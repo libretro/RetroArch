@@ -632,7 +632,7 @@ typedef struct udev_input
 } udev_input_t;
 
 #ifdef UDEV_XKB_HANDLING
-int init_xkb(int fd, size_t size);
+int init_xkb(int fd, size_t len);
 void free_xkb(void);
 int handle_xkb(int code, int value);
 #endif
@@ -871,7 +871,7 @@ static int16_t udev_mouse_get_y(const udev_input_mouse_t *mouse)
    return y + (y < 0 ? -0.5 : 0.5);
 }
 
-static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse, 
+static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
             bool screen, bool confined, int16_t *ret_x, int16_t *ret_y)
 {
    struct video_viewport vp    = {0};
@@ -913,7 +913,7 @@ static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
    {
       return false;
    }
-   
+
    if (screen)
    {
       *ret_x = res_screen_x;
@@ -1284,14 +1284,14 @@ static const char *udev_mt_code_to_str(uint32_t code)
  *
  * @param label Label to prefix the message with.
  * @param request_data Input data structure to dump.
- * @param count Number of elements in the values array.
+ * @param len Number of elements in the values array.
  */
-static void udev_dump_mt_request_data(const char *label, const uint8_t *request_data, size_t count)
+static void udev_dump_mt_request_data(const char *label, const uint8_t *request_data, size_t len)
 {
    uint32_t *mt_req_code = (uint32_t*) request_data;
    int32_t *mt_req_values = ((int32_t*) request_data) + 1;
    RARCH_DBG("[udev] %s: Req { %s, [ ", label, udev_mt_code_to_str(*mt_req_code));
-   for (; mt_req_values < (((int32_t*) mt_req_code) + count + 1); ++mt_req_values)
+   for (; mt_req_values < (((int32_t*) mt_req_code) + len + 1); ++mt_req_values)
    {
       RARCH_DBG("%d, ", *mt_req_values);
    }

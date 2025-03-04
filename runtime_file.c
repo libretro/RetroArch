@@ -324,9 +324,7 @@ runtime_log_t *runtime_log_init(
     * content has the same name... */
    else if (string_is_equal(core_name, "TyrQuake"))
    {
-      const char *slash      = strrchr(content_path, '/');
-      const char *backslash  = strrchr(content_path, '\\');
-      const char *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+      char *last_slash = find_last_slash(content_path);
       if (last_slash)
       {
          size_t path_length = last_slash + 1 - content_path;
@@ -1162,9 +1160,6 @@ void runtime_update_playlist(
    runtime_log_t *runtime_log             = NULL;
    const struct playlist_entry *entry     = NULL;
    struct playlist_entry update_entry     = {0};
-#if defined(HAVE_MENU) && (defined(HAVE_OZONE) || defined(HAVE_MATERIALUI))
-   const char *menu_ident                 = menu_driver_ident();
-#endif
 
    /* Sanity check */
    if (!playlist)
@@ -1232,6 +1227,7 @@ void runtime_update_playlist(
     * to be populated even when no runtime is recorded */
    if (update_entry.runtime_status != PLAYLIST_RUNTIME_VALID)
    {
+      const char *menu_ident = menu_driver_ident();
       if (   string_is_equal(menu_ident, "ozone")
           || string_is_equal(menu_ident, "glui"))
       {
@@ -1270,9 +1266,6 @@ void runtime_update_contentless_core(
    core_info_t *core_info                       = NULL;
    runtime_log_t *runtime_log                   = NULL;
    contentless_core_runtime_info_t runtime_info = {0};
-#if (defined(HAVE_OZONE) || defined(HAVE_MATERIALUI))
-   const char *menu_ident                       = menu_driver_ident();
-#endif
 
    /* Sanity check */
    if (    string_is_empty(core_path)
@@ -1325,6 +1318,7 @@ void runtime_update_contentless_core(
     * to be populated even when no runtime is recorded */
    if (runtime_info.status != CONTENTLESS_CORE_RUNTIME_VALID)
    {
+      const char *menu_ident = menu_driver_ident();
       if (   string_is_equal(menu_ident, "ozone")
           || string_is_equal(menu_ident, "glui"))
       {

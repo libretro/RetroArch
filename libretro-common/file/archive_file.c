@@ -54,9 +54,9 @@ static int file_archive_get_file_list_cb(
 
    if (valid_exts)
    {
-      size_t path_len              = strlen(path);
+      size_t _len                  = strlen(path);
       /* Checks if this entry is a directory or a file. */
-      char last_char               = path[path_len - 1];
+      char last_char               = path[_len - 1];
       struct string_list ext_list  = {0};
 
       /* Skip if directory. */
@@ -157,7 +157,8 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
       state->archive_mmap_fd = open(path, O_RDONLY);
       if (state->archive_mmap_fd)
       {
-         state->archive_mmap_data = (uint8_t*)mmap(NULL, (size_t)state->archive_size,
+         state->archive_mmap_data = (uint8_t*)mmap(NULL,
+               (size_t)state->archive_size,
                PROT_READ, MAP_SHARED, state->archive_mmap_fd, 0);
 
          if (state->archive_mmap_data == (uint8_t*)MAP_FAILED)

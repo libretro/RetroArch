@@ -272,7 +272,7 @@ static void do_memchunkhax2(void)
    svcControlMemory(&linear_buffer, 0, 0, 0x1000,
          MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
 
-   mch2.alloc_size     = ((((linear_size - (skip_pages << 12)) 
+   mch2.alloc_size     = ((((linear_size - (skip_pages << 12))
                + 0x1000) >> 13) << 12);
 
    mem_free            = osGetMemRegionFree(MEMREGION_APPLICATION);
@@ -303,14 +303,14 @@ static void do_memchunkhax2(void)
    alloc_address_kaddr      = osConvertVirtToPhys(
          (void*)linear_address) + mch2.kernel_fcram_mapping_offset;
 
-   mch2.thread_page_kva     = get_first_free_basemem_page(mch2.isNew3DS) 
+   mch2.thread_page_kva     = get_first_free_basemem_page(mch2.isNew3DS)
       - 0x10000; /* skip down 16 pages */
    ((u32*)linear_buffer)[0] = 1;
    ((u32*)linear_buffer)[1] = mch2.thread_page_kva;
    ((u32*)linear_buffer)[2] = alloc_address_kaddr + (((mch2.alloc_size >> 12) - 3) << 13) + (skip_pages << 12);
 
-   dst_memchunk             = linear_address 
-      + (((mch2.alloc_size >> 12) - 2) << 13) 
+   dst_memchunk             = linear_address
+      + (((mch2.alloc_size >> 12) - 2) << 13)
       + (skip_pages << 12);
 
    memcpy(flush_buffer, flush_buffer + 0x4000, 0x4000);
@@ -319,7 +319,7 @@ static void do_memchunkhax2(void)
    GSPGPU_FlushDataCache((void*)linear_buffer, 16);
    memcpy(flush_buffer, flush_buffer + 0x4000, 0x4000);
 
-   /* can't clear gspEvents[GSPGPU_EVENT_PPF]), 
+   /* can't clear gspEvents[GSPGPU_EVENT_PPF]),
     * directly so execute a dummy copy
     * and use gspWaitForEvent to clear it. */
 
@@ -380,8 +380,8 @@ static void do_memchunkhax2(void)
          thread_ACL[SVC_ACL_OFFSET(0x7B) >> 2] = SVC_ACL_MASK(0x7B);
          GSPGPU_FlushDataCache((void*)thread_ACL, 16);
          GSPGPU_InvalidateDataCache((void*)thread_ACL, 16);
-         mch2.threads[i].args.target_kaddr = get_thread_page() 
-            + THREAD_PAGE_ACL_OFFSET 
+         mch2.threads[i].args.target_kaddr = get_thread_page()
+            + THREAD_PAGE_ACL_OFFSET
             + SVC_ACL_OFFSET(0x7B);
          mch2.threads[i].args.target_val   = SVC_ACL_MASK(0x7B);
          break;
@@ -437,7 +437,7 @@ static void gspwn(u32 dst, u32 src, u32 size, u8* flush_buffer)
 }
 
 /* pseudo-code:
- * if(val2)
+ * if (val2)
  * {
  *    *(u32*)val1 = val2;
  *    *(u32*)(val2 + 8) = (val1 - 4);
@@ -503,8 +503,8 @@ static void do_memchunkhax1(void)
    u32 saved_vram_value = *(u32*)0x1F000008;
 
    /* 0x1F000000 contains the enable bit for svc 0x7B */
-   memchunkhax1_write_pair(get_thread_page() 
-         + THREAD_PAGE_ACL_OFFSET 
+   memchunkhax1_write_pair(get_thread_page()
+         + THREAD_PAGE_ACL_OFFSET
          + SVC_ACL_OFFSET(0x7B), 0x1F000000);
 
    write_kaddr(0x1F000008, saved_vram_value);
@@ -540,10 +540,10 @@ Result svchax_init(bool patch_srv)
         u32 luma_major, luma_minor;
 
         if (kver > SYSTEM_VERSION(2, 50, 11) &&
-            (R_FAILED(get_luma_version(&luma_major, &luma_minor) 
+            (R_FAILED(get_luma_version(&luma_major, &luma_minor)
                       || luma_major < 8)))
           return -1;
-        else if (kver > SYSTEM_VERSION(2, 46, 0) 
+        else if (kver > SYSTEM_VERSION(2, 46, 0)
               && kver <= SYSTEM_VERSION(2, 50, 11))
           do_memchunkhax2();
         else if (kver <= SYSTEM_VERSION(2, 46, 0))
@@ -557,7 +557,7 @@ Result svchax_init(bool patch_srv)
 
    if (patch_srv && !__ctr_svchax_srv)
    {
-      u32 PID_kaddr    = read_kaddr(CURRENT_KPROCESS) 
+      u32 PID_kaddr    = read_kaddr(CURRENT_KPROCESS)
          + (isNew3DS ? 0xBC : (kver > SYSTEM_VERSION(2, 40, 0)) ? 0xB4 : 0xAC);
       u32 old_PID      = read_kaddr(PID_kaddr);
       write_kaddr(PID_kaddr, 0);

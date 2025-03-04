@@ -89,6 +89,7 @@ AVUTIL_LIBS      := -lavutil
 SWSCALE_LIBS     := -lswscale
 AVFORMAT_LIBS    := -lavformat
 SWRESAMPLE_LIBS  := -lswresample
+AVDEVICE_LIBS    := -lavdevice
 FFMPEG_LIBS      := -lws2_32 -lz
 endif
 

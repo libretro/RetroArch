@@ -27,12 +27,10 @@
 #define CALLBACK_ERROR_SIZE 4200
 
 static int file_decompressed_target_file(const char *name,
-      const char *valid_exts,
-      const uint8_t *cdata,
+      const char *valid_exts, const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   /* TODO/FIXME */
    return 0;
 }
 
@@ -42,13 +40,11 @@ static int file_decompressed_subdir(const char *name,
       unsigned cmode, uint32_t csize,uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   size_t _len;
    char path_dir[DIR_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
-   size_t name_len            = strlen(name);
-   char last_char             = name[name_len - 1];
-   /* Ignore directories, go to next file. */
-   if (last_char == '/' || last_char == '\\')
+   size_t _len        = strlen(name);
+   /* Look at last character. Ignore directories, go to next file. */
+   if (name[_len - 1] == '/' || name[_len - 1] == '\\')
       return 1;
    if (strstr(name, userdata->dec->subdir) != name)
       return 1;
@@ -89,13 +85,11 @@ static int file_decompressed(const char *name, const char *valid_exts,
    const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
    uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   size_t _len;
    char path[PATH_MAX_LENGTH];
-   decompress_state_t    *dec = userdata->dec;
-   size_t name_len            = strlen(name);
-   char last_char             = name[name_len - 1];
-   /* Ignore directories, go to next file. */
-   if (last_char == '/' || last_char == '\\')
+   decompress_state_t *dec = userdata->dec;
+   size_t _len             = strlen(name);
+   /* Look at last character. Ignore directories, go to next file. */
+   if (name[_len - 1] == '/' || name[_len - 1] == '\\')
       return 1;
    /* Make directory */
    fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
@@ -227,8 +221,7 @@ static void task_decompress_handler_subdir(retro_task_t *task)
          sizeof(dec->userdata->archive_path));
 
    ret                     = file_archive_parse_file_iterate(
-         &dec->archive,
-         &retdec, dec->source_file,
+         &dec->archive, &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_subdir, dec->userdata);
 
    task_set_progress(task,

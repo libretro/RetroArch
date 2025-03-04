@@ -9,7 +9,8 @@
 ThumbnailDelegate::ThumbnailDelegate(const GridItem &gridItem, QObject* parent) :
    QStyledItemDelegate(parent), m_style(gridItem) { }
 
-void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &option, const QModelIndex& index) const
+void ThumbnailDelegate::paint(QPainter* painter,
+      const QStyleOptionViewItem &option, const QModelIndex& index) const
 {
    QStyleOptionViewItem opt = option;
    const QWidget    *widget = opt.widget;
@@ -18,8 +19,10 @@ void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &opt
    int      text_top_margin = 4; /* Qt seemingly reports -4 the actual line height. */
    int          text_height = painter->fontMetrics().height() + padding + padding;
    QRect               rect = opt.rect;
-   QRect           adjusted = rect.adjusted(padding, padding, -padding, -text_height + text_top_margin);
-   QPixmap           pixmap = index.data(PlaylistModel::THUMBNAIL).value<QPixmap>();
+   QRect           adjusted = rect.adjusted(padding, padding, -padding,
+         -text_height + text_top_margin);
+   QPixmap           pixmap = index.data(
+         PlaylistModel::THUMBNAIL).value<QPixmap>();
 
    painter->save();
 
@@ -31,16 +34,23 @@ void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &opt
    /* draw the image */
    if (!pixmap.isNull())
    {
-      QPixmap pixmapScaled = pixmap.scaled(adjusted.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-      style->drawItemPixmap(painter, adjusted, Qt::AlignHCenter | m_style.thumbnailVerticalAlignmentFlag, pixmapScaled);
+      QPixmap pixmapScaled = pixmap.scaled(adjusted.size(),
+            Qt::KeepAspectRatio, Qt::SmoothTransformation);
+      style->drawItemPixmap(painter, adjusted,
+            Qt::AlignHCenter | m_style.thumbnailVerticalAlignmentFlag,
+            pixmapScaled);
    }
 
    /* draw the text */
    if (!opt.text.isEmpty())
    {
-      QPalette::ColorGroup cg = opt.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Disabled;
-      QRect textRect          = QRect(rect.x() + padding, rect.y() + adjusted.height() - text_top_margin + padding, rect.width() - 2 * padding, text_height);
-      QString elidedText      = painter->fontMetrics().elidedText(opt.text, opt.textElideMode, textRect.width(), Qt::TextShowMnemonic);
+      QPalette::ColorGroup cg = opt.state & QStyle::State_Enabled
+         ? QPalette::Normal : QPalette::Disabled;
+      QRect textRect          = QRect(rect.x() + padding,
+            rect.y() + adjusted.height() - text_top_margin + padding,
+            rect.width() - 2 * padding, text_height);
+      QString elidedText      = painter->fontMetrics().elidedText(opt.text,
+            opt.textElideMode, textRect.width(), Qt::TextShowMnemonic);
 
       if (cg == QPalette::Normal && !(opt.state & QStyle::State_Active))
          cg = QPalette::Inactive;
@@ -57,7 +67,8 @@ void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &opt
    painter->restore();
 }
 
-GridView::GridView(QWidget *parent) : QAbstractItemView(parent), m_idealHeight(0), m_hashIsDirty(false)
+GridView::GridView(QWidget *parent) :
+   QAbstractItemView(parent), m_idealHeight(0), m_hashIsDirty(false)
 {
    setFocusPolicy(Qt::WheelFocus);
    horizontalScrollBar()->setRange(0, 0);
@@ -67,11 +78,13 @@ GridView::GridView(QWidget *parent) : QAbstractItemView(parent), m_idealHeight(0
 void GridView::setModel(QAbstractItemModel *newModel)
 {
    if (model())
-      disconnect(model(), SIGNAL(rowsRemoved(QModelIndex, int, int)), this, SLOT(rowsRemoved(QModelIndex, int, int)));
+      disconnect(model(), SIGNAL(rowsRemoved(QModelIndex, int, int)),
+            this, SLOT(rowsRemoved(QModelIndex, int, int)));
 
    QAbstractItemView::setModel(newModel);
 
-   connect(newModel, SIGNAL(rowsRemoved(QModelIndex, int, int)), this, SLOT(rowsRemoved(QModelIndex, int, int)));
+   connect(newModel, SIGNAL(rowsRemoved(QModelIndex, int, int)),
+         this, SLOT(rowsRemoved(QModelIndex, int, int)));
 
    m_hashIsDirty = true;
 }
@@ -189,7 +202,11 @@ QRectF GridView::viewportRectForRow(int row) const
    rect = m_rectForRow.value(row).toRect();
    if (!rect.isValid())
       return rect;
-   return QRectF(rect.x() - horizontalScrollBar()->value(), rect.y() - verticalScrollBar()->value(), rect.width(), rect.height());
+   return QRectF(
+         rect.x() - horizontalScrollBar()->value(),
+         rect.y() - verticalScrollBar()->value(),
+         rect.width(),
+         rect.height());
 }
 
 void GridView::scrollTo(const QModelIndex &index, QAbstractItemView::ScrollHint)
@@ -198,17 +215,24 @@ void GridView::scrollTo(const QModelIndex &index, QAbstractItemView::ScrollHint)
    QRect itemRect = visualRect(index);
 
    if (itemRect.left() < viewRect.left())
-      horizontalScrollBar()->setValue(horizontalScrollBar()->value() + itemRect.left() - viewRect.left());
+      horizontalScrollBar()->setValue(horizontalScrollBar()->value()
+            + itemRect.left() - viewRect.left());
    else if (itemRect.right() > viewRect.right())
-      horizontalScrollBar()->setValue(horizontalScrollBar()->value() + qMin(itemRect.right() - viewRect.right(), itemRect.left() - viewRect.left()));
+      horizontalScrollBar()->setValue(horizontalScrollBar()->value()
+            + qMin(itemRect.right() - viewRect.right(),
+               itemRect.left() - viewRect.left()));
    if (itemRect.top() < viewRect.top())
-      verticalScrollBar()->setValue(verticalScrollBar()->value() + itemRect.top() - viewRect.top());
+      verticalScrollBar()->setValue(verticalScrollBar()->value()
+            + itemRect.top() - viewRect.top());
    else if (itemRect.bottom() > viewRect.bottom())
-      verticalScrollBar()->setValue(verticalScrollBar()->value() + qMin(itemRect.bottom() - viewRect.bottom(), itemRect.top() - viewRect.top()));
+      verticalScrollBar()->setValue(verticalScrollBar()->value()
+            + qMin(itemRect.bottom() - viewRect.bottom(),
+               itemRect.top() - viewRect.top()));
    viewport()->update();
 }
 
-/* TODO: Make this more efficient by changing m_rectForRow for another data structure. Look at how Qt's own views do it. */
+/* TODO: Make this more efficient by changing m_rectForRow for
+ * another data structure. Look at how Qt's own views do it. */
 QModelIndex GridView::indexAt(const QPoint &point_) const
 {
    QPoint point(point_);
@@ -229,7 +253,8 @@ QModelIndex GridView::indexAt(const QPoint &point_) const
    return QModelIndex();
 }
 
-void GridView::dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
+void GridView::dataChanged(const QModelIndex &topLeft,
+      const QModelIndex &bottomRight, const QVector<int> &roles)
 {
    m_hashIsDirty = true;
    QAbstractItemView::dataChanged(topLeft, bottomRight);
@@ -274,17 +299,20 @@ void GridView::reset()
    refresh();
 }
 
-QModelIndex GridView::moveCursor(QAbstractItemView::CursorAction cursorAction, Qt::KeyboardModifiers)
+QModelIndex GridView::moveCursor(QAbstractItemView::CursorAction cursorAction,
+      Qt::KeyboardModifiers)
 {
    QModelIndex index = currentIndex();
    if (index.isValid())
    {
-      if ((cursorAction == MoveLeft && index.row() > 0) || (cursorAction == MoveRight && index.row() + 1 < model()->rowCount()))
+      if (     (cursorAction == MoveLeft  && index.row() > 0)
+            || (cursorAction == MoveRight && index.row() + 1 < model()->rowCount()))
       {
          const int offset = (cursorAction == MoveLeft ? -1 : 1);
          index = model()->index(index.row() + offset, index.column(), index.parent());
       }
-      else if ((cursorAction == MoveUp && index.row() > 0) || (cursorAction == MoveDown && index.row() + 1 < model()->rowCount()))
+      else if ((cursorAction == MoveUp   && index.row() > 0)
+            || (cursorAction == MoveDown && index.row() + 1 < model()->rowCount()))
       {
          const int offset = ((m_size + m_spacing) * (cursorAction == MoveUp ? -1 : 1));
          QRect rect = viewportRectForRow(index.row()).toRect();
@@ -317,7 +345,8 @@ QVector<QModelIndex> GridView::visibleIndexes() const {
    return m_visibleIndexes;
 }
 
-void GridView::setSelection(const QRect &rect, QFlags<QItemSelectionModel::SelectionFlag> flags)
+void GridView::setSelection(const QRect &rect,
+      QFlags<QItemSelectionModel::SelectionFlag> flags)
 {
    QRect rectangle;
    QHash<int, QRectF>::const_iterator i;
@@ -329,7 +358,7 @@ void GridView::setSelection(const QRect &rect, QFlags<QItemSelectionModel::Selec
    rectangle    = rect.translated(horizontalScrollBar()->value(),
          verticalScrollBar()->value()).normalized();
 
-   i            = m_rectForRow.constBegin();
+   i = m_rectForRow.constBegin();
 
    while (i != m_rectForRow.constEnd())
    {
@@ -398,7 +427,9 @@ void GridView::paintEvent(QPaintEvent*)
       QStyleOptionViewItem option = viewOptions();
 #endif
 
-      if (!rect.isValid() || rect.bottom() < 0 || rect.y() > viewport()->height())
+      if (    !rect.isValid()
+            || rect.bottom() < 0
+            || rect.y() > viewport()->height())
          continue;
 
       m_visibleIndexes.append(index);
@@ -422,10 +453,12 @@ void GridView::updateGeometries()
 
    verticalScrollBar()->setSingleStep(RowHeight);
    verticalScrollBar()->setPageStep(viewport()->height());
-   verticalScrollBar()->setRange(0, qMax(0, m_idealHeight - viewport()->height()));
+   verticalScrollBar()->setRange(0, qMax(0,
+            m_idealHeight - viewport()->height()));
 
    horizontalScrollBar()->setPageStep(viewport()->width());
-   horizontalScrollBar()->setRange(0, qMax(0, RowHeight - viewport()->width()));
+   horizontalScrollBar()->setRange(0, qMax(0,
+            RowHeight - viewport()->width()));
 
    emit(visibleItemsChangedMaybe());
 }
@@ -435,24 +468,24 @@ QString GridView::getLayout() const
    switch (m_viewMode)
    {
       case Simple:
-         return "simple";
+         return QStringLiteral("simple");
       case Anchored:
-         return "anchored";
+         return QStringLiteral("anchored");
       case Centered:
       default:
          break;
    }
 
-   return "centered";
+   return QStringLiteral("centered");
 }
 
 void GridView::setLayout(QString layout)
 {
-   if (layout == "anchored")
+   if (layout == QLatin1String("anchored"))
       m_viewMode = Anchored;
-   else if (layout == "centered")
+   else if (layout == QLatin1String("centered"))
       m_viewMode = Centered;
-   else if (layout == "fixed")
+   else if (layout == QLatin1String("fixed"))
       m_viewMode = Simple;
 }
 
@@ -461,49 +494,37 @@ int GridView::getSpacing() const
    return m_spacing;
 }
 
-void GridView::setSpacing(const int spacing)
-{
-   m_spacing = spacing;
-}
+void GridView::setSpacing(const int spacing) { m_spacing = spacing; }
 
 GridItem::GridItem(QWidget* parent) : QWidget(parent)
 , thumbnailVerticalAlignmentFlag(Qt::AlignBottom)
-, padding(11)
-{
-}
+, padding(11) { }
 
-int GridItem::getPadding() const
-{
-   return padding;
-}
-
-void GridItem::setPadding(const int value)
-{
-   padding = value;
-}
+int GridItem::getPadding() const { return padding; }
+void GridItem::setPadding(const int value) { padding = value; }
 
 QString GridItem::getThumbnailVerticalAlign() const
 {
    switch (thumbnailVerticalAlignmentFlag)
    {
       case Qt::AlignTop:
-         return "top";
+         return QStringLiteral("top");
       case Qt::AlignVCenter:
-         return "center";
+         return QStringLiteral("center");
       case Qt::AlignBottom:
       default:
          break;
    }
 
-   return "bottom";
+   return QStringLiteral("bottom");
 }
 
 void GridItem::setThumbnailVerticalAlign(const QString valign)
 {
-   if (valign == "top")
+   if (valign == QLatin1String("top"))
       thumbnailVerticalAlignmentFlag = Qt::AlignTop;
-   else if (valign == "center")
+   else if (valign == QLatin1String("center"))
       thumbnailVerticalAlignmentFlag = Qt::AlignVCenter;
-   else if (valign == "bottom")
+   else if (valign == QLatin1String("bottom"))
       thumbnailVerticalAlignmentFlag = Qt::AlignBottom;
 }

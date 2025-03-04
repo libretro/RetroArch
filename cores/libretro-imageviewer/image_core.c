@@ -181,10 +181,6 @@ void IMAGE_CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
    IMAGE_CORE_PREFIX(video_cb) = cb;
 }
 
-void IMAGE_CORE_PREFIX(retro_set_audio_sample)(retro_audio_sample_t unused)
-{
-}
-
 void IMAGE_CORE_PREFIX(retro_set_audio_sample_batch)(retro_audio_sample_batch_t cb)
 {
    IMAGE_CORE_PREFIX(audio_batch_cb) = cb;
@@ -200,41 +196,14 @@ void IMAGE_CORE_PREFIX(retro_set_input_state)(retro_input_state_t cb)
    IMAGE_CORE_PREFIX(input_state_cb) = cb;
 }
 
-void IMAGE_CORE_PREFIX(retro_set_controller_port_device)(unsigned a, unsigned b)
-{
-}
-
-void IMAGE_CORE_PREFIX(retro_reset)(void)
-{
-   image_uploaded = false;
-}
-
-size_t IMAGE_CORE_PREFIX(retro_serialize_size)(void)
-{
-   return 0;
-}
-
-bool IMAGE_CORE_PREFIX(retro_serialize)(void *data, size_t size)
-{
-   (void)data;
-   (void)size;
-   return false;
-}
-
-bool IMAGE_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
-{
-   (void)data;
-   (void)size;
-   return false;
-}
-
-void IMAGE_CORE_PREFIX(retro_cheat_reset)(void)
-{
-}
-
-void IMAGE_CORE_PREFIX(retro_cheat_set)(unsigned a, bool b, const char * c)
-{
-}
+void IMAGE_CORE_PREFIX(retro_set_audio_sample)(retro_audio_sample_t unused) { }
+void IMAGE_CORE_PREFIX(retro_set_controller_port_device)(unsigned a, unsigned b) { }
+void IMAGE_CORE_PREFIX(retro_reset)(void) { image_uploaded = false; }
+size_t IMAGE_CORE_PREFIX(retro_serialize_size)(void) { return 0; }
+bool IMAGE_CORE_PREFIX(retro_serialize)(void *data, size_t len) { return false; }
+bool IMAGE_CORE_PREFIX(retro_unserialize)(const void *s, size_t len) { return false; }
+void IMAGE_CORE_PREFIX(retro_cheat_reset)(void) { }
+void IMAGE_CORE_PREFIX(retro_cheat_set)(unsigned a, bool b, const char * c) { }
 
 static bool imageviewer_load(const char *path, int image_index)
 {
@@ -307,31 +276,18 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    return true;
 }
 
-bool IMAGE_CORE_PREFIX(retro_load_game_special)(unsigned a, const struct retro_game_info *b, size_t c)
-{
-   return false;
-}
+bool IMAGE_CORE_PREFIX(retro_load_game_special)(unsigned a,
+      const struct retro_game_info *b, size_t c) { return false; }
+unsigned IMAGE_CORE_PREFIX(retro_get_region)(void) { return RETRO_REGION_NTSC; }
+void *IMAGE_CORE_PREFIX(retro_get_memory_data)(unsigned id) { return NULL; }
+size_t IMAGE_CORE_PREFIX(retro_get_memory_size)(unsigned id) { return 0; }
+
 
 void IMAGE_CORE_PREFIX(retro_unload_game)(void)
 {
    imageviewer_free_image();
    image_width  = 0;
    image_height = 0;
-}
-
-unsigned IMAGE_CORE_PREFIX(retro_get_region)(void)
-{
-   return RETRO_REGION_NTSC;
-}
-
-void *IMAGE_CORE_PREFIX(retro_get_memory_data)(unsigned id)
-{
-   return NULL;
-}
-
-size_t IMAGE_CORE_PREFIX(retro_get_memory_size)(unsigned id)
-{
-   return 0;
 }
 
 void IMAGE_CORE_PREFIX(retro_run)(void)

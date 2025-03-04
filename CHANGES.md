@@ -1,11 +1,45 @@
 # Future
+- 3DS: Fix unique IDs for newer cores
+- AUTOCONF: Enable alternative display name in autoconfig files
 - AUDIO/PIPEWIRE: Fix app launch when pipewire service is stopped
+- AUDIO/PIPEWIRE: Fix speedup with threaded video mode
+- AUDIO/PIPEWIRE: Fix latency setting and microphone handling
+- CHEEVOS: Include achievement state in netplay states
+- CLOUDSYNC: Fix Windows path issues
+- CLOUDSYNC: Workaround for duplicated requests bug
+- EMSCRIPTEN: Scale window to correct size
+- EMSCRIPTEN: Additional platform functions
+- EMSCRIPTEN/RWEBINPUT: Add touch input support
 - GENERAL: Fix save state auto increment
 - GENERAL: Fix softpatching with periods/dots in the file name
 - GENERAL: Fix compilation with --enable-videocore
-- MENU: Add SSL support to the information list
+- GENERAL: Allow asset directory redefinition and other directory overrides via environment variables
+- GENERAL: Allow override of player 1/2 input with machine learning models (needs recompilation and external library)
+- INPUT: Fix a crash when initializing illuminance sensor on Linux
+- INPUT: Analog-to-digital refactor, fixing behavior when analogs are assigned to keys
+- INPUT/COCOA: Include gravity in acceleration sensor values
+- INPUT/WINRAW: Invert mouse index order
 - IOS: Ensure webserver notice can be dismissed
+- IOS: Fix clean playlist function
+- MACOS: Fix some sandbox handling in App Store builds
+- MACOS: Reset keyboard state when focus is lost
+- MENU: Add SSL support to the information list
+- MENU: Add warning to BFI and related menu items
+- MENU: Fix latency statistics when using runahead
+- MENU: Fix opening file inside archive with core selection
+- MENU/PLAYLISTS: Random selection/shuffle function
+- MENU/QT: Fix desktop menu crash with Cheevos disabled
+- MENU/RGUI: Cleanups of certain menu items
+- NETWORK: Refactor of net_http, improvements for task blocking and performance
+- OVERLAY: Preferred overlay loading is now default only on mobile platforms
+- TVOS: Fix 720p display
+- TVOS: Fix refresh rate fetching on tvOS 13/14
+- SAVESTATES: Reset state index when loading new content
+- UWP: Fix slang shader compilation
+- VIDEO: Enable BFI setting for mobile platforms (mind the warnings)
+- VIDEO/OpenGLES: Fix FP/sRGB FBO support
 - VIDEO/SHADERS: Allow exact refresh rate sync with shader subframes
+- WEBPLAYER: Update core list for 1.20.0
 
 # 1.20.0
 - AUDIO: Fix audio handling in case of RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE

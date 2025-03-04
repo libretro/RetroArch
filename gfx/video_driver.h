@@ -915,7 +915,7 @@ void video_driver_unset_stub_frame(void);
 
 float video_driver_get_core_aspect(void);
 
-uint32_t video_driver_get_frame_time_delta_usec(void);
+retro_time_t video_driver_get_frame_time_delta_usec(void);
 
 float video_driver_get_original_fps(void);
 
@@ -1384,6 +1384,7 @@ extern const gfx_ctx_driver_t gfx_ctx_cgl;
 extern const gfx_ctx_driver_t gfx_ctx_cocoagl;
 extern const gfx_ctx_driver_t gfx_ctx_cocoavk;
 extern const gfx_ctx_driver_t gfx_ctx_emscripten;
+extern const gfx_ctx_driver_t gfx_ctx_emscripten_webgl;
 extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;

@@ -223,13 +223,13 @@ enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym);
 /**
  * input_keymaps_translate_rk_to_str:
  * @key                   : Retro key identifier.
- * @buf                   : Buffer.
- * @size                  : Size of @buf.
+ * @s                     : Buffer.
+ * @len                   : Size of @s.
  *
  * Translates a retro key identifier to a human-readable
  * identifier string.
  **/
-void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
+void input_keymaps_translate_rk_to_str(enum retro_key key, char *s, size_t len);
 
 /**
  * input_translate_rk_to_ascii:

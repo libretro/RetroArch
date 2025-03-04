@@ -64,9 +64,9 @@ static void bluetoothctl_scan(void *data)
 
    while (fgets(line, 512, dev_file))
    {
-      size_t len = strlen(line);
-      if (len > 0 && line[len-1] == '\n')
-         line[--len] = '\0';
+      size_t _len = strlen(line);
+      if (_len > 0 && line[_len - 1] == '\n')
+         line[--_len] = '\0';
 
       string_list_append(btctl->lines, line, attr);
    }
@@ -225,8 +225,14 @@ static bool bluetoothctl_remove_device(void *data, unsigned idx)
    string_list_free(list);
 
    snprintf(btctl->command, sizeof(btctl->command), "\
-         echo -e \"disconnect %s\\nremove %s\\n\" | bluetoothctl",
-         device, device);
+         bluetoothctl -- disconnect %s",
+         device);
+
+   pclose(popen(btctl->command, "r"));
+
+   snprintf(btctl->command, sizeof(btctl->command), "\
+         bluetoothctl -- remove %s",
+         device);
 
    pclose(popen(btctl->command, "r"));
 

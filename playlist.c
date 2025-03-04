@@ -194,43 +194,40 @@ playlist_config_t *playlist_get_config(playlist_t *playlist)
 {
    if (!playlist)
       return NULL;
-
    return &playlist->config;
 }
 
 static void path_replace_base_path_and_convert_to_local_file_system(
-      char *out_path,
+      char *s,
       const char *in_path,
-      const char *in_oldrefpath,
-      const char *in_refpath,
-      size_t size)
+      const char *in_oldrefpath, const char *in_refpath,
+      size_t len)
 {
    size_t in_oldrefpath_length = strlen(in_oldrefpath);
-
    /* If entry path is inside playlist base path,
     * replace it with new base content directory */
    if (string_starts_with_size(in_path, in_oldrefpath, in_oldrefpath_length))
    {
       size_t in_refpath_length = strlen(in_refpath);
-      memcpy(out_path, in_refpath, in_refpath_length);
+      memcpy(s, in_refpath, in_refpath_length);
       memcpy(
-            out_path + in_refpath_length,
-            in_path  + in_oldrefpath_length,
+            s               + in_refpath_length,
+            in_path         + in_oldrefpath_length,
             strlen(in_path) - in_oldrefpath_length + 1);
 #ifdef _WIN32
       /* If we are running under a Windows filesystem,
        * '/' characters are not allowed anywhere.
        * We replace with '\' and hope for the best... */
-      string_replace_all_chars(out_path,
+      string_replace_all_chars(s,
             POSIX_PATH_DELIMITER, WINDOWS_PATH_DELIMITER);
 #else
       /* Under POSIX filesystem, we replace '\' characters with '/' */
-      string_replace_all_chars(out_path,
+      string_replace_all_chars(s,
             WINDOWS_PATH_DELIMITER, POSIX_PATH_DELIMITER);
 #endif
    }
    else
-      strlcpy(out_path, in_path, size);
+      strlcpy(s, in_path, len);
 }
 
 /* Generates a case insensitive hash for the
@@ -1229,6 +1226,12 @@ bool playlist_content_path_is_valid(const char *path)
    if (string_is_empty(path))
       return false;
 
+#ifdef IOS
+   char expanded_path[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(expanded_path, path, sizeof(expanded_path));
+   path = expanded_path;
+#endif
+
    /* If content is inside an archive, special
     * handling is required... */
    if (path_contains_compressed_file(path))
@@ -1739,11 +1742,11 @@ void playlist_write_file(playlist_t *playlist)
    bool pl_old_fmt      = ((playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT)    > 0);
 
    if (   !playlist
-       || !((playlist->flags & CNT_PLAYLIST_FLG_MOD) ||
+       || !((playlist->flags & CNT_PLAYLIST_FLG_MOD)
 #if defined(HAVE_ZLIB)
-        (pl_compressed != playlist->config.compress) ||
+       || (pl_compressed != playlist->config.compress)
 #endif
-        (pl_old_fmt    != playlist->config.old_format)))
+       || (pl_old_fmt    != playlist->config.old_format)))
       return;
 
 #if defined(HAVE_ZLIB)
@@ -2626,7 +2629,7 @@ static bool playlist_read_file(playlist_t *playlist)
       /* Read error or EOF (end of file) */
       if ((test_char = intfstream_getc(file)) == EOF)
          goto end;
-   } while (!isgraph(test_char) || test_char > 0x7F);
+   }while(!isgraph(test_char) || test_char > 0x7F);
 
    if (test_char != '{')
       playlist->flags |=  (CNT_PLAYLIST_FLG_OLD_FMT);
@@ -2826,7 +2829,7 @@ static bool playlist_read_file(playlist_t *playlist)
                      line_buf[3], thumbnail_mode_str,
                      sizeof(thumbnail_mode_str)) > 0)
                {
-                  char *tok, *save;
+                  char *tok, *save             = NULL;
                   char *thumbnail_mode_str_cpy = strdup(thumbnail_mode_str);
 
                   if ((tok = strtok_r(thumbnail_mode_str_cpy, "|", &save)))
@@ -2980,7 +2983,8 @@ playlist_t *playlist_init(const playlist_config_t *config)
             tmp_entry_path[0] = '\0';
             path_replace_base_path_and_convert_to_local_file_system(
                   tmp_entry_path, entry->path,
-                  playlist->base_content_directory, playlist->config.base_content_directory,
+                  playlist->base_content_directory,
+                  playlist->config.base_content_directory,
                   sizeof(tmp_entry_path));
 
             free(entry->path);

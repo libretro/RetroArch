@@ -255,7 +255,8 @@ const char *path_get_extension(const char *path)
 char *path_get_extension_mutable(const char *path)
 {
    char *ext = NULL;
-   if (!string_is_empty(path) && ((ext = (char*)strrchr(path_basename(path), '.'))))
+   if (    !string_is_empty(path)
+       && ((ext = (char*)strrchr(path_basename(path), '.'))))
       return ext;
    return NULL;
 }
@@ -276,8 +277,7 @@ char *path_get_extension_mutable(const char *path)
  **/
 char *path_remove_extension(char *s)
 {
-   char *last = !string_is_empty(s)
-      ? (char*)strrchr(path_basename(s), '.') : NULL;
+   char *last = path_get_extension_mutable(s);
    if (!last)
       return NULL;
    if (*last)
@@ -597,21 +597,18 @@ size_t path_basedir(char *s)
    char *last_slash = NULL;
    if (!s || s[0] == '\0' || s[1] == '\0')
       return (s && s[0] != '\0') ? 1 : 0;
-   slash             = strrchr(s, '/');
-   backslash         = strrchr(s, '\\');
-   last_slash        = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   slash            = strrchr(s, '/');
+   backslash        = strrchr(s, '\\');
+   last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    if (last_slash)
    {
-      last_slash[1]  = '\0';
+      last_slash[1] = '\0';
       return last_slash + 1 - s;
    }
-   else
-   {
-      s[0]           = '.';
-      s[1]           = PATH_DEFAULT_SLASH_C();
-      s[2]           = '\0';
-      return 2;
-   }
+   s[0]             = '.';
+   s[1]             = PATH_DEFAULT_SLASH_C();
+   s[2]             = '\0';
+   return 2;
 }
 
 /**
@@ -1173,7 +1170,7 @@ size_t fill_pathname_abbreviate_special(char *s,
  *
  * @returns new string that has been sanitized
  **/
-const char *sanitize_path_part(const char *path_part, size_t size)
+const char *sanitize_path_part(const char *path_part, size_t len)
 {
    int i;
    int j = 0;
@@ -1183,7 +1180,7 @@ const char *sanitize_path_part(const char *path_part, size_t size)
    if (string_is_empty(path_part))
       return NULL;
 
-   tmp = (char *)malloc((size + 1) * sizeof(char));
+   tmp = (char *)malloc((len + 1) * sizeof(char));
 
    for (i = 0; path_part[i] != '\0'; i++)
    {
@@ -1414,11 +1411,11 @@ size_t fill_pathname_application_path(char *s, size_t len)
       }
 #elif defined(__QNX__)
       char *buff = malloc(len);
-      size_t rv = 0;
+      size_t _len = 0;
       if (_cmdname(buff))
-         rv = strlcpy(s, buff, len);
+         _len = strlcpy(s, buff, len);
       free(buff);
-      return rv;
+      return _len;
 #else
       size_t i;
       static const char *exts[] = { "exe", "file", "path/a.out" };
@@ -1446,13 +1443,13 @@ size_t fill_pathname_application_path(char *s, size_t len)
    return 0;
 }
 
-void fill_pathname_application_dir(char *s, size_t len)
+size_t fill_pathname_application_dir(char *s, size_t len)
 {
 #ifdef __WINRT__
-   strlcpy(s, uwp_dir_install, len);
+   return strlcpy(s, uwp_dir_install, len);
 #else
    fill_pathname_application_path(s, len);
-   path_basedir(s);
+   return path_basedir(s);
 #endif
 }
 

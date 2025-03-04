@@ -59,9 +59,8 @@ namespace
       Windows::UI::Core::CoreWindow^ corewindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
       while (!finished)
       {
-         if (corewindow) {
+         if (corewindow)
             corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
-         }
       }
 
       if (exception != nullptr)

@@ -38,29 +38,29 @@
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
 
-void audio_mix_volume_C(float *out, const float *in, float vol, size_t samples)
+void audio_mix_volume_C(float *s, const float *in, float vol, size_t len)
 {
    size_t i;
-   for (i = 0; i < samples; i++)
-      out[i] += in[i] * vol;
+   for (i = 0; i < len; i++)
+      s[i] += in[i] * vol;
 }
 
 #ifdef __SSE2__
-void audio_mix_volume_SSE2(float *out, const float *in, float vol, size_t samples)
+void audio_mix_volume_SSE2(float *s, const float *in, float vol, size_t len)
 {
    size_t i, remaining_samples;
    __m128 volume = _mm_set1_ps(vol);
 
-   for (i = 0; i + 16 <= samples; i += 16, out += 16, in += 16)
+   for (i = 0; i + 16 <= len; i += 16, s += 16, in += 16)
    {
       unsigned j;
       __m128 input[4];
       __m128 additive[4];
 
-      input[0]    = _mm_loadu_ps(out +  0);
-      input[1]    = _mm_loadu_ps(out +  4);
-      input[2]    = _mm_loadu_ps(out +  8);
-      input[3]    = _mm_loadu_ps(out + 12);
+      input[0]    = _mm_loadu_ps(s +  0);
+      input[1]    = _mm_loadu_ps(s +  4);
+      input[2]    = _mm_loadu_ps(s +  8);
+      input[3]    = _mm_loadu_ps(s + 12);
 
       additive[0] = _mm_mul_ps(volume, _mm_loadu_ps(in +  0));
       additive[1] = _mm_mul_ps(volume, _mm_loadu_ps(in +  4));
@@ -68,13 +68,13 @@ void audio_mix_volume_SSE2(float *out, const float *in, float vol, size_t sample
       additive[3] = _mm_mul_ps(volume, _mm_loadu_ps(in + 12));
 
       for (j = 0; j < 4; j++)
-         _mm_storeu_ps(out + 4 * j, _mm_add_ps(input[j], additive[j]));
+         _mm_storeu_ps(s + 4 * j, _mm_add_ps(input[j], additive[j]));
    }
 
-   remaining_samples = samples - i;
+   remaining_samples = len - i;
 
    for (i = 0; i < remaining_samples; i++)
-      out[i] += in[i] * vol;
+      s[i] += in[i] * vol;
 }
 #endif
 
@@ -176,9 +176,9 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate,
             uint8_t *sample                  = (
                   (uint8_t*)chunk->rwav->samples) + i;
 
-            chunk->upsample_buf[i * 2]       = 
+            chunk->upsample_buf[i * 2]       =
                (int16_t)((sample[0] - 128) << 8);
-            chunk->upsample_buf[(i * 2) + 1] = 
+            chunk->upsample_buf[(i * 2) + 1] =
                (int16_t)((sample[0] - 128) << 8);
          }
       }
@@ -190,9 +190,9 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate,
                   (uint8_t*)chunk->rwav->samples) +
                (i * 2);
 
-            chunk->upsample_buf[i * 2]       = 
+            chunk->upsample_buf[i * 2]       =
                (int16_t)((sample[0] - 128) << 8);
-            chunk->upsample_buf[(i * 2) + 1] = 
+            chunk->upsample_buf[(i * 2) + 1] =
                (int16_t)((sample[1] - 128) << 8);
          }
       }
@@ -238,13 +238,13 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate,
          struct resampler_data info;
 
          chunk->float_buf          = (float*)memalign_alloc(128,
-               chunk->rwav->numsamples * 2 * 
+               chunk->rwav->numsamples * 2 *
                chunk->ratio * sizeof(float));
 
-         /* why is *3 needed instead of just *2? Does the 
+         /* why is *3 needed instead of just *2? Does the
           * sinc driver require more space than we know about? */
          chunk->float_resample_buf = (float*)memalign_alloc(128,
-               chunk->rwav->numsamples * 3 * 
+               chunk->rwav->numsamples * 3 *
                chunk->ratio * sizeof(float));
 
          convert_s16_to_float(chunk->float_buf,
@@ -260,7 +260,7 @@ audio_chunk_t* audio_mix_load_wav_file(const char *path, int sample_rate,
 
          chunk->resampler->process(chunk->resampler_data, &info);
 
-         /* number of output_frames does not increase with 
+         /* number of output_frames does not increase with
           * multiple channels, but assume we need space for 2 */
          chunk->resample_buf = (int16_t*)memalign_alloc(128,
                info.output_frames * 2 * sizeof(int16_t));
@@ -323,11 +323,11 @@ int16_t audio_mix_get_chunk_sample(audio_chunk_t *chunk,
 
       if (chunk->resample)
          sample = (uint8_t*)chunk->resample_buf +
-            (sample_size * index * chunk->rwav->numchannels) 
+            (sample_size * index * chunk->rwav->numchannels)
             + (channel * sample_size);
       else
          sample = (uint8_t*)chunk->upsample_buf +
-            (sample_size * index * chunk->rwav->numchannels) 
+            (sample_size * index * chunk->rwav->numchannels)
             + (channel * sample_size);
 
       sample_out = (int16_t)*sample;

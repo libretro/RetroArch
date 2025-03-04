@@ -189,8 +189,8 @@ char *string_trim_whitespace(char *const s)
 
 /**
  * word_wrap:
- * @dst                : pointer to destination buffer.
- * @dst_size           : size of destination buffer.
+ * @s                  : pointer to destination buffer.
+ * @len                : size of destination buffer.
  * @src                : pointer to input string.
  * @line_width         : max number of characters per line.
  * @wideglyph_width    : not used, but is necessary to keep
@@ -198,8 +198,8 @@ char *string_trim_whitespace(char *const s)
  * @max_lines          : max lines of destination string.
  *                       0 means no limit.
  *
- * Wraps string specified by 'src' to destination buffer
- * specified by 'dst' and 'dst_size'.
+ * Wraps string specified by @src to destination buffer
+ * specified by @s and @len.
  * This function assumes that all glyphs in the string
  * have an on-screen pixel width similar to that of
  * regular Latin characters - i.e. it will not wrap
@@ -207,7 +207,7 @@ char *string_trim_whitespace(char *const s)
  * characters (e.g. CJK languages, emojis, etc.).
  **/
 size_t word_wrap(
-      char *dst,       size_t dst_size,
+      char *s,         size_t len,
       const char *src, size_t src_len,
       int line_width,  int wideglyph_width, unsigned max_lines)
 {
@@ -217,13 +217,13 @@ size_t word_wrap(
    const char *src_end = src + src_len;
 
    /* Prevent buffer overflow */
-   if (dst_size < src_len + 1)
+   if (len < src_len + 1)
       return 0;
 
    /* Early return if src string length is less
     * than line width */
    if (src_len < (size_t)line_width)
-      return strlcpy(dst, src, dst_size);
+      return strlcpy(s, src, len);
 
    while (*src != '\0')
    {
@@ -231,7 +231,7 @@ size_t word_wrap(
       counter++;
 
       if (*src == ' ')
-         last_space = dst; /* Remember the location of the whitespace */
+         last_space = s; /* Remember the location of the whitespace */
       else if (*src == '\n')
       {
          /* If newlines embedded in the input,
@@ -242,11 +242,11 @@ size_t word_wrap(
          /* Early return if remaining src string
           * length is less than line width */
          if (src_end - src <= line_width)
-            return strlcpy(dst, src, dst_size);
+            return strlcpy(s, src, len);
      }
 
       while (char_len--)
-         *dst++ = *src++;
+         *s++ = *src++;
 
       if (counter >= (unsigned)line_width)
       {
@@ -259,26 +259,26 @@ size_t word_wrap(
             *last_space = '\n';
             lines++;
 
-            src        -= dst - last_space - 1;
-            dst         = last_space + 1;
+            src        -= s - last_space - 1;
+            s           = last_space + 1;
             last_space  = NULL;
 
             /* Early return if remaining src string
              * length is less than line width */
             if (src_end - src < line_width)
-               return strlcpy(dst, src, dst_size);
+               return strlcpy(s, src, len);
          }
       }
    }
 
-   *dst = '\0';
+   *s = '\0';
    return 0;
 }
 
 /**
  * word_wrap_wideglyph:
  * @dst                : pointer to destination buffer.
- * @dst_size           : size of destination buffer.
+ * @len                : size of destination buffer.
  * @src                : pointer to input string.
  * @line_width         : max number of characters per line.
  * @wideglyph_width    : effective width of 'wide' Unicode glyphs.
@@ -296,7 +296,7 @@ size_t word_wrap(
  *                       0 means no limit.
  *
  * Wraps string specified by @src to destination buffer
- * specified by @dst and @dst_size.
+ * specified by @dst and @len.
  * This function assumes that all glyphs in the string
  * are:
  * - EITHER 'non-wide' Unicode glyphs, with an on-screen
@@ -308,7 +308,7 @@ size_t word_wrap(
  * on-screen pixel width deviates greatly from the set
  * @wideglyph_width value.
  **/
-size_t word_wrap_wideglyph(char *dst, size_t dst_size,
+size_t word_wrap_wideglyph(char *s, size_t len,
       const char *src, size_t src_len, int line_width,
       int wideglyph_width, unsigned max_lines)
 {
@@ -344,7 +344,7 @@ size_t word_wrap_wideglyph(char *dst, size_t dst_size,
    /* Early return if src string length is less
     * than line width */
    if (src_end - src < line_width)
-      return strlcpy(dst, src, dst_size);
+      return strlcpy(s, src, len);
 
    while (*src != '\0')
    {
@@ -352,11 +352,11 @@ size_t word_wrap_wideglyph(char *dst, size_t dst_size,
       counter_normalized += 100;
 
       /* Prevent buffer overflow */
-      if (char_len >= dst_size)
+      if (char_len >= len)
          break;
 
       if (*src == ' ')
-         lastspace          = dst; /* Remember the location of the whitespace */
+         lastspace          = s; /* Remember the location of the whitespace */
       else if (*src == '\n')
       {
          /* If newlines embedded in the input,
@@ -367,19 +367,19 @@ size_t word_wrap_wideglyph(char *dst, size_t dst_size,
          /* Early return if remaining src string
           * length is less than line width */
          if (src_end - src <= line_width)
-            return strlcpy(dst, src, dst_size);
+            return strlcpy(s, src, len);
       }
       else if (char_len >= 3)
       {
          /* Remember the location of the first byte
           * whose length as UTF-8 >= 3*/
-         lastwideglyph       = dst;
+         lastwideglyph       = s;
          counter_normalized += additional_counter_normalized;
       }
 
-      dst_size -= char_len;
+      len -= char_len;
       while (char_len--)
-         *dst++ = *src++;
+         *s++ = *src++;
 
       if (counter_normalized >= (unsigned)line_width_normalized)
       {
@@ -392,14 +392,14 @@ size_t word_wrap_wideglyph(char *dst, size_t dst_size,
             /* Insert newline character */
             *lastwideglyph = '\n';
             lines++;
-            src           -= dst - lastwideglyph;
-            dst            = lastwideglyph + 1;
+            src           -= s - lastwideglyph;
+            s              = lastwideglyph + 1;
             lastwideglyph  = NULL;
 
             /* Early return if remaining src string
              * length is less than line width */
             if (src_end - src <= line_width)
-               return strlcpy(dst, src, dst_size);
+               return strlcpy(s, src, len);
          }
          else if (lastspace)
          {
@@ -407,19 +407,19 @@ size_t word_wrap_wideglyph(char *dst, size_t dst_size,
              * with newline character */
             *lastspace = '\n';
             lines++;
-            src       -= dst - lastspace - 1;
-            dst        = lastspace + 1;
+            src       -= s - lastspace - 1;
+            s          = lastspace + 1;
             lastspace  = NULL;
 
             /* Early return if remaining src string
              * length is less than line width */
             if (src_end - src < line_width)
-               return strlcpy(dst, src, dst_size);
+               return strlcpy(s, src, len);
          }
       }
    }
 
-   *dst = '\0';
+   *s = '\0';
    return 0;
 }
 
@@ -455,7 +455,6 @@ char* string_tokenize(char **str, const char *delim)
    if (!str || string_is_empty(delim))
       return NULL;
 
-
    /* Note: we don't check string_is_empty() here,
     * empty strings are valid */
    if (!(str_ptr = *str))
@@ -483,16 +482,16 @@ char* string_tokenize(char **str, const char *delim)
 
 /**
  * string_remove_all_chars:
- * @str                : input string (must be non-NULL, otherwise UB)
+ * @s                 : input string (must be non-NULL, otherwise UB)
  *
  * Leaf function.
  *
- * Removes every instance of character @c from @str
+ * Removes every instance of character @c from @s
  **/
-void string_remove_all_chars(char *str, char c)
+void string_remove_all_chars(char *s, char c)
 {
-   char *read_ptr  = str;
-   char *write_ptr = str;
+   char *read_ptr  = s;
+   char *write_ptr = s;
 
    while (*read_ptr != '\0')
    {
@@ -506,16 +505,16 @@ void string_remove_all_chars(char *str, char c)
 
 /**
  * string_replace_all_chars:
- * @str                : input string (must be non-NULL, otherwise UB)
+ * @s                  : input string (must be non-NULL, otherwise UB)
  * @find               : character to find
  * @replace            : character to replace @find with
  *
- * Replaces every instance of character @find in @str
+ * Replaces every instance of character @find in @s
  * with character @replace
  **/
-void string_replace_all_chars(char *str, char find, char replace)
+void string_replace_all_chars(char *s, char find, char replace)
 {
-   char *str_ptr = str;
+   char *str_ptr = s;
    while ((str_ptr = strchr(str_ptr, find)))
       *str_ptr++ = replace;
 }
@@ -561,9 +560,9 @@ unsigned string_hex_to_unsigned(const char *str)
    /* Remove leading '0x', if required */
    if (str[0] != '\0' && str[1] != '\0')
    {
-      if ( (str[0] == '0') &&
-          ((str[1] == 'x') ||
-           (str[1] == 'X')))
+      if (     (str[0] == '0')
+           && ((str[1] == 'x')
+           ||  (str[1] == 'X')))
       {
          hex_str = str + 2;
          if (string_is_empty(hex_str))
@@ -610,11 +609,11 @@ int string_count_occurrences_single_character(const char *str, char c)
  *
  * Replaces all spaces with given character @c.
  **/
-void string_replace_whitespace_with_single_character(char *str, char c)
+void string_replace_whitespace_with_single_character(char *s, char c)
 {
-   for (; *str; str++)
-      if (ISSPACE(*str))
-         *str = c;
+   for (; *s; s++)
+      if (ISSPACE(*s))
+         *s = c;
 }
 
 /**
@@ -624,18 +623,18 @@ void string_replace_whitespace_with_single_character(char *str, char c)
  *
  * Replaces multiple spaces with a single space in a string.
  **/
-void string_replace_multi_space_with_single_space(char *str)
+void string_replace_multi_space_with_single_space(char *s)
 {
-   char *str_trimmed  = str;
+   char *str_trimmed  = s;
    bool prev_is_space = false;
    bool curr_is_space = false;
 
-   for (; *str; str++)
+   for (; *s; s++)
    {
-      curr_is_space  = ISSPACE(*str);
+      curr_is_space  = ISSPACE(*s);
       if (prev_is_space && curr_is_space)
          continue;
-      *str_trimmed++ = *str;
+      *str_trimmed++ = *s;
       prev_is_space  = curr_is_space;
    }
    *str_trimmed = '\0';
@@ -648,12 +647,12 @@ void string_replace_multi_space_with_single_space(char *str)
  *
  * Remove all spaces from the given string.
  **/
-void string_remove_all_whitespace(char *str_trimmed, const char *str)
+void string_remove_all_whitespace(char *s, const char *str)
 {
    for (; *str; str++)
       if (!ISSPACE(*str))
-         *str_trimmed++ = *str;
-   *str_trimmed = '\0';
+         *s++ = *str;
+   *s = '\0';
 }
 
 /**
@@ -689,10 +688,10 @@ int string_find_index_substring_string(const char *str, const char *substr)
  *
  * Strips non-ASCII characters from a string.
  **/
-void string_copy_only_ascii(char *str_stripped, const char *str)
+void string_copy_only_ascii(char *s, const char *str)
 {
    for (; *str; str++)
       if (*str > 0x1F && *str < 0x7F)
-         *str_stripped++ = *str;
-   *str_stripped = '\0';
+         *s++ = *str;
+   *s = '\0';
 }

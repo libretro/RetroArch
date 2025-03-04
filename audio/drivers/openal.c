@@ -163,29 +163,29 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
    return true;
 }
 
-static size_t al_fill_internal_buf(al_t *al, const void *buf, size_t size)
+static size_t al_fill_internal_buf(al_t *al, const void *s, size_t len)
 {
-   size_t read_size = MIN(OPENAL_BUFSIZE - al->tmpbuf_ptr, size);
-   memcpy(al->tmpbuf + al->tmpbuf_ptr, buf, read_size);
+   size_t read_size = MIN(OPENAL_BUFSIZE - al->tmpbuf_ptr, len);
+   memcpy(al->tmpbuf + al->tmpbuf_ptr, s, read_size);
    al->tmpbuf_ptr += read_size;
    return read_size;
 }
 
-static ssize_t al_write(void *data, const void *buf_, size_t size)
+static ssize_t al_write(void *data, const void *s, size_t len)
 {
    al_t           *al = (al_t*)data;
-   const uint8_t *buf = (const uint8_t*)buf_;
+   const uint8_t *buf = (const uint8_t*)s;
    size_t     written = 0;
 
-   while (size)
+   while (len)
    {
       ALint val;
       ALuint buffer;
-      size_t rc = al_fill_internal_buf(al, buf, size);
+      size_t rc = al_fill_internal_buf(al, buf, len);
 
       written += rc;
       buf     += rc;
-      size    -= rc;
+      len     -= rc;
 
       if (al->tmpbuf_ptr != OPENAL_BUFSIZE)
          break;
@@ -254,11 +254,7 @@ static size_t al_buffer_size(void *data)
    return (al->num_buffers + 1) * OPENAL_BUFSIZE; /* Also got tmpbuf. */
 }
 
-static bool al_use_float(void *data)
-{
-   (void)data;
-   return false;
-}
+static bool al_use_float(void *data) { return false; }
 
 audio_driver_t audio_openal = {
    al_init,

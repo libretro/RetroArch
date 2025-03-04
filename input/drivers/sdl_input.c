@@ -519,7 +519,7 @@ static void sdl_input_free(void *data)
 #endif
    sdl_input_t *sdl = (sdl_input_t*)data;
 
-   if (!data)
+   if (!sdl)
       return;
 
    /* Flush out all pending events. */

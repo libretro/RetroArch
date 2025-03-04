@@ -59,9 +59,9 @@ void libretro_dummy_retro_run(void);
 
 size_t libretro_dummy_retro_serialize_size(void);
 
-bool libretro_dummy_retro_serialize(void *data, size_t size);
+bool libretro_dummy_retro_serialize(void *s, size_t len);
 
-bool libretro_dummy_retro_unserialize(const void *data, size_t size);
+bool libretro_dummy_retro_unserialize(const void *s, size_t len);
 
 void libretro_dummy_retro_cheat_reset(void);
 
@@ -113,9 +113,9 @@ void libretro_ffmpeg_retro_run(void);
 
 size_t libretro_ffmpeg_retro_serialize_size(void);
 
-bool libretro_ffmpeg_retro_serialize(void *data, size_t size);
+bool libretro_ffmpeg_retro_serialize(void *s, size_t len);
 
-bool libretro_ffmpeg_retro_unserialize(const void *data, size_t size);
+bool libretro_ffmpeg_retro_unserialize(const void *s, size_t len);
 
 void libretro_ffmpeg_retro_cheat_reset(void);
 
@@ -169,9 +169,9 @@ void libretro_mpv_retro_run(void);
 
 size_t libretro_mpv_retro_serialize_size(void);
 
-bool libretro_mpv_retro_serialize(void *data, size_t size);
+bool libretro_mpv_retro_serialize(void *data, size_t len);
 
-bool libretro_mpv_retro_unserialize(const void *data, size_t size);
+bool libretro_mpv_retro_unserialize(const void *data, size_t len);
 
 void libretro_mpv_retro_cheat_reset(void);
 
@@ -225,9 +225,9 @@ void libretro_imageviewer_retro_run(void);
 
 size_t libretro_imageviewer_retro_serialize_size(void);
 
-bool libretro_imageviewer_retro_serialize(void *data, size_t size);
+bool libretro_imageviewer_retro_serialize(void *data, size_t len);
 
-bool libretro_imageviewer_retro_unserialize(const void *data, size_t size);
+bool libretro_imageviewer_retro_unserialize(const void *data, size_t len);
 
 void libretro_imageviewer_retro_cheat_reset(void);
 
@@ -281,9 +281,9 @@ void libretro_netretropad_retro_run(void);
 
 size_t libretro_netretropad_retro_serialize_size(void);
 
-bool libretro_netretropad_retro_serialize(void *data, size_t size);
+bool libretro_netretropad_retro_serialize(void *data, size_t len);
 
-bool libretro_netretropad_retro_unserialize(const void *data, size_t size);
+bool libretro_netretropad_retro_unserialize(const void *data, size_t len);
 
 void libretro_netretropad_retro_cheat_reset(void);
 
@@ -337,9 +337,9 @@ void libretro_videoprocessor_retro_run(void);
 
 size_t libretro_videoprocessor_retro_serialize_size(void);
 
-bool libretro_videoprocessor_retro_serialize(void *data, size_t size);
+bool libretro_videoprocessor_retro_serialize(void *data, size_t len);
 
-bool libretro_videoprocessor_retro_unserialize(const void *data, size_t size);
+bool libretro_videoprocessor_retro_unserialize(const void *data, size_t len);
 
 void libretro_videoprocessor_retro_cheat_reset(void);
 

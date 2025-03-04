@@ -238,7 +238,8 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
             "key_size", &idx->key_size,
             "next",     &idx->next,
             "count",    &idx->count,
-                                 NULL) < 0) {
+                                 NULL) < 0)
+      {
         printf("Invalid index header\n");
         break;
       }
@@ -309,13 +310,13 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
    rv = binsearch(buff, key, idx.count, (ssize_t)idx.key_size, &offset);
    free(buff);
 
-   if (rv == 0) {
+   if (rv == 0)
+   {
       filestream_seek(db->fd, (ssize_t)offset, RETRO_VFS_SEEK_POSITION_START);
       rmsgpack_dom_read(db->fd, out);
       return 0;
-   } else {
-     return -1;
    }
+   return -1;
 }
 
 /**

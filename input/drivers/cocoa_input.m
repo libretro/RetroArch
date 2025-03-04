@@ -78,6 +78,11 @@ static UISelectionFeedbackGenerator *feedbackGenerator;
 
 static bool apple_key_state[MAX_KEYS];
 
+void apple_input_keyboard_reset(void)
+{
+   memset(apple_key_state, 0, sizeof(apple_key_state));
+}
+
 /* Send keyboard inputs directly using RETROK_* codes
  * Used by the iOS custom keyboard implementation */
 void apple_direct_input_keyboard_event(bool down,
@@ -396,6 +401,12 @@ static void cocoa_input_poll(void *data)
    if (!apple)
       return;
 
+   apple->mouse_rel_x = apple->window_pos_x - apple->mouse_x_last;
+   apple->mouse_x_last = apple->window_pos_x;
+
+   apple->mouse_rel_y = apple->window_pos_y - apple->mouse_y_last;
+   apple->mouse_y_last = apple->window_pos_y;
+
    for (i = 0; i < apple->touch_count || i == 0; i++)
    {
       struct video_viewport vp;
@@ -568,75 +579,40 @@ static int16_t cocoa_input_state(
          return (id && id < RETROK_LAST) && apple_key_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
+         switch (id)
          {
-            int16_t val = 0;
-            switch (id)
+         case RETRO_DEVICE_ID_MOUSE_X:
+            if (device == RARCH_DEVICE_MOUSE_SCREEN)
             {
-               case RETRO_DEVICE_ID_MOUSE_X:
-                  if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                  {
 #ifdef IOS
-                     return apple->window_pos_x;
+               return apple->window_pos_x;
 #else
-                     return apple->window_pos_x * cocoa_screen_get_backing_scale_factor();
+               return apple->window_pos_x * cocoa_screen_get_backing_scale_factor();
 #endif
-                  }
-#ifdef IOS
-#ifdef HAVE_IOS_TOUCHMOUSE
-                  if (apple->window_pos_x > 0 || apple->mouse_grabbed)
-                  {
-                     val = apple->window_pos_x - apple->mouse_x_last;
-                     apple->mouse_x_last = apple->window_pos_x;
-                  }
-                  else
-                     val = apple->mouse_rel_x;
-#else
-                  val = apple->mouse_rel_x;
-#endif
-#else
-                  val = apple->window_pos_x - apple->mouse_x_last;
-                  apple->mouse_x_last = apple->window_pos_x;
-#endif
-                  return val;
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                  {
-#ifdef IOS
-                     return apple->window_pos_y;
-#else
-                     return apple->window_pos_y * cocoa_screen_get_backing_scale_factor();
-#endif
-                  }
-#ifdef IOS
-#ifdef HAVE_IOS_TOUCHMOUSE
-                  if (apple->window_pos_y > 0 || apple->mouse_grabbed)
-                  {
-                     val = apple->window_pos_y - apple->mouse_y_last;
-                     apple->mouse_y_last = apple->window_pos_y;
-                  }
-                  else
-                     val = apple->mouse_rel_y;
-#else
-                  val    = apple->mouse_rel_y;
-#endif
-#else
-                  val = apple->window_pos_y - apple->mouse_y_last;
-                  apple->mouse_y_last = apple->window_pos_y;
-#endif
-                  return val;
-               case RETRO_DEVICE_ID_MOUSE_LEFT:
-                  return apple->mouse_buttons & 1;
-               case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                  return apple->mouse_buttons & 2;
-               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-                  return apple->mouse_wu;
-               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-                  return apple->mouse_wd;
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-                  return apple->mouse_wl;
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-                  return apple->mouse_wr;
             }
+            return apple->mouse_rel_x;
+         case RETRO_DEVICE_ID_MOUSE_Y:
+            if (device == RARCH_DEVICE_MOUSE_SCREEN)
+            {
+#ifdef IOS
+               return apple->window_pos_y;
+#else
+               return apple->window_pos_y * cocoa_screen_get_backing_scale_factor();
+#endif
+            }
+            return apple->mouse_rel_y;
+         case RETRO_DEVICE_ID_MOUSE_LEFT:
+            return apple->mouse_buttons & 1;
+         case RETRO_DEVICE_ID_MOUSE_RIGHT:
+            return apple->mouse_buttons & 2;
+         case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+            return apple->mouse_wu;
+         case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+            return apple->mouse_wd;
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+            return apple->mouse_wl;
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+            return apple->mouse_wr;
          }
          break;
       case RETRO_DEVICE_POINTER:
@@ -695,13 +671,13 @@ static int16_t cocoa_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
                {
                   unsigned new_id                = input_driver_lightgun_id_convert(id);
-                  const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
-                  const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
-                  const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
-                  const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
+                  const uint32_t bind_joykey     = input_config_binds[port][new_id].joykey;
+                  const uint32_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
+                  const uint32_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
+                  const uint32_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
                   uint16_t joyport               = joypad_info->joy_idx;
                   float axis_threshold           = joypad_info->axis_threshold;
-                  const uint64_t joykey          = (bind_joykey != NO_BTN) ? bind_joykey  : autobind_joykey;
+                  const uint32_t joykey          = (bind_joykey != NO_BTN) ? bind_joykey  : autobind_joykey;
                   const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE) ? bind_joyaxis : autobind_joyaxis;
                   
                   if (binds[port][new_id].valid)
@@ -737,14 +713,12 @@ static int16_t cocoa_input_state(
 
 static void cocoa_input_free(void *data)
 {
-   unsigned i;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
 
    if (!apple || !data)
       return;
 
-   for (i = 0; i < MAX_KEYS; i++)
-      apple_key_state[i] = 0;
+   memset(apple_key_state, 0, sizeof(apple_key_state));
 
    free(apple);
 }
@@ -777,6 +751,10 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
          if (!controller || controller.playerIndex != port)
             continue;
          if (!controller.motion)
+            break;
+         if (action == RETRO_SENSOR_ACCELEROMETER_ENABLE && !controller.motion.hasGravityAndUserAcceleration)
+            break;
+         if (action == RETRO_SENSOR_GYROSCOPE_ENABLE && !controller.motion.hasAttitudeAndRotationRate)
             break;
          if (controller.motion.sensorsRequireManualActivation)
          {
@@ -823,7 +801,7 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
 static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id)
 {
 #ifdef HAVE_MFI
-   if (@available(iOS 14.0, *))
+   if (@available(iOS 14.0, macOS 11.0, tvOS 14.0, *))
    {
       for (GCController *controller in [GCController controllers])
       {
@@ -834,11 +812,11 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
          switch (id)
          {
             case RETRO_SENSOR_ACCELEROMETER_X:
-               return controller.motion.userAcceleration.x;
+               return controller.motion.acceleration.x;
             case RETRO_SENSOR_ACCELEROMETER_Y:
-               return controller.motion.userAcceleration.y;
+               return controller.motion.acceleration.y;
             case RETRO_SENSOR_ACCELEROMETER_Z:
-               return controller.motion.userAcceleration.z;
+               return controller.motion.acceleration.z;
             case RETRO_SENSOR_GYROSCOPE_X:
                return controller.motion.rotationRate.x;
             case RETRO_SENSOR_GYROSCOPE_Y:
@@ -856,11 +834,11 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
       switch (id)
       {
          case RETRO_SENSOR_ACCELEROMETER_X:
-            return motionManager.deviceMotion.userAcceleration.x;
+            return motionManager.deviceMotion.gravity.x + motionManager.deviceMotion.userAcceleration.x;
          case RETRO_SENSOR_ACCELEROMETER_Y:
-            return motionManager.deviceMotion.userAcceleration.y;
+            return motionManager.deviceMotion.gravity.y + motionManager.deviceMotion.userAcceleration.y;
          case RETRO_SENSOR_ACCELEROMETER_Z:
-            return motionManager.deviceMotion.userAcceleration.z;
+            return motionManager.deviceMotion.gravity.z + motionManager.deviceMotion.userAcceleration.z;
          case RETRO_SENSOR_GYROSCOPE_X:
             return motionManager.deviceMotion.rotationRate.x;
          case RETRO_SENSOR_GYROSCOPE_Y:

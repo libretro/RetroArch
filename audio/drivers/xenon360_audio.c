@@ -57,21 +57,21 @@ static INLINE uint32_t bswap_32(uint32_t val)
       ((val >> 8) & 0xff00) | ((val << 8) & 0xff0000);
 }
 
-static ssize_t xenon360_audio_write(void *data, const void *buf, size_t size)
+static ssize_t xenon360_audio_write(void *data, const void *s, size_t len)
 {
    size_t written = 0, i;
-   const uint32_t *in_buf = buf;
-   xenon_audio_t *xa = data;
+   const uint32_t *in_buf = s;
+   xenon_audio_t *xa      = data;
 
-   for (i = 0; i < (size >> 2); i++)
+   for (i = 0; i < (len >> 2); i++)
       xa->buffer[i] = bswap_32(in_buf[i]);
 
    if (xa->nonblock)
    {
       if (xenon_sound_get_unplayed() < MAX_BUFFER)
       {
-         xenon_sound_submit(xa->buffer, size);
-         written = size;
+         xenon_sound_submit(xa->buffer, len);
+         written = len;
       }
    }
    else
@@ -83,8 +83,8 @@ static ssize_t xenon360_audio_write(void *data, const void *buf, size_t size)
          udelay(50);
       }
 
-      xenon_sound_submit(xa->buffer, size);
-      written = size;
+      xenon_sound_submit(xa->buffer, len);
+      written = len;
    }
 
    return written;

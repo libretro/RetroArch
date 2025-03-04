@@ -46,7 +46,8 @@
 enum autoconfig_handle_flags
 {
    AUTOCONF_FLAG_AUTOCONFIG_ENABLED     = (1 << 0),
-   AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS = (1 << 1)
+   AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS = (1 << 1),
+   AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF = (1 << 2)
 };
 
 typedef struct
@@ -202,10 +203,9 @@ static void input_autoconfigure_set_config_file(
       autoconfig_handle_t *autoconfig_handle,
       config_file_t *config, unsigned alternative)
 {
-   struct config_entry_list *entry    = NULL;
-   char config_key[32]                = {0};
-   char config_key_postfix[7]         = {0};
    size_t _len;
+   char config_key[32];
+   struct config_entry_list *entry    = NULL;
 
    /* Attach config file */
    autoconfig_handle->autoconfig_file = config;
@@ -220,16 +220,13 @@ static void input_autoconfigure_set_config_file(
                sizeof(autoconfig_handle->device_info.config_name));
    }
 
-   /* Read device display name */
-   if (alternative > 0)
-      snprintf(config_key_postfix, sizeof(config_key_postfix),
-               "_alt%d",alternative);
-
    /* Parse config file */
    _len  = strlcpy(config_key, "input_device_display_name",
             sizeof(config_key));
-   _len += strlcpy(config_key  + _len, config_key_postfix,
-            sizeof(config_key) - _len);
+   /* Read device display name */
+   if (alternative > 0)
+      _len += snprintf(config_key + _len, sizeof(config_key) - _len,
+               "_alt%d",alternative);
 
    if (  (entry = config_get_entry(config, config_key))
          && !string_is_empty(entry->value))
@@ -439,7 +436,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
             (   detected_port == settings->uints.input_joypad_index[player]
             || !input_config_get_device_name(settings->uints.input_joypad_index[player]))
             && settings->uints.input_device_reservation_type[player]
-            != INPUT_DEVICE_RESERVATION_RESERVED )
+            != INPUT_DEVICE_RESERVATION_RESERVED)
       {
          first_free_player_slot = player;
          RARCH_DBG("[Autoconf]: First unconfigured / unreserved player is %d\n",
@@ -449,14 +446,15 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
       if (settings->uints.input_device_reservation_type[player] != INPUT_DEVICE_RESERVATION_NONE)
          no_reservation_at_all = false;
    }
-   if (first_free_player_slot > settings->uints.input_max_users) {
+   if (first_free_player_slot > settings->uints.input_max_users)
+   {
       RARCH_ERR( "[Autoconf]: No free and unreserved player slots found for adding new device"
-                 " \"%s\"! Detected port %d, max_users: %d, first free slot %d\n",
-                 device_name, detected_port,
-                 settings->uints.input_max_users,
-                 first_free_player_slot+1);
+            " \"%s\"! Detected port %d, max_users: %d, first free slot %d\n",
+            device_name, detected_port,
+            settings->uints.input_max_users,
+            first_free_player_slot+1);
       RARCH_WARN("[Autoconf]: Leaving detected player slot in place: %d\n",
-                 prev_assigned_player_slots[detected_port]);
+            prev_assigned_player_slots[detected_port]);
       return;
    }
 
@@ -483,12 +481,12 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
             strlcpy(settings_value_device_name, settings_value,
                     sizeof(settings_value_device_name));
             device_has_reserved_slot =
-               string_is_equal(device_name, settings_value_device_name) ||
-               string_is_equal(device_display_name, settings_value_device_name);
+                  string_is_equal(device_name, settings_value_device_name)
+               || string_is_equal(device_display_name, settings_value_device_name);
          }
          else
-            device_has_reserved_slot = (vendor_id == settings_value_vendor_id &&
-                                       product_id == settings_value_product_id);
+            device_has_reserved_slot = (  vendor_id  == settings_value_vendor_id
+                                       && product_id == settings_value_product_id);
 
          if (device_has_reserved_slot)
          {
@@ -514,7 +512,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
    if (device_has_reserved_slot)
    {
       unsigned prev_assigned_port = settings->uints.input_joypad_index[player];
-      if(detected_port != prev_assigned_port)
+      if (detected_port != prev_assigned_port)
       {
          RARCH_LOG("[Autoconf]: Device \"%s\" (%x:%x) is reserved "
                    "for player %d, updating.\n",
@@ -761,7 +759,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       }
       /* Device is autoconfigured, but a (most likely
        * incorrect) fallback definition was used... */
-      else
+      else if (!(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF))
          snprintf(task_title, sizeof(task_title),
                   msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR),
                   device_display_name,
@@ -769,7 +767,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
                   autoconfig_handle->device_info.pid);
    }
    /* Autoconfig failed */
-   else
+   else if (!(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF))
          snprintf(task_title, sizeof(task_title),
                   msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_NR),
                   device_display_name,
@@ -827,6 +825,8 @@ bool input_autoconfigure_connect(
          settings->paths.directory_autoconfig : NULL;
    bool notification_show_autoconfig      = settings ?
          settings->bools.notification_show_autoconfig : true;
+   bool notification_show_autoconfig_fails = settings ?
+         settings->bools.notification_show_autoconfig_fails : true;
    task_finder_data_t find_data;
 
    if (port >= MAX_INPUT_DEVICES)
@@ -858,6 +858,8 @@ bool input_autoconfigure_connect(
       autoconfig_handle->flags |= AUTOCONF_FLAG_AUTOCONFIG_ENABLED;
    if (!notification_show_autoconfig)
       autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS;
+   if (!notification_show_autoconfig_fails)
+      autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF;
    autoconfig_handle->dir_autoconfig               = NULL;
    autoconfig_handle->dir_driver_autoconfig        = NULL;
    autoconfig_handle->autoconfig_file              = NULL;

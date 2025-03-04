@@ -215,13 +215,14 @@ void cheat_manager_index_next(void);
 
 void cheat_manager_index_prev(void);
 
-void cheat_manager_toggle(void);
+void cheat_manager_toggle(bool notification_show_cheats_applied);
 
-void cheat_manager_apply_cheats(void);
+void cheat_manager_apply_cheats(bool notification_show_cheats_applied);
 
 void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx);
 
 void cheat_manager_toggle_index(bool apply_cheats_after_toggle,
+      bool notification_show_cheats_applied,
       unsigned i);
 
 unsigned cheat_manager_get_buf_size(void);

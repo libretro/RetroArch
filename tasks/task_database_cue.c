@@ -279,14 +279,19 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    #define DISC_DATA_SIZE_PS2 0x84000
    int pos;
    char raw_game_id[50];
-   char disc_data[DISC_DATA_SIZE_PS2];
+   char *disc_data;
 
    /* Load data into buffer and use pointers */
    if (intfstream_seek(fd, 0, SEEK_SET) < 0)
       return false;
 
+   disc_data = malloc(DISC_DATA_SIZE_PS2);
+
    if (intfstream_read(fd, disc_data, DISC_DATA_SIZE_PS2) <= 0)
+   {
+      free(disc_data);
       return false;
+   }
 
    disc_data[DISC_DATA_SIZE_PS2 - 1] = '\0';
 
@@ -373,6 +378,7 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
             string_remove_all_whitespace(s, raw_game_id);
             cue_append_multi_disc_suffix(s, filename);
+            free(disc_data);
             return true;
          }
       }
@@ -390,6 +396,7 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    s[9 ] = 'X';
    s[10] = '\0';
    cue_append_multi_disc_suffix(s, filename);
+   free(disc_data);
    return false;
 }
 
@@ -763,7 +770,6 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    char pre_game_id[50];
    char raw_game_id[50];
    int index;
-   size_t size_t_var;
    char lgame_id[20];
    char rgame_id[20];
 
@@ -799,17 +805,16 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    {
       if (total_hyphens >= 2)
       {
-         index                = string_index_last_occurance(raw_game_id, '-');
+         index               = string_index_last_occurance(raw_game_id, '-');
          if (index < 0)
             return false;
-         size_t_var           = (size_t)index;
-         strncpy(lgame_id, &raw_game_id[0], size_t_var);
-         lgame_id[index]      = '\0';
+         strncpy(lgame_id, &raw_game_id[0], (size_t)index);
+         lgame_id[index]     = '\0';
          strncpy(rgame_id, &raw_game_id[index + 1], __len - 1);
          rgame_id[__len - 1] = '\0';
-         _len                 = strlcat(s, lgame_id, len);
-         s[  _len]            = '-';
-         s[++_len]            = '\0';
+         _len                = strlcat(s, lgame_id, len);
+         s[  _len]           = '-';
+         s[++_len]           = '\0';
          strlcpy(s + _len, rgame_id, len - _len);
       }
       else if (__len <= 7)
@@ -845,13 +850,12 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
       if (total_hyphens_recalc >= 2)
       {
-         index                       = string_index_last_occurance(pre_game_id, '-');
+         index             = string_index_last_occurance(pre_game_id, '-');
          if (index < 0)
             return false;
-         size_t_var                  = (size_t)index;
-         strncpy(lgame_id, pre_game_id, size_t_var);
-         lgame_id[index]             = '\0';
-         ___len                      = strlen(pre_game_id);
+         strncpy(lgame_id, pre_game_id, (size_t)index);
+         lgame_id[index]   = '\0';
+         ___len            = strlen(pre_game_id);
       }
       else
       {
@@ -1047,11 +1051,11 @@ int detect_system(intfstream_t *fd, const char **system_name, const char * filen
    {
       if (intfstream_seek(fd, MAGIC_NUMBERS[i].offset, SEEK_SET) >= 0)
       {
-         size_t magic_len = strlen(MAGIC_NUMBERS[i].magic);
-         if (intfstream_read(fd, magic, magic_len) > 0)
+         size_t _len = strlen(MAGIC_NUMBERS[i].magic);
+         if (intfstream_read(fd, magic, _len) > 0)
          {
-            magic[magic_len] = '\0';
-            if (memcmp(MAGIC_NUMBERS[i].magic, magic, magic_len) == 0)
+            magic[_len] = '\0';
+            if (memcmp(MAGIC_NUMBERS[i].magic, magic, _len) == 0)
             {
                *system_name = MAGIC_NUMBERS[i].system_name;
 #ifdef DEBUG

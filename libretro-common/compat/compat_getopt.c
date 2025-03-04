@@ -123,17 +123,17 @@ static int parse_short(const char *optstring, char * const *argv)
 
 static int parse_long(const struct option *longopts, char * const *argv)
 {
-   size_t indice;
+   size_t i;
    char *save  = NULL;
    char *argv0 = strdup(&argv[0][2]);
    char *token = strtok_r(argv0, "=", &save);
    const struct option *opt = NULL;
 
-   for (indice = 0; longopts[indice].name; indice++)
+   for (i = 0; longopts[i].name; i++)
    {
-      if (token && !strcmp(longopts[indice].name, token))
+      if (token && !strcmp(longopts[i].name, token))
       {
-         opt = &longopts[indice];
+         opt = &longopts[i];
          break;
       }
    }

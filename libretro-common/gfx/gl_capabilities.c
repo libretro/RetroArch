@@ -287,15 +287,12 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          }
          break;
       case GL_CAPS_FP_FBO:
-         /* GLES - No extensions for float FBO currently. */
-#ifndef HAVE_OPENGLES
          if (gl_check_capability(GL_CAPS_FBO))
          {
             /* Float FBO is core in 3.2. */
-            if (gl_query_core_context_in_use() || gl_query_extension("ARB_texture_float"))
+            if (gl_query_core_context_in_use() || gl_query_extension("ARB_texture_float") || gl_query_extension("OES_texture_float_linear"))
                return true;
          }
-#endif
          break;
       case GL_CAPS_BGRA8888:
 #ifdef HAVE_OPENGLES

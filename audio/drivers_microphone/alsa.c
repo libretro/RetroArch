@@ -21,7 +21,6 @@
 #include "audio/microphone_driver.h"
 #include "verbosity.h"
 
-
 #define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
 #define FRAMES_TO_BYTES(frames, frame_bits) ((frames) * frame_bits / 8)
 
@@ -51,7 +50,7 @@ static void *alsa_microphone_init(void)
    return alsa;
 }
 
-static void alsa_microphone_close_mic(void *driver_context, void *microphone_context);
+static void alsa_microphone_close_mic(void *driver_context, void *mic_context);
 static void alsa_microphone_free(void *driver_context)
 {
    alsa_microphone_t *alsa = (alsa_microphone_t*)driver_context;
@@ -64,36 +63,37 @@ static void alsa_microphone_free(void *driver_context)
    }
 }
 
-static bool alsa_microphone_start_mic(void *driver_context, void *microphone_context);
-static int alsa_microphone_read(void *driver_context, void *microphone_context, void *buf_, size_t size_)
+static bool alsa_microphone_start_mic(void *driver_context, void *mic_context);
+
+static int alsa_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
 {
-   alsa_microphone_t *alsa              = (alsa_microphone_t*)driver_context;
-   alsa_microphone_handle_t *microphone = (alsa_microphone_handle_t*)microphone_context;
-   uint8_t *buf                  = (uint8_t*)buf_;
+   size_t frames_size;
+   snd_pcm_sframes_t size;
+   snd_pcm_state_t state;
+   alsa_microphone_t       *alsa = (alsa_microphone_t*)driver_context;
+   alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
+   uint8_t *buf                  = (uint8_t*)s;
    snd_pcm_sframes_t read        = 0;
    int errnum                    = 0;
-   snd_pcm_sframes_t size;
-   size_t frames_size;
-   snd_pcm_state_t state;
 
-   if (!alsa || !microphone || !buf)
+   if (!alsa || !mic || !buf)
       return -1;
 
-   size        = BYTES_TO_FRAMES(size_, microphone->stream_info.frame_bits);
-   frames_size = microphone->stream_info.has_float ? sizeof(float) : sizeof(int16_t);
+   size        = BYTES_TO_FRAMES(len, mic->stream_info.frame_bits);
+   frames_size = mic->stream_info.has_float ? sizeof(float) : sizeof(int16_t);
 
-   state = snd_pcm_state(microphone->pcm);
+   state = snd_pcm_state(mic->pcm);
    if (state != SND_PCM_STATE_RUNNING)
    {
       RARCH_WARN("[ALSA]: Expected microphone \"%s\" to be in state RUNNING, was in state %s\n",
-                 snd_pcm_name(microphone->pcm),
+                 snd_pcm_name(mic->pcm),
                  snd_pcm_state_name(state));
 
-      errnum = snd_pcm_start(microphone->pcm);
+      errnum = snd_pcm_start(mic->pcm);
       if (errnum < 0)
       {
          RARCH_ERR("[ALSA]: Failed to start microphone \"%s\": %s\n",
-                   snd_pcm_name(microphone->pcm),
+                   snd_pcm_name(mic->pcm),
                    snd_strerror(errnum));
 
          return -1;
@@ -104,11 +104,11 @@ static int alsa_microphone_read(void *driver_context, void *microphone_context, 
    {
       while (size)
       {
-         snd_pcm_sframes_t frames = snd_pcm_readi(microphone->pcm, buf, size);
+         snd_pcm_sframes_t frames = snd_pcm_readi(mic->pcm, buf, size);
 
          if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
          {
-            errnum = snd_pcm_recover(microphone->pcm, frames, 0);
+            errnum = snd_pcm_recover(mic->pcm, frames, 0);
             if (errnum < 0)
             {
                RARCH_ERR("[ALSA]: Failed to read from microphone: %s\n", snd_strerror(frames));
@@ -135,20 +135,20 @@ static int alsa_microphone_read(void *driver_context, void *microphone_context, 
       while (size)
       {
          snd_pcm_sframes_t frames;
-         int rc = snd_pcm_wait(microphone->pcm, -1);
+         int rc = snd_pcm_wait(mic->pcm, -1);
 
          if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
          {
-            if (snd_pcm_recover(microphone->pcm, rc, 1) < 0)
+            if (snd_pcm_recover(mic->pcm, rc, 1) < 0)
                return -1;
             continue;
          }
 
-         frames = snd_pcm_readi(microphone->pcm, buf, size);
+         frames = snd_pcm_readi(mic->pcm, buf, size);
 
          if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
          {
-            if (snd_pcm_recover(microphone->pcm, frames, 1) < 0)
+            if (snd_pcm_recover(mic->pcm, frames, 1) < 0)
                return -1;
 
             break;
@@ -172,18 +172,18 @@ static int alsa_microphone_read(void *driver_context, void *microphone_context, 
       }
    }
 
-   return FRAMES_TO_BYTES(read, microphone->stream_info.frame_bits);
+   return FRAMES_TO_BYTES(read, mic->stream_info.frame_bits);
 }
 
-static bool alsa_microphone_mic_alive(const void *driver_context, const void *microphone_context)
+static bool alsa_microphone_mic_alive(const void *driver_context, const void *mic_context)
 {
-   alsa_microphone_handle_t *microphone = (alsa_microphone_handle_t*)microphone_context;
+   alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
    (void)driver_context;
 
-   if (!microphone)
+   if (!mic)
       return false;
 
-   return snd_pcm_state(microphone->pcm) == SND_PCM_STATE_RUNNING;
+   return snd_pcm_state(mic->pcm) == SND_PCM_STATE_RUNNING;
 }
 
 static void alsa_microphone_set_nonblock_state(void *driver_context, bool nonblock)
@@ -194,7 +194,6 @@ static void alsa_microphone_set_nonblock_state(void *driver_context, bool nonblo
 
 static struct string_list *alsa_microphone_device_list_new(const void *data)
 {
-   (void)data;
    return alsa_device_list_type_new("Input");
 }
 
@@ -211,73 +210,64 @@ static void *alsa_microphone_open_mic(void *driver_context,
    unsigned latency,
    unsigned *new_rate)
 {
-   alsa_microphone_t *alsa              = (alsa_microphone_t*)driver_context;
-   alsa_microphone_handle_t *microphone = NULL;
+   alsa_microphone_t       *alsa = (alsa_microphone_t*)driver_context;
+   alsa_microphone_handle_t *mic = NULL;
 
    if (!alsa) /* If we weren't given a valid ALSA context... */
       return NULL;
 
-   microphone = calloc(1, sizeof(alsa_microphone_handle_t));
 
-   if (!microphone) /* If the microphone context couldn't be allocated... */
+   /* If the microphone context couldn't be allocated... */
+   if (!(mic = calloc(1, sizeof(alsa_microphone_handle_t))))
       return NULL;
 
    /* channels hardcoded to 1, because we only support mono mic input */
-   if (alsa_init_pcm(&microphone->pcm, device, SND_PCM_STREAM_CAPTURE, rate, latency, 1, &microphone->stream_info, new_rate, SND_PCM_NONBLOCK) < 0)
-   {
+   if (alsa_init_pcm(&mic->pcm, device, SND_PCM_STREAM_CAPTURE, rate, latency, 1,
+            &mic->stream_info, new_rate, SND_PCM_NONBLOCK) < 0)
       goto error;
-   }
 
-   return microphone;
+   return mic;
 
 error:
    RARCH_ERR("[ALSA]: Failed to initialize microphone...\n");
 
-   alsa_microphone_close_mic(alsa, microphone);
+   alsa_microphone_close_mic(alsa, mic);
 
    return NULL;
 
 }
-static void alsa_microphone_close_mic(void *driver_context, void *microphone_context)
+static void alsa_microphone_close_mic(void *driver_context, void *mic_context)
 {
-   alsa_microphone_handle_t *microphone = (alsa_microphone_handle_t*)microphone_context;
+   alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
    (void)driver_context;
 
-   if (microphone)
+   if (mic)
    {
-      alsa_free_pcm(microphone->pcm);
-      free(microphone);
+      alsa_free_pcm(mic->pcm);
+      free(mic);
    }
 }
 
-static bool alsa_microphone_start_mic(void *driver_context, void *microphone_context)
+static bool alsa_microphone_start_mic(void *driver_context, void *mic_context)
 {
-   alsa_microphone_handle_t *microphone = (alsa_microphone_handle_t*)microphone_context;
-   (void)driver_context;
-
-   if (!microphone)
+   alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
+   if (!mic)
       return false;
-
-   return alsa_start_pcm(microphone->pcm);
+   return alsa_start_pcm(mic->pcm);
 }
 
-static bool alsa_microphone_stop_mic(void *driver_context, void *microphone_context)
+static bool alsa_microphone_stop_mic(void *driver_context, void *mic_context)
 {
-   alsa_microphone_handle_t *microphone = (alsa_microphone_handle_t*)microphone_context;
-   (void)driver_context;
-
-   if (!microphone)
+   alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
+   if (!mic)
       return false;
-
-   return alsa_stop_pcm(microphone->pcm);
+   return alsa_stop_pcm(mic->pcm);
 }
 
-static bool alsa_microphone_mic_use_float(const void *driver_context, const void *microphone_context)
+static bool alsa_microphone_mic_use_float(const void *driver_context, const void *mic_context)
 {
-   alsa_microphone_handle_t *microphone = (alsa_microphone_handle_t*)microphone_context;
-   (void)driver_context;
-
-   return microphone->stream_info.has_float;
+   alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
+   return mic->stream_info.has_float;
 }
 
 microphone_driver_t microphone_alsa = {

@@ -91,15 +91,15 @@ static void ctr_dsp_audio_free(void *data)
    ndspExit();
 }
 
-static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size)
+static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t len)
 {
    u32 pos;
-   ctr_dsp_audio_t                           * ctr = (ctr_dsp_audio_t*)data;
-   uint32_t sample_pos                             = ndspChnGetSamplePos(ctr->channel);
+   ctr_dsp_audio_t     *ctr = (ctr_dsp_audio_t*)data;
+   uint32_t sample_pos      = ndspChnGetSamplePos(ctr->channel);
 
-   if ((((sample_pos  - ctr->pos) & CTR_DSP_AUDIO_COUNT_MASK) < (CTR_DSP_AUDIO_COUNT >> 2)) ||
-      (((ctr->pos - sample_pos ) & CTR_DSP_AUDIO_COUNT_MASK) < (CTR_DSP_AUDIO_COUNT >> 4)) ||
-      (((sample_pos  - ctr->pos) & CTR_DSP_AUDIO_COUNT_MASK) < (size >> 2)))
+   if (  (((sample_pos  - ctr->pos)   & CTR_DSP_AUDIO_COUNT_MASK) < (CTR_DSP_AUDIO_COUNT >> 2))
+      || (((ctr->pos    - sample_pos) & CTR_DSP_AUDIO_COUNT_MASK) < (CTR_DSP_AUDIO_COUNT >> 4))
+      || (((sample_pos  - ctr->pos)   & CTR_DSP_AUDIO_COUNT_MASK) < (len >> 2)))
    {
       if (ctr->nonblock)
          ctr->pos = (sample_pos + (CTR_DSP_AUDIO_COUNT >> 1)) & CTR_DSP_AUDIO_COUNT_MASK;
@@ -118,33 +118,33 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size)
             }
 
             sample_pos = ndspChnGetSamplePos(ctr->channel);
-         }while (    ((sample_pos - (ctr->pos + (size >>2))) & CTR_DSP_AUDIO_COUNT_MASK) > (CTR_DSP_AUDIO_COUNT >> 1)
+         }while (    ((sample_pos - (ctr->pos + (len >>2))) & CTR_DSP_AUDIO_COUNT_MASK) > (CTR_DSP_AUDIO_COUNT >> 1)
                  || (((ctr->pos - (CTR_DSP_AUDIO_COUNT >> 4) - sample_pos) & CTR_DSP_AUDIO_COUNT_MASK) > (CTR_DSP_AUDIO_COUNT >> 1)));
       }
    }
 
    pos = ctr->pos << 2;
 
-   if ((pos + size) > CTR_DSP_AUDIO_SIZE)
+   if ((pos + len) > CTR_DSP_AUDIO_SIZE)
    {
       memcpy(ctr->dsp_buf.data_pcm8 + pos, buf,
             (CTR_DSP_AUDIO_SIZE - pos));
       DSP_FlushDataCache(ctr->dsp_buf.data_pcm8 + pos, (CTR_DSP_AUDIO_SIZE - pos));
 
       memcpy(ctr->dsp_buf.data_pcm8, (uint8_t*) buf + (CTR_DSP_AUDIO_SIZE - pos),
-            (pos + size - CTR_DSP_AUDIO_SIZE));
-      DSP_FlushDataCache(ctr->dsp_buf.data_pcm8, (pos + size - CTR_DSP_AUDIO_SIZE));
+            (pos + len - CTR_DSP_AUDIO_SIZE));
+      DSP_FlushDataCache(ctr->dsp_buf.data_pcm8, (pos + len - CTR_DSP_AUDIO_SIZE));
    }
    else
    {
-      memcpy(ctr->dsp_buf.data_pcm8 + pos, buf, size);
-      DSP_FlushDataCache(ctr->dsp_buf.data_pcm8 + pos, size);
+      memcpy(ctr->dsp_buf.data_pcm8 + pos, buf, len);
+      DSP_FlushDataCache(ctr->dsp_buf.data_pcm8 + pos, len);
    }
 
-   ctr->pos += size >> 2;
+   ctr->pos += len >> 2;
    ctr->pos &= CTR_DSP_AUDIO_COUNT_MASK;
 
-   return size;
+   return len;
 }
 
 static bool ctr_dsp_audio_stop(void *data)
@@ -185,11 +185,7 @@ static void ctr_dsp_audio_set_nonblock_state(void *data, bool state)
       ctr->nonblock = state;
 }
 
-static bool ctr_dsp_audio_use_float(void *data)
-{
-   (void)data;
-   return false;
-}
+static bool ctr_dsp_audio_use_float(void *data) { return false; }
 
 static size_t ctr_dsp_audio_write_avail(void *data)
 {

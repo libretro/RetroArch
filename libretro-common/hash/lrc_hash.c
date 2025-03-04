@@ -123,13 +123,13 @@ static void sha256_block(struct sha256_ctx *p)
 }
 
 static void sha256_chunk(struct sha256_ctx *p,
-      const uint8_t *s, unsigned len)
+      const uint8_t *s, size_t len)
 {
    p->len += len;
 
    while (len)
    {
-      unsigned l = 64 - p->inlen;
+      size_t l   = 64 - p->inlen;
 
       if (len < l)
          l       = len;
@@ -179,7 +179,7 @@ static void sha256_subhash(struct sha256_ctx *p, uint32_t *t)
  *
  * Hashes SHA256 and outputs a human readable string.
  **/
-void sha256_hash(char *s, const uint8_t *in, size_t size)
+void sha256_hash(char *s, const uint8_t *in, size_t len)
 {
    unsigned i;
    struct sha256_ctx sha;
@@ -191,7 +191,7 @@ void sha256_hash(char *s, const uint8_t *in, size_t size)
    } shahash;
 
    sha256_init(&sha);
-   sha256_chunk(&sha, in, (unsigned)size);
+   sha256_chunk(&sha, in, len);
    sha256_final(&sha);
    sha256_subhash(&sha, shahash.u32);
 

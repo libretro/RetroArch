@@ -2275,12 +2275,12 @@ error:
 }
 
 static ssize_t
-tinyalsa_write(void *data, const void *buf_, size_t size_)
+tinyalsa_write(void *data, const void *buf_, size_t len)
 {
    tinyalsa_t *tinyalsa      = (tinyalsa_t*)data;
    const uint8_t *buf        = (const uint8_t*)buf_;
    snd_pcm_sframes_t written = 0;
-   snd_pcm_sframes_t size    = BYTES_TO_FRAMES(size_, tinyalsa->frame_bits);
+   snd_pcm_sframes_t size    = BYTES_TO_FRAMES(len, tinyalsa->frame_bits);
    size_t frames_size        = tinyalsa->has_float ? sizeof(float) : sizeof(int16_t);
 
    if (tinyalsa->nonblock)

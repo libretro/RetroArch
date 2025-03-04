@@ -282,12 +282,12 @@ uint32_t gl3_get_cross_compiler_target_version(void)
    return 100 * major + 10 * minor;
 }
 
-static void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size)
+static void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t len)
 {
    if (!gl->scratch_vbos[gl->scratch_vbo_index])
       glGenBuffers(1, &gl->scratch_vbos[gl->scratch_vbo_index]);
    glBindBuffer(GL_ARRAY_BUFFER, gl->scratch_vbos[gl->scratch_vbo_index]);
-   glBufferData(GL_ARRAY_BUFFER, size, data, GL_STREAM_DRAW);
+   glBufferData(GL_ARRAY_BUFFER, len, data, GL_STREAM_DRAW);
    gl->scratch_vbo_index++;
    if (gl->scratch_vbo_index >= GL_CORE_NUM_VBOS)
       gl->scratch_vbo_index = 0;
@@ -2740,7 +2740,7 @@ static bool gl3_frame(void *data, const void *frame,
 #else
    gl3_filter_chain_set_frame_direction(gl->filter_chain, 1);
 #endif
-   gl3_filter_chain_set_frame_time_delta(gl->filter_chain, video_driver_get_frame_time_delta_usec());
+   gl3_filter_chain_set_frame_time_delta(gl->filter_chain, (uint32_t)video_driver_get_frame_time_delta_usec());
 
    gl3_filter_chain_set_original_fps(gl->filter_chain, video_driver_get_original_fps());
 

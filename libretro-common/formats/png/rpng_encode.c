@@ -49,10 +49,10 @@ static void dword_write_be(uint8_t *buf, uint32_t val)
    *buf++ = (uint8_t)(val >>  0);
 }
 
-static bool png_write_crc_string(intfstream_t *intf_s, const uint8_t *data, size_t size)
+static bool png_write_crc_string(intfstream_t *intf_s, const uint8_t *data, size_t len)
 {
    uint8_t crc_raw[4] = {0};
-   uint32_t crc       = encoding_crc32(0, data, size);
+   uint32_t crc       = encoding_crc32(0, data, len);
 
    dword_write_be(crc_raw, crc);
    return intfstream_write(intf_s, crc_raw, sizeof(crc_raw)) == sizeof(crc_raw);
@@ -94,12 +94,11 @@ static bool png_write_ihdr_string(intfstream_t *intf_s, const struct png_ihdr *i
          sizeof(ihdr_raw) - sizeof(uint32_t));
 }
 
-static bool png_write_idat_string(intfstream_t* intf_s, const uint8_t *data, size_t size)
+static bool png_write_idat_string(intfstream_t* intf_s, const uint8_t *data, size_t len)
 {
-   if (intfstream_write(intf_s, data, size) != (ssize_t)size)
+   if (intfstream_write(intf_s, data, len) != (ssize_t)len)
       return false;
-
-   return png_write_crc_string(intf_s, data + sizeof(uint32_t), size - sizeof(uint32_t));
+   return png_write_crc_string(intf_s, data + sizeof(uint32_t), len - sizeof(uint32_t));
 }
 
 static bool png_write_iend_string(intfstream_t* intf_s)
@@ -140,11 +139,11 @@ static void copy_bgr24_line(uint8_t *dst, const uint8_t *src, unsigned width)
    }
 }
 
-static unsigned count_sad(const uint8_t *data, size_t size)
+static unsigned count_sad(const uint8_t *data, size_t len)
 {
    size_t i;
    unsigned cnt = 0;
-   for (i = 0; i < size; i++)
+   for (i = 0; i < len; i++)
    {
       if (data[i])
          cnt += abs((int8_t)data[i]);
@@ -223,7 +222,7 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
    void *stream            = NULL;
    uint32_t total_in       = 0;
    uint32_t total_out      = 0;
-   
+
    if (!intf_s)
       GOTO_END_ERROR();
 
@@ -370,8 +369,8 @@ bool rpng_save_image_argb(const char *path, const uint32_t *data,
 {
    bool ret                      = false;
    intfstream_t* intf_s          = NULL;
-   
-   intf_s = intfstream_open_file(path, 
+
+   intf_s = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
@@ -388,11 +387,11 @@ bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
 {
    bool ret                      = false;
    intfstream_t* intf_s          = NULL;
-   
-   intf_s = intfstream_open_file(path, 
+
+   intf_s = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   ret = rpng_save_image_stream(data, intf_s, width, height, 
+   ret = rpng_save_image_stream(data, intf_s, width, height,
                                 (signed) pitch, 3);
    intfstream_close(intf_s);
    free(intf_s);
@@ -412,14 +411,14 @@ uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
    buf_length = (int)(width*height*3*DEFLATE_PADDING)+PNG_ROUGH_HEADER;
    buf        = (uint8_t*)malloc(buf_length*sizeof(uint8_t));
    if (!buf)
-      GOTO_END_ERROR(); 
+      GOTO_END_ERROR();
 
-   intf_s = intfstream_open_writable_memory(buf, 
+   intf_s = intfstream_open_writable_memory(buf,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE,
          buf_length);
 
-   ret = rpng_save_image_stream((const uint8_t*)data, 
+   ret = rpng_save_image_stream((const uint8_t*)data,
             intf_s, width, height, pitch, 3);
 
    *bytes = intfstream_get_ptr(intf_s);

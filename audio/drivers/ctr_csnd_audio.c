@@ -162,19 +162,19 @@ static void ctr_csnd_audio_free(void *data)
    free(ctr);
 }
 
-static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
+static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
 {
    int i;
-   uint32_t samples_played                     = 0;
-   uint64_t current_tick                       = 0;
-   const uint16_t                         *src = buf;
-   ctr_csnd_audio_t                       *ctr = (ctr_csnd_audio_t*)data;
+   uint32_t samples_played      = 0;
+   uint64_t current_tick        = 0;
+   const uint16_t          *src = buf;
+   ctr_csnd_audio_t        *ctr = (ctr_csnd_audio_t*)data;
 
    ctr_csnd_audio_update_playpos(ctr);
 
-   if ((((ctr->playpos  - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 2)) ||
-      (((ctr->pos - ctr->playpos ) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 4)) ||
-      (((ctr->playpos  - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (size >> 2)))
+   if (  (((ctr->playpos  - ctr->pos)     & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 2))
+      || (((ctr->pos      - ctr->playpos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 4))
+      || (((ctr->playpos  - ctr->pos)     & CTR_CSND_AUDIO_COUNT_MASK) < (len >> 2)))
    {
       if (ctr->nonblock)
          ctr->pos = (ctr->playpos + (CTR_CSND_AUDIO_COUNT >> 1)) & CTR_CSND_AUDIO_COUNT_MASK;
@@ -189,7 +189,7 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
       }
    }
 
-   for (i = 0; i < (size >> 1); i += 2)
+   for (i = 0; i < (len >> 1); i += 2)
    {
       ctr->l[ctr->pos] = src[i];
       ctr->r[ctr->pos] = src[i + 1];
@@ -200,7 +200,7 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
    GSPGPU_FlushDataCache(ctr->l, CTR_CSND_AUDIO_SIZE);
    GSPGPU_FlushDataCache(ctr->r, CTR_CSND_AUDIO_SIZE);
 
-   return size;
+   return len;
 }
 
 static bool ctr_csnd_audio_stop(void *data)
@@ -264,11 +264,7 @@ static void ctr_csnd_audio_set_nonblock_state(void *data, bool state)
       ctr->nonblock = state;
 }
 
-static bool ctr_csnd_audio_use_float(void *data)
-{
-   (void)data;
-   return false;
-}
+static bool ctr_csnd_audio_use_float(void *data) { return false; }
 
 static size_t ctr_csnd_audio_write_avail(void *data)
 {

@@ -87,7 +87,6 @@ size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
       out_chars--;
       ret++;
    }
-
    return ret;
 }
 
@@ -162,20 +161,20 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
  * Acts mostly like strlcpy.
  *
  * Copies the given number of UTF-8 characters,
- * but at most @d_len bytes.
+ * but at most @len bytes.
  *
  * Always NULL terminates. Does not copy half a character.
  * @s is assumed valid UTF-8.
- * Use only if @chars is considerably less than @d_len.
+ * Use only if @chars is considerably less than @len.
  *
  * @return Number of bytes.
  **/
-size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
+size_t utf8cpy(char *s, size_t len, const char *in, size_t chars)
 {
-   const uint8_t *sb     = (const uint8_t*)s;
+   const uint8_t *sb     = (const uint8_t*)in;
    const uint8_t *sb_org = sb;
 
-   if (!s)
+   if (!in)
       return 0;
 
    while (*sb && chars-- > 0)
@@ -185,17 +184,16 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
          sb++;
    }
 
-   if ((size_t)(sb - sb_org) > d_len-1 /* NUL */)
+   if ((size_t)(sb - sb_org) > len - 1)
    {
-      sb = sb_org + d_len-1;
+      sb = sb_org + len - 1;
       while ((*sb & 0xC0) == 0x80)
          sb--;
    }
 
-   memcpy(d, sb_org, sb-sb_org);
-   d[sb-sb_org] = '\0';
-
-   return sb-sb_org;
+   memcpy(s, sb_org, sb - sb_org);
+   s[sb-sb_org] = '\0';
+   return sb - sb_org;
 }
 
 /**
@@ -292,19 +290,16 @@ static bool utf16_to_char(uint8_t **utf_data,
  **/
 bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
 {
-   size_t     dest_len     = 0;
-   uint8_t *utf16_data     = NULL;
-   bool            ret     = utf16_to_char(&utf16_data, &dest_len, in);
-
+   size_t  _len        = 0;
+   uint8_t *utf16_data = NULL;
+   bool            ret = utf16_to_char(&utf16_data, &_len, in);
    if (ret)
    {
-      utf16_data[dest_len] = 0;
+      utf16_data[_len] = 0;
       strlcpy(s, (const char*)utf16_data, len);
    }
-
    free(utf16_data);
-   utf16_data              = NULL;
-
+   utf16_data          = NULL;
    return ret;
 }
 

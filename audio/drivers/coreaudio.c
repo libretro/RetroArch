@@ -312,26 +312,26 @@ error:
    return NULL;
 }
 
-static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
+static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
 {
    coreaudio_t *dev   = (coreaudio_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
    size_t written     = 0;
 
-   while (!dev->is_paused && size > 0)
+   while (!dev->is_paused && len > 0)
    {
       size_t write_avail;
 
       slock_lock(dev->lock);
 
       write_avail = FIFO_WRITE_AVAIL(dev->buffer);
-      if (write_avail > size)
-         write_avail = size;
+      if (write_avail > len)
+         write_avail = len;
 
       fifo_write(dev->buffer, buf, write_avail);
       buf     += write_avail;
       written += write_avail;
-      size    -= write_avail;
+      len     -= write_avail;
 
       if (dev->nonblock)
       {
@@ -409,16 +409,9 @@ static size_t coreaudio_buffer_size(void *data)
    return dev->buffer_size;
 }
 
-static void *coreaudio_device_list_new(void *data)
-{
-   /* TODO/FIXME */
-   return NULL;
-}
-
-static void coreaudio_device_list_free(void *data, void *array_list_data)
-{
-   /* TODO/FIXME */
-}
+/* TODO/FIXME - implement */
+static void *coreaudio_device_list_new(void *data) { return NULL; }
+static void coreaudio_device_list_free(void *data, void *array_list_data) { }
 
 audio_driver_t audio_coreaudio = {
    coreaudio_init,

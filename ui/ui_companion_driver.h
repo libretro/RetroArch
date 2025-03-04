@@ -169,7 +169,11 @@ void *ui_companion_driver_get_main_window(void);
 
 const char *ui_companion_driver_get_ident(void);
 
-void ui_companion_driver_init_first(void);
+void ui_companion_driver_init_first(
+      bool desktop_menu_enable,
+      bool ui_companion_toggle,
+      unsigned ui_companion_start_on_boot
+      );
 
 void ui_companion_driver_msg_queue_push(
       const char *msg, unsigned priority,

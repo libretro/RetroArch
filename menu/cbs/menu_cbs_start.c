@@ -82,9 +82,7 @@ static int action_start_remap_file_info(
       unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st            = menu_state_get_ptr();
-   settings_t *settings                  = config_get_ptr();
-   const char *directory_input_remapping = settings ?
-         settings->paths.directory_input_remapping : NULL;
+   const char *directory_input_remapping = config_get_ptr()->paths.directory_input_remapping;
    rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
 
    input_remapping_deinit(false);
@@ -487,7 +485,6 @@ static int action_start_state_slot(
       unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
-   size_t selection           = menu_st->selection_ptr;
    settings_t *settings       = config_get_ptr();
 
    settings->ints.state_slot  = 0;
@@ -496,7 +493,7 @@ static int action_start_state_slot(
    {
       if (menu_st->driver_ctx->update_savestate_thumbnail_path)
          menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
+               menu_st->userdata, (unsigned)menu_st->selection_ptr);
       if (menu_st->driver_ctx->update_savestate_thumbnail_image)
          menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
    }

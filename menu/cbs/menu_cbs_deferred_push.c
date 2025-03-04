@@ -294,6 +294,10 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_information_steam_list,    DISPLAYLIST_
 
 GENERIC_DEFERRED_PUSH(deferred_push_file_browser_select_sideload_core, DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE)
 
+#ifdef HAVE_GAME_AI
+GENERIC_DEFERRED_PUSH(deferred_push_core_game_ai_options,             DISPLAYLIST_OPTIONS_GAME_AI)
+#endif
+
 static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
@@ -353,11 +357,11 @@ static int deferred_push_cursor_manager_list_generic(
       menu_displaylist_info_t *info, enum database_query_type type)
 {
    char query[256];
-   char *tok, *save;
-   char *elem0                   = NULL;
-   char *elem1                   = NULL;
-   char *path_cpy                = NULL;
-   const char *path              = info->path;
+   char *tok, *save  = NULL;
+   char *elem0       = NULL;
+   char *elem1       = NULL;
+   char *path_cpy    = NULL;
+   const char *path  = info->path;
 
    if (!path)
       return -1;
@@ -526,8 +530,8 @@ static int general_push(menu_displaylist_info_t *info,
                core_info_get_list(&list);
                if (list && !string_is_empty(list->all_ext))
                {
-                  char *tok, *save;
-                  char *all_ext_cpy    = strdup(list->all_ext);
+                  char *tok, *save  = NULL;
+                  char *all_ext_cpy = strdup(list->all_ext);
 
                   /* If the current core already supports
                    * this extension, skip adding it */
@@ -538,8 +542,8 @@ static int general_push(menu_displaylist_info_t *info,
 
                      if (!string_is_empty(newstr2))
                      {
-                        char *tok2, *save2;
-                        char *newstr2_cpy = strdup(newstr2);
+                        char *tok2, *save2 = NULL;
+                        char *newstr2_cpy  = strdup(newstr2);
                         for ( tok2 = strtok_r(newstr2_cpy, "|", &save2); tok2;
                               tok2 = strtok_r(NULL, "|", &save2))
                         {
@@ -663,6 +667,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list, PUSH_DEFAULT, DIS
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_RESOLUTION)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_audio_device, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_AUDIO_DEVICE)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_midi_device, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MIDI_DEVICE)
 #ifdef HAVE_MICROPHONE
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_microphone_device, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MICROPHONE_DEVICE)
 #endif
@@ -677,6 +682,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_playlist_sort_mode
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_system_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_core_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_disk_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_retropad_bind, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_RETROPAD_BIND)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_device_type, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_TYPE)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description_kbd, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD)
@@ -688,6 +694,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_select_physi
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_netplay_mitm_server, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER)
 #endif
 GENERIC_DEFERRED_PUSH(deferred_push_add_to_playlist_list,          DISPLAYLIST_ADD_TO_PLAYLIST_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_add_to_playlist_quickmenu,     DISPLAYLIST_ADD_TO_PLAYLIST_QUICKMENU)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
@@ -711,6 +718,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL, deferred_push_dropdown_box_list_special},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION, deferred_push_dropdown_box_list_resolution},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE, deferred_push_dropdown_box_list_audio_device},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MIDI_DEVICE, deferred_push_dropdown_box_list_midi_device},
 #ifdef HAVE_MICROPHONE
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE, deferred_push_dropdown_box_list_microphone_device},
       {MENU_ENUM_LABEL_DEFERRED_MICROPHONE_SETTINGS_LIST, deferred_push_microphone_settings_list},
@@ -724,6 +732,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE, deferred_push_dropdown_box_list_playlist_left_thumbnail_mode},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE, deferred_push_dropdown_box_list_playlist_sort_mode},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX, deferred_push_dropdown_box_list_disk_index},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND, deferred_push_dropdown_box_list_input_retropad_bind},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE, deferred_push_dropdown_box_list_input_device_type},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION, deferred_push_dropdown_box_list_input_description},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD, deferred_push_dropdown_box_list_input_description_kbd},
@@ -951,6 +960,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST, deferred_push_lakka_list},
 #endif
        {MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST, deferred_push_add_to_playlist_list},
+       {MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU, deferred_push_add_to_playlist_quickmenu},
+
+#ifdef HAVE_GAME_AI
+      {MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS, deferred_push_core_game_ai_options},
+#endif
    };
 
    if (!string_is_equal(label, "null"))
@@ -1415,6 +1429,14 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_to_playlist_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_to_playlist_quickmenu);
+            break;
+#ifdef HAVE_GAME_AI
+         case MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_game_ai_options);
+            break;
+#endif
          default:
             return -1;
       }

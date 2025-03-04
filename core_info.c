@@ -849,8 +849,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
             sizeof(file_path));
 
 #if defined(CORE_INFO_CACHE_COMPRESS)
-   file = intfstream_open_rzip_file(file_path,
-         RETRO_VFS_FILE_ACCESS_WRITE);
+   file = intfstream_open_rzip_file(file_path, RETRO_VFS_FILE_ACCESS_WRITE);
 #else
    file = intfstream_open_file(file_path,
          RETRO_VFS_FILE_ACCESS_WRITE,
@@ -1255,10 +1254,8 @@ bool core_info_cache_force_refresh(const char *path_info)
     * if required */
    if (!path_is_valid(file_path))
    {
-      RFILE *refresh_file = filestream_open(
-            file_path,
-            RETRO_VFS_FILE_ACCESS_WRITE,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      RFILE *refresh_file = filestream_open(file_path,
+            RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!refresh_file)
          return false;
@@ -1402,8 +1399,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
 
    /* Fetch core directory listing */
    dir_list_ok = dir_list_append(path_list->dir_list,
-         core_dir, exts, false, show_hidden_files,
-               false, false);
+         core_dir, exts, false, show_hidden_files, false, false);
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    {
@@ -2196,19 +2192,15 @@ static bool core_info_does_support_file(
       const core_info_t *core, const char *path)
 {
    const char *basename, *ext;
-
    if (!core || !core->supported_extensions_list)
       return false;
    if (string_is_empty(path))
       return false;
-
    basename = path_basename(path);
-
    /* if a core has / in its list of supported extensions, the core
       supports loading of directories on the host file system */
    if (string_is_empty(basename))
       return string_list_find_elem(core->supported_extensions_list, "/");
-
    ext = strrchr(basename, '.');
    return string_list_find_elem_prefix(
          core->supported_extensions_list, ".", (ext ? ext + 1 : ""));
@@ -2226,12 +2218,11 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
    int support_b                 = core_info_does_support_file(b,
          p_coreinfo->tmp_path);
 #ifdef HAVE_COMPRESSION
-   support_a            = support_a ||
-      core_info_does_support_any_file(a, p_coreinfo->tmp_list);
-   support_b            = support_b ||
-      core_info_does_support_any_file(b, p_coreinfo->tmp_list);
+   support_a            = support_a
+      || core_info_does_support_any_file(a, p_coreinfo->tmp_list);
+   support_b            = support_b
+      || core_info_does_support_any_file(b, p_coreinfo->tmp_list);
 #endif
-
    if (support_a != support_b)
       return support_b - support_a;
    return strcasecmp(a->display_name, b->display_name);
@@ -2793,72 +2784,64 @@ void core_info_qsort(core_info_list_t *core_info_list,
 
 bool core_info_current_supports_savestate(void)
 {
-   core_info_state_t *p_coreinfo = &core_info_st;
-   settings_t        *settings   = config_get_ptr();
-
-   if (settings->bools.core_info_savestate_bypass)
+   core_info_state_t *p_coreinfo   = &core_info_st;
+   settings_t        *settings     = config_get_ptr();
+   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
+   if (core_info_savestate_bypass)
       return true;
-
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-
    return p_coreinfo->current->savestate_support_level >=
          CORE_INFO_SAVESTATE_BASIC;
 }
 
 bool core_info_current_supports_rewind(void)
 {
-   core_info_state_t *p_coreinfo = &core_info_st;
-   settings_t        *settings   = config_get_ptr();
-
-   if (settings->bools.core_info_savestate_bypass)
+   core_info_state_t *p_coreinfo   = &core_info_st;
+   settings_t        *settings     = config_get_ptr();
+   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
+   if (core_info_savestate_bypass)
       return true;
-
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-
    return p_coreinfo->current->savestate_support_level >=
          CORE_INFO_SAVESTATE_SERIALIZED;
 }
 
 bool core_info_current_supports_netplay(void)
 {
-   core_info_state_t *p_coreinfo = &core_info_st;
-   settings_t        *settings   = config_get_ptr();
-
-   if (settings->bools.core_info_savestate_bypass)
+   core_info_state_t *p_coreinfo   = &core_info_st;
+   settings_t        *settings     = config_get_ptr();
+   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
+   if (core_info_savestate_bypass)
       return true;
-
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-
    return p_coreinfo->current->savestate_support_level >=
          CORE_INFO_SAVESTATE_DETERMINISTIC;
 }
 
 bool core_info_current_supports_runahead(void)
 {
-   core_info_state_t *p_coreinfo = &core_info_st;
-   settings_t        *settings   = config_get_ptr();
-
-   if (settings->bools.core_info_savestate_bypass)
+   core_info_state_t *p_coreinfo   = &core_info_st;
+   settings_t        *settings     = config_get_ptr();
+   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
+   if (core_info_savestate_bypass)
       return true;
-
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-
    return p_coreinfo->current->savestate_support_level >=
          CORE_INFO_SAVESTATE_DETERMINISTIC;
 }

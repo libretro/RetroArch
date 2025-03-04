@@ -558,7 +558,7 @@ static LRESULT CALLBACK winraw_callback(
 static void *winraw_init(const char *joypad_driver)
 {
    RAWINPUTDEVICE rid;
-   settings_t *settings = config_get_ptr();
+   bool input_nowinkey_enable = config_get_ptr()->bools.input_nowinkey_enable;
    winraw_input_t *wr   = (winraw_input_t *)
       calloc(1, sizeof(winraw_input_t));
 
@@ -585,7 +585,7 @@ static void *winraw_init(const char *joypad_driver)
    rid.hwndTarget  = wr->window;
    rid.usUsagePage = 0x01; /* Generic desktop */
    rid.usUsage     = 0x06; /* Keyboard */
-   if (settings->bools.input_nowinkey_enable)
+   if (input_nowinkey_enable)
       rid.dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
 
    if (!RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE)))
@@ -617,7 +617,7 @@ error:
       rid.hwndTarget  = NULL;
       rid.usUsagePage = 0x01; /* Generic desktop */
       rid.usUsage     = 0x06; /* Keyboard */
-      if (settings->bools.input_nowinkey_enable)
+      if (input_nowinkey_enable)
          rid.dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
 
       RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
@@ -992,8 +992,8 @@ bool winraw_handle_message(UINT msg,
 static void winraw_free(void *data)
 {
    RAWINPUTDEVICE rid;
-   settings_t *settings = config_get_ptr();
-   winraw_input_t *wr   = (winraw_input_t*)data;
+   winraw_input_t *wr         = (winraw_input_t*)data;
+   bool input_nowinkey_enable = config_get_ptr()->bools.input_nowinkey_enable;
 
    rid.dwFlags          = RIDEV_REMOVE;
    rid.hwndTarget       = NULL;
@@ -1006,7 +1006,7 @@ static void winraw_free(void *data)
    rid.hwndTarget       = NULL;
    rid.usUsagePage      = 0x01; /* Generic desktop */
    rid.usUsage          = 0x06; /* Keyboard */
-   if (settings->bools.input_nowinkey_enable)
+   if (input_nowinkey_enable)
       rid.dwFlags      |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
 
    RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));

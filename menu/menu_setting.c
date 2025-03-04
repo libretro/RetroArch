@@ -787,50 +787,55 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    return 0;
 }
 
-static void setting_get_string_representation_hex_and_uint(
+static size_t setting_get_string_representation_hex_and_uint(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, "%u (%08X)",
+      return snprintf(s, len, "%u (%08X)",
             *setting->value.target.unsigned_integer,
             *setting->value.target.unsigned_integer);
+   return 0;
 }
 
-static void setting_get_string_representation_uint(rarch_setting_t *setting,
+static size_t setting_get_string_representation_uint(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, "%u",
+      return snprintf(s, len, "%u",
             *setting->value.target.unsigned_integer);
+   return 0;
 }
 
 #if defined(HAVE_NETWORKING)
-static void setting_get_string_representation_color_rgb(rarch_setting_t *setting,
+static size_t setting_get_string_representation_color_rgb(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, "#%06X",
+      return snprintf(s, len, "#%06X",
          *setting->value.target.unsigned_integer & 0xFFFFFF);
+   return 0;
 }
 #endif
 
-static void setting_get_string_representation_size_in_mb(
+static size_t setting_get_string_representation_size_in_mb(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, "%" PRI_SIZET,
+      return snprintf(s, len, "%" PRI_SIZET,
             (*setting->value.target.sizet) / (1024 * 1024));
+   return 0;
 }
 
 #ifdef HAVE_CHEATS
-static void setting_get_string_representation_uint_as_enum(
+static size_t setting_get_string_representation_uint_as_enum(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      strlcpy(s,
+      return strlcpy(s,
             msg_hash_to_str((enum msg_hash_enums)(
                setting->index_offset+(
                   *setting->value.target.unsigned_integer))), len);
+   return 0;
 }
 #endif
 
@@ -1066,30 +1071,31 @@ void setting_generic_handle_change(rarch_setting_t *setting)
 }
 
 
-static void setting_get_string_representation_int_gpu_index(rarch_setting_t *setting,
+static size_t setting_get_string_representation_int_gpu_index(rarch_setting_t *setting,
       char *s, size_t len)
 {
+   size_t _len = 0;
    if (setting)
    {
       struct string_list *list = video_driver_get_gpu_api_devices(video_context_driver_get_api());
-      size_t _len = snprintf(s, len, "%d", *setting->value.target.integer);
-      if (list && (*setting->value.target.integer < (int)list->size) && !string_is_empty(list->elems[*setting->value.target.integer].data))
+      _len = snprintf(s, len, "%d", *setting->value.target.integer);
+      if (      list
+            && (*setting->value.target.integer < (int)list->size)
+            && !string_is_empty(list->elems[*setting->value.target.integer].data))
       {
-         s[  _len] = ' ';
-         s[++_len] = '-';
-         s[++_len] = ' ';
-         s[++_len] = '\0';
-         strlcpy(s + _len, list->elems[*setting->value.target.integer].data, len - _len);
+         _len += strlcpy(s + _len, " - ", len - _len);
+         _len += strlcpy(s + _len, list->elems[*setting->value.target.integer].data, len - _len);
       }
    }
+   return _len;
 }
 
-static void setting_get_string_representation_int(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_int(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, "%d", *setting->value.target.integer);
+      return snprintf(s, len, "%d", *setting->value.target.integer);
+   return 0;
 }
 
 static int setting_fraction_action_left_default(
@@ -1217,10 +1223,11 @@ static int setting_generic_action_start_default(rarch_setting_t *setting)
    return 0;
 }
 
-static void setting_get_string_representation_default(rarch_setting_t *setting,
+static size_t setting_get_string_representation_default(rarch_setting_t *setting,
       char *s, size_t len)
 {
    s[0] = '\0';
+   return 0;
 }
 
 /**
@@ -1232,14 +1239,15 @@ static void setting_get_string_representation_default(rarch_setting_t *setting,
  *
  * Set a settings' label value. The setting is of type ST_BOOL.
  **/
-static void setting_get_string_representation_st_bool(rarch_setting_t *setting,
+static size_t setting_get_string_representation_st_bool(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      strlcpy(s, *setting->value.target.boolean
-            ? setting->boolean.on_label
-            : setting->boolean.off_label,
+      return strlcpy(s, *setting->value.target.boolean
+            ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
             len);
+   return 0;
 }
 
 /**
@@ -1251,54 +1259,60 @@ static void setting_get_string_representation_st_bool(rarch_setting_t *setting,
  *
  * Set a settings' label value. The setting is of type ST_FLOAT.
  **/
-static void setting_get_string_representation_st_float(rarch_setting_t *setting,
+static size_t setting_get_string_representation_st_float(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, setting->rounding_fraction,
+      return snprintf(s, len, setting->rounding_fraction,
             *setting->value.target.fraction);
+   return 0;
 }
 
-static void setting_get_string_representation_st_dir(rarch_setting_t *setting,
+static size_t setting_get_string_representation_st_dir(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-#if IOS
    {
+#if IOS
       if (*setting->value.target.string)
-         fill_pathname_abbreviate_special(s, setting->value.target.string, len);
-      else
-         strlcpy(s, setting->dir.empty_path, len);
-   }
+         return fill_pathname_abbreviate_special(s, setting->value.target.string, len);
+      return strlcpy(s, setting->dir.empty_path, len);
 #else
-      strlcpy(s,
+      return strlcpy(s,
              *setting->value.target.string
             ? setting->value.target.string
             : setting->dir.empty_path,
             len);
 #endif
+   }
+   return 0;
 }
 
-static void setting_get_string_representation_st_path(rarch_setting_t *setting,
+static size_t setting_get_string_representation_st_path(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
+   {
 #if IOS
-      fill_pathname_abbreviate_special(s, path_basename(setting->value.target.string), len);
+      return fill_pathname_abbreviate_special(s,
+            path_basename(setting->value.target.string), len);
 #else
-      fill_pathname(s, path_basename(setting->value.target.string),
+      return fill_pathname(s, path_basename(setting->value.target.string),
             "", len);
 #endif
+   }
+   return 0;
 }
 
-static void setting_get_string_representation_st_string(rarch_setting_t *setting,
+static size_t setting_get_string_representation_st_string(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      strlcpy(s, setting->value.target.string, len);
+      return strlcpy(s, setting->value.target.string, len);
+   return 0;
 }
 
-static void setting_get_string_representation_st_bind(rarch_setting_t *setting,
+static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting,
       char *s, size_t len)
 {
    unsigned index_offset                 = 0;
@@ -1307,14 +1321,12 @@ static void setting_get_string_representation_st_bind(rarch_setting_t *setting,
    settings_t *settings                  = config_get_ptr();
 
    if (!setting)
-      return;
-
+      return 0;
    index_offset = setting->index_offset;
    keybind      = (const struct retro_keybind*)setting->value.target.keybind;
    auto_bind    = (const struct retro_keybind*)
       input_config_get_bind_auto(index_offset, keybind->id);
-
-   input_config_get_bind_string(settings, s, keybind, auto_bind, len);
+   return input_config_get_bind_string(settings, s, keybind, auto_bind, len);
 }
 
 static int setting_action_action_ok(
@@ -1517,7 +1529,6 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.rounding_fraction         = rounding;
 
    result.value.target.fraction     = target;
-   result.original_value.fraction   = *target;
    result.default_value.fraction    = default_value;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
@@ -1592,7 +1603,6 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.rounding_fraction               = NULL;
 
    result.value.target.unsigned_integer   = target;
-   result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
 
    result.cmd_trigger_idx                 = CMD_EVENT_NONE;
@@ -1669,7 +1679,6 @@ static rarch_setting_t setting_size_setting(const char* name,
    result.rounding_fraction         = NULL;
 
    result.value.target.sizet        = target;
-   result.original_value.sizet      = *target;
    result.default_value.sizet       = default_value;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
@@ -2061,10 +2070,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.rounding_fraction         = NULL;
 
    result.value.target.boolean      = target;
-   result.original_value.boolean    = *target;
    result.default_value.boolean     = default_value;
-   result.boolean.off_label         = off;
-   result.boolean.on_label          = on;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
@@ -2138,7 +2144,6 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.rounding_fraction         = NULL;
 
    result.value.target.integer      = target;
-   result.original_value.integer    = *target;
    result.default_value.integer     = default_value;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
@@ -2353,7 +2358,7 @@ static void config_float_alt(
 static void config_path(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      char *target, size_t len,
+      char *s, size_t len,
       enum msg_hash_enums name_enum_idx,
       enum msg_hash_enums SHORT_enum_idx,
       const char *default_value,
@@ -2365,7 +2370,7 @@ static void config_path(
    (*list)[list_info->index++]             = setting_string_setting(ST_PATH,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target, (unsigned)len, default_value, "",
+         s, (unsigned)len, default_value, "",
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
          false);
@@ -2378,7 +2383,7 @@ static void config_path(
 static void config_dir(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      char *target, size_t len,
+      char *s, size_t len,
       enum msg_hash_enums name_enum_idx,
       enum msg_hash_enums SHORT_enum_idx,
       const char *default_value,
@@ -2391,7 +2396,7 @@ static void config_dir(
    (*list)[list_info->index++]             = setting_string_setting(ST_DIR,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target, (unsigned)len, default_value,
+         s, (unsigned)len, default_value,
          msg_hash_to_str(empty_enum_idx),
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
@@ -2409,7 +2414,7 @@ static void config_dir(
 static void config_string(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      char *target, size_t len,
+      char *s, size_t len,
       enum msg_hash_enums name_enum_idx,
       enum msg_hash_enums SHORT_enum_idx,
       const char *default_value,
@@ -2421,7 +2426,7 @@ static void config_string(
    (*list)[list_info->index++] = setting_string_setting(ST_STRING,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target, (unsigned)len, default_value, "",
+         s, (unsigned)len, default_value, "",
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, false);
    MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, name_enum_idx);
@@ -2431,7 +2436,7 @@ static void config_string(
 static void config_string_alt(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      char *target, size_t len,
+      char *s, size_t len,
       char *label,
       char* shortname,
       const char *default_value,
@@ -2441,9 +2446,8 @@ static void config_string_alt(
       change_handler_t change_handler, change_handler_t read_handler)
 {
    (*list)[list_info->index++] = setting_string_setting(ST_STRING,
-         label,
-         shortname,
-         target, (unsigned)len, default_value, "",
+         label, shortname,
+         s, (unsigned)len, default_value, "",
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, true);
 }
@@ -2451,7 +2455,7 @@ static void config_string_alt(
 static void config_string_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      char *target, size_t len,
+      char *s, size_t len,
       enum msg_hash_enums name_enum_idx,
       enum msg_hash_enums SHORT_enum_idx,
       const char *default_value, const char *values,
@@ -2464,7 +2468,7 @@ static void config_string_options(
          ST_STRING_OPTIONS,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target, (unsigned)len, default_value, "", values,
+         s, (unsigned)len, default_value, "", values,
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, false);
    (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_STRING_COMBOBOX;
@@ -2479,7 +2483,7 @@ static void config_string_options(
 static void config_bind_alt(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      struct retro_keybind *target,
+      struct retro_keybind *s,
       uint32_t player, uint32_t player_offset,
       const char *name, const char *SHORT,
       const struct retro_keybind *default_value,
@@ -2487,7 +2491,7 @@ static void config_bind_alt(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
-   (*list)[list_info->index++] = setting_bind_setting(name, SHORT, target,
+   (*list)[list_info->index++] = setting_bind_setting(name, SHORT, s,
          player, player_offset, default_value,
          group_info->name, subgroup_info->name, parent_group,
          true);
@@ -2569,8 +2573,8 @@ static void end_sub_group(
 
 /* MENU SETTINGS */
 
-static int setting_action_ok_bind_all(
-      rarch_setting_t *setting, size_t idx, bool wraparound)
+static int setting_action_ok_bind_all(rarch_setting_t *setting,
+      size_t idx, bool wraparound)
 {
    if (!menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_ALL, setting))
       return -1;
@@ -2600,7 +2604,8 @@ static int setting_action_ok_bind_all_save_autoconfig(
       char buf[128];
       char msg[NAME_MAX_LENGTH];
       config_get_autoconf_profile_filename(name, index_offset, buf, sizeof(buf));
-      _len = snprintf(msg, sizeof(msg),msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED), buf);
+      _len = snprintf(msg, sizeof(msg),
+            msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED), buf);
       runloop_msg_queue_push(msg, _len, 1, 180, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
@@ -2627,12 +2632,12 @@ static int setting_action_ok_bind_defaults(
    if (!setting)
       return -1;
 
-   target                         =  &input_config_binds[setting->index_offset][0];
-   def_binds                      =  (setting->index_offset)
-                                    ? retro_keybinds_rest
-                                    : retro_keybinds_1;
-   binds->begin                   = MENU_SETTINGS_BIND_BEGIN;
-   binds->last                    = MENU_SETTINGS_BIND_LAST;
+   target             =  &input_config_binds[setting->index_offset][0];
+   def_binds          =  (setting->index_offset)
+                        ? retro_keybinds_rest
+                        : retro_keybinds_1;
+   binds->begin       = MENU_SETTINGS_BIND_BEGIN;
+   binds->last        = MENU_SETTINGS_BIND_LAST;
 
    for ( i  = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
@@ -2718,6 +2723,118 @@ static int setting_action_ok_uint(
          NULL, NULL, 0, idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST);
    return 1;
+}
+
+static int setting_action_ok_retropad_bind(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   char enum_idx[16];
+   if (!setting)
+      return -1;
+
+   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+
+   generic_action_ok_displaylist_push(
+         enum_idx, /* we will pass the enumeration index of the string as a path */
+         NULL, NULL, 0, idx, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND);
+   return 1;
+}
+
+static int setting_action_left_retropad_bind(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   int value       = 0;
+   int step        = 1;
+   int i           = 0;
+   bool overflowed = false;
+
+   if (!setting)
+      return -1;
+
+   value = *setting->value.target.integer;
+
+   if (value < 0)
+      overflowed = true;
+   else if (input_config_bind_order[value] == 0)
+      *setting->value.target.integer = -1;
+   else
+   {
+      for (i = 0; i < setting->max + 1; i++)
+      {
+         if ((int)input_config_bind_order[i] == value)
+         {
+            *setting->value.target.integer = input_config_bind_order[i - step];
+            break;
+         }
+      }
+   }
+
+   i -= step;
+
+   if (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
+   {
+      if (overflowed || i < setting->min)
+      {
+         settings_t *settings = config_get_ptr();
+
+         if (settings &&
+             settings->bools.menu_navigation_wraparound_enable)
+         {
+            unsigned max = (unsigned)setting->max;
+            *setting->value.target.integer = input_config_bind_order[max];
+         }
+      }
+   }
+
+   return 0;
+}
+
+static int setting_action_right_retropad_bind(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   int value = 0;
+   int step  = 1;
+   int i     = 0;
+
+   if (!setting)
+      return -1;
+
+   value = *setting->value.target.integer;
+
+   if (value < 0)
+      *setting->value.target.integer = input_config_bind_order[0];
+   else
+   {
+      for (i = 0; i < setting->max + 1; i++)
+      {
+         if ((int)input_config_bind_order[i] == value)
+         {
+            *setting->value.target.integer = input_config_bind_order[i + step];
+            break;
+         }
+      }
+   }
+
+   i += step;
+
+   if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
+   {
+      if (i > setting->max)
+      {
+         settings_t *settings = config_get_ptr();
+         int min              = (int)setting->min;
+         if (settings && settings->bools.menu_navigation_wraparound_enable)
+         {
+            if (min < 0)
+               *setting->value.target.integer = min;
+            else
+               *setting->value.target.integer = input_config_bind_order[min];
+         }
+      }
+   }
+
+   return 0;
 }
 
 #if defined(HAVE_NETWORKING)
@@ -2846,6 +2963,33 @@ static int setting_string_action_start_audio_device(rarch_setting_t *setting)
    return 0;
 }
 
+static int setting_string_action_ok_midi_device(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   char enum_idx[16];
+   if (!setting)
+      return -1;
+
+   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+
+   generic_action_ok_displaylist_push(
+         enum_idx, /* we will pass the enumeration index of the string as a path */
+         NULL, NULL, 0, idx, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_MIDI_DEVICE);
+   return 0;
+}
+
+static int setting_string_action_start_midi_device(rarch_setting_t *setting)
+{
+   if (!setting)
+      return -1;
+
+   setting_reset_setting(setting);
+
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   return 0;
+}
+
 #ifdef HAVE_MICROPHONE
 static int setting_string_action_start_microphone_device(rarch_setting_t *setting)
 {
@@ -2876,228 +3020,195 @@ static int setting_string_action_ok_microphone_device(
 #endif
 #endif
 
-static void setting_get_string_representation_streaming_mode(
-      rarch_setting_t *setting,
-      char *s, size_t len)
-{
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
-   {
-      case STREAMING_MODE_TWITCH:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_TWITCH), len);
-         break;
-      case STREAMING_MODE_YOUTUBE:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_YOUTUBE), len);
-         break;
-      case STREAMING_MODE_FACEBOOK:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK), len);
-         break;
-      case STREAMING_MODE_LOCAL:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL), len);
-         break;
-      case STREAMING_MODE_CUSTOM:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM), len);
-         break;
-   }
-}
-
-static void setting_get_string_representation_video_stream_quality(
-      rarch_setting_t *setting,
-      char *s, size_t len)
-{
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
-   {
-      case RECORD_CONFIG_TYPE_STREAMING_CUSTOM:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM), len);
-         break;
-      case RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY), len);
-         break;
-      case RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY), len);
-         break;
-      case RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY), len);
-         break;
-   }
-}
-
-static void setting_get_string_representation_video_record_quality(rarch_setting_t *setting,
-      char *s, size_t len)
-{
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
-   {
-      case RECORD_CONFIG_TYPE_RECORDING_CUSTOM:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM), len);
-         break;
-      case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY), len);
-         break;
-      case RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY), len);
-         break;
-      case RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY), len);
-         break;
-      case RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY), len);
-         break;
-      case RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST), len);
-         break;
-      case RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY), len);
-         break;
-      case RECORD_CONFIG_TYPE_RECORDING_GIF:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_GIF), len);
-         break;
-      case RECORD_CONFIG_TYPE_RECORDING_APNG:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_APNG), len);
-         break;
-   }
-}
-
-static void setting_get_string_representation_video_filter(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_streaming_mode(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      fill_pathname(s, path_basename(setting->value.target.string),
-            "", len);
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case STREAMING_MODE_TWITCH:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_TWITCH), len);
+         case STREAMING_MODE_YOUTUBE:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_YOUTUBE), len);
+         case STREAMING_MODE_FACEBOOK:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK), len);
+         case STREAMING_MODE_LOCAL:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL), len);
+         case STREAMING_MODE_CUSTOM:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM), len);
+      }
+   }
+   return 0;
 }
 
-static void setting_get_string_representation_video_font_path(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_video_stream_quality(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case RECORD_CONFIG_TYPE_STREAMING_CUSTOM:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM), len);
+         case RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY), len);
+         case RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY), len);
+         case RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY), len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_video_record_quality(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case RECORD_CONFIG_TYPE_RECORDING_CUSTOM:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM), len);
+         case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY), len);
+         case RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_MED_QUALITY), len);
+         case RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY), len);
+         case RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY), len);
+         case RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST), len);
+         case RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY), len);
+         case RECORD_CONFIG_TYPE_RECORDING_GIF:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_GIF), len);
+         case RECORD_CONFIG_TYPE_RECORDING_APNG:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_APNG), len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_video_filter(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+      return fill_pathname(s, path_basename(setting->value.target.string),
+            "", len);
+   return 0;
+}
+
+static size_t setting_get_string_representation_video_font_path(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
-      return;
-
+      return 0;
    if (string_is_empty(setting->value.target.string))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
-   else
-      fill_pathname(s, path_basename(setting->value.target.string),
-            "", len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+   return fill_pathname(s, path_basename(setting->value.target.string),
+         "", len);
 }
 
-static void setting_get_string_representation_state_slot(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_state_slot(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
-      return;
+      return 0;
    if (*setting->value.target.integer == -1)
-      strlcpy(s, "Auto", len);
-   else
-      snprintf(s, len, "%d", *setting->value.target.integer);
+      return strlcpy(s, "Auto", len);
+   return snprintf(s, len, "%d", *setting->value.target.integer);
 }
 
-static void setting_get_string_representation_percentage(rarch_setting_t *setting,
+static size_t setting_get_string_representation_percentage(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, "%d%%", *setting->value.target.integer);
+      return snprintf(s, len, "%d%%", *setting->value.target.integer);
+   return 0;
 }
 
-static void setting_get_string_representation_float_video_msg_color(rarch_setting_t *setting,
+static size_t setting_get_string_representation_float_video_msg_color(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, "%d", (int)(*setting->value.target.fraction * 255.0f));
+      return snprintf(s, len, "%d", (int)(*setting->value.target.fraction * 255.0f));
+   return 0;
 }
 
-static void setting_get_string_representation_max_users(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_max_users(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+      return snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+   return 0;
 }
 
 #if defined(HAVE_CHEEVOS) || defined(HAVE_CLOUDSYNC)
-static void setting_get_string_representation_password(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_password(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   if (!string_is_empty(setting->value.target.string))
+   if (setting)
    {
-      s[0] = s[1] = s[2] = s[3] = s[4] = s[5] = s[6] = s[7] = '*';
-      s[8] = '\0';
+      if (!string_is_empty(setting->value.target.string))
+         return strlcpy(s, "********", len);
+      if (config_get_ptr()->arrays.cheevos_token[0])
+         return strlcpy(s, "********", len);
+      *setting->value.target.string = '\0';
    }
-   else
-   {
-      settings_t *settings = config_get_ptr();
-      if (settings->arrays.cheevos_token[0])
-      {
-         s[0] = s[1] = s[2] = s[3] = s[4] = s[5] = s[6] = s[7] = '*';
-         s[8] = '\0';
-      }
-      else
-         *setting->value.target.string = '\0';
-   }
+   return 0;
 }
 #endif
 
 #if TARGET_OS_IPHONE
-static void setting_get_string_representation_uint_keyboard_gamepad_mapping_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_keyboard_gamepad_mapping_type(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case 0:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
-         break;
-      case 1:
-         strlcpy(s, "iPega PG-9017", len);
-         break;
-      case 2:
-         strlcpy(s, "8-bitty", len);
-         break;
-      case 3:
-         strlcpy(s, "SNES30 8bitdo", len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+         case 1:
+            return strlcpy(s, "iPega PG-9017", len);
+         case 2:
+            return strlcpy(s, "8-bitty", len);
+         case 3:
+            return strlcpy(s, "SNES30 8bitdo", len);
+      }
    }
+   return 0;
 }
 #endif
 
 #ifdef HAVE_TRANSLATE
-static void setting_get_string_representation_uint_ai_service_mode(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_ai_service_mode(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
    if (!setting)
-      return;
-
+      return 0;
    switch (*setting->value.target.unsigned_integer)
    {
       case 0:
@@ -3112,19 +3223,17 @@ static void setting_get_string_representation_uint_ai_service_mode(
       default:
          break;
    }
-
    if (enum_idx != 0)
-      strlcpy(s, msg_hash_to_str(enum_idx), len);
+      return strlcpy(s, msg_hash_to_str(enum_idx), len);
+   return 0;
 }
 
-static void setting_get_string_representation_uint_ai_service_lang(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_ai_service_lang(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
    if (!setting)
-      return;
-
+      return 0;
    switch (*setting->value.target.unsigned_integer)
    {
       case TRANSLATION_LANG_EN:
@@ -3329,103 +3438,35 @@ static void setting_get_string_representation_uint_ai_service_lang(
       default:
          break;
    }
-
    if (enum_idx != 0)
-      strlcpy(s, msg_hash_to_str(enum_idx), len);
-   else
-      snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+      return strlcpy(s, msg_hash_to_str(enum_idx), len);
+   return snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 #endif
 
-static void setting_get_string_representation_uint_menu_thumbnails(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_menu_thumbnails(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
-      return;
+      return 0;
 
    switch (*setting->value.target.unsigned_integer)
    {
+      default:
       case 0:
-         strlcpy(s, msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OFF), len);
+         return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
          break;
       case 1:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS), len);
+         return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS), len);
          break;
       case 2:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS), len);
+         return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS), len);
          break;
       case 3:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS), len);
+         return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS), len);
          break;
       case 4:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS), len);
-         break;
-   }
-}
-
-static void setting_get_string_representation_uint_menu_left_thumbnails(
-      rarch_setting_t *setting,
-      char *s, size_t len)
-{
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
-   {
-      case 0:
-         strlcpy(s, msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
-      case 1:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS), len);
-         break;
-      case 2:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS), len);
-         break;
-      case 3:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS), len);
-         break;
-      case 4:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS), len);
-         break;
-   }
-}
-
-static void setting_get_string_representation_uint_menu_icon_thumbnails(
-      rarch_setting_t *setting,
-      char *s, size_t len)
-{
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
-   {
-      case 0:
-         strlcpy(s, msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
-      case 1:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS), len);
+         return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS), len);
          break;
    }
 }
@@ -3433,9 +3474,9 @@ static void setting_get_string_representation_uint_menu_icon_thumbnails(
 static void setting_set_string_representation_timedate_date_separator(char *s)
 {
    settings_t *settings                  = config_get_ptr();
-   unsigned menu_timedate_date_separator = settings ?
-         settings->uints.menu_timedate_date_separator :
-         MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN;
+   unsigned menu_timedate_date_separator = settings
+         ? settings->uints.menu_timedate_date_separator
+         : MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN;
 
    switch (menu_timedate_date_separator)
    {
@@ -3451,1542 +3492,1351 @@ static void setting_set_string_representation_timedate_date_separator(char *s)
    }
 }
 
-static void setting_get_string_representation_uint_menu_timedate_style(
-   rarch_setting_t *setting,
-   char *s, size_t len)
+static size_t setting_get_string_representation_uint_menu_timedate_style(
+   rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   size_t _len = 0;
+   if (setting)
    {
-      case MENU_TIMEDATE_STYLE_YMD_HMS:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS), len);
-         break;
-      case MENU_TIMEDATE_STYLE_YMD_HM:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_YMD:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD), len);
-         break;
-      case MENU_TIMEDATE_STYLE_YM:
-         strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_TIMEDATE_YM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_MDYYYY_HMS:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS), len);
-         break;
-      case MENU_TIMEDATE_STYLE_MDYYYY_HM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_MD_HM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_MDYYYY:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY), len);
-         break;
-      case MENU_TIMEDATE_STYLE_MD:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_MD), len);
-         break;
-      case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS), len);
-         break;
-      case MENU_TIMEDATE_STYLE_DDMMYYYY_HM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_DDMM_HM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_DDMMYYYY:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY), len);
-         break;
-      case MENU_TIMEDATE_STYLE_DDMM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_HMS:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS), len);
-         break;
-      case MENU_TIMEDATE_STYLE_HM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_HM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_YMD_HMS_AMPM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS_AMPM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_YMD_HM_AMPM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM_AMPM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AMPM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS_AMPM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_MDYYYY_HM_AMPM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_MD_HM_AMPM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AMPM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS_AMPM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AMPM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM_AMPM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_DDMM_HM_AMPM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM_AMPM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_HMS_AMPM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS_AMPM), len);
-         break;
-      case MENU_TIMEDATE_STYLE_HM_AMPM:
-         strlcpy(s,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_TIMEDATE_HM_AMPM), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MENU_TIMEDATE_STYLE_YMD_HMS:
+            _len = strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS), len);
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HM:
+            _len = strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_YMD:
+            _len = strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD), len);
+            break;
+         case MENU_TIMEDATE_STYLE_YM:
+            _len = strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_YM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS), len);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY), len);
+            break;
+         case MENU_TIMEDATE_STYLE_MD:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MD), len);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS), len);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM_HM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY), len);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_HMS:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS), len);
+            break;
+         case MENU_TIMEDATE_STYLE_HM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_HM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HMS_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS_AMPM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_YMD_HM_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM_AMPM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS_AMPM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_MDYYYY_HM_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_MD_HM_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS_AMPM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM_AMPM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_DDMM_HM_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM_AMPM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_HMS_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_HMS_AMPM), len);
+            break;
+         case MENU_TIMEDATE_STYLE_HM_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_HM_AMPM), len);
+            break;
+      }
    }
 
    /* Change date separator, if required */
    setting_set_string_representation_timedate_date_separator(s);
+   return _len;
 }
 
-static void setting_get_string_representation_uint_menu_timedate_date_separator(
-   rarch_setting_t *setting,
-   char *s, size_t len)
+static size_t setting_get_string_representation_uint_menu_timedate_date_separator(
+   rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
-         strlcpy(s, "'-'", len);
-         break;
-      case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-         strlcpy(s, "'/'", len);
-         break;
-      case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-         strlcpy(s, "'.'", len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
+            return strlcpy(s, "'-'", len);
+         case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+            return strlcpy(s, "'/'", len);
+         case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+            return strlcpy(s, "'.'", len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_menu_add_content_entry_display_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_menu_add_content_entry_display_type(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case MENU_ADD_CONTENT_ENTRY_DISPLAY_HIDDEN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OFF),
-               len);
-         break;
-      case MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB),
-               len);
-         break;
-      case MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MENU_ADD_CONTENT_ENTRY_DISPLAY_HIDDEN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OFF),
+                  len);
+         case MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB),
+                  len);
+         case MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB),
+                  len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_menu_contentless_cores_display_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_menu_contentless_cores_display_type(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case MENU_CONTENTLESS_CORES_DISPLAY_NONE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OFF),
-               len);
-         break;
-      case MENU_CONTENTLESS_CORES_DISPLAY_ALL:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL),
-               len);
-         break;
-      case MENU_CONTENTLESS_CORES_DISPLAY_SINGLE_PURPOSE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE),
-               len);
-         break;
-      case MENU_CONTENTLESS_CORES_DISPLAY_CUSTOM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MENU_CONTENTLESS_CORES_DISPLAY_NONE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OFF),
+                  len);
+         case MENU_CONTENTLESS_CORES_DISPLAY_ALL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL),
+                  len);
+         case MENU_CONTENTLESS_CORES_DISPLAY_SINGLE_PURPOSE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE),
+                  len);
+         case MENU_CONTENTLESS_CORES_DISPLAY_CUSTOM:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM),
+                  len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_rgui_menu_color_theme(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_rgui_menu_color_theme(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case RGUI_THEME_CUSTOM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM),
-               len);
-         break;
-      case RGUI_THEME_CLASSIC_RED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED),
-               len);
-         break;
-      case RGUI_THEME_CLASSIC_ORANGE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_ORANGE),
-               len);
-         break;
-      case RGUI_THEME_CLASSIC_YELLOW:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_YELLOW),
-               len);
-         break;
-      case RGUI_THEME_CLASSIC_GREEN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREEN),
-               len);
-         break;
-      case RGUI_THEME_CLASSIC_BLUE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE),
-               len);
-         break;
-      case RGUI_THEME_CLASSIC_VIOLET:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_VIOLET),
-               len);
-         break;
-      case RGUI_THEME_CLASSIC_GREY:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREY),
-               len);
-         break;
-      case RGUI_THEME_LEGACY_RED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED),
-               len);
-         break;
-      case RGUI_THEME_DARK_PURPLE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE),
-               len);
-         break;
-      case RGUI_THEME_MIDNIGHT_BLUE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE),
-               len);
-         break;
-      case RGUI_THEME_GOLDEN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN),
-               len);
-         break;
-      case RGUI_THEME_ELECTRIC_BLUE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ELECTRIC_BLUE),
-               len);
-         break;
-      case RGUI_THEME_APPLE_GREEN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN),
-               len);
-         break;
-      case RGUI_THEME_VOLCANIC_RED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_VOLCANIC_RED),
-               len);
-         break;
-      case RGUI_THEME_LAGOON:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LAGOON),
-               len);
-         break;
-      case RGUI_THEME_BROGRAMMER:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_BROGRAMMER),
-               len);
-         break;
-      case RGUI_THEME_DRACULA:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA),
-               len);
-         break;
-      case RGUI_THEME_FAIRYFLOSS:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FAIRYFLOSS),
-               len);
-         break;
-      case RGUI_THEME_FLATUI:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLATUI),
-               len);
-         break;
-      case RGUI_THEME_GRUVBOX_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK),
-               len);
-         break;
-      case RGUI_THEME_GRUVBOX_LIGHT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_LIGHT),
-               len);
-         break;
-      case RGUI_THEME_HACKING_THE_KERNEL:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_HACKING_THE_KERNEL),
-               len);
-         break;
-      case RGUI_THEME_NORD:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NORD),
-               len);
-         break;
-      case RGUI_THEME_NOVA:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NOVA),
-               len);
-         break;
-      case RGUI_THEME_ONE_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ONE_DARK),
-               len);
-         break;
-      case RGUI_THEME_PALENIGHT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_PALENIGHT),
-               len);
-         break;
-      case RGUI_THEME_SOLARIZED_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_DARK),
-               len);
-         break;
-      case RGUI_THEME_SOLARIZED_LIGHT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_LIGHT),
-               len);
-         break;
-      case RGUI_THEME_TANGO_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_DARK),
-               len);
-         break;
-      case RGUI_THEME_TANGO_LIGHT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_LIGHT),
-               len);
-         break;
-      case RGUI_THEME_ZENBURN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ZENBURN),
-               len);
-         break;
-      case RGUI_THEME_ANTI_ZENBURN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ANTI_ZENBURN),
-               len);
-         break;
-      case RGUI_THEME_FLUX:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLUX),
-               len);
-         break;
-      case RGUI_THEME_DYNAMIC:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC),
-               len);
-         break;
-      case RGUI_THEME_GRAY_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_DARK),
-               len);
-         break;
-      case RGUI_THEME_GRAY_LIGHT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_LIGHT),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case RGUI_THEME_CUSTOM:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM),
+                  len);
+         case RGUI_THEME_CLASSIC_RED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED),
+                  len);
+         case RGUI_THEME_CLASSIC_ORANGE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_ORANGE),
+                  len);
+         case RGUI_THEME_CLASSIC_YELLOW:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_YELLOW),
+                  len);
+         case RGUI_THEME_CLASSIC_GREEN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREEN),
+                  len);
+         case RGUI_THEME_CLASSIC_BLUE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE),
+                  len);
+         case RGUI_THEME_CLASSIC_VIOLET:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_VIOLET),
+                  len);
+         case RGUI_THEME_CLASSIC_GREY:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREY),
+                  len);
+         case RGUI_THEME_LEGACY_RED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED),
+                  len);
+         case RGUI_THEME_DARK_PURPLE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE),
+                  len);
+         case RGUI_THEME_MIDNIGHT_BLUE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE),
+                  len);
+         case RGUI_THEME_GOLDEN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN),
+                  len);
+         case RGUI_THEME_ELECTRIC_BLUE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ELECTRIC_BLUE),
+                  len);
+         case RGUI_THEME_APPLE_GREEN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN),
+                  len);
+         case RGUI_THEME_VOLCANIC_RED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_VOLCANIC_RED),
+                  len);
+         case RGUI_THEME_LAGOON:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LAGOON),
+                  len);
+         case RGUI_THEME_BROGRAMMER:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_BROGRAMMER),
+                  len);
+         case RGUI_THEME_DRACULA:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA),
+                  len);
+         case RGUI_THEME_FAIRYFLOSS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FAIRYFLOSS),
+                  len);
+         case RGUI_THEME_FLATUI:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLATUI),
+                  len);
+         case RGUI_THEME_GRUVBOX_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK),
+                  len);
+         case RGUI_THEME_GRUVBOX_LIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_LIGHT),
+                  len);
+         case RGUI_THEME_HACKING_THE_KERNEL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_HACKING_THE_KERNEL),
+                  len);
+         case RGUI_THEME_NORD:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NORD),
+                  len);
+         case RGUI_THEME_NOVA:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NOVA),
+                  len);
+         case RGUI_THEME_ONE_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ONE_DARK),
+                  len);
+         case RGUI_THEME_PALENIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_PALENIGHT),
+                  len);
+         case RGUI_THEME_SOLARIZED_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_DARK),
+                  len);
+         case RGUI_THEME_SOLARIZED_LIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_LIGHT),
+                  len);
+         case RGUI_THEME_TANGO_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_DARK),
+                  len);
+         case RGUI_THEME_TANGO_LIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_LIGHT),
+                  len);
+         case RGUI_THEME_ZENBURN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ZENBURN),
+                  len);
+         case RGUI_THEME_ANTI_ZENBURN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ANTI_ZENBURN),
+                  len);
+         case RGUI_THEME_FLUX:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLUX),
+                  len);
+         case RGUI_THEME_DYNAMIC:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC),
+                  len);
+         case RGUI_THEME_GRAY_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_DARK),
+                  len);
+         case RGUI_THEME_GRAY_LIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_LIGHT),
+                  len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_rgui_thumbnail_scaler(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_rgui_thumbnail_scaler(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case RGUI_THUMB_SCALE_POINT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT),
-               len);
-         break;
-      case RGUI_THUMB_SCALE_BILINEAR:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR),
-               len);
-         break;
-      case RGUI_THUMB_SCALE_SINC:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case RGUI_THUMB_SCALE_POINT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT),
+                  len);
+         case RGUI_THUMB_SCALE_BILINEAR:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR),
+                  len);
+         case RGUI_THUMB_SCALE_SINC:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC),
+                  len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_rgui_internal_upscale_level(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_rgui_internal_upscale_level(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case RGUI_UPSCALE_NONE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE),
-               len);
-         break;
-      case RGUI_UPSCALE_AUTO:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO),
-               len);
-         break;
-      case RGUI_UPSCALE_X2:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X2),
-               len);
-         break;
-      case RGUI_UPSCALE_X3:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X3),
-               len);
-         break;
-      case RGUI_UPSCALE_X4:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X4),
-               len);
-         break;
-      case RGUI_UPSCALE_X5:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X5),
-               len);
-         break;
-      case RGUI_UPSCALE_X6:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X6),
-               len);
-         break;
-      case RGUI_UPSCALE_X7:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X7),
-               len);
-         break;
-      case RGUI_UPSCALE_X8:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X8),
-               len);
-         break;
-      case RGUI_UPSCALE_X9:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X9),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case RGUI_UPSCALE_NONE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE),
+                  len);
+         case RGUI_UPSCALE_AUTO:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO),
+                  len);
+         case RGUI_UPSCALE_X2:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X2),
+                  len);
+         case RGUI_UPSCALE_X3:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X3),
+                  len);
+         case RGUI_UPSCALE_X4:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X4),
+                  len);
+         case RGUI_UPSCALE_X5:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X5),
+                  len);
+         case RGUI_UPSCALE_X6:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X6),
+                  len);
+         case RGUI_UPSCALE_X7:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X7),
+                  len);
+         case RGUI_UPSCALE_X8:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X8),
+                  len);
+         case RGUI_UPSCALE_X9:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_X9),
+                  len);
+      }
    }
+   return 0;
 }
 
 #if !defined(DINGUX)
-static void setting_get_string_representation_uint_rgui_aspect_ratio(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_rgui_aspect_ratio(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case RGUI_ASPECT_RATIO_4_3:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_4_3),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_16_9:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_16_9_CENTRE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_16_10:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_16_10_CENTRE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_21_9:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_21_9_CENTRE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_3_2:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_3_2_CENTRE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_5_3:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_5_3_CENTRE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_AUTO:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO),
-               len);
-         break;
-
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case RGUI_ASPECT_RATIO_4_3:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_4_3),
+                  len);
+         case RGUI_ASPECT_RATIO_16_9:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9),
+                  len);
+         case RGUI_ASPECT_RATIO_16_9_CENTRE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE),
+                  len);
+         case RGUI_ASPECT_RATIO_16_10:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10),
+                  len);
+         case RGUI_ASPECT_RATIO_16_10_CENTRE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE),
+                  len);
+         case RGUI_ASPECT_RATIO_21_9:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9),
+                  len);
+         case RGUI_ASPECT_RATIO_21_9_CENTRE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE),
+                  len);
+         case RGUI_ASPECT_RATIO_3_2:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2),
+                  len);
+         case RGUI_ASPECT_RATIO_3_2_CENTRE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE),
+                  len);
+         case RGUI_ASPECT_RATIO_5_3:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3),
+                  len);
+         case RGUI_ASPECT_RATIO_5_3_CENTRE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE),
+                  len);
+         case RGUI_ASPECT_RATIO_AUTO:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO),
+                  len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_rgui_aspect_ratio_lock(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_rgui_aspect_ratio_lock(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case RGUI_ASPECT_RATIO_LOCK_NONE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_LOCK_INTEGER:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER),
-               len);
-         break;
-      case RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case RGUI_ASPECT_RATIO_LOCK_NONE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE),
+                  len);
+         case RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN),
+                  len);
+         case RGUI_ASPECT_RATIO_LOCK_INTEGER:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER),
+                  len);
+         case RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN),
+                  len);
+      }
    }
+   return 0;
 }
 #endif
 
-static void setting_get_string_representation_uint_rgui_particle_effect(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_rgui_particle_effect(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case RGUI_PARTICLE_EFFECT_NONE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE),
-               len);
-         break;
-      case RGUI_PARTICLE_EFFECT_SNOW:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW),
-               len);
-         break;
-      case RGUI_PARTICLE_EFFECT_SNOW_ALT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT),
-               len);
-         break;
-      case RGUI_PARTICLE_EFFECT_RAIN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN),
-               len);
-         break;
-      case RGUI_PARTICLE_EFFECT_VORTEX:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX),
-               len);
-         break;
-      case RGUI_PARTICLE_EFFECT_STARFIELD:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case RGUI_PARTICLE_EFFECT_NONE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE),
+                  len);
+         case RGUI_PARTICLE_EFFECT_SNOW:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW),
+                  len);
+         case RGUI_PARTICLE_EFFECT_SNOW_ALT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT),
+                  len);
+         case RGUI_PARTICLE_EFFECT_RAIN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN),
+                  len);
+         case RGUI_PARTICLE_EFFECT_VORTEX:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX),
+                  len);
+         case RGUI_PARTICLE_EFFECT_STARFIELD:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD),
+                  len);
+      }
    }
+   return 0;
 }
 
 #ifdef HAVE_XMB
-static void setting_get_string_representation_uint_menu_xmb_animation_move_up_down(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_menu_xmb_animation_move_up_down(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case 0:
-         strlcpy(s, "Easing Out Quad", len);
-         break;
-      case 1:
-         strlcpy(s, "Easing Out Expo", len);
-         break;
-      case 2:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s, "Easing Out Quad", len);
+         case 1:
+            return strlcpy(s, "Easing Out Expo", len);
+         case 2:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_menu_xmb_animation_opening_main_menu(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_menu_xmb_animation_opening_main_menu(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case 0:
-         strlcpy(s, "Easing Out Quad", len);
-         break;
-      case 1:
-         strlcpy(s, "Easing Out Circ", len);
-         break;
-      case 2:
-         strlcpy(s, "Easing Out Expo", len);
-         break;
-      case 3:
-         strlcpy(s, "Easing Out Bounce", len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s, "Easing Out Quad", len);
+         case 1:
+            return strlcpy(s, "Easing Out Circ", len);
+         case 2:
+            return strlcpy(s, "Easing Out Expo", len);
+         case 3:
+            return strlcpy(s, "Easing Out Bounce", len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_menu_xmb_animation_horizontal_highlight(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_menu_xmb_animation_horizontal_highlight(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case 0:
-         strlcpy(s, "Easing Out Quad", len);
-         break;
-      case 1:
-         strlcpy(s, "Easing In Sine", len);
-         break;
-      case 2:
-         strlcpy(s, "Easing Out Bounce", len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s, "Easing Out Quad", len);
+         case 1:
+            return strlcpy(s, "Easing In Sine", len);
+         case 2:
+            return strlcpy(s, "Easing Out Bounce", len);
+      }
    }
+   return 0;
 }
 #endif
 
-static void setting_get_string_representation_uint_menu_ticker_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_menu_ticker_type(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case TICKER_TYPE_BOUNCE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE),
-               len);
-         break;
-      case TICKER_TYPE_LOOP:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case TICKER_TYPE_BOUNCE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE),
+                  len);
+         case TICKER_TYPE_LOOP:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP),
+                  len);
+      }
    }
+   return 0;
 }
 
 #ifdef HAVE_XMB
-static void setting_get_string_representation_uint_xmb_icon_theme(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_xmb_icon_theme(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case XMB_ICON_THEME_MONOCHROME:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME), len);
-         break;
-      case XMB_ICON_THEME_FLATUI:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI), len);
-         break;
-      case XMB_ICON_THEME_FLATUX:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUX), len);
-         break;
-      case XMB_ICON_THEME_RETROSYSTEM:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM), len);
-         break;
-      case XMB_ICON_THEME_PIXEL:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL), len);
-         break;
-      case XMB_ICON_THEME_SYSTEMATIC:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC), len);
-         break;
-      case XMB_ICON_THEME_DOTART:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART), len);
-         break;
-      case XMB_ICON_THEME_MONOCHROME_INVERTED:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED), len);
-         break;
-      case XMB_ICON_THEME_CUSTOM:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM), len);
-         break;
-      case XMB_ICON_THEME_AUTOMATIC:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC), len);
-         break;
-      case XMB_ICON_THEME_AUTOMATIC_INVERTED:
-         strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED), len);
-         break;
-      case XMB_ICON_THEME_DAITE:
-         strlcpy(s,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DAITE), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case XMB_ICON_THEME_MONOCHROME:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME), len);
+         case XMB_ICON_THEME_FLATUI:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI), len);
+         case XMB_ICON_THEME_FLATUX:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUX), len);
+         case XMB_ICON_THEME_RETROSYSTEM:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM), len);
+         case XMB_ICON_THEME_PIXEL:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL), len);
+         case XMB_ICON_THEME_SYSTEMATIC:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC), len);
+         case XMB_ICON_THEME_DOTART:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART), len);
+         case XMB_ICON_THEME_MONOCHROME_INVERTED:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED), len);
+         case XMB_ICON_THEME_CUSTOM:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM), len);
+         case XMB_ICON_THEME_AUTOMATIC:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC), len);
+         case XMB_ICON_THEME_AUTOMATIC_INVERTED:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED), len);
+         case XMB_ICON_THEME_DAITE:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DAITE), len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_xmb_layout(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_xmb_layout(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case 0:
-         strlcpy(s, "Auto", len);
-         break;
-      case 1:
-         strlcpy(s, "Console", len);
-         break;
-      case 2:
-         strlcpy(s, "Handheld", len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s, "Auto", len);
+         case 1:
+            return strlcpy(s, "Console", len);
+         case 2:
+            return strlcpy(s, "Handheld", len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_xmb_menu_color_theme(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_xmb_menu_color_theme(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case XMB_THEME_WALLPAPER:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN),
-               len);
-         break;
-      case XMB_THEME_LEGACY_RED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED),
-               len);
-         break;
-      case XMB_THEME_DARK_PURPLE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE),
-               len);
-         break;
-      case XMB_THEME_MIDNIGHT_BLUE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE),
-               len);
-         break;
-      case XMB_THEME_GOLDEN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN),
-               len);
-         break;
-      case XMB_THEME_ELECTRIC_BLUE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE),
-               len);
-         break;
-      case XMB_THEME_APPLE_GREEN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN),
-               len);
-         break;
-      case XMB_THEME_UNDERSEA:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA),
-               len);
-         break;
-      case XMB_THEME_VOLCANIC_RED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED),
-               len);
-         break;
-      case XMB_THEME_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK),
-               len);
-         break;
-      case XMB_THEME_LIGHT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT),
-               len);
-         break;
-      case XMB_THEME_MORNING_BLUE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE),
-               len);
-         break;
-      case XMB_THEME_SUNBEAM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM),
-               len);
-         break;
-	  case XMB_THEME_LIME:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIME),
-               len);
-         break;
-	  case XMB_THEME_MIDGAR:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR),
-               len);
-         break;
-	  case XMB_THEME_PIKACHU_YELLOW:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PIKACHU_YELLOW),
-               len);
-         break;
-	  case XMB_THEME_GAMECUBE_PURPLE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GAMECUBE_PURPLE),
-               len);
-         break;
-	  case XMB_THEME_FAMICOM_RED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_FAMICOM_RED),
-               len);
-         break;
-	  case XMB_THEME_FLAMING_HOT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_FLAMING_HOT),
-               len);
-         break;
-	  case XMB_THEME_ICE_COLD:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ICE_COLD),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case XMB_THEME_WALLPAPER:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN),
+                  len);
+         case XMB_THEME_LEGACY_RED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED),
+                  len);
+         case XMB_THEME_DARK_PURPLE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE),
+                  len);
+         case XMB_THEME_MIDNIGHT_BLUE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE),
+                  len);
+         case XMB_THEME_GOLDEN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN),
+                  len);
+         case XMB_THEME_ELECTRIC_BLUE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE),
+                  len);
+         case XMB_THEME_APPLE_GREEN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN),
+                  len);
+         case XMB_THEME_UNDERSEA:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA),
+                  len);
+         case XMB_THEME_VOLCANIC_RED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED),
+                  len);
+         case XMB_THEME_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK),
+                  len);
+         case XMB_THEME_LIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT),
+                  len);
+         case XMB_THEME_MORNING_BLUE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE),
+                  len);
+         case XMB_THEME_SUNBEAM:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM),
+                  len);
+         case XMB_THEME_LIME:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIME),
+                  len);
+         case XMB_THEME_MIDGAR:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR),
+                  len);
+         case XMB_THEME_PIKACHU_YELLOW:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PIKACHU_YELLOW),
+                  len);
+         case XMB_THEME_GAMECUBE_PURPLE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GAMECUBE_PURPLE),
+                  len);
+         case XMB_THEME_FAMICOM_RED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_FAMICOM_RED),
+                  len);
+         case XMB_THEME_FLAMING_HOT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_FLAMING_HOT),
+                  len);
+         case XMB_THEME_ICE_COLD:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ICE_COLD),
+                  len);
+         case XMB_THEME_GRAY_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK),
+                  len);
+         case XMB_THEME_GRAY_LIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT),
+                  len);
+      }
    }
+   return 0;
 }
 #endif
 
 #ifdef HAVE_MATERIALUI
-static void setting_get_string_representation_uint_materialui_menu_color_theme(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_materialui_menu_color_theme(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case MATERIALUI_THEME_BLUE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE), len);
-         break;
-      case MATERIALUI_THEME_BLUE_GREY:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY), len);
-         break;
-      case MATERIALUI_THEME_GREEN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN), len);
-         break;
-      case MATERIALUI_THEME_RED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED), len);
-         break;
-      case MATERIALUI_THEME_YELLOW:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW), len);
-         break;
-      case MATERIALUI_THEME_DARK_BLUE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE), len);
-         break;
-      case MATERIALUI_THEME_NVIDIA_SHIELD:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD), len);
-         break;
-      case MATERIALUI_THEME_MATERIALUI:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI), len);
-         break;
-      case MATERIALUI_THEME_MATERIALUI_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK), len);
-         break;
-      case MATERIALUI_THEME_OZONE_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK), len);
-         break;
-      case MATERIALUI_THEME_NORD:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NORD), len);
-         break;
-      case MATERIALUI_THEME_GRUVBOX_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK), len);
-         break;
-      case MATERIALUI_THEME_SOLARIZED_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK), len);
-         break;
-      case MATERIALUI_THEME_CUTIE_BLUE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE), len);
-         break;
-      case MATERIALUI_THEME_CUTIE_CYAN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN), len);
-         break;
-      case MATERIALUI_THEME_CUTIE_GREEN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN), len);
-         break;
-      case MATERIALUI_THEME_CUTIE_ORANGE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_ORANGE), len);
-         break;
-      case MATERIALUI_THEME_CUTIE_PINK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PINK), len);
-         break;
-      case MATERIALUI_THEME_CUTIE_PURPLE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PURPLE), len);
-         break;
-      case MATERIALUI_THEME_CUTIE_RED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED), len);
-         break;
-      case MATERIALUI_THEME_VIRTUAL_BOY:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_VIRTUAL_BOY), len);
-         break;
-      case MATERIALUI_THEME_HACKING_THE_KERNEL:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_HACKING_THE_KERNEL), len);
-         break;
-      case MATERIALUI_THEME_GRAY_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK), len);
-         break;
-      case MATERIALUI_THEME_GRAY_LIGHT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT), len);
-         break;
-      default:
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MATERIALUI_THEME_BLUE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE), len);
+         case MATERIALUI_THEME_BLUE_GREY:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY), len);
+         case MATERIALUI_THEME_GREEN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN), len);
+         case MATERIALUI_THEME_RED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED), len);
+         case MATERIALUI_THEME_YELLOW:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW), len);
+         case MATERIALUI_THEME_DARK_BLUE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE), len);
+         case MATERIALUI_THEME_NVIDIA_SHIELD:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD), len);
+         case MATERIALUI_THEME_MATERIALUI:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI), len);
+         case MATERIALUI_THEME_MATERIALUI_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK), len);
+         case MATERIALUI_THEME_OZONE_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK), len);
+         case MATERIALUI_THEME_NORD:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NORD), len);
+         case MATERIALUI_THEME_GRUVBOX_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK), len);
+         case MATERIALUI_THEME_SOLARIZED_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK), len);
+         case MATERIALUI_THEME_CUTIE_BLUE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE), len);
+         case MATERIALUI_THEME_CUTIE_CYAN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN), len);
+         case MATERIALUI_THEME_CUTIE_GREEN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN), len);
+         case MATERIALUI_THEME_CUTIE_ORANGE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_ORANGE), len);
+         case MATERIALUI_THEME_CUTIE_PINK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PINK), len);
+         case MATERIALUI_THEME_CUTIE_PURPLE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PURPLE), len);
+         case MATERIALUI_THEME_CUTIE_RED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED), len);
+         case MATERIALUI_THEME_VIRTUAL_BOY:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_VIRTUAL_BOY), len);
+         case MATERIALUI_THEME_HACKING_THE_KERNEL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_HACKING_THE_KERNEL), len);
+         case MATERIALUI_THEME_GRAY_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK), len);
+         case MATERIALUI_THEME_GRAY_LIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT), len);
+         default:
+            break;
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_materialui_menu_transition_animation(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_materialui_menu_transition_animation(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case MATERIALUI_TRANSITION_ANIM_AUTO:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO), len);
-         break;
-      case MATERIALUI_TRANSITION_ANIM_FADE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE), len);
-         break;
-      case MATERIALUI_TRANSITION_ANIM_SLIDE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE), len);
-         break;
-      case MATERIALUI_TRANSITION_ANIM_NONE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE), len);
-         break;
-      default:
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MATERIALUI_TRANSITION_ANIM_AUTO:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO), len);
+         case MATERIALUI_TRANSITION_ANIM_FADE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE), len);
+         case MATERIALUI_TRANSITION_ANIM_SLIDE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE), len);
+         case MATERIALUI_TRANSITION_ANIM_NONE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE), len);
+         default:
+            break;
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_materialui_menu_thumbnail_view_portrait(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_materialui_menu_thumbnail_view_portrait(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED), len);
-         break;
-      case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL), len);
-         break;
-      case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM), len);
-         break;
-      case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON), len);
-         break;
-      default:
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED), len);
+         case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL), len);
+         case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM), len);
+         case MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON), len);
+         default:
+            break;
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_materialui_menu_thumbnail_view_landscape(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_materialui_menu_thumbnail_view_landscape(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED), len);
-         break;
-      case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL), len);
-         break;
-      case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM), len);
-         break;
-      case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE), len);
-         break;
-      case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP), len);
-         break;
-      default:
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED), len);
+         case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL), len);
+         case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM), len);
+         case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE), len);
+         case MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP), len);
+         default:
+            break;
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_materialui_landscape_layout_optimization(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_materialui_landscape_layout_optimization(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED), len);
-         break;
-      case MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS), len);
-         break;
-      case MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS), len);
-         break;
-      default:
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED), len);
+         case MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS), len);
+         case MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS), len);
+         default:
+            break;
+      }
    }
+   return 0;
 }
 #endif
 
 #ifdef HAVE_OZONE
-static void setting_get_string_representation_uint_ozone_menu_color_theme(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_ozone_menu_color_theme(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case OZONE_COLOR_THEME_BASIC_BLACK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK), len);
-         break;
-      case OZONE_COLOR_THEME_NORD:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD), len);
-         break;
-      case OZONE_COLOR_THEME_GRUVBOX_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK), len);
-         break;
-      case OZONE_COLOR_THEME_BOYSENBERRY:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY), len);
-         break;
-      case OZONE_COLOR_THEME_HACKING_THE_KERNEL:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_HACKING_THE_KERNEL), len);
-         break;
-      case OZONE_COLOR_THEME_TWILIGHT_ZONE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_TWILIGHT_ZONE), len);
-         break;
-      case OZONE_COLOR_THEME_DRACULA:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA), len);
-         break;
-      case OZONE_COLOR_THEME_SELENIUM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM), len);
-         break;
-      case OZONE_COLOR_THEME_SOLARIZED_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK), len);
-         break;
-      case OZONE_COLOR_THEME_SOLARIZED_LIGHT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT), len);
-         break;
-      case OZONE_COLOR_THEME_GRAY_DARK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK), len);
-         break;
-      case OZONE_COLOR_THEME_GRAY_LIGHT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT), len);
-         break;
-      case OZONE_COLOR_THEME_PURPLE_RAIN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN), len);
-         break;
-      case OZONE_COLOR_THEME_BASIC_WHITE:
-      default:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case OZONE_COLOR_THEME_BASIC_BLACK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK), len);
+         case OZONE_COLOR_THEME_NORD:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD), len);
+         case OZONE_COLOR_THEME_GRUVBOX_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK), len);
+         case OZONE_COLOR_THEME_BOYSENBERRY:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY), len);
+         case OZONE_COLOR_THEME_HACKING_THE_KERNEL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_HACKING_THE_KERNEL), len);
+         case OZONE_COLOR_THEME_TWILIGHT_ZONE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_TWILIGHT_ZONE), len);
+         case OZONE_COLOR_THEME_DRACULA:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA), len);
+         case OZONE_COLOR_THEME_SELENIUM:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM), len);
+         case OZONE_COLOR_THEME_SOLARIZED_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK), len);
+         case OZONE_COLOR_THEME_SOLARIZED_LIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT), len);
+         case OZONE_COLOR_THEME_GRAY_DARK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK), len);
+         case OZONE_COLOR_THEME_GRAY_LIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT), len);
+         case OZONE_COLOR_THEME_PURPLE_RAIN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN), len);
+         case OZONE_COLOR_THEME_BASIC_WHITE:
+         default:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE), len);
+      }
    }
+   return 0;
 }
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #if defined(HAVE_XMB) && defined(HAVE_SHADERPIPELINE)
-static void setting_get_string_representation_uint_xmb_shader_pipeline(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_xmb_shader_pipeline(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case XMB_SHADER_PIPELINE_WALLPAPER:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
-      case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED), len);
-         break;
-      case XMB_SHADER_PIPELINE_RIBBON:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON), len);
-         break;
-      case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW), len);
-         break;
-      case XMB_SHADER_PIPELINE_SNOW:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW), len);
-         break;
-      case XMB_SHADER_PIPELINE_BOKEH:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH), len);
-         break;
-      case XMB_SHADER_PIPELINE_SNOWFLAKE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case XMB_SHADER_PIPELINE_WALLPAPER:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED), len);
+         case XMB_SHADER_PIPELINE_RIBBON:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON), len);
+         case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW), len);
+         case XMB_SHADER_PIPELINE_SNOW:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW), len);
+         case XMB_SHADER_PIPELINE_BOKEH:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH), len);
+         case XMB_SHADER_PIPELINE_SNOWFLAKE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE), len);
+      }
    }
+   return 0;
 }
 #endif
 #endif
 
 #ifdef HAVE_SCREENSHOTS
 #ifdef HAVE_GFX_WIDGETS
-static void setting_get_string_representation_uint_notification_show_screenshot_duration(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_notification_show_screenshot_duration(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL), len);
-         break;
-      case NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST), len);
-         break;
-      case NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST), len);
-         break;
-      case NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_NORMAL), len);
+         case NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST), len);
+         case NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST), len);
+         case NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT), len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_notification_show_screenshot_flash(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_notification_show_screenshot_flash(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL), len);
-         break;
-      case NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST), len);
-         break;
-      case NOTIFICATION_SHOW_SCREENSHOT_FLASH_OFF:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL), len);
+         case NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST), len);
+         case NOTIFICATION_SHOW_SCREENSHOT_FLASH_OFF:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+      }
    }
+   return 0;
 }
 #endif
 #endif
 
-static void setting_get_string_representation_uint_video_autoswitch_refresh_rate(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_video_autoswitch_refresh_rate(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN), len);
-         break;
-      case AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN), len);
-         break;
-      case AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN), len);
-         break;
-      case AUTOSWITCH_REFRESH_RATE_OFF:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN), len);
+         case AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN), len);
+         case AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN), len);
+         case AUTOSWITCH_REFRESH_RATE_OFF:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OFF), len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_video_monitor_index(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_video_monitor_index(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   if (*setting->value.target.unsigned_integer)
-      snprintf(s, len, "%u",
+   if (setting && *setting->value.target.unsigned_integer)
+      return snprintf(s, len, "%u",
             *setting->value.target.unsigned_integer);
-   else
-      strlcpy(s, "0 (Auto)", len);
+   return strlcpy(s, "0 (Auto)", len);
 }
 
-static void setting_get_string_representation_uint_custom_vp_width(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_custom_vp_width(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    size_t _len;
    struct retro_game_geometry  *geom    = NULL;
@@ -4994,24 +4844,22 @@ static void setting_get_string_representation_uint_custom_vp_width(rarch_setting
    struct retro_system_av_info *av_info = &video_st->av_info;
    unsigned int rotation                = retroarch_get_rotation();
    if (!setting || !av_info)
-      return;
-
+      return 0;
    geom    = (struct retro_game_geometry*)&av_info->geometry;
    _len    = snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
-
    if (!geom->base_width || !geom->base_height)
-      return;
-
+      return _len;
    if (!(rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_width == 0))
-      snprintf(s + _len, len - _len, " (%ux)",
+      _len += snprintf(s + _len, len - _len, " (%ux)",
             *setting->value.target.unsigned_integer / geom->base_width);
    else if ((rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_height == 0))
-      snprintf(s + _len, len - _len, " (%ux)",
+      _len += snprintf(s + _len, len - _len, " (%ux)",
             *setting->value.target.unsigned_integer / geom->base_height);
+   return _len;
 }
 
-static void setting_get_string_representation_uint_custom_vp_height(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_custom_vp_height(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    size_t _len;
    struct retro_game_geometry  *geom    = NULL;
@@ -5019,32 +4867,28 @@ static void setting_get_string_representation_uint_custom_vp_height(rarch_settin
    struct retro_system_av_info *av_info = &video_st->av_info;
    unsigned int rotation                = retroarch_get_rotation();
    if (!setting || !av_info)
-      return;
-
+      return 0;
    geom    = (struct retro_game_geometry*)&av_info->geometry;
    _len    = snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
-
    if (!geom->base_width || !geom->base_height)
-      return;
-
+      return _len;
    if (!(rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_height == 0))
-      snprintf(s + _len, len - _len, " (%ux)",
+      _len += snprintf(s + _len, len - _len, " (%ux)",
             *setting->value.target.unsigned_integer / geom->base_height);
    else  if ((rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_width == 0))
-      snprintf(s + _len, len - _len, " (%ux)",
+      _len += snprintf(s + _len, len - _len, " (%ux)",
             *setting->value.target.unsigned_integer / geom->base_width);
+   return _len;
 }
 
 #ifdef HAVE_WASAPI
-static void setting_get_string_representation_uint_audio_wasapi_sh_buffer_length(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_audio_wasapi_sh_buffer_length(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    size_t _len;
    settings_t *settings = config_get_ptr();
-
    if (!setting || !settings)
-      return;
-
+      return 0;
    _len = snprintf(s, len, "%u (", *setting->value.target.integer);
    switch (*setting->value.target.integer)
    {
@@ -5065,557 +4909,513 @@ static void setting_get_string_representation_uint_audio_wasapi_sh_buffer_length
                (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
          break;
    }
-   strlcpy(s + _len, ")", len - _len);
+   _len += strlcpy(s + _len, ")", len - _len);
+   return _len;
 }
 
 #ifdef HAVE_MICROPHONE
-static void setting_get_string_representation_uint_microphone_wasapi_sh_buffer_length(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_microphone_wasapi_sh_buffer_length(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
-
    if (!setting || !settings)
-      return;
-
+      return 0;
    if (*setting->value.target.integer > 0)
-      snprintf(s, len, "%u (%.1f ms)",
+      return snprintf(s, len, "%u (%.1f ms)",
             *setting->value.target.integer,
             (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
-   else
-      strlcpy(s, "Auto", len);
+   return strlcpy(s, "Auto", len);
 }
 #endif
 #endif
 
 #if !defined(RARCH_CONSOLE)
-static void setting_get_string_representation_string_audio_device(rarch_setting_t *setting,
+static size_t setting_get_string_representation_string_audio_device(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (!setting)
-      return;
-
+      return 0;
    if (string_is_empty(setting->value.target.string))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
-   else
-      strlcpy(s, setting->value.target.string, len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+   return strlcpy(s, setting->value.target.string, len);
 }
 #endif
 
-static void setting_get_string_representation_crt_switch_resolution_super(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_crt_switch_resolution_super(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
-      return;
-
+      return 0;
    if (*setting->value.target.unsigned_integer == 0)
-      strlcpy(s, "NATIVE", len);
+      return strlcpy(s, "NATIVE", len);
    else if (*setting->value.target.unsigned_integer == 1)
-      strlcpy(s, "DYNAMIC", len);
-   else
-      snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+      return strlcpy(s, "DYNAMIC", len);
+   return snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 
-static void setting_get_string_representation_uint_playlist_sublabel_runtime_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_playlist_sublabel_runtime_type(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case PLAYLIST_RUNTIME_PER_CORE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE),
-               len);
-         break;
-      case PLAYLIST_RUNTIME_AGGREGATE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case PLAYLIST_RUNTIME_PER_CORE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE),
+                  len);
+         case PLAYLIST_RUNTIME_AGGREGATE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE),
+                  len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_playlist_sublabel_last_played_style(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_playlist_sublabel_last_played_style(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   size_t _len = 0;
+   if (setting)
    {
-      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_YMD:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_YM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_YM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HMS:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MD_HM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MD:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MD),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HMS:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DDMM_HM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DDMM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS_AMPM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS_AMPM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM_AMPM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM_AMPM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HMS_AMPM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS_AMPM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HM_AMPM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_MD_HM_AMPM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HMS_AMPM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS_AMPM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HM_AMPM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM_AMPM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_DDMM_HM_AMPM:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM_AMPM),
-               len);
-         break;
-      case PLAYLIST_LAST_PLAYED_STYLE_AGO:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_YMD:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_YM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_YM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HMS:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_MD_HM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_MD:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MD),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HMS:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_DDMM_HM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_DDMM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_YMD_HMS_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS_AMPM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_YMD_HM_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM_AMPM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HMS_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS_AMPM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_MDYYYY_HM_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_MD_HM_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HMS_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HMS_AMPM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_DDMMYYYY_HM_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY_HM_AMPM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_DDMM_HM_AMPM:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM_HM_AMPM),
+                  len);
+            break;
+         case PLAYLIST_LAST_PLAYED_STYLE_AGO:
+            _len = strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO),
+                  len);
+            break;
+      }
    }
 
    /* Change date separator, if required */
    setting_set_string_representation_timedate_date_separator(s);
+   return _len;
 }
 
-static void setting_get_string_representation_uint_playlist_inline_core_display_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_playlist_inline_core_display_type(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV),
-               len);
-         break;
-      case PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS),
-               len);
-         break;
-      case PLAYLIST_INLINE_CORE_DISPLAY_NEVER:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV),
+                  len);
+         case PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS),
+                  len);
+         case PLAYLIST_INLINE_CORE_DISPLAY_NEVER:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER),
+                  len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_playlist_entry_remove_enable(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_playlist_entry_remove_enable(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV),
-               len);
-         break;
-      case PLAYLIST_ENTRY_REMOVE_ENABLE_ALL:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL),
-               len);
-         break;
-      case PLAYLIST_ENTRY_REMOVE_ENABLE_NONE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV),
+                  len);
+         case PLAYLIST_ENTRY_REMOVE_ENABLE_ALL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL),
+                  len);
+         case PLAYLIST_ENTRY_REMOVE_ENABLE_NONE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE),
+                  len);
+      }
    }
+   return 0;
 }
 
 #ifdef _3DS
-static void setting_get_string_representation_uint_video_3ds_display_mode(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_video_3ds_display_mode(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case CTR_VIDEO_MODE_3D:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_3D),
-               len);
-         break;
-      case CTR_VIDEO_MODE_2D:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D),
-               len);
-         break;
-      case CTR_VIDEO_MODE_2D_400X240:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240),
-               len);
-         break;
-      case CTR_VIDEO_MODE_2D_800X240:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case CTR_VIDEO_MODE_3D:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_3D),
+                  len);
+         case CTR_VIDEO_MODE_2D:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D),
+                  len);
+         case CTR_VIDEO_MODE_2D_400X240:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240),
+                  len);
+         case CTR_VIDEO_MODE_2D_800X240:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240),
+                  len);
+      }
    }
 }
 #endif
 
 #if defined(DINGUX)
-static void setting_get_string_representation_uint_video_dingux_ipu_filter_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_video_dingux_ipu_filter_type(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case DINGUX_IPU_FILTER_BICUBIC:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC),
-               len);
-         break;
-      case DINGUX_IPU_FILTER_BILINEAR:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR),
-               len);
-         break;
-      case DINGUX_IPU_FILTER_NEAREST:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case DINGUX_IPU_FILTER_BICUBIC:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC),
+                  len);
+         case DINGUX_IPU_FILTER_BILINEAR:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR),
+                  len);
+         case DINGUX_IPU_FILTER_NEAREST:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST),
+                  len);
+      }
    }
+   return 0;
 }
 
 #if defined(DINGUX_BETA)
-static void setting_get_string_representation_uint_video_dingux_refresh_rate(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_video_dingux_refresh_rate(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case DINGUX_REFRESH_RATE_60HZ:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ),
-               len);
-         break;
-      case DINGUX_REFRESH_RATE_50HZ:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case DINGUX_REFRESH_RATE_60HZ:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ),
+                  len);
+         case DINGUX_REFRESH_RATE_50HZ:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ),
+                  len);
+      }
    }
+   return 0;
 }
 #endif
 
 #if defined(RS90) || defined(MIYOO)
-static void setting_get_string_representation_uint_video_dingux_rs90_softfilter_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_video_dingux_rs90_softfilter_type(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case DINGUX_RS90_SOFTFILTER_POINT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT),
-               len);
-         break;
-      case DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case DINGUX_RS90_SOFTFILTER_POINT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT),
+                  len);
+         case DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ),
+                  len);
+      }
    }
+   return 0;
 }
 #endif
 #endif
 
-static void setting_get_string_representation_uint_input_auto_game_focus(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_input_auto_game_focus(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case AUTO_GAME_FOCUS_OFF:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF),
-               len);
-         break;
-      case AUTO_GAME_FOCUS_ON:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON),
-               len);
-         break;
-      case AUTO_GAME_FOCUS_DETECT:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case AUTO_GAME_FOCUS_OFF:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF),
+                  len);
+         case AUTO_GAME_FOCUS_ON:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON),
+                  len);
+         case AUTO_GAME_FOCUS_DETECT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT),
+                  len);
+      }
    }
+   return 0;
 }
 
 #if defined(HAVE_OVERLAY)
-static void setting_get_string_representation_uint_input_overlay_show_inputs(
-      rarch_setting_t *setting,
-      char *s, size_t len)
-{
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
-   {
-      case OVERLAY_SHOW_INPUT_NONE:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OFF),
-               len);
-         break;
-      case OVERLAY_SHOW_INPUT_TOUCHED:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED),
-               len);
-         break;
-      case OVERLAY_SHOW_INPUT_PHYSICAL:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL),
-               len);
-         break;
-   }
-}
-
-static void setting_get_string_representation_uint_input_overlay_show_inputs_port(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_input_overlay_show_inputs(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, "%u",
-            *setting->value.target.unsigned_integer + 1);
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case OVERLAY_SHOW_INPUT_NONE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OFF),
+                  len);
+         case OVERLAY_SHOW_INPUT_TOUCHED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED),
+                  len);
+         case OVERLAY_SHOW_INPUT_PHYSICAL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL),
+                  len);
+      }
+   }
+   return 0;
 }
 
-static void setting_get_string_representation_overlay_lightgun_port(
+static size_t setting_get_string_representation_uint_input_overlay_show_inputs_port(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+      return snprintf(s, len, "%u",
+            *setting->value.target.unsigned_integer + 1);
+   return 0;
+}
+
+static size_t setting_get_string_representation_overlay_lightgun_port(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
    {
       if (*setting->value.target.integer < 0)
-         strlcpy(s, msg_hash_to_str(
+         return strlcpy(s, msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY), len);
-      else
-         snprintf(s, len, "%d", *setting->value.target.integer + 1);
+      return snprintf(s, len, "%d", *setting->value.target.integer + 1);
    }
+   return 0;
 }
 
-static void setting_get_string_representation_overlay_lightgun_action(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_overlay_lightgun_action(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case OVERLAY_LIGHTGUN_ACTION_NONE:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_NONE), len);
-         break;
-      case OVERLAY_LIGHTGUN_ACTION_TRIGGER:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER), len);
-         break;
-      case OVERLAY_LIGHTGUN_ACTION_RELOAD:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD), len);
-         break;
-      case OVERLAY_LIGHTGUN_ACTION_AUX_A:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A), len);
-         break;
-      case OVERLAY_LIGHTGUN_ACTION_AUX_B:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B), len);
-         break;
-      case OVERLAY_LIGHTGUN_ACTION_AUX_C:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C), len);
-         break;
-      case OVERLAY_LIGHTGUN_ACTION_SELECT:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT), len);
-         break;
-      case OVERLAY_LIGHTGUN_ACTION_START:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START), len);
-         break;
-      case OVERLAY_LIGHTGUN_ACTION_DPAD_UP:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP), len);
-         break;
-      case OVERLAY_LIGHTGUN_ACTION_DPAD_DOWN:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN), len);
-         break;
-      case OVERLAY_LIGHTGUN_ACTION_DPAD_LEFT:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT), len);
-         break;
-      case OVERLAY_LIGHTGUN_ACTION_DPAD_RIGHT:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case OVERLAY_LIGHTGUN_ACTION_NONE:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_NONE), len);
+         case OVERLAY_LIGHTGUN_ACTION_TRIGGER:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER), len);
+         case OVERLAY_LIGHTGUN_ACTION_RELOAD:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD), len);
+         case OVERLAY_LIGHTGUN_ACTION_AUX_A:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A), len);
+         case OVERLAY_LIGHTGUN_ACTION_AUX_B:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B), len);
+         case OVERLAY_LIGHTGUN_ACTION_AUX_C:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C), len);
+         case OVERLAY_LIGHTGUN_ACTION_SELECT:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT), len);
+         case OVERLAY_LIGHTGUN_ACTION_START:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START), len);
+         case OVERLAY_LIGHTGUN_ACTION_DPAD_UP:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP), len);
+         case OVERLAY_LIGHTGUN_ACTION_DPAD_DOWN:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN), len);
+         case OVERLAY_LIGHTGUN_ACTION_DPAD_LEFT:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT), len);
+         case OVERLAY_LIGHTGUN_ACTION_DPAD_RIGHT:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT), len);
+      }
    }
+   return 0;
 }
 #endif
 
@@ -6246,7 +6046,7 @@ static int setting_uint_action_right_custom_vp_height(
    settings_t                 *settings = config_get_ptr();
    video_viewport_t            *custom  = &settings->video_vp_custom;
 
-   if (!settings || !av_info)
+   if (!av_info)
       return -1;
 
    video_driver_get_viewport_info(&vp);
@@ -6365,7 +6165,7 @@ static int setting_string_action_right_driver(
    if (!success)
    {
       settings_t                   *settings = config_get_ptr();
-      bool menu_navigation_wraparound_enable = settings ? settings->bools.menu_navigation_wraparound_enable: false;
+      bool menu_navigation_wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
 
       if (menu_navigation_wraparound_enable)
       {
@@ -6410,7 +6210,7 @@ static int setting_string_action_left_midi_input(
    {
       int i = string_list_find_elem(list, setting->value.target.string) - 2;
 
-      if (wraparound && i == -1)
+      if (i == -1)
          i = (int)list->size - 1;
       if (i >= 0)
       {
@@ -6420,6 +6220,7 @@ static int setting_string_action_left_midi_input(
       }
    }
 
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return -1;
 }
 
@@ -6432,7 +6233,7 @@ static int setting_string_action_right_midi_input(
    {
       int i = string_list_find_elem(list, setting->value.target.string);
 
-      if (wraparound && i == (int)list->size)
+      if (i == (int)list->size)
          i = 0;
       if (i >= 0 && i < (int)list->size)
       {
@@ -6442,6 +6243,7 @@ static int setting_string_action_right_midi_input(
       }
    }
 
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return -1;
 }
 
@@ -6454,7 +6256,7 @@ static int setting_string_action_left_midi_output(
    {
       int i = string_list_find_elem(list, setting->value.target.string) - 2;
 
-      if (wraparound && i == -1)
+      if (i == -1)
          i = (int)list->size - 1;
       if (i >= 0)
       {
@@ -6464,6 +6266,7 @@ static int setting_string_action_left_midi_output(
       }
    }
 
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return -1;
 }
 
@@ -6476,7 +6279,7 @@ static int setting_string_action_right_midi_output(
    {
       int i = string_list_find_elem(list, setting->value.target.string);
 
-      if (wraparound && i == (int)list->size)
+      if (i == (int)list->size)
          i = 0;
       if (i >= 0 && i < (int)list->size)
       {
@@ -6486,233 +6289,214 @@ static int setting_string_action_right_midi_output(
       }
    }
 
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return -1;
 }
 
 #ifdef HAVE_CHEATS
-static void setting_get_string_representation_uint_cheat_exact(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_cheat_exact(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL),
+      return snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
+   return 0;
 }
 
-static void setting_get_string_representation_uint_cheat_lt(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_cheat_lt(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL), len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL), len);
+   return 0;
 }
 
-static void setting_get_string_representation_uint_cheat_gt(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_cheat_gt(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL), len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL), len);
+   return 0;
 }
 
-static void setting_get_string_representation_uint_cheat_lte(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_cheat_lte(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL), len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL), len);
+   return 0;
 }
 
-static void setting_get_string_representation_uint_cheat_gte(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_cheat_gte(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL), len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL), len);
+   return 0;
 }
 
-static void setting_get_string_representation_uint_cheat_eq(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_cheat_eq(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL), len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL), len);
+   return 0;
 }
 
-static void setting_get_string_representation_uint_cheat_neq(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_cheat_neq(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL), len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL), len);
+   return 0;
 }
 
-static void setting_get_string_representation_uint_cheat_eqplus(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_cheat_eqplus(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL),
+      return snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
+   return 0;
 }
 
-static void setting_get_string_representation_uint_cheat_eqminus(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_cheat_eqminus(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL),
+      return snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL),
             *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
+   return 0;
 }
 
-static void setting_get_string_representation_uint_cheat_browse_address(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_cheat_browse_address(
+      rarch_setting_t *setting, char *s, size_t len)
 {
+   size_t _len = 0;
    unsigned int address      = cheat_manager_state.browse_address;
    unsigned int address_mask = 0;
    unsigned int prev_val     = 0;
    unsigned int curr_val     = 0;
 
    if (setting)
-      snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL),
-            *setting->value.target.unsigned_integer, *setting->value.target.unsigned_integer);
-
-   cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_BROWSE, cheat_manager_state.match_idx, &address, &address_mask, &prev_val, &curr_val);
-
-   snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val);
-
+      _len = snprintf(s, len, msg_hash_to_str(
+               MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL),
+            *setting->value.target.unsigned_integer,
+            *setting->value.target.unsigned_integer);
+   cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_BROWSE,
+         cheat_manager_state.match_idx, &address, &address_mask,
+         &prev_val, &curr_val);
+   _len = snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val);
+   return _len;
 }
 #endif
 
-static void setting_get_string_representation_video_swap_interval(rarch_setting_t *setting,
+static size_t setting_get_string_representation_video_swap_interval(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (!setting)
-      return;
-
+      return 0;
    if (*setting->value.target.unsigned_integer == 0)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO), len);
-   else
-      snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO), len);
+   return snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
 }
 
-static void setting_get_string_representation_black_frame_insertion(rarch_setting_t *setting,
+static size_t setting_get_string_representation_black_frame_insertion(rarch_setting_t *setting,
       char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case 0:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
-      case 1:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120), len);
-         break;
-      case 2:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180), len);
-         break;
-      case 3:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240), len);
-         break;
-      case 4:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300), len);
-         break;
-      case 5:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360), len);
-         break;
-      case 6:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420), len);
-         break;
-      case 7:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480), len);
-         break;
-      case 8:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540), len);
-         break;
-      case 9:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600), len);
-         break;
-      case 10:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660), len);
-         break;
-      case 11:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720), len);
-         break;
-      case 12:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780), len);
-         break;
-      case 13:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840), len);
-         break;
-      case 14:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900), len);
-         break;
-      case 15:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         case 1:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120), len);
+         case 2:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180), len);
+         case 3:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240), len);
+         case 4:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300), len);
+         case 5:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360), len);
+         case 6:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420), len);
+         case 7:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480), len);
+         case 8:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540), len);
+         case 9:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600), len);
+         case 10:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660), len);
+         case 11:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720), len);
+         case 12:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780), len);
+         case 13:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840), len);
+         case 14:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900), len);
+         case 15:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960), len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_shader_subframes(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_shader_subframes(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case 1:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
-      case 2:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120), len);
-         break;
-      case 3:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180), len);
-         break;
-      case 4:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240), len);
-         break;
-      case 5:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300), len);
-         break;
-      case 6:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360), len);
-         break;
-      case 7:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420), len);
-         break;
-      case 8:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480), len);
-         break;
-      case 9:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540), len);
-         break;
-      case 10:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600), len);
-         break;
-      case 11:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660), len);
-         break;
-      case 12:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720), len);
-         break;
-      case 13:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780), len);
-         break;
-      case 14:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840), len);
-         break;
-      case 15:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900), len);
-         break;
-      case 16:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 1:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         case 2:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120), len);
+         case 3:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180), len);
+         case 4:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240), len);
+         case 5:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300), len);
+         case 6:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360), len);
+         case 7:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420), len);
+         case 8:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480), len);
+         case 9:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540), len);
+         case 10:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600), len);
+         case 11:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660), len);
+         case 12:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720), len);
+         case 13:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780), len);
+         case 14:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840), len);
+         case 15:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900), len);
+         case 16:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960), len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_video_frame_delay(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_video_frame_delay(
+      rarch_setting_t *setting, char *s, size_t len)
 {
+   size_t _len = 0;
    settings_t *settings           = config_get_ptr();
 
    if (!setting)
-      return;
+      return 0;
 
    if (settings && settings->bools.video_frame_delay_auto)
    {
@@ -6727,9 +6511,9 @@ static void setting_get_string_representation_video_frame_delay(rarch_setting_t 
 
       if (*setting->value.target.unsigned_integer == 0)
       {
-         size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC), len);
+         _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC), len);
          if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
-            snprintf(s + _len, len - _len, " (%ums %s)",
+            _len += snprintf(s + _len, len - _len, " (%ums %s)",
                   video_st->frame_delay_effective,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
       }
@@ -6738,28 +6522,30 @@ static void setting_get_string_representation_video_frame_delay(rarch_setting_t 
          if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
          {
             if (*setting->value.target.unsigned_integer >= 20)
-               snprintf(s, len, "%u%s (%ums)",
+               _len = snprintf(s, len, "%u%s (%ums)",
                      *setting->value.target.unsigned_integer,
                      target_unit,
-                     (unsigned)(1 / settings->floats.video_refresh_rate * 1000 * (*setting->value.target.unsigned_integer / 100.0f)));
+                     (unsigned)(1 / settings->floats.video_refresh_rate
+                     * 1000 * (*setting->value.target.unsigned_integer / 100.0f)));
             else
             {
-               size_t _len = snprintf(s, len, "%u",
+               _len  = snprintf(s, len, "%u",
                      *setting->value.target.unsigned_integer);
-               strlcpy(s + _len, target_unit, len - _len);
+               _len += strlcpy(s + _len, target_unit, len - _len);
             }
          }
          else
          {
             if (*setting->value.target.unsigned_integer >= 20)
-               snprintf(s, len, "%u%s (%ums, %ums %s)",
+               _len = snprintf(s, len, "%u%s (%ums, %ums %s)",
                      *setting->value.target.unsigned_integer,
                      target_unit,
-                     (unsigned)(1 / settings->floats.video_refresh_rate * 1000 * (*setting->value.target.unsigned_integer / 100.0f)),
+                     (unsigned)(1 / settings->floats.video_refresh_rate
+                     * 1000 * (*setting->value.target.unsigned_integer / 100.0f)),
                      video_st->frame_delay_effective,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
             else
-               snprintf(s, len, "%u%s (%ums %s)",
+               _len = snprintf(s, len, "%u%s (%ums %s)",
                      *setting->value.target.unsigned_integer,
                      target_unit,
                      video_st->frame_delay_effective,
@@ -6770,143 +6556,132 @@ static void setting_get_string_representation_video_frame_delay(rarch_setting_t 
    else
    {
       const char *target_unit = (*setting->value.target.unsigned_integer >= 20 ? "\%" : "ms");
-      size_t _len = snprintf(s, len, "%u",
+      _len  = snprintf(s, len, "%u",
             *setting->value.target.unsigned_integer);
       _len += strlcpy(s + _len, target_unit, len - _len);
       if (*setting->value.target.unsigned_integer >= 20)
-         snprintf(s + _len, len - _len, " (%ums)",
-               (unsigned)(1 / settings->floats.video_refresh_rate * 1000 * (*setting->value.target.unsigned_integer / 100.0f)));
+         _len += snprintf(s + _len, len - _len, " (%ums)",
+               (unsigned)(1 / settings->floats.video_refresh_rate
+                  * 1000 * (*setting->value.target.unsigned_integer / 100.0f)));
    }
+   return _len;
 }
 
-static void setting_get_string_representation_uint_video_rotation(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_video_rotation(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
    {
       switch (*setting->value.target.unsigned_integer)
       {
          case VIDEO_ROTATION_NORMAL:
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_NORMAL),
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_NORMAL),
                   len);
-            break;
          case VIDEO_ROTATION_90_DEG:
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_90_DEG),
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_90_DEG),
                   len);
-            break;
          case VIDEO_ROTATION_180_DEG:
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_180_DEG),
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_180_DEG),
                   len);
-            break;
          case VIDEO_ROTATION_270_DEG:
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_270_DEG),
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_270_DEG),
                   len);
-            break;
       }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_screen_orientation(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_screen_orientation(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
    {
       switch (*setting->value.target.unsigned_integer)
       {
          case ORIENTATION_NORMAL:
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL),
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL),
                   len);
-            break;
          case ORIENTATION_VERTICAL:
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL),
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL),
                   len);
-            break;
          case ORIENTATION_FLIPPED:
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED),
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED),
                   len);
-            break;
          case ORIENTATION_FLIPPED_ROTATED:
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED),
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED),
                   len);
-            break;
       }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_aspect_ratio_index(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_aspect_ratio_index(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      strlcpy(s,
+      return strlcpy(s,
             aspectratio_lut[*setting->value.target.unsigned_integer].name,
             len);
+   return 0;
 }
 
-static void setting_get_string_representation_uint_crt_switch_resolutions(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_crt_switch_resolutions(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case CRT_SWITCH_NONE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
-      case CRT_SWITCH_15KHZ:
-         strlcpy(s, "15 KHz", len);
-         break;
-      case CRT_SWITCH_31KHZ:
-         strlcpy(s, "31 KHz, Standard", len);
-         break;
-      case CRT_SWITCH_32_120:
-         strlcpy(s, "31 KHz, 120Hz", len);
-         break;
-      case CRT_SWITCH_INI:
-         strlcpy(s, "INI", len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case CRT_SWITCH_NONE:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         case CRT_SWITCH_15KHZ:
+            return strlcpy(s, "15 KHz", len);
+         case CRT_SWITCH_31KHZ:
+            return strlcpy(s, "31 KHz, Standard", len);
+         case CRT_SWITCH_32_120:
+            return strlcpy(s, "31 KHz, 120Hz", len);
+         case CRT_SWITCH_INI:
+            return strlcpy(s, "INI", len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_audio_resampler_quality(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_audio_resampler_quality(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case RESAMPLER_QUALITY_DONTCARE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE),
-               len);
-         break;
-      case RESAMPLER_QUALITY_LOWEST:
-         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_LOWEST),
-               len);
-         break;
-      case RESAMPLER_QUALITY_LOWER:
-         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_LOWER),
-               len);
-         break;
-      case RESAMPLER_QUALITY_HIGHER:
-         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_HIGHER),
-               len);
-         break;
-      case RESAMPLER_QUALITY_HIGHEST:
-         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_HIGHEST),
-               len);
-         break;
-      case RESAMPLER_QUALITY_NORMAL:
-         strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_NORMAL),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case RESAMPLER_QUALITY_DONTCARE:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE),
+                  len);
+         case RESAMPLER_QUALITY_LOWEST:
+            return strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_LOWEST),
+                  len);
+         case RESAMPLER_QUALITY_LOWER:
+            return strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_LOWER),
+                  len);
+         case RESAMPLER_QUALITY_HIGHER:
+            return strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_HIGHER),
+                  len);
+         case RESAMPLER_QUALITY_HIGHEST:
+            return strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_HIGHEST),
+                  len);
+         case RESAMPLER_QUALITY_NORMAL:
+            return strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_NORMAL),
+                  len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_libretro_device(
+static size_t setting_get_string_representation_uint_libretro_device(
       rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -6914,13 +6689,10 @@ static void setting_get_string_representation_uint_libretro_device(
    const struct retro_controller_description *desc = NULL;
    const char *name              = NULL;
    rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
-
    if (!setting)
-      return;
-
+      return 0;
    index_offset                = setting->index_offset;
    device                      = input_config_get_device(index_offset);
-
    if (sys_info)
    {
       if (index_offset < sys_info->ports.size)
@@ -6928,10 +6700,8 @@ static void setting_get_string_representation_uint_libretro_device(
                &sys_info->ports.data[index_offset],
                device);
    }
-
    if (desc)
       name = desc->desc;
-
    if (!name)
    {
       /* Find generic name. */
@@ -6951,339 +6721,297 @@ static void setting_get_string_representation_uint_libretro_device(
             break;
       }
    }
-
    if (!string_is_empty(name))
-      strlcpy(s, name, len);
+      return strlcpy(s, name, len);
+   return 0;
 }
 
-static void setting_get_string_representation_uint_analog_dpad_mode(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_analog_dpad_mode(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    const char *modes[5];
-
    modes[0] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
    modes[1] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG);
    modes[2] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG);
    modes[3] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED);
    modes[4] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED);
-
-   strlcpy(s, modes[*setting->value.target.unsigned_integer % ANALOG_DPAD_LAST], len);
+   return strlcpy(s, modes[*setting->value.target.unsigned_integer
+         % ANALOG_DPAD_LAST], len);
 }
 
-static void setting_get_string_representation_uint_input_remap_port(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_input_remap_port(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, "%u", *setting->value.target.unsigned_integer + 1);
+      return snprintf(s, len, "%u",
+            *setting->value.target.unsigned_integer + 1);
+   return 0;
 }
 
 #ifdef HAVE_THREADS
-static void setting_get_string_representation_uint_autosave_interval(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_autosave_interval(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   if (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      size_t _len = snprintf(s, len, "%u ", *setting->value.target.unsigned_integer);
-      strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len - _len);
+      if (*setting->value.target.unsigned_integer)
+      {
+         size_t _len = snprintf(s, len, "%u ", *setting->value.target.unsigned_integer);
+         _len += strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len - _len);
+         return _len;
+      }
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
    }
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+   return 0;
 }
 #endif
 
 #ifdef HAVE_BSV_MOVIE
-static void setting_get_string_representation_uint_replay_checkpoint_interval(
+static size_t setting_get_string_representation_uint_replay_checkpoint_interval(
       rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (!setting)
-      return;
-
+      return 0;
    if (*setting->value.target.unsigned_integer)
    {
       size_t _len = snprintf(s, len, "%u ", *setting->value.target.unsigned_integer);
-      strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len - _len);
+      _len += strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len - _len);
+      return _len;
    }
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+   return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
 }
 #endif
 
 #if defined(HAVE_NETWORKING)
-static void setting_get_string_representation_netplay_mitm_server(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_netplay_mitm_server(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-
+   return 0;
 }
 
-static void setting_get_string_representation_netplay_share_digital(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_netplay_share_digital(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE), len);
-         break;
-
-      case RARCH_NETPLAY_SHARE_DIGITAL_OR:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR), len);
-         break;
-
-      case RARCH_NETPLAY_SHARE_DIGITAL_XOR:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR), len);
-         break;
-
-      case RARCH_NETPLAY_SHARE_DIGITAL_VOTE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE), len);
-         break;
-
-      default:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE), len);
+         case RARCH_NETPLAY_SHARE_DIGITAL_OR:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR), len);
+         case RARCH_NETPLAY_SHARE_DIGITAL_XOR:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR), len);
+         case RARCH_NETPLAY_SHARE_DIGITAL_VOTE:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE), len);
+         default:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE), len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_netplay_share_analog(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_netplay_share_analog(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE), len);
-         break;
-
-      case RARCH_NETPLAY_SHARE_ANALOG_MAX:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX), len);
-         break;
-
-      case RARCH_NETPLAY_SHARE_ANALOG_AVERAGE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE), len);
-         break;
-
-      default:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE), len);
+         case RARCH_NETPLAY_SHARE_ANALOG_MAX:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX), len);
+         case RARCH_NETPLAY_SHARE_ANALOG_AVERAGE:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE), len);
+         default:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE), len);
+      }
    }
+   return 0;
 }
 #endif
 
-static void setting_get_string_representation_gamepad_combo(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_gamepad_combo(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case INPUT_COMBO_NONE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
-         break;
-      case INPUT_COMBO_DOWN_Y_L_R:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R), len);
-         break;
-      case INPUT_COMBO_L3_R3:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L3_R3), len);
-         break;
-      case INPUT_COMBO_L1_R1_START_SELECT:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L1_R1_START_SELECT), len);
-         break;
-      case INPUT_COMBO_START_SELECT:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_SELECT), len);
-         break;
-      case INPUT_COMBO_L3_R:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L3_R), len);
-         break;
-      case INPUT_COMBO_L_R:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L_R), len);
-         break;
-      case INPUT_COMBO_HOLD_START:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HOLD_START), len);
-         break;
-      case INPUT_COMBO_HOLD_SELECT:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HOLD_SELECT), len);
-         break;
-      case INPUT_COMBO_DOWN_SELECT:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWN_SELECT), len);
-         break;
-      case INPUT_COMBO_L2_R2:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L2_R2), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case INPUT_COMBO_NONE:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+         case INPUT_COMBO_DOWN_Y_L_R:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R), len);
+         case INPUT_COMBO_L3_R3:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L3_R3), len);
+         case INPUT_COMBO_L1_R1_START_SELECT:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L1_R1_START_SELECT), len);
+         case INPUT_COMBO_START_SELECT:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_SELECT), len);
+         case INPUT_COMBO_L3_R:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L3_R), len);
+         case INPUT_COMBO_L_R:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L_R), len);
+         case INPUT_COMBO_HOLD_START:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HOLD_START), len);
+         case INPUT_COMBO_HOLD_SELECT:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HOLD_SELECT), len);
+         case INPUT_COMBO_DOWN_SELECT:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWN_SELECT), len);
+         case INPUT_COMBO_L2_R2:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_L2_R2), len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_turbo_mode(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_turbo_mode(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case INPUT_TURBO_MODE_CLASSIC:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC), len);
-         break;
-      case INPUT_TURBO_MODE_CLASSIC_TOGGLE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE), len);
-         break;
-      case INPUT_TURBO_MODE_SINGLEBUTTON:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON), len);
-         break;
-      case INPUT_TURBO_MODE_SINGLEBUTTON_HOLD:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case INPUT_TURBO_MODE_CLASSIC:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC), len);
+         case INPUT_TURBO_MODE_CLASSIC_TOGGLE:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE), len);
+         case INPUT_TURBO_MODE_SINGLEBUTTON:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON), len);
+         case INPUT_TURBO_MODE_SINGLEBUTTON_HOLD:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD), len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_turbo_default_button(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_turbo_duty_cycle(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case INPUT_TURBO_DEFAULT_BUTTON_B:
-         strlcpy(s, "B", len);
-         break;
-      case INPUT_TURBO_DEFAULT_BUTTON_Y:
-         strlcpy(s, "Y", len);
-         break;
-      case INPUT_TURBO_DEFAULT_BUTTON_A:
-         strlcpy(s, "A", len);
-         break;
-      case INPUT_TURBO_DEFAULT_BUTTON_X:
-         strlcpy(s, "X", len);
-         break;
-      case INPUT_TURBO_DEFAULT_BUTTON_L:
-         strlcpy(s, "L", len);
-         break;
-      case INPUT_TURBO_DEFAULT_BUTTON_R:
-         strlcpy(s, "R", len);
-         break;
-      case INPUT_TURBO_DEFAULT_BUTTON_L2:
-         strlcpy(s, "L2", len);
-         break;
-      case INPUT_TURBO_DEFAULT_BUTTON_R2:
-         strlcpy(s, "R2", len);
-         break;
-      case INPUT_TURBO_DEFAULT_BUTTON_L3:
-         strlcpy(s, "L3", len);
-         break;
-      case INPUT_TURBO_DEFAULT_BUTTON_R3:
-         strlcpy(s, "R3", len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF), len);
+         default:
+            return snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
+      }
    }
+   return 0;
 }
 
-
-static void setting_get_string_representation_poll_type_behavior(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_retropad_bind(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case 0:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY), len);
-         break;
-      case 1:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL), len);
-         break;
-      case 2:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE), len);
-         break;
+      settings_t *settings = config_get_ptr();
+      int retro_id         = *setting->value.target.integer;
+
+      if (retro_id < 0)
+         return strlcpy(s, "---", len);
+      else
+      {
+         const struct retro_keybind *keyptr =
+               &input_config_binds[0][retro_id];
+
+         return strlcpy(s, msg_hash_to_str(keyptr->enum_idx), len);
+      }
    }
+   return 0;
+}
+
+static size_t setting_get_string_representation_poll_type_behavior(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY), len);
+         case 1:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL), len);
+         case 2:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE), len);
+      }
+   }
+   return 0;
 }
 
 #ifdef HAVE_RUNAHEAD
-static void setting_get_string_representation_runahead_mode(
+static size_t setting_get_string_representation_runahead_mode(
       rarch_setting_t *setting,
       char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case MENU_RUNAHEAD_MODE_SINGLE_INSTANCE:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MENU_RUNAHEAD_MODE_SINGLE_INSTANCE:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE), len);
 #if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
-      case MENU_RUNAHEAD_MODE_SECOND_INSTANCE:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE), len);
-         break;
+         case MENU_RUNAHEAD_MODE_SECOND_INSTANCE:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE), len);
 #endif
-      case MENU_RUNAHEAD_MODE_PREEMPTIVE_FRAMES:
-         strlcpy(s, msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES), len);
-         break;
-      default:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
+         case MENU_RUNAHEAD_MODE_PREEMPTIVE_FRAMES:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES), len);
+         default:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+      }
    }
+   return 0;
 }
 #endif
 
-static void setting_get_string_representation_input_touch_scale(rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_input_touch_scale(
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      snprintf(s, len, "x%d", *setting->value.target.unsigned_integer);
+      return snprintf(s, len, "x%d", *setting->value.target.unsigned_integer);
+   return 0;
 }
 
 #ifdef ANDROID
-static void setting_get_string_representation_android_physical_keyboard(
-        rarch_setting_t *setting,
-        char *s, size_t len)
+static size_t setting_get_string_representation_android_physical_keyboard(
+        rarch_setting_t *setting, char *s, size_t len)
 {
-    if (!setting)
-        return;
-
-    settings_t *settings = config_get_ptr();
-
-    int keyboard_vendor_id;
-    int keyboard_product_id;
-
-    if (sscanf(setting->value.target.string, "%04x:%04x ", &keyboard_vendor_id, &keyboard_product_id) != 2)
-        strlcpy(s, setting->value.target.string, len);
-    else
-        strlcpy(s, &setting->value.target.string[10], len);
+    if (setting)
+    {
+       int keyboard_vendor_id;
+       int keyboard_product_id;
+       if (sscanf(setting->value.target.string, "%04x:%04x ",
+                &keyboard_vendor_id, &keyboard_product_id) != 2)
+          return strlcpy(s, setting->value.target.string, len);
+       return strlcpy(s, &setting->value.target.string[10], len);
+    }
+    return 0;
 }
 #endif
 
 #ifdef HAVE_LANGEXTRA
-static void setting_get_string_representation_uint_user_language(
+static size_t setting_get_string_representation_uint_user_language(
       rarch_setting_t *setting,
       char *s, size_t len)
 {
+   size_t _len = 0;
    const char *modes[RETRO_LANGUAGE_LAST];
    uint32_t translated[RETRO_LANGUAGE_LAST];
 #define LANG_DATA(STR) \
@@ -7338,8 +7066,7 @@ static void setting_get_string_representation_uint_user_language(
    LANG_DATA(NORWEGIAN)
 
    if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_ENGLISH)
-      strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
-   else
+      return strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
    {
       const char *rating = msg_hash_to_str(
             translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 95 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_95_PLUS :
@@ -7347,256 +7074,220 @@ static void setting_get_string_representation_uint_user_language(
             translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 49 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_50_PLUS :
             translated[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)] > 24 ? MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_25_PLUS :
             MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_25_MINUS);
-      snprintf(s, len, "%s [%s]",
+      _len = snprintf(s, len, "%s [%s]",
             modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], rating);
    }
+   return _len;
 }
 #endif
 
-static void setting_get_string_representation_uint_libretro_log_level(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_libretro_log_level(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case 0:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG), len);
-         break;
-      case 1:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_INFO), len);
-         break;
-      case 2:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING), len);
-         break;
-      case 3:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG), len);
+         case 1:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_INFO), len);
+         case 2:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING), len);
+         case 3:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR), len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_quit_on_close_content(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_quit_on_close_content(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case QUIT_ON_CLOSE_CONTENT_DISABLED:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
-      case QUIT_ON_CLOSE_CONTENT_ENABLED:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
-         break;
-      case QUIT_ON_CLOSE_CONTENT_CLI:
-         strlcpy(s, "CLI", len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case QUIT_ON_CLOSE_CONTENT_DISABLED:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         case QUIT_ON_CLOSE_CONTENT_ENABLED:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
+         case QUIT_ON_CLOSE_CONTENT_CLI:
+            return strlcpy(s, "CLI", len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_video_scale_integer_axis(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_video_scale_integer_axis(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      default:
-      case VIDEO_SCALE_INTEGER_AXIS_Y:
-         strlcpy(s, "Y", len);
-         break;
-      case VIDEO_SCALE_INTEGER_AXIS_Y_X:
-         strlcpy(s, "Y + X", len);
-         break;
-      case VIDEO_SCALE_INTEGER_AXIS_Y_XHALF:
-         strlcpy(s, "Y + X.5", len);
-         break;
-      case VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF:
-         strlcpy(s, "Y.5 + X.5", len);
-         break;
-      case VIDEO_SCALE_INTEGER_AXIS_X:
-         strlcpy(s, "X", len);
-         break;
-      case VIDEO_SCALE_INTEGER_AXIS_XHALF:
-         strlcpy(s, "X.5", len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_SCALE_INTEGER_AXIS_Y_X:
+            return strlcpy(s, "Y + X", len);
+         case VIDEO_SCALE_INTEGER_AXIS_Y_XHALF:
+            return strlcpy(s, "Y + X.5", len);
+         case VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF:
+            return strlcpy(s, "Y.5 + X.5", len);
+         case VIDEO_SCALE_INTEGER_AXIS_X:
+            return strlcpy(s, "X", len);
+         case VIDEO_SCALE_INTEGER_AXIS_XHALF:
+            return strlcpy(s, "X.5", len);
+         case VIDEO_SCALE_INTEGER_AXIS_Y:
+         default:
+            return strlcpy(s, "Y", len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_video_scale_integer_scaling(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_video_scale_integer_scaling(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      default:
-      case VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE), len);
-         break;
-      case VIDEO_SCALE_INTEGER_SCALING_OVERSCALE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE), len);
-         break;
-      case VIDEO_SCALE_INTEGER_SCALING_SMART:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_SCALE_INTEGER_SCALING_OVERSCALE:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE), len);
+         case VIDEO_SCALE_INTEGER_SCALING_SMART:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART), len);
+         case VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE:
+         default:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE), len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_playlist_show_history_icons(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_playlist_show_history_icons(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
-         break;
-      case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN), len);
-         break;
-      case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+         case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN), len);
+         case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT), len);
+      }
    }
+   return 0;
 }
 
-static void setting_get_string_representation_uint_menu_screensaver_timeout(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_menu_screensaver_timeout(
+      rarch_setting_t *setting, char *s, size_t len)
 {
+   size_t _len;
    if (!setting)
-      return;
-
+      return 0;
    if (*setting->value.target.unsigned_integer == 0)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-   else
-   {
-      size_t _len = snprintf(s, len, "%u ", *setting->value.target.unsigned_integer);
-      strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len - _len);
-   }
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+   _len  = snprintf(s, len, "%u ", *setting->value.target.unsigned_integer);
+   _len += strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS), len - _len);
+   return _len;
 }
 
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
-static void setting_get_string_representation_uint_menu_screensaver_animation(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_uint_menu_screensaver_animation(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case MENU_SCREENSAVER_BLANK:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OFF),
-               len);
-         break;
-      case MENU_SCREENSAVER_SNOW:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW),
-               len);
-         break;
-      case MENU_SCREENSAVER_STARFIELD:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD),
-               len);
-         break;
-      case MENU_SCREENSAVER_VORTEX:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MENU_SCREENSAVER_BLANK:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OFF),
+                  len);
+         case MENU_SCREENSAVER_SNOW:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW),
+                  len);
+         case MENU_SCREENSAVER_STARFIELD:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD),
+                  len);
+         case MENU_SCREENSAVER_VORTEX:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX),
+                  len);
+      }
    }
+   return 0;
 }
 #endif
 
-#if defined(HAVE_XMB) || defined(HAVE_OZONE) || defined(HAVE_RGUI)
-static void setting_get_string_representation_uint_menu_remember_selection(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+#if defined(HAVE_XMB) || defined(HAVE_OZONE) || defined(HAVE_RGUI) || defined(HAVE_MATERIALUI)
+static size_t setting_get_string_representation_uint_menu_remember_selection(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case MENU_REMEMBER_SELECTION_ALWAYS:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS),
-               len);
-         break;
-      case MENU_REMEMBER_SELECTION_PLAYLISTS:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS),
-               len);
-         break;
-      case MENU_REMEMBER_SELECTION_MAIN:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN),
-               len);
-         break;
-      case MENU_REMEMBER_SELECTION_OFF:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_OFF),
-               len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MENU_REMEMBER_SELECTION_ALWAYS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS),
+                  len);
+         case MENU_REMEMBER_SELECTION_PLAYLISTS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS),
+                  len);
+         case MENU_REMEMBER_SELECTION_MAIN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN),
+                  len);
+         case MENU_REMEMBER_SELECTION_OFF:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OFF),
+                  len);
+      }
    }
+   return 0;
 }
 #endif
 
 #ifdef HAVE_MIST
-static void setting_get_string_representation_steam_rich_presence_format(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+static size_t setting_get_string_representation_steam_rich_presence_format(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-      case STEAM_RICH_PRESENCE_FORMAT_CONTENT:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT), len);
-         break;
-      case STEAM_RICH_PRESENCE_FORMAT_CORE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE), len);
-         break;
-      case STEAM_RICH_PRESENCE_FORMAT_SYSTEM:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM), len);
-         break;
-      case STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM), len);
-         break;
-      case STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE), len);
-         break;
-      case STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE), len);
-         break;
-      case STEAM_RICH_PRESENCE_FORMAT_NONE:
-      default:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
-         break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case STEAM_RICH_PRESENCE_FORMAT_CONTENT:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT), len);
+         case STEAM_RICH_PRESENCE_FORMAT_CORE:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE), len);
+         case STEAM_RICH_PRESENCE_FORMAT_SYSTEM:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM), len);
+         case STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM), len);
+         case STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE), len);
+         case STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE), len);
+         case STEAM_RICH_PRESENCE_FORMAT_NONE:
+         default:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+      }
    }
+   return 0;
 }
 #endif
 
@@ -7725,33 +7416,11 @@ int menu_action_handle_setting(rarch_setting_t *setting,
                   break;
                case MENU_ACTION_LEFT:
                   if (setting->action_left)
-                  {
                      ret = setting->action_left(setting, selection, false);
-                     if (menu_st->driver_ctx)
-                     {
-                        if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-                           menu_st->driver_ctx->update_savestate_thumbnail_path(
-                                 menu_st->userdata, (unsigned)selection);
-                        if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-                           menu_st->driver_ctx->update_savestate_thumbnail_image(
-                                 menu_st->userdata);
-                     }
-                  }
                   break;
                case MENU_ACTION_RIGHT:
                   if (setting->action_right)
-                  {
                      ret = setting->action_right(setting, selection, false);
-                     if (menu_st->driver_ctx)
-                     {
-                        if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-                           menu_st->driver_ctx->update_savestate_thumbnail_path(
-                                 menu_st->userdata, (unsigned)selection);
-                        if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-                           menu_st->driver_ctx->update_savestate_thumbnail_image(
-                                 menu_st->userdata);
-                     }
-                  }
                   break;
                case MENU_ACTION_SELECT:
                   if (setting->action_select)
@@ -7784,10 +7453,9 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
 /**
  * menu_setting_find:
- * @settings           : pointer to settings
- * @name               : name of setting to search for
+ * @label              : name of setting to search for
  *
- * Search for a setting with a specified name (@name).
+ * Search for a setting with a specified name (@label).
  *
  * Returns: pointer to setting if found, NULL otherwise.
  **/
@@ -7973,13 +7641,14 @@ static int setting_action_start_custom_vp_height(rarch_setting_t *setting)
    struct retro_system_av_info *av_info = &video_st->av_info;
    settings_t                 *settings = config_get_ptr();
    video_viewport_t            *custom  = &settings->video_vp_custom;
+   bool video_scale_integer             = settings->bools.video_scale_integer;
 
-   if (!settings || !av_info)
+   if (!av_info)
       return -1;
 
    video_driver_get_viewport_info(&vp);
 
-   if (settings->bools.video_scale_integer)
+   if (video_scale_integer)
    {
       struct retro_game_geometry *geom = (struct retro_game_geometry*)
          &av_info->geometry;
@@ -8241,14 +7910,14 @@ static int setting_action_right_input_mouse_index(
  ******* ACTION OK CALLBACK FUNCTIONS *******
 **/
 
-static void
+static size_t
 setting_get_string_representation_st_float_video_refresh_rate_polled(
       rarch_setting_t *setting, char *s, size_t len)
 {
-    snprintf(s, len, "%.3f Hz", video_driver_get_refresh_rate());
+    return snprintf(s, len, "%.3f Hz", video_driver_get_refresh_rate());
 }
 
-static void
+static size_t
 setting_get_string_representation_st_float_video_refresh_rate_auto(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -8256,18 +7925,17 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
    double deviation          = 0.0;
    unsigned sample_points    = 0;
    if (!setting)
-      return;
-
+      return 0;
    if (video_monitor_fps_statistics(&video_refresh_rate,
             &deviation, &sample_points))
    {
       gfx_animation_t *p_anim   = anim_get_ptr();
-      snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
+      size_t _len = snprintf(s, len, "%.3f Hz (%.1f%% dev, %u samples)",
             video_refresh_rate, 100.0 * deviation, sample_points);
       GFX_ANIMATION_SET_ACTIVE(p_anim);
+      return _len;
    }
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+   return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
 static void
 setting_get_string_representation_st_float_sensor_auto(
@@ -8285,28 +7953,27 @@ setting_get_string_representation_st_float_sensor_auto(
 }
 
 #ifdef HAVE_LIBNX
-static void get_string_representation_split_joycon(rarch_setting_t *setting, char *s,
-      size_t len)
+static size_t get_string_representation_split_joycon(
+      rarch_setting_t *setting, char *s, size_t len)
 {
-   settings_t      *settings = config_get_ptr();
-   unsigned index_offset     = setting->index_offset;
-   unsigned map              = settings->uints.input_split_joycon[index_offset];
-
+   settings_t *settings  = config_get_ptr();
+   unsigned index_offset = setting->index_offset;
+   unsigned map          = settings->uints.input_split_joycon[index_offset];
    if (map == 0)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+   return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
 }
 #endif
 
-static void get_string_representation_input_device_index(
+static size_t get_string_representation_input_device_index(
       rarch_setting_t *setting, char *s, size_t len)
 {
+   size_t _len = 0;
    settings_t      *settings = config_get_ptr();
    unsigned map              = 0;
 
    if (!setting || !settings)
-      return;
+      return 0;
 
    map = settings->uints.input_joypad_index[setting->index_offset];
 
@@ -8323,88 +7990,82 @@ static void get_string_representation_input_device_index(
 
          /* If idx is non-zero, it's part of a set */
          if (idx > 0)
-            snprintf(s + _len, len - _len, " (%u)", idx);
+            _len += snprintf(s + _len, len - _len, " (%u)", idx);
       }
       else
-         snprintf(s, len,
+         _len = snprintf(s, len,
                "%s (#%u)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                map + 1);
    }
 
    if (string_is_empty(s))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+      _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+   return _len;
 }
 
-static void get_string_representation_input_device_reservation_type(
+static size_t get_string_representation_input_device_reservation_type(
       rarch_setting_t *setting, char *s, size_t len)
 {
    settings_t      *settings = config_get_ptr();
    unsigned map              = 0;
-
    if (!setting || !settings)
-      return;
-
+      return 0;
    map = settings->uints.input_device_reservation_type[setting->index_offset];
-
    if (map == INPUT_DEVICE_RESERVATION_NONE)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE), len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE), len);
    else if (map == INPUT_DEVICE_RESERVATION_PREFERRED)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED), len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED), len);
    else if (map == INPUT_DEVICE_RESERVATION_RESERVED)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED), len);
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED), len);
+   return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
 
-static void setting_get_string_representation_input_device_reserved_device_name(
-        rarch_setting_t *setting,
-        char *s, size_t len)
+static size_t setting_get_string_representation_input_device_reserved_device_name(
+        rarch_setting_t *setting, char *s, size_t len)
 {
-    int dev_vendor_id;
-    int dev_product_id;
-
-    if (!setting)
-        return;
-
-    if (string_is_empty(setting->value.target.string))
-        strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
-    else if (sscanf(setting->value.target.string, "%04x:%04x ", &dev_vendor_id, &dev_product_id) != 2)
-        strlcpy(s, setting->value.target.string, len);
-    else
-        strlcpy(s, &setting->value.target.string[10], len);
+   int dev_vendor_id;
+   int dev_product_id;
+   if (!setting)
+      return 0;
+   if (string_is_empty(setting->value.target.string))
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+   else if (sscanf(setting->value.target.string, "%04x:%04x ", &dev_vendor_id, &dev_product_id) != 2)
+      return strlcpy(s, setting->value.target.string, len);
+   return strlcpy(s, &setting->value.target.string[10], len);
 }
 
-static void get_string_representation_input_mouse_index(
+static size_t get_string_representation_input_mouse_index(
       rarch_setting_t *setting, char *s, size_t len)
 {
+   size_t _len = 0;
    settings_t      *settings = config_get_ptr();
    unsigned map              = 0;
 
    if (!setting || !settings)
-      return;
+      return 0;
 
    map = settings->uints.input_mouse_index[setting->index_offset];
 
    if (map < MAX_INPUT_DEVICES)
    {
       const char *device_name = input_config_get_mouse_display_name(map);
-
       if (!string_is_empty(device_name))
-         strlcpy(s, device_name, len);
+         _len  = strlcpy(s, device_name, len);
       else if (map > 0)
       {
-         size_t _len = strlcpy(s,
+         _len  = strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                len);
-         snprintf(s + _len, len - _len, " (#%u)", map + 1);
+         _len += snprintf(s + _len, len - _len, " (#%u)", map + 1);
       }
       else
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+         _len  = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    }
 
    if (string_is_empty(s))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+      _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+   return _len;
 }
 static void get_string_representation_input_sensor_index(
       rarch_setting_t *setting, char *s, size_t len)
@@ -8715,8 +8376,10 @@ static void general_write_handler(rarch_setting_t *setting)
                1);
 
              /* Set reasonable default for dark frames for current BFI value.
-                Even results OR odd 60hz multiples should be mostly immune to lcd voltage retention.
-                Nothing to be done for 120hz except phase retention usage if needed. */
+                Even results OR odd 60Hz multiples should be mostly immune
+                to LCD voltage retention.
+                Nothing to be done for 120hz except phase retention usage
+                if needed. */
             if (*setting->value.target.unsigned_integer == 1)
             {
                configuration_set_uint(settings,
@@ -8813,7 +8476,7 @@ static void general_write_handler(rarch_setting_t *setting)
             enum dingux_refresh_rate
                target_refresh_rate       =
                   (enum dingux_refresh_rate)settings->uints.video_dingux_refresh_rate;
-            bool refresh_rate_valid                       = false;
+            bool refresh_rate_valid      = false;
 
             /* Get current refresh rate */
             refresh_rate_valid = dingux_get_video_refresh_rate(&current_refresh_rate);
@@ -8867,7 +8530,8 @@ static void general_write_handler(rarch_setting_t *setting)
             settings->floats.video_hdr_max_nits  = roundf(*setting->value.target.fraction);
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_max_nits)
-               video_st->poke->set_hdr_max_nits(video_st->data, settings->floats.video_hdr_max_nits);
+               video_st->poke->set_hdr_max_nits(video_st->data,
+                     settings->floats.video_hdr_max_nits);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS:
@@ -8879,7 +8543,8 @@ static void general_write_handler(rarch_setting_t *setting)
 
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_paper_white_nits)
-               video_st->poke->set_hdr_paper_white_nits(video_st->data, settings->floats.video_hdr_paper_white_nits);
+               video_st->poke->set_hdr_paper_white_nits(video_st->data,
+                     settings->floats.video_hdr_paper_white_nits);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST:
@@ -8889,7 +8554,8 @@ static void general_write_handler(rarch_setting_t *setting)
             settings->floats.video_hdr_display_contrast   = *setting->value.target.fraction;
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_contrast)
-               video_st->poke->set_hdr_contrast(video_st->data, VIDEO_HDR_MAX_CONTRAST - settings->floats.video_hdr_display_contrast);
+               video_st->poke->set_hdr_contrast(video_st->data,
+                     VIDEO_HDR_MAX_CONTRAST - settings->floats.video_hdr_display_contrast);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:
@@ -8899,7 +8565,8 @@ static void general_write_handler(rarch_setting_t *setting)
             settings->bools.video_hdr_expand_gamut        = *setting->value.target.boolean;
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_expand_gamut)
-               video_st->poke->set_hdr_expand_gamut(video_st->data, settings->bools.video_hdr_expand_gamut);
+               video_st->poke->set_hdr_expand_gamut(video_st->data,
+                     settings->bools.video_hdr_expand_gamut);
          }
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
@@ -8908,7 +8575,9 @@ static void general_write_handler(rarch_setting_t *setting)
 #ifdef ANDROID
        case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
            settings->flags |= SETTINGS_FLG_MODIFIED;
-           strlcpy(settings->arrays.input_android_physical_keyboard, setting->value.target.string, sizeof(settings->arrays.input_android_physical_keyboard));
+           strlcpy(settings->arrays.input_android_physical_keyboard,
+                 setting->value.target.string,
+                 sizeof(settings->arrays.input_android_physical_keyboard));
            break;
 #endif
       case MENU_ENUM_LABEL_LOG_TO_FILE:
@@ -9291,8 +8960,8 @@ static void general_write_handler(rarch_setting_t *setting)
              * force a cache refresh on the next
              * core info initialisation */
             if (*setting->value.target.boolean)
-               if (!core_info_cache_force_refresh(!string_is_empty(path_libretro_info) ?
-                     path_libretro_info : dir_libretro))
+               if (!core_info_cache_force_refresh(!string_is_empty(path_libretro_info)
+                     ? path_libretro_info : dir_libretro))
                {
                   const char *_msg = msg_hash_to_str(MSG_CORE_INFO_CACHE_UNSUPPORTED);
                   /* core_info_cache_force_refresh() will fail
@@ -9339,8 +9008,7 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER:
          {
             struct menu_state *menu_st = menu_state_get_ptr();
-            menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
-                                       |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+            menu_st->flags            |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
             task_push_cloud_sync_update_driver();
          }
          break;
@@ -9382,16 +9050,16 @@ static void frontend_log_level_change_handler(rarch_setting_t *setting)
 #ifdef HAVE_RUNAHEAD
 static void runahead_change_handler(rarch_setting_t *setting)
 {
+#if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   bool secondary_instance;
+   bool run_ahead_enabled;
+#endif
+   bool preempt_enable;
    settings_t *settings        = config_get_ptr();
    struct menu_state *menu_st  = menu_state_get_ptr();
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    preempt_t *preempt          = runloop_st->preempt_data;
    unsigned run_ahead_frames   = settings->uints.run_ahead_frames;
-   bool preempt_enable;
-#if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
-   bool secondary_instance;
-   bool run_ahead_enabled;
-#endif
 
    if (!setting)
       return;
@@ -9482,83 +9150,75 @@ static void achievement_leaderboard_trackers_enabled_write_handler(rarch_setting
    rcheevos_leaderboard_trackers_visibility_changed();
 }
 
-static void setting_get_string_representation_uint_cheevos_visibility_summary(
+static size_t setting_get_string_representation_uint_cheevos_visibility_summary(
    rarch_setting_t* setting,
    char* s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-   case RCHEEVOS_SUMMARY_ALLGAMES:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES),
-         len);
-      break;
-   case RCHEEVOS_SUMMARY_HASCHEEVOS:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS),
-         len);
-      break;
-   case RCHEEVOS_SUMMARY_OFF:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_OFF),
-         len);
-      break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case RCHEEVOS_SUMMARY_ALLGAMES:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES),
+                  len);
+         case RCHEEVOS_SUMMARY_HASCHEEVOS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS),
+                  len);
+         case RCHEEVOS_SUMMARY_OFF:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OFF),
+                  len);
+      }
    }
+   return 0;
 }
 
 #ifdef HAVE_GFX_WIDGETS
-static void setting_get_string_representation_uint_cheevos_appearance_anchor(
-   rarch_setting_t* setting,
-   char* s, size_t len)
+static size_t setting_get_string_representation_uint_cheevos_appearance_anchor(
+   rarch_setting_t* setting, char *s, size_t len)
 {
-   if (!setting)
-      return;
-
-   switch (*setting->value.target.unsigned_integer)
+   if (setting)
    {
-   case CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT),
-         len);
-      break;
-   case CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER),
-         len);
-      break;
-   case CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT),
-         len);
-      break;
-   case CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT),
-         len);
-      break;
-   case CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER),
-         len);
-      break;
-   case CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT:
-      strlcpy(s,
-         msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT),
-         len);
-      break;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT),
+                  len);
+         case CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER),
+                  len);
+         case CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT),
+                  len);
+         case CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT),
+                  len);
+         case CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER),
+                  len);
+         case CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT),
+                  len);
+      }
    }
+   return 0;
 }
 
 static void cheevos_appearance_write_handler(rarch_setting_t* setting)
@@ -10239,15 +9899,15 @@ static bool setting_append_list_input_remap_port_options(
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-   settings_t *settings = config_get_ptr();
+   unsigned user;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    static char key_port[MAX_USERS][64];
    static char label_port[MAX_USERS][64];
-   unsigned user;
+   settings_t *settings = config_get_ptr();
 
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
+   group_info.name      = NULL;
+   subgroup_info.name   = NULL;
 
    START_GROUP(list, list_info, &group_info,
          "Mapped Ports", parent_group);
@@ -10546,7 +10206,10 @@ static bool setting_append_list(
          }
 #endif
 
-         if (string_is_not_equal(settings->arrays.menu_driver, "xmb") && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
+#if defined(HAVE_XMB) || defined(HAVE_OZONE)
+         if (     string_is_not_equal(settings->arrays.menu_driver, "xmb")
+               && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
+#endif
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -11856,7 +11519,9 @@ static bool setting_append_list(
             uint8_t i, listing = 0;
             struct bool_entry bool_entries[12];
 
-            START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), parent_group);
+            START_GROUP(list, list_info, &group_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS),
+                  parent_group);
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS);
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
@@ -12429,10 +12094,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_CMD_APPLY_AUTO);
-         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+               SD_FLAG_NONE);
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REWIND_TOGGLE);
 
             CONFIG_UINT(
@@ -12490,7 +12152,9 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_CHEATS:
          {
-            START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS), parent_group);
+            START_GROUP(list, list_info, &group_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS),
+                  parent_group);
 
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SETTINGS);
 
@@ -12993,7 +12657,9 @@ static bool setting_append_list(
       case SETTINGS_LIST_VIDEO:
          {
             struct video_viewport *custom_vp   = &settings->video_vp_custom;
-            START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS), parent_group);
+            START_GROUP(list, list_info, &group_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
+                  parent_group);
             MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_VIDEO_SETTINGS);
 
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
@@ -13019,9 +12685,11 @@ static bool setting_append_list(
 #endif
 
             END_SUB_GROUP(list, list_info, parent_group);
-            START_SUB_GROUP(list, list_info, "Platform-specific", &group_info, &subgroup_info, parent_group);
+            START_SUB_GROUP(list, list_info, "Platform-specific", &group_info,
+                  &subgroup_info, parent_group);
 
-            video_driver_menu_settings((void**)list, (void*)list_info, (void*)&group_info, (void*)&subgroup_info, parent_group);
+            video_driver_menu_settings((void**)list, (void*)list_info,
+                  (void*)&group_info, (void*)&subgroup_info, parent_group);
 
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(list, list_info, "Monitor", &group_info, &subgroup_info, parent_group);
@@ -13243,8 +12911,8 @@ static bool setting_append_list(
             }
 
 #if defined(DINGUX) && defined(DINGUX_BETA)
-            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux") ||
-                string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
+            if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
+                || string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                CONFIG_UINT(
                      list, list_info,
@@ -13627,8 +13295,8 @@ static bool setting_append_list(
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
 #if defined(DINGUX)
-            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux") ||
-                string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
+            if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
+                || string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -14951,6 +14619,22 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP,
                MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
                DEFAULT_AUDIO_FASTFORWARD_SPEEDUP,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.audio_rewind_mute,
+               MENU_ENUM_LABEL_AUDIO_REWIND_MUTE,
+               MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+               DEFAULT_AUDIO_REWIND_MUTE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -16404,6 +16088,96 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_turbo_enable,
+               MENU_ENUM_LABEL_INPUT_TURBO_ENABLE,
+               MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+               DEFAULT_TURBO_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_turbo_mode,
+               MENU_ENUM_LABEL_INPUT_TURBO_MODE,
+               MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+               DEFAULT_TURBO_MODE,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_UINT_COMBOBOX;
+         (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_turbo_mode;
+         menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TURBO_MODE_LAST-1), 1, true, true);
+
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.input_turbo_bind,
+               MENU_ENUM_LABEL_INPUT_TURBO_BIND,
+               MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+               DEFAULT_TURBO_BIND,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_UINT_COMBOBOX;
+         (*list)[list_info->index - 1].action_ok    = &setting_action_ok_retropad_bind;
+         (*list)[list_info->index - 1].action_left  = &setting_action_left_retropad_bind;
+         (*list)[list_info->index - 1].action_right = &setting_action_right_retropad_bind;
+         (*list)[list_info->index - 1].offset_by = -1;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_retropad_bind;
+         menu_settings_list_current_add_range(list, list_info, -1, (RARCH_ANALOG_BIND_LIST_END-1), 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_turbo_button,
+               MENU_ENUM_LABEL_INPUT_TURBO_BUTTON,
+               MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+               DEFAULT_TURBO_BUTTON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_UINT_COMBOBOX;
+         (*list)[list_info->index - 1].action_ok    = &setting_action_ok_retropad_bind;
+         (*list)[list_info->index - 1].action_left  = &setting_action_left_retropad_bind;
+         (*list)[list_info->index - 1].action_right = &setting_action_right_retropad_bind;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_retropad_bind;
+         menu_settings_list_current_add_range(list, list_info, 0, (RARCH_FIRST_CUSTOM_BIND-1), 1, true, true);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_turbo_allow_dpad,
+               MENU_ENUM_LABEL_INPUT_TURBO_ALLOW_DPAD,
+               MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
+               DEFAULT_TURBO_ALLOW_DPAD,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+               );
+
          CONFIG_UINT(
                list, list_info,
                &settings->uints.input_turbo_period,
@@ -16418,13 +16192,12 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by = 1;
          menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
          CONFIG_UINT(
                list, list_info,
                &settings->uints.input_turbo_duty_cycle,
-               MENU_ENUM_LABEL_INPUT_DUTY_CYCLE,
-               MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
+               MENU_ENUM_LABEL_INPUT_TURBO_DUTY_CYCLE,
+               MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DUTY_CYCLE,
                DEFAULT_TURBO_DUTY_CYCLE,
                &group_info,
                &subgroup_info,
@@ -16432,59 +16205,9 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].offset_by = 1;
-         menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.input_turbo_mode,
-               MENU_ENUM_LABEL_INPUT_TURBO_MODE,
-               MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
-               DEFAULT_TURBO_MODE,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_turbo_mode;
-         menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TURBO_MODE_LAST-1), 1, true, true);
-
-         CONFIG_UINT(
-               list, list_info,
-               &settings->uints.input_turbo_default_button,
-               MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON,
-               MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-               DEFAULT_TURBO_DEFAULT_BTN,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_turbo_default_button;
-         menu_settings_list_current_add_range(list, list_info, 0, (INPUT_TURBO_DEFAULT_BUTTON_LAST-1), 1, true, true);
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.input_allow_turbo_dpad,
-                  MENU_ENUM_LABEL_INPUT_ALLOW_TURBO_DPAD,
-                  MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-                  DEFAULT_ALLOW_TURBO_DPAD,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
+            &setting_get_string_representation_turbo_duty_cycle;
+         menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -17363,6 +17086,20 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG,
                MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
                DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.notification_show_autoconfig_fails,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+               DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -18572,9 +18309,9 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 0, 1800, 10, true, true);
 
 #if (defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)) && !defined(_3DS)
-         if (string_is_equal(settings->arrays.menu_driver, "glui") ||
-             string_is_equal(settings->arrays.menu_driver, "xmb")  ||
-             string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (   string_is_equal(settings->arrays.menu_driver, "glui")
+             || string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -18611,10 +18348,11 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0.1, 10.0, 0.1, true, true);
          }
 #endif
-#if defined(HAVE_XMB) || defined(HAVE_OZONE) || defined(HAVE_RGUI)
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
-             string_is_equal(settings->arrays.menu_driver, "ozone") ||
-             string_is_equal(settings->arrays.menu_driver, "rgui"))
+#if defined(HAVE_XMB) || defined(HAVE_OZONE) || defined(HAVE_RGUI) || defined(HAVE_MATERIALUI)
+         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone")
+             || string_is_equal(settings->arrays.menu_driver, "rgui")
+             || string_is_equal(settings->arrays.menu_driver, "glui"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -19126,7 +18864,8 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (     string_is_equal(settings->arrays.menu_driver, "xmb")
+               || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -19186,9 +18925,9 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
          /* > MaterialUI, XMB and Ozone all support menu scaling */
-         if (string_is_equal(settings->arrays.menu_driver, "glui") ||
-             string_is_equal(settings->arrays.menu_driver, "xmb") ||
-             string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (   string_is_equal(settings->arrays.menu_driver, "glui")
+             || string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_FLOAT(
                   list, list_info,
@@ -19383,6 +19122,7 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_xmb_icon_theme;
             menu_settings_list_current_add_range(list, list_info, 0, XMB_ICON_THEME_LAST - 1, 1, true, true);
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_BOOL(
@@ -19461,6 +19201,8 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].action_left = &setting_uint_action_left_with_refresh;
+               (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
                (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_xmb_menu_color_theme;
             menu_settings_list_current_add_range(list, list_info, 0, XMB_THEME_LAST-1, 1, true, true);
@@ -19740,7 +19482,8 @@ static bool setting_append_list(
 #endif
 
 #if defined(HAVE_XMB) || defined(HAVE_OZONE)
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (     string_is_equal(settings->arrays.menu_driver, "xmb")
+               || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -19872,29 +19615,6 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
 #endif
 
-#if defined(HAVE_XMB) || defined(HAVE_OZONE)
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
-             string_is_equal(settings->arrays.menu_driver, "ozone"))
-         {
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.menu_content_show_add,
-                  MENU_ENUM_LABEL_CONTENT_SHOW_ADD,
-                  MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
-                  DEFAULT_MENU_CONTENT_SHOW_ADD,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-         }
-         else
-#endif
-         {
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.menu_content_show_add_entry,
@@ -19911,8 +19631,6 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_menu_add_content_entry_display_type;
             menu_settings_list_current_add_range(list, list_info, 0, MENU_ADD_CONTENT_ENTRY_DISPLAY_LAST-1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
-         }
 
             CONFIG_BOOL(
                   list, list_info,
@@ -19920,6 +19638,21 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLISTS,
                   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
                   DEFAULT_CONTENT_SHOW_PLAYLISTS,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_content_show_playlist_tabs,
+                  MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLIST_TABS,
+                  MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
+                  DEFAULT_CONTENT_SHOW_PLAYLIST_TABS,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -20316,10 +20049,10 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
-             string_is_equal(settings->arrays.menu_driver, "ozone") ||
-             string_is_equal(settings->arrays.menu_driver, "rgui") ||
-             string_is_equal(settings->arrays.menu_driver, "glui"))
+         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone")
+             || string_is_equal(settings->arrays.menu_driver, "rgui")
+             || string_is_equal(settings->arrays.menu_driver, "glui"))
          {
             enum msg_hash_enums thumbnails_label_value;
             enum msg_hash_enums left_thumbnails_label_value;
@@ -20358,8 +20091,8 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_menu_thumbnails;
-            menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_THUMBNAIL_MODE_LOGOS - 1, 1, true, true);
+                  &setting_get_string_representation_uint_menu_thumbnails;
+            menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
 
             CONFIG_UINT(
@@ -20375,10 +20108,13 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_menu_left_thumbnails;
-            menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_THUMBNAIL_MODE_LOGOS - 1, 1, true, true);
+                  &setting_get_string_representation_uint_menu_thumbnails;
+            menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
+         }
 
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+         {
              CONFIG_UINT(
                   list, list_info,
                   &settings->uints.menu_icon_thumbnails,
@@ -20392,13 +20128,10 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_menu_icon_thumbnails;
-            menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, true);
+                  &setting_get_string_representation_uint_menu_thumbnails;
+            menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
-         }
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
-         {
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_xmb_vertical_thumbnails,
@@ -20430,9 +20163,9 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, 100, 1, true, true);
          }
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
-             string_is_equal(settings->arrays.menu_driver, "ozone") ||
-             string_is_equal(settings->arrays.menu_driver, "glui"))
+         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone")
+             || string_is_equal(settings->arrays.menu_driver, "glui"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -22225,8 +21958,8 @@ static bool setting_append_list(
 
          /* Playlist entry index display and content specific history icon
           * are currently supported only by Ozone & XMB */
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
-             string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -22374,8 +22107,8 @@ static bool setting_append_list(
             );
 
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
-         if (string_is_equal(settings->arrays.menu_driver, "ozone") ||
-             string_is_equal(settings->arrays.menu_driver, "xmb"))
+         if (   string_is_equal(settings->arrays.menu_driver, "ozone")
+             || string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -22476,7 +22209,8 @@ static bool setting_append_list(
                );
 
 #ifndef HAVE_GFX_WIDGETS
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (     string_is_equal(settings->arrays.menu_driver, "xmb")
+               || string_is_equal(settings->arrays.menu_driver, "ozone"))
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.cheevos_badges_enable,
@@ -23617,6 +23351,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].change_handler = samba_enable_toggle_change_handler;
 
+#ifdef HAVE_BLUETOOTH
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.bluetooth_enable,
@@ -23632,7 +23367,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].change_handler = bluetooth_enable_toggle_change_handler;
-
+#endif
 #ifdef HAVE_WIFI
             CONFIG_BOOL(
                   list, list_info,
@@ -23814,6 +23549,69 @@ static bool setting_append_list(
             &setting_get_string_representation_uint_user_language;
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_COMBOBOX;
 #endif
+
+#ifdef HAVE_GAME_AI
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.quick_menu_show_game_ai,
+                  MENU_ENUM_LABEL_QUICK_MENU_SHOW_GAME_AI,
+                  MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_GAME_AI,
+                  1,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.game_ai_override_p1,
+                  MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P1,
+                  MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P1,
+                  1,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_CMD_APPLY_AUTO);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.game_ai_override_p2,
+                  MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P2,
+                  MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P2,
+                  1,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_CMD_APPLY_AUTO);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.game_ai_show_debug,
+                  MENU_ENUM_LABEL_GAME_AI_SHOW_DEBUG,
+                  MENU_ENUM_LABEL_VALUE_GAME_AI_SHOW_DEBUG,
+                  1,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_CMD_APPLY_AUTO);
+#endif
+
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -24577,6 +24375,7 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State",
                &group_info, &subgroup_info, parent_group);
 
+#if !defined(RARCH_CONSOLE)
          CONFIG_STRING(
                list, list_info,
                settings->arrays.midi_input,
@@ -24589,10 +24388,10 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
+         (*list)[list_info->index - 1].action_start = setting_string_action_start_midi_device;
          (*list)[list_info->index - 1].action_left  = setting_string_action_left_midi_input;
          (*list)[list_info->index - 1].action_right = setting_string_action_right_midi_input;
+         (*list)[list_info->index - 1].action_ok    = setting_string_action_ok_midi_device;
 
          CONFIG_STRING(
                list, list_info,
@@ -24606,10 +24405,10 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
+         (*list)[list_info->index - 1].action_start = setting_string_action_start_midi_device;
          (*list)[list_info->index - 1].action_left  = setting_string_action_left_midi_output;
          (*list)[list_info->index - 1].action_right = setting_string_action_right_midi_output;
+         (*list)[list_info->index - 1].action_ok    = setting_string_action_ok_midi_device;
 
          CONFIG_UINT(
                list, list_info,
@@ -24624,6 +24423,7 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0.0f, 100.0f, 1.0f, true, true);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -24895,11 +24695,8 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].get_string_representation        = NULL; \
    (*&list)[pos].default_value.fraction           = 0.0f; \
    (*&list)[pos].value.target.fraction            = NULL; \
-   (*&list)[pos].original_value.fraction          = 0.0f; \
    (*&list)[pos].dir.empty_path                   = NULL; \
    (*&list)[pos].cmd_trigger_idx                  = CMD_EVENT_NONE; \
-   (*&list)[pos].boolean.off_label                = NULL; \
-   (*&list)[pos].boolean.on_label                 = NULL; \
 }
 
 static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_info)

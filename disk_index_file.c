@@ -226,12 +226,9 @@ bool disk_index_file_init(
    /* > Get disk index file directory */
    if (!string_is_empty(dir_savefile))
       strlcpy(disk_index_file_dir, dir_savefile, sizeof(disk_index_file_dir));
-   else
-   {
-      /* Use content directory */
-      strlcpy(disk_index_file_dir, content_path, sizeof(disk_index_file_dir));
-      path_basedir(disk_index_file_dir);
-   }
+   else /* Use content directory */
+      fill_pathname_basedir(disk_index_file_dir, content_path,
+            sizeof(disk_index_file_dir));
 
    /* > Create directory, if required */
    if (     !path_is_directory(disk_index_file_dir)

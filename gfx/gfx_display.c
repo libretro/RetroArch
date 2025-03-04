@@ -289,7 +289,9 @@ float gfx_display_get_dpi_scale(
             menu_scale_factor        = 1.0f;
          else
 #endif
+#ifdef HAVE_GFX_WIDGETS
             menu_scale_factor        = settings->floats.menu_scale_factor;
+#endif
       }
    }
 #endif

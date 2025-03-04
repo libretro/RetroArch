@@ -164,20 +164,20 @@ static void retrode_update_button_state(retrode_pad_data_t *pad)
           pad->buttons |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
 }
 
-static void hidpad_retrode_pad_packet_handler(retrode_pad_data_t *pad, uint8_t *packet, size_t size)
+static void hidpad_retrode_pad_packet_handler(retrode_pad_data_t *pad, uint8_t *packet, size_t len)
 {
-   memcpy(pad->data, packet, size);
+   memcpy(pad->data, packet, len);
    retrode_update_button_state(pad);
 }
 
-static void hidpad_retrode_packet_handler(void *device_data, uint8_t *packet, uint16_t size)
+static void hidpad_retrode_packet_handler(void *device_data, uint8_t *packet, uint16_t len)
 {
    retrode_device_data_t *device = (retrode_device_data_t *)device_data;
 
    if (!device)
       return;
 
-   memcpy(device->data, packet, size);
+   memcpy(device->data, packet, len);
 
    /*
     * packet[0] contains Retrode port number
@@ -187,7 +187,7 @@ static void hidpad_retrode_packet_handler(void *device_data, uint8_t *packet, ui
     * 4 = right Genesis/MD
     */
 
-   hidpad_retrode_pad_packet_handler(&device->pad_data[packet[0] - 1], &device->data[0], size);
+   hidpad_retrode_pad_packet_handler(&device->pad_data[packet[0] - 1], &device->data[0], len);
 }
 
 static void hidpad_retrode_set_rumble(void *data,
