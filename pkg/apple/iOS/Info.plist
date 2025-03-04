@@ -81,6 +81,8 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Some cores are able to provide camera input to games.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>RetroArch uses direct Bluetooth communication for some types of controllers</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
