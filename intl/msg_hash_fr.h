@@ -2627,6 +2627,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    "Biais d'ancrage Y de la fenêtre d'affichage"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Position horizontale du contenu lorsque la fenêtre d'affichage est plus large que la largeur du contenu. 0,0 est à l'extrême gauche, 0,5 est au centre, 1,0 est à l'extrême droite."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Position verticale du contenu lorsque la fenêtre d'affichage est plus haute que la hauteur du contenu. 0,0 est tout en haut, 0,5 est au centre, 1,0 est tout en bas."
+   )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -2643,6 +2651,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "Biais d'ancrage Y de la fenêtre d'affichage (orientation portrait)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Position horizontale du contenu lorsque la fenêtre d'affichage est plus large que la largeur du contenu. 0,0 est à l'extrême gauche, 0,5 est au centre, 1,0 est à l'extrême droite (orientation portrait)."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Position verticale du contenu lorsque la fenêtre d'affichage est plus haute que la hauteur du contenu. 0,0 est tout en haut, 0,5 est au centre, 1,0 est tout en bas (orientation portrait)."
    )
 #endif
 MSG_HASH(

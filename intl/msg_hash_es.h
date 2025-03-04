@@ -2647,6 +2647,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    "Compensación del eje Y del punto de anclaje del área de visualización"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Establece la posición horizontal del contenido cuando el área de visualización sea más ancha que el contenido. 0,0 para extremo izquierdo, 0,5 para centrar, 1,0 para extremo derecho."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Establece la posición vertical del contenido cuando el área de visualización sea más alta que el contenido. 0,0 para extremo superior, 0,5 para centrar, 1,0 para extremo inferior."
+   )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -2663,6 +2671,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "Compensación del eje Y del punto de anclaje del área de visualización (orientación vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Establece la posición horizontal del contenido cuando el área de visualización sea más ancha que el contenido. 0,0 para extremo izquierdo, 0,5 para centrar, 1,0 para extremo derecho (en orientación vertical)."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Establece la posición vertical del contenido cuando el área de visualización sea más alta que el contenido. 0,0 para extremo superior, 0,5 para centrar, 1,0 para extremo inferior (en orientación vertical)."
    )
 #endif
 MSG_HASH(

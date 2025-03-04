@@ -2671,6 +2671,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    "뷰포트 기준점 바이어스 Y"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "뷰포트 가로 길이가 컨텐츠 가로 길이보다 길 때 컨텐츠를 표시할 가로 위치입니다. 0.0은 왼쪽 끝, 0.5는 가운데, 1.0은 오른쪽 끝입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "뷰포트 세로 길이가 컨텐츠 세로 길이보다 길 때 컨텐츠를 표시할 세로 위치입니다. 0.0은 위쪽 끝, 0.5는 가운데, 1.0은 아래쪽 끝입니다."
+   )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -2687,6 +2695,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "뷰포트 기준점 바이어스 Y (세로 화면)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "뷰포트 가로 길이가 컨텐츠 가로 길이보다 길 때 컨텐츠를 표시할 가로 위치입니다. 0.0은 왼쪽 끝, 0.5는 가운데, 1.0은 오른쪽 끝입니다. (세로 화면)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "뷰포트 세로 길이가 컨텐츠 세로 길이보다 길 때 컨텐츠를 표시할 세로 위치입니다. 0.0은 위쪽 끝, 0.5는 가운데, 1.0은 아래쪽 끝입니다. (세로 화면)"
    )
 #endif
 MSG_HASH(

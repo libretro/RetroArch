@@ -2663,6 +2663,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    "Сдвиг области просмотра по Y"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Положение контента по горизонтали, если область вывода превышает ширину контента. 0.0 слева, 0.5 по центру, 1.0 справа."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Положение контента по вертикали, если область вывода превышает высоту контента. 0.0 сверху, 0.5 по центру, 1.0 снизу."
+   )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -2679,6 +2687,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "Сдвиг области просмотра по Y (портретный режим)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Положение контента по горизонтали, если область вывода превышает ширину контента. 0.0 слева, 0.5 по центру, 1.0 справа (портретная ориентация)."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Положение контента по вертикали, если область вывода превышает высоту контента. 0.0 сверху, 0.5 по центру, 1.0 снизу (портретная ориентация)."
    )
 #endif
 MSG_HASH(
@@ -5876,7 +5892,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
-   "Уведомление о патче"
+   "Уведомление о применении патча"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
@@ -13880,7 +13896,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
-   "Не удалось выделить память для пропатченного содержимого ..."
+   "Не удалось выделить память для пропатченного контента..."
    )
 MSG_HASH(
    MSG_FAILED_TO_APPLY_SHADER,
@@ -15922,9 +15938,17 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P1,
    "Заменить Игрока 1"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
+   "Заменить Игрока 1"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P2,
+   "Заменить Игрока 2"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P2,
    "Заменить Игрока 2"
    )
 
