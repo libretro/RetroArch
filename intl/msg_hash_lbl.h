@@ -1896,6 +1896,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,
    "input_analog_sensitivity"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "input_sensor_accelerometer_sensitivity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "input_sensor_gyroscope_sensitivity"
+   )
 #ifdef GEKKO
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_MOUSE_SCALE,
@@ -2003,6 +2011,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_MOUSE_INDEX,
    "input_player%u_mouse_index"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SENSOR_INDEX,
+   "input_player%u_sensor_index"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_X,
+   "input_player%u_accelerometer_x_binding"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_Y,
+   "input_player%u_accelerometer_y_binding"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_Z,
+   "input_player%u_accelerometer_z_binding"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_X,
+   "input_player%u_gyroscope_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_Y,
+   "input_player%u_gyroscope_y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_Z,
+   "input_player%u_gyroscope_z"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX,
