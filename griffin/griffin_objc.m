@@ -65,6 +65,10 @@
 #include "../location/drivers/corelocation.m"
 #endif
 
+#ifdef HAVE_AVF
+#include "../camera/drivers/avfoundation.m"
+#endif
+
 #if defined(HAVE_DISCORD)
 #include "../deps/discord-rpc/src/discord_register_osx.m"
 #endif
