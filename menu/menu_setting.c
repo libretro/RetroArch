@@ -7937,7 +7937,7 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
    }
    return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
-static void
+static size_t
 setting_get_string_representation_st_float_sensor_auto(
       rarch_setting_t *setting, char *s, size_t len){
 
@@ -7946,10 +7946,10 @@ setting_get_string_representation_st_float_sensor_auto(
    if (settings->bools.input_sensors_enable) {
       float sensor_poll = input_driver_get_sensor(
          remapped_port,settings->bools.input_sensors_enable,setting->retropad_sensor_index);
-      snprintf(s,len,"%.0f", 100.f*sensor_poll);
+      return snprintf(s,len,"%.0f", 100.f*sensor_poll);
    }
    else 
-      strlcpy(s, "Disabled", len);
+      return strlcpy(s, "Disabled", len);
 }
 
 #ifdef HAVE_LIBNX
@@ -8067,14 +8067,15 @@ static size_t get_string_representation_input_mouse_index(
       _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
    return _len;
 }
-static void get_string_representation_input_sensor_index(
+static size_t get_string_representation_input_sensor_index(
       rarch_setting_t *setting, char *s, size_t len)
 {
    settings_t      *settings = config_get_ptr();
    unsigned map              = 0;
+   size_t new_len            = 0;
 
    if (!setting || !settings)
-      return;
+      return 0;
 
    map = settings->uints.input_sensor_index[setting->index_offset];
 
@@ -8083,22 +8084,23 @@ static void get_string_representation_input_sensor_index(
       const char *device_name = input_config_get_sensor_display_name(map);
 
       if (!string_is_empty(device_name))
-         strlcpy(s, device_name, len);
+         new_len=strlcpy(s, device_name, len);
       else if (map > 0)
       {
          size_t _len = strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                len);
-         snprintf(s + _len, len - _len, " (#%u)", map + 1);
+         new_len=snprintf(s + _len, len - _len, " (#%u)", map + 1);
       }
       else
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+         new_len=strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    }
 
    if (string_is_empty(s))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+      new_len=strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+   return new_len;
 }
-static void get_string_representation_of_abs_device(
+static size_t get_string_representation_of_abs_device(
       rarch_setting_t *setting, char *s, size_t len)
 {
    settings_t      *settings = config_get_ptr();
@@ -8107,7 +8109,7 @@ static void get_string_representation_of_abs_device(
       [setting->retropad_sensor_index];
    
 
-   snprintf(
+   return snprintf(
       s,len,
       msg_hash_to_str(
          (index%2)?MENU_ENUM_LABEL_INPUT_ABS_SOURCE_INVERTED:MENU_ENUM_LABEL_INPUT_ABS_SOURCE
