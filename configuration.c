@@ -728,6 +728,8 @@ static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_ANDROID;
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_PIPEWIRE;
 #elif defined(HAVE_FFMPEG)
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_FFMPEG;
+#elif defined(HAVE_AVF)
+static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_AVFOUNDATION;
 #else
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_NULL;
 #endif
