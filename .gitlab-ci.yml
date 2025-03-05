@@ -408,6 +408,8 @@ build-retroarch-ios-arm64:
 
 build-retroarch-ios9:
   extends: .build-retroarch-macos-xcode
+  tags:
+    - macosx-packaging
   variables:
     XCPROJECT_NAME: RetroArch_iOS9
     XCCONFIG: GitLabCI.xcconfig
