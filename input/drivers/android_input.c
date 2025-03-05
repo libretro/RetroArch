@@ -102,9 +102,6 @@ uint8_t *android_keyboard_state_get(unsigned port)
    return android_key_state[port];
 }
 
-/* TODO/FIXME -
- * fix game focus toggle */
-
 typedef struct
 {
    float x;
@@ -1726,7 +1723,9 @@ static int16_t android_input_state(
             if (binds[port][id].valid)
             {
                if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
-                     && ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], id))
+                     && ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], id)
+                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                     )
                   return 1;
             }
          }
