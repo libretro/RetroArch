@@ -83,11 +83,11 @@ emmake make -f Makefile platform=emscripten
 cp melonds_libretro_emscripten.bc ~/retroarch/RetroArch/libretro_emscripten.bc
 ```
 
-Now build the frontend with the pthreads env variable: (2 is the number of workers; this can be any integer, but many browsers limit the number of workers)
+Now build the frontend with the pthreads env variable:
 
 ```
 cd ~/retroarch/RetroArch
-emmake make -f Makefile.emscripten LIBRETRO=melonds PTHREAD=2 && cp melonds_libretro.* pkg/emscripten/libretro
+emmake make -f Makefile.emscripten LIBRETRO=melonds HAVE_THREADS=1 && cp melonds_libretro.* pkg/emscripten/libretro
 ```
 
 Your resulting output will be located in:
@@ -153,7 +153,7 @@ git clone https://github.com/libretro/RetroArch.git ~/retroarch/RetroArch
 cp ~/retroarch/libretro-fceumm/fceumm_libretro_emscripten.bc ~/retroarch/RetroArch/libretro_emscripten.bc
 
 cd ~/retroarch
-emmake make -f Makefile.emscripten LIBRETRO=fceumm PROXY_TO_PTHREAD=1 PTHREAD=4 HAVE_WASMFS=1 ASYNC=0 HAVE_EGL=0 -j all
+emmake make -f Makefile.emscripten LIBRETRO=fceumm PROXY_TO_PTHREAD=1 HAVE_WASMFS=1 -j all
 cp fceumm_libretro.{js,wasm} pkg/emscripten/libretro-thread
 ```
 

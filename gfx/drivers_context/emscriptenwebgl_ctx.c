@@ -62,13 +62,10 @@ static void gfx_ctx_emscripten_webgl_check_window(void *data, bool *quit,
    *quit   = false;
 }
 
+/* https://github.com/emscripten-core/emscripten/issues/17816#issuecomment-1249719343 */
 static void gfx_ctx_emscripten_webgl_swap_buffers(void *data)
 {
-#ifdef PROXY_TO_PTHREAD
-   emscripten_webgl_commit_frame();
-#else
    (void)data;
-#endif
 }
 
 static void gfx_ctx_emscripten_webgl_get_video_size(void *data,
@@ -134,11 +131,7 @@ static void *gfx_ctx_emscripten_webgl_init(void *video_driver)
 #endif
    attrs.minorVersion = 0;
    attrs.enableExtensionsByDefault = true;
-#ifdef PROXY_TO_PTHREAD
-   attrs.explicitSwapControl = true;
-#else
    attrs.explicitSwapControl = false;
-#endif
    attrs.renderViaOffscreenBackBuffer = false;
    attrs.proxyContextToMainThread = EMSCRIPTEN_WEBGL_CONTEXT_PROXY_DISALLOW;
 

@@ -63,8 +63,10 @@
 #include <emscripten/proxying.h>
 #include <emscripten/atomic.h>
 #define PLATFORM_SETVAL(type, addr, val) emscripten_atomic_store_##type(addr, val)
+#define PLATFORM_GETVAL(type, addr) emscripten_atomic_load_##type(addr)
 #else
 #define PLATFORM_SETVAL(type, addr, val) *addr = val
+#define PLATFORM_GETVAL(type, addr) *addr
 #endif
 
 void emscripten_mainloop(void);
@@ -72,39 +74,6 @@ void PlatformEmscriptenWatchCanvasSizeAndDpr(double *dpr);
 void PlatformEmscriptenWatchWindowVisibility(void);
 void PlatformEmscriptenPowerStateInit(void);
 void PlatformEmscriptenMemoryUsageInit(void);
-
-static bool command_flag = false;
-
-void PlatformEmscriptenCommandReply(const char *msg, size_t len)
-{
-   MAIN_THREAD_EM_ASM({
-      var message = UTF8ToString($0, $1);
-      RPE.command_reply_queue.push(message);
-   }, msg, len);
-}
-
-size_t PlatformEmscriptenCommandRead(char **into, size_t max_len)
-{
-  if (!command_flag) { return 0; }
-  return MAIN_THREAD_EM_ASM_INT({
-      var next_command = RPE.command_queue.shift();
-      var length = lengthBytesUTF8(next_command);
-      if (length > $2) {
-        console.error("[CMD] Command too long, skipping", next_command);
-        return 0;
-      }
-      stringToUTF8(next_command, $1, $2);
-      if (RPE.command_queue.length == 0) {
-        setValue($0, 0, 'i8');
-      }
-      return length;
-    }, &command_flag, into, max_len);
-}
-
-void PlatformEmscriptenCommandRaiseFlag()
-{
-   command_flag = true;
-}
 
 typedef struct
 {
@@ -118,6 +87,7 @@ typedef struct
    volatile bool power_state_charging;
    volatile bool power_state_supported;
    volatile bool window_hidden;
+   volatile bool command_flag;
 } emscripten_platform_data_t;
 
 static emscripten_platform_data_t *emscripten_platform_data = NULL;
@@ -288,27 +258,62 @@ void update_memory_usage(uint32_t used1, uint32_t used2, uint32_t limit1, uint32
    PLATFORM_SETVAL(u64, &emscripten_platform_data->memory_limit, limit1 | ((uint64_t)limit2 << 32));
 }
 
+void PlatformEmscriptenCommandRaiseFlag()
+{
+   if (!emscripten_platform_data)
+      return;
+   emscripten_platform_data->command_flag = true;
+}
+
 /* platform specific c helpers */
+
+void PlatformEmscriptenCommandReply(const char *msg, size_t len)
+{
+   MAIN_THREAD_EM_ASM({
+      var message = UTF8ToString($0, $1);
+      RPE.command_reply_queue.push(message);
+   }, msg, len);
+}
+
+size_t PlatformEmscriptenCommandRead(char **into, size_t max_len)
+{
+   if (!emscripten_platform_data || !emscripten_platform_data->command_flag)
+      return 0;
+   return MAIN_THREAD_EM_ASM_INT({
+      var next_command = RPE.command_queue.shift();
+      var length = lengthBytesUTF8(next_command);
+      if (length > $2) {
+         console.error("[CMD] Command too long, skipping", next_command);
+         return 0;
+      }
+      stringToUTF8(next_command, $1, $2);
+      if (RPE.command_queue.length == 0) {
+         setValue($0, 0, 'i8');
+      }
+      return length;
+    }, &emscripten_platform_data->command_flag, into, max_len);
+}
 
 void platform_emscripten_get_canvas_size(int *width, int *height)
 {
-   if (!emscripten_platform_data ||
-       (emscripten_platform_data->canvas_width == 0 && emscripten_platform_data->canvas_height == 0))
-   {
-      *width  = 800;
-      *height = 600;
-      RARCH_ERR("[EMSCRIPTEN]: Could not get screen dimensions!\n");
-   }
-   else
-   {
-      *width  = emscripten_platform_data->canvas_width;
-      *height = emscripten_platform_data->canvas_height;
-   }
+   if (!emscripten_platform_data)
+      goto error;
+
+   *width  = PLATFORM_GETVAL(u32, &emscripten_platform_data->canvas_width);
+   *height = PLATFORM_GETVAL(u32, &emscripten_platform_data->canvas_height);
+
+   if (*width != 0 || *height != 0)
+      return;
+
+error:
+   *width  = 800;
+   *height = 600;
+   RARCH_ERR("[EMSCRIPTEN]: Could not get screen dimensions!\n");
 }
 
 double platform_emscripten_get_dpr(void)
 {
-   return emscripten_platform_data->device_pixel_ratio;
+   return PLATFORM_GETVAL(f64, &emscripten_platform_data->device_pixel_ratio);
 }
 
 bool platform_emscripten_is_window_hidden(void)
@@ -440,19 +445,22 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 static enum frontend_powerstate frontend_emscripten_get_powerstate(int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+   int level;
 
    if (!emscripten_platform_data || !emscripten_platform_data->power_state_supported)
       return ret;
 
+   level = PLATFORM_GETVAL(f32, &emscripten_platform_data->power_state_level);
+
    if (!emscripten_platform_data->power_state_charging)
       ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
-   else if (emscripten_platform_data->power_state_level == 1)
+   else if (level == 1)
       ret = FRONTEND_POWERSTATE_CHARGED;
    else
       ret = FRONTEND_POWERSTATE_CHARGING;
 
-   *seconds = emscripten_platform_data->power_state_discharge_time;
-   *percent = (int)(emscripten_platform_data->power_state_level * 100);
+   *seconds = PLATFORM_GETVAL(u32, &emscripten_platform_data->power_state_discharge_time);
+   *percent = (int)(level * 100);
 
    return ret;
 }
@@ -461,7 +469,7 @@ static uint64_t frontend_emscripten_get_total_mem(void)
 {
    if (!emscripten_platform_data)
       return 0;
-   return emscripten_platform_data->memory_limit;
+   return PLATFORM_GETVAL(u64, &emscripten_platform_data->memory_limit);
 }
 
 static uint64_t frontend_emscripten_get_free_mem(void)
@@ -469,11 +477,11 @@ static uint64_t frontend_emscripten_get_free_mem(void)
    if (!emscripten_platform_data)
       return 0;
 #ifndef PROXY_TO_PTHREAD
-   uint64_t used = emscripten_platform_data->memory_used;
+   uint64_t used = PLATFORM_GETVAL(u64, &emscripten_platform_data->memory_used);
 #else
    uint64_t used = mallinfo().uordblks;
 #endif
-   return (emscripten_platform_data->memory_limit - used);
+   return (PLATFORM_GETVAL(u64, &emscripten_platform_data->memory_limit) - used);
 }
 
 /* program entry and startup */
@@ -510,7 +518,7 @@ void platform_emscripten_mount_filesystems(void)
          abort();
       }
    }
-#if false
+
    if (fetch_manifest)
    {
       /* fetch_manifest should be a path to a manifest file.
@@ -575,7 +583,6 @@ void platform_emscripten_mount_filesystems(void)
       fclose(file);
       free(line);
    }
-#endif
 }
 #endif /* HAVE_WASMFS */
 
@@ -608,6 +615,10 @@ static void *main_pthread(void* arg)
 int main(int argc, char *argv[])
 {
    int ret = 0;
+#ifdef PROXY_TO_PTHREAD
+   pthread_attr_t attr;
+   pthread_t thread;
+#endif
    // this never gets freed
    emscripten_platform_data = (emscripten_platform_data_t *)calloc(1, sizeof(emscripten_platform_data_t));
 
@@ -619,8 +630,6 @@ int main(int argc, char *argv[])
 #ifdef PROXY_TO_PTHREAD
    _main_argc = argc;
    _main_argv = argv;
-   pthread_attr_t attr;
-   pthread_t thread;
    pthread_attr_init(&attr);
    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
    pthread_attr_setstacksize(&attr, EMSCRIPTEN_STACK_SIZE);

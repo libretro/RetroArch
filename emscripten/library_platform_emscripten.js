@@ -3,7 +3,7 @@
 var LibraryPlatformEmscripten = {
    $RPE: {
       powerStateChange: function(e) {
-         Module._update_power_state(true, Number.isFinite(e.target.dischargingTime) ? e.target.dischargingTime : 0x7FFFFFFF, e.target.level, e.target.charging);
+         _update_power_state(true, Number.isFinite(e.target.dischargingTime) ? e.target.dischargingTime : 0x7FFFFFFF, e.target.level, e.target.charging);
       },
 
       updateMemoryUsage: function() {
@@ -11,7 +11,7 @@ var LibraryPlatformEmscripten = {
          var used = BigInt(performance.memory.usedJSHeapSize || 0);
          var limit = BigInt(performance.memory.jsHeapSizeLimit || 0);
          // emscripten currently only supports passing 32 bit ints, so pack it
-         Module._update_memory_usage(Number(used & 0xFFFFFFFFn), Number(used >> 32n), Number(limit & 0xFFFFFFFFn), Number(limit >> 32n));
+         _update_memory_usage(Number(used & 0xFFFFFFFFn), Number(used >> 32n), Number(limit & 0xFFFFFFFFn), Number(limit >> 32n));
          setTimeout(RPE.updateMemoryUsage, 5000);
       },
       command_queue: [],
@@ -37,7 +37,7 @@ var LibraryPlatformEmscripten = {
          }
          // doubles are too big to pass as an argument to exported functions
          {{{ makeSetValue("dpr", "0", "window.devicePixelRatio", "double") }}};
-         Module._update_canvas_dimensions(width, height, dpr);
+         _update_canvas_dimensions(width, height, dpr);
       });
       RPE.observer.observe(Module.canvas);
       window.addEventListener("resize", function() {
@@ -48,7 +48,7 @@ var LibraryPlatformEmscripten = {
 
    PlatformEmscriptenWatchWindowVisibility: function() {
       document.addEventListener("visibilitychange", function() {
-         Module._update_window_hidden(document.visibilityState == "hidden");
+         _update_window_hidden(document.visibilityState == "hidden");
       }, false);
    },
 

@@ -56,6 +56,7 @@ HAVE_BSV_MOVIE = 1
 HAVE_AL = 1
 HAVE_CHD ?= 0
 HAVE_NETPLAYDISCOVERY ?= 0
+HAVE_THREADS ?= 0
 
 # WARNING -- READ BEFORE ENABLING
 # The rwebaudio driver is known to have several audio bugs, such as
@@ -79,7 +80,6 @@ PROXY_TO_PTHREAD ?= 0
 
 ASYNC ?= 0
 LTO ?= 0
-PTHREAD ?= 0
 PTHREAD_POOL_SIZE ?= 4
 
 STACK_SIZE ?= 4194304
@@ -121,7 +121,8 @@ endif
 ifeq ($(PROXY_TO_PTHREAD), 1)
    LIBS += -s OFFSCREENCANVAS_SUPPORT
    DEFINES += -DPROXY_TO_PTHREAD -DEMSCRIPTEN_STACK_SIZE=$(STACK_SIZE)
-   override PTHREAD = 1
+   override HAVE_THREADS = 1
+   # use the default stack size for the browser thread; the RetroArch thread will be created with the specified stack size
    override STACK_SIZE = 4194304
 else ifeq ($(HAVE_AL), 1)
    override ASYNC = 1
@@ -169,19 +170,16 @@ ifeq ($(HAVE_AL), 1)
    DEFINES += -DHAVE_AL
 endif
 
-ifeq ($(PTHREAD), 1)
+ifeq ($(HAVE_THREADS), 1)
    LDFLAGS += -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD_POOL_SIZE)
    CFLAGS += -pthread -s SHARED_MEMORY
-   HAVE_THREADS = 1
-else
-   HAVE_THREADS = 0
 endif
 
 ifeq ($(ASYNC), 1)
    DEFINES += -DEMSCRIPTEN_ASYNCIFY
    LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=8192
    ifeq ($(DEBUG), 1)
-      # LDFLAGS += -s ASYNCIFY_DEBUG=1 # -s ASYNCIFY_ADVISE
+      LDFLAGS += -s ASYNCIFY_DEBUG=1 # -s ASYNCIFY_ADVISE
    endif
 endif
 
@@ -205,7 +203,8 @@ endif
 
 ifeq ($(DEBUG), 1)
    LDFLAGS += -O0 -g -gsource-map -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
-   CFLAGS += -O0 -g -gsource-map
+   # -O0 in cflags gives "too many locals" errors
+   CFLAGS += -O1 -g -gsource-map
 else
    LDFLAGS += -O3
    # WARNING: some optimizations can break some cores (ex: LTO breaks tyrquake)
