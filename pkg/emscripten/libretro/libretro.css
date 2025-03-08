@@ -81,12 +81,22 @@
   }
 }
 
-/**
- * Disable the border around the player.
- */
 canvas.webplayer {
   border: none;
   outline: none;
+  width: 800px;
+  height: 600px;
+}
+
+/**
+ * Hack to make emscripten stop messing with the canvas size while in fullscreen.
+ * Foiled again!
+ */
+:fullscreen canvas.webplayer {
+  min-width: 100vw;
+  max-width: 100vw;
+  min-height: 100vh;
+  max-height: 100vh;
 }
 
 textarea {

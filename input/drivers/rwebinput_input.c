@@ -45,6 +45,8 @@
 
 #define MAX_TOUCH 32
 
+double platform_emscripten_get_dpr(void);
+
 typedef struct rwebinput_key_to_code_map_entry
 {
    const char *key;
@@ -299,7 +301,7 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
    }
    else
    {
-      double dpr = emscripten_get_device_pixel_ratio();
+      double dpr = platform_emscripten_get_dpr();
       rwebinput->mouse.x = (int)(mouse_event->targetX * dpr);
       rwebinput->mouse.y = (int)(mouse_event->targetY * dpr);
    }
@@ -317,7 +319,7 @@ static EM_BOOL rwebinput_wheel_cb(int event_type,
 {
    rwebinput_input_t       *rwebinput = (rwebinput_input_t*)user_data;
 
-   double dpr = emscripten_get_device_pixel_ratio();
+   double dpr = platform_emscripten_get_dpr();
    rwebinput->mouse.pending_scroll_x += wheel_event->deltaX * dpr;
    rwebinput->mouse.pending_scroll_y += wheel_event->deltaY * dpr;
 
@@ -341,7 +343,7 @@ static EM_BOOL rwebinput_touch_cb(int event_type,
             if (!(touch_event->touches[touch].isChanged) && rwebinput->pointer[touch].id == touch_event->touches[touch].identifier)
                continue;
 
-            double dpr = emscripten_get_device_pixel_ratio();
+            double dpr = platform_emscripten_get_dpr();
             rwebinput->pointer[touch].x  = (int)(touch_event->touches[touch].targetX * dpr);
             rwebinput->pointer[touch].y  = (int)(touch_event->touches[touch].targetY * dpr);
             rwebinput->pointer[touch].id = touch_event->touches[touch].identifier;
@@ -416,8 +418,9 @@ static void *rwebinput_input_init(const char *joypad_driver)
 
    rwebinput_generate_lut();
 
-   r = emscripten_set_keydown_callback(
-         "#canvas", rwebinput, false,
+   input_keymaps_init_keyboard_lut(rarch_key_map_rwebinput);
+
+   r = emscripten_set_keydown_callback("#canvas", rwebinput, false,
          rwebinput_keyboard_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -425,8 +428,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
          "[EMSCRIPTEN/INPUT] failed to create keydown callback: %d\n", r);
    }
 
-   r = emscripten_set_keyup_callback(
-         "#canvas", rwebinput, false,
+   r = emscripten_set_keyup_callback("#canvas", rwebinput, false,
          rwebinput_keyboard_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -434,8 +436,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
          "[EMSCRIPTEN/INPUT] failed to create keyup callback: %d\n", r);
    }
 
-   r = emscripten_set_keypress_callback(
-         "#canvas", rwebinput, false,
+   r = emscripten_set_keypress_callback("#canvas", rwebinput, false,
          rwebinput_keyboard_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -467,8 +468,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
          "[EMSCRIPTEN/INPUT] failed to create mousemove callback: %d\n", r);
    }
 
-   r = emscripten_set_wheel_callback(
-         "#canvas", rwebinput, false,
+   r = emscripten_set_wheel_callback("#canvas", rwebinput, false,
          rwebinput_wheel_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -516,8 +516,6 @@ static void *rwebinput_input_init(const char *joypad_driver)
       RARCH_ERR(
          "[EMSCRIPTEN/INPUT] failed to create pointerlockchange callback: %d\n", r);
    }
-
-   input_keymaps_init_keyboard_lut(rarch_key_map_rwebinput);
 
    return rwebinput;
 }

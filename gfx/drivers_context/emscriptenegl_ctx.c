@@ -33,6 +33,8 @@
 #include "../common/egl_common.h"
 #endif
 
+void platform_emscripten_get_canvas_size(int *width, int *height);
+
 typedef struct
 {
 #ifdef HAVE_EGL
@@ -50,18 +52,6 @@ static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
       emscripten_set_main_loop_timing(EM_TIMING_RAF, interval);
 }
 
-static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
-{
-   EMSCRIPTEN_RESULT r = emscripten_get_canvas_element_size("#canvas", width, height);
-
-   if (r != EMSCRIPTEN_RESULT_SUCCESS)
-   {
-      *width  = 800;
-      *height = 600;
-      RARCH_ERR("[EMSCRIPTEN/EGL]: Could not get screen dimensions: %d\n",r);
-   }
-}
-
 static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
@@ -69,7 +59,8 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    int input_height;
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
-   gfx_ctx_emscripten_get_canvas_size(&input_width, &input_height);
+   platform_emscripten_get_canvas_size(&input_width, &input_height);
+
    *resize = (emscripten->fb_width != input_width || emscripten->fb_height != input_height);
    *width  = emscripten->fb_width  = (unsigned)input_width;
    *height = emscripten->fb_height = (unsigned)input_height;
@@ -93,10 +84,9 @@ static void gfx_ctx_emscripten_get_video_size(void *data,
 
    if (!emscripten)
       return;
-   int w, h;
-   gfx_ctx_emscripten_get_canvas_size(&w, &h);
-   *width = w;
-   *height = h;
+
+   *width  = emscripten->fb_width;
+   *height = emscripten->fb_height;
 }
 
 static bool gfx_ctx_emscripten_get_metrics(void *data,
