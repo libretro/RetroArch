@@ -3515,6 +3515,18 @@ MSG_HASH(
    "Адна кнопка (Утрымліванне)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   "Турба-кнопка"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
+   "Дазвол турба на кірункі D-Pad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
+   "Калі ўключана, уводы лічбавых кірункаў (таксама вядомыя як d-pad ці 'hatswitch') могуць быць турба."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Турба-кнопкі"
    )
