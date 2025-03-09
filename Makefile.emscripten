@@ -13,8 +13,9 @@ EOPTS = $(addprefix -s $(EMPTY), $(EOPT)) # Add '-s ' to each option
 
 OS = Emscripten
 OBJ :=
-DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN
-DEFINES += -DHAVE_FILTERS_BUILTIN
+DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN -DEMSCRIPTEN -DNO_CANVAS_RESIZE
+DEFINES += -DHAVE_FILTERS_BUILTIN -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORE_INFO
+
 HAVE_PATCH = 1
 HAVE_DSP_FILTER = 1
 HAVE_VIDEO_FILTER = 1
@@ -29,7 +30,7 @@ HAVE_SCREENSHOTS = 1
 HAVE_REWIND = 1
 HAVE_AUDIOMIXER = 1
 HAVE_CC_RESAMPLER = 1
-HAVE_EGL    ?= 1
+HAVE_EGL ?= 0
 HAVE_OPENGLES = 1
 HAVE_RJPEG  = 0
 HAVE_RPNG   = 1
@@ -54,12 +55,8 @@ HAVE_7ZIP = 1
 HAVE_BSV_MOVIE = 1
 HAVE_AL = 1
 HAVE_CHD ?= 0
-HAVE_WASMFS ?= 0
-PROXY_TO_PTHREAD ?= 0
 HAVE_NETPLAYDISCOVERY ?= 0
-
-DEFINES += -DHAVE_NETWORKING -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_COMPRESSION
-DEFINES += -DHAVE_UPDATE_CORE_INFO
+HAVE_THREADS ?= 0
 
 # WARNING -- READ BEFORE ENABLING
 # The rwebaudio driver is known to have several audio bugs, such as
@@ -78,9 +75,12 @@ FS_DEBUG = 0
 HAVE_OPENGLES ?= 1
 HAVE_OPENGLES3 ?= 0
 
-ASYNC ?= 1
+HAVE_WASMFS ?= 0
+PROXY_TO_PTHREAD ?= 0
+
+ASYNC ?= 0
 LTO ?= 0
-PTHREAD ?= 0
+PTHREAD_POOL_SIZE ?= 4
 
 STACK_SIZE ?= 4194304
 INITIAL_HEAP ?= 134217728
@@ -102,55 +102,58 @@ OBJDIR := obj-emscripten
 EXPORTED_FUNCTIONS = _main,_malloc,_free,_cmd_savefiles,_cmd_save_state,_cmd_load_state,_cmd_undo_save_state,_cmd_undo_load_state,_cmd_take_screenshot,\
 _cmd_toggle_menu,_cmd_reload_config,_cmd_toggle_grab_mouse,_cmd_toggle_game_focus,_cmd_reset,_cmd_toggle_pause,_cmd_pause,_cmd_unpause,\
 _cmd_set_volume,_cmd_set_shader,_cmd_cheat_set_code,_cmd_cheat_get_code,_cmd_cheat_toggle_index,_cmd_cheat_get_code_state,_cmd_cheat_realloc,\
-_cmd_cheat_get_size,_cmd_cheat_apply_cheats,EmscriptenSendCommand,EmscriptenReceiveCommandReply
+_cmd_cheat_get_size,_cmd_cheat_apply_cheats,_update_canvas_dimensions,_update_window_hidden,_update_power_state,_update_memory_usage,\
+EmscriptenSendCommand,EmscriptenReceiveCommandReply
 
-EXPORTS := callMain,FS,PATH,ERRNO_CODES,ENV,stringToNewUTF8,UTF8ToString,Browser,GL,EmscriptenSendCommand,EmscriptenReceiveCommandReply
+EXPORTS := callMain,FS,PATH,ERRNO_CODES,ENV,stringToNewUTF8,UTF8ToString,Browser,EmscriptenSendCommand,EmscriptenReceiveCommandReply
 
-LIBS    := -s USE_ZLIB=1 -lbrowser.js
+LIBS    := -s USE_ZLIB=1
 
 ifeq ($(HAVE_WASMFS), 1)
-   DEFINES += -DHAVE_WASMFS=1
-   LIBS += -sWASMFS -sFORCE_FILESYSTEM=1 -lfetchfs.js -lopfs.js
-   EXPORTS := $(EXPORTS),FETCHFS,OPFS
-   ifeq ($(PTHREAD),0)
-   $(error ERROR: WASMFS requires threading support)
+   LIBS += -s WASMFS -s FORCE_FILESYSTEM=1 -lfetchfs.js -lopfs.js
+   DEFINES += -DHAVE_WASMFS
+   ifeq ($(PROXY_TO_PTHREAD), 0)
+      $(error ERROR: WASMFS requires PROXY_TO_PTHREAD)
    endif
 endif
 
-ifeq ($(PROXY_TO_PTHREAD),1)
-   LIBS += -sENVIRONMENT=worker,web
-   LIBS += -sPROXY_TO_PTHREAD -sOFFSCREENCANVAS_SUPPORT
-   DEFINES += -DUSE_OFFSCREENCANVAS=1 -DPROXY_TO_PTHREAD=1
-else
+# note: real PROXY_TO_PTHREAD is not used here; we do the pthread management ourselves
+ifeq ($(PROXY_TO_PTHREAD), 1)
+   LIBS += -s OFFSCREENCANVAS_SUPPORT
+   DEFINES += -DPROXY_TO_PTHREAD -DEMSCRIPTEN_STACK_SIZE=$(STACK_SIZE)
+   override HAVE_THREADS = 1
+   # use the default stack size for the browser thread; the RetroArch thread will be created with the specified stack size
+   override STACK_SIZE = 4194304
+else ifeq ($(HAVE_AL), 1)
    override ASYNC = 1
 endif
-   
+
 ifeq ($(HAVE_SDL2), 1)
    LIBS += -s USE_SDL=2
    DEFINES += -DHAVE_SDL2
 endif
-
 
 LDFLAGS := -L. --no-heap-copy -s STACK_SIZE=$(STACK_SIZE) -s INITIAL_MEMORY=$(INITIAL_HEAP) \
            -s EXPORTED_RUNTIME_METHODS=$(EXPORTS) \
            -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="$(EXPORTED_FUNCTIONS)" \
            -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME="libretro_$(subst -,_,$(LIBRETRO))" \
            -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 \
+           -s ENVIRONMENT=web,worker \
            --extern-pre-js emscripten/pre.js \
            --js-library emscripten/library_rwebcam.js \
-           -gsource-map -g2 \
            --js-library emscripten/library_platform_emscripten.js
 
 ifeq ($(HAVE_OPENGLES), 1)
    ifeq ($(HAVE_OPENGLES3), 1)
-      LDFLAGS += -s FULL_ES3=1 -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2 -lGL
+      LDFLAGS += -s FULL_ES3=1 -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2
    else
-      LDFLAGS += -s FULL_ES2=1 -s MIN_WEBGL_VERSION=1 -s MAX_WEBGL_VERSION=2 -lGL
+      LDFLAGS += -s FULL_ES2=1 -s MIN_WEBGL_VERSION=1 -s MAX_WEBGL_VERSION=2
    endif
 endif
 
 ifeq ($(GL_DEBUG), 1)
-   LDFLAGS += -s GL_ASSERTIONS=1 -s GL_DEBUG=1 -DHAVE_GL_DEBUG_ES=1
+   LDFLAGS += -s GL_ASSERTIONS=1 -s GL_DEBUG=1
+   DEFINES += -DHAVE_GL_DEBUG_ES=1
 endif
 
 ifeq ($(FS_DEBUG), 1)
@@ -167,18 +170,14 @@ ifeq ($(HAVE_AL), 1)
    DEFINES += -DHAVE_AL
 endif
 
-ifneq ($(PTHREAD), 0)
-   LDFLAGS += -s WASM_MEM_MAX=1073741824 -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD)
+ifeq ($(HAVE_THREADS), 1)
+   LDFLAGS += -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD_POOL_SIZE)
    CFLAGS += -pthread -s SHARED_MEMORY
-   HAVE_THREADS=1
-else
-   HAVE_THREADS=0
 endif
-
 
 ifeq ($(ASYNC), 1)
    DEFINES += -DEMSCRIPTEN_ASYNCIFY
-   LDFLAGS += -s ASYNCIFY=$(ASYNC) -s ASYNCIFY_STACK_SIZE=8192 
+   LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=8192
    ifeq ($(DEBUG), 1)
       LDFLAGS += -s ASYNCIFY_DEBUG=1 # -s ASYNCIFY_ADVISE
    endif
@@ -204,7 +203,8 @@ endif
 
 ifeq ($(DEBUG), 1)
    LDFLAGS += -O0 -g -gsource-map -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
-   CFLAGS += -O0 -g -gsource-map
+   # -O0 in cflags gives "too many locals" errors
+   CFLAGS += -O1 -g -gsource-map
 else
    LDFLAGS += -O3
    # WARNING: some optimizations can break some cores (ex: LTO breaks tyrquake)

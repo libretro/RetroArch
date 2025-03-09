@@ -17,58 +17,11 @@ var Module = {
    message_accum: "",
 
    retroArchSend: function(msg) {
-      let bytes = this.encoder.encode(msg + "\n");
-      this.message_queue.push([bytes, 0]);
+      this.EmscriptenSendCommand(msg);
    },
    retroArchRecv: function() {
-      let out = this.message_out.shift();
-      if (out == null && this.message_accum != "") {
-         out = this.message_accum;
-         this.message_accum = "";
-      }
-      return out;
+      return this.EmscriptenReceiveCommandReply();
    },
-   preRun: [
-      function(module) {
-         function stdin() {
-            // Return ASCII code of character, or null if no input
-            while (module.message_queue.length > 0) {
-               var msg = module.message_queue[0][0];
-               var index = module.message_queue[0][1];
-               if (index >= msg.length) {
-                  module.message_queue.shift();
-               } else {
-                  module.message_queue[0][1] = index + 1;
-                  // assumption: msg is a uint8array
-                  return msg[index];
-               }
-            }
-            return null;
-         }
-
-         function stdout(c) {
-            if (c == null) {
-               // flush
-               if (module.message_accum != "") {
-                  module.message_out.push(module.message_accum);
-                  module.message_accum = "";
-               }
-            } else {
-               let s = String.fromCharCode(c);
-               if (s == "\n") {
-                  if (module.message_accum != "") {
-                     module.message_out.push(module.message_accum);
-                     module.message_accum = "";
-                  }
-               } else {
-                  module.message_accum = module.message_accum + s;
-               }
-            }
-         }
-         module.FS.init(stdin, stdout);
-      }
-   ],
-   postRun: [],
    onRuntimeInitialized: function() {
       appInitialized();
    },
@@ -197,13 +150,13 @@ function setupFileSystem(backend) {
    // create a mountable filesystem that will server as a root mountpoint for browserfs
    var mfs = new BrowserFS.FileSystem.MountableFileSystem();
 
-   // create an XmlHttpRequest filesystem for the bundled data
+   // create a ZipFS filesystem for the bundled data
    var zipfs = new BrowserFS.FileSystem.ZipFS(zipTOC);
    // create an XmlHttpRequest filesystem for core assets
    var xfs = new BrowserFS.FileSystem.XmlHttpRequest(".index-xhr", "assets/cores/");
 
    console.log("WEBPLAYER: initializing filesystem: " + backend);
-   mfs.mount('/home/web_user/retroarch/', zipfs);
+   mfs.mount('/home/web_user/retroarch', zipfs);
    mfs.mount('/home/web_user/retroarch/userdata', afs);
    mfs.mount('/home/web_user/retroarch/userdata/content/downloads', xfs);
    BrowserFS.initialize(mfs);

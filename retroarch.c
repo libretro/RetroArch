@@ -86,6 +86,7 @@
 
 #ifdef EMSCRIPTEN
 #include <emscripten/emscripten.h>
+#include "gfx/common/gl_common.h"
 #endif
 
 #ifdef HAVE_LIBNX
@@ -5959,8 +5960,10 @@ int rarch_main(int argc, char *argv[], void *data)
 }
 
 #if defined(EMSCRIPTEN)
-#include "gfx/common/gl_common.h"
 
+#ifdef PROXY_TO_PTHREAD
+bool platform_emscripten_is_window_hidden(void);
+#endif
 #ifdef HAVE_RWEBAUDIO
 void RWebAudioRecalibrateTime(void);
 #endif
@@ -5978,6 +5981,13 @@ void emscripten_mainloop(void)
    uint32_t runloop_flags                 = runloop_get_flags();
    bool runloop_is_slowmotion             = (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false;
    bool runloop_is_paused                 = (runloop_flags & RUNLOOP_FLAG_PAUSED)     ? true : false;
+
+#ifdef PROXY_TO_PTHREAD
+   // ensure the same behavior when requestAnimationFrame is emulated (i.e. pause when window is hidden)
+   // todo: is this an emscripten bug?
+   if (!input_driver_nonblock_state && platform_emscripten_is_window_hidden())
+      return;
+#endif
 
 #ifdef HAVE_RWEBAUDIO
    RWebAudioRecalibrateTime();
