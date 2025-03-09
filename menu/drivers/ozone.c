@@ -59,10 +59,6 @@
 #include "../../cheevos/cheevos_menu.h"
 #endif
 
-#ifdef HAVE_DISCORD_OWN_AVATAR
-#include "../../discord/discord.h"
-#endif
-
 #define ANIMATION_PUSH_ENTRY_DURATION 166.66667f
 #define ANIMATION_CURSOR_DURATION     166.66667f
 #define ANIMATION_CURSOR_PULSE        166.66667f * 3
@@ -165,9 +161,6 @@ enum OZONE_TEXTURE
 {
    OZONE_TEXTURE_RETROARCH = 0,
    OZONE_TEXTURE_CURSOR_BORDER,
-#ifdef HAVE_DISCORD_OWN_AVATAR
-   OZONE_TEXTURE_DISCORD_OWN_AVATAR,
-#endif
    OZONE_TEXTURE_LAST
 };
 
@@ -9435,33 +9428,11 @@ static void ozone_context_reset(void *data, bool is_threaded)
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
       {
          char filename[64];
-#ifdef HAVE_DISCORD_OWN_AVATAR
-         if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
-            fill_pathname(filename, discord_get_own_avatar(),
-                  ".png", sizeof(filename));
-         else
-#endif
-         {
-            strlcpy(filename, OZONE_TEXTURES_FILES[i], sizeof(filename));
-         }
+         strlcpy(filename, OZONE_TEXTURES_FILES[i], sizeof(filename));
 
-#ifdef HAVE_DISCORD_OWN_AVATAR
-         if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
-         {
-            char buf[PATH_MAX_LENGTH];
-            fill_pathname_application_special(buf,
-               sizeof(buf),
-               APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
-            gfx_display_reset_textures_list(filename,
-                  buf, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
-         }
-         else
-#endif
-         {
-            if (!gfx_display_reset_textures_list(filename,
-                  ozone->png_path, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
-               ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
-         }
+         if (!gfx_display_reset_textures_list(filename,
+               ozone->png_path, &ozone->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+            ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
       }
 
       /* Sidebar textures */
@@ -10556,42 +10527,22 @@ static void ozone_draw_header(
          dispctx->blend_begin(userdata);
       if (dispctx->draw)
       {
-#ifdef HAVE_DISCORD_OWN_AVATAR
-         if (discord_avatar_is_ready())
-            ozone_draw_icon(
-                  p_disp,
-                  userdata,
-                  video_width,
-                  video_height,
-                  logo_icon_size,
-                  logo_icon_size,
-                  ozone->textures[OZONE_TEXTURE_DISCORD_OWN_AVATAR],
-                  47 * scale_factor,
-                  14 * scale_factor, /* Where does this come from...? */
-                  video_width,
-                  video_height,
-                  0.0f,
-                  1.0f,
-                  col,
-                  mymat);
-         else
-#endif
-            ozone_draw_icon(
-                  p_disp,
-                  userdata,
-                  video_width,
-                  video_height,
-                  logo_icon_size,
-                  logo_icon_size,
-                  ozone->textures[OZONE_TEXTURE_RETROARCH],
-                  47 * scale_factor,
-                  (ozone->dimensions.header_height - logo_icon_size) / 2,
-                  video_width,
-                  video_height,
-                  0.0f,
-                  1.0f,
-                  col,
-                  mymat);
+         ozone_draw_icon(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               logo_icon_size,
+               logo_icon_size,
+               ozone->textures[OZONE_TEXTURE_RETROARCH],
+               47 * scale_factor,
+               (ozone->dimensions.header_height - logo_icon_size) / 2,
+               video_width,
+               video_height,
+               0.0f,
+               1.0f,
+               col,
+               mymat);
       }
       if (dispctx->blend_end)
          dispctx->blend_end(userdata);
@@ -11676,16 +11627,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    video_driver_state_t *video_st         = video_state_get_ptr();
    struct menu_state *menu_st             = menu_state_get_ptr();
    menu_list_t *menu_list                 = menu_st->entries.list;
-
-#ifdef HAVE_DISCORD_OWN_AVATAR
-   static bool reset                      = false;
-
-   if (discord_avatar_is_ready() && !reset)
-   {
-      ozone_context_reset(data, false);
-      reset = true;
-   }
-#endif
 
    if (!ozone)
       return;
