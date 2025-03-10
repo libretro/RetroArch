@@ -1269,6 +1269,10 @@ MSG_HASH(
    "Po włączeniu pliki konfiguracyjne zostaną zsynchronizowane z chmurą."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Po włączeniu miniaturki zostaną zsynchronizowane z chmurą. Na ogół niezalecane z wyjątkiem dużych kolekcji niestandardowych obrazów miniatur; w przeciwnym razie lepszy wybór jest pobieracz miniatur."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
    "Gdy włączone, pliki systemowe będą synchronizowane z chmurą. To może znacząco wydłużyć czas potrzebny do synchronizacji; używaj z ostrożnością."
    )
@@ -1742,6 +1746,10 @@ MSG_HASH(
    "Sterownik PulseAudio. Jeśli system używa PulseAudio, upewnij się, że używasz tego sterownika zamiast np. ALSA."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "Sterownik PipeWire. Jeśli system używa PipeWire, upewnij się, że używasz tego sterownika zamiast np. PulseAudio."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Sterownik Jack Audio Connection Kit."
    )
@@ -1927,6 +1935,10 @@ MSG_HASH(
    "Wstawianie czarnej klatki"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "OSTRZEŻENIE: Szybkie migotanie może spowodować utrzymywanie się obrazu na niektórych wyświetlaczach. Używaj na własne ryzyko // Wstaw czarne ramki między klatkami. Może znacznie zmniejszyć rozmycie ruchu poprzez emulowanie skanowania CRT, ale kosztem jasności."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    "Wstawia czarne ramki pomiędzy ramkami w celu zwiększenia jasności ruchu. Użyj opcji tylko dla aktualnego wskaźnika odświeżania ekranu. Nie używać z szybkością odświeżania, które nie są wielokrotnościami 60Hz, takimi jak 144Hz, 165Hz itp. Nie łączyć z Interwalem Swap > 1, podramki, ramki Frame lub Synchronizuj z dokładną zawartością. Pozostawienie systemu VRR jest w porządku, a nie to ustawienie. Jeśli zauważysz dowolne tymczasowe zatrzymanie obrazu, powinieneś wyłącz[...]"
    )
@@ -2007,6 +2019,10 @@ MSG_HASH(
    "Pod-klatki shadera"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "OSTRZEŻENIE: Szybkie migotanie może spowodować utrzymywanie się obrazu na niektórych wyświetlaczach. Użwać na własne ryzyko // Symuluje prostą kroczącą linię skanującą nad wieloma podklatkami poprzez podzielenie ekranu pionowo i renderowanie każdej części ekranu w zależności od liczby podklatek."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    "Wstawia dodatkowe klatki shaderów pomiędzy klatkami dla wszelkich możliwych efektów shaderów, które są zaprojektowane do działania szybciej niż częstotliwość zawartości. Używaj tylko opcji wyznaczonej dla bieżącej częstotliwości odświeżania wyświetlacza. Nie używać przy częstotliwościach odświeżania, które nie są wielokrotnościami 60 Hz, takich jak 144 Hz, 165 Hz itp. Nie łączyć z opcjami Interwał zmiany klatek > 1, BFI, Opóźnienie klatek lub Synchronizuj do d[...]"
    )
@@ -2077,6 +2093,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "Symulacja prześwietlania"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "OSTRZEŻENIE: Szybkie migotanie może spowodować utrzymywanie się obrazu na niektórych wyświetlaczach. Użwać na własne ryzyko // Symuluje prostą kroczącą linię skanującą nad wieloma podklatkami poprzez podzielenie ekranu pionowo i renderowanie każdej części ekranu w zależności od liczby podklatek."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
@@ -2492,6 +2512,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    "Skala całkowita"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Skaluj wideo tylko w krokach całkowitych. Rozmiar bazowy zależy od geometrii i proporcji podanej w rdzeniu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
