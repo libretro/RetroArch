@@ -535,7 +535,10 @@ void platform_emscripten_mount_filesystems(void)
        */
       int max_line_len = 1024;
       if (!(fetch_manifest && fetch_base_dir))
+      {
          printf("[FetchFS] must specify both FETCH_MANIFEST and FETCH_BASE_DIR\n");
+         abort();
+      }
       printf("[FetchFS] read fetch manifest from %s\n", fetch_manifest);
       FILE *file = fopen(fetch_manifest, "r");
       if (!file)
