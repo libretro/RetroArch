@@ -549,7 +549,7 @@ void platform_emscripten_mount_filesystems(void)
       char *line = calloc(sizeof(char), max_line_len);
       size_t len = max_line_len;
       if (getline(&line, &len, file) == -1 || len == 0)
-         printf("[FetchFS] missing base URL, skipping fetch initialization\n");
+         printf("[FetchFS] missing base URL suggest empty manifest, skipping fetch initialization\n");
       else
       {
          char *base_url = strdup(line);
