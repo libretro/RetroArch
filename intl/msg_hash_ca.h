@@ -7553,8 +7553,16 @@ MSG_HASH(
    "No compatible"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_RECENTLY_UNLOCKED_ENTRY,
+   "Desbloquejat recentment"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ALMOST_THERE_ENTRY,
    "Gairebé allà"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ACTIVE_CHALLENGES_ENTRY,
+   "Desafiaments actius"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
@@ -7742,6 +7750,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    "Seleccioneu la relació d’aspecte del menú. Les relacions de pantalla panoràmica incrementen la resolució horitzontal de la interfície del menú. (Pot caldre reiniciar si l’opció «Bloqueja la relació d’aspecte del menú» està desactivada)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "Bloquejar la relació d'aspecte"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
@@ -8006,6 +8018,10 @@ MSG_HASH(
    "Color de la font vermell"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   "Color de la font (blau)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
    "Disposició"
    )
@@ -8044,6 +8060,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
    "Factor d’esvaïment vertical"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
+   "Mostrar encapçalament amb el títol"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
@@ -8279,6 +8299,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
    "Color del tema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
+   "Miniatura principal"
    )
 
 /* MaterialUI: Settings Options */
@@ -8862,6 +8886,10 @@ MSG_HASH(
    "No heu seleccionat cap disc"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
+   "Comptadors del front-end"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
    "Menú horitzontal"
    )
@@ -8993,12 +9021,20 @@ MSG_HASH(
    "Relació personalitzada"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
+   "Habilitar la gravació de vídeo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
    "Veure coincidència #"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
    "Força la relació d’aspecte"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
+   "Eliminar aquesta coincidència"
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
@@ -9015,6 +9051,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
    "Iniciar contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+   "ID de la pantalla de sortida"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
@@ -9059,6 +9099,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
    "Client de joc en xarxa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
+   "Permetre espectador a Netplay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
@@ -9507,6 +9551,10 @@ MSG_HASH(
    "Ha fallat l’actualització. El fitxer DAT d’arcade és massa gran (no hi ha prou memòria): "
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Afegir a la llista de reproducció"
+   )
+MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,
    "Nucli definit: "
    )
@@ -9911,6 +9959,10 @@ MSG_HASH(
    "Emmagatzematge intern"
    )
 MSG_HASH(
+   MSG_REMOVABLE_STORAGE,
+   "Emmagatzematge extraïble"
+   )
+MSG_HASH(
    MSG_IN_BYTES,
    "en bytes"
    )
@@ -10019,6 +10071,10 @@ MSG_HASH(
    "a"
    )
 MSG_HASH(
+   MSG_UNDID_LOAD_STATE,
+   "S'ha anul·lat la càrrega del desat ràpid."
+   )
+MSG_HASH(
    MSG_UNKNOWN,
    "Desconegut"
    )
@@ -10121,6 +10177,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    "Contrasenya incorrecta."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "S'han afegit %u coincidències."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
@@ -10227,8 +10287,16 @@ MSG_HASH(
    "Cercant al nucli: "
    )
 MSG_HASH(
+   MSG_BACKING_UP_CORE,
+   "Còpia de seguretat del nucli: "
+   )
+MSG_HASH(
    MSG_RESTORING_CORE,
    "Reinicant els nuclis: "
+   )
+MSG_HASH(
+   MSG_INSTALLING_CORE,
+   "Instal·lant el nucli: "
    )
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
@@ -10281,12 +10349,20 @@ MSG_HASH(
    "Separa els Joy-Con"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+   "Resolució de pantalla"
+   )
+MSG_HASH(
    MSG_SCREEN_RESOLUTION_FORMAT_NO_DESC,
    "%u×%u"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_FORMAT_DESC,
    "%u×%u - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Aplicant: predeterminada"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -10596,6 +10672,10 @@ MSG_HASH(
 #else
 #endif
 #ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+   "Pantalla inferior de la 3DS"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
    "Mode de pantalla 3DS"
