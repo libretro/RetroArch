@@ -1,12 +1,25 @@
 # Future
 - 3DS: Fix unique IDs for newer cores
+- APPLE: Enable Vulkan emulated mailbox
+- APPLE: Include b2 core in App Store builds
+- APPLE: CoreMIDI driver for IOS/MacOS
+- APPLE: CoreLocation driver for IOS/MacOS
 - AUTOCONF: Enable alternative display name in autoconfig files
+- AUTOCONF: Make autoconfig failure messages optional
+- AUDIO: Option to mute on rewind
 - AUDIO/PIPEWIRE: Fix app launch when pipewire service is stopped
 - AUDIO/PIPEWIRE: Fix speedup with threaded video mode
 - AUDIO/PIPEWIRE: Fix latency setting and microphone handling
+- AUDIO/PIPEWIRE: Pass the new rate to the audio driver
+- CAMERA: Add PipeWire camera driver
+- CAMERA: Add ffmpeg camera driver
 - CHEEVOS: Include achievement state in netplay states
+- CHEEVOS: Fix crash when entering achievements in quick menu while client is not present
+- CLI: Allow --entryslot to fall back to normal states
 - CLOUDSYNC: Fix Windows path issues
 - CLOUDSYNC: Workaround for duplicated requests bug
+- CLOUDSYNC: Workaround for 301 redirects
+- CLOUDSYNC: Handle ignored directories properly
 - EMSCRIPTEN: Scale window to correct size
 - EMSCRIPTEN: Additional platform functions
 - EMSCRIPTEN/RWEBINPUT: Add touch input support
@@ -15,30 +28,66 @@
 - GENERAL: Fix compilation with --enable-videocore
 - GENERAL: Allow asset directory redefinition and other directory overrides via environment variables
 - GENERAL: Allow override of player 1/2 input with machine learning models (needs recompilation and external library)
+- GENERAL: Fix performance counter option not remembered between sessions
+- GENERAL: Create security statement
+- GENERAL: Fix crash when core is not selected
+- GENERAL: Use core fps instead of screen refresh for calculating dropped frames
 - INPUT: Fix a crash when initializing illuminance sensor on Linux
 - INPUT: Analog-to-digital refactor, fixing behavior when analogs are assigned to keys
+- INPUT: Turbo fire overhaul. See https://github.com/libretro/RetroArch/pull/17633
+- INPUT/ANDROID: Fix game focus and pause handling
 - INPUT/COCOA: Include gravity in acceleration sensor values
+- INPUT/COCOA: Fix relative mouse input
+- INPUT/COCOA: Allow mouse input while mouse overlay is active
 - INPUT/WINRAW: Invert mouse index order
 - IOS: Ensure webserver notice can be dismissed
 - IOS: Fix clean playlist function
+- IOS: Fix crash when scanning
+- IOS: Fix jump back to selected item when closing content
+- IOS: Fix shared GL context setup
+- IOS: Update Launch Screen
+- LAKKA: Remove bluetooth device after disconnection
 - MACOS: Fix some sandbox handling in App Store builds
 - MACOS: Reset keyboard state when focus is lost
 - MENU: Add SSL support to the information list
 - MENU: Add warning to BFI and related menu items
 - MENU: Fix latency statistics when using runahead
 - MENU: Fix opening file inside archive with core selection
+- MENU: Main menu unified between different menu drivers
+- MENU: Visibility toggle for playlist tabs
+- MENU: Color the notification icon by message category
+- MENU: Gray Dark+Light theme adjustments
+- MENU/GLUI: Menu back button switches tabs like in other menu drivers
+- MENU/GLUI: Tab selection option is honored
+- MENU/GLUI: Fix CD icon appearing when no icon is specified
+- MENU/GLUI: Allow fullscreen thumbnail browsing
+- MENU/GLUI: Save state thumbnails
 - MENU/PLAYLISTS: Random selection/shuffle function
 - MENU/QT: Fix desktop menu crash with Cheevos disabled
 - MENU/RGUI: Cleanups of certain menu items
+- MENU/RGUI: Thumbnail fixes
+- MENU/OZONE: Fix messagebox background
+- MENU/XMB: Fix Light theme, font shadow
+- MENU/XMB: Appearance menu cleanup
+- MENU/XMB: Icon thumbnail can be any of the existing types
+- MIDI: Add dropdown items for midi device selection
 - NETWORK: Refactor of net_http, improvements for task blocking and performance
+- NETWORK: Follow http redirects in net_http
+- NETWORK: Expire failed DNS lookups much faster
+- NETWORK: Fix netplay when using netpacket interface with recent cheevos
 - OVERLAY: Preferred overlay loading is now default only on mobile platforms
+- OVERLAY: Improve analog recentering when touching the area just outside the recentering zone
+- REPLAY: Fix issue when replaying old format input recordings in newer RetroArch
+- TTS: Fix initial text-to-speech on Windows
 - TVOS: Fix 720p display
 - TVOS: Fix refresh rate fetching on tvOS 13/14
+- TVOS: Update Top Shelf art
 - SAVESTATES: Reset state index when loading new content
 - UWP: Fix slang shader compilation
 - VIDEO: Enable BFI setting for mobile platforms (mind the warnings)
 - VIDEO/OpenGLES: Fix FP/sRGB FBO support
 - VIDEO/SHADERS: Allow exact refresh rate sync with shader subframes
+- VIDEO/VULKAN: Enable adaptive vsync
 - WEBPLAYER: Update core list for 1.20.0
 
 # 1.20.0
