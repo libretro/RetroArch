@@ -491,6 +491,7 @@ void platform_emscripten_mount_filesystems(void)
 {
    char *opfs_mount = getenv("OPFS_MOUNT");
    char *fetch_manifest = getenv("FETCH_MANIFEST");
+   char *fetch_base_dir = getenv("FETCH_BASE_DIR");
    if (opfs_mount)
    {
       int res;
@@ -518,20 +519,26 @@ void platform_emscripten_mount_filesystems(void)
          abort();
       }
    }
-
-   if (fetch_manifest)
+   if (fetch_manifest || fetch_base_dir)
    {
       /* fetch_manifest should be a path to a manifest file.
          manifest files have this format:
 
+         BASEURL
          URL PATH
          URL PATH
          URL PATH
          ...
 
          Where URL may not contain spaces, but PATH may.
+         URL segments are relative to BASEURL.
        */
       int max_line_len = 1024;
+      if (!(fetch_manifest && fetch_base_dir))
+      {
+         printf("[FetchFS] must specify both FETCH_MANIFEST and FETCH_BASE_DIR\n");
+         abort();
+      }
       printf("[FetchFS] read fetch manifest from %s\n", fetch_manifest);
       FILE *file = fopen(fetch_manifest, "r");
       if (!file)
@@ -541,44 +548,72 @@ void platform_emscripten_mount_filesystems(void)
       }
       char *line = calloc(sizeof(char), max_line_len);
       size_t len = max_line_len;
-      while (getline(&line, &len, file) != -1)
+      if (getline(&line, &len, file) == -1 || len == 0)
+         printf("[FetchFS] missing base URL suggest empty manifest, skipping fetch initialization\n");
+      else
       {
-         char *path = strstr(line, " ");
+         char *base_url = strdup(line);
+         base_url[strcspn(base_url, "\r\n")] = '\0'; // drop newline
+         base_url[len-1] = '\0'; // drop newline
          backend_t fetch;
-         int fd;
-         if (len <= 2 || !path)
+         len = max_line_len;
+         // Don't create fetch backend unless manifest actually has entries
+         while (getline(&line, &len, file) != -1)
          {
-            printf("[FetchFS] Manifest file has invalid line %s\n", line);
-            continue;
-         }
-         *path = '\0';
-         path += 1;
-         path[strcspn(path, "\r\n")] = '\0';
-         printf("[FetchFS] Fetch %s from %s\n", path, line);
-         {
-            char *parent = strdup(path);
-            path_parent_dir(parent, strlen(parent));
-            if (!path_mkdir(parent))
+            if (!fetch)
             {
-               printf("[FetchFS] mkdir error %d\n", errno);
+               fetch = wasmfs_create_fetch_backend(base_url, 16*1024*1024);
+               wasmfs_create_directory(fetch_base_dir, 0777, fetch);
+            }
+            char *realfs_path = strstr(line, " "), *url = line;
+            int fd;
+            if (len <= 2 || !realfs_path)
+            {
+               printf("[FetchFS] Manifest file has invalid line %s\n",line);
+               continue;
+            }
+            *realfs_path = '\0';
+            realfs_path += 1;
+            realfs_path[strcspn(realfs_path, "\r\n")] = '\0';
+            char fetchfs_path[PATH_MAX];
+            fill_pathname_join(fetchfs_path, fetch_base_dir, url, sizeof(fetchfs_path));
+            /* Make the directories for link path */
+            {
+               char *parent = strdup(realfs_path);
+               path_parent_dir(parent, strlen(parent));
+               if (!path_mkdir(parent))
+               {
+                  printf("[FetchFS] mkdir error %s %d\n", realfs_path, errno);
+                  abort();
+               }
+               free(parent);
+            }
+            /* Make the directories for URL path */
+            {
+               char *parent = strdup(fetchfs_path);
+               path_parent_dir(parent, strlen(parent));
+               if (!path_mkdir(parent))
+               {
+                  printf("[FetchFS] mkdir error %s %d\n", fetchfs_path, errno);
+                  abort();
+               }
+               free(parent);
+            }
+            fd = wasmfs_create_file(fetchfs_path, 0777, fetch);
+            if (!fd)
+            {
+               printf("[FetchFS] couldn't create fetch file %s\n", fetchfs_path);
                abort();
             }
-            free(parent);
+            close(fd);
+            if (symlink(fetchfs_path, realfs_path) != 0)
+            {
+               printf("[FetchFS] couldn't create link %s to fetch file %s (errno %d)\n", realfs_path, fetchfs_path, errno);
+               abort();
+            }
+            len = max_line_len;
          }
-         fetch = wasmfs_create_fetch_backend(line, 16*1024*1024);
-         if (!fetch)
-         {
-           printf("[FetchFS] couldn't create fetch backend\n");
-           abort();
-         }
-         fd = wasmfs_create_file(path, 0777, fetch);
-         if (!fd)
-         {
-           printf("[FetchFS] couldn't create fetch file\n");
-           abort();
-         }
-         close(fd);
-         len = max_line_len;
+         free(base_url);
       }
       fclose(file);
       free(line);
