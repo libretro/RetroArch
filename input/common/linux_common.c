@@ -314,6 +314,7 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    char buffer[256];
    double illuminance = 0.0;
    RFILE *in_illuminance_input = NULL;
+   int err = 0;
 
    if (!sensor || sensor->path[0] == '\0')
       return -1.0;
@@ -332,11 +333,15 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
       goto done;
    }
 
+   /* Clear any existing error so we'll know if strtod fails */
+   errno = 0;
+
    /* TODO: This may be locale-sensitive */
    illuminance = strtod(buffer, NULL);
-   if (errno != 0)
+   err = errno;
+   if (err != 0)
    {
-      RARCH_ERR("Failed to parse input \"%s\" into a floating-point value\n", buffer);
+      RARCH_ERR("Failed to parse input \"%s\" into a floating-point value: %s\n", buffer, strerror(err));
       illuminance = -1.0;
       goto done;
    }
