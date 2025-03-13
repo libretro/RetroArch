@@ -72,6 +72,14 @@ MSG_HASH(
    "Select which core to use."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Unload Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "Release the loaded core."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Browse for a libretro core implementation. Where the browser starts depends on your Core Directory path. If blank, it will start in root.\nIf Core Directory is a directory, the menu will use that as top folder. If Core Directory is a full path, it will start in the folder where the file is."
    )

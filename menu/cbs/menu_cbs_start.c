@@ -798,6 +798,7 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
       switch (cbs->enum_idx)
       {
          case MENU_ENUM_LABEL_CORE_LIST:
+         case MENU_ENUM_LABEL_CORE_LIST_UNLOAD:
             BIND_ACTION_START(cbs, action_start_load_core);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
