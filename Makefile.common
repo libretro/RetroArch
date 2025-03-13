@@ -1305,6 +1305,11 @@ ifeq ($(HAVE_WAYLAND), 1)
 
 endif
 
+ifeq ($(HAVE_GLIB), 1)
+  DEF_FLAGS += $(GLIB_CFLAGS)
+  LIBS += $(GLIB_LIBS)
+endif
+
 # XML
 OBJ += \
        $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o \
