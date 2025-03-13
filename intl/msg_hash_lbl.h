@@ -693,7 +693,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CLOSE_CONTENT,
-   "unload_core"
+   "close_content"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_COLLECTION,
@@ -826,6 +826,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_LIST,
    "load_core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_LIST_UNLOAD,
+   "unload_core"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,

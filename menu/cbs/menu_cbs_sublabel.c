@@ -620,6 +620,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_password,              MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_post_filter_record,      MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_start_core,                    MENU_ENUM_SUBLABEL_START_CORE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_list,                     MENU_ENUM_SUBLABEL_CORE_LIST)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_list_unload,              MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_download_core,                 MENU_ENUM_SUBLABEL_DOWNLOAD_CORE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_update_installed_cores,        MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES)
 #if defined(ANDROID)
@@ -4463,6 +4464,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_list);
+            break;
+         case MENU_ENUM_LABEL_CORE_LIST_UNLOAD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_list_unload);
             break;
          case MENU_ENUM_LABEL_SIDELOAD_CORE_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sideload_core_list);

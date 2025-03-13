@@ -15075,9 +15075,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      if (settings->bools.menu_show_load_core)
                      {
-                        if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-                                 MENU_ENUM_LABEL_CORE_LIST, PARSE_ACTION, false) == 0)
-                           count++;
+                        if (!string_is_empty(sys_info->info.library_name))
+                        {
+                           if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                                    MENU_ENUM_LABEL_CORE_LIST_UNLOAD, PARSE_ACTION, false) == 0)
+                              count++;
+                        }
+                        else
+                        {
+                           if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                                    MENU_ENUM_LABEL_CORE_LIST, PARSE_ACTION, false) == 0)
+                              count++;
+                        }
                      }
                   }
                }

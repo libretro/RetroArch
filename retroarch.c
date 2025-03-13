@@ -321,6 +321,7 @@ struct rarch_state
    char path_default_shader_preset[PATH_MAX_LENGTH];
    char path_content[PATH_MAX_LENGTH];
    char path_libretro[PATH_MAX_LENGTH];
+   char path_libretro_last[PATH_MAX_LENGTH];
    char path_config_file[PATH_MAX_LENGTH];
    char path_config_append_file[PATH_MAX_LENGTH];
    char path_config_override_file[PATH_MAX_LENGTH];
@@ -2429,6 +2430,8 @@ char *path_get_ptr(enum rarch_path_type type)
          break;
       case RARCH_PATH_CORE:
          return p_rarch->path_libretro;
+      case RARCH_PATH_CORE_LAST:
+         return p_rarch->path_libretro_last;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -2465,6 +2468,8 @@ const char *path_get(enum rarch_path_type type)
          break;
       case RARCH_PATH_CORE:
          return p_rarch->path_libretro;
+      case RARCH_PATH_CORE_LAST:
+         return p_rarch->path_libretro_last;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -2497,6 +2502,8 @@ size_t path_get_realsize(enum rarch_path_type type)
          return sizeof(p_rarch->path_config_override_file);
       case RARCH_PATH_CORE:
          return sizeof(p_rarch->path_libretro);
+      case RARCH_PATH_CORE_LAST:
+         return sizeof(p_rarch->path_libretro_last);
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
@@ -2528,6 +2535,10 @@ bool path_set(enum rarch_path_type type, const char *path)
       case RARCH_PATH_CORE:
          strlcpy(p_rarch->path_libretro, path,
                sizeof(p_rarch->path_libretro));
+         break;
+      case RARCH_PATH_CORE_LAST:
+         strlcpy(p_rarch->path_libretro_last, path,
+               sizeof(p_rarch->path_libretro_last));
          break;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          strlcpy(p_rarch->path_default_shader_preset, path,
@@ -2604,6 +2615,10 @@ bool path_is_empty(enum rarch_path_type type)
          if (string_is_empty(p_rarch->path_libretro))
             return true;
          break;
+      case RARCH_PATH_CORE_LAST:
+         if (string_is_empty(p_rarch->path_libretro_last))
+            return true;
+         break;
       case RARCH_PATH_BASENAME:
          if (string_is_empty(runloop_state_get_ptr()->runtime_content_path_basename))
             return true;
@@ -2627,26 +2642,29 @@ void path_clear(enum rarch_path_type type)
 
    switch (type)
    {
+      case RARCH_PATH_CONTENT:
+         *p_rarch->path_content = '\0';
+         break;
       case RARCH_PATH_CORE:
          *p_rarch->path_libretro = '\0';
          break;
-      case RARCH_PATH_CONFIG:
-         *p_rarch->path_config_file = '\0';
-         break;
-      case RARCH_PATH_CONTENT:
-         *p_rarch->path_content = '\0';
+      case RARCH_PATH_CORE_LAST:
+         *p_rarch->path_libretro_last = '\0';
          break;
       case RARCH_PATH_CORE_OPTIONS:
          *p_rarch->path_core_options_file = '\0';
          break;
-      case RARCH_PATH_DEFAULT_SHADER_PRESET:
-         *p_rarch->path_default_shader_preset = '\0';
+      case RARCH_PATH_CONFIG:
+         *p_rarch->path_config_file = '\0';
          break;
       case RARCH_PATH_CONFIG_APPEND:
          *p_rarch->path_config_append_file = '\0';
          break;
       case RARCH_PATH_CONFIG_OVERRIDE:
          *p_rarch->path_config_override_file = '\0';
+         break;
+      case RARCH_PATH_DEFAULT_SHADER_PRESET:
+         *p_rarch->path_default_shader_preset = '\0';
          break;
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
@@ -2665,11 +2683,15 @@ void path_clear(enum rarch_path_type type)
 static void path_clear_all(void)
 {
    path_clear(RARCH_PATH_CONTENT);
+   path_clear(RARCH_PATH_CORE);
+   path_clear(RARCH_PATH_CORE_LAST);
+   path_clear(RARCH_PATH_CORE_OPTIONS);
    path_clear(RARCH_PATH_CONFIG);
    path_clear(RARCH_PATH_CONFIG_APPEND);
    path_clear(RARCH_PATH_CONFIG_OVERRIDE);
-   path_clear(RARCH_PATH_CORE_OPTIONS);
+   path_clear(RARCH_PATH_DEFAULT_SHADER_PRESET);
    path_clear(RARCH_PATH_BASENAME);
+   path_clear(RARCH_PATH_SUBSYSTEM);
 }
 
 static void ram_state_to_file(void)
@@ -3655,6 +3677,15 @@ bool command_event(enum event_command cmd, void *data)
                content_clear_subsystem();
             }
          }
+
+#ifdef HAVE_MENU
+         menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                         |  MENU_ST_FLAG_PREVENT_POPULATE;
+         {
+            bool pending_push = false;
+            menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+         }
+#endif
          break;
       case CMD_EVENT_CLOSE_CONTENT:
 #ifdef HAVE_MENU
@@ -3671,6 +3702,7 @@ bool command_event(enum event_command cmd, void *data)
          if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
          {
             menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+            menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
             command_event(CMD_EVENT_MENU_TOGGLE, NULL);
          }
 #else

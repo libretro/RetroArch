@@ -5808,22 +5808,25 @@ static enum runloop_state_enum runloop_check_state(
    /* Check menu hotkey */
    {
       static bool old_pressed = false;
-      char *menu_driver       = settings->arrays.menu_driver;
       bool pressed            = BIT256_GET(current_bits, RARCH_MENU_TOGGLE)
-            && !string_is_equal(menu_driver, "null");
+            && !string_is_equal(settings->arrays.menu_driver, "null");
       bool core_type_is_dummy = runloop_st->current_core_type == CORE_TYPE_DUMMY;
 
-      if (    (pressed && !old_pressed)
-            || core_type_is_dummy)
+      if (pressed && !old_pressed)
       {
+         bool core_is_running    = runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING;
+
          if (menu_st->flags & MENU_ST_FLAG_ALIVE)
          {
-            if (rarch_is_initialized && !core_type_is_dummy)
+            if (rarch_is_initialized && !core_type_is_dummy && core_is_running)
                retroarch_menu_running_finished(false);
          }
          else
             retroarch_menu_running();
       }
+      /* Initial menu toggle on startup */
+      else if (core_type_is_dummy && !(menu_st->flags & MENU_ST_FLAG_ALIVE))
+         retroarch_menu_running();
 
       old_pressed             = pressed;
    }

@@ -2109,8 +2109,10 @@ bool task_push_load_content_from_playlist_from_menu(
 #endif
 
    /* Specified core is not loaded
-    * > Load it */
+    * > Load it
+    * > Forget manually loaded core */
    path_set(RARCH_PATH_CORE, core_path);
+   path_clear(RARCH_PATH_CORE_LAST);
 #ifdef HAVE_DYNAMIC
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #else
@@ -2275,7 +2277,11 @@ bool task_push_load_new_core(
       retro_task_callback_t cb,
       void *user_data)
 {
+   /* Set core path */
    path_set(RARCH_PATH_CORE, core_path);
+
+   /* Remember core path for reloading */
+   path_set(RARCH_PATH_CORE_LAST, core_path);
 
    /* Load core */
    command_event(CMD_EVENT_LOAD_CORE, NULL);

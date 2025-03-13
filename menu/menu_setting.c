@@ -9948,6 +9948,15 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].values              = ext_name;
                MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_LOAD_CORE);
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_BROWSER_ACTION);
+
+               CONFIG_ACTION(
+                     list, list_info,
+                     MENU_ENUM_LABEL_CORE_LIST_UNLOAD,
+                     MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group);
+               MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_UNLOAD_CORE);
             }
          }
 

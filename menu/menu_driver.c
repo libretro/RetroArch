@@ -49,6 +49,7 @@
 #include "../driver.h"
 #include "../list_special.h"
 #include "../paths.h"
+#include "../tasks/task_content.h"
 #include "../tasks/task_powerstate.h"
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
@@ -6417,6 +6418,7 @@ void retroarch_menu_running(void)
    struct menu_state *menu_st      = &menu_driver_state;
    menu_handle_t *menu             = menu_st->driver_data;
    menu_input_t *menu_input        = &menu_st->input_state;
+
    if (menu)
    {
       if (menu->driver_ctx && menu->driver_ctx->toggle)
@@ -6485,6 +6487,11 @@ void retroarch_menu_running_finished(bool quit)
    struct menu_state *menu_st      = &menu_driver_state;
    menu_handle_t *menu             = menu_st->driver_data;
    menu_input_t *menu_input        = &menu_st->input_state;
+
+   /* Only allow toggling menu off with a proper core */
+   if (runloop_st->current_core_type == CORE_TYPE_DUMMY && !quit)
+      return;
+
    if (menu)
    {
       if (menu->driver_ctx && menu->driver_ctx->toggle)
@@ -7838,6 +7845,25 @@ int generic_menu_entry_action(
       menu_st->flags &= ~(MENU_ST_FLAG_PENDING_CLOSE_CONTENT
                         | MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH);
       menu_st->pending_env_shutdown_content_path[0] = '\0';
+   }
+   else if (menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE)
+   {
+      menu_st->flags &= ~MENU_ST_FLAG_PENDING_RELOAD_CORE;
+
+      if (!string_is_empty(path_get(RARCH_PATH_CORE_LAST)))
+      {
+         content_ctx_info_t content_info = {0};
+         if (task_push_load_new_core(
+                     path_get(RARCH_PATH_CORE_LAST),
+                     NULL,
+                     &content_info,
+                     CORE_TYPE_PLAIN,
+                     NULL, NULL))
+         {
+            menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                            |  MENU_ST_FLAG_PREVENT_POPULATE;
+         }
+      }
    }
 
    return ret;
