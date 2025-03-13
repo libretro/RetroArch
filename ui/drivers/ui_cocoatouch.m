@@ -60,6 +60,14 @@
 #import <GameController/GCMouse.h>
 #endif
 
+#ifdef HAVE_KSCRASH
+#import <KSCrash.h>
+#import <KSCrashConfiguration.h>
+#import <KSCrashReportStore.h>
+#import <KSCrashInstallation.h>
+#import <KSCrashReport.h>
+#endif
+
 #ifdef HAVE_SDL2
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
@@ -629,8 +637,136 @@ enum
    }
 }
 
+#ifdef HAVE_KSCRASH
+- (NSString *)crashReportsPath
+{
+   /* Store crash reports in Documents directory for user access */
+   NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+   NSString *documentsPath = [paths firstObject];
+   return [documentsPath stringByAppendingPathComponent:@"CrashReports"];
+}
+
+- (void)initKSCrash
+{
+   NSString *crashReportsPath = [self crashReportsPath];
+
+   /* Create the crash reports directory if it doesn't exist */
+   NSFileManager *fileManager = [NSFileManager defaultManager];
+   NSError *createError = nil;
+   if (![fileManager fileExistsAtPath:crashReportsPath])
+   {
+      [fileManager createDirectoryAtPath:crashReportsPath
+             withIntermediateDirectories:YES
+                              attributes:nil
+                                   error:&createError];
+      if (createError)
+      {
+         NSLog(@"[KSCrash] Failed to create crash reports directory: %@\n", createError);
+         return;
+      }
+   }
+
+   /* Configure KSCrash for local storage only */
+   KSCrashConfiguration *config = [KSCrashConfiguration new];
+   config.installPath = crashReportsPath;
+   KSCrashReportStoreConfiguration *storeConfig = [KSCrashReportStoreConfiguration new];
+   storeConfig.reportsPath = crashReportsPath;
+   storeConfig.appName = @"RetroArch";
+   storeConfig.maxReportCount = 10; /* Keep last 10 crash reports */
+   config.reportStoreConfiguration = storeConfig;
+
+   /* Set appropriate monitors */
+   if (jit_available())
+      config.monitors = KSCrashMonitorTypeDebuggerSafe;
+   else
+      config.monitors = KSCrashMonitorTypeProductionSafe;
+   /* Enable useful debugging features */
+   config.enableMemoryIntrospection = YES;
+   config.enableQueueNameSearch = YES;
+   config.addConsoleLogToReport = YES;
+
+   /* Install KSCrash without any network sink */
+   NSError *installError = nil;
+   if (![[KSCrash sharedInstance] installWithConfiguration:config error:&installError])
+   {
+      NSLog(@"[KSCrash] Failed to install crash reporter: %@\n", installError);
+      return;
+   }
+
+   NSLog(@"[KSCrash] reports will be stored in: %@\n", crashReportsPath);
+}
+
+- (void)processKSCrashReports
+{
+   /* Check if we crashed last launch */
+   if (![[KSCrash sharedInstance] crashedLastLaunch])
+       return;
+
+   if ([[[KSCrash sharedInstance] reportStore] reportCount] <= 0)
+      return;
+
+   RARCH_LOG("[KSCrash] crash report available in Documents/CrashReports\n");
+
+   /* Process crash reports to strip binary_images section */
+   KSCrashReportStore *store = [[KSCrash sharedInstance] reportStore];
+   NSArray<NSNumber *> *reportIDs = [store reportIDs];
+   for (NSNumber *reportIDNum in reportIDs)
+   {
+      int64_t reportID = [reportIDNum longLongValue];
+      KSCrashReportDictionary *report = [store reportForID:reportID];
+      if (!report)
+         continue;
+
+      NSMutableDictionary *mutableReport = [report.value mutableCopy];
+
+      /* Remove binary_images to reduce file size */
+      if ([mutableReport objectForKey:@"binary_images"])
+         [mutableReport removeObjectForKey:@"binary_images"];
+
+      /* Save pretty-printed version as standalone file */
+      NSData *prettyData = [NSJSONSerialization dataWithJSONObject:mutableReport
+                                                           options:NSJSONWritingPrettyPrinted
+                                                             error:nil];
+      if (prettyData)
+      {
+         NSString *reportPath = [NSString stringWithFormat:@"%@/report-%lld.json",
+                                 [self crashReportsPath], reportID];
+         [prettyData writeToFile:reportPath options:NSDataWritingAtomic error:nil];
+         RARCH_LOG("[KSCrash] Saved stripped report %lld to: %s\n",
+                   reportID, [reportPath UTF8String]);
+      }
+
+      /* Log minified JSON on a single line for easy extraction */
+      NSData *minifiedData = [NSJSONSerialization dataWithJSONObject:mutableReport
+                                                             options:0  /* no pretty printing */
+                                                               error:nil];
+      if (minifiedData)
+      {
+         NSString *jsonString = [[NSString alloc] initWithData:minifiedData
+                                                      encoding:NSUTF8StringEncoding];
+         if (jsonString)
+         {
+            /* Log with a unique marker that can be extracted with grep/sed */
+            RARCH_LOG("[KSCrash] Report %lld follows on next line\n", reportID);
+            RARCH_LOG("%s\n", [jsonString UTF8String]);
+         }
+      }
+
+      /* Delete the report from KSCrash store to prevent re-logging on next launch */
+      [store deleteReportWithID:reportID];
+   }
+
+   if (reportIDs.count > 0)
+      RARCH_LOG("[KSCrash] Processed and removed %lu report(s) from store\n", (unsigned long)reportIDs.count);
+}
+#endif
+
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
+#ifdef HAVE_KSCRASH
+   [self initKSCrash];
+#endif
+
    char arguments[]   = "retroarch";
    char       *argv[] = {arguments,   NULL};
    int argc           = 1;
@@ -679,6 +815,10 @@ enum
    [self showGameView];
 
    rarch_main(argc, argv, NULL);
+
+#ifdef HAVE_KSCRASH
+   [self processKSCrashReports];
+#endif
 
    uico_driver_state_t *uico_st     = uico_state_get_ptr();
    rarch_setting_t *appicon_setting = menu_setting_find_enum(MENU_ENUM_LABEL_APPICON_SETTINGS);
