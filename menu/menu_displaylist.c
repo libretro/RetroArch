@@ -14261,7 +14261,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             }
             break;
          case DISPLAYLIST_ARCHIVE_ACTION:
-	    menu_entries_clear(info->list);
+            menu_entries_clear(info->list);
+            if (menu_entries_append(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_ARCHIVE),
+                     MENU_ENUM_LABEL_LOAD_ARCHIVE,
+                     0, 0, 0, NULL))
+               count++;
 #ifdef HAVE_COMPRESSION
             if (menu_entries_append(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE),
@@ -14270,17 +14276,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      0, 0, 0, NULL))
                count++;
 #endif
-            if (menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_ARCHIVE),
-                     MENU_ENUM_LABEL_LOAD_ARCHIVE,
-                     0, 0, 0, NULL))
-               count++;
-
             info->flags    |= MD_FLAG_NEED_PUSH;
             break;
          case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
             menu_entries_clear(info->list);
+            if (menu_entries_append(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE),
+                     MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE,
+                     0, 0, 0, NULL))
+               count++;
 #ifdef HAVE_COMPRESSION
             if (menu_entries_append(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE),
@@ -14289,13 +14294,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      0, 0, 0, NULL))
                count++;
 #endif
-            if (menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE),
-                     MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE,
-                     0, 0, 0, NULL))
-               count++;
-
             info->flags    |= MD_FLAG_NEED_PUSH;
             break;
          case DISPLAYLIST_PLAYLIST_MANAGER_LIST:
