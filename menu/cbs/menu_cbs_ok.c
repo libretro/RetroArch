@@ -9686,14 +9686,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             else
             {
-               if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
-               {
+               if (     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES))
+                     && path_is_empty(RARCH_PATH_CORE))
                   BIND_ACTION_OK(cbs, action_ok_compressed_archive_push_detect_core);
-               }
                else
-               {
                   BIND_ACTION_OK(cbs, action_ok_compressed_archive_push);
-               }
             }
             break;
          case FILE_TYPE_CORE:
