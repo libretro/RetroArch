@@ -68,6 +68,14 @@ MSG_HASH(
    "Kullanılacak çekirdeği seçin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Çekirdeği Serbest Bırak"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "Yüklenen çekirdeği serbest bırakın."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Bir libretro çekirdek uygulamasına göz atın. Tarayıcının nerede başlayacağı, Çekirdek Dizin yolunuza bağlıdır. Boşsa, kök dizinde başlar.\nÇekirdek Dizin bir dizinse, menü bunu üst klasör olarak kullanır. Çekirdek Dizin tam yol ise, dosyanın bulunduğu klasörde başlar."
    )

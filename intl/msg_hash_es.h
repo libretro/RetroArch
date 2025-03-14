@@ -72,6 +72,14 @@ MSG_HASH(
    "Selecciona el núcleo a usar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Descargar núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "Descarga el núcleo que esté cargado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Busca una implementación de un núcleo libretro. La posición inicial del explorador dependerá de la ruta del directorio de núcleos. En caso de estar en blanco, la posición inicial será la raíz.\nSi el directorio de núcleos es un directorio, este se utilizará como posición inicial. Si es una ruta completa, la posición será la carpeta donde se encuentre el archivo."
    )
