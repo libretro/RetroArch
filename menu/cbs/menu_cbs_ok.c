@@ -7591,14 +7591,14 @@ static int action_ok_push_dropdown_item_input_select_reserved_device(const char 
                                     ? input_config_get_device_display_name(i)
                                     : input_config_get_device_name(i);
 
-          if (string_is_equal(device_name, reserved_device_name))
+          if (string_starts_with(reserved_device_name, device_name))
           {
              uint16_t vendor_id = input_config_get_device_vid(i);
              uint16_t product_id = input_config_get_device_pid(i);
              snprintf(settings->arrays.input_reserved_devices[user],
                    sizeof(settings->arrays.input_reserved_devices[user]),
                    "%04x:%04x %s",
-                   vendor_id, product_id, reserved_device_name);
+                   vendor_id, product_id, device_name);
              break;
           }
        }
