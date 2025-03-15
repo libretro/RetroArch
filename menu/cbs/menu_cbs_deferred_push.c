@@ -421,8 +421,8 @@ GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
-   char newstr2[PATH_MAX_LENGTH*2];
-   size_t _len = 0;
+   char *newstr2;
+   size_t _len = 0, size;
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
@@ -468,6 +468,8 @@ static int general_push(menu_displaylist_info_t *info,
    info->type_default = FILE_TYPE_PLAIN;
    if (id != PUSH_DETECT_CORE_LIST)
       info->setting   = menu_setting_find_enum(info->enum_idx);
+   if (!(newstr2 = malloc(size = PATH_MAX_LENGTH)))
+      return -1;
    newstr2[0]          = '\0';
 
    switch (id)
@@ -477,8 +479,8 @@ static int general_push(menu_displaylist_info_t *info,
             struct retro_system_info *sysinfo =
                &runloop_state_get_ptr()->system.info;
             if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
-               _len = strlcpy(newstr2 + _len, sysinfo->valid_extensions,
-                     sizeof(newstr2)  - _len);
+               _len += strlcpy(newstr2 + _len, sysinfo->valid_extensions,
+                     size - _len);
          }
          break;
       case PUSH_DEFAULT:
@@ -497,17 +499,17 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (!string_is_empty(valid_extensions))
             {
-               _len += strlcpy(newstr2 + _len, valid_extensions, sizeof(newstr2) - _len);
+               _len += strlcpy(newstr2 + _len, valid_extensions, size - _len);
 #ifdef HAVE_IBXM
                if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|",   sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "s3m", sizeof(newstr2) - _len);
+                  _len += strlcpy(newstr2 + _len, "|",   size - _len);
+               _len    += strlcpy(newstr2 + _len, "s3m", size - _len);
                if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|",   sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "mod", sizeof(newstr2) - _len);
+                  _len += strlcpy(newstr2 + _len, "|",   size - _len);
+               _len    += strlcpy(newstr2 + _len, "mod", size - _len);
                if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|",   sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "xm",  sizeof(newstr2) - _len);
+                  _len += strlcpy(newstr2 + _len, "|",   size - _len);
+               _len    += strlcpy(newstr2 + _len, "xm",  size - _len);
 #endif
             }
          }
@@ -522,7 +524,7 @@ static int general_push(menu_displaylist_info_t *info,
             if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
                _len += strlcpy(newstr2 + _len,
                      sysinfo->valid_extensions,
-                     sizeof(newstr2)   - _len);
+                     size - _len);
 
             if (!filter_by_current_core)
             {
@@ -560,11 +562,20 @@ static int general_push(menu_displaylist_info_t *info,
                       * add it */
                      if (!exists)
                      {
+                        if (_len + strlen(tok) > size - 1 - 1) {
+                           char *reallocated = realloc(newstr2, size += PATH_MAX_LENGTH);
+
+                           if (!reallocated) {
+                              free(newstr2);
+                              return -1;
+                           }
+                           newstr2 = reallocated;
+                        }
                         if (_len > 0 && newstr2[_len-1] != '\0')
                            _len += strlcpy(newstr2 + _len, "|",
-                                   sizeof(newstr2) - _len);
+                                   size - _len);
                         _len    += strlcpy(newstr2 + _len, tok,
-                              sizeof(newstr2) - _len);
+                              size - _len);
                      }
                   }
 
@@ -578,32 +589,32 @@ static int general_push(menu_displaylist_info_t *info,
             {
 #if defined(HAVE_DR_MP3)
                if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "mp3", sizeof(newstr2) - _len);
+                  _len += strlcpy(newstr2 + _len, "|", size - _len);
+               _len    += strlcpy(newstr2 + _len, "mp3", size - _len);
 #endif
 #if defined(HAVE_STB_VORBIS)
                if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "ogg", sizeof(newstr2) - _len);
+                  _len += strlcpy(newstr2 + _len, "|", size - _len);
+               _len    += strlcpy(newstr2 + _len, "ogg", size - _len);
 #endif
 #if defined(HAVE_DR_FLAC)
                if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "flac", sizeof(newstr2) - _len);
+                  _len += strlcpy(newstr2 + _len, "|", size - _len);
+               _len    += strlcpy(newstr2 + _len, "flac", size - _len);
 #endif
 #if defined(HAVE_RWAV)
                if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "wav", sizeof(newstr2) - _len);
+                  _len += strlcpy(newstr2 + _len, "|", size - _len);
+               _len    += strlcpy(newstr2 + _len, "wav", size - _len);
 #endif
 #ifdef HAVE_IBXM
                if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "s3m", sizeof(newstr2) - _len);
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "mod", sizeof(newstr2) - _len);
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "xm", sizeof(newstr2) - _len);
+                  _len += strlcpy(newstr2 + _len, "|", size - _len);
+               _len    += strlcpy(newstr2 + _len, "s3m", size - _len);
+                  _len += strlcpy(newstr2 + _len, "|", size - _len);
+               _len    += strlcpy(newstr2 + _len, "mod", size - _len);
+                  _len += strlcpy(newstr2 + _len, "|", size - _len);
+               _len    += strlcpy(newstr2 + _len, "xm", size - _len);
 #endif
             }
 #endif
@@ -622,9 +633,9 @@ static int general_push(menu_displaylist_info_t *info,
 #endif
       if (_len > 0 && newstr2[_len-1] != '\0')
          _len += strlcpy(newstr2 + _len, "|",
-                 sizeof(newstr2) - _len);
+                 size - _len);
       _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions,
-              sizeof(newstr2) - _len);
+              size - _len);
    }
 #endif
 
@@ -635,9 +646,9 @@ static int general_push(menu_displaylist_info_t *info,
       libretro_imageviewer_retro_get_system_info(&sysinfo);
       if (_len > 0 && newstr2[_len-1] != '\0')
          _len += strlcpy(newstr2 + _len, "|",
-               sizeof(newstr2)   - _len);
+               size - _len);
       _len    += strlcpy(newstr2 + _len, sysinfo.valid_extensions,
-               sizeof(newstr2)   - _len);
+               size - _len);
    }
 #endif
 
@@ -645,8 +656,10 @@ static int general_push(menu_displaylist_info_t *info,
    {
       if (info->exts)
          free(info->exts);
-      info->exts = strdup(newstr2);
+      info->exts = newstr2;
    }
+   else
+      free(newstr2);
 
    return deferred_push_dlist(info, state, settings);
 }
