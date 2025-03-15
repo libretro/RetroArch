@@ -68,6 +68,14 @@ MSG_HASH(
    "Sélectionner le cœur à utiliser."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Décharger le cœur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "Relâche le cœur chargé."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Rechercher une implémentation de cœur libretro. Le dossier de démarrage du navigateur de fichiers dépend de votre dossier d'emplacement des cœurs. S'il n'est pas défini, il démarrera à la racine.\nSi l'emplacement des cœurs est un dossier, le menu l'utilisera comme dossier principal. Si le dossier d'emplacement des cœurs est un chemin complet, il démarrera dans le dossier où se trouve le fichier."
    )

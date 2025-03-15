@@ -72,6 +72,14 @@ MSG_HASH(
    "사용할 코어를 선택합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "코어 닫기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "불러와져있는 코어를 종료합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "libretro 코어 파일을 탐색합니다. 탐색기가 시작되는 위치는 코어 디렉토리 경로를 따릅니다. 만약 비어있다면 루트에서 시작됩니다.\n코어 디렉토리가 폴더로 설정되면 메뉴상에서 최상위 폴더로 사용됩니다. 코어 디렉토리가 전체 경로라면 파일이 있는 폴더에서 시작됩니다."
    )
