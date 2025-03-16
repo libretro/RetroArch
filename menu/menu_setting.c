@@ -5186,6 +5186,7 @@ static size_t setting_get_string_representation_uint_video_3ds_display_mode(
                   len);
       }
    }
+   return 0;
 }
 #endif
 

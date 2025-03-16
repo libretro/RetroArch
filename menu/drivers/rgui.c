@@ -1839,7 +1839,7 @@ static void rgui_render_border(
 }
 
 /* Returns true if particle is on screen */
-static bool INLINE rgui_draw_particle(
+static INLINE bool rgui_draw_particle(
       uint16_t *data,
       unsigned fb_width,
       unsigned fb_height,
@@ -2812,7 +2812,7 @@ static void rgui_render_fs_thumbnail(
    }
 }
 
-static unsigned INLINE rgui_get_mini_thumbnail_fullwidth(rgui_t *rgui)
+static INLINE unsigned rgui_get_mini_thumbnail_fullwidth(rgui_t *rgui)
 {
    unsigned width      = rgui->mini_thumbnail.is_valid ? rgui->mini_thumbnail.width : 0;
    unsigned left_width = rgui->mini_left_thumbnail.is_valid ? rgui->mini_left_thumbnail.width : 0;

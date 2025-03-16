@@ -5558,7 +5558,7 @@ static void xmb_show_fullscreen_thumbnails(
    xmb_set_thumbnail_delay(false);
 }
 
-static bool INLINE xmb_fullscreen_thumbnails_available(xmb_handle_t *xmb,
+static INLINE bool xmb_fullscreen_thumbnails_available(xmb_handle_t *xmb,
       struct menu_state *menu_st)
 {
    bool ret = xmb->fullscreen_thumbnails_available

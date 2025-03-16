@@ -189,11 +189,11 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
          return false;
    }
 
-   ctx->horiz.filter     = (int16_t*)calloc(sizeof(int16_t), ctx->horiz.filter_stride * ctx->out_width);
-   ctx->horiz.filter_pos = (int*)calloc(sizeof(int), ctx->out_width);
+   ctx->horiz.filter     = (int16_t*)calloc(ctx->horiz.filter_stride * ctx->out_width, sizeof(int16_t));
+   ctx->horiz.filter_pos = (int*)calloc(ctx->out_width, sizeof(int));
 
-   ctx->vert.filter      = (int16_t*)calloc(sizeof(int16_t), ctx->vert.filter_stride * ctx->out_height);
-   ctx->vert.filter_pos  = (int*)calloc(sizeof(int), ctx->out_height);
+   ctx->vert.filter      = (int16_t*)calloc(ctx->vert.filter_stride * ctx->out_height, sizeof(int16_t));
+   ctx->vert.filter_pos  = (int*)calloc(ctx->out_height, sizeof(int));
 
    if (!ctx->horiz.filter || !ctx->vert.filter)
       return false;
