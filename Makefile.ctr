@@ -154,7 +154,7 @@ LIBDIRS := -L. -L$(CTRULIB)/lib
 ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=soft
 
 CFLAGS	+= -mword-relocations \
-	   -fomit-frame-pointer -ffast-math \
+	   -ffast-math \
 	   -Werror=implicit-function-declaration \
 	   $(ARCH)
 
@@ -168,7 +168,7 @@ endif
 ifeq ($(DEBUG), 1)
    CFLAGS	+= -O0 -g
 else
-   CFLAGS	+= -O3
+   CFLAGS	+= -fomit-frame-pointer -O3
 endif
 
 ifeq ($(CONSOLE_LOG), 1)
