@@ -825,12 +825,8 @@ static void ctr_update_state_date(void *data)
 static bool ctr_update_state_date_from_file(void *data)
 {
    char state_path[PATH_MAX_LENGTH];
-#ifdef USE_CTRULIB_2
-   time_t mtime;
-#else
-   time_t ft;
    u64 mtime;
-#endif
+   time_t ft;
    struct tm *t     = NULL;
    ctr_video_t *ctr = (ctr_video_t*)data;
 
@@ -848,12 +844,8 @@ static bool ctr_update_state_date_from_file(void *data)
 
    ctr->state_data_exist = true;
 
-#ifdef USE_CTRULIB_2
-   t     = localtime(&mtime);
-#else
    ft    = mtime;
    t     = localtime(&ft);
-#endif
    snprintf(ctr->state_date, sizeof(ctr->state_date), "%02d/%02d/%d",
       t->tm_mon + 1, t->tm_mday, t->tm_year + 1900);
 

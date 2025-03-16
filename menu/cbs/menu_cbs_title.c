@@ -525,6 +525,7 @@ static int action_get_title_dropdown_input_description_common(
    const char *input_label_ptr = input_name;
    char input_label[NAME_MAX_LENGTH];
 
+   input_label[0] = '\0';
    if (!string_is_empty(input_label_ptr))
    {
       /* Strip off 'Auto:' prefix, if required */
