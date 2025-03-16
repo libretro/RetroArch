@@ -164,7 +164,7 @@ static void ctr_csnd_audio_free(void *data)
 
 static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
 {
-   int i;
+   unsigned int i;
    uint32_t samples_played      = 0;
    uint64_t current_tick        = 0;
    const uint16_t          *src = buf;
