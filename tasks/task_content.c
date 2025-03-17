@@ -2281,7 +2281,8 @@ bool task_push_load_new_core(
    path_set(RARCH_PATH_CORE, core_path);
 
    /* Remember core path for reloading */
-   path_set(RARCH_PATH_CORE_LAST, core_path);
+   if (!string_is_equal(core_path, path_get(RARCH_PATH_CORE_LAST)))
+      path_set(RARCH_PATH_CORE_LAST, core_path);
 
    /* Load core */
    command_event(CMD_EVENT_LOAD_CORE, NULL);
