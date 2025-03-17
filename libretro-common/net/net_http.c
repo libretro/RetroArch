@@ -1252,6 +1252,10 @@ static bool net_http_send_request(struct http_t *state)
 #ifdef _WIN32
       len     = snprintf(NULL, 0, "%" PRIuPTR, post_len);
       len_str = (char*)malloc(len + 1);
+      if (!len_str) {
+      fprintf(stderr, "Memory allocation failed for len_str\n");
+      return NULL; // Handle the error appropriately
+}
       snprintf(len_str, len + 1, "%" PRIuPTR, post_len);
 #else
       len     = snprintf(NULL, 0, "%llu", (long long unsigned)post_len);
