@@ -594,7 +594,7 @@ bool net_http_connection_done(struct http_connection_t *conn)
          /* if there wasn't a port, we have to expand the urlcopy so we can separate the two parts */
          size_t domain_len   = strlen(conn->domain);
          size_t path_len     = strlen(conn->scan);
-         char* urlcopy = (char*)malloc(domain_len + path_len + 2);
+         char* urlcopy       = (char*)malloc(domain_len + path_len + 2);
          if (!urlcopy) {
            fprintf(stderr, "Memory allocation failed for urlcopy\n");
            return NULL; // Handle the error appropriately
