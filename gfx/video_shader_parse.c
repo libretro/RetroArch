@@ -1890,7 +1890,7 @@ end:
  **/
 static bool video_shader_load_root_config_into_shader(
       config_file_t *conf,
-      settings_t *settings,
+      bool video_shader_watch_files,
       struct video_shader *shader)
 {
    size_t i;
@@ -1921,7 +1921,7 @@ static bool video_shader_load_root_config_into_shader(
    strlcpy(shader->loaded_preset_path, conf->path,
          sizeof(shader->loaded_preset_path));
 
-   if (settings->bools.video_shader_watch_files)
+   if (video_shader_watch_files)
    {
       union string_list_elem_attr attr;
       int flags                        =
@@ -2255,7 +2255,8 @@ bool video_shader_load_preset_into_shader(const char *path,
    if (string_is_equal(root_conf->path, path))
    {
       /* Load the config from the shader chain from the first reference into the shader */
-      video_shader_load_root_config_into_shader(root_conf, config_get_ptr(), shader);
+      video_shader_load_root_config_into_shader(root_conf,
+            config_get_ptr()->bools.video_shader_watch_files, shader);
       goto end;
    }
 
@@ -2308,7 +2309,8 @@ bool video_shader_load_preset_into_shader(const char *path,
    }
 
    /* Load the config from the shader chain from the first reference into the shader */
-   video_shader_load_root_config_into_shader(root_conf, config_get_ptr(), shader);
+   video_shader_load_root_config_into_shader(root_conf,
+         config_get_ptr()->bools.video_shader_watch_files, shader);
 
    /* Set Path for originally loaded preset because it is different than the root preset path */
    strlcpy(shader->loaded_preset_path, path, sizeof(shader->loaded_preset_path));
@@ -2531,14 +2533,13 @@ static bool video_shader_dir_init_shader_internal(
 
 static void video_shader_dir_init_shader(
       void *menu_driver_data_,
-      settings_t *settings,
+      const char *directory_video_shader,
+      const char *directory_menu_config,
+      bool show_hidden_files,
+      bool shader_remember_last_dir,
+      bool video_shader_remember_last_dir,
       struct rarch_dir_shader_list *dir_list)
 {
-   bool show_hidden_files                         = settings->bools.show_hidden_files;
-   bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
-   const char *directory_video_shader             = settings->paths.directory_video_shader;
-   const char *directory_menu_config              = settings->paths.directory_menu_config;
-   bool video_shader_remember_last_dir            = settings->bools.video_shader_remember_last_dir;
    const char *last_shader_preset_dir             = NULL;
    const char *last_shader_preset_file_name       = NULL;
    video_driver_state_t *video_st                 = video_state_get_ptr();
@@ -2643,7 +2644,18 @@ void video_shader_dir_check_shader(
        && (last_shader_preset_type != RARCH_SHADER_NONE)
        && !string_is_equal(dir_list->directory, last_shader_preset_dir)))
    {
-      video_shader_dir_init_shader(menu_ptr, settings, dir_list);
+      const char *directory_video_shader          = settings->paths.directory_video_shader;
+      const char *directory_menu_config           = settings->paths.directory_menu_config;
+      bool show_hidden_files                      = settings->bools.show_hidden_files;
+      bool shader_remember_last_dir               = settings->bools.video_shader_remember_last_dir;
+      bool video_shader_remember_last_dir         = settings->bools.video_shader_remember_last_dir;
+      video_shader_dir_init_shader(menu_ptr,
+            directory_video_shader,
+            directory_menu_config,
+            show_hidden_files,
+            shader_remember_last_dir,
+            video_shader_remember_last_dir,
+            dir_list);
       dir_list_initialised = true;
    }
 
@@ -2827,12 +2839,13 @@ static bool video_shader_load_shader_preset_internal(
  *
  * Returns: false if there was an error or no action was performed.
  */
-static bool video_shader_load_auto_shader_preset(settings_t *settings, const char *core_name,
+static bool video_shader_load_auto_shader_preset(
+      const char *video_shader_directory,
+      const char *menu_config_directory,
+      const char *core_name,
       char *s, size_t len)
 {
    size_t i;
-   const char *video_shader_directory = settings->paths.directory_video_shader;
-   const char *menu_config_directory  = settings->paths.directory_menu_config;
    const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
    bool has_content                   = !string_is_empty(rarch_path_basename);
 
@@ -2917,7 +2930,6 @@ success:
 }
 
 bool video_shader_combine_preset_and_apply(
-      settings_t *settings,
       enum rarch_shader_type type,
       struct video_shader *menu_shader,
       const char *preset_path,
@@ -3111,7 +3123,8 @@ const char *video_shader_get_current_shader_preset(void)
          if (auto_shaders_enable) /* sets runtime_shader_preset_path */
          {
             if (video_shader_load_auto_shader_preset(
-                     settings,
+                     settings->paths.directory_video_shader,
+                     settings->paths.directory_menu_config,
                      runloop_st->system.info.library_name,
                      runloop_st->runtime_shader_preset_path,
                      sizeof(runloop_st->runtime_shader_preset_path)))

@@ -1533,7 +1533,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type,
       void *display, void *surface,
       unsigned width, unsigned height,
-      unsigned swap_interval)
+      int8_t swap_interval)
 {
    switch (type)
    {
@@ -1914,7 +1914,7 @@ bool vulkan_is_hdr10_format(VkFormat format)
 
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
-      unsigned swap_interval)
+      int8_t swap_interval)
 {
    unsigned i;
    uint32_t format_count;
@@ -1932,6 +1932,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
    settings_t                    *settings = config_get_ptr();
    bool vsync                              = settings->bools.video_vsync;
+   bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
 
    format.format                           = VK_FORMAT_UNDEFINED;
    format.colorSpace                       = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
@@ -1951,7 +1952,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          && (vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX)
          && vsync)
    {
-      swap_interval  =  1;
+      swap_interval  =  (adaptive_vsync) ? -1 : 1;
       vk->flags     |=  VK_DATA_FLAG_EMULATING_MAILBOX;
    }
    else
@@ -2028,6 +2029,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    vk->context.swap_interval = swap_interval;
 
+   for (i = 0; i < present_mode_count; i++)
+      vk->context.present_modes[i] = present_modes[i];
+
    /* Prefer IMMEDIATE without vsync */
    for (i = 0; i < present_mode_count; i++)
    {
@@ -2036,6 +2040,13 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
             && present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
       {
          swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+         break;
+      }
+
+      if (     swap_interval < 0
+            && present_modes[i] == VK_PRESENT_MODE_FIFO_RELAXED_KHR)
+      {
+         swapchain_present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
          break;
       }
    }

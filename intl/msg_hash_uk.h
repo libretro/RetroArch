@@ -72,6 +72,14 @@ MSG_HASH(
    "Вибрати ядро для використання."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Відвантажити Ядро"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "Відпустіть завантажене ядро."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Знайдіть основну реалізацію libretro. Де браузер запускається в залежності від вашого базового шляху каталогу. Якщо цього немає, то він запуститься в root.\nЯкщо Core Directory це каталог, меню буде використовувати це як верхню теку. Якщо Core Directory є повним шляхом, то він почнеться в папці[...]"
    )
@@ -2665,11 +2673,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   "Настроюване зміщення вікна перегляду, яке використовується для зсуву вікна перегляду по горизонталі (якщо ширше за висоту вмісту).  0,0 означає крайній ліворуч, а 1,0 означає крайній правий."
+   "Горизонтальне положення вмісту, якщо вікно перегляду ширше, ніж ширина контенту. 0.0 знаходиться далеко, 0.5 - центр, 1.0 знаходиться набагато вірно."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "Настроюване зміщення вікна перегляду, яке використовується для зсуву вікна перегляду по вертикалі (якщо вище за висоту вмісту).  0,0 означає верх і 1,0 означає низ."
+   "Вертикальне положення вмісту, коли вікно перегляду перевищує висоту. 0.0 знаходиться зверху, 0.5 - центр, 1.0 знизу."
    )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
@@ -2690,11 +2698,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "Настроюване зміщення вікна перегляду, яке використовується для зміщення вікна перегляду по горизонталі (якщо ширше за висоту вмісту).  0,0 означає крайній ліворуч, а 1,0 означає крайній правий. (Книжкова орієнтація)"
+   "Горизонтальне положення вмісту, коли вікно перегляду ширше, ніж ширина контенту. 0,0 далеко зліва, 0,5 - центр, 1.0 - набагато правильніше. (портретний орієнтація)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "Настроюване зміщення вікна перегляду, яке використовується для зсуву вікна перегляду по вертикалі (якщо вище за висоту вмісту).  0,0 означає верх і 1,0 означає низ. (Книжкова орієнтація)"
+   "Вертикальне положення вмісту, коли вікно перегляду є вищим, ніж висота контенту. 0,0 зверху, 0.5 знаходиться в центрі, 1.0 знаходиться внизу. (портретна орієнтація)"
    )
 #endif
 MSG_HASH(
@@ -2942,7 +2950,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Вимкнути звук при перемотуванні"
+   "Вимкнення звуку швидкого переходу"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
@@ -2950,11 +2958,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Прискорити Під Час Перемотування Вперед"
+   "Прискорення звуку Швидкого Вперед"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    "Прискорювати звук під час перемотування вперед. Запобігає потріскуванню, але змінює висоту тону."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "Вимкнення звуку назад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "Автоматично вимикати звук під час перемотування назад."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -3501,21 +3517,34 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "Утримуйте"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Турбо Кнопки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
+   "Вимкнено зупиняє всі операції турбопожежі."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Турбо-період"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "Тривалість (у кадрах) дії turbo-кнопок."
+   "Період у кадрах під час натискання кнопок із увімкненим режимом турбо."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "Робочий цикл турбо"
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DUTY_CYCLE,
+   "Робочий цикл Turbo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "Кількість кадрів із турбо-періоду, протягом якого кнопки утримуються. Якщо це число дорівнює або перевищує період турбо, кнопки ніколи не відпустяться."
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
+   "Кількість кадрів із турбо-періоду, протягом якого кнопки утримуються. Якщо це число дорівнює або перевищує Turbo Period, кнопки ніколи не відпустяться."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
+   "Половина періоду"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3543,34 +3572,38 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Класичний режим, керування двома кнопками. Утримуйте кнопку та торкніться кнопки Турбо, щоб активувати послідовність пресреліз.\n Кнопку Турбо можна призначити в меню «Налаштування»/«Вхід»/«Керування портом 1»."
+   "Класичний режим, управління двома кнопками. Утримуйте кнопку та торкніться кнопки «Турбо», щоб активувати послідовність прес-релізів.\nТурбо-прив’язку можна призначити в «Параметрах»/«Введення»/«Керування портом X»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "Класичний режим перемикання, робота двома кнопками. Утримуйте кнопку та торкніться кнопки Turbo, щоб увімкнути турбо для цієї кнопки. Щоб вимкнути турбо: утримуйте кнопку та знову натисніть кнопку «Турбо».\nКнопку «Турбо» можна призначити в меню «Налаштування/Вхід/Керування[...]"
+   "Класичний режим перемикання, робота двома кнопками. Утримуйте кнопку та торкніться кнопки Turbo, щоб увімкнути турбо для цієї кнопки. Щоб вимкнути турбо: утримуйте кнопку та знову натисніть кнопку «Турбо».\nТурбозв’язування може b."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Режим перемикання. Натисніть кнопку «Турбо» один раз, щоб активувати послідовність прес-релізів для вибраної кнопки за замовчуванням, натисніть її ще раз, щоб вимкнути її.\nКнопку «Турбо» можна призначити в меню «Налаштування/Вхід/Керування портом 1»."
+   "Режим перемикання. Натисніть кнопку Turbo один раз, щоб активувати послідовність прес-релізів для вибраної кнопки за замовчуванням, натисніть її ще раз, щоб вимкнути її.\nTurbo bind можна призначити в Settings/Input/Por."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Режим утримання. Послідовність прес-релізів для вибраної кнопки за замовчуванням активна, доки кнопка Turbo утримується.\n Кнопку Turbo можна призначити в меню «Параметри/Вхід/Керування портом 1».\n Щоб імітувати функцію автозапуску епохи домашнього комп’ютера, установіть Turbo [...]"
+   "Режим утримання. Послідовність прес-релізів для вибраної кнопки за замовчуванням активна, доки кнопку Turbo утримують.\nТурбозв’язування можна призначити в меню «Параметри/Вхід/Керування портом X».\nЩоб імітувати функцію автозапуску ери домашнього комп’ютера, установіть «[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "Стандартна кнопка Турбо"
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+   "Зв'язати Турбо"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Активна кнопка для турбо режиму за замовчанням."
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   "Turbo активація прив'язки RetroPad. Empty використовує прив’язку до порту."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "Дозволити маршрути Turbo D-Pad"
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   "Турбо кнопка"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   "Цільова турбо-кнопка в режимі «Одна кнопка»."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
    "Якщо ввімкнено, цифрові спрямовані входи (також відомі як d-pad або «hatswitch») можуть бути турбо."
    )
 MSG_HASH(
@@ -3579,7 +3612,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Змініть налаштування турбопожежі.\n Примітка: функція турбо вимагає зіставлення кнопки турбо з пристроєм введення у відповідному меню «Керування портом X»."
+   "Змініть налаштування турбо вогню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3772,7 +3805,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Перемикає поточний вигляд між меню та запущеним контентом."
+   "Перемикає поточний дисплей між меню та вмістом."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
@@ -3852,7 +3885,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Перемикає запущений зміст між зупиненим та не зупиненими станом."
+   "Перемикає вміст між станами призупинення та без паузи."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -4059,6 +4092,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
    "Зменшує поточний вибраний індекс слота для повтору."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
+   "Turbo Fire (перемикач)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
+   "Вмикає/вимикає турбо вогонь."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -4440,7 +4481,7 @@ MSG_HASH(
    "Гармата D-панель праворуч"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Турбо"
    )
 
@@ -4994,12 +5035,12 @@ MSG_HASH(
    "Фільтрація файлів, що відображаються у браузері файлів, підтримуючи розширення."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-   "Використовувати вбудований медіа-програвач"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "Фільтрувати за поточним ядром"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+   "Фільтр файлів, що відображаються в браузері файлу по поточному ядру."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
@@ -5008,6 +5049,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    "Відкрити Файловий браузер в останньому використаному місці при завантаженні вмісту з папки Старт. Примітка: Місцезнаходження буде скинуто при перезапуску RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   "Використовувати вбудований медіа-програвач"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "Використовувати вбудований переглядач зображень"
    )
 
 /* Settings > Frame Throttle */
@@ -5790,6 +5839,10 @@ MSG_HASH(
    "Вхідний (автоматичний) Сповіщення про підключення"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Повідомлення про помилку введення (автоконфігурації)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "Повідомлення чіт-кодів"
    )
@@ -5808,6 +5861,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    "Відображати екранне повідомлення під час підключення/відключення вхідних пристроїв."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Відображати повідомлення на екрані, якщо не вдалося налаштувати пристрої введення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
@@ -6100,7 +6157,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Призупиняти запущений вміст, якщо меню активне."
+   "Призупинити вміст, якщо меню активне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -6457,7 +6514,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Показати список відтворення. (Потрібно перезапустити в Ozone/XMB)"
+   "Показати списки відтворення в головному меню. Ігнорується в GLUI, якщо ввімкнено вкладки списку відтворення та навігаційну панель."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
+   "Показати вкладки списку відтворення"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
+   "Показати вкладки списку відтворення. Не впливає на RGUI. Панель навігації має бути ввімкнена в GLUI. (Потрібен перезапуск Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
@@ -6936,14 +7001,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    "Показати 'Користувач'"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Значки списку відтворення"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "Тип ескізу іконок у плейлісті для відображення."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -7889,7 +7946,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   "Сканувати перевірки CRC на можливі дублікати"
+   "Сканування перевіряє CRC на можливі дублікати"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
@@ -8160,7 +8217,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Файловий менеджер"
+   "Початковий каталог"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -8405,7 +8462,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "Визначте, яку інформацію, пов'язану з запущеним змістом, буде надано контент."
+   "Вирішіть, яку інформацію, пов’язану з вмістом, буде надано."
    )
 
 MSG_HASH(
@@ -9005,7 +9062,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Відновити актуальний вміст та залишити панель швидкого меню."
+   "Відновити вміст і вийти зі швидкого меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -9021,7 +9078,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Закрити поточний вміст. Будь-які незбережені зміни можуть бути втрачені."
+   "Закрийте вміст. Усі незбережені зміни можуть бути втрачені."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9157,7 +9214,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "Змінити параметри, які зараз працюють."
+   "Змініть параметри вмісту."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -9165,7 +9222,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "Змінити параметри елементів керування на даний момент."
+   "Змініть елементи керування вмістом."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9791,7 +9848,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "Перегляд файлів шейдерів для нових змін. Після збереження змін у тінню на диску він буде автоматично перекомпільований і застосований до запущеного вмісту."
+   "Слідкуйте за новими змінами у файлах шейдерів. Після збереження змін шейдера на диску його буде автоматично перекомпільовано та застосовано до вмісту."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -11008,7 +11065,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Увімкнути фонове відображення запущеного вмісту, коли активне Швидке Меню. Вимкнення прозорості може змінити кольори теми."
+   "Увімкнути фонове відображення вмісту під час активного швидкого меню. Вимкнення прозорості може змінити кольори теми."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
@@ -11385,6 +11442,14 @@ MSG_HASH(
    "Тип ескізу для відображення вліво."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Мініатюра значка"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Тип мініатюри значка списку відтворення."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    "Динамічне тло"
    )
@@ -11679,6 +11744,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR,
    "Веселка"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   "Темно-сірий"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   "Світло-сірий"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -11706,6 +11779,31 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "Плейлісти будуть повторно сортовані в алфавітному порядку після видалення компонента виконавців їх імен."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "Додаткова мініатюра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "Замінити панель метаданих вмісту іншою мініатюрою."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "Використовувати тікер для вмісту метаданих"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "Коли увімкнено, кожен елемент метаданих, що відображаються на правій бічній панелі списків відтворення (пов’язаний з ядром, час гри) буде займати одну лінію; рядки, що перевищують ширину бічної панелі, будуть відображатися як текст прокрутки тікета. Коли вимкнено, кожен ел[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Фактор масштабування мініатюр"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Масштабувати розмір мініатюри (основного розміру)."
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "Колір теми"
@@ -11766,30 +11864,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN,
    "Фіолетовий Дощ"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "Додаткова мініатюра"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "Замінити панель метаданих вмісту іншою мініатюрою."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "Використовувати тікер для вмісту метаданих"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "Коли увімкнено, кожен елемент метаданих, що відображаються на правій бічній панелі списків відтворення (пов’язаний з ядром, час гри) буде займати одну лінію; рядки, що перевищують ширину бічної панелі, будуть відображатися як текст прокрутки тікета. Коли вимкнено, кожен ел[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Фактор масштабування мініатюр"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Масштабувати розмір мініатюри (основного розміру)."
-   )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
@@ -12763,10 +12838,6 @@ MSG_HASH(
    "Користувач"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-   "Використовувати вбудований переглядач зображень"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "Задає прийом відео чітка використовувати вказаний режим буферизації."
    )
@@ -12892,14 +12963,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
    "Вибір зі списку відтворення"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Продовжити"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Відновити актуальний вміст та залишити панель швидкого меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,

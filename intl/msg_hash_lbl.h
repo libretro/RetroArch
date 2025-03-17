@@ -693,7 +693,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CLOSE_CONTENT,
-   "unload_core"
+   "close_content"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_COLLECTION,
@@ -826,6 +826,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_LIST,
    "load_core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_LIST_UNLOAD,
+   "unload_core"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,
@@ -1010,6 +1014,10 @@ MSG_HASH(
    "deferred_dropdown_box_list_disk_index"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND,
+   "deferred_dropdown_box_list_input_retropad_bind"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE,
    "deferred_dropdown_box_list_input_device_type"
    )
@@ -1038,6 +1046,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE,
    "deferred_dropdown_box_list_audio_device"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MIDI_DEVICE,
+   "deferred_dropdown_box_list_midi_device"
    )
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
@@ -1551,6 +1563,10 @@ MSG_HASH(
    "core_disk_options"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DISK_INDEX,
+   "core_disk_index"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
    "downloaded_file_detect_core_list"
    )
@@ -1941,10 +1957,6 @@ MSG_HASH(
    "input_driver"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_DUTY_CYCLE,
-   "input_duty_cycle"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS,
    "input_retropad_binds"
    )
@@ -2183,10 +2195,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE,
    "input_touch_enable"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_TURBO_PERIOD,
-   "input_turbo_period"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_USER_10_BINDS,
@@ -3403,10 +3411,6 @@ MSG_HASH(
    "restart_retroarch"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_RESUME,
-   "resume"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_RESUME_CONTENT,
    "resume_content"
    )
@@ -3501,6 +3505,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST,
    "playlist_create"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ADD_TO_PLAYLIST_QUICKMENU,
+   "playlist_add_quickmenu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU,
+   "deferred_add_to_playlist_quickmenu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST_QUICKMENU,
+   "add_entry_to_playlist_quickmenu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST_QUICKMENU,
+   "playlist_create_quickmenu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SET_CORE_ASSOCIATION,
@@ -6209,6 +6229,10 @@ MSG_HASH(
    "notification_show_autoconfig"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "notification_show_autoconfig_fails"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "notification_show_cheats_applied"
    )
@@ -6577,8 +6601,20 @@ MSG_HASH(
    "input_turbo_mode"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "input_turbo_default_button"
+   MENU_ENUM_LABEL_INPUT_TURBO_BIND,
+   "input_turbo_bind"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TURBO_BUTTON,
+   "input_turbo_button"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TURBO_PERIOD,
+   "input_turbo_period"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_TURBO_DUTY_CYCLE,
+   "input_turbo_duty_cycle"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_ALLOW_TURBO_DPAD,

@@ -94,7 +94,7 @@ static bool netplay_json_number(void* ctx, const char *p_value, size_t len)
 static bool netplay_json_start_object(void* ctx)
 {
    struct netplay_json_context *p_ctx = (struct netplay_json_context*)ctx;
-   net_driver_state_t         *net_st = networking_state_get_ptr(); 
+   net_driver_state_t         *net_st = networking_state_get_ptr();
 
    if (p_ctx->state == STATE_FIELDS_START)
    {
@@ -134,7 +134,7 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
       size_t len)
 {
    struct netplay_json_context* p_ctx = (struct netplay_json_context*)ctx;
-   net_driver_state_t         *net_st = networking_state_get_ptr(); 
+   net_driver_state_t         *net_st = networking_state_get_ptr();
 
    if (!p_value || !len)
       return true;
@@ -173,44 +173,32 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
             p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->address);
          }
          else if (string_is_equal(p_value, "port"))
-         {
             p_ctx->cur_member_int    = &net_st->rooms_data->cur->port;
-         }
          else if (string_is_equal(p_value, "game_crc"))
-         {
             p_ctx->cur_member_inthex = &net_st->rooms_data->cur->gamecrc;
-         }
          else if (string_is_equal(p_value, "core_version"))
          {
             p_ctx->cur_member_string = net_st->rooms_data->cur->coreversion;
             p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->coreversion);
          }
          else if (string_is_equal(p_value, "has_password"))
-         {
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->has_password;
-         }
          else if (string_is_equal(p_value, "has_spectate_password"))
-         {
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->has_spectate_password;
-         }
          else if (string_is_equal(p_value, "mitm_ip"))
          {
             p_ctx->cur_member_string = net_st->rooms_data->cur->mitm_address;
             p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->mitm_address);
          }
          else if (string_is_equal(p_value, "mitm_port"))
-         {
             p_ctx->cur_member_int    = &net_st->rooms_data->cur->mitm_port;
-         }
          else if (string_is_equal(p_value, "mitm_session"))
          {
             p_ctx->cur_member_string = net_st->rooms_data->cur->mitm_session;
             p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->mitm_session);
          }
          else if (string_is_equal(p_value, "host_method"))
-         {
             p_ctx->cur_member_int    = &net_st->rooms_data->cur->host_method;
-         }
          else if (string_is_equal(p_value, "retroarch_version"))
          {
             p_ctx->cur_member_string = net_st->rooms_data->cur->retroarch_version;
@@ -232,13 +220,9 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
             p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->subsystem_name);
          }
          else if (string_is_equal(p_value, "connectable"))
-         {
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->connectable;
-         }
          else if (string_is_equal(p_value, "is_retroarch"))
-         {
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->is_retroarch;
-         }
       }
    }
 
@@ -264,7 +248,7 @@ static void netplay_rooms_error(void *context,
 
 void netplay_rooms_free(void)
 {
-   net_driver_state_t         *net_st = networking_state_get_ptr(); 
+   net_driver_state_t         *net_st = networking_state_get_ptr();
    if (net_st->rooms_data)
    {
       struct netplay_room *room = net_st->rooms_data->head;
@@ -288,7 +272,7 @@ void netplay_rooms_free(void)
 int netplay_rooms_parse(const char *buf, size_t len)
 {
    struct netplay_json_context ctx;
-   net_driver_state_t         *net_st = networking_state_get_ptr(); 
+   net_driver_state_t         *net_st = networking_state_get_ptr();
 
    memset(&ctx, 0, sizeof(ctx));
 
@@ -318,7 +302,7 @@ int netplay_rooms_parse(const char *buf, size_t len)
 struct netplay_room* netplay_room_get(int index)
 {
    int                    cur = 0;
-   net_driver_state_t *net_st = networking_state_get_ptr(); 
+   net_driver_state_t *net_st = networking_state_get_ptr();
    struct netplay_room  *room = net_st->rooms_data->head;
 
    if (index < 0)
@@ -340,7 +324,7 @@ int netplay_rooms_get_count(void)
 {
    int count = 0;
    struct netplay_room *room  = NULL;
-   net_driver_state_t *net_st = networking_state_get_ptr(); 
+   net_driver_state_t *net_st = networking_state_get_ptr();
 
    if (!net_st || !net_st->rooms_data)
       return count;
@@ -351,7 +335,6 @@ int netplay_rooms_get_count(void)
    while (room)
    {
       count++;
-
       room = room->next;
    }
 

@@ -214,8 +214,11 @@ void pipewire_core_deinit(pipewire_core_t *pw)
       pw_core_disconnect(pw->core);
    }
 
-   spa_clear_ptr(pw->ctx, pw_context_destroy);
-   spa_clear_ptr(pw->thread_loop, pw_thread_loop_destroy);
+   if (pw->ctx)
+      pw_context_destroy(pw->ctx);
+
+   if (pw->thread_loop)
+      pw_thread_loop_destroy(pw->thread_loop);
 
    if (pw->devicelist)
       string_list_free(pw->devicelist);

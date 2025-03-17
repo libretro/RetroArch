@@ -38,6 +38,12 @@
 		05A8E23C20A63CF50084ABDA /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23B20A63CF50084ABDA /* QuartzCore.framework */; };
 		05D7753520A567A400646447 /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
 		05D7753720A567A700646447 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
+		0703E3292D76B6ED00D7B9BE /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0703E3282D76B6ED00D7B9BE /* CoreMedia.framework */; };
+		0703E32A2D76B6F400D7B9BE /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0703E3282D76B6ED00D7B9BE /* CoreMedia.framework */; };
+		0703E32B2D76B6FA00D7B9BE /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0703E3282D76B6ED00D7B9BE /* CoreMedia.framework */; };
+		07097FFB2D60F4C80021608F /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07097FFA2D60F4C80021608F /* CoreMIDI.framework */; };
+		07097FFC2D60F4D00021608F /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07097FFA2D60F4C80021608F /* CoreMIDI.framework */; };
+		07097FFD2D60F4D60021608F /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07097FFA2D60F4C80021608F /* CoreMIDI.framework */; };
 		070A88402A4E7A1B003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
 		070A88412A4E7A24003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
 		0720993E29B1258C001642BB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
@@ -65,7 +71,13 @@
 		0720995929B1258C001642BB /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
 		072976DD296284F600D6E00C /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
 		0746953A2997393000CCB7BD /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
+		074A924B2D76B1850084364A /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074A924A2D76B1850084364A /* Accelerate.framework */; };
+		074A924C2D76B18D0084364A /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074A924A2D76B1850084364A /* Accelerate.framework */; };
+		074A924D2D76B19A0084364A /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074A924A2D76B1850084364A /* Accelerate.framework */; };
 		075650252C488918004C5E7E /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 075650242C488918004C5E7E /* CloudKit.framework */; };
+		076512622D64E99200E1F6BE /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 076512612D64E99200E1F6BE /* CoreLocation.framework */; };
+		076512632D64E99A00E1F6BE /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 076512612D64E99200E1F6BE /* CoreLocation.framework */; };
+		076512642D64E9A000E1F6BE /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 076512612D64E99200E1F6BE /* CoreLocation.framework */; };
 		076E640C2BF30A7A00681536 /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
 		076E640D2BF30A9200681536 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
 		076E640E2BF30AA200681536 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
@@ -443,13 +455,17 @@
 		05F2873F20F2BEEA00632D47 /* task_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_content.c; sourceTree = "<group>"; };
 		05F2874020F2BEEA00632D47 /* task_http.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_http.c; sourceTree = "<group>"; };
 		05F2874120F2BEEA00632D47 /* task_patch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_patch.c; sourceTree = "<group>"; };
+		0703E3282D76B6ED00D7B9BE /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		07097FFA2D60F4C80021608F /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = System/Library/Frameworks/CoreMIDI.framework; sourceTree = SDKROOT; };
 		070A883F2A4E7A1B003161C0 /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
 		071051BE2BEFEFBA009C29D8 /* Info_AppStore.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info_AppStore.plist; path = OSX/Info_AppStore.plist; sourceTree = "<group>"; };
 		0720996029B1258C001642BB /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		072976DC296284F600D6E00C /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		074695362995C03900CCB7BD /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
+		074A924A2D76B1850084364A /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		075650242C488918004C5E7E /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
 		075650262C48B417004C5E7E /* RetroArchCI.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchCI.entitlements; sourceTree = "<group>"; };
+		076512612D64E99200E1F6BE /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		0776EF3829A005D600AF0237 /* Steam.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Steam.xcconfig; sourceTree = "<group>"; };
 		0790F6782BF282B400AA58C9 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Media.xcassets; path = OSX/Media.xcassets; sourceTree = "<group>"; };
 		0795A8C6299A095300D5035D /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
@@ -517,15 +533,19 @@
 				0720994C29B1258C001642BB /* OpenGL.framework in Frameworks */,
 				0720994D29B1258C001642BB /* GameController.framework in Frameworks */,
 				0720994F29B1258C001642BB /* AVFoundation.framework in Frameworks */,
+				0703E3292D76B6ED00D7B9BE /* CoreMedia.framework in Frameworks */,
 				0720995029B1258C001642BB /* QuartzCore.framework in Frameworks */,
 				0720995129B1258C001642BB /* IOSurface.framework in Frameworks */,
 				0720995229B1258C001642BB /* CoreHaptics.framework in Frameworks */,
 				0720995329B1258C001642BB /* Metal.framework in Frameworks */,
+				07097FFD2D60F4D60021608F /* CoreMIDI.framework in Frameworks */,
 				0720995429B1258C001642BB /* MetalKit.framework in Frameworks */,
 				0720995529B1258C001642BB /* libz.dylib in Frameworks */,
 				070A88412A4E7A24003161C0 /* OpenAL.framework in Frameworks */,
+				076512642D64E9A000E1F6BE /* CoreLocation.framework in Frameworks */,
 				0720995629B1258C001642BB /* CoreAudio.framework in Frameworks */,
 				0720995729B1258C001642BB /* AudioUnit.framework in Frameworks */,
+				074A924D2D76B19A0084364A /* Accelerate.framework in Frameworks */,
 				0720995829B1258C001642BB /* AppKit.framework in Frameworks */,
 				0720995929B1258C001642BB /* IOKit.framework in Frameworks */,
 			);
@@ -538,14 +558,18 @@
 				07F2BBD32BE83A4700FD1295 /* AudioToolbox.framework in Frameworks */,
 				07F2BBD42BE83A4700FD1295 /* OpenGL.framework in Frameworks */,
 				07F2BBD52BE83A4700FD1295 /* GameController.framework in Frameworks */,
+				074A924C2D76B18D0084364A /* Accelerate.framework in Frameworks */,
+				0703E32B2D76B6FA00D7B9BE /* CoreMedia.framework in Frameworks */,
 				07F2BBD72BE83A4700FD1295 /* AVFoundation.framework in Frameworks */,
 				07F2BBD82BE83A4700FD1295 /* QuartzCore.framework in Frameworks */,
 				07F2BBD92BE83A4700FD1295 /* IOSurface.framework in Frameworks */,
 				07F2BBDA2BE83A4700FD1295 /* CoreHaptics.framework in Frameworks */,
 				07F2BBDB2BE83A4700FD1295 /* Metal.framework in Frameworks */,
 				07F2BBDC2BE83A4700FD1295 /* MetalKit.framework in Frameworks */,
+				07097FFC2D60F4D00021608F /* CoreMIDI.framework in Frameworks */,
 				07F2BBDD2BE83A4700FD1295 /* libz.dylib in Frameworks */,
 				07F2BBDE2BE83A4700FD1295 /* OpenAL.framework in Frameworks */,
+				076512632D64E99A00E1F6BE /* CoreLocation.framework in Frameworks */,
 				07F2BBDF2BE83A4700FD1295 /* CoreAudio.framework in Frameworks */,
 				07F2BBE02BE83A4700FD1295 /* AudioUnit.framework in Frameworks */,
 				07D851CD2CAF06E2005097EA /* CloudKit.framework in Frameworks */,
@@ -561,6 +585,8 @@
 				D27C508C2228362700113BC0 /* AudioToolbox.framework in Frameworks */,
 				072976DD296284F600D6E00C /* OpenGL.framework in Frameworks */,
 				0746953A2997393000CCB7BD /* GameController.framework in Frameworks */,
+				074A924B2D76B1850084364A /* Accelerate.framework in Frameworks */,
+				0703E32A2D76B6F400D7B9BE /* CoreMedia.framework in Frameworks */,
 				D27C508B2228361D00113BC0 /* AVFoundation.framework in Frameworks */,
 				05A8E23C20A63CF50084ABDA /* QuartzCore.framework in Frameworks */,
 				05A8E23A20A63CED0084ABDA /* IOSurface.framework in Frameworks */,
@@ -570,9 +596,11 @@
 				075650252C488918004C5E7E /* CloudKit.framework in Frameworks */,
 				5061C8A41AE47E510080AE14 /* libz.dylib in Frameworks */,
 				070A88402A4E7A1B003161C0 /* OpenAL.framework in Frameworks */,
+				076512622D64E99200E1F6BE /* CoreLocation.framework in Frameworks */,
 				84DD5EA91A89E4BE007336C1 /* CoreAudio.framework in Frameworks */,
 				84DD5EB31A89E6C0007336C1 /* AudioUnit.framework in Frameworks */,
 				84DD5EA31A89E2AA007336C1 /* AppKit.framework in Frameworks */,
+				07097FFB2D60F4C80021608F /* CoreMIDI.framework in Frameworks */,
 				84DD5EB51A89E737007336C1 /* IOKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1245,6 +1273,10 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0703E3282D76B6ED00D7B9BE /* CoreMedia.framework */,
+				074A924A2D76B1850084364A /* Accelerate.framework */,
+				076512612D64E99200E1F6BE /* CoreLocation.framework */,
+				07097FFA2D60F4C80021608F /* CoreMIDI.framework */,
 				075650242C488918004C5E7E /* CloudKit.framework */,
 				070A883F2A4E7A1B003161C0 /* OpenAL.framework */,
 				0795A8C6299A095300D5035D /* CoreHaptics.framework */,
@@ -1888,6 +1920,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../Frameworks/MoltenVK.framework",
 				);
+				LLVM_LTO = YES_THIN;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MARKETING_VERSION = 1.20.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -1969,6 +2002,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../Frameworks/MoltenVK.framework",
 				);
+				LLVM_LTO = YES_THIN;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MARKETING_VERSION = 1.20.0;
 				MTL_ENABLE_DEBUG_INFO = NO;

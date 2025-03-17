@@ -21,6 +21,7 @@
 #endif
 
 #include <retro_timers.h>
+#include <retro_math.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
@@ -48,6 +49,7 @@
 #include "../driver.h"
 #include "../list_special.h"
 #include "../paths.h"
+#include "../tasks/task_content.h"
 #include "../tasks/task_powerstate.h"
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
@@ -91,6 +93,8 @@ typedef struct menu_input_ctx_bind
 
 /* TODO/FIXME - public global variable */
 extern u32 __nx_applet_type;
+
+void libnx_apply_overclock(void);
 #endif
 
 /* Accelerated navigation buttons */
@@ -381,7 +385,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
    newpath[0]                  = '\0';
 
-   if (!list)
+   if (!list || !list->size)
       return;
 
    path_enabled               = (entry_flags & MENU_ENTRY_FLAG_PATH_ENABLED) ? true : false;
@@ -441,7 +445,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
             path_enabled = true;
       }
 
-      if ((path_enabled || (entry_flags & MENU_ENTRY_FLAG_VALUE_ENABLED))
+      if (   (path_enabled
+          || (entry_flags & MENU_ENTRY_FLAG_VALUE_ENABLED))
           && cbs->action_get_value
           && use_representation)
       {
@@ -469,26 +474,13 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          }
       }
 
-      if (entry_flags & MENU_ENTRY_FLAG_SUBLABEL_ENABLED)
-      {
-         if (!string_is_empty(cbs->action_sublabel_cache))
-            strlcpy(entry->sublabel,
-                     cbs->action_sublabel_cache, sizeof(entry->sublabel));
-         else if (cbs->action_sublabel)
-         {
-            /* If this function callback returns true,
-             * we know that the value won't change - so we
-             * can cache it instead. */
-            if (cbs->action_sublabel(list,
-                     entry->type, (unsigned)i,
-                     label, path,
-                     entry->sublabel,
-                     sizeof(entry->sublabel)) > 0)
-               strlcpy(cbs->action_sublabel_cache,
-                     entry->sublabel,
-                     sizeof(cbs->action_sublabel_cache));
-         }
-      }
+      if (     cbs->action_sublabel
+            && (entry_flags & MENU_ENTRY_FLAG_SUBLABEL_ENABLED))
+            cbs->action_sublabel(list,
+                  entry->type, (unsigned)i,
+                  label, path,
+                  entry->sublabel,
+                  sizeof(entry->sublabel));
    }
 
    /* Inspect core options and set entries with only 2 options as
@@ -1068,8 +1060,6 @@ size_t menu_entries_get_title(char *s, size_t len)
    if (cbs && cbs->action_get_title)
    {
       const char *label       = (list->size) ? list->list[list->size - 1].label : NULL;
-      if (!string_is_empty(cbs->action_title_cache))
-         return strlcpy(s, cbs->action_title_cache, len);
 
       /* Show playlist entry instead of "Quick Menu" */
       if (string_is_equal(label, "deferred_rpl_entry_actions"))
@@ -1094,8 +1084,7 @@ size_t menu_entries_get_title(char *s, size_t len)
             path               = list->list[list->size - 1].path;
             menu_type          = list->list[list->size - 1].type;
          }
-         if (cbs->action_get_title(path, label, menu_type, s, len) == 1)
-            return strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
+         cbs->action_get_title(path, label, menu_type, s, len);
       }
    }
    return 0;
@@ -2256,26 +2245,14 @@ static bool menu_driver_displaylist_push_internal(
       settings_t *settings)
 {
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_HISTORY, info, settings);
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info, settings);
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info, settings);
 #ifdef HAVE_CHEATS
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST, info, settings);
 #endif
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
    {
@@ -2292,8 +2269,7 @@ static bool menu_driver_displaylist_push_internal(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
       menu_entries_clear(info->list);
-      menu_displaylist_ctl(DISPLAYLIST_MUSIC_HISTORY, info, settings);
-      return true;
+      return menu_displaylist_ctl(DISPLAYLIST_MUSIC_HISTORY, info, settings);
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)))
    {
@@ -2310,8 +2286,7 @@ static bool menu_driver_displaylist_push_internal(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
       menu_entries_clear(info->list);
-      menu_displaylist_ctl(DISPLAYLIST_VIDEO_HISTORY, info, settings);
-      return true;
+      return menu_displaylist_ctl(DISPLAYLIST_VIDEO_HISTORY, info, settings);
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)))
    {
@@ -2328,8 +2303,7 @@ static bool menu_driver_displaylist_push_internal(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
       menu_entries_clear(info->list);
-      menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info, settings);
-      return true;
+      return menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info, settings);
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
    {
@@ -2361,38 +2335,21 @@ static bool menu_driver_displaylist_push_internal(
 
       info->path = strdup(dir_playlist);
 
-      if (menu_displaylist_ctl(
-               DISPLAYLIST_DATABASE_PLAYLISTS, info, settings))
-         return true;
+      return menu_displaylist_ctl(
+               DISPLAYLIST_DATABASE_PLAYLISTS, info, settings);
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info, settings);
 #if defined(HAVE_LIBRETRODB)
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info, settings);
 #endif
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_CONTENTLESS_CORES, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_CONTENTLESS_CORES, info, settings);
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info, settings);
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info, settings))
-         return true;
-   }
-
+      return menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info, settings);
    return false;
 }
 
@@ -2601,12 +2558,7 @@ static void menu_cbs_init(
    menu_cbs_init_bind_sublabel(cbs, path, label, lbl_len, type, idx);
 
    if (menu_driver_ctx && menu_driver_ctx->bind_init)
-      menu_driver_ctx->bind_init(
-            cbs,
-            path,
-            label,
-            type,
-            idx);
+      menu_driver_ctx->bind_init(cbs, path, label, type, idx);
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -2690,13 +2642,15 @@ enum rarch_shader_type menu_driver_get_last_shader_preset_type(void)
 }
 
 static void menu_driver_get_last_shader_path_int(
-      settings_t *settings, enum rarch_shader_type type,
-      const char *shader_dir, const char *shader_file_name,
-      const char **dir_out, const char **file_name_out)
+      bool remember_last_dir,
+      const char *video_shader_dir,
+      enum rarch_shader_type type,
+      const char *shader_dir,
+      const char *shader_file_name,
+      const char **dir_out,
+      const char **file_name_out)
 {
    gfx_ctx_flags_t flags;
-   bool remember_last_dir       = settings->bools.video_shader_remember_last_dir;
-   const char *video_shader_dir = settings->paths.directory_video_shader;
 
    /* File name is NULL by default */
    if (file_name_out)
@@ -2750,8 +2704,10 @@ void menu_driver_get_last_shader_preset_path(
       shader_file_name          = menu->last_shader_selection.preset_file_name;
    }
 
-   menu_driver_get_last_shader_path_int(settings, type,
-         shader_dir, shader_file_name,
+   menu_driver_get_last_shader_path_int(
+         settings->bools.video_shader_remember_last_dir,
+         settings->paths.directory_video_shader,
+         type, shader_dir, shader_file_name,
          directory, file_name);
 }
 
@@ -2771,8 +2727,10 @@ void menu_driver_get_last_shader_pass_path(
       shader_file_name          = menu->last_shader_selection.pass_file_name;
    }
 
-   menu_driver_get_last_shader_path_int(settings, type,
-         shader_dir, shader_file_name,
+   menu_driver_get_last_shader_path_int(
+         settings->bools.video_shader_remember_last_dir,
+         settings->paths.directory_video_shader,
+         type, shader_dir, shader_file_name,
          directory, file_name);
 }
 
@@ -2921,9 +2879,9 @@ void menu_shader_manager_apply_changes(
 
    type = menu_shader_manager_get_type(shader);
 
-   if (shader->passes
-         && type != RARCH_SHADER_NONE
-         && !(shader->flags & SHDR_FLAG_DISABLED))
+   if (     shader->passes
+         && (type != RARCH_SHADER_NONE)
+         && (!(shader->flags & SHDR_FLAG_DISABLED)))
    {
       menu_shader_manager_save_preset(shader, NULL,
             dir_video_shader, dir_menu_config, true);
@@ -3031,7 +2989,8 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
 {
    char config_directory[DIR_MAX_LENGTH];
    const char *preset_dirs[3]  = {0};
-   settings_t *settings        = config_get_ptr();
+   bool preset_save_ref_enable = config_get_ptr()->
+      bools.video_shader_preset_save_reference_enable;
 
    if (path_is_empty(RARCH_PATH_CONFIG))
       config_directory[0]      = '\0';
@@ -3045,7 +3004,7 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    preset_dirs[2] = config_directory;
 
    return menu_shader_manager_save_preset_internal(
-         settings->bools.video_shader_preset_save_reference_enable,
+         preset_save_ref_enable,
          shader, basename,
          dir_video_shader,
          apply,
@@ -3063,10 +3022,10 @@ static bool menu_shader_manager_operate_auto_preset(
    char file[PATH_MAX_LENGTH];
    char old_presets_directory[DIR_MAX_LENGTH];
    char config_directory[DIR_MAX_LENGTH];
-   settings_t *settings                           = config_get_ptr();
-   bool video_shader_preset_save_reference_enable = settings->bools.video_shader_preset_save_reference_enable;
+   bool video_shader_preset_save_reference_enable = config_get_ptr()->
+      bools.video_shader_preset_save_reference_enable;
    struct retro_system_info *sysinfo              = &runloop_state_get_ptr()->system.info;
-   static enum rarch_shader_type shader_types[]       =
+   static enum rarch_shader_type shader_types[]   =
    {
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
    };
@@ -3633,7 +3592,7 @@ static int menu_dialog_iterate(
          break;
       case MENU_DIALOG_HELP_EXTRACT:
          {
-            bool bundle_finished        = settings->bools.bundle_finished;
+            bool bundle_finished = settings->bools.bundle_finished;
 
             msg_hash_get_help_enum(
                   MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
@@ -3808,7 +3767,8 @@ static bool rarch_menu_init(
             NULL,
             NULL,
             false);
-      /* Support only 1 version - setting this would prevent the assets from being extracted every time */
+      /* Support only 1 version - setting this would prevent
+       * the assets from being extracted every time */
       configuration_set_int(settings,
             settings->uints.bundle_assets_extract_last_version, 1);
    }
@@ -3930,14 +3890,22 @@ static enum menu_driver_id_type menu_driver_set_id(
 {
    if (!string_is_empty(driver_name))
    {
+#ifdef HAVE_RGUI
       if (string_is_equal(driver_name, "rgui"))
          return MENU_DRIVER_ID_RGUI;
-      else if (string_is_equal(driver_name, "ozone"))
+#endif
+#ifdef HAVE_OZONE
+      if (string_is_equal(driver_name, "ozone"))
          return MENU_DRIVER_ID_OZONE;
-      else if (string_is_equal(driver_name, "glui"))
+#endif
+#ifdef HAVE_MATERIALUI
+      if (string_is_equal(driver_name, "glui"))
          return MENU_DRIVER_ID_GLUI;
-      else if (string_is_equal(driver_name, "xmb"))
+#endif
+#ifdef HAVE_XMB
+      if (string_is_equal(driver_name, "xmb"))
          return MENU_DRIVER_ID_XMB;
+#endif
    }
    return MENU_DRIVER_ID_UNKNOWN;
 }
@@ -4263,8 +4231,6 @@ bool menu_entries_append(
       malloc(sizeof(menu_file_list_cbs_t))))
       return false;
 
-   cbs->action_sublabel_cache[0]   = '\0';
-   cbs->action_title_cache[0]      = '\0';
    cbs->enum_idx                   = enum_idx;
    cbs->checked                    = false;
    cbs->setting                    = setting;
@@ -4359,8 +4325,6 @@ void menu_entries_prepend(file_list_t *list,
    if (!cbs)
       return;
 
-   cbs->action_sublabel_cache[0]   = '\0';
-   cbs->action_title_cache[0]      = '\0';
    cbs->enum_idx                   = enum_idx;
    cbs->checked                    = false;
    cbs->setting                    = menu_setting_find_enum(cbs->enum_idx);
@@ -5709,7 +5673,7 @@ static int menu_input_post_iterate(
    menu_list_t *menu_list                          = menu_st->entries.list;
    file_list_t *selection_buf                      = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
    size_t selection                                = menu_st->selection_ptr;
-   menu_file_list_cbs_t *cbs                       = selection_buf
+   menu_file_list_cbs_t *cbs                       = selection_buf && selection_buf->size
       ? (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
       : NULL;
 
@@ -6454,6 +6418,7 @@ void retroarch_menu_running(void)
    struct menu_state *menu_st      = &menu_driver_state;
    menu_handle_t *menu             = menu_st->driver_data;
    menu_input_t *menu_input        = &menu_st->input_state;
+
    if (menu)
    {
       if (menu->driver_ctx && menu->driver_ctx->toggle)
@@ -6522,6 +6487,11 @@ void retroarch_menu_running_finished(bool quit)
    struct menu_state *menu_st      = &menu_driver_state;
    menu_handle_t *menu             = menu_st->driver_data;
    menu_input_t *menu_input        = &menu_st->input_state;
+
+   /* Only allow toggling menu off with a proper core */
+   if (runloop_st->current_core_type == CORE_TYPE_DUMMY && !quit)
+      return;
+
    if (menu)
    {
       if (menu->driver_ctx && menu->driver_ctx->toggle)
@@ -6955,8 +6925,7 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
       const char* preset_path, const bool prepend)
 {
    bool ret                      = false;
-   settings_t* settings          = config_get_ptr();
-   const char *dir_video_shader  = settings->paths.directory_video_shader;
+   const char *dir_video_shader  = config_get_ptr()->paths.directory_video_shader;
    enum rarch_shader_type type   = menu_shader_manager_get_type(shader);
    struct menu_state *menu_st    = &menu_driver_state;
 
@@ -6966,7 +6935,7 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
       goto clear;
    }
 
-   if (!video_shader_combine_preset_and_apply(settings,
+   if (!video_shader_combine_preset_and_apply(
             type, shader, preset_path, dir_video_shader, prepend, true))
       goto clear;
 
@@ -7078,9 +7047,7 @@ static int generic_menu_iterate(
             bind.s              = menu->menu_state_msg;
             bind.len            = sizeof(menu->menu_state_msg);
 
-            if (menu_input_key_bind_iterate(
-                     settings,
-                     &bind, current_time))
+            if (menu_input_key_bind_iterate(settings, &bind, current_time))
             {
                size_t selection = menu_st->selection_ptr;
                menu_entries_pop_stack(&selection, 0, 0);
@@ -7426,7 +7393,7 @@ int generic_menu_entry_action(
    file_list_t *menu_stack        = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
    size_t entries_size            = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0)->size : 0;
    size_t selection_buf_size      = selection_buf ? selection_buf->size : 0;
-   menu_file_list_cbs_t *cbs      = selection_buf ?
+   menu_file_list_cbs_t *cbs      = selection_buf && selection_buf->size ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable      = settings->bools.accessibility_enable;
@@ -7706,7 +7673,7 @@ int generic_menu_entry_action(
          break;
    }
 
-   if (MENU_ENTRIES_NEEDS_REFRESH(menu_st))
+   if (MENU_ENTRIES_NEEDS_REFRESH(menu_st) && selection_buf_size)
    {
       menu_driver_displaylist_push(
             menu_st,
@@ -7879,6 +7846,25 @@ int generic_menu_entry_action(
                         | MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH);
       menu_st->pending_env_shutdown_content_path[0] = '\0';
    }
+   else if (menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE)
+   {
+      menu_st->flags &= ~MENU_ST_FLAG_PENDING_RELOAD_CORE;
+
+      if (!string_is_empty(path_get(RARCH_PATH_CORE_LAST)))
+      {
+         content_ctx_info_t content_info = {0};
+         if (task_push_load_new_core(
+                     path_get(RARCH_PATH_CORE_LAST),
+                     NULL,
+                     &content_info,
+                     CORE_TYPE_PLAIN,
+                     NULL, NULL))
+         {
+            menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                            |  MENU_ST_FLAG_PREVENT_POPULATE;
+         }
+      }
+   }
 
    return ret;
 }
@@ -8019,39 +8005,26 @@ size_t menu_update_fullscreen_thumbnail_label(
    /* > State slot label */
    else if (   is_quick_menu
             && (
-               string_is_equal(selected_entry.label, "state_slot")
-            || string_is_equal(selected_entry.label, "loadstate")
-            || string_is_equal(selected_entry.label, "savestate")
+               string_is_equal(selected_entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+            || string_is_equal(selected_entry.label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
+            || string_is_equal(selected_entry.label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE))
                )
            )
    {
-      size_t _len = strlcpy(s,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+      int slot    = config_get_ptr()->ints.state_slot;
+      size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
             len);
-      _len += snprintf(s + _len, len - _len, " %d",
-            config_get_ptr()->ints.state_slot);
-      return _len;
-   }
-   else if (   is_quick_menu
-            && (
-               string_is_equal(selected_entry.label, "replay_slot")
-            || string_is_equal(selected_entry.label, "record_replay")
-            || string_is_equal(selected_entry.label, "play_replay")
-            || string_is_equal(selected_entry.label, "halt_replay")
-         ))
-   {
-      size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REPLAY_SLOT),
-            len);
-      _len += snprintf(s + _len, len - _len, " %d",
-               config_get_ptr()->ints.replay_slot);
+      if (slot < 0)
+         _len += snprintf(s + _len, len - _len, " %s", "Auto");
+      else
+         _len += snprintf(s + _len, len - _len, " %d", slot);
       return _len;
    }
    else if (string_to_unsigned(selected_entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
    {
       size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
             len);
-      _len += snprintf(s + _len, len - _len, " %d",
-            string_to_unsigned(selected_entry.path));
+      _len += snprintf(s + _len, len - _len, " %s", selected_entry.path);
       return _len;
    }
    /* > Quick Menu playlist label */
@@ -8106,3 +8079,32 @@ void menu_update_runahead_mode(void)
       menu_st->runahead_mode = MENU_RUNAHEAD_MODE_OFF;
 }
 #endif
+
+/* Common method for ignoring specifics while picking random playlist items. */
+size_t menu_playlist_random_selection(size_t selection, bool is_explore_list)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection_start     = 0;
+   size_t selection_total     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+   size_t new_selection       = selection;
+
+   /* Skip header items (Search Name + Add Additional Filter + Save as View + Delete this View) */
+   if (is_explore_list)
+   {
+      menu_entry_t entry;
+      MENU_ENTRY_INITIALIZE(entry);
+      menu_entry_get(&entry, 0, 0, NULL, true);
+
+      if (entry.type == MENU_SETTINGS_LAST + 1 || entry.type == FILE_TYPE_PLAIN)
+         selection_start = 1;
+      else if (entry.type == FILE_TYPE_RDB)
+         selection_start = 2;
+   }
+
+   new_selection = random_range((unsigned)(selection_start), (unsigned)(selection_total - 1));
+
+   while (new_selection == selection && selection_start != selection_total - 1)
+      new_selection = random_range((unsigned)(selection_start), (unsigned)(selection_total - 1));
+
+   return new_selection;
+}

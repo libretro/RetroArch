@@ -60,7 +60,9 @@ typedef enum apple_view_type
  * the displays should not sleep.
  */
 - (bool)setDisableDisplaySleep:(bool)disable;
+#if !defined(HAVE_COCOATOUCH)
 - (void)openDocument:(id)sender;
+#endif
 @end
 
 #endif

@@ -138,7 +138,9 @@ static bool bsv_movie_init_playback(
    }
 
    handle->min_file_pos = sizeof(header) + state_size;
-   bsv_movie_read_next_events(handle);
+   if(vsn > 0)
+      bsv_movie_read_next_events(handle);
+
 
    return true;
 }
@@ -411,7 +413,7 @@ bool movie_stop(input_driver_state_t *input_st)
       return movie_stop_playback(input_st);
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
       return movie_stop_record(input_st);
-   if(input_st->bsv_movie_state_handle)
+   if (input_st->bsv_movie_state_handle)
       RARCH_ERR("Didn't really stop movie!\n");
    return true;
 }

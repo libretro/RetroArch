@@ -48,7 +48,8 @@ enum menu_state_flags
     * - Does menu driver support screensaver functionality?
     * - Is screensaver currently active? */
    MENU_ST_FLAG_SCREENSAVER_SUPPORTED       = (1 << 10),
-   MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11)
+   MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11),
+   MENU_ST_FLAG_PENDING_RELOAD_CORE         = (1 << 12)
 };
 
 enum menu_scroll_mode
@@ -316,6 +317,8 @@ enum xmb_color_theme
    XMB_THEME_FLAMING_HOT,
    XMB_THEME_ICE_COLD,
    XMB_THEME_MIDGAR,
+   XMB_THEME_GRAY_DARK,
+   XMB_THEME_GRAY_LIGHT,
    XMB_THEME_LAST
 };
 

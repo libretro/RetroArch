@@ -134,6 +134,7 @@
 #ifdef ANDROID
 #endif
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 
@@ -413,6 +414,8 @@
 
 
 /* Ozone: Settings > User Interface > Appearance */
+
+
 
 
 /* MaterialUI: Settings > User Interface > Appearance */

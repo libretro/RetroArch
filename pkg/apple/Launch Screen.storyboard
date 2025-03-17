@@ -20,11 +20,15 @@
                         <subviews>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="retroarch_logo.png" translatesAutoresizingMaskIntoConstraints="NO" id="Pqj-Zw-2gE">
                                 <rect key="frame" x="7" y="333" width="400" height="240"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="240" id="K36-0A-HhX"/>
+                                    <constraint firstAttribute="width" constant="400" id="ROP-g2-vww"/>
+                                </constraints>
                             </imageView>
                         </subviews>
-                        <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <color key="backgroundColor" red="0.1764705882352941" green="0.1764705882352941" blue="0.1764705882352941" alpha="0.76419087593129142" colorSpace="calibratedRGB"/>
                         <constraints>
-                            <constraint firstItem="Pqj-Zw-2gE" firstAttribute="centerY" secondItem="Bcu-3y-fUS" secondAttribute="centerY" id="Set-OA-NQ0"/>
+                            <constraint firstItem="Pqj-Zw-2gE" firstAttribute="centerY" secondItem="Bcu-3y-fUS" secondAttribute="centerY" constant="-12" id="Set-OA-NQ0"/>
                             <constraint firstItem="Pqj-Zw-2gE" firstAttribute="centerX" secondItem="Bcu-3y-fUS" secondAttribute="centerX" id="qC6-u3-bUN"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
@@ -36,6 +40,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="retroarch_logo.png" width="400" height="240"/>
+        <image name="retroarch_logo.png" width="1200" height="720"/>
     </resources>
 </document>

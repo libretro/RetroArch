@@ -772,12 +772,30 @@ enum
          mouse.mouseInput.mouseMovedHandler = ^(GCMouseInput * _Nonnull mouse, float delta_x, float delta_y)
          {
             cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-            if (!apple || !apple->mouse_grabbed)
+            if (!apple)
                return;
-            apple->mouse_rel_x       += (int16_t)delta_x;
-            apple->mouse_rel_y       -= (int16_t)delta_y;
             apple->window_pos_x      += (int16_t)delta_x;
             apple->window_pos_y      -= (int16_t)delta_y;
+         };
+         mouse.mouseInput.leftButton.pressedChangedHandler = ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed)
+         {
+            cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+            if (!apple)
+               return;
+            if (pressed)
+                apple->mouse_buttons |= (1 << 0);
+            else
+                apple->mouse_buttons &= ~(1 << 0);
+         };
+         mouse.mouseInput.rightButton.pressedChangedHandler = ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed)
+         {
+            cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+            if (!apple)
+               return;
+            if (pressed)
+                apple->mouse_buttons |= (1 << 1);
+            else
+                apple->mouse_buttons &= ~(1 << 1);
          };
       }];
    }

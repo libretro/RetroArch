@@ -815,6 +815,10 @@ CAMERA
 #include "../camera/drivers/pipewire.c"
 #endif
 
+#ifdef HAVE_FFMPEG
+#include "../camera/drivers/ffmpeg.c"
+#endif
+
 #ifdef HAVE_VIDEOPROCESSOR
 #include "../cores/libretro-video-processor/video_processor_v4l2.c"
 #endif
@@ -959,6 +963,10 @@ MIDI
 ============================================================ */
 #ifdef HAVE_WINMM
 #include "../midi/drivers/winmm_midi.c"
+#endif
+
+#ifdef HAVE_COREMIDI
+#include "../midi/drivers/coremidi.c"
 #endif
 
 /*============================================================

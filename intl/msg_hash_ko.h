@@ -72,6 +72,14 @@ MSG_HASH(
    "사용할 코어를 선택합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "코어 닫기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "불러와져있는 코어를 종료합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "libretro 코어 파일을 탐색합니다. 탐색기가 시작되는 위치는 코어 디렉토리 경로를 따릅니다. 만약 비어있다면 루트에서 시작됩니다.\n코어 디렉토리가 폴더로 설정되면 메뉴상에서 최상위 폴더로 사용됩니다. 코어 디렉토리가 전체 경로라면 파일이 있는 폴더에서 시작됩니다."
    )
@@ -2673,11 +2681,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   "뷰포트 너비가 콘텐츠 너비보다 넓을 경우 뷰포트 가로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 왼쪽 끝, 1.0은 오른쪽 끝입니다."
+   "뷰포트 가로 길이가 컨텐츠 가로 길이보다 길 때 컨텐츠를 표시할 가로 위치입니다. 0.0은 왼쪽 끝, 0.5는 가운데, 1.0은 오른쪽 끝입니다."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "뷰포트 높이가 콘텐츠 높이보다 길 경우 뷰포트 세로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 맨 위, 1.0은 맨 아래입니다."
+   "뷰포트 세로 길이가 컨텐츠 세로 길이보다 길 때 컨텐츠를 표시할 세로 위치입니다. 0.0은 위쪽 끝, 0.5는 가운데, 1.0은 아래쪽 끝입니다."
    )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
@@ -2698,11 +2706,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "뷰포트 너비가 콘텐츠 너비보다 넓을 경우 뷰포트 가로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 왼쪽 끝, 1.0은 오른쪽 끝입니다. (세로 화면)"
+   "뷰포트 가로 길이가 컨텐츠 가로 길이보다 길 때 컨텐츠를 표시할 가로 위치입니다. 0.0은 왼쪽 끝, 0.5는 가운데, 1.0은 오른쪽 끝입니다. (세로 화면)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "뷰포트 높이가 콘텐츠 높이보다 길 경우 뷰포트 세로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 맨 위, 1.0은 맨 아래입니다. (세로 화면)"
+   "뷰포트 세로 길이가 컨텐츠 세로 길이보다 길 때 컨텐츠를 표시할 세로 위치입니다. 0.0은 위쪽 끝, 0.5는 가운데, 1.0은 아래쪽 끝입니다. (세로 화면)"
    )
 #endif
 MSG_HASH(
@@ -2954,7 +2962,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "빨리 감기 중 음소거"
+   "빨리 감기 중 오디오 음소거"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
@@ -2967,6 +2975,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    "빨리 감기 중 오디오의 속도를 올립니다. 소리 깨짐 효과를 방지하지만 음높이가 올라갑니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "뒤로 감기 중 오디오 음소거"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "뒤로 감기를 사용할 때 오디오를 음소거합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -3513,21 +3529,34 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "꾹 누르기"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "터보 입력"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
+   "비활성화할 경우 모든 터보 입력이 중단됩니다."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "터보 반복 간격"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "터보 설정된 버튼이 눌렸을 때 사용될 입력 간격(프레임)입니다."
+   "터보 설정된 버튼을 누르고 있으면, 이 프레임 간격마다 버튼 입력이 반복됩니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "터보 입력 시간"
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DUTY_CYCLE,
+   "터보 홀드 시간"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "터보 설정된 버튼이 눌렸을 때 사용될 누르고 있을 기간(프레임)입니다. 이 값이 터보 간격 값과 같거나 더 클 경우, 버튼은 눌린 상태로 유지될 것입니다."
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
+   "터보 설정된 버튼을 누르고 있을 때 버튼이 눌려 있을 프레임 간격입니다. 이 값이 터보 반복 간격 값과 같거나 더 클 경우, 버튼은 계속 눌린 상태로 유지됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
+   "반복 간격의 절반"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3555,35 +3584,43 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "클래식 모드, 2버튼 작동. 버튼을 누른 상태에서 터보 버튼을 클릭해 활성화합니다.\n터보 버튼은 설정/입력/포트 1 컨트롤에서 할당할 수 있습니다."
+   "두 개의 버튼을 사용하는 클래식 모드입니다. 원하는 버튼을 누른 상태에서 터보 활성화 버튼을 눌러 터보 입력을 활성화합니다.\n터보 활성화 버튼은 설정/입력/X번 포트 입력 설정에서 할당할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "클래식 토글 모드, 2버튼 작동. 원하는 버튼을 누른 상태에서 터보 버튼을 눌러 활성화합니다. 터보를 끄려면: 원하는 버튼을 누른 상태에서 터보 버튼을 한 번 더 누릅니다.\n터보 버튼은 설정/입력/포트 1 컨트롤에서 할당할 수 있습니다."
+   "두 개의 버튼을 사용하는 클래식 토글 모드입니다. 원하는 버튼을 누른 상태에서 터보 활성화 버튼을 누르면 해당 버튼의 터보 입력이 활성화됩니다. 터보 입력을 끄려면: 원하는 버튼을 누른 상태에서 터보 활성화 버튼을 한 번 더 누릅니다.\n터보 활성화 버튼은 설정/입력/X번 포트 입력 설정에서 할당할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "토글 모드. 터보 버튼을 한 번 누르면 선택한 기본 버튼의 터보가 활성화되고 다시 한 번 누르면 꺼집니다.\n터보 버튼은 설정/입력/포트 1 컨트롤에서 할당할 수 있습니다."
+   "토글 모드입니다. 터보 활성화 버튼을 한 번 누르면 지정된 버튼의 터보 입력이 활성화되고, 한 번 더 누르면 비활성화됩니다.\n터보 활성화 버튼은 설정/입력/X번 포트 입력 설정에서 할당할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "홀드 모드. 터보 버튼을 누르고 있는 동안 선택한 기본 버튼의 터보가 활성화됩니다.\n터보 버튼은 설정/입력/포트 1 컨트롤에서 할당할 수 있습니다.\n가정용 컴퓨터 시대의 자동 발사 기능을 모방하려면 터보 버튼과 기본 버튼을 조이스틱 발사 버튼과 동일하게 설정하십시오."
+   "홀드 모드입니다. 터보 활성화 버튼이 눌려 있는 동안 지정된 버튼의 터보 입력이 활성화됩니다.\n터보 활성화 버튼은 설정/입력/X번 포트 입력 설정에서 할당할 수 있습니다.\n가정용 컴퓨터 시대의 자동 연사 기능을 모방하려면, 터보 활성화 버튼과 지정 버튼을 동일한 조이스틱 발사 버튼으로 할당하십시오."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "터보 기본 버튼"
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+   "터보 활성화 버튼"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "'단일 버튼' 터보 모드의 기본 터보 활성화 버튼을 설정합니다."
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   "터보를 활성화하는 RetroPad 입력입니다. 비워둘 경우 개별 포트에서 할당된 버튼이 사용됩니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "터보 십자패드 방향 허용"
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   "터보 지정 버튼"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
-   "활성화되면 디지털 방향 입력 (십자패드 또는 'hatswitch'라고도 함) 이 터보가 될 수 있습니다."
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   "'단일 버튼' 모드에서 터보를 활성화할 지정 버튼입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
+   "방향 패드 터보 입력 허용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
+   "활성화할 경우, 디지털 방향 입력(십자패드 또는 '햇스위치'라고도 함)에도 터보 입력을 사용할 수 있게 됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -3591,7 +3628,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "터보 발사 설정 변경입니다.\n참고: 터보 기능을 사용하려면 해당 '포트 X 컨트롤' 메뉴에서 터보 버튼을 입력 장치에 매핑해야 합니다."
+   "터보 입력 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3788,7 +3825,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "실행중인 콘텐츠와 메뉴 사이를 전환합니다."
+   "콘텐츠와 메뉴 사이를 전환합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
@@ -4075,6 +4112,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
    "선택된 리플레이 슬롯의 인덱스를 감소시킵니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
+   "터보 입력 (켜기/끄기)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
+   "터보 입력을 켜거나 끕니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -4464,8 +4509,8 @@ MSG_HASH(
    "무기 D-패드 오른쪽"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "터보 사용"
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "터보"
    )
 
 /* Settings > Latency */
@@ -5022,12 +5067,12 @@ MSG_HASH(
    "파일 탐색기에서 지원되는 확장자의 파일만 표시합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-   "내장 미디어 플레이어 사용"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "현재 코어에 따라 필터"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+   "현재 코어에서 사용 가능한 파일만 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
@@ -5036,6 +5081,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    "시작 디렉토리에서 콘텐츠를 불러올 경우 최근 사용한 위치에서 파일 탐색기를 시작합니다. 참고: RetroArch를 재시작하면 기본 위치로 초기화 됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   "내장 미디어 플레이어 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "내장 이미지 뷰어 사용"
    )
 
 /* Settings > Frame Throttle */
@@ -5846,6 +5899,10 @@ MSG_HASH(
    "입력 (자동구성) 연결 알림"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "입력 (자동구성) 실패 알림"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "치트 코드 알림"
    )
@@ -5864,6 +5921,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    "입력 장치를 연결/연결 해제할 때 화면에 메시지를 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "입력 장치가 제대로 설정되지 못했을 때 화면에 메시지를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
@@ -6156,7 +6217,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "RetroArch 메뉴가 활성화되면 실행중인 콘텐츠를 일시정지합니다."
+   "메뉴가 활성화되면 컨텐츠를 일시정지합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -6517,7 +6578,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "실행목록을 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
+   "메인 메뉴에 실행목록을 표시합니다. GLUI에서는 실행목록 탭과 내비게이션 바가 활성화된 경우 무시됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
+   "실행목록 탭 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
+   "실행목록 탭을 표시합니다. RGUI에서는 무시됩니다. GLUI에서는 내비게이션 바가 활성화되어 있어야 합니다. (Ozone/XMB 사용시 재시작 필요)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
@@ -6996,14 +7065,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    "'사용자' 표시"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "실행목록 아이콘"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "표시할 실행목록 아이콘 섬네일의 종류입니다."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -7969,11 +8030,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   "스캔은 가능한 중복에 대해 CRC를 확인"
+   "CRC 검사로 중복 여부 확인"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   "때때로 ISO는 특히 PSP/PSN 타이틀의 경우 시리즈를 복제합니다. 시리즈에만 의존하면 스캐너가 콘텐츠를 잘못된 시스템에 배치하는 경우가 있습니다. 이렇게 하면 CRC 검사가 추가되어 스캔 속도가 상당히 느려지지만 더 정확할 수 있습니다."
+   "종종 내용은 다르지만 같은 시리얼 값을 가지는 ISO들이 존재하며, 이는 특히 PSP/PSN 타이틀에서 빈번히 발견됩니다. 시리얼 값만으로 콘텐츠를 구분할 경우 콘텐츠가 잘못된 시스템으로 분류될 수 있습니다. 이 옵션을 활성화하면 CRC 검사 과정이 추가되며, 검사 속도가 현저히 느려지지만, 더 정확한 결과를 얻을 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
@@ -8228,7 +8289,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "파일 탐색기"
+   "시작 디렉토리"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -8473,7 +8534,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "실행중인 콘텐츠에 대해 어떤 정보를 공유할지 결정합니다."
+   "콘텐츠에 대한 어떤 정보를 공유할지 결정합니다."
    )
 
 MSG_HASH(
@@ -9073,7 +9134,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "빠른 메뉴를 종료하고 현재 실행 중인 콘텐츠를 이어합니다"
+   "빠른 메뉴를 종료하고 콘텐츠로 돌아갑니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -9089,7 +9150,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "현재 콘텐츠를 종료합니다. 저장되지 않은 내용은 사라지게 됩니다."
+   "콘텐츠를 종료합니다. 저장되지 않은 내용은 사라지게 됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9225,7 +9286,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "현재 실행중인 콘텐츠의 옵션을 변경합니다."
+   "콘텐츠의 옵션을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -9233,7 +9294,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "현재 실행중인 콘텐츠의 조작방법 설정을 변경합니다."
+   "콘텐츠의 조작 방법을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9867,7 +9928,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "셰이더 파일에서 변경 사항을 확인합니다. 셰이더 변경 사항을 디스크에 저장하면 자동으로 다시 컴파일되어 실행 중인 콘텐츠에 적용됩니다."
+   "셰이더 파일의 변경을 감지합니다. 셰이더의 변경 사항이 디스크에 저장되면 셰이더가 자동으로 다시 컴파일되어 콘텐츠에 적용됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -11012,7 +11073,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "빠른 메뉴 활성 시 실행 중인 컨텐츠를 배경 화면으로 표시합니다. 이 설정을 변경하면 테마 색상이 달라질 수 있습니다."
+   "빠른 메뉴 활성 시 콘텐츠를 배경 화면으로 표시합니다. 이 설정을 변경하면 테마 색상이 달라질 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
@@ -11357,6 +11418,14 @@ MSG_HASH(
    "왼쪽에 표시할 미리보기의 종류입니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "아이콘 미리보기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "표시할 실행목록 아이콘 미리보기의 종류입니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    "다이나믹 백그라운드"
    )
@@ -11663,6 +11732,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR,
    "미드가르"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   "어두운 회색"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   "밝은 회색"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -11690,6 +11767,31 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "이름에서 제조사 항목을 삭제한 후 실행목록을 알파벳 순으로 다시 정렬합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "두 번째 미리보기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "콘텐츠 메타데이터 패널 대신 다른 미리보기를 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "콘텐츠 메타데이터 한 줄로 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "사용할 경우, 오른쪽 사이드바에 표시되는 콘텐츠 메타데이터(코어, 실행 시간 등)를 항목당 한 줄씩으로 표시합니다. 사이드바 너비를 초과하는 길이의 문구는 스크롤됩니다. 사용하지 않을 경우, 컨텐츠 메타데이터는 필요한 만큼 줄 수를 늘려가며 정적으로 표시됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "미리보기 배율"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "섬네일 바의 크기 배율을 설정합니다."
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "색상 테마"
@@ -11731,10 +11833,6 @@ MSG_HASH(
    "드라큘라"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
-   "셀레늄"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
    "솔라라이즈 다크"
    )
@@ -11755,29 +11853,10 @@ MSG_HASH(
    "자줏빛 비"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "두 번째 미리보기"
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
+   "셀레늄"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "콘텐츠 메타데이터 패널 대신 다른 미리보기를 표시합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "콘텐츠 메타데이터 한 줄로 표시"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "사용할 경우, 오른쪽 사이드바에 표시되는 콘텐츠 메타데이터(코어, 실행 시간 등)를 항목당 한 줄씩으로 표시합니다. 사이드바 너비를 초과하는 길이의 문구는 스크롤됩니다. 사용하지 않을 경우, 컨텐츠 메타데이터는 필요한 만큼 줄 수를 늘려가며 정적으로 표시됩니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "미리보기 배율"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "섬네일 바의 크기 배율을 설정합니다."
-   )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
@@ -12759,10 +12838,6 @@ MSG_HASH(
    "키보드"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-   "내장 이미지 뷰어 사용"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "최대 스왑체인 이미지"
    )
@@ -12896,14 +12971,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
    "실행목록에서 선택"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "이어하기"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "빠른 메뉴를 종료하고 현재 실행 중인 콘텐츠를 이어합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,

@@ -109,6 +109,7 @@ enum menu_settings_type
    MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_CORE_NAME,
    MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
+   MENU_SETTING_DROPDOWN_ITEM_INPUT_RETROPAD_BIND,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_INDEX,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_RESERVED_DEVICE,
@@ -744,6 +745,9 @@ bool menu_input_key_bind_set_mode(
 #ifdef HAVE_RUNAHEAD
 void menu_update_runahead_mode(void);
 #endif
+
+size_t menu_playlist_random_selection(
+      size_t selection, bool is_explore_list);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

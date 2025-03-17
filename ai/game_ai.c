@@ -11,6 +11,7 @@
 #endif
 
 #include <retro_assert.h>
+#include <compat/strl.h>
 
 #include "../deps/game_ai_lib/GameAI.h"
 
@@ -51,65 +52,60 @@ void game_ai_debug_log(int level, const char *fmt, ...)
    va_end(vp);
 }
 
-void array_to_bits_16(volatile signed short * result, const bool b[16])
+void array_to_bits_16(volatile signed short *result, const bool b[16])
 {
    for (int bit = 0; bit <= 15; bit++)
-   {
       *result |= b[bit] ? (1 << bit) : 0;
-   }
 }
 
 /* Interface to RA */
 
-extern signed short int game_ai_input(unsigned int port, unsigned int device, unsigned int idx, unsigned int id, signed short int result)
+signed short int game_ai_input(unsigned int port, unsigned int device,
+      unsigned int idx, unsigned int id, signed short int result)
 {
-   if (ga == NULL)
-      return 0;
-
-   if (port < GAME_AI_MAX_PLAYERS)
+   if (ga && (port < GAME_AI_MAX_PLAYERS))
       return g_buttons_bits[port];
-
    return 0;
 }
 
-extern void game_ai_init()
+void game_ai_init(void)
 {
-   if (create_game_ai == NULL)
+   if (!create_game_ai)
    {
 #ifdef _WIN32
-   BOOL fFreeResult, fRunTimeLinkSuccess = FALSE;
+      BOOL fFreeResult, fRunTimeLinkSuccess = FALSE;
 
-   g_lib_handle = LoadLibrary(TEXT("game_ai.dll"));
-   retro_assert(hinstLib);
+      g_lib_handle = LoadLibrary(TEXT("game_ai.dll"));
+      retro_assert(hinstLib);
 
-   char full_module_path[MAX_PATH];
-   DWORD dwLen = GetModuleFileNameA(g_lib_handle, static_cast<char*>(&full_module_path), MAX_PATH);
+      char full_module_path[MAX_PATH];
+      DWORD dwLen = GetModuleFileNameA(g_lib_handle, static_cast<char*>(&full_module_path), MAX_PATH);
 
-   if (hinstLib != NULL)
-   {
-      create_game_ai = (create_game_ai_t) GetProcAddress(hinstLib, "create_game_ai");
-      retro_assert(create_game_ai);
+      if (hinstLib)
+      {
+         create_game_ai = (create_game_ai_t) GetProcAddress(hinstLib, "create_game_ai");
+         retro_assert(create_game_ai);
 
-      destroy_game_ai = (destroy_game_ai_t) GetProcAddress(hinstLib, "destroy_game_ai");
-      retro_assert(destroy_game_ai);
+         destroy_game_ai = (destroy_game_ai_t) GetProcAddress(hinstLib, "destroy_game_ai");
+         retro_assert(destroy_game_ai);
 
-      game_ai_lib_init = (game_ai_lib_init_t) GetProcAddress(hinstLib, "game_ai_lib_init");
-      retro_assert(game_ai_lib_init);
+         game_ai_lib_init = (game_ai_lib_init_t) GetProcAddress(hinstLib, "game_ai_lib_init");
+         retro_assert(game_ai_lib_init);
 
-      game_ai_lib_think = (game_ai_lib_think_t) GetProcAddress(hinstLib, "game_ai_lib_think");
-      retro_assert(game_ai_lib_think);
+         game_ai_lib_think = (game_ai_lib_think_t) GetProcAddress(hinstLib, "game_ai_lib_think");
+         retro_assert(game_ai_lib_think);
 
-      game_ai_lib_set_show_debug = (game_ai_lib_set_show_debug_t) GetProcAddress(hinstLib, "game_ai_lib_set_show_debug");
-      retro_assert(game_ai_lib_set_show_debug);
+         game_ai_lib_set_show_debug = (game_ai_lib_set_show_debug_t) GetProcAddress(hinstLib, "game_ai_lib_set_show_debug");
+         retro_assert(game_ai_lib_set_show_debug);
 
-      game_ai_lib_set_debug_log = (game_ai_lib_set_debug_log_t) GetProcAddress(hinstLib, "game_ai_lib_set_debug_log");
-      retro_assert(game_ai_lib_set_debug_log);
-   }
+         game_ai_lib_set_debug_log = (game_ai_lib_set_debug_log_t) GetProcAddress(hinstLib, "game_ai_lib_set_debug_log");
+         retro_assert(game_ai_lib_set_debug_log);
+      }
 #else
       g_lib_handle = dlopen("./libgame_ai.so", RTLD_NOW);
       retro_assert(g_lib_handle);
 
-      if(g_lib_handle != NULL)
+      if (g_lib_handle)
       {
          dlinfo(g_lib_handle, RTLD_DI_ORIGIN, (void *) &game_ai_lib_path);
 
@@ -135,7 +131,7 @@ extern void game_ai_init()
    }
 }
 
-extern void game_ai_shutdown()
+void game_ai_shutdown(void)
 {
    if (g_lib_handle)
    {
@@ -152,14 +148,14 @@ extern void game_ai_shutdown()
    }
 }
 
-extern void game_ai_load(const char * name, void * ram_ptr, int ram_size, retro_log_printf_t log)
+void game_ai_load(const char * name, void * ram_ptr, int ram_size, retro_log_printf_t log)
 {
    strcpy((char *) &g_game_name[0], name);
 
-   g_ram_ptr = ram_ptr;
+   g_ram_ptr  = ram_ptr;
    g_ram_size = ram_size;
 
-   g_log = log;
+   g_log      = log;
 
    if (ga)
    {
@@ -168,12 +164,14 @@ extern void game_ai_load(const char * name, void * ram_ptr, int ram_size, retro_
    }
 }
 
-extern void game_ai_think(bool override_p1, bool override_p2, bool show_debug, const void *frame_data, unsigned int frame_width, unsigned int frame_height, unsigned int frame_pitch, unsigned int pixel_format)
+void game_ai_think(bool override_p1, bool override_p2, bool show_debug,
+      const void *frame_data, unsigned int frame_width, unsigned int frame_height,
+      unsigned int frame_pitch, unsigned int pixel_format)
 {
    if (ga)
       game_ai_lib_set_show_debug(ga, show_debug);
 
-   if (ga == NULL && g_ram_ptr != NULL)
+   if (!ga && g_ram_ptr)
    {
       ga = create_game_ai((char *) &g_game_name[0]);
       retro_assert(ga);
@@ -214,7 +212,5 @@ extern void game_ai_think(bool override_p1, bool override_p2, bool show_debug, c
       g_frameCount=0;
    }
    else
-   {
       g_frameCount++;
-   }
 }

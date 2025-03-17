@@ -349,6 +349,8 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
                SendMessage(hwndList, LB_ADDSTRING, 0,
                      (LPARAM)info->display_name);
             }
+            /* Select the first item in the list */
+            SendMessage(hwndList, LB_SETCURSEL, 0, 0);
             SetFocus(hwndList);
             return TRUE;
          }
@@ -2117,7 +2119,7 @@ static void win32_localize_menu(HMENU menu)
       memset(&menu_item_info, 0, sizeof(menu_item_info));
       menu_item_info.cbSize     = sizeof(menu_item_info);
       menu_item_info.dwTypeData = NULL;
-#if(WINVER >= 0x0500)
+#if (WINVER >= 0x0500)
       menu_item_info.fMask      = MIIM_STRING | MIIM_FTYPE | MIIM_ID | MIIM_STATE | MIIM_SUBMENU;
 #else
       menu_item_info.fMask      =                            MIIM_ID | MIIM_STATE | MIIM_SUBMENU;

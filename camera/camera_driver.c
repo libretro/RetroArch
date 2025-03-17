@@ -49,7 +49,7 @@ const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
    &camera_v4l2,
 #endif
-#ifdef HAVE_PIPEWIRE
+#ifdef HAVE_PIPEWIRE_STABLE
    &camera_pipewire,
 #endif
 #ifdef EMSCRIPTEN
@@ -57,6 +57,12 @@ const camera_driver_t *camera_drivers[] = {
 #endif
 #ifdef ANDROID
    &camera_android,
+#endif
+#ifdef HAVE_AVF
+   &camera_avfoundation,
+#endif
+#ifdef HAVE_FFMPEG
+   &camera_ffmpeg,
 #endif
    &camera_null,
    NULL,

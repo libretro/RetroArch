@@ -341,12 +341,12 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
    return xa;
 }
 
-static ssize_t xa_write(void *data, const void *buf, size_t len)
+static ssize_t xa_write(void *data, const void *s, size_t len)
 {
    unsigned bytes        = len;
    xa_t *xa              = (xa_t*)data;
    xaudio2_t *handle     = xa->xa;
-   const uint8_t *buffer = (const uint8_t*)buf;
+   const uint8_t *buffer = (const uint8_t*)s;
 
    if (xa->flags & XA2_FLAG_NONBLOCK)
    {

@@ -213,14 +213,16 @@ for f in `ls -v *_${platform}.${EXT}`; do
       big_stack="BIG_STACK=1"
    fi
    if [ $PLATFORM = "emscripten" ]; then
-      async=0
-      pthread=${pthread:-0}
-      gles3=0
+      async=${ASYNC:-0}
+      have_threads=${HAVE_THREADS:-0}
+      proxy_to_pthread=${PROXY_TO_PTHREAD:-0}
+      gles3=${HAVE_OPENGLES3:-0}
       stack_mem=4194304
       heap_mem=134217728
       if [ $name = "mupen64plus_next" ] ; then
          gles3=1
-         async=1
+         #async=1
+         #proxy_to_pthread=0
          stack_mem=134217728
          heap_mem=268435456
       elif [ $name = "parallel_n64" ] ; then
@@ -247,7 +249,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
    echo LTO: $lto
    if [ $PLATFORM = "emscripten" ]; then
       echo ASYNC: $async
-      echo PTHREAD: $pthread
+      echo HAVE_THREADS: $have_threads
+      echo PROXY_TO_PTHREAD: $proxy_to_pthread
       echo GLES3: $gles3
       echo STACK_MEMORY: $stack_mem
       echo HEAP_MEMORY: $heap_mem
@@ -258,7 +261,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       if [ $MAKEFILE_GRIFFIN = "yes" ]; then
          make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
       elif [ $PLATFORM = "emscripten" ]; then
-         make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto HAVE_OPENGLES3=$gles3 -j7 clean || exit 1
+         make -C ../ -f Makefile.emscripten HAVE_THREADS=$have_threads ASYNC=$async LTO=$lto HAVE_OPENGLES3=$gles3 -j7 clean || exit 1
       elif [ $PLATFORM = "unix" ]; then
          make -C ../ -f Makefile LINK=g++ LTO=$lto -j7 clean || exit 1
       else
@@ -270,8 +273,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
    if [ $MAKEFILE_GRIFFIN = "yes" ]; then
       make -C ../ -f Makefile.griffin $OPTS platform=${platform} $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "emscripten" ]; then
-       echo "BUILD COMMAND: make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto HAVE_OPENGLES3=$gles3 STACK_SIZE=$stack_mem INITIAL_HEAP=$heap_mem -j7 LIBRETRO=${name} TARGET=${name}_libretro.js"
-       make -C ../ -f Makefile.emscripten $OPTS PTHREAD=$pthread ASYNC=$async LTO=$lto HAVE_OPENGLES3=$gles3 STACK_SIZE=$stack_mem INITIAL_HEAP=$heap_mem -j7 LIBRETRO=${name} TARGET=${name}_libretro.js || exit 1
+       echo "BUILD COMMAND: make -C ../ -f Makefile.emscripten $OPTS LTO=$lto ASYNC=$async HAVE_THREADS=$have_threads PROXY_TO_PTHREAD=$proxy_to_pthread HAVE_OPENGLES3=$gles3 STACK_SIZE=$stack_mem INITIAL_HEAP=$heap_mem -j7 LIBRETRO=${name} TARGET=${name}_libretro.js"
+       make -C ../ -f Makefile.emscripten $OPTS LTO=$lto ASYNC=$async HAVE_THREADS=$have_threads PROXY_TO_PTHREAD=$proxy_to_pthread HAVE_OPENGLES3=$gles3 STACK_SIZE=$stack_mem INITIAL_HEAP=$heap_mem -j7 LIBRETRO=${name} TARGET=${name}_libretro.js || exit 1
    elif [ $PLATFORM = "unix" ]; then
       make -C ../ -f Makefile LINK=g++ $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "ctr" ]; then
@@ -338,7 +341,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mkdir -p ../pkg/emscripten/
       mv -f ../${name}_libretro.js ../pkg/emscripten/${name}_libretro.js
       mv -f ../${name}_libretro.wasm ../pkg/emscripten/${name}_libretro.wasm
-      if [ $pthread != 0 ] ; then
+      if [ -f ../${name}_libretro.worker.js ] ; then
          mv -f ../${name}_libretro.worker.js ../pkg/emscripten/${name}_libretro.worker.js
       fi
       if [ -f ../${name}_libretro.wasm.map ] ; then
@@ -390,7 +393,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       if [ $MAKEFILE_GRIFFIN = "yes" ]; then
          make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
       elif [ $PLATFORM = "emscripten" ]; then
-         make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 clean || exit 1
+         make -C ../ -f Makefile.emscripten HAVE_THREADS=$have_threads ASYNC=$async LTO=$lto -j7 clean || exit 1
       elif [ $PLATFORM = "unix" ]; then
          make -C ../ -f Makefile LTO=$lto -j7 clean || exit 1
       else

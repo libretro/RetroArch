@@ -92,8 +92,8 @@ typedef struct ctr_video
    void *texture_linear;
    void *texture_swizzled;
    int display_list_size;
-   int texture_width;
-   int texture_height;
+   unsigned int texture_width;
+   unsigned int texture_height;
 
    ctr_scale_vector_t scale_vector;
    ctr_vertex_t* frame_coords;
@@ -119,7 +119,7 @@ typedef struct ctr_video
    {
       ctr_vertex_t* buffer;
       ctr_vertex_t* current;
-      int size;
+      size_t size;
    }vertex_cache;
 
    int state_slot;
@@ -158,10 +158,10 @@ typedef struct ctr_video
 
 typedef struct ctr_texture
 {
-   int width;
-   int height;
-   int active_width;
-   int active_height;
+   unsigned int width;
+   unsigned int height;
+   unsigned int active_width;
+   unsigned int active_height;
 
    enum texture_filter_type type;
    void* data;

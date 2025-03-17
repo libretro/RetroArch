@@ -28,10 +28,11 @@
 
 RETRO_BEGIN_DECLS
 
-void rcheevos_menu_populate(void* data);
-void rcheevos_menu_populate_hardcore_pause_submenu(void* data);
-bool rcheevos_menu_get_state(unsigned menu_offset, char* buffer, size_t buffer_size);
-bool rcheevos_menu_get_sublabel(unsigned menu_offset, char* buffer, size_t buffer_size);
+void rcheevos_menu_populate(void* data, bool cheevos_enable,
+      bool cheevos_hardcore_mode_enable);
+void rcheevos_menu_populate_hardcore_pause_submenu(void* data, bool cheevos_hardcore_mode_enable);
+size_t rcheevos_menu_get_state(unsigned menu_offset, char *s, size_t len);
+size_t rcheevos_menu_get_sublabel(unsigned menu_offset, char *s, size_t len);
 uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset);
 void rcheevos_menu_reset_badges(void);
 

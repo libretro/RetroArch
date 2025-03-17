@@ -234,6 +234,7 @@ enum camera_driver_enum
    CAMERA_ANDROID,
    CAMERA_AVFOUNDATION,
    CAMERA_PIPEWIRE,
+   CAMERA_FFMPEG,
    CAMERA_NULL
 };
 
@@ -285,6 +286,7 @@ enum midi_driver_enum
 {
    MIDI_WINMM               = RECORD_NULL + 1,
    MIDI_ALSA,
+   MIDI_COREMIDI,
    MIDI_NULL
 };
 
@@ -329,7 +331,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_BIND(gun_dpad_left,                 RARCH_LIGHTGUN_DPAD_LEFT,     MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT),
    DECLARE_BIND(gun_dpad_right,                RARCH_LIGHTGUN_DPAD_RIGHT,    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT),
 
-   DECLARE_BIND(turbo,                         RARCH_TURBO_ENABLE,           MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE),
+   DECLARE_BIND(turbo,                         RARCH_TURBO_ENABLE,           MENU_ENUM_LABEL_VALUE_INPUT_TURBO),
 
    DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,          MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
 #ifdef HAVE_MENU
@@ -381,6 +383,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_META_BIND(2, recording_toggle,      RARCH_RECORDING_TOGGLE,       MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE),
    DECLARE_META_BIND(2, streaming_toggle,      RARCH_STREAMING_TOGGLE,       MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE),
 
+   DECLARE_META_BIND(2, turbo_fire_toggle,     RARCH_TURBO_FIRE_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE),
    DECLARE_META_BIND(2, grab_mouse_toggle,     RARCH_GRAB_MOUSE_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE),
    DECLARE_META_BIND(2, game_focus_toggle,     RARCH_GAME_FOCUS_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE),
    DECLARE_META_BIND(2, toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY,  MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY),
@@ -597,6 +600,8 @@ static const enum record_driver_enum RECORD_DEFAULT_DRIVER = RECORD_WAV;
 
 #ifdef HAVE_WINMM
 static const enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_WINMM;
+#elif defined(HAVE_COREMIDI)
+static const enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_COREMIDI;
 #elif defined(HAVE_ALSA) && !defined(HAVE_HAKCHI) && !defined(HAVE_SEGAM) && !defined(DINGUX)
 static const enum midi_driver_enum MIDI_DEFAULT_DRIVER = MIDI_ALSA;
 #else
@@ -721,6 +726,10 @@ static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_RWEBCAM;
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_ANDROID;
 #elif defined(HAVE_PIPEWIRE)
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_PIPEWIRE;
+#elif defined(HAVE_FFMPEG)
+static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_FFMPEG;
+#elif defined(HAVE_AVF)
+static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_AVFOUNDATION;
 #else
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_NULL;
 #endif
@@ -743,6 +752,8 @@ static const enum wifi_driver_enum WIFI_DEFAULT_DRIVER = WIFI_NULL;
 
 #if defined(ANDROID)
 static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_ANDROID;
+#elif defined(HAVE_CORELOCATION)
+static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_CORELOCATION;
 #else
 static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 #endif
@@ -1307,6 +1318,8 @@ const char *config_get_default_camera(void)
          return "avfoundation";
       case CAMERA_PIPEWIRE:
          return "pipewire";
+      case CAMERA_FFMPEG:
+         return "ffmpeg";
       case CAMERA_NULL:
          break;
    }
@@ -1455,6 +1468,8 @@ const char *config_get_default_midi(void)
          return "winmm";
       case MIDI_ALSA:
          return "alsa";
+      case MIDI_COREMIDI:
+         return "coremidi";
       case MIDI_NULL:
          break;
    }
@@ -1838,6 +1853,7 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
    SETTING_BOOL("audio_fastforward_mute",        &settings->bools.audio_fastforward_mute, true, DEFAULT_AUDIO_FASTFORWARD_MUTE, false);
    SETTING_BOOL("audio_fastforward_speedup",     &settings->bools.audio_fastforward_speedup, true, DEFAULT_AUDIO_FASTFORWARD_SPEEDUP, false);
+   SETTING_BOOL("audio_rewind_mute",             &settings->bools.audio_rewind_mute, true, DEFAULT_AUDIO_REWIND_MUTE, false);
 
 #ifdef HAVE_WASAPI
    SETTING_BOOL("audio_wasapi_exclusive_mode",   &settings->bools.audio_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);
@@ -1902,6 +1918,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_widget_scale_auto",        &settings->bools.menu_widget_scale_auto, true, DEFAULT_MENU_WIDGET_SCALE_AUTO, false);
    SETTING_BOOL("menu_show_load_content_animation", &settings->bools.menu_show_load_content_animation, true, DEFAULT_MENU_SHOW_LOAD_CONTENT_ANIMATION, false);
    SETTING_BOOL("notification_show_autoconfig",  &settings->bools.notification_show_autoconfig, true, DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG, false);
+   SETTING_BOOL("notification_show_autoconfig_fails", &settings->bools.notification_show_autoconfig_fails, true, DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG_FAILS, false);
    SETTING_BOOL("notification_show_cheats_applied", &settings->bools.notification_show_cheats_applied, true, DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED, false);
    SETTING_BOOL("notification_show_patch_applied", &settings->bools.notification_show_patch_applied, true, DEFAULT_NOTIFICATION_SHOW_PATCH_APPLIED, false);
    SETTING_BOOL("notification_show_remap_load",  &settings->bools.notification_show_remap_load, true, DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD, false);
@@ -2009,8 +2026,8 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("content_show_netplay",          &settings->bools.menu_content_show_netplay, true, DEFAULT_CONTENT_SHOW_NETPLAY, false);
 #endif
    SETTING_BOOL("content_show_history",          &settings->bools.menu_content_show_history, true, DEFAULT_CONTENT_SHOW_HISTORY, false);
-   SETTING_BOOL("content_show_add",              &settings->bools.menu_content_show_add, true, DEFAULT_MENU_CONTENT_SHOW_ADD, false);
    SETTING_BOOL("content_show_playlists",        &settings->bools.menu_content_show_playlists, true, DEFAULT_CONTENT_SHOW_PLAYLISTS, false);
+   SETTING_BOOL("content_show_playlist_tabs",    &settings->bools.menu_content_show_playlist_tabs, true, DEFAULT_CONTENT_SHOW_PLAYLIST_TABS, false);
 #if defined(HAVE_LIBRETRODB)
    SETTING_BOOL("content_show_explore",          &settings->bools.menu_content_show_explore, true, DEFAULT_MENU_CONTENT_SHOW_EXPLORE, false);
 #endif
@@ -2142,7 +2159,8 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->bools.input_keyboard_gamepad_enable, true, DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE, false);
    SETTING_BOOL("input_autodetect_enable",       &settings->bools.input_autodetect_enable, true, DEFAULT_INPUT_AUTODETECT_ENABLE, false);
-   SETTING_BOOL("input_allow_turbo_dpad",        &settings->bools.input_allow_turbo_dpad, true, DEFAULT_ALLOW_TURBO_DPAD, false);
+   SETTING_BOOL("input_turbo_enable",            &settings->bools.input_turbo_enable, true, DEFAULT_TURBO_ENABLE, false);
+   SETTING_BOOL("input_turbo_allow_dpad",        &settings->bools.input_turbo_allow_dpad, true, DEFAULT_TURBO_ALLOW_DPAD, false);
    SETTING_BOOL("input_auto_mouse_grab",         &settings->bools.input_auto_mouse_grab, true, DEFAULT_INPUT_AUTO_MOUSE_GRAB, false);
    SETTING_BOOL("input_remap_binds_enable",      &settings->bools.input_remap_binds_enable, true, true, false);
    SETTING_BOOL("input_remap_sort_by_controller_enable",      &settings->bools.input_remap_sort_by_controller_enable, true, false, false);
@@ -2503,9 +2521,9 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_bind_timeout",            &settings->uints.input_bind_timeout,     true, DEFAULT_INPUT_BIND_TIMEOUT, false);
    SETTING_UINT("input_bind_hold",               &settings->uints.input_bind_hold,        true, DEFAULT_INPUT_BIND_HOLD, false);
    SETTING_UINT("input_turbo_period",            &settings->uints.input_turbo_period,     true, DEFAULT_TURBO_PERIOD, false);
-   SETTING_UINT("input_duty_cycle",              &settings->uints.input_turbo_duty_cycle, true, DEFAULT_TURBO_DUTY_CYCLE, false);
-   SETTING_UINT("input_turbo_mode",              &settings->uints.input_turbo_mode, true, DEFAULT_TURBO_MODE, false);
-   SETTING_UINT("input_turbo_default_button",    &settings->uints.input_turbo_default_button, true, DEFAULT_TURBO_DEFAULT_BTN, false);
+   SETTING_UINT("input_turbo_duty_cycle",        &settings->uints.input_turbo_duty_cycle, true, DEFAULT_TURBO_DUTY_CYCLE, false);
+   SETTING_UINT("input_turbo_mode",              &settings->uints.input_turbo_mode,       true, DEFAULT_TURBO_MODE, false);
+   SETTING_UINT("input_turbo_button",            &settings->uints.input_turbo_button,     true, DEFAULT_TURBO_BUTTON, false);
    SETTING_UINT("input_max_users",               &settings->uints.input_max_users,          true, DEFAULT_INPUT_MAX_USERS, false);
    SETTING_UINT("input_menu_toggle_gamepad_combo", &settings->uints.input_menu_toggle_gamepad_combo, true, DEFAULT_MENU_TOGGLE_GAMEPAD_COMBO, false);
    SETTING_UINT("input_poll_type_behavior",      &settings->uints.input_poll_type_behavior, true, DEFAULT_INPUT_POLL_TYPE_BEHAVIOR, false);
@@ -2692,6 +2710,7 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_OVERLAY
    SETTING_INT("input_overlay_lightgun_port",    &settings->ints.input_overlay_lightgun_port, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_PORT, false);
 #endif
+   SETTING_INT("input_turbo_bind",               &settings->ints.input_turbo_bind, true, DEFAULT_TURBO_BIND, false);
 
    *size = count;
 
@@ -3734,6 +3753,14 @@ static bool config_load_file(global_t *global,
       RARCH_LOG_OUTPUT("=== Config end ===\n");
    }
 #endif
+
+   /* Special case for perfcnt_enable */
+   {
+      bool tmp = false;
+      config_get_bool(conf, "perfcnt_enable", &tmp);
+      if (tmp)
+         retroarch_ctl(RARCH_CTL_SET_PERFCNT_ENABLE, NULL);
+   }
 
    /* Overrides */
 
@@ -5930,11 +5957,15 @@ bool input_remapping_load_file(void *data, const char *path)
    config_file_t *conf                              = (config_file_t*)data;
    settings_t *settings                             = config_st;
    runloop_state_t *runloop_st                      = runloop_state_get_ptr();
-   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] = {
-      "b", "y", "select", "start",
-      "up", "down", "left", "right",
-      "a", "x", "l", "r", "l2", "r2",
-      "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
+   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] =
+   {
+      "b",      "y",      "select", "start",
+      "up",     "down",   "left",   "right",
+      "a",      "x",      "l",      "r",
+      "l2",     "r2",     "l3",     "r3",
+      "l_x+",   "l_x-",   "l_y+",   "l_y-",
+      "r_x+",   "r_x-",   "r_y+",   "r_y-"
+   };
 
    if (    !conf
          || string_is_empty(path))
@@ -6025,17 +6056,39 @@ bool input_remapping_load_file(void *data, const char *path)
          }
       }
 
-      _len = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
-      CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], s1);
-
       _len = strlcpy(s1, "input_libretro_device_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], s1);
 
+      _len = strlcpy(s1, prefix, sizeof(s1));
+      strlcpy(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], s1);
+
       _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[i], s1);
+
+      /* Turbo fire settings */
+      _len = strlcpy(s1, "input_turbo_enable", sizeof(s1));
+      CONFIG_GET_BOOL_BASE(conf, settings, bools.input_turbo_enable, s1);
+
+      _len = strlcpy(s1, "input_turbo_allow_dpad", sizeof(s1));
+      CONFIG_GET_BOOL_BASE(conf, settings, bools.input_turbo_allow_dpad, s1);
+
+      _len = strlcpy(s1, "input_turbo_mode", sizeof(s1));
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_turbo_mode, s1);
+
+      _len = strlcpy(s1, "input_turbo_bind", sizeof(s1));
+      CONFIG_GET_INT_BASE(conf, settings, ints.input_turbo_bind, s1);
+
+      _len = strlcpy(s1, "input_turbo_button", sizeof(s1));
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_turbo_button, s1);
+
+      _len = strlcpy(s1, "input_turbo_period", sizeof(s1));
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_turbo_period, s1);
+
+      _len = strlcpy(s1, "input_turbo_duty_cycle", sizeof(s1));
+      CONFIG_GET_INT_BASE(conf, settings, uints.input_turbo_duty_cycle, s1);
    }
 
    input_remapping_update_port_map();
@@ -6150,7 +6203,12 @@ bool input_remapping_save_file(const char *path)
          else
          {
             if (remap_id == RARCH_UNMAPPED)
-               config_set_int(conf, _ident, -1);
+            {
+               if (string_is_empty(runloop_st->system.input_desc_btn[i][j]))
+                  config_unset(conf, _ident);
+               else
+                  config_set_int(conf, _ident, -1);
+            }
             else
                config_set_int(conf, _ident,
                      settings->uints.input_remap_ids[i][j]);
@@ -6183,7 +6241,12 @@ bool input_remapping_save_file(const char *path)
          else
          {
             if (remap_id == RARCH_UNMAPPED)
-               config_set_int(conf, _ident, -1);
+            {
+               if (string_is_empty(runloop_st->system.input_desc_btn[i][j]))
+                  config_unset(conf, _ident);
+               else
+                  config_set_int(conf, _ident, -1);
+            }
             else
                config_set_int(conf, _ident,
                      settings->uints.input_remap_ids[i][j]);
@@ -6211,6 +6274,28 @@ bool input_remapping_save_file(const char *path)
       _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
+
+      /* Turbo fire settings */
+      _len = strlcpy(s1, "input_turbo_enable", sizeof(s1));
+      config_set_string(conf, s1, settings->bools.input_turbo_enable ? "true" : "false");
+
+      _len = strlcpy(s1, "input_turbo_allow_dpad", sizeof(s1));
+      config_set_string(conf, s1, settings->bools.input_turbo_allow_dpad ? "true" : "false");
+
+      _len = strlcpy(s1, "input_turbo_mode", sizeof(s1));
+      config_set_int(conf, s1, settings->uints.input_turbo_mode);
+
+      _len = strlcpy(s1, "input_turbo_bind", sizeof(s1));
+      config_set_int(conf, s1, settings->ints.input_turbo_bind);
+
+      _len = strlcpy(s1, "input_turbo_button", sizeof(s1));
+      config_set_int(conf, s1, settings->uints.input_turbo_button);
+
+      _len = strlcpy(s1, "input_turbo_period", sizeof(s1));
+      config_set_int(conf, s1, settings->uints.input_turbo_period);
+
+      _len = strlcpy(s1, "input_turbo_duty_cycle", sizeof(s1));
+      config_set_int(conf, s1, settings->uints.input_turbo_duty_cycle);
    }
 
    ret = config_file_write(conf, path, true);

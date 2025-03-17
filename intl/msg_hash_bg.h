@@ -998,6 +998,7 @@ MSG_HASH(
    "Задръж"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 
@@ -1236,7 +1237,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Разглеждане на файловете"
+   "Начална Директория"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -1417,6 +1418,8 @@ MSG_HASH(
 
 
 /* Ozone: Settings > User Interface > Appearance */
+
+
 
 
 /* MaterialUI: Settings > User Interface > Appearance */

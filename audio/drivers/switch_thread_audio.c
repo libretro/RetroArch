@@ -338,7 +338,7 @@ static void switch_thread_audio_free(void *data)
    swa = NULL;
 }
 
-static ssize_t switch_thread_audio_write(void *data, const void *buf, size_t len)
+static ssize_t switch_thread_audio_write(void *data, const void *s, size_t len)
 {
    size_t avail, written;
    switch_thread_audio_t *swa = (switch_thread_audio_t *)data;
@@ -352,7 +352,7 @@ static ssize_t switch_thread_audio_write(void *data, const void *buf, size_t len
       avail = FIFO_WRITE_AVAIL(swa->fifo);
       written = MIN(avail, len);
       if (written > 0)
-         fifo_write(swa->fifo, buf, written);
+         fifo_write(swa->fifo, s, written);
       compat_mutex_unlock(&swa->fifoLock);
    }
    else
@@ -373,7 +373,7 @@ static ssize_t switch_thread_audio_write(void *data, const void *buf, size_t len
          else
          {
             size_t write_amt = MIN(len - written, avail);
-            fifo_write(swa->fifo, (const char*)buf + written, write_amt);
+            fifo_write(swa->fifo, (const char*)s + written, write_amt);
             compat_mutex_unlock(&swa->fifoLock);
             written += write_amt;
          }

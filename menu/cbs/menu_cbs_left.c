@@ -138,31 +138,40 @@ static int action_left_cheat(unsigned type, const char *label,
 static int action_left_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
-   unsigned btn_idx;
    unsigned user_idx;
+   unsigned btn_idx;
    unsigned remap_idx;
    unsigned bind_idx;
    unsigned mapped_port;
    settings_t *settings                  = config_get_ptr();
    rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
+
    if (!settings || !sys_info)
       return 0;
 
    user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
    btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
    mapped_port = settings->uints.input_remap_ports[user_idx];
-
-   if (settings->uints.input_remap_ids[user_idx][btn_idx] == RARCH_UNMAPPED)
-      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_CUSTOM_BIND_LIST_END - 1;
-
-   remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
+   remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
    for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
    {
       if (input_config_bind_order[bind_idx] == remap_idx)
          break;
    }
 
-   if (bind_idx > 0)
+   /* Search for the last input desc bind */
+   if (remap_idx == RARCH_UNMAPPED)
+   {
+      uint8_t i;
+
+      for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
+      {
+         if (string_is_empty(sys_info->input_desc_btn[mapped_port][i]))
+            break;
+      }
+      settings->uints.input_remap_ids[user_idx][btn_idx] = input_config_bind_order[i - 1];
+   }
+   else if (bind_idx > 0)
    {
       if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
          settings->uints.input_remap_ids[user_idx][btn_idx]--;
@@ -175,19 +184,6 @@ static int action_left_input_desc(unsigned type, const char *label,
    }
    else if (bind_idx == 0)
       settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
-   else
-      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_CUSTOM_BIND_LIST_END - 1;
-
-   remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
-
-   /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
-      also skip all the axes until analog remapping is implemented */
-   if (remap_idx != RARCH_UNMAPPED)
-   {
-      if ((string_is_empty(sys_info->input_desc_btn[mapped_port][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END) /*||
-          (remap_idx >= RARCH_FIRST_CUSTOM_BIND && remap_idx < RARCH_CUSTOM_BIND_LIST_END)*/)
-         action_left_input_desc(type, label, wraparound);
-   }
 
    return 0;
 }
@@ -951,8 +947,8 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
 static int action_left_state_slot(unsigned type, const char *label,
       bool wraparound)
 {
-   struct menu_state *menu_st     = menu_state_get_ptr();
-   settings_t           *settings = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t       *settings = config_get_ptr();
 
    settings->ints.state_slot--;
    if (settings->ints.state_slot < -1)
@@ -960,16 +956,16 @@ static int action_left_state_slot(unsigned type, const char *label,
 
    if (menu_st->driver_ctx)
    {
-      size_t selection            = menu_st->selection_ptr;
       if (menu_st->driver_ctx->update_savestate_thumbnail_path)
          menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
+               menu_st->userdata, (unsigned)menu_st->selection_ptr);
       if (menu_st->driver_ctx->update_savestate_thumbnail_image)
          menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
    }
 
    return 0;
 }
+
 static int action_left_replay_slot(unsigned type, const char *label,
       bool wraparound)
 {
@@ -979,16 +975,6 @@ static int action_left_replay_slot(unsigned type, const char *label,
    settings->ints.replay_slot--;
    if (settings->ints.replay_slot < -1)
       settings->ints.replay_slot = 999;
-
-   if (menu_st->driver_ctx)
-   {
-      size_t selection            = menu_st->selection_ptr;
-      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-         menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
-      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
-   }
 
    return 0;
 }
@@ -1102,6 +1088,9 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
                BIND_ACTION_LEFT(cbs, manual_content_scan_core_name_left);
+               break;
+            case MENU_ENUM_LABEL_STATE_SLOT:
+               BIND_ACTION_LEFT(cbs, action_left_state_slot);
                break;
             #ifdef HAVE_LAKKA
             case MENU_ENUM_LABEL_CPU_PERF_MODE:

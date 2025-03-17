@@ -236,6 +236,7 @@ bool midi_driver_set_all_sounds_off(void);
 
 extern midi_driver_t midi_winmm;
 extern midi_driver_t midi_alsa;
+extern midi_driver_t midi_coremidi;
 
 extern midi_driver_t *midi_drivers[];
 

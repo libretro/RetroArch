@@ -147,6 +147,7 @@ else
                 anarch
                 ardens
                 atari800
+                b2
                 #blastem
                 bluemsx
                 bsnes

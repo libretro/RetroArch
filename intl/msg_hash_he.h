@@ -1325,6 +1325,11 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "החזק"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "ירי טורבו"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "תקופת טורבו"
@@ -1576,7 +1581,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "סייר קבצים"
+   "תיקיית ההתחלה"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -1733,6 +1738,8 @@ MSG_HASH(
 
 
 /* Ozone: Settings > User Interface > Appearance */
+
+
 
 
 /* MaterialUI: Settings > User Interface > Appearance */

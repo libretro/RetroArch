@@ -2,20 +2,28 @@
 
 var LibraryPlatformEmscripten = {
    $RPE: {
-      powerState: {
-         supported: false,
-         dischargeTime: 0,
-         level: 0,
-         charging: false
-      },
       powerStateChange: function(e) {
-         RPE.powerState.dischargeTime = Number.isFinite(e.target.dischargingTime) ? e.target.dischargingTime : 0x7FFFFFFF;
-         RPE.powerState.level = e.target.level;
-         RPE.powerState.charging = e.target.charging;
-      }
+         _update_power_state(true, Number.isFinite(e.target.dischargingTime) ? e.target.dischargingTime : 0x7FFFFFFF, e.target.level, e.target.charging);
+      },
+
+      updateMemoryUsage: function() {
+         // unfortunately this will be innacurate in threaded (worker) builds
+         var used = BigInt(performance.memory.usedJSHeapSize || 0);
+         var limit = BigInt(performance.memory.jsHeapSizeLimit || 0);
+         // emscripten currently only supports passing 32 bit ints, so pack it
+         _update_memory_usage(Number(used & 0xFFFFFFFFn), Number(used >> 32n), Number(limit & 0xFFFFFFFFn), Number(limit >> 32n));
+         setTimeout(RPE.updateMemoryUsage, 5000);
+      },
+      command_queue: [],
+      command_reply_queue: []
    },
 
-   PlatformEmscriptenWatchCanvasSize: function() {
+   PlatformEmscriptenWatchCanvasSizeAndDpr: function(dpr) {
+      if (RPE.observer) {
+         RPE.observer.unobserve(Module.canvas);
+         RPE.observer.observe(Module.canvas);
+         return;
+      }
       RPE.observer = new ResizeObserver(function(e) {
          var width, height;
          var entry = e.find(i => i.target == Module.canvas);
@@ -27,13 +35,20 @@ var LibraryPlatformEmscripten = {
             width = Math.round(entry.contentRect.width * window.devicePixelRatio);
             height = Math.round(entry.contentRect.height * window.devicePixelRatio);
          }
-         Module.setCanvasSize(width, height);
-         Module.print("Setting real canvas size: " + width + " x " + height);
+         // doubles are too big to pass as an argument to exported functions
+         {{{ makeSetValue("dpr", "0", "window.devicePixelRatio", "double") }}};
+         _update_canvas_dimensions(width, height, dpr);
       });
       RPE.observer.observe(Module.canvas);
-      window.addEventListener("resize", function(e) {
+      window.addEventListener("resize", function() {
          RPE.observer.unobserve(Module.canvas);
          RPE.observer.observe(Module.canvas);
+      }, false);
+   },
+
+   PlatformEmscriptenWatchWindowVisibility: function() {
+      document.addEventListener("visibilitychange", function() {
+         _update_window_hidden(document.visibilityState == "hidden");
       }, false);
    },
 
@@ -43,34 +58,22 @@ var LibraryPlatformEmscripten = {
          battery.addEventListener("chargingchange", RPE.powerStateChange);
          battery.addEventListener("levelchange", RPE.powerStateChange);
          RPE.powerStateChange({target: battery});
-         RPE.powerState.supported = true;
       });
    },
 
-   PlatformEmscriptenPowerStateGetSupported: function() {
-      return RPE.powerState.supported;
+   PlatformEmscriptenMemoryUsageInit: function() {
+      if (!performance.memory) return;
+      RPE.updateMemoryUsage();
    },
 
-   PlatformEmscriptenPowerStateGetDischargeTime: function() {
-      return RPE.powerState.dischargeTime;
+   $EmscriptenSendCommand__deps: ["PlatformEmscriptenCommandRaiseFlag"],
+   $EmscriptenSendCommand: function(str) {
+      RPE.command_queue.push(str);
+      _PlatformEmscriptenCommandRaiseFlag();
    },
 
-   PlatformEmscriptenPowerStateGetLevel: function() {
-      return RPE.powerState.level;
-   },
-
-   PlatformEmscriptenPowerStateGetCharging: function() {
-      return RPE.powerState.charging;
-   },
-
-   PlatformEmscriptenGetTotalMem: function() {
-      if (!performance.memory) return 0;
-      return performance.memory.jsHeapSizeLimit || 0;
-   },
-
-   PlatformEmscriptenGetFreeMem: function() {
-      if (!performance.memory) return 0;
-      return (performance.memory.jsHeapSizeLimit || 0) - (performance.memory.usedJSHeapSize || 0);
+   $EmscriptenReceiveCommandReply: function() {
+      return RPE.command_reply_queue.shift();
    }
 };
 

@@ -82,7 +82,7 @@ error:
    return NULL;
 }
 
-static ssize_t audioio_write(void *data, const void *buf, size_t len)
+static ssize_t audioio_write(void *data, const void *s, size_t len)
 {
    ssize_t written;
    int *fd = (int*)data;
@@ -90,7 +90,7 @@ static ssize_t audioio_write(void *data, const void *buf, size_t len)
    if (len == 0)
       return 0;
 
-   if ((written = write(*fd, buf, len)) < 0)
+   if ((written = write(*fd, s, len)) < 0)
    {
       if (errno == EAGAIN && (fcntl(*fd, F_GETFL) & O_NONBLOCK))
          return 0;

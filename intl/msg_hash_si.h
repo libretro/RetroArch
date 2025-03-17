@@ -198,6 +198,7 @@ MSG_HASH(
 #ifdef ANDROID
 #endif
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 
@@ -489,6 +490,8 @@ MSG_HASH(
 
 
 /* Ozone: Settings > User Interface > Appearance */
+
+
 
 
 /* MaterialUI: Settings > User Interface > Appearance */

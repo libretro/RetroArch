@@ -48,7 +48,7 @@
 static dispgfx_widget_t dispwidget_st = {0}; /* uint64_t alignment */
 
 /* Widgets list */
-const static gfx_widget_t* const widgets[] = {
+static const gfx_widget_t* const widgets[] = {
 #ifdef HAVE_NETWORKING
    &gfx_widget_netplay_chat,
    &gfx_widget_netplay_ping,
@@ -211,6 +211,11 @@ void gfx_widgets_msg_queue_push(
             msg_widget->flags                  &= ~DISPWIDG_FLAG_UNFOLDING;
             msg_widget->unfold                  = 1.0f;
          }
+
+         if (category == MESSAGE_QUEUE_CATEGORY_WARNING)
+            msg_widget->flags                  |=  DISPWIDG_FLAG_CATEGORY_WARNING;
+         else if (category == MESSAGE_QUEUE_CATEGORY_ERROR)
+            msg_widget->flags                  |=  DISPWIDG_FLAG_CATEGORY_ERROR;
 
          if (task)
          {
@@ -1361,24 +1366,30 @@ static void gfx_widgets_draw_regular_msg(
       unsigned video_width,
       unsigned video_height)
 {
-   static float msg_queue_info[16] = COLOR_HEX_TO_FLOAT(0x0C99D6, 1.0f);
-   static float msg_queue_bar[16]  = COLOR_HEX_TO_FLOAT(0xCCCCCC, 1.0f);
+   static float msg_queue_info_blue[16]   = COLOR_HEX_TO_FLOAT(0x0C99D6, 1.0f);
+   static float msg_queue_info_yellow[16] = COLOR_HEX_TO_FLOAT(0xD6C10C, 1.0f);
+   static float msg_queue_info_red[16]    = COLOR_HEX_TO_FLOAT(0xD6160C, 1.0f);
+   static float msg_queue_bar[16]         = COLOR_HEX_TO_FLOAT(0xCCCCCC, 1.0f);
+   float* msg_queue_info;
    unsigned rect_width;
    unsigned rect_margin;
    unsigned text_color;
-   static float last_alpha = 0.0f;
 
    msg->flags             &= ~DISPWIDG_FLAG_UNFOLDING;
    msg->flags             |=  DISPWIDG_FLAG_UNFOLDED;
 
-   if (last_alpha != msg->alpha)
-   {
-      /* Icon */
-      gfx_display_set_alpha(msg_queue_info, msg->alpha);
-      gfx_display_set_alpha(p_dispwidget->pure_white, msg->alpha);
-      gfx_display_set_alpha(p_dispwidget->msg_queue_bg, msg->alpha);
-      last_alpha = msg->alpha;
-   }
+   /* Tint icon yellow for warnings and red for errors, otherwise use blue */
+   if (msg->flags & DISPWIDG_FLAG_CATEGORY_WARNING)
+      msg_queue_info = msg_queue_info_yellow;
+   else if (msg->flags & DISPWIDG_FLAG_CATEGORY_ERROR)
+      msg_queue_info = msg_queue_info_red;
+   else
+      msg_queue_info = msg_queue_info_blue;
+
+   /* Icon */
+   gfx_display_set_alpha(msg_queue_info, msg->alpha);
+   gfx_display_set_alpha(p_dispwidget->pure_white, msg->alpha);
+   gfx_display_set_alpha(p_dispwidget->msg_queue_bg, msg->alpha);
 
    if (    !(msg->flags & DISPWIDG_FLAG_UNFOLDED)
          || (msg->flags & DISPWIDG_FLAG_UNFOLDING))
@@ -1461,6 +1472,10 @@ static void gfx_widgets_draw_regular_msg(
 
    if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS)
    {
+      /* For warnings and errors, flip the 'i' upside down so it becomes '!' */
+      bool invert_y = (msg->flags & (  DISPWIDG_FLAG_CATEGORY_WARNING
+                                     | DISPWIDG_FLAG_CATEGORY_ERROR)) != 0;
+
       if (dispctx && dispctx->blend_begin)
          dispctx->blend_begin(userdata);
 
@@ -1476,7 +1491,7 @@ static void gfx_widgets_draw_regular_msg(
                   + (p_dispwidget->simple_widget_padding / 4.0f),
             video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y,
             0.0f, /* rad                         */
-            1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+            (invert_y ? -1.0f : 1.0f), /* cosine */
             0.0f, /* sine(rad)  = sine(0) = 0.0f */
             msg_queue_info);
 

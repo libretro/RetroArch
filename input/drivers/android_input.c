@@ -102,9 +102,6 @@ uint8_t *android_keyboard_state_get(unsigned port)
    return android_key_state[port];
 }
 
-/* TODO/FIXME -
- * fix game focus toggle */
-
 typedef struct
 {
    float x;
@@ -1610,8 +1607,7 @@ static void android_input_poll_user(android_input_t *android)
    }
 }
 
-/* Handle all events. If our activity is in pause state,
- * block until we're unpaused.
+/* Handle all events.
  */
 static void android_input_poll(void *data)
 {
@@ -1621,11 +1617,7 @@ static void android_input_poll(void *data)
    settings_t            *settings = config_get_ptr();
 
    while ((ident =
-            ALooper_pollAll((input_config_binds[0][RARCH_PAUSE_TOGGLE].valid 
-               && input_key_pressed(RARCH_PAUSE_TOGGLE,
-                  ANDROID_KEYBOARD_PORT_INPUT_PRESSED(input_config_binds[0],
-                     RARCH_PAUSE_TOGGLE)))
-               ? -1 : settings->uints.input_block_timeout,
+            ALooper_pollAll(settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
       switch (ident)
@@ -1726,7 +1718,9 @@ static int16_t android_input_state(
             if (binds[port][id].valid)
             {
                if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
-                     && ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], id))
+                     && ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], id)
+                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                     )
                   return 1;
             }
          }

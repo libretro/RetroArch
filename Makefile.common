@@ -923,11 +923,14 @@ endif
 
 ifeq ($(HAVE_PIPEWIRE), 1)
    OBJ += audio/drivers/pipewire.o \
-          audio/common/pipewire.o \
-          camera/drivers/pipewire.o
+          audio/common/pipewire.o
 
    ifeq ($(HAVE_MICROPHONE), 1)
       OBJ += audio/drivers_microphone/pipewire.o
+   endif
+
+   ifeq ($(HAVE_PIPEWIRE_STABLE), 1)
+      OBJ += camera/drivers/pipewire.o
    endif
 
    LIBS += $(PIPEWIRE_LIBS)
@@ -977,6 +980,12 @@ ifeq ($(HAVE_WINMM), 1)
    OBJ += midi/drivers/winmm_midi.o
    DEFINES += -DHAVE_WINMM
    LIBS += -lwinmm
+endif
+
+ifeq ($(HAVE_COREMIDI), 1)
+   OBJ += midi/drivers/coremidi.o
+   DEFINES += -DHAVE_COREMIDI
+   LIBS += -framework CoreMIDI
 endif
 
 # Audio Resamplers
@@ -1527,7 +1536,10 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    endif
 
    ifeq ($(HAVE_EMSCRIPTEN), 1)
-      OBJ += gfx/drivers_context/emscriptenegl_ctx.o
+      ifeq ($(HAVE_EGL), 1)
+        OBJ += gfx/drivers_context/emscriptenegl_ctx.o
+      endif
+      OBJ += gfx/drivers_context/emscriptenwebgl_ctx.o
    endif
 
    ifeq ($(HAVE_MALI_FBDEV), 1)
@@ -2170,6 +2182,65 @@ ifeq ($(HAVE_V4L2),1)
    LIBS += $(V4L2_LIBS)
 endif
 
+# FFmpeg
+
+ifeq ($(HAVE_FFMPEG), 1)
+   DEFINES += -DHAVE_FFMPEG
+   INCLUDE_DIRS += -Iffmpeg
+   DEF_FLAGS += $(FFMPEG_CFLAGS) -Wno-deprecated-declarations
+   LIBS += $(FFMPEG_LIBS)
+
+   ifeq ($(HAVE_AVCODEC), 1)
+      DEFINES += -DHAVE_AVCODEC
+      DEF_FLAGS += $(AVCODEC_CFLAGS)
+      LIBS += $(AVCODEC_LIBS)
+   endif
+
+   ifeq ($(HAVE_AVDEVICE), 1)
+      DEFINES += -DHAVE_AVDEVICE
+      DEF_FLAGS += $(AVDEVICE_CFLAGS)
+      LIBS += $(AVDEVICE_LIBS)
+   endif
+
+   ifeq ($(HAVE_AVFORMAT), 1)
+      DEFINES += -DHAVE_AVFORMAT
+      DEF_FLAGS += $(AVFORMAT_CFLAGS)
+      LIBS += $(AVFORMAT_LIBS)
+   endif
+
+   ifeq ($(HAVE_AVUTIL), 1)
+      DEFINES += -DHAVE_AVUTIL
+      DEF_FLAGS += $(AVUTIL_CFLAGS)
+      LIBS += $(AVUTIL_LIBS)
+   endif
+
+   ifeq ($(HAVE_SWSCALE), 1)
+      DEFINES += -DHAVE_SWSCALE
+      DEF_FLAGS += $(SWSCALE_CFLAGS)
+      LIBS += $(SWSCALE_LIBS)
+   endif
+
+   ifeq ($(HAVE_SWRESAMPLE), 1)
+      DEFINES += -DHAVE_SWRESAMPLE
+      DEF_FLAGS += $(SWRESAMPLE_CFLAGS)
+      LIBS += $(SWRESAMPLE_LIBS)
+   endif
+endif
+
+ifeq ($(HAVE_FFMPEG), 1)
+ifeq ($(HAVE_AVFORMAT), 1)
+ifeq ($(HAVE_AVDEVICE), 1)
+ifeq ($(HAVE_AVCODEC), 1)
+ifeq ($(HAVE_AVUTIL), 1)
+ifeq ($(HAVE_SWSCALE), 1)
+   OBJ += camera/drivers/ffmpeg.o
+endif
+endif
+endif
+endif
+endif
+endif
+
 # Accessibility
 ifeq ($(HAVE_ACCESSIBILITY), 1)
    DEFINES += -DHAVE_ACCESSIBILITY
@@ -2194,10 +2265,15 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
           core_updater_list.o \
           network/natt.o \
-          tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
           tasks/task_netplay_find_content.o
+
+   ifeq ($(HAVE_EMSCRIPTEN), 1)
+     OBJ += tasks/task_http_emscripten.o
+   else
+     OBJ += tasks/task_http.o
+   endif
 
    ifeq ($(HAVE_MENU), 1)
       OBJ += tasks/task_pl_thumbnail_download.o
@@ -2405,7 +2481,7 @@ ifeq ($(HAVE_FFMPEG), 1)
           cores/libretro-ffmpeg/video_buffer.o \
           $(LIBRETRO_COMM_DIR)/rthreads/tpool.o
 
-   LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
+   LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS) $(AVDEVICE_LIBS)
    DEFINES += -DHAVE_FFMPEG
    DEF_FLAGS += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS) \
                 -Wno-deprecated-declarations

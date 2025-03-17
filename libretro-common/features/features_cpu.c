@@ -840,8 +840,8 @@ end:
    if (!s)
       return;
    {
-      size_t len_size = len;
-      sysctlbyname("machdep.cpu.brand_string", s, &len_size, NULL, 0);
+      size_t __len = len;
+      sysctlbyname("machdep.cpu.brand_string", s, &__len, NULL, 0);
    }
 #elif defined(__linux__)
    if (!s)

@@ -163,8 +163,7 @@ bool recording_deinit(void)
 {
    recording_state_t *recording_st = &recording_state;
 #ifdef HAVE_FFMPEG
-   settings_t *settings            = config_get_ptr();
-   bool history_list_enable        = settings->bools.history_list_enable;
+   bool history_list_enable        = config_get_ptr()->bools.history_list_enable;
 #endif
 
    if (     !recording_st->data

@@ -420,8 +420,8 @@ static bool menu_screensaver_update_state(
 #endif
 
    /* Check if dimensions have changed */
-   if ((screensaver->last_width  != width) ||
-       (screensaver->last_height != height))
+   if (   (screensaver->last_width  != width)
+       || (screensaver->last_height != height))
    {
       menu_screensaver_set_dimensions(screensaver, width, height);
 
@@ -453,9 +453,9 @@ static bool menu_screensaver_update_state(
    }
 
    /* Create font, if required */
-   if ((screensaver->effect != MENU_SCREENSAVER_BLANK) &&
-       !screensaver->font_data.font &&
-       screensaver->font_enabled)
+   if (   (screensaver->effect != MENU_SCREENSAVER_BLANK)
+       && !screensaver->font_data.font
+       &&  screensaver->font_enabled)
    {
       char font_file[PATH_MAX_LENGTH];
 #if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || defined(HAVE_STB_FONT)
@@ -623,11 +623,11 @@ void menu_screensaver_iterate(
                /* Reset particle if it has:
                 * - Dropped off the edge of the screen
                 * - Reached the screen depth */
-               if ((particle->x < -particle_size_px) ||
-                   (particle->x > (float)width + particle_size_px) ||
-                   (particle->y < -particle_size_px) ||
-                   (particle->y > (float)height + particle_size_px) ||
-                   (particle->c <= 0.0f))
+               if (   (particle->x < -particle_size_px)
+                   || (particle->x > (float)width + particle_size_px)
+                   || (particle->y < -particle_size_px)
+                   || (particle->y > (float)height + particle_size_px)
+                   || (particle->c <= 0.0f))
                {
                   /* x pos ('physical' space) */
                   particle->a = (float)(rand() % width);

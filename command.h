@@ -228,6 +228,8 @@ enum event_command
    CMD_EVENT_DISK_APPEND_IMAGE,
    /* Stops rumbling. */
    CMD_EVENT_RUMBLE_STOP,
+   /* Toggles turbo fire. */
+   CMD_EVENT_TURBO_FIRE_TOGGLE,
    /* Toggles mouse grab. */
    CMD_EVENT_GRAB_MOUSE_TOGGLE,
    /* Toggles game focus. */
@@ -329,11 +331,20 @@ struct rarch_state;
 bool command_event(enum event_command action, void *data);
 
 /* Constructors for the supported drivers */
+#ifdef HAVE_NETWORK_CMD
 command_t* command_network_new(uint16_t port);
-command_t* command_stdin_new(void);
-command_t* command_uds_new(void);
-
 bool command_network_send(const char *cmd_);
+#endif
+#ifdef HAVE_STDIN_CMD
+command_t* command_stdin_new(void);
+#endif
+#ifdef LAKKA
+command_t* command_uds_new(void);
+#endif
+#ifdef EMSCRIPTEN
+command_t* command_emscripten_new(void);
+#endif
+
 
 void command_event_set_mixer_volume(
       settings_t *settings,
@@ -481,6 +492,7 @@ static const struct cmd_map map[] = {
    { "RECORDING_TOGGLE",       RARCH_RECORDING_TOGGLE },
    { "STREAMING_TOGGLE",       RARCH_STREAMING_TOGGLE },
 
+   { "TURBO_FIRE_TOGGLE",      RARCH_TURBO_FIRE_TOGGLE },
    { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
    { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },
    { "FULLSCREEN_TOGGLE",      RARCH_FULLSCREEN_TOGGLE_KEY },

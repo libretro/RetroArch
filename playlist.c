@@ -1742,11 +1742,11 @@ void playlist_write_file(playlist_t *playlist)
    bool pl_old_fmt      = ((playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT)    > 0);
 
    if (   !playlist
-       || !((playlist->flags & CNT_PLAYLIST_FLG_MOD) ||
+       || !((playlist->flags & CNT_PLAYLIST_FLG_MOD)
 #if defined(HAVE_ZLIB)
-        (pl_compressed != playlist->config.compress) ||
+       || (pl_compressed != playlist->config.compress)
 #endif
-        (pl_old_fmt    != playlist->config.old_format)))
+       || (pl_old_fmt    != playlist->config.old_format)))
       return;
 
 #if defined(HAVE_ZLIB)
@@ -2629,7 +2629,7 @@ static bool playlist_read_file(playlist_t *playlist)
       /* Read error or EOF (end of file) */
       if ((test_char = intfstream_getc(file)) == EOF)
          goto end;
-   } while (!isgraph(test_char) || test_char > 0x7F);
+   }while(!isgraph(test_char) || test_char > 0x7F);
 
    if (test_char != '{')
       playlist->flags |=  (CNT_PLAYLIST_FLG_OLD_FMT);

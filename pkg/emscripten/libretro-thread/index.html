@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>RetroArch Web Player</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link href="libretro.css" rel="stylesheet" type="text/css">
+		<link rel="shortcut icon" href="media/retroarch.ico">
+		<!-- Font Awesome -->
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+		<!-- Google Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	</head>
+	<body>
+		<!--Navbar-->
+		<div id="navbar">
+			<input type="checkbox" id="menuhider">
+			<label for="menuhider" class="menuhiderlabel" aria-label="Hide/Show Top Navigation" id="btnHideMenu" title="Hide/Show Top Navigation">
+				<span class="fa fa-chevron-up"></span>
+			</label>
+			<ul id="menu">
+				<li class="dropdown-parent">
+					<input type="checkbox" id="dropdown-box">
+					<label for="dropdown-box">
+						<span id="current-core">Core Selection</span>&nbsp;
+						<span class="fa fa-caret-down"></span>
+					</label>
+					<div class="dropdown-child ozone-list" id="core-selector">
+						<a href="." data-core="2048">2048</a>
+						<a href="." data-core="anarch">Anarch</a>
+						<a href="." data-core="ardens">Arduboy (Ardens)</a>
+						<a href="." data-core="arduous">Arduboy (Arduous)</a>
+						<a href="." data-core="bk">Elektronika - BK-0010/BK-0011 (BK)</a>
+						<a href="." data-core="chailove">ChaiLove</a>
+						<a href="." data-core="craft">Minecraft (Craft)</a>
+						<a href="." data-core="DoubleCherryGB">Nintendo - Game Boy / Color (DoubleCherryGB)</a>
+						<a href="." data-core="ecwolf">Wolfenstein 3D (ECWolf)</a>
+						<a href="." data-core="fbalpha2012">Arcade (FB Alpha 2012)</a>
+						<a href="." data-core="fbalpha2012_cps1">Arcade (FB Alpha 2012 CPS1)</a>
+						<a href="." data-core="fbalpha2012_cps2">Arcade (FB Alpha 2012 CPS2)</a>
+						<a href="." data-core="fbalpha2012_neogeo">Arcade (FB Alpha 2012 NeoGeo)</a>
+						<a href="." data-core="fceumm">Nintendo - NES / Famicom (FCEUmm)</a>
+						<a href="." data-core="freechaf">Fairchild ChannelF (FreeChaF)</a>
+						<a href="." data-core="galaksija">Galaksija</a>
+						<a href="." data-core="gambatte">Nintendo - Game Boy / Color (Gambatte)</a>
+						<a href="." data-core="gme">Game Music Emu</a>
+						<a href="." data-core="gearboy">Nintendo - Game Boy / Color (GearBoy)</a>
+						<a href="." data-core="gearcoleco">Coleco - ColecoVision (GearColeco)</a>
+						<a href="." data-core="gearsystem">Sega - MS/GG/SG-1000 (GearSystem)</a>
+						<a href="." data-core="genesis_plus_gx">Sega - MS/GG/MD/CD (Genesis Plus GX)</a>
+						<a href="." data-core="genesis_plus_gx_wide">Sega - MS/GG/MD/CD (Genesis Plus GX Wide)</a>
+						<a href="." data-core="gong">Gong</a>
+						<a href="." data-core="gw">Handheld Electronic (GW)</a>
+						<a href="." data-core="handy">Atari - Lynx (Handy)</a>
+						<a href="." data-core="jaxe">CHIP-8/S-CHIP/XO-CHIP (JAXE)</a>
+						<a href="." data-core="jumpnbump">Jump 'n Bump</a>
+						<a href="." data-core="lowresnx">LowResNX</a>
+						<a href="." data-core="lutro">Lua Engine (Lutro)</a>
+						<a href="." data-core="m2000">Philips - P2000T (M2000)</a>
+						<a href="." data-core="mame2000">Arcade - MAME 2000</a>
+						<a href="." data-core="mame2003">Arcade - MAME 2003</a>
+						<a href="." data-core="mame2003_plus">Arcade - MAME 2003-Plus</a>
+						<a href="." data-core="mednafen_lynx">Atari - Lynx (Beetle Lynx)</a>
+						<a href="." data-core="mednafen_ngp">SNK - Neo Geo Pocket / Color (Beetle Neo Geo Pop)</a>
+						<a href="." data-core="mednafen_pce_fast">NEC - PC Engine / CD (Beetle PC Engine Fast)</a>
+						<a href="." data-core="mednafen_vb">Nintendo - Virtual Boy (Beetle VB)</a>
+						<a href="." data-core="mednafen_wswan">Bandai - WonderSwan/Color (Beetle WonderSwan)</a>
+						<a href="." data-core="mgba">Nintendo - Game Boy Advance (mGBA)</a>
+						<a href="." data-core="minivmac">Mac II (MiniVmac)</a>
+						<a href="." data-core="mu">Palm OS(Mu)</a>
+						<a href="." data-core="mrboom">Bomberman (Mr.Boom)</a>
+						<a href="." data-core="neocd">SNK - Neo Geo CD (NeoCD)</a>
+						<a href="." data-core="nestopia">Nintendo - NES / Famicom (Nestopia)</a>
+						<a href="." data-core="numero">Texas Instruments TI-83 (Numero)</a>
+						<a href="." data-core="nxengine">Cave Story (NX Engine)</a>
+						<a href="." data-core="o2em">Magnavox - Odyssey2 / Philips Videopac+ (O2EM)</a>
+						<a href="." data-core="opera">The 3DO Company - 3DO (Opera)</a>
+						<a href="." data-core="pcsx_rearmed">Sony - PlayStation (PCSX ReARMed)</a>
+						<a href="." data-core="picodrive">Sega - MS/GG/MD/CD/32X (PicoDrive)</a>
+						<a href="." data-core="pocketcdg">PocketCDG</a>
+						<a href="." data-core="prboom">Doom (PrBoom)</a>
+						<a href="." data-core="quasi88">NEC - PC-8000 / PC-8800 series (QUASI88)</a>
+						<a href="." data-core="quicknes">Nintendo - NES / Famicom (QuickNES)</a>
+						<a href="." data-core="retro8">PICO-8 (Retro8)</a>
+						<a href="." data-core="scummvm">ScummVM</a>
+						<a href="." data-core="snes9x2002">Nintendo - SNES / SFC (Snes9x 2002)</a>
+						<a href="." data-core="snes9x2005">Nintendo - SNES / SFC (Snes9x 2005)</a>
+						<a href="." data-core="snes9x2010">Nintendo - SNES / SFC (Snes9x 2010)</a>
+						<a href="." data-core="snes9x">Nintendo - SNES / SFC (Snes9x)</a>
+						<a href="." data-core="squirreljme">Java ME (SquirrelJME)</a>
+						<a href="." data-core="tamalibretro">Bandai - Tamagothci P1 (TamaLIBretro)</a>
+						<a href="." data-core="tgbdual">Nintendo - Game Boy / Color (TGB Dual)</a>
+						<a href="." data-core="theodore">Theodore (Thomson TO8/TO9)</a>
+						<a href="." data-core="tic80">TIC-80</a>
+						<a href="." data-core="tyrquake">Quake (TyrQuake)</a>
+						<a href="." data-core="uw8">MicroW8 (UW8)</a>
+						<a href="." data-core="uzem">Uzebox (Uzem)</a>
+						<a href="." data-core="vaporspec">Vaporspec</a>
+						<a href="." data-core="vba_next">Nintendo - Game Boy Advance (VBA Next)</a>
+						<a href="." data-core="vecx">GCE - Vectrex (Vecx)</a>
+						<a href="." data-core="vice_x64">Commodore - C64 (VICE x64, fast)</a>
+						<a href="." data-core="vice_x64sc">Commodore - C64 (VICE x64sc, accurate)</a>
+						<a href="." data-core="vice_x128">Commodore - C128 (VICE x128)</a>
+						<a href="." data-core="vice_xcbm2">Commodore - CBM-II 6x0/7x0 (VICE xcbm2)</a>
+						<a href="." data-core="vice_xcbm5x0">Commodore - CBM-II 5x0 (xcbm5x0)</a>
+						<a href="." data-core="vice_xpet">Commodore - PET (VICE xpet)</a>
+						<a href="." data-core="vice_xplus4">Commodore - PLUS/4 (VICE xplus4)</a>
+						<a href="." data-core="vice_xscpu64">Commodore - C64 SuperCPU (VICE xscpu4)</a>
+						<a href="." data-core="vice_xvic">Commodore - VIC-20 (VICE xvic)</a>
+						<a href="." data-core="virtualxt">VirtualXT</a>
+						<a href="." data-core="vitaquake2">Quake II (vitaQuake 2)</a>
+						<a href="." data-core="vitaquake2-rogue">Quake II - Ground Zero (vitaQuake2 (rogue))</a>
+						<a href="." data-core="vitaquake2-xatrix">Quake II - The Reckoning (vitaQuake2 (xatrix))</a>
+						<a href="." data-core="vitaquake2-zaero">Quake II - Zaero (vitaQuake2 (zaero))</a>
+						<a href="." data-core="wasm4">WASM4</a>
+						<a href="." data-core="x1">Sharp X1 (X Millenium)</a>
+						<a href="." data-core="xrick">Rick Dangerous (XRick)</a>
+					</div>
+				</li>
+				<li id="btnRun" class="disabled">
+					<span class="fa fa-spinner fa-spin" id="icnRun"></span>&nbsp; Run
+				</li>
+				<li id="btnAdd" class="disabled">
+					<span class="fa fa-plus" id="icnAdd"></span>&nbsp; Add Content
+				</li>
+				<li id="btnFiles" title="Manage files" aria-label="Manage files">
+					<span class="fa fa-file"></span>
+				</li>
+				<li id="btnMenu" title="Menu toggle" aria-label="Menu" class="disabled">
+					<span class="fa fa-bars"></span>
+				</li>
+				<li id="btnFullscreen" title="Fullscreen" aria-label="Fullscreen" class="disabled">
+					<span class="fa fa-expand"></span>
+				</li>
+				<li id="btnHelp">Help</li>
+			</ul>
+			<div class="progressContainer">
+				<div class="progressBar" id="progressBarMain"></div>
+				<div class="progressText" id="progressTextMain"></div>
+			</div>
+		</div>
+		<div id="modals">
+			<div id="modal-window">
+				<div class="modal-header">
+					<h2 id="modal-title">Sample title</h2>
+					<div id="modal-close"><span class="fa fa-times"></span></div>
+					<div class="progressContainer">
+						<div class="progressBar" id="progressBarModal"></div>
+						<div class="progressText" id="progressTextModal"></div>
+					</div>
+				</div>
+				<!-- Basic steps modal for Web Libretro -->
+				<div class="modal-body" role="dialog" id="helpModal">
+					<h3><b>Load Core</b></h3>
+					<p>Load your core by clicking on the first tab. Scroll down until you reach the desired Core. We will use Nestopia for now. Don't forget - Content must be compatible with the matched Core.</p>
+					<ul>
+						<li>NES: <i>Nestopia</i></li>
+						<li>Game Boy / Color: <i>Gambatte</i></li>
+					</ul>
+					<p>etc.</p>
+					<p></p>
+					<h3><b>Load Content</b></h3>
+					<p>After selecting Core, click Run. After RetroArch opens, click Add Content and select your compatible ROM.</p>
+					<ul>
+						<li>Nestopia > <i>YourGame.nes</i></li>
+						<li>Gambatte > <i>YourGame.gb(c)</i></li>
+					</ul>
+					<p>etc.</p>
+					<p></p>
+					<h3><b><span class="fa fa-file"></span>&nbsp; File Management</b></h3>
+					<p>Download/upload/erase save data</p>
+					<p>If the Web Player doesn't start, you should click "Delete all" and refresh the cache in your browser (usually F5 or Shift+F5).</p>
+					<p>If this happens, please also report an issue on <a target="_blank" href="https://github.com/libretro/RetroArch/issues">GitHub</a> with logs from the browser's developer tools console.</p>
+					<p></p>
+					<h3><b><span class="fa fa-bars"></span>&nbsp; Quick Menu</b></h3>
+					<p>If you click on the three line icons, the Quick Menu will open in RetroArch.</p>
+				</div>
+				<!-- File management -->
+				<div class="modal-body" role="dialog" id="filesModal">
+					<div class="ozone-list" id="fileManagerPanel">
+						<span data-action="upload_saves">Upload saves</span>
+						<span data-action="upload_states">Upload states</span>
+						<span data-action="upload_system">Upload system files</span>
+						<span data-action="download_sss">Download saves/states/screenshots</span>
+						<span data-action="download_all">Download all (slow)</span>
+						<span data-action="delete_sss" class="danger">Delete saves/states/screenshots</span>
+						<span data-action="delete_content" class="danger">Delete content</span>
+						<span data-action="delete_config" class="danger">Delete config</span>
+						<span data-action="delete_assets" class="danger">Delete assets</span>
+						<span data-action="delete_all" class="danger">Delete all</span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="webplayer-container">
+			<canvas class="webplayer" id="canvas" tabindex="1"></canvas>
+			<div id="webplayer-preview"></div>
+		</div>
+		<script src="libretro.js"></script>
+	</body>
+</html>

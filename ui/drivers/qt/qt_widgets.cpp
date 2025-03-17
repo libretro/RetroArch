@@ -77,10 +77,7 @@ static inline QString form_label(rarch_setting_t *setting)
    return QString(sanitize_ampersand(setting->short_description)) + ":";
 }
 
-FormLayout::FormLayout(QWidget *parent) :
-   QFormLayout(parent)
-{
-}
+FormLayout::FormLayout(QWidget *parent) : QFormLayout(parent) { }
 
 void FormLayout::addCheckBox(rarch_setting_t *setting)
 {
@@ -154,7 +151,8 @@ void FormLayout::addFloatSliderAndSpinBox(rarch_setting_t *setting)
       addRow(form_label(setting), new FloatSliderAndSpinBox(setting));
 }
 
-void FormLayout::addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b)
+void FormLayout::addUIntColorButton(const QString &title,
+	msg_hash_enums r, msg_hash_enums g, msg_hash_enums b)
 {
    rarch_setting_t   *red = menu_setting_find_enum(r);
    rarch_setting_t *green = menu_setting_find_enum(g);
@@ -176,35 +174,21 @@ bool FormLayout::addBindButton(rarch_setting_t *setting)
 
 SettingsGroup::SettingsGroup(const QString &title, QWidget *parent) :
    QGroupBox(title, parent)
-   ,m_layout(new FormLayout(this))
-{
-}
+   ,m_layout(new FormLayout(this)) { }
 
 SettingsGroup::SettingsGroup(QWidget *parent) :
    QGroupBox(parent)
-   ,m_layout(new FormLayout(this))
-{
-}
+   ,m_layout(new FormLayout(this)) { }
 
-void SettingsGroup::addWidget(QWidget *widget)
-{
-   m_layout->addWidget(widget);
-}
+void SettingsGroup::addWidget(QWidget *widget) { m_layout->addWidget(widget); }
 
 void SettingsGroup::addRow(QString label, QWidget *widget)
 {
    m_layout->addRow(label, widget);
 }
 
-void SettingsGroup::addRow(QWidget *widget)
-{
-   m_layout->addRow(widget);
-}
-
-void SettingsGroup::addRow(QLayout *layout)
-{
-   m_layout->addRow(layout);
-}
+void SettingsGroup::addRow(QWidget *widget) { m_layout->addRow(widget); }
+void SettingsGroup::addRow(QLayout *layout) { m_layout->addRow(layout); }
 
 void SettingsGroup::addRow(QString label, QLayout *layout)
 {
@@ -266,7 +250,8 @@ void SettingsGroup::addFloatSliderAndSpinBox(rarch_setting_t *setting)
    m_layout->addFloatSliderAndSpinBox(setting);
 }
 
-void SettingsGroup::addUIntColorButton(const QString &title, msg_hash_enums r, msg_hash_enums g, msg_hash_enums b)
+void SettingsGroup::addUIntColorButton(const QString &title,
+	msg_hash_enums r, msg_hash_enums g, msg_hash_enums b)
 {
    m_layout->addUIntColorButton(title, r, g, b);
 }
@@ -336,9 +321,7 @@ CheckableSettingsGroup::CheckableSettingsGroup(rarch_setting_t *setting, QWidget
 }
 
 CheckableSettingsGroup::CheckableSettingsGroup(msg_hash_enums enum_idx, QWidget *parent) :
-   CheckableSettingsGroup(menu_setting_find_enum(enum_idx), parent)
-{
-}
+   CheckableSettingsGroup(menu_setting_find_enum(enum_idx), parent) { }
 
 void CheckableSettingsGroup::onClicked(bool checked)
 {
@@ -362,9 +345,7 @@ void CheckableSettingsGroup::paintEvent(QPaintEvent *event)
 }
 
 CheckableIcon::CheckableIcon(msg_hash_enums enum_idx, const QIcon &icon, QWidget *parent) :
-   CheckableIcon(menu_setting_find_enum(enum_idx), icon, parent)
-{
-}
+   CheckableIcon(menu_setting_find_enum(enum_idx), icon, parent) { }
 
 CheckableIcon::CheckableIcon(rarch_setting_t *setting, const QIcon &icon, QWidget *parent) :
    QToolButton(parent)
@@ -447,7 +428,8 @@ StringComboBox::StringComboBox(rarch_setting_t *setting, QWidget *parent) :
 {
    addItems(string_split_to_qt(QString(setting->values), '|'));
 
-   connect(this, SIGNAL(currentTextChanged(const QString&)), this, SLOT(onCurrentTextChanged(const QString&)));
+   connect(this, SIGNAL(currentTextChanged(const QString&)), this,
+		 SLOT(onCurrentTextChanged(const QString&)));
 
    add_sublabel_and_whats_this(this, m_setting);
 }
@@ -481,7 +463,7 @@ UIntComboBox::UIntComboBox(rarch_setting_t *setting, QWidget *parent) :
 }
 
 UIntComboBox::UIntComboBox(rarch_setting_t *setting, double min, double max, QWidget *parent) :
-   QComboBox(parent)
+    QComboBox(parent)
    ,m_setting(setting)
    ,m_value(setting->value.target.unsigned_integer)
 {
@@ -533,9 +515,7 @@ UIntComboBox::UIntComboBox(msg_hash_enums enum_idx, QWidget *parent) :
 }
 
 UIntComboBox::UIntComboBox(msg_hash_enums enum_idx, double min, double max, QWidget *parent) :
-   UIntComboBox(menu_setting_find_enum(enum_idx), min, max, parent)
-{
-}
+   UIntComboBox(menu_setting_find_enum(enum_idx), min, max, parent) { }
 
 void UIntComboBox::onCurrentIndexChanged(int index)
 {
@@ -568,9 +548,7 @@ UIntSpinBox::UIntSpinBox(rarch_setting_t *setting, QWidget *parent) :
 }
 
 UIntSpinBox::UIntSpinBox(msg_hash_enums enum_idx, QWidget *parent) :
-    UIntSpinBox(menu_setting_find_enum(enum_idx), parent)
-{
-}
+    UIntSpinBox(menu_setting_find_enum(enum_idx), parent) { }
 
 void UIntSpinBox::onValueChanged(int value)
 {
@@ -598,8 +576,10 @@ SizeSpinBox::SizeSpinBox(rarch_setting_t *setting, unsigned scale, QWidget *pare
    ,m_value(setting->value.target.sizet)
    ,m_scale(scale)
 {
-   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min / m_scale : 0.00f);
-   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max / m_scale : INT_MAX);
+   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE)
+		   ? setting->min / m_scale : 0.00f);
+   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
+		   ? setting->max / m_scale : INT_MAX);
 
    setSingleStep(setting->step / m_scale);
 
@@ -611,9 +591,7 @@ SizeSpinBox::SizeSpinBox(rarch_setting_t *setting, unsigned scale, QWidget *pare
 }
 
 SizeSpinBox::SizeSpinBox(msg_hash_enums enum_idx, unsigned scale, QWidget *parent) :
-   SizeSpinBox(menu_setting_find_enum(enum_idx), scale, parent)
-{
-}
+   SizeSpinBox(menu_setting_find_enum(enum_idx), scale, parent) { }
 
 void SizeSpinBox::onValueChanged(int value)
 {
@@ -658,7 +636,8 @@ UIntRadioButton::UIntRadioButton(msg_hash_enums enum_idx, unsigned value, QWidge
    connect(this, SIGNAL(clicked(bool)), this, SLOT(onClicked(bool)));
 }
 
-UIntRadioButton::UIntRadioButton(const QString &text, rarch_setting_t *setting, unsigned value, QWidget *parent) :
+UIntRadioButton::UIntRadioButton(const QString &text,
+	rarch_setting_t *setting, unsigned value, QWidget *parent) :
    QRadioButton(text, parent)
    ,m_setting(setting)
    ,m_target(setting->value.target.unsigned_integer)
@@ -732,9 +711,7 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
 }
 
 UIntRadioButtons::UIntRadioButtons(msg_hash_enums enum_idx, QWidget *parent) :
-    UIntRadioButtons(menu_setting_find_enum(enum_idx), parent)
-{
-}
+    UIntRadioButtons(menu_setting_find_enum(enum_idx), parent) { }
 
 void UIntRadioButtons::onButtonClicked(int id)
 {
@@ -1054,15 +1031,13 @@ void ColorButton::paintEvent(QPaintEvent *event)
    p.drawRect(r.adjusted(0, 0, -1, -1));
 }
 
-UIntColorButton::UIntColorButton(msg_hash_enums red, msg_hash_enums green, msg_hash_enums blue, QWidget *parent) :
-   ColorButton(red, green, blue, parent)
-{
-}
+UIntColorButton::UIntColorButton(msg_hash_enums red,
+   msg_hash_enums green, msg_hash_enums blue, QWidget *parent) :
+   ColorButton(red, green, blue, parent) { }
 
-UIntColorButton::UIntColorButton(rarch_setting_t *red, rarch_setting_t *green, rarch_setting_t *blue, QWidget *parent) :
-   ColorButton(red, green, blue, parent)
-{
-}
+UIntColorButton::UIntColorButton(rarch_setting_t *red,
+   rarch_setting_t *green, rarch_setting_t *blue, QWidget *parent) :
+   ColorButton(red, green, blue, parent) { }
 
 void UIntColorButton::onColorChanged(const QColor &color)
 {
@@ -1082,10 +1057,9 @@ QColor UIntColorButton::color()
       *m_blue->value.target.unsigned_integer);
 }
 
-FloatColorButton::FloatColorButton(msg_hash_enums red, msg_hash_enums green, msg_hash_enums blue, QWidget *parent) :
-   ColorButton(red, green, blue, parent)
-{
-}
+FloatColorButton::FloatColorButton(msg_hash_enums red,
+   msg_hash_enums green, msg_hash_enums blue, QWidget *parent) :
+   ColorButton(red, green, blue, parent) { }
 
 void FloatColorButton::onColorChanged(const QColor &color)
 {
@@ -1100,9 +1074,9 @@ void FloatColorButton::onColorChanged(const QColor &color)
 QColor FloatColorButton::color()
 {
    return QColor(
-      *m_red->value.target.fraction * 255,
+      *m_red->value.target.fraction   * 255,
       *m_green->value.target.fraction * 255,
-      *m_blue->value.target.fraction * 255);
+      *m_blue->value.target.fraction  * 255);
 }
 #endif
 
@@ -1127,12 +1101,14 @@ void FileDropWidget::paintEvent(QPaintEvent *event)
 
 void FileDropWidget::keyPressEvent(QKeyEvent *event)
 {
-   if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+   int key = event->key();
+   if (   key == Qt::Key_Return
+       || key == Qt::Key_Enter)
    {
       event->accept();
       emit enterPressed();
    }
-   else if (event->key() == Qt::Key_Delete)
+   else if (key == Qt::Key_Delete)
    {
       event->accept();
       emit deletePressed();
@@ -1149,7 +1125,8 @@ void FileDropWidget::dragEnterEvent(QDragEnterEvent *event)
       event->acceptProposedAction();
 }
 
-/* Workaround for QTBUG-72844. Without it, you can't drop on this if you first drag over another widget that doesn't accept drops. */
+/* Workaround for QTBUG-72844. Without it, you can't drop on this if you
+ * first drag over another widget that doesn't accept drops. */
 void FileDropWidget::dragMoveEvent(QDragMoveEvent *event)
 {
    event->acceptProposedAction();
@@ -1161,9 +1138,9 @@ void FileDropWidget::dropEvent(QDropEvent *event)
 
    if (data->hasUrls())
    {
-      QList<QUrl> urls = data->urls();
-      QStringList files;
       int i;
+      QStringList files;
+      QList<QUrl> urls = data->urls();
 
       for (i = 0; i < urls.count(); i++)
       {
@@ -1196,7 +1173,9 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 
    if (!specialPlaylist)
    {
-      downloadThumbnailAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL)), this));
+      downloadThumbnailAction.reset(new QAction(
+               QString(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL)), this));
       menu->addAction(downloadThumbnailAction.data());
    }
 
@@ -1249,7 +1228,10 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
             }
             else
             {
-               showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+               showMessageBox(msg_hash_to_str(
+			MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS),
+			       MainWindow::MSGBOX_TYPE_ERROR,
+			       Qt::ApplicationModal, false);
             }
          }
       }
@@ -1270,8 +1252,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
          addFilesToPlaylist(QStringList());
       else if (selectedAction == addFolderAction.data())
       {
-         QString dirPath = QFileDialog::getExistingDirectory(
-               this,
+         QString dirPath = QFileDialog::getExistingDirectory(this,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER),
                QString(), QFileDialog::ShowDirsOnly);
 
@@ -1312,7 +1293,9 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 
          if (!updateCurrentPlaylistEntry(contentHash))
          {
-            showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+            showMessageBox(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY),
+                  MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
             return;
          }
       }

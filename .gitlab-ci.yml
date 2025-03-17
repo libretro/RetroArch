@@ -331,7 +331,7 @@ build-retroarch-linux-i686:
 .build-retroarch-macos-xcode:
   # Metal/Universal x86_64 arm64 is default
   tags:
-    - macosx-packaging
+    - mac-apple-silicon
   stage: build
   variables:
     XCARCHIVE_PATH: pkg/apple/build/RetroArchUniversal
@@ -358,6 +358,8 @@ build-retroarch-osx-universal-metal:
 
 build-retroarch-osx-opengl-x64:
   extends: .build-retroarch-macos-xcode
+  tags:
+    - macosx-packaging
   variables:
     XCARCHIVE_PATH: pkg/apple/build/RetroArchOpenGL
     XCPROJECT_NAME: RetroArch
@@ -388,8 +390,6 @@ build-retroarch-osx-opengl-x64:
 
 build-retroarch-ios-arm64:
   extends: .build-retroarch-macos-xcode
-  tags:
-    - mac-apple-silicon
   variables:
     XCPROJECT_NAME: RetroArch_iOS13
     XCCONFIG: GitLabCI.xcconfig
@@ -408,6 +408,8 @@ build-retroarch-ios-arm64:
 
 build-retroarch-ios9:
   extends: .build-retroarch-macos-xcode
+  tags:
+    - macosx-packaging
   variables:
     XCPROJECT_NAME: RetroArch_iOS9
     XCCONFIG: GitLabCI.xcconfig

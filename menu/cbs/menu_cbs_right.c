@@ -112,8 +112,8 @@ int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
    settings_t           *settings = config_get_ptr();
    bool apply_cheats_after_toggle = settings->bools.apply_cheats_after_toggle;
 
-   cheat_manager_toggle_index(
-         apply_cheats_after_toggle,
+   cheat_manager_toggle_index(apply_cheats_after_toggle,
+         settings->bools.notification_show_cheats_applied,
          (unsigned)idx);
 
    return 0;
@@ -171,7 +171,6 @@ static int action_right_input_desc_kbd(unsigned type, const char *label,
    return 0;
 }
 
-/* TODO/FIXME: incomplete, lacks error checking */
 static int action_right_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
@@ -190,38 +189,26 @@ static int action_right_input_desc(unsigned type, const char *label,
             break;
       }
 
-      if (bind_idx < RARCH_CUSTOM_BIND_LIST_END - 1)
-      {
-         if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
-            settings->uints.input_remap_ids[user_idx][btn_idx]++;
-         else
-         {
-            if (bind_idx < RARCH_ANALOG_BIND_LIST_END - 1)
-            {
-               bind_idx++;
-               bind_idx = input_config_bind_order[bind_idx];
-            }
-            else if (bind_idx == RARCH_ANALOG_BIND_LIST_END - 1)
-               bind_idx = RARCH_UNMAPPED;
-            else
-               bind_idx = input_config_bind_order[0];
-            settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
-         }
-      }
-      else if (bind_idx == RARCH_CUSTOM_BIND_LIST_END - 1)
-         settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
+      if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
+         settings->uints.input_remap_ids[user_idx][btn_idx]++;
       else
-         settings->uints.input_remap_ids[user_idx][btn_idx] = input_config_bind_order[0];
-
-      remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
-
-      /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
-         also skip all the axes until analog remapping is implemented */
-      if (remap_idx != RARCH_UNMAPPED)
       {
-         if ((string_is_empty(sys_info->input_desc_btn[mapped_port][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END))
-            action_right_input_desc(type, label, wraparound);
+         if (bind_idx < RARCH_ANALOG_BIND_LIST_END - 1)
+         {
+            bind_idx++;
+            bind_idx = input_config_bind_order[bind_idx];
+         }
+         else if (bind_idx == RARCH_ANALOG_BIND_LIST_END - 1)
+            bind_idx = RARCH_UNMAPPED;
+         else
+            bind_idx = input_config_bind_order[0];
+
+         settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
       }
+
+      /* Empty is always last, so right jumps to first */
+      if (string_is_empty(sys_info->input_desc_btn[mapped_port][remap_idx]))
+         settings->uints.input_remap_ids[user_idx][btn_idx] = input_config_bind_order[0];
    }
 
    return 0;
@@ -951,8 +938,8 @@ static int disk_options_disk_idx_right(unsigned type, const char *label,
 static int action_right_state_slot(unsigned type, const char *label,
       bool wraparound)
 {
-   settings_t       *settings = config_get_ptr();
    struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t       *settings = config_get_ptr();
 
    settings->ints.state_slot++;
    if (settings->ints.state_slot > 999)
@@ -960,10 +947,9 @@ static int action_right_state_slot(unsigned type, const char *label,
 
    if (menu_st->driver_ctx)
    {
-      size_t selection = menu_st->selection_ptr;
       if (menu_st->driver_ctx->update_savestate_thumbnail_path)
          menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
+               menu_st->userdata, (unsigned)menu_st->selection_ptr);
       if (menu_st->driver_ctx->update_savestate_thumbnail_image)
          menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
    }
@@ -975,21 +961,11 @@ static int action_right_replay_slot(unsigned type, const char *label,
       bool wraparound)
 {
    struct menu_state *menu_st     = menu_state_get_ptr();
-   size_t selection               = menu_st->selection_ptr;
    settings_t           *settings = config_get_ptr();
 
    settings->ints.replay_slot++;
    if (settings->ints.replay_slot > 999)
       settings->ints.replay_slot = -1;
-
-   if (menu_st->driver_ctx)
-   {
-      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-         menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
-      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
-   }
 
    return 0;
 }
@@ -1241,6 +1217,9 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
                BIND_ACTION_RIGHT(cbs, manual_content_scan_core_name_right);
+               break;
+            case MENU_ENUM_LABEL_STATE_SLOT:
+               BIND_ACTION_RIGHT(cbs, action_right_state_slot);
                break;
             #ifdef HAVE_LAKKA
             case MENU_ENUM_LABEL_CPU_PERF_MODE:

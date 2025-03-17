@@ -21,7 +21,6 @@
 #include "audio/microphone_driver.h"
 #include "verbosity.h"
 
-
 #define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
 #define FRAMES_TO_BYTES(frames, frame_bits) ((frames) * frame_bits / 8)
 

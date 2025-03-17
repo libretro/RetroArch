@@ -42,17 +42,15 @@ static int casencmp(const char *a, const char *b, size_t n)
 
 char *strcasestr_retro__(const char *haystack, const char *needle)
 {
-   size_t i, search_off;
-   size_t hay_len    = strlen(haystack);
-   size_t needle_len = strlen(needle);
-
-   if (needle_len > hay_len)
-      return NULL;
-
-   search_off = hay_len - needle_len;
-   for (i = 0; i <= search_off; i++)
-      if (!casencmp(haystack + i, needle, needle_len))
-         return (char*)haystack + i;
-
+   size_t _len  = strlen(needle);
+   size_t __len = strlen(haystack);
+   if (_len <= __len)
+   {
+      size_t i;
+      __len -= _len; /* offset */
+      for (i = 0; i <= __len; i++)
+         if (!casencmp(haystack + i, needle, _len))
+            return (char*)haystack + i;
+   }
    return NULL;
 }
