@@ -1504,6 +1504,7 @@ ifeq ($(HAVE_PLAIN_DRM), 1)
       INCLUDE_DIRS += -I/usr/include/libdrm
    endif
    LIBS += -ldrm
+   HAVE_AND_WILL_USE_DRM = 1
 endif
 
 ifeq ($(HAVE_VITAGL), 1)
