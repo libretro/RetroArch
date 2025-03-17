@@ -1261,11 +1261,12 @@ static bool net_http_send_request(struct http_t *state)
       len     = snprintf(NULL, 0, "%llu", (long long unsigned)post_len);
       len_str = (char*)malloc(len + 1);
       if (len_str == NULL) {
-    // Handle memory allocation failure. You might want to exit or return an error.
-    fprintf(stderr, "Memory allocation failed.\n");
-    return; // Or handle the error in some other way.
+      // Handle memory allocation failure
+      fprintf(stderr, "Memory allocation failed.\n");
+      return; // or handle the error appropriately (e.g., exit or clean up)
 }
-      snprintf(len_str, len + 1, "%llu", (long long unsigned)post_len);
+
+snprintf(len_str, len + 1, "%llu", (long long unsigned)post_len);
 #endif
 
       len_str[len] = '\0';
