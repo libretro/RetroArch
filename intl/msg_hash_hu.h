@@ -68,6 +68,14 @@ MSG_HASH(
    "A használni kívánt mag."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Unloadolni a core-t"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "Kiadás a betöltött a core-t."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Libretro magok tallózása. A böngésző a magok könyvtárából indul, ha az üres, akkor a gyökérkönyvtárból. Ha a magok könyvtára egy könyvtár, akkor a menüben ennél feljebb nem lehet lépni. Ha a magok könyvtára egy fájlra mutat, a menü az ezt tartalmazó könyvtárban indul."
    )
@@ -15624,6 +15632,14 @@ MSG_HASH(
    "leállítva."
    )
 #ifdef HAVE_GAME_AI
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION,
+   "MI játékos felülírás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
+   "MI játékos felülírás alcím"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS,
