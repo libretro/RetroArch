@@ -595,9 +595,9 @@ bool net_http_connection_done(struct http_connection_t *conn)
          size_t domain_len   = strlen(conn->domain);
          size_t path_len     = strlen(conn->scan);
          char* urlcopy = (char*)malloc(domain_len + path_len + 2);
-       if (!urlcopy) {
-       fprintf(stderr, "Memory allocation failed for urlcopy\n");
-       return NULL; // Handle the error appropriately
+         if (!urlcopy) {
+         fprintf(stderr, "Memory allocation failed for urlcopy\n");
+         return NULL; // Handle the error appropriately
 }
 
          memcpy(urlcopy, conn->domain, domain_len);
