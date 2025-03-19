@@ -42,7 +42,6 @@
 #endif
 
 #include "remotepad.h"
-#include "../../input/input_defines.h"
 
 #define DESC_NUM_PORTS(desc) ((desc)->port_max - (desc)->port_min + 1)
 #define DESC_NUM_INDICES(desc) ((desc)->index_max - (desc)->index_min + 1)

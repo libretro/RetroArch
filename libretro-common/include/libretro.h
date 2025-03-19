@@ -4523,7 +4523,7 @@ enum retro_sensor_selector
     */
    RETRO_SENSOR_ILLUMINANCE,
 
-   /** Dummy value to ensure sizeof(enum retro_hw_context_type) == sizeof(int). Do not use. */
+   /** Dummy value to ensure sizeof(enum retro_sensor_selector) == sizeof(int). Do not use. */
    RETRO_SENSOR_SELECTOR_DUMMY=INT_MAX
 };
 

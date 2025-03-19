@@ -5027,12 +5027,12 @@ static bool get_config_name_for_sensor(char * buf,size_t buf_len, unsigned senso
    const char * sensor_str;
    char direction;
 
-   if (sensor >= 6) return false;
-   sensor_str=sensor>=3?"gyroscope":"accelerometer";
-   direction="xyzxyz"[sensor];
+   if (sensor >= 6)
+      return false;
+   sensor_str = sensor>=3?"gyroscope":"accelerometer";
+   direction = "xyzxyz"[sensor];
    snprintf(buf, buf_len,"input_sensor_%s_%c",
-      sensor_str, direction
-   );
+      sensor_str, direction);
    return true;
 }
 /**

@@ -4357,16 +4357,7 @@ static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id)
    if (id == RETRO_SENSOR_ILLUMINANCE && udev->illuminance_sensor)
       return linux_get_illuminance_reading(udev->illuminance_sensor);
    
-   RARCH_DBG(
-      "[udev] sensor:\n"
-      "\t%d\n"
-      "\t%d\n"
-      "\t%f\n",
-      id,
-      port,
-      sensor_value
-   );
-   
+
    return (
       /*clamp it to the 0 to 1 range*/
       ((sensor_value-limits.min)/(limits.max-limits.min))

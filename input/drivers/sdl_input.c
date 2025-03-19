@@ -775,16 +775,6 @@ static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id)
    } else {
       return 0.f; /*UNIMPLEMENTED*/
    }
-   RARCH_DBG(
-      "[sdl] sensor:\n"
-      "\t%f\n"
-      "\t%d\n"
-      "\t%d\n",
-      sensor_value,
-      port,
-      id
-
-   );
    return sensor_value;
 #else 
    return 0.f;
