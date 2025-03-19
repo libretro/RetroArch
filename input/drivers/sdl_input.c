@@ -524,7 +524,7 @@ static void sdl_input_free(void *data)
 
    free(data);
 }
-#ifdef HAVE_SDL2
+#if SDL_SUPPORT_SENSORS
 static sdl_input_auxiliary_device * sdl_find_sensor_auxiliary_device(
    sdl_input_t *sdl, unsigned port, SDL_SensorType sensor_type
 ){
