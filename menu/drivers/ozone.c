@@ -1753,6 +1753,44 @@ static ozone_theme_t ozone_theme_selenium = {
    NULL,                                            /* name */
 };
 
+static const float ozone_sidebar_gradient_top_bright[16] = COLOR_HEX_TO_FLOAT(0xCCCCEE, 1.00f);
+static const float ozone_sidebar_gradient_bottom_bright[16] = COLOR_HEX_TO_FLOAT(0xCCCCEE, 1.00f);
+static const float ozone_sidebar_background_bright[16] = COLOR_HEX_TO_FLOAT(0xCCCCEE, 1.00f);
+static const float ozone_border_0_bright[16] = COLOR_HEX_TO_FLOAT(0x000000, 1.00f);
+static const float ozone_border_1_bright[16] = COLOR_HEX_TO_FLOAT(0x000000, 1.00f);
+
+static ozone_theme_t ozone_theme_bright = {
+   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00f),                  /* background */
+   ozone_background_libretro_running_light,              /* background_libretro_running */
+   COLOR_HEX_TO_FLOAT(0x2B2B2B, 1.00f),                  /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0x111111, 1.00f),                  /* text */
+   COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.00f),                  /* selection */
+   COLOR_HEX_TO_FLOAT(0x00BBBB, 1.00f),                  /* selection_border */
+   COLOR_HEX_TO_FLOAT(0xCDCDCD, 1.00f),                  /* entries_border */
+   COLOR_HEX_TO_FLOAT(0x002266, 1.00f),                  /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0xAA3333, 1.00f),                  /* text_selected */
+   COLOR_HEX_TO_FLOAT(0xF0F0F0, 1.00f),                  /* message_background */
+
+   0x111111FF,                                           /* text_rgba */
+   0x111111FF,                                           /* text_sidebar_rgba */
+   0xCC2222FF,                                           /* text_selected_rgba */
+   0x222222FF,                                           /* text_sublabel_rgba */
+
+   /* Screensaver 'tint' (RGB24) */
+   0xEBEBEB,                                             /* screensaver_tint */
+
+   ozone_sidebar_background_bright,                      /* sidebar_background */
+   ozone_sidebar_gradient_top_bright,                    /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_bright,                 /* sidebar_bottom_gradient */
+
+   ozone_border_0_bright,                                /* cursor_border_0 */
+   ozone_border_1_bright,                                /* cursor_border_1 */
+
+   {0},                                                  /* textures */
+
+   NULL                                              /* name */
+};
+
 static ozone_theme_t *ozone_themes[] = {
    &ozone_theme_light,
    &ozone_theme_dark,
@@ -1769,6 +1807,7 @@ static ozone_theme_t *ozone_themes[] = {
    &ozone_theme_purple_rain,
    &ozone_theme_selenium,
    &ozone_theme_evergarden,
+   &ozone_theme_bright,
 };
 
 /* Forward declarations */

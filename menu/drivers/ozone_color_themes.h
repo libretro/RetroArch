@@ -43,6 +43,7 @@
    X("gray_light",         ozone_theme_gray_light,         MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT) \
    X("purple_rain",        ozone_theme_purple_rain,        MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN) \
    X("selenium",           ozone_theme_selenium,           MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM) \
-   X("evergarden",         ozone_theme_evergarden,         MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_EVERGARDEN)
+   X("evergarden",         ozone_theme_evergarden,         MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_EVERGARDEN) \
+   X("bright",             ozone_theme_bright,             MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT)
 
 #endif
