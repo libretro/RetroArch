@@ -4100,7 +4100,7 @@ static bool udev_set_sensor_state(void *data, unsigned port, enum retro_sensor_a
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
       case RETRO_SENSOR_GYROSCOPE_DISABLE:
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-         /** Unimplemented sensor actions that probably shouldn't fail */
+         /** udev can't enable or disable sensors */
          return true;
 
       case RETRO_SENSOR_ILLUMINANCE_ENABLE:

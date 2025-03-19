@@ -1358,6 +1358,9 @@ void input_config_parse_mouse_button(
       char *s,
       void *conf_data, const char *prefix,
       const char *btn, void *bind_data);
+
+/* Parse Accelerometer and Gyroscope Bindings
+ * from the controller configuration file */
 unsigned input_config_parse_sensor(
       unsigned id,
       char *s,
