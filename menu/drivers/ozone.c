@@ -1570,27 +1570,27 @@ static ozone_theme_t ozone_theme_bright = {
    COLOR_HEX_TO_FLOAT(0x00BBBB, 1.00f),                  /* selection_border */
    COLOR_HEX_TO_FLOAT(0xCDCDCD, 1.00f),                  /* entries_border */
    COLOR_HEX_TO_FLOAT(0x002266, 1.00f),                  /* entries_icon */
-   COLOR_HEX_TO_FLOAT(0xCC4433, 1.00f),                  /* text_selected */
+   COLOR_HEX_TO_FLOAT(0xAA3333, 1.00f),                  /* text_selected */
    COLOR_HEX_TO_FLOAT(0xF0F0F0, 1.00f),                  /* message_background */
 
    0x111111FF,                                           /* text_rgba */
    0x111111FF,                                           /* text_sidebar_rgba */
-   0xCC4433FF,                                           /* text_selected_rgba */
+   0xCC2222FF,                                           /* text_selected_rgba */
    0x222222FF,                                           /* text_sublabel_rgba */
 
    /* Screensaver 'tint' (RGB24) */
    0xEBEBEB,                                             /* screensaver_tint */
 
-   ozone_sidebar_background_bright,                       /* sidebar_background */
-   ozone_sidebar_gradient_top_bright,                     /* sidebar_top_gradient */
-   ozone_sidebar_gradient_bottom_bright,                  /* sidebar_bottom_gradient */
+   ozone_sidebar_background_bright,                      /* sidebar_background */
+   ozone_sidebar_gradient_top_bright,                    /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_bright,                 /* sidebar_bottom_gradient */
 
-   ozone_border_0_bright,                                 /* cursor_border_0 */
-   ozone_border_1_bright,                                 /* cursor_border_1 */
+   ozone_border_0_bright,                                /* cursor_border_0 */
+   ozone_border_1_bright,                                /* cursor_border_1 */
 
    {0},                                                  /* textures */
 
-   "bright"                                               /* name */
+   "bright"                                              /* name */
 };
 
 static ozone_theme_t *ozone_themes[] = {
