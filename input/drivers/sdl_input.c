@@ -403,12 +403,8 @@ static int16_t sdl_input_state(
             
             SDL_GameControllerGetTouchpadFinger(
                sdl->auxiliary_devices[port].dev.game_controller.ptr,
-               0,
-               idx, 
-               NULL,
-               &x,&y,
-               &pressure
-            );
+               0, idx, NULL, &x, &y,
+               &pressure);
             switch (id)
             {
                case RETRO_DEVICE_ID_POINTER_X:
