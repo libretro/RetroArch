@@ -574,7 +574,7 @@ static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_ac
       case RETRO_SENSOR_GYROSCOPE_ENABLE:
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
          
-         #ifdef HAVE_SDL2
+         #if SDL_SUPPORT_SENSORS
          {
          sdl_input_auxiliary_device * aux_device;
          SDL_SensorType sensor_type= (action&2)?SDL_SENSOR_GYRO:SDL_SENSOR_ACCEL;
