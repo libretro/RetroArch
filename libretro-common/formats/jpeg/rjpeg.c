@@ -330,7 +330,7 @@ static void rjpeg_build_fast_ac(int16_t *fast_ac, rjpeg_huffman *h)
             int k = ((i << len) & ((1 << FAST_BITS) - 1)) >> (FAST_BITS - magbits);
             int m = 1 << (magbits - 1);
             if (k < m)
-               k += (-1 << magbits) + 1;
+               k += (~0U << magbits) + 1;
 
             /* if the result is small enough, we can fit it in fast_ac table */
             if (k >= -128 && k <= 127)
