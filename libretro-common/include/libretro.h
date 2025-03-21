@@ -716,7 +716,6 @@ enum retro_error
 {
    RETROE_NONE           = 0x00000000,
    RETROE_MASK_CORE      = 0x0000FFFF, /* Mask value for core/frontend split */
-   RETROE_MASK_FUNC      = 0x0000FFFF, /* Mask value for core/frontend split */
 
    RETROE_UNSUPPORTED_CONTENT_FORMAT       = 0x01000000,
    RETROE_MISSING_BIOS                     = 0x02000000,
