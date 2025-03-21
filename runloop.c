@@ -3554,6 +3554,22 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
+
+      case RETRO_ENVIRONMENT_SET_ERROR_CODE:
+         {
+
+            RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_ERROR_CODE.\n");
+
+            /* Sanitise input latency value */
+            runloop_st->last_error_code = 0;
+            if (data)
+            {
+               runloop_st->last_error_code = *(const uint32_t*)data;
+               RARCH_LOG("[Environ]: Error code set: %04X-%04X.\n", (runloop_st->last_error_code&0xFFFF0000)>>16,runloop_st->last_error_code&0x0FFFF);
+            }
+         }
+         break;
+
       default:
          RARCH_LOG("[Environ]: UNSUPPORTED (#%u).\n", cmd);
          return false;
@@ -7448,6 +7464,7 @@ bool core_set_cheat(retro_ctx_cheat_info_t *info)
    unsigned run_ahead_frames         = 0;
    bool run_ahead_secondary_instance = false;
    bool want_runahead                = false;
+   runloop_st->last_error_code       = 0;
 
    if (settings)
    {
@@ -7466,14 +7483,27 @@ bool core_set_cheat(retro_ctx_cheat_info_t *info)
 
    runloop_st->current_core.retro_cheat_set(info->index, info->enabled, info->code);
 
+   if (runloop_st->last_error_code)
+      RARCH_LOG("[Error code]: Code received in core_cheat_set: %04X-%04X.\n",
+                (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                 runloop_st->last_error_code & 0x0FFFF);
+
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
    if (     (want_runahead)
          && (run_ahead_secondary_instance)
          && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
          && (secondary_core_ensure_exists(runloop_st, settings))
          && (runloop_st->secondary_core.retro_cheat_set))
+   {
+      runloop_st->last_error_code = 0;
       runloop_st->secondary_core.retro_cheat_set(
             info->index, info->enabled, info->code);
+
+      if (runloop_st->last_error_code)
+         RARCH_LOG("[Error code]: Code received in core_cheat_set, second instance: %04X-%04X.\n",
+                   (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                    runloop_st->last_error_code & 0x0FFFF);
+   }
 #endif
 
    return true;
@@ -7488,6 +7518,7 @@ bool core_reset_cheat(void)
    unsigned run_ahead_frames         = 0;
    bool run_ahead_secondary_instance = false;
    bool want_runahead                = false;
+   runloop_st->last_error_code       = 0;
 
    if (settings)
    {
@@ -7505,6 +7536,10 @@ bool core_reset_cheat(void)
 #endif
 
    runloop_st->current_core.retro_cheat_reset();
+   if (runloop_st->last_error_code)
+      RARCH_LOG("[Error code]: Code received in core_cheat_reset: %04X-%04X.\n",
+                (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                 runloop_st->last_error_code & 0x0FFFF);
 
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
    if (   (want_runahead)
@@ -7512,7 +7547,14 @@ bool core_reset_cheat(void)
        && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
        && (secondary_core_ensure_exists(runloop_st, settings))
        && (runloop_st->secondary_core.retro_cheat_reset))
+   {
+      runloop_st->last_error_code = 0;
       runloop_st->secondary_core.retro_cheat_reset();
+      if (runloop_st->last_error_code)
+         RARCH_LOG("[Error code]: Code received in core_cheat_reset, second instance: %04X-%04X.\n",
+                   (runloop_st->last_error_code & 0xFFFF0000) >> 16,
+                    runloop_st->last_error_code & 0x0FFFF);
+   }
 #endif
 
    return true;
@@ -7558,8 +7600,14 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
    runloop_state_t *runloop_st    = &runloop_state;
    if (!info)
       return false;
+   runloop_st->last_error_code = 0;
    info->size  = runloop_st->current_core.retro_get_memory_size(info->id);
    info->data  = runloop_st->current_core.retro_get_memory_data(info->id);
+   if (runloop_st->last_error_code)
+      RARCH_LOG("[Error code]: Code received in core_get_memory: %04X-%04X.\n",
+                (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                 runloop_st->last_error_code & 0x0FFFF);
+
    return true;
 }
 
@@ -7570,6 +7618,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    runloop_state_t *runloop_st    = &runloop_state;
 
    video_st->frame_cache_data     = NULL;
+   runloop_st->last_error_code    = 0;
 
 #ifdef HAVE_RUNAHEAD
    runahead_set_load_content_info(runloop_st, load_info);
@@ -7579,6 +7628,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 #endif
 
    set_save_state_in_background(false);
+   runloop_st->last_error_code = 0;
 
    if (load_info && load_info->special)
       game_loaded = runloop_st->current_core.retro_load_game_special(
@@ -7590,6 +7640,11 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 
    if (game_loaded)
    {
+      if (runloop_st->last_error_code)
+         RARCH_LOG("[Error code]: Code received in core_load_game: %04X-%04X.\n",
+                   (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                    runloop_st->last_error_code & 0x0FFFF);
+
       /* If 'game_loaded' is true at this point, then
        * core is actually running; register that any
        * changes to global remap-related parameters
@@ -7604,6 +7659,11 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
       return true;
    }
 
+   if (runloop_st->last_error_code)
+      RARCH_ERR("[Error code]: Code received in core_load_game: %04X-%04X.\n",
+                (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                 runloop_st->last_error_code & 0x0FFFF);
+
    runloop_st->current_core.flags &= ~RETRO_CORE_FLAG_GAME_LOADED;
    return false;
 }
@@ -7611,17 +7671,34 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 bool core_get_system_info(struct retro_system_info *sysinfo)
 {
    runloop_state_t *runloop_st  = &runloop_state;
+
    if (!sysinfo)
       return false;
+
+   runloop_st->last_error_code  = 0;
    runloop_st->current_core.retro_get_system_info(sysinfo);
+   if (runloop_st->last_error_code)
+      RARCH_LOG("[Error code]: Code received in core_get_system_info: %04X-%04X.\n",
+                (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                 runloop_st->last_error_code & 0x0FFFF);
+
    return true;
 }
 
 bool core_unserialize(retro_ctx_serialize_info_t *info)
 {
    runloop_state_t *runloop_st  = &runloop_state;
+   runloop_st->last_error_code  = 0;
+
    if (!info || !runloop_st->current_core.retro_unserialize(info->data_const, info->size))
+   {
+      if (runloop_st->last_error_code)
+         RARCH_LOG("[Error code]: Code received in core_unserialize: %04X-%04X.\n",
+                   (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                    runloop_st->last_error_code & 0x0FFFF);
+
       return false;
+   }
 
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, info);
@@ -7641,9 +7718,16 @@ bool core_unserialize_special(retro_ctx_serialize_info_t *info)
    if (!info)
       return false;
 
+   runloop_st->last_error_code = 0;
+
    runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    ret = runloop_st->current_core.retro_unserialize(info->data_const, info->size);
    runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
+
+   if (runloop_st->last_error_code)
+      RARCH_LOG("[Error code]: Code received in core_unserialize_special: %04X-%04X.\n",
+                (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                 runloop_st->last_error_code & 0x0FFFF);
 
 #ifdef HAVE_NETWORKING
    if (ret)
@@ -7656,8 +7740,21 @@ bool core_unserialize_special(retro_ctx_serialize_info_t *info)
 bool core_serialize(retro_ctx_serialize_info_t *info)
 {
    runloop_state_t *runloop_st  = &runloop_state;
+   runloop_st->last_error_code  = 0;
+   
    if (!info || !runloop_st->current_core.retro_serialize(info->data, info->size))
+   {
+      if (runloop_st->last_error_code)
+         RARCH_ERR("[Error code]: Code received in core_serialize: %04X-%04X.\n",
+                   (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                    runloop_st->last_error_code & 0x0FFFF);
       return false;
+   }
+
+   if (runloop_st->last_error_code)
+      RARCH_LOG("[Error code]: Code received in core_serialize: %04X-%04X.\n",
+                (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                 runloop_st->last_error_code & 0x0FFFF);
    return true;
 }
 
@@ -7669,27 +7766,45 @@ bool core_serialize_special(retro_ctx_serialize_info_t *info)
    if (!info)
       return false;
 
+   runloop_st->last_error_code = 0;
    runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    ret                = runloop_st->current_core.retro_serialize(
                         info->data, info->size);
    runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
 
+   if (runloop_st->last_error_code)
+      RARCH_LOG("[Error code]: Code received in core_serialize_special: %04X-%04X.\n",
+                (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                 runloop_st->last_error_code & 0x0FFFF);
    return ret;
 }
 
 size_t core_serialize_size(void)
 {
+   size_t val;
    runloop_state_t *runloop_st  = &runloop_state;
-   return runloop_st->current_core.retro_serialize_size();
+   runloop_st->last_error_code = 0;
+   val = runloop_st->current_core.retro_serialize_size();
+   if (runloop_st->last_error_code)
+      RARCH_LOG("[Error code]: Code received in core_serialize_size: %04X-%04X.\n",
+                (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                 runloop_st->last_error_code & 0x0FFFF);
+   return val;
 }
 
 size_t core_serialize_size_special(void)
 {
    size_t val;
    runloop_state_t *runloop_st = &runloop_state;
+   runloop_st->last_error_code = 0;
    runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    val                = runloop_st->current_core.retro_serialize_size();
    runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
+
+   if (runloop_st->last_error_code)
+      RARCH_LOG("[Error code]: Code received in core_serialize_size_special: %04X-%04X.\n",
+                (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                 runloop_st->last_error_code & 0x0FFFF);
 
    return val;
 }
@@ -7705,7 +7820,14 @@ void core_reset(void)
    runloop_state_t *runloop_st    = &runloop_state;
    video_driver_state_t *video_st = video_state_get_ptr();
    video_st->frame_cache_data     = NULL;
+   runloop_st->last_error_code    = 0;
+
    runloop_st->current_core.retro_reset();
+
+   if (runloop_st->last_error_code)
+      RARCH_LOG("[Error code]: Code received in core_reset: %04X-%04X.\n",
+                (runloop_st->last_error_code & 0xFFFF0000 ) >> 16,
+                 runloop_st->last_error_code & 0x0FFFF);
 }
 
 void core_run(void)
@@ -7738,8 +7860,14 @@ void core_run(void)
       input_driver_poll();
    else if (late_polling)
       current_core->flags &= ~RETRO_CORE_FLAG_INPUT_POLLED;
+   runloop_st->last_error_code = 0;
 
    current_core->retro_run();
+
+   if (runloop_st->last_error_code)
+      RARCH_LOG("[Error code]: Code received in core_run: %04X-%04X.\n",
+                (runloop_st->last_error_code & 0xFFFF0000) >> 16,
+                 runloop_st->last_error_code & 0x0FFFF);
 
 #ifdef HAVE_GAME_AI
    {
