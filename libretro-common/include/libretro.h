@@ -711,6 +711,21 @@ enum retro_mod
    RETROKMOD_DUMMY = INT_MAX /* Ensure sizeof(enum) == sizeof(int) */
 };
 
+/* Error codes that can be reported by the core. */
+enum retro_error
+{
+   RETROE_NONE           = 0x00000000,
+   RETROE_MASK_CORE      = 0x0000FFFF, /* Mask value for core/frontend split */
+   RETROE_MASK_FUNC      = 0x0000FFFF, /* Mask value for core/frontend split */
+
+   RETROE_UNSUPPORTED_CONTENT_FORMAT       = 0x01000000,
+   RETROE_MISSING_BIOS                     = 0x02000000,
+   RETROE_HARDWARE_RENDERING_NOT_AVAILABLE = 0x03000000,
+
+   RETROE_MASK_FRONTEND = 0xFFFF0000, /* Mask value for core/frontend split */
+   RETROE_DUMMY         = INT_MAX     /* Ensure sizeof(enum) == sizeof(int) */
+};
+
 /**
  * @defgroup RETRO_ENVIRONMENT Environment Callbacks
  * @{
@@ -2573,6 +2588,17 @@ enum retro_mod
  * @return \c true if the environment call is available.
  */
 #define RETRO_ENVIRONMENT_GET_FILE_BROWSER_START_DIRECTORY 80
+
+/**
+ * Informs the frontend of an error occurrence during the current operation.
+ *
+ * @param[in] data <tt>const uint32_t*</tt>.
+ * Valid values of the upper 16 bit are defined as retro_error.
+ * The lower 16 bits are reserved for the core.
+ * @return \c true if the environment call is available.
+ * @see retro_error
+ */
+#define RETRO_ENVIRONMENT_SET_ERROR_CODE 81
 
 /**@}*/
 
