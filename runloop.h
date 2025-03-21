@@ -268,6 +268,8 @@ struct runloop
 
    uint32_t flags;
    uint8_t pending_disk_control_insert;
+   uint32_t last_error_code;
+   char last_error_message[512];
    int8_t run_frames_and_pause;
 
    char runtime_content_path_basename[PATH_MAX_LENGTH];
