@@ -290,6 +290,9 @@ struct runloop
    unsigned video_swap_interval_auto;
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
 
+   uint32_t last_error_code;
+   char last_error_message[512];
+
    char runtime_content_path_basename[PATH_MAX_LENGTH];
 #ifdef HAVE_SCREENSHOTS
    char max_frames_screenshot_path[PATH_MAX_LENGTH];
