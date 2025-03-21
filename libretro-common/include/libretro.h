@@ -721,7 +721,7 @@ enum retro_error
    RETROE_MISSING_BIOS                     = 0x02000000,
    RETROE_HARDWARE_RENDERING_NOT_AVAILABLE = 0x03000000,
 
-   RETROE_MASK_FRONTEND = 0xFFFF0000, /* Mask value for core/frontend split */
+   RETROE_MASK_FRONTEND = 0x7FFF0000, /* Mask value for core/frontend split - limited to 31 bit due to C89 */
    RETROE_DUMMY         = INT_MAX     /* Ensure sizeof(enum) == sizeof(int) */
 };
 
