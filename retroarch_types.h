@@ -20,7 +20,7 @@
 
 RETRO_BEGIN_DECLS
 
-enum
+enum poll_type
 {
    /* Polling is performed before
     * call to retro_run. */

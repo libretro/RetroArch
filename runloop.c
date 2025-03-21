@@ -4518,7 +4518,7 @@ static void core_input_state_poll_maybe(void)
    runloop_state_t *runloop_st = &runloop_state;
    const enum poll_type_override_t
       core_poll_type_override  = runloop_st->core_poll_type_override;
-   unsigned new_poll_type      = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
+   enum poll_type new_poll_type      = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
       : runloop_st->current_core.poll_type;
    if (new_poll_type == POLL_TYPE_NORMAL)
@@ -4531,7 +4531,7 @@ static retro_input_state_t core_input_state_poll_return_cb(void)
    runloop_state_t *runloop_st = &runloop_state;
    const enum poll_type_override_t
       core_poll_type_override  = runloop_st->core_poll_type_override;
-   unsigned new_poll_type      = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
+   enum poll_type new_poll_type      = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
       : runloop_st->current_core.poll_type;
    if (new_poll_type == POLL_TYPE_LATE)
@@ -7715,7 +7715,7 @@ void core_run(void)
       current_core             = &runloop_st->current_core;
    const enum poll_type_override_t
       core_poll_type_override  = runloop_st->core_poll_type_override;
-   unsigned new_poll_type      = (core_poll_type_override != POLL_TYPE_OVERRIDE_DONTCARE)
+   enum poll_type new_poll_type      = (core_poll_type_override != POLL_TYPE_OVERRIDE_DONTCARE)
       ? (core_poll_type_override - 1)
       : current_core->poll_type;
    bool early_polling          = new_poll_type == POLL_TYPE_EARLY;

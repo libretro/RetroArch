@@ -35,8 +35,8 @@ struct tremolo_core
    float *wavetable;
    float freq;
    float depth;
-   int index;
-   int maxindex;
+   unsigned index;
+   unsigned maxindex;
 };
 
 struct tremolo

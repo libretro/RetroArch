@@ -722,8 +722,7 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
                && raw_game_id[1] == 'K'
                && raw_game_id[2] == '-')
          {
-            strncpy(s, &raw_game_id[3], __len - 3);
-            s[__len - 3] = '\0';
+            strlcpy(s, &raw_game_id[3], len);
          }
          else
             strlcpy(s, raw_game_id, len);
