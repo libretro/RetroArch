@@ -7815,9 +7815,10 @@ uint64_t core_serialization_quirks(void)
 void core_reset(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
-   runloop_st->last_error_code    = 0;
    video_driver_state_t *video_st = video_state_get_ptr();
    video_st->frame_cache_data     = NULL;
+   runloop_st->last_error_code    = 0;
+
    runloop_st->current_core.retro_reset();
 
    if (runloop_st->last_error_code)
