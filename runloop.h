@@ -267,6 +267,8 @@ struct runloop
 #endif
 
    uint32_t flags;
+   uint32_t last_error_code;
+   char last_error_message[512];
    int8_t run_frames_and_pause;
 
    char runtime_content_path_basename[PATH_MAX_LENGTH];
