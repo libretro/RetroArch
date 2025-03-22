@@ -421,8 +421,9 @@ GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
-   char *newstr2;
-   size_t _len = 0, size;
+   char *new_extensions;
+   size_t size;
+   FILE *stream = open_memstream(&new_extensions, &size);
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
@@ -433,7 +434,7 @@ static int general_push(menu_displaylist_info_t *info,
    bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
 #endif
 
-   if (!menu)
+   if (!menu || !stream)
       return -1;
 
    if (   (id == PUSH_ARCHIVE_OPEN_DETECT_CORE)
@@ -468,9 +469,6 @@ static int general_push(menu_displaylist_info_t *info,
    info->type_default = FILE_TYPE_PLAIN;
    if (id != PUSH_DETECT_CORE_LIST)
       info->setting   = menu_setting_find_enum(info->enum_idx);
-   if (!(newstr2 = malloc(size = PATH_MAX_LENGTH)))
-      return -1;
-   newstr2[0]          = '\0';
 
    switch (id)
    {
@@ -479,8 +477,7 @@ static int general_push(menu_displaylist_info_t *info,
             struct retro_system_info *sysinfo =
                &runloop_state_get_ptr()->system.info;
             if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
-               _len += strlcpy(newstr2 + _len, sysinfo->valid_extensions,
-                     size - _len);
+               fputs(sysinfo->valid_extensions, stream);
          }
          break;
       case PUSH_DEFAULT:
@@ -499,17 +496,9 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (!string_is_empty(valid_extensions))
             {
-               _len += strlcpy(newstr2 + _len, valid_extensions, size - _len);
+	       fputs(valid_extensions, stream);
 #ifdef HAVE_IBXM
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|",   size - _len);
-               _len    += strlcpy(newstr2 + _len, "s3m", size - _len);
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|",   size - _len);
-               _len    += strlcpy(newstr2 + _len, "mod", size - _len);
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|",   size - _len);
-               _len    += strlcpy(newstr2 + _len, "xm",  size - _len);
+	       fputs("|s3m|mod|xm", stream);
 #endif
             }
          }
@@ -521,100 +510,34 @@ static int general_push(menu_displaylist_info_t *info,
                &runloop_state_get_ptr()->system.info;
             bool filter_by_current_core       = settings->bools.filter_by_current_core;
 
-            if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
-               _len += strlcpy(newstr2 + _len,
-                     sysinfo->valid_extensions,
-                     size - _len);
-
-            if (!filter_by_current_core)
+            if (sysinfo && !string_is_empty(sysinfo->valid_extensions)
+                && filter_by_current_core)
+               fputs(sysinfo->valid_extensions, stream);
+            else
             {
                core_info_list_t *list = NULL;
                core_info_get_list(&list);
                if (list && !string_is_empty(list->all_ext))
-               {
-                  char *tok, *save  = NULL;
-                  char *all_ext_cpy = strdup(list->all_ext);
-
-                  /* If the current core already supports
-                   * this extension, skip adding it */
-                  for ( tok = strtok_r(all_ext_cpy, "|", &save); tok;
-                        tok = strtok_r(NULL, "|", &save))
-                  {
-                     bool exists = false;
-
-                     if (!string_is_empty(newstr2))
-                     {
-                        char *tok2, *save2 = NULL;
-                        char *newstr2_cpy  = strdup(newstr2);
-                        for ( tok2 = strtok_r(newstr2_cpy, "|", &save2); tok2;
-                              tok2 = strtok_r(NULL, "|", &save2))
-                        {
-                           if (string_is_equal(tok, tok2))
-                           {
-                              exists = true;
-                              break;
-                           }
-                        }
-                        free(newstr2_cpy);
-                     }
-
-                     /* If extension wasn't found in string,
-                      * add it */
-                     if (!exists)
-                     {
-                        if (_len + strlen(tok) > size - 1 - 1) {
-                           char *reallocated = realloc(newstr2, size += PATH_MAX_LENGTH);
-
-                           if (!reallocated) {
-                              free(newstr2);
-                              return -1;
-                           }
-                           newstr2 = reallocated;
-                        }
-                        if (_len > 0 && newstr2[_len-1] != '\0')
-                           _len += strlcpy(newstr2 + _len, "|",
-                                   size - _len);
-                        _len    += strlcpy(newstr2 + _len, tok,
-                              size - _len);
-                     }
-                  }
-
-                  free(all_ext_cpy);
-               }
+                  fputs(list->all_ext, stream);
             }
-
 
 #if defined(HAVE_AUDIOMIXER)
             if (multimedia_builtin_mediaplayer_enable)
             {
 #if defined(HAVE_DR_MP3)
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", size - _len);
-               _len    += strlcpy(newstr2 + _len, "mp3", size - _len);
+               fputs("|mp3", stream);
 #endif
 #if defined(HAVE_STB_VORBIS)
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", size - _len);
-               _len    += strlcpy(newstr2 + _len, "ogg", size - _len);
+               fputs("|ogg", stream);
 #endif
 #if defined(HAVE_DR_FLAC)
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", size - _len);
-               _len    += strlcpy(newstr2 + _len, "flac", size - _len);
+               fputs("|flac", stream);
 #endif
 #if defined(HAVE_RWAV)
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", size - _len);
-               _len    += strlcpy(newstr2 + _len, "wav", size - _len);
+               fputs("|wav", stream);
 #endif
 #ifdef HAVE_IBXM
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", size - _len);
-               _len    += strlcpy(newstr2 + _len, "s3m", size - _len);
-                  _len += strlcpy(newstr2 + _len, "|", size - _len);
-               _len    += strlcpy(newstr2 + _len, "mod", size - _len);
-                  _len += strlcpy(newstr2 + _len, "|", size - _len);
-               _len    += strlcpy(newstr2 + _len, "xm", size - _len);
+               fputs("|s3m|mod|xm", stream);
 #endif
             }
 #endif
@@ -631,11 +554,7 @@ static int general_push(menu_displaylist_info_t *info,
 #elif defined(HAVE_MPV)
       libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-      if (_len > 0 && newstr2[_len-1] != '\0')
-         _len += strlcpy(newstr2 + _len, "|",
-                 size - _len);
-      _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions,
-              size - _len);
+      fprintf(stream, "|%s", sysinfo.valid_extensions);
    }
 #endif
 
@@ -644,22 +563,18 @@ static int general_push(menu_displaylist_info_t *info,
    {
       struct retro_system_info sysinfo = {0};
       libretro_imageviewer_retro_get_system_info(&sysinfo);
-      if (_len > 0 && newstr2[_len-1] != '\0')
-         _len += strlcpy(newstr2 + _len, "|",
-               size - _len);
-      _len    += strlcpy(newstr2 + _len, sysinfo.valid_extensions,
-               size - _len);
+      fprintf("|%s", sysinfo.valid_extensions);
    }
 #endif
-
-   if (!string_is_empty(newstr2))
+   fclose(stream);
+   if (!string_is_empty(new_extensions))
    {
       if (info->exts)
          free(info->exts);
-      info->exts = newstr2;
+      info->exts = new_extensions;
    }
    else
-      free(newstr2);
+      free(new_extensions);
 
    return deferred_push_dlist(info, state, settings);
 }
