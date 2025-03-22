@@ -595,6 +595,11 @@ bool net_http_connection_done(struct http_connection_t *conn)
          size_t domain_len   = strlen(conn->domain);
          size_t path_len     = strlen(conn->scan);
          char* urlcopy       = (char*)malloc(domain_len + path_len + 2);
+         if (!urlcopy) {
+           fprintf(stderr, "Memory allocation failed for urlcopy\n");
+           return NULL;
+         }
+
          memcpy(urlcopy, conn->domain, domain_len);
          urlcopy[domain_len] = '\0';
          memcpy(urlcopy + domain_len + 1, conn->scan, path_len + 1);
@@ -1247,11 +1252,20 @@ static bool net_http_send_request(struct http_t *state)
 #ifdef _WIN32
       len     = snprintf(NULL, 0, "%" PRIuPTR, post_len);
       len_str = (char*)malloc(len + 1);
+      if (!len_str) {
+      fprintf(stderr, "Memory allocation failed for len_str\n");
+      return NULL; 
+}
       snprintf(len_str, len + 1, "%" PRIuPTR, post_len);
 #else
       len     = snprintf(NULL, 0, "%llu", (long long unsigned)post_len);
       len_str = (char*)malloc(len + 1);
-      snprintf(len_str, len + 1, "%llu", (long long unsigned)post_len);
+      if (len_str == NULL) {
+      fprintf(stderr, "Memory allocation failed.\n");
+      return NULL;
+}
+
+snprintf(len_str, len + 1, "%llu", (long long unsigned)post_len);
 #endif
 
       len_str[len] = '\0';
