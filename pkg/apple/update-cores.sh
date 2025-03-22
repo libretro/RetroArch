@@ -156,6 +156,7 @@ else
                 cap32
                 crocods
                 desmume
+                dice
                 dinothawr
                 dirksimple
                 dosbox_pure
