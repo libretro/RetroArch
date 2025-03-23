@@ -7117,6 +7117,10 @@ MSG_HASH(
    "Adreça de memòria"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
+   "Adreça de memòria"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
    "Vibra si la memoria..."
    )
@@ -7309,6 +7313,10 @@ MSG_HASH(
    "Anomena i desa les personalitzacions"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Desa les excepcions del nucli"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "Desa les excepcions del joc"
    )
@@ -7390,8 +7398,16 @@ MSG_HASH(
    "No hi ha nuclis disponibles"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+   "No hi ha imatges disponibles"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
    "No hi ha música disponible"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+   "No hi ha vídeos disponibles"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
@@ -7428,6 +7444,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    "Directori pare"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
+   "No s'ha trobat la carpeta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ITEMS,
@@ -7517,12 +7537,20 @@ MSG_HASH(
    "Mode narrador"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
+   "Historial i Preferits"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
    "Totes les llistes de reproducció"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
    "No"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
+   "Historial i Preferits"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
@@ -8214,6 +8242,10 @@ MSG_HASH(
 /* XMB: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+   "Segona miniatura"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    "Tipus de miniatura que es mostrarà a l’esquerra."
    )
@@ -8456,6 +8488,10 @@ MSG_HASH(
    "Manté la barra lateral sempre replegada."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "Segona miniatura"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
    "Substitueix el plafó de metadades per una altra miniatura."
    )
@@ -8533,12 +8569,20 @@ MSG_HASH(
    "Icones d'interruptors"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
+   "Mostra la barra de navegació"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
    "Color del tema"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
    "Miniatura principal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
+   "Segona miniatura"
    )
 
 /* MaterialUI: Settings Options */
@@ -8737,6 +8781,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    "Documentació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
+   "Carrega el nucli personalitzat..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
@@ -9144,6 +9192,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
    "Subsistemes"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   "Contingut actual: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
@@ -10259,6 +10311,10 @@ MSG_HASH(
    "No està disponible el rebobinat perquè aquest nucli no té suport d'estat desats serialitzats."
    )
 MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Desa la nova configuració a"
+   )
+MSG_HASH(
    MSG_SAVING_RAM_TYPE,
    "Desant el tipus de memòria RAM"
    )
@@ -10967,6 +11023,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
    "Mode de pantalla 3DS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
+   "2D (Alta resolució)"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
