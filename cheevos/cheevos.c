@@ -990,7 +990,7 @@ void rcheevos_test(void)
 #ifdef HAVE_THREADS
    if (rcheevos_locals.queued_command != CMD_EVENT_NONE)
    {
-      if ((int)rcheevos_locals.queued_command == CMD_CHEEVOS_FINALIZE_LOAD)
+      if (rcheevos_locals.queued_command == CMD_CHEEVOS_FINALIZE_LOAD)
          rcheevos_finalize_game_load_on_ui_thread();
       else
          command_event(rcheevos_locals.queued_command, NULL);
