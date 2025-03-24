@@ -872,7 +872,7 @@ static void task_cloud_sync_delete_server_file(task_cloud_sync_state_t *sync_sta
 static void task_cloud_sync_maybe_ignore(task_cloud_sync_state_t *sync_state)
 {
    struct string_list *dirlist = task_cloud_sync_directory_map();
-   int i;
+   size_t i;
    bool found;
 
    if (sync_state->local_manifest)
