@@ -732,6 +732,13 @@ else ifeq ($(LIBRETRO), vecx)
 	APP_ICON             = pkg/ctr/assets/vecx.png
 	APP_BANNER           = pkg/ctr/assets/vecx_banner.png
 
+else ifeq ($(LIBRETRO), vemulator)
+	APP_TITLE            = VeMUlator Libretro
+	APP_PRODUCT_CODE     = RARCH-VEMULATOR
+	APP_UNIQUE_ID        = 0xBBCE8
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
 else ifeq ($(LIBRETRO), vice_x64)
 	APP_TITLE            = VICE x64
 	APP_PRODUCT_CODE     = RARCH-VICE-X64
@@ -841,6 +848,21 @@ else ifeq ($(LIBRETRO), xrick)
 	APP_TITLE            = XRick
 	APP_PRODUCT_CODE     = RARCH-XRICK
 	APP_UNIQUE_ID        = 0xBACA9
+	APP_ICON             = pkg/ctr/assets/default.png
+	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
+
+else ifeq ($(LIBRETRO), yabause)
+	APP_TITLE            = Yabause
+	APP_PRODUCT_CODE     = RARCH-YABAUSE
+	APP_UNIQUE_ID        = 0xBBCE5
+	APP_ICON             = pkg/ctr/assets/yabause.png
+	APP_BANNER           = pkg/ctr/assets/yabause_banner.png
+
+else ifeq ($(LIBRETRO), zc210)
+	APP_TITLE            = Zelda Classic v2.10
+	APP_AUTHOR           = Netux79
+	APP_PRODUCT_CODE     = RARCH-ZC210
+	APP_UNIQUE_ID        = 0xBBCE6
 	APP_ICON             = pkg/ctr/assets/default.png
 	APP_BANNER           = pkg/ctr/assets/libretro_banner.png
 

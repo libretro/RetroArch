@@ -1315,6 +1315,10 @@ MSG_HASH(
    )
 #ifdef _3DS
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_MENU_3DS_SETTINGS_LIST,
+   "deferred_menu_3ds_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_MENU_BOTTOM_SETTINGS_LIST,
    "deferred_menu_bottom_settings"
    )
@@ -6080,44 +6084,92 @@ MSG_HASH(
    )
 #ifdef _3DS
 MSG_HASH(
-   MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE,
-   "new3ds_speedup_enable"
+   MENU_ENUM_LABEL_VIDEO_CTR_DISPLAY_MODE,
+   "video_ctr_display_mode"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,
-   "video_3ds_lcd_bottom"
+   MENU_ENUM_LABEL_CTR_BOTTOM_DISPLAY_MODE,
+   "ctr_bottom_display_mode"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,
-   "video_3ds_display_mode"
+   MENU_ENUM_LABEL_CTR_N3DS_SPEEDUP_ENABLE,
+   "ctr_n3ds_speedup_enable"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_BOTTOM_ASSETS_DIRECTORY,
-   "bottom_assets_directory"
+   MENU_ENUM_LABEL_CTR_BOTTOM_LCD_ENABLE,
+   "ctr_bottom_lcd_enable"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_BOTTOM_FONT_ENABLE,
-   "bottom_font_enable"
+   MENU_ENUM_LABEL_CTR_BOTTOM_CONSOLE_ENABLE,
+   "ctr_bottom_console_enable"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_RED,
-   "bottom_font_color_red"
+   MENU_ENUM_LABEL_CTR_BOTTOM_DEBUG_ENABLE,
+   "ctr_bottom_debug_enable"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_GREEN,
-   "bottom_font_color_green"
+   MENU_ENUM_LABEL_VIDEO_CTR_RENDER_TARGET,
+   "video_ctr_render_target"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_BLUE,
-   "bottom_font_color_blue"
+   MENU_ENUM_LABEL_VIDEO_CTR_DUAL_DEADZONE,
+   "video_ctr_dual_deadzone"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_OPACITY,
-   "bottom_font_color_opacity"
+   MENU_ENUM_LABEL_VIDEO_CTR_DUAL_OFFSET_X,
+   "video_ctr_dual_offset_x"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_BOTTOM_FONT_SCALE,
-   "bottom_font_scale"
+   MENU_ENUM_LABEL_VIDEO_CTR_DUAL_OFFSET_Y,
+   "video_ctr_dual_offset_y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CTR_SAVE_STATE_TO_RAM,
+   "ctr_save_state_to_ram"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_CTR_SENSORS_ENABLE,
+   "input_ctr_sensors_enabled"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_CTR_MOUSE_MODE,
+   "input_ctr_mouse_mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_CTR_SENSORS_CURSOR,
+   "input_ctr_sensors_cursor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_CTR_LIGHTGUN_ABS,
+   "input_ctr_lightgun_abs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CTR_BOTTOM_ASSETS_DIRECTORY,
+   "ctr_bottom_assets_directory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CTR_BOTTOM_FONT_ENABLE,
+   "ctr_bottom_font_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CTR_BOTTOM_FONT_COLOR_RED,
+   "ctr_bottom_font_color_red"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CTR_BOTTOM_FONT_COLOR_GREEN,
+   "ctr_bottom_font_color_green"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CTR_BOTTOM_FONT_COLOR_BLUE,
+   "ctr_bottom_font_color_blue"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CTR_BOTTOM_FONT_COLOR_OPACITY,
+   "ctr_bottom_font_color_opacity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CTR_BOTTOM_FONT_SCALE,
+   "ctr_bottom_font_scale"
    )
 #endif
 MSG_HASH(
@@ -6624,6 +6676,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,
    "menu_views_settings"
    )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_3DS_SETTINGS,
+   "menu_3ds_settings"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS,
    "quick_menu_views_settings"

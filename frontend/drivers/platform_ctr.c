@@ -400,14 +400,19 @@ void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id)
 }
 #endif
 
-#ifdef CONSOLE_LOG
+//#ifdef CONSOLE_LOG
 PrintConsole* ctrConsole;
-#endif
+//#endif
 
 static void frontend_ctr_init(void* data)
 {
 #ifndef IS_SALAMANDER
    extern audio_driver_t audio_null;
+
+//   settings_t *settings = config_get_ptr();
+//   bool console_bottom = settings->bools.video_3ds_console_bottom;
+
+   (void)data;
 
    verbosity_enable();
 
@@ -448,9 +453,11 @@ static void frontend_ctr_init(void* data)
    gfxSetFramebufferInfo(GFX_BOTTOM, 0);
 
    gfxSet3D(true);
-#ifdef CONSOLE_LOG
-   ctrConsole = consoleInit(GFX_BOTTOM, NULL);
-#endif
+
+//#ifdef CONSOLE_LOG
+//   if(console_bottom)
+//      ctrConsole = consoleInit(GFX_BOTTOM, NULL);
+//#endif
 
    /* enable access to all service calls when possible. */
    if (svchax_init)

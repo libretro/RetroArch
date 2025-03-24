@@ -92,6 +92,8 @@
 #define DEFAULT_MAX_PADS 4
 #elif defined(DINGUX)
 #define DEFAULT_MAX_PADS 2
+#elif defined(_3DS)
+#define DEFAULT_MAX_PADS 1
 #else
 #define DEFAULT_MAX_PADS 16
 #endif /* defined(ANDROID) */

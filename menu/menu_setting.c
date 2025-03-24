@@ -5157,7 +5157,7 @@ static size_t setting_get_string_representation_uint_playlist_entry_remove_enabl
 }
 
 #ifdef _3DS
-static size_t setting_get_string_representation_uint_video_3ds_display_mode(
+static size_t setting_get_string_representation_uint_video_ctr_display_mode(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
@@ -5184,6 +5184,117 @@ static size_t setting_get_string_representation_uint_video_3ds_display_mode(
                   msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240),
                   len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_uint_ctr_bottom_display_mode(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case CTR_BOTTOM_MODE_DISABLED:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_MODE_DISABLED),
+                  len);
+            break;
+         case CTR_BOTTOM_MODE_CONTROL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_MODE_CONTROL),
+                  len);
+            break;
+         case CTR_BOTTOM_MODE_OVERLAY:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_MODE_OVERLAY),
+                  len);
+            break;
+         case CTR_BOTTOM_MODE_RETROARCH:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_MODE_RETROARCH),
+                  len);
+            break;
+         case CTR_BOTTOM_MODE_CONSOLE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_MODE_CONSOLE),
+                  len);
+            break;
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_uint_video_ctr_render_target(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case CTR_VIDEO_TARGET_TOP:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_RENDER_TARGET_TOP),
+                  len);
+            break;
+         case CTR_VIDEO_TARGET_BOTTOM:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_RENDER_TARGET_BOTTOM),
+                  len);
+            break;
+         case CTR_VIDEO_TARGET_MIRROR:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_RENDER_TARGET_MIRROR),
+                  len);
+           break;
+         case CTR_VIDEO_TARGET_DUAL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_RENDER_TARGET_DUAL),
+                  len);
+            break;
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_uint_input_ctr_mouse_mode(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case CTR_INPUT_MOUSE_TOUCH:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_INPUT_MOUSE_TOUCH),
+                  len);
+            break;
+         case CTR_INPUT_MOUSE_GYRO:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_INPUT_MOUSE_GYRO),
+                  len);
+            break;
+         case CTR_INPUT_MOUSE_QTM:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CTR_INPUT_MOUSE_QTM),
+                  len);
+            break;
       }
    }
    return 0;
@@ -8955,6 +9066,102 @@ static void frontend_log_level_change_handler(rarch_setting_t *setting)
    verbosity_set_log_level(*setting->value.target.unsigned_integer);
 }
 
+
+#ifdef _3DS
+static void ctr_bottom_mode_change_handler(rarch_setting_t *setting)
+{
+   enum event_command rarch_cmd     = CMD_EVENT_NONE; 
+   settings_t *settings             = config_get_ptr();
+   
+   unsigned ctr_bottom_display_mode = settings->uints.ctr_bottom_display_mode;
+   unsigned video_ctr_render_target = settings->uints.video_ctr_render_target;
+   
+
+   if (!setting)
+      return;
+   
+    switch (*setting->value.target.unsigned_integer)
+   {
+      case CTR_BOTTOM_MODE_DISABLED:
+//	     configuration_set_bool(settings,
+//         settings->bools.video_3ds_lcd_bottom, false);
+         break;
+	  case CTR_BOTTOM_MODE_CONTROL:
+//	     configuration_set_bool(settings,
+//         settings->bools.video_3ds_lcd_bottom, true);
+         break;
+      case CTR_BOTTOM_MODE_OVERLAY:
+//	     configuration_set_bool(settings,
+//         settings->bools.video_3ds_lcd_bottom, true);
+         break;
+	  case CTR_BOTTOM_MODE_RETROARCH:
+
+	     configuration_set_uint(settings,
+         settings->uints.video_ctr_render_target, CTR_VIDEO_TARGET_MIRROR);
+		 
+	     rarch_cmd = CMD_EVENT_REINIT; // reinit video
+	  
+	  
+//	     configuration_set_uint(settings,
+//         settings->uints.video_3ds_display_mode, CTR_VIDEO_MODE_2D);
+         break;
+	  case CTR_BOTTOM_MODE_CONSOLE:
+         break;
+   }
+   if ((ctr_bottom_display_mode != CTR_BOTTOM_MODE_RETROARCH) &&
+         (video_ctr_render_target > 0)) //<< todo add to above switch
+   {
+      configuration_set_uint(settings,
+            settings->uints.video_ctr_render_target, CTR_VIDEO_TARGET_TOP);
+      rarch_cmd = CMD_EVENT_REINIT; // reinit
+   }
+
+   if (rarch_cmd || (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED))
+      command_event(rarch_cmd, NULL);
+}  
+   
+static void input_ctr_mouse_mode_change_handler(rarch_setting_t *setting)
+{
+   enum event_command rarch_cmd     = CMD_EVENT_NONE; 
+   settings_t *settings             = config_get_ptr();
+   
+   bool input_ctr_sensors_enabled   = settings->bools.input_ctr_sensors_enable;
+//   unsigned video_ctr_render_target = settings->uints.video_ctr_render_target;
+   
+      if (!setting)
+      return;
+	  
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case CTR_INPUT_MOUSE_TOUCH:
+//	     configuration_set_bool(settings,
+//         settings->bools.video_3ds_lcd_bottom, false);
+         break;
+	  case CTR_INPUT_MOUSE_QTM:
+//	     configuration_set_bool(settings,
+//         settings->bools.video_3ds_lcd_bottom, true);
+         break;
+      case CTR_INPUT_MOUSE_GYRO:
+//	     configuration_set_bool(settings,
+//         settings->bools.video_3ds_lcd_bottom, true);
+         break;
+   }
+
+   if (!input_ctr_sensors_enabled)
+   {
+      configuration_set_uint(settings,
+            settings->uints.input_ctr_mouse_mode, CTR_INPUT_MOUSE_TOUCH);
+//      rarch_cmd = CMD_EVENT_REINIT; // reinit
+   }
+
+   if (rarch_cmd || (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED))
+      command_event(rarch_cmd, NULL);
+	  
+}
+#endif	  
+	  
+   
+
 #ifdef HAVE_RUNAHEAD
 static void runahead_change_handler(rarch_setting_t *setting)
 {
@@ -9262,7 +9469,7 @@ static void appicon_change_handler(rarch_setting_t *setting)
 }
 
 #ifdef _3DS
-static void new3ds_speedup_change_handler(rarch_setting_t *setting)
+static void ctr_n3ds_speedup_change_handler(rarch_setting_t *setting)
 {
    if (setting)
       osSetSpeedupEnable(*setting->value.target.boolean);
@@ -10520,6 +10727,14 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 #ifdef _3DS
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_MENU_3DS_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_MENU_3DS_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS,
@@ -20538,10 +20753,10 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->uints.video_3ds_display_mode,
-                  MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,
-                  MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
-                  DEFAULT_VIDEO_3DS_DISPLAY_MODE,
+                  &settings->uints.video_ctr_display_mode,
+                  MENU_ENUM_LABEL_VIDEO_CTR_DISPLAY_MODE,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_CTR_DISPLAY_MODE,
+                  DEFAULT_VIDEO_CTR_DISPLAY_MODE,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -20549,18 +20764,130 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_uint_video_3ds_display_mode;
+                  &setting_get_string_representation_uint_video_ctr_display_mode;
             menu_settings_list_current_add_range(list, list_info, 0,
                   CTR_VIDEO_MODE_LAST - (((device_model == 0) || (device_model == 1)) ? 1 : 3),
                   1, true, true);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.input_ctr_mouse_mode,
+                  MENU_ENUM_LABEL_INPUT_CTR_MOUSE_MODE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_CTR_MOUSE_MODE,
+                  DEFAULT_INPUT_CTR_MOUSE_MODE,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].change_handler = input_ctr_mouse_mode_change_handler;
+            (*list)[list_info->index - 1].get_string_representation =
+                  &setting_get_string_representation_uint_input_ctr_mouse_mode;
+            menu_settings_list_current_add_range(list, list_info, 0,
+                  CTR_INPUT_MOUSE_LAST - (((device_model == 2) || (device_model == 4)) ? 1 : 2),
+                  1, true, true);
          }
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.ctr_bottom_display_mode,
+               MENU_ENUM_LABEL_CTR_BOTTOM_DISPLAY_MODE,
+               MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_DISPLAY_MODE,
+               DEFAULT_CTR_BOTTOM_DISPLAY_MODE,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok      = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_left    = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right   = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].change_handler = ctr_bottom_mode_change_handler;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_ctr_bottom_display_mode;
+         menu_settings_list_current_add_range(list, list_info, 0, CTR_BOTTOM_MODE_LAST - 1, 1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_ctr_render_target,
+               MENU_ENUM_LABEL_VIDEO_CTR_RENDER_TARGET,
+               MENU_ENUM_LABEL_VALUE_VIDEO_CTR_RENDER_TARGET,
+               DEFAULT_VIDEO_CTR_RENDER_TARGET,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_video_ctr_render_target;
+         menu_settings_list_current_add_range(list, list_info, 0, CTR_VIDEO_TARGET_LAST - 1, 1, true, true);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
+               CMD_EVENT_REINIT);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.video_ctr_dual_deadzone,
+               MENU_ENUM_LABEL_VIDEO_CTR_DUAL_DEADZONE,
+               MENU_ENUM_LABEL_VALUE_VIDEO_CTR_DUAL_DEADZONE,
+               DEFAULT_VIDEO_CTR_DUAL_DEADZONE,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+//         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, 0,
+               50,
+               1, true, true);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
+               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.video_ctr_dual_offset_x,
+               MENU_ENUM_LABEL_VIDEO_CTR_DUAL_OFFSET_X,
+               MENU_ENUM_LABEL_VALUE_VIDEO_CTR_DUAL_OFFSET_X,
+               DEFAULT_VIDEO_CTR_DUAL_OFFSET_X,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+//         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, -240,
+               240,
+               1, true, true);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
+               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+
+         CONFIG_INT(
+               list, list_info,
+               &settings->ints.video_ctr_dual_offset_y,
+               MENU_ENUM_LABEL_VIDEO_CTR_DUAL_OFFSET_Y,
+               MENU_ENUM_LABEL_VALUE_VIDEO_CTR_DUAL_OFFSET_Y,
+               DEFAULT_VIDEO_CTR_DUAL_OFFSET_Y,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+//         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, -240,
+               240,
+               1, true, true);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
+               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->bools.new3ds_speedup_enable,
-               MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE,
-               MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
-               DEFAULT_NEW_3DS_SPEEDUP_ENABLE,
+               &settings->bools.ctr_save_state_to_ram,
+               MENU_ENUM_LABEL_CTR_SAVE_STATE_TO_RAM,
+               MENU_ENUM_LABEL_VALUE_CTR_SAVE_STATE_TO_RAM,
+               DEFAULT_CTR_SAVE_STATE_TO_RAM,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -20569,14 +20896,29 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_CMD_APPLY_AUTO);
-         (*list)[list_info->index - 1].change_handler = new3ds_speedup_change_handler;
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->bools.video_3ds_lcd_bottom,
-               MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM,
-               MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
-               DEFAULT_VIDEO_3DS_LCD_BOTTOM,
+               &settings->bools.ctr_n3ds_speedup_enable,
+               MENU_ENUM_LABEL_CTR_N3DS_SPEEDUP_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CTR_N3DS_SPEEDUP_ENABLE,
+               DEFAULT_CTR_N3DS_SPEEDUP_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+         (*list)[list_info->index - 1].change_handler = ctr_n3ds_speedup_change_handler;
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ctr_bottom_lcd_enable,
+               MENU_ENUM_LABEL_CTR_BOTTOM_LCD_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_LCD_ENABLE,
+               DEFAULT_CTR_BOTTOM_LCD_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -20589,13 +20931,87 @@ static bool setting_append_list(
 #ifdef CONSOLE_LOG
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT_FROM_TOGGLE);
 #endif
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ctr_bottom_console_enable,
+               MENU_ENUM_LABEL_CTR_BOTTOM_CONSOLE_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_CONSOLE_ENABLE,
+               DEFAULT_CTR_BOTTOM_CONSOLE_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.ctr_bottom_debug_enable,
+               MENU_ENUM_LABEL_CTR_BOTTOM_DEBUG_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_DEBUG_ENABLE,
+               DEFAULT_CTR_BOTTOM_DEBUG_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_ctr_sensors_enable,
+               MENU_ENUM_LABEL_INPUT_CTR_SENSORS_ENABLE,
+               MENU_ENUM_LABEL_VALUE_INPUT_CTR_SENSORS_ENABLE,
+               DEFAULT_INPUT_CTR_SENSORS_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_ctr_sensors_cursor,
+               MENU_ENUM_LABEL_INPUT_CTR_SENSORS_CURSOR,
+               MENU_ENUM_LABEL_VALUE_INPUT_CTR_SENSORS_CURSOR,
+               DEFAULT_INPUT_CTR_SENSORS_CURSOR,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.input_ctr_lightgun_abs,
+               MENU_ENUM_LABEL_INPUT_CTR_LIGHTGUN_ABS,
+               MENU_ENUM_LABEL_VALUE_INPUT_CTR_LIGHTGUN_ABS,
+               DEFAULT_INPUT_CTR_LIGHTGUN_ABS,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_CMD_APPLY_AUTO);
 
          CONFIG_DIR(
                list, list_info,
-               settings->paths.directory_bottom_assets,
-               sizeof(settings->paths.directory_bottom_assets),
-               MENU_ENUM_LABEL_BOTTOM_ASSETS_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
+               settings->paths.directory_ctr_bottom_assets,
+               sizeof(settings->paths.directory_ctr_bottom_assets),
+               MENU_ENUM_LABEL_CTR_BOTTOM_ASSETS_DIRECTORY,
+               MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_ASSETS_DIRECTORY,
                g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS],
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
@@ -20608,10 +21024,10 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
-               &settings->bools.bottom_font_enable,
-               MENU_ENUM_LABEL_BOTTOM_FONT_ENABLE,
-               MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
-               DEFAULT_BOTTOM_FONT_ENABLE,
+               &settings->bools.ctr_bottom_font_enable,
+               MENU_ENUM_LABEL_CTR_BOTTOM_FONT_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_FONT_ENABLE,
+               DEFAULT_CTR_BOTTOM_FONT_ENABLE,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -20623,10 +21039,10 @@ static bool setting_append_list(
 
          CONFIG_INT(
                list, list_info,
-               &settings->ints.bottom_font_color_red,
-               MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_RED,
-               MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
-               DEFAULT_BOTTOM_FONT_COLOR,
+               &settings->ints.ctr_bottom_font_color_red,
+               MENU_ENUM_LABEL_CTR_BOTTOM_FONT_COLOR_RED,
+               MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_FONT_COLOR_RED,
+               DEFAULT_CTR_BOTTOM_FONT_COLOR,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -20637,10 +21053,10 @@ static bool setting_append_list(
 
          CONFIG_INT(
                list, list_info,
-               &settings->ints.bottom_font_color_green,
-               MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_GREEN,
-               MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
-               DEFAULT_BOTTOM_FONT_COLOR,
+               &settings->ints.ctr_bottom_font_color_green,
+               MENU_ENUM_LABEL_CTR_BOTTOM_FONT_COLOR_GREEN,
+               MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_FONT_COLOR_GREEN,
+               DEFAULT_CTR_BOTTOM_FONT_COLOR,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -20651,10 +21067,10 @@ static bool setting_append_list(
 
          CONFIG_INT(
                list, list_info,
-               &settings->ints.bottom_font_color_blue,
-               MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_BLUE,
-               MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
-               DEFAULT_BOTTOM_FONT_COLOR,
+               &settings->ints.ctr_bottom_font_color_blue,
+               MENU_ENUM_LABEL_CTR_BOTTOM_FONT_COLOR_BLUE,
+               MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_FONT_COLOR_BLUE,
+               DEFAULT_CTR_BOTTOM_FONT_COLOR,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -20665,10 +21081,10 @@ static bool setting_append_list(
 
          CONFIG_INT(
                list, list_info,
-               &settings->ints.bottom_font_color_opacity,
-               MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_OPACITY,
-               MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
-               DEFAULT_BOTTOM_FONT_COLOR,
+               &settings->ints.ctr_bottom_font_color_opacity,
+               MENU_ENUM_LABEL_CTR_BOTTOM_FONT_COLOR_OPACITY,
+               MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_FONT_COLOR_OPACITY,
+               DEFAULT_CTR_BOTTOM_FONT_COLOR,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -20679,10 +21095,10 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->floats.bottom_font_scale,
-               MENU_ENUM_LABEL_BOTTOM_FONT_SCALE,
-               MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
-               DEFAULT_BOTTOM_FONT_SCALE,
+               &settings->floats.ctr_bottom_font_scale,
+               MENU_ENUM_LABEL_CTR_BOTTOM_FONT_SCALE,
+               MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_FONT_SCALE,
+               DEFAULT_CTR_BOTTOM_FONT_SCALE,
                "%.2f",
                &group_info,
                &subgroup_info,

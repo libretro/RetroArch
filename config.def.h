@@ -32,11 +32,6 @@
 #include "network/netplay/netplay_defines.h"
 #endif
 
-/* Required for 3DS display mode setting */
-#if defined(_3DS)
-#include "gfx/common/ctr_defines.h"
-#endif
-
 /* Required for OpenDingux IPU filter + refresh
  * rate settings */
 #if defined(DINGUX)
@@ -1039,16 +1034,31 @@
 #define DEFAULT_ALLOW_ROTATE true
 
 #ifdef _3DS
-/* Enable New3DS clock and L2 cache */
-#define DEFAULT_NEW_3DS_SPEEDUP_ENABLE true
-/* Enable bottom LCD screen */
-#define DEFAULT_VIDEO_3DS_LCD_BOTTOM true
 /* Sets video display mode (3D, 2D, etc.) */
-#define DEFAULT_VIDEO_3DS_DISPLAY_MODE CTR_VIDEO_MODE_3D
+#define DEFAULT_VIDEO_CTR_DISPLAY_MODE  CTR_VIDEO_MODE_3D
+#define DEFAULT_VIDEO_CTR_RENDER_TARGET CTR_VIDEO_TARGET_TOP
+#define DEFAULT_VIDEO_CTR_DUAL_DEADZONE 0
+#define DEFAULT_VIDEO_CTR_DUAL_OFFSET_X 0
+#define DEFAULT_VIDEO_CTR_DUAL_OFFSET_Y 0
 
-#define DEFAULT_BOTTOM_FONT_ENABLE true
-#define DEFAULT_BOTTOM_FONT_COLOR 255
-#define DEFAULT_BOTTOM_FONT_SCALE 1.48f
+#define DEFAULT_INPUT_CTR_MOUSE_MODE     CTR_INPUT_MOUSE_TOUCH
+#define DEFAULT_INPUT_CTR_SENSORS_ENABLE false
+#define DEFAULT_INPUT_CTR_SENSORS_CURSOR false
+#define DEFAULT_INPUT_CTR_LIGHTGUN_ABS   true
+
+#define DEFAULT_CTR_BOTTOM_DISPLAY_MODE CTR_BOTTOM_MODE_CONTROL
+#define DEFAULT_CTR_BOTTOM_FONT_ENABLE  true
+#define DEFAULT_CTR_BOTTOM_FONT_COLOR   255
+#define DEFAULT_CTR_BOTTOM_FONT_SCALE   1.48f
+
+/* Enable bottom LCD screen */
+#define DEFAULT_CTR_BOTTOM_LCD_ENABLE     true
+#define DEFAULT_CTR_BOTTOM_CONSOLE_ENABLE false
+#define DEFAULT_CTR_BOTTOM_DEBUG_ENABLE   false
+
+/* Enable New3DS clock and L2 cache */
+#define DEFAULT_CTR_N3DS_SPEEDUP_ENABLE true
+#define DEFAULT_CTR_SAVE_STATE_TO_RAM   true
 #endif
 
 #ifdef WIIU

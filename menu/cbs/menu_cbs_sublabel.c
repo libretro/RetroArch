@@ -337,6 +337,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_visibility_progress_tracker,
 
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_views_settings_list,      MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS)
+#ifdef _3DS
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_3ds_settings_list,        MENU_ENUM_SUBLABEL_MENU_3DS_SETTINGS)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_views_settings_list, MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings_views_settings_list, MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_settings_list,            MENU_ENUM_SUBLABEL_MENU_SETTINGS)
@@ -1315,16 +1318,26 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_gamemode_enable,                MENU
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_brightness_control,             MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL)
 
 #ifdef _3DS
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_new3ds_speedup_enable,          MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_3ds_display_mode,         MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_3ds_lcd_bottom,           MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_assets_directory,        MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_font_enable,             MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_font_color_red,          MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_font_color_green,        MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_font_color_blue,         MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_font_color_opacity,      MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bottom_font_scale,              MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_bottom_lcd_enable,                 MENU_ENUM_SUBLABEL_CTR_BOTTOM_LCD_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_ctr_display_mode,                MENU_ENUM_SUBLABEL_VIDEO_CTR_DISPLAY_MODE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_ctr_render_target,               MENU_ENUM_SUBLABEL_VIDEO_CTR_RENDER_TARGET)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_ctr_dual_deadzone,               MENU_ENUM_SUBLABEL_VIDEO_CTR_DUAL_DEADZONE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_ctr_sensors_enable,              MENU_ENUM_SUBLABEL_INPUT_CTR_SENSORS_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_ctr_sensors_cursor,              MENU_ENUM_SUBLABEL_INPUT_CTR_SENSORS_CURSOR)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_ctr_mouse_mode,                  MENU_ENUM_SUBLABEL_INPUT_CTR_MOUSE_MODE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_ctr_lightgun_abs,                MENU_ENUM_SUBLABEL_INPUT_CTR_LIGHTGUN_ABS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_bottom_display_mode,               MENU_ENUM_SUBLABEL_CTR_BOTTOM_DISPLAY_MODE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_bottom_assets_directory,           MENU_ENUM_SUBLABEL_CTR_BOTTOM_ASSETS_DIRECTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_bottom_font_enable,                MENU_ENUM_SUBLABEL_CTR_BOTTOM_FONT_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_bottom_font_color_red,             MENU_ENUM_SUBLABEL_CTR_BOTTOM_FONT_COLOR_RED)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_bottom_font_color_green,           MENU_ENUM_SUBLABEL_CTR_BOTTOM_FONT_COLOR_GREEN)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_bottom_font_color_blue,            MENU_ENUM_SUBLABEL_CTR_BOTTOM_FONT_COLOR_BLUE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_bottom_font_color_opacity,         MENU_ENUM_SUBLABEL_CTR_BOTTOM_FONT_COLOR_OPACITY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_bottom_font_scale,                 MENU_ENUM_SUBLABEL_CTR_BOTTOM_FONT_SCALE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_bottom_console_enable,             MENU_ENUM_SUBLABEL_CTR_BOTTOM_CONSOLE_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_bottom_debug_enable,               MENU_ENUM_SUBLABEL_CTR_BOTTOM_DEBUG_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_n3ds_speedup_enable,               MENU_ENUM_SUBLABEL_CTR_N3DS_SPEEDUP_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ctr_save_state_to_ram,                 MENU_ENUM_SUBLABEL_CTR_SAVE_STATE_TO_RAM)
 #endif
 
 #if defined (WIIU)
@@ -5002,6 +5015,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_views_settings_list);
             break;
+#ifdef _3DS
+         case MENU_ENUM_LABEL_MENU_3DS_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_3ds_settings_list);
+            break;
+#endif
          case MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_settings_views_settings_list);
             break;
@@ -5448,35 +5466,65 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_brightness_control);
             break;
 #ifdef _3DS
-         case MENU_ENUM_LABEL_NEW3DS_SPEEDUP_ENABLE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_new3ds_speedup_enable);
+         case MENU_ENUM_LABEL_VIDEO_CTR_DISPLAY_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_ctr_display_mode);
             break;
-         case MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_3ds_display_mode);
+         case MENU_ENUM_LABEL_CTR_BOTTOM_DISPLAY_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_bottom_display_mode);
             break;
-         case MENU_ENUM_LABEL_VIDEO_3DS_LCD_BOTTOM:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_3ds_lcd_bottom);
+         case MENU_ENUM_LABEL_CTR_SAVE_STATE_TO_RAM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_save_state_to_ram);
             break;
-         case MENU_ENUM_LABEL_BOTTOM_ASSETS_DIRECTORY:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_assets_directory);
+         case MENU_ENUM_LABEL_CTR_N3DS_SPEEDUP_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_n3ds_speedup_enable);
             break;
-         case MENU_ENUM_LABEL_BOTTOM_FONT_ENABLE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_font_enable);
+         case MENU_ENUM_LABEL_CTR_BOTTOM_LCD_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_bottom_lcd_enable);
             break;
-         case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_RED:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_font_color_red);
+         case MENU_ENUM_LABEL_CTR_BOTTOM_CONSOLE_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_bottom_console_enable);
             break;
-         case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_GREEN:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_font_color_green);
+         case MENU_ENUM_LABEL_CTR_BOTTOM_DEBUG_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_bottom_debug_enable);
             break;
-         case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_BLUE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_font_color_blue);
+         case MENU_ENUM_LABEL_VIDEO_CTR_RENDER_TARGET:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_ctr_render_target);
             break;
-         case MENU_ENUM_LABEL_BOTTOM_FONT_COLOR_OPACITY:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_font_color_opacity);
+         case MENU_ENUM_LABEL_VIDEO_CTR_DUAL_DEADZONE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_ctr_dual_deadzone);
             break;
-         case MENU_ENUM_LABEL_BOTTOM_FONT_SCALE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bottom_font_scale);
+         case MENU_ENUM_LABEL_INPUT_CTR_SENSORS_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_ctr_sensors_enable);
+            break;
+         case MENU_ENUM_LABEL_INPUT_CTR_SENSORS_CURSOR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_ctr_sensors_cursor);
+            break;
+         case MENU_ENUM_LABEL_INPUT_CTR_MOUSE_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_ctr_mouse_mode);
+            break;
+         case MENU_ENUM_LABEL_INPUT_CTR_LIGHTGUN_ABS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_ctr_lightgun_abs);
+            break;
+         case MENU_ENUM_LABEL_CTR_BOTTOM_ASSETS_DIRECTORY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_bottom_assets_directory);
+            break;
+         case MENU_ENUM_LABEL_CTR_BOTTOM_FONT_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_bottom_font_enable);
+            break;
+         case MENU_ENUM_LABEL_CTR_BOTTOM_FONT_COLOR_RED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_bottom_font_color_red);
+            break;
+         case MENU_ENUM_LABEL_CTR_BOTTOM_FONT_COLOR_GREEN:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_bottom_font_color_green);
+            break;
+         case MENU_ENUM_LABEL_CTR_BOTTOM_FONT_COLOR_BLUE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_bottom_font_color_blue);
+            break;
+         case MENU_ENUM_LABEL_CTR_BOTTOM_FONT_COLOR_OPACITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_bottom_font_color_opacity);
+            break;
+         case MENU_ENUM_LABEL_CTR_BOTTOM_FONT_SCALE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ctr_bottom_font_scale);
             break;
 #endif
 #if defined(WIIU)
