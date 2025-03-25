@@ -85,7 +85,6 @@ ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=so
 
 CFLAGS	+=	-mword-relocations \
 			-fomit-frame-pointer -ffast-math \
-         -Werror=implicit-function-declaration \
 			$(ARCH)
 
 #CFLAGS	+= -Wall
@@ -115,7 +114,7 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 ASFLAGS	:=	-g $(ARCH) -O3
 LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-CFLAGS   += -std=gnu99 -ffast-math
+CFLAGS   += -std=gnu99 -Werror=implicit-function-declaration
 
 LIBS	:= -lctru -lm
 

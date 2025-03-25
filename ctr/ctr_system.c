@@ -311,9 +311,9 @@ void wait_for_input(void)
 void error_and_quit(const char* errorStr)
 {
    errorConf error;
-#ifdef IS_SALAMANDER
-   gfxInitDefault();
-#endif
+   if (!gspHasGpuRight())
+      gfxInitDefault();
+
    errorInit(&error, ERROR_TEXT, CFG_LANGUAGE_EN);
    errorText(&error, errorStr);
    errorDisp(&error);

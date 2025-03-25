@@ -1698,7 +1698,12 @@ bool content_load_state_from_ram(void)
 
    /* We need to make a temporary copy of the buffer, to allow the swap below */
    temp_data       = malloc(ram_buf.state_buf.size);
+   
+   if (!temp_data)
+      return ret;
+   
    temp_data_size  = ram_buf.state_buf.size;
+
    memcpy(temp_data, ram_buf.state_buf.data, ram_buf.state_buf.size);
 
    /* Swap the current state with the backup state. This way, we can undo
@@ -1722,7 +1727,7 @@ bool content_load_state_from_ram(void)
 }
 
 /**
- * content_save_state_from_ram:
+ * content_save_state_to_ram:
  * Save a state to RAM.
  *
  * @return true if successful, false otherwise.

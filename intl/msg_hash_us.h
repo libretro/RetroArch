@@ -6205,6 +6205,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
    "Toggle the visibility of menu items in RetroArch."
    )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_3DS_SETTINGS,
+   "3DS Settings"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_3DS_SETTINGS,
+   "Settings for 3DS"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "Appearance"
@@ -16557,28 +16567,20 @@ MSG_HASH(
 #endif
 #ifdef _3DS
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
+   MENU_ENUM_LABEL_VALUE_CTR_N3DS_SPEEDUP_ENABLE,
    "Enable New3DS Clock / L2 Cache"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
+   MENU_ENUM_SUBLABEL_CTR_N3DS_SPEEDUP_ENABLE,
    "Enable New3DS clock speed (804MHz) and L2 cache."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
-   "3DS Bottom Screen"
+   MENU_ENUM_LABEL_VALUE_VIDEO_CTR_DISPLAY_MODE,
+   "3DS Top screen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM,
-   "Enable display of status information on bottom screen. Disable to increase battery life and improve performance."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
-   "3DS Display Mode"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
-   "Selects between 3D and 2D display modes. In '3D' mode, pixels are square and a depth effect is applied when viewing the Quick Menu. '2D' mode provides the best performance."
+   MENU_ENUM_SUBLABEL_VIDEO_CTR_DISPLAY_MODE,
+   "Select between 3D and 2D display modes. In '3D' mode, pixels are square and a depth effect is applied when viewing the Quick Menu. '2D' mode provides the best performance."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_3D,
@@ -16597,6 +16599,106 @@ MSG_HASH(
    "2D (High Resolution)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_DISPLAY_MODE,
+   "3DS Bottom screen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CTR_BOTTOM_DISPLAY_MODE,
+   "Select bottom screen mode."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_MODE_DISABLED,
+   "Disable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_MODE_CONTROL,
+   "Control"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_MODE_OVERLAY,
+   "Overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_MODE_RETROARCH,
+   "Retroarch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_MODE_CONSOLE,
+   "Console"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_SAVE_STATE_TO_RAM,
+   "Save STATES to RAM"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CTR_SAVE_STATE_TO_RAM,
+   "Store savestates in RAM during runtime. Savestates will be written to SD upon exit."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_LCD_ENABLE,
+   "Enable bottom screen LCD"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CTR_BOTTOM_LCD_ENABLE,
+   "Enable bottom screen LCD. Disable to increase battery life and improve performance."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_CONSOLE_ENABLE,
+   "Bottom screen console"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CTR_BOTTOM_CONSOLE_ENABLE,
+   "Enable console on the bottom screen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_DEBUG_ENABLE,
+   "Debug bottom screen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CTR_BOTTOM_DEBUG_ENABLE,
+   "Enable debug info on the bottom screen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CTR_RENDER_TARGET,
+   "Display target"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CTR_RENDER_TARGET,
+   "Switch between top, bottom, clone or dual screen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_RENDER_TARGET_TOP,
+   "Top screen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_RENDER_TARGET_BOTTOM,
+   "Bottom screen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_RENDER_TARGET_MIRROR,
+   "Mirror screen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_RENDER_TARGET_DUAL,
+   "Dual screen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CTR_DUAL_DEADZONE,
+   "Deadzone"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CTR_DUAL_DEADZONE,
+   "Specify the amount not displayed between top and bottom screen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CTR_DUAL_OFFSET_X,
+   "Offset width"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CTR_DUAL_OFFSET_Y,
+   "Offset height"
+   )
+MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
    "Tap the Touch Screen to go\nto the Retroarch menu"
    )
@@ -16613,6 +16715,14 @@ MSG_HASH(
    "No\nScreenshot"
    )
 MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESET,
+   "Reset"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_PAUSE,
+   "Pause Game"
+   )
+MSG_HASH(
    MSG_3DS_BOTTOM_MENU_RESUME,
    "Resume Game"
    )
@@ -16625,59 +16735,103 @@ MSG_HASH(
    "Load\nRestore Point"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
+   MENU_ENUM_LABEL_VALUE_INPUT_CTR_SENSORS_ENABLE,
+   "Enable 3DS auxiliary sensors"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_CTR_SENSORS_ENABLE,
+   "Enable touch, gyroscope, accelerometer and head-tracking if supported"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_CTR_SENSORS_CURSOR,
+   "Enable on-screen cursor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_CTR_SENSORS_CURSOR,
+   "Enable on-screen cursor for touch, gyroscope and head-tracking"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_CTR_MOUSE_MODE,
+   "Emulated mouse input mode"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_CTR_MOUSE_MODE,
+   "Switch between touch, gyroscope and head-tracking if supported"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_INPUT_MOUSE_TOUCH,
+   "Touch screen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_INPUT_MOUSE_GYRO,
+   "Gyroscope"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_INPUT_MOUSE_QTM,
+   "Head-tracking"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_CTR_LIGHTGUN_ABS,
+   "Absolute lightgun coords"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_CTR_LIGHTGUN_ABS,
+   "Switch to absolute lightgun coördinates"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_ASSETS_DIRECTORY,
    "Bottom Screen Asset Directory"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
+   MENU_ENUM_SUBLABEL_CTR_BOTTOM_ASSETS_DIRECTORY,
    "Bottom screen asset directory. Directory must include \"bottom_menu.png\"."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_FONT_ENABLE,
    "Font Enable"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Display bottom menu font. Enable to display button descriptions on the bottom screen. This excludes the save state date."
+   MENU_ENUM_SUBLABEL_CTR_BOTTOM_FONT_ENABLE,
+   "Display bottom menu font. Enable to display button descriptions on the bottom screen. This excludes the savestate date."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_FONT_COLOR_RED,
    "Font Color Red"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
+   MENU_ENUM_SUBLABEL_CTR_BOTTOM_FONT_COLOR_RED,
    "Adjust bottom screen font red color."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_FONT_COLOR_GREEN,
    "Font Color Green"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   MENU_ENUM_SUBLABEL_CTR_BOTTOM_FONT_COLOR_GREEN,
    "Adjust bottom screen font green color."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_FONT_COLOR_BLUE,
    "Font Color Blue"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
+   MENU_ENUM_SUBLABEL_CTR_BOTTOM_FONT_COLOR_BLUE,
    "Adjust bottom screen font blue color."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_FONT_COLOR_OPACITY,
    "Font Color Opacity"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
+   MENU_ENUM_SUBLABEL_CTR_BOTTOM_FONT_COLOR_OPACITY,
    "Adjust bottom screen font opacity."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
+   MENU_ENUM_LABEL_VALUE_CTR_BOTTOM_FONT_SCALE,
    "Font Scale"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
+   MENU_ENUM_SUBLABEL_CTR_BOTTOM_FONT_SCALE,
    "Adjust bottom screen font scale."
    )
 #endif

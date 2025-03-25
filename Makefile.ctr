@@ -2,9 +2,9 @@ TARGET := retroarch_3ds
 LIBRETRO =
 
 DEBUG                   = 0
-CONSOLE_LOG             = 0
+CONSOLE_LOG             = 1
 GRIFFIN_BUILD           = 1
-HAVE_STATIC_DUMMY ?= 0
+HAVE_STATIC_DUMMY      ?= 0
 WHOLE_ARCHIVE_LINK      = 0
 BUILD_3DSX              = 1
 BUILD_3DS               = 0
@@ -41,6 +41,11 @@ OBJ += ctr/exec-3dsx/exec_cia.o \
 	ctr/exec-3dsx/mini-hb-menu/loaders/rosalina.o \
 	ctr/exec-3dsx/mini-hb-menu/loaders/hax2.o
 
+OBJ += ctr/ctr-bottom/ctr_bottom.o \
+	ctr/ctr-bottom/ctr_bottom_kbd.o \
+	ctr/ctr-bottom/ctr_bottom_states.o \
+	ctr/ctr-bottom/ctr_bottom_debug.o
+
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
 	APP_USE_SVCHAX = 1
 	LDFLAGS  += -Wl,--defsym,__ctr_patch_services=__service_ptr
@@ -65,6 +70,15 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	DEFINES += -DHAVE_GFX_WIDGETS
 	DEFINES += -DHAVE_OVERLAY
 	DEFINES += -DHAVE_CORE_INFO_CACHE
+#DEFINES += -DHAVE_STB_VORBIS -DHAVE_AUDIOMIXER
+#DEFINES += -DHAVE_STB_FONT
+DEFINES += -DHAVE_CLOUDSYNC
+
+	DEFINES += -DHAVE_NETWORKGAMEPAD
+	DEFINES += -DHAVE_BOTTOM_SCREEN
+	DEFINES += -DHAVE_CHD
+	DEFINES += -DHAVE_QTM
+	DEFINES += -DHAVE_GYRO
 	#DEFINES += -DHAVE_SOCKET_LEGACY
 	#-DHAVE_SSL -DHAVE_BUILTINMBEDTLS -DMBEDTLS_SSL_DEBUG_ALL
 	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
@@ -155,7 +169,6 @@ ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=so
 
 CFLAGS	+= -mword-relocations \
 	   -ffast-math \
-	   -Werror=implicit-function-declaration \
 	   $(ARCH)
 
 #CFLAGS	+= -Wall
@@ -202,7 +215,7 @@ CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	 := -g $(ARCH) -O3
 LDFLAGS  += -specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
-CFLAGS   += -std=gnu99 -ffast-math
+CFLAGS   += -std=gnu99 -Werror=implicit-function-declaration
 
 LIB_CORE      :=
 LIB_CORE_FULL :=

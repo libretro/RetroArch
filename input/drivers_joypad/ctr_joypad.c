@@ -162,14 +162,12 @@ static void ctr_joypad_poll(void)
 {
    uint32_t state_tmp;
    circlePosition state_tmp_left_analog, state_tmp_right_analog;
-   touchPosition state_tmp_touch;
 
    hidScanInput();
 
    state_tmp = hidKeysHeld();
    hidCircleRead(&state_tmp_left_analog);
    irrstCstickRead(&state_tmp_right_analog);
-   hidTouchRead(&state_tmp_touch);
 
    pad_state = 0;
    pad_state |= (state_tmp & KEY_DLEFT) ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
