@@ -187,14 +187,18 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
    int pos;
    char raw_game_id[50];
-   char disc_data[DISC_DATA_SIZE_PS1];
+   char *disc_data = malloc(DISC_DATA_SIZE_PS1);
+
+   if (!disc_data)
+      return false;
 
    /* Load data into buffer and use pointers */
-   if (intfstream_seek(fd, 0, SEEK_SET) < 0)
+   if (intfstream_seek(fd, 0, SEEK_SET) < 0
+      || intfstream_read(fd, disc_data, DISC_DATA_SIZE_PS1) <= 0)
+   {
+      free(disc_data);
       return false;
-
-   if (intfstream_read(fd, disc_data, DISC_DATA_SIZE_PS1) <= 0)
-      return false;
+   }
 
    disc_data[DISC_DATA_SIZE_PS1 - 1] = '\0';
 
@@ -238,6 +242,7 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
             string_remove_all_whitespace(s, raw_game_id);
             cue_append_multi_disc_suffix(s, filename);
+            free(disc_data);
             return true;
          }
       }
@@ -247,6 +252,7 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
          string_remove_all_whitespace(s, raw_game_id);
          cue_append_multi_disc_suffix(s, filename);
+         free(disc_data);
          return true;
       }
       else if (string_is_equal_fast(raw_game_id, "PSX.EXE", STRLEN_CONST("PSX.EXE")))
@@ -255,6 +261,7 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
          string_remove_all_whitespace(s, raw_game_id);
          cue_append_multi_disc_suffix(s, filename);
+         free(disc_data);
          return false;
       }
    }
@@ -271,6 +278,7 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    s[9 ] = 'X';
    s[10] = '\0';
    cue_append_multi_disc_suffix(s, filename);
+   free(disc_data);
    return false;
 }
 
@@ -404,14 +412,18 @@ int detect_psp_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
    #define DISC_DATA_SIZE_PSP 40000
    int pos;
-   char disc_data[DISC_DATA_SIZE_PSP];
+   char *disc_data = malloc(DISC_DATA_SIZE_PSP);
+
+   if (!disc_data)
+      return false;
 
    /* Load data into buffer and use pointers */
-   if (intfstream_seek(fd, 0, SEEK_SET) < 0)
+   if (intfstream_seek(fd, 0, SEEK_SET) < 0
+      || intfstream_read(fd, disc_data, DISC_DATA_SIZE_PSP) <= 0)
+   {
+      free(disc_data);
       return false;
-
-   if (intfstream_read(fd, disc_data, DISC_DATA_SIZE_PSP) <= 0)
-      return false;
+   }
 
    disc_data[DISC_DATA_SIZE_PSP - 1] = '\0';
 
@@ -455,11 +467,13 @@ int detect_psp_game(intfstream_t *fd, char *s, size_t len, const char *filename)
             )
          {
             cue_append_multi_disc_suffix(s, filename);
+            free(disc_data);
             return true;
          }
       }
    }
 
+   free(disc_data);
    return false;
 }
 

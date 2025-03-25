@@ -743,13 +743,12 @@ bool command_show_osd_msg(command_t *cmd, const char* arg)
 
 bool command_load_state_slot(command_t *cmd, const char *arg)
 {
-   char state_path[16384];
+   char state_path[PATH_MAX_LENGTH] = "";
    size_t _len                  = 0;
    char reply[128]              = "";
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret                     = false;
-   state_path[0]                = '\0';
    _len  = strlcpy(reply, "LOAD_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
    if (savestates_enabled)
@@ -1362,7 +1361,7 @@ void command_event_init_cheats(
 
 bool command_event_load_entry_state(settings_t *settings)
 {
-   char entry_state_path[PATH_MAX_LENGTH];
+   char entry_state_path[PATH_MAX_LENGTH] = "";
    int entry_path_stats;
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    bool ret                        = false;
@@ -1378,8 +1377,6 @@ bool command_event_load_entry_state(settings_t *settings)
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
       return false;
 #endif
-
-   entry_state_path[0] = '\0';
 
    if (!runloop_get_entry_state_path(
          entry_state_path, sizeof(entry_state_path),
@@ -2112,14 +2109,12 @@ void command_event_remove_current_config(enum override_type type)
 
 bool command_event_main_state(unsigned cmd)
 {
-   char msg[128];
-   char state_path[16384]; /* TODO/FIXME - reduce this */
+   char msg[128]               = "";
+   char state_path[PATH_MAX_LENGTH] = "";
    size_t _len                 = 0;
    settings_t *settings        = config_get_ptr();
    bool savestates_enabled     = core_info_current_supports_savestate();
    bool ret                    = false;
-
-   state_path[0] = msg[0]      = '\0';
 
    if (savestates_enabled)
    {
