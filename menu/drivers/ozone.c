@@ -336,7 +336,7 @@ typedef struct
 {
    const char *str;
    float x;
-   size_t width;
+   int width; /* -1 on error */
    bool show;
 } ozone_footer_label_t;
 
