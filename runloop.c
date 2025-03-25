@@ -7320,7 +7320,7 @@ bool runloop_get_savestate_path(char *s, size_t len, int state_slot)
    return true;
 }
 
-bool runloop_get_replay_path(char *s, size_t len, unsigned slot)
+bool runloop_get_replay_path(char *s, size_t len, int slot)
 {
    size_t _len;
    runloop_state_t *runloop_st = &runloop_state;
@@ -7335,7 +7335,7 @@ bool runloop_get_replay_path(char *s, size_t len, unsigned slot)
 
    _len = strlcpy(s, name_replay, len);
    if (slot >= 0)
-      snprintf(s + _len, len - _len, "%d",  slot);
+      snprintf(s + _len, len - _len, "%d", slot);
 
    return true;
 }
