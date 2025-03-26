@@ -525,7 +525,7 @@ static void threaded_worker(void *userdata)
 
       slock_unlock(running_lock);
       task->handler(task);
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(_3DS)
       /* Workaround emscripten pthread bug where not parking the
          thread will prevent other important stuff from
          happening. Maybe due to lack of signals implementation in
