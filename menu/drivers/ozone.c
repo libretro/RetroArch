@@ -7684,7 +7684,7 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
 
 /* Returns true if specified category is currently
  * displayed on screen */
-static bool INLINE ozone_category_onscreen(
+static INLINE bool ozone_category_onscreen(
       ozone_handle_t *ozone,
       size_t idx)
 {
@@ -7731,7 +7731,7 @@ static void ozone_auto_select_onscreen_entry(
    }
 }
 
-static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone,
+static INLINE bool ozone_metadata_override_available(ozone_handle_t *ozone,
       unsigned menu_left_thumbnails)
 {
    /* Ugly construct...
@@ -7759,7 +7759,7 @@ static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone,
                (ozone->thumbnails_right_status_prev <= GFX_THUMBNAIL_STATUS_AVAILABLE)));
 }
 
-static bool INLINE ozone_fullscreen_thumbnails_available(ozone_handle_t *ozone,
+static INLINE bool ozone_fullscreen_thumbnails_available(ozone_handle_t *ozone,
       struct menu_state *menu_st)
 {
    bool ret =
@@ -9523,7 +9523,7 @@ static void ozone_unload_thumbnail_textures(void *data)
    gfx_thumbnail_reset(&ozone->thumbnails.savestate);
 }
 
-static void INLINE ozone_font_free(font_data_impl_t *font_data)
+static INLINE void ozone_font_free(font_data_impl_t *font_data)
 {
    if (font_data->font)
       font_driver_free(font_data->font);

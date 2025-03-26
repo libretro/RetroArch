@@ -214,7 +214,7 @@ static int16_t input_wl_state(
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
+         if (binds)
          {
             int id_minus_key      = 0;
             int id_plus_key       = 0;

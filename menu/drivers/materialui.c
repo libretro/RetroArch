@@ -3348,7 +3348,7 @@ static float materialui_get_scroll(materialui_handle_t *mui,
 
 /* Returns true if specified entry is currently
  * displayed on screen */
-static bool INLINE materialui_entry_onscreen(
+static INLINE bool materialui_entry_onscreen(
       materialui_handle_t *mui, size_t idx)
 {
    return   (idx >= mui->first_onscreen_entry)

@@ -1055,6 +1055,8 @@ size_t fill_pathname_join_delim(char *s, const char *dir,
       _len     = strlen(dir);
    else
       _len     = strlcpy(s, dir, len);
+   if (len - _len < 2)
+      return _len;
    s[_len++]   = delim;
    s[_len  ]   = '\0';
    if (path)
