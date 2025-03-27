@@ -7503,9 +7503,6 @@ static int action_ok_push_dropdown_item_input_retropad_bind(const char *path,
 {
    rarch_setting_t *setting;
    enum msg_hash_enums enum_idx;
-   retro_ctx_controller_info_t pad;
-   unsigned port                = 0;
-   unsigned device              = 0;
 
    const char *menu_path        = NULL;
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
