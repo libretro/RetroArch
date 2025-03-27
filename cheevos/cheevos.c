@@ -309,7 +309,7 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
             strlcpy(title,
                msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), sizeof(title));
 
-         snprintf(subtitle, sizeof(subtitle), "%s (%d)", cheevo->title, cheevo->points);
+         snprintf(subtitle, sizeof(subtitle), "%s (%lu)", cheevo->title, (unsigned long)cheevo->points);
 
          gfx_widgets_push_achievement(title, subtitle, cheevo->badge_name);
       }

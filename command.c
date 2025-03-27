@@ -992,7 +992,7 @@ bool command_get_status(command_t *cmd, const char* arg)
       _len    += strlcpy(reply + _len,
             path_basename(path_get(RARCH_PATH_BASENAME)), sizeof(reply) - _len);
       _len    += snprintf(reply + _len, sizeof(reply) - _len,
-            ",crc32=%x\n", content_get_crc());
+            ",crc32=%lx\n", (unsigned long)content_get_crc());
    }
    else
        _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
