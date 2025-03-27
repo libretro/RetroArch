@@ -6466,78 +6466,57 @@ static size_t setting_get_string_representation_shader_subframes(
 static size_t setting_get_string_representation_video_frame_delay(
       rarch_setting_t *setting, char *s, size_t len)
 {
-   size_t _len = 0;
+   size_t _len                    = 0;
    settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   const char *label              = NULL;
+   unsigned int value;
+   file_list_t *menu_stack;
 
-   if (!setting)
+   if (!setting || !settings)
       return 0;
 
-   if (settings && settings->bools.video_frame_delay_auto)
-   {
-      video_driver_state_t *video_st = video_state_get_ptr();
-      struct menu_state *menu_st     = menu_state_get_ptr();
-      file_list_t *menu_stack        = MENU_LIST_GET(menu_st->entries.list, 0);
-      const char *label              = NULL;
-      const char *target_unit        = (*setting->value.target.unsigned_integer >= 20 ? "\%" : "ms");
+   value = *setting->value.target.unsigned_integer;
 
-      if (menu_stack && menu_stack->size)
-         label = menu_stack->list[menu_stack->size - 1].label;
-
-      if (*setting->value.target.unsigned_integer == 0)
-      {
-         _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC), len);
-         if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
-            _len += snprintf(s + _len, len - _len, " (%ums %s)",
-                  video_st->frame_delay_effective,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
-      }
-      else
-      {
-         if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
-         {
-            if (*setting->value.target.unsigned_integer >= 20)
-               _len = snprintf(s, len, "%u%s (%ums)",
-                     *setting->value.target.unsigned_integer,
-                     target_unit,
-                     (unsigned)(1 / settings->floats.video_refresh_rate
-                     * 1000 * (*setting->value.target.unsigned_integer / 100.0f)));
-            else
-            {
-               _len  = snprintf(s, len, "%u",
-                     *setting->value.target.unsigned_integer);
-               _len += strlcpy(s + _len, target_unit, len - _len);
-            }
-         }
-         else
-         {
-            if (*setting->value.target.unsigned_integer >= 20)
-               _len = snprintf(s, len, "%u%s (%ums, %ums %s)",
-                     *setting->value.target.unsigned_integer,
-                     target_unit,
-                     (unsigned)(1 / settings->floats.video_refresh_rate
-                     * 1000 * (*setting->value.target.unsigned_integer / 100.0f)),
-                     video_st->frame_delay_effective,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
-            else
-               _len = snprintf(s, len, "%u%s (%ums %s)",
-                     *setting->value.target.unsigned_integer,
-                     target_unit,
-                     video_st->frame_delay_effective,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
-         }
-      }
-   }
-   else
+   if (!settings->bools.video_frame_delay_auto
+     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
    {
-      const char *target_unit = (*setting->value.target.unsigned_integer >= 20 ? "\%" : "ms");
-      _len  = snprintf(s, len, "%u",
-            *setting->value.target.unsigned_integer);
-      _len += strlcpy(s + _len, target_unit, len - _len);
-      if (*setting->value.target.unsigned_integer >= 20)
-         _len += snprintf(s + _len, len - _len, " (%ums)",
+      if (value >= 20)
+         _len = snprintf(s, len, "%u%% (%ums)",
+               value,
                (unsigned)(1 / settings->floats.video_refresh_rate
-                  * 1000 * (*setting->value.target.unsigned_integer / 100.0f)));
+               * 1000 * (value / 100.0f)));
+      else
+         _len  = snprintf(s, len, "%ums", value);
+      return _len;
    }
+
+   menu_stack = MENU_LIST_GET(menu_st->entries.list, 0);
+   if (menu_stack && menu_stack->size)
+      label = menu_stack->list[menu_stack->size - 1].label;
+
+   if (value == 0)
+   {
+      _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC), len);
+      if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
+         _len += snprintf(s + _len, len - _len, " (%ums %s)",
+               video_st->frame_delay_effective,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+   }
+   else if (value >= 20)
+      _len = snprintf(s, len, "%u%% (%ums, %ums %s)",
+             value,
+             (unsigned)(1 / settings->floats.video_refresh_rate
+             * 1000 * (value / 100.0f)),
+             video_st->frame_delay_effective,
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+   else
+      _len = snprintf(s, len, "%ums (%ums %s)",
+             value,
+             video_st->frame_delay_effective,
+             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+
    return _len;
 }
 
