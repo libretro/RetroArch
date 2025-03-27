@@ -2405,7 +2405,6 @@ static void materialui_update_fullscreen_thumbnail_label(
 {
    struct menu_state *menu_st  = menu_state_get_ptr();
    size_t selection            = menu_st->selection_ptr;
-   const char *thumbnail_label = NULL;
    menu_entry_t selected_entry;
 
    /* Cache selected entry label

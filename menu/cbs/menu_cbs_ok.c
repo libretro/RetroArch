@@ -4670,7 +4670,6 @@ static int action_ok_cheat_delete(const char *path,
    char msg[128];
    size_t new_selection_ptr   = 0;
    struct menu_state *menu_st = menu_state_get_ptr();
-   size_t selection           = menu_st->selection_ptr;
    unsigned int new_size      = cheat_manager_get_size() - 1;
 
    if (new_size >0)
