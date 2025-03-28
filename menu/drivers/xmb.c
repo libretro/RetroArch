@@ -6537,7 +6537,6 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 
    if (reinit_textures)
    {
-      settings_t *settings = config_get_ptr();
       gfx_display_deinit_white_texture();
       gfx_display_init_white_texture();
       xmb->assets_missing     = false;
