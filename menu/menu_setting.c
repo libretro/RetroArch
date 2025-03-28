@@ -6889,7 +6889,6 @@ static size_t setting_get_string_representation_retropad_bind(
 {
    if (setting)
    {
-      settings_t *settings = config_get_ptr();
       int retro_id         = *setting->value.target.integer;
 
       if (retro_id < 0)
