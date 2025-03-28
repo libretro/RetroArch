@@ -8418,7 +8418,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       const char *str             = menu_input_dialog_get_buffer();
       const char *label           = menu_st->input_dialog_kb_label;
-      size_t _len                 = strlcpy(msg, label, sizeof(msg));
+      size_t _len                 = strlcpy(msg, label, sizeof(msg) - 2);
       msg[  _len]                 = '\n';
       msg[++_len]                 = '\0';
       strlcpy(msg       + _len,

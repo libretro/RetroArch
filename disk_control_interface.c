@@ -623,7 +623,7 @@ bool disk_control_append_image(
       goto error;
 
    /* Display log */
-   _len        = strlcpy(msg, msg_hash_to_str(MSG_APPENDED_DISK), sizeof(msg));
+   _len        = strlcpy(msg, msg_hash_to_str(MSG_APPENDED_DISK), sizeof(msg) - 3);
    msg[  _len] = ':';
    msg[++_len] = ' ';
    msg[++_len] = '\0';
@@ -653,7 +653,7 @@ error:
       disk_control_set_eject_state(disk_control, false, false);
 
    _len        = strlcpy(msg,
-         msg_hash_to_str(MSG_FAILED_TO_APPEND_DISK), sizeof(msg));
+         msg_hash_to_str(MSG_FAILED_TO_APPEND_DISK), sizeof(msg) - 3);
    msg[  _len] = ':';
    msg[++_len] = ' ';
    msg[++_len] = '\0';

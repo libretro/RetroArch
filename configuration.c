@@ -4475,7 +4475,7 @@ bool config_load_override(void *data)
          char tmp_path[PATH_MAX_LENGTH];
          size_t _len      = strlcpy(tmp_path,
                path_get(RARCH_PATH_CONFIG_OVERRIDE),
-               sizeof(tmp_path));
+               sizeof(tmp_path) - 2);
          tmp_path[  _len] = '|';
          tmp_path[++_len] = '\0';
          strlcpy(tmp_path + _len, core_path, sizeof(tmp_path) - _len);
@@ -4503,7 +4503,7 @@ bool config_load_override(void *data)
             char tmp_path[PATH_MAX_LENGTH];
             size_t _len      = strlcpy(tmp_path,
                   path_get(RARCH_PATH_CONFIG_OVERRIDE),
-                  sizeof(tmp_path));
+                  sizeof(tmp_path) - 2);
             tmp_path[  _len] = '|';
             tmp_path[++_len] = '\0';
             strlcpy(tmp_path + _len, content_path, sizeof(tmp_path) - _len);
@@ -4529,7 +4529,7 @@ bool config_load_override(void *data)
             char tmp_path[PATH_MAX_LENGTH];
             size_t _len      = strlcpy(tmp_path,
                   path_get(RARCH_PATH_CONFIG_OVERRIDE),
-                  sizeof(tmp_path));
+                  sizeof(tmp_path) - 2);
             tmp_path[  _len] = '|';
             tmp_path[++_len] = '\0';
             strlcpy(tmp_path + _len, game_path, sizeof(tmp_path) - _len);

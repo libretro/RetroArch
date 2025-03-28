@@ -867,7 +867,7 @@ static void content_file_get_path(
             char info_path[PATH_MAX_LENGTH];
             /* Build 'complete' archive file path */
             size_t _len       = strlcpy(info_path,
-                  content_path, sizeof(info_path));
+                  content_path, sizeof(info_path) - 2);
             info_path[_len  ] = '#';
             info_path[_len+1] = '\0';
             _len             += 1;

@@ -855,7 +855,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       lgame_id[1]          = '\0';
       strncpy(rgame_id, &raw_game_id[1], __len - 1);
       rgame_id[__len - 1]  = '\0';
-      _len                 = strlcpy(pre_game_id, lgame_id, sizeof(pre_game_id));
+      _len                 = strlcpy(pre_game_id, lgame_id, sizeof(pre_game_id) - 2);
       pre_game_id[  _len]  = '-';
       pre_game_id[++_len]  = '\0';
       strlcpy(pre_game_id + _len, rgame_id, sizeof(pre_game_id) - _len);
