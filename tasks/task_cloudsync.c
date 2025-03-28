@@ -1199,7 +1199,7 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
 
    slock_lock(tcs_running_lock);
    /* we can transfer more than one file at a time */
-   if (sync_state->waiting > ((sync_state->phase == CLOUD_SYNC_PHASE_DIFF) ? 4 : 0))
+   if (sync_state->waiting > ((sync_state->phase == CLOUD_SYNC_PHASE_DIFF) ? 4U : 0U))
    {
       task->when = cpu_features_get_time_usec() + 17 * 1000; /* 17ms */
       slock_unlock(tcs_running_lock);
