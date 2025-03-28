@@ -7157,7 +7157,6 @@ static void materialui_show_fullscreen_thumbnails(
       materialui_handle_t *mui, struct menu_state *menu_st,
       size_t selection)
 {
-   menu_entry_t selected_entry;
    gfx_animation_ctx_entry_t animation_entry;
    gfx_thumbnail_t *primary_thumbnail   = NULL;
    gfx_thumbnail_t *secondary_thumbnail = NULL;
