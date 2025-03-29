@@ -19,6 +19,7 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <emscripten/html5.h>
+#include "../../frontend/drivers/platform_emscripten.h"
 
 #include "../input_driver.h"
 
@@ -29,9 +30,14 @@
 #define NUM_BUTTONS 64
 #define NUM_AXES 64
 
+typedef struct
+{
+   struct EmscriptenGamepadEvent pads[DEFAULT_MAX_PADS];
+   bool live_pads[DEFAULT_MAX_PADS];
+} rwebpad_joypad_data_t;
+
 /* TODO/FIXME - static globals */
-static struct EmscriptenGamepadEvent _pads[DEFAULT_MAX_PADS];
-static bool _live_pads[DEFAULT_MAX_PADS] = {0};
+static rwebpad_joypad_data_t *rwebpad_joypad_data = NULL;
 
 static EM_BOOL rwebpad_gamepad_cb(int event_type,
    const EmscriptenGamepadEvent *gamepad_event, void *user_data)
@@ -42,8 +48,8 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
    switch (event_type)
    {
       case EMSCRIPTEN_EVENT_GAMEPADCONNECTED:
-         _pads[gamepad_event->index] = *gamepad_event;
-         _live_pads[gamepad_event->index] = true;
+         rwebpad_joypad_data->pads[gamepad_event->index] = *gamepad_event;
+         rwebpad_joypad_data->live_pads[gamepad_event->index] = true;
          input_autoconfigure_connect(
                gamepad_event->id,    /* name */
                NULL,                 /* display name */
@@ -53,7 +59,7 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
                pid);                 /* pid */
          break;
       case EMSCRIPTEN_EVENT_GAMEPADDISCONNECTED:
-         _live_pads[gamepad_event->index] = false;
+         rwebpad_joypad_data->live_pads[gamepad_event->index] = false;
          input_autoconfigure_disconnect(gamepad_event->index,
                rwebpad_joypad.ident);
          break;
@@ -70,7 +76,14 @@ static void *rwebpad_joypad_init(void *data)
    if (r == EMSCRIPTEN_RESULT_NOT_SUPPORTED)
       return NULL;
 
-   /* callbacks needs to be registered for gamepads to connect */
+   if (!rwebpad_joypad_data)
+   {
+      rwebpad_joypad_data = (rwebpad_joypad_data_t*)calloc(1, sizeof(rwebpad_joypad_data_t));
+      if (!rwebpad_joypad_data)
+         return NULL;
+   }
+
+   /* callbacks need to be registered for gamepads to connect */
    r = emscripten_set_gamepadconnected_callback(NULL, false,
       rwebpad_gamepad_cb);
 
@@ -82,32 +95,32 @@ static void *rwebpad_joypad_init(void *data)
 
 static const char *rwebpad_joypad_name(unsigned pad)
 {
-   if (pad >= DEFAULT_MAX_PADS || !_live_pads[pad]) {
+   if (pad >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[pad]) {
       return "";
    }
-   return _pads[pad].id;
+   return rwebpad_joypad_data->pads[pad].id;
 }
 
 static int32_t rwebpad_joypad_button(unsigned port, uint16_t joykey)
 {
    EmscriptenGamepadEvent gamepad_state;
-   if (port >= DEFAULT_MAX_PADS || !_live_pads[port])
+   if (port >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port])
       return 0;
-   gamepad_state = _pads[port];
+   gamepad_state = rwebpad_joypad_data->pads[port];
    if (joykey < gamepad_state.numButtons)
       return gamepad_state.digitalButton[joykey];
    return 0;
 }
 
-static void rwebpad_joypad_get_buttons(unsigned port_num, input_bits_t *state)
+static void rwebpad_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
    EmscriptenGamepadEvent gamepad_state;
    unsigned i;
-   if (port_num >= DEFAULT_MAX_PADS || !_live_pads[port_num]) {
+   if (port >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port]) {
       BIT256_CLEAR_ALL_PTR(state);
       return;
    }
-   gamepad_state = _pads[port_num];
+   gamepad_state = rwebpad_joypad_data->pads[port];
    for (i = 0; i < gamepad_state.numButtons; i++)
    {
       if (gamepad_state.digitalButton[i])
@@ -138,10 +151,10 @@ static int16_t rwebpad_joypad_axis_state(
 
 static int16_t rwebpad_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   if (port >= DEFAULT_MAX_PADS || !_live_pads[port]) {
+   if (port >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port]) {
       return 0;
    }
-   return rwebpad_joypad_axis_state(&_pads[port], port, joyaxis);
+   return rwebpad_joypad_axis_state(&rwebpad_joypad_data->pads[port], port, joyaxis);
 }
 
 static int16_t rwebpad_joypad_state(
@@ -153,9 +166,9 @@ static int16_t rwebpad_joypad_state(
    EmscriptenGamepadEvent gamepad_state;
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
-   if (port_idx >= DEFAULT_MAX_PADS || !_live_pads[port])
+   if (port_idx >= DEFAULT_MAX_PADS || !rwebpad_joypad_data->live_pads[port])
       return 0;
-   gamepad_state = _pads[port];
+   gamepad_state = rwebpad_joypad_data->pads[port];
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
       /* Auto-binds are per joypad, not per user. */
@@ -179,19 +192,25 @@ static int16_t rwebpad_joypad_state(
    return ret;
 }
 
+static void rwebpad_joypad_do_poll(void *data)
+{
+   int i;
+   emscripten_sample_gamepad_data();
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
+   {
+      if (rwebpad_joypad_data->live_pads[i])
+         emscripten_get_gamepad_status(i, &rwebpad_joypad_data->pads[i]);
+   }
+}
+
 static void rwebpad_joypad_poll(void)
 {
-   emscripten_sample_gamepad_data();
-   for (int i = 0; i < DEFAULT_MAX_PADS; i++) {
-      if (_live_pads[i]) {
-         emscripten_get_gamepad_status(i, &_pads[i]);
-      }
-   }
+   platform_emscripten_run_on_browser_thread_sync(rwebpad_joypad_do_poll, NULL);
 }
 
 static bool rwebpad_joypad_query_pad(unsigned pad)
 {
-   return _live_pads[pad];
+   return rwebpad_joypad_data->live_pads[pad];
 }
 
 static void rwebpad_joypad_destroy(void) { }

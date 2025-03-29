@@ -21,6 +21,7 @@
 
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+#include "../../frontend/drivers/platform_emscripten.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -33,8 +34,6 @@
 #include "../common/egl_common.h"
 #endif
 
-void platform_emscripten_get_canvas_size(int *width, int *height);
-
 typedef struct
 {
 #ifdef HAVE_EGL
@@ -46,10 +45,7 @@ typedef struct
 
 static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
 {
-   if (interval == 0)
-      emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
-   else
-      emscripten_set_main_loop_timing(EM_TIMING_RAF, interval);
+   platform_emscripten_set_main_loop_interval(interval);
 }
 
 static void gfx_ctx_emscripten_check_window(void *data, bool *quit,

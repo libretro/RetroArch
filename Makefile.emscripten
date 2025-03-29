@@ -8,9 +8,6 @@ TARGET := $(LIBRETRO)_libretro.js
 endif
 endif
 
-EOPT = USE_ZLIB=1 # Emscripten specific options
-EOPTS = $(addprefix -s $(EMPTY), $(EOPT)) # Add '-s ' to each option
-
 OS = Emscripten
 OBJ :=
 DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN -DEMSCRIPTEN -DNO_CANVAS_RESIZE
@@ -20,7 +17,7 @@ HAVE_PATCH = 1
 HAVE_DSP_FILTER = 1
 HAVE_VIDEO_FILTER = 1
 HAVE_OVERLAY = 1
-HAVE_NETWORKING = 1
+HAVE_NETWORKING ?= 1
 HAVE_LIBRETRODB = 1
 HAVE_COMPRESSION = 1
 HAVE_UPDATE_ASSETS = 1
@@ -32,10 +29,10 @@ HAVE_AUDIOMIXER = 1
 HAVE_CC_RESAMPLER = 1
 HAVE_EGL ?= 0
 HAVE_OPENGLES = 1
-HAVE_RJPEG  = 0
-HAVE_RPNG   = 1
+HAVE_RJPEG = 0
+HAVE_RPNG = 1
 HAVE_EMSCRIPTEN = 1
-HAVE_MENU = 1
+HAVE_MENU ?= 1
 HAVE_GFX_WIDGETS = 1
 HAVE_RGUI = 1
 HAVE_SDL = 0
@@ -47,16 +44,23 @@ HAVE_STATIC_AUDIO_FILTERS = 1
 HAVE_STB_FONT = 1
 HAVE_CONFIGFILE = 1
 HAVE_COMMAND = 1
-HAVE_STDIN_CMD = 1
+HAVE_STDIN_CMD ?= 1
 HAVE_CHEATS = 1
 HAVE_IBXM = 1
 HAVE_CORE_INFO_CACHE = 1
 HAVE_7ZIP = 1
 HAVE_BSV_MOVIE = 1
-HAVE_AL = 1
 HAVE_CHD ?= 0
 HAVE_NETPLAYDISCOVERY ?= 0
+
+HAVE_AL ?= 1
+
+# enables pthreads, requires special headers on the web server:
+# see https://web.dev/articles/coop-coep
 HAVE_THREADS ?= 0
+
+# requires HAVE_THREADS
+HAVE_AUDIOWORKLET ?= 0
 
 # WARNING -- READ BEFORE ENABLING
 # The rwebaudio driver is known to have several audio bugs, such as
@@ -64,19 +68,38 @@ HAVE_THREADS ?= 0
 #  It works perfectly on chrome, but even firefox has really bad audio quality.
 #  I should also note, the driver on iOS is completely broken (crashes the page).
 #  You have been warned.
-HAVE_RWEBAUDIO = 0
+HAVE_RWEBAUDIO ?= 0
+
+# whether the browser thread is allowed to block to wait for audio to play,
+# may lead to the issues mentioned above.
+# currently this variable is only used by audioworklet;
+# rwebaudio will always busywait and openal will never busywait.
+ALLOW_AUDIO_BUSYWAIT ?= 0
+
+# minimal asyncify; better performance than full asyncify,
+# but sleeping on the main thread is only possible in some places.
+MIN_ASYNC ?= 0
+
+# runs RetroArch on a pthread instead of the browser thread; requires HAVE_THREADS
+PROXY_TO_PTHREAD ?= 0
+
+# recommended FS when using HAVE_THREADS
+HAVE_WASMFS ?= 0
+
+# enables OPFS (origin private file system) and FETCHFS, requires PROXY_TO_PTHREAD
+HAVE_EXTRA_WASMFS ?= 0
+
+# enable javascript filesystem tracking, incompatible with HAVE_WASMFS
+FS_DEBUG ?= 0
 
 # help diagnose GL problems (can cause issues in normal operation)
 GL_DEBUG ?= 0
 
-# enable javascript filesystem tracking
-FS_DEBUG = 0
+# does nothing on its own, but automatically selected by some other options
+WASM_WORKERS = 0
 
 HAVE_OPENGLES ?= 1
 HAVE_OPENGLES3 ?= 0
-
-HAVE_WASMFS ?= 0
-PROXY_TO_PTHREAD ?= 0
 
 ASYNC ?= 0
 LTO ?= 0
@@ -102,19 +125,24 @@ OBJDIR := obj-emscripten
 EXPORTED_FUNCTIONS = _main,_malloc,_free,_cmd_savefiles,_cmd_save_state,_cmd_load_state,_cmd_undo_save_state,_cmd_undo_load_state,_cmd_take_screenshot,\
 _cmd_toggle_menu,_cmd_reload_config,_cmd_toggle_grab_mouse,_cmd_toggle_game_focus,_cmd_reset,_cmd_toggle_pause,_cmd_pause,_cmd_unpause,\
 _cmd_set_volume,_cmd_set_shader,_cmd_cheat_set_code,_cmd_cheat_get_code,_cmd_cheat_toggle_index,_cmd_cheat_get_code_state,_cmd_cheat_realloc,\
-_cmd_cheat_get_size,_cmd_cheat_apply_cheats,_update_canvas_dimensions,_update_window_hidden,_update_power_state,_update_memory_usage,\
-EmscriptenSendCommand,EmscriptenReceiveCommandReply
+_cmd_cheat_get_size,_cmd_cheat_apply_cheats,EmscriptenSendCommand,EmscriptenReceiveCommandReply
 
 EXPORTS := callMain,FS,PATH,ERRNO_CODES,ENV,stringToNewUTF8,UTF8ToString,Browser,EmscriptenSendCommand,EmscriptenReceiveCommandReply
 
-LIBS    := -s USE_ZLIB=1
+LIBS   := -s USE_ZLIB=1
+CFLAGS := -s USE_ZLIB=1
+
+ifeq ($(HAVE_EXTRA_WASMFS), 1)
+   LIBS += -lfetchfs.js -lopfs.js
+   DEFINES += -DHAVE_EXTRA_WASMFS
+   override HAVE_WASMFS = 1
+   ifeq ($(PROXY_TO_PTHREAD), 0)
+      $(error ERROR: HAVE_EXTRA_WASMFS requires PROXY_TO_PTHREAD)
+   endif
+endif
 
 ifeq ($(HAVE_WASMFS), 1)
-   LIBS += -s WASMFS -s FORCE_FILESYSTEM=1 -lfetchfs.js -lopfs.js
-   DEFINES += -DHAVE_WASMFS
-   ifeq ($(PROXY_TO_PTHREAD), 0)
-      $(error ERROR: WASMFS requires PROXY_TO_PTHREAD)
-   endif
+   LIBS += -s WASMFS -s FORCE_FILESYSTEM=1
 endif
 
 # note: real PROXY_TO_PTHREAD is not used here; we do the pthread management ourselves
@@ -122,6 +150,7 @@ ifeq ($(PROXY_TO_PTHREAD), 1)
    LIBS += -s OFFSCREENCANVAS_SUPPORT
    DEFINES += -DPROXY_TO_PTHREAD -DEMSCRIPTEN_STACK_SIZE=$(STACK_SIZE)
    override HAVE_THREADS = 1
+   override WASM_WORKERS = 1
    # use the default stack size for the browser thread; the RetroArch thread will be created with the specified stack size
    override STACK_SIZE = 4194304
 else ifeq ($(HAVE_AL), 1)
@@ -165,6 +194,40 @@ ifeq ($(HAVE_RWEBAUDIO), 1)
    DEFINES += -DHAVE_RWEBAUDIO
 endif
 
+ifeq ($(HAVE_AUDIOWORKLET), 1)
+   LDFLAGS += -s AUDIO_WORKLET=1
+   DEFINES += -DHAVE_AUDIOWORKLET
+   override WASM_WORKERS = 1
+   ifeq ($(HAVE_THREADS), 0)
+      $(error ERROR: AUDIOWORKLET requires HAVE_THREADS)
+   endif
+   ifeq ($(PROXY_TO_PTHREAD), 1)
+   else ifeq ($(ASYNC), 1)
+   else
+      DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
+      ifeq ($(MIN_ASYNC), 1)
+         DEFINES += -DEMSCRIPTEN_AUDIO_ASYNC_BLOCK
+      else
+         DEFINES += -DEMSCRIPTEN_AUDIO_FAKE_BLOCK
+      endif
+      ifneq ($(ALLOW_AUDIO_BUSYWAIT), 1)
+         DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
+      endif
+   endif
+endif
+
+ifeq ($(ALLOW_AUDIO_BUSYWAIT), 1)
+   DEFINES += -DEMSCRIPTEN_AUDIO_BUSYWAIT
+endif
+
+# explanation of some of these defines:
+# EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK: audio blocking occurs in the main loop instead of in the audio driver functions.
+# EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK: along with above, enables external blocking in the write function.
+# ALLOW_AUDIO_BUSYWAIT: write function will busywait. init function may still use an external block.
+# EMSCRIPTEN_AUDIO_ASYNC_BLOCK: external block uses emscripten_sleep (requires MIN_ASYNC).
+# EMSCRIPTEN_AUDIO_FAKE_BLOCK: external block uses main loop timing (doesn't require asyncify).
+# when building with either PROXY_TO_PTHREAD or ASYNC (full asyncify), none of the above are required.
+
 ifeq ($(HAVE_AL), 1)
    LDFLAGS += -lopenal
    DEFINES += -DHAVE_AL
@@ -175,11 +238,21 @@ ifeq ($(HAVE_THREADS), 1)
    CFLAGS += -pthread -s SHARED_MEMORY
 endif
 
+ifeq ($(WASM_WORKERS), 1)
+   LDFLAGS += -s WASM_WORKERS=2
+endif
+
 ifeq ($(ASYNC), 1)
-   DEFINES += -DEMSCRIPTEN_ASYNCIFY
+   DEFINES += -DEMSCRIPTEN_ASYNCIFY -DEMSCRIPTEN_FULL_ASYNCIFY
    LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=8192
    ifeq ($(DEBUG), 1)
-      LDFLAGS += -s ASYNCIFY_DEBUG=1 # -s ASYNCIFY_ADVISE
+      #LDFLAGS += -s ASYNCIFY_DEBUG=1 # broken?
+   endif
+else ifeq ($(MIN_ASYNC), 1)
+   DEFINES += -DEMSCRIPTEN_ASYNCIFY -DEMSCRIPTEN_MIN_ASYNCIFY
+   LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=8192 -s ASYNCIFY_IGNORE_INDIRECT=1 -s ASYNCIFY_ADD='dynCall_*,emscripten_mainloop' -s ASYNCIFY_REMOVE='threaded_worker'
+   ifeq ($(DEBUG), 1)
+      LDFLAGS += -s ASYNCIFY_ADVISE #-s ASYNCIFY_DEBUG=1
    endif
 endif
 
@@ -202,7 +275,7 @@ ifneq ($(V), 1)
 endif
 
 ifeq ($(DEBUG), 1)
-   LDFLAGS += -O0 -g -gsource-map -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
+   LDFLAGS += -O0 -g -gsource-map -s SAFE_HEAP=2 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
    # -O0 in cflags gives "too many locals" errors
    CFLAGS += -O1 -g -gsource-map
 else
@@ -223,19 +296,25 @@ all: $(TARGET)
 $(libretro_new) : $(libretro)
 	mv -f $(libretro) $(libretro_new)
 
+# until emscripten adds something like WASM_WORKERS=2 but for audio worklets, DIY.
 $(TARGET): $(RARCH_OBJ) $(libretro_new)
 	@$(if $(Q), $(shell echo echo "LD $@ \<obj\> $(libretro_new) $(LIBS) $(LDFLAGS)"),)
 	$(Q)$(LD) -o $@ $(RARCH_OBJ) $(libretro_new) $(LIBS) $(LDFLAGS)
+	@if [ "$(HAVE_AUDIOWORKLET)" = 1 ]; then\
+		tr -d '\n' < "$${TARGET%%\.js}.aw.js" | sed -e "s/[\/&]/\\\\&/g" -e "s/'/\\\\\\\\&/g" > _audioworklet.js;\
+		sed -i "s/\"$${TARGET%%\.js}\.aw\.js\"/URL.createObjectURL(new Blob(['$$(cat _audioworklet.js)'],{type:'text\/javascript'}))/" "$@";\
+		rm "$${TARGET%%\.js}.aw.js" _audioworklet.js;\
+	fi
 
 $(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) $(EOPTS) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
-	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) $(EOPTS) -c -o $@ $<
+	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
 
 clean:
 	rm -rf $(OBJDIR)

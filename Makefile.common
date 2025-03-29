@@ -790,6 +790,9 @@ ifeq ($(HAVE_EMSCRIPTEN), 1)
    ifeq ($(HAVE_RWEBAUDIO), 1)
       OBJ += audio/drivers/rwebaudio.o
    endif
+   ifeq ($(HAVE_AUDIOWORKLET), 1)
+      OBJ += audio/drivers/audioworklet.o
+   endif
 endif
 
 ifeq ($(HAVE_BLUETOOTH), 1)
