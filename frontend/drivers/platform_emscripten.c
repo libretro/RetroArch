@@ -54,11 +54,12 @@
 #include "../../cheat_manager.h"
 #include "../../audio/audio_driver.h"
 
-#ifdef HAVE_WASMFS
+#ifdef HAVE_EXTRA_WASMFS
 #include <emscripten/wasmfs.h>
 #endif
 
 #ifdef PROXY_TO_PTHREAD
+#include <emscripten/wasm_worker.h>
 #include <emscripten/threading.h>
 #include <emscripten/proxying.h>
 #include <emscripten/atomic.h>
@@ -69,6 +70,8 @@
 #define PLATFORM_GETVAL(type, addr) *addr
 #endif
 
+#include "platform_emscripten.h"
+
 void emscripten_mainloop(void);
 void PlatformEmscriptenWatchCanvasSizeAndDpr(double *dpr);
 void PlatformEmscriptenWatchWindowVisibility(void);
@@ -77,13 +80,20 @@ void PlatformEmscriptenMemoryUsageInit(void);
 
 typedef struct
 {
+#ifdef PROXY_TO_PTHREAD
+   pthread_t program_thread_id;
+   emscripten_lock_t raf_lock;
+   emscripten_condvar_t raf_cond;
+#endif
    uint64_t memory_used;
    uint64_t memory_limit;
    double device_pixel_ratio;
+   int raf_interval;
    int canvas_width;
    int canvas_height;
    int power_state_discharge_time;
    float power_state_level;
+   bool has_async_atomics;
    volatile bool power_state_charging;
    volatile bool power_state_supported;
    volatile bool window_hidden;
@@ -222,7 +232,7 @@ void cmd_cheat_apply_cheats(void)
 
 /* javascript callbacks */
 
-void update_canvas_dimensions(int width, int height, double *dpr)
+void platform_emscripten_update_canvas_dimensions(int width, int height, double *dpr)
 {
    printf("[INFO] Setting real canvas size: %d x %d\n", width, height);
    emscripten_set_canvas_element_size("#canvas", width, height);
@@ -233,14 +243,14 @@ void update_canvas_dimensions(int width, int height, double *dpr)
    PLATFORM_SETVAL(f64, &emscripten_platform_data->device_pixel_ratio, *dpr);
 }
 
-void update_window_hidden(bool hidden)
+void platform_emscripten_update_window_hidden(bool hidden)
 {
    if (!emscripten_platform_data)
       return;
    emscripten_platform_data->window_hidden = hidden;
 }
 
-void update_power_state(bool supported, int discharge_time, float level, bool charging)
+void platform_emscripten_update_power_state(bool supported, int discharge_time, float level, bool charging)
 {
    if (!emscripten_platform_data)
       return;
@@ -250,7 +260,7 @@ void update_power_state(bool supported, int discharge_time, float level, bool ch
    PLATFORM_SETVAL(f32, &emscripten_platform_data->power_state_level,          level);
 }
 
-void update_memory_usage(uint32_t used1, uint32_t used2, uint32_t limit1, uint32_t limit2)
+void platform_emscripten_update_memory_usage(uint32_t used1, uint32_t used2, uint32_t limit1, uint32_t limit2)
 {
    if (!emscripten_platform_data)
       return;
@@ -258,7 +268,7 @@ void update_memory_usage(uint32_t used1, uint32_t used2, uint32_t limit1, uint32
    PLATFORM_SETVAL(u64, &emscripten_platform_data->memory_limit, limit1 | ((uint64_t)limit2 << 32));
 }
 
-void PlatformEmscriptenCommandRaiseFlag()
+void platform_emscripten_command_raise_flag()
 {
    if (!emscripten_platform_data)
       return;
@@ -266,8 +276,36 @@ void PlatformEmscriptenCommandRaiseFlag()
 }
 
 /* platform specific c helpers */
+/* see platform_emscripten.h for documentation. */
 
-void PlatformEmscriptenCommandReply(const char *msg, size_t len)
+void platform_emscripten_run_on_browser_thread_sync(void (*func)(void*), void* arg)
+{
+#ifdef PROXY_TO_PTHREAD
+   emscripten_proxy_sync(emscripten_proxy_get_system_queue(), emscripten_main_runtime_thread_id(), func, arg);
+#else
+   func(arg);
+#endif
+}
+
+void platform_emscripten_run_on_browser_thread_async(void (*func)(void*), void* arg)
+{
+#ifdef PROXY_TO_PTHREAD
+   emscripten_proxy_async(emscripten_proxy_get_system_queue(), emscripten_main_runtime_thread_id(), func, arg);
+#else
+   emscripten_async_call(func, arg, 0);
+#endif
+}
+
+void platform_emscripten_run_on_program_thread_async(void (*func)(void*), void* arg)
+{
+#ifdef PROXY_TO_PTHREAD
+   emscripten_proxy_async(emscripten_proxy_get_system_queue(), emscripten_platform_data->program_thread_id, func, arg);
+#else
+   emscripten_async_call(func, arg, 0);
+#endif
+}
+
+void platform_emscripten_command_reply(const char *msg, size_t len)
 {
    MAIN_THREAD_EM_ASM({
       var message = UTF8ToString($0, $1);
@@ -275,7 +313,7 @@ void PlatformEmscriptenCommandReply(const char *msg, size_t len)
    }, msg, len);
 }
 
-size_t PlatformEmscriptenCommandRead(char **into, size_t max_len)
+size_t platform_emscripten_command_read(char **into, size_t max_len)
 {
    if (!emscripten_platform_data || !emscripten_platform_data->command_flag)
       return 0;
@@ -316,27 +354,62 @@ double platform_emscripten_get_dpr(void)
    return PLATFORM_GETVAL(f64, &emscripten_platform_data->device_pixel_ratio);
 }
 
+bool platform_emscripten_has_async_atomics(void)
+{
+   return emscripten_platform_data->has_async_atomics;
+}
+
 bool platform_emscripten_is_window_hidden(void)
 {
    return emscripten_platform_data->window_hidden;
 }
 
-void platform_emscripten_run_on_browser_thread_sync(void (*func)(void*), void* arg)
+bool platform_emscripten_should_drop_iter(void)
 {
-#ifdef PROXY_TO_PTHREAD
-   emscripten_proxy_sync(emscripten_proxy_get_system_queue(), emscripten_main_runtime_thread_id(), func, arg);
-#else
-   func(arg);
-#endif
+   return (emscripten_platform_data->window_hidden && emscripten_platform_data->raf_interval);
 }
 
-void platform_emscripten_run_on_browser_thread_async(void (*func)(void*), void* arg)
-{
 #ifdef PROXY_TO_PTHREAD
-   emscripten_proxy_async(emscripten_proxy_get_system_queue(), emscripten_main_runtime_thread_id(), func, arg);
+
+static void set_raf_interval(void *data)
+{
+   emscripten_set_main_loop_timing(EM_TIMING_RAF, (int)data);
+}
+
+void platform_emscripten_wait_for_frame(void)
+{
+   if (emscripten_platform_data->raf_interval)
+      emscripten_condvar_waitinf(&emscripten_platform_data->raf_cond, &emscripten_platform_data->raf_lock);
+}
+
 #else
-   // for now, not async
-   func(arg);
+
+void platform_emscripten_enter_fake_block(int ms)
+{
+   if (ms == 0)
+      emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
+   else
+      emscripten_set_main_loop_timing(EM_TIMING_SETTIMEOUT, ms);
+}
+
+void platform_emscripten_exit_fake_block(void)
+{
+   command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+}
+
+#endif
+
+void platform_emscripten_set_main_loop_interval(int interval)
+{
+   emscripten_platform_data->raf_interval = interval;
+#ifdef PROXY_TO_PTHREAD
+   if (interval != 0)
+      platform_emscripten_run_on_browser_thread_sync(set_raf_interval, (void *)interval);
+#else
+   if (interval == 0)
+      emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
+   else
+      emscripten_set_main_loop_timing(EM_TIMING_RAF, interval);
 #endif
 }
 
@@ -354,7 +427,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    {
       size_t _len = strlcpy(base_path, home, sizeof(base_path));
       strlcpy(base_path + _len, "/retroarch", sizeof(base_path) - _len);
-#ifndef HAVE_WASMFS
+#ifndef HAVE_EXTRA_WASMFS
       /* can be removed when the new web player replaces the old one */
       _len = strlcpy(user_path, home, sizeof(user_path));
       strlcpy(user_path + _len, "/retroarch/userdata", sizeof(user_path) - _len);
@@ -370,7 +443,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    else
    {
       strlcpy(base_path, "retroarch", sizeof(base_path));
-#ifndef HAVE_WASMFS
+#ifndef HAVE_EXTRA_WASMFS
       /* can be removed when the new web player replaces the old one */
       strlcpy(user_path, "retroarch/userdata", sizeof(user_path));
       strlcpy(bundle_path, "retroarch/bundle", sizeof(bundle_path));
@@ -445,7 +518,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 static enum frontend_powerstate frontend_emscripten_get_powerstate(int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
-   int level;
+   float level;
 
    if (!emscripten_platform_data || !emscripten_platform_data->power_state_supported)
       return ret;
@@ -486,8 +559,8 @@ static uint64_t frontend_emscripten_get_free_mem(void)
 
 /* program entry and startup */
 
-#ifdef HAVE_WASMFS
-void platform_emscripten_mount_filesystems(void)
+#ifdef HAVE_EXTRA_WASMFS
+static void platform_emscripten_mount_filesystems(void)
 {
    char *opfs_mount = getenv("OPFS_MOUNT");
    char *fetch_manifest = getenv("FETCH_MANIFEST");
@@ -619,16 +692,20 @@ void platform_emscripten_mount_filesystems(void)
       free(line);
    }
 }
-#endif /* HAVE_WASMFS */
+#endif /* HAVE_EXTRA_WASMFS */
 
 static int thread_main(int argc, char *argv[])
 {
-#ifdef HAVE_WASMFS
+#ifdef HAVE_EXTRA_WASMFS
    platform_emscripten_mount_filesystems();
 #endif
 
    emscripten_set_main_loop(emscripten_mainloop, 0, 0);
+#ifdef PROXY_TO_PTHREAD
+   emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
+#else
    emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
+#endif
    rarch_main(argc, argv, NULL);
 
    return 0;
@@ -642,8 +719,14 @@ static char** _main_argv;
 static void *main_pthread(void* arg)
 {
    emscripten_set_thread_name(pthread_self(), "Application main thread");
+   emscripten_platform_data->program_thread_id = pthread_self();
    thread_main(_main_argc, _main_argv);
    return NULL;
+}
+
+static void raf_signaler(void)
+{
+   emscripten_condvar_signal(&emscripten_platform_data->raf_cond, 1);
 }
 #endif
 
@@ -654,15 +737,28 @@ int main(int argc, char *argv[])
    pthread_attr_t attr;
    pthread_t thread;
 #endif
-   // this never gets freed
+   /* this never gets freed */
    emscripten_platform_data = (emscripten_platform_data_t *)calloc(1, sizeof(emscripten_platform_data_t));
+
+   emscripten_platform_data->has_async_atomics = EM_ASM_INT({
+      return Atomics?.waitAsync?.toString().includes("[native code]");
+   });
 
    PlatformEmscriptenWatchCanvasSizeAndDpr(malloc(sizeof(double)));
    PlatformEmscriptenWatchWindowVisibility();
    PlatformEmscriptenPowerStateInit();
    PlatformEmscriptenMemoryUsageInit();
 
+   emscripten_platform_data->raf_interval = 1;
 #ifdef PROXY_TO_PTHREAD
+   /* run requestAnimationFrame on the browser thread, as some browsers (chrome on linux) */
+   /* seem to have issues running at full speed with requestAnimationFrame in workers. */
+   /* instead, we run the RetroArch main loop with setImmediate and just wait on a signal if we need RAF */
+   emscripten_lock_init(&emscripten_platform_data->raf_lock);
+   emscripten_condvar_init(&emscripten_platform_data->raf_cond);
+   emscripten_set_main_loop(raf_signaler, 0, 0);
+   emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
+
    _main_argc = argc;
    _main_argv = argv;
    pthread_attr_init(&attr);

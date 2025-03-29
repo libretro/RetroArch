@@ -439,6 +439,7 @@ extern audio_driver_t audio_switch_thread;
 extern audio_driver_t audio_switch_libnx_audren;
 extern audio_driver_t audio_switch_libnx_audren_thread;
 extern audio_driver_t audio_rwebaudio;
+extern audio_driver_t audio_audioworklet;
 
 audio_driver_state_t *audio_state_get_ptr(void);
 

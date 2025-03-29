@@ -351,12 +351,20 @@ async function appInitialized() {
 	});
 }
 
-function loadCore(core) {
+async function downloadScript(src) {
+	let resp = await fetch(src);
+	let blob = await resp.blob();
+	return blob;
+}
+
+async function loadCore(core) {
 	// Make the core the selected core in the UI.
 	const coreTitle = document.querySelector('#core-selector a[data-core="' + core + '"]')?.textContent;
 	if (coreTitle) coreSelectorCurrent.textContent = coreTitle;
 	const fileExt = (core == "retroarch") ? ".js" : "_libretro.js";
-	import("./" + core + fileExt).then(script => {
+	const url = URL.createObjectURL(await downloadScript("./" + core + fileExt));
+	Module.mainScriptUrlOrBlob = url;
+	import(url).then(script => {
 		script.default(Module).then(mod => {
 			Module = mod;
 		}).catch(err => { console.error("Couldn't instantiate module", err); throw err; });
