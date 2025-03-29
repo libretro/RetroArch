@@ -4475,7 +4475,7 @@ bool config_load_override(void *data)
          char tmp_path[PATH_MAX_LENGTH];
          size_t _len      = strlcpy(tmp_path,
                path_get(RARCH_PATH_CONFIG_OVERRIDE),
-               sizeof(tmp_path));
+               sizeof(tmp_path) - 2);
          tmp_path[  _len] = '|';
          tmp_path[++_len] = '\0';
          strlcpy(tmp_path + _len, core_path, sizeof(tmp_path) - _len);
@@ -4503,7 +4503,7 @@ bool config_load_override(void *data)
             char tmp_path[PATH_MAX_LENGTH];
             size_t _len      = strlcpy(tmp_path,
                   path_get(RARCH_PATH_CONFIG_OVERRIDE),
-                  sizeof(tmp_path));
+                  sizeof(tmp_path) - 2);
             tmp_path[  _len] = '|';
             tmp_path[++_len] = '\0';
             strlcpy(tmp_path + _len, content_path, sizeof(tmp_path) - _len);
@@ -4529,7 +4529,7 @@ bool config_load_override(void *data)
             char tmp_path[PATH_MAX_LENGTH];
             size_t _len      = strlcpy(tmp_path,
                   path_get(RARCH_PATH_CONFIG_OVERRIDE),
-                  sizeof(tmp_path));
+                  sizeof(tmp_path) - 2);
             tmp_path[  _len] = '|';
             tmp_path[++_len] = '\0';
             strlcpy(tmp_path + _len, game_path, sizeof(tmp_path) - _len);
@@ -4916,6 +4916,7 @@ static void save_keybind_axis(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
+   char config[16];
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
    strlcpy(key + _len, "_axis", sizeof(key) - _len);
 
@@ -4923,25 +4924,20 @@ static void save_keybind_axis(config_file_t *conf,
    {
       if (save_empty)
          config_set_string(conf, key, "nul");
+      return;
    }
-   else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+
+   if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
-      char config[16];
-      config[0] = '-';
-      config[1] = '\0';
-      snprintf(config + 1, sizeof(config) - 1, "%u",
-            AXIS_NEG_GET(bind->joyaxis));
-      config_set_string(conf, key, config);
+      snprintf(config, sizeof(config), "-%lu",
+            (unsigned long)AXIS_NEG_GET(bind->joyaxis));
    }
    else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {
-      char config[16];
-      config[0] = '+';
-      config[1] = '\0';
-      snprintf(config + 1, sizeof(config) - 1, "%u",
-            AXIS_POS_GET(bind->joyaxis));
-      config_set_string(conf, key, config);
+      snprintf(config, sizeof(config), "+%lu",
+            (unsigned long)AXIS_POS_GET(bind->joyaxis));
    }
+   config_set_string(conf, key, config);
 }
 
 static void save_keybind_mbutton(config_file_t *conf,

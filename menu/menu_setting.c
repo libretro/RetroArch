@@ -6175,6 +6175,7 @@ static int setting_string_action_right_driver(
    return 0;
 }
 
+#if !defined(RARCH_CONSOLE)
 static int setting_string_action_left_midi_input(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -6266,6 +6267,7 @@ static int setting_string_action_right_midi_output(
    command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return -1;
 }
+#endif
 
 #ifdef HAVE_CHEATS
 static size_t setting_get_string_representation_uint_cheat_exact(
@@ -6887,7 +6889,6 @@ static size_t setting_get_string_representation_retropad_bind(
 {
    if (setting)
    {
-      settings_t *settings = config_get_ptr();
       int retro_id         = *setting->value.target.integer;
 
       if (retro_id < 0)

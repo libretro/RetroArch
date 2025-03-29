@@ -1517,7 +1517,6 @@ static int16_t input_state_device(
                uint8_t turbo_period     = settings->uints.input_turbo_period;
                uint8_t turbo_duty_cycle = settings->uints.input_turbo_duty_cycle;
                uint8_t turbo_mode       = settings->uints.input_turbo_mode;
-               int8_t turbo_bind        = settings->ints.input_turbo_bind;
 
                if (turbo_duty_cycle == 0)
                   turbo_duty_cycle = turbo_period / 2;

@@ -6537,7 +6537,6 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 
    if (reinit_textures)
    {
-      settings_t *settings = config_get_ptr();
       gfx_display_deinit_white_texture();
       gfx_display_init_white_texture();
       xmb->assets_missing     = false;
@@ -8419,7 +8418,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       const char *str             = menu_input_dialog_get_buffer();
       const char *label           = menu_st->input_dialog_kb_label;
-      size_t _len                 = strlcpy(msg, label, sizeof(msg));
+      size_t _len                 = strlcpy(msg, label, sizeof(msg) - 2);
       msg[  _len]                 = '\n';
       msg[++_len]                 = '\0';
       strlcpy(msg       + _len,

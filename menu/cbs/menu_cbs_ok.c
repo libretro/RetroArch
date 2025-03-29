@@ -4670,7 +4670,6 @@ static int action_ok_cheat_delete(const char *path,
    char msg[128];
    size_t new_selection_ptr   = 0;
    struct menu_state *menu_st = menu_state_get_ptr();
-   size_t selection           = menu_st->selection_ptr;
    unsigned int new_size      = cheat_manager_get_size() - 1;
 
    if (new_size >0)
@@ -7504,9 +7503,6 @@ static int action_ok_push_dropdown_item_input_retropad_bind(const char *path,
 {
    rarch_setting_t *setting;
    enum msg_hash_enums enum_idx;
-   retro_ctx_controller_info_t pad;
-   unsigned port                = 0;
-   unsigned device              = 0;
 
    const char *menu_path        = NULL;
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);

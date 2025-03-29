@@ -5238,7 +5238,7 @@ static unsigned menu_displaylist_parse_content_information(
    {
       const char *cheevos_hash_str =
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH);
-      size_t _len                  = strlcpy(tmp, cheevos_hash_str, sizeof(tmp));
+      size_t _len                  = strlcpy(tmp, cheevos_hash_str, sizeof(tmp) - 4);
       tmp[  _len]                  = ':';
       tmp[++_len]                  = ' ';
       tmp[++_len]                  = '\n';
