@@ -140,7 +140,11 @@ FS.rm = async function() {
 		const child = path.substr(dir_end + 1);
 		const parent_dir = await getDirHandle(parent);
 		if (!parent_dir) continue;
-		await parent_dir.removeEntry(child, {recursive: true});
+		try {
+			await parent_dir.removeEntry(child, {recursive: true});
+		} catch (e) {
+			continue;
+		}
 	}
 }
 

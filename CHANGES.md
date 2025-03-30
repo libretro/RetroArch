@@ -22,6 +22,9 @@
 - CLOUDSYNC: Handle ignored directories properly
 - EMSCRIPTEN: Scale window to correct size
 - EMSCRIPTEN: Additional platform functions
+- EMSCRIPTEN: Add new default video context driver: emscriptenwebgl_ctx
+- EMSCRIPTEN: Add new audio driver: AudioWorklet
+- EMSCRIPTEN: Add new modernized web player which will eventually replace the existing one
 - EMSCRIPTEN/RWEBINPUT: Add touch input support
 - GENERAL: Fix save state auto increment
 - GENERAL: Fix softpatching with periods/dots in the file name
