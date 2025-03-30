@@ -138,6 +138,29 @@ void rc_mutex_unlock(rc_mutex_t* mutex)
   LWP_MutexUnlock(mutex);
 }
 
+#elif defined(_3DS)
+
+void rc_mutex_init(rc_mutex_t* mutex)
+{
+  RecursiveLock_Init(mutex);
+}
+
+void rc_mutex_destroy(rc_mutex_t* mutex)
+{
+  /* Nothing to do here */
+  (void)mutex;
+}
+
+void rc_mutex_lock(rc_mutex_t* mutex)
+{
+  RecursiveLock_Lock(mutex);
+}
+
+void rc_mutex_unlock(rc_mutex_t* mutex)
+{
+  RecursiveLock_Unlock(mutex);
+}
+
 #else
 
 void rc_mutex_init(rc_mutex_t* mutex)

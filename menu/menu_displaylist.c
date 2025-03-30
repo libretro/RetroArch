@@ -140,6 +140,10 @@
 #include "../steam/steam.h"
 #endif
 
+#ifdef _3DS
+#include <3ds/services/cfgu.h> /* CFGU_GetSystemModel */
+#endif
+
 /* Spacers used for '<content> - <core name>' labels
  * in playlists */
 #define PL_LABEL_SPACER_DEFAULT "   |   "

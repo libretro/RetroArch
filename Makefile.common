@@ -2014,6 +2014,7 @@ ifeq ($(HAVE_BUILTINZLIB), 1)
           $(DEPS_DIR)/libz/inflate.o \
           $(DEPS_DIR)/libz/inftrees.o \
           $(DEPS_DIR)/libz/trees.o \
+          $(DEPS_DIR)/libz/uncompr.o \
           $(DEPS_DIR)/libz/zutil.o
    INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
 else ifeq ($(HAVE_ZLIB),1)

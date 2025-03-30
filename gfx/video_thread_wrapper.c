@@ -23,6 +23,11 @@
 #include <features/features_cpu.h>
 #include <string/stdstring.h>
 
+#ifdef _3DS
+#include <3ds/types.h>
+#include <3ds/allocator/linear.h> /* linearMemAlign() */
+#endif
+
 #include "video_driver.h"
 #include "video_thread_wrapper.h"
 #include "font_driver.h"

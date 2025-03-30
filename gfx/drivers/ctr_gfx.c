@@ -39,7 +39,9 @@
 #endif
 
 #include "../font_driver.h"
+#define DEPRECATED
 #include "../../ctr/gpu_old.h"
+#undef DEPRECATED
 #include "ctr_gu.h"
 
 #include "../../configuration.h"
@@ -49,6 +51,7 @@
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
+#include "../../paths.h"
 
 #include "../common/ctr_defines.h"
 #ifndef HAVE_THREADS
