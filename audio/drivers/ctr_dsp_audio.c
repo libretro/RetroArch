@@ -19,6 +19,8 @@
 
 #include "../audio_driver.h"
 #include "../../ctr/ctr_debug.h"
+#include "../../retroarch.h"
+#include "../../verbosity.h"
 
 typedef struct
 {
@@ -113,7 +115,7 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t len)
              * changed, this prevents a hang on sleep. */
             if (!aptMainLoop())
             {
-               command_event(CMD_EVENT_QUIT, NULL);
+               retroarch_main_quit();
                return true;
             }
 

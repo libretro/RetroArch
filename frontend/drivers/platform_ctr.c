@@ -61,6 +61,9 @@
 #endif
 #endif
 
+#include "../../audio/audio_driver.h"
+#include "../../menu/menu_entries.h"
+
 static enum frontend_fork ctr_fork_mode = FRONTEND_FORK_NONE;
 static const char* elf_path_cst         = "sdmc:/retroarch/retroarch.3dsx";
 
@@ -138,6 +141,12 @@ static void frontend_ctr_get_env(int* argc, char* argv[],
    dir_check_defaults("custom.ini");
 #endif
 }
+
+#ifdef USE_CTRULIB_2
+u8* gfxTopLeftFramebuffers[2];
+u8* gfxTopRightFramebuffers[2];
+u8* gfxBottomFramebuffers[2];
+#endif
 
 static void frontend_ctr_deinit(void* data)
 {
@@ -371,10 +380,6 @@ __attribute__((weak)) u32 __ctr_patch_services;
 void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id);
 
 #ifdef USE_CTRULIB_2
-u8* gfxTopLeftFramebuffers[2];
-u8* gfxTopRightFramebuffers[2];
-u8* gfxBottomFramebuffers[2];
-
 void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id)
 {
    if (screen==GFX_TOP)
