@@ -2817,6 +2817,10 @@ MSG_HASH(
    "Silencia automàticament el so quan s’usa l’avançament ràpid."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Accelerar l'àudio durant l'avançament ràpid"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    "Accelera l'àudio a l'emprar l'avançament ràpid. Defugirá sorolls en l'àudio però canviant la seva tonalitat."
    )
@@ -3730,6 +3734,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
    "Canvia a activat/desactivat l'anticipació."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
+   "Fes servir fotogrames preventius (alternar)"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
@@ -3795,6 +3803,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
    "Envia un missatge de xat a la sessió actual de netplay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Amaga el xat del joc en xarxa (alternar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
@@ -4142,6 +4154,10 @@ MSG_HASH(
 /* Settings > Configuration */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
+   "Desa la configuració en sortir"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
    "Desa els fitxers d'assignació en sortir"
    )
@@ -4151,6 +4167,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    "Interval entre desats automàtics de la SaveRAM"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Interval de punts de control de repetició"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
@@ -4592,6 +4612,10 @@ MSG_HASH(
    "Ajusta automàticament l'escala de la superposició i de l'espaiat dels elements de la IU per coincidir la relació d'aspecte amb l'orientació de la pantalla. Produeix els millors resultats amb superposicions de controladors."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "Sensibilitat diagonal de la creueta"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    "Sensibilitat de la sobreposició ABXY"
    )
@@ -4799,6 +4823,10 @@ MSG_HASH(
    "Mostra un missatge en pantalla quan restableix automàticament a l’arrencada el darrer disc usat d’un contingut multidisc carregat mitjançant llistes M3U."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Notificacions de control de disc"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
    "Notificacions dels estat desats"
    )
@@ -4992,6 +5020,10 @@ MSG_HASH(
    "Temps d'espera de l'estalvi de pantalla del menú"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
+   "Animació de l'estalvi de pantalla del menú"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
    "Habilita un efecte d’animació mentre l’estalvi de pantalla del menú està actiu. Afecta moderadament el rendiment."
    )
@@ -5070,6 +5102,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
    "Retard inicial en mil·lisegons quan es manté una direcció per desplaçar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
+   "Executa la interfície d'usuari en iniciar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
@@ -6261,6 +6297,10 @@ MSG_HASH(
    "abans"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
+   "Mostar índexs en les llistres de reproducció"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
    "Cerca aproximada de fitxers"
    )
@@ -7433,6 +7473,10 @@ MSG_HASH(
    "Comença o continua la cerca de trucs"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
+   "Carrega el fitxer de trucs (Reemplaça)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
    "Carrega fitxers de trucs (afegir)"
    )
@@ -7621,11 +7665,19 @@ MSG_HASH(
    "Força de la vibració primària"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
+   "Força de la vibració secundària"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
    "Codi"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
+   "Afegeix un nou truc després d'aquest"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
    "Afegeix un nou truc després d'aquest"
    )
 MSG_HASH(
@@ -7920,6 +7972,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
    "No hi ha nuclis disponibles"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
+   "No hi ha opcions del nucli disponibles"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE,
+   "No hi ha còpies de seguretat del nucli disponibles"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
@@ -9161,6 +9221,10 @@ MSG_HASH(
    "Icones d'interruptors"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+   "Optimitza la disposició en mode horitzontal"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
    "Mostra la barra de navegació"
    )
@@ -9357,6 +9421,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
    "Recorda la posició de les finestres acoblades:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+   "Recorda la geometria de la finestra:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
@@ -9850,6 +9918,10 @@ MSG_HASH(
    "No s'han trobat servidors del joc en xarxa."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "No s'han trobat clients del joc en xarxa."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
    "No hi ha comptadors de rendiment."
    )
@@ -9995,6 +10067,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
    "Veure coincidència #"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
+   "Selecciona la coincidència que vols veure."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
@@ -10683,6 +10759,10 @@ MSG_HASH(
    "No s’han pogut desar les opcions del nucli a:"
    )
 MSG_HASH(
+   MSG_COULD_NOT_OPEN_DATA_TRACK,
+   "No es pot obrir la pista de dades"
+   )
+MSG_HASH(
    MSG_CUSTOM_TIMING_GIVEN,
    "Temps personalitzat donat"
    )
@@ -11063,6 +11143,10 @@ MSG_HASH(
    "Error en desar la personalització."
    )
 MSG_HASH(
+   MSG_OVERRIDES_ERROR_REMOVING,
+   "Error en eliminar les personalitzacions."
+   )
+MSG_HASH(
    MSG_PAUSED,
    "En pausa."
    )
@@ -11071,8 +11155,16 @@ MSG_HASH(
    "Enregistrant a"
    )
 MSG_HASH(
+   MSG_REDIRECTING_CHEATFILE_TO,
+   "Redirigint el fitxer de trucs a"
+   )
+MSG_HASH(
    MSG_REDIRECTING_SAVEFILE_TO,
    "Redirigint fitxer de desat a"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_SAVESTATE_TO,
+   "Redirigint el fitxer d'estats desats a"
    )
 MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,
@@ -11177,6 +11269,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Assoliment desbloquejat"
+   )
+MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Assoliment poc freqüent assolit"
    )
 MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
@@ -11467,6 +11563,10 @@ MSG_HASH(
    "Unitat %d"
    )
 MSG_HASH(
+   MSG_LOAD_CORE_FIRST,
+   "Carrega un nucli en primer lloc, si us plau."
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
    "Escanejant contingut: "
    )
@@ -11505,6 +11605,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_BACKUP_FAILED,
    "Error en crear la còpia de seguretat del nucli: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_FAILED,
+   "Error en restaurar el nucli: "
    )
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
@@ -11791,6 +11895,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
    "Mostrar Reiniciar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
+   "Mostra l'opció 'Reiniciar'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,

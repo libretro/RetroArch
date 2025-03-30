@@ -68,6 +68,14 @@ MSG_HASH(
    "Välj vilken Kärna som ska användas."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Läs ur kärna"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "Frigör inläst kärna."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Bläddra efter en libretro-kärnimplementation. Var webbläsaren startar beror på sökvägen till dina kärnor. Om den är tom, börjar den i rotmappen.\nOm kärnmappen är en katalog, kommer menyn att använda den som översta mapp. Om sökvägen till kärnmappen är en fullständig sökväg, börjar den i mappen där filen finns."
    )
@@ -2772,6 +2780,10 @@ MSG_HASH(
    "Anpassat sökvägsvärde för OSS-drivrutinen (t.ex. /dev/dsp)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "Anpassat portnamnsvärde för JACK-drivrutinen (t.ex. system:playback1,system:playback_2)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
    "Anpassad IP-adress för en RSound-server för RSound-drivrutinen."
    )
@@ -2833,6 +2845,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    "WASAPI Exklusivt läge"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Tillåt RetroArch att ta exklusiv kontroll över mikrofonenheten när WASAPI-mikrofondrivrutinen används. Om inaktiverad kommer RetroArch att använda delat läge istället."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
@@ -3042,6 +3058,10 @@ MSG_HASH(
    "Maximalt antal användare som stöds av RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Pollningsbeteende (omstart krävs)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
    "Påverkar hur input polling utförs i RetroArch.\nEarly - Input polling utförs innan ramen bearbetas.\nNormal - Input polling utförs när polling begärs.\nLate - Input polling utförs vid första begäran om inputstatus per ram.\nAtt ställa in den på 'Early' eller 'Late' kan resultera i mindre latens, beroende på din konfiguration. Kommer att ignoreras när du använder netplay."
    )
@@ -3062,6 +3082,10 @@ MSG_HASH(
    "Konfigurerar automatiskt spelkontroller som har en profil, Plug-and-Play-stil."
    )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+   "Inaktivera Windows-snabbtangenter (omstart krävs)"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
    "Behåll kombinationer med Win-tangenten inuti programmet."
@@ -3471,6 +3495,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Pausa"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
+   "Växlar innehåll mellan pausade och icke-pausade tillstånd."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
@@ -3801,6 +3829,10 @@ MSG_HASH(
    "Enhetindex"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   "Den fysiska kontrollern som den känns igen av RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
    "Reserverad enhet för denna spelare"
    )
@@ -4065,6 +4097,10 @@ MSG_HASH(
    "Tillåter kärnor att visa alternativ i kategoribaserade undermenyer. OBS: Kärnan måste laddas om för att ändringar ska börja gälla."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
+   "Behåller en ihållande lokal cache av installerad kärninformation. Minskar inläsningstiderna avsevärt på plattformar med långsam diskåtkomst."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "Kringgå kärninformationens funktioner för sparad status"
    )
@@ -4261,6 +4297,10 @@ MSG_HASH(
    "Spara automatiskt icke-flyktigt SaveRAM vid fasta intervaller (i sekunder)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
+   "Autosparar det icke-flyktiga SRAM-minnet med jämna mellanrum. Detta är inaktiverat som standard om inget annat anges. Intervallet mäts i sekunder. Ett värde på 0 inaktiverar autosparning."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "Sparar automatiskt speltillståndet under inspelning av repriser med ett regelbundet intervall. Detta är inaktiverat som standard om inget annat anges. Intervallet mäts i sekunder. Ett värde på 0 avaktiverar inspelning av kontrollpunkter."
    )
@@ -4303,6 +4343,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
    "Kompression för SaveRAM"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
+   "Skriv icke-flyktiga SaveRAM-filer i ett arkiverat format. Minskar filstorleken dramatiskt på bekostnad av (försumbart) ökade spar-/inläsningstider.\nGäller endast kärnor som möjliggör sparande via standardgränssnittet libretro SaveRAM."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
@@ -4355,6 +4399,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
    "Spara körtidslogg (per kärna)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
+   "Håll reda på hur länge varje innehållspost har körts, med poster separerade efter kärna."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
