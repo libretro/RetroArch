@@ -263,7 +263,6 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                break;
             case RARCH_WILDCARD_CORE:
                _len = strlcpy(replace_text, runloop_state_get_ptr()->system.info.library_name, sizeof(replace_text));
-                              RARCH_DBG(" replace_text:               \"%s\" \n", replace_text);
                break;
             case RARCH_WILDCARD_GAME:
                {
