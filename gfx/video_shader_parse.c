@@ -262,7 +262,8 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                }
                break;
             case RARCH_WILDCARD_CORE:
-               strlcpy(replace_text, runloop_state_get_ptr()->system.info.library_name, sizeof(replace_text));
+               _len = strlcpy(replace_text, runloop_state_get_ptr()->system.info.library_name, sizeof(replace_text));
+                              RARCH_DBG(" replace_text:               \"%s\" \n", replace_text);
                break;
             case RARCH_WILDCARD_GAME:
                {
@@ -276,7 +277,7 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                }
                break;
             case RARCH_WILDCARD_VIDEO_DRIVER:
-               strlcpy(replace_text, config_get_ptr()->arrays.video_driver, sizeof(replace_text));
+               _len = strlcpy(replace_text, config_get_ptr()->arrays.video_driver, sizeof(replace_text));
                break;
             case RARCH_WILDCARD_CORE_REQUESTED_ROTATION:
                _len  = strlcpy(replace_text, "CORE-REQ-ROT-", sizeof(replace_text));
@@ -412,7 +413,7 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
             char *replace_output = string_replace_substring(replaced_path,
                sizeof(replaced_path),
                wildcard_tokens[i].token_name,
-               STRLEN_CONST(wildcard_tokens[i].token_name),
+               strlen(wildcard_tokens[i].token_name),
                replace_text,
                _len);
             strlcpy(replaced_path, replace_output, sizeof(replaced_path));
