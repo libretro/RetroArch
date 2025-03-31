@@ -2907,7 +2907,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
-   "Om detta värde sätts till 0 inaktiveras hastighetskontrollen. Alla andra värden styr delta för ljudfrekvensreglering.\nDefinierar hur mycket ingångsfrekvensen kan justeras dynamiskt. Inmatningshastigheten definieras som:\\inmatningshastighet * (1,0 +/- (hastighetskontroll delta))"
+   "Om detta värde sätts till 0 inaktiveras hastighetskontrollen. Alla andra värden styr delta för ljudfrekvensreglering.\nDefinierar hur mycket ingångsfrekvensen kan justeras dynamiskt. Inmatningshastigheten definieras som:\\\\inmatningshastighet * (1,0 +/- (hastighetskontroll delta))"
    )
 
 /* Settings > Audio > MIDI */
