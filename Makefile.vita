@@ -138,7 +138,7 @@ ifeq ($(HAVE_VITAGLES), 1)
    ARCHFLAGS += -DSCE_LIBC_SIZE=$(SCE_LIBC_SIZE)
 endif
 
-CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls
+CFLAGS    += $(ARCHFLAGS) -mword-relocations
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -g -Og
@@ -147,7 +147,7 @@ else
 endif
 
 ASFLAGS := $(CFLAGS)
-LDFLAGS := -Wl,-q
+LDFLAGS := -Wl,-q,--pic-veneer
 
 CFLAGS += -Wall -ffast-math
 CFLAGS += -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DRARCH_CONSOLE
