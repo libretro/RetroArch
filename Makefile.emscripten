@@ -7,6 +7,7 @@ else
 TARGET := $(LIBRETRO)_libretro.js
 endif
 endif
+TARGET_BASE := $(subst .js,,$(TARGET))
 
 OS = Emscripten
 OBJ :=
@@ -293,18 +294,24 @@ RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 all: $(TARGET)
 
-$(libretro_new) : $(libretro)
-	mv -f $(libretro) $(libretro_new)
+$(libretro_new): ;
+
+mv_libretro:
+	mv -f $(libretro) $(libretro_new) || true
 
 # until emscripten adds something like WASM_WORKERS=2 but for audio worklets, DIY.
-$(TARGET): $(RARCH_OBJ) $(libretro_new)
+ifeq ($(HAVE_AUDIOWORKLET), 1)
+$(TARGET): $(RARCH_OBJ) $(libretro_new) mv_libretro
 	@$(if $(Q), $(shell echo echo "LD $@ \<obj\> $(libretro_new) $(LIBS) $(LDFLAGS)"),)
 	$(Q)$(LD) -o $@ $(RARCH_OBJ) $(libretro_new) $(LIBS) $(LDFLAGS)
-	@if [ "$(HAVE_AUDIOWORKLET)" = 1 ]; then\
-		tr -d '\n' < "$${TARGET%%\.js}.aw.js" | sed -e "s/[\/&]/\\\\&/g" -e "s/'/\\\\\\\\&/g" > _audioworklet.js;\
-		sed -i "s/\"$${TARGET%%\.js}\.aw\.js\"/URL.createObjectURL(new Blob(['$$(cat _audioworklet.js)'],{type:'text\/javascript'}))/" "$@";\
-		rm "$${TARGET%%\.js}.aw.js" _audioworklet.js;\
-	fi
+	$(Q)tr -d '\n' < "$(TARGET_BASE).aw.js" | sed -e "s/[\/&]/\\\\&/g" -e "s/'/\\\\\\\\&/g" > _audioworklet.js
+	$(Q)sed -i.bak -e "s/\"$(TARGET_BASE)\.aw\.js\"/URL.createObjectURL(new Blob(['$$(cat _audioworklet.js)'],{type:'text\/javascript'}))/" -- "$@"
+	$(Q)rm -f "$(TARGET_BASE).aw.js" _audioworklet.js "$@".bak
+else
+$(TARGET): $(RARCH_OBJ) $(libretro_new) mv_libretro
+	@$(if $(Q), $(shell echo echo "LD $@ \<obj\> $(libretro_new) $(LIBS) $(LDFLAGS)"),)
+	$(Q)$(LD) -o $@ $(RARCH_OBJ) $(libretro_new) $(LIBS) $(LDFLAGS)
+endif
 
 $(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@)
@@ -320,4 +327,4 @@ clean:
 	rm -rf $(OBJDIR)
 	rm -f $(TARGET)
 
-.PHONY: all clean
+.PHONY: all clean mv_libretro
