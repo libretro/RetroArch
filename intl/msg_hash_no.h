@@ -72,6 +72,10 @@ MSG_HASH(
    "Velg hvilken kjerne du skal bruke."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   ".."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Åpne innhold"
    )

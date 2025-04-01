@@ -1987,6 +1987,62 @@ MSG_HASH(
    "Infogar extra shader-ram(ar) mellan bildrutorna för eventuella shader-effekter som är utformade för att köras snabbare än innehållshastigheten. Använd endast det alternativ som är avsett för din aktuella bildskärmsuppdateringsfrekvens. Används inte vid uppdateringsfrekvenser som inte är multiplar av 60 Hz, t. ex. 144 Hz, 165 Hz osv. Kombinera inte med Swap Interval > 1, BFI, Frame Delay eller Sync to Exact Content Framerate. Att låta systemets VRR vara på är ok, men inte den inst[...]"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
+   "2 - För 120Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180,
+   "3 - För 180Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240,
+   "4 - För 240Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300,
+   "5 - För 300Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360,
+   "6 - För 360Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420,
+   "7 - För 420Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480,
+   "8 - För 480Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540,
+   "9 - För 540Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600,
+   "10 - För 600Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660,
+   "11 - För 660Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720,
+   "12 - För 720Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780,
+   "13 - För 780Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840,
+   "14 - För 840Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900,
+   "15 - För 900Hz skärmuppdateringsfrekvens"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960,
    "16 - För 960Hz skärmuppdateringsfrekvens"
    )
@@ -2416,6 +2472,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    "Skala antingen höjd eller bredd, eller både höjd och bredd. Halva steg gäller endast för källor med hög upplösning."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Avrunda nedåt eller uppåt till nästa heltal. ”Smart” sjunker till underskala när bilden beskärs för mycket."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
@@ -2907,7 +2967,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
-   "Om detta värde sätts till 0 inaktiveras hastighetskontrollen. Alla andra värden styr delta för ljudfrekvensreglering.\nDefinierar hur mycket ingångsfrekvensen kan justeras dynamiskt. Inmatningshastigheten definieras som:\\\\inmatningshastighet * (1,0 +/- (hastighetskontroll delta))"
+   "Om detta värde sätts till 0 inaktiveras hastighetskontrollen. Alla andra värden styr delta för ljudfrekvensreglering.\nDefinierar hur mycket ingångsfrekvensen kan justeras dynamiskt. Inmatningshastigheten definieras som:\\inmatningshastighet * (1,0 +/- (hastighetskontroll delta))"
    )
 
 /* Settings > Audio > MIDI */
@@ -6860,6 +6920,10 @@ MSG_HASH(
    "Spellistor"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
+   "Spellistor lagras i denna katalog."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_DIRECTORY,
    "Favoritspellista"
    )
@@ -6890,6 +6954,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    "Spara filer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
+   "Spara alla sparningsfiler till denna katalog. Om den inte är inställd försöker den spara i innehållsfilens arbetskatalog."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
@@ -7253,6 +7321,10 @@ MSG_HASH(
    "Efter Poäng"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
+   "Efter media"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
    "Efter spelkontroller"
    )
@@ -7271,6 +7343,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
    "Efter perspektiv"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
+   "Efter inställning"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
@@ -7305,6 +7381,10 @@ MSG_HASH(
    "Ange namn för ny vy"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_VIEW_EXISTS,
+   "Visa redan befintliga med samma namn"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_EXPLORE_VIEW_SAVED,
    "Vy sparad"
    )
@@ -7330,6 +7410,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
    "Ta bort"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DELETE_ENTRY,
+   "Ta bort denna post från spellistan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
@@ -7537,6 +7621,14 @@ MSG_HASH(
    "Börja streama"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
+   "Starta strömning till valt mål."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
+   "Stoppa strömning"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
    "Avsluta ström."
    )
@@ -7551,6 +7643,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
    "Kärnalternativ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
+   "Ändra alternativen för innehållet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -8065,6 +8161,10 @@ MSG_HASH(
 
 /* Quick Menu > Shaders > Shader Parameters */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
+   "Inga shader-parametrar"
+   )
 
 /* Quick Menu > Overrides */
 
@@ -9819,6 +9919,10 @@ MSG_HASH(
    "Filtrera inuti arkiv"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
+   "(används för att hitta miniatyrbilder)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
    "Är du säker på att du vill radera objektet \"%1\"?"
    )
@@ -9956,6 +10060,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
    "Inställningar för kärnuppdateraren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
+   "Turbo/Dödzon"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_DISK,
@@ -10426,6 +10534,10 @@ MSG_HASH(
    "Externt nätverk har en privat eller delad adress. Överväg att använda en reläserver."
    )
 MSG_HASH(
+   MSG_SETTING_DISK_IN_TRAY,
+   "Matar in skiva i släden"
+   )
+MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Väntar på klient..."
    )
@@ -10769,6 +10881,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "Kärnan har inget stöd för Spara Statusar."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_RESET,
+   "Alla kärnalternativ nollställda till standard."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FLUSH_FAILED,
