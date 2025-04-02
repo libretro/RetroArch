@@ -948,7 +948,7 @@ static bool net_http_new_socket(struct http_t *state)
       thread = sthread_create(net_http_resolve, entry);
       sthread_detach(thread);
 #else
-      net_http_resolve(state);
+      net_http_resolve(entry);
 #endif
    }
 
