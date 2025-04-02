@@ -142,9 +142,9 @@ static void *sdl_input_init(const char *joypad_driver)
       );
 #endif
 #if SDL_SUPPORT_FANCY_GAMEPAD
+      numJoysticks=SDL_NumJoysticks();
       RARCH_DBG(
-         "[SDL]: SDL_NumJoysticks: %d\n",
-         numJoysticks=SDL_NumJoysticks()
+         "[SDL]: SDL_NumJoysticks: %d\n",numJoysticks
       );
 #endif
       sdl->auxiliary_device_number=0;
