@@ -742,8 +742,6 @@ static uint64_t sdl_get_capabilities(void *data)
 static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id) {
    sdl_input_t * sdl = (sdl_input_t *)data;
 #if SDL_SUPPORT_SENSORS
-   SDL_GameController * gamepad=NULL;
-   SDL_Sensor * sensor=NULL;
    SDL_SensorType sensor_type;
    int i;
    float sensor_data[3],sensor_value;
@@ -776,10 +774,10 @@ static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id)
 
    #if SDL_SUPPORT_FANCY_GAMEPAD
    else if (auxiliary_device->type == SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER )
-      SDL_GameControllerGetSensorData(gamepad, sensor_type, sensor_data,3);
+      SDL_GameControllerGetSensorData(auxiliary_device->dev.game_controller.ptr, sensor_type, sensor_data,3);
    #endif
    else if (auxiliary_device->type == SDL_AUXILIARY_DEVICE_TYPE_SENSOR) 
-      SDL_SensorGetData(sensor,sensor_data, 3);
+      SDL_SensorGetData(auxiliary_device->dev.sensor,sensor_data, 3);
 
    if (id>=RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z){
       sensor_value=sensor_data[id-RETRO_SENSOR_ACCELEROMETER_X];
