@@ -509,6 +509,7 @@ static void sdl_input_free(void *data)
    /* Flush out all pending events. */
 #ifdef HAVE_SDL2
    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+   SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
    free(sdl->auxiliary_devices);
 #else
    while (SDL_PollEvent(&event));
