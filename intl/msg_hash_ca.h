@@ -2351,6 +2351,10 @@ MSG_HASH(
    "La freqüència d'actualització que notifica el controlador de la pantalla."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Canvia automàticament la freqüència d'actualització"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Només en mode de pantalla completa exclusiva"
    )
@@ -4789,6 +4793,10 @@ MSG_HASH(
    "Velocitat del ratolí"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SPEED,
+   "Ajusta la velocitat del ratolí."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
    "Mantén polsat per arrossegar"
    )
@@ -5775,6 +5783,10 @@ MSG_HASH(
    "Mostra 'Assoliments'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+   "Mostra la configuració dels assoliments."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
    "Mostrar Xarxa"
    )
@@ -5837,6 +5849,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    "Miniatura principal"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS,
+   "Tipus de miniatures que es mostrarà."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+   "Llindar d'escalat de miniatures"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
@@ -6191,6 +6211,10 @@ MSG_HASH(
    "Contrasenya del servidor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
+   "Contrasenya del servidor per espectadors"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
    "Mode espectador del joc en línia"
    )
@@ -6201,6 +6225,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
    "Amagar xat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   "Fes desaparèixer els missatges del xat en un temps determinat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
@@ -6295,6 +6323,10 @@ MSG_HASH(
    "Interfície de comandes de l'entrada estàndard."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
+   "Descàrrega les miniatures sota demanda"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
    "Configuració de l'actualitzador"
    )
@@ -6347,6 +6379,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
    "Permet eliminar els elements"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+   "Ordena les llistes de reproducció alfabèticament"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
@@ -7664,6 +7700,10 @@ MSG_HASH(
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
+   "Inicia o reinicia una cerca de trucs"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
    "Cerca valors en la memòria"
    )
@@ -7805,6 +7845,10 @@ MSG_HASH(
    "Nombre d'iteracions"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
+   "Augmentar el valor en cada iteració"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
    "Vibra si la memoria..."
    )
@@ -7877,6 +7921,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    "Shaders de Vídeo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
+   "Activa el procés de shaders de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
@@ -8138,6 +8186,10 @@ MSG_HASH(
    "No hi ha opcions del nucli disponibles"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE,
+   "No hi ha informació del nucli disponible"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE,
    "No hi ha còpies de seguretat del nucli disponibles"
    )
@@ -8164,6 +8216,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
    "No hi ha informació disponible"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
+   "No hi ha elements disponibles a la llista de reproducció"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
@@ -10150,6 +10206,10 @@ MSG_HASH(
    "En línia"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "Port %d Nom dispositiu: %s (#%d)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Configuració dels trucs"
    )
@@ -10706,6 +10766,10 @@ MSG_HASH(
    "T'has unit com a jugador %u"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYER_S_LEFT,
+   "El jugador %.*s ha deixat el joc"
+   )
+MSG_HASH(
    MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
    "%.*s s'ha unit com el jugador %u"
    )
@@ -10732,6 +10796,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_PEER_PAUSED,
    "El client del joc en xarxa \"%s\" està en pausa"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CHANGED_NICK,
+   "El teu sobrenom ha canviat a \"%s\""
    )
 MSG_HASH(
    MSG_NETPLAY_KICKED_CLIENT_S,
@@ -11427,12 +11495,24 @@ MSG_HASH(
    "Aturant la gravació de la partida."
    )
 MSG_HASH(
+   MSG_NETPLAY_FAILED,
+   "Error en iniciar el joc en xarxa."
+   )
+MSG_HASH(
+   MSG_NO_STATE_HAS_BEEN_LOADED_YET,
+   "No s'ha carregat encara el desat ràpid."
+   )
+MSG_HASH(
    MSG_OVERRIDES_ERROR_SAVING,
    "Error en desar la personalització."
    )
 MSG_HASH(
    MSG_OVERRIDES_ERROR_REMOVING,
    "Error en eliminar les personalitzacions."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_SAVED_SUCCESSFULLY,
+   "S'ha desat la personalització correctament."
    )
 MSG_HASH(
    MSG_PAUSED,
