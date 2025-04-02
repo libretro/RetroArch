@@ -3216,8 +3216,9 @@ static void udev_handle_sensor(void *data,
  * Initialize given sensor device.
  *
  * @param dev Input sensor device to initialize.
+ * @return Returns whether initialization was successful. 
  */
-static void udev_init_sensor_dev(udev_input_device_t *dev)
+static bool udev_init_sensor_dev(udev_input_device_t *dev)
 {
    udev_input_sensor_t *sensor = &dev->sensor_state;
    int ret,i;
@@ -3228,15 +3229,21 @@ static void udev_init_sensor_dev(udev_input_device_t *dev)
       ret = ioctl(dev->fd, EVIOCGABS(i), &abs_info);
       if (ret < 0)
       {
-         RARCH_WARN("[udev sensor] Failed to get sensor limits\n");
+         RARCH_WARN(
+            "[udev sensor] Failed to get sensor limits\n"
+            "\tstrerror: %s\n",
+            strerror(errno)
+         );
 
          sensor->limits.a[i].enabled = false;
+         return false;
       }
       else{
          RARCH_DBG("[udev sensor]: Initializing sensor %d\n",i);
          udev_set_limits_from(&abs_info, &sensor->limits.a[i]);
       }
    }
+   return true;
 
 }
 
@@ -3253,7 +3260,6 @@ static int udev_input_add_device(udev_input_t *udev,
    struct input_absinfo absinfo;
    int fd                                   = -1;
    int ret                                  = 0;
-   /*int new_device                           = 1;*/
    struct stat st;
 #if defined(HAVE_EPOLL)
    struct epoll_event event;
@@ -3366,8 +3372,10 @@ static int udev_input_add_device(udev_input_t *udev,
 
       if (!mouse)
          goto end;
-   } else if (type == UDEV_INPUT_SENSOR)
-      udev_init_sensor_dev(device);
+   } else if (type == UDEV_INPUT_SENSOR) {
+      if (!udev_init_sensor_dev(device))
+         goto end;
+   }
    
 
    tmp = (udev_input_device_t**)realloc(udev->devices,
