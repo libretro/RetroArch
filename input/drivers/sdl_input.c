@@ -130,78 +130,87 @@ static void *sdl_input_init(const char *joypad_driver)
       int numJoysticks=0,numTouchDevices=0,numSensors=0;
       int i; int sensor_count=0;
 
-      SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
-      RARCH_DBG(
-         "[SDL]: SDL_GetNumTouchDevices: %d\n",
-         numTouchDevices=SDL_GetNumTouchDevices()
-      );
-#if SDL_SUPPORT_SENSORS
-      RARCH_DBG(
-         "[SDL]: SDL_NumSensors: %d\n",
-         numSensors=SDL_NumSensors()
-      );
-#endif
-#if SDL_SUPPORT_FANCY_GAMEPAD
-      numJoysticks=SDL_NumJoysticks();
-      RARCH_DBG(
-         "[SDL]: SDL_NumJoysticks: %d\n",numJoysticks
-      );
-#endif
-      sdl->auxiliary_device_number=0;
-      sdl->auxiliary_devices=malloc(sizeof(sdl_input_auxiliary_device)*(numJoysticks+numTouchDevices+numSensors));
-      for (i=0; i<numTouchDevices; i++){
-         sdl->auxiliary_devices[sdl->auxiliary_device_number].
-            dev.touch_id=SDL_GetTouchDevice(i);
-         sdl->auxiliary_devices[sdl->auxiliary_device_number].
-            type=SDL_AUXILIARY_DEVICE_TYPE_TOUCHID;
-         sdl->auxiliary_device_number++;
-      }
-#if SDL_SUPPORT_SENSORS
-      for(i=0; i<numSensors; i++){
-         sdl->auxiliary_devices[sdl->auxiliary_device_number].
-            dev.sensor=SDL_SensorOpen(i);
-         sdl->auxiliary_devices[sdl->auxiliary_device_number].
-            type=SDL_AUXILIARY_DEVICE_TYPE_SENSOR;
-         input_config_set_sensor_display_name(
-            sensor_count++,
-            SDL_SensorGetName(sdl->auxiliary_devices[sdl->auxiliary_device_number].dev.sensor)
-         );
-         sdl->auxiliary_device_number++;
-
-      }
-#endif
-#if SDL_SUPPORT_FANCY_GAMEPAD
-      for (i=0; i<numJoysticks; i++){
-         SDL_GameController * gamepad=SDL_GameControllerOpen(i);
-
+      if (!SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)) {
+         numTouchDevices=SDL_GetNumTouchDevices();
          RARCH_DBG(
-            "[SDL]: Gamepad no %d (%s 0x%p)\n"
-            "\tHasSensor: %d\n"
-            "\tGetNumTouchpads: %d\n"
-            ,i,SDL_GameControllerName(gamepad),gamepad,
-            SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_ACCEL),
-            SDL_GameControllerGetNumTouchpads(gamepad)
+            "[SDL]: SDL_GetNumTouchDevices: %d\n",
+            numTouchDevices
          );
-
-         if (
-            SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_ACCEL) ||
-            SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_GYRO)
-         ){
+#if SDL_SUPPORT_SENSORS
+         numSensors=SDL_NumSensors();
+         RARCH_DBG(
+            "[SDL]: SDL_NumSensors: %d\n",
+            numSensors
+         );
+#endif
+#if SDL_SUPPORT_FANCY_GAMEPAD
+         numJoysticks=SDL_NumJoysticks();
+         RARCH_DBG(
+            "[SDL]: SDL_NumJoysticks: %d\n",numJoysticks
+         );
+#endif
+         sdl->auxiliary_device_number=0;
+         sdl->auxiliary_devices=malloc(sizeof(sdl_input_auxiliary_device)*(numJoysticks+numTouchDevices+numSensors));
+         for (i=0; i<numTouchDevices; i++){
             sdl->auxiliary_devices[sdl->auxiliary_device_number].
-               dev.game_controller.ptr=SDL_GameControllerOpen(i);
+               dev.touch_id=SDL_GetTouchDevice(i);
             sdl->auxiliary_devices[sdl->auxiliary_device_number].
-               dev.game_controller.has_accelerometer=SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_ACCEL);
-            sdl->auxiliary_devices[sdl->auxiliary_device_number].
-               dev.game_controller.has_gyro=SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_GYRO);
-            sdl->auxiliary_devices[sdl->auxiliary_device_number].
-               dev.game_controller.num_touchpads=SDL_GameControllerGetNumTouchpads(gamepad);
-              
-            sdl->auxiliary_devices[sdl->auxiliary_device_number].
-               type=SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER;
+               type=SDL_AUXILIARY_DEVICE_TYPE_TOUCHID;
             sdl->auxiliary_device_number++;
-            input_config_set_sensor_display_name(sensor_count++,SDL_GameControllerName(gamepad));
          }
-      }
+#if SDL_SUPPORT_SENSORS
+         for(i=0; i<numSensors; i++){
+            sdl->auxiliary_devices[sdl->auxiliary_device_number].
+               dev.sensor=SDL_SensorOpen(i);
+            sdl->auxiliary_devices[sdl->auxiliary_device_number].
+               type=SDL_AUXILIARY_DEVICE_TYPE_SENSOR;
+            input_config_set_sensor_display_name(
+               sensor_count++,
+               SDL_SensorGetName(sdl->auxiliary_devices[sdl->auxiliary_device_number].dev.sensor)
+            );
+            sdl->auxiliary_device_number++;
+   
+         }
+#endif
+#if SDL_SUPPORT_FANCY_GAMEPAD
+         for (i=0; i<numJoysticks; i++){
+            SDL_GameController * gamepad=SDL_GameControllerOpen(i);
+   
+            RARCH_DBG(
+               "[SDL]: Gamepad no %d (%s 0x%p)\n"
+               "\tHasSensor: %d\n"
+               "\tGetNumTouchpads: %d\n"
+               ,i,SDL_GameControllerName(gamepad),gamepad,
+               SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_ACCEL),
+               SDL_GameControllerGetNumTouchpads(gamepad)
+            );
+   
+            if (
+               SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_ACCEL) ||
+               SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_GYRO)
+            ){
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                  dev.game_controller.ptr=gamepad;
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                  dev.game_controller.has_accelerometer=SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_ACCEL);
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                  dev.game_controller.has_gyro=SDL_GameControllerHasSensor(gamepad,SDL_SENSOR_GYRO);
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                  dev.game_controller.num_touchpads=SDL_GameControllerGetNumTouchpads(gamepad);
+                 
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                  type=SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER;
+               sdl->auxiliary_device_number++;
+               input_config_set_sensor_display_name(sensor_count++,SDL_GameControllerName(gamepad));
+            }
+         }
+      } else 
+         RARCH_DBG(
+            "[SDL] Can't Initialize Gamepad subsystem\n\tSDL_GetError(): %s\n",
+            SDL_GetError()
+         );
+      
+
 #endif
    }
 #endif
@@ -383,6 +392,9 @@ static int16_t sdl_input_state(
                sdl->auxiliary_devices[port].dev.touch_id,
                idx
             );
+            if (!finger) 
+               return 0;
+            
             switch (id)
             {
                case RETRO_DEVICE_ID_POINTER_X:
