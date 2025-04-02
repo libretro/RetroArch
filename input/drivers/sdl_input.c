@@ -565,29 +565,37 @@ static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_ac
          linux_close_illuminance_sensor(sdl->illuminance_sensor); /* noop if NULL */
          sdl->illuminance_sensor = NULL;
 #endif
+#if SDL_SUPPORT_SENSORS
       case RETRO_SENSOR_GYROSCOPE_DISABLE:
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
       case RETRO_SENSOR_GYROSCOPE_ENABLE:
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
          
-         #if SDL_SUPPORT_SENSORS
          {
          sdl_input_auxiliary_device * aux_device;
-         SDL_SensorType sensor_type= (action&2)?SDL_SENSOR_GYRO:SDL_SENSOR_ACCEL;
-         aux_device = sdl_find_sensor_auxiliary_device(sdl, port,sensor_type);
+         bool isgyro =
+            (action == RETRO_SENSOR_GYROSCOPE_ENABLE) || (action == RETRO_SENSOR_GYROSCOPE_DISABLE);
+         bool to_enable = 
+            (action==RETRO_SENSOR_GYROSCOPE_ENABLE)||(action==RETRO_SENSOR_ACCELEROMETER_ENABLE);
+         
+         
+         aux_device = sdl_find_sensor_auxiliary_device(sdl, port,isgyro?SDL_SENSOR_GYRO:SDL_SENSOR_ACCEL);
          if (aux_device->type == SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER) {
             RARCH_DBG("[SDL]: Initializing %s on port %u\n",
-               (action&2)?"gyroscope":"accelerometer",
+               isgyro?"gyroscope":"accelerometer",
                port);
 
-            SDL_GameControllerSetSensorEnabled(
+            if (SDL_GameControllerSetSensorEnabled(
                   aux_device->dev.game_controller.ptr,
-                  sensor_type,action&1);
+                  isgyro?SDL_SENSOR_GYRO:SDL_SENSOR_ACCEL,to_enable)) {
+                  return false;
+            }
             
          }
          }
-         #endif
          return true;
+
+#endif
       case RETRO_SENSOR_ILLUMINANCE_ENABLE:
 #ifdef __linux__
          /* Unsupported on non-Linux platforms */
