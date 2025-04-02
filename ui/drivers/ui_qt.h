@@ -155,7 +155,7 @@ public:
    void setThumbnailCacheLimit(int limit);
    bool isSupportedImage(const QString path) const;
    QString getPlaylistThumbnailsDir(const QString playlistName) const;
-   QString getSanitizedThumbnailName(QString label) const;
+   QString getSanitizedThumbnailName(QString dir, QString label) const;
 
 signals:
    void imageLoaded(const QImage image, const QModelIndex &index, const QString &path);

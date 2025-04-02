@@ -2250,8 +2250,8 @@ QString MainWindow::changeThumbnail(const QImage &image, QString type)
    QString dirString            = m_playlistModel->getPlaylistThumbnailsDir(
                                       hash["db_name"])
                                 + QStringLiteral("/") + type;
-   QString thumbPath            = dirString + QStringLiteral("/")
-                                + m_playlistModel->getSanitizedThumbnailName(
+   QString thumbPath            = m_playlistModel->getSanitizedThumbnailName(
+                                      dirString + QStringLiteral("/"),
                                       hash["label_noext"]);
    QByteArray   dirArray        = QDir::toNativeSeparators(dirString).toUtf8();
    const char   *dirData        = dirArray.constData();
@@ -3618,13 +3618,23 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
    {
       QString thumbnailsDir = m_playlistModel->getPlaylistThumbnailsDir(
             hash["db_name"]);
-      QString thumbnailName = m_playlistModel->getSanitizedThumbnailName(
+      QString thumbnailName1 = m_playlistModel->getSanitizedThumbnailName(
+            thumbnailsDir + QStringLiteral("/") + THUMBNAIL_BOXART     + QStringLiteral("/"),
+            hash["label_noext"]);
+      QString thumbnailName2 = m_playlistModel->getSanitizedThumbnailName(
+            thumbnailsDir + QStringLiteral("/") + THUMBNAIL_TITLE      + QStringLiteral("/"),
+            hash["label_noext"]);
+      QString thumbnailName3 = m_playlistModel->getSanitizedThumbnailName(
+            thumbnailsDir + QStringLiteral("/") + THUMBNAIL_SCREENSHOT + QStringLiteral("/"),
+            hash["label_noext"]);
+      QString thumbnailName4 = m_playlistModel->getSanitizedThumbnailName(
+            thumbnailsDir + QStringLiteral("/") + THUMBNAIL_LOGO       + QStringLiteral("/"),
             hash["label_noext"]);
 
-      m_thumbnailPixmap     = new QPixmap(thumbnailsDir + QStringLiteral("/") + THUMBNAIL_BOXART + QStringLiteral("/") + thumbnailName);
-      m_thumbnailPixmap2    = new QPixmap(thumbnailsDir + QStringLiteral("/") + THUMBNAIL_TITLE  + QStringLiteral("/") + thumbnailName);
-      m_thumbnailPixmap3    = new QPixmap(thumbnailsDir + QStringLiteral("/") + THUMBNAIL_SCREENSHOT + QStringLiteral("/") + thumbnailName);
-      m_thumbnailPixmap4    = new QPixmap(thumbnailsDir + QStringLiteral("/") + THUMBNAIL_LOGO + QStringLiteral("/") + thumbnailName);
+      m_thumbnailPixmap     = new QPixmap(thumbnailName1);
+      m_thumbnailPixmap2    = new QPixmap(thumbnailName2);
+      m_thumbnailPixmap3    = new QPixmap(thumbnailName3);
+      m_thumbnailPixmap4    = new QPixmap(thumbnailName4);
 
       if (      m_currentBrowser == BROWSER_TYPE_PLAYLISTS
             && !currentPlaylistIsSpecial())
