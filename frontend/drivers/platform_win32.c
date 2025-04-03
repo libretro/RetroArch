@@ -283,7 +283,6 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    /* Windows 2000 and later */
    SYSTEM_INFO si         = {{0}};
    OSVERSIONINFOEX vi     = {0};
-   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
 #if _WIN32_WINNT >= 0x0600
    /* Vista and later*/
    const char win_ver_reg_key[]    = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
@@ -300,7 +299,9 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    /* end Vista and later; still within Windows 2000 and later block */
 #endif
 
-GetSystemInfo(&si);
+   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+
+   GetSystemInfo(&si);
    switch (si.wProcessorArchitecture)
    {
       case PROCESSOR_ARCHITECTURE_AMD64:
