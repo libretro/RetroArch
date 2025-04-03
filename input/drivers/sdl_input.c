@@ -194,26 +194,40 @@ static void *sdl_input_init(const char *joypad_driver)
 #endif
 #if SDL_SUPPORT_SENSORS
          for(i=0; (i<numSensors) && (sensor_count<MAX_USERS); i++){
-            sdl->auxiliary_devices[sdl->auxiliary_device_number].
-               dev.sensor=SDL_SensorOpen(i);
-            sdl->auxiliary_devices[sdl->auxiliary_device_number].
-               type=SDL_AUXILIARY_DEVICE_TYPE_SENSOR;
-            input_config_set_sensor_display_name(
-               sensor_count++,
-               SDL_SensorGetName(sdl->auxiliary_devices[sdl->auxiliary_device_number].dev.sensor)
-            );
-            sdl->auxiliary_device_number++;
-            
-   
+            SDL_Sensor * sensor = SDL_SensorOpen(i);
+            if (sensor){
+
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+               dev.sensor=sensor;
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                  type=SDL_AUXILIARY_DEVICE_TYPE_SENSOR;
+               input_config_set_sensor_display_name(
+                  sensor_count++,
+                  SDL_SensorGetName(sdl->auxiliary_devices[sdl->auxiliary_device_number].dev.sensor)
+               );
+               sdl->auxiliary_device_number++;
+            } else 
+               RARCH_DBG(
+                  "[SDL]: Failed to open sensor on slot %d\n\t%s\n",
+                  SDL_GetError()
+               );
          }
 #endif
          for (i=0; (i<numTouchDevices) && (touch_device_count<MAX_USERS); i++){
-            sdl->auxiliary_devices[sdl->auxiliary_device_number].
-               dev.touch_id=SDL_GetTouchDevice(i);
-            sdl->auxiliary_devices[sdl->auxiliary_device_number].
-               type=SDL_AUXILIARY_DEVICE_TYPE_TOUCHID;
-            sdl->auxiliary_device_number++;
-            touch_device_count++;
+            SDL_TouchID touch_id=SDL_GetTouchDevice(i);
+            if (touch_id){
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                  dev.touch_id=touch_id;
+               sdl->auxiliary_devices[sdl->auxiliary_device_number].
+                  type=SDL_AUXILIARY_DEVICE_TYPE_TOUCHID;
+               sdl->auxiliary_device_number++;
+               touch_device_count++;
+            } else {
+               RARCH_DBG(
+                  "[SDL]: Failed to open touch device on slot %d\n\t%s\n",
+                  SDL_GetError()
+               );
+            }
          }
          
       } else 
