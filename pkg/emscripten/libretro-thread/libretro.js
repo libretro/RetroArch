@@ -208,14 +208,18 @@ function uploadFiles(accept) {
 		input.type = "file";
 		input.setAttribute("multiple", "");
 		if (accept) input.accept = accept;
-		input.onchange = async function() {
+		input.style.setProperty("display", "none", "important");
+		document.body.appendChild(input);
+		input.addEventListener("change", async function() {
 			let files = [];
 			for (const file of this.files) {
 				files.push({path: file.name, data: await readFile(file)});
 			}
+			document.body.removeChild(input);
 			resolve(files);
-		}
+		});
 		input.oncancel = function() {
+			document.body.removeChild(input);
 			resolve([]);
 		}
 		input.click();
