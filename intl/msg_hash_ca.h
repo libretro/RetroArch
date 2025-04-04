@@ -2817,6 +2817,10 @@ MSG_HASH(
    "Respecta el mode silenciós"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "Silencia l'àudio en fer servir el mode silenci."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    "Silencia l'àudio en l'avançament ràpid"
    )
@@ -4202,6 +4206,10 @@ MSG_HASH(
    "Desa els fitxers d'assignació en sortir"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
+   "Carrega automàticament fitxers de remapeig"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
    "Fes servir el fitxer global d'opcions del nucli"
    )
@@ -4491,6 +4499,10 @@ MSG_HASH(
    "Alta qualitat WebM"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
+   "Configuració personalitzada de gravació"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
    "Fils per a l'enregistrament"
    )
@@ -4533,6 +4545,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
    "Alt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+   "Configuració personalitzada de retransmissió"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
@@ -5773,6 +5789,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACCESSIBILITY,
    "Mostra 'Accesibilitat'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
+   "Mostra la configuració d'accessibilitat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
@@ -7328,6 +7348,10 @@ MSG_HASH(
    "Afegir a la llista de reproducció"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Afegeix el contingut a una llista de reproducció."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    "Crea una nova llista de reproducció"
    )
@@ -7611,6 +7635,10 @@ MSG_HASH(
    "Fitxer de reassignació actiu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
+   "El fitxer de reassignació està en ús actualment."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
    "Carrega el fitxer de reassignació"
    )
@@ -7779,6 +7807,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
    "Crea una coincidència del truc #"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
+   "Direcció de coincidència: %08X Mask: %02X"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Replace) */
 
@@ -7873,6 +7905,10 @@ MSG_HASH(
    "Força de la vibració secundària"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
+   "Duració (ms) de la vibració secundària"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
    "Codi"
    )
@@ -7925,6 +7961,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
    "Activa el procés de shaders de vídeo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
+   "Comprova els canvis en els shaders"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
@@ -8531,6 +8571,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_8,
    "8-Bit, Valor màxim = 0xFF"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
+   "16 Bits, valor màxim = 0xFFFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
@@ -9218,6 +9262,10 @@ MSG_HASH(
    "Color del tema"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   "Disposició vertical de miniatures"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
    "Mostra la minatura de l’esquerra a sota de la de la dreta, al costat dret de la pantalla."
    )
@@ -9240,6 +9288,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
    "Marge del títol"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   "Desplaçament horitzontal del marge del títol"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -9893,6 +9945,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
    "Progrés:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+   "Mostra fitxers i carpetes ocults:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
@@ -10774,6 +10830,10 @@ MSG_HASH(
    "%.*s s'ha unit com el jugador %u"
    )
 MSG_HASH(
+   MSG_NETPLAY_ENTER_PASSWORD,
+   "Introdueix la contrasenya del servidor de joc:"
+   )
+MSG_HASH(
    MSG_NETPLAY_ENTER_CHAT,
    "Escriu el missatge per iniciar la sessió:"
    )
@@ -10788,6 +10848,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_CLIENT_HANGUP,
    "Joc en xarxa desconnectat"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
+   "No hi ha lloc per més jugadors"
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY,
@@ -11515,6 +11579,10 @@ MSG_HASH(
    "S'ha desat la personalització correctament."
    )
 MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "La funció desat està bloquejada. Les personalitzacions estan actives."
+   )
+MSG_HASH(
    MSG_PAUSED,
    "En pausa."
    )
@@ -11557,6 +11625,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
    "No està disponible el rebobinat perquè aquest nucli no té suport d'estat desats serialitzats."
+   )
+MSG_HASH(
+   MSG_REWIND_REACHED_END,
+   "S'ha arribat al final de la memòria intermèdia de rebobinat."
    )
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
@@ -11835,6 +11907,10 @@ MSG_HASH(
    "Cerca de fitxers finalitzada."
    )
 MSG_HASH(
+   MSG_CHEAT_INIT_FAIL,
+   "No és possible iniciar la cerca de trucs."
+   )
+MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "Nou nombre de coincidències = %u"
    )
@@ -11897,6 +11973,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
    "Error en seleccionar el disc."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Error en establi l'últim disc que s'ha fet servir."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
@@ -11965,6 +12045,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOAD_CORE_FIRST,
    "Carrega un nucli en primer lloc, si us plau."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_SHADER_PRESET,
+   "Error en eliminar la configuració de shaders."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
@@ -12127,6 +12211,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_NO_DESC,
    "Resolució de pantalla: %d x %d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "Resolució de la pantalla: %dx%d - %s"
    )
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
@@ -12559,6 +12647,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
    "Carrega el punt de restauració"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
+   "Directori de recursos de la pantalla inferior"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
