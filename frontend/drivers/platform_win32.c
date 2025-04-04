@@ -283,8 +283,8 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    /* Windows 2000 and later */
    SYSTEM_INFO si         = {{0}};
    OSVERSIONINFOEX vi     = {0};
-#if _WIN32_WINNT >= 0x0600
-   /* Vista and later*/
+#ifndef _MSC_VER
+   /* Vista and later, MSYS2/MINGW64 build */
    const char win_ver_reg_key[]    = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
    const DWORD reg_read_flags      = RRF_RT_REG_SZ; /* Only read strings (REG_SZ) */
    const int ProductName_2nd_digit = 9; /* second digit in the string 'Windows 10' */
@@ -317,8 +317,9 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          break;
    }
 
-#if _WIN32_WINNT >= 0x0600
-   /* Vista and later: check for Win11 by looking for a specific Registry value.
+#ifndef _MSC_VER
+   /* Vista and later, MSYS2/MINGW64 build
+   /* Check for Win11 by looking for a specific Registry value.
     * The behavior of GetVersionEx is changed under Win11 and no longer provides
     * relevant data. If the specific Registry value is present, read version data
     * directly from registry and skip remainder of function.
