@@ -3,6 +3,10 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+#if defined(_3DS) && !defined(_POSIX_THREADS)
+#include <../rthreads/ctr_pthread.h>
+#endif
+
 #ifdef RC_C89_HELPERS
 
 int rc_strncasecmp(const char* left, const char* right, size_t length)
@@ -136,6 +140,29 @@ void rc_mutex_lock(rc_mutex_t* mutex)
 void rc_mutex_unlock(rc_mutex_t* mutex)
 {
   LWP_MutexUnlock(mutex);
+}
+
+#elif defined(_3DS)
+
+void rc_mutex_init(rc_mutex_t* mutex)
+{
+  RecursiveLock_Init(mutex);
+}
+
+void rc_mutex_destroy(rc_mutex_t* mutex)
+{
+  /* Nothing to do here */
+  (void)mutex;
+}
+
+void rc_mutex_lock(rc_mutex_t* mutex)
+{
+  RecursiveLock_Lock(mutex);
+}
+
+void rc_mutex_unlock(rc_mutex_t* mutex)
+{
+  RecursiveLock_Unlock(mutex);
 }
 
 #else

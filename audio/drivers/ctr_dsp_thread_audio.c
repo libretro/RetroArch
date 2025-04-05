@@ -16,11 +16,13 @@
 #include <3ds.h>
 #include <string.h>
 #include <malloc.h>
+#include <math.h>
 #include <queues/fifo_queue.h>
 #include <rthreads/rthreads.h>
 
 #include "../audio_driver.h"
 #include "../../ctr/ctr_debug.h"
+#include "../../verbosity.h"
 
 typedef struct
 {

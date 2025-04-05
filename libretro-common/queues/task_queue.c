@@ -35,7 +35,7 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(_3DS)
 #include <retro_timers.h>
 #endif
 #ifdef HAVE_GCD
