@@ -364,8 +364,7 @@ command_t* command_stdin_new(void)
 #endif
 
 #if defined(EMSCRIPTEN)
-void PlatformEmscriptenCommandReply(const char *, size_t);
-int PlatformEmscriptenCommandRead(char **, size_t);
+#include "frontend/drivers/platform_emscripten.h"
 typedef struct
 {
    char command_buf[CMD_BUF_SIZE];
@@ -374,7 +373,7 @@ typedef struct
 static void emscripten_command_reply(command_t *_cmd,
    const char *s, size_t len)
 {
-   PlatformEmscriptenCommandReply(s, len);
+   platform_emscripten_command_reply(s, len);
 }
 
 static void emscripten_command_free(command_t *handle)
@@ -386,7 +385,7 @@ static void emscripten_command_free(command_t *handle)
 static void command_emscripten_poll(command_t *handle)
 {
    command_emscripten_t *emscriptencmd = (command_emscripten_t*)handle->userptr;
-   ptrdiff_t msg_len = PlatformEmscriptenCommandRead((char **)(&emscriptencmd->command_buf), CMD_BUF_SIZE);
+   ptrdiff_t msg_len = platform_emscripten_command_read((char **)(&emscriptencmd->command_buf), CMD_BUF_SIZE);
    if (msg_len == 0)
       return;
    command_parse_msg(handle, emscriptencmd->command_buf);
@@ -415,8 +414,6 @@ command_t* command_emscripten_new(void)
    return cmd;
 }
 #endif
-
-
 
 bool command_get_config_param(command_t *cmd, const char* arg)
 {

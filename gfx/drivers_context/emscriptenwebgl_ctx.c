@@ -21,6 +21,7 @@
 
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+#include "../../frontend/drivers/platform_emscripten.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -28,9 +29,6 @@
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-
-void platform_emscripten_get_canvas_size(int *width, int *height);
-double platform_emscripten_get_dpr(void);
 
 typedef struct
 {
@@ -41,10 +39,7 @@ typedef struct
 
 static void gfx_ctx_emscripten_webgl_swap_interval(void *data, int interval)
 {
-   if (interval == 0)
-      emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
-   else
-      emscripten_set_main_loop_timing(EM_TIMING_RAF, interval);
+   platform_emscripten_set_main_loop_interval(interval);
 }
 
 static void gfx_ctx_emscripten_webgl_check_window(void *data, bool *quit,

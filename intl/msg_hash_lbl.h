@@ -241,6 +241,10 @@ MSG_HASH(
    "rwebaudio"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_AUDIOWORKLET,
+   "audioworklet"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DRIVER_JACK,
    "jack"
    )

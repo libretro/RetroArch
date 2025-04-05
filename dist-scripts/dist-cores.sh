@@ -221,7 +221,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       heap_mem=134217728
       if [ $name = "mupen64plus_next" ] ; then
          gles3=1
-         #async=1
+         async=1
          #proxy_to_pthread=0
          stack_mem=134217728
          heap_mem=268435456
