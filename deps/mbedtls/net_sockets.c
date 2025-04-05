@@ -400,6 +400,7 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
 
             memcpy( client_ip, &addr4->sin_addr.s_addr, *ip_len );
         }
+#ifndef MBEDTLS_NO_IPV6
         else
         {
             struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *) &client_addr;
@@ -410,6 +411,7 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
 
             memcpy( client_ip, &addr6->sin6_addr.s6_addr, *ip_len);
         }
+#endif
     }
 
     return( 0 );

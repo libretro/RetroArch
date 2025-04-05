@@ -3,6 +3,10 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+#if defined(_3DS) && !defined(_POSIX_THREADS)
+#include <../rthreads/ctr_pthread.h>
+#endif
+
 #ifdef RC_C89_HELPERS
 
 int rc_strncasecmp(const char* left, const char* right, size_t length)
