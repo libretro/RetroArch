@@ -1382,12 +1382,10 @@ static void rcheevos_client_login_callback(int result,
 
 static void rcheevos_finalize_game_load(rc_client_t* client)
 {
-#if defined(HAVE_GFX_WIDGETS) /* We always want badges if widgets are enabled */
-   bool want_badges     = true;
-#else
    settings_t* settings = config_get_ptr();
    bool want_badges     = settings->bools.cheevos_badges_enable;
-   /* Badges are only needed for xmb and ozone menus */
+#if !defined(HAVE_GFX_WIDGETS)
+   /* Then badges are only needed for xmb and ozone menus */
    want_badges          = want_badges &&
       (        string_is_equal(settings->arrays.menu_driver, "xmb")
             || string_is_equal(settings->arrays.menu_driver, "ozone"));
