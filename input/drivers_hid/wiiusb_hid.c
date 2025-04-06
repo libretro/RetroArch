@@ -15,6 +15,8 @@
  */
 
 #include <stdlib.h>
+#include <unistd.h>
+#include <malloc.h>
 
 #include <gccore.h>
 #include <rthreads/rthreads.h>
