@@ -1971,6 +1971,10 @@ MSG_HASH(
    "15 - För 960Hz skärmuppdateringsfrekvens"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Infoga svart bildruta - Mörka bildrutor"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
    "Justera antalet svarta bildrutor i den totala BFI-sekvensen för utskanning. Fler motsvarar högre rörelseklarhet, färre motsvarar högre ljusstyrka. Inte tillämpligt vid 120 Hz eftersom det bara finns totalt 1 BFI-bildruta att arbeta med. Inställningar som är högre än möjligt begränsar dig till det högsta möjliga för din valda uppdateringsfrekvens."
    )
@@ -2753,12 +2757,28 @@ MSG_HASH(
    "Stäng av allt ljud i tyst läge."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "Tyst ljud vid snabbspolning"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Stäng av ljudet automatiskt när snabbspolning framåt används."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Uppsnabbat ljud vid snabbspolning"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    "Snabba upp ljudet vid snabbspolning framåt. Förhindrar knastrande men ändrar tonhöjd."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "Tyst ljud vid tillbakaspolning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "Tysta ljudet automatiskt vid tillbakaspolning."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -3299,6 +3319,10 @@ MSG_HASH(
    "Turboläge"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   "Välj det allmänna beteendet för turbo-läget."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
    "Klassisk"
    )
@@ -3333,6 +3357,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
    "Turbo-bindning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   "Turbo aktiverar RetroPad-bindning. Tom använder den portspecifika bindningen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
@@ -4716,6 +4744,10 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "Nollställ efter snabbspolning"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
    "Återställ efter sparad status"
    )
@@ -4948,8 +4980,16 @@ MSG_HASH(
    "Överlager"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Föredra inläsning av överlägg baserat på systemnamn innan det återgår till standardförinställningen. Ignoreras om en åsidosättning har angetts för förinställningen för överlägg."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
    "Överlager opacitet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
+   "Opacitet för alla användargränssnittselement i överlägget."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
@@ -5064,8 +5104,20 @@ MSG_HASH(
    "Välj och justera ett tangentbordsöverlager."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   "Aktivera överlägg för ljuspistol, mus och pekare"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "Använd alla pekinmatningar som inte trycker på överläggskontroller för att skapa pekenhetsinmatningar för kärnan."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    "Överlägg ljuspistol"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "Konfigurera ljuspistolens inmatning som skickas från överlägget."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -5093,6 +5145,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
    "Justera tangentbordsöverlägret till dess ursprungliga bildformat. Inaktivera för att fylla skärmen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+   "Opacitet för tangentbordsöverlägg"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
@@ -5658,6 +5714,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
    "Initial fördröjning i millisekunder när du håller en riktning för att rulla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
+   "Starta UI Companion vid uppstart"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT,
+   "Starta User Interface companion-drivrutinen vid uppstart (om tillgänglig)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,

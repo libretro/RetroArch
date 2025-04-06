@@ -11147,6 +11147,10 @@ MSG_HASH(
    "No s’han pogut desar les opcions del nucli a:"
    )
 MSG_HASH(
+   MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
+   "No s'ha trobat un altre controlador"
+   )
+MSG_HASH(
    MSG_COULD_NOT_OPEN_DATA_TRACK,
    "No es pot obrir la pista de dades"
    )
@@ -11237,6 +11241,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR_SAVING_SHADER_PRESET,
    "Error en desar el preajust de shaders."
+   )
+MSG_HASH(
+   MSG_EXTERNAL_APPLICATION_DIR,
+   "Directori extern de l'aplicació"
    )
 MSG_HASH(
    MSG_EXTRACTING,
@@ -11563,6 +11571,10 @@ MSG_HASH(
    "Error en iniciar el joc en xarxa."
    )
 MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "El nucli no admet joc en xarxa."
+   )
+MSG_HASH(
    MSG_NO_STATE_HAS_BEEN_LOADED_YET,
    "No s'ha carregat encara el desat ràpid."
    )
@@ -11605,6 +11617,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
    "Redirigint el fitxer d'estats desats a"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
+   "El fitxer de personalització s'ha desat correctament."
    )
 MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,
@@ -11779,6 +11795,10 @@ MSG_HASH(
    "Fi de la pausa."
    )
 MSG_HASH(
+   MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
+   "Desconnecta el dispositiu del port"
+   )
+MSG_HASH(
    MSG_VALUE_REBOOTING,
    "Reiniciant..."
    )
@@ -11817,6 +11837,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_NR,
    "No ha sigut configurat %s (%u/%u)"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
+   "no està configurat, es fa servir l'opció secundària"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
@@ -11885,6 +11909,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    "Contrasenya incorrecta."
+   )
+MSG_HASH(
+   MSG_CONFIG_OVERRIDE_LOADED,
+   "S'ha carregat la configuració personalitzada."
    )
 MSG_HASH(
    MSG_GAME_REMAP_FILE_LOADED,
@@ -11991,6 +12019,10 @@ MSG_HASH(
    "El servidor de joc està ple."
    )
 MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "No se't permet entrar en aquest servidor."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "Heu de posar en pausa o desactivar el mode expert d’assoliments per carregar desats ràpids."
    )
@@ -12009,6 +12041,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
    "S’ha activat el mode expert d’assoliments; s’han desactivat els desats ràpids i el rebobinat."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "Aquest joc no té assoliments."
    )
 MSG_HASH(
    MSG_CHEEVOS_UNSUPPORTED_COUNT,
@@ -12608,6 +12644,10 @@ MSG_HASH(
    )
 #endif
 #ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
+   "Activa l'acceleració de CPU de New3DS i memòria intermèdia L2"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
    "Pantalla inferior de la 3DS"

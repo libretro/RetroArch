@@ -1454,7 +1454,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "Змяніць накладку на дысплэй і клавіятуру, а таксама налады апавяшчэнняў на экране."
+   "Змяніць накладку дысплэя і клавіятуры ды налады экранных апавяшчэнняў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -4121,7 +4121,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "Захапляе выяву бягучага кантэнту для перакладу і/або агучвае любы тэкст на экране. 'AI-сэрвіс' павінен быць уключаны і наладжаны."
+   "Захапляе выяву бягучага змесціва на пераклад ды/або агучвае любы тэкст на экране. 'ШІ-сэрвіс' павінен быць уключаны і наладжаны."
    )
 
 MSG_HASH(
@@ -5700,7 +5700,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
-   "Вывад паведамленняў на экран."
+   "Паказваць экранныя паведамленні."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
@@ -5803,12 +5803,16 @@ MSG_HASH(
    "Апавяшчэнне пра злучэнне прылады ўводу (аўтаканфігурацыя)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Апавяшчэнні пра памылкі прылад увода (аўтаканфігурацыя)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "Апавяшчэнні пра чыт-коды"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Адлюстроўваць паведамленне пры загрузцы чыт-кодаў."
+   "Адлюстроўваць экраннае паведамленне пры загрузцы чыт-кодаў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
@@ -5816,11 +5820,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
-   "Адлюстроўваць паведамленне, калі да ROM ужыты софт-патч."
+   "Адлюстроўваць экраннае паведамленне, калі да ROM ужыты софт-патч."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
-   "Адлюстроўваць паведамленне пры злучэнне/адлучэнне прылад уводу."
+   "Адлюстроўваць экраннае паведамленне пры злучэнне/адлучэнне прылад уводу."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
@@ -5828,7 +5832,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
-   "Адлюстроўваць паведамленне пры загрузцы файлаў раскладак кіравання."
+   "Адлюстроўваць экраннае паведамленне пры загрузцы файлаў раскладак кіравання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
@@ -5836,7 +5840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-   "Паказваць паведамленне пры загрузцы перавызначэння канфігурацыі."
+   "Паказваць экраннае паведамленне пры загрузцы перавызначэння канфігурацыі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
@@ -5844,7 +5848,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-   "Адлюстроўваць паведамленне пры аўтаматычным запуску апошняга выкарыстанага дыска з дапамогай M3U-плэйліста для мультыдыскавага кантэнту."
+   "Адлюстроўваць экраннае паведамленне пры аўтаматычным запуску апошняга выкарыстанага дыска з дапамогай M3U-плэйліста для шматдыскавага змесціва."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
@@ -5852,7 +5856,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
-   "Адлюстроўваць паведамленне пры ўстаўцы і выманні дыска."
+   "Адлюстроўваць экраннае паведамленне пры ўстаўцы і выманні дыска."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
@@ -5860,7 +5864,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
-   "Адлюстроўваць на экране паведамленне пры захаванні ды загрузцы станаў."
+   "Адлюстроўваць экраннае паведамленне пры захаванні ды загрузцы станаў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -5876,7 +5880,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
-   "Адлюстроўваць паведамленне пры захаванні скрыншота."
+   "Адлюстроўваць экраннае паведамленне пры захаванні здымка экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
@@ -5908,7 +5912,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-   "Адлюстраванне на экране эфекту ўспышкі з зададзенай працягласцю пры стварэнні скрыншота."
+   "Адлюстраванне на экране эфекту ўспышкі з зададзенай працягласцю пры стварэнні здымка экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
@@ -5924,7 +5928,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
-   "Адлюстроўваць паведамленне пры змене частаты абнаўлення."
+   "Адлюстроўваць экраннае паведамленне пры змене частаты абнаўлення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
@@ -6673,11 +6677,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-   "Паказваць 'Аверлэі'"
+   "Паказ 'Экранныя накладкі'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-   "Паказваць опцыю 'Аверлэі'."
+   "Паказваць опцыю 'Экранныя накладкі'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
@@ -7234,7 +7238,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
-   "Настройка размяшчэння і зрушэнняў для наэкранных апавяшчэнняў аб дасягненнях."
+   "Змяніць размяшчэнне і зрухі экранных апавяшчэнняў пра дасягненні."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
