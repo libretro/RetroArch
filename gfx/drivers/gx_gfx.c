@@ -742,8 +742,8 @@ static void init_vtx(gx_video_t *gx, const video_info_t *video,
       }
    }
 
-   DCFlushRange(g_tex.data, ((g_tex.width *
-         g_tex.height) * video->rgb32) ? 4 : 2);
+   DCFlushRange(g_tex.data, g_tex.width * g_tex.height *
+            (video->rgb32 ? 4 : 2));
 
    gx->rgb32 = video->rgb32;
    gx->scale = video->input_scale;
