@@ -74,6 +74,9 @@
   }
 #endif
 
+void VIDEO_SetTrapFilter(bool enable);
+void VIDEO_SetGamma(int gamma);
+
 enum
 {
    GX_RESOLUTIONS_DEFAULT = 0,
