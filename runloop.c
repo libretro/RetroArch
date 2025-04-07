@@ -5141,25 +5141,72 @@ error:
    return false;
 }
 
-void core_options_reset(void)
+void core_options_reset(const char* label)
 {
    size_t i;
    runloop_state_t *runloop_st     = &runloop_state;
    core_option_manager_t *coreopts = runloop_st->core_options;
 
-   /* If there are no core options, there
-    * is nothing to do */
-   if (!coreopts || (coreopts->size < 1))
+   /* If there are no loaded core options, or the menu entry
+    * was indicating a reset for a specific core instead,
+    * do a "cold reset" (deletion of options file) */
+   if (!coreopts || !string_is_empty(label))
+   {
+      settings_t *settings             = config_get_ptr();
+      const char *core_name            = label;
+      char per_core_options_path[PATH_MAX_LENGTH];
+
+      RARCH_DBG("[Core]: Core options cold reset, label from menu entry \"%s\", loaded core \"%s\".\n",
+                label, runloop_st->system.info.library_name);
+
+      if (string_is_empty(label))
+         core_name = runloop_st->system.info.library_name;
+
+      if (settings->bools.global_core_options)
+      {
+         RARCH_WARN("[Core]: Core options cold reset is not supported when global core options are used, deletion skipped.\n");
+         return;
+      }
+
+      /* Get current options file path */
+      per_core_options_path[0]      = '\0';
+      validate_per_core_options(
+            per_core_options_path, sizeof(per_core_options_path), true,
+            core_name, core_name);
+
+      if (string_is_empty(per_core_options_path))
+      {
+         RARCH_ERR("[Core]: Core options file could not be located, deletion skipped.\n");
+         return;
+      }
+      /* Remove current options file, if possible */
+      if (path_is_valid(per_core_options_path))
+      {
+         RARCH_WARN("[Core]: Deleting core options file: \"%s\".\n", per_core_options_path);
+         filestream_delete(per_core_options_path);
+      }
+      else
+      {
+         RARCH_ERR("[Core]: Core options file path is not valid, deletion skipped: \"%s\".\n", per_core_options_path);
+         return;
+      }
+   }
+   else if (coreopts->size < 1)
+   {
+      RARCH_WARN("[Core]: Core options reset invoked but there are no options.\n");
       return;
+   }
+   else
+   {
+      for (i = 0; i < coreopts->size; i++)
+         coreopts->opts[i].index = coreopts->opts[i].default_index;
 
-   for (i = 0; i < coreopts->size; i++)
-      coreopts->opts[i].index = coreopts->opts[i].default_index;
-
-   coreopts->updated = true;
+      coreopts->updated = true;
 
 #ifdef HAVE_CHEEVOS
-   rcheevos_validate_config_settings();
+      rcheevos_validate_config_settings();
 #endif
+   }
 
    {
       const char *_msg = msg_hash_to_str(MSG_CORE_OPTIONS_RESET);

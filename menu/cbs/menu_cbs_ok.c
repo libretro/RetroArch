@@ -5655,7 +5655,7 @@ static int action_ok_folder_specific_core_options_remove(const char *path,
 static int action_ok_core_options_reset(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   core_options_reset();
+   core_options_reset(label);
    return 0;
 }
 
