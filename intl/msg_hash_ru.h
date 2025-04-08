@@ -9383,14 +9383,6 @@ MSG_HASH(
    "Текущий используемый файл опций."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Сбросить опции"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Возврат опций ядра к стандартным значениям."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Выгрузить опции в память"
    )

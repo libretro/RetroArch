@@ -9291,14 +9291,6 @@ MSG_HASH(
    "Le fichier des options en cours d'utilisation."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Réinitialiser les options"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Définir toutes les options du cœur aux valeurs par défaut."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Enregistrer les options sur le disque"
    )

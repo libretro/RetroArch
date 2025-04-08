@@ -8155,14 +8155,6 @@ MSG_HASH(
    "Tällä hetkellä käytössä oleva asetustiedosto."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Nollaa asetukset"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Aseta kaikki ydinasetukset oletusarvoihin."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Vie asetukset levylle"
    )

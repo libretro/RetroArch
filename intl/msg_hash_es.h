@@ -9343,14 +9343,6 @@ MSG_HASH(
    "El archivo de opciones que se está utilizando actualmente."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Restablecer opciones"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Cambia todas las opciones del núcleo a su configuración predeterminada."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Escribir opciones en disco"
    )

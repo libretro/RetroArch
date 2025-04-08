@@ -9339,14 +9339,6 @@ MSG_HASH(
    "A jelenleg használt konfigurációs fájl."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Beállítások visszaállítása"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Az összes magbeállítás visszaállítása alapértékre."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Beállítások azonnali lemezre írása"
    )

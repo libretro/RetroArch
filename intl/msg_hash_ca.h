@@ -3804,6 +3804,10 @@ MSG_HASH(
    "Superposició de teclat (alternar)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   "Activa o desactiva la superposició del teclat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
    "Següent Superposició"
    )
@@ -4161,6 +4165,10 @@ MSG_HASH(
    "Memòria cau d'arxius d'informació de nuclis"
    )
 #ifndef HAVE_DYNAMIC
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+   "Recarrega sempre el nucli en executar contingut"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
@@ -4202,6 +4210,10 @@ MSG_HASH(
 )
 
 
+MSG_HASH(
+   MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
+   "El nucli s'està descarregant ara mateix"
+)
 #endif
 /* Settings > Configuration */
 
@@ -4214,8 +4226,16 @@ MSG_HASH(
    "Desa els fitxers d'assignació en sortir"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
+   "Carrega els fitxers de personalització automàticament"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
    "Carrega automàticament fitxers de remapeig"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
+   "Carrega els fitxers de shaders automàticament"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
@@ -4382,6 +4402,10 @@ MSG_HASH(
 
 /* Settings > File Browser */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
+   "Mostra fitxers i carpetes ocults"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "Filtrar extensions desconegudes"
@@ -5112,6 +5136,10 @@ MSG_HASH(
    "Navegació en bucle"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+   "Posa en pausa el contingut quan el menú estigui actiu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
    "Reprendre contingut després d'utilitzar un desat ràpid"
    )
@@ -5827,6 +5855,10 @@ MSG_HASH(
    "Mostra 'Administració d'energia'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+   "Mostra la configuració de 'Gestió energia'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
    "Mostra 'Assoliments'"
    )
@@ -6239,6 +6271,10 @@ MSG_HASH(
    "Europa Occidental"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   "Sud-amèrica (Sud-est, Brasil)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    "Sud-est Àsia"
    )
@@ -6537,6 +6573,10 @@ MSG_HASH(
    "Etiqueta de temps de joc a les llistes"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   "Estil de data i temps de 'Última reproducció'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
    "Cerca aproximada de fitxers"
    )
@@ -6636,6 +6676,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
    "Permetre la càmera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
+   "Tots els nuclis tenen accés a la càmera."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
@@ -6948,6 +6992,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE,
    "Contingut (Nom del nucli)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE,
+   "Contingut (Nom del sistema - Nom del nucli)"
    )
 #endif
 
@@ -7655,14 +7703,6 @@ MSG_HASH(
    "El fitxer d'opcions que està ara mateix en ús."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Reinicia les opcions"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Estableix totes les opcions del nucli als valors predeterminats."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Escriu les opcions al disc"
    )
@@ -7715,6 +7755,10 @@ MSG_HASH(
    "Elimina els fitxers d'assignació del nucli"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+   "Desa la personalització a la carpeta de fitxers"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "Desa el fitxer de mapeig del nucli"
    )
@@ -7743,6 +7787,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
    "Comença o continua la cerca de trucs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
+   "Escaneja la memòria per trobar nous trucs."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -8183,6 +8231,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
    "Fitxer de personalització activat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
+   "El fitxer de trucs està en ús actualment."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
@@ -8635,6 +8687,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
    "Executa el següent truc si el valor és idèntic al de la memòria"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
+   "Executa el següent truc si el valor és diferent al de la memòria"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
@@ -9629,6 +9685,10 @@ MSG_HASH(
    "Icones d'interruptors"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "Icones de les llistes de reproducció (Es requereix reinici)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
    "Optimitza la disposició en mode horitzontal"
    )
@@ -10059,6 +10119,14 @@ MSG_HASH(
    "Progrés:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   "Nombre màxim d'entrades a 'Totes les llistes de reproducció':"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   "Nombre màxim d'entrades a 'Totes les llistes de reproducció':"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
    "Mostra fitxers i carpetes ocults:"
    )
@@ -10267,6 +10335,10 @@ MSG_HASH(
    "Límit de la memòria cau de miniatures:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
+   "Límit de la mida de miniatures arrosegades:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
    "Descarrega totes les miniatures"
    )
@@ -10464,6 +10536,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
    "Sobrenom: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
+   "Cercant per contingut compatible..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
@@ -10970,6 +11046,10 @@ MSG_HASH(
    "\"%s\" s'ha desconnectat"
    )
 MSG_HASH(
+   MSG_NETPLAY_SERVER_HANGUP,
+   "Un client de joc de xarxa s'ha desconnectat"
+   )
+MSG_HASH(
    MSG_NETPLAY_CLIENT_HANGUP,
    "Joc en xarxa desconnectat"
    )
@@ -11239,6 +11319,10 @@ MSG_HASH(
    "Els CRC32 dels continguts són diferents. No es poden usar jocs diferents."
    )
 MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "El servidor està executant un joc diferent."
+   )
+MSG_HASH(
    MSG_PING_TOO_HIGH,
    "El vostre ping és massa alt per aquest amfitrió."
    )
@@ -11273,6 +11357,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
    "No s'ha trobat un altre controlador"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
+   "No s'ha pogut trobar un sistema compatible."
    )
 MSG_HASH(
    MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
@@ -11767,6 +11855,10 @@ MSG_HASH(
    "El fitxer de personalització s'ha desat correctament."
    )
 MSG_HASH(
+   MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
+   "S'ha eliminat el fitxer d'assignació."
+   )
+MSG_HASH(
    MSG_REMOVED_DISK_FROM_TRAY,
    "Disc eliminat de la safata."
    )
@@ -11781,6 +11873,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Restaurant un estat desat anterior."
+   )
+MSG_HASH(
+   MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
+   "Revertint la carpeta de fitxers de desat a"
    )
 MSG_HASH(
    MSG_REWINDING,
@@ -12605,12 +12701,20 @@ MSG_HASH(
    "Preferència a l'entrada tàctil frontal"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
+   "Fes servir el toc frontal en comptes del toc posterior."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    "Tàctil"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    "Configuració del mode teclat del controlador"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   "Tipus de configuració del mode teclat del controlador"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
@@ -12711,6 +12815,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
    "Força la CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
+   "Permet que es facin servir altres freqüències de rellotge amb la CPU"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
@@ -12883,6 +12991,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
    "Mida de la font"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
+   "Ajusta l'escala de la font a la pantalla inferior."
    )
 #endif
 #ifdef HAVE_QT

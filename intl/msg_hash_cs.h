@@ -9275,14 +9275,6 @@ MSG_HASH(
    "Aktuální používaný soubor možností."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Resetovat možnosti"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Nastavte všechny základní možnosti na výchozí hodnoty."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Zápis možnosti na disk"
    )

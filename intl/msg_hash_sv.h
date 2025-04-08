@@ -8383,14 +8383,6 @@ MSG_HASH(
    "Den aktuella alternativfilen som används."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Återställ alternativ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Ställ in alla kärnalternativ till standardvärden."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Skriv alternativ till disk"
    )

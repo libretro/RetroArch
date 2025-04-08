@@ -9039,14 +9039,6 @@ MSG_HASH(
    "現在使用中のオプションファイルです。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "オプションをリセット"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "すべてのコアオプションをデフォルトの値に設定します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "オプションを強制的にディスクに保存"
    )
