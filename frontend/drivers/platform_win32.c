@@ -319,7 +319,7 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 
 #ifndef _MSC_VER
    /* Vista and later, MSYS2/MINGW64 build
-   /* Check for Win11 by looking for a specific Registry value.
+    * Check for Win11 by looking for a specific Registry value.
     * The behavior of GetVersionEx is changed under Win11 and no longer provides
     * relevant data. If the specific Registry value is present, read version data
     * directly from registry and skip remainder of function.
