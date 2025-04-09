@@ -191,8 +191,6 @@ void rarch_stop_draw_observer(void)
     iterate_observer = NULL;
 }
 
-apple_frontend_settings_t apple_frontend_settings;
-
 void get_ios_version(int *major, int *minor)
 {
    static int savedMajor, savedMinor;
@@ -713,7 +711,6 @@ enum
 
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:[AVAudioSession sharedInstance]];
 
-   [self refreshSystemConfig];
    [self showGameView];
 
    rarch_main(argc, argv, NULL);
@@ -913,7 +910,6 @@ enum
 #if TARGET_OS_IOS
    [self setToolbarHidden:![[viewController toolbarItems] count] animated:YES];
 #endif
-   [self refreshSystemConfig];
 }
 
 - (void)showGameView
@@ -931,22 +927,6 @@ enum
    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
          command_event(CMD_EVENT_AUDIO_START, NULL);
          });
-}
-
-- (void)refreshSystemConfig
-{
-#if TARGET_OS_IOS
-   /* Get enabled orientations */
-   apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
-
-   if (string_is_equal(apple_frontend_settings.orientations, "landscape"))
-      apple_frontend_settings.orientation_flags =
-           UIInterfaceOrientationMaskLandscape;
-   else if (string_is_equal(apple_frontend_settings.orientations, "portrait"))
-      apple_frontend_settings.orientation_flags =
-           UIInterfaceOrientationMaskPortrait
-         | UIInterfaceOrientationMaskPortraitUpsideDown;
-#endif
 }
 
 - (void)supportOtherAudioSessions { }

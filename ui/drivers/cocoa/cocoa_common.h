@@ -97,14 +97,6 @@ void get_ios_version(int *major, int *minor);
 @end
 #endif
 
-typedef struct
-{
-   char orientations[32];
-   unsigned orientation_flags;
-   char bluetooth_mode[64];
-} apple_frontend_settings_t;
-extern apple_frontend_settings_t apple_frontend_settings;
-
 #define BOXSTRING(x) [NSString stringWithUTF8String:x]
 #define BOXINT(x)    [NSNumber numberWithInt:x]
 #define BOXUINT(x)   [NSNumber numberWithUnsignedInt:x]

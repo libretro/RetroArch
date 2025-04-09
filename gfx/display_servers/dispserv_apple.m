@@ -176,6 +176,53 @@ static void *apple_display_server_get_resolution_list(
    return conf;
 }
 
+#if TARGET_OS_IOS
+static void apple_display_server_set_screen_orientation(void *data, enum rotation rotation)
+{
+    switch (rotation)
+    {
+        case ORIENTATION_VERTICAL:
+            [[CocoaView get] setShouldLockCurrentInterfaceOrientation:YES];
+            [[CocoaView get] setLockInterfaceOrientation:UIInterfaceOrientationLandscapeRight];
+            break;
+        case ORIENTATION_FLIPPED:
+            [[CocoaView get] setShouldLockCurrentInterfaceOrientation:YES];
+            [[CocoaView get] setLockInterfaceOrientation:UIInterfaceOrientationPortraitUpsideDown];
+            break;
+        case ORIENTATION_FLIPPED_ROTATED:
+            [[CocoaView get] setShouldLockCurrentInterfaceOrientation:YES];
+            [[CocoaView get] setLockInterfaceOrientation:UIInterfaceOrientationLandscapeLeft];
+            break;
+        case ORIENTATION_NORMAL:
+        default:
+            [[CocoaView get] setShouldLockCurrentInterfaceOrientation:NO];
+            break;
+    }
+    if (@available(iOS 16.0, *))
+    {
+        [[CocoaView get] setNeedsUpdateOfSupportedInterfaceOrientations];
+    }
+}
+
+static enum rotation apple_display_server_get_screen_orientation(void *data)
+{
+    if (![[CocoaView get] shouldLockCurrentInterfaceOrientation])
+        return ORIENTATION_NORMAL;
+    UIInterfaceOrientation orientation = [[CocoaView get] lockInterfaceOrientation];
+    switch (orientation)
+    {
+        case UIInterfaceOrientationLandscapeRight:
+            return ORIENTATION_VERTICAL;
+        case UIInterfaceOrientationPortraitUpsideDown:
+            return ORIENTATION_FLIPPED;
+        case UIInterfaceOrientationLandscapeLeft:
+            return ORIENTATION_FLIPPED_ROTATED;
+        default:
+            return ORIENTATION_NORMAL;
+    }
+}
+#endif
+
 const video_display_server_t dispserv_apple = {
    NULL, /* init */
    NULL, /* destroy */
@@ -191,8 +238,13 @@ const video_display_server_t dispserv_apple = {
    apple_display_server_set_resolution,
    apple_display_server_get_resolution_list,
    NULL, /* get_output_options */
+#if TARGET_OS_IOS
+    apple_display_server_set_screen_orientation,
+    apple_display_server_get_screen_orientation,
+#else
    NULL, /* set_screen_orientation */
    NULL, /* get_screen_orientation */
+#endif
    NULL, /* get_flags */
    "apple"
 };
