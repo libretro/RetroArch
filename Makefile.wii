@@ -265,6 +265,10 @@ ifeq ($(LOAD_WITHOUT_CORE_INFO),1)
    CFLAGS += -DLOAD_WITHOUT_CORE_INFO
 endif
 
+ifneq ($(V),1)
+   Q := @
+endif
+
 OBJOUT   = -o
 LINKOUT  = -o
 LINK = $(CXX)
@@ -278,7 +282,8 @@ $(EXT_INTER_TARGET): $(OBJ)
 	$(LINK) $(LINKOUT)$@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) $(LIBS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.cpp
 	$(CXX) $(CFLAGS) -c $(OBJOUT)$@ $<

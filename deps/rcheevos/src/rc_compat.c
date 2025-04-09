@@ -3,10 +3,6 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-#if defined(_3DS) && !defined(_POSIX_THREADS)
-#include <../rthreads/ctr_pthread.h>
-#endif
-
 #ifdef RC_C89_HELPERS
 
 int rc_strncasecmp(const char* left, const char* right, size_t length)
@@ -124,22 +120,24 @@ void rc_mutex_unlock(rc_mutex_t* mutex)
 
 void rc_mutex_init(rc_mutex_t* mutex)
 {
-  LWP_MutexInit(mutex, NULL);
+  /* LWP_MutexInit has the handle passed by reference */
+  /* Other LWP_Mutex* calls have the handle passed by value */
+  LWP_MutexInit(&mutex->handle, 1);
 }
 
 void rc_mutex_destroy(rc_mutex_t* mutex)
 {
-  LWP_MutexDestroy(mutex);
+  LWP_MutexDestroy(mutex->handle);
 }
 
 void rc_mutex_lock(rc_mutex_t* mutex)
 {
-  LWP_MutexLock(mutex);
+  LWP_MutexLock(mutex->handle);
 }
 
 void rc_mutex_unlock(rc_mutex_t* mutex)
 {
-  LWP_MutexUnlock(mutex);
+  LWP_MutexUnlock(mutex->handle);
 }
 
 #elif defined(_3DS)

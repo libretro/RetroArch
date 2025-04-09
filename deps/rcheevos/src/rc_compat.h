@@ -81,6 +81,11 @@ RC_BEGIN_C_DECLS
   typedef struct rc_mutex_t {
     void* handle; /* HANDLE is defined as "void*" */
   } rc_mutex_t;
+ #elif defined(GEKKO)
+  #include <ogcsys.h>
+  typedef struct rc_mutex_t {
+    mutex_t handle;
+  } rc_mutex_t;
  #elif defined(_3DS)
   #include <3ds/synchronization.h>
   typedef RecursiveLock rc_mutex_t;
