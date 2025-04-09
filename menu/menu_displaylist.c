@@ -12855,7 +12855,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                size_t _len;
                unsigned i;
                char text[128];
-               const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
                /* TODO/FIXME - localize */
                runloop_msg_queue_push(
                      "Warning : extended overclocking can damage the Switch",
@@ -12882,7 +12881,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         0, 0, NULL))
                   count++;
 
-               for (i = 0; i < profiles_count; i++)
+               for (i = 0; SWITCH_CPU_PROFILES[i]; i++)
                {
                   char title[NAME_MAX_LENGTH];
                   size_t _len = strlcpy(title, SWITCH_CPU_PROFILES[i],
