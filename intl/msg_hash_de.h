@@ -9167,6 +9167,14 @@ MSG_HASH(
    "Die aktuell verwendete Einstellungsdatei."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "Core-Optionen zurücksetzen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   "Setzt alle Optionen des aktuellen Cores auf deren Standardwerte."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Optionen auf Datenträger schreiben"
    )

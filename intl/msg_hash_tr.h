@@ -9355,6 +9355,14 @@ MSG_HASH(
    "Kullanımda olan mevcut seçenek dosyası."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "Çekirdek Seçeneklerini Sıfırla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   "Mevcut çekirdeğin tüm seçeneklerini varsayılan değerlere ayarlayın."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Diske Yazma Seçenekleri"
    )

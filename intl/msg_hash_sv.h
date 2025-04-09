@@ -3367,8 +3367,16 @@ MSG_HASH(
    "Turbo-knapp"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
+   "Om den är aktiverad kan digitala riktningsinmatningar (även kända som d-pad eller ”hatswitch”) vara turbo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Turbo-avfyrning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Ändra inställningar för turboavtryckare."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -12619,6 +12627,18 @@ MSG_HASH(
    "Åskådarläge för %s"
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "Hardcore pausad. Manuell inställning av fördröjning av bildrutor för video är inte tillåten."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "Hardcore pausad. vsync swap-intervall över 1 tillåts inte."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   "Hardcore pausad. Infogning av svarta bildrutor är inte tillåtet."
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
    "Hardcore pausat. Inställningen tillåts inte: %s=%s"
    )
@@ -12691,8 +12711,16 @@ MSG_HASH(
    "Skannar innehåll: "
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   "Kontrollerar aktuella poster: "
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Skannar: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
+   "Städar upp M3U-poster: "
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_END,
@@ -12749,6 +12777,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE,
    "Misslyckades med att gå in i GameMode"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "Misslyckades med att gå in i GameMode - kontrollera att GameMode-daemon är installerad och körs"
    )
 
 /* Lakka */
@@ -12833,8 +12865,16 @@ MSG_HASH(
    "Öppna Windows-inställningar för filåtkomstbehörighet"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "Öppna Windows inställningar för behörighet för att aktivera funktionen broadFileSystemAccess."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
    "Öppna..."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
+   "Öppna en annan katalog med hjälp av systemets filväljare"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,

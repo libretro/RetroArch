@@ -69,11 +69,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
-   "Unloadolni a core-t"
+   "Mag bezárása"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
-   "Kiadás a betöltött a core-t."
+   "A betöltött mag eltávolítása a memóriából."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
@@ -9337,6 +9337,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
    "A jelenleg használt konfigurációs fájl."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "Magbeállítások visszaállítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   "A jelenlegi mag összes beállításának visszaállítása alapértékre."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,

@@ -7703,6 +7703,10 @@ MSG_HASH(
    "El fitxer d'opcions que està ara mateix en ús."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "Reinicia les opcions del nucli"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Escriu les opcions al disc"
    )
@@ -11879,6 +11883,10 @@ MSG_HASH(
    "Revertint la carpeta de fitxers de desat a"
    )
 MSG_HASH(
+   MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
+   "Revertint la carpeta de fitxers de desats a"
+   )
+MSG_HASH(
    MSG_REWINDING,
    "Retrocedint."
    )
@@ -11925,6 +11933,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SENDING_COMMAND,
    "Enviant comanda"
+   )
+MSG_HASH(
+   MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
+   "S'ha desat la personalització de shaders correctament."
    )
 MSG_HASH(
    MSG_SLOW_MOTION,
@@ -12049,6 +12061,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    "Fes servir el nom del nucli per la nova configuració."
+   )
+MSG_HASH(
+   MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
+   "Connecta el dispositiu a un port vàlid."
    )
 MSG_HASH(
    MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
@@ -12337,6 +12353,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOAD_CORE_FIRST,
    "Carrega un nucli en primer lloc, si us plau."
+   )
+MSG_HASH(
+   MSG_NO_DISC_INSERTED,
+   "No hi ha un disc dins del lector."
    )
 MSG_HASH(
    MSG_ERROR_REMOVING_SHADER_PRESET,
