@@ -1661,7 +1661,7 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 }
 
 static void gx2_update_uniform_block(wiiu_video_t *wiiu,
-      int pass, float *ubo, int id,
+      int pass, float *ubo, int chosen_id,
       int size, int uniformVarCount, GX2UniformVar *uniformVars,
       uint64_t frame_count, int32_t frame_direction, uint32_t rotation, float core_aspect,
       float core_aspect_rot, uint32_t frame_time_delta, uint32_t original_fps)
@@ -1672,7 +1672,7 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
       int k;
       float *dst;
       const char *id = NULL;
-      if (uniformVars[i].block != id)
+      if (uniformVars[i].block != chosen_id)
          continue;
       if (!(id = strrchr(uniformVars[i].name, '.')))
          continue;
