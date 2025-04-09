@@ -3,8 +3,8 @@ LIBRETRO =
 
 DEBUG                   = 0
 CONSOLE_LOG             = 0
-GRIFFIN_BUILD           = 1
-HAVE_STATIC_DUMMY ?= 0
+GRIFFIN_BUILD           = 0
+HAVE_STATIC_DUMMY      ?= 0
 WHOLE_ARCHIVE_LINK      = 0
 BUILD_3DSX              = 1
 BUILD_3DS               = 0
@@ -87,11 +87,16 @@ else
 	HAVE_PATCH = 1
 	HAVE_SCREENSHOTS = 1
 	HAVE_REWIND = 1
-	HAVE_AUDIOMIXER = 1
 	HAVE_RWAV = 1
-	#HAVE_NETWORKING = 1
-	#HAVE_IFINFO = 1
-	#HAVE_CHEEVOS = 1
+	HAVE_CHEATS = 1
+	HAVE_VIDEO_FILTER = 1
+	HAVE_DSP_FILTER = 1
+	HAVE_CONFIGFILE = 1
+	HAVE_OVERLAY = 1
+	HAVE_GFX_WIDGETS = 1
+	HAVE_NETWORKING = 1
+	HAVE_IFINFO = 1
+	HAVE_CHEEVOS = 1
 	#HAVE_SOCKET_LEGACY = 1
 	HAVE_THREADS = 1
 	#HAVE_SSL = 1
@@ -100,10 +105,6 @@ else
 
 	include Makefile.common
 	CFLAGS += $(DEF_FLAGS)
-	BLACKLIST :=
-	BLACKLIST += input/input_overlay.o
-	BLACKLIST += tasks/task_overlay.o
-	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 endif
 
 ifeq ($(strip $(DEVKITPRO)),)
@@ -155,7 +156,6 @@ ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=so
 
 CFLAGS	+= -mword-relocations \
 	   -ffast-math \
-	   -Werror=implicit-function-declaration \
 	   $(ARCH)
 
 #CFLAGS	+= -Wall
@@ -188,17 +188,17 @@ CFLAGS += -I. \
 	  -Ideps \
 	  -Ideps/7zip \
 	  -Ideps/stb \
+	  -Ideps/mbedtls \
 	  -Ideps/rcheevos/include \
 	  -Ilibretro-common/include \
 	  -Ilibretro-common/include/compat/zlib
 
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
-CFLAGS += -DHAVE_DSP_FILTER
-CFLAGS += -DHAVE_VIDEO_FILTER
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
-CFLAGS += -DHAVE_CHEATS
+CFLAGS += -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_CORES -DHAVE_UPDATE_CORE_INFO
 
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+CFLAGS += -Werror=implicit-function-declaration
 
 ASFLAGS	 := -g $(ARCH) -O3
 LDFLAGS  += -specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
@@ -220,6 +220,10 @@ ifeq ($(DEBUG), 1)
 	LIBS	+= -lctrud
 else
 	LIBS	+= -lctru
+endif
+
+ifneq ($(V),1)
+	Q := @
 endif
 
 ifeq ($(BUILD_3DSX), 1)
@@ -291,7 +295,8 @@ endif
 	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
 
 %.o: %.c
-	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
 
 %.o: %.s
 	$(CC) -c -o $@ $< $(ASFLAGS)
