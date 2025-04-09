@@ -96,7 +96,7 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
    if (     (win32_vk.flags & VK_DATA_FLAG_FULLSCREEN)
          && (g_win32_refresh_rate)
          && (g_win32_refresh_rate  != refresh_rate) 
-         && (abs(g_win32_refresh_rate - refresh_rate) > 0)
+         && (fabsf(g_win32_refresh_rate - refresh_rate) > 0.1f)
          && (g_win32_resize_width  == *width) 
          && (g_win32_resize_height == *height))
    {
