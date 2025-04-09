@@ -198,10 +198,12 @@ static void apple_display_server_set_screen_orientation(void *data, enum rotatio
             [[CocoaView get] setShouldLockCurrentInterfaceOrientation:NO];
             break;
     }
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 160000
     if (@available(iOS 16.0, *))
     {
         [[CocoaView get] setNeedsUpdateOfSupportedInterfaceOrientations];
     }
+#endif
 }
 
 static enum rotation apple_display_server_get_screen_orientation(void *data)
