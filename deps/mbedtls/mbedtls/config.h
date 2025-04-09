@@ -28,6 +28,14 @@
 #ifndef MBEDTLS_CONFIG_H
 #define MBEDTLS_CONFIG_H
 
+#ifdef _3DS
+#define unix
+#define MBEDTLS_NO_IPV6
+#ifndef _SOCKLEN_T_DECLARED
+#define _SOCKLEN_T_DECLARED
+#endif
+#endif
+
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_DEPRECATE)
 #define _CRT_SECURE_NO_DEPRECATE 1
 #endif
@@ -2020,7 +2028,9 @@
  *
  * This module is used by the HAVEGE random number generator.
  */
+#ifndef _3DS
 #define MBEDTLS_TIMING_C
+#endif
 
 /**
  * \def MBEDTLS_VERSION_C
