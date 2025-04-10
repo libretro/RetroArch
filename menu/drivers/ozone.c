@@ -9167,7 +9167,7 @@ static void ozone_cache_footer_label(
    /* If font_driver_get_message_width() fails,
     * use predetermined glyph_width as a fallback */
    if (label->width < 0)
-      label->width = _len * ozone->fonts.footer.glyph_width;
+      label->width = (int)(_len * ozone->fonts.footer.glyph_width);
 }
 
 /* Assigns footer label strings (based on current
