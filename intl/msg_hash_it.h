@@ -9183,6 +9183,14 @@ MSG_HASH(
    "Il file di opzione corrente in uso."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "Ripristina Opzioni Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   "Imposta tutte le opzioni del core attuale ai valori predefiniti."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Salvare opzioni su Disco"
    )

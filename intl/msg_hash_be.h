@@ -4067,7 +4067,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
-   "Выклікае дапаможны інтэрфейс WIMP (Windows, Icons, Menus, Pointer)."
+   "Выклікае дапаможны карыстальніцкі інтэрфейс WIMP (Windows, Icons, Menus, Pointer)."
    )
 
 MSG_HASH(
@@ -6249,15 +6249,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
-   "Дадатковы інтэрфейс"
+   "Дапаможны інтэрфейс"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
-   "Запуск дадатковага інтэрфейсу пры загрузцы"
+   "Запуск дапаможнага інтэрфейсу пры загрузцы"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT,
-   "Запускаць дадатковы драйвер карыстальніцкага інтэрфейсу пры загрузцы (калі даступна)."
+   "Запускаць драйвер дапаможнага карыстальніцкага інтэрфейсу пры загрузцы (калі даступна)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,

@@ -9391,6 +9391,14 @@ MSG_HASH(
    "현재 사용중인 옵션 파일입니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "코어 옵션 초기화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   "현재 코어의 모든 옵션을 기본값으로 초기화합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "옵션 디스크에 저장"
    )
