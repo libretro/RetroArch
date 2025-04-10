@@ -1233,7 +1233,7 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
    }
 }
 
-static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
+static void xmb_update_savestate_thumbnail_path(void *data, size_t i)
 {
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
    settings_t *settings     = config_get_ptr();
@@ -2127,7 +2127,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       /* This shows savestate thumbnail after
        * opening savestate submenu */
       xmb->skip_thumbnail_reset = false;
-      xmb_update_savestate_thumbnail_path(xmb, (unsigned)current);
+      xmb_update_savestate_thumbnail_path(xmb, current);
       xmb_update_savestate_thumbnail_image(xmb);
    }
 
