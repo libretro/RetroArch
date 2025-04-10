@@ -269,7 +269,8 @@ retro_time_t cpu_features_get_time_usec(void)
 #endif
 
 #if defined(CPU_X86) && !defined(__MACH__)
-void x86_cpuid(int func, int flags[4])
+#include <limits.h>
+void x86_cpuid(int func, int32_t flags[4])
 {
    /* On Android, we compile RetroArch with PIC, and we
     * are not allowed to clobber the ebx register. */
@@ -288,8 +289,8 @@ void x86_cpuid(int func, int flags[4])
          "xchg %%" REG_b ", %%" REG_S "\n"
          : "=a"(flags[0]), "=S"(flags[1]), "=c"(flags[2]), "=d"(flags[3])
          : "a"(func));
-#elif defined(_MSC_VER)
-   __cpuid(flags, func);
+#elif defined(_MSC_VER) && INT_MAX == 2147483647
+   __cpuid((int*)flags, func);
 #else
 #ifndef NDEBUG
    printf("Unknown compiler. Cannot check CPUID with inline assembly.\n");
