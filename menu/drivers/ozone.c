@@ -8004,8 +8004,7 @@ static enum menu_action ozone_parse_menu_entry_action(
       enum menu_action action)
 {
    uintptr_t tag;
-   int new_selection;
-   size_t selection;
+   size_t new_selection, selection;
    size_t selection_total;
    bool is_current_entry_settings = false;
    struct menu_state *menu_st     = menu_state_get_ptr();
@@ -8282,12 +8281,12 @@ static enum menu_action ozone_parse_menu_entry_action(
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
-            if ((new_selection = (int)selection - 1) < 0)
-               new_selection   = horizontal_list_size + ozone->system_tab_end;
-
-            if (     !menu_navigation_wraparound_enable
-                  && selection == 0)
-               new_selection   = 0;
+            if (selection > 0)
+               new_selection = selection - 1;
+            else if (menu_navigation_wraparound_enable)
+               new_selection = horizontal_list_size + ozone->system_tab_end;
+            else
+               new_selection = selection;
 
             if (new_selection != selection)
             {
@@ -8521,10 +8520,15 @@ static enum menu_action ozone_parse_menu_entry_action(
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
-            new_selection              = (int)tab_selection;
+            new_selection              = tab_selection;
 
             if (menu_st->scroll.mode == MENU_SCROLL_PAGE)
-               new_selection           = (int)(tab_selection - 10);
+            {
+               if (tab_selection >= (size_t)ozone->system_tab_end + 11)
+                  new_selection        = tab_selection - 10;
+               else
+                  new_selection        = ozone->system_tab_end + 1;
+            }
             else if (ozone->sidebar_index_size)
             {
                /* Alphabetical scroll */
@@ -8540,8 +8544,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             if (tab_selection < (size_t)(ozone->system_tab_end + 1))
                new_selection           = 0;
-            else if (tab_selection > ozone->system_tab_end - new_selection
-                  || new_selection < 0)
+            else if (tab_selection > ozone->system_tab_end - new_selection)
                new_selection           = ozone->system_tab_end + 1;
 
             if (new_selection != tab_selection)
