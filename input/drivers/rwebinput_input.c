@@ -25,6 +25,7 @@
 
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+#include "../../frontend/drivers/platform_emscripten.h"
 
 #include "../input_driver.h"
 #include "../input_types.h"
@@ -44,8 +45,6 @@
 #define RWEBINPUT_MOUSE_BTN5 4
 
 #define MAX_TOUCH 32
-
-double platform_emscripten_get_dpr(void);
 
 typedef struct rwebinput_key_to_code_map_entry
 {
@@ -732,14 +731,18 @@ static int16_t rwebinput_input_state(
    return 0;
 }
 
+static void rwebinput_remove_event_listeners(void *data)
+{
+   /* *currently* not automatically proxied in the case of PROXY_TO_PTHREAD */
+   emscripten_html5_remove_all_event_listeners();
+}
+
 static void rwebinput_input_free(void *data)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
 
-   emscripten_html5_remove_all_event_listeners();
-
+   platform_emscripten_run_on_browser_thread_sync(rwebinput_remove_event_listeners, NULL);
    free(rwebinput->keyboard.events);
-
    free(data);
 }
 
