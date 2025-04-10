@@ -320,7 +320,7 @@
             x(retro_get_memory_data); \
             x(retro_get_memory_size);
 
-#define RESET_ERROR_CODE \
+#define RESET_ERROR_CODE() \
       runloop_st->last_error_code = 0;\
       runloop_st->last_error_message[0] = '\0';
 
@@ -3617,7 +3617,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          {
 
             RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_ERROR_CODE.\n");
-            RESET_ERROR_CODE;
+            RESET_ERROR_CODE();
             if (data)
             {
                struct retro_error_message *msg = (struct retro_error_message *)data;
@@ -4017,7 +4017,7 @@ static bool core_unload_game(void)
    {
       RARCH_LOG("[Core]: Unloading game..\n");
 
-      RESET_ERROR_CODE;
+      RESET_ERROR_CODE();
       runloop_st->current_core.retro_unload_game();
       if (runloop_st->last_error_code)
          runloop_display_error_code("LOG", "core_unload_game");
@@ -4126,7 +4126,7 @@ void runloop_event_deinit_core(void)
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
       RARCH_LOG("[Core]: Unloading core..\n");
-      RESET_ERROR_CODE;
+      RESET_ERROR_CODE();
       runloop_st->current_core.retro_deinit();
       if (runloop_st->last_error_code)
          runloop_display_error_code("LOG", "deinit_core");
@@ -4572,7 +4572,7 @@ static bool core_verify_api_version(runloop_state_t *runloop_st)
 {
    unsigned api_version;
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    api_version = runloop_st->current_core.retro_api_version();
    if (runloop_st->last_error_code)
       runloop_display_error_code("ERR", "core_verify_api_version");
@@ -4641,7 +4641,7 @@ static void core_init_libretro_cbs(runloop_state_t *runloop_st,
 {
    retro_input_state_t state_cb = core_input_state_poll_return_cb();
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->current_core.retro_set_video_refresh(video_driver_frame);
    runloop_st->current_core.retro_set_audio_sample(audio_driver_sample);
    runloop_st->current_core.retro_set_audio_sample_batch(audio_driver_sample_batch);
@@ -4671,7 +4671,7 @@ static bool runloop_event_load_core(runloop_state_t *runloop_st,
       return false;
    core_init_libretro_cbs(runloop_st, &runloop_st->retro_ctx);
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->current_core.retro_get_system_av_info(&video_st->av_info);
    if (runloop_st->last_error_code)
       runloop_display_error_code("LOG", "load_code get_system_av_info");
@@ -4731,7 +4731,7 @@ bool runloop_event_init_core(
       runloop_st->current_core.retro_run   = retro_run_null;
    runloop_st->current_core.flags         |= RETRO_CORE_FLAG_SYMBOLS_INITED;
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->current_core.retro_get_system_info(&sys_info->info);
    if (runloop_st->last_error_code)
       runloop_display_error_code("LOG", "init_core get_system_info");
@@ -4804,7 +4804,7 @@ bool runloop_event_init_core(
    runloop_path_set_redirect(settings, old_savefile_dir, old_savestate_dir);
 
    /* Set core environment */
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->current_core.retro_set_environment(runloop_environment_cb);
    if (runloop_st->last_error_code)
       runloop_display_error_code("LOG", "init_core core_set_environment");
@@ -4825,7 +4825,7 @@ bool runloop_event_init_core(
 
    video_st->frame_cache_data              = NULL;
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->current_core.retro_init();
    runloop_st->current_core.flags         |= RETRO_CORE_FLAG_INITED;
    if (runloop_st->last_error_code)
@@ -7508,7 +7508,7 @@ bool core_set_netplay_callbacks(void)
 
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
    {
-      RESET_ERROR_CODE;
+      RESET_ERROR_CODE();
       /* Force normal poll type for netplay. */
       runloop_st->current_core.poll_type = POLL_TYPE_NORMAL;
 
@@ -7538,7 +7538,7 @@ bool core_unset_netplay_callbacks(void)
    if (!core_set_default_callbacks(&cbs))
       return false;
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->current_core.retro_set_video_refresh(cbs.frame_cb);
    runloop_st->current_core.retro_set_audio_sample(cbs.sample_cb);
    runloop_st->current_core.retro_set_audio_sample_batch(cbs.sample_batch_cb);
@@ -7575,7 +7575,7 @@ bool core_set_cheat(retro_ctx_cheat_info_t *info)
    }
 #endif
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->current_core.retro_cheat_set(info->index, info->enabled, info->code);
 
    if (runloop_st->last_error_code)
@@ -7588,7 +7588,7 @@ bool core_set_cheat(retro_ctx_cheat_info_t *info)
          && (secondary_core_ensure_exists(runloop_st, settings))
          && (runloop_st->secondary_core.retro_cheat_set))
    {
-      RESET_ERROR_CODE;
+      RESET_ERROR_CODE();
       runloop_st->secondary_core.retro_cheat_set(
             info->index, info->enabled, info->code);
 
@@ -7625,7 +7625,7 @@ bool core_reset_cheat(void)
    }
 #endif
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->current_core.retro_cheat_reset();
    if (runloop_st->last_error_code)
       runloop_display_error_code("LOG", "core_cheat_reset");
@@ -7637,7 +7637,7 @@ bool core_reset_cheat(void)
        && (secondary_core_ensure_exists(runloop_st, settings))
        && (runloop_st->secondary_core.retro_cheat_reset))
    {
-      RESET_ERROR_CODE;
+      RESET_ERROR_CODE();
       runloop_st->secondary_core.retro_cheat_reset();
       if (runloop_st->last_error_code)
          runloop_display_error_code("LOG", "core_cheat_reset, second instance");
@@ -7678,7 +7678,7 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
 #endif
 #endif
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->current_core.retro_set_controller_port_device(pad->port, pad->device);
    if (runloop_st->last_error_code)
       runloop_display_error_code("LOG", "core_set_controller_port_device");
@@ -7691,7 +7691,7 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
    runloop_state_t *runloop_st    = &runloop_state;
    if (!info)
       return false;
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    info->size  = runloop_st->current_core.retro_get_memory_size(info->id);
    info->data  = runloop_st->current_core.retro_get_memory_data(info->id);
    if (runloop_st->last_error_code)
@@ -7716,7 +7716,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 #endif
 
    set_save_state_in_background(false);
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
 
    if (load_info && load_info->special)
       game_loaded = runloop_st->current_core.retro_load_game_special(
@@ -7759,7 +7759,7 @@ bool core_get_system_info(struct retro_system_info *sysinfo)
    if (!sysinfo)
       return false;
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->current_core.retro_get_system_info(sysinfo);
    if (runloop_st->last_error_code)
       runloop_display_error_code("LOG", "core_get_system_info");
@@ -7771,7 +7771,7 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
 {
    runloop_state_t *runloop_st  = &runloop_state;
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    if (!info || !runloop_st->current_core.retro_unserialize(info->data_const, info->size))
    {
       if (runloop_st->last_error_code)
@@ -7801,7 +7801,7 @@ bool core_unserialize_special(retro_ctx_serialize_info_t *info)
    if (!info)
       return false;
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
 
    runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    ret = runloop_st->current_core.retro_unserialize(info->data_const, info->size);
@@ -7822,7 +7822,7 @@ bool core_serialize(retro_ctx_serialize_info_t *info)
 {
    runloop_state_t *runloop_st  = &runloop_state;
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    if (!info || !runloop_st->current_core.retro_serialize(info->data, info->size))
    {
       if (runloop_st->last_error_code)
@@ -7845,7 +7845,7 @@ bool core_serialize_special(retro_ctx_serialize_info_t *info)
    if (!info)
       return false;
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    ret                = runloop_st->current_core.retro_serialize(
                         info->data, info->size);
@@ -7861,7 +7861,7 @@ size_t core_serialize_size(void)
 {
    size_t val;
    runloop_state_t *runloop_st  = &runloop_state;
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    val = runloop_st->current_core.retro_serialize_size();
    if (runloop_st->last_error_code)
       runloop_display_error_code("LOG", "core_serialize_size");
@@ -7873,7 +7873,7 @@ size_t core_serialize_size_special(void)
 {
    size_t val;
    runloop_state_t *runloop_st = &runloop_state;
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    val                = runloop_st->current_core.retro_serialize_size();
    runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
@@ -7896,7 +7896,7 @@ void core_reset(void)
    video_driver_state_t *video_st = video_state_get_ptr();
    video_st->frame_cache_data     = NULL;
 
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
    runloop_st->current_core.retro_reset();
 
    if (runloop_st->last_error_code)
@@ -7934,7 +7934,7 @@ void core_run(void)
       input_driver_poll();
    else if (late_polling)
       current_core->flags &= ~RETRO_CORE_FLAG_INPUT_POLLED;
-   RESET_ERROR_CODE;
+   RESET_ERROR_CODE();
 
    current_core->retro_run();
 
