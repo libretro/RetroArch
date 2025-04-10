@@ -62,6 +62,9 @@
 #include "../verbosity.h"
 
 #include "../ai/game_ai.h"
+#if defined(_WIN32)
+#include <winsock2.h>
+#endif
 
 #define HOLD_BTN_DELAY_SEC 2
 
@@ -6776,7 +6779,12 @@ void input_driver_poll(void)
             ssize_t ret;
             struct remote_message msg;
 
+
+#if defined(_WIN32)
+            if (input_st->remote->net_fd[user] == INVALID_SOCKET)
+#else
             if (input_st->remote->net_fd[user] < 0)
+#endif
                return;
 
             FD_ZERO(&fds);
