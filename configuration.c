@@ -6178,7 +6178,11 @@ bool input_remapping_save_file(const char *path)
       if (skip_port)
          continue;
 
-      snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
+      _len = snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
+      if (_len >= sizeof(formatted_number)) {
+         RARCH_ERR("[Config]: unexpectedly high number of users");
+         break;
+      }
       _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
       strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
       _len       = strlcpy(s1, prefix, sizeof(s1));

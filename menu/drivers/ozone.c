@@ -8004,8 +8004,7 @@ static enum menu_action ozone_parse_menu_entry_action(
       enum menu_action action)
 {
    uintptr_t tag;
-   int new_selection;
-   size_t selection;
+   size_t new_selection, selection;
    size_t selection_total;
    bool is_current_entry_settings = false;
    struct menu_state *menu_st     = menu_state_get_ptr();
@@ -9168,7 +9167,7 @@ static void ozone_cache_footer_label(
    /* If font_driver_get_message_width() fails,
     * use predetermined glyph_width as a fallback */
    if (label->width < 0)
-      label->width = _len * ozone->fonts.footer.glyph_width;
+      label->width = (int)(_len * ozone->fonts.footer.glyph_width);
 }
 
 /* Assigns footer label strings (based on current

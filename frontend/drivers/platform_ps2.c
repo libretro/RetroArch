@@ -343,7 +343,7 @@ static void frontend_ps2_exec(const char *path, bool should_load_game)
    deinit_drivers(true, true);
    reset_IOP();
    common_init_drivers(false);
-   waitUntilDeviceIsReady(path);
+   waitUntilDeviceIsReady((char *)path);
 
 #ifndef IS_SALAMANDER
    char game_path[FILENAME_MAX];

@@ -682,10 +682,17 @@ const char* drflac_next_vorbis_comment(drflac_vorbis_comment_iterator* pIter, dr
 #define DRFLAC_NO_CPUID
 #endif
 
-
 #ifdef __linux__
-#define _BSD_SOURCE
-#include <endian.h>
+    #ifndef _BSD_SOURCE
+        #define _BSD_SOURCE
+    #endif
+    #ifndef _DEFAULT_SOURCE
+        #define _DEFAULT_SOURCE
+    #endif
+    #ifndef __USE_BSD
+        #define __USE_BSD
+    #endif
+    #include <endian.h>
 #endif
 
 #if defined(_MSC_VER) && _MSC_VER >= 1500 && (defined(DRFLAC_X86) || defined(DRFLAC_X64))
