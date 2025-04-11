@@ -2424,7 +2424,7 @@ static void materialui_update_fullscreen_thumbnail_label(
          NULL);
 }
 
-static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
+static void materialui_update_savestate_thumbnail_path(void *data, size_t i)
 {
    settings_t *settings     = config_get_ptr();
    materialui_handle_t *mui = (materialui_handle_t*)data;

@@ -6872,7 +6872,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
 #endif
 }
 
-static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
+static void rgui_update_savestate_thumbnail_path(void *data, size_t i)
 {
    settings_t *settings = config_get_ptr();
    rgui_t *rgui         = (rgui_t*)data;
@@ -7072,7 +7072,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    /* Reset savestate thumbnails always */
    if (selection < list_size)
    {
-      rgui_update_savestate_thumbnail_path(rgui, (unsigned)selection);
+      rgui_update_savestate_thumbnail_path(rgui, selection);
       rgui_update_savestate_thumbnail_image(rgui);
    }
 
