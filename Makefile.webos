@@ -183,7 +183,9 @@ CXXFLAGS += $(DEF_FLAGS)
 
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
-Q := @
+ifneq ($(V),1)
+        Q := @
+endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
