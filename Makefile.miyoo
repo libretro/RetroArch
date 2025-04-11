@@ -201,9 +201,13 @@ $(OBJDIR)/%.o: %.S $(HEADERS)
 	$(Q)$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
 
 clean:
+ifneq ($(V),1)
+	@echo RM
+else
 	rm -rf $(OBJDIR_BASE)
 	rm -f $(TARGET)
 	rm -f *.d
+endif
 
 .PHONY: all clean
 
