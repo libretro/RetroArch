@@ -70,6 +70,37 @@ struct v4l2_capbuf
    size_t   len;
 };
 
+struct v4l2_resolution
+{
+   int width;
+   int height;
+};
+
+struct v4l2_resolution v4l2_resolutions[] =
+{
+   //4:3
+   {160,120},
+   {320,240},
+   {480,320},
+   {640,480},
+   {720,480},
+   {800,600},
+   {960,720},
+   {1024,768},
+   {1280,960},
+   {1440,1050},
+   {1440,1080},
+   {1600,1200},
+	//16:9
+   {640,360},
+   {960,540},
+   {1280,720},
+   {1600,900},
+   {1920,1080},
+   {1920,1200},
+   {2560,1440},
+   {3840,2160}
+};
 /*
  * Video capture state
  */
@@ -84,6 +115,7 @@ static struct  v4l2_buffer video_buf;
 static uint8_t v4l2_ncapbuf_target;
 static size_t  v4l2_ncapbuf;
 static struct  v4l2_capbuf v4l2_capbuf[VIDEO_BUFFERS_MAX];
+struct v4l2_capability caps;
 
 static float   dummy_pos=0;
 
@@ -92,6 +124,7 @@ static uint32_t video_cap_width;
 static uint32_t video_cap_height;
 static uint32_t video_out_height;
 static char     video_capture_mode[ENVVAR_BUFLEN];
+static char     video_capture_resolution[ENVVAR_BUFLEN];
 static char     video_output_mode[ENVVAR_BUFLEN];
 static char     video_frame_times[ENVVAR_BUFLEN];
 
@@ -228,7 +261,7 @@ static void enumerate_audio_devices(char *s, size_t len)
 #ifdef HAVE_ALSA
    int ndevs;
    void **hints, **n;
-   char *ioid, *name;
+   char *ioid, *name, *descr;
 #endif
 
    memset(s, 0, len);
@@ -241,35 +274,84 @@ static void enumerate_audio_devices(char *s, size_t len)
    ndevs = 0;
    for (n = hints; *n; n++)
    {
-      name = snd_device_name_get_hint(*n, "NAME");
       ioid = snd_device_name_get_hint(*n, "IOID");
-      if (   (ioid == NULL
-           || string_is_equal(ioid, "Input"))
-           && (   !strncmp(name, "hw:", strlen("hw:"))
-           ||     !strncmp(name, "default:", strlen("default:"))))
+      if (ioid != NULL && strcmp(ioid, "Input") != 0)
       {
-         if (ndevs > 0)
-            appendstr(s, "|", len);
-         appendstr(s, name, len);
-         ++ndevs;
+         free(ioid);
+         ioid = NULL;
+         continue;
       }
-      free(name);
-      free(ioid);
+
+      name = snd_device_name_get_hint(*n, "NAME");
+      if (name == NULL || strstr(name, "front:") == NULL)
+      {
+         free(name);
+         name = NULL;
+         continue;
+      }
+
+      //todo: add more info to make picking audio device more user friendly
+      descr = snd_device_name_get_hint(*n, "DESC");
+      if (!descr)
+      {
+         free(descr);
+         descr = NULL;
+         continue;
+      }
+
+      if (ndevs > 0)
+         appendstr(s, "|", len);
+      appendstr(s, name, len);
+      ++ndevs;
+
+      // not sure if this is necessary but ensuring things are free/null
+      if(name != NULL)
+      {
+         free(name);
+         name = NULL;
+      }
+      if(ioid != NULL)
+      {
+         free(ioid);
+         ioid = NULL;
+      }
+      if(descr != NULL)
+      {
+         free(descr);
+         descr = NULL;
+      }
    }
 
    snd_device_name_free_hint(hints);
 #endif
 }
 
+static void list_resolutions(char *capture_resolutions, size_t len)
+{
+   memset(capture_resolutions, 0, len);
+   char resolution[len];
+   appendstr(capture_resolutions, "Capture resolution; ", len);
+   for(int i =0; i < sizeof(v4l2_resolutions)/sizeof(v4l2_resolutions[0]) ;i++)
+   {
+      snprintf(resolution, 1024 * sizeof(char), "%dx%d",v4l2_resolutions[i].width,v4l2_resolutions[i].height);
+
+      if(i > 0)
+         appendstr(capture_resolutions, "|",  len);
+      appendstr(capture_resolutions, resolution, len);
+
+   }
+}
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
    bool no_content = true;
    char video_devices[ENVVAR_BUFLEN];
    char audio_devices[ENVVAR_BUFLEN];
+   char capture_resolutions[ENVVAR_BUFLEN];
    struct retro_variable envvars[] = {
       { "videoproc_videodev", NULL },
       { "videoproc_audiodev", NULL },
-      { "videoproc_capture_mode", "Capture mode; alternate|interlaced|top|bottom|alternate_hack" },
+      { "videoproc_capture_mode", "Capture mode; alternate|deinterlaced|interlaced|top|bottom|alternate_hack" },
+      { "videoproc_capture_resolution", NULL },
       { "videoproc_output_mode","Output mode; progressive|deinterlaced|interlaced" },
       { "videoproc_frame_times","Print frame times to terminal (v4l2 only); Off|On" },
       { NULL, NULL }
@@ -294,6 +376,13 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
    envvars[0].value = video_devices;
    envvars[1].key   = "videoproc_audiodev";
    envvars[1].value = audio_devices;
+
+   if(envvars[3].value == NULL)
+      list_resolutions(capture_resolutions, sizeof(capture_resolutions));
+   appendstr(capture_resolutions, "|auto", ENVVAR_BUFLEN);
+   envvars[3].key   = "videoproc_capture_resolution";
+   envvars[3].value = capture_resolutions;
+   printf("captures: %s\n", envvars[3].value);
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_VARIABLES, envvars);
 }
@@ -329,12 +418,13 @@ static bool open_devices(void)
 {
    struct retro_variable videodev = { "videoproc_videodev", NULL };
    struct retro_variable audiodev = { "videoproc_audiodev", NULL };
-   struct v4l2_capability caps;
+   struct retro_variable captureresolution = { "videoproc_capture_resolution", NULL };
    int error;
 
    /* Get the video and audio capture device names from the environment */
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &audiodev);
+   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &captureresolution);
 
    if (strcmp(videodev.value, "dummy") == 0)
       return true;
@@ -489,44 +579,70 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_info)(struct retro_system_
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 {
    struct retro_variable videodev = { "videoproc_videodev", NULL };
+   struct retro_variable capture_resolution = { "videoproc_capture_resolution", NULL };
    struct v4l2_cropcap cc;
    int error;
+   char splitresolution[ENVVAR_BUFLEN];
+   char* token;
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
+   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_resolution);
 
    if (strcmp(videodev.value, "dummy") == 0)
    {
       info->geometry.aspect_ratio = 4.0/3.0;
-      info->geometry.base_width  = info->geometry.max_width = video_cap_width;
-      info->geometry.base_height = video_cap_height; /* out? */
-      info->geometry.max_height  = video_out_height;
-      info->timing.fps           = 60;
-      info->timing.sample_rate   = AUDIO_SAMPLE_RATE;
+      info->geometry.base_width   = info->geometry.max_width = video_cap_width;
+      info->geometry.base_height  = video_cap_height; /* out? */
+      info->geometry.max_height   = video_out_height;
+      info->timing.fps            = 60;
+      info->timing.sample_rate    = AUDIO_SAMPLE_RATE;
    }
    else
    {
-       /*
-        * Query the device cropping limits. If available, we can use this to find the capture pixel aspect.
-        */
-       memset(&cc, 0, sizeof(cc));
-       cc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-       error = v4l2_ioctl(video_device_fd, VIDIOC_CROPCAP, &cc);
+      /*
+       * Query the device cropping limits. If available, we can use this to find the capture pixel aspect.
+       */
+      memset(&cc, 0, sizeof(cc));
+      cc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      error = v4l2_ioctl(video_device_fd, VIDIOC_CROPCAP, &cc);
 
-       info->geometry.base_width  = info->geometry.max_width = video_format.fmt.pix.width;
-       info->geometry.base_height = video_format.fmt.pix.height;
-       /* TODO Only double if frames are NOT fields (interlaced, full resolution) */
-       info->geometry.max_height = video_format.fmt.pix.height * 2;
-       /* TODO Only double if frames ARE fields (progressive or deinterlaced, full framerate)
-        * *2 for fields
-        */
-       info->timing.fps           = ((double)(video_standard.frameperiod.denominator*2)) /
-                                    (double)video_standard.frameperiod.numerator;
-       info->timing.sample_rate   = AUDIO_SAMPLE_RATE;
+      info->geometry.base_width  = info->geometry.max_width = video_format.fmt.pix.width;
+      info->geometry.base_height = video_format.fmt.pix.height;
 
-       /* TODO/FIXME Allow for fixed 4:3 and 16:9 modes */
-       if (error == 0)
-          info->geometry.aspect_ratio = (double)info->geometry.base_width / (double)info->geometry.max_height /
-             ((double)cc.pixelaspect.numerator / (double)cc.pixelaspect.denominator);
+      if(capture_resolution.value != NULL)
+         strncpy(video_capture_resolution, capture_resolution.value, ENVVAR_BUFLEN-1);
+      else
+         strncpy(video_capture_resolution, "auto", ENVVAR_BUFLEN-1);
+
+      if (strcmp(video_capture_resolution, "auto") != 0)
+      {
+         strcpy(splitresolution, video_capture_resolution);
+         token = strtok(splitresolution, "x");
+         info->geometry.base_width  = info->geometry.max_width = video_format.fmt.pix.width = atoi(token);
+         token = strtok(NULL, "x");
+         info->geometry.base_height = video_format.fmt.pix.height = atoi(token);
+         printf("Resolution postfix %ux%u\n", info->geometry.base_width,
+                info->geometry.base_height);
+      }
+      // no doubling for interlaced or deinterlaced capture
+      bool nodouble = strcmp(video_capture_mode, "deinterlaced") == 0 || strcmp(video_capture_mode, "interlaced") == 0;
+      info->geometry.max_height = nodouble ? video_format.fmt.pix.height : video_format.fmt.pix.height * 2;
+
+      /* TODO Only double if frames ARE fields (progressive or deinterlaced, full framerate)
+       * *2 for fields
+       */
+      // defaulting to 60 if this this doesn't return a usable number
+      if(video_standard.frameperiod.denominator == 0 || video_standard.frameperiod.numerator == 0)
+         info->timing.fps = 60;
+      else
+         info->timing.fps = ((double)(video_standard.frameperiod.denominator*2)) /
+                             (double)video_standard.frameperiod.numerator;
+      info->timing.sample_rate   = AUDIO_SAMPLE_RATE;
+
+      /* TODO/FIXME Allow for fixed 4:3 and 16:9 modes */
+      if (error == 0)
+         info->geometry.aspect_ratio = (double)info->geometry.base_width / (double)info->geometry.max_height /
+            ((double)cc.pixelaspect.numerator / (double)cc.pixelaspect.denominator);
    }
 
    printf("Aspect ratio: %f\n",info->geometry.aspect_ratio);
@@ -907,6 +1023,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
    struct retro_variable videodev    = { "videoproc_videodev", NULL };
    struct retro_variable audiodev    = { "videoproc_audiodev", NULL };
    struct retro_variable capturemode = { "videoproc_capture_mode", NULL };
+   struct retro_variable captureresolution = { "videoproc_capture_resolution", NULL };
    struct retro_variable outputmode  = { "videoproc_output_mode", NULL };
    struct retro_variable frametimes  = { "videoproc_frame_times", NULL };
    bool updated = false;
@@ -916,7 +1033,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &audiodev);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capturemode);
-      VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &outputmode);
+      VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &captureresolution);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &frametimes);
       /* Video or Audio device(s) has(ve) been changed
        * TODO We may get away without resetting devices when changing output mode...
@@ -924,6 +1041,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
       if ((videodev.value    && (strcmp(video_device, videodev.value) != 0)) ||\
           (audiodev.value    && (strcmp(audio_device, audiodev.value) != 0)) ||\
           (capturemode.value && (strcmp(video_capture_mode, capturemode.value) != 0)) ||\
+          (captureresolution.value && (strcmp(video_capture_resolution, captureresolution.value) != 0)) ||\
           (outputmode.value  && (strcmp(video_output_mode,  outputmode.value)  != 0)))
       {
           VIDEOPROC_CORE_PREFIX(retro_unload_game)();
@@ -1063,6 +1181,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    struct retro_variable videodev     = { "videoproc_videodev", NULL };
    struct retro_variable audiodev     = { "videoproc_audiodev", NULL };
    struct retro_variable capture_mode = { "videoproc_capture_mode", NULL };
+   struct retro_variable capture_resolution = { "videoproc_capture_resolution", NULL };
    struct retro_variable output_mode  = { "videoproc_output_mode", NULL };
    struct retro_variable frame_times  = { "videoproc_frame_times", NULL };
    enum retro_pixel_format pixel_format;
@@ -1075,6 +1194,8 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    uint32_t index;
    bool std_found;
    int error;
+   char splitresolution[ENVVAR_BUFLEN];
+   char* token;
 
    if (open_devices() == false)
    {
@@ -1105,6 +1226,12 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &audiodev);
    if (audiodev.value != NULL)
       strncpy(audio_device, audiodev.value, ENVVAR_BUFLEN-1);
+
+   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_resolution);
+   if(capture_resolution.value != NULL)
+      strncpy(video_capture_resolution, capture_resolution.value, ENVVAR_BUFLEN-1);
+   else
+      strncpy(video_capture_resolution, "auto", ENVVAR_BUFLEN-1);
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_mode);
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &output_mode);
@@ -1160,23 +1287,35 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       fmt.fmt.pix.colorspace = V4L2_COLORSPACE_SRGB;
       fmt.fmt.pix.quantization = V4L2_QUANTIZATION_LIM_RANGE;
 
-      fmt.fmt.pix.height = 240;
+      // applied set resolution if not set to auto
+      if (strcmp(video_capture_resolution, "auto") != 0)
+      {
+         strcpy(splitresolution, video_capture_resolution);
+         token = strtok(splitresolution, "x");
+         fmt.fmt.pix.width = atoi(token);
+         token = strtok(NULL, "x");
+         fmt.fmt.pix.height = atoi(token);
+      }
       fmt.fmt.pix.field = V4L2_FIELD_TOP;
-
       /* TODO Query the size and FPS */
       if (strcmp(video_capture_mode, "interlaced") == 0)
       {
          v4l2_ncapbuf_target         = 2;
          fmt.fmt.pix.field           = V4L2_FIELD_INTERLACED;
-         video_format.fmt.pix.height = 480;
-         video_cap_height            = 480;
+         video_format.fmt.pix.height = fmt.fmt.pix.height;
+         video_cap_height            = fmt.fmt.pix.height;
       }
       else
       {
          v4l2_ncapbuf_target         = 2;
-         video_format.fmt.pix.height = 240;
-         video_cap_height            = 240;
-         if (strcmp(video_capture_mode, "alternate") == 0)
+         video_format.fmt.pix.height = fmt.fmt.pix.height/2;
+         video_cap_height            = fmt.fmt.pix.height/2;
+         if (strcmp(video_capture_mode, "deinterlaced") == 0)
+         {
+            v4l2_ncapbuf_target         = 2;
+            video_format.fmt.pix.height = fmt.fmt.pix.height;
+            video_cap_height            = fmt.fmt.pix.height;
+         } else if (strcmp(video_capture_mode, "alternate") == 0)
             fmt.fmt.pix.field = V4L2_FIELD_ALTERNATE;
          else if (strcmp(video_capture_mode, "top") == 0)
             fmt.fmt.pix.field = V4L2_FIELD_TOP;
@@ -1189,8 +1328,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
          }
       }
 
-      video_format.fmt.pix.width = 720;
-      video_cap_width            = 720;
+      video_cap_width = fmt.fmt.pix.width;
 
       error = v4l2_ioctl(video_device_fd, VIDIOC_S_FMT, &fmt);
       if (error != 0)
@@ -1199,32 +1337,37 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
          return false;
       }
 
-      error = v4l2_ioctl(video_device_fd, VIDIOC_G_STD, &std_id);
-      if (error != 0)
+      /* skipping this for (magewell usb) since the std ioctl gives errors
+       * unsure if this will impact other cards
+       */
+      if(strcmp((const char*)caps.driver, "uvcvideo")  != 0)
       {
-         printf("VIDIOC_G_STD failed: %s\n", strerror(errno));
-         return false;
-      }
-      for (index = 0, std_found = false; ; index++)
-      {
-         memset(&std, 0, sizeof(std));
-         std.index = index;
-         error     = v4l2_ioctl(video_device_fd, VIDIOC_ENUMSTD, &std);
-         if (error)
-            break;
-         if (std.id == std_id)
+         error = v4l2_ioctl(video_device_fd, VIDIOC_G_STD, &std_id);
+         if (error != 0)
          {
-            video_standard = std;
-            std_found      = true;
+            printf("VIDIOC_G_STD failed: %s\n", strerror(errno));
+            return false;
          }
-         printf("VIDIOC_ENUMSTD[%u]: %s%s\n", index, std.name, std.id == std_id ? " [*]" : "");
+         for (index = 0, std_found = false; ; index++)
+         {
+            memset(&std, 0, sizeof(std));
+            std.index = index;
+            error     = v4l2_ioctl(video_device_fd, VIDIOC_ENUMSTD, &std);
+            if (error)
+               break;
+            if (std.id == std_id)
+            {
+               video_standard = std;
+               std_found      = true;
+            }
+            printf("VIDIOC_ENUMSTD[%u]: %s%s\n", index, std.name, std.id == std_id ? " [*]" : "");
+         }
+         if (!std_found)
+         {
+            printf("VIDIOC_ENUMSTD did not contain std ID %08x\n", (unsigned)std_id);
+            return false;
+         }
       }
-      if (!std_found)
-      {
-         printf("VIDIOC_ENUMSTD did not contain std ID %08x\n", (unsigned)std_id);
-         return false;
-      }
-
       video_format = fmt;
       /* TODO Check if what we got is indeed what we asked for */
 
@@ -1316,7 +1459,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       video_out_height = video_cap_height;
    else if (strcmp(video_output_mode, "deinterlaced") == 0)
    {
-      if (strcmp(video_capture_mode, "interlaced") == 0)
+      if (strcmp(video_capture_mode, "interlaced") == 0 || strcmp(video_capture_mode, "deinterlaced") == 0)
          video_out_height = video_cap_height;
       else
          video_out_height = video_cap_height*2;
