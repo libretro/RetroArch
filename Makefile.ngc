@@ -241,31 +241,60 @@ OBJOUT   = -o
 LINKOUT  = -o
 LINK = $(CXX)
 
-all: $(EXT_TARGET)
+all: info $(EXT_TARGET)
+
+define INFO
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CXX: $(CXX)
+LD: $(LD)
+LDFLAGS: $(LDFLAGS)
+LIBDIRS: $(LIBDIRS)
+LIBS: $(LIBS)
+LINK: $(LINK)
+LINKOUT: $(LINKOUT)
+OBJ: $(OBJ)
+OBJOUT: $(OBJOUT)
+PLATEXTRA: $(PLATEXTRA)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 %.dol: %.elf
 	$(ELF2DOL) $< $@
 
 $(EXT_INTER_TARGET): $(OBJ)
-	$(LINK) $(LINKOUT)$@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) $(LIBS)
+	@$(if $(Q), $(shell echo echo LINK $@),)
+	$(Q)$(LINK) $(LINKOUT)$@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) $(LIBS)
 
 %.o: %.c
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.cpp
-	$(CXX) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.S
-	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.binobj: %.bin
-	$(LD) -r -b binary $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo LD $@),)
+	$(Q)$(LD) -r -b binary $(OBJOUT)$@ $<
 
 clean:
+ifneq ($(V),1)
+	@echo RM
+else
 	rm -f $(EXT_TARGET)
 	rm -f $(EXT_INTER_TARGET)
 	rm -f $(OBJ)
+endif
 
 .PHONY: clean
 

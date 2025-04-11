@@ -83,6 +83,10 @@ ifeq ($(strip $(PS2SDK)),)
 $(error "Please set PS2SDK in your environment. export PS2SDK=<path to>ps2sdk")
 endif
 
+ifneq ($(V),1)
+        Q := @
+endif
+
 INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include
 INCDIR += -Ilibretro-common/include -Ideps -Ideps/stb -Ideps/7zip
 
@@ -104,10 +108,27 @@ EE_INCS = $(INCDIR)
 EE_BIN = $(TARGET).elf
 EE_GPVAL = $(GPVAL)
 
-all: $(EE_BIN)
+all: info $(EE_BIN)
+
+define INFO
+EE_BIN: $(EE_BIN)
+EE_CC: $(EE_CC)
+EE_CFLAGS: $(EE_CFLAGS)
+EE_CXX: $(EE_CXX)
+EE_CXXFLAGS: $(EE_CXXFLAGS)
+EE_INCS: $(EE_INCS)
+EE_OBJS: $(EE_OBJS)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 clean:
-	rm -f $(EE_BIN) $(EE_OBJS)
+	@$(if $(Q), $(shell echo echo RM $<),)
+	$(Q)rm -f $(EE_BIN) $(EE_OBJS)
 
 prepare:
 	ps2client -h $(PS2_IP) reset
@@ -131,3 +152,15 @@ release: all
 #Include preferences
 include $(PS2SDK)/samples/Makefile.pref
 include $(PS2SDK)/samples/Makefile.eeglobal_cpp
+
+%.o: %.c
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -c $< -o $@
+
+%.o: %.cc
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(EE_CXX) $(EE_CXXFLAGS) $(EE_INCS) -c $< -o $@
+
+%.o: %.cpp
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(EE_CXX) $(EE_CXXFLAGS) $(EE_INCS) -c $< -o $@
