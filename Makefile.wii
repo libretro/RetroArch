@@ -301,7 +301,8 @@ $(EXT_INTER_TARGET): $(OBJ)
 	$(CXX) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.S
-	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.binobj: %.bin
 	$(LD) -r -b binary $(OBJOUT)$@ $<
