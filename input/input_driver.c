@@ -62,9 +62,6 @@
 #include "../verbosity.h"
 
 #include "../ai/game_ai.h"
-#if defined(_WIN32)
-#include <winsock2.h>
-#endif
 
 #define HOLD_BTN_DELAY_SEC 2
 

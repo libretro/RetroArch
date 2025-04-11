@@ -32,6 +32,10 @@
 #include "../config.h"
 #endif /* HAVE_CONFIG_H */
 
+#if defined(_WIN32) && !defined(SOCKET)
+#include <winsock2.h>
+#endif
+
 #include "input_defines.h"
 #include "input_types.h"
 #ifdef HAVE_OVERLAY
@@ -284,7 +288,11 @@ struct remote_message
 struct input_remote
 {
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+#ifdef _WIN32
+   SOCKET net_fd[MAX_USERS];
+#else
    int net_fd[MAX_USERS];
+#endif
 #endif
    bool state[RARCH_BIND_LIST_END];
 };
