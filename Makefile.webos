@@ -235,12 +235,16 @@ $(OBJDIR)/%.o: %.S $(HEADERS)
 	$(Q)$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
 
 clean:
+ifneq ($(V),1)
+	@echo RM
+else
 	rm -rf $(OBJDIR_BASE)
 	rm -f $(TARGET)
 	rm -f *.d
 	rm -rf SDL
 	rm -rf webos/*.ipk
 	rm -rf webos/dist
+endif
 
 sdl2: $(TARGET)
 ifeq ($(ADD_SDL2_LIB), 1)
