@@ -263,9 +263,13 @@ $(EXT_INTER_TARGET): $(OBJ)
 	$(LD) -r -b binary $(OBJOUT)$@ $<
 
 clean:
+ifneq ($(V),1)
+	@echo RM
+else
 	rm -f $(EXT_TARGET)
 	rm -f $(EXT_INTER_TARGET)
 	rm -f $(OBJ)
+endif
 
 .PHONY: clean
 
