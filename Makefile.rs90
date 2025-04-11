@@ -186,7 +186,29 @@ X-OD-NeedsDownscaling=true
 endef
 export DESKTOP_ENTRY
 
-all: $(TARGET) opk
+all: info $(TARGET) opk
+
+define INFO
+ASFLAGS: $(ASFLAGS)
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CPPFLAGS: $(CPPFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+DEFINES: $(DEFINES)
+LDFLAGS: $(LDFLAGS)
+LIBRARY_DIRS: $(LIBRARY_DIRS)
+LIBS: $(LIBS)
+LINK: $(LINK)
+OBJCFLAGS: $(OBJCFLAGS)
+RARCH_OBJ: $(RARCH_OBJ)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 -include $(RARCH_OBJ:.o=.d)
 
