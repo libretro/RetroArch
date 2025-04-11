@@ -166,7 +166,29 @@ endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
-all: $(TARGET)
+all: info $(TARGET)
+
+define INFO
+ASFLAGS: $(ASFLAGS)
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CPPFLAGS: $(CPPFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+DEFINES: $(DEFINES)
+LDFLAGS: $(LDFLAGS)
+LIBRARY_DIRS: $(LIBRARY_DIRS)
+LIBS: $(LIBS)
+LINK: $(LINK)
+OBJCFLAGS: $(OBJCFLAGS)
+RARCH_OBJ: $(RARCH_OBJ)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 -include $(RARCH_OBJ:.o=.d)
 
