@@ -4592,7 +4592,7 @@ static void ozone_change_tab(ozone_handle_t *ozone,
    menu_driver_deferred_push_content_list(selection_buf);
 }
 
-static void ozone_sidebar_goto(ozone_handle_t *ozone, unsigned new_selection)
+static void ozone_sidebar_goto(ozone_handle_t *ozone, size_t new_selection)
 {
    static const enum msg_hash_enums ozone_system_tabs_idx[OZONE_SYSTEM_TAB_LAST]      = {
       MENU_ENUM_LABEL_MAIN_MENU,
@@ -8125,17 +8125,17 @@ static enum menu_action ozone_parse_menu_entry_action(
                   : ozone->categories_selection_ptr;
 
             new_selection = random_range((unsigned)(ozone->system_tab_end + 1), (unsigned)(ozone->system_tab_end + horizontal_list_size));
-            while (new_selection == (int)tab_selection)
+            while (new_selection == tab_selection)
                new_selection = random_range((unsigned)(ozone->system_tab_end + 1), (unsigned)(ozone->system_tab_end + horizontal_list_size));
 
-            if (new_selection != (int)tab_selection)
+            if (new_selection != tab_selection)
                ozone_sidebar_goto(ozone, new_selection);
 
             ozone->flags &= ~OZONE_FLAG_CURSOR_MODE;
             new_action    = MENU_ACTION_NOOP;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != (int)selection)
+            if (new_selection != selection)
                audio_driver_mixer_play_scroll_sound(true);
 #endif
             break;
@@ -8231,16 +8231,16 @@ static enum menu_action ozone_parse_menu_entry_action(
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
-            new_selection      = (int)(selection + 1);
+            new_selection      = selection + 1;
 
-            if (new_selection >= (int)(ozone->system_tab_end + horizontal_list_size + 1))
+            if (new_selection >= ozone->system_tab_end + horizontal_list_size + 1)
                new_selection   = 0;
 
             if (     !menu_navigation_wraparound_enable
                   && selection == ozone->system_tab_end + horizontal_list_size)
-               new_selection   = (int)selection;
+               new_selection   = selection;
 
-            if (new_selection != (int)selection)
+            if (new_selection != selection)
             {
                ozone_sidebar_goto(ozone, new_selection);
                new_action      = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
@@ -8253,7 +8253,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != (int)selection)
+            if (new_selection != selection)
                audio_driver_mixer_play_scroll_sound(false);
 #endif
             break;
@@ -8288,7 +8288,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                   && selection == 0)
                new_selection   = 0;
 
-            if (new_selection != (int)selection)
+            if (new_selection != selection)
             {
                ozone_sidebar_goto(ozone, new_selection);
                new_action      = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
@@ -8301,7 +8301,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != (int)selection)
+            if (new_selection != selection)
                audio_driver_mixer_play_scroll_sound(true);
 #endif
             break;
@@ -8505,7 +8505,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             ozone->flags2 &= ~OZONE_FLAG2_PENDING_CURSOR_IN_SIDEBAR;
             ozone->flags  |=  OZONE_FLAG_CURSOR_IN_SIDEBAR;
-            ozone_sidebar_goto(ozone, (unsigned)ozone->categories_selection_ptr);
+            ozone_sidebar_goto(ozone, ozone->categories_selection_ptr);
          }
          break;
       case MENU_ACTION_SCROLL_UP:
@@ -8539,18 +8539,18 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             if (tab_selection < (size_t)(ozone->system_tab_end + 1))
                new_selection           = 0;
-            else if ((int)tab_selection > (int)ozone->system_tab_end - new_selection
+            else if (tab_selection > ozone->system_tab_end - new_selection
                   || new_selection < 0)
-               new_selection           = (int)(ozone->system_tab_end + 1);
+               new_selection           = ozone->system_tab_end + 1;
 
-            if (new_selection != (int)tab_selection)
+            if (new_selection != tab_selection)
                ozone_sidebar_goto(ozone, new_selection);
 
             new_action         = MENU_ACTION_NOOP;
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != (int)selection)
+            if (new_selection != selection)
                audio_driver_mixer_play_scroll_sound(true);
 #endif
             break;
@@ -8602,17 +8602,17 @@ static enum menu_action ozone_parse_menu_entry_action(
                   new_selection        = ozone->system_tab_end + 1;
             }
 
-            if (new_selection > (int)(ozone->system_tab_end + horizontal_list_size))
-               new_selection           = (int)(ozone->system_tab_end + horizontal_list_size);
+            if (new_selection > ozone->system_tab_end + horizontal_list_size)
+               new_selection           = ozone->system_tab_end + horizontal_list_size;
 
-            if (new_selection != (int)tab_selection)
+            if (new_selection != tab_selection)
                ozone_sidebar_goto(ozone, new_selection);
 
             new_action         = MENU_ACTION_NOOP;
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != (int)selection)
+            if (new_selection != selection)
                audio_driver_mixer_play_scroll_sound(false);
 #endif
             break;
@@ -8641,16 +8641,16 @@ static enum menu_action ozone_parse_menu_entry_action(
             new_selection              = 0;
 
             if (tab_selection > ozone->system_tab_end)
-               new_selection           = (int)(ozone->system_tab_end + 1);
+               new_selection           = ozone->system_tab_end + 1;
 
-            if (new_selection != (int)tab_selection)
+            if (new_selection != tab_selection)
                ozone_sidebar_goto(ozone, new_selection);
 
             new_action         = MENU_ACTION_NOOP;
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != (int)selection)
+            if (new_selection != selection)
                audio_driver_mixer_play_scroll_sound(true);
 #endif
             break;
@@ -8667,14 +8667,14 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             new_selection              = ozone->system_tab_end + horizontal_list_size;
 
-            if (new_selection != (int)tab_selection)
+            if (new_selection != tab_selection)
                ozone_sidebar_goto(ozone, new_selection);
 
             new_action         = MENU_ACTION_NOOP;
             ozone->flags      &= ~OZONE_FLAG_CURSOR_MODE;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != (int)selection)
+            if (new_selection != selection)
                audio_driver_mixer_play_scroll_sound(false);
 #endif
             break;
@@ -12803,7 +12803,7 @@ static int ozone_pointer_up(void *userdata,
 
                /* Ensure that current category is valid */
                if (ozone->pointer_categories_selection <= ozone->system_tab_end + horizontal_list_size)
-                  ozone_sidebar_goto(ozone, (unsigned)ozone->pointer_categories_selection);
+                  ozone_sidebar_goto(ozone, ozone->pointer_categories_selection);
             }
          }
          break;
