@@ -241,7 +241,28 @@ OBJOUT   = -o
 LINKOUT  = -o
 LINK = $(CXX)
 
-all: $(EXT_TARGET)
+all: info $(EXT_TARGET)
+
+define INFO
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CXX: $(CXX)
+LD: $(LD)
+LDFLAGS: $(LDFLAGS)
+LIBDIRS: $(LIBDIRS)
+LIBS: $(LIBS)
+LINK: $(LINK)
+LINKOUT: $(LINKOUT)
+OBJ: $(OBJ)
+OBJOUT: $(OBJOUT)
+PLATEXTRA: $(PLATEXTRA)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 %.dol: %.elf
 	$(ELF2DOL) $< $@
