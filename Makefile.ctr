@@ -313,20 +313,24 @@ $(TARGET).elf: $(OBJ) $(LIB_CORE_FULL)
 	rm $*.shbin
 
 %.o: %.cpp
-	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
 
 %.o: %.c
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
 
 %.o: %.s
-	$(CC) -c -o $@ $< $(ASFLAGS)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(ASFLAGS)
 
 %.o: %.S
-	$(CC) -c -o $@ $< $(ASFLAGS)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(ASFLAGS)
 
 %.a:
-	$(AR) -rc $@ $^
+	@$(if $(Q), $(shell echo echo AR $<),)
+	$(Q)$(AR) -rc $@ $^
 
 %.vsh:
 
@@ -342,7 +346,8 @@ endif
 	$(DEVKITTOOLS)/bin/3dsxtool $< $@ $(_3DSXFLAGS)
 
 $(TARGET).elf: ctr/3dsx_custom_crt0.o
-	$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@
+	@$(if $(Q), $(shell echo echo LD $@),)
+	$(Q)$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@
 	$(NM) -CSn $@ > $(notdir $*.lst)
 
 $(TARGET).bnr: $(TARGET).elf $(APP_BANNER) $(APP_AUDIO)
@@ -358,6 +363,9 @@ $(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 	$(MAKEROM) -f cia -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=false
 
 clean:
+ifneq ($(V),1)
+	@echo RM
+else
 	rm -f $(OBJ)
 	rm -f $(TARGET).3dsx
 	rm -f $(TARGET).elf
@@ -368,5 +376,6 @@ clean:
 	rm -f $(TARGET).icn
 	rm -f ctr/ctr_config_*.o
 	rm -f ctr/3dsx_custom_crt0.o
+endif
 
 .PHONY: clean
