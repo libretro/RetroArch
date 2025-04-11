@@ -9319,6 +9319,14 @@ MSG_HASH(
    "Використовується поточний файл опцій."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "Скинути параметри ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   "Встановити всі параметри поточного ядра для значень за замовчуванням."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Зберегти параметри на диск"
    )

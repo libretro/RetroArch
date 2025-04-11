@@ -8227,6 +8227,14 @@ MSG_HASH(
    "Nome do arquivo de configuração do núcleo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "Redefinir Opções do Núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   "Define todas as opções do núcleo atual para os valores padrão."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Gravar opções em disco"
    )
