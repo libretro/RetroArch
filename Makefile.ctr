@@ -238,16 +238,7 @@ ifeq ($(BUILD_CIA), 1)
 	TARGET_CIA := $(TARGET).cia
 endif
 
-.PHONY: $(BUILD) clean all
-
-all: $(TARGET)
-
-$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
-$(TARGET).3dsx: $(TARGET).elf
-$(TARGET).elf: $(OBJ) $(LIB_CORE_FULL)
-
 PREFIX		:=	$(DEVKITARM)/bin/arm-none-eabi-
-
 CC      := $(PREFIX)gcc
 CXX     := $(PREFIX)g++
 AS      := $(PREFIX)as
@@ -280,6 +271,36 @@ ifeq ($(strip $(CTRMAKEROM)),)
 else
 	MAKEROM = $(CTRMAKEROM)
 endif
+
+.PHONY: $(BUILD) clean all
+
+all: info $(TARGET)
+
+define INFO
+AR: $(AR)
+ASFLAGS: $(ASFLAGS)
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+INCDIRS: $(INCDIRS)
+LD: $(LD)
+LDFLAGS: $(LDFLAGS)
+LIBDIRS: $(LIBDIRS)
+LIBS: $(LIBS)
+OBJ: $(OBJ)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
+
+
+$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
+$(TARGET).3dsx: $(TARGET).elf
+$(TARGET).elf: $(OBJ) $(LIB_CORE_FULL)
 
 %.o: %.vsh %.gsh
 	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
