@@ -652,7 +652,7 @@ uint64_t cpu_features_get(void)
    cpu |= RETRO_SIMD_MMX | RETRO_SIMD_SSE | RETRO_SIMD_MMXEXT;
 #elif defined(CPU_X86)
    unsigned max_flag   = 0;
-   int flags[4];
+   int32_t flags[4];
    int vendor_shuffle[3];
    char vendor[13];
    x86_cpuid(0, flags);
