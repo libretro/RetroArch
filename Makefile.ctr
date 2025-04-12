@@ -238,16 +238,7 @@ ifeq ($(BUILD_CIA), 1)
 	TARGET_CIA := $(TARGET).cia
 endif
 
-.PHONY: $(BUILD) clean all
-
-all: $(TARGET)
-
-$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
-$(TARGET).3dsx: $(TARGET).elf
-$(TARGET).elf: $(OBJ) $(LIB_CORE_FULL)
-
 PREFIX		:=	$(DEVKITARM)/bin/arm-none-eabi-
-
 CC      := $(PREFIX)gcc
 CXX     := $(PREFIX)g++
 AS      := $(PREFIX)as
@@ -281,6 +272,36 @@ else
 	MAKEROM = $(CTRMAKEROM)
 endif
 
+.PHONY: $(BUILD) clean all
+
+all: info $(TARGET)
+
+define INFO
+AR: $(AR)
+ASFLAGS: $(ASFLAGS)
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+INCDIRS: $(INCDIRS)
+LD: $(LD)
+LDFLAGS: $(LDFLAGS)
+LIBDIRS: $(LIBDIRS)
+LIBS: $(LIBS)
+OBJ: $(OBJ)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
+
+
+$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
+$(TARGET).3dsx: $(TARGET).elf
+$(TARGET).elf: $(OBJ) $(LIB_CORE_FULL)
+
 %.o: %.vsh %.gsh
 	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
 	$(DEVKITTOOLS)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
@@ -292,20 +313,24 @@ endif
 	rm $*.shbin
 
 %.o: %.cpp
-	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
 
 %.o: %.c
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
 
 %.o: %.s
-	$(CC) -c -o $@ $< $(ASFLAGS)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(ASFLAGS)
 
 %.o: %.S
-	$(CC) -c -o $@ $< $(ASFLAGS)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(ASFLAGS)
 
 %.a:
-	$(AR) -rc $@ $^
+	@$(if $(Q), $(shell echo echo AR $<),)
+	$(Q)$(AR) -rc $@ $^
 
 %.vsh:
 
@@ -321,7 +346,8 @@ endif
 	$(DEVKITTOOLS)/bin/3dsxtool $< $@ $(_3DSXFLAGS)
 
 $(TARGET).elf: ctr/3dsx_custom_crt0.o
-	$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@
+	@$(if $(Q), $(shell echo echo LD $@),)
+	$(Q)$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@
 	$(NM) -CSn $@ > $(notdir $*.lst)
 
 $(TARGET).bnr: $(TARGET).elf $(APP_BANNER) $(APP_AUDIO)
@@ -337,6 +363,9 @@ $(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 	$(MAKEROM) -f cia -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=false
 
 clean:
+ifneq ($(V),1)
+	@echo RM
+else
 	rm -f $(OBJ)
 	rm -f $(TARGET).3dsx
 	rm -f $(TARGET).elf
@@ -347,5 +376,6 @@ clean:
 	rm -f $(TARGET).icn
 	rm -f ctr/ctr_config_*.o
 	rm -f ctr/3dsx_custom_crt0.o
+endif
 
 .PHONY: clean
