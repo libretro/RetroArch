@@ -159,7 +159,7 @@ size_t playlist_config_set_base_content_directory(
       config->autofix_paths = !string_is_empty(path);
       if (config->autofix_paths)
 #if IOS
-         return fill_path_abbreviate_special(config->base_content_directory, path,
+         return fill_pathname_abbreviate_special(config->base_content_directory, path,
                sizeof(config->base_content_directory));
 #else
          return strlcpy(config->base_content_directory, path,
