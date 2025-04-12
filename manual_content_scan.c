@@ -284,6 +284,10 @@ bool manual_content_scan_set_menu_content_dir(const char *content_dir)
    size_t _len;
    const char *dir_name = NULL;
 
+   char _tmpbuf[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(_tmpbuf, content_dir, sizeof(_tmpbuf));
+   content_dir = _tmpbuf;
+
    /* Sanity check */
    if (string_is_empty(content_dir))
       goto error;
@@ -669,7 +673,7 @@ enum manual_content_scan_playlist_refresh_status
       scan_settings.dat_file_path[0] = '\0';
    else
    {
-      strlcpy(scan_settings.dat_file_path, dat_file_path,
+      fill_pathname_expand_special(scan_settings.dat_file_path, dat_file_path,
             sizeof(scan_settings.dat_file_path));
 
       switch (manual_content_scan_validate_dat_file_path())
