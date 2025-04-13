@@ -4025,6 +4025,10 @@ MSG_HASH(
    "Återställ grund kontroller"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
+   "Nollställ bindningsinställningar för inmatningar till deras standardvärden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
    "Spara spelkontrolls-profil"
    )
@@ -6787,8 +6791,24 @@ MSG_HASH(
 /* Settings > Network */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
+   "Om netplay-spel ska annonseras offentligt. Om inställningen är avaktiverad måste klienter ansluta manuellt i stället för att använda den publika lobbyn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
    "Använd reläserver"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
+   "Välj en specifik reläserver att använda. Geografiskt närmare platser tenderar att ha lägre latens."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
+   "Anpassad adress för reläserver"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   "Ange adressen till din anpassade reläserver här. Format: adress eller adress|port."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -6835,8 +6855,16 @@ MSG_HASH(
    "Max samtidiga anslutningar"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "Det maximala antalet aktiva anslutningar som värden accepterar innan nya anslutningar avvisas."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
    "Ping begränsning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   "Den maximala anslutningsfördröjningen (ping) som värden accepterar. Ställ in den på 0 för ingen gräns."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -6915,6 +6943,10 @@ MSG_HASH(
    "Begär enhet %u"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
+   "Begär att få spela med den angivna inmatningsenheten."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
    "Nätverkskommandon"
    )
@@ -6937,6 +6969,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
    "Kommandon för stdin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
+   "stdin kommandogränssnitt."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
@@ -7342,12 +7378,24 @@ MSG_HASH(
 
 /* Settings > User > Accounts > YouTube */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   "Strömningsnyckel för YouTube"
+   )
 
 /* Settings > User > Accounts > Twitch */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
+   "Strömningsnyckel för Twitch"
+   )
 
 /* Settings > User > Accounts > Facebook Gaming */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
+   "Strömningsnyckel för Facebook Gaming"
+   )
 
 /* Settings > Directory */
 
@@ -7512,6 +7560,10 @@ MSG_HASH(
    "Spelkontrollsprofiler som automatisk konfigurerar spelkontroller lagras i denna katalog."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
+   "Ommappningar för inmatning"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Spellistor"
    )
@@ -7540,8 +7592,16 @@ MSG_HASH(
    "Musikspellista"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
+   "Spara musikspellistan till denna katalog."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_VIDEO_HISTORY_DIRECTORY,
    "Videospellista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
+   "Spara videospellistan till denna katalog."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
@@ -8685,6 +8745,10 @@ MSG_HASH(
    "Mask för minnesadress"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
+   "Adressbitmask när minnesstorlek för sökning < 8-bitars."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
    "Antal iterationer"
    )
@@ -8766,6 +8830,14 @@ MSG_HASH(
 
 /* Quick Menu > Shaders */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
+   "Tillämpa automatiskt ändringar som gjorts i shader-filer på disken."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
+   "Bevaka shader-filer för nya ändringar. När du har sparat ändringar i en shader på disken kommer den automatiskt att kompileras om och tillämpas på innehållet."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
    "Kom ihåg senast använda Shader-katalog"
@@ -9906,6 +9978,10 @@ MSG_HASH(
    "Typsnitt"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_FONT,
+   "Välj ett annat huvudsakligt teckensnitt som ska användas av menyn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
    "Teckenfärg (röd)"
    )
@@ -9918,8 +9994,16 @@ MSG_HASH(
    "Teckenfärg (blå)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_LAYOUT,
+   "Välj en annan layout för XMB-gränssnittet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_THEME,
    "Ikontema"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_THEME,
+   "Välj ett annat ikontema för RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
@@ -9932,6 +10016,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
    "Skuggeffekter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
+   "Välj en animerad bakgrundseffekt. Kan vara GPU-intensiv beroende på effekten. Om prestandan är otillfredsställande kan du antingen stänga av den eller återgå till en enklare effekt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
@@ -10094,6 +10182,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Ta bort tillverkarens namn från spellistorna. Till exempel, 'Sony - PlayStation' blir 'PlayStation'."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "Spellistorna kommer att sorteras om i alfabetisk ordning efter att tillverkarkomponenten i deras namn har tagits bort."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
@@ -10771,6 +10863,10 @@ MSG_HASH(
    "<flera>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
+   "Fel vid uppdatering av spellistepost."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
    "Fyll i alla nödvändiga fält."
    )
@@ -10815,8 +10911,32 @@ MSG_HASH(
    "Ta bort"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_REMOVE_PASSES,
+   "Ta bort pass"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_APPLY,
    "Tillämpa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHADER_ADD_PASS,
+   "Lägg till pass"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHADER_CLEAR_ALL_PASSES,
+   "Töm alla pass"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
+   "Inga shader-pass."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET_PASS,
+   "Nollställ pass"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET_ALL_PASSES,
+   "Nollställ alla pass"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
@@ -10878,8 +10998,16 @@ MSG_HASH(
    "Turbo/Dödzon"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
+   "Kärnräknare"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_DISK,
    "Ingen skiva vald"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
+   "Frontend-räknare"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
@@ -10912,6 +11040,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
    "Inga netplay-klienter hittades."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
+   "Inga prestandaräknare."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
@@ -11089,12 +11221,20 @@ MSG_HASH(
    "Starta innehåll"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+   "Välj utgångsporten som är ansluten till CRT-skärmen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Hjälp"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Rensa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
+   "Felsökning för ljud/video"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
@@ -11382,6 +11522,14 @@ MSG_HASH(
    "Skicka felsökningsinformation lyckad. Ditt ID-nummer är %u."
    )
 MSG_HASH(
+   MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
+   "Tryck två gånger till för att skicka diagnostikinformation till RetroArch-teamet."
+   )
+MSG_HASH(
+   MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
+   "Tryck en gång till för att skicka diagnostikinformation till RetroArch-teamet."
+   )
+MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
    "Global ljudmixervolym"
    )
@@ -11396,6 +11544,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
    "Okänt netplay-kommando togs emot"
+   )
+MSG_HASH(
+   MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
+   "Filen finns redan. Sparar till reservbuffert"
    )
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM,
@@ -11919,6 +12071,10 @@ MSG_HASH(
    "Misslyckades med att läsa filmfilen"
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_OVERLAY,
+   "Misslyckades med att läsa in överlägg."
+   )
+MSG_HASH(
    MSG_OSK_OVERLAY_NOT_SET,
    "Tangentbordsöverlägg är inte inställt."
    )
@@ -12025,6 +12181,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FRAMES,
    "Bildrutor"
+   )
+MSG_HASH(
+   MSG_GOT_INVALID_DISK_INDEX,
+   "Fick ogiltigt skivindex."
    )
 MSG_HASH(
    MSG_GRAB_MOUSE_STATE,
@@ -12167,6 +12327,10 @@ MSG_HASH(
    "Inget att spara. Åsidosättningar inte sparade."
    )
 MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "Sparar inte. Åsidosättningar aktiva."
+   )
+MSG_HASH(
    MSG_PAUSED,
    "Pausad."
    )
@@ -12181,6 +12345,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REDIRECTING_CHEATFILE_TO,
    "Dirigerar om fuskfil till"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_SAVEFILE_TO,
+   "Omdirigerar sparad fil till"
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
