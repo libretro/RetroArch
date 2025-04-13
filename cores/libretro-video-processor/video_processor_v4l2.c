@@ -91,6 +91,7 @@ struct v4l2_resolution v4l2_resolutions[] =
    {1440,1050},
    {1440,1080},
    {1600,1200},
+   {1920,1440},
 	//16:9
    {640,360},
    {960,540},
@@ -328,18 +329,11 @@ static void enumerate_audio_devices(char *s, size_t len)
 
 static void list_resolutions(char *capture_resolutions, size_t len)
 {
-   memset(capture_resolutions, 0, len);
-   char resolution[len];
-   appendstr(capture_resolutions, "Capture resolution; ", len);
-   for(int i =0; i < sizeof(v4l2_resolutions)/sizeof(v4l2_resolutions[0]) ;i++)
-   {
-      snprintf(resolution, 1024 * sizeof(char), "%dx%d",v4l2_resolutions[i].width,v4l2_resolutions[i].height);
-
-      if(i > 0)
-         appendstr(capture_resolutions, "|",  len);
-      appendstr(capture_resolutions, resolution, len);
-
-   }
+   size_t i, written;
+   written = snprintf(capture_resolutions, len, "Capture resolution; ");
+   for (i = 0; i < sizeof(v4l2_resolutions) / sizeof(v4l2_resolutions[0]); i++)
+      written += snprintf(capture_resolutions + written, len - written, "%s%dx%d", i > 0 ? "|" : "",
+         v4l2_resolutions[i].width,v4l2_resolutions[i].height);
 }
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
