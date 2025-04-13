@@ -1350,6 +1350,10 @@ ifeq ($(HAVE_X11), 1)
    ifeq ($(HAVE_XCB),1)
       LIBS += -lX11-xcb
    endif
+   ifeq ($(HAVE_XI2),1)
+      LIBS += -lXi
+      DEFINES += -DHAVE_XI2
+   endif
    ifeq ($(HAVE_XSCRNSAVER),1)
       LIBS += -lXss
    endif
