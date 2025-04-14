@@ -312,14 +312,11 @@ $(APP_BOOTER_DIR)/app_booter.bin:
 	$(MAKE) -C $(APP_BOOTER_DIR)
 
 clean:
-ifneq ($(V),1)
-	@echo RM
-else
-	rm -f $(EXT_TARGET)
-	rm -f $(EXT_INTER_TARGET)
-	rm -f $(OBJ)
-	$(MAKE) -C $(APP_BOOTER_DIR) clean
-endif
+	@$(if $(Q), echo $@,)
+	$(Q)rm -f $(EXT_TARGET)
+	$(Q)rm -f $(EXT_INTER_TARGET)
+	$(Q)rm -f $(OBJ)
+	$(Q)$(MAKE) -C $(APP_BOOTER_DIR) clean
 
 .PHONY: clean
 

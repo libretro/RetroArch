@@ -312,13 +312,10 @@ uninstall:
 	rm -rf $(DESTDIR)$(ASSETS_DIR)
 
 clean:
-ifneq ($(V),1)
-	@echo RM
-else
-	rm -rf $(OBJDIR_BASE)
-	rm -f $(TARGET)
-	rm -f *.d
-endif
+	@$(if $(Q), echo $@,)
+	$(Q)rm -rf $(OBJDIR_BASE)
+	$(Q)rm -f $(TARGET)
+	$(Q)rm -f *.d
 
 .PHONY: all install uninstall clean
 
