@@ -9303,6 +9303,14 @@ MSG_HASH(
    "Бягучы файл опцый які выкарыстоўваецца."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "Скід опцый ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   "Скінуць усе значэнні опцый бягучага ядра да прадвызначаных."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "Скінуць опцыі на дыск"
    )

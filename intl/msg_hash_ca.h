@@ -3782,6 +3782,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
    "Fes servir fotogrames preventius (alternar)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
+   "Activa o desactiva el sistema de fotogrames preventius."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
@@ -4413,6 +4417,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "Filtra pel nucli actual"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
+   "Recorda l'última carpeta on has desat"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -5692,6 +5700,10 @@ MSG_HASH(
    "Mostra afegir a una llista de reproducció"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Mostra l'opció 'Afegir a una llista de reproducció'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Mostra «Estableix l’associació de nucli»"
    )
@@ -5825,6 +5837,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
    "Mostra 'Presentació en pantalla'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+   "Mostra l'opció 'Visualització en pantalla'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
@@ -6279,6 +6295,10 @@ MSG_HASH(
    "Sud-est Àsia"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
+   "Àsia Oriental (Chuncheon, Corea del sud)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Personalitzat"
    )
@@ -6487,6 +6507,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
    "Comprimeix les llistes de reproducció"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   "Mostra els nuclis associats a les llistes de reproducció"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
@@ -7825,6 +7849,14 @@ MSG_HASH(
    "Elimina tots els trucs"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+   "Aplica els trucs automàticament durant en carregar un joc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
+   "Aplica els trucs automàticament quan es carrega el joc."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
    "Aplica en activar"
    )
@@ -8259,6 +8291,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    "Desa la personalització de directori de continguts"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "Elimina la personalització de les carpetes de contingut"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
@@ -8727,6 +8763,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
    "16 Bits, valor màxim = 0xFFFF"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
+   "32 bits, Valor màxim = 0xFFFFFFFF"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
@@ -9903,6 +9943,10 @@ MSG_HASH(
    "Recorda la geometria de la finestra:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+   "Recorda l'última pestanya de l'explorador de continguts:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
    "Tema:"
    )
@@ -11058,6 +11102,10 @@ MSG_HASH(
    "Joc en xarxa desconnectat"
    )
 MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
+   "No tens permís per jugar"
+   )
+MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
    "No hi ha lloc per més jugadors"
    )
@@ -11763,6 +11811,10 @@ MSG_HASH(
    "Carrega el desat ràpid %d."
    )
 MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Carrega l'estat des de la ranura #-1 (Automàticament)."
+   )
+MSG_HASH(
    MSG_LOADING,
    "Carregant"
    )
@@ -12195,6 +12247,10 @@ MSG_HASH(
    "S'ha carregat el fitxer d'assignacions del nucli."
    )
 MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "Les opcions d'assignació d'entrada s'han desat a:"
+   )
+MSG_HASH(
    MSG_RUNAHEAD_DISABLED,
    "Desactiva l'execució anticipada."
    )
@@ -12361,6 +12417,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR_REMOVING_SHADER_PRESET,
    "Error en eliminar la configuració de shaders."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "Has seleccionat un fitxer DAT de arcade no vàlid."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
