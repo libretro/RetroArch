@@ -817,8 +817,8 @@ static size_t setting_get_string_representation_size_in_mb(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      return snprintf(s, len, "%ju", (uintmax_t)
-            ((*setting->value.target.sizet) / (1024 * 1024)));
+      return snprintf(s, len, "%" PRI_SIZET,
+            (*setting->value.target.sizet) / (1024 * 1024));
    return 0;
 }
 
