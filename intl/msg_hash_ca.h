@@ -3162,6 +3162,10 @@ MSG_HASH(
    "El número màxim d'usuaris suportat per RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Sistema de votació (Es requereix reinici)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "Re-mapeja els controls d'aquest nucli"
    )
@@ -3276,6 +3280,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    "La quantitat de segons que se sosté una entrada per a assignar-la."
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_PRESS,
+   "Clica al teclat, ratolí o controlador"
    )
 MSG_HASH(
    MSG_INPUT_BIND_RELEASE,
@@ -4943,6 +4951,10 @@ MSG_HASH(
    "Mostra el ping de la sala de joc en línia actual."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "Notificació d'inici en carregar contingut"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "Notificacions dels trucs"
    )
@@ -4953,6 +4965,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
    "Notificacions de la càrrega de reassignacions d'entrada"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "Notificacions en restaurar un disc d'inci"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
@@ -7653,6 +7669,10 @@ MSG_HASH(
    "Opcions del nucli"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
+   "Canvia les opcions pel contingut."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
    "Trucs"
    )
@@ -8121,6 +8141,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
    "Comprova els canvis en els shaders"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Recorda l'última carpeta de shaders que s'ha fet servir"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
@@ -9406,6 +9430,10 @@ MSG_HASH(
    "Activa l’animació horitzontal pel menú. Això afectarà el rendiment."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+   "Ressalta les icones horitzontals en fer animacions"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
    "Animació de pujada/baixada"
    )
@@ -9739,6 +9767,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
    "Mostra la barra de navegació"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+   "Gira automàticament la barra de navegació"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
@@ -10183,6 +10215,10 @@ MSG_HASH(
    "Nova llista de reproducció"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
+   "Introdueix el nom d'una llista nova:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    "Esborrar llista de reproducció"
    )
@@ -10399,6 +10435,10 @@ MSG_HASH(
    "Aquesta llista de reproducció"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
+   "Les miniatures s'han descarregat correctament."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
    "Obtingudes: %1 Fallades: %2"
    )
@@ -10448,6 +10488,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
    "Menú horitzontal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
+   "Amaga les descripcions de nuclis"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
@@ -11839,6 +11883,10 @@ MSG_HASH(
    "Memòria"
    )
 MSG_HASH(
+   MSG_MOVIE_PLAYBACK_ENDED,
+   "La reproducció s'ha acabat."
+   )
+MSG_HASH(
    MSG_MOVIE_RECORD_STOPPED,
    "Aturant la gravació de la partida."
    )
@@ -12135,6 +12183,14 @@ MSG_HASH(
    "Versió de la API de Libretro"
    )
 MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Error en obrir la safata de discs virtual."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Error en tancar la safata de discs virtual."
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
    "Carrega automàticament el desat ràpid des de"
    )
@@ -12261,6 +12317,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
    "Cerca de fitxers finalitzada."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_SUCCESS,
+   "S'ha iniciat correctament la cerca de trucs."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
@@ -12421,6 +12481,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
    "Has seleccionat un fitxer DAT de arcade no vàlid."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "Configuració de cerca manual no vàlida."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
@@ -12833,6 +12897,10 @@ MSG_HASH(
    "Internet (No hi ha connexió)"
    )
 MSG_HASH(
+   MSG_READ_ONLY,
+   "Estat de l'emmagatzematge intern: Només lectura"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
    "Brillantor de la pantalla"
    )
@@ -13067,6 +13135,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
    "Opacitat del color de text"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
+   "Ajusta l'opacitat de la font de la pantalla inferior."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,

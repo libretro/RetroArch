@@ -42,11 +42,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Innehållslösa Kärnor"
+   "Innehållslösa kärnor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   "Importera Innehåll"
+   "Importera innehåll"
    )
 
 /* Main Menu */
@@ -61,11 +61,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   "Ladda Kärna"
+   "Läs in kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Välj vilken Kärna som ska användas."
+   "Välj vilken kärna som ska användas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
@@ -97,7 +97,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "Ladda en fysisk medieskiva. Välj först Kärnan (Ladda Kärna) att använda med skivan."
+   "Läs in en fysisk medieskiva. Välj först kärnan (Läs in kärna) att använda med skivan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
@@ -127,7 +127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Importera Innehåll"
+   "Importera innehåll"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
@@ -135,7 +135,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "Visa Skrivbordsmeny"
+   "Visa skrivbordsmeny"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
@@ -143,7 +143,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Inaktivera Kioskläge (omstart krävs)"
+   "Inaktivera kioskläge (omstart krävs)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -155,7 +155,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Laddar ner tillägg, komponenter och innehåll för RetroArch."
+   "Hämtar ner tillägg, komponenter och innehåll för RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
@@ -226,11 +226,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   "Installera/Återställ Kärna"
+   "Installera/Återställ kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   "Installera eller återställ en Kärna från 'Nerladdningar'-katalogen."
+   "Installera eller återställ en kärna från 'Hämtningar'-katalogen."
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
@@ -249,15 +249,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-   "Nedladdningar"
+   "Hämtningar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   "Utforska arkiv"
+   "Bläddra i arkiv"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   "Ladda Arkiv"
+   "Läs in arkiv"
    )
 
 /* Main Menu > Load Content > Playlists */
@@ -304,11 +304,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Innehållslösa Kärnor"
+   "Innehållslösa kärnor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   "Visar Kärnor som kan drivas utan att ladda en Innehålls-fil."
+   "Installerade kärnor som kan fungera utan att läsa in innehåll visas här."
    )
 
 /* Main Menu > Online Updater */
@@ -319,7 +319,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   "Uppdatera installerade Kärnor"
+   "Uppdatera installerade kärnor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
@@ -327,11 +327,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   "Byt Kärnor till Play Butik-versioner"
+   "Byt kärnor till Play-butiksversioner"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   "Ersätt alla äldre och manuellt installerade Kärnor med de senaste versionerna från Play Butik, om möjligt."
+   "Ersätt alla äldre och manuellt installerade kärnor med de senaste versionerna från Play-butik, om möjligt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
@@ -367,27 +367,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   "Uppdatera Kärninfofiler"
+   "Uppdatera kärninfofiler"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   "Uppdatera Tillgångar"
+   "Uppdatera resurser"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   "Uppdatera Spelkontroll-profiler"
+   "Uppdatera spelkontrollsprofiler"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   "Uppdatera Fusk"
+   "Uppdatera fusk"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   "Uppdatera Databaser"
+   "Uppdatera databaser"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   "Uppdatera Överlager"
+   "Uppdatera överlager"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
@@ -481,7 +481,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-   "Skapare"
+   "Upphovsperson"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
@@ -525,7 +525,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- Observera: 'Systemfiler är i Innehållskatalog' är för närvarande aktiverat."
+   "- Observera: 'Systemfiler är i innehållskatalog' är för närvarande aktiverat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
@@ -549,7 +549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "Lås installerad Kärna"
+   "Lås installerad kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
@@ -557,27 +557,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Uteslut från 'Innehållslösa Kärnor' menyn"
+   "Uteslut från 'Innehållslösa kärnor'-menyn"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Förhindra att denna kärna visas i fliken/menyn 'Innehållslösa Kärnor'. Gäller endast när visningsläget är inställt på 'Anpassat'."
+   "Förhindra att denna kärna visas i fliken/menyn 'Innehållslösa kärnor'. Gäller endast när visningsläget är inställt på 'Anpassat'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   "Radera Kärna"
+   "Ta bort kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE,
-   "Radera den här kärna från disken."
+   "Ta bort denna kärna från disken."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   "Säkerhetskopiera Kärna"
+   "Säkerhetskopiera kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   "Skapa en arkiverad säkerhetskopia av den aktuella installerade Kärnan."
+   "Spara en säkerhetskopia av den aktuella installerade kärnan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
@@ -585,11 +585,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   "Installera en tidigare version av Kärnan från en lista över arkiverade säkerhetskopior."
+   "Installera en tidigare version av kärnan från en lista över sparade säkerhetskopior."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
-   "Radera säkerhetskopia"
+   "Ta bort säkerhetskopia"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
@@ -652,15 +652,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   "Skärm bredd (mm)"
+   "Skärmbredd (mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "Skärm höjd (mm)"
+   "Skärmhöjd (mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   "Skärm DPI"
+   "Skärmens DPI"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
@@ -974,7 +974,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   "Scensättning"
+   "Inställning"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
@@ -1111,15 +1111,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-   "Scrolla upp"
+   "Rulla upp"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-   "Scrolla ner"
+   "Rulla ner"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
    "Bekräfta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+   "Starta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
@@ -1178,7 +1182,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "Ändra inställningar för Kärna."
+   "Ändra inställningar för kärna."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
@@ -1198,7 +1202,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
-   "Molnsynk"
+   "Molnsynkronisering"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
@@ -1206,7 +1210,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
-   "Aktivera Molnsynk"
+   "Aktivera molnsynkronisering"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
@@ -1382,7 +1386,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   "Bildrutereglage"
+   "Bildfrekvensstrypning"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
@@ -1394,7 +1398,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "Ändra inställningar för Inspelning."
+   "Ändra inställningar för inspelning."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
@@ -1418,7 +1422,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   "Ändra inställningar för AI-tjänsten (Translation/TTS/Misc)."
+   "Ändra inställningar för AI-tjänsten (Översättning/TTT/Diverse)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
@@ -1426,7 +1430,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   "Ändra inställningar för Tillgänglighetsberättaren."
+   "Ändra inställningar för hjälpmedelsberättaren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
@@ -1442,7 +1446,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Ändra inställningar för Prestationer."
+   "Ändra inställningar för prestationer."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
@@ -1458,7 +1462,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   "Ändra inställningar för Spellistor."
+   "Ändra inställningar för spellistor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
@@ -1888,7 +1892,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   "Trådad Video"
+   "Trådad video"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
@@ -2300,15 +2304,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
-   "Endast i exklusivt Helskärmsläge"
+   "Endast i exklusivt helskärmsläge"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
-   "Endast i fönster med Helskärmsläge"
+   "Endast i fönster med helskärmsläge"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
-   "Alla Helskärmslägen"
+   "Alla helskärmslägen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
@@ -2357,7 +2361,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   "Helskärm Bredd"
+   "Bredd för helskärm"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -2365,7 +2369,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   "Helskärm Höjd"
+   "Höjd för helskärm"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
@@ -2392,7 +2396,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   "Fönster Opacitet"
+   "Fönsteropacitet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
@@ -2400,7 +2404,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-   "Visa Fönsterdekorationer"
+   "Visa fönsterdekorationer"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
@@ -2432,7 +2436,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   "Fönster Bredd"
+   "Fönsterbredd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
@@ -2440,7 +2444,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   "Fönster Höjd"
+   "Fönsterhöjd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
@@ -2448,7 +2452,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   "Max Bredd fönster"
+   "Maximal fönsterbredd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
@@ -2456,7 +2460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   "Max Höjd fönster"
+   "Maximal fönsterhöjd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -2609,7 +2613,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   "Vertikal Synk (VSynk)"
+   "Vertikal synkronisering (Vsync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
@@ -2746,11 +2750,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-   "Stäng av mixer ljudet."
+   "Stäng av ljudet från mixer."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
-   "Respektera Tyst läge"
+   "Respektera tyst läge"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
@@ -2794,7 +2798,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-   "Mixer Volymökning (dB)"
+   "Mixer-volymförstärkning (dB)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
@@ -2806,11 +2810,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   "Ljud-plugin som bearbetar ljud innan det skickas till drivrutinen."
+   "Insticksmodul för DSP-ljud som bearbetar ljud innan det skickas till drivrutinen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   "Ta bort DSP-plugin"
+   "Ta bort DSP-insticksmodulen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
@@ -4292,7 +4296,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
-   "Hantera Kärnor"
+   "Hantera kärnor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
@@ -4301,7 +4305,7 @@ MSG_HASH(
 #ifdef HAVE_MIST
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
-   "Hantera Kärnor"
+   "Hantera kärnor"
    )
 
 MSG_HASH(
@@ -4311,26 +4315,26 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
-   "Installera Kärna"
+   "Installera kärna"
 )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
-   "Avinstallera Kärna"
+   "Avinstallera kärna"
 )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
-   "Visa 'Hantera Kärnor'"
+   "Visa 'Hantera kärnor'"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
-   "Visa alternativet 'Hantera Kärnor' i huvudmenyn."
+   "Visa alternativet 'Hantera kärnor' i huvudmenyn."
 )
 
 MSG_HASH(
    MSG_CORE_STEAM_INSTALLING,
-   "Installerar Kärna: "
+   "Installerar kärna: "
 )
 
 MSG_HASH(
@@ -4601,7 +4605,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
-   "Loggningsnivå för Kärna"
+   "Loggningsnivå för kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
@@ -4668,7 +4672,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
-   "Filtrera efter Kärna"
+   "Filtrera efter kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
@@ -5336,7 +5340,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-   "\"Ladda Innehåll\" notis vid start"
+   "\"Läs in innehåll\"-notifiering vid uppstart"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
@@ -5360,11 +5364,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
-   "Ommappning laddad Notiser"
+   "Notifieringar vid inlästa inmatningsommappningar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
-   "Visa ett meddelande på skärmen när ommappningsfiler för spelkontroller laddas."
+   "Visa ett meddelande på skärmen vid inläsning av ommappningsfiler för inmatning."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
@@ -5376,7 +5380,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
-   "Visa ett meddelande på skärmen när du sparar och laddar spelstatus."
+   "Visa ett meddelande på skärmen när du sparar och läser in sparade tillstånd."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -5613,7 +5617,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "Stäng automatiskt menyn och återuppta innehållet efter att ha sparat eller laddat en status. Inaktivering kan förbättra prestandan för sparad status på mycket långsamma enheter."
+   "Stäng automatiskt menyn och återuppta innehållet efter att ha sparat eller läst in ett tillstånd. Inaktivering kan förbättra prestandan för sparad status på mycket långsamma enheter."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
@@ -5621,7 +5625,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
-   "Stäng automatiskt menyn och återuppta innehållet efter att matat in eller laddat en ny skiva."
+   "Stäng automatiskt menyn och återuppta innehållet efter att matat in eller läst in en ny skiva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
@@ -5764,27 +5768,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
-   "Visa 'Ladda Kärna'"
+   "Visa 'Läs in kärna'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
-   "Visa alternativet 'Ladda Kärna' i huvudmenyn."
+   "Visa alternativet 'Läs in kärna' i huvudmenyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
-   "Visa 'Ladda Innehåll'"
+   "Visa 'Läs in innehåll'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
-   "Visa alternativet 'Ladda Innehåll' i huvudmenyn."
+   "Visa alternativet 'Läs in innehåll' i huvudmenyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
-   "Visa 'Ladda skiva'"
+   "Visa 'Läs in skiva'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
-   "Visa alternativet 'Ladda skiva' i huvudmenyn."
+   "Visa alternativet 'Läs in skiva' i huvudmenyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
@@ -5814,7 +5818,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   "Visa 'Ladda ner Kärna'"
+   "Visa 'Hämta ner kärna'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
@@ -5962,11 +5966,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Visa 'Innehållslösa Kärnor'"
+   "Visa 'Innehållslösa kärnor'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    "Alla"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
+   "En gång"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
@@ -6065,11 +6073,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Visa 'Spara/Ladda status'"
+   "Visa 'Spara/Läs in tillstånd'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Visa alternativen för att spara/ladda ett tillstånd."
+   "Visa alternativen för att spara/läs in ett tillstånd."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
@@ -6081,11 +6089,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Visa 'Ångra Spara/Ladda status'"
+   "Visa 'Ångra Spara/Läs in tillstånd'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Visa alternativen för att Ångra Spara/Ladda status."
+   "Visa alternativen för att Ångra Spara/Läs in tillstånd."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -6094,6 +6102,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
    "Visa alternativet 'Kärnalternativ'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Visa 'Skriv alternativ till disk'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Visa posten ”Skriv alternativ till disk” i menyn ”Alternativ > Hantera kärnalternativ”."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
@@ -6160,6 +6176,14 @@ MSG_HASH(
    "Visa alternativet 'Spola tillbaka'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+   "Visa 'Spara kärnåsidosättningar'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+   "Visa alternativet 'Spara kärnåsidosättningar' i menyn 'Åsidosättningar'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
    "Visa 'Fusk'"
    )
@@ -6205,11 +6229,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   "Visa 'Ladda ner miniatyrer'"
+   "Visa 'Hämta ner miniatyrer'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   "Visa alternativet 'Ladda ner miniatyrer' när innehåll inte körs."
+   "Visa alternativet 'Hämta ner miniatyrer' när innehåll inte körs."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
@@ -6535,7 +6559,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
-   "Pausa Kärna medan skärmen översatts."
+   "Pausa kärnan medan skärmen översatts."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
@@ -6587,11 +6611,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Hardcore läge"
+   "Hardcore-läge"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Avaktiverar fusk, spola tillbaka, slowmotion och ladda sparade tillstånd. Prestationer som uppnås i hardcore-läget är unikt markerade så att du kan visa andra vad du har uppnått utan emulatorns hjälpfunktioner. Om du växlar den här inställningen under spelets gång startas spelet om."
+   "Inaktiverar fusk, spola tillbaka, slowmotion och läsa in sparade tillstånd. Prestationer som uppnås i hardcore-läget är unikt markerade så att du kan visa andra vad du har uppnått utan emulatorns hjälpfunktioner. Om du växlar den här inställningen under spelets gång startas spelet om."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -6999,19 +7023,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
-   "Visa experimentella Kärnor"
+   "Visa experimentella kärnor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
-   "Inkludera 'experimentella' Kärnor i Ladda ner Kärnor-listan. Dessa är vanligen endast för utveckling/teständamål, och rekommenderas inte för allmän användning."
+   "Inkludera 'experimentella' kärnor i Hämta ner kärnor-listan. Dessa är vanligen endast för utveckling/teständamål, och rekommenderas inte för allmän användning."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
-   "Säkerhetskopiera Kärnor vid uppdatering"
+   "Säkerhetskopiera kärnor vid uppdatering"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
-   "Skapa automatiskt en säkerhetskopia av installerade Kärnor när en online-uppdatering utförs. Möjliggör enkel återställning till en fungerande Kärna om en uppdatering introducerar en försämring."
+   "Skapa automatiskt en säkerhetskopia av installerade kärnor när en online-uppdatering utförs. Möjliggör enkel återställning till en fungerande kärna om en uppdatering introducerar en försämring."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "Storlek för säkerhetskopieringshistorik för kärnor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -7086,7 +7114,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Visa associerade Kärnor i spellistor"
+   "Visa associerade kärnor i spellistor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
@@ -7331,7 +7359,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
-   "Tillåt Kärnor att komma åt kameran."
+   "Tillåt kärnor att komma åt kameran."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
@@ -7343,7 +7371,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
-   "Tillåt Kärnor att komma åt din plats."
+   "Tillåt kärnor att komma åt din plats."
    )
 
 /* Settings > User > Accounts */
@@ -7405,7 +7433,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-   "Nedladdningar"
+   "Hämtningar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
@@ -7457,7 +7485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
-   "Libretro Kärnor lagras i denna katalog."
+   "Libretro-kärnor lagras i denna katalog."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
@@ -7744,11 +7772,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
-   "Endast installerade Kärnor"
+   "Endast installerade kärnor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
-   "Lösenordade rum"
+   "Lösenordsskyddade rum"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
@@ -7876,7 +7904,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "Välj en standard kärna att använda vid start av skannat innehåll."
+   "Välj en standardkärna att använda vid start av genomsökt innehåll."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
@@ -8026,7 +8054,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
-   "Efter Poäng"
+   "Efter poäng"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
@@ -8189,11 +8217,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Ladda ner miniatyrer"
+   "Hämta ner miniatyrer"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Ladda ner miniatyrbilder för skärmdump/boxart/titelskärm för aktuellt innehåll. Uppdaterar eventuella befintliga miniatyrbilder."
+   "Hämta ner miniatyrbilder för skärmdump/omslag/titelskärm för aktuellt innehåll. Uppdaterar eventuella befintliga miniatyrbilder."
    )
 
 /* Playlist Item > Set Core Association */
@@ -8286,7 +8314,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-   "Ladda status"
+   "Läs in tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
@@ -8294,7 +8322,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
-   "Ångra Ladda status"
+   "Ångra Läs in tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
@@ -8389,6 +8417,10 @@ MSG_HASH(
    "Spelkontroller"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
+   "Ändra kontrollerna för innehållet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
    "Fusk"
    )
@@ -8427,6 +8459,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST,
    "Hantera kärnalternativ"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST,
+   "Spara eller ta bort alternativåsidosättningar för aktuella innehållet."
+   )
 
 /* Quick Menu > Options > Manage Core Options */
 
@@ -8435,20 +8471,48 @@ MSG_HASH(
    "Spara spelalternativ"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Spara kärnalternativ som tillämpas endast för det aktuella innehållet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
    "Ta bort spelalternativ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Ta bort kärnalternativ som tillämpas endast för det aktuella innehållet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
    "Spara Innehålls-inställningar"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   "Spara kärnalternativ som tillämpas för allt innehåll inläst från samma katalog som den aktuella filen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Ta bort alternativ för innehållskatalog"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Ta bort kärnalternativ som tillämpas för allt innehåll inläst från samma katalog som den aktuella filen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
-   "Aktiv alternativ-fil"
+   "Aktiv alternativfil"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
    "Den aktuella alternativfilen som används."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   "Nollställ kärnalternativ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   "Ställ in alla alternativ för den aktuella kärnan till standardvärden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
@@ -8476,7 +8540,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
-   "Ladda och ersätt nuvarande inmatningsmappningar."
+   "Läs in och ersätt nuvarande inmatningsmappningar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
@@ -8809,7 +8873,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-   "Ladda ny skiva"
+   "Läs in ny skiva"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
@@ -8825,7 +8889,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Välj aktuell skiva från listan över tillgängliga avbilder. Skivan laddas när ”Mata in skiva” väljs."
+   "Välj aktuell skiva från listan över tillgängliga avbilder. Skivan läses in när ”Mata in skiva” väljs."
    )
 
 /* Quick Menu > Shaders */
@@ -8843,16 +8907,20 @@ MSG_HASH(
    "Kom ihåg senast använda Shader-katalog"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Öppna filbläddrare vid senast använda katalog när shader-förval och pass läses in."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "Ladda förinställd"
+   "Läs in förinställd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
-   "Ladda en förinställd Shader. Shader pipelinen kommer automatiskt att konfigureras."
+   "Läs in en förinställd Shader. Shader pipelinen kommer automatiskt att konfigureras."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
-   "Ladda en shader-förinställning direkt. Shader-menyn uppdateras i enlighet med detta.\nSkaleringsfaktorn som visas i menyn är tillförlitlig endast om förinställningen använder enkla skalningsmetoder (dvs. källskalning, samma skalningsfaktor för X/Y)."
+   "Läs in en shader-förinställning direkt. Shader-menyn uppdateras i enlighet med detta.\nSkaleringsfaktorn som visas i menyn är tillförlitlig endast om förinställningen använder enkla skalningsmetoder (dvs. källskalning, samma skalningsfaktor för X/Y)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
@@ -8863,8 +8931,16 @@ MSG_HASH(
    "Spara förinställning"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
+   "Spara aktuella shader-förvalet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
    "Ta bort förinställning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
+   "Ta bort ett automatiskt shader-förval."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -8942,6 +9018,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
    "Spara de aktuella shaderinställningarna som standard för den här kärnan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   "Spara förval för innehållskatalog"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
@@ -9119,7 +9199,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
-   "Inga Kärnor tillgängliga"
+   "Inga kärnor tillgängliga"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
@@ -9298,7 +9378,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
-   "Historik & Favoriter"
+   "Historik och favoriter"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
@@ -9310,7 +9390,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE,
-   "Per Kärna"
+   "Per kärna"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
@@ -9581,8 +9661,16 @@ MSG_HASH(
    "Närmsta"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAIN,
+   "Huvudsaklig"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT,
    "Innehåll"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
+   "<Ospecificerat>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
@@ -10488,7 +10576,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
-   "&Ladda Kärna..."
+   "&Läs in kärna..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
@@ -10572,11 +10660,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   "Ladda Kärna"
+   "Läs in kärna"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
-   "Laddar kärna..."
+   "Läser in kärna..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_NAME,
@@ -10724,7 +10812,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
-   "Föreslå laddad kärna först:"
+   "Föreslå inläst kärna först:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_VIEW,
@@ -10900,7 +10988,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD,
-   "Ladda"
+   "Läs in"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SAVE,
@@ -11023,7 +11111,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
-   "När innehåll laddas sparas innehåll och libretro core-kombinationer i historiken. Historiken sparas i en fil i samma katalog som konfigurationsfilen för RetroArch. Om ingen konfigurationsfil laddades vid uppstart sparas eller laddas inte historiken och den finns inte i huvudmenyn."
+   "När innehåll läses in sparas innehåll och libretro core-kombinationer i historiken.\nHistoriken sparas i en fil i samma katalog som konfigurationsfilen för RetroArch. Om ingen konfigurationsfil lästs in vid uppstart sparas eller läses inte historiken in och den finns inte i huvudmenyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
@@ -11075,7 +11163,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_START_CORE,
-   "Starta Kärna"
+   "Starta kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_START_CORE,
@@ -11132,6 +11220,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_URL,
    "URL-sökväg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   "Starta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
@@ -11238,7 +11330,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
-   "Laddar innehåll"
+   "Läser in innehåll"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
@@ -11401,7 +11493,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Nedladdningar"
+   "Hämtningar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
@@ -11437,7 +11529,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
-   "Scrolla upp"
+   "Rulla upp"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
@@ -11495,11 +11587,11 @@ MSG_HASH( /* FIXME Should be MSG_ */
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
-   "Kärninstallation lyckad"
+   "Kärninstallation lyckades"
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
-   "Kärninstallation misslyckad"
+   "Kärninstallation misslyckades"
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
@@ -11760,7 +11852,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DOWNLOADING_CORE,
-   "Laddar ner kärna: "
+   "Hämtar ner kärna: "
    )
 MSG_HASH(
    MSG_EXTRACTING_CORE,
@@ -11776,7 +11868,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING_CORES,
-   "Skannar Kärnor..."
+   "Söker igenom kärnor..."
    )
 MSG_HASH(
    MSG_CHECKING_CORE,
@@ -11784,11 +11876,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ALL_CORES_UPDATED,
-   "Alla installerade Kärnor på senaste version"
+   "Alla installerade kärnor är senaste versionen"
    )
 MSG_HASH(
    MSG_ALL_CORES_SWITCHED_PFD,
-   "Alla Kärnor som stöds ersatta till Play Butik-versioner"
+   "Alla kärnor som stöds ersatta till Play-butiksversioner"
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
@@ -11924,7 +12016,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Kärnan har inget stöd för Spara Statusar."
+   "Kärnan har inget stöd för sparat tillstånd."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_RESET,
@@ -11984,11 +12076,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DOWNLOADING,
-   "Laddar ner"
+   "Hämtar ner"
    )
 MSG_HASH(
    MSG_DOWNLOAD_FAILED,
-   "Nedladdningen misslyckades"
+   "Hämtningen misslyckades"
    )
 MSG_HASH(
    MSG_ERROR,
@@ -12009,6 +12101,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR_PARSING_ARGUMENTS,
    "Fel vid tolkning av argument."
+   )
+MSG_HASH(
+   MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
+   "Fel vid sparning av kärnans alternativfil."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_CORE_OPTIONS_FILE,
+   "Fel vid borttagning av kärnans alternativfil."
    )
 MSG_HASH(
    MSG_EXTERNAL_APPLICATION_DIR,
@@ -12060,11 +12160,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
-   "Misslyckades att ladda"
+   "Misslyckades att läsa in"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
-   "Misslyckades att ladda Innehåll"
+   "Misslyckades att läsa in innehåll"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
@@ -12108,7 +12208,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_SRAM,
-   "Det gick inte att ladda SRAM"
+   "Det gick inte att läsa in SRAM"
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
@@ -12173,6 +12273,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
    "Hittade första dataspåret på fil"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Inte från aktuell inspelning"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -12268,7 +12372,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING,
-   "Laddar"
+   "Läser in"
    )
 MSG_HASH(
    MSG_FIRMWARE,
@@ -12276,15 +12380,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADING_CONTENT_FILE,
-   "Laddar innehållsfil"
+   "Läser in innehållsfil"
    )
 MSG_HASH(
    MSG_LOADING_HISTORY_FILE,
-   "Laddar historikfil"
+   "Läser in historikfil"
    )
 MSG_HASH(
    MSG_LOADING_FAVORITES_FILE,
-   "Laddar favoriterfil"
+   "Läser in favoriterfil"
    )
 MSG_HASH(
    MSG_LOADING_STATE,
@@ -12472,7 +12576,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
-   "Alla möjliga nedladdningar av miniatyrbilder har redan provats för den här spellisteposten."
+   "Alla möjliga hämtningar av miniatyrbilder har redan provats för den här spellisteposten."
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
@@ -12524,11 +12628,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Auto ladda sparad status från"
+   "Läs automatiskt in sparade tillstånd från"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
-   "Misslyckades med att automatiskt ladda in sparad status från \"%s\"."
+   "Misslyckades med att automatiskt läsa in sparat tillstånd från \"%s\"."
    )
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT,
@@ -12740,7 +12844,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Du måste pausa eller inaktivera Achievements Hardcore-läget för att ladda tillstånd."
+   "Du måste pausa eller inaktivera Hardcore-läget för prestationer för att läsa in tillstånd."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
@@ -12871,6 +12975,10 @@ MSG_HASH(
    "Ingen skiva har matats in i enheten."
    )
 MSG_HASH(
+   MSG_ERROR_REMOVING_SHADER_PRESET,
+   "Fel vid borttagning av shader-förval."
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
    "Inget giltigt innehåll hittades."
    )
@@ -12896,7 +13004,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_BACKUP_SCANNING_CORE,
-   "Skannar kärna: "
+   "Söker igenom kärna: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_ALREADY_EXISTS,
+   "Säkerhetskopia av installerad kärna finns redan: "
    )
 MSG_HASH(
    MSG_BACKING_UP_CORE,
@@ -12907,12 +13019,16 @@ MSG_HASH(
    "Tar bort föråldrade säkerhetskopior: "
    )
 MSG_HASH(
+   MSG_CORE_BACKUP_COMPLETE,
+   "Säkerhetskopiering av kärna slutförd: "
+   )
+MSG_HASH(
    MSG_RESTORING_CORE,
    "Återställer kärna: "
    )
 MSG_HASH(
    MSG_INSTALLING_CORE,
-   "Installerar Kärna: "
+   "Installerar kärna: "
    )
 MSG_HASH(
    MSG_CORE_RESTORATION_INVALID_CONTENT,
@@ -12932,11 +13048,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "Misslyckades att ta bort Kärna från listan 'Innehållslösa Kärnor': "
+   "Misslyckades att ta bort kärna från listan 'Innehållslösa kärnor': "
    )
 MSG_HASH(
    MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "Misslyckades att lägga till Kärna i listan 'Innehållslösa Kärnor': "
+   "Misslyckades att lägga till kärna i listan 'Innehållslösa kärnor': "
    )
 MSG_HASH(
    MSG_UNSUPPORTED_VIDEO_MODE,
@@ -13394,7 +13510,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Ladda\nÅterställ punkt"
+   "Läs in\nåterställningspunkt"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
@@ -13424,7 +13540,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Skanning slutförd.<br><br>\nFör att innehållet ska skannas korrekt måste du:\n<ul><li>ha en kompatibel kärna redan nedladdad</li>\n<li>ha ”Core Info Files” uppdaterat via Online Updater</li>\n<li>ha ”Databases” uppdaterat via Online Updater</li>\n<li>starta om RetroArch om något av ovanstående just har gjorts</li></ul>\nSlutligen måste innehållet matcha befintliga databaser från <a href=\"https://docs. libretro.com/guides/roms-playlists-thumbnails/#sources\">här</a>. Om det fortfarande inte fungerar kan du överväga att <a href=”https://www.github.com/libretro/RetroArch/issues”>skicka in en felrapport</a>."
+   "Genomsökning slutförd.<br><br>\nFör att innehållet ska sökas igenom korrekt måste du:\n<ul><li>ha en kompatibel kärna redan hämtad</li>\n<li>ha ”Core Info Files” uppdaterat via Online Updater</li>\n<li>ha ”Databases” uppdaterat via Online Updater</li>\n<li>starta om RetroArch om något av ovanstående just har gjorts</li></ul>\nSlutligen måste innehållet matcha befintliga databaser från <a href=\"https://docs. libretro.com/guides/roms-playlists-thumbnails/#sources\">här</a>. Om det fortfarande inte fungerar kan du överväga att <a href=”https://www.github.com/libretro/RetroArch/issues”>skicka in en felrapport</a>."
    )
 #endif
 MSG_HASH(
