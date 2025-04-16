@@ -363,19 +363,16 @@ $(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 	$(MAKEROM) -f cia -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=false
 
 clean:
-ifneq ($(V),1)
-	@echo RM
-else
-	rm -f $(OBJ)
-	rm -f $(TARGET).3dsx
-	rm -f $(TARGET).elf
-	rm -f $(TARGET).3ds
-	rm -f $(TARGET).cia
-	rm -f $(TARGET).smdh
-	rm -f $(TARGET).bnr
-	rm -f $(TARGET).icn
-	rm -f ctr/ctr_config_*.o
-	rm -f ctr/3dsx_custom_crt0.o
-endif
+	@$(if $(Q), echo $@,)
+	$(Q)rm -f $(OBJ)
+	$(Q)rm -f $(TARGET).3dsx
+	$(Q)rm -f $(TARGET).elf
+	$(Q)rm -f $(TARGET).3ds
+	$(Q)rm -f $(TARGET).cia
+	$(Q)rm -f $(TARGET).smdh
+	$(Q)rm -f $(TARGET).bnr
+	$(Q)rm -f $(TARGET).icn
+	$(Q)rm -f ctr/ctr_config_*.o
+	$(Q)rm -f ctr/3dsx_custom_crt0.o
 
 .PHONY: clean
