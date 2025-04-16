@@ -2012,6 +2012,7 @@ ifeq ($(HAVE_BUILTINZLIB), 1)
    HAVE_ZLIB_COMMON = 1
    OBJ += $(DEPS_DIR)/libz/adler32.o \
           $(DEPS_DIR)/libz/libz-crc32.o \
+          $(DEPS_DIR)/libz/compress.o \
           $(DEPS_DIR)/libz/deflate.o \
           $(DEPS_DIR)/libz/gzclose.o \
           $(DEPS_DIR)/libz/gzlib.o \
