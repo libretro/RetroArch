@@ -313,6 +313,7 @@ if [ "$HAVE_QT" != 'no' ]; then
       then
          HAVE_QT6='yes'
          add_define MAKEFILE HAVE_QT6 1
+         add_define CONFIG HAVE_QT6 1
       fi
    fi
    if [ "$HAVE_QT6" != 'yes' ]; then
