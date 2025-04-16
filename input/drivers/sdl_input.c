@@ -245,6 +245,7 @@ static void *sdl_input_init(const char *joypad_driver)
             "[SDL] Can't Initialize Gamepad subsystem\n\tSDL_GetError(): %s\n",
             SDL_GetError()
          );
+         free(sdl);
          return NULL;
       }
       
