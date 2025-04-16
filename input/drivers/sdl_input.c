@@ -49,7 +49,13 @@
 #include <dlfcn.h>
 #endif
 
-
+#ifdef SDL_SUPPORT_FANCY_GAMEPAD 
+#define SDL_SUBSYSTEM_BITMASK SDL_INIT_GAMECONTROLLER | SDL_INIT_SENSOR
+#elif SDL_SUPPORT_SENSORS
+#define SDL_SUBSYSTEM_BITMASK SDL_INIT_SENSOR
+#else 
+#define SDL_SUBSYSTEM_BITMASK 0
+#endif
 
 /* TODO/FIXME -
  * fix game focus toggle */
@@ -130,7 +136,7 @@ static void *sdl_input_init(const char *joypad_driver)
       int numJoysticks=0,numTouchDevices=0,numSensors=0;
       int i; int sensor_count=0, touch_device_count=0;
 
-      if (!SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)) {
+      if (!SDL_InitSubSystem(SDL_SUBSYSTEM_BITMASK)) {
          numTouchDevices=SDL_GetNumTouchDevices();
          RARCH_DBG(
             "[SDL]: SDL_GetNumTouchDevices: %d\n",
@@ -144,7 +150,6 @@ static void *sdl_input_init(const char *joypad_driver)
          );
 #endif
       sdl->auxiliary_device_number=0;
-      sdl->auxiliary_devices=malloc(sizeof(sdl_input_auxiliary_device)*(numSensors+numSensors+numTouchDevices));
 
 #if SDL_SUPPORT_FANCY_GAMEPAD
          numJoysticks=SDL_NumJoysticks();
@@ -153,6 +158,7 @@ static void *sdl_input_init(const char *joypad_driver)
          );
          if (numJoysticks > MAX_USERS)
             numJoysticks=MAX_USERS;
+         sdl->auxiliary_devices=malloc(sizeof(sdl_input_auxiliary_device)*(numJoysticks+numSensors+numTouchDevices));
          for (i=0; i<numJoysticks; i++){
             SDL_GameController * gamepad=SDL_GameControllerOpen(i);
             if (gamepad) {
@@ -189,7 +195,11 @@ static void *sdl_input_init(const char *joypad_driver)
                      type=SDL_AUXILIARY_DEVICE_TYPE_GAMECONTROLLER;
                   sdl->auxiliary_device_number++;
                } 
-            }
+            } else RARCH_DBG (
+               "[SDL]: SDL_GameControllerOpen returned NULL:\n\t%s\n",
+               SDL_GetError()
+            );
+
          }
 #endif
 #if SDL_SUPPORT_SENSORS
@@ -230,11 +240,13 @@ static void *sdl_input_init(const char *joypad_driver)
             }
          }
          
-      } else 
+      } else {
          RARCH_DBG(
             "[SDL] Can't Initialize Gamepad subsystem\n\tSDL_GetError(): %s\n",
             SDL_GetError()
          );
+         return NULL;
+      }
       
 
 
@@ -547,7 +559,7 @@ static void sdl_input_free(void *data)
    /* Flush out all pending events. */
 #ifdef HAVE_SDL2
    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-   SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
+   SDL_QuitSubSystem(SDL_SUBSYSTEM_BITMASK);
    free(sdl->auxiliary_devices);
 #else
    while (SDL_PollEvent(&event));

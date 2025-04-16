@@ -4490,20 +4490,24 @@ float input_get_sensor_state(unsigned port, unsigned id)
    bool input_sensors_enable              = settings->bools.input_sensors_enable;
    float sensitivity;
    int remapped_port=settings->uints.input_sensor_index[port];
-   int invert                             = (settings->uints.input_sensor_ids[port][id]%2)?-1:1;
+   int invert;
    unsigned remapped_input_sensor_id      = settings->uints.input_sensor_ids[port][id]/2;
-   
-   if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z)
+   if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z) {
+      invert=(settings->uints.input_sensor_ids[port][id]%2)?-1:1;
       sensitivity=settings->floats.input_sensor_accelerometer_sensitivity;
-   else if (id >= RETRO_SENSOR_GYROSCOPE_X && id <= RETRO_SENSOR_GYROSCOPE_Z)
+   } else if (id >= RETRO_SENSOR_GYROSCOPE_X && id <= RETRO_SENSOR_GYROSCOPE_Z) {
+      invert=(settings->uints.input_sensor_ids[port][id]%2)?-1:1;
       sensitivity=settings->floats.input_sensor_gyroscope_sensitivity;
-   else 
-      sensitivity=1.f;
+   } else {
+      invert=1;
+      sensitivity=0.f;
+   }
    return input_driver_get_sensor(
          remapped_port,
          input_sensors_enable,
          remapped_input_sensor_id)
       *invert*((float)pow(2,sensitivity));
+   
 }
 
 /**
