@@ -8004,7 +8004,8 @@ static enum menu_action ozone_parse_menu_entry_action(
       enum menu_action action)
 {
    uintptr_t tag;
-   size_t new_selection, selection;
+   int new_selection;
+   size_t selection;
    size_t selection_total;
    bool is_current_entry_settings = false;
    struct menu_state *menu_st     = menu_state_get_ptr();
