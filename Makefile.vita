@@ -138,7 +138,7 @@ ifeq ($(HAVE_VITAGLES), 1)
    ARCHFLAGS += -DSCE_LIBC_SIZE=$(SCE_LIBC_SIZE)
 endif
 
-CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls
+CFLAGS    += $(ARCHFLAGS) -mword-relocations
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -g -Og
@@ -147,7 +147,7 @@ else
 endif
 
 ASFLAGS := $(CFLAGS)
-LDFLAGS := -Wl,-q
+LDFLAGS := -Wl,-q,--pic-veneer
 
 CFLAGS += -Wall -ffast-math
 CFLAGS += -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DRARCH_CONSOLE
@@ -190,6 +190,10 @@ else
   LIBS += -lretro_vita
 endif
 
+ifneq ($(V),1)
+   Q := @
+endif
+
 LIBS    += $(WHOLE_END) $(VITA_LIBS) -lm -lc
 
 TARGETS := $(TARGET).vpk
@@ -197,27 +201,53 @@ TARGETS := $(TARGET).vpk
 DEPFLAGS    = -MT $@ -MMD -MP -MF $*.Tdepend
 POSTCOMPILE = mv -f $*.Tdepend $*.depend
 
-all: $(TARGETS)
+all: info $(TARGETS)
+
+define INFO
+ASFLAGS: $(ASFLAGS)
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+DEPFLAGS: $(DEPFLAGS)
+INCDIRS: $(INCDIRS)
+LD: $(LD)
+LDFLAGS: $(LDFLAGS)
+LIBDIRS: $(LIBDIRS)
+LIBS: $(LIBS)
+OBJ: $(OBJ)
+POSTCOMPILE: $(POSTCOMPILE)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 %.o: %.cpp
 %.o: %.cpp %.depend
-	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS) $(DEPFLAGS)
-	$(POSTCOMPILE)
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(Q)$(POSTCOMPILE)
 
 %.o: %.c
 %.o: %.c %.depend
-	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS) $(DEPFLAGS)
-	$(POSTCOMPILE)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(Q)$(POSTCOMPILE)
 
 %.o: %.S
 %.o: %.S %.depend
-	$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
-	$(POSTCOMPILE)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(Q)$(POSTCOMPILE)
 
 %.o: %.s
 %.o: %.s %.depend
-	$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
-	$(POSTCOMPILE)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(Q)$(POSTCOMPILE)
 
 %.depend: ;
 
@@ -228,7 +258,8 @@ liblibScePiglet_stub.a:
 	cp deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet/liblibScePiglet_stub.a .
 
 $(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
-	$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
+	@$(if $(Q), $(shell echo echo LD $@),)
+	$(Q)$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
 %.velf: %.elf
 	cp $< $<.unstripped.elf
@@ -243,9 +274,11 @@ $(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
 	vita-pack-vpk -s param.sfo -b $< $@
 
 clean:
+ifneq ($(V),1)
 	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk 
 	rm -rf  deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
 	rm -f $(OBJ:.o=.depend)
+endif
 
 # Useful for developers
 vpksend: $(TARGET).vpk

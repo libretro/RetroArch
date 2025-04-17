@@ -8935,14 +8935,6 @@ MSG_HASH(
    "目前使用的核心選項設定檔。\n載入優先順序: 項目>路徑>核心。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "重置核心選項"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "重置全部核心選項為預設值。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "取代目前存檔"
    )

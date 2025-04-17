@@ -5167,7 +5167,7 @@ unsigned menu_event(
    static unsigned ok_old                          = 0;
    unsigned ret                                    = MENU_ACTION_NOOP;
    bool set_scroll                                 = false;
-   size_t new_scroll_accel                         = 0;
+   unsigned new_scroll_accel                       = 0;
    struct menu_state *menu_st                      = &menu_driver_state;
    menu_input_t *menu_input                        = &menu_st->input_state;
    input_driver_state_t *input_st                  = input_state_get_ptr();
@@ -5380,7 +5380,7 @@ unsigned menu_event(
          p_trigger_input->data[0]  |= p_input->data[0] & input_repeat;
          set_scroll                 = true;
          hold_reset                 = true;
-         new_scroll_accel           = MIN(menu_st->scroll.acceleration + 1, (menu_scroll_fast) ? 25 : 5);
+         new_scroll_accel           = MIN(menu_st->scroll.acceleration + 1, menu_scroll_fast ? 25U : 5U);
       }
    }
    else
@@ -5392,7 +5392,7 @@ unsigned menu_event(
    }
 
    if (set_scroll)
-      menu_st->scroll.acceleration  = (unsigned)(new_scroll_accel);
+      menu_st->scroll.acceleration  = new_scroll_accel;
 
    if (display_kb)
    {

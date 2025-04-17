@@ -275,7 +275,6 @@ static void ffmpeg_camera_poll_thread(void *data);
 
 static bool ffmpeg_camera_start(void *data)
 {
-   const settings_t *settings = config_get_ptr();
    ffmpeg_camera_t *ffmpeg = data;
    int result = 0;
    AVStream *stream = NULL;

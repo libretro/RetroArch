@@ -85,7 +85,6 @@ ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=so
 
 CFLAGS	+=	-mword-relocations \
 			-fomit-frame-pointer -ffast-math \
-         -Werror=implicit-function-declaration \
 			$(ARCH)
 
 #CFLAGS	+= -Wall
@@ -111,6 +110,7 @@ CFLAGS += -I. -Ideps/7zip -Ideps/stb -Ilibretro-common/include -Ilibretro-common
 CFLAGS += -DRARCH_CONSOLE -DIS_SALAMANDER
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+CFLAGS += -Werror=implicit-function-declaration
 
 ASFLAGS	:=	-g $(ARCH) -O3
 LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)

@@ -140,6 +140,10 @@
 #include "../steam/steam.h"
 #endif
 
+#ifdef _3DS
+#include <3ds/services/cfgu.h> /* CFGU_GetSystemModel */
+#endif
+
 /* Spacers used for '<content> - <core name>' labels
  * in playlists */
 #define PL_LABEL_SPACER_DEFAULT "   |   "
@@ -1021,6 +1025,14 @@ end:
                      MENU_SETTING_ACTION_CORE_DELETE, 0, 0, NULL))
                count++;
 #endif
+
+         /* Reset core options */
+         if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET),
+               core_info->core_name,
+               MENU_ENUM_LABEL_CORE_OPTIONS_RESET,
+               MENU_SETTING_ACTION_CORE_OPTIONS_RESET, 0, 0, NULL))
+            count++;
       }
 #endif
    }
@@ -1471,7 +1483,7 @@ end:
       /* Reset core options */
       if (menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET),
-            msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS_RESET),
+            "",
             MENU_ENUM_LABEL_CORE_OPTIONS_RESET,
             MENU_SETTING_ACTION_CORE_OPTIONS_RESET, 0, 0, NULL))
          count++;
@@ -5238,7 +5250,7 @@ static unsigned menu_displaylist_parse_content_information(
    {
       const char *cheevos_hash_str =
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH);
-      size_t _len                  = strlcpy(tmp, cheevos_hash_str, sizeof(tmp));
+      size_t _len                  = strlcpy(tmp, cheevos_hash_str, sizeof(tmp) - 4);
       tmp[  _len]                  = ':';
       tmp[++_len]                  = ' ';
       tmp[++_len]                  = '\n';
@@ -9306,9 +9318,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,                          PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,                           PARSE_ONLY_STRING_OPTIONS,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE,                           PARSE_ONLY_BOOL,   false  },
-#ifndef HAVE_GFX_WIDGETS
                {MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,                                 PARSE_ONLY_BOOL,   false  },
-#endif
                {MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,                               PARSE_ONLY_BOOL,   false  },
 #ifdef HAVE_AUDIOMIXER
                {MENU_ENUM_LABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,                           PARSE_ONLY_BOOL,   false  },
@@ -11319,6 +11329,13 @@ unsigned menu_displaylist_build_list(
                         false) == 0)
                   count++;
             }
+            /* Reset core options */
+            if (!settings->bools.global_core_options && menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET),
+                  "",
+                  MENU_ENUM_LABEL_CORE_OPTIONS_RESET,
+                  MENU_SETTING_ACTION_CORE_OPTIONS_RESET, 0, 0, NULL))
+               count++;
          }
          break;
       case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
@@ -12842,7 +12859,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                size_t _len;
                unsigned i;
                char text[128];
-               const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
                /* TODO/FIXME - localize */
                runloop_msg_queue_push(
                      "Warning : extended overclocking can damage the Switch",
@@ -12869,7 +12885,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         0, 0, NULL))
                   count++;
 
-               for (i = 0; i < profiles_count; i++)
+               for (i = 0; SWITCH_CPU_PROFILES[i]; i++)
                {
                   char title[NAME_MAX_LENGTH];
                   size_t _len = strlcpy(title, SWITCH_CPU_PROFILES[i],
@@ -15073,6 +15089,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      if (settings->bools.menu_show_load_core)
                      {
+#ifdef HAVE_DYNAMIC
                         if (!string_is_empty(sys_info->info.library_name))
                         {
                            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
@@ -15080,6 +15097,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               count++;
                         }
                         else
+#endif
                         {
                            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                                     MENU_ENUM_LABEL_CORE_LIST, PARSE_ACTION, false) == 0)

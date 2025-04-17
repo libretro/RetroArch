@@ -1517,7 +1517,6 @@ static int16_t input_state_device(
                uint8_t turbo_period     = settings->uints.input_turbo_period;
                uint8_t turbo_duty_cycle = settings->uints.input_turbo_duty_cycle;
                uint8_t turbo_mode       = settings->uints.input_turbo_mode;
-               int8_t turbo_bind        = settings->ints.input_turbo_bind;
 
                if (turbo_duty_cycle == 0)
                   turbo_duty_cycle = turbo_period / 2;
@@ -1777,7 +1776,7 @@ static int16_t input_state_device(
                   input_st->overlay_ptr, port, device, idx, id);
 #endif
 
-         if (res && input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT)
+         if (res || input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT)
             break;
 
          if (id < RARCH_FIRST_META_KEY)
@@ -3257,14 +3256,9 @@ static void input_overlay_poll_mouse(settings_t *settings,
       mouse_st->click = 0;
       pending_click   = false;
 
-      if (ptr_count)
-      {
-         /* Assume main pointer changed. Reset deltas */
-         mouse_st->prev_screen_x = x_start = ptr_st->screen_x;
-         mouse_st->prev_screen_y = y_start = ptr_st->screen_y;
-      }
-      else
-         old_peak_ptr_count = peak_ptr_count;
+      /* Assume main pointer changed. Reset deltas */
+      mouse_st->prev_screen_x = x_start = ptr_st->screen_x;
+      mouse_st->prev_screen_y = y_start = ptr_st->screen_y;
 
       if (ptr_count > old_ptr_count)
       {
@@ -3273,8 +3267,12 @@ static void input_overlay_poll_mouse(settings_t *settings,
          start_usec     = now_usec;
       }
       else
+      {
          /* Pointer removed */
          mouse_st->hold = 0;
+         if (!ptr_count)
+            old_peak_ptr_count = peak_ptr_count;
+      }
    }
 
    /* Action type */
@@ -3624,8 +3622,6 @@ static void input_poll_overlay(
       if (ptr_state->device_mask & (1 << RETRO_DEVICE_MOUSE))
          input_overlay_poll_mouse(settings, &ptr_state->mouse, ol,
                ptr_state->count, old_ptr_count);
-
-      ptr_state->device_mask = 0;
    }
 
    if (     OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT)
@@ -3715,10 +3711,19 @@ static void input_poll_overlay(
          (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_TOUCHED),
          input_overlay_show_inputs_port);
 
-   if (button_pressed || ol_ptr_enable)
+   /* Block other touchscreen input as needed. */
+   if (     button_pressed
+#ifdef IOS
+         || (ptr_state->device_mask & (1 << RETRO_DEVICE_LIGHTGUN))
+         || (ol->flags & INPUT_OVERLAY_BLOCKED))
+#else
+         || ol_ptr_enable)
+#endif
       input_st->flags |=  INP_FLAG_BLOCK_POINTER_INPUT;
    else
       input_st->flags &= ~INP_FLAG_BLOCK_POINTER_INPUT;
+
+   ptr_state->device_mask = 0;
 
    if (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_NONE)
       button_pressed = false;
@@ -6771,7 +6776,12 @@ void input_driver_poll(void)
             ssize_t ret;
             struct remote_message msg;
 
+
+#if defined(_WIN32)
+            if (input_st->remote->net_fd[user] == INVALID_SOCKET)
+#else
             if (input_st->remote->net_fd[user] < 0)
+#endif
                return;
 
             FD_ZERO(&fds);

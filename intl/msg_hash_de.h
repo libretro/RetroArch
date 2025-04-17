@@ -9168,11 +9168,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Einstellungen zurücksetzen"
+   "Core-Optionen zurücksetzen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Alle Core-Einstellungen auf Standardwerte zurücksetzen."
+   "Setzt alle Optionen des aktuellen Cores auf deren Standardwerte."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,

@@ -1174,7 +1174,7 @@
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW) || defined(MIYOO)
+#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && !defined(HAVE_AUDIOWORKLET))
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #define DEFAULT_IN_LATENCY 128
@@ -1619,7 +1619,11 @@
 #endif
 
 #define DEFAULT_INPUT_BIND_TIMEOUT 3
+#if defined(ANDROID)
+#define DEFAULT_INPUT_BIND_HOLD 1
+#else
 #define DEFAULT_INPUT_BIND_HOLD 0
+#endif
 #define DEFAULT_INPUT_POLL_TYPE_BEHAVIOR 2
 #define DEFAULT_INPUT_HOTKEY_BLOCK_DELAY 5
 #define DEFAULT_INPUT_HOTKEY_DEVICE_MERGE false

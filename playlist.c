@@ -158,8 +158,13 @@ size_t playlist_config_set_base_content_directory(
    {
       config->autofix_paths = !string_is_empty(path);
       if (config->autofix_paths)
+#if IOS
+         return fill_pathname_abbreviate_special(config->base_content_directory, path,
+               sizeof(config->base_content_directory));
+#else
          return strlcpy(config->base_content_directory, path,
                sizeof(config->base_content_directory));
+#endif
       config->base_content_directory[0] = '\0';
    }
    return 0;
@@ -1139,7 +1144,7 @@ enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlis
 void playlist_resolve_path(enum playlist_file_mode mode,
       bool is_core, char *s, size_t len)
 {
-#ifdef HAVE_COCOATOUCH
+#if IOS
    char tmp[PATH_MAX_LENGTH];
    int _len = 0;
 
@@ -3510,6 +3515,11 @@ void playlist_set_scan_content_dir(playlist_t *playlist, const char *content_dir
 {
    bool current_string_empty;
    bool new_string_empty;
+#if IOS
+   char _tmpbuf[PATH_MAX_LENGTH];
+   fill_pathname_abbreviate_special(_tmpbuf, content_dir, sizeof(_tmpbuf));
+   content_dir = _tmpbuf;
+#endif
 
    if (!playlist)
       return;
@@ -3572,6 +3582,11 @@ void playlist_set_scan_dat_file_path(playlist_t *playlist, const char *dat_file_
 {
    bool current_string_empty;
    bool new_string_empty;
+#if IOS
+   char _tmpbuf[PATH_MAX_LENGTH];
+   fill_pathname_abbreviate_special(_tmpbuf, dat_file_path, sizeof(_tmpbuf));
+   dat_file_path = _tmpbuf;
+#endif
 
    if (!playlist)
       return;

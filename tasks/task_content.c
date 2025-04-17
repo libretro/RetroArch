@@ -32,6 +32,7 @@
 #else
 #include <io.h>
 #include <fcntl.h>
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 #endif
@@ -867,7 +868,7 @@ static void content_file_get_path(
             char info_path[PATH_MAX_LENGTH];
             /* Build 'complete' archive file path */
             size_t _len       = strlcpy(info_path,
-                  content_path, sizeof(info_path));
+                  content_path, sizeof(info_path) - 2);
             info_path[_len  ] = '#';
             info_path[_len+1] = '\0';
             _len             += 1;
@@ -2281,7 +2282,8 @@ bool task_push_load_new_core(
    path_set(RARCH_PATH_CORE, core_path);
 
    /* Remember core path for reloading */
-   path_set(RARCH_PATH_CORE_LAST, core_path);
+   if (!string_is_equal(core_path, path_get(RARCH_PATH_CORE_LAST)))
+      path_set(RARCH_PATH_CORE_LAST, core_path);
 
    /* Load core */
    command_event(CMD_EVENT_LOAD_CORE, NULL);

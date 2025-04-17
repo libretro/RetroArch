@@ -15,6 +15,8 @@
 
 #if !defined(_XBOX)
 
+#define WIN32_LEAN_AND_MEAN
+
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0601 /* Windows 7 */
 #endif
@@ -333,10 +335,11 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
    {
       case WM_INITDIALOG:
          {
+            const core_info_t *info = NULL;
             HWND hwndList;
             unsigned i;
-            /* Add items to list.  */
 
+            /* Add items to list.  */
             core_info_get_list(&core_info_list);
             core_info_list_get_supported_cores(core_info_list,
                   path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
@@ -349,8 +352,12 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
                SendMessage(hwndList, LB_ADDSTRING, 0,
                      (LPARAM)info->display_name);
             }
+
             /* Select the first item in the list */
             SendMessage(hwndList, LB_SETCURSEL, 0, 0);
+            info = (const core_info_t*)&core_info[0];
+            path_set(RARCH_PATH_CORE, info->path);
+
             SetFocus(hwndList);
             return TRUE;
          }

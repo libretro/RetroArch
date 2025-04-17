@@ -140,7 +140,11 @@ FS.rm = async function() {
 		const child = path.substr(dir_end + 1);
 		const parent_dir = await getDirHandle(parent);
 		if (!parent_dir) continue;
-		await parent_dir.removeEntry(child, {recursive: true});
+		try {
+			await parent_dir.removeEntry(child, {recursive: true});
+		} catch (e) {
+			continue;
+		}
 	}
 }
 
@@ -158,16 +162,17 @@ FS.stat = async function(path) {
 
 /* data migration */
 
-function idbExists(name) {
+function idbExists(dbName, objStoreName) {
 	return new Promise((resolve, reject) => {
-		let request = indexedDB.open(name);
+		let request = indexedDB.open(dbName);
 		request.onupgradeneeded = function(e) {
 			e.target.transaction.abort();
 			resolve(false);
 		}
 		request.onsuccess = function(e) {
+			let exists = objStoreName ? Array.from(e.target.result.objectStoreNames).includes(objStoreName) : true;
 			e.target.result.close();
-			resolve(true);
+			resolve(exists);
 		}
 		request.onerror = function(e) {
 			reject(e);
@@ -252,7 +257,7 @@ async function indexMigrateTree(dir, maxDepth) {
 
 // look for and migrate any data to the OPFS from the old BrowserFS in IndexedDB
 async function tryMigrateFromIdbfs() {
-	if (await FS.stat("/retroarch/.migration-finished") == "file" || !(await idbExists("RetroArch"))) return;
+	if (await FS.stat("/retroarch/.migration-finished") == "file" || !(await idbExists("RetroArch", "RetroArch"))) return;
 	debugLog("Migrating data from BrowserFS IndexedDB");
 	await initBfsIdbfs("RetroArch");
 	const files = await indexMigrateTree("/", 5);
@@ -301,8 +306,7 @@ async function tryLoadBundle() {
 	if (await FS.stat(timestampFile) == "file")
 		timestamp = new TextDecoder().decode(await FS.readFile(timestampFile));
 
-	// debuggers beware: the network tab's "Disable cache" option disables If-Modified-Since too
-	let resp = await fetch(bundlePath[0], {headers: {"If-Modified-Since": timestamp}});
+	let resp = await fetch(bundlePath[0], {headers: {"If-Modified-Since": timestamp, "Cache-Control": "public, max-age=0"}});
 	if (resp.status == 200) {
 		debugLog("Got new bundle");
 		timestamp = resp.headers.get("last-modified");

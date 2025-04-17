@@ -86,6 +86,7 @@
 
 #ifdef EMSCRIPTEN
 #include <emscripten/emscripten.h>
+#include "frontend/drivers/platform_emscripten.h"
 #include "gfx/common/gl_common.h"
 #endif
 
@@ -5486,6 +5487,10 @@ bool command_event(enum event_command cmd, void *data)
       /* Deprecated */
       case CMD_EVENT_SEND_DEBUG_INFO:
          break;
+
+      /* Do nothing about the special negative value */
+      case CMD_SPECIAL:
+         break;
    }
 
    return true;
@@ -5993,8 +5998,8 @@ int rarch_main(int argc, char *argv[], void *data)
 
 #if defined(EMSCRIPTEN)
 
-#ifdef PROXY_TO_PTHREAD
-bool platform_emscripten_is_window_hidden(void);
+#if defined(EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK) && defined(HAVE_AUDIOWORKLET)
+bool audioworklet_external_block(void);
 #endif
 #ifdef HAVE_RWEBAUDIO
 void RWebAudioRecalibrateTime(void);
@@ -6014,10 +6019,12 @@ void emscripten_mainloop(void)
    bool runloop_is_slowmotion             = (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false;
    bool runloop_is_paused                 = (runloop_flags & RUNLOOP_FLAG_PAUSED)     ? true : false;
 
-#ifdef PROXY_TO_PTHREAD
-   // ensure the same behavior when requestAnimationFrame is emulated (i.e. pause when window is hidden)
-   // todo: is this an emscripten bug?
-   if (!input_driver_nonblock_state && platform_emscripten_is_window_hidden())
+   /* firefox especially seems to bug without this */
+   if (platform_emscripten_should_drop_iter())
+      return;
+
+#if defined(EMSCRIPTEN_AUDIO_FAKE_BLOCK) && defined(HAVE_AUDIOWORKLET)
+   if (audioworklet_external_block())
       return;
 #endif
 
@@ -6047,7 +6054,17 @@ void emscripten_mainloop(void)
 
    ret = runloop_iterate();
 
+#if defined(EMSCRIPTEN_AUDIO_ASYNC_BLOCK) && defined(HAVE_AUDIOWORKLET)
+   audioworklet_external_block();
+#endif
+
    task_queue_check();
+
+#ifdef PROXY_TO_PTHREAD
+   /* sync with requestAnimationFrame on browser thread if vsync is on */
+   /* performance seems better with this wait at the end of the iter */
+   platform_emscripten_wait_for_frame();
+#endif
 
    if (ret != -1)
       return;

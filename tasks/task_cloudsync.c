@@ -872,7 +872,7 @@ static void task_cloud_sync_delete_server_file(task_cloud_sync_state_t *sync_sta
 static void task_cloud_sync_maybe_ignore(task_cloud_sync_state_t *sync_state)
 {
    struct string_list *dirlist = task_cloud_sync_directory_map();
-   int i;
+   size_t i;
    bool found;
 
    if (sync_state->local_manifest)
@@ -1199,7 +1199,7 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
 
    slock_lock(tcs_running_lock);
    /* we can transfer more than one file at a time */
-   if (sync_state->waiting > ((sync_state->phase == CLOUD_SYNC_PHASE_DIFF) ? 4 : 0))
+   if (sync_state->waiting > ((sync_state->phase == CLOUD_SYNC_PHASE_DIFF) ? 4U : 0U))
    {
       task->when = cpu_features_get_time_usec() + 17 * 1000; /* 17ms */
       slock_unlock(tcs_running_lock);

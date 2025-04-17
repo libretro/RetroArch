@@ -101,7 +101,6 @@ UINavigationControllerDelegate> {
 - (void)showGameView;
 - (void)supportOtherAudioSessions;
 
-- (void)refreshSystemConfig;
 @end
 
 #else

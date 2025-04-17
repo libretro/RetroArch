@@ -969,7 +969,6 @@ static int action_left_state_slot(unsigned type, const char *label,
 static int action_left_replay_slot(unsigned type, const char *label,
       bool wraparound)
 {
-   struct menu_state *menu_st     = menu_state_get_ptr();
    settings_t           *settings = config_get_ptr();
 
    settings->ints.replay_slot--;

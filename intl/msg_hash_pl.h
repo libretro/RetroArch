@@ -8150,14 +8150,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
    "Bieżący plik opcji w użyciu."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Resetuj opcje"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Przywrócić całą konfigurację rdzeni do wartości domyślnych."
-   )
 
 /* - Legacy (unused) */
 MSG_HASH(

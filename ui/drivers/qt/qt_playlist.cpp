@@ -168,9 +168,23 @@ bool PlaylistModel::isSupportedImage(const QString path) const
    return false;
 }
 
-QString PlaylistModel::getSanitizedThumbnailName(QString label) const
+QString PlaylistModel::getSanitizedThumbnailName(QString dir, QString label) const
 {
-   return label.replace(m_fileSanitizerRegex, "_") + ".png";
+   QDir tnDir(dir);
+
+   QString tnName = label.replace(m_fileSanitizerRegex, "_");
+   if (tnDir.exists(tnName + ".png"))
+      return dir + tnName + ".png";
+   if (tnDir.exists(tnName + ".jpg"))
+      return dir + tnName + ".jpg";
+   if (tnDir.exists(tnName + ".jpeg"))
+      return dir + tnName + ".jpeg";
+   if (tnDir.exists(tnName + ".bmp"))
+      return dir + tnName + ".bmp";
+   if (tnDir.exists(tnName + ".tga"))
+      return dir + tnName + ".tga";
+   return dir + tnName + ".png";
+
 }
 
 QString PlaylistModel::getThumbnailPath(const QHash<QString, QString> &hash, QString type) const
@@ -179,11 +193,12 @@ QString PlaylistModel::getThumbnailPath(const QHash<QString, QString> &hash, QSt
    if (isSupportedImage(hash["path"]))
       return hash["path"];
 
-   return getPlaylistThumbnailsDir(hash.value("db_name"))
+   return getSanitizedThumbnailName(
+      getPlaylistThumbnailsDir(hash.value("db_name"))
       + QStringLiteral("/")
       + type
-      + QStringLiteral("/")
-      + getSanitizedThumbnailName(hash["label_noext"]);
+      + QStringLiteral("/"),
+      hash["label_noext"]);
 }
 
 QString PlaylistModel::getCurrentTypeThumbnailPath(const QModelIndex &index) const

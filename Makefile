@@ -171,7 +171,34 @@ ifneq ($(MOC_HEADERS),)
     RARCH_OBJ += $(MOC_OBJ)
 endif
 
-all: $(TARGET) config.mk
+all: info $(TARGET) config.mk
+
+define INFO
+ASFLAGS: $(ASFLAGS)
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CPPFLAGS: $(CPPFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+DEFINES: $(DEFINES)
+LDFLAGS: $(LDFLAGS)
+LIBRARY_DIRS: $(LIBRARY_DIRS)
+LIBS: $(LIBS)
+LINK: $(LINK)
+MD: $(MD)
+MOC: $(MOC)
+MOC_TMP: $(MOC_TMP)
+OBJCFLAGS: $(OBJCFLAGS)
+QT_VERSION: $(QT_VERSION)
+RARCH_OBJ: $(RARCH_OBJ)
+WINDRES: $(WINDRES)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 $(MOC_SRC):
 	@$(if $(Q), $(shell echo echo MOC $<),)
@@ -285,9 +312,10 @@ uninstall:
 	rm -rf $(DESTDIR)$(ASSETS_DIR)
 
 clean:
-	rm -rf $(OBJDIR_BASE)
-	rm -f $(TARGET)
-	rm -f *.d
+	@$(if $(Q), echo $@,)
+	$(Q)rm -rf $(OBJDIR_BASE)
+	$(Q)rm -f $(TARGET)
+	$(Q)rm -f *.d
 
 .PHONY: all install uninstall clean
 

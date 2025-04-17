@@ -430,7 +430,7 @@ bool switch_joypad_set_rumble(unsigned pad,
    HidVibrationDeviceHandle* handle;
    float amp;
 
-   if (pad >= DEFAULT_MAX_PADS || !vibration_handles[pad])
+   if (pad >= DEFAULT_MAX_PADS)
       return false;
 
    amp  = (float)strength / 65535.0f;

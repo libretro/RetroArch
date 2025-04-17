@@ -9320,11 +9320,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Скинути параметри"
+   "Скинути параметри ядра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Встановити всі параметри ядра для значень за замовчуванням."
+   "Встановити всі параметри поточного ядра для значень за замовчуванням."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,

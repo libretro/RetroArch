@@ -4634,10 +4634,6 @@ MSG_HASH(
 
 /* Quick Menu > Options > Manage Core Options */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Vynulovať voľby"
-   )
 
 /* - Legacy (unused) */
 

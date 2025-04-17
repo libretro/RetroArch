@@ -9011,14 +9011,6 @@ MSG_HASH(
    "当前选项文件正在使用。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "重置设置"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "将所有核心设置重置为默认值。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    "更新选项到磁盘"
    )

@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define WIN32_LEAN_AND_MEAN
+
 /* VC6 needs objbase included before initguid, but nothing else does */
 #include <objbase.h>
 #include <initguid.h>

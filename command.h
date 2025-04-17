@@ -41,6 +41,7 @@ RETRO_BEGIN_DECLS
 
 enum event_command
 {
+   CMD_SPECIAL = -1,
    CMD_EVENT_NONE = 0,
    /* Resets RetroArch. */
    CMD_EVENT_RESET,

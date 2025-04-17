@@ -147,8 +147,11 @@ audio_driver_t *audio_drivers[] = {
 #ifdef WIIU
    &audio_ax,
 #endif
-#if defined(EMSCRIPTEN) && defined(HAVE_RWEBAUDIO)
+#if defined(HAVE_RWEBAUDIO)
    &audio_rwebaudio,
+#endif
+#if defined(HAVE_AUDIOWORKLET)
+   &audio_audioworklet,
 #endif
 #if defined(PSP) || defined(VITA) || defined(ORBIS)
   &audio_psp,
@@ -463,19 +466,19 @@ static void audio_driver_flush(
                                      = avail;
          audio_st->source_ratio_current
                                      = audio_st->source_ratio_original * adjust;
-      }
 
 #if 0
-      if (verbosity_is_enabled())
-      {
-         RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
-               (unsigned)(100 - (avail * 100) /
-                  audio_st->buffer_size));
-         RARCH_LOG_OUTPUT("[Audio]: New rate: %lf, Orig rate: %lf\n",
-               audio_st->source_ratio_current,
-               audio_st->source_ratio_original);
-      }
+         if (verbosity_is_enabled())
+         {
+            RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
+                  (unsigned)(100 - (avail * 100) /
+                     audio_st->buffer_size));
+            RARCH_LOG_OUTPUT("[Audio]: New rate: %lf, Orig rate: %lf\n",
+                  audio_st->source_ratio_current,
+                  audio_st->source_ratio_original);
+         }
 #endif
+      }
    }
 
    src_data.ratio           = audio_st->source_ratio_current;

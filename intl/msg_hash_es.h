@@ -9344,11 +9344,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Restablecer opciones"
+   "Restablecer opciones del núcleo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Cambia todas las opciones del núcleo a su configuración predeterminada."
+   "Reinicia todas las opciones del núcleo actual a sus valores predeterminados."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,

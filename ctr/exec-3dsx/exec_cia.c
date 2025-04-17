@@ -63,7 +63,7 @@ static int isCiaInstalled(u64 titleId, u16 version)
    return 0;
 }
 
-static int deleteCia(u64 TitleId)
+static void deleteCia(u64 TitleId)
 {
    u64 currTitleId = 0;
 

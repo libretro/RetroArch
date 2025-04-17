@@ -176,38 +176,67 @@ else
    CXXFLAGS += -O3
 endif
 
+ifneq ($(V),1)
+        Q := @
+endif
+
 TARGETS := $(TARGET).self
 
-all: $(TARGETS)
+all: info $(TARGETS)
+
+define INFO
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+LD: $(LD)
+LDFLAGS: $(LDFLAGS)
+LIBS: $(LIBS)
+OBJ: $(OBJ)
+OBJOUT: $(OBJOUT)
+ORBISDEV: $(ORBISDEV)
+TARGET: $(TARGET)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 OBJOUT   = -o
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) $(CXXFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.S
-	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.s
-	$(CC) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c $(OBJOUT)$@ $<
 
 $(TARGET).elf: $(OBJ)
-	$(LD) $(ORBISDEV)/usr/lib/crt0.o $(OBJ) $(LDFLAGS) $(LIBS) -o $(TARGET).elf
+	@$(if $(Q), $(shell echo echo LD $@),)
+	$(Q)$(LD) $(ORBISDEV)/usr/lib/crt0.o $(OBJ) $(LDFLAGS) $(LIBS) -o $(TARGET).elf
 
 $(TARGET).oelf: $(TARGET).elf
-	@orbis-elf-create $(TARGET).elf $(TARGET).oelf
+	orbis-elf-create $(TARGET).elf $(TARGET).oelf
 
 $(TARGET).self: $(TARGET).oelf
 	python $(ORBISDEV)/bin/make_fself.py --auth-info $(AUTH_INFO) $(TARGET).oelf $(TARGET).self
 
 install:
-	@cp $(TARGET).self $(SELF_PATH_INSTALL)/homebrew.self
+	cp $(TARGET).self $(SELF_PATH_INSTALL)/homebrew.self
 	@echo "Installed!"
 
 clean:
-	rm -f $(OBJ) $(TARGET).elf $(TARGET).oelf $(TARGET).self
+	$(Q)rm -f $(OBJ) $(TARGET).elf $(TARGET).oelf $(TARGET).self
 
 .PHONY: clean all

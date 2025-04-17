@@ -22,6 +22,7 @@
  */
 
 #define CINTERFACE
+#define WIN32_LEAN_AND_MEAN
 
 #include <string.h>
 #include <malloc.h>

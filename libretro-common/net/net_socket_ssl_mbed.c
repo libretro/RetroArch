@@ -25,6 +25,11 @@
 #include <net/net_socket.h>
 #include <net/net_socket_ssl.h>
 
+#ifdef _3DS
+#include <3ds/types.h>
+#include <3ds/services/ps.h>
+#endif
+
 #if defined(HAVE_BUILTINMBEDTLS)
 #include "../../deps/mbedtls/mbedtls/config.h"
 #include "../../deps/mbedtls/mbedtls/certs.h"
@@ -76,6 +81,15 @@ static void ssl_debug(void *ctx, int level,
    fflush((FILE*)ctx);
 }
 
+#ifdef _3DS
+int ctr_entropy_func(void *data, unsigned char *buffer, size_t size)
+{
+   (void)data;
+   PS_GenerateRandomBytes(buffer, size);
+   return 0;
+}
+#endif
+
 void* ssl_socket_init(int fd, const char *domain)
 {
    static const char *pers = "libretro";
@@ -98,7 +112,13 @@ void* ssl_socket_init(int fd, const char *domain)
 
    state->net_ctx.fd = fd;
 
-   if (mbedtls_ctr_drbg_seed(&state->ctr_drbg, mbedtls_entropy_func, &state->entropy, (const unsigned char*)pers, strlen(pers)) != 0)
+   if (mbedtls_ctr_drbg_seed(&state->ctr_drbg,
+#ifdef _3DS
+      ctr_entropy_func,
+#else
+      mbedtls_entropy_func,
+#endif
+      &state->entropy, (const unsigned char*)pers, strlen(pers)) != 0)
       goto error;
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)

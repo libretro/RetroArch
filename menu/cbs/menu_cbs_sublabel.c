@@ -1826,7 +1826,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
    if (status)
    {
       size_t _len = strlcpy(buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS),
-            sizeof(buf));
+            sizeof(buf) - 3);
       buf[  _len] = ':';
       buf[++_len] = ' ';
       buf[++_len] = '\0';
