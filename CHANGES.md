@@ -2,7 +2,10 @@
 
 # 1.21.0
 - 3DS: Fix unique IDs for newer cores
-- 3DS: Fixes
+- 3DS: Enable TLS (SSL)
+- 3DS: Fix UI freeze when threaded rendering is enabled
+- 3DS: Fix crash on load content
+- 3DS: Other minor fixes
 - APPLE: Enable Vulkan emulated mailbox
 - APPLE: Include b2 core in App Store builds
 - APPLE: CoreMIDI driver for IOS/MacOS
