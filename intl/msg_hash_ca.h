@@ -2366,6 +2366,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
    "Tots els modes de pantalla completa"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Llindar de freqüència d'actualització PAL"
+   )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
@@ -3387,6 +3391,10 @@ MSG_HASH(
    "Controls del port %u"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "Canvia les assignacions d'entrada específiques pel nucli."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Solució per les desconnexions d’Android"
    )
@@ -4246,6 +4254,10 @@ MSG_HASH(
    "Carrega automàticament fitxers de remapeig"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
+   "Carrega els controls personalitzats a l'inici."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
    "Carrega els fitxers de shaders automàticament"
    )
@@ -4257,12 +4269,20 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
+   "Endreça els fitxers desats per carpetes amb el nom del nucli"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    "Interval entre desats automàtics de la SaveRAM"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
    "Interval de punts de control de repetició"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Augmenta automàticament l'índex de repeticions"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
@@ -4758,6 +4778,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
    "Superposició predefinida"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+   "Selecciona una superposició en l'explorador de fitxers."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
@@ -10681,6 +10705,10 @@ MSG_HASH(
    "Desa la gravació com a..."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
+   "Desa les gravacions a la carpeta assignada"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
    "Veure coincidència #"
    )
@@ -10743,6 +10771,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
    "Solució de problemes d'àudio/vídeo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
+   "Canvia el controlador virtual superposat"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
@@ -11939,6 +11971,10 @@ MSG_HASH(
    "Llegint la primera pista de dades..."
    )
 MSG_HASH(
+   MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
+   "Gravació acabada pel canvi de mida de la finestra."
+   )
+MSG_HASH(
    MSG_RECORDING_TO,
    "Enregistrant a"
    )
@@ -12411,6 +12447,10 @@ MSG_HASH(
    "No se't permet entrar en aquest servidor."
    )
 MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Error en rebre l'encapçalament del servidor."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "Heu de posar en pausa o desactivar el mode expert d’assoliments per carregar desats ràpids."
    )
@@ -12473,6 +12513,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_DISC_INSERTED,
    "No hi ha un disc dins del lector."
+   )
+MSG_HASH(
+   MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
+   "S'ha eliminat la configuració de shaders."
    )
 MSG_HASH(
    MSG_ERROR_REMOVING_SHADER_PRESET,
@@ -12895,6 +12939,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INTERNET_NOT_CONNECTABLE,
    "Internet (No hi ha connexió)"
+   )
+MSG_HASH(
+   MSG_READ_WRITE,
+   "Estat de l'emmagatzematge intern: Lectura/Escriptura"
    )
 MSG_HASH(
    MSG_READ_ONLY,
