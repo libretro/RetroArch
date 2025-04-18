@@ -14,7 +14,6 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define WIN32_LEAN_AND_MEAN
 #include <QApplication>
 #include <QAbstractEventDispatcher>
 #include <QtWidgets>
