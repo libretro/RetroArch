@@ -52,6 +52,9 @@ extern cloud_sync_driver_t cloud_sync_webdav;
 #ifdef HAVE_ICLOUD
 extern cloud_sync_driver_t cloud_sync_icloud;
 #endif
+#ifdef HAVE_ICLOUD_DRIVE
+extern cloud_sync_driver_t cloud_sync_icloud_drive;
+#endif
 
 extern const cloud_sync_driver_t *cloud_sync_drivers[];
 

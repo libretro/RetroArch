@@ -85,3 +85,7 @@
 #if defined(HAVE_CLOUDSYNC) && defined(HAVE_ICLOUD)
 #include "../network/cloud_sync/icloud.m"
 #endif
+
+#if defined(HAVE_CLOUDSYNC) && defined(HAVE_ICLOUD_DRIVE)
+#include "../network/cloud_sync/icloud_drive.m"
+#endif
