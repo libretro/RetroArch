@@ -1112,12 +1112,24 @@ MSG_HASH(
    "تحميل ملف التكوين"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   "تحميل الإعدادات الحالية واستبدال القيم الموجودة"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "قراءة إعدادات التكوين الحالية"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   "استبدال ملف الإعدادات الحالي"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "حفظ الإعدادات"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   "حفظ الإعدادات الحالية في ملف منفصل"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
@@ -1337,6 +1349,10 @@ MSG_HASH(
    "مستعرض الملفات"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "تعديل إعدادات مستعرض الملفات.مستعرض الملفات"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
    "ملف الإعدادات."
    )
@@ -1403,6 +1419,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
    "صورة. حدده لفتح هذا الملف مع عارض الصورة."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "نواة ليبرترو. اختيار هذا سيربط هذا النواة باللعبة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1672,6 +1692,26 @@ MSG_HASH(
    "نظام تشغيل القائمة"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "نوع الواجهة الرئيسية. (يتطلب إعادة التشغيل)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "واجهة XMB مستوحاة من قوائم أجهزة الجيل السابع مثل PS3، وتقدم ميزات مشابهة لـ Ozone."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   "واجهة Ozone هي الواجهة الرئيسية الافتراضية في RetroArch، ومصممة خصيصًا لتسهيل التنقل بيد التحكم."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
+   "واجهة RGUI هي واجهة مدمجة وبسيطة في RetroArch. تُعد الأقل من حيث متطلبات الأداء بين جميع مشغّلات القوائم، ويمكن استخدامها على الشاشات منخفضة الدقة."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "في الأجهزة المحمولة، يستخدم RetroArch واجهة المستخدم الخاصة بالموبايل بشكل افتراضي، والمعروفة باسم MaterialUI. تم تصميم هذه الواجهة خصيصًا لتناسب أجهزة اللمس والمؤشرات مثل الماوس أو التراكبول."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "نظام تشغيل التسجيل"
    )
@@ -1759,8 +1799,16 @@ MSG_HASH(
    "يحسن الأداء على حساب التأخير والمزيد من مقاطع الفيديو. يستخدم فقط إذا لم يكن من الممكن الحصول على السرعة الكاملة خلاف ذلك."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "تمكين المعالجة المتعددة للفيديو قد يرفع الأداء، لكن فيه احتمال يصير فيه تأخير أو تقطيع بسيط."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "إدراج الإطار الأسود"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "تحذير: الوميض السريع قد يسبب أثرًا دائمًا على بعض الشاشات. استخدم هذا الخيار على مسؤوليتك. إدراج إطار أسود بين الفريمات يقلل بشكل كبير من ضبابية الحركة ويحاكي عرض CRT، لكن يقلل من سطوع الشاشة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
