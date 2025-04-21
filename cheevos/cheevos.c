@@ -44,10 +44,6 @@
 #include <rthreads/rthreads.h>
 #endif
 
-#ifdef HAVE_CHEATS
-#include "../cheat_manager.h"
-#endif
-
 #ifdef HAVE_CHD
 #include "streams/chd_stream.h"
 #endif
@@ -764,16 +760,6 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
          locals->hardcore_being_enabled = false;
          return;
       }
-
-#ifdef HAVE_CHEATS
-      /* If one or more emulator managed cheats is active, abort */
-      cheat_manager_apply_cheats(notification_show_cheats_applied);
-      if (!locals->hardcore_allowed)
-      {
-         locals->hardcore_being_enabled = false;
-         return;
-      }
-#endif
 
       if (rcheevos_is_game_loaded())
       {
