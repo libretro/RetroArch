@@ -1,18 +1,18 @@
 buildscript {
   repositories {
     google()
-    jcenter()
+    mavenCentral()
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:4.2.0'
+    classpath 'com.android.tools.build:gradle:8.9.1'
   }
 }
 
 allprojects {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
 
     Properties props = new Properties()
@@ -25,9 +25,9 @@ allprojects {
 apply plugin: 'com.android.application'
 
 android {
-  compileSdkVersion 31
+  compileSdkVersion 30
   buildToolsVersion "30.0.3"
-  ndkVersion "22.0.7026061"
+  ndkVersion = "22.0.7026061"
 
   flavorDimensions "variant"
 
@@ -142,18 +142,18 @@ android {
   buildTypes {
     if (project.hasProperty("RELEASE_STORE_FILE")) {
       release {
-        signingConfig signingConfigs.release
+        signingConfig = signingConfigs.release
       }
     }
     else {
       release {
-        signingConfig signingConfigs.debug
+        signingConfig = signingConfigs.debug
       }
     }
   }
 }
 
-def playCore = 'com.google.android.play:core:1.8.0'
+def playCore = 'com.google.android.play:core:1.10.3'
 
 dependencies {
   playStoreNormalImplementation playCore
