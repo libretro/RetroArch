@@ -23,7 +23,6 @@
         android:hasCode="true"
         android:isGame="true"
         android:banner="@drawable/banner"
-        android:extractNativeLibs="true"
         android:requestLegacyExternalStorage="true"
         tools:ignore="UnusedAttribute">
         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">

@@ -152,6 +152,11 @@ android {
       }
     }
   }
+  packagingOptions {
+    jniLibs {
+      useLegacyPackaging true
+    }
+  }
 }
 
 def playCore = 'com.google.android.play:core:1.10.3'
@@ -192,3 +197,5 @@ tasks.register("outputVersionCode") {
     println getPlayStoreVersionCode()
   }
 }
+
+java{toolchain{languageVersion=JavaLanguageVersion.of(21)}}
