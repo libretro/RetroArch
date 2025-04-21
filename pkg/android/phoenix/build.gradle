@@ -25,7 +25,8 @@ allprojects {
 apply plugin: 'com.android.application'
 
 android {
-  compileSdkVersion 30
+  namespace = "com.retroarch"
+  compileSdkVersion 35
   buildToolsVersion "30.0.3"
   ndkVersion = "22.0.7026061"
 
@@ -47,7 +48,7 @@ android {
     normal {
       resValue "string", "app_name", "RetroArch"
       buildConfigField "boolean", "PLAY_STORE_BUILD", "false"
-      android.buildFeatures.buildConfig true
+      android.buildFeatures.buildConfig = true
       dimension "variant"
     }
     aarch64 {
