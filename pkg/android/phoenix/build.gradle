@@ -47,7 +47,7 @@ android {
     normal {
       resValue "string", "app_name", "RetroArch"
       buildConfigField "boolean", "PLAY_STORE_BUILD", "false"
-
+      android.buildFeatures.buildConfig true
       dimension "variant"
     }
     aarch64 {
