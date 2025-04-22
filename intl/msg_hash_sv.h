@@ -3568,6 +3568,10 @@ MSG_HASH(
    "Visa/dölj meny"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
+   "Växlar den aktuella skärmen mellan meny och innehåll."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "Avsluta (spelkontroll kombo)"
    )
@@ -4225,6 +4229,10 @@ MSG_HASH(
 /* Settings > Core */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+   "Ge hårdvarurenderade kärnor en egen privat kontext. Undviker att behöva anta att hårdvaran ändrar tillstånd mellan bildrutor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
    "Tillåt kärnor att byta videodrivrutin"
    )
@@ -4724,6 +4732,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    "Slow motion hastighet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+   "Den hastighet som innehållet spelas upp i när slowmotion används."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -5471,6 +5483,10 @@ MSG_HASH(
    "Notis-storlek"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "Ange teckenstorleken i punkter. När widgetar används har denna storlek endast effekt på statistikvisningen på skärmen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Notisposition (horisontellt)"
    )
@@ -5541,6 +5557,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
    "Ställer in det blåa värdet för bakgrundsfärgen för skärm-notiser. Giltiga värden är mellan 0 och 255."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   "Ställer in opaciteten för OSD-bakgrundsfärgen. Giltiga värden ligger mellan 0,0 och 1,0."
    )
 
 /* Settings > User Interface */
@@ -7121,8 +7141,16 @@ MSG_HASH(
    "Ange när poster i spellistan ska taggas med den aktuella associerade kärnan (om någon).\nDen här inställningen ignoreras när underetiketter för spellistor är aktiverade."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
+   "Visa underetiketter för spellista"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
    "Visa ytterligare information för varje spellistepost, t. ex. aktuell kärnassociation och körtid (om tillgänglig). Har en varierande prestandapåverkan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
+   "Visa innehållsspecifika ikoner i historik och favoriter"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
@@ -7610,6 +7638,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_DIRECTORY,
    "Historikspellista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_HISTORY_DIRECTORY,
+   "Spara historikspellistan till denna katalog."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
@@ -9027,16 +9059,32 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    "Spara de aktuella shaderinställningarna som standard för alla filer i den aktuella innehållskatalogen."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "Spara de aktuella shaderinställningarna som standardinställningar för innehållet."
+   )
 
 /* Quick Menu > Shaders > Remove */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
+   "Inga automatiska shader-förinställningar hittades"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
    "Ta bort globalt förval"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   "Ta bort den globala förinställningen, som används av allt innehåll och alla kärnor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
    "Ta bort kärnförval"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   "Ta bort förinställningen för kärna, som används av allt innehåll som körs med den för närvarande inlästa kärnan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
@@ -9045,6 +9093,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
    "Ta bort spelförval"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   "Ta bort förinställningen för spel, som endast används för det specifika spelet i fråga."
    )
 
 /* Quick Menu > Shaders > Shader Parameters */
@@ -9808,8 +9860,16 @@ MSG_HASH(
    "Färgtema"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
+   "Välj ett annat färgtema. Om du väljer ”Anpassad” kan du använda förinställda filer för menyteman."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
    "Anpassat temaförval"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
+   "Välj ett förinställt menytema från filbläddraren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
@@ -9828,8 +9888,20 @@ MSG_HASH(
    "Animerad bakgrund"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT,
+   "Aktivera animeringseffekt för bakgrundspartiklar. Har en betydande prestandapåverkan."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
    "Animerad bakgrunds hastighet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
+   "Justera hastigheten på animationseffekterna för bakgrundspartiklar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Bakgrundsanimering för skärmsläckare"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
@@ -10058,8 +10130,16 @@ MSG_HASH(
    "Dynamisk bakgrund"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
+   "Läs in en ny bakgrundsbild dynamiskt beroende på kontext."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
    "Horisontell animering"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+   "Aktivera horisontell animering för menyn. Detta kommer att påverka prestandan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -10270,6 +10350,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Ta bort tillverkarens namn från spellistorna. Till exempel, 'Sony - PlayStation' blir 'PlayStation'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "Sortera spellistor efter avkortat namn (omstart krävs)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -10903,6 +10987,10 @@ MSG_HASH(
    "Tillägg:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
+   "(blankstegsseparerade; inkluderar alla som standard)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
    "Filtrera inuti arkiv"
    )
@@ -11110,6 +11198,10 @@ MSG_HASH(
    "Historik"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
+   "Välj innehåll från spellistan med senaste historik."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
    "När innehåll läses in sparas innehåll och libretro core-kombinationer i historiken.\nHistoriken sparas i en fil i samma katalog som konfigurationsfilen för RetroArch. Om ingen konfigurationsfil lästs in vid uppstart sparas eller läses inte historiken in och den finns inte i huvudmenyn."
    )
@@ -11241,6 +11333,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
    "Inga spellistor hittades"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
+   "Kompatibelt innehåll hittades"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
@@ -11311,6 +11407,10 @@ MSG_HASH( /* FIXME Still exists in a comment about being removed */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
    "Starta innehåll"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
+   "Sökväg för innehållshistorik"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
@@ -11975,6 +12075,10 @@ MSG_HASH(
    "Fel vid sparande av handkontrollerprofil."
    )
 MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
+   "Kontrollerprofilen sparades."
+   )
+MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "Kunde inte initiera automatisk sparning."
    )
@@ -12051,6 +12155,10 @@ MSG_HASH(
    "Kunde inte läsa innehållsfilen"
    )
 MSG_HASH(
+   MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
+   "Kunde inte läsa tillstånd från film."
+   )
+MSG_HASH(
    MSG_CRC32_CHECKSUM_MISMATCH,
    "CRC32-kontrollsumman stämmer inte överens mellan innehållsfilen och kontrollsumman för sparat innehåll i uppspelningsfilens huvud. Uppspelningen kommer med stor sannolikhet att desynkroniseras vid uppspelning."
    )
@@ -12073,6 +12181,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    "Koppla från enhet från en giltig port."
+   )
+MSG_HASH(
+   MSG_DISK_CLOSED,
+   "Stängde virtuell skivsläde."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Matade ut virtuell skivsläde."
    )
 MSG_HASH(
    MSG_DOWNLOADING,
@@ -12251,6 +12367,10 @@ MSG_HASH(
    "Misslyckades med att ta skärmbild."
    )
 MSG_HASH(
+   MSG_FAILED_TO_UNDO_LOAD_STATE,
+   "Misslyckades med att ångra inläst tillstånd."
+   )
+MSG_HASH(
    MSG_FAILED_TO_UNDO_SAVE_STATE,
    "Misslyckades att få sparad status ogjord."
    )
@@ -12273,6 +12393,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
    "Hittade första dataspåret på fil"
+   )
+MSG_HASH(
+   MSG_FOUND_LAST_STATE_SLOT,
+   "Hittade senaste tillståndsplats"
    )
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
@@ -12459,6 +12583,10 @@ MSG_HASH(
    "Omdirigerar sparad status till"
    )
 MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Tog bort skiva från släde."
+   )
+MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
    "Tar bort temporär innehållsfil"
    )
@@ -12497,6 +12625,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVING_RAM_TYPE,
    "Sparar RAM-typ"
+   )
+MSG_HASH(
+   MSG_SAVING_STATE,
+   "Sparar tillstånd"
    )
 MSG_HASH(
    MSG_SCANNING,
