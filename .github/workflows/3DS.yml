@@ -32,4 +32,4 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: RetroArch 3DS
-        path: retroarch_3ds.3dsx retroarch_3ds_salamander.3dsx
+        path: retroarch_3ds*

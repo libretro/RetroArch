@@ -27,7 +27,6 @@ apply plugin: 'com.android.application'
 android {
   namespace = "com.retroarch"
   compileSdkVersion 35
-  buildToolsVersion "30.0.3"
   ndkVersion = "22.0.7026061"
 
   flavorDimensions "variant"

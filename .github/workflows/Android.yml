@@ -37,3 +37,11 @@ jobs:
         path: |
           pkg/android/phoenix/build/outputs/apk/normal/debug/phoenix-normal-debug.apk
           pkg/android/phoenix/build/outputs/apk/aarch64/debug/phoenix-aarch64-debug.apk
+    - uses: actions/upload-artifact@v4
+      with:
+        name: retroarch-android-other-${{ steps.slug.outputs.sha8 }}
+        path: |
+          pkg/android/phoenix/build/outputs/apk/ra32/debug/phoenix-ra32-debug.apk
+          pkg/android/phoenix/build/outputs/apk/playStoreNormal/debug/phoenix-playStoreNormal-debug.apk
+          pkg/android/phoenix/build/outputs/apk/playStorePlus/debug/phoenix-playStorePlus-debug.apk
+          pkg/android/phoenix/build/reports/problems/problems-report.html
