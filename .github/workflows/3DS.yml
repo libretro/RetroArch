@@ -29,7 +29,7 @@ jobs:
         make -f Makefile.ctr -j$(getconf _NPROCESSORS_ONLN) USE_CTRULIB_2=1 clean
         make -f Makefile.ctr -j$(getconf _NPROCESSORS_ONLN) USE_CTRULIB_2=1 HAVE_STATIC_DUMMY=1
         ls -l
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: RetroArch 3DS
         path: retroarch_3ds*
