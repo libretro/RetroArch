@@ -172,13 +172,13 @@ public class RetroDocumentsProvider extends DocumentsProvider {
             final File file = pending.removeFirst();
             // Avoid folders outside the $HOME folders linked in to symlinks (to avoid e.g. search
             // through the whole SD card).
-            boolean InsideHome;
+            boolean isInsideHome;
             try {
-                InsideHome = file.getCanonicalPath().startsWith(getContext().getFilesDir().getParent());
+                isInsideHome = file.getCanonicalPath().startsWith(getContext().getFilesDir().getParent());
             } catch (IOException e) {
-                InsideHome = true;
+                isInsideHome = true;
             }
-            if (InsideHome) {
+            if (isInsideHome) {
                 if (file.isDirectory()) {
                     Collections.addAll(pending, file.listFiles());
                 } else {

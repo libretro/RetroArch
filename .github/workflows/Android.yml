@@ -26,7 +26,7 @@ jobs:
     - name: Compile RA
       run: |
         cd pkg/android/phoenix
-        ./gradlew assembleDebug --warning-mode all
+        ./gradlew assembleDebug --warning-mode all --stacktrace --info --debug
         find . -iname "*.apk" -exec ls -l "{}" \;
     - name: Get short SHA
       id: slug
