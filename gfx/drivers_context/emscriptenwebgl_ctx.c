@@ -239,6 +239,11 @@ static uint32_t gfx_ctx_emscripten_webgl_get_flags(void *data)
 
 static void gfx_ctx_emscripten_webgl_set_flags(void *data, uint32_t flags) { }
 
+static gfx_ctx_proc_t gfx_ctx_emscripten_webgl_get_proc_address(const char *symbol)
+{
+   return emscripten_webgl_get_proc_address(symbol);
+}
+
 const gfx_ctx_driver_t gfx_ctx_emscripten_webgl = {
    gfx_ctx_emscripten_webgl_init,
    gfx_ctx_emscripten_webgl_destroy,
@@ -261,7 +266,7 @@ const gfx_ctx_driver_t gfx_ctx_emscripten_webgl = {
    false,
    gfx_ctx_emscripten_webgl_swap_buffers,
    gfx_ctx_emscripten_webgl_input_driver,
-   NULL,
+   gfx_ctx_emscripten_webgl_get_proc_address,
    NULL,
    NULL,
    NULL,
