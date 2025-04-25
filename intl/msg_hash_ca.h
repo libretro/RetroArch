@@ -2363,6 +2363,10 @@ MSG_HASH(
    "Canvia automàticament la freqüència d'actualització"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Canvia automàticament la freqüència d'actualització de la pantalla en funció del contingut actual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    "Només en mode de pantalla completa exclusiva"
    )
@@ -3413,6 +3417,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
    "Assignació del turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   "L'assignació que activarà el turbo en el RetroPad. Si està buit, s'utilitzarà l'assignació específica del port."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
@@ -5020,6 +5028,10 @@ MSG_HASH(
    "Sensibilitat diagonal de la creueta"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "Ajusta la mida de les zones diagonals. Per tenir una simetría en les 8 direccions, selecciona 100%."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    "Sensibilitat de la sobreposició ABXY"
    )
@@ -5517,6 +5529,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Posició de les notificacions (horitzontal)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
+   "Especifica una posició x personalitzada del text en pantalla respecte a l'eix X. 0 és la vora esquerra."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
@@ -7650,6 +7666,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "Memòria cau"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
+   "En aquesta carpeta es desen temporalment els continguts dels fitxers comprimits."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_DIR,
@@ -13701,6 +13721,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
    "Has seleccionat un fitxer DAT de arcade no vàlid."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   "El fitxer de dades DAT seleccionat és massa gran (memòria lliure insuficient)."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
