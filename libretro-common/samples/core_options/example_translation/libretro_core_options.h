@@ -139,7 +139,7 @@ struct retro_core_options_v2 options_us = {
 
 #ifndef HAVE_NO_LANGEXTRA
 struct retro_core_options_v2 *options_intl[RETRO_LANGUAGE_LAST] = {
-   &options_us, /* RETRO_LANGUAGE_ENGLISH */
+   &options_us,      /* RETRO_LANGUAGE_ENGLISH */
    &options_ja,      /* RETRO_LANGUAGE_JAPANESE */
    &options_fr,      /* RETRO_LANGUAGE_FRENCH */
    &options_es,      /* RETRO_LANGUAGE_SPANISH */
@@ -171,6 +171,9 @@ struct retro_core_options_v2 *options_intl[RETRO_LANGUAGE_LAST] = {
    &options_ca,      /* RETRO_LANGUAGE_CATALAN */
    &options_en,      /* RETRO_LANGUAGE_BRITISH_ENGLISH */
    &options_hu,      /* RETRO_LANGUAGE_HUNGARIAN */
+   &options_be,      /* RETRO_LANGUAGE_BELARUSIAN */
+   &options_gl,      /* RETRO_LANGUAGE_GALICIAN */
+   &options_no,      /* RETRO_LANGUAGE_NORWEGIAN */
 };
 #endif
 
