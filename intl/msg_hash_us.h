@@ -7236,6 +7236,14 @@ MSG_HASH(
    "Enable Text-to-Speech to aid in menu navigation."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SYNTHESIZER,
+   "Text-to-Speech synthesizer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SYNTHESIZER,
+   "The engine of the Text-to-Speech synthesis."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    "Text-to-Speech Speed"
    )

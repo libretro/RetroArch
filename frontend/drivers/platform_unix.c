@@ -51,6 +51,10 @@
 #include <signal.h>
 #include <pthread.h>
 
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
+#include "accessibility.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -2899,7 +2903,8 @@ static const char* accessibility_unix_language_code(const char* language)
          string_is_equal(language, "ta") ||
          string_is_equal(language, "te") ||
          string_is_equal(language, "ur") ||
-         string_is_equal(language, "cy")
+         string_is_equal(language, "cy") ||
+         string_is_equal(language, "ca")
       )
       return language;
    else if (
@@ -2908,19 +2913,16 @@ static const char* accessibility_unix_language_code(const char* language)
       )
       return "nb";
    else if (string_is_equal(language, "en_gb"))
-      return "en-gb";
-   else if (
-         string_is_equal(language, "ca") ||
-         string_is_equal(language, "ca_ES@valencia")
-      )
-      return "ca";
+      return "en-GB";
+   else if (string_is_equal(language, "ca_ES@valencia"))
+      return "ca-VA";
    else if (
          string_is_equal(language, "pt_pt") ||
          string_is_equal(language, "pt")
       )
       return "pt";
    else if (string_is_equal(language, "pt_bt"))
-      return "pt-br";
+      return "pt-BR";
    else if (
          string_is_equal(language, "zh") ||
          string_is_equal(language, "zh_cn") ||
@@ -2938,26 +2940,68 @@ static const char* accessibility_unix_language_code(const char* language)
 static bool accessibility_speak_unix(int speed,
       const char* speak_text, int priority)
 {
+   unsigned synthesizer;
    int pid;
    const char* language   = accessibility_unix_language_code(get_user_language_iso639_1(true));
    char* voice_out        = (char*)malloc(3 + strlen(language));
    char* speed_out        = (char*)malloc(3 + 3);
    const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
+   char* executable       = (char*)malloc(16);
+
+   settings_t *settings = config_get_ptr();
+   synthesizer = settings->uints.accessibility_narrator_synthesizer;
+
+   switch (synthesizer)
+   {
+      case ACCESSIBILITY_NARRATOR_SYNTHESIZER_SPEACH_DISPATCHER:
+      {
+         strlcpy(executable, "spd-say", 8);
+         speeds[0] = "-99";
+         speeds[1] = "-75";
+         speeds[2] = "-50";
+         speeds[3] = "-25";
+         speeds[4] = "0";
+         speeds[5] = "20";
+         speeds[6] = "40";
+         speeds[7] = "60";
+         speeds[8] = "80";
+         speeds[9] = "100";
+
+         voice_out[0] = '-';
+         voice_out[1] = 'l';
+         voice_out[2] = '\0';
+         strlcat(voice_out, language, sizeof(voice_out));
+
+         speed_out[0] = '-';
+         speed_out[1] = 'r';
+         speed_out[2] = '\0';
+         strlcat(speed_out, speeds[speed-1], sizeof(speed_out));
+
+         break;
+      }
+      case ACCESSIBILITY_NARRATOR_SYNTHESIZER_ESPEAK:
+      default:
+      {
+         strlcpy(executable, "espeak", 7);
+
+         voice_out[0] = '-';
+         voice_out[1] = 'v';
+         voice_out[2] = '\0';
+         strlcat(voice_out, language, sizeof(voice_out));
+
+         speed_out[0] = '-';
+         speed_out[1] = 's';
+         speed_out[2] = '\0';
+         strlcat(speed_out, speeds[speed-1], sizeof(speed_out));
+
+         break;
+      }
+   }
 
    if (speed < 1)
       speed = 1;
    else if (speed > 10)
       speed = 10;
-
-   voice_out[0] = '-';
-   voice_out[1] = 'v';
-   voice_out[2] = '\0';
-   strlcat(voice_out, language, 3 + strlen(language));
-
-   speed_out[0] = '-';
-   speed_out[1] = 's';
-   speed_out[2] = '\0';
-   strlcat(speed_out, speeds[speed-1], 6);
 
    if (priority < 10 && speak_pid > 0)
    {
@@ -2968,7 +3012,7 @@ static bool accessibility_speak_unix(int speed,
 
    if (speak_pid > 0)
    {
-      /* Kill the running espeak */
+      /* Kill the running TTS Engine */
       kill(speak_pid, SIGTERM);
       speak_pid = 0;
    }
@@ -2978,19 +3022,20 @@ static bool accessibility_speak_unix(int speed,
    {
       case 0:
          {
-            /* child process: replace process with the espeak command */
-            char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL };
+            /* child process: replace process with the TTS command */
+            char* cmd[] = { NULL, NULL, NULL, NULL, NULL };
+            cmd[0] = executable;
             cmd[1] = voice_out;
             cmd[2] = speed_out;
             cmd[3] = (char*)speak_text;
-            execvp("espeak", cmd);
+            execvp(executable, cmd);
 
-            RARCH_WARN("Could not execute espeak.\n");
+            RARCH_WARN("Could not execute TTS Engine.\n");
             /* Prevent interfere with the parent process */
             _exit(EXIT_FAILURE);
          }
       case -1:
-         RARCH_ERR("Could not fork for espeak.\n");
+         RARCH_ERR("Could not fork for the TTS process.\n");
       default:
          {
             /* parent process */
@@ -3007,6 +3052,8 @@ end:
       free(voice_out);
    if (speed_out)
       free(speed_out);
+   if (executable)
+      free(executable);
    return true;
 }
 #endif

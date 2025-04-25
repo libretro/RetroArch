@@ -279,6 +279,7 @@ typedef struct settings
 #endif
 
       /* Accessibility */
+      unsigned accessibility_narrator_synthesizer;
       unsigned accessibility_narrator_speech_speed;
 
       unsigned menu_timedate_style;

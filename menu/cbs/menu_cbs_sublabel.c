@@ -231,6 +231,7 @@ DEFAULT_SUBLABEL_MACRO(menu_action_sublabel_setting_audio_mixer_stream_volume,
       MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accessibility_enabled, MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accessibility_narrator_synthesizer, MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SYNTHESIZER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accessibility_narrator_speech_speed, MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED)
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_config,                      MENU_ENUM_SUBLABEL_CONFIGURATIONS)
@@ -5341,6 +5342,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accessibility_enabled);
+            break;
+         case MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SYNTHESIZER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accessibility_narrator_synthesizer);
             break;
          case MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accessibility_narrator_speech_speed);

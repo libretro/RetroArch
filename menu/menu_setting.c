@@ -31,6 +31,12 @@
 
 #include <compat/strl.h>
 
+#ifdef HAVE_ACCESSIBILITY
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
+#include "accessibility.h"
+#endif
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -3173,6 +3179,29 @@ static size_t setting_get_string_representation_uint_keyboard_gamepad_mapping_ty
    }
    return 0;
 }
+#endif
+
+#ifdef HAVE_ACCESSIBILITY
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
+static size_t setting_get_string_representation_uint_accessibility_narrator_synthesizer(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   switch(*setting->value.target.unsigned_integer)
+   {
+      case ACCESSIBILITY_NARRATOR_SYNTHESIZER_NATIVE:
+         return strlcpy(s, "native", len);
+      case ACCESSIBILITY_NARRATOR_SYNTHESIZER_SPEACH_DISPATCHER:
+         return strlcpy(s, "Speech Dispatcher", len);
+      case ACCESSIBILITY_NARRATOR_SYNTHESIZER_ESPEAK:
+         return strlcpy(s, "eSpeak", len);
+      case ACCESSIBILITY_NARRATOR_SYNTHESIZER_LAST:
+         return 0;
+   }
+   return 0;
+}
+#endif
 #endif
 
 #ifdef HAVE_TRANSLATE
@@ -12110,7 +12139,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 
+            menu_settings_list_current_add_range(list, list_info,
                   0, cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size), 1, true, true);
             (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_hex_and_uint;
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
@@ -12203,7 +12232,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 
+            menu_settings_list_current_add_range(list, list_info,
                   0, cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size), 1, true, true);
             (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_hex_and_uint;
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
@@ -20552,6 +20581,26 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
          (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+
+#ifdef HAVE_ACCESSIBILITY
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.accessibility_narrator_synthesizer,
+               MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SYNTHESIZER,
+               MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SYNTHESIZER,
+               DEFAULT_ACCESSIBILITY_NARRATOR_SYNTHESIZER,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_accessibility_narrator_synthesizer;
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         menu_settings_list_current_add_range(list, list_info, ACCESSIBILITY_NARRATOR_SYNTHESIZER_NATIVE, (ACCESSIBILITY_NARRATOR_SYNTHESIZER_LAST - 1), 1, true, true);
+#endif
+#endif
 
          CONFIG_UINT(
                list, list_info,

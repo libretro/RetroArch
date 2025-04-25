@@ -8296,6 +8296,7 @@ unsigned menu_displaylist_build_list(
             bool accessibility_enable      = settings->bools.accessibility_enable;
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_ACCESSIBILITY_ENABLED,               PARSE_ONLY_BOOL, true },
+               {MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SYNTHESIZER,  PARSE_ONLY_UINT, false },
                {MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED, PARSE_ONLY_UINT, false },
                {MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,                 PARSE_ACTION,    true },
             };
@@ -8304,6 +8305,9 @@ unsigned menu_displaylist_build_list(
             {
                switch (build_list[i].enum_idx)
                {
+#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+                  case MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SYNTHESIZER:
+#endif
                   case MENU_ENUM_LABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED:
                      if (accessibility_enable)
                         build_list[i].checked = true;
