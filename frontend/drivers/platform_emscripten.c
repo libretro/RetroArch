@@ -628,7 +628,7 @@ static void platform_emscripten_mount_filesystems(void)
          char *base_url = strdup(line);
          base_url[strcspn(base_url, "\r\n")] = '\0'; // drop newline
          base_url[len-1] = '\0'; // drop newline
-         backend_t fetch;
+         backend_t fetch = NULL;
          len = max_line_len;
          // Don't create fetch backend unless manifest actually has entries
          while (getline(&line, &len, file) != -1)
@@ -636,6 +636,10 @@ static void platform_emscripten_mount_filesystems(void)
             if (!fetch)
             {
                fetch = wasmfs_create_fetch_backend(base_url, 16*1024*1024);
+               if(!fetch) {
+                 printf("[FetchFS] couldn't create fetch backend for %s\n", base_url);
+                 abort();
+               }
                wasmfs_create_directory(fetch_base_dir, 0777, fetch);
             }
             char *realfs_path = strstr(line, " "), *url = line;
