@@ -3011,6 +3011,10 @@ MSG_HASH(
    "Freqüència d'entrada predeterminada (Hz)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "Indica la freqüència de mostreig de l'entrada d'àudio. S'utilitzarà si els nuclis no demanen un valor concret."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
    "Latència de l'entrada de so (ms)"
    )
@@ -3236,6 +3240,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "Endreça les assignacions per cada controlador"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Les assignacions s'aplicaran només al controlador actiu en el qual s'han desat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -5245,6 +5253,10 @@ MSG_HASH(
    "Llindar de la doble pulsació (ms)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Ajusta el marge de temps entre clics pel qual es detectarà un doble clic."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "Llindar de lliscament"
    )
@@ -5363,6 +5375,10 @@ MSG_HASH(
    "Interval d'actualització de l'ús de memòria (en fotogrames)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
+   "El comptador de memòria en pantalla s'actualitzarà a la velocitat assignada a fotogrames."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Mostra el ping del joc en línia"
    )
@@ -5403,6 +5419,14 @@ MSG_HASH(
    "Mostra un missatge en pantalla al corregir ROM al vol."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
+   "Mostra un missatge en pantalla quan es connectin o desconnectin dispositiu d'entrada."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Mostra un missatge en pantalla quan el dispositiu d'entrda no es pot configurar."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
    "Notificacions de la càrrega de reassignacions d'entrada"
    )
@@ -5413,6 +5437,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
    "Notificacions de càrrega de configuracions personalitzades"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "Mostra un missatge en pantalla en carregar fitxers de configuració."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
@@ -5537,6 +5565,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    "Posició de les notificacions (vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
+   "Especifica una posició personalitzada del text en pantalla respecte a l'eix Y. 0 és la vora inferior."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
@@ -6216,6 +6248,10 @@ MSG_HASH(
    "Mostra l'opció 'Desar la personalització de carpetes de continguts'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Mostra l'opció 'Desa la personalització de les carpetes de contingut' dins del menú Personalitzacions."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    "Mostra desar les personalitzacions del joc"
    )
@@ -6511,6 +6547,10 @@ MSG_HASH(
    "Fes servir el tema de colors del sistema"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+   "Fes servir el tema de color del sistema operatiu (si n'hi ha). S'ignoraran la configuració del tema."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    "Miniatura principal"
    )
@@ -6525,6 +6565,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
    "Animació de text en moviment"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE,
+   "Selecciona el mètode desplaçament horitzontal pels texts del menú que siguin molt llargs."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -6792,8 +6836,16 @@ MSG_HASH(
    "Notificacions de jocs"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
+   "Mostra una notificació quan s'hagin desbloquejat tots els assoliments d'un joc."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
    "Activa els indicadors de desafiament"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   "Mostra indicadors en pantalla quan es puguin desbloquejar certs assoliments."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
@@ -6822,6 +6874,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
    "Seguiment de la taula de classificació"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Mostra informació del seguiment en pantalla amb el valor actualitzat de les taules de classifcació actives."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -6925,6 +6981,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
    "Contrasenya del servidor per espectadors"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
+   "Indica la contrasenya que han de fer servir els clients que es connecten al sevidor com a espectadors."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
@@ -7095,6 +7155,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
    "Historial"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
+   "Permet tenir llistes de jocs, imatges, música i vídeos utilitzats recentment."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
@@ -7306,6 +7370,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
    "Neteja la llista de reproducció"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+   "Confirma les associacions a nuclis i elimina els elements invàlids i duplicats."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
@@ -8337,8 +8405,16 @@ MSG_HASH(
    "Desfer càrrega ràpida"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
+   "Si s'ha carregat un estat desat, el contingut tornarà a l'estat previ a la càrrega."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
    "Desfer desat ràpid"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
+   "Si s'ha sobreescrit un desat ràpid, tornarà a tenir les dades prèvies."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
@@ -8495,6 +8571,10 @@ MSG_HASH(
    "Elimina les opcions del joc"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Elimina les opcions del nucli que s'aplicaran només al contingut actual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
    "Desa les opcions del directori de contingut"
    )
@@ -8579,6 +8659,10 @@ MSG_HASH(
    "Desa el fitxer de mapeig del nucli"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CORE,
+   "Desa un fitxer d'assignació que s'aplicarà a tots els continguts que es carreguin amb aquest nucli."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
    "Elimina els fitxers d'assignació del nucli"
    )
@@ -8603,6 +8687,10 @@ MSG_HASH(
    "Elimina els fitxers d'assignació del joc"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
+   "Elimina el fitxer d'assignació que s'aplicarà al contingut actual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
    "Reinicia les assignacions d'entrada"
    )
@@ -8613,6 +8701,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
    "Actualitza el fitxer d'assignacions d'entrada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "Sobreescriu el fitxer d'assignació actiu amb les opcions actuals d'assignació d'entrada."
    )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
@@ -8889,6 +8981,10 @@ MSG_HASH(
    "Augmentar el valor en cada iteració"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+   "Després de cada iteració, el 'Valor' augmentarà en aquesta quantitat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_TYPE,
    "Vibra si la memòria"
    )
@@ -9090,6 +9186,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Desa com a predefinició del joc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+   "Desa la configuració actual de shaders per aquest contingut."
    )
 
 /* Quick Menu > Shaders > Remove */
@@ -10088,8 +10188,16 @@ MSG_HASH(
    "Intercanvia miniatures"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
+   "Intercanvia la posició de les miniatures superior e inferior."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    "Mètode d'escalat de miniatures"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+   "Selecciona el mètode de redimensionat perquè les miniatures entrin a la pantalla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
@@ -11522,6 +11630,10 @@ MSG_HASH(
    "Port %d Nom dispositiu: %s (#%d)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
+   "Nom per mostrar del dispositiu: %s\nNom de configuració del dispositiu: %s\n VID/PID del dispositiu: %d/%d"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Configuració dels trucs"
    )
@@ -11566,6 +11678,10 @@ MSG_HASH(
    "Nombre màxim d'imatges en la cadena d'intercanvi"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Avisa al controlador de vídeo que faci servir un mode de búfer concret."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
    "Cadenes d'intercanvi en espera"
    )
@@ -11576,6 +11692,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    "Latència de fotograma màxima"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   "Avisa al controlador de vídeo que faci servir un mode de búfer concret."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
@@ -12150,6 +12270,10 @@ MSG_HASH(
    "%.*s ha accedit amb el dispositiu %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_OUT_OF_DATE,
+   "Un client del joc en xarxa fa servir una versió antiga de RetroArch. No es pot connectar amb el client."
+   )
+MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORES,
    "Un client del joc en xarxa està fent servir un nucli diferent. No es pot connectar amb el client."
    )
@@ -12437,6 +12561,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY,
    "S’ha desat correctament el perfil del controlador."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "El perfil de controlador s'ha desat a la carpeta corresponent com:\n\"%s\""
    )
 MSG_HASH(
    MSG_AUTOSAVE_FAILED,
@@ -12853,6 +12981,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_GAME_FOCUS_OFF,
    "Focus al joc desactivat"
+   )
+MSG_HASH(
+   MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
+   "La renderització d'aquest nucli es fa per maquinari. Els enregistraments han de tenir shaders aplicats."
    )
 MSG_HASH(
    MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
@@ -13447,6 +13579,10 @@ MSG_HASH(
    "Reducció predictiva de latència activada. Fotogrames de latència eliminats: %u."
    )
 MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "La reducció predictiva de latència predictiva s'ha activat mitjançant una segona instància. Fotogrames de latència eliminats: %u."
+   )
+MSG_HASH(
    MSG_RUNAHEAD_DISABLED,
    "Desactiva l'execució anticipada."
    )
@@ -13651,6 +13787,10 @@ MSG_HASH(
    "Mode Hardcore pausat. No es pot canviar: %s=%s"
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
+   "Mode Hardcore en pausa. No pots desbloquejar assoliments Hardcore de %s amb %s"
+   )
+MSG_HASH(
    MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
    "RetroAchievements: No es pot identificar el joc."
    )
@@ -13851,6 +13991,10 @@ MSG_HASH(
    "El mode de vídeo no és compatible"
    )
 MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "No es pot escriure a la carpeta d'informació del nucli: es desactivarà la memòria intermèdia d'informació del nucli"
+   )
+MSG_HASH(
    MSG_FOUND_ENTRY_STATE_IN,
    "S'ha trobat un desat ràpid a"
    )
@@ -13861,6 +14005,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE,
    "Error en entrar al GameMode"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "Error en entrar a GameMode - comprova que el servei de GameMode està instal·lat i en funcionament"
    )
 MSG_HASH(
    MSG_VRR_RUNLOOP_ENABLED,
@@ -14372,6 +14520,10 @@ MSG_HASH(
    "Mode 'Touchpad' pel ratolí virtual"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Activa aquesta opció juntament amb el ratolí per utilitzar la pantalla tàctil com a panell tàctil."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
    "Mode 'Trackball' del ratolí virtual"
    )
@@ -14455,6 +14607,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
    "Directori de recursos de la pantalla inferior"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
+   "Indica la carpeta de recursos de la pantalla inferior. La carpeta ha de tenir un fitxer \"bottom_menu.png\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
