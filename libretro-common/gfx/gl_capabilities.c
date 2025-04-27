@@ -190,10 +190,14 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
 #endif
       case GL_CAPS_ARGB8:
-#ifdef HAVE_OPENGLES
+#if defined(HAVE_OPENGLES) && !defined(EMSCRIPTEN)
          if (gl_query_extension("OES_rgb8_rgba8")
                || gl_query_extension("ARM_rgba8")
                   || major >= 3)
+            return true;
+#elif defined(HAVE_OPENGLES) && defined(EMSCRIPTEN)
+         if (gl_query_extension("EXT_sRGB")
+               || major >= 3)
             return true;
 #else
          /* TODO/FIXME - implement this for non-GLES? */
