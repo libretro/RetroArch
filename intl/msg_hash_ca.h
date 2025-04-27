@@ -2604,8 +2604,16 @@ MSG_HASH(
    "Relació d'aspecte personalitzat (posició X)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   "Desplaçament personalitzat per definir la posició en l'eix X de l'àrea de visualització."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Relació d'aspecte personalitzat (posició Y)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Desplaçament personalitzat per definir la posició en l'eix Y de l'àrea de visualització."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
@@ -3025,6 +3033,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
    "Format WASAPI de coma flotant"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Fes servir el format de coma flotant pel controlador WASAPI, si és compatible amb el teu dispositiu d'àudio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
@@ -3680,6 +3692,10 @@ MSG_HASH(
    "Rebobina"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
+   "Rebobina el contingut actual mentre es polsa la tecla. Ha d'estar activat 'Suporta rebobinat'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Fer pausa"
    )
@@ -3767,8 +3783,16 @@ MSG_HASH(
    "Disc Següent"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "Incrementa l'índex del disc seleccionat actualment. La safata de disc virtual ha d'estar oberta."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Disc Anterior"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
+   "Disminueix l'índex del disc seleccionat actualment. La safata de disc virtual ha d'estar oberta."
    )
 
 MSG_HASH(
@@ -4061,6 +4085,10 @@ MSG_HASH(
    "Dispositiu reservat per aquest jugador"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Aquest controlador serà assignat a aquest jugador seguint el mode de reserva."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
    "Sense reserva"
    )
@@ -4079,6 +4107,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Port assignat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "Especifica quin dels ports del nucli rebrà els senyals d'entrada del port del comandament %u."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -4497,6 +4529,10 @@ MSG_HASH(
    "Interval entre desats automàtics de la SaveRAM"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
+   "Desa automàticament la SaveRAM no volàtil a intervals marcats (en segons)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
    "Interval de punts de control de repetició"
    )
@@ -4767,6 +4803,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
    "Rebobinar fotogrames"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
+   "El nombre de fotogrames a rebobinar en cada pas. Valors alts augmenten la velocitat de rebobinat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
@@ -5048,6 +5088,10 @@ MSG_HASH(
    "Zona de centrat dels gatells analògics"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "El senyal d'entrada dels joysticks analògics serà relativa a la posició del primer clic si es fa dins d'aquesta zona."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Superposició"
    )
@@ -5076,6 +5120,10 @@ MSG_HASH(
    "Escala de superposició (mode horitzontal)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
+   "Dimensiona els elements de la interfície d'usuari quan es fa servir una orientació horitzontal de la pantalla."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
    "Relació d'aspecte de la superposició (mode horitzontal)"
    )
@@ -5102,6 +5150,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
    "Escala de la superposició (mode vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
+   "Dimensiona els elements de la interfície d'usuari quan es fa servir una orientació vertical de la pantalla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
@@ -5575,12 +5627,24 @@ MSG_HASH(
    "Color de les notificacions (vermell)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
+   "Ajusta el valor del vermell del color del text en els missatges en pantalla. Els valors vàlids són de 0 a 255."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
    "Color de les notificacions (verd)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
+   "Ajusta el valor del verd del color del text en els missatges en pantalla. Els valors vàlids són de 0 a 255."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
    "Color de les notificacions (blau)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
+   "Ajusta el valor del blau del color del text en els missatges en pantalla. Els valors vàlids són de 0 a 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
@@ -5595,12 +5659,24 @@ MSG_HASH(
    "Color de fons de les notificacions (vermell)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
+   "Ajusta el valor del vermell del fons dels missatges en pantalla. Els valors vàlids són de 0 a 255."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
    "Color de fons de les notificacions (verd)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
+   "Ajusta el valor del verd del fons dels missatges en pantalla. Els valors vàlids són de 0 a 255."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
    "Color de fons de les notificacions (blau)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
+   "Ajusta el valor del blau del fons dels missatges en pantalla. Els valors vàlids són de 0 a 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
@@ -5758,6 +5834,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    "Els gestors de finestres usen la composició per aplicar efectes visuals i detectar finestres que no responen, entre altres coses."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
+   "Força la desactivació de la composició. Només funciona per Windows Vista o Windows 7."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
@@ -6850,6 +6930,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
    "Indicador de progrés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Mostra un indicador en pantalla quan es facin progressos per aconseguir certs assoliments."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
@@ -8667,6 +8751,10 @@ MSG_HASH(
    "Elimina els fitxers d'assignació del nucli"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE,
+   "Elimina el fitxer d'assignació que s'aplicarà a tots els cotinguts que es carreguin amb aquest nucli."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "Desa la personalització a la carpeta de fitxers"
    )
@@ -9125,6 +9213,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
    "Paràmetres del shader"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
+   "Modifica el shader actual directament. Els canvis no es desaran en el fitxer d'ajustament."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
@@ -10168,6 +10260,10 @@ MSG_HASH(
    "Animació d'estalvi de pantalla"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Mostra un efecte d'animació de partícules en el fons mentre l'estalvi de pantalla del menú estigui actiu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
    "Mostra miniatures de les llistes de reproducció"
    )
@@ -10849,8 +10945,16 @@ MSG_HASH(
    "Visualització de les miniatures en mode vertical"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+   "Especifica la forma de mostra les miniatures de les llistes de reproducció amb l'orientació vertical."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
    "Miniatures en mode horitzontal"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+   "Especifica la forma de mostra les miniatures de les llistes de reproducció amb l'orientació horitzontal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
@@ -12226,6 +12330,10 @@ MSG_HASH(
    "L'assignació de ports pel joc en xarxa s'ha completat"
    )
 MSG_HASH(
+   MSG_PRIVATE_OR_SHARED_ADDRESS,
+   "La xarxa externa té una adreça privada o compartida. Podries utilitzar un servidor intermedi."
+   )
+MSG_HASH(
    MSG_UPNP_FAILED,
    "Error en assignar ports UPnP pel joc en xarxa"
    )
@@ -13379,6 +13487,10 @@ MSG_HASH(
    "No hi ha miniatures disponibles"
    )
 MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Ja s'han cercat totes les possibles caràtules descarregables per aquest element de la llista de reproducció."
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Premeu una altra vegada per sortir..."
    )
@@ -13587,12 +13699,24 @@ MSG_HASH(
    "Desactiva l'execució anticipada."
    )
 MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "La reducció predictiva de latència ha sigut desactivada perquè aquest nucli no és compatible amb els desats ràpids."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
+   "La reducció predictiva de latència no està disponible perquè el nucli no suporta els desats ràpids."
+   )
+MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
    "Error en desar l'estat. La reducció predictiva de latència ha sigut desactivada."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
    "Error en carregar l'estat. La reducció predictiva de latència ha sigut desactivada."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+   "Error en carregar la segona instància. La reducció predictiva de latència només farà servir una instància a partir d'ara."
    )
 MSG_HASH(
    MSG_PREEMPT_ENABLED,
@@ -13821,6 +13945,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_MISSING_ASSETS,
    "Avís: falten recursos, fes servir l'actualitzador en línia si està disponible."
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Atenció: falten tipografies per la llengua seleccionada, useu l’actualitzador en línia si està disponible."
    )
 MSG_HASH(
    MSG_RGUI_INVALID_LANGUAGE,
@@ -14119,6 +14247,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
    "Obre la configuració de permisos d'accés de fitxers a Windows"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "Obre la finestra de configuració de permisos de Windows per activar el permís a broadFileSystemAccess."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
@@ -14530,6 +14662,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
    "Empra els gestos pel ratolí virtual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Activa els gestos a la pantalla tàctil, incloent-hi clicar, arrossegar i combinacions de dits."
    )
 #endif
 #ifdef HAVE_ODROIDGO2
