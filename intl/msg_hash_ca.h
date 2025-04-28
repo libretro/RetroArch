@@ -2988,6 +2988,10 @@ MSG_HASH(
    "Valor personalitzat per la ruta del controlador OSS."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "Valor personalitzat del nom del port pel controlador JACK (per exemple: system:playback1,system:playback_2)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
    "Direcció IP personalitzada en un servidor RSound pel controlador RSound."
    )
@@ -3003,8 +3007,20 @@ MSG_HASH(
    "Micròfon"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "Activa l'entrada d'àudio en aquells nuclis que siguin compatibles. Si el nucli no fa servir el micròfon, no augmenta la càrrega de la CPU."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "Dispositiu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "Força el dispositiu que fa servir el controlador de micròfon. Això depèn del controlador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "Força el dispositiu que fa servir el controlador de micròfon. Això depèn del controlador."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
@@ -3455,6 +3471,10 @@ MSG_HASH(
    "Permet direccions amb la creueta amb turbo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
+   "Permet que els botons digitals de direcció (coneguts com a creueta) puguin fer servir el mode turbo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Disparador de turbo"
    )
@@ -3481,6 +3501,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "Dreceres de teclat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
+   "Canvia la configuració i l'assignació de tecles d'accés ràpid, així com les combinacions de tecles per mostrar o amagar el menú durant la partida."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
@@ -4454,6 +4478,10 @@ MSG_HASH(
    "Desa els fitxers d'assignació en sortir"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   "Desa els canvis de qualsevol fitxer d'assignació d'entrada actiu en tancar un contingut o en sortir de RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
    "Carrega automàticament les opcions del nucli pel contingut"
    )
@@ -4517,8 +4545,16 @@ MSG_HASH(
    "Endreça els fitxers desats per carpetes amb el nom del contingut"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Endreça els fitxers de desat mitjançant carpetes amb els noms on es troba el contingut."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Endreça els estats desats en carpetes amb el nom del contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Endreça els desats ràpids mitjançant carpetes amb el nom on es troba el contingut."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
@@ -5084,6 +5120,10 @@ MSG_HASH(
    "Sensibilitat de la sobreposició ABXY"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "Ajusta la mida de les zones superposades en el bloc dels botons d'acció. Per obtenir una simetria en les 8 direccions, selecciona el 100%."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
    "Zona de centrat dels gatells analògics"
    )
@@ -5219,6 +5259,10 @@ MSG_HASH(
    "Escala automàticament la posició del teclat"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Ajusta la superposició de teclat a la relació d'aspecte original. Desactiva aquesta opció per estirar el teclat per tota la pantalla."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
    "Opacitat del teclat superposat"
    )
@@ -5268,6 +5312,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
    "Permet apuntar fora de la pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "Permet apuntar fora dels límits de la pantalla. Desactiva aquesta opció per limitar l'apuntat a la vora de la pantalla."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
@@ -5682,6 +5730,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
    "Opacitat del fons de les notificacions"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   "Ajusta l'opacitat del fons dels missatges en pantalla. Els valors vàlids estan entre 0,0 i 1,0."
+   )
 
 /* Settings > User Interface */
 
@@ -5758,6 +5810,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
    "Reprendre contingut al canviar de disc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   "Tanca el menú i reprèn el contingut automàticament després d'inserir o carregar un nou disc."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
@@ -6087,6 +6143,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "Mostra «Llistes de reproducció»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
+   "Mostra les llistes de reproducció en el menú principal. S'ignorarà aquesta opció a GLUI si s'activen les seccions de la llista de reproducció i de la barra de navegació."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
@@ -6892,6 +6952,10 @@ MSG_HASH(
    "Visibilitat"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   "Canvia quins missatges i elements de pantalla es mostraran. Aquesta opció no desactiva la funcionalitat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
    "Resum d'inici"
    )
@@ -6946,6 +7010,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
    "Missatges enviats a la taula de classificació"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Mostra un missatge amb el valor enviat en completar l'intent d'entrar en una taula de classificació."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
@@ -7007,6 +7075,10 @@ MSG_HASH(
    "Direcció del servidor intermediari personalitzat"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   "Aquí pots introduir la direcció del teu servidor intermediari personalitzat. Format: Adreça o adreça/port."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
    "Nord-amèrica (Costa est, USA)"
    )
@@ -7051,8 +7123,16 @@ MSG_HASH(
    "Nombre màxim de connexions"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   "Indica el nombre màxim de connexions actives que admet el servidor abans de rebutjar una nova connexió."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
    "Limitació del ping"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   "Indica la latència (ping) màxima que acceptarà el servidor d'altres connexions. Selecciona 0 per desactivar el límit."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -7222,6 +7302,10 @@ MSG_HASH(
    "Extreu automàticament els fitxers descarregats"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+   "Extreu els continguts dels fitxers després de descarregar-los."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
    "Mostra els nuclis experimentals"
    )
@@ -7247,6 +7331,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
    "Mida del historial"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
+   "Limita el nombre d'entrades a la llista de reproducció recent per jocs, imatges, música i vídeos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
@@ -7413,6 +7501,10 @@ MSG_HASH(
    "Fes servir els noms dels fitxers per cercar miniatures"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
+   "Si està activat, es cercaran miniatures mitjançant el nom del fitxer de l'element i no en la seva etiqueta."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
    "Permet tots els tipus d'matge per les miniatures"
    )
@@ -7493,6 +7585,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
    "Nom d’usuari"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
+   "Introdueix aquí el teu nom d'usuari. Aquest nom es farà servir pel joc en xarxa i altres coses."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
@@ -9167,6 +9263,10 @@ MSG_HASH(
    "Recorda l'última carpeta de shaders que s'ha fet servir"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Obre l'explorador de fitxers en l'última carpeta que es va obrir per carregar ajustaments i shaders."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
    "Carregar ajust predeterminat"
    )
@@ -9385,6 +9485,10 @@ MSG_HASH(
    "Elimina les personalitzacions del joc"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Elimina el fitxer de configuració personalitzada que s'aplicarà només al contingut actual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
    "Descarrega la personalització"
    )
@@ -9426,6 +9530,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
    "El servidor de RetroAchievements no està disponible"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
+   "El servidor de RetroAchievements no està disponible. Es seguirà intentant la connexió fins que es confirmi la comunicació o fins que es tanqui l'aplicació."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "Totes les sol·licituds pendents han sigut sincronitzades amb el servidor de RetroAchievements."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
@@ -10244,8 +10356,16 @@ MSG_HASH(
    "Efectes d'ombra"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SHADOWS,
+   "Mostra ombres en el text, vores i miniatures del menú. No afecta gaire el rendiment."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
    "Animació de fons"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT,
+   "Activa un efecte d'animació de partícules en el fons. Té un impacte en el rendiment."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
@@ -10310,6 +10430,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
    "Icones d'interruptors"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
+   "Mostra icones en comptes de text per representar aquella configuració del menú que tingui aquestes opcions."
    )
 
 /* RGUI: Settings Options */
@@ -10610,8 +10734,16 @@ MSG_HASH(
    "Icones d'interruptors"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
+   "Mostra icones en comptes de text per representar aquella configuració del menú que tingui aquestes opcions."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
    "Efectes d'ombra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
+   "Mostra ombres en totes les icones, miniatures i texts. Afecta lleugerament al rendiment."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
@@ -10909,6 +11041,10 @@ MSG_HASH(
    "Icones d'interruptors"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
+   "Mostra icones en comptes de text per representar aquella configuració del menú que tingui aquestes opcions."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
    "Icones de les llistes de reproducció (Es requereix reinici)"
    )
@@ -10939,6 +11075,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
    "Animació de transició"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   "Permet navegar per les diferents opcions del menú amb una animació fluida."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
@@ -12306,6 +12446,10 @@ MSG_HASH(
    "S’ha completat la cerca de partides en línia."
    )
 MSG_HASH(
+   MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
+   "Ho sentim, aquest sistema no està implementat: els nuclis que no requereixen continguts, no poden fer servir. el joc en xarxa."
+   )
+MSG_HASH(
    MSG_NATIVE,
    "Nativa"
    )
@@ -13151,6 +13295,10 @@ MSG_HASH(
    "en gigabytes"
    )
 MSG_HASH(
+   MSG_LIBRETRO_ABI_BREAK,
+   "està compilat per una versió diferent de libretro que aquesta compilació de libretro."
+   )
+MSG_HASH(
    MSG_LIBRETRO_FRONTEND,
    "Interfície d'usuari per Libretro"
    )
@@ -13727,6 +13875,14 @@ MSG_HASH(
    "Sistemes de fotogrames preventiu desactivat."
    )
 MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "El sistema de fotogrames preventiu ha sigut desactivat perquè aquest nucli no és compatible amb els desats ràpids."
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
+   "No està disponible el sistema de fotogrames preventius perquè aquest nucli no suporta els desats ràpids."
+   )
+MSG_HASH(
    MSG_PREEMPT_FAILED_TO_ALLOCATE,
    "Error en assignar memòria pel sistema de fotogrames preventius."
    )
@@ -13861,6 +14017,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
    "Assoliments Hardcore canviats pel servidor."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "El servidor de joc en xarxa necessita una actualització. Els assoliments Hardcore han sigut desactivats per aquesta sessió."
    )
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
