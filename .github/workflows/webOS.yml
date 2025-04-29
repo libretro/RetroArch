@@ -52,4 +52,4 @@ jobs:
       - name: Compile RA
         run: |
           . /tmp/arm-webos-linux-gnueabi_sdk-buildroot/environment-setup
-          make -f Makefile.webos ADD_SDL2_LIB=1 -j$(getconf _NPROCESSORS_ONLN)
+          make -f Makefile.webos ADD_SDL2_LIB=1 -j$(getconf _NPROCESSORS_ONLN) info all
