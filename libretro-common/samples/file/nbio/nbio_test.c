@@ -5,17 +5,17 @@
 
 static void nbio_write_test(void)
 {
-   size_t size;
+   size_t _len;
    bool looped = false;
-   void* ptr = NULL;
+   void *ptr   = NULL;
    struct nbio_t* write = nbio_open("test.bin", NBIO_WRITE);
    if (!write)
       puts("[ERROR]: nbio_open failed (1)");
 
    nbio_resize(write, 1024*1024);
 
-   ptr = nbio_get_ptr(write, &size);
-   if (size != 1024*1024)
+   ptr = nbio_get_ptr(write, &_len);
+   if (_len != 1024*1024)
       puts("[ERROR]: wrong size (1)");
 
    memset(ptr, 0x42, 1024*1024);
@@ -32,14 +32,14 @@ static void nbio_write_test(void)
 
 static void nbio_read_test(void)
 {
-   size_t size;
+   size_t _len;
    bool looped = false;
    struct nbio_t* read = nbio_open("test.bin", NBIO_READ);
-   void* ptr           = nbio_get_ptr(read, &size);
+   void* ptr           = nbio_get_ptr(read, &_len);
    if (!read)
       puts("[ERROR]: nbio_open failed (2)");
 
-   if (size != 1024*1024)
+   if (_len != 1024*1024)
       puts("[ERROR]: wrong size (2)");
    if (ptr)
       puts("[SUCCESS]: Read pointer is available before iterating.");
@@ -52,9 +52,9 @@ static void nbio_read_test(void)
    if (!looped)
       puts("[SUCCESS]: Read finished immediately.");
 
-   ptr = nbio_get_ptr(read, &size);
+   ptr = nbio_get_ptr(read, &_len);
 
-   if (size != 1024*1024)
+   if (_len != 1024*1024)
       puts("[ERROR]: wrong size (3)");
    if (*(char*)ptr != 0x42 || memcmp(ptr, (char*)ptr+1, 1024*1024-1))
       puts("[ERROR]: wrong data");

@@ -42,7 +42,7 @@ body:
     attributes:
       label: Version/Commit
       description: You can find this information under Information/System Information
-      placeholder: 1.19.1 (Git 0792144fe3)
+      placeholder: 1.20.0 (Git ab3b175)
     validations:
       required: true
 
@@ -56,8 +56,8 @@ body:
   - type: dropdown
     id: nigthly
     attributes:
-      label: Check in the nightly version
-      description: This issue is reproducible with [nightly builds](https://buildbot.libretro.com/nightly/)?
+      label: Present in the nightly version
+      description: Is the issue reproducible with current [nightly builds](https://buildbot.libretro.com/nightly/)?
       options:
         - I don't know
         - Yes, this is reproduced in the nightly build

@@ -82,15 +82,15 @@ error:
    return NULL;
 }
 
-static ssize_t audioio_write(void *data, const void *buf, size_t size)
+static ssize_t audioio_write(void *data, const void *s, size_t len)
 {
-   ssize_t ret;
+   ssize_t written;
    int *fd = (int*)data;
 
-   if (size == 0)
+   if (len == 0)
       return 0;
 
-   if ((ret = write(*fd, buf, size)) < 0)
+   if ((written = write(*fd, s, len)) < 0)
    {
       if (errno == EAGAIN && (fcntl(*fd, F_GETFL) & O_NONBLOCK))
          return 0;
@@ -98,7 +98,7 @@ static ssize_t audioio_write(void *data, const void *buf, size_t size)
       return -1;
    }
 
-   return ret;
+   return written;
 }
 
 static bool audioio_stop(void *data)

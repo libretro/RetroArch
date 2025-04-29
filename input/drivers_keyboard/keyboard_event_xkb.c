@@ -56,39 +56,35 @@ void free_xkb(void)
    xkb_state   = NULL;
 }
 
-int init_xkb(int fd, size_t size)
+int init_xkb(int fd, size_t len)
 {
-   mod_map_idx          = (xkb_mod_index_t *)calloc(
+   mod_map_idx = (xkb_mod_index_t *)calloc(
          MOD_MAP_SIZE, sizeof(xkb_mod_index_t));
 
    if (!mod_map_idx)
       goto error;
 
-   mod_map_bit          = (uint16_t*)
-      calloc(MOD_MAP_SIZE, sizeof(uint16_t));
-
-   if (!mod_map_bit)
+   if (!(mod_map_bit = (uint16_t*)
+      calloc(MOD_MAP_SIZE, sizeof(uint16_t))))
       goto error;
 
-   xkb_ctx              = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-
-   if (xkb_ctx)
+   if ((xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS)))
    {
       if (fd >= 0)
       {
-         char *map_str = (char*)mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+         char *map_str = (char*)mmap(NULL, len, PROT_READ, MAP_SHARED, fd, 0);
          if (map_str == MAP_FAILED)
             goto error;
 
          xkb_map = xkb_keymap_new_from_string(xkb_ctx, map_str,
                XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
-         munmap(map_str, size);
+         munmap(map_str, len);
       }
       else
       {
          struct xkb_rule_names rule        = {0};
          settings_t *settings              = config_get_ptr();
-         const char *input_keyboard_layout = 
+         const char *input_keyboard_layout =
             settings->arrays.input_keyboard_layout;
 
          rule.rules = "evdev";

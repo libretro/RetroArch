@@ -166,7 +166,7 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
    aud->buffer_size = (real_latency * sample_rate / 1000);
    aud->samples     = (aud->buffer_size / num_channels / sizeof(int16_t));
 
-   mempool_size     = (aud->buffer_size * BUFFER_COUNT + 
+   mempool_size     = (aud->buffer_size * BUFFER_COUNT +
          (AUDREN_MEMPOOL_ALIGNMENT-1)) &~ (AUDREN_MEMPOOL_ALIGNMENT-1);
    aud->mempool     = memalign(AUDREN_MEMPOOL_ALIGNMENT, mempool_size);
 
@@ -282,7 +282,7 @@ static size_t libnx_audren_thread_audio_buffer_size(void *data)
 }
 
 static ssize_t libnx_audren_thread_audio_write(void *data,
-      const void *buf, size_t size)
+      const void *s, size_t len)
 {
    libnx_audren_thread_t *aud = (libnx_audren_thread_t*)data;
    size_t available, written, written_tmp;
@@ -297,22 +297,22 @@ static ssize_t libnx_audren_thread_audio_write(void *data,
    {
       mutexLock(&aud->fifo_lock);
       available = FIFO_WRITE_AVAIL(aud->fifo);
-      written = MIN(available, size);
+      written = MIN(available, len);
       if (written > 0)
-         fifo_write(aud->fifo, buf, written);
+         fifo_write(aud->fifo, s, written);
       mutexUnlock(&aud->fifo_lock);
    }
    else
    {
       written = 0;
-      while (written < size && aud->running)
+      while (written < len && aud->running)
       {
          mutexLock(&aud->fifo_lock);
          available = FIFO_WRITE_AVAIL(aud->fifo);
          if (available)
          {
-            written_tmp = MIN(size - written, available);
-            fifo_write(aud->fifo, (const char*)buf + written, written_tmp);
+            written_tmp = MIN(len - written, available);
+            fifo_write(aud->fifo, (const char*)s + written, written_tmp);
             mutexUnlock(&aud->fifo_lock);
             written += written_tmp;
          }

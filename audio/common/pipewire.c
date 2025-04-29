@@ -16,12 +16,11 @@
 #include "pipewire.h"
 
 #include <spa/utils/result.h>
-
 #include <pipewire/pipewire.h>
 
 #include <retro_assert.h>
 
-#include "verbosity.h"
+#include "../../verbosity.h"
 
 
 static void core_error_cb(void *data, uint32_t id, int seq, int res, const char *message)
@@ -31,7 +30,6 @@ static void core_error_cb(void *data, uint32_t id, int seq, int res, const char 
    RARCH_ERR("[PipeWire]: error id:%u seq:%d res:%d (%s): %s\n",
              id, seq, res, spa_strerror(res), message);
 
-   /* stop and exit the thread loop */
    pw_thread_loop_stop(pw->thread_loop);
 }
 
@@ -42,11 +40,9 @@ static void core_done_cb(void *data, uint32_t id, int seq)
    retro_assert(id == PW_ID_CORE);
 
    pw->last_seq = seq;
+
    if (pw->pending_seq == seq)
-   {
-      /* stop and exit the thread loop */
       pw_thread_loop_signal(pw->thread_loop, false);
-   }
 }
 
 static const struct pw_core_events core_events = {
@@ -55,7 +51,7 @@ static const struct pw_core_events core_events = {
       .error = core_error_cb,
 };
 
-size_t calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
+size_t pipewire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
 {
    uint32_t sample_size = 1;
    switch (fmt)
@@ -85,7 +81,7 @@ size_t calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
    return sample_size * nchannels;
 }
 
-void set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
+void pipewire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
 {
    memcpy(position, (uint32_t[SPA_AUDIO_MAX_CHANNELS]) { SPA_AUDIO_CHANNEL_UNKNOWN, },
          sizeof(uint32_t) * SPA_AUDIO_MAX_CHANNELS);
@@ -114,7 +110,7 @@ void set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
    }
 }
 
-void pipewire_wait_resync(pipewire_core_t *pw)
+void pipewire_core_wait_resync(pipewire_core_t *pw)
 {
    retro_assert(pw);
    pw->pending_seq = pw_core_sync(pw->core, PW_ID_CORE, pw->pending_seq);
@@ -127,7 +123,7 @@ void pipewire_wait_resync(pipewire_core_t *pw)
    }
 }
 
-bool pipewire_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active)
+bool pipewire_stream_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active)
 {
    enum pw_stream_state st;
    const char       *error;
@@ -144,31 +140,89 @@ bool pipewire_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, 
    return active ? st == PW_STREAM_STATE_STREAMING : st == PW_STREAM_STATE_PAUSED;
 }
 
-bool pipewire_core_init(pipewire_core_t *pw, const char *loop_name)
+bool pipewire_core_init(pipewire_core_t **pw, const char *loop_name, const struct pw_registry_events *events)
 {
-   retro_assert(pw);
+   retro_assert(!*pw);
 
-   pw->thread_loop = pw_thread_loop_new(loop_name, NULL);
-   if (!pw->thread_loop)
+   *pw = (pipewire_core_t*)calloc(1, sizeof(pipewire_core_t));
+   if (!*pw)
       return false;
 
-   pw->ctx = pw_context_new(pw_thread_loop_get_loop(pw->thread_loop), NULL, 0);
-   if (!pw->ctx)
+   (*pw)->devicelist = string_list_new();
+   if (!(*pw)->devicelist)
+   {
+      free(*pw);
+      *pw = NULL;
+      return false;
+   }
+
+   pw_init(NULL, NULL);
+
+   (*pw)->thread_loop = pw_thread_loop_new(loop_name, NULL);
+   if (!(*pw)->thread_loop)
       return false;
 
-   if (pw_thread_loop_start(pw->thread_loop) < 0)
+   (*pw)->ctx = pw_context_new(pw_thread_loop_get_loop((*pw)->thread_loop), NULL, 0);
+   if (!(*pw)->ctx)
       return false;
 
-   pw_thread_loop_lock(pw->thread_loop);
-
-   pw->core = pw_context_connect(pw->ctx, NULL, 0);
-   if(!pw->core)
+   if (pw_thread_loop_start((*pw)->thread_loop) < 0)
       return false;
 
-   if (pw_core_add_listener(pw->core,
-                            &pw->core_listener,
-                            &core_events, pw) < 0)
-      return false;
+   pw_thread_loop_lock((*pw)->thread_loop);
+
+   (*pw)->core = pw_context_connect((*pw)->ctx, NULL, 0);
+   if (!(*pw)->core)
+      goto unlock;
+
+   if (pw_core_add_listener((*pw)->core,
+                            &(*pw)->core_listener,
+                            &core_events, *pw) < 0)
+      goto unlock;
+
+   if (events)
+   {
+      (*pw)->registry = pw_core_get_registry((*pw)->core, PW_VERSION_REGISTRY, 0);
+      spa_zero((*pw)->registry_listener);
+      pw_registry_add_listener((*pw)->registry, &(*pw)->registry_listener, events, *pw);
+   }
 
    return true;
+
+unlock:
+   pw_thread_loop_unlock((*pw)->thread_loop);
+   return false;
+}
+
+void pipewire_core_deinit(pipewire_core_t *pw)
+{
+   if (!pw)
+      return pw_deinit();
+
+   if (pw->thread_loop)
+      pw_thread_loop_stop(pw->thread_loop);
+
+   if (pw->registry)
+   {
+      spa_hook_remove(&pw->registry_listener);
+      pw_proxy_destroy((struct pw_proxy*)pw->registry);
+   }
+
+   if (pw->core)
+   {
+      spa_hook_remove(&pw->core_listener);
+      pw_core_disconnect(pw->core);
+   }
+
+   if (pw->ctx)
+      pw_context_destroy(pw->ctx);
+
+   if (pw->thread_loop)
+      pw_thread_loop_destroy(pw->thread_loop);
+
+   if (pw->devicelist)
+      string_list_free(pw->devicelist);
+
+   free(pw);
+   pw_deinit();
 }

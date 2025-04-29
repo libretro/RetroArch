@@ -235,7 +235,7 @@ typedef struct gfx_ctx_wayland_data
 
 #ifdef HAVE_XKBCOMMON
 /* FIXME: Move this into a header? */
-int init_xkb(int fd, size_t size);
+int init_xkb(int fd, size_t len);
 int handle_xkb(int code, int value);
 void handle_xkb_state_mask(uint32_t depressed,
       uint32_t latched, uint32_t locked, uint32_t group);

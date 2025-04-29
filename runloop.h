@@ -252,8 +252,8 @@ struct runloop
    unsigned fastforward_after_frames;
    unsigned perf_ptr_libretro;
    unsigned subsystem_current_count;
-   unsigned entry_state_slot;
    unsigned video_swap_interval_auto;
+   int16_t entry_state_slot;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
 
@@ -425,15 +425,13 @@ void runloop_path_set_names(void);
 
 uint32_t runloop_get_flags(void);
 
-bool runloop_get_entry_state_path(char *path, size_t len, unsigned slot);
+bool runloop_get_entry_state_path(char *path, size_t len, int slot);
 
 bool runloop_get_current_savestate_path(char *path, size_t len);
 
 bool runloop_get_savestate_path(char *path, size_t len, int slot);
 
-bool runloop_get_current_replay_path(char *path, size_t len);
-
-bool runloop_get_replay_path(char *path, size_t len, unsigned slot);
+bool runloop_get_replay_path(char *path, size_t len, int slot);
 
 void runloop_state_free(runloop_state_t *runloop_st);
 

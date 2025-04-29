@@ -22,6 +22,7 @@
  */
 
 #define CINTERFACE
+#define WIN32_LEAN_AND_MEAN
 #define COBJMACROS
 
 #include <string.h>
@@ -1336,7 +1337,7 @@ static bool d3d10_gfx_set_shader(void* data,
             &d3d10->pass[i].frame_count,     /* FrameCount */
             &d3d10->pass[i].frame_direction, /* FrameDirection */
             &d3d10->pass[i].frame_time_delta,/* FrameTimeDelta */
-            &d3d10->pass[i].original_fps,        /* OriginalFPS */
+            &d3d10->pass[i].original_fps,    /* OriginalFPS */
             &d3d10->pass[i].rotation,        /* Rotation */
             &d3d10->pass[i].core_aspect,     /* OriginalAspect */
             &d3d10->pass[i].core_aspect_rot, /* OriginalAspectRotated */
@@ -2324,28 +2325,23 @@ static bool d3d10_gfx_frame(
          d3d10_set_shader(context, &d3d10->pass[i].shader);
 
          if (d3d10->shader_preset->pass[i].frame_count_mod)
-            d3d10->pass[i].frame_count =
+            d3d10->pass[i].frame_count   =
                frame_count % d3d10->shader_preset->pass[i].frame_count_mod;
          else
-            d3d10->pass[i].frame_count = frame_count;
+            d3d10->pass[i].frame_count   = frame_count;
 
 #ifdef HAVE_REWIND
-         d3d10->pass[i].frame_direction = state_manager_frame_is_reversed()
+         d3d10->pass[i].frame_direction  = state_manager_frame_is_reversed()
             ? -1 : 1;
 #else
-         d3d10->pass[i].frame_direction = 1;
+         d3d10->pass[i].frame_direction  = 1;
 #endif
-
-         d3d10->pass[i].frame_time_delta = video_driver_get_frame_time_delta_usec();
-
-         d3d10->pass[i].original_fps = video_driver_get_original_fps();
-
-         d3d10->pass[i].rotation = retroarch_get_rotation();
-
-         d3d10->pass[i].core_aspect = video_driver_get_core_aspect();
-
-         /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
-         d3d10->pass[i].core_aspect_rot = video_driver_get_core_aspect();
+         d3d10->pass[i].frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
+         d3d10->pass[i].original_fps     = video_driver_get_original_fps();
+         d3d10->pass[i].rotation         = retroarch_get_rotation();
+         d3d10->pass[i].core_aspect      = video_driver_get_core_aspect();
+         /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
+         d3d10->pass[i].core_aspect_rot  = video_driver_get_core_aspect();
          uint32_t rot = retroarch_get_rotation();
          if (rot == 1 || rot == 3)
             d3d10->pass[i].core_aspect_rot = 1/d3d10->pass[i].core_aspect_rot;

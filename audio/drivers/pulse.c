@@ -142,7 +142,7 @@ static void stream_state_cb(pa_stream *s, void *data)
    }
 }
 
-static void stream_request_cb(pa_stream *s, size_t length, void *data)
+static void stream_request_cb(pa_stream *s, size_t len, void *data)
 {
    pa_t *pa = (pa_t*)data;
    pa_threaded_mainloop_signal(pa->mainloop, 0);
@@ -276,11 +276,31 @@ error:
    return NULL;
 }
 
-static bool pulse_start(void *data, bool is_shutdown);
-static ssize_t pulse_write(void *data, const void *buf_, size_t size)
+static bool pulse_start(void *data, bool is_shutdown)
+{
+   bool ret;
+   pa_t *pa = (pa_t*)data;
+
+   if (!pa->is_ready)
+      return false;
+   if (!pa->is_paused)
+      return true;
+
+   pa->success = true; /* In case of spurious wakeup. Not critical. */
+   pa_threaded_mainloop_lock(pa->mainloop);
+   pa_stream_cork(pa->stream, false, stream_success_cb, pa);
+   pa_threaded_mainloop_wait(pa->mainloop);
+   ret = pa->success;
+   pa_threaded_mainloop_unlock(pa->mainloop);
+   pa->is_paused = false;
+   return ret;
+}
+
+
+static ssize_t pulse_write(void *data, const void *s, size_t len)
 {
    pa_t           *pa = (pa_t*)data;
-   const uint8_t *buf = (const uint8_t*)buf_;
+   const uint8_t *buf = (const uint8_t*)s;
    size_t     written = 0;
 
    /* Workaround buggy menu code.
@@ -293,15 +313,15 @@ static ssize_t pulse_write(void *data, const void *buf_, size_t size)
       return 0;
 
    pa_threaded_mainloop_lock(pa->mainloop);
-   while (size)
+   while (len)
    {
-      size_t writable = MIN(size, pa_stream_writable_size(pa->stream));
+      size_t writable = MIN(len, pa_stream_writable_size(pa->stream));
 
       if (writable)
       {
          pa_stream_write(pa->stream, buf, writable, NULL, 0, PA_SEEK_RELATIVE);
-         buf += writable;
-         size -= writable;
+         buf     += writable;
+         len     -= writable;
          written += writable;
       }
       else if (!pa->nonblock)
@@ -344,26 +364,6 @@ static bool pulse_alive(void *data)
    return !pa->is_paused;
 }
 
-static bool pulse_start(void *data, bool is_shutdown)
-{
-   bool ret;
-   pa_t *pa = (pa_t*)data;
-
-   if (!pa->is_ready)
-      return false;
-   if (!pa->is_paused)
-      return true;
-
-   pa->success = true; /* In case of spurious wakeup. Not critical. */
-   pa_threaded_mainloop_lock(pa->mainloop);
-   pa_stream_cork(pa->stream, false, stream_success_cb, pa);
-   pa_threaded_mainloop_wait(pa->mainloop);
-   ret = pa->success;
-   pa_threaded_mainloop_unlock(pa->mainloop);
-   pa->is_paused = false;
-   return ret;
-}
-
 static void pulse_set_nonblock_state(void *data, bool state)
 {
    pa_t *pa = (pa_t*)data;
@@ -371,11 +371,7 @@ static void pulse_set_nonblock_state(void *data, bool state)
       pa->nonblock = state;
 }
 
-static bool pulse_use_float(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool pulse_use_float(void *data) { return true; }
 
 static size_t pulse_write_avail(void *data)
 {

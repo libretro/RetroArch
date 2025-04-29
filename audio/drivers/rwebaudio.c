@@ -23,7 +23,7 @@
 /* forward declarations */
 unsigned RWebAudioSampleRate(void);
 void *RWebAudioInit(unsigned latency);
-ssize_t RWebAudioWrite(const void *buf, size_t size);
+ssize_t RWebAudioWrite(const void *s, size_t len);
 bool RWebAudioStop(void);
 bool RWebAudioStart(void);
 void RWebAudioSetNonblockState(bool state);
@@ -54,9 +54,9 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
    return rwebaudio;
 }
 
-static ssize_t rwebaudio_write(void *data, const void *buf, size_t size)
+static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
 {
-   return RWebAudioWrite(buf, size);
+   return RWebAudioWrite(s, len);
 }
 
 static bool rwebaudio_stop(void *data)

@@ -205,7 +205,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
 
       IDirectSoundBuffer_Unlock(ds->dsb, region.chunk1,
             region.size1, region.chunk2, region.size2);
-      write_ptr = (write_ptr + region.size1 + region.size2) 
+      write_ptr = (write_ptr + region.size1 + region.size2)
          % ds->buffer_size;
 
       if (is_pull)
@@ -501,7 +501,7 @@ static void dsound_set_nonblock_state(void *data, bool state)
       ds->nonblock = state;
 }
 
-static ssize_t dsound_write(void *data, const void *buf_, size_t size)
+static ssize_t dsound_write(void *data, const void *buf_, size_t len)
 {
    size_t     written = 0;
    dsound_t       *ds = (dsound_t*)data;
@@ -512,39 +512,39 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t size)
 
    if (ds->nonblock)
    {
-      if (size > 0)
+      if (len > 0)
       {
          size_t avail;
 
          EnterCriticalSection(&ds->crit);
          avail = FIFO_WRITE_AVAIL(ds->buffer);
-         if (avail > size)
-            avail = size;
+         if (avail > len)
+            avail = len;
 
          fifo_write(ds->buffer, buf, avail);
          LeaveCriticalSection(&ds->crit);
 
          buf     += avail;
-         size    -= avail;
+         len     -= avail;
          written += avail;
       }
    }
    else
    {
-      while (size > 0)
+      while (len > 0)
       {
          size_t avail;
 
          EnterCriticalSection(&ds->crit);
          avail = FIFO_WRITE_AVAIL(ds->buffer);
-         if (avail > size)
-            avail = size;
+         if (avail > len)
+            avail = len;
 
          fifo_write(ds->buffer, buf, avail);
          LeaveCriticalSection(&ds->crit);
 
          buf     += avail;
-         size    -= avail;
+         len     -= avail;
          written += avail;
 
          if (!ds->thread_alive)

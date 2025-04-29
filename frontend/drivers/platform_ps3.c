@@ -436,16 +436,16 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
 #ifdef HAVE_NETWORKING
-   char *arg_data[NETPLAY_FORK_MAX_ARGS];
+   const char *arg_data[NETPLAY_FORK_MAX_ARGS];
 #else
-   char *arg_data[2];
+   const char *arg_data[2];
 #endif
    char game_path[PATH_MAX_LENGTH];
    bool verbosity = verbosity_is_enabled();
 
    verbosity_enable();
 #else
-   char *arg_data[1];
+   const char *arg_data[1];
 #endif
 
    arg_data[0] = NULL;

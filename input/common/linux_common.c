@@ -201,6 +201,10 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
    if (!sensor)
       goto error;
 
+   device = retro_opendir(IIO_DEVICES_DIR);
+   if (!device)
+      goto error;
+
    sensor->millilux  = 0;
    sensor->poll_rate = rate ? rate : DEFAULT_POLL_RATE;
    sensor->thread    = NULL; /* We'll spawn a thread later, once we find a sensor */
@@ -243,7 +247,7 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
    }
 
 error:
-   RARCH_ERR("Failed to find an illuminance sensor\n");
+   RARCH_ERR("Failed to find an illuminance sensor in " IIO_DEVICES_DIR "\n");
    retro_closedir(device);
 
    free(sensor);
@@ -262,7 +266,7 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
 
    if (sensor->thread)
    {
-      pthread_t thread = sthread_get_thread_id(sensor->thread);
+      pthread_t thread = (pthread_t)sthread_get_thread_id(sensor->thread);
       sensor->done = true;
 
       if (pthread_cancel(thread) != 0)
@@ -310,6 +314,7 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    char buffer[256];
    double illuminance = 0.0;
    RFILE *in_illuminance_input = NULL;
+   int err = 0;
 
    if (!sensor || sensor->path[0] == '\0')
       return -1.0;
@@ -328,11 +333,15 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
       goto done;
    }
 
+   /* Clear any existing error so we'll know if strtod fails */
+   errno = 0;
+
    /* TODO: This may be locale-sensitive */
    illuminance = strtod(buffer, NULL);
-   if (errno != 0)
+   err = errno;
+   if (err != 0)
    {
-      RARCH_ERR("Failed to parse input \"%s\" into a floating-point value\n", buffer);
+      RARCH_ERR("Failed to parse input \"%s\" into a floating-point value: %s\n", buffer, strerror(err));
       illuminance = -1.0;
       goto done;
    }

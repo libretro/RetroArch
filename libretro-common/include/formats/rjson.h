@@ -67,7 +67,7 @@ struct RFILE;
 /* Create a new parser instance from various sources */
 rjson_t *rjson_open_stream(struct intfstream_internal *stream);
 rjson_t *rjson_open_rfile(struct RFILE *rfile);
-rjson_t *rjson_open_buffer(const void *buffer, size_t size);
+rjson_t *rjson_open_buffer(const void *buffer, size_t len);
 rjson_t *rjson_open_string(const char *string, size_t len);
 rjson_t *rjson_open_user(rjson_io_t io, void *user_data, int io_block_size);
 

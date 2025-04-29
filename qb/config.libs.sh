@@ -270,6 +270,7 @@ check_pkgconf ROAR libroar 1.0.12
 check_val '' JACK -ljack '' jack 0.120.1 '' false
 check_val '' PULSE -lpulse '' libpulse '' '' false
 check_val '' PIPEWIRE -lpipewire-0.3 '' libpipewire-0.3 '' '' false
+check_val '' PIPEWIRE_STABLE -lpipewire-0.3 '' libpipewire-0.3 1.0.0 '' false
 check_val '' SDL -lSDL SDL sdl 1.2.10 '' false
 check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' false
 
@@ -286,6 +287,7 @@ check_enabled CXX DISCORD discord 'The C++ compiler is' false
 check_enabled CXX QT 'Qt companion' 'The C++ compiler is' false
 
 if [ "$HAVE_QT" != 'no' ]; then
+   _have_qt=$HAVE_QT
    if [ "$HAVE_CXX17" = 'yes' ]; then
       check_pkgconf QT6CORE Qt6Core 6.2
       check_pkgconf QT6GUI Qt6Gui 6.2
@@ -296,22 +298,26 @@ if [ "$HAVE_QT" != 'no' ]; then
 
       # pkg-config is needed to reliably find Qt6 libraries.
 
-      check_enabled QT6CORE QT Qt 'Qt6Core is' true
-      check_enabled QT6GUI QT Qt 'Qt6GUI is' true
-      check_enabled QT6WIDGETS QT Qt 'Qt6Widgets is' true
-      check_enabled QT6CONCURRENT QT Qt 'Qt6Concurrent is' true
-      check_enabled QT6NETWORK QT Qt 'Qt6Network is' true
-      #check_enabled QT6WEBENGINE QT Qt 'Qt6Webengine is' true
+      check_enabled QT6CORE QT Qt 'Qt6Core is' user
+      check_enabled QT6GUI QT Qt 'Qt6GUI is' user
+      check_enabled QT6WIDGETS QT Qt 'Qt6Widgets is' user
+      check_enabled QT6CONCURRENT QT Qt 'Qt6Concurrent is' user
+      check_enabled QT6NETWORK QT Qt 'Qt6Network is' user
+      #check_enabled QT6WEBENGINE QT Qt 'Qt6Webengine is' user
 
-      if [ "$HAVE_QT" != yes ]; then
-         die : 'Notice: Qt support disabled, required libraries were not found.'
-      else
+      if [ "$HAVE_QT6CORE" = 'yes' ] && \
+         [ "$HAVE_QT6GUI" = 'yes' ] &&  \
+         [ "$HAVE_QT6WIDGETS" = 'yes' ] &&  \
+         [ "$HAVE_QT6CONCURRENT" = 'yes' ] && \
+         [ "$HAVE_QT6NETWORK" = 'yes' ]
+      then
          HAVE_QT6='yes'
          add_define MAKEFILE HAVE_QT6 1
+         add_define CONFIG HAVE_QT6 1
       fi
    fi
    if [ "$HAVE_QT6" != 'yes' ]; then
-      HAVE_QT='auto'
+      HAVE_QT=$_have_qt
       check_pkgconf QT5CORE Qt5Core 5.2
       check_pkgconf QT5GUI Qt5Gui 5.2
       check_pkgconf QT5WIDGETS Qt5Widgets 5.2
@@ -327,10 +333,10 @@ if [ "$HAVE_QT" != 'no' ]; then
       check_enabled QT5CONCURRENT QT Qt 'Qt5Concurrent is' true
       check_enabled QT5NETWORK QT Qt 'Qt5Network is' true
       #check_enabled QT5WEBENGINE QT Qt 'Qt5Webengine is' true
+   fi
 
-      if [ "$HAVE_QT" != yes ]; then
-         die : 'Notice: Qt support disabled, required libraries were not found.'
-      fi
+   if [ "$HAVE_QT" != yes ]; then
+      die : 'Notice: Qt support disabled, required libraries were not found.'
    fi
 
    check_pkgconf OPENSSL openssl 1.0.0
@@ -539,6 +545,7 @@ if [ "$HAVE_X11" != 'no' ]; then
    check_val '' XEXT -lXext '' xext '' '' false
    check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
    check_val '' XSCRNSAVER -lXss '' xscrnsaver '' '' false
+   check_val '' XI2 -lXi '' xi '' '' false
 else
    die : 'Notice: X11 not present. Skipping X11 code paths.'
 fi

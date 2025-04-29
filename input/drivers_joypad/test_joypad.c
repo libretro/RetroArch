@@ -125,7 +125,7 @@ static bool JTifJSONObjectEndHandler(void* context)
    return true;
 }
 
-static bool JTifJSONObjectMemberHandler(void* context, const char *pValue, size_t length)
+static bool JTifJSONObjectMemberHandler(void* context, const char *pValue, size_t len)
 {
    JTifJSONContext *pCtx = (JTifJSONContext*)context;
 
@@ -133,7 +133,7 @@ static bool JTifJSONObjectMemberHandler(void* context, const char *pValue, size_
    if (pCtx->current_entry_str_val)
       return false;
 
-   if (length)
+   if (len)
    {
       if (string_is_equal(pValue, "frame"))
          pCtx->current_entry_uint_val = &pCtx->frame;
@@ -149,11 +149,11 @@ static bool JTifJSONObjectMemberHandler(void* context, const char *pValue, size_
    return true;
 }
 
-static bool JTifJSONNumberHandler(void* context, const char *pValue, size_t length)
+static bool JTifJSONNumberHandler(void* context, const char *pValue, size_t len)
 {
    JTifJSONContext *pCtx = (JTifJSONContext*)context;
 
-   if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
+   if (pCtx->current_entry_uint_val && len && !string_is_empty(pValue))
       *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
    /* ignore unknown members */
 
@@ -162,11 +162,11 @@ static bool JTifJSONNumberHandler(void* context, const char *pValue, size_t leng
    return true;
 }
 
-static bool JTifJSONStringHandler(void* context, const char *pValue, size_t length)
+static bool JTifJSONStringHandler(void* context, const char *pValue, size_t len)
 {
    JTifJSONContext *pCtx = (JTifJSONContext*)context;
 
-   if (pCtx->current_entry_str_val && length && !string_is_empty(pValue))
+   if (pCtx->current_entry_str_val && len && !string_is_empty(pValue))
    {
       if (*pCtx->current_entry_str_val)
          free(*pCtx->current_entry_str_val);
@@ -394,9 +394,7 @@ static int16_t test_joypad_state(
 			   ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
 		   /* Test input driver uses same button layout internally as RA, so no conversion is needed */
 		   if (joykey != NO_BTN && (test_joypads[port_idx].button_state & (1 << i)))
-		   {
 			   ret |= ( 1 << i);
-         }
 	   }
    }
 
@@ -426,8 +424,8 @@ static void test_joypad_poll(void)
             test_joypad_autodetect_remove(input_test_steps[i].param_num);
             input_test_steps[i].handled = true;
          }
-         else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST &&
-                  input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST)
+         else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST
+                  && input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST)
          {
             unsigned targetpad = input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST;
             test_joypads[targetpad].button_state |= input_test_steps[i].param_num;
@@ -436,8 +434,8 @@ static void test_joypad_poll(void)
                "[Test joypad driver]: Pressing device %d buttons %x, new state %x.\n",
                targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
          }
-         else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST &&
-                  input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_LAST)
+         else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST
+                  && input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_LAST)
          {
             unsigned targetpad = input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST;
             test_joypads[targetpad].button_state &= ~input_test_steps[i].param_num;
@@ -446,8 +444,8 @@ static void test_joypad_poll(void)
                "[Test joypad driver]: Releasing device %d buttons %x, new state %x.\n",
                targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
          }
-         else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST &&
-                  input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_AXIS_LAST)
+         else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST
+                  && input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_AXIS_LAST)
          {
             unsigned targetpad =
                (input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST) / MAX_AXIS;
@@ -482,10 +480,7 @@ static bool test_joypad_query_pad(unsigned pad)
    return (pad < MAX_USERS);
 }
 
-static void test_joypad_destroy(void)
-{
-
-}
+static void test_joypad_destroy(void) { }
 
 input_device_driver_t test_joypad = {
    test_joypad_init,

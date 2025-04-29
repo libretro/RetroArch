@@ -318,10 +318,10 @@ static void vg_free(void *data)
 static void vg_calculate_quad(vg_t *vg,
       unsigned vp_width, unsigned vp_height)
 {
-   struct video_viewport_t vp;
+   video_viewport_t vp;
    settings_t *settings      = config_get_ptr();
    bool video_scale_integer  = settings->bools.video_scale_integer;
-   float device_aspect       = (float)width / height;
+   float device_aspect       = (float)vp_width / vp_height;
 
    vp.x                      = 0;
    vp.y                      = 0;

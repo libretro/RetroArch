@@ -75,8 +75,6 @@ struct retro_keybind
    uint32_t joyaxis;
    /* Default joy axis binding value for resetting bind to default. */
    uint32_t def_joyaxis;
-   /* Used by input_{push,pop}_analog_dpad(). */
-   uint32_t orig_joyaxis;
 
    enum msg_hash_enums enum_idx;
 
@@ -113,6 +111,19 @@ typedef struct input_mapper
    /* This is a bitmask of (1 << key_bind_id). */
    input_bits_t buttons[MAX_USERS];
 } input_mapper_t;
+
+typedef struct
+{
+   unsigned analog_dpad_mode[MAX_USERS];
+   unsigned libretro_device[MAX_USERS];
+   unsigned turbo_mode;
+   unsigned turbo_button;
+   unsigned turbo_period;
+   unsigned turbo_duty_cycle;
+   int turbo_bind;
+   bool turbo_enable;
+   bool turbo_allow_dpad;
+} input_remap_cache_t;
 
 typedef struct input_game_focus_state
 {

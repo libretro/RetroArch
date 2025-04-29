@@ -44,6 +44,11 @@
 #include "../../deps/xxHash/xxhash.h"
 #endif
 
+#if defined(VITA)
+#include <psp2/kernel/threadmgr/thread.h>
+#include <psp2/power.h>
+#endif
+
 #define PREV_TEXTURES (GFX_MAX_TEXTURES - 1)
 
 /* Cache the VBO. */
@@ -1368,7 +1373,7 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    }
 
   if (uni->frame_time_delta >= 0)
-      glUniform1i(uni->frame_time_delta, video_driver_get_frame_time_delta_usec());
+      glUniform1i(uni->frame_time_delta, (GLint)video_driver_get_frame_time_delta_usec());
 
   if (uni->original_fps >= 0)
       glUniform1f(uni->original_fps, video_driver_get_original_fps());

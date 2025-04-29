@@ -28,17 +28,17 @@
 #include "glslang_util.h"
 #include "../../verbosity.h"
 
-static void get_include_file(const char *line, char *s, size_t len)
+static char *slang_get_include_file(const char *line)
 {
    char *end   = NULL;
    char *start = (char*)strchr(line, '\"');
    if (!start)
-      return;
+      return NULL;
    start++;
    if (!(end = (char*)strchr(start, '\"')))
-      return;
+      return NULL;
    *end = '\0';
-   strlcpy(s, start, len);
+   return start;
 }
 
 bool slang_texture_semantic_is_array(enum slang_texture_semantic sem)
@@ -193,15 +193,8 @@ bool glslang_read_shader_file(const char *path,
       bool include_optional = !strncmp("#pragma include_optional ", line, STRLEN_CONST("#pragma include_optional "));
       if ( !strncmp("#include ", line, STRLEN_CONST("#include ")) || include_optional )
       {
-
-         char include_file[PATH_MAX_LENGTH];
          char include_path[PATH_MAX_LENGTH];
-
-         include_file[0] = '\0';
-         include_path[0] = '\0';
-
-         /* Build include file path */
-         get_include_file(line, include_file, sizeof(include_file));
+         char *include_file = slang_get_include_file(line);
 
          if (string_is_empty(include_file))
          {
@@ -209,6 +202,7 @@ bool glslang_read_shader_file(const char *path,
             goto error;
          }
 
+         include_path[0] = '\0';
          fill_pathname_resolve_relative(
                include_path, path, include_file, sizeof(include_path));
 

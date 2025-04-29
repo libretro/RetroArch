@@ -72,6 +72,14 @@ MSG_HASH(
    "选择使用的模拟器核心。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "卸载核心"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "释放已加载核心。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "浏览 libretro 核心实现。浏览器的起始位置取决于你的「核心目录」路径。若空，则从根目录开始。\n如果「核心目录」是一个目录，菜单会将其作为顶级文件夹使用。如果「核心目录」是一个完整路径，它将从路径所指文件所在的文件夹开始。"
    )
@@ -731,6 +739,30 @@ MSG_HASH(
    "SDL 2 支持"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
+   "Direct3D 8 支持"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
+   "Direct3D 9 支持"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
+   "Direct3D 10 支持"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
+   "Direct3D 11 支持"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
+   "Direct3D 12 支持"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
+   "GDI 支持"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
    "Vulkan 支持"
    )
@@ -811,6 +843,10 @@ MSG_HASH(
    "PulseAudio 支持"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
+   "PipeWire 支持"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
    "CoreAudio 支持"
    )
@@ -889,6 +925,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Video4Linux2 支持"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
+   "SSL 支持"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
@@ -1750,6 +1790,10 @@ MSG_HASH(
    "PulseAudio 音频驱动。如果系统有 PulseAudio，请不要使用其他驱动，比如 ALSA。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "PipeWire 驱动。如果系统使用 PipeWire，请确保使用此驱动程序而不是 PulseAudio。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Jack 音频驱动。"
    )
@@ -1944,7 +1988,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "在帧之间插入黑帧。可以通过仿真CRT扫描来大幅降低运动模糊，但以损失亮度为代价。 不要与 Swap Interval > 1, sub-frames, Frame Delay, 或者 Sync to Exact Content Framerate功能同时使用。"
+   "警告：快速闪烁可能在某些显示器上造成图像持续。使用风险//在帧之间插入黑帧。 可以通过模拟CRT扫描来大幅降低移动侦测模糊，但以亮度为代价。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
@@ -2027,10 +2071,6 @@ MSG_HASH(
    "着色器子帧"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "在帧之间插入额外的着色器帧。允许着色器执行特效提升原生游戏的帧率。 应当设置为当前屏幕的刷新率。不要与“交换间隔 > 1”, “BFI”, “帧延迟”, 或“精确同步游戏帧率“功能同时使用。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    "设计用来在任何可能的着色器特效上提升游戏本身的帧率，在帧之间插入额外的着色器帧。仅可以使用为您当前显示器刷新率指定的选项。 不要在非60赫兹倍数的屏幕刷新率使用，例如144赫兹，165赫兹等。 不要与“Swap 间隔 > 1”, “BFI”, “帧延迟”, 或者 “精确同步游戏帧率”功能同时使用. 可以保持系统的 VRR 功能打开，仅仅不是那个设置。"
    )
@@ -2101,10 +2141,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "滚动扫描线模拟"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "在多个子帧上模拟基本的滚动扫描线，方法是垂直分割屏幕，并根据子帧的数量渲染屏幕的每个部分。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
@@ -2530,10 +2566,6 @@ MSG_HASH(
    "整数缩放轴"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "仅缩放高度，或同时缩放高度和宽度。半步适用于高分辨率信号源。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    "智能"
    )
@@ -2837,16 +2869,8 @@ MSG_HASH(
    "静音模式下静音所有音频。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "快进时静音"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "快进时自动静音。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "快进时的加速声音"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
@@ -3365,21 +3389,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "长按"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "连发"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "连发周期"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "触发连发键所需的按压时间 (帧)。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "连发周期"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "连击速率。如果此数值大于或等于连击时长，则按键将永远不会松开。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3406,44 +3423,8 @@ MSG_HASH(
    "单个按钮 (长按)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "经典模式，2个按键的操作。\n先按住需要使用连发的按键, 再按一下[连发键] 开启连发, 当连发中的按键放开時失效。\n[连发键] 可在[设置/输入/端口 1 控制] 中设定。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "经典切换键模式，2个按键的操作，保持按住一个按键并且按下“连发键”来开启该按键连发，关闭连发：保持按住该按键并且再次按下“连发键”。\n“连发键”可以在设置/输入/端口 1 控制内设定。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "翻转模式。按一下Turbo按钮来激活选中默认按钮的按下和弹起事件，再次按它来关闭它。\nTurbo按钮可以在 Settings/Input/port 1 Control中分配。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "按住模式。只要Turbo按钮被按住，选中的默认按钮的按下和弹起事件将处于活动状态。\nTurbo按钮可以在 Settings/Input/port 1 Control中分配。\n要模拟主计算机时代的自动开火功能，请设置Turbo和默认按钮与游戏杆开火按钮相同。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "连发默认按钮"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "默认的「单一按钮」连发模式激活按钮。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "允许 D-Pad 方向键连发"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
-   "如果启用，数字方向输入(也称为dpad或“hatswitch”) 也可以连发。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "连发"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "更改连发设定.\n注意：连发功能需要在您的输入设备相对应的“端口 X 控制”菜单内映射一个“连发键”。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3623,10 +3604,6 @@ MSG_HASH(
    "菜单开关"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "在菜单和游戏之间切换显示。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "退出 (控制器组合)"
    )
@@ -3701,10 +3678,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "暂停"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "切换暂停游戏/继续游戏状态。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -4295,10 +4268,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "光枪十字键右"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "连发"
-   )
 
 /* Settings > Latency */
 
@@ -4402,10 +4371,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "绕过核心信息保存状态功能"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "指定是否忽略核心信息保护功能，允许尝试相关的功能 (超前运行，回溯等)。"
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4648,10 +4613,6 @@ MSG_HASH(
    "自动保存状态"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "关闭游戏时自动保存状态。如果启用了「自动加载状态」，下次打开游戏时，全能模拟器将自动加载此状态。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
    "自动加载存档"
    )
@@ -4830,10 +4791,6 @@ MSG_HASH(
    "按支持的扩展名过滤文件管理器中显示的文件。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-   "使用内建媒体播放器"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "过滤当前核心支持文件"
    )
@@ -4844,6 +4801,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    "在起始目录加载游戏时，于最后打开的位置开启文件浏览器。注：重启全能模拟器后，此位置将重置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   "使用内建媒体播放器"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "使用内建图像查看器"
    )
 
 /* Settings > Frame Throttle */
@@ -5798,10 +5763,6 @@ MSG_HASH(
    "通知大小"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "设置字体大小磅数。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "通知位置 (水平)"
    )
@@ -5953,10 +5914,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    "菜单激活时暂停游戏"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "激活菜单后暂停当前运行的游戏。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -6314,10 +6271,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "显示「游戏列表」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "显示「游戏列表」。(在 Ozone/XMB 中需要重启)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
@@ -6796,14 +6749,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    "显示「用户」"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "游戏列表图标"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "要显示的游戏列表图标缩略图类型。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -7768,10 +7713,6 @@ MSG_HASH(
    "允许扫描还没有安装游戏核心的游戏文件并将其添加到游戏列表中。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   "扫描CRC 是否可能重复"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
    "ISO有时重复序列，特别是使用 PSP/PSN 标题。仅仅依靠序列有时会导致扫描器将内容放入错误的系统。 这里增加了一个 CRC 检查，虽然大大减慢了扫描速度，但是扫描会更加准确。"
    )
@@ -8036,7 +7977,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "文件浏览器"
+   "开始文件夹"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -8278,10 +8219,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
    "Steam个人状态格式"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "决定与运行内容相关的信息将共享。"
    )
 
 MSG_HASH(
@@ -8880,10 +8817,6 @@ MSG_HASH(
    "继续"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "退出快捷菜单并继续游戏。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "重启"
    )
@@ -8894,10 +8827,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "关闭游戏"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "关闭当前游戏。未保存的进度可能会丢失。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9032,16 +8961,8 @@ MSG_HASH(
    "核心选项"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "更改当前游戏的核心选项设置。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "控制"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "更改当前游戏的键位设置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9136,14 +9057,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
    "当前选项文件正在使用。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "重置设置"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "将所有核心设置重置为默认值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
@@ -9672,10 +9585,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    "自动对磁盘上的着色器文件进行更改。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "着色器文件进行新的更改。在磁盘上保存更改后，它将自动重新编译并应用到运行的内容。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -10815,10 +10724,6 @@ MSG_HASH(
    "透明度"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "当点击“快捷菜单”上的按钮，允许正在运行中的游戏在后台显示。 禁用透明度可能会改变主题的颜色。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "阴影效果"
    )
@@ -11439,6 +11344,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR,
    "米德加"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   "暗灰"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   "亮灰"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -11466,6 +11379,31 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "移除主机生产厂商名字之后，播放列表会重新排序。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "次要缩略图"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "用另一个缩略图替换元数据面板。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "使用滚动字幕显示内容元数据"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "启用后，列表的游戏元数据项 (绑定核心，游戏时间) 只占用一行文字；超出宽度的文字会滚动显示。禁用后，游戏元数据项静态显示，在到达最大宽度后换行。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "缩略图缩放倍数"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "缩放缩略图栏的大小。"
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "色彩主题"
@@ -11522,30 +11460,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
    "亮灰"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "次要缩略图"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "用另一个缩略图替换元数据面板。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "使用滚动字幕显示内容元数据"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "启用后，列表的游戏元数据项 (绑定核心，游戏时间) 只占用一行文字；超出宽度的文字会滚动显示。禁用后，游戏元数据项静态显示，在到达最大宽度后换行。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "缩略图缩放倍数"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "缩放缩略图栏的大小。"
-   )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
@@ -12507,10 +12422,6 @@ MSG_HASH(
    "键盘"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-   "使用内建图像查看器"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "最大的交换链图像"
    )
@@ -12644,14 +12555,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
    "从列表中选择"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "继续"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "退出菜单并继续游戏。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
@@ -13250,10 +13153,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTODETECT,
    "自动检测"
-   )
-MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "自动加载状态存储于"
    )
 MSG_HASH(
    MSG_CAPABILITIES,
@@ -14350,6 +14249,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "收回虚拟光驱托盘失败。"
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "自动加载状态存储于"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
@@ -15570,10 +15473,6 @@ MSG_HASH(
    "启用字体"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "显示底部菜单字体。启用以在底部屏幕上显示按钮描述。这不包括保存日期。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
    "字体颜色红色通道"
    )
@@ -15636,3 +15535,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "已停止."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

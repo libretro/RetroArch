@@ -21,8 +21,10 @@
 
 #include <spa/param/audio/format-utils.h>
 #include <spa/utils/ringbuffer.h>
-
 #include <pipewire/pipewire.h>
+
+#include <lists/string_list.h>
+
 
 #define PW_RARCH_APPNAME                   "RetroArch"
 
@@ -31,34 +33,35 @@
 #define PW_RARCH_MEDIA_TYPE_VIDEO          "Video"
 #define PW_RARCH_MEDIA_TYPE_MIDI           "Midi"
 #define PW_RARCH_MEDIA_CATEGORY_PLAYBACK   "Playback"
-#define PW_RARCH_MEDIA_CATEGORY_RECORD	    "Capture"
+#define PW_RARCH_MEDIA_CATEGORY_RECORD     "Capture"
 #define PW_RARCH_MEDIA_ROLE                "Game"
 
 typedef struct pipewire_core
 {
    struct pw_thread_loop *thread_loop;
    struct pw_context *ctx;
+
    struct pw_core *core;
    struct spa_hook core_listener;
    int last_seq, pending_seq;
 
    struct pw_registry *registry;
    struct spa_hook registry_listener;
-   struct pw_client *client;
-   struct spa_hook client_listener;
 
-   bool nonblock;
    struct string_list *devicelist;
+   bool nonblock;
 } pipewire_core_t;
 
-size_t calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels);
+size_t pipewire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels);
 
-void set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS]);
+void pipewire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS]);
 
-void pipewire_wait_resync(pipewire_core_t *pipewire);
+bool pipewire_core_init(pipewire_core_t **pw, const char *loop_name, const struct pw_registry_events *events);
 
-bool pipewire_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active);
+void pipewire_core_deinit(pipewire_core_t *pw);
 
-bool pipewire_core_init(pipewire_core_t *pipewire, const char *loop_name);
+void pipewire_core_wait_resync(pipewire_core_t *pw);
+
+bool pipewire_stream_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active);
 
 #endif  /* _RETROARCH_PIPEWIRE */

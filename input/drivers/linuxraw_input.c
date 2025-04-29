@@ -98,7 +98,7 @@ static int16_t linuxraw_input_state(
                   if (binds[port][i].valid)
                   {
                      if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
-                           && linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][i].key]])
+                           && linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][i].key] & 0X7F])
                         ret |= (1 << i);
                   }
                }
@@ -112,7 +112,7 @@ static int16_t linuxraw_input_state(
             if (binds[port][id].valid)
             {
                if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
-                     && linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
+                     && linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key] & 0X7F]
                      && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                   )
                   return 1;
@@ -120,7 +120,7 @@ static int16_t linuxraw_input_state(
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
+         if (binds)
          {
             int id_minus_key      = 0;
             int id_plus_key       = 0;
@@ -139,18 +139,25 @@ static int16_t linuxraw_input_state(
 
             if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
-               unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
-               if (linuxraw->state[sym] & 0x80)
+               unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key] & 0X7F;
+               if (linuxraw->state[sym])
                   ret = 0x7fff;
             }
             if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
-               unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
-               if (linuxraw->state[sym] & 0x80)
+               unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key] & 0X7F;
+               if (linuxraw->state[sym])
                   ret += -0x7fff;
             }
 
             return ret;
+         }
+         break;
+      case RETRO_DEVICE_KEYBOARD:
+         if (id && id < RETROK_LAST)
+         {
+            unsigned sym = rarch_keysym_lut[(enum retro_key)id] & 0X7F;
+            return linuxraw->state[sym];
          }
          break;
    }
@@ -242,14 +249,30 @@ static void linuxraw_input_poll(void *data)
       if (!c)
          read(STDIN_FILENO, &t, 2);
       else
+      {
+         unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(c);
+         uint16_t mod          = 0;
+
+         if (linuxraw->state[KEY_LEFTCTRL]  || linuxraw->state[KEY_RIGHTCTRL])
+            mod |= RETROKMOD_CTRL;
+         if (linuxraw->state[KEY_LEFTALT]   || linuxraw->state[KEY_RIGHTALT])
+            mod |= RETROKMOD_ALT;
+         if (linuxraw->state[KEY_LEFTSHIFT] || linuxraw->state[KEY_RIGHTSHIFT])
+            mod |= RETROKMOD_SHIFT;
+         if (linuxraw->state[KEY_LEFTMETA]  || linuxraw->state[KEY_RIGHTMETA])
+            mod |= RETROKMOD_META;
+
          linuxraw->state[c] = pressed;
+         input_keyboard_event(pressed, keyboardcode, keyboardcode, mod, RETRO_DEVICE_KEYBOARD);
+      }
    }
 }
 
 static uint64_t linuxraw_get_capabilities(void *data)
 {
    return (1 << RETRO_DEVICE_JOYPAD)
-        | (1 << RETRO_DEVICE_ANALOG);
+        | (1 << RETRO_DEVICE_ANALOG)
+        | (1 << RETRO_DEVICE_KEYBOARD);
 }
 
 input_driver_t input_linuxraw = {

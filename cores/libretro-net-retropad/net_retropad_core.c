@@ -255,7 +255,7 @@ typedef struct
    char *message;
 } ITifJSONContext;
 
-static bool ITifJSONObjectEndHandler(void* context)
+static bool ITifJSONObjectEndHandler(void *context)
 {
    ITifJSONContext *pCtx = (ITifJSONContext*)context;
 
@@ -278,7 +278,7 @@ static bool ITifJSONObjectEndHandler(void* context)
    return true;
 }
 
-static bool ITifJSONObjectMemberHandler(void* context, const char *pValue, size_t length)
+static bool ITifJSONObjectMemberHandler(void* context, const char *s, size_t len)
 {
    ITifJSONContext *pCtx = (ITifJSONContext*)context;
 
@@ -286,41 +286,41 @@ static bool ITifJSONObjectMemberHandler(void* context, const char *pValue, size_
    if (pCtx->current_entry_str_val)
       return false;
 
-   if (length)
+   if (len)
    {
-      if (string_is_equal(pValue, "expected_button"))
-         pCtx->current_entry_uint_val = &pCtx->expected_button;
-      else if (string_is_equal(pValue, "message"))
-         pCtx->current_entry_str_val = &pCtx->message;
       /* ignore unknown members */
+      if (string_is_equal(s, "expected_button"))
+         pCtx->current_entry_uint_val = &pCtx->expected_button;
+      else if (string_is_equal(s, "message"))
+         pCtx->current_entry_str_val = &pCtx->message;
    }
 
    return true;
 }
 
-static bool ITifJSONNumberHandler(void* context, const char *pValue, size_t length)
+static bool ITifJSONNumberHandler(void* context, const char *s, size_t len)
 {
    ITifJSONContext *pCtx = (ITifJSONContext*)context;
 
-   if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
-      *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
    /* ignore unknown members */
+   if (pCtx->current_entry_uint_val && len && !string_is_empty(s))
+      *pCtx->current_entry_uint_val = string_to_unsigned(s);
 
    pCtx->current_entry_uint_val = NULL;
 
    return true;
 }
 
-static bool ITifJSONStringHandler(void* context, const char *pValue, size_t length)
+static bool ITifJSONStringHandler(void* context, const char *s, size_t len)
 {
    ITifJSONContext *pCtx = (ITifJSONContext*)context;
 
-   if (pCtx->current_entry_str_val && length && !string_is_empty(pValue))
+   if (pCtx->current_entry_str_val && len && !string_is_empty(s))
    {
       if (*pCtx->current_entry_str_val)
          free(*pCtx->current_entry_str_val);
 
-      *pCtx->current_entry_str_val = strdup(pValue);
+      *pCtx->current_entry_str_val = strdup(s);
    }
    /* ignore unknown members */
 
@@ -430,7 +430,6 @@ end:
 
 static void sensors_init(void)
 {
-
    struct retro_sensor_interface sensor_interface = {0};
 	if (NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE, &sensor_interface)) {
 
@@ -563,11 +562,7 @@ unsigned NETRETROPAD_CORE_PREFIX(retro_api_version)(void)
 }
 
 void NETRETROPAD_CORE_PREFIX(retro_set_controller_port_device)(
-      unsigned port, unsigned device)
-{
-   (void)port;
-   (void)device;
-}
+      unsigned port, unsigned device) { }
 
 void NETRETROPAD_CORE_PREFIX(retro_get_system_info)(
       struct retro_system_info *info)
@@ -593,7 +588,7 @@ void NETRETROPAD_CORE_PREFIX(retro_get_system_av_info)(
 }
 
 static void NETRETROPAD_CORE_PREFIX(update_keyboard_cb)(bool down, unsigned keycode,
-                               uint32_t character, uint16_t key_modifiers)
+      uint32_t character, uint16_t key_modifiers)
 {
    struct retro_message message;
    char buf[NAME_MAX_LENGTH];
@@ -601,7 +596,8 @@ static void NETRETROPAD_CORE_PREFIX(update_keyboard_cb)(bool down, unsigned keyc
    if (keycode < RETROK_LAST)
    {
       keyboard_state[keycode] = down ? true : false;
-      if (down && ((keycode == RETROK_a && keyboard_state[RETROK_b]) || (keycode == RETROK_b && keyboard_state[RETROK_a])))
+      if (down && ((keycode == RETROK_a && keyboard_state[RETROK_b])
+               ||  (keycode == RETROK_b && keyboard_state[RETROK_a])))
          flip_screen();
       /* Message for the keypresses not shown as actual keys, just placeholder blocks */
       if ((keycode ==   0) ||
@@ -634,10 +630,9 @@ static unsigned get_pixel_coordinate(int val, unsigned dimension)
 static unsigned set_pixel(unsigned x, unsigned y, unsigned color)
 {
    unsigned old_color;
-   uint16_t *pixel;
-   pixel = frame_buf + y * 320 + x;
+   uint16_t *pixel = frame_buf + y * 320 + x;
    old_color = *pixel;
-   *pixel = color;
+   *pixel    = color;
    return old_color;
 
 }
@@ -728,7 +723,7 @@ static void retropad_update_input(void)
                         pointer_y = (int16_t)state;
                   }
                }
-               
+
                /* Do not send extra descriptor state - RA side is not prepared to receive it */
                if (i>1)
                   continue;
@@ -849,7 +844,6 @@ static void netretropad_check_variables(void)
       mouse_type = NETRETROPAD_LIGHTGUN_OLD;
    else
       mouse_type = 0;
-
 }
 
 void NETRETROPAD_CORE_PREFIX(retro_set_audio_sample)(retro_audio_sample_t cb)
@@ -1035,14 +1029,12 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
             sensor_item_colors[median_index]   = (uint16_t)(fabsf(32*4*value)) << 11;
       }
    }
-   
+
    /* Button values for sensor test screen, since they do not follow any pattern, it is *
     * provided as a direct list. */
    if (mouse_type == NETRETROPAD_MOUSE)
    {
-      int offset;
-
-      offset = DESC_OFFSET(&mouse, 0, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
+      int offset = DESC_OFFSET(&mouse, 0, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
       sensor_item_colors[80] = mouse.value[offset] ? 0xA000 : 0x0000;
 
       offset = DESC_OFFSET(&mouse, 0, 0, RETRO_DEVICE_ID_MOUSE_MIDDLE);
@@ -1062,7 +1054,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 
       offset = DESC_OFFSET(&mouse, 0, 0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
       sensor_item_colors[86] = mouse.value[offset] ? 0xA000 : 0x0000;
-      
+
       offset = DESC_OFFSET(&mouse, 0, 0, RETRO_DEVICE_ID_MOUSE_BUTTON_4);
       sensor_item_colors[88] = mouse.value[offset] ? 0xA000 : 0x0000;
 
@@ -1072,9 +1064,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
    }
    else if (mouse_type == NETRETROPAD_LIGHTGUN)
    {
-      int offset;
-
-      offset = DESC_OFFSET(&lightgun, 0, 0, RETRO_DEVICE_ID_LIGHTGUN_AUX_A);
+      int offset = DESC_OFFSET(&lightgun, 0, 0, RETRO_DEVICE_ID_LIGHTGUN_AUX_A);
       sensor_item_colors[70] = lightgun.value[offset] ? 0xA000 : 0x0000;
 
       offset = DESC_OFFSET(&lightgun, 0, 0, RETRO_DEVICE_ID_LIGHTGUN_AUX_B);
@@ -1094,7 +1084,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 
       offset = DESC_OFFSET(&lightgun, 0, 0, RETRO_DEVICE_ID_LIGHTGUN_SELECT);
       sensor_item_colors[76] = lightgun.value[offset] ? 0xA000 : 0x0000;
-      
+
       offset = DESC_OFFSET(&lightgun, 0, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN);
       sensor_item_colors[77] = lightgun.value[offset] ? 0xA000 : 0x0000;
 
@@ -1113,9 +1103,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
    }
    else if (mouse_type == NETRETROPAD_POINTER)
    {
-      int offset;
-
-      offset = DESC_OFFSET(&pointer, 0, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
+      int offset = DESC_OFFSET(&pointer, 0, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
       sensor_item_colors[104] = pointer.value[offset] ? 0xA000 : 0x0000;
 
       offset = DESC_OFFSET(&pointer, 0, 1, RETRO_DEVICE_ID_POINTER_PRESSED);
@@ -1390,7 +1378,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
          pointer_prev_y = pointer_y_coord;
       }
    }
-   
+
    NETRETROPAD_CORE_PREFIX(video_cb)(frame_buf, 320, 240, 640);
    retro_sleep(4);
 }
@@ -1417,52 +1405,23 @@ bool NETRETROPAD_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info
    return true;
 }
 
-void NETRETROPAD_CORE_PREFIX(retro_unload_game)(void)
-{}
-
+void NETRETROPAD_CORE_PREFIX(retro_unload_game)(void) { }
 unsigned NETRETROPAD_CORE_PREFIX(retro_get_region)(void) { return RETRO_REGION_NTSC; }
-
 bool NETRETROPAD_CORE_PREFIX(retro_load_game_special)(unsigned type,
-      const struct retro_game_info *info, size_t num)
-{
-   (void)type;
-   (void)info;
-   (void)num;
-   return false;
-}
-
+      const struct retro_game_info *info, size_t num) { return false; }
 size_t NETRETROPAD_CORE_PREFIX(retro_serialize_size)(void) { return 0; }
-
-bool NETRETROPAD_CORE_PREFIX(retro_serialize)(void *data, size_t size)
-{
-   (void)data;
-   (void)size;
-   return false;
-}
-
+bool NETRETROPAD_CORE_PREFIX(retro_serialize)(void *data,
+      size_t len) { return false; }
 bool NETRETROPAD_CORE_PREFIX(retro_unserialize)(const void *data,
-      size_t size)
-{
-   (void)data;
-   (void)size;
-   return false;
-}
+      size_t len) { return false; }
+size_t NETRETROPAD_CORE_PREFIX(retro_get_memory_size)(
+      unsigned id) { return 0; }
+void NETRETROPAD_CORE_PREFIX(retro_cheat_reset)(void) { }
+void NETRETROPAD_CORE_PREFIX(retro_cheat_set)(unsigned idx,
+      bool enabled, const char *code) { }
 
 void *NETRETROPAD_CORE_PREFIX(retro_get_memory_data)(unsigned id)
 {
-   (void)id;
    return NULL;
 }
 
-size_t NETRETROPAD_CORE_PREFIX(retro_get_memory_size)(unsigned id) { return 0; }
-
-void NETRETROPAD_CORE_PREFIX(retro_cheat_reset)(void)
-{}
-
-void NETRETROPAD_CORE_PREFIX(retro_cheat_set)(unsigned idx,
-      bool enabled, const char *code)
-{
-   (void)idx;
-   (void)enabled;
-   (void)code;
-}

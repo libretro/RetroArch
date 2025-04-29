@@ -18,6 +18,8 @@
 #pragma comment(lib, "dinput8")
 #endif
 
+#define WIN32_LEAN_AND_MEAN
+
 #undef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
 
@@ -172,10 +174,10 @@ static void *dinput_init(const char *joypad_driver)
 
    if (di->keyboard)
    {
-      settings_t *settings = config_get_ptr();
-      DWORD flags          = DISCL_NONEXCLUSIVE | DISCL_FOREGROUND;
-      if (settings->bools.input_nowinkey_enable)
-         flags            |= DISCL_NOWINKEY;
+      bool input_nowinkey_enable = config_get_ptr()->bools.input_nowinkey_enable;
+      DWORD flags                = DISCL_NONEXCLUSIVE | DISCL_FOREGROUND;
+      if (input_nowinkey_enable)
+         flags                  |= DISCL_NOWINKEY;
 
       IDirectInputDevice8_SetDataFormat(di->keyboard, &c_dfDIKeyboard);
       IDirectInputDevice8_SetCooperativeLevel(di->keyboard,

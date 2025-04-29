@@ -240,7 +240,7 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
    {
       if (*format == '%')
       {
-         int sublen;
+         int sublen       = 0;
          char* subfmtiter = subfmt;
          bool asterisk    = false;
 

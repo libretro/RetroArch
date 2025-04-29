@@ -107,7 +107,7 @@ typedef int  (*action_start_handler_t         )(rarch_setting_t *setting);
 typedef int  (*action_cancel_handler_t        )(rarch_setting_t *setting);
 typedef int  (*action_ok_handler_t            )(rarch_setting_t *setting, size_t idx, bool wraparound);
 typedef int  (*action_select_handler_t        )(rarch_setting_t *setting, size_t idx, bool wraparound);
-typedef void (*get_string_representation_t    )(rarch_setting_t *setting, char *s, size_t len);
+typedef size_t (*get_string_representation_t    )(rarch_setting_t *setting, char *s, size_t len);
 
 struct rarch_setting_group_info
 {
@@ -119,11 +119,6 @@ struct rarch_setting
 
    float               min;
    float               max;
-   struct
-   {
-      const char     *off_label;
-      const char     *on_label;
-   } boolean;
    struct
    {
       const char     *empty_path;
@@ -173,15 +168,6 @@ struct rarch_setting
       float                      fraction;
       bool                       boolean;
    } default_value;
-
-   union
-   {
-      size_t         sizet;
-      int            integer;
-      unsigned int   unsigned_integer;
-      float          fraction;
-      bool           boolean;
-   } original_value;
 
    uint32_t             index_offset;
    uint32_t             size;

@@ -267,6 +267,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_AUDIO_DEVICE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_MIDI_DEVICE:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MIDI_DEVICE;
 #ifdef HAVE_MICROPHONE
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE;
@@ -287,6 +289,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_DISK_INDEX:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION:
@@ -527,6 +531,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST;
       case ACTION_OK_DL_ADD_TO_PLAYLIST:
          return MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST;
+      case ACTION_OK_DL_ADD_TO_PLAYLIST_QUICKMENU:
+         return MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU;
       default:
          break;
    }
@@ -701,10 +707,7 @@ int generic_action_ok_displaylist_push(
    recording_state_t *recording_st         = recording_state_get_ptr();
 
    if (!menu || string_is_equal(menu_ident, "null"))
-   {
-      menu_displaylist_info_free(&info);
       return -1;
-   }
 
 #ifdef HAVE_AUDIOMIXER
    if (audio_enable_menu && audio_enable_menu_ok)
@@ -892,6 +895,15 @@ int generic_action_ok_displaylist_push(
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE:
          info.type          = type;
          info.directory_ptr = idx;
@@ -946,6 +958,15 @@ int generic_action_ok_displaylist_push(
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_MIDI_DEVICE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MIDI_DEVICE);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MIDI_DEVICE;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
 #ifdef HAVE_MICROPHONE
@@ -1048,7 +1069,7 @@ int generic_action_ok_displaylist_push(
          p_dialog->pending_push = true;
          break;
       case ACTION_OK_DL_RPL_ENTRY:
-         strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
+         fill_pathname_expand_special(menu->deferred_path, label, sizeof(menu->deferred_path));
          info_label = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
          info.enum_idx                 = MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS;
          info.directory_ptr            = idx;
@@ -1377,10 +1398,12 @@ int generic_action_ok_displaylist_push(
          {
             filebrowser_clear_type();
             if (content_get_subsystem_rom_id() > 0)
-               strlcpy(tmp, content_get_subsystem_rom(content_get_subsystem_rom_id() - 1), sizeof(tmp));
+               fill_pathname_basedir(tmp,
+                     content_get_subsystem_rom(content_get_subsystem_rom_id() - 1),
+                     sizeof(tmp));
             else
-               strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
-            path_basedir(tmp);
+               fill_pathname_basedir(tmp,
+                     path_get(RARCH_PATH_CONTENT), sizeof(tmp));
 
             if (content_get_subsystem() != (int)type - MENU_SETTINGS_SUBSYSTEM_ADD)
                content_clear_subsystem();
@@ -1848,6 +1871,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_CORE_OPTION_OVERRIDE_LIST:
       case ACTION_OK_DL_REMAP_FILE_MANAGER_LIST:
       case ACTION_OK_DL_ADD_TO_PLAYLIST:
+      case ACTION_OK_DL_ADD_TO_PLAYLIST_QUICKMENU:
          ACTION_OK_DL_LBL(action_ok_dl_to_enum(action_type), DISPLAYLIST_GENERIC);
          break;
       case ACTION_OK_DL_CDROM_INFO_DETAIL_LIST:
@@ -1902,14 +1926,14 @@ int generic_action_ok_displaylist_push(
  * selection needs to be made from a list, otherwise
  * returns true and fills in @s with path to core.
  **/
-static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info,
-      bool load_content_with_current_core,
-      char *new_core_path, size_t len)
+static bool menu_content_find_first_core(
+      menu_content_ctx_defer_info_t *def_info,
+      bool load_content_with_current_core, char *s, size_t len)
 {
-   const core_info_t *info                 = NULL;
-   size_t supported                        = 0;
-   core_info_list_t *core_info             = (core_info_list_t*)def_info->data;
-   const char *default_info_dir            = def_info->dir;
+   const core_info_t *info          = NULL;
+   size_t supported                 = 0;
+   core_info_list_t *core_info      = (core_info_list_t*)def_info->data;
+   const char *default_info_dir     = def_info->dir;
 
    if (!string_is_empty(default_info_dir))
    {
@@ -1952,7 +1976,7 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
       return false;
 
     if (info)
-      strlcpy(new_core_path, info->path, len);
+      strlcpy(s, info->path, len);
 
    return true;
 }
@@ -4646,7 +4670,6 @@ static int action_ok_cheat_delete(const char *path,
    char msg[128];
    size_t new_selection_ptr   = 0;
    struct menu_state *menu_st = menu_state_get_ptr();
-   size_t selection           = menu_st->selection_ptr;
    unsigned int new_size      = cheat_manager_get_size() - 1;
 
    if (new_size >0)
@@ -4681,15 +4704,6 @@ static int action_ok_cheat_delete(const char *path,
    new_selection_ptr      = menu_st->selection_ptr;
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
    menu_st->selection_ptr = new_selection_ptr;
-
-   if (menu_st->driver_ctx)
-   {
-      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-         menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
-      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
-   }
 
    return 0;
 }
@@ -4874,6 +4888,9 @@ static void cb_decompressed(retro_task_t *task,
          case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
          case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
             generic_action_ok_command(CMD_EVENT_REINIT);
+            break;
+         case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
+            generic_action_ok_command(CMD_EVENT_CORE_INFO_INIT);
             break;
          default:
             break;
@@ -5374,8 +5391,8 @@ static int action_ok_download_generic(const char *path,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          {
-            char *tok, *save;
-            char *menu_label_cpy         = strdup(menu_label);
+            char *tok, *save     = NULL;
+            char *menu_label_cpy = strdup(menu_label);
             if ((tok = strtok_r(menu_label_cpy, ";", &save)))
                strlcpy(s, tok, sizeof(s));
             free(menu_label_cpy);
@@ -5638,7 +5655,7 @@ static int action_ok_folder_specific_core_options_remove(const char *path,
 static int action_ok_core_options_reset(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   core_options_reset();
+   core_options_reset(label);
    return 0;
 }
 
@@ -5695,6 +5712,9 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
        * MENU_ST_FLAG_PREVENT_POPULATE */
       menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
    }
+
+   /* Try to reload last core if loaded manually */
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
 
    return ret;
 }
@@ -5867,6 +5887,132 @@ static int action_ok_add_to_favorites(const char *path,
    return ret;
 }
 
+/* This function is called when selecting 'add to playlist'
+ * while viewing the quick menu (i.e. content is running) */
+static int action_ok_add_entry_to_playlist_quickmenu(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *content_path = path_get(RARCH_PATH_CONTENT);
+   int ret = 0;
+
+   /* Error checking
+    * > If content path is empty, cannot do anything... */
+   if (!string_is_empty(content_path))
+   {
+      union string_list_elem_attr attr;
+      char core_name[NAME_MAX_LENGTH];
+      char content_label[NAME_MAX_LENGTH];
+      char core_path[PATH_MAX_LENGTH];
+      runloop_state_t *runloop_st       = runloop_state_get_ptr();
+      struct retro_system_info *sysinfo = &runloop_st->system.info;
+      struct string_list *str_list      = NULL;
+      const char *crc32                 = NULL;
+      const char *db_name               = NULL;
+
+      core_path[0]     = '\0';
+      core_name[0]     = '\0';
+
+      /* Create string list container for playlist parameters */
+      attr.i           = 0;
+      if (!(str_list = string_list_new()))
+         return 0;
+
+      /* Determine playlist parameters */
+
+      /* > content_label */
+      if (!string_is_empty(runloop_st->name.label))
+         strlcpy(content_label, runloop_st->name.label,
+               sizeof(content_label));
+      else
+         content_label[0] = '\0';
+
+      /* Label is empty - use file name instead */
+      if (string_is_empty(content_label))
+         fill_pathname(content_label,
+               path_basename(content_path), "",
+               sizeof(content_label));
+
+      /* > core_path + core_name */
+      if (sysinfo)
+      {
+         if (!string_is_empty(path_get(RARCH_PATH_CORE)))
+         {
+            core_info_t *core_info = NULL;
+
+            /* >> core_path */
+            strlcpy(core_path, path_get(RARCH_PATH_CORE),
+                  sizeof(core_path));
+            /* >> core_name
+             * (always use display name, if available) */
+            if (core_info_find(core_path, &core_info))
+               if (!string_is_empty(core_info->display_name))
+                  strlcpy(core_name, core_info->display_name,
+                        sizeof(core_name));
+         }
+
+         /* >> core_name (continued) */
+         if (      string_is_empty(core_name)
+               && !string_is_empty(sysinfo->library_name))
+            strlcpy(core_name, sysinfo->library_name, sizeof(core_name));
+      }
+
+      if (string_is_empty(core_path) || string_is_empty(core_name))
+      {
+         strlcpy(core_path, FILE_PATH_DETECT, sizeof(core_path));
+         strlcpy(core_name, FILE_PATH_DETECT, sizeof(core_name));
+      }
+
+      /* > crc32 + db_name */
+      {
+         menu_handle_t *menu = menu_state_get_ptr()->driver_data;
+         if (menu)
+         {
+            playlist_t *playlist_curr = playlist_get_cached();
+
+            if (playlist_index_is_valid(playlist_curr,
+                     menu->rpl_entry_selection_ptr,
+                     content_path, core_path))
+            {
+               playlist_get_crc32(playlist_curr,
+                     menu->rpl_entry_selection_ptr, &crc32);
+               playlist_get_db_name(playlist_curr,
+                     menu->rpl_entry_selection_ptr, &db_name);
+            }
+         }
+      }
+
+      /* Copy playlist parameters into string list
+       *   [0]: content_path
+       *   [1]: content_label
+       *   [2]: core_path
+       *   [3]: core_name
+       *   [4]: crc32
+       *   [5]: db_name
+       *   [6]: playlist*/
+      string_list_append(str_list, content_path, attr);
+      string_list_append(str_list, content_label, attr);
+      string_list_append(str_list, core_path, attr);
+      string_list_append(str_list, core_name, attr);
+      string_list_append(str_list, !string_is_empty(crc32)
+            ? crc32 : "", attr);
+      string_list_append(str_list, !string_is_empty(db_name)
+            ? db_name : "", attr);
+      string_list_append(str_list, label, attr);
+
+      /* Trigger 'ADD_TO_PLAYLIST' event */
+      if (!command_event(CMD_EVENT_ADD_TO_PLAYLIST, (void*)str_list))
+         ret = -1;
+
+      /* Clean up */
+      string_list_free(str_list);
+      str_list = NULL;
+   }
+
+   return ret;
+}
+
+/* This function is called when selecting 'add to playlist'
+ * while viewing a playlist entry */
 static int action_ok_add_entry_to_playlist(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5879,7 +6025,7 @@ static int action_ok_add_entry_to_playlist(const char *path,
       return 0;
    if (!menu)
       return -1;
-   if(!label)
+   if (!label)
       return 0;
 
    /*
@@ -6017,13 +6163,30 @@ static void action_input_add_entry_to_new_playlist(void *userdata, const char *l
 
    menu_input_dialog_end();
 
-   if(!line)
+   if (!line)
       return;
 
    /* Create path for new file */
    _len = fill_pathname_join_special(path, settings->paths.directory_playlist, line, sizeof(path));
    strlcpy(path + _len, ".lpl",  sizeof(path) - _len);
    action_ok_add_entry_to_playlist(NULL, path, 0, 0, 0);
+}
+
+static void action_input_add_entry_to_new_playlist_quickmenu(void *userdata, const char *line)
+{
+   char path[PATH_MAX_LENGTH];
+   settings_t *settings       = config_get_ptr();
+   size_t _len                = 0;
+
+   menu_input_dialog_end();
+
+   if (!line)
+      return;
+
+   /* Create path for new file */
+   _len = fill_pathname_join_special(path, settings->paths.directory_playlist, line, sizeof(path));
+   strlcpy(path + _len, ".lpl",  sizeof(path) - _len);
+   action_ok_add_entry_to_playlist_quickmenu(NULL, path, 0, 0, 0);
 }
 
 static int action_ok_add_entry_to_new_playlist(const char *path,
@@ -6034,7 +6197,9 @@ static int action_ok_add_entry_to_new_playlist(const char *path,
    line.label_setting         = NULL;
    line.type                  = 0;
    line.idx                   = 0;
-   line.cb                    = action_input_add_entry_to_new_playlist;
+   line.cb                    = (string_is_equal(label, (char*)msg_hash_to_str(MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST)) ?
+                                      action_input_add_entry_to_new_playlist :
+                                      action_input_add_entry_to_new_playlist_quickmenu);
    menu_input_dialog_start(&line);
 
    return 0;
@@ -6241,17 +6406,17 @@ static int action_ok_delete_entry(const char *path,
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char *tok, *save;
    char new_str[PATH_MAX_LENGTH];
    char new_label[PATH_MAX_LENGTH];
-   size_t _len                     = 0;
-   char *label_cpy                 = NULL;
+   char *tok, *save = NULL;
+   size_t _len      = 0;
+   char *label_cpy  = NULL;
 
    if (!label)
       return -1;
 
-   new_label[0]                    =  '\0';
-   label_cpy                       = strdup(label);
+   new_label[0]     =  '\0';
+   label_cpy        = strdup(label);
 
    /* element 0: label */
    if ((tok = strtok_r(label_cpy, "|", &save)))
@@ -6380,6 +6545,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_overlay_preset, ACTION_OK_DL_OVERLAY_PRE
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_osk_overlay_preset, ACTION_OK_DL_OSK_OVERLAY_PRESET)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_video_font, ACTION_OK_DL_VIDEO_FONT)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_rpl_entry, ACTION_OK_DL_RPL_ENTRY)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_open_archive_detect_core, ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_file_load_music, ACTION_OK_DL_MUSIC)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_list, ACTION_OK_DL_ACCOUNTS_LIST)
@@ -6427,7 +6593,6 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_dump_disc_list, ACTION_OK_DL_DUMP_D
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_eject_disc, ACTION_OK_DL_EJECT_DISC)
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_load_disc_list, ACTION_OK_DL_LOAD_DISC_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_rgui_menu_theme_preset, ACTION_OK_DL_RGUI_MENU_THEME_PRESET)
 #ifdef HAVE_NETWORKING
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_pl_thumbnails_updater_list, ACTION_OK_DL_PL_THUMBNAILS_UPDATER_LIST)
@@ -6444,6 +6609,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_remap_file_manager_list, ACTION_OK_
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_savestate_list, ACTION_OK_DL_SAVESTATE_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_options_list, ACTION_OK_DL_CORE_OPTIONS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_add_to_playlist_list, ACTION_OK_DL_ADD_TO_PLAYLIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_add_to_playlist_quickmenu, ACTION_OK_DL_ADD_TO_PLAYLIST_QUICKMENU)
 DEFAULT_ACTION_OK_FUNC(action_ok_push_playlist_manager_settings, ACTION_OK_DL_PLAYLIST_MANAGER_SETTINGS)
 #ifdef HAVE_CHEEVOS
 DEFAULT_ACTION_OK_FUNC(action_ok_push_achievements_hardcore_pause_list, ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST)
@@ -6467,6 +6633,9 @@ static int action_ok_open_picker(const char *path,
 {
 #if TARGET_OS_IOS
    ios_show_file_sheet();
+   return 0;
+#elif defined(OSX) && defined(HAVE_APPLE_STORE)
+   osx_show_file_sheet();
    return 0;
 #else
    char *new_path = NULL;
@@ -6937,7 +7106,7 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
       case ST_STRING_OPTIONS:
          if (setting->get_string_representation)
          {
-            char *tok, *save;
+            char *tok, *save         = NULL;
             unsigned tok_idx         = 0;
             char *setting_values_cpy = strdup(setting->values);
 
@@ -7329,6 +7498,28 @@ static int action_ok_push_dropdown_item_microphone_device(const char *path,
 }
 #endif
 
+static int action_ok_push_dropdown_item_input_retropad_bind(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   rarch_setting_t *setting;
+   enum msg_hash_enums enum_idx;
+
+   const char *menu_path        = NULL;
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+   enum_idx = (enum msg_hash_enums)atoi(menu_path);
+   setting  = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   if ((int)entry_idx < 0)
+      *setting->value.target.integer = -1;
+   else
+      *setting->value.target.integer = input_config_bind_order[entry_idx];
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_dropdown_item_input_device_type(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -7393,14 +7584,14 @@ static int action_ok_push_dropdown_item_input_select_reserved_device(const char 
                                     ? input_config_get_device_display_name(i)
                                     : input_config_get_device_name(i);
 
-          if (string_is_equal(device_name, reserved_device_name))
+          if (string_starts_with(reserved_device_name, device_name))
           {
              uint16_t vendor_id = input_config_get_device_vid(i);
              uint16_t product_id = input_config_get_device_pid(i);
              snprintf(settings->arrays.input_reserved_devices[user],
                    sizeof(settings->arrays.input_reserved_devices[user]),
                    "%04x:%04x %s",
-                   vendor_id, product_id, reserved_device_name);
+                   vendor_id, product_id, device_name);
              break;
           }
        }
@@ -8857,11 +9048,14 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_RESUME_CONTENT,                      action_ok_resume_content},
          {MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST,           action_ok_add_to_favorites_playlist},
          {MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,               action_ok_add_entry_to_playlist},
+         {MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST_QUICKMENU,     action_ok_add_entry_to_playlist_quickmenu},
          {MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST,                 action_ok_add_entry_to_new_playlist},
+         {MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST_QUICKMENU,       action_ok_add_entry_to_new_playlist},
          {MENU_ENUM_LABEL_SET_CORE_ASSOCIATION,                action_ok_set_core_association},
          {MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION,              action_ok_reset_core_association},
          {MENU_ENUM_LABEL_ADD_TO_FAVORITES,                    action_ok_add_to_favorites},
          {MENU_ENUM_LABEL_ADD_TO_PLAYLIST,                     action_ok_push_add_to_playlist_list},
+         {MENU_ENUM_LABEL_ADD_TO_PLAYLIST_QUICKMENU,           action_ok_push_add_to_playlist_quickmenu},
          {MENU_ENUM_LABEL_RESTART_CONTENT,                     action_ok_restart_content},
          {MENU_ENUM_LABEL_TAKE_SCREENSHOT,                     action_ok_screenshot},
          {MENU_ENUM_LABEL_RENAME_ENTRY,                        action_ok_rename_entry},
@@ -9334,6 +9528,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_disk_index);
             break;
+         case MENU_SETTING_DROPDOWN_ITEM_INPUT_RETROPAD_BIND:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_retropad_bind);
+            break;
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_device_type);
             break;
@@ -9424,7 +9621,14 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_menu_wallpaper_load);
             break;
          case FILE_TYPE_USE_DIRECTORY:
-            BIND_ACTION_OK(cbs, action_ok_path_use_directory);
+            if (     cbs->enum_idx == MSG_UNKNOWN
+                  && string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
+               BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
+            else if (cbs->enum_idx == MSG_UNKNOWN
+                  && string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND)))
+               BIND_ACTION_OK(cbs, action_ok_disk_image_append);
+            else
+               BIND_ACTION_OK(cbs, action_ok_path_use_directory);
             break;
 #ifdef HAVE_LIBRETRODB
          case FILE_TYPE_SCAN_DIRECTORY:
@@ -9475,14 +9679,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             else
             {
-               if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
-               {
+               if (     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES))
+                     && path_is_empty(RARCH_PATH_CORE))
                   BIND_ACTION_OK(cbs, action_ok_compressed_archive_push_detect_core);
-               }
                else
-               {
                   BIND_ACTION_OK(cbs, action_ok_compressed_archive_push);
-               }
             }
             break;
          case FILE_TYPE_CORE:
@@ -9567,17 +9768,17 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_RDB:
             if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST)))
+                  msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST)))
             {
                BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
             }
             else if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST)))
+                  msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST)))
             {
                BIND_ACTION_OK(cbs, action_ok_database_manager_list);
             }
-            /* TODO/FIXME - refactor this */
-            else if (string_is_equal(menu_label, "Horizontal Menu"))
+            else if (string_is_equal(menu_label,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU)))
             {
                BIND_ACTION_OK(cbs, action_ok_database_manager_list);
             }
@@ -9637,9 +9838,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             {
                switch (cbs->enum_idx)
                {
+                  case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
                   case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
                   case MENU_ENUM_LABEL_FAVORITES:
-                  case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
 #ifdef HAVE_COMPRESSION
                      if (type == FILE_TYPE_IN_CARCHIVE)
                      {
@@ -9664,10 +9865,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             else
             {
-               if (
-                     string_is_equal(menu_label, "deferred_archive_open_detect_core") ||
-                     string_is_equal(menu_label, "downloaded_file_detect_core_list") ||
-                     string_is_equal(menu_label, "favorites")
+               if (     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE))
+                     || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST))
+                     || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES))
                   )
                {
 #ifdef HAVE_COMPRESSION
@@ -9681,11 +9881,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
                   }
                }
-               else if (string_is_equal(menu_label, "disk_image_append"))
+               else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND)))
                {
                   BIND_ACTION_OK(cbs, action_ok_disk_image_append);
                }
-               else if (string_is_equal(menu_label, "subsystem_add"))
+               else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD)))
                {
                   BIND_ACTION_OK(cbs, action_ok_subsystem_add);
                }

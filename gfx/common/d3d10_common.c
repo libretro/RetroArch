@@ -14,6 +14,7 @@
  */
 
 #define CINTERFACE
+#define WIN32_LEAN_AND_MEAN
 
 #include "d3d10_defines.h"
 #include "d3dcompiler_common.h"

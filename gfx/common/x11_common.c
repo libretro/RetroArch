@@ -813,13 +813,13 @@ bool x11_connect(void)
 
 void x11_update_title(void *data)
 {
-   size_t len;
+   size_t _len;
    char title[128];
-   title[0] = '\0';
-   len      = video_driver_get_window_title(title, sizeof(title));
+   title[0]  = '\0';
+   _len      = video_driver_get_window_title(title, sizeof(title));
    if (title[0])
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
-            8, PropModeReplace, (const unsigned char*)title, len);
+            8, PropModeReplace, (const unsigned char*)title, _len);
 }
 
 bool x11_input_ctx_new(bool true_full)

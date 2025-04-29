@@ -824,7 +824,10 @@ static ui_application_t ui_application_cocoa = {
 }
 
 - (void)applicationDidBecomeActive:(NSNotification *)notification  { }
-- (void)applicationWillResignActive:(NSNotification *)notification { }
+- (void)applicationWillResignActive:(NSNotification *)notification
+{
+   apple_input_keyboard_reset();
+}
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication { return YES; }
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
@@ -918,16 +921,23 @@ static void open_document_handler(
    if (!result)
       return;
 
-   path_set(RARCH_PATH_CONTENT, state->result);
-
-   if (core_name)
+   if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
+      action_scan_file(state->result, NULL, 0, 0);
+   else
    {
-      content_ctx_info_t content_info = {0};
-      task_push_load_content_with_current_core_from_companion_ui(
-            NULL,
-            &content_info,
-            CORE_TYPE_PLAIN,
-            NULL, NULL);
+      path_set(RARCH_PATH_CONTENT, state->result);
+
+      if (!string_is_empty(core_name))
+      {
+         content_ctx_info_t content_info = {0};
+         task_push_load_content_with_current_core_from_companion_ui(
+                                                                    NULL,
+                                                                    &content_info,
+                                                                    CORE_TYPE_PLAIN,
+                                                                    NULL, NULL);
+      }
+      else
+         cocoa_file_load_with_detect_core(state->result);
    }
 }
 

@@ -27,8 +27,10 @@
 
 #define SYSMEM1_SIZE 0x01800000
 
+#ifndef _SHIFTL
 #define _SHIFTL(v, s, w)	((uint32_t) (((uint32_t)(v) & ((0x01 << (w)) - 1)) << (s)))
 #define _SHIFTR(v, s, w)	((uint32_t)(((uint32_t)(v) >> (s)) & ((0x01 << (w)) - 1)))
+#endif
 
 #define OSThread lwp_t
 #define OSCond lwpq_t

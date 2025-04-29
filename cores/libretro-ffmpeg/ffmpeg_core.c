@@ -222,14 +222,14 @@ static void ass_msg_cb(int level, const char *fmt, va_list args, void *data)
 }
 #endif
 
-static void append_attachment(const uint8_t *data, size_t size)
+static void append_attachment(const uint8_t *data, size_t len)
 {
    attachments = (struct attachment*)av_realloc(
          attachments, (attachments_size + 1) * sizeof(*attachments));
 
-   attachments[attachments_size].data = (uint8_t*)av_malloc(size);
-   attachments[attachments_size].size = size;
-   memcpy(attachments[attachments_size].data, data, size);
+   attachments[attachments_size].data = (uint8_t*)av_malloc(len);
+   attachments[attachments_size].size = len;
+   memcpy(attachments[attachments_size].data, data, len);
 
    attachments_size++;
 }
@@ -2278,41 +2278,12 @@ size_t CORE_PREFIX(retro_serialize_size)(void)
    return 0;
 }
 
-bool CORE_PREFIX(retro_serialize)(void *data, size_t size)
-{
-   (void)data;
-   (void)size;
-   return false;
-}
-
-bool CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
-{
-   (void)data;
-   (void)size;
-   return false;
-}
-
-void *CORE_PREFIX(retro_get_memory_data)(unsigned id)
-{
-   (void)id;
-   return NULL;
-}
-
-size_t CORE_PREFIX(retro_get_memory_size)(unsigned id)
-{
-   (void)id;
-   return 0;
-}
-
-void CORE_PREFIX(retro_cheat_reset)(void)
-{}
-
-void CORE_PREFIX(retro_cheat_set)(unsigned index, bool enabled, const char *code)
-{
-   (void)index;
-   (void)enabled;
-   (void)code;
-}
+bool CORE_PREFIX(retro_serialize)(void *data, size_t len) { return false; }
+bool CORE_PREFIX(retro_unserialize)(const void *data, size_t len) { return false; }
+void *CORE_PREFIX(retro_get_memory_data)(unsigned id) { return NULL; }
+size_t CORE_PREFIX(retro_get_memory_size)(unsigned id) { return 0; }
+void CORE_PREFIX(retro_cheat_reset)(void) { }
+void CORE_PREFIX(retro_cheat_set)(unsigned a, bool b, const char *c) { }
 
 #if defined(LIBRETRO_SWITCH)
 

@@ -275,7 +275,6 @@ void video_shader_dir_check_shader(
       bool pressed_prev);
 
 bool video_shader_combine_preset_and_apply(
-      settings_t *settings,
       enum rarch_shader_type type,
       struct video_shader *menu_shader,
       const char *preset_path,

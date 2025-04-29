@@ -84,7 +84,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total);
  * Report HTTP status. 200, 404, or whatever.
  *
  * Leaf function.
- * 
+ *
  * @return HTTP status code.
  **/
 int net_http_status(struct http_t *state);
@@ -138,7 +138,7 @@ void net_http_urlencode(char **dest, const char *source);
  *
  * Re-encode a full URL
  **/
-void net_http_urlencode_full(char *dest, const char *source, size_t size);
+void net_http_urlencode_full(char *s, const char *source, size_t len);
 
 RETRO_END_DECLS
 

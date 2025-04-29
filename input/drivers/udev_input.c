@@ -574,7 +574,7 @@ typedef struct udev_input
 } udev_input_t;
 
 #ifdef UDEV_XKB_HANDLING
-int init_xkb(int fd, size_t size);
+int init_xkb(int fd, size_t len);
 void free_xkb(void);
 int handle_xkb(int code, int value);
 #endif
@@ -781,7 +781,7 @@ static int16_t udev_mouse_get_y(const udev_input_mouse_t *mouse)
    return y + (y < 0 ? -0.5 : 0.5);
 }
 
-static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse, 
+static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
             bool screen, bool confined, int16_t *ret_x, int16_t *ret_y)
 {
    struct video_viewport vp    = {0};
@@ -800,8 +800,8 @@ static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
    {
       /* mouse coordinates are relative to the full screen; convert them
        * to be relative to the viewport */
-      scaled_x = mouse->x_abs - mouse->x_min;
-      scaled_y = mouse->y_abs - mouse->y_min;
+      scaled_x = vp.full_width  * (mouse->x_abs - mouse->x_min) / (mouse->x_max - mouse->x_min + 1);
+      scaled_y = vp.full_height * (mouse->y_abs - mouse->y_min) / (mouse->y_max - mouse->y_min + 1);
    }
    else /* mouse coords are viewport relative */
    {
@@ -823,7 +823,7 @@ static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
    {
       return false;
    }
-   
+
    if (screen)
    {
       *ret_x = res_screen_x;
@@ -1209,14 +1209,14 @@ static const char *udev_mt_code_to_str(uint32_t code)
  *
  * @param label Label to prefix the message with.
  * @param request_data Input data structure to dump.
- * @param count Number of elements in the values array.
+ * @param len Number of elements in the values array.
  */
-static void udev_dump_mt_request_data(const char *label, const uint8_t *request_data, size_t count)
+static void udev_dump_mt_request_data(const char *label, const uint8_t *request_data, size_t len)
 {
    uint32_t *mt_req_code = (uint32_t*) request_data;
    int32_t *mt_req_values = ((int32_t*) request_data) + 1;
    RARCH_DBG("[udev] %s: Req { %s, [ ", label, udev_mt_code_to_str(*mt_req_code));
-   for (; mt_req_values < (((int32_t*) mt_req_code) + count + 1); ++mt_req_values)
+   for (; mt_req_values < (((int32_t*) mt_req_code) + len + 1); ++mt_req_values)
    {
       RARCH_DBG("%d, ", *mt_req_values);
    }
@@ -3787,7 +3787,7 @@ static int16_t udev_input_state(
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
+         if (binds)
          {
             int id_minus_key      = 0;
             int id_plus_key       = 0;
@@ -4126,7 +4126,28 @@ static void *udev_input_init(const char *joypad_driver)
    /* If using KMS and we forgot this,
     * we could lock ourselves out completely. */
    if (!udev->num_devices)
+   {
+      settings_t *settings = config_get_ptr();
       RARCH_WARN("[udev]: Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event* and /run/udev/?\n");
+      /* Start screen is not used nowadays, but it still gets true value only
+       * on first startup without config file, so it should be good to catch
+       * initial boots without udev devices available. */
+#if defined(__linux__) && !defined(ANDROID)
+      if (settings->bools.menu_show_start_screen)
+      {
+         /* Force fallback to linuxraw. Driver reselection would happen even
+          * without overwriting input_driver setting, but that would not be saved
+          * as input driver auto-changes are not stored (due to interlock with
+          * video context driver), and on next boot user would be stuck with a
+          * possibly nonworking configuration.
+          */
+         strlcpy(settings->arrays.input_driver, "linuxraw",
+                 sizeof(settings->arrays.input_driver));
+         RARCH_WARN("[udev]: First boot and without input devices, forcing fallback to linuxraw.\n");
+         goto error;
+      }
+#endif
+   }
 
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 

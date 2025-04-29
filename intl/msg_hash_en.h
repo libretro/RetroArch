@@ -525,13 +525,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Adjust the sensitivity of analogue sticks."
    )
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
    "Select the general behaviour of turbo mode."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
-   "If enabled, digital directional inputs (also known as D-Pad or 'hatswitch') can be turbo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
@@ -837,6 +834,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
    "Show the Mouse Cursor With Overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Analogue Recentring Zone"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Analogue stick input will be relative to first touch if pressed within this zone."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
@@ -1628,7 +1633,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Enable background display of running content while Quick Menu is active. Disabling transparency may alter theme colours."
+   "Enable background display of content while Quick Menu is active. Disabling transparency may alter theme colours."
    )
 
 /* RGUI: Settings Options */
@@ -1715,8 +1720,17 @@ MSG_HASH(
 
 /* XMB: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   "Grey Dark"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   "Grey Light"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
+
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
@@ -1742,6 +1756,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
    "Grey Light"
    )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
@@ -2270,10 +2285,6 @@ MSG_HASH(
    "Tap the Touch Screen to go\nto the RetroArch menu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Display bottom menu font. Enable to display button descriptions on the bottom screen. This excludes the save-state date."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
    "Font Colour Red"
    )
@@ -2307,4 +2318,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
    "Scan Finished.<br><br>\nIn order for content to be correctly scanned, you must:\n<ul><li>have a compatible core already downloaded</li>\n<li>have \"Core Info Files\" updated with the Online Updater</li>\n<li>have \"Databases\" updated with the Online Updater</li>\n<li>restart RetroArch if any of the above was just done</li></ul>\nFinally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>."
    )
+#endif
+#ifdef HAVE_GAME_AI
+
+
+
+
+
 #endif

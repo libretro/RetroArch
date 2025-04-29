@@ -24,9 +24,7 @@
 #include "menu_driver.h"
 #include "menu_displaylist.h"
 #include "../file_path_special.h"
-#include "../retroarch.h"
 #include "../core_info.h"
-#include "../configuration.h"
 
 #define CONTENTLESS_CORE_ICON_DEFAULT "default.png"
 
@@ -99,8 +97,8 @@ static void contentless_cores_free_info_entries(
 static void contentless_cores_init_info_entries(
       contentless_cores_state_t *state)
 {
-   core_info_list_t *core_info_list = NULL;
    size_t i;
+   core_info_list_t *core_info_list = NULL;
 
    if (!state)
       return;
@@ -126,7 +124,7 @@ static void contentless_cores_init_info_entries(
                (contentless_core_info_entry_t*)malloc(sizeof(*entry));
          size_t _len          = strlcpy(licenses_str,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
-               sizeof(licenses_str));
+               sizeof(licenses_str) - 3);
          licenses_str[  _len] = ':';
          licenses_str[++_len] = ' ';
          licenses_str[++_len] = '\0';
@@ -207,8 +205,8 @@ void menu_contentless_cores_get_info(const char *core_id,
 
 void menu_contentless_cores_flush_runtime(void)
 {
-   contentless_cores_state_t *state = contentless_cores_state;
    size_t i, cap;
+   contentless_cores_state_t *state = contentless_cores_state;
 
    if (!state || !state->info_entries)
       return;
@@ -402,12 +400,10 @@ void menu_contentless_cores_free(void)
    contentless_cores_state = NULL;
 }
 
-unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *settings)
+unsigned menu_displaylist_contentless_cores(file_list_t *list,
+      enum menu_contentless_cores_display_type core_display_type)
 {
    unsigned count                   = 0;
-   enum menu_contentless_cores_display_type
-         core_display_type          = (enum menu_contentless_cores_display_type)
-               settings->uints.menu_content_show_contentless_cores;
    core_info_list_t *core_info_list = NULL;
 
    /* Get core list */

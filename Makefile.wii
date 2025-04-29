@@ -265,11 +265,27 @@ ifeq ($(LOAD_WITHOUT_CORE_INFO),1)
    CFLAGS += -DLOAD_WITHOUT_CORE_INFO
 endif
 
+ifneq ($(V),1)
+   Q := @
+endif
+
 OBJOUT   = -o
 LINKOUT  = -o
 LINK = $(CXX)
 
-all: $(EXT_TARGET)
+all: info $(EXT_TARGET)
+
+define INFO
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+OBJOUT: $(OBJOUT)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 %.dol: %.elf
 	$(ELF2DOL) $< $@
@@ -278,13 +294,15 @@ $(EXT_INTER_TARGET): $(OBJ)
 	$(LINK) $(LINKOUT)$@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) $(LIBS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.cpp
 	$(CXX) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.S
-	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.binobj: %.bin
 	$(LD) -r -b binary $(OBJOUT)$@ $<
@@ -294,10 +312,11 @@ $(APP_BOOTER_DIR)/app_booter.bin:
 	$(MAKE) -C $(APP_BOOTER_DIR)
 
 clean:
-	rm -f $(EXT_TARGET)
-	rm -f $(EXT_INTER_TARGET)
-	rm -f $(OBJ)
-	$(MAKE) -C $(APP_BOOTER_DIR) clean
+	@$(if $(Q), echo $@,)
+	$(Q)rm -f $(EXT_TARGET)
+	$(Q)rm -f $(EXT_INTER_TARGET)
+	$(Q)rm -f $(OBJ)
+	$(Q)$(MAKE) -C $(APP_BOOTER_DIR) clean
 
 .PHONY: clean
 

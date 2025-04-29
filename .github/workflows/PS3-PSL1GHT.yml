@@ -1,0 +1,44 @@
+name: CI PS3/PSL1GHT
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-psl1ght:latest
+      options: --user root
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Compile Salamander
+      run: |
+        make -f Makefile.psl1ght.salamander -j$(getconf _NPROCESSORS_ONLN) clean
+        make -f Makefile.psl1ght.salamander -j$(getconf _NPROCESSORS_ONLN)
+
+    - name: Compile RA
+      run: |
+        make -f Makefile.psl1ght -j$(getconf _NPROCESSORS_ONLN) clean
+        make -f Makefile.psl1ght -j$(getconf _NPROCESSORS_ONLN) HAVE_STATIC_DUMMY=1
+
+    - name: Get short SHA
+      id: slug
+      run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: RA-psl1ght-dummy-${{ steps.slug.outputs.sha8 }}
+        path: |
+          retroarch_psl1ght_salamander.elf
+          retroarch_psl1ght.elf

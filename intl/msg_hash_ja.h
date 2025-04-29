@@ -727,6 +727,30 @@ MSG_HASH(
    "SDL2 対応"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
+   "Direct3D 8 対応"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
+   "Direct3D 9 対応"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
+   "Direct3D 10 対応"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
+   "Direct3D 11 対応"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
+   "Direct3D 12 対応"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
+   "GDI 対応"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
    "Vulkan 対応"
    )
@@ -807,6 +831,10 @@ MSG_HASH(
    "PulseAudio 対応"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
+   "PipeWire 対応"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
    "CoreAudio 対応"
    )
@@ -885,6 +913,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Video4Linux2 対応"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
+   "SSL 対応"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
@@ -1935,10 +1967,6 @@ MSG_HASH(
    "黒フレーム挿入"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "フレーム間に黒フレームを挿入します。CRT スキャンをエミュレートすることで残像感を大幅に減らすことができますが、明るさが減少します。1 以上のスワップ間隔 (自動は可)、フレーム遅延または正確なコンテンツフレームレートに同期と組み合わせないでください。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    "フレーム間に黒フレームを挿入し、動きをより鮮明にします。現在のディスプレイのリフレッシュレート用に準備されたオプションのみを使用してください。144Hz、165Hz など、60Hz の倍数ではないリフレッシュレートでは使用できません。1 以上のスワップ間隔、フレーム遅延または正確なフレームレートに同期と組み合わせないでください。"
    )
@@ -2019,10 +2047,6 @@ MSG_HASH(
    "シェーダーサブフレーム"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "フレーム間に追加のシェーダーフレームを挿入します。シェーダーで実際のコンテンツフレームレートよりも高い FPS で動作するエフェクトを実行できるようになります。現在のディスプレイ Hz に対応するオプションを設定する必要があります。1 以上のスワップ間隔、黒フレーム挿入、正確なフレームレートに同期と組み合わせないでください。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    "コンテンツフレームレートよりも高速に動作するように設計されたシェーダー効果用に、フレーム間に追加のシェーダーフレームを挿入します。現在のディスプレイ Hz に対応するオプションのみを使用してください。144Hz、165Hz など、60Hz の倍数ではないリフレッシュレートでは使用できません。"
    )
@@ -2093,10 +2117,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "ループ回転スキャンラインシミュレーション"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "画面を垂直に分割し、サブフレームの数に応じて画面の各部分をレンダリングすることで、複数のサブフレームにわたるブラウン管をカメラで撮影したときのようなループ回転スキャンラインをシミュレートします。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
@@ -2514,6 +2534,18 @@ MSG_HASH(
    "整数倍拡大"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "整数倍拡大軸"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "アンダースケール"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "オーバースケール"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    "スマート"
    )
@@ -2591,14 +2623,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    "表示領域 Y 座標補正"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   "表示領域がコンテンツの幅より広い場合、水平方向のオフセットに使用される補正値です。0.0 は左端を、1.0 は右端を表します。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "表示領域がコンテンツの高さより高い場合、垂直方向のオフセットに使用される補正値です。0.0 は上端を、1.0 は下端を表します。"
-   )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -2615,14 +2639,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "表示領域 Y 座標補正 (縦向き)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "表示領域がコンテンツの幅より広い場合、水平方向のオフセットに使用される補正値です。0.0 は左端を、1.0 は右端を表します (縦向き)。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "表示領域がコンテンツの高さより高い場合、垂直方向のオフセットに使用される補正値です。0.0 は上端を、1.0 は下端を表します (縦向き)。"
    )
 #endif
 MSG_HASH(
@@ -2853,16 +2869,8 @@ MSG_HASH(
    "サイレントモードですべてのオーディオを消音にします。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "早送り時に消音"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "早送りを使用中に自動的にオーディオを消音にします。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "早送り時に高速化"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
@@ -3381,21 +3389,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "長押し"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "連射"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "ターボ間隔"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "ターボを有効にしたボタンが押される間隔 (フレーム単位) です。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "ターボ間隔中のボタン押下フレーム数"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "ターボ間隔中にボタンの押下状態を維持するフレーム数です。この値をターボ間隔と同じかそれ以上にすると、ボタンは離されず押されたままの状態になります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3422,44 +3423,8 @@ MSG_HASH(
    "シングルボタン (長押し)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "クラシックモードです。ターボの有効化ボタンと連射したいボタンを同時に押している間、連射したいボタンが連射されます。\nターボの有効化ボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "クラシック切り替えモードです。連射したいボタンを押しながらターボの有効化ボタンを押すと、ターボを無効にするまで連射したいボタンが連射ボタンになります。ターボを無効にするには、連射ボタンを押しながらターボの有効化ボタンを押してください。\nターボの有効化ボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "切り替えモードです。ターボの有効化ボタンを一度押すと、次にターボの有効化ボタンを押すまで選択されたデフォルトボタンが押下せずとも自動で連射されます。\nターボの有効化ボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "長押しモードです。ターボの有効化ボタンを押している間、選択されたデフォルトボタンが連射されます。\nターボの有効化ボタンは [設定 > 入力 > ポート 1 コントロール] で割り当てることができます。\nホームコンピュータ時代の連射機能をエミュレートするには、ターボの有効化ボタンとデフォルトボタンをジョイスティックのファイアボタンと同じに設定します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "ターボデフォルトボタン"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "ターボモード [シングルボタン] で連射されるデフォルトのボタンです。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "十字キーのターボを許可"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
-   "有効にすると、デジタル方向入力 (十字キーまたは「ハットスイッチ」とも呼ばれます) がターボできるようになります。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "連射"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "連射の設定を変更します。\n注意: 連射機能を使用するには、対応する [ポート X コントロール] メニューで入力デバイスにターボの有効化ボタンを割り当てる必要があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3639,10 +3604,6 @@ MSG_HASH(
    "メニュー切り替え"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "現在の表示をメニューと実行中のコンテンツの間で切り替えます。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "終了 (コントローラー同時押し)"
    )
@@ -3717,10 +3678,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "一時停止"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "実行中のコンテンツの一時停止と非一時停止の状態を切り替えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -4311,10 +4268,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "ライトガン 十字キー 右"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "ターボの有効化"
-   )
 
 /* Settings > Latency */
 
@@ -4426,10 +4379,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "コア情報のステートセーブ機能の対応有無を無視"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "コア情報のステートセーブ機能の対応有無を無視するかどうかを指定し、関連する機能 (先行実行、巻き戻しなど) を試すことができます。"
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4672,10 +4621,6 @@ MSG_HASH(
    "自動ステートセーブ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "コンテンツを閉じたときに自動的にステートセーブを作成します。[自動ステートロード] が有効になっている場合、RetroArch はこのステートセーブを自動的にロードします。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
    "自動ステートロード"
    )
@@ -4854,10 +4799,6 @@ MSG_HASH(
    "ファイルブラウザに表示されるファイルを対応する拡張子でフィルタリングします。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-   "内蔵メディアプレイヤーを使用"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "現在のコアでフィルター"
    )
@@ -4868,6 +4809,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    "コンテンツをロードする際に、最後に使用したディレクトリでファイルブラウザを開きます。注意: 再起動すると場所はデフォルトにリセットされます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   "内蔵メディアプレイヤーを使用"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "内蔵画像ビューアを使用"
    )
 
 /* Settings > Frame Throttle */
@@ -5818,10 +5767,6 @@ MSG_HASH(
    "通知のサイズ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "フォントサイズをポイントで指定します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "通知の表示位置 (水平)"
    )
@@ -5973,10 +5918,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    "メニュー表示時にコンテンツを一時停止"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "メニューを表示している間、現在実行中のコンテンツを一時停止します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -6322,10 +6263,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "[プレイリスト] を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "[プレイリスト] メニューを表示します。 (Ozone/XMB で再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
@@ -6804,14 +6741,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    "[ユーザー] を表示"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "プレイリストアイコン"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "表示するプレイリストアイコンサムネイルの種類です。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -7772,10 +7701,6 @@ MSG_HASH(
    "対応するコアがインストールされていないコンテンツをスキャンし、プレイリストに追加することを許可します。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   "スキャン時に重複の可能性がある場合 CRC をチェック"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
    "特に PSP/PSN タイトルで、ISO が重複するシリアルを持つ場合があります。シリアルにのみ依存すると、スキャナーがコンテンツを間違ったシステムに入れてしまうことがあります。これにより CRC チェックが追加され、スキャンが大幅に遅くなりますが、より正確になる可能性があります。"
    )
@@ -8032,7 +7957,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "ファイルブラウザ"
+   "開始ディレクトリ"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -8274,10 +8199,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
    "Rich Presence コンテンツ形式"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "実行中のコンテンツに関連する情報について、どのような情報を共有するかを決定します。"
    )
 
 MSG_HASH(
@@ -8876,10 +8797,6 @@ MSG_HASH(
    "再開"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "クイックメニューを閉じて現在動作中のアプリを再開します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "再起動"
    )
@@ -8890,10 +8807,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "コンテンツを閉じる"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "現在のコンテンツを閉じます。すべての保存されていない設定は失われる可能性があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9028,16 +8941,8 @@ MSG_HASH(
    "コアオプション"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "現在動作中のコンテンツのオプションを変更します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "コントロール"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "現在動作中のコンテンツのコントロールを変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9132,14 +9037,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
    "現在使用中のオプションファイルです。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "オプションをリセット"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "すべてのコアオプションをデフォルトの値に設定します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
@@ -9668,10 +9565,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    "ディスク上のシェーダーファイルに加えられた変更を自動的に適用します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "シェーダーファイルの新しい変更を監視します。シェーダーの変更をディスクに保存すると、自動的に再コンパイルされ実行中のコンテンツに適用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -10915,10 +10808,6 @@ MSG_HASH(
    "透明度"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "クイックメニューがアクティブな間、実行中のコンテンツの背景表示を有効にします。透明度を無効にするとテーマカラーが変わることがあります。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "影のエフェクト"
    )
@@ -11455,6 +11344,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR,
    "ミッドガル"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   "グレーダーク"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   "グレーライト"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -11483,6 +11380,31 @@ MSG_HASH(
    "メーカー名が削除されたプレイリストをアルファベット順に並べ替えます。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "セカンダリーサムネイル"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "コンテンツのメタデータパネルを、選択したサムネイルを表示するパネルに置き換えます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "コンテンツのメタデータ表示にティッカーテキストを使用"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "有効にすると、プレイリストの右サイドバーに表示されるコンテンツメタデータの各項目 (関連付けされたコア、プレイ時間) が 1 行で表示されます。サイドバーの幅を超える文字列はスクロールティッカーテキストとして表示されます。無効にすると、コンテンツメタデータの各項目は静的に表示され、必要な行数に応じて折り返されます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "サムネイル表示倍率"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "サムネイルバーのサイズの表示倍率です。"
+   )
+
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "カラーテーマ"
    )
@@ -11510,30 +11432,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN,
    "パープルレイン"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "セカンダリーサムネイル"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "コンテンツのメタデータパネルを、選択したサムネイルを表示するパネルに置き換えます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "コンテンツのメタデータ表示にティッカーテキストを使用"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "有効にすると、プレイリストの右サイドバーに表示されるコンテンツメタデータの各項目 (関連付けされたコア、プレイ時間) が 1 行で表示されます。サイドバーの幅を超える文字列はスクロールティッカーテキストとして表示されます。無効にすると、コンテンツメタデータの各項目は静的に表示され、必要な行数に応じて折り返されます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "サムネイル表示倍率"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "サムネイルバーのサイズの表示倍率です。"
-   )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
@@ -11898,6 +11797,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
    "タイトルスクリーン"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
+   "ロゴ"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
@@ -12451,10 +12354,6 @@ MSG_HASH(
    "キーボード"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-   "内蔵画像ビューアを使用"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "最大スワップチェーンイメージ"
    )
@@ -12588,14 +12487,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
    "プレイリストから選択"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "再開"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "クイックメニューを閉じて現在動作中のアプリを再開します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
@@ -13194,10 +13085,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTODETECT,
    "自動検出"
-   )
-MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "ステートセーブを自動ロード中 from"
    )
 MSG_HASH(
    MSG_CAPABILITIES,
@@ -14286,6 +14173,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "仮想ディスクトレイを閉じることができませんでした。"
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "ステートセーブを自動ロード中 from"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
@@ -15514,10 +15405,6 @@ MSG_HASH(
    "フォントを有効にする"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "下メニューのフォントを表示します。下画面にボタンの説明を表示することが出来ます。ステートセーブの日付は表示されません。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
    "フォントの色 (赤)"
    )
@@ -15584,3 +15471,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "停止しました。"
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

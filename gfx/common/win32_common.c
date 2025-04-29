@@ -15,6 +15,8 @@
 
 #if !defined(_XBOX)
 
+#define WIN32_LEAN_AND_MEAN
+
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0601 /* Windows 7 */
 #endif
@@ -333,10 +335,11 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
    {
       case WM_INITDIALOG:
          {
+            const core_info_t *info = NULL;
             HWND hwndList;
             unsigned i;
-            /* Add items to list.  */
 
+            /* Add items to list.  */
             core_info_get_list(&core_info_list);
             core_info_list_get_supported_cores(core_info_list,
                   path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
@@ -349,6 +352,12 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
                SendMessage(hwndList, LB_ADDSTRING, 0,
                      (LPARAM)info->display_name);
             }
+
+            /* Select the first item in the list */
+            SendMessage(hwndList, LB_SETCURSEL, 0, 0);
+            info = (const core_info_t*)&core_info[0];
+            path_set(RARCH_PATH_CORE, info->path);
+
             SetFocus(hwndList);
             return TRUE;
          }
@@ -1325,22 +1334,22 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             if (gcs)
             {
                int i;
-               wchar_t wstr[4]={0,};
-               int len1 = ImmGetCompositionStringW(hIMC, gcs, wstr, 4);
-               wstr[2]  = wstr[1];
-               wstr[1]  = 0;
-               if ((len1 <= 0) || (len1 > 4))
+               wchar_t wstr[4] = {0,};
+               LONG _len       = ImmGetCompositionStringW(hIMC, gcs, wstr, 4);
+               wstr[2]         = wstr[1];
+               wstr[1]         = 0;
+               if ((_len <= 0) || (_len > 4))
                   break;
-               for (i = 0; i < len1; i = i + 2)
+               for (i = 0; i < _len; i = i + 2)
                {
-                  size_t len2;
+                  size_t __len;
                   char *utf8   = utf16_to_utf8_string_alloc(wstr+i);
                   if (!utf8)
                      continue;
-                  len2         = strlen(utf8) + 1;
-                  if (len2 >= 1 && len2 <= 3)
+                  __len         = strlen(utf8) + 1;
+                  if (__len >= 1 && __len <= 3)
                   {
-                     if (len2 >= 2)
+                     if (__len >= 2)
                         utf8[3] = (gcs) | (gcs >> 4);
                      input_keyboard_event(true, 1, *((int*)utf8), 0, RETRO_DEVICE_KEYBOARD);
                   }
@@ -1373,8 +1382,10 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                keysym |= 0x80;
 
             /* tell the driver about shift and alt key events */
-            if (keysym == 0x2A/*DIK_LSHIFT*/ || keysym == 0x36/*DIK_RSHIFT*/
-                     || keysym == 0x38/*DIK_LMENU*/ || keysym == 0xB8/*DIK_RMENU*/)
+            if (        keysym == 0x2A/*DIK_LSHIFT*/
+                     || keysym == 0x36/*DIK_RSHIFT*/
+                     || keysym == 0x38/*DIK_LMENU*/
+                     || keysym == 0xB8/*DIK_RMENU*/)
             {
                void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
                if (input_data && dinput_handle_message(input_data,
@@ -2115,7 +2126,7 @@ static void win32_localize_menu(HMENU menu)
       memset(&menu_item_info, 0, sizeof(menu_item_info));
       menu_item_info.cbSize     = sizeof(menu_item_info);
       menu_item_info.dwTypeData = NULL;
-#if(WINVER >= 0x0500)
+#if (WINVER >= 0x0500)
       menu_item_info.fMask      = MIIM_STRING | MIIM_FTYPE | MIIM_ID | MIIM_STATE | MIIM_SUBMENU;
 #else
       menu_item_info.fMask      =                            MIIM_ID | MIIM_STATE | MIIM_SUBMENU;
@@ -2137,7 +2148,7 @@ static void win32_localize_menu(HMENU menu)
       if (label_enum != MSG_UNKNOWN)
       {
          int len;
-         size_t len2;
+         size_t __len;
 #ifndef LEGACY_WIN32
          wchar_t* new_label_unicode = NULL;
 #else
@@ -2156,38 +2167,38 @@ static void win32_localize_menu(HMENU menu)
                MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
          {
             meta_key_name = "Ctrl+O";
-            len2          = STRLEN_CONST("Ctrl+O");
+            __len         = STRLEN_CONST("Ctrl+O");
          }
          else if (label_enum ==
                MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY)
          {
             meta_key_name = "Alt+Enter";
-            len2          = STRLEN_CONST("Alt+Enter");
+            __len        = STRLEN_CONST("Alt+Enter");
          }
          else if (meta_key != 0)
          {
             meta_key_name = win32_meta_key_to_name(meta_key);
-            len2          = strlen(meta_key_name);
+            __len        = strlen(meta_key_name);
          }
 
          /* Append localized name, tab character, and Shortcut Key */
          if (meta_key_name && string_is_not_equal(meta_key_name, "nul"))
          {
-            size_t len1     = strlen(new_label);
-            size_t buf_size = len1 + len2 + 2;
+            size_t _len     = strlen(new_label);
+            size_t buf_size = _len + __len + 2;
             new_label_text  = (char*)malloc(buf_size);
 
             if (new_label_text)
             {
-               size_t _len;
+               size_t __len;
                new_label2              = new_label_text;
-               _len                    = strlcpy(new_label_text, new_label,
+               __len                   = strlcpy(new_label_text, new_label,
                      buf_size);
-               new_label_text[  _len]  = '\t';
-               new_label_text[++_len]  = '\0';
-               strlcpy(new_label_text + _len, meta_key_name, buf_size - _len);
+               new_label_text[  __len] = '\t';
+               new_label_text[++__len] = '\0';
+               strlcpy(new_label_text + __len, meta_key_name, buf_size - __len);
                /* Make first character of shortcut name uppercase */
-               new_label_text[len1 + 1] = toupper(new_label_text[len1 + 1]);
+               new_label_text[_len + 1] = toupper(new_label_text[_len + 1]);
             }
          }
 

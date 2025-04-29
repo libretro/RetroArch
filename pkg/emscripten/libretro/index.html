@@ -1,210 +1,204 @@
 <!doctype html>
 <html lang="en">
-<head>
-   <meta charset="utf-8">
-   <title>RetroArch Web Player</title>
-   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <!-- Bootstrap core CSS -->
-   <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.3/css/bootstrap.min.css" rel="stylesheet" type="text/css">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.0/css/font-awesome.min.css">
-    <!-- Material Design Bootstrap -->
-    <link href="//cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.1.1/css/mdb.min.css" rel="stylesheet">
-
-   <link href="libretro.css" rel="stylesheet" type="text/css">
-   <link rel="shortcut icon" href="media/retroarch.ico" />
-
-</head>
-<body>
-   <!--Navbar-->
-   <nav class="navbar navbar-dark bg-primary">
-     <div class="container">
-           <!--navbar content-->
-           <div class="navbar-toggleable-xs">
+   <head>
+      <meta charset="utf-8">
+      <title>RetroArch Web Player</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <!-- Bootstrap core CSS -->
+      <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.3/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+      <!-- Font Awesome -->
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.0/css/font-awesome.min.css">
+      <!-- Material Design Bootstrap -->
+      <link href="//cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.1.1/css/mdb.min.css" rel="stylesheet">
+      <link href="libretro.css" rel="stylesheet" type="text/css">
+      <link rel="shortcut icon" href="media/retroarch.ico" />
+   </head>
+   <body>
+      <!--Navbar-->
+      <nav class="navbar navbar-dark bg-primary">
+         <div class="container">
+            <!--navbar content-->
+            <div class="navbar-toggleable-xs">
                <!--Links-->
                <ul class="nav navbar-nav">
                   <div class="dropdown">
-                  <li class="nav-item dropdown">
+                     <li class="nav-item dropdown">
                         <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Core Selection</button>
                         <div class="dropdown-menu dropdown-primary" aria-labelledby="dropdownMenu1" data-dropdown-in="fadeIn" data-dropdown-out="fadeOut" id="core-selector">
                            <a class="dropdown-item" href="." data-core="2048">2048</a>
-                           <a class="dropdown-item" href="." data-core="arduous">Arduous</a>
-                           <a class="dropdown-item" href="." data-core="bk">BK</a>
-                           <a class="dropdown-item" href="." data-core="bluemsx">BlueMSX</a>
+                           <a class="dropdown-item" href="." data-core="anarch">Anarch</a>
+                           <a class="dropdown-item" href="." data-core="ardens">Arduboy (Ardens)</a>
+                           <a class="dropdown-item" href="." data-core="arduous">Arduboy (Arduous)</a>
+                           <a class="dropdown-item" href="." data-core="bk">Elektronika - BK-0010/BK-0011 (BK)</a>
                            <a class="dropdown-item" href="." data-core="chailove">ChaiLove</a>
-                           <a class="dropdown-item" href="." data-core="craft">Craft</a>
-                           <a class="dropdown-item" href="." data-core="desmume">DeSmuME</a>
-                           <a class="dropdown-item" href="." data-core="dosbox">DOSBox</a>
-                           <a class="dropdown-item" href="." data-core="easyrpg">EasyRPG</a>
-                           <a class="dropdown-item" href="." data-core="ecwolf">ECWolf</a>
-                           <a class="dropdown-item" href="." data-core="fbalpha2012">FB Alpha 2012</a>
-                           <a class="dropdown-item" href="." data-core="fbalpha2012_cps1">FB Alpha 2012 CPS1</a>
-                           <a class="dropdown-item" href="." data-core="fbalpha2012_cps2">FB Alpha 2012 CPS2</a>
-                           <a class="dropdown-item" href="." data-core="fbalpha2012_neo">FB Alpha 2012 NeoGeo</a>
-                           <a class="dropdown-item" href="." data-core="fceumm">FCEUmm</a>
-                           <a class="dropdown-item" href="." data-core="ffmpeg">FFmpeg</a>
-                           <a class="dropdown-item" href="." data-core="freechaf">FreeChaF</a>
-                           <a class="dropdown-item" href="." data-core="gambatte">Gambatte</a>
+                           <a class="dropdown-item" href="." data-core="craft">Minecraft (Craft)</a>
+                           <a class="dropdown-item" href="." data-core="DoubleCherryGB">Nintendo - Game Boy / Color (DoubleCherryGB)</a>
+                           <a class="dropdown-item" href="." data-core="ecwolf">Wolfenstein 3D (ECWolf)</a>
+                           <a class="dropdown-item" href="." data-core="fbalpha2012">Arcade (FB Alpha 2012)</a>
+                           <a class="dropdown-item" href="." data-core="fbalpha2012_cps1">Arcade (FB Alpha 2012 CPS1)</a>
+                           <a class="dropdown-item" href="." data-core="fbalpha2012_cps2">Arcade (FB Alpha 2012 CPS2)</a>
+                           <a class="dropdown-item" href="." data-core="fbalpha2012_neogeo">Arcade (FB Alpha 2012 NeoGeo)</a>
+                           <a class="dropdown-item" href="." data-core="fceumm">Nintendo - NES / Famicom (FCEUmm)</a>
+                           <a class="dropdown-item" href="." data-core="freechaf">Fairchild ChannelF (FreeChaF)</a>
+                           <a class="dropdown-item" href="." data-core="galaksija">Galaksija</a>
+                           <a class="dropdown-item" href="." data-core="gambatte">Nintendo - Game Boy / Color (Gambatte)</a>
                            <a class="dropdown-item" href="." data-core="gme">Game Music Emu</a>
-                           <a class="dropdown-item" href="." data-core="gearboy">GearBoy</a>
-                           <a class="dropdown-item" href="." data-core="gearcoleco">GearColeco</a>
-                           <a class="dropdown-item" href="." data-core="gearsystem">GearSystem</a>
-                           <a class="dropdown-item" href="." data-core="genesis_plus_gx">Genesis Plus GX</a>
-                           <a class="dropdown-item" href="." data-core="genesis_plus_gx_wide">Genesis Plus GX Wide</a>
-                           <a class="dropdown-item" href="." data-core="glupen64">GLupeN64</a>
-                           <!--<a class="dropdown-item" href="." data-core="gpsp">gPSP</a>-->
-                           <a class="dropdown-item" href="." data-core="handy">Handy</a>
-                           <a class="dropdown-item" href="." data-core="jaxe">JAXE</a>
+                           <a class="dropdown-item" href="." data-core="gearboy">Nintendo - Game Boy / Color (GearBoy)</a>
+                           <a class="dropdown-item" href="." data-core="gearcoleco">Coleco - ColecoVision (GearColeco)</a>
+                           <a class="dropdown-item" href="." data-core="gearsystem">Sega - MS/GG/SG-1000 (GearSystem)</a>
+                           <a class="dropdown-item" href="." data-core="genesis_plus_gx">Sega - MS/GG/MD/CD (Genesis Plus GX)</a>
+                           <a class="dropdown-item" href="." data-core="genesis_plus_gx_wide">Sega - MS/GG/MD/CD (Genesis Plus GX Wide)</a>
+                           <a class="dropdown-item" href="." data-core="gong">Gong</a>
+                           <a class="dropdown-item" href="." data-core="gw">Handheld Electronic (GW)</a>
+                           <a class="dropdown-item" href="." data-core="handy">Atari - Lynx (Handy)</a>
+                           <a class="dropdown-item" href="." data-core="jaxe">CHIP-8/S-CHIP/XO-CHIP (JAXE)</a>
                            <a class="dropdown-item" href="." data-core="jumpnbump">Jump 'n Bump</a>
                            <a class="dropdown-item" href="." data-core="lowresnx">LowResNX</a>
-                           <a class="dropdown-item" href="." data-core="lutro">Lutro</a>
-                           <a class="dropdown-item" href="." data-core="m2000">M2000</a>
-                           <a class="dropdown-item" href="." data-core="mame2000">MAME 2000</a>
-                           <a class="dropdown-item" href="." data-core="mame2003">MAME 2003</a>
-                           <a class="dropdown-item" href="." data-core="mame2003_plus">MAME 2003-Plus</a>
-                           <a class="dropdown-item" href="." data-core="mednafen_lynx">Mednafen Lynx</a>
-                           <a class="dropdown-item" href="." data-core="mednafen_ngp">Mednafen Neo Geo Pocket</a>
-                           <a class="dropdown-item" href="." data-core="mednafen_pce_fast">Mednafen PC Engine Fast</a>
-                           <!--<a class="dropdown-item" href="." data-core="mednafen_pcfx">Mednafen/Beetle PCFX</a>-->
-                           <a class="dropdown-item" href="." data-core="mednafen_psx">Mednafen/Beetle PSX</a>
-                           <!--<a class="dropdown-item" href="." data-core="mednafen_saturn">Mednafen/Beetle Saturn</a>-->
-                           <a class="dropdown-item" href="." data-core="mednafen_snes">Mednafen/Beetle SNES</a>
-                           <a class="dropdown-item" href="." data-core="mednafen_vb">Mednafen/Beetle Virtual Boy</a>
-                           <a class="dropdown-item" href="." data-core="mednafen_wswan">Mednafen/Beetle WonderSwan</a>
-                           <a class="dropdown-item" href="." data-core="mgba">Mgba</a>
-                           <a class="dropdown-item" href="." data-core="minivmac">MiniVmac</a>
-                           <a class="dropdown-item" href="." data-core="mu">Mu</a>
-                           <a class="dropdown-item" href="." data-core="mupen64plus">Mupen64 Plus</a>
-                           <a class="dropdown-item" href="." data-core="mrboom">MrBoom</a>
-                           <a class="dropdown-item" href="." data-core="nestopia">Nestopia</a>
-                           <a class="dropdown-item" href="." data-core="nxengine">NX Engine</a>
-                           <a class="dropdown-item" href="." data-core="o2em">O2em</a>
-                           <a class="dropdown-item" href="." data-core="opera">Opera</a>
-                           <a class="dropdown-item" href="." data-core="picodrive">PicoDrive</a>
-                           <a class="dropdown-item" href="." data-core="prboom">PrBoom</a>
-                           <a class="dropdown-item" href="." data-core="quasi88">Quasi88</a>
-                           <a class="dropdown-item" href="." data-core="quicknes">QuickNES</a>
-                           <a class="dropdown-item" href="." data-core="retro8">Retro8</a>
-                           <a class="dropdown-item" href="." data-core="flycast">Flycast</a>
-                           <a class="dropdown-item" href="." data-core="snes9x2002">Snes9x 2002</a>
-                           <a class="dropdown-item" href="." data-core="snes9x2005">Snes9x 2005</a>
-                           <a class="dropdown-item" href="." data-core="snes9x2010">Snes9x 2010</a>
-                           <a class="dropdown-item" href="." data-core="snes9x">Snes9x</a>
-                           <a class="dropdown-item" href="." data-core="squirreljme">SquirrelJME</a>
-                           <a class="dropdown-item" href="." data-core="stella">Stella</a>
-                           <a class="dropdown-item" href="." data-core="tgbdual">TGB Dual</a>
+                           <a class="dropdown-item" href="." data-core="lutro">Lua Engine (Lutro)</a>
+                           <a class="dropdown-item" href="." data-core="m2000">Philips - P2000T (M2000)</a>
+                           <a class="dropdown-item" href="." data-core="mame2000">Arcade - MAME 2000</a>
+                           <a class="dropdown-item" href="." data-core="mame2003">Arcade - MAME 2003</a>
+                           <a class="dropdown-item" href="." data-core="mame2003_plus">Arcade - MAME 2003-Plus</a>
+                           <a class="dropdown-item" href="." data-core="mednafen_lynx">Atari - Lynx (Beetle Lynx)</a>
+                           <a class="dropdown-item" href="." data-core="mednafen_ngp">SNK - Neo Geo Pocket / Color (Beetle Neo Geo Pop)</a>
+                           <a class="dropdown-item" href="." data-core="mednafen_pce_fast">NEC - PC Engine / CD (Beetle PC Engine Fast)</a>
+                           <a class="dropdown-item" href="." data-core="mednafen_vb">Nintendo - Virtual Boy (Beetle VB)</a>
+                           <a class="dropdown-item" href="." data-core="mednafen_wswan">Bandai - WonderSwan/Color (Beetle WonderSwan)</a>
+                           <a class="dropdown-item" href="." data-core="mgba">Nintendo - Game Boy Advance (mGBA)</a>
+                           <a class="dropdown-item" href="." data-core="minivmac">Mac II (MiniVmac)</a>
+                           <a class="dropdown-item" href="." data-core="mu">Palm OS(Mu)</a>
+                           <a class="dropdown-item" href="." data-core="mrboom">Bomberman (Mr.Boom)</a>
+                           <a class="dropdown-item" href="." data-core="neocd">SNK - Neo Geo CD (NeoCD)</a>
+                           <a class="dropdown-item" href="." data-core="nestopia">Nintendo - NES / Famicom (Nestopia)</a>
+                           <a class="dropdown-item" href="." data-core="numero">Texas Instruments TI-83 (Numero)</a>
+                           <a class="dropdown-item" href="." data-core="nxengine">Cave Story (NX Engine)</a>
+                           <a class="dropdown-item" href="." data-core="o2em">Magnavox - Odyssey2 / Philips Videopac+ (O2EM)</a>
+                           <a class="dropdown-item" href="." data-core="opera">The 3DO Company - 3DO (Opera)</a>
+                           <a class="dropdown-item" href="." data-core="pcsx_rearmed">Sony - PlayStation (PCSX ReARMed)</a>
+                           <a class="dropdown-item" href="." data-core="picodrive">Sega - MS/GG/MD/CD/32X (PicoDrive)</a>
+                           <a class="dropdown-item" href="." data-core="pocketcdg">PocketCDG</a>
+                           <a class="dropdown-item" href="." data-core="prboom">Doom (PrBoom)</a>
+                           <a class="dropdown-item" href="." data-core="quasi88">NEC - PC-8000 / PC-8800 series (QUASI88)</a>
+                           <a class="dropdown-item" href="." data-core="quicknes">Nintendo - NES / Famicom (QuickNES)</a>
+                           <a class="dropdown-item" href="." data-core="retro8">PICO-8 (Retro8)</a>
+                           <a class="dropdown-item" href="." data-core="scummvm">ScummVM</a>
+                           <a class="dropdown-item" href="." data-core="snes9x2002">Nintendo - SNES / SFC (Snes9x 2002)</a>
+                           <a class="dropdown-item" href="." data-core="snes9x2005">Nintendo - SNES / SFC (Snes9x 2005)</a>
+                           <a class="dropdown-item" href="." data-core="snes9x2010">Nintendo - SNES / SFC (Snes9x 2010)</a>
+                           <a class="dropdown-item" href="." data-core="snes9x">Nintendo - SNES / SFC (Snes9x)</a>
+                           <a class="dropdown-item" href="." data-core="squirreljme">Java ME (SquirrelJME)</a>
+                           <a class="dropdown-item" href="." data-core="tamalibretro">Bandai - Tamagothci P1 (TamaLIBretro)</a>
+                           <a class="dropdown-item" href="." data-core="tgbdual">Nintendo - Game Boy / Color (TGB Dual)</a>
                            <a class="dropdown-item" href="." data-core="theodore">Theodore (Thomson TO8/TO9)</a>
                            <a class="dropdown-item" href="." data-core="tic80">TIC-80</a>
-                           <a class="dropdown-item" href="." data-core="tyrquake">TyrQuake</a>
-                           <a class="dropdown-item" href="." data-core="uzem">UZEM</a>
+                           <a class="dropdown-item" href="." data-core="tyrquake">Quake (TyrQuake)</a>
+                           <a class="dropdown-item" href="." data-core="uw8">MicroW8 (UW8)</a>
+                           <a class="dropdown-item" href="." data-core="uzem">Uzebox (Uzem)</a>
                            <a class="dropdown-item" href="." data-core="vaporspec">Vaporspec</a>
-                           <a class="dropdown-item" href="." data-core="vba_next">VBA Next</a>
-                           <a class="dropdown-item" href="." data-core="vecx">Vecx</a>
-                           <a class="dropdown-item" href="." data-core="vice_x64">VICE x64</a>
-                           <a class="dropdown-item" href="." data-core="vice_x64sc">VICE x64sc</a>
-                           <a class="dropdown-item" href="." data-core="vice_x128">VICE x128</a>
-                           <a class="dropdown-item" href="." data-core="vice_xcbm2">VICE xcbm2</a>
-                           <a class="dropdown-item" href="." data-core="vice_xcbm5x0">VICE xcbm5x0</a>
-                           <a class="dropdown-item" href="." data-core="vice_xpet">VICE xPET</a>
-                           <a class="dropdown-item" href="." data-core="vice_xplus4">VICE xPlus4</a>
-                           <a class="dropdown-item" href="." data-core="vice_xscpu64">VICE xscpu4</a>
-                           <a class="dropdown-item" href="." data-core="vice_xvic">VICE xVIC</a>
-                           <a class="dropdown-item" href="." data-core="vitaquake2">Vita Quake2</a>
-                           <a class="dropdown-item" href="." data-core="vitaquake2-rogue">Vita Quake2 (rogue)</a>
-                           <a class="dropdown-item" href="." data-core="vitaquake2-xatrix">Vita Quake2 (xatrix)</a>
-                           <a class="dropdown-item" href="." data-core="vitaquake2-zaero">Vita Quake2 (zaero)</a>
-                           <a class="dropdown-item" href="." data-core="virtualjaguar">Virtual Jaguar</a>
+                           <a class="dropdown-item" href="." data-core="vba_next">Nintendo - Game Boy Advance (VBA Next)</a>
+                           <a class="dropdown-item" href="." data-core="vecx">GCE - Vectrex (Vecx)</a>
+                           <a class="dropdown-item" href="." data-core="vice_x64">Commodore - C64 (VICE x64, fast)</a>
+                           <a class="dropdown-item" href="." data-core="vice_x64sc">Commodore - C64 (VICE x64sc, accurate)</a>
+                           <a class="dropdown-item" href="." data-core="vice_x128">Commodore - C128 (VICE x128)</a>
+                           <a class="dropdown-item" href="." data-core="vice_xcbm2">Commodore - CBM-II 6x0/7x0 (VICE xcbm2)</a>
+                           <a class="dropdown-item" href="." data-core="vice_xcbm5x0">Commodore - CBM-II 5x0 (xcbm5x0)</a>
+                           <a class="dropdown-item" href="." data-core="vice_xpet">Commodore - PET (VICE xpet)</a>
+                           <a class="dropdown-item" href="." data-core="vice_xplus4">Commodore - PLUS/4 (VICE xplus4)</a>
+                           <a class="dropdown-item" href="." data-core="vice_xscpu64">Commodore - C64 SuperCPU (VICE xscpu4)</a>
+                           <a class="dropdown-item" href="." data-core="vice_xvic">Commodore - VIC-20 (VICE xvic)</a>
+                           <a class="dropdown-item" href="." data-core="virtualxt">VirtualXT</a>
+                           <a class="dropdown-item" href="." data-core="vitaquake2">Quake II (vitaQuake 2)</a>
+                           <a class="dropdown-item" href="." data-core="vitaquake2-rogue">Quake II - Ground Zero (vitaQuake2 (rogue))</a>
+                           <a class="dropdown-item" href="." data-core="vitaquake2-xatrix">Quake II - The Reckoning (vitaQuake2 (xatrix))</a>
+                           <a class="dropdown-item" href="." data-core="vitaquake2-zaero">Quake II - Zaero (vitaQuake2 (zaero))</a>
                            <a class="dropdown-item" href="." data-core="wasm4">WASM4</a>
-                           <a class="dropdown-item" href="." data-core="x1">XMillenium</a>
-                           <a class="dropdown-item" href="." data-core="xrick">XRick</a>
-                           <a class="dropdown-item" href="." data-core="yabause">Yabause</a>
+                           <a class="dropdown-item" href="." data-core="x1">Sharp X1 (X Millenium)</a>
+                           <a class="dropdown-item" href="." data-core="xrick">Rick Dangerous (XRick)</a>
                         </div>
-                        <button class="btn btn-primary disabled" id="btnRun" onclick="startRetroArch()" disabled>
-                           <span class="fa fa-spinner fa-spin" id="icnRun"></span> Run
+                        <button class="btn btn-primary disabled" id="btnRun" disabled>
+                        <span class="fa fa-spinner fa-spin" id="icnRun"></span> Run
                         </button>
-                        <button class="btn btn-primary disabled" id="btnAdd" onclick="document.getElementById('btnRom').click()" disabled>
-                           <span class="fa fa-plus" id="icnAdd"></span> Add Content
+                        <button class="btn btn-primary disabled" id="btnAdd" disabled>
+                        <span class="fa fa-plus" id="icnAdd"></span> Add Content
                         </button>
-                        <button class="btn btn-primary tooltip-enable" id="btnClean" onclick="cleanupStorage();" title="Cleanup storage">
-                           <span class="fa fa-trash-o" id="icnClean"></span> <span class="sr-only">Cleanup</span>
+                        <input style="display: none" type="file" id="btnRom" name="upload" multiple />
+                        <button class="btn btn-primary tooltip-enable" id="btnClean" title="Cleanup storage">
+                        <span class="fa fa-trash-o" id="icnClean"></span> <span class="sr-only">Cleanup</span>
                         </button>
-                        <input class="btn btn-primary disabled" style="display: none" type="file" id="btnRom" name="upload" onclick="document.getElementById('btnAdd').click();" onchange="selectFiles(event.target.files)" multiple />
-                        <button class="btn btn-primary disabled tooltip-enable" id="btnMenu" onclick="keyPress('F1');" title="Menu toggle" disabled>
-                           <span class="fa fa-bars" id="btnMenu"></span> <span class="sr-only">Menu</span>
+                        <button class="btn btn-primary disabled tooltip-enable" id="btnMenu" title="Menu toggle" disabled>
+                        <span class="fa fa-bars" id="icnMenu"></span> <span class="sr-only">Menu</span>
                         </button>
-                        <button class="btn btn-primary disabled tooltip-enable" id="btnFullscreen" onclick="Module.requestFullscreen(false)" title="Fullscreen" disabled>
-                           <span class="fa fa-desktop" id="icnAdd"></span> <span class="sr-only">Fullscreen</span>
-                        </button>
+                        <button class="btn btn-primary disabled tooltip-enable" id="btnFullscreen" title="Fullscreen" disabled>
+                        <span class="fa fa-desktop" id="icnFullscreen"></span> <span class="sr-only">Fullscreen</span>
                         </button>
                         <button type="button" class="btn btn-primary tooltip-enable" data-toggle="modal" data-target="#helpModal">Help</button>
-                   </li>
-                </div>
+                     </li>
+                  </div>
                </ul>
                <div class="toggleMenu">
                   <button class="btn btn-primary" id="btnHideMenu" title="Toggle Menu">
-                     <span class="fa fa-chevron-up" id="icnHideMenu"></span> <span class="sr-only">Hide Top Navigation</span>
+                  <span class="fa fa-chevron-up" id="icnHideMenu"></span> <span class="sr-only">Hide Top Navigation</span>
                   </button>
                </div>
-           </div>
-           <!-- Basics steps modal for Web Libretro -->
-  <div class="modal fade" id="helpModal" role="dialog"  style="color:black;">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h1 class="modal-title">Basics</h1>
-        </div>
-        <div class="modal-body">
-      <h3><b>Load Core</b></h3>
-      <p>Load your core by clicking on the first tab. Scroll down until you reach the desired Core. We will use Nestopia for now. Don't forget - Content must be compatible with the matched Core.</p>
-          <li>Nes: <i>NESTOPIA</i></li>
-      <li>Game Boy / Color: <i>Gambatte</i></li>
-    </ul>
-      <p>etc.</p>
-        <p></p>
-      <h3><b>Load Content</b></h3>
-      <p>After selecting Core, click Run. After RetroArch opens, click Add Content and select your compatible ROM.</p>
-      <li>Nestopia > <i>YourGame.nes</i></li>
-      <li>Gambatte > <i>YourGame.gbc</i></li>
-    </ul>
-    <p>etc.</p>
-              <p></p>
-      <h3><b><span class="fa fa-trash-o"></span> Cleanup Storage</b></h3>
-      <p>The trashcan erases your existing configuration and presets. If the Web Player doesn't start, you should click the trashcan and refresh the cache in your browser (usually F5 or Shift+F5).</p>
-                  <p></p>
-      <h3><b><span class="fa fa-bars"></span> Quick Menu</b></h3>
-      <p>If you click on the three line icons, the Quick Menu will open here as in RetroArch.</p>
-
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        </div>
+            </div>
+            <!-- Basics steps modal for Web Libretro -->
+            <div class="modal fade" id="helpModal" role="dialog"  style="color:black;">
+               <div class="modal-dialog modal-lg">
+                  <div class="modal-content">
+                     <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h1 class="modal-title">Basics</h1>
+                     </div>
+                     <div class="modal-body">
+                        <h3><b>Load Core</b></h3>
+                        <p>Load your core by clicking on the first tab. Scroll down until you reach the desired Core. We will use Nestopia for now. Don't forget - Content must be compatible with the matched Core.</p>
+                        <ul>
+                           <li>Nes: <i>NESTOPIA</i></li>
+                           <li>Game Boy / Color: <i>Gambatte</i></li>
+                        </ul>
+                        <p>etc.</p>
+                        <p></p>
+                        <h3><b>Load Content</b></h3>
+                        <p>After selecting Core, click Run. After RetroArch opens, click Add Content and select your compatible ROM.</p>
+                        <ul>
+                           <li>Nestopia > <i>YourGame.nes</i></li>
+                           <li>Gambatte > <i>YourGame.gbc</i></li>
+                        </ul>
+                        <p>etc.</p>
+                        <p></p>
+                        <h3><b><span class="fa fa-trash-o"></span> Cleanup Storage</b></h3>
+                        <p>The trashcan erases your existing configuration and presets. If the Web Player doesn't start, you should click the trashcan and refresh the cache in your browser (usually F5 or Shift+F5).</p>
+                        <p></p>
+                        <h3><b><span class="fa fa-bars"></span> Quick Menu</b></h3>
+                        <p>If you click on the three line icons, the Quick Menu will open here as in RetroArch.</p>
+                     </div>
+                     <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+         <!--/.navbar content-->
+      </nav>
+      <div class="bg-inverse webplayer-container">
+         <div class="webplayer_border text-xs-center" id="canvas_div">
+            <div class="showMenu">
+               <button type="button" class="btn btn-link">
+               <span class="fa fa-chevron-down" id="icnShowMenu"></span> <span class="sr-only">Show Top Navigation</span>
+               </button>
+            </div>
+            <canvas class="webplayer" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()" style="display: none"></canvas>
+            <img class="webplayer-preview img-fluid" src="media/canvas.png" width="960" height="720" alt="RetroArch Logo">
+         </div>
       </div>
-    </div>
-  </div>
-</div>
-           <!--/.navbar content-->
-       </div>
-   </nav>
-   <div class="bg-inverse webplayer-container">
-      <div class="webplayer_border text-xs-center" id="canvas_div">
-          <div class="showMenu">
-             <button type="button" class="btn btn-link">
-                <span class="fa fa-chevron-down" id="icnShowMenu"></span> <span class="sr-only">Show Top Navigation</span>
-             </button>
-          </div>
-          <canvas class="webplayer" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()" style="display: none"></canvas>
-          <img class="webplayer-preview img-fluid" src="media/canvas.png" width="960px" height="720px" alt="RetroArch Logo">
-      </div>
-   </div>
-
-   <script src="//code.jquery.com/jquery-3.1.0.min.js"></script>
-   <script src="//rawgit.com/jeresig/jquery.hotkeys/master/jquery.hotkeys.js"></script>
-   <script src="//cdnjs.cloudflare.com/ajax/libs/tether/1.3.4/js/tether.min.js"></script>
-   <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.3/js/bootstrap.min.js"></script>
-   <script src="analytics.js"></script>
-   <!--script src="//wzrd.in/standalone/browserfs@0.6.1"></script-->
-   <script src="browserfs.min.js"></script>
-   <script src="libretro.js"></script>
-</body>
+      <script crossorigin="anonymous" src="//code.jquery.com/jquery-3.1.0.min.js"></script>
+      <script crossorigin="anonymous" src="//rawgit.com/jeresig/jquery.hotkeys/master/jquery.hotkeys.js"></script>
+      <script crossorigin="anonymous" src="//cdnjs.cloudflare.com/ajax/libs/tether/1.3.4/js/tether.min.js"></script>
+      <script crossorigin="anonymous" src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.3/js/bootstrap.min.js"></script>
+      <script src="analytics.js"></script>
+      <!--script src="//wzrd.in/standalone/browserfs@0.6.1"></script-->
+      <script src="browserfs.min.js"></script>
+      <script src="libretro.js"></script>
+   </body>
 </html>

@@ -99,7 +99,7 @@ void increment_msf(unsigned char *min, unsigned char *sec, unsigned char *frame)
 }
 
 #ifdef CDROM_DEBUG
-static void cdrom_print_sense_data(const unsigned char *sense, size_t len)
+static void cdrom_print_sense_data(const unsigned char *s, size_t len)
 {
    unsigned i;
    const char *sense_key_text = NULL;
@@ -114,20 +114,20 @@ static void cdrom_print_sense_data(const unsigned char *sense, size_t len)
       return;
    }
 
-   key  = sense[2] & 0xF;
-   asc  = sense[12];
-   ascq = sense[13];
+   key  = s[2] & 0xF;
+   asc  = s[12];
+   ascq = s[13];
 
    printf("[CDROM] Sense Data: ");
 
    for (i = 0; i < MIN(len, 16); i++)
-      printf("%02X ", sense[i]);
+      printf("%02X ", s[i]);
 
    printf("\n");
 
-   if (sense[0] == 0x70)
+   if (s[0] == 0x70)
       printf("[CDROM] CURRENT ERROR:\n");
-   if (sense[0] == 0x71)
+   if (s[0] == 0x71)
       printf("[CDROM] DEFERRED ERROR:\n");
 
    switch (key)
@@ -371,17 +371,17 @@ static int cdrom_send_command_linux(const libretro_vfs_implementation_file *stre
 #endif
 
 static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir,
-      void *buf, size_t len, unsigned char *cmd, size_t cmd_len, size_t skip)
+      void *s, size_t len, unsigned char *cmd, size_t cmd_len, size_t skip)
 {
-   unsigned char *xfer_buf = NULL;
-   unsigned char *xfer_buf_pos = xfer_buf;
-   unsigned char sense[CDROM_MAX_SENSE_BYTES] = {0};
-   unsigned char retries_left = CDROM_MAX_RETRIES;
    int i, rv = 0;
    int frames = 1;
+   unsigned char *xfer_buf     = NULL;
+   unsigned char *xfer_buf_pos = xfer_buf;
+   unsigned char sense[CDROM_MAX_SENSE_BYTES] = {0};
+   unsigned char retries_left  = CDROM_MAX_RETRIES;
    size_t padded_req_bytes;
-   size_t copied_bytes = 0;
-   bool read_cd = false;
+   size_t copied_bytes         = 0;
+   bool read_cd                = false;
 
    if (!cmd || cmd_len == 0 || cmd_len < CDROM_MIN_BUFSIZE)
       return 1;
@@ -491,13 +491,13 @@ retry:
       {
          rv = 0;
 
-         if (buf)
+         if (s)
          {
 #if 0
             printf("offsetting %" PRId64 " from buf, copying at xfer_buf offset %" PRId64 ", copying %" PRId64 " bytes\n", copied_bytes, (xfer_buf_pos + skip) - xfer_buf, copy_len);
             fflush(stdout);
 #endif
-            memcpy((char*)buf + copied_bytes, xfer_buf_pos + skip, copy_len);
+            memcpy((char*)s + copied_bytes, xfer_buf_pos + skip, copy_len);
             copied_bytes += copy_len;
 
             if (read_cd && !cached_read && request_len >= 2352)
@@ -570,7 +570,6 @@ retry:
 
    if (xfer_buf)
       memalign_free(xfer_buf);
-
    return rv;
 }
 
@@ -1000,12 +999,11 @@ int cdrom_set_read_speed(libretro_vfs_implementation_file *stream, unsigned spee
 
 int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, size_t *out_len, char cdrom_drive, unsigned char *num_tracks, cdrom_toc_t *toc)
 {
+   int i;
    unsigned char buf[2352] = {0};
    unsigned short data_len = 0;
-   size_t len = 0;
-   size_t pos = 0;
+   size_t _len = 0, pos = 0;
    int rv = 0;
-   int i;
 
    if (!out_buf || !out_len || !num_tracks || !toc)
    {
@@ -1052,10 +1050,10 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
       return 1;
    }
 
-   len = CDROM_CUE_TRACK_BYTES * (*num_tracks);
+   _len            = CDROM_CUE_TRACK_BYTES * (*num_tracks);
    toc->num_tracks = *num_tracks;
-   *out_buf = (char*)calloc(1, len);
-   *out_len = len;
+   *out_buf        = (char*)calloc(1, _len);
+   *out_len        = _len;
 
    for (i = 0; i < (data_len - 2) / 11; i++)
    {
@@ -1104,11 +1102,11 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
             track_type = "MODE2/2352";
 
 #if defined(_WIN32) && !defined(_XBOX)
-         pos += snprintf(*out_buf + pos, len - pos, "FILE \"cdrom://%c:/drive-track%02d.bin\" BINARY\n", cdrom_drive, point);
+         pos += snprintf(*out_buf + pos, _len - pos, "FILE \"cdrom://%c:/drive-track%02d.bin\" BINARY\n", cdrom_drive, point);
 #else
-         pos += snprintf(*out_buf + pos, len - pos, "FILE \"cdrom://drive%c-track%02d.bin\" BINARY\n", cdrom_drive, point);
+         pos += snprintf(*out_buf + pos, _len - pos, "FILE \"cdrom://drive%c-track%02d.bin\" BINARY\n", cdrom_drive, point);
 #endif
-         pos += snprintf(*out_buf + pos, len - pos, "  TRACK %02d %s\n", point, track_type);
+         pos += snprintf(*out_buf + pos, _len - pos, "  TRACK %02d %s\n", point, track_type);
 
          {
             unsigned pregap_lba_len = toc->track[point - 1].lba - toc->track[point - 1].lba_start;
@@ -1121,11 +1119,11 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
 
                cdrom_lba_to_msf(pregap_lba_len, &min, &sec, &frame);
 
-               pos += snprintf(*out_buf + pos, len - pos, "    INDEX 00 00:00:00\n");
-               pos += snprintf(*out_buf + pos, len - pos, "    INDEX 01 %02u:%02u:%02u\n", (unsigned)min, (unsigned)sec, (unsigned)frame);
+               pos += snprintf(*out_buf + pos, _len - pos, "    INDEX 00 00:00:00\n");
+               pos += snprintf(*out_buf + pos, _len - pos, "    INDEX 01 %02u:%02u:%02u\n", (unsigned)min, (unsigned)sec, (unsigned)frame);
             }
             else
-               pos += snprintf(*out_buf + pos, len - pos, "    INDEX 01 00:00:00\n");
+               pos += snprintf(*out_buf + pos, _len - pos, "    INDEX 01 00:00:00\n");
          }
       }
    }
@@ -1169,7 +1167,10 @@ int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *s, size_t 
    return 0;
 }
 
-int cdrom_read(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip)
+int cdrom_read(libretro_vfs_implementation_file *stream,
+      cdrom_group_timeouts_t *timeouts, unsigned char min,
+      unsigned char sec, unsigned char frame, void *s,
+      size_t len, size_t skip)
 {
    /* MMC Command: READ CD MSF */
    unsigned char cdb[] = {0xB9, 0, 0, 0, 0, 0, 0, 0, 0, 0xF8, 0, 0};

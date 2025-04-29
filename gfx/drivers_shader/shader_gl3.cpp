@@ -1683,11 +1683,11 @@ void Pass::build_commands(
       unsigned vertex_binding   = locations.buffer_index_ubo_vertex;
       unsigned fragment_binding = locations.buffer_index_ubo_fragment;
       const void *data          = uniforms.data();
-      size_t size               = reflection.ubo_size;
+      size_t _len               = reflection.ubo_size;
       GLuint id                 = ubo_ring.buffers[ubo_ring.buffer_index];
 
       glBindBuffer(GL_UNIFORM_BUFFER, id);
-      glBufferSubData(GL_UNIFORM_BUFFER, 0, size, data);
+      glBufferSubData(GL_UNIFORM_BUFFER, 0, _len, data);
       glBindBuffer(GL_UNIFORM_BUFFER, 0);
       if (vertex_binding != GL_INVALID_INDEX)
          glBindBufferBase(GL_UNIFORM_BUFFER, vertex_binding, id);

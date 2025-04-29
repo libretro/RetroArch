@@ -109,6 +109,7 @@ enum menu_settings_type
    MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_CORE_NAME,
    MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
+   MENU_SETTING_DROPDOWN_ITEM_INPUT_RETROPAD_BIND,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_INDEX,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_RESERVED_DEVICE,
@@ -390,7 +391,7 @@ typedef struct menu_ctx_driver
    void (*refresh_thumbnail_image)(void *data, unsigned i);
    void (*set_thumbnail_content)(void *data, const char *s);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
-   void (*update_savestate_thumbnail_path)(void *data, unsigned i);
+   void (*update_savestate_thumbnail_path)(void *data, size_t i);
    void (*update_savestate_thumbnail_image)(void *data);
    int (*pointer_down)(void *data, unsigned x, unsigned y, unsigned ptr,
          menu_file_list_cbs_t *cbs,
@@ -448,7 +449,7 @@ typedef struct
       char file_name[NAME_MAX_LENGTH];
    } last_start_content;
 
-   char menu_state_msg[PATH_MAX_LENGTH * 2];
+   char menu_state_msg[MENU_LABEL_MAX_LENGTH];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
     * paths (subdirs/previous dirs/current dir/path, etc).
@@ -744,6 +745,9 @@ bool menu_input_key_bind_set_mode(
 #ifdef HAVE_RUNAHEAD
 void menu_update_runahead_mode(void);
 #endif
+
+size_t menu_playlist_random_selection(
+      size_t selection, bool is_explore_list);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

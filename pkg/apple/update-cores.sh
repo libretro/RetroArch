@@ -147,6 +147,7 @@ else
                 anarch
                 ardens
                 atari800
+                b2
                 #blastem
                 bluemsx
                 bsnes
@@ -155,6 +156,7 @@ else
                 cap32
                 crocods
                 desmume
+                dice
                 dinothawr
                 dirksimple
                 dosbox_pure

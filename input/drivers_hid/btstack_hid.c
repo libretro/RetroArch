@@ -766,12 +766,11 @@ static void btpad_increment_position(uint32_t *ptr)
 }
 
 static void btpad_connection_send_control(void *data,
-      uint8_t* data_buf, size_t size)
+      uint8_t *s, size_t len)
 {
    struct btstack_hid_adapter *connection = (struct btstack_hid_adapter*)data;
-
    if (connection)
-      bt_send_l2cap_ptr(connection->channels[0], data_buf, size);
+      bt_send_l2cap_ptr(connection->channels[0], s, len);
 }
 
 static void btpad_queue_process_cmd(struct btpad_queue_command *cmd)

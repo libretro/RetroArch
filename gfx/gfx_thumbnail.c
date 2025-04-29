@@ -35,7 +35,7 @@
 
 #include "../tasks/tasks_internal.h"
 
-#define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  83.333333f
+#define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  16.66667f * 3
 #define DEFAULT_GFX_THUMBNAIL_FADE_DURATION 166.66667f
 
 /* Utility structure, sent as userdata when pushing
@@ -282,8 +282,11 @@ static bool gfx_thumbnail_get_path(
  *         on-demand thumbnail download support
  *         (an annoyance...) */
 void gfx_thumbnail_request(
-      gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id,
-      playlist_t *playlist, size_t idx, gfx_thumbnail_t *thumbnail,
+      gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id,
+      playlist_t *playlist,
+      size_t idx,
+      gfx_thumbnail_t *thumbnail,
       unsigned gfx_thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
 {
@@ -332,7 +335,7 @@ void gfx_thumbnail_request(
             {
                enum playlist_thumbnail_name_flags curr_flag;
                static char last_img_name[PATH_MAX_LENGTH] = {0};
-               settings_t *settings                       = config_get_ptr();
+               bool playlist_use_filename                 = config_get_ptr()->bools.playlist_use_filename;
                if (!playlist)
                   goto end;
                /* Only trigger a thumbnail download if image
@@ -364,7 +367,7 @@ void gfx_thumbnail_request(
                    || curr_flag & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
                   goto end;
                /* Do not try to fetch full names here, if it is not explicitly wanted */
-               if (   !settings->bools.playlist_use_filename
+               if (   !playlist_use_filename
                    && !playlist_thumbnail_match_with_filename(playlist)
                    && curr_flag == PLAYLIST_THUMBNAIL_FLAG_INVALID)
                     playlist_update_thumbnail_name_flag(playlist, idx, PLAYLIST_THUMBNAIL_FLAG_FULL_NAME);
@@ -881,6 +884,16 @@ void gfx_thumbnail_get_draw_dimensions(
 
       if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
          *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
+   }
+
+   /* Final overwidth check */
+   if (*draw_width > width)
+   {
+      *draw_width  = (float)width;
+      *draw_height = (float)thumbnail->height * (*draw_width / (float)thumbnail->width);
+
+      if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
+         *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
    }
 
    /* Account for scale factor

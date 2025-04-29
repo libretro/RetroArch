@@ -147,8 +147,11 @@ audio_driver_t *audio_drivers[] = {
 #ifdef WIIU
    &audio_ax,
 #endif
-#if defined(EMSCRIPTEN) && defined(HAVE_RWEBAUDIO)
+#if defined(HAVE_RWEBAUDIO)
    &audio_rwebaudio,
+#endif
+#if defined(HAVE_AUDIOWORKLET)
+   &audio_audioworklet,
 #endif
 #if defined(PSP) || defined(VITA) || defined(ORBIS)
   &audio_psp,
@@ -215,14 +218,6 @@ bool audio_driver_is_ai_service_speech_running(void)
    return false;
 }
 #endif
-
-static enum resampler_quality audio_driver_get_resampler_quality(
-      settings_t *settings)
-{
-   if (settings)
-      return (enum resampler_quality)settings->uints.audio_resampler_quality;
-   return RESAMPLER_QUALITY_DONTCARE;
-}
 
 static bool audio_driver_free_devices_list(void)
 {
@@ -344,24 +339,17 @@ static void audio_driver_mixer_deinit(void)
 
 bool audio_driver_deinit(void)
 {
-   settings_t *settings = config_get_ptr();
 #ifdef HAVE_AUDIOMIXER
    audio_driver_mixer_deinit();
 #endif
    audio_driver_free_devices_list();
-   return audio_driver_deinit_internal(
-         settings->bools.audio_enable);
+   return audio_driver_deinit_internal(config_get_ptr()->bools.audio_enable);
 }
 
-bool audio_driver_find_driver(
-      void *settings_data,
-      const char *prefix,
-      bool verbosity_enabled)
+bool audio_driver_find_driver(const char *audio_drv,
+      const char *prefix, bool verbosity_enabled)
 {
-   settings_t *settings    = (settings_t*)settings_data;
-   int i                   = (int)driver_find_index(
-         "audio_driver",
-         settings->arrays.audio_driver);
+   int i = (int)driver_find_index("audio_driver", audio_drv);
 
    if (i >= 0)
       audio_driver_st.current_audio = (const audio_driver_t*)
@@ -372,8 +360,7 @@ bool audio_driver_find_driver(
       if (verbosity_enabled)
       {
          unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.audio_driver);
+         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix, audio_drv);
          RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
          for (d = 0; audio_drivers[d]; d++)
          {
@@ -400,22 +387,20 @@ bool audio_driver_find_driver(
  * @param audio_st The overall state of the audio driver.
  * @param slowmotion_ratio The factor by which slow motion extends the core's runtime
  * (e.g. a value of 2 means the core is running at half speed).
- * @param audio_fastforward_mute True if no audio should be output while the game is in fast-forward.
  * @param data Audio output data that was most recently provided by the core.
  * @param samples The size of \c data, in samples.
- * @param is_slowmotion True if the player is currently running the game in slow motion.
- * @param is_fastmotion True if the player is currently running the game in fast-forward.
+ * @param is_slowmotion True if the core is currently running in slow motion.
+ * @param is_fastmotion True if the core is currently running in fast-forward.
  **/
 static void audio_driver_flush(
       audio_driver_state_t *audio_st,
       float slowmotion_ratio,
-      bool audio_fastforward_mute,
       const int16_t *data, size_t samples,
       bool is_slowmotion, bool is_fastforward)
 {
    struct resampler_data src_data;
-   float audio_volume_gain           = (audio_st->mute_enable ||
-         (audio_fastforward_mute && is_fastforward))
+   float audio_volume_gain           =
+         (audio_st->mute_enable || audio_st->flags & AUDIO_FLAG_MUTED)
                ? 0.0f
                : audio_st->volume_gain;
 
@@ -481,19 +466,19 @@ static void audio_driver_flush(
                                      = avail;
          audio_st->source_ratio_current
                                      = audio_st->source_ratio_original * adjust;
-      }
 
 #if 0
-      if (verbosity_is_enabled())
-      {
-         RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
-               (unsigned)(100 - (avail * 100) /
-                  audio_st->buffer_size));
-         RARCH_LOG_OUTPUT("[Audio]: New rate: %lf, Orig rate: %lf\n",
-               audio_st->source_ratio_current,
-               audio_st->source_ratio_original);
-      }
+         if (verbosity_is_enabled())
+         {
+            RARCH_LOG_OUTPUT("[Audio]: Audio buffer is %u%% full\n",
+                  (unsigned)(100 - (avail * 100) /
+                     audio_st->buffer_size));
+            RARCH_LOG_OUTPUT("[Audio]: New rate: %lf, Orig rate: %lf\n",
+                  audio_st->source_ratio_current,
+                  audio_st->source_ratio_original);
+         }
 #endif
+      }
    }
 
    src_data.ratio           = audio_st->source_ratio_current;
@@ -598,9 +583,7 @@ const char *audio_driver_mixer_get_stream_name(unsigned i)
 
 #endif
 
-bool audio_driver_init_internal(
-      void *settings_data,
-      bool audio_cb_inited)
+bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 {
    unsigned new_rate              = 0;
    float  *out_samples_buf        = NULL;
@@ -612,8 +595,8 @@ bool audio_driver_init_internal(
    float slowmotion_ratio         = settings->floats.slowmotion_ratio;
    unsigned setting_audio_latency = settings->uints.audio_latency;
    unsigned runloop_audio_latency = runloop_state_get_ptr()->audio_latency;
-   unsigned audio_latency         = (runloop_audio_latency > setting_audio_latency) ?
-         runloop_audio_latency : setting_audio_latency;
+   unsigned audio_latency         = (runloop_audio_latency > setting_audio_latency)
+         ? runloop_audio_latency : setting_audio_latency;
 #ifdef HAVE_REWIND
    int16_t *rewind_buf            = NULL;
 #endif
@@ -658,7 +641,7 @@ bool audio_driver_init_internal(
    else
       audio_driver_st.flags     |= AUDIO_FLAG_ACTIVE;
 
-   if (!(audio_driver_find_driver(settings,
+   if (!(audio_driver_find_driver(settings->arrays.audio_driver,
          "audio driver", verbosity_enabled)))
    {
       RARCH_ERR("Failed to initialize audio driver.\n");
@@ -679,7 +662,7 @@ bool audio_driver_init_internal(
       if (!audio_init_thread(
                &audio_driver_st.current_audio,
                &audio_driver_st.context_audio_data,
-               *settings->arrays.audio_device
+                *settings->arrays.audio_device
                ? settings->arrays.audio_device : NULL,
                settings->uints.audio_output_sample_rate, &new_rate,
                audio_latency,
@@ -694,8 +677,8 @@ bool audio_driver_init_internal(
 #endif
    {
       audio_driver_st.context_audio_data =
-         audio_driver_st.current_audio->init(*settings->arrays.audio_device ?
-               settings->arrays.audio_device : NULL,
+         audio_driver_st.current_audio->init(*settings->arrays.audio_device
+               ? settings->arrays.audio_device : NULL,
                settings->uints.audio_output_sample_rate,
                audio_latency,
                settings->uints.audio_block_frames,
@@ -704,7 +687,8 @@ bool audio_driver_init_internal(
    }
 
    if (new_rate != 0)
-      configuration_set_int(settings, settings->uints.audio_output_sample_rate, new_rate);
+      configuration_set_int(settings,
+            settings->uints.audio_output_sample_rate, new_rate);
 
    if (!audio_driver_st.context_audio_data)
    {
@@ -735,7 +719,8 @@ bool audio_driver_init_internal(
       /* Should never happen. */
       RARCH_WARN("[Audio]: Input rate is invalid (%.3f Hz)."
             " Using output rate (%u Hz).\n",
-            audio_driver_st.input, settings->uints.audio_output_sample_rate);
+            audio_driver_st.input,
+            settings->uints.audio_output_sample_rate);
 
       audio_driver_st.input = settings->uints.audio_output_sample_rate;
    }
@@ -751,8 +736,7 @@ bool audio_driver_init_internal(
    else
       audio_driver_st.resampler_ident[0] = '\0';
 
-   audio_driver_st.resampler_quality =
-         audio_driver_get_resampler_quality(settings);
+   audio_driver_st.resampler_quality = (enum resampler_quality)settings->uints.audio_resampler_quality;
 
    if (!retro_resampler_realloc(
             &audio_driver_st.resampler_data,
@@ -850,7 +834,6 @@ void audio_driver_sample(int16_t left, int16_t right)
          || !(audio_st->output_samples_buf)))
       audio_driver_flush(audio_st,
             config_get_ptr()->floats.slowmotion_ratio,
-            config_get_ptr()->bools.audio_fastforward_mute,
             audio_st->output_samples_conv_buf,
             audio_st->data_ptr,
             (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
@@ -900,7 +883,6 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
             || !(audio_st->output_samples_buf)))
          audio_driver_flush(audio_st,
                config_get_ptr()->floats.slowmotion_ratio,
-               config_get_ptr()->bools.audio_fastforward_mute,
                data,
                frames_to_write << 1,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
@@ -1487,7 +1469,8 @@ void audio_driver_mixer_play_scroll_sound(bool direction_up)
    bool        audio_enable_menu = settings->bools.audio_enable_menu;
    bool audio_enable_menu_scroll = settings->bools.audio_enable_menu_scroll;
    if (audio_enable_menu && audio_enable_menu_scroll)
-      audio_driver_mixer_play_menu_sound(direction_up ? AUDIO_MIXER_SYSTEM_SLOT_UP : AUDIO_MIXER_SYSTEM_SLOT_DOWN);
+      audio_driver_mixer_play_menu_sound(direction_up
+            ? AUDIO_MIXER_SYSTEM_SLOT_UP : AUDIO_MIXER_SYSTEM_SLOT_DOWN);
 }
 
 void audio_driver_mixer_play_stream_looped(unsigned i)
@@ -1615,18 +1598,18 @@ bool audio_driver_disable_callback(void)
 
 bool audio_driver_callback(void)
 {
-   settings_t *settings        = config_get_ptr();
+   bool menu_pause_libretro    = config_get_ptr()->bools.menu_pause_libretro;
    uint32_t runloop_flags      = runloop_get_flags();
    bool runloop_paused         = (runloop_flags & RUNLOOP_FLAG_PAUSED) ? true : false;
 #ifdef HAVE_MENU
 #ifdef HAVE_NETWORKING
    bool core_paused            = runloop_paused
-       || (settings->bools.menu_pause_libretro
+       || (menu_pause_libretro
        && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
        &&  netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL));
 #else
    bool core_paused            = runloop_paused
-      || (settings->bools.menu_pause_libretro
+      || (menu_pause_libretro
       && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
 #endif
 #else
@@ -1737,18 +1720,14 @@ void audio_driver_frame_is_reverse(void)
          || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
          || !(audio_st->output_samples_buf)))
       if (!(audio_st->flags & AUDIO_FLAG_SUSPENDED))
-      {
-         settings_t *settings = config_get_ptr();
          audio_driver_flush(audio_st,
-               settings->floats.slowmotion_ratio,
-               settings->bools.audio_fastforward_mute,
+               config_get_ptr()->floats.slowmotion_ratio,
                audio_st->rewind_buf  +
                audio_st->rewind_ptr,
                audio_st->rewind_size -
                audio_st->rewind_ptr,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
-      }
 }
 #endif
 
@@ -1880,6 +1859,7 @@ void audio_driver_menu_sample(void)
 {
    static int16_t samples_buf[1024]       = {0};
    settings_t *settings                   = config_get_ptr();
+   float slowmotion_ratio                 = settings->floats.slowmotion_ratio;
    video_driver_state_t *video_st         = video_state_get_ptr();
    uint32_t runloop_flags                 = runloop_get_flags();
    recording_state_t *recording_st        = recording_state_get_ptr();
@@ -1910,17 +1890,16 @@ void audio_driver_menu_sample(void)
       }
       if (check_flush)
          audio_driver_flush(audio_st,
-               settings->floats.slowmotion_ratio,
-               settings->bools.audio_fastforward_mute,
+               slowmotion_ratio,
                samples_buf,
                1024,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
       sample_count -= 1024;
    }
-   if (  recording_st->data   &&
-         recording_st->driver &&
-         recording_st->driver->push_audio)
+   if (     recording_st->data
+         && recording_st->driver
+         && recording_st->driver->push_audio)
    {
       struct record_audio_data ffemu_data;
 
@@ -1932,10 +1911,7 @@ void audio_driver_menu_sample(void)
    }
    if (check_flush)
       audio_driver_flush(audio_st,
-            settings->floats.slowmotion_ratio,
-            settings->bools.audio_fastforward_mute,
-            samples_buf,
-            sample_count,
+            slowmotion_ratio, samples_buf, sample_count,
             (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
             (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
 }

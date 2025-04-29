@@ -72,6 +72,14 @@ MSG_HASH(
    "Valitse käytettävä ydin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Vapauta ydin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "Vapauta ladattu ydin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Selaa libretro ytimiä. Tiedostoselaimen aloituspaikka riippuu ydinten kansion polusta. Jos tyhjä, se alkaa juuresta.\nJos ydinkansion on kansio, valikko käyttää sitä pääkansiona. Jos ydinkansio on täydellinen polku, se alkaa kansiosta, jossa ytimen tiedosto on."
    )
@@ -905,6 +913,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Video4Linux2-tuki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
+   "SSL-tuki"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
@@ -2653,16 +2665,8 @@ MSG_HASH(
    "Mykistä kaikki äänet äänettömässä tilassa."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Mykistä pikakelattaessa"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Mykistä ääni automaattisesti, kun pikakelaus on käytössä."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Nopeuta pikakelattaessa"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
@@ -3125,21 +3129,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "Pidä"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Turbotulitus"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turbon jakso"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "Ajanjakso (kuvissa) kun turbo-yhteensopivia painikkeita painetaan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "Turbon käyttöjakso"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "Kuvien määrä turbojaksolla, jonka aikana painikkeita pidetään painettuina. Jos tämä luku on yhtä suuri tai suurempi kuin turbojakso, painikkeet eivät koskaan vapaudu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3166,12 +3163,8 @@ MSG_HASH(
    "Yksittäinen painike (Pito)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "Turbon oletuspainike"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Oletusarvoinen aktiivinen painike turbotilalle käyttäessä tilaa 'yksi painike'."
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   "Turbopainike"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -3323,10 +3316,6 @@ MSG_HASH(
    "Valikon vaihto"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Vaihtaa valikon ja käynnissä olevan sisällön välillä nykyisellä näytöllä."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "Lopeta (näppäin yhdistelmä)"
    )
@@ -3397,10 +3386,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Keskeytä"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Vaihtaa käynnissä olevan sisällön keskeytyksen päälle tai pois."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -4184,10 +4169,6 @@ MSG_HASH(
    "Tilan automaattinen tallennus"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Luo tilatallennus automaattisesti kun suljet sisällön. RetroArch lataa automaattisesti tämän tilatallennuksen, jos \"Lataa tilatallennus automaattisesti\" on käytössä."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
    "Tilan automaattinen lataaminen"
    )
@@ -4362,10 +4343,6 @@ MSG_HASH(
    "Suodata tiedostoja tiedostoselaimessa tuettujen tiedostopäätteiden mukaan."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-   "Käytä sisäänrakennettua mediasoitinta"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "Suodata nykyisen ytimen mukaan"
    )
@@ -4376,6 +4353,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    "Avaa tiedostoselain viimeksi käytetyssä sijainnissa, kun lataat sisältöä aloitushakemistosta. Huom: sijainti palautetaan oletusarvoon RetroArchin uudelleenkäynnistyessä."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   "Käytä sisäänrakennettua mediasoitinta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "Käytä sisäänrakennettua kuvankatselinta"
    )
 
 /* Settings > Frame Throttle */
@@ -5010,6 +4995,10 @@ MSG_HASH(
    "Syötelaitteen (Automaattinen kokoonpano) yhdistämisen ilmoitukset"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Syötelaitteen (Autoconfig) epäonnistumisen ilmoitukset"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "Huijauskoodi-ilmoitukset"
    )
@@ -5028,6 +5017,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    "Näytä näytöllä ilmoitus viesti, kun syöttölaitteita yhdistetään/irrotetaan."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Näytä viesti, kun syötelaitteita ei voitu määrittää."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
@@ -5146,10 +5139,6 @@ MSG_HASH(
    "Ilmoituksen koko"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "Määritä fontin koko pisteinä."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Ilmoituksen sijainti (vaaka)"
    )
@@ -5257,10 +5246,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    "Keskeytä sisältö kun valikko on aktiivisena"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Keskeytä käynnissä oleva sisältö, jos valikko on aktiivinen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -6032,10 +6017,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    "Näytä \"Käyttäjä\""
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Soittolistan kuvakkeet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -7120,7 +7101,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Tiedostoselain"
+   "Aloituskansio"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
@@ -7936,10 +7917,6 @@ MSG_HASH(
    "Jatka"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Jatka käynnissä olevaa sisältöä ja poistu pikavalikosta."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "Käynnistä uudelleen"
    )
@@ -7950,10 +7927,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Sulje sisältö"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Sulje nykyinen sisältö. Tallentamattomat muutokset saattavat kadota."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -8088,16 +8061,8 @@ MSG_HASH(
    "Ytimen asetukset"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "Muuta käynnissä olevan sisällön asetuksia."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Ohjaus"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "Muuta käynnissä olevan sisällön ohjausasetuksia."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -8191,11 +8156,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Nollaa asetukset"
+   "Nollaa ytimen asetukset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Aseta kaikki ydinasetukset oletusarvoihin."
+   "Aseta kaikki nykyisen ytimen valinnat oletusarvoihin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
@@ -9077,6 +9042,10 @@ MSG_HASH(
    "Kierrä pienoiskuvia"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Satunnainen valinta"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Takaisin"
    )
@@ -9831,10 +9800,6 @@ MSG_HASH(
    "Läpinäkyvyys"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Ota käyttöön sisällön taustanäyttö, kun pikavalikko on aktiivisena. Läpinäkyvyyden poistaminen voi muuttaa teeman värejä."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Varjotehosteet"
    )
@@ -10407,6 +10372,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ICE_COLD,
    "Jäänkylmä"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   "Tumman harmaa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   "Vaalean harmaa"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -10426,6 +10399,31 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "Soittolistat järjestetään uudelleen aakkosjärjestykseen sen jälkeen, kun valmistajan nimi soittolistojen nimistä on poistettu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "Toissijainen esikatselukuva"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "Korvaa sisällön metatieto toisella esikatselukuvalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "Käytä tekstinauhaa sisällön metatietoon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "Kun käytössä, soittolistojen oikean sivun metatietojen jokainen kohde (liitetty ydin, toistoaika) on yhdellä rivillä; merkkijonot, jotka ylittävät sivupalkin leveyden, näytetään vieritettävänä tekstinauhana. Kun pois päältä, kaikki sisällön metatiedot näytetään kiinteästi rivitettynä niin monella riville kuin tarvitaan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Esikatselukuvan skaalauskerroin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Skaalaa esikatselukuvien palkin koko."
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "Väriteema"
@@ -10482,30 +10480,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN,
    "Violetti sade"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "Toissijainen esikatselukuva"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "Korvaa sisällön metatieto toisella esikatselukuvalla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "Käytä tekstinauhaa sisällön metatietoon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "Kun käytössä, soittolistojen oikean sivun metatietojen jokainen kohde (liitetty ydin, toistoaika) on yhdellä rivillä; merkkijonot, jotka ylittävät sivupalkin leveyden, näytetään vieritettävänä tekstinauhana. Kun pois päältä, kaikki sisällön metatiedot näytetään kiinteästi rivitettynä niin monella riville kuin tarvitaan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Esikatselukuvan skaalauskerroin"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Skaalaa esikatselukuvien palkin koko."
-   )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
@@ -11459,10 +11434,6 @@ MSG_HASH(
    "Näp"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-   "Käytä sisäänrakennettua kuvankatselinta"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "Määrää videoajurin käyttämään yksiselitteisesti määritettyä puskurointitilaa."
    )
@@ -11580,14 +11551,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
    "Valitse soittolistalta"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Jatka"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Jatka käynnissä olevaa sisältöä ja poistu pikavalikosta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
@@ -12170,10 +12133,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTODETECT,
    "Havaitse automaattisesti"
-   )
-MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Tilan lataaminen kohteesta"
    )
 MSG_HASH(
    MSG_CAPABILITIES,
@@ -13232,6 +13191,10 @@ MSG_HASH(
    "Virtuaalisen levyaseman sulkeminen epäonnistui."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Tilan lataaminen kohteesta"
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
    "Tilatallennuksen automaattinen lataus kohteesta \"%s\" epäonnistui."
    )
@@ -14116,6 +14079,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Valitse aikavyöhyke, jotta voit määrittää sijaintisi päivämäärän ja ajan."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TIMEZONE,
+   "Näyttää luettelon käytettävissä olevista aikavyöhykkeistä. Aikavyöhykkeen valitsemisen jälkeen aika ja päivämäärä on säädetään valittuun aikavyöhykkeeseen. Perusoletus on, että järjestelmän / laitteiston kello on asetettu UTC-aikaan."
+   )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
@@ -14344,3 +14311,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "pysäytetty."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

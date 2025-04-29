@@ -1497,6 +1497,7 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 #endif
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "Kích hoạt hotkeys"
@@ -1567,10 +1568,6 @@ MSG_HASH(
 
 /* Settings > Input > Port # Controls */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "Kích hoạt Turbo"
-   )
 
 /* Settings > Latency */
 
@@ -1932,7 +1929,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Quản lý tập tin"
+   "Yêu thích"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
@@ -2283,6 +2280,8 @@ MSG_HASH(
 /* Ozone: Settings > User Interface > Appearance */
 
 
+
+
 /* MaterialUI: Settings > User Interface > Appearance */
 
 
@@ -2516,10 +2515,6 @@ MSG_HASH(
    "Tự động phát hiện"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Đang tự đông tải savestate từ"
-   )
-MSG_HASH(
    MSG_CONNECTING_TO_NETPLAY_HOST,
    "Đang kết nối vào máy chủ netplay"
    )
@@ -2631,6 +2626,10 @@ MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
    )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Đang tự đông tải savestate từ"
+   )
 
 /* Lakka */
 
@@ -2723,4 +2722,11 @@ MSG_HASH(
    )
 #endif
 #ifdef HAVE_QT
+#endif
+#ifdef HAVE_GAME_AI
+
+
+
+
+
 #endif

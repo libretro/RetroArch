@@ -89,26 +89,26 @@ static void adapter_thread(void *data)
 
    while (!adapter->quitting)
    {
-      size_t send_command_size;
       int tmp;
+      size_t _len;
       int report_number;
       int size = 0;
 
       slock_lock(adapter->send_control_lock);
       if (FIFO_READ_AVAIL(adapter->send_control_buffer)
-            >= sizeof(send_command_size))
+            >= sizeof(_len))
       {
          fifo_read(adapter->send_control_buffer,
-               &send_command_size, sizeof(send_command_size));
+               &_len, sizeof(_len));
 
          if (FIFO_READ_AVAIL(adapter->send_control_buffer)
-               >= sizeof(send_command_size))
+               >= sizeof(_len))
          {
             fifo_read(adapter->send_control_buffer,
-                  send_command_buf, send_command_size);
+                  send_command_buf, _len);
             libusb_interrupt_transfer(adapter->handle,
                   adapter->endpoint_out, send_command_buf,
-                  send_command_size, &tmp, 1000);
+                  _len, &tmp, 1000);
          }
       }
       slock_unlock(adapter->send_control_lock);
@@ -124,7 +124,7 @@ static void adapter_thread(void *data)
 }
 
 static void libusb_hid_device_send_control(void *data,
-      uint8_t* data_buf, size_t size)
+      uint8_t *s, size_t len)
 {
    struct libusb_adapter *adapter = (struct libusb_adapter*)data;
 
@@ -133,10 +133,10 @@ static void libusb_hid_device_send_control(void *data,
 
    slock_lock(adapter->send_control_lock);
 
-   if (FIFO_WRITE_AVAIL(adapter->send_control_buffer) >= size + sizeof(size))
+   if (FIFO_WRITE_AVAIL(adapter->send_control_buffer) >= len + sizeof(len))
    {
-      fifo_write(adapter->send_control_buffer, &size, sizeof(size));
-      fifo_write(adapter->send_control_buffer, data_buf, size);
+      fifo_write(adapter->send_control_buffer, &len, sizeof(len));
+      fifo_write(adapter->send_control_buffer, s, len);
    }
    else
    {

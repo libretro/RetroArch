@@ -790,6 +790,9 @@ ifeq ($(HAVE_EMSCRIPTEN), 1)
    ifeq ($(HAVE_RWEBAUDIO), 1)
       OBJ += audio/drivers/rwebaudio.o
    endif
+   ifeq ($(HAVE_AUDIOWORKLET), 1)
+      OBJ += audio/drivers/audioworklet.o
+   endif
 endif
 
 ifeq ($(HAVE_BLUETOOTH), 1)
@@ -929,6 +932,10 @@ ifeq ($(HAVE_PIPEWIRE), 1)
       OBJ += audio/drivers_microphone/pipewire.o
    endif
 
+   ifeq ($(HAVE_PIPEWIRE_STABLE), 1)
+      OBJ += camera/drivers/pipewire.o
+   endif
+
    LIBS += $(PIPEWIRE_LIBS)
    DEF_FLAGS += $(PIPEWIRE_CFLAGS)
 endif
@@ -976,6 +983,12 @@ ifeq ($(HAVE_WINMM), 1)
    OBJ += midi/drivers/winmm_midi.o
    DEFINES += -DHAVE_WINMM
    LIBS += -lwinmm
+endif
+
+ifeq ($(HAVE_COREMIDI), 1)
+   OBJ += midi/drivers/coremidi.o
+   DEFINES += -DHAVE_COREMIDI
+   LIBS += -framework CoreMIDI
 endif
 
 # Audio Resamplers
@@ -1337,6 +1350,10 @@ ifeq ($(HAVE_X11), 1)
    ifeq ($(HAVE_XCB),1)
       LIBS += -lX11-xcb
    endif
+   ifeq ($(HAVE_XI2),1)
+      LIBS += -lXi
+      DEFINES += -DHAVE_XI2
+   endif
    ifeq ($(HAVE_XSCRNSAVER),1)
       LIBS += -lXss
    endif
@@ -1494,6 +1511,7 @@ ifeq ($(HAVE_PLAIN_DRM), 1)
       INCLUDE_DIRS += -I/usr/include/libdrm
    endif
    LIBS += -ldrm
+   HAVE_AND_WILL_USE_DRM = 1
 endif
 
 ifeq ($(HAVE_VITAGL), 1)
@@ -1526,7 +1544,10 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    endif
 
    ifeq ($(HAVE_EMSCRIPTEN), 1)
-      OBJ += gfx/drivers_context/emscriptenegl_ctx.o
+      ifeq ($(HAVE_EGL), 1)
+        OBJ += gfx/drivers_context/emscriptenegl_ctx.o
+      endif
+      OBJ += gfx/drivers_context/emscriptenwebgl_ctx.o
    endif
 
    ifeq ($(HAVE_MALI_FBDEV), 1)
@@ -1570,10 +1591,11 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       DEF_FLAGS += $(OPENGLES_CFLAGS)
       ifeq ($(HAVE_OPENGLES3), 1)
          DEFINES += -DHAVE_OPENGLES3
+         OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es3.o
       else
          DEFINES += -DHAVE_OPENGLES2
+         OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es2.o
       endif
-      OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es2.o
    else
       DEFINES += -DHAVE_GL_SYNC
       OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_gl.o
@@ -1990,6 +2012,7 @@ ifeq ($(HAVE_BUILTINZLIB), 1)
    HAVE_ZLIB_COMMON = 1
    OBJ += $(DEPS_DIR)/libz/adler32.o \
           $(DEPS_DIR)/libz/libz-crc32.o \
+          $(DEPS_DIR)/libz/compress.o \
           $(DEPS_DIR)/libz/deflate.o \
           $(DEPS_DIR)/libz/gzclose.o \
           $(DEPS_DIR)/libz/gzlib.o \
@@ -1999,6 +2022,7 @@ ifeq ($(HAVE_BUILTINZLIB), 1)
           $(DEPS_DIR)/libz/inflate.o \
           $(DEPS_DIR)/libz/inftrees.o \
           $(DEPS_DIR)/libz/trees.o \
+          $(DEPS_DIR)/libz/uncompr.o \
           $(DEPS_DIR)/libz/zutil.o
    INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
 else ifeq ($(HAVE_ZLIB),1)
@@ -2168,6 +2192,65 @@ ifeq ($(HAVE_V4L2),1)
    LIBS += $(V4L2_LIBS)
 endif
 
+# FFmpeg
+
+ifeq ($(HAVE_FFMPEG), 1)
+   DEFINES += -DHAVE_FFMPEG
+   INCLUDE_DIRS += -Iffmpeg
+   DEF_FLAGS += $(FFMPEG_CFLAGS) -Wno-deprecated-declarations
+   LIBS += $(FFMPEG_LIBS)
+
+   ifeq ($(HAVE_AVCODEC), 1)
+      DEFINES += -DHAVE_AVCODEC
+      DEF_FLAGS += $(AVCODEC_CFLAGS)
+      LIBS += $(AVCODEC_LIBS)
+   endif
+
+   ifeq ($(HAVE_AVDEVICE), 1)
+      DEFINES += -DHAVE_AVDEVICE
+      DEF_FLAGS += $(AVDEVICE_CFLAGS)
+      LIBS += $(AVDEVICE_LIBS)
+   endif
+
+   ifeq ($(HAVE_AVFORMAT), 1)
+      DEFINES += -DHAVE_AVFORMAT
+      DEF_FLAGS += $(AVFORMAT_CFLAGS)
+      LIBS += $(AVFORMAT_LIBS)
+   endif
+
+   ifeq ($(HAVE_AVUTIL), 1)
+      DEFINES += -DHAVE_AVUTIL
+      DEF_FLAGS += $(AVUTIL_CFLAGS)
+      LIBS += $(AVUTIL_LIBS)
+   endif
+
+   ifeq ($(HAVE_SWSCALE), 1)
+      DEFINES += -DHAVE_SWSCALE
+      DEF_FLAGS += $(SWSCALE_CFLAGS)
+      LIBS += $(SWSCALE_LIBS)
+   endif
+
+   ifeq ($(HAVE_SWRESAMPLE), 1)
+      DEFINES += -DHAVE_SWRESAMPLE
+      DEF_FLAGS += $(SWRESAMPLE_CFLAGS)
+      LIBS += $(SWRESAMPLE_LIBS)
+   endif
+endif
+
+ifeq ($(HAVE_FFMPEG), 1)
+ifeq ($(HAVE_AVFORMAT), 1)
+ifeq ($(HAVE_AVDEVICE), 1)
+ifeq ($(HAVE_AVCODEC), 1)
+ifeq ($(HAVE_AVUTIL), 1)
+ifeq ($(HAVE_SWSCALE), 1)
+   OBJ += camera/drivers/ffmpeg.o
+endif
+endif
+endif
+endif
+endif
+endif
+
 # Accessibility
 ifeq ($(HAVE_ACCESSIBILITY), 1)
    DEFINES += -DHAVE_ACCESSIBILITY
@@ -2192,10 +2275,15 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
           core_updater_list.o \
           network/natt.o \
-          tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
           tasks/task_netplay_find_content.o
+
+   ifeq ($(HAVE_EMSCRIPTEN), 1)
+     OBJ += tasks/task_http_emscripten.o
+   else
+     OBJ += tasks/task_http.o
+   endif
 
    ifeq ($(HAVE_MENU), 1)
       OBJ += tasks/task_pl_thumbnail_download.o
@@ -2403,7 +2491,7 @@ ifeq ($(HAVE_FFMPEG), 1)
           cores/libretro-ffmpeg/video_buffer.o \
           $(LIBRETRO_COMM_DIR)/rthreads/tpool.o
 
-   LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
+   LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS) $(AVDEVICE_LIBS)
    DEFINES += -DHAVE_FFMPEG
    DEF_FLAGS += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS) \
                 -Wno-deprecated-declarations
@@ -2646,6 +2734,38 @@ ifeq ($(HAVE_ODROIDGO2), 1)
   OBJ += $(DEPS_DIR)/libgo2/src/display.o \
          $(DEPS_DIR)/libgo2/src/queue.o \
          gfx/drivers/oga_gfx.o
+endif
+
+ifeq ($(HAVE_GAME_AI),1)
+   DEFINES += -DHAVE_GAME_AI
+   OBJ += ai/game_ai.o
+endif
+
+# Detect the operating system
+UNAME := $(shell uname -s)
+
+# Check if the system is MSYS2 (MINGW64 or MINGW32)
+ifneq ($(findstring MINGW,$(UNAME)),)
+$(info Detected MSYS2 environment)
+
+NT_VERSION := $(shell \
+  echo '#include <windows.h>' > temp.c; \
+  echo '#ifdef _WIN32_WINNT' >> temp.c; \
+  echo '#define GET_MACRO_VALUE(x) #x' >> temp.c; \
+  echo '#define EXPAND_MACRO_VALUE(x) GET_MACRO_VALUE(x)' >> temp.c; \
+  echo '#pragma message("_WIN32_WINNT=" EXPAND_MACRO_VALUE(_WIN32_WINNT))' >> temp.c; \
+  echo '#endif' >> temp.c; \
+  $(CC) -c temp.c 2>&1 | sed -n 's/^.*_WIN32_WINNT=\(0x[0-9A-Fa-f]\+\).*/\1/p'; \
+  rm -f temp.c temp.o)
+
+ifneq ($(NT_VERSION),)
+ifeq ($(shell [ $$(( $(NT_VERSION) )) -gt $$(( 0x602 )) ] && echo true),true)
+LIBS += -lxaudio2_9
+endif
+else
+$(warning Windows NT version macro (_WIN32_WINNT) is not defined.)
+endif
+
 endif
 
 ##################################

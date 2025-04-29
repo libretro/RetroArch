@@ -269,14 +269,14 @@ static bool iohidmanager_hid_joypad_rumble(void *data, unsigned pad,
 }
 
 static void iohidmanager_hid_device_send_control(void *data,
-      uint8_t* data_buf, size_t size)
+      uint8_t *s, size_t len)
 {
    struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)data;
 
    if (adapter)
       IOHIDDeviceSetReport(adapter->handle,
-            kIOHIDReportTypeOutput, 0x01, data_buf + 1, size - 1);
+            kIOHIDReportTypeOutput, 0x01, s + 1, len - 1);
 }
 
 static void iohidmanager_hid_device_report(void *data,
@@ -490,7 +490,7 @@ static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_h
 {
    int i, slot;
    struct iohidmanager_hid_adapter *adapter = NULL;
-   
+
    /*loop though the controller ports and find the device with a matching IOHINDeviceRef*/
    for (i=0; i<MAX_USERS; i++)
    {
@@ -585,13 +585,12 @@ static uint32_t iohidmanager_hid_device_get_location_id(IOHIDDeviceRef device)
 }
 
 static void iohidmanager_hid_device_get_product_string(
-      IOHIDDeviceRef device, char *buf, size_t len)
+      IOHIDDeviceRef device, char *s, size_t len)
 {
    CFStringRef ref = (CFStringRef)
       IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
-
    if (ref)
-      CFStringGetCString(ref, buf, len, kCFStringEncodingUTF8);
+      CFStringGetCString(ref, s, len, kCFStringEncodingUTF8);
 }
 
 static void iohidmanager_hid_device_add_autodetect(unsigned idx,
@@ -1036,11 +1035,11 @@ static int iohidmanager_hid_manager_set_device_matching(
       kHIDUsage_GD_GamePad);
    /* The GameCube Adapter reports usage id 0x00 */
    iohidmanager_hid_append_matching_dictionary(matcher, kHIDPage_Game, 0x00);
-   
+
    IOHIDManagerSetDeviceMatchingMultiple(hid->ptr, matcher);
    IOHIDManagerRegisterDeviceMatchingCallback(hid->ptr,iohidmanager_hid_device_matched, 0);
    IOHIDManagerRegisterDeviceRemovalCallback(hid->ptr,iohidmanager_hid_device_removed, 0);
-   
+
    CFRelease(matcher);
 
    return 0;
@@ -1088,27 +1087,29 @@ static void iohidmanager_hid_free(const void *data)
 
 static void iohidmanager_hid_poll(void *data) { }
 
-static int32_t iohidmanager_set_report(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *data_buf, size_t size)
+static int32_t iohidmanager_set_report(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *s, size_t len)
 {
    struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)handle;
    if (adapter)
       return IOHIDDeviceSetReport(adapter->handle,
             translate_hid_report_type(report_type), report_id,
-            data_buf + 1, size - 1);
+            s + 1, len - 1);
    return -1;
 }
 
 static int32_t iohidmanager_get_report(void *handle, uint8_t report_type, uint8_t report_id,
-      uint8_t *data_buf, size_t size)
+      uint8_t *s, size_t len)
 {
    struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)handle;
 
    if (adapter)
    {
-      CFIndex length = size;
-      return IOHIDDeviceGetReport(adapter->handle, translate_hid_report_type(report_type), report_id, data_buf, &length);
+      CFIndex length = len;
+      return IOHIDDeviceGetReport(adapter->handle,
+            translate_hid_report_type(report_type),
+            report_id, s, &length);
    }
 
    return -1;

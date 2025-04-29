@@ -136,33 +136,38 @@ void playlist_set_cached_external(playlist_t* pl)
 
 /* Convenience function: copies specified playlist
  * path to specified playlist configuration object */
-void playlist_config_set_path(playlist_config_t *config, const char *path)
+size_t playlist_config_set_path(playlist_config_t *config, const char *path)
 {
-   if (!config)
-      return;
-
-   if (!string_is_empty(path))
-      strlcpy(config->path, path, sizeof(config->path));
-   else
+   if (config)
+   {
+      if (!string_is_empty(path))
+         return strlcpy(config->path, path, sizeof(config->path));
       config->path[0] = '\0';
+   }
+   return 0;
 }
 
 /* Convenience function: copies base content directory
  * path to specified playlist configuration object.
  * Also sets autofix_paths boolean, depending on base
  * content directory value */
-void playlist_config_set_base_content_directory(
+size_t playlist_config_set_base_content_directory(
       playlist_config_t* config, const char* path)
 {
-   if (!config)
-      return;
-
-   config->autofix_paths = !string_is_empty(path);
-   if (config->autofix_paths)
-      strlcpy(config->base_content_directory, path,
-            sizeof(config->base_content_directory));
-   else
+   if (config)
+   {
+      config->autofix_paths = !string_is_empty(path);
+      if (config->autofix_paths)
+#if IOS
+         return fill_pathname_abbreviate_special(config->base_content_directory, path,
+               sizeof(config->base_content_directory));
+#else
+         return strlcpy(config->base_content_directory, path,
+               sizeof(config->base_content_directory));
+#endif
       config->base_content_directory[0] = '\0';
+   }
+   return 0;
 }
 
 
@@ -194,43 +199,40 @@ playlist_config_t *playlist_get_config(playlist_t *playlist)
 {
    if (!playlist)
       return NULL;
-
    return &playlist->config;
 }
 
 static void path_replace_base_path_and_convert_to_local_file_system(
-      char *out_path,
+      char *s,
       const char *in_path,
-      const char *in_oldrefpath,
-      const char *in_refpath,
-      size_t size)
+      const char *in_oldrefpath, const char *in_refpath,
+      size_t len)
 {
    size_t in_oldrefpath_length = strlen(in_oldrefpath);
-
    /* If entry path is inside playlist base path,
     * replace it with new base content directory */
    if (string_starts_with_size(in_path, in_oldrefpath, in_oldrefpath_length))
    {
       size_t in_refpath_length = strlen(in_refpath);
-      memcpy(out_path, in_refpath, in_refpath_length);
+      memcpy(s, in_refpath, in_refpath_length);
       memcpy(
-            out_path + in_refpath_length,
-            in_path  + in_oldrefpath_length,
+            s               + in_refpath_length,
+            in_path         + in_oldrefpath_length,
             strlen(in_path) - in_oldrefpath_length + 1);
 #ifdef _WIN32
       /* If we are running under a Windows filesystem,
        * '/' characters are not allowed anywhere.
        * We replace with '\' and hope for the best... */
-      string_replace_all_chars(out_path,
+      string_replace_all_chars(s,
             POSIX_PATH_DELIMITER, WINDOWS_PATH_DELIMITER);
 #else
       /* Under POSIX filesystem, we replace '\' characters with '/' */
-      string_replace_all_chars(out_path,
+      string_replace_all_chars(s,
             WINDOWS_PATH_DELIMITER, POSIX_PATH_DELIMITER);
 #endif
    }
    else
-      strlcpy(out_path, in_path, size);
+      strlcpy(s, in_path, len);
 }
 
 /* Generates a case insensitive hash for the
@@ -1142,7 +1144,7 @@ enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlis
 void playlist_resolve_path(enum playlist_file_mode mode,
       bool is_core, char *s, size_t len)
 {
-#ifdef HAVE_COCOATOUCH
+#if IOS
    char tmp[PATH_MAX_LENGTH];
    int _len = 0;
 
@@ -1228,6 +1230,12 @@ bool playlist_content_path_is_valid(const char *path)
    /* Sanity check */
    if (string_is_empty(path))
       return false;
+
+#ifdef IOS
+   char expanded_path[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(expanded_path, path, sizeof(expanded_path));
+   path = expanded_path;
+#endif
 
    /* If content is inside an archive, special
     * handling is required... */
@@ -1739,11 +1747,11 @@ void playlist_write_file(playlist_t *playlist)
    bool pl_old_fmt      = ((playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT)    > 0);
 
    if (   !playlist
-       || !((playlist->flags & CNT_PLAYLIST_FLG_MOD) ||
+       || !((playlist->flags & CNT_PLAYLIST_FLG_MOD)
 #if defined(HAVE_ZLIB)
-        (pl_compressed != playlist->config.compress) ||
+       || (pl_compressed != playlist->config.compress)
 #endif
-        (pl_old_fmt    != playlist->config.old_format)))
+       || (pl_old_fmt    != playlist->config.old_format)))
       return;
 
 #if defined(HAVE_ZLIB)
@@ -2575,21 +2583,18 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
    return true;
 }
 
-static void playlist_get_old_format_metadata_value(
-      char *metadata_line, char *value, size_t len)
+static size_t playlist_get_old_format_metadata_value(
+      char *metadata_line, char *s, size_t len)
 {
    char *end   = NULL;
    char *start = strchr(metadata_line, '\"');
-
    if (!start)
-      return;
-
+      return 0;
    start++;
    if (!(end = strchr(start, '\"')))
-      return;
-
+      return 0;
    *end        = '\0';
-   strlcpy(value, start, len);
+   return strlcpy(s, start, len);
 }
 
 static bool playlist_read_file(playlist_t *playlist)
@@ -2629,7 +2634,7 @@ static bool playlist_read_file(playlist_t *playlist)
       /* Read error or EOF (end of file) */
       if ((test_char = intfstream_getc(file)) == EOF)
          goto end;
-   } while (!isgraph(test_char) || test_char > 0x7F);
+   }while(!isgraph(test_char) || test_char > 0x7F);
 
    if (test_char != '{')
       playlist->flags |=  (CNT_PLAYLIST_FLG_OLD_FMT);
@@ -2805,16 +2810,14 @@ static bool playlist_read_file(playlist_t *playlist)
                      line_buf[2],
                      STRLEN_CONST("label_display_mode")) == 0)
             {
-               unsigned display_mode;
-               char display_mode_str[4] = {0};
-
-               playlist_get_old_format_metadata_value(
-                     line_buf[2], display_mode_str, sizeof(display_mode_str));
-
-               display_mode = string_to_unsigned(display_mode_str);
-
-               if (display_mode <= LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX)
-                  playlist->label_display_mode = (enum playlist_label_display_mode)display_mode;
+               char display_mode_str[4];
+               if (playlist_get_old_format_metadata_value(
+                     line_buf[2], display_mode_str, sizeof(display_mode_str)) > 0)
+               {
+                  unsigned display_mode = string_to_unsigned(display_mode_str);
+                  if (display_mode <= LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX)
+                     playlist->label_display_mode = (enum playlist_label_display_mode)display_mode;
+               }
             }
 
             /* Get thumbnail modes */
@@ -2825,32 +2828,34 @@ static bool playlist_read_file(playlist_t *playlist)
                      line_buf[3],
                      STRLEN_CONST("thumbnail_mode")) == 0)
             {
-               char *tok, *save;
-               char thumbnail_mode_str[8]   = {0};
-               char *thumbnail_mode_str_cpy = strdup(thumbnail_mode_str);
+               char thumbnail_mode_str[8];
 
-               playlist_get_old_format_metadata_value(
+               if (playlist_get_old_format_metadata_value(
                      line_buf[3], thumbnail_mode_str,
-                     sizeof(thumbnail_mode_str));
-
-               if ((tok = strtok_r(thumbnail_mode_str_cpy, "|", &save)))
+                     sizeof(thumbnail_mode_str)) > 0)
                {
-                  char *elem0 = strdup(tok);
-                  if ((tok = strtok_r(NULL, "|", &save)))
-                  {
-                     /* Right thumbnail mode */
-                     unsigned thumbnail_mode = string_to_unsigned(elem0);
-                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
-                        playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
+                  char *tok, *save             = NULL;
+                  char *thumbnail_mode_str_cpy = strdup(thumbnail_mode_str);
 
-                     /* Left thumbnail mode */
-                     thumbnail_mode = string_to_unsigned(tok);
-                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
-                        playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
+                  if ((tok = strtok_r(thumbnail_mode_str_cpy, "|", &save)))
+                  {
+                     char *elem0 = strdup(tok);
+                     if ((tok = strtok_r(NULL, "|", &save)))
+                     {
+                        /* Right thumbnail mode */
+                        unsigned thumbnail_mode = string_to_unsigned(elem0);
+                        if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
+                           playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
+
+                        /* Left thumbnail mode */
+                        thumbnail_mode = string_to_unsigned(tok);
+                        if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
+                           playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
+                     }
+                     free(elem0);
                   }
-                  free(elem0);
+                  free(thumbnail_mode_str_cpy);
                }
-               free(thumbnail_mode_str_cpy);
             }
 
             /* Get sort_mode */
@@ -2861,16 +2866,14 @@ static bool playlist_read_file(playlist_t *playlist)
                      line_buf[4],
                      STRLEN_CONST("sort_mode")) == 0)
             {
-               unsigned sort_mode;
-               char sort_mode_str[4] = {0};
-
-               playlist_get_old_format_metadata_value(
-                     line_buf[4], sort_mode_str, sizeof(sort_mode_str));
-
-               sort_mode = string_to_unsigned(sort_mode_str);
-
-               if (sort_mode <= PLAYLIST_SORT_MODE_OFF)
-                  playlist->sort_mode = (enum playlist_sort_mode)sort_mode;
+               char sort_mode_str[4];
+               if (playlist_get_old_format_metadata_value(
+                     line_buf[4], sort_mode_str, sizeof(sort_mode_str)) > 0)
+               {
+                  unsigned sort_mode = string_to_unsigned(sort_mode_str);
+                  if (sort_mode <= PLAYLIST_SORT_MODE_OFF)
+                     playlist->sort_mode = (enum playlist_sort_mode)sort_mode;
+               }
             }
 
             /* All metadata parsed -> end of file */
@@ -2985,7 +2988,8 @@ playlist_t *playlist_init(const playlist_config_t *config)
             tmp_entry_path[0] = '\0';
             path_replace_base_path_and_convert_to_local_file_system(
                   tmp_entry_path, entry->path,
-                  playlist->base_content_directory, playlist->config.base_content_directory,
+                  playlist->base_content_directory,
+                  playlist->config.base_content_directory,
                   sizeof(tmp_entry_path));
 
             free(entry->path);
@@ -3511,6 +3515,11 @@ void playlist_set_scan_content_dir(playlist_t *playlist, const char *content_dir
 {
    bool current_string_empty;
    bool new_string_empty;
+#if IOS
+   char _tmpbuf[PATH_MAX_LENGTH];
+   fill_pathname_abbreviate_special(_tmpbuf, content_dir, sizeof(_tmpbuf));
+   content_dir = _tmpbuf;
+#endif
 
    if (!playlist)
       return;
@@ -3573,6 +3582,11 @@ void playlist_set_scan_dat_file_path(playlist_t *playlist, const char *dat_file_
 {
    bool current_string_empty;
    bool new_string_empty;
+#if IOS
+   char _tmpbuf[PATH_MAX_LENGTH];
+   fill_pathname_abbreviate_special(_tmpbuf, dat_file_path, sizeof(_tmpbuf));
+   dat_file_path = _tmpbuf;
+#endif
 
    if (!playlist)
       return;

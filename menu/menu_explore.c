@@ -183,23 +183,21 @@ static explore_state_t* explore_state;
 
 static void ex_arena_grow(ex_arena *arena, size_t min_size)
 {
-   size_t size = EX_ARENA_ALIGN_UP(
+   size_t _len = EX_ARENA_ALIGN_UP(
          MAX(min_size, EX_ARENA_BLOCK_SIZE), EX_ARENA_ALIGNMENT);
-   arena->ptr  = (char *)malloc(size);
-   arena->end  = arena->ptr + size;
+   arena->ptr  = (char *)malloc(_len);
+   arena->end  = arena->ptr + _len;
    RBUF_PUSH(arena->blocks, arena->ptr);
 }
 
-static void *ex_arena_alloc(ex_arena *arena, size_t size)
+static void *ex_arena_alloc(ex_arena *arena, size_t len)
 {
    void *ptr  = NULL;
-
-   if (size > (size_t)(arena->end - arena->ptr))
-      ex_arena_grow(arena, size);
-
+   if (len > (size_t)(arena->end - arena->ptr))
+      ex_arena_grow(arena, len);
    ptr        = arena->ptr;
    arena->ptr = (char *)
-      EX_ARENA_ALIGN_UP((uintptr_t)(arena->ptr + size), EX_ARENA_ALIGNMENT);
+      EX_ARENA_ALIGN_UP((uintptr_t)(arena->ptr + len), EX_ARENA_ALIGNMENT);
    return ptr;
 }
 
@@ -316,7 +314,7 @@ static void explore_add_unique_string(
 
    for (p = str + 1;; p++)
    {
-      size_t _len              = 0;
+      size_t _len             = 0;
       uint32_t hash           = 0;
       explore_string_t* entry = NULL;
 
@@ -552,20 +550,20 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
          rdb_num = RHMAP_GET(rdb_indices, rdb_hash);
          if (!rdb_num)
          {
-            size_t systemname_len;
+            size_t _len;
             struct explore_rdb newrdb;
-            char *ext_path        = NULL;
+            char *ext_path          = NULL;
 
-            newrdb.handle         = libretrodb_new();
-            newrdb.count          = 0;
-            newrdb.playlist_crcs  = NULL;
-            newrdb.playlist_names = NULL;
+            newrdb.handle           = libretrodb_new();
+            newrdb.count            = 0;
+            newrdb.playlist_crcs    = NULL;
+            newrdb.playlist_names   = NULL;
 
-            systemname_len        = db_ext - db_name;
-            if (systemname_len >= sizeof(newrdb.systemname))
-               systemname_len     = sizeof(newrdb.systemname)-1;
-            memcpy(newrdb.systemname, db_name, systemname_len);
-            newrdb.systemname[systemname_len] = '\0';
+            _len                    = db_ext - db_name;
+            if (_len >= sizeof(newrdb.systemname))
+               _len                 = sizeof(newrdb.systemname)-1;
+            memcpy(newrdb.systemname, db_name, _len);
+            newrdb.systemname[_len] = '\0';
 
             fill_pathname_join_special(
                   tmp, directory_database, db_name, sizeof(tmp));
@@ -973,7 +971,8 @@ static void explore_action_find_complete(void *userdata, const char *line)
    }
 }
 
-static int explore_action_ok_find(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+static int explore_action_ok_find(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    menu_input_ctx_line_t line;
    line.label                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH);
@@ -985,8 +984,8 @@ static int explore_action_ok_find(const char *path, const char *label, unsigned 
    return 0;
 }
 
-static const char* explore_get_view_path(struct menu_state *menu_st, menu_list_t *menu_list,
-      file_list_t *menu_stack)
+static const char* explore_get_view_path(struct menu_state *menu_st,
+      menu_list_t *menu_list, file_list_t *menu_stack)
 {
    struct item_file *cur = (struct item_file *)&menu_stack->list[menu_stack->size - 1];
 
@@ -996,14 +995,17 @@ static const char* explore_get_view_path(struct menu_state *menu_st, menu_list_t
       const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
       if (driver_ctx->list_get_entry)
       {
-         size_t selection                 = driver_ctx->list_get_selection ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
-         size_t size                      = driver_ctx->list_get_size      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
-         if (selection > 0 && size > 0)
+         size_t selection = driver_ctx->list_get_selection
+            ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
+         size_t _len      = driver_ctx->list_get_size
+            ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
+         if (selection > 0 && _len > 0)
          {
             struct item_file *item        = NULL;
             /* Label contains the path and path contains the label */
-            if ((item = (struct item_file*)driver_ctx->list_get_entry(menu_st->userdata, MENU_LIST_HORIZONTAL,
-                        (unsigned)(selection - (size +1)))))
+            if ((item = (struct item_file*)driver_ctx->list_get_entry(
+                        menu_st->userdata, MENU_LIST_HORIZONTAL,
+                        (unsigned)(selection - (_len +1)))))
                return item->label;
          }
       }
@@ -1031,7 +1033,8 @@ static void explore_on_edit_views(enum msg_hash_enums msg)
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
-static int explore_action_ok_deleteview(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+static int explore_action_ok_deleteview(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st    = menu_state_get_ptr();
    menu_list_t *menu_list        = menu_st->entries.list;
@@ -1153,7 +1156,8 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
    explore_on_edit_views(MENU_ENUM_LABEL_EXPLORE_VIEW_SAVED);
 }
 
-static int explore_action_ok_saveview(const char *path, const char *label, unsigned type, size_t idx, size_t entry_idx)
+static int explore_action_ok_saveview(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
 {
    menu_input_ctx_line_t line;
    line.label                 = msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_NEW_VIEW);
@@ -1429,7 +1433,8 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME),
                EXPLORE_TYPE_SEARCH, explore_action_ok_find);
          if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel =
+               explore_action_sublabel_spacer;
       }
 
       for (cat = 0; cat < EXPLORE_CAT_COUNT; cat++)
@@ -1448,33 +1453,33 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                   && !explore_by_info[cat].is_boolean
                   && RBUF_LEN(state->by[cat]) > 1))
          {
-            size_t tmplen = strlcpy(tmp,
+            size_t _len = strlcpy(tmp,
                   msg_hash_to_str(explore_by_info[cat].by_enum), sizeof(tmp));
 
             if (is_top)
             {
                if (explore_by_info[cat].is_numeric)
-                  snprintf(tmp         + tmplen,
-                           sizeof(tmp) - tmplen,
+                  snprintf(tmp         + _len,
+                           sizeof(tmp) - _len,
                            " (%s - %s)",
                            entries[0]->str,
                            entries[RBUF_LEN(entries) - 1]->str);
                else if (!explore_by_info[cat].is_boolean)
                {
-                  tmplen += strlcpy (tmp + tmplen, " (", sizeof(tmp) - tmplen);
-                  tmplen += snprintf(tmp + tmplen,       sizeof(tmp) - tmplen,
+                  _len += strlcpy (tmp + _len, " (", sizeof(tmp) - _len);
+                  _len += snprintf(tmp + _len,       sizeof(tmp) - _len,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT),
                         (unsigned)RBUF_LEN(entries));
-                  strlcpy(tmp  + tmplen, ")",  sizeof(tmp) - tmplen);
+                  strlcpy(tmp  + _len, ")",  sizeof(tmp) - _len);
                }
             }
             else if (i != state->view_levels)
             {
-               tmplen += strlcpy(tmp + tmplen, " (", sizeof(tmp) - tmplen);
-               tmplen += strlcpy(tmp + tmplen,
+               _len += strlcpy(tmp + _len, " (", sizeof(tmp) - _len);
+               _len += strlcpy(tmp + _len,
                      msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER),
-                     sizeof(tmp)     - tmplen);
-               strlcpy(tmp + tmplen, ")", sizeof(tmp) - tmplen);
+                     sizeof(tmp)     - _len);
+               strlcpy(tmp + _len, ")", sizeof(tmp) - _len);
             }
 
             explore_menu_entry(list, state,

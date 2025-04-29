@@ -32,7 +32,7 @@ int main(void)
 {
    char   *data;
    struct http_t *http1, *http3;
-   size_t len, pos = 0, tot = 0;
+   size_t _len, pos = 0, tot = 0;
 
    if (!network_init())
       return -1;
@@ -45,7 +45,7 @@ int main(void)
    http3 = net_http_new("http://www.wikipedia.org/");
    while (!net_http_update(http3, NULL, NULL)) {}
 
-   data  = (char*)net_http_data(http3, &len, false);
+   data  = (char*)net_http_data(http3, &_len, false);
 
    printf("%.*s\n", (int)256, data);
 

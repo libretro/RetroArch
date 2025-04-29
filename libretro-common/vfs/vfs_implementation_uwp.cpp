@@ -659,8 +659,8 @@ struct libretro_vfs_implementation_dir
 libretro_vfs_implementation_dir* retro_vfs_opendir_impl(
     const char* name, bool include_hidden)
 {
+    size_t _len;
     char path_buf[1024];
-    size_t copied      = 0;
     wchar_t* path_wide = NULL;
     libretro_vfs_implementation_dir* rdir;
 
@@ -674,14 +674,14 @@ libretro_vfs_implementation_dir* retro_vfs_opendir_impl(
 
     rdir->orig_path = strdup(name);
 
-    copied          = strlcpy(path_buf, name, sizeof(path_buf));
+    _len = strlcpy(path_buf, name, sizeof(path_buf));
 
     /* Non-NT platforms don't like extra slashes in the path */
-    if (path_buf[copied - 1] != '\\')
-        path_buf[copied++] = '\\';
+    if (path_buf[_len - 1] != '\\')
+        path_buf[_len++]   = '\\';
 
-    path_buf[copied]       = '*';
-    path_buf[copied + 1]   = '\0';
+    path_buf[_len]         = '*';
+    path_buf[_len + 1]     = '\0';
 
     path_wide              = utf8_to_utf16_string_alloc(path_buf);
     rdir->directory        = FindFirstFileExFromAppW(

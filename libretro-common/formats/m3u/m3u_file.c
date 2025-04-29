@@ -182,16 +182,16 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
 
          if (token_ptr)
          {
-            size_t len = (size_t)(1 + token_ptr - line);
+            size_t _len = (size_t)(1 + token_ptr - line);
 
             /* Get entry_path segment */
-            if (len > 0)
+            if (_len > 0)
             {
                memset(entry_path, 0, sizeof(entry_path));
                strlcpy(
                      entry_path, line,
-                     ((len < PATH_MAX_LENGTH ?
-                           len : PATH_MAX_LENGTH) * sizeof(char)));
+                     ((_len < PATH_MAX_LENGTH ?
+                       _len : PATH_MAX_LENGTH) * sizeof(char)));
                string_trim_whitespace_right(entry_path);
                string_trim_whitespace_left(entry_path);
             }

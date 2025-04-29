@@ -79,9 +79,11 @@ static inline bool comp_string_lower(const QString &lhs, const QString &rhs)
    return lhs.toLower() < rhs.toLower();
 }
 
-static inline bool comp_hash_ui_display_name_key_lower(const QHash<QString, QString> &lhs, const QHash<QString, QString> &rhs)
+static inline bool comp_hash_ui_display_name_key_lower(const QHash<QString,
+		QString> &lhs, const QHash<QString, QString> &rhs)
 {
-   return lhs.value("ui_display_name").toLower() < rhs.value("ui_display_name").toLower();
+   return    lhs.value("ui_display_name").toLower()
+	   < rhs.value("ui_display_name").toLower();
 }
 
 PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent) :
@@ -93,14 +95,19 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
    ,m_extensionsLineEdit(new QLineEdit(this))
    ,m_coreComboBox(new QComboBox(this))
    ,m_databaseComboBox(new QComboBox(this))
-   ,m_extensionArchiveCheckBox(new QCheckBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES), this))
+   ,m_extensionArchiveCheckBox(new QCheckBox(
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES),
+            this))
 {
    QFormLayout *form                = new QFormLayout();
-   QDialogButtonBox *buttonBox      = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+   QDialogButtonBox *buttonBox      = new QDialogButtonBox(
+         QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
    QVBoxLayout *databaseVBoxLayout  = new QVBoxLayout();
    QHBoxLayout *pathHBoxLayout      = new QHBoxLayout();
    QHBoxLayout *extensionHBoxLayout = new QHBoxLayout();
-   QLabel *databaseLabel            = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS), this);
+   QLabel *databaseLabel            = new QLabel(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS), this);
    QToolButton *pathPushButton      = new QToolButton(this);
 
    pathPushButton->setText(QStringLiteral("..."));
@@ -114,10 +121,14 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
    extensionHBoxLayout->addWidget(m_extensionsLineEdit);
    extensionHBoxLayout->addWidget(m_extensionArchiveCheckBox);
 
-   m_extensionsLineEdit->setPlaceholderText(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER));
+   m_extensionsLineEdit->setPlaceholderText(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER));
 
    /* Ensure placeholder text is completely visible. */
-   m_extensionsLineEdit->setMinimumWidth(QFontMetrics(m_extensionsLineEdit->font()).boundingRect(m_extensionsLineEdit->placeholderText()).width() + m_extensionsLineEdit->frameSize().width());
+   m_extensionsLineEdit->setMinimumWidth(QFontMetrics(
+            m_extensionsLineEdit->font()).boundingRect(
+            m_extensionsLineEdit->placeholderText()).width()
+          + m_extensionsLineEdit->frameSize().width());
 
    setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY));
 
@@ -132,11 +143,16 @@ PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent
    connect(this, SIGNAL(accepted()), this, SLOT(onAccepted()));
    connect(this, SIGNAL(rejected()), this, SLOT(onRejected()));
 
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME), m_nameLineEdit);
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH), pathHBoxLayout);
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE), m_coreComboBox);
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE), databaseVBoxLayout);
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS), extensionHBoxLayout);
+   form->addRow(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME), m_nameLineEdit);
+   form->addRow(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH), pathHBoxLayout);
+   form->addRow(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE), m_coreComboBox);
+   form->addRow(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE), databaseVBoxLayout);
+   form->addRow(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS), extensionHBoxLayout);
 
    qobject_cast<QVBoxLayout*>(layout())->addLayout(form);
    layout()->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
@@ -277,7 +293,9 @@ void PlaylistEntryDialog::setEntryValues(
 
    for (i = 0; i < m_coreComboBox->count(); i++)
    {
-      const QHash<QString, QString> hash = m_coreComboBox->itemData(i, Qt::UserRole).value<QHash<QString, QString> >();
+      const QHash<QString, QString> hash =
+         m_coreComboBox->itemData(i,
+               Qt::UserRole).value<QHash<QString, QString> >();
 
       if (hash.isEmpty() || coreName.isEmpty())
          continue;
@@ -302,7 +320,8 @@ void PlaylistEntryDialog::setEntryValues(
 
 const QHash<QString, QString> PlaylistEntryDialog::getSelectedCore()
 {
-   return m_coreComboBox->currentData(Qt::UserRole).value<QHash<QString, QString> >();
+   return m_coreComboBox->currentData(
+         Qt::UserRole).value<QHash<QString, QString> >();
 }
 
 const QString PlaylistEntryDialog::getSelectedName()
@@ -331,27 +350,15 @@ const QStringList PlaylistEntryDialog::getSelectedExtensions()
    return list;
 }
 
-void PlaylistEntryDialog::onAccepted()
-{
-}
-
-void PlaylistEntryDialog::onRejected()
-{
-}
+void PlaylistEntryDialog::onAccepted() { }
+void PlaylistEntryDialog::onRejected() { }
+void PlaylistEntryDialog::hideDialog() { reject(); }
 
 bool PlaylistEntryDialog::showDialog(const QHash<QString, QString> &hash)
 {
    loadPlaylistOptions();
    setEntryValues(hash);
-
-   if (exec() == QDialog::Accepted)
-      return true;
-   return false;
-}
-
-void PlaylistEntryDialog::hideDialog()
-{
-   reject();
+   return (exec() == QDialog::Accepted);
 }
 
 CoreInfoDialog::CoreInfoDialog(MainWindow *mainwindow, QWidget *parent) :
@@ -378,9 +385,8 @@ CoreInfoDialog::CoreInfoDialog(MainWindow *mainwindow, QWidget *parent) :
 
 void CoreInfoDialog::showCoreInfo()
 {
-   int      row  = 0;
+   int i, row;
    int row_count = m_formLayout->rowCount();
-   int       i   = 0;
    QVector<QHash<QString, QString> > info_list
                  = m_mainwindow->getCoreInfo();
 
@@ -444,7 +450,8 @@ void CoreInfoDialog::showCoreInfo()
 QPixmap getColorizedPixmap(const QPixmap& oldPixmap, const QColor& color)
 {
    QPixmap pixmap = oldPixmap;
-   QBitmap   mask = pixmap.createMaskFromColor(Qt::transparent, Qt::MaskInColor);
+   QBitmap   mask = pixmap.createMaskFromColor(Qt::transparent,
+         Qt::MaskInColor);
    pixmap.fill(color);
    pixmap.setMask(mask);
    return pixmap;
@@ -528,7 +535,8 @@ private:
    }
 };
 
-ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
+ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow,
+      QWidget *parent) :
    QDialog(mainwindow)
    ,m_optionsList(new QListWidget(this))
    ,m_optionsStack(new QStackedLayout)
@@ -541,7 +549,8 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    QFont      headerLabelFont = m_headerLabel->font();
    const int        pointSize = headerLabelFont.pointSize();
    QHBoxLayout *headerHLayout = new QHBoxLayout;
-   const int       leftMargin = QApplication::style()->pixelMetric(QStyle::PM_LayoutLeftMargin);
+   const int       leftMargin = QApplication::style()->pixelMetric(
+         QStyle::PM_LayoutLeftMargin);
 
 #if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
    m_optionsStack->setContentsMargins(0, 0, 0, 0);
@@ -557,7 +566,8 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
 
    m_headerLabel->setFont(headerLabelFont);
 
-   headerHLayout->addSpacerItem(new QSpacerItem(leftMargin, 0, QSizePolicy::Fixed, QSizePolicy::Ignored));
+   headerHLayout->addSpacerItem(new QSpacerItem(leftMargin, 0,
+            QSizePolicy::Fixed, QSizePolicy::Ignored));
    headerHLayout->addWidget(m_headerLabel);
 
    addCategory(new DriversCategory(this));
@@ -574,7 +584,9 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    addCategory(new OnscreenDisplayCategory(this));
    addCategory(new UserInterfaceCategory(mainwindow, this));
    addCategory(new AIServiceCategory(this));
+#ifdef HAVE_CHEEVOS
    addCategory(new AchievementsCategory(this));
+#endif
    addCategory(new NetworkCategory(this));
    addCategory(new PlaylistsCategory(this));
    addCategory(new UserCategory(this));
@@ -595,8 +607,10 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    layout->addLayout(headerHLayout, 0, 1);
    layout->addLayout(m_optionsStack, 1, 1);
 
-   connect(m_optionsList, SIGNAL(currentRowChanged(int)), m_optionsStack, SLOT(setCurrentIndex(int)));
-   connect(m_optionsList, SIGNAL(currentTextChanged(const QString&)), m_headerLabel, SLOT(setText(const QString&)));
+   connect(m_optionsList, SIGNAL(currentRowChanged(int)),
+         m_optionsStack, SLOT(setCurrentIndex(int)));
+   connect(m_optionsList, SIGNAL(currentTextChanged(const QString&)),
+         m_headerLabel, SLOT(setText(const QString&)));
 
    connect(this, SIGNAL(rejected()), this, SLOT(onRejected()));
 }
@@ -655,7 +669,8 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    , m_viewOptionsWidget(new ViewOptionsWidget(mainwindow))
 {
    QVBoxLayout         *layout = new QVBoxLayout;
-   QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+   QDialogButtonBox *buttonBox = new QDialogButtonBox(
+         QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
    connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
    connect(buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
@@ -688,10 +703,7 @@ void ViewOptionsDialog::showDialog()
    activateWindow();
 }
 
-void ViewOptionsDialog::hideDialog()
-{
-   reject();
-}
+void ViewOptionsDialog::hideDialog() { reject(); }
 
 void ViewOptionsDialog::onRejected()
 {
@@ -715,9 +727,12 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    ,m_thumbnailCacheSpinBox(new QSpinBox(this))
    ,m_thumbnailDropSizeSpinBox(new QSpinBox(this))
    ,m_startupPlaylistComboBox(new QComboBox(this))
-   ,m_highlightColorPushButton(new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CHOOSE), this))
+   ,m_highlightColorPushButton(new QPushButton(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CHOOSE), this))
    ,m_highlightColor()
-   ,m_highlightColorLabel(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR), this))
+   ,m_highlightColorLabel(new QLabel(
+            msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR), this))
    ,m_customThemePath()
    ,m_suggestLoadedCoreFirstCheckBox(new QCheckBox(this))
    /* ,m_allPlaylistsListMaxCountSpinBox(new QSpinBox(this)) */
@@ -726,9 +741,15 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    QVBoxLayout *layout = new QVBoxLayout;
    QFormLayout *form   = new QFormLayout;
 
-   m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT), MainWindow::THEME_SYSTEM_DEFAULT);
-   m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK), MainWindow::THEME_DARK);
-   m_themeComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM), MainWindow::THEME_CUSTOM);
+   m_themeComboBox->addItem(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT),
+         MainWindow::THEME_SYSTEM_DEFAULT);
+   m_themeComboBox->addItem(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK),
+         MainWindow::THEME_DARK);
+   m_themeComboBox->addItem(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM),
+         MainWindow::THEME_CUSTOM);
 
    m_thumbnailCacheSpinBox->setSuffix(" MB");
    m_thumbnailCacheSpinBox->setRange(0, 99999);
@@ -742,9 +763,14 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    form->setFormAlignment(Qt::AlignCenter);
    form->setLabelAlignment(Qt::AlignCenter);
 
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY), m_saveGeometryCheckBox);
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS), m_saveDockPositionsCheckBox);
-   form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB), m_saveLastTabCheckBox);
+   form->addRow(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY),
+         m_saveGeometryCheckBox);
+   form->addRow(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS),
+         m_saveDockPositionsCheckBox);
+   form->addRow(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB), m_saveLastTabCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES), m_showHiddenFilesCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST), m_suggestLoadedCoreFirstCheckBox);
 #if 0
@@ -921,15 +947,8 @@ void ViewOptionsWidget::saveViewOptions()
    m_mainwindow->setThumbnailCacheLimit(m_thumbnailCacheSpinBox->value());
 }
 
-void ViewOptionsWidget::onAccepted()
-{
-   saveViewOptions();
-}
-
-void ViewOptionsWidget::onRejected()
-{
-   loadViewOptions();
-}
+void ViewOptionsWidget::onAccepted() { saveViewOptions(); }
+void ViewOptionsWidget::onRejected() { loadViewOptions(); }
 
 CoreOptionsDialog::CoreOptionsDialog(QWidget *parent) :
    QDialog(parent)
@@ -944,9 +963,7 @@ CoreOptionsDialog::CoreOptionsDialog(QWidget *parent) :
    QTimer::singleShot(0, this, SLOT(clearLayout()));
 }
 
-CoreOptionsDialog::~CoreOptionsDialog()
-{
-}
+CoreOptionsDialog::~CoreOptionsDialog() { }
 
 void CoreOptionsDialog::resizeEvent(QResizeEvent *event)
 {

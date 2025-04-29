@@ -191,8 +191,6 @@ void rarch_stop_draw_observer(void)
     iterate_observer = NULL;
 }
 
-apple_frontend_settings_t apple_frontend_settings;
-
 void get_ios_version(int *major, int *minor)
 {
    static int savedMajor, savedMinor;
@@ -528,7 +526,7 @@ enum
 
 - (void)setupMetalLayer {
     self.metalLayer.device = MTLCreateSystemDefaultDevice();
-    self.metalLayer.contentsScale = [UIScreen mainScreen].nativeScale;
+    self.metalLayer.contentsScale = cocoa_screen_get_native_scale();
     self.metalLayer.opaque = YES;
 }
 
@@ -713,7 +711,6 @@ enum
 
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:[AVAudioSession sharedInstance]];
 
-   [self refreshSystemConfig];
    [self showGameView];
 
    rarch_main(argc, argv, NULL);
@@ -772,12 +769,30 @@ enum
          mouse.mouseInput.mouseMovedHandler = ^(GCMouseInput * _Nonnull mouse, float delta_x, float delta_y)
          {
             cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-            if (!apple || !apple->mouse_grabbed)
+            if (!apple)
                return;
-            apple->mouse_rel_x       += (int16_t)delta_x;
-            apple->mouse_rel_y       -= (int16_t)delta_y;
             apple->window_pos_x      += (int16_t)delta_x;
             apple->window_pos_y      -= (int16_t)delta_y;
+         };
+         mouse.mouseInput.leftButton.pressedChangedHandler = ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed)
+         {
+            cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+            if (!apple)
+               return;
+            if (pressed)
+                apple->mouse_buttons |= (1 << 0);
+            else
+                apple->mouse_buttons &= ~(1 << 0);
+         };
+         mouse.mouseInput.rightButton.pressedChangedHandler = ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed)
+         {
+            cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+            if (!apple)
+               return;
+            if (pressed)
+                apple->mouse_buttons |= (1 << 1);
+            else
+                apple->mouse_buttons &= ~(1 << 1);
          };
       }];
    }
@@ -895,7 +910,6 @@ enum
 #if TARGET_OS_IOS
    [self setToolbarHidden:![[viewController toolbarItems] count] animated:YES];
 #endif
-   [self refreshSystemConfig];
 }
 
 - (void)showGameView
@@ -913,22 +927,6 @@ enum
    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
          command_event(CMD_EVENT_AUDIO_START, NULL);
          });
-}
-
-- (void)refreshSystemConfig
-{
-#if TARGET_OS_IOS
-   /* Get enabled orientations */
-   apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
-
-   if (string_is_equal(apple_frontend_settings.orientations, "landscape"))
-      apple_frontend_settings.orientation_flags =
-           UIInterfaceOrientationMaskLandscape;
-   else if (string_is_equal(apple_frontend_settings.orientations, "portrait"))
-      apple_frontend_settings.orientation_flags =
-           UIInterfaceOrientationMaskPortrait
-         | UIInterfaceOrientationMaskPortraitUpsideDown;
-#endif
 }
 
 - (void)supportOtherAudioSessions { }

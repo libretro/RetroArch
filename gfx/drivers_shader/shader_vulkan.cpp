@@ -73,7 +73,7 @@ class Buffer
    public:
       Buffer(VkDevice device,
             const VkPhysicalDeviceMemoryProperties &mem_props,
-            size_t size, VkBufferUsageFlags usage);
+            size_t len, VkBufferUsageFlags usage);
       ~Buffer();
 
       size_t get_size() const { return size; }
@@ -1532,8 +1532,8 @@ StaticTexture::~StaticTexture()
 
 Buffer::Buffer(VkDevice device,
       const VkPhysicalDeviceMemoryProperties &mem_props,
-      size_t size, VkBufferUsageFlags usage) :
-   device(device), size(size)
+      size_t len, VkBufferUsageFlags usage) :
+   device(device), size(len)
 {
    VkBufferCreateInfo info;
    VkMemoryRequirements mem_reqs;
@@ -1542,7 +1542,7 @@ Buffer::Buffer(VkDevice device,
    info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
    info.pNext                 = NULL;
    info.flags                 = 0;
-   info.size                  = size;
+   info.size                  = len;
    info.usage                 = usage;
    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
    info.queueFamilyIndexCount = 0;

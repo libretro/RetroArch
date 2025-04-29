@@ -194,8 +194,8 @@ static bool sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
 
    /* Check whether shake device has the required
     * feature set */
-   if (!Shake_QueryEffectSupport(rumble->device, SHAKE_EFFECT_PERIODIC) ||
-       !Shake_QueryWaveformSupport(rumble->device, SHAKE_PERIODIC_SINE))
+   if (   !Shake_QueryEffectSupport(rumble->device, SHAKE_EFFECT_PERIODIC)
+       || !Shake_QueryWaveformSupport(rumble->device, SHAKE_PERIODIC_SINE))
       goto error;
 
    /* In most cases it is recommended to use SHAKE_EFFECT_PERIODIC
@@ -311,8 +311,7 @@ static bool sdl_dingux_joypad_set_rumble(unsigned pad,
 {
    dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
 
-   if ((pad != 0) ||
-       !joypad->rumble.device)
+   if ((pad != 0) || !joypad->rumble.device)
       return false;
 
    switch (effect)
@@ -336,8 +335,7 @@ static bool sdl_dingux_joypad_set_rumble_gain(unsigned pad, unsigned gain)
 {
    dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
 
-   if ((pad != 0) ||
-       !joypad->rumble.device)
+   if ((pad != 0) || !joypad->rumble.device)
       return false;
 
    /* Gain is automatically capped by Shake_SetGain(),

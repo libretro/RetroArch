@@ -25,6 +25,11 @@
 #include <process.h>
 #endif
 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+#include <winreg.h>
+#include <winerror.h>
+#endif
+
 #include <boolean.h>
 #include <compat/strl.h>
 #include <dynamic/dylib.h>
@@ -278,15 +283,25 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    /* Windows 2000 and later */
    SYSTEM_INFO si         = {{0}};
    OSVERSIONINFOEX vi     = {0};
+#ifndef _MSC_VER
+   /* Vista and later, MSYS2/MINGW64 build */
+   const char win_ver_reg_key[]    = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
+   const DWORD reg_read_flags      = RRF_RT_REG_SZ; /* Only read strings (REG_SZ) */
+   const int ProductName_2nd_digit = 9; /* second digit in the string 'Windows 10' */
+   char str_ProductName[64]        = {0};
+   char str_DisplayVersion[64]     = {0};
+   char str_LCUVer[64]             = {0};
+   char str_CurrentBuild[64]       = {0};
+   DWORD key_type                  = 0; /* null pointer */
+   DWORD data_size                 = 0;
+   long reg_read_result;
+   bool read_success               = TRUE;
+   /* end Vista and later; still within Windows 2000 and later block */
+#endif
+
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
 
    GetSystemInfo(&si);
-
-   /* Available from NT 3.5 and Win95 */
-   GetVersionEx((OSVERSIONINFO*)&vi);
-
-   server = vi.wProductType != VER_NT_WORKSTATION;
-
    switch (si.wProcessorArchitecture)
    {
       case PROCESSOR_ARCHITECTURE_AMD64:
@@ -301,6 +316,73 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
       default:
          break;
    }
+
+#ifndef _MSC_VER
+   /* Vista and later, MSYS2/MINGW64 build
+    * Check for Win11 by looking for a specific Registry value.
+    * The behavior of GetVersionEx is changed under Win11 and no longer provides
+    * relevant data. If the specific Registry value is present, read version data
+    * directly from registry and skip remainder of function.
+    * Each read is paired for string values; the first gets the size of the
+    * string (read into data_size); the second passes data_size back as an
+    * argument and reads the actual string. */
+   reg_read_result = RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "LCUVer",
+         reg_read_flags, &key_type, 0, &data_size);
+   
+   if (reg_read_result == ERROR_SUCCESS)
+   {
+      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "LCUVer",
+            reg_read_flags, &key_type, str_LCUVer, &data_size) != ERROR_SUCCESS)
+         read_success = FALSE;
+
+      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "ProductName",
+            reg_read_flags, &key_type, 0, &data_size) != ERROR_SUCCESS)
+         read_success = FALSE;
+      
+      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "ProductName",
+            reg_read_flags, &key_type, str_ProductName, &data_size) != ERROR_SUCCESS)
+         read_success = FALSE;
+
+      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "DisplayVersion",
+            reg_read_flags, &key_type, 0, &data_size) != ERROR_SUCCESS)
+         read_success = FALSE;
+
+      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "DisplayVersion",
+            reg_read_flags, &key_type, str_DisplayVersion, &data_size) != ERROR_SUCCESS)
+         read_success = FALSE;
+
+      if (read_success)
+      {
+         str_ProductName[ProductName_2nd_digit] = '1';
+         /* Even the version in the Registry still says Windows 10 and requires
+          * string manipulation. */
+         
+          _len = strlcpy(s, str_ProductName, len);
+                  if (!string_is_empty(arch))
+         {
+            _len += strlcat(s, " ",  len);
+            _len += strlcat(s, arch, len);
+         }
+         _len = strlcat(s, " ", len);
+         _len = strlcat(s, str_DisplayVersion, len);
+         _len = strlcat(s, " (", len);
+         _len = strlcat(s, str_LCUVer, len);
+         _len = strlcat(s, ")", len);
+
+         *major = 10;
+         *minor = 0;
+         
+         return _len;
+      }
+   }
+   /* End registry-check-and-read code; still within 2000-and-later block */
+#endif
+
+   /* GetVersionEx call changed in Win2K and later */
+   GetVersionEx((OSVERSIONINFO*)&vi);
+
+   server = vi.wProductType != VER_NT_WORKSTATION;
+
 #else
    OSVERSIONINFO vi = {0};
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
@@ -566,24 +648,51 @@ static void frontend_win32_env_get(int *argc, char *argv[],
 {
    const char *tmp_dir = getenv("TMP");
    const char *libretro_directory = getenv("LIBRETRO_DIRECTORY");
+   const char *libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
+   const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
+   const char* libretro_cheats_directory = getenv("LIBRETRO_CHEATS_DIRECTORY");
+   const char* libretro_database_directory = getenv("LIBRETRO_DATABASE_DIRECTORY");
+   const char* libretro_system_directory = getenv("LIBRETRO_SYSTEM_DIRECTORY");
+   const char* libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
+   const char* libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
    if (!string_is_empty(tmp_dir))
       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CACHE],
          tmp_dir, sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
    gfx_set_dwm();
 
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_ASSETS],
-      ":\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   if (!string_is_empty(libretro_assets_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_ASSETS], libretro_assets_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   else
+       fill_pathname_expand_special(
+	   g_defaults.dirs[DEFAULT_DIR_ASSETS],
+	   ":\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
       ":\\filters\\audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
-      ":\\filters\\video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CHEATS],
-      ":\\cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
-      ":\\database\\rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   if (!string_is_empty(libretro_video_filter_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+	       libretro_video_filter_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+           ":\\filters\\video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   if (!string_is_empty(libretro_cheats_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+	       libretro_cheats_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+           ":\\cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   if (!string_is_empty(libretro_database_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+	       libretro_database_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+           ":\\database\\rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-      ":\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+      ":\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
       ":\\config\\record", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
@@ -606,12 +715,26 @@ static void frontend_win32_env_get(int *argc, char *argv[],
    else
       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],
             ":\\cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
-      ":\\info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
-      ":\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
-      ":\\shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   if (!string_is_empty(libretro_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], libretro_directory,
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+           ":\\info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   if (!string_is_empty(libretro_autoconfig_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+	      libretro_autoconfig_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+             ":\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   if (!string_is_empty(libretro_video_filter_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_SHADER],
+	      libretro_video_shader_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
+             ":\\shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
       ":\\downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
@@ -620,8 +743,13 @@ static void frontend_win32_env_get(int *argc, char *argv[],
       ":\\saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
       ":\\states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-      ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   if (!string_is_empty(libretro_system_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+	       libretro_system_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+             ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_LOGS],
       ":\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
@@ -1078,9 +1206,12 @@ static bool accessibility_speak_windows(int speed,
       if (!wc || res != 0)
       {
          RARCH_ERR("Error communicating with NVDA\n");
+         /* Fallback on powershell immediately and retry */
+         g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
+         g_plat_win32_flags |= PLAT_WIN32_FLAG_USE_POWERSHELL;
          if (wc)
             free(wc);
-         return false;
+         return accessibility_speak_windows(speed, speak_text, priority);
       }
 
       nvdaController_cancelSpeech_func();

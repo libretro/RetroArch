@@ -294,6 +294,10 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_information_steam_list,    DISPLAYLIST_
 
 GENERIC_DEFERRED_PUSH(deferred_push_file_browser_select_sideload_core, DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE)
 
+#ifdef HAVE_GAME_AI
+GENERIC_DEFERRED_PUSH(deferred_push_core_game_ai_options,             DISPLAYLIST_OPTIONS_GAME_AI)
+#endif
+
 static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
@@ -353,11 +357,11 @@ static int deferred_push_cursor_manager_list_generic(
       menu_displaylist_info_t *info, enum database_query_type type)
 {
    char query[256];
-   char *tok, *save;
-   char *elem0                   = NULL;
-   char *elem1                   = NULL;
-   char *path_cpy                = NULL;
-   const char *path              = info->path;
+   char *tok, *save  = NULL;
+   char *elem0       = NULL;
+   char *elem1       = NULL;
+   char *path_cpy    = NULL;
+   const char *path  = info->path;
 
    if (!path)
       return -1;
@@ -414,11 +418,26 @@ GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query
 GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query_rdb_entry_releaseyear, DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR)
 #endif
 
+#define CHECK_SIZE(desired_size) \
+    do { \
+      char *reallocated; \
+      size_t dsize = (desired_size); \
+      if (_len + dsize < size) \
+         break; \
+      reallocated = realloc(newstr2, size += dsize * 2); \
+      if (!reallocated) { \
+         free(newstr2); \
+         return -1; \
+      } \
+      newstr2 = reallocated; \
+    } while (0);
+
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
 {
-   char newstr2[PATH_MAX_LENGTH*2];
-   size_t _len = 0;
+   size_t _len                                = 0;
+   size_t size                                = PATH_MAX_LENGTH;
+   char *newstr2                              = malloc(size);
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
@@ -429,7 +448,7 @@ static int general_push(menu_displaylist_info_t *info,
    bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
 #endif
 
-   if (!menu)
+   if (!menu || !newstr2)
       return -1;
 
    if (   (id == PUSH_ARCHIVE_OPEN_DETECT_CORE)
@@ -464,7 +483,8 @@ static int general_push(menu_displaylist_info_t *info,
    info->type_default = FILE_TYPE_PLAIN;
    if (id != PUSH_DETECT_CORE_LIST)
       info->setting   = menu_setting_find_enum(info->enum_idx);
-   newstr2[0]          = '\0';
+
+   newstr2[0] = '\0';
 
    switch (id)
    {
@@ -473,8 +493,10 @@ static int general_push(menu_displaylist_info_t *info,
             struct retro_system_info *sysinfo =
                &runloop_state_get_ptr()->system.info;
             if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
-               _len = strlcpy(newstr2 + _len, sysinfo->valid_extensions,
-                     sizeof(newstr2)  - _len);
+            {
+               CHECK_SIZE(strlen(sysinfo->valid_extensions));
+               _len += strlcpy(newstr2 + _len, sysinfo->valid_extensions, size - _len);
+            }
          }
          break;
       case PUSH_DEFAULT:
@@ -493,17 +515,10 @@ static int general_push(menu_displaylist_info_t *info,
 
             if (!string_is_empty(valid_extensions))
             {
-               _len += strlcpy(newstr2 + _len, valid_extensions, sizeof(newstr2) - _len);
+               CHECK_SIZE(strlen(valid_extensions) + 12);
+               _len += strlcpy(newstr2 + _len, valid_extensions, size - _len);
 #ifdef HAVE_IBXM
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|",   sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "s3m", sizeof(newstr2) - _len);
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|",   sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "mod", sizeof(newstr2) - _len);
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|",   sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "xm",  sizeof(newstr2) - _len);
+               _len += strlcpy(newstr2 + _len, "|s3m|mod|xm", size - _len);
 #endif
             }
          }
@@ -515,91 +530,40 @@ static int general_push(menu_displaylist_info_t *info,
                &runloop_state_get_ptr()->system.info;
             bool filter_by_current_core       = settings->bools.filter_by_current_core;
 
-            if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
-               _len += strlcpy(newstr2 + _len,
-                     sysinfo->valid_extensions,
-                     sizeof(newstr2)   - _len);
-
-            if (!filter_by_current_core)
+            if (sysinfo && !string_is_empty(sysinfo->valid_extensions)
+                && filter_by_current_core)
+            {
+               CHECK_SIZE(strlen(sysinfo->valid_extensions));
+               _len += strlcpy(newstr2 + _len, sysinfo->valid_extensions, size - _len);
+            }
+            else
             {
                core_info_list_t *list = NULL;
                core_info_get_list(&list);
                if (list && !string_is_empty(list->all_ext))
                {
-                  char *tok, *save;
-                  char *all_ext_cpy    = strdup(list->all_ext);
-
-                  /* If the current core already supports
-                   * this extension, skip adding it */
-                  for ( tok = strtok_r(all_ext_cpy, "|", &save); tok;
-                        tok = strtok_r(NULL, "|", &save))
-                  {
-                     bool exists = false;
-
-                     if (!string_is_empty(newstr2))
-                     {
-                        char *tok2, *save2;
-                        char *newstr2_cpy = strdup(newstr2);
-                        for ( tok2 = strtok_r(newstr2_cpy, "|", &save2); tok2;
-                              tok2 = strtok_r(NULL, "|", &save2))
-                        {
-                           if (string_is_equal(tok, tok2))
-                           {
-                              exists = true;
-                              break;
-                           }
-                        }
-                        free(newstr2_cpy);
-                     }
-
-                     /* If extension wasn't found in string,
-                      * add it */
-                     if (!exists)
-                     {
-                        if (_len > 0 && newstr2[_len-1] != '\0')
-                           _len += strlcpy(newstr2 + _len, "|",
-                                   sizeof(newstr2) - _len);
-                        _len    += strlcpy(newstr2 + _len, tok,
-                              sizeof(newstr2) - _len);
-                     }
-                  }
-
-                  free(all_ext_cpy);
+                  CHECK_SIZE(strlen(list->all_ext));
+                  _len += strlcpy(newstr2 + _len, list->all_ext, size - _len);
                }
             }
-
-
 #if defined(HAVE_AUDIOMIXER)
             if (multimedia_builtin_mediaplayer_enable)
             {
+               CHECK_SIZE(28);
 #if defined(HAVE_DR_MP3)
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "mp3", sizeof(newstr2) - _len);
+               _len += strlcpy(newstr2 + _len, "|mp3", size - _len);
 #endif
 #if defined(HAVE_STB_VORBIS)
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "ogg", sizeof(newstr2) - _len);
+               _len += strlcpy(newstr2 + _len, "|ogg", size - _len);
 #endif
 #if defined(HAVE_DR_FLAC)
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "flac", sizeof(newstr2) - _len);
+               _len += strlcpy(newstr2 + _len, "|flac", size - _len);
 #endif
 #if defined(HAVE_RWAV)
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "wav", sizeof(newstr2) - _len);
+               _len += strlcpy(newstr2 + _len, "|wav", size - _len);
 #endif
 #ifdef HAVE_IBXM
-               if (_len > 0 && newstr2[_len-1] != '\0')
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "s3m", sizeof(newstr2) - _len);
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "mod", sizeof(newstr2) - _len);
-                  _len += strlcpy(newstr2 + _len, "|", sizeof(newstr2) - _len);
-               _len    += strlcpy(newstr2 + _len, "xm", sizeof(newstr2) - _len);
+               _len += strlcpy(newstr2 + _len, "|s3m|mod|xm", size - _len);
 #endif
             }
 #endif
@@ -616,11 +580,10 @@ static int general_push(menu_displaylist_info_t *info,
 #elif defined(HAVE_MPV)
       libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-      if (_len > 0 && newstr2[_len-1] != '\0')
-         _len += strlcpy(newstr2 + _len, "|",
-                 sizeof(newstr2) - _len);
-      _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions,
-              sizeof(newstr2) - _len);
+      CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
+      if (_len > 0)
+         newstr2[_len++] = '|';
+      _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
    }
 #endif
 
@@ -629,11 +592,10 @@ static int general_push(menu_displaylist_info_t *info,
    {
       struct retro_system_info sysinfo = {0};
       libretro_imageviewer_retro_get_system_info(&sysinfo);
-      if (_len > 0 && newstr2[_len-1] != '\0')
-         _len += strlcpy(newstr2 + _len, "|",
-               sizeof(newstr2)   - _len);
-      _len    += strlcpy(newstr2 + _len, sysinfo.valid_extensions,
-               sizeof(newstr2)   - _len);
+      CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
+      if (_len > 0)
+         newstr2[_len++] = '|';
+      _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
    }
 #endif
 
@@ -641,11 +603,15 @@ static int general_push(menu_displaylist_info_t *info,
    {
       if (info->exts)
          free(info->exts);
-      info->exts = strdup(newstr2);
+      info->exts = newstr2;
    }
+   else
+      free(newstr2);
 
    return deferred_push_dlist(info, state, settings);
 }
+
+#undef CHECK_SIZE
 
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_detect_core_list, PUSH_DETECT_CORE_LIST, DISPLAYLIST_CORES_DETECTED)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_archive_open_detect_core, PUSH_ARCHIVE_OPEN_DETECT_CORE, DISPLAYLIST_DEFAULT)
@@ -663,6 +629,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list, PUSH_DEFAULT, DIS
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_RESOLUTION)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_audio_device, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_AUDIO_DEVICE)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_midi_device, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MIDI_DEVICE)
 #ifdef HAVE_MICROPHONE
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_microphone_device, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MICROPHONE_DEVICE)
 #endif
@@ -677,6 +644,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_playlist_sort_mode
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_system_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_manual_content_scan_core_name, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_disk_index, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_retropad_bind, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_RETROPAD_BIND)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_device_type, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_TYPE)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_description_kbd, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD)
@@ -688,6 +656,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_select_physi
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_netplay_mitm_server, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER)
 #endif
 GENERIC_DEFERRED_PUSH(deferred_push_add_to_playlist_list,          DISPLAYLIST_ADD_TO_PLAYLIST_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_add_to_playlist_quickmenu,     DISPLAYLIST_ADD_TO_PLAYLIST_QUICKMENU)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
@@ -711,6 +680,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL, deferred_push_dropdown_box_list_special},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION, deferred_push_dropdown_box_list_resolution},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE, deferred_push_dropdown_box_list_audio_device},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MIDI_DEVICE, deferred_push_dropdown_box_list_midi_device},
 #ifdef HAVE_MICROPHONE
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MICROPHONE_DEVICE, deferred_push_dropdown_box_list_microphone_device},
       {MENU_ENUM_LABEL_DEFERRED_MICROPHONE_SETTINGS_LIST, deferred_push_microphone_settings_list},
@@ -724,6 +694,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE, deferred_push_dropdown_box_list_playlist_left_thumbnail_mode},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE, deferred_push_dropdown_box_list_playlist_sort_mode},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX, deferred_push_dropdown_box_list_disk_index},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND, deferred_push_dropdown_box_list_input_retropad_bind},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE, deferred_push_dropdown_box_list_input_device_type},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION, deferred_push_dropdown_box_list_input_description},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD, deferred_push_dropdown_box_list_input_description_kbd},
@@ -951,6 +922,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST, deferred_push_lakka_list},
 #endif
        {MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST, deferred_push_add_to_playlist_list},
+       {MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU, deferred_push_add_to_playlist_quickmenu},
+
+#ifdef HAVE_GAME_AI
+      {MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS, deferred_push_core_game_ai_options},
+#endif
    };
 
    if (!string_is_equal(label, "null"))
@@ -1415,6 +1391,14 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_to_playlist_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_to_playlist_quickmenu);
+            break;
+#ifdef HAVE_GAME_AI
+         case MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_game_ai_options);
+            break;
+#endif
          default:
             return -1;
       }

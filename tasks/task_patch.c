@@ -162,10 +162,10 @@ static enum patch_error bps_apply_patch(
    bps.target_relative_offset = 0;
    bps.output_offset          = 0;
 
-   if (  (bps_read(&bps) != 'B') ||
-         (bps_read(&bps) != 'P') ||
-         (bps_read(&bps) != 'S') ||
-         (bps_read(&bps) != '1'))
+   if (     (bps_read(&bps) != 'B')
+         || (bps_read(&bps) != 'P')
+         || (bps_read(&bps) != 'S')
+         || (bps_read(&bps) != '1'))
       return PATCH_PATCH_INVALID_HEADER;
 
    modify_source_size  = bps_decode(&bps);
@@ -368,10 +368,10 @@ static enum patch_error ups_apply_patch(
       return PATCH_PATCH_INVALID;
 
    if (
-         (ups_patch_read(&data) != 'U') ||
-         (ups_patch_read(&data) != 'P') ||
-         (ups_patch_read(&data) != 'S') ||
-         (ups_patch_read(&data) != '1')
+            (ups_patch_read(&data) != 'U')
+         || (ups_patch_read(&data) != 'P')
+         || (ups_patch_read(&data) != 'S')
+         || (ups_patch_read(&data) != '1')
       )
       return PATCH_PATCH_INVALID;
 
@@ -548,12 +548,12 @@ static enum patch_error ips_apply_patch(
 {
    uint32_t offset = 5;
    enum patch_error error_patch = PATCH_UNKNOWN;
-   if (  patchlen      < 8   ||
-         patchdata[0] != 'P' ||
-         patchdata[1] != 'A' ||
-         patchdata[2] != 'T' ||
-         patchdata[3] != 'C' ||
-         patchdata[4] != 'H')
+   if (     patchlen      < 8
+         || patchdata[0] != 'P'
+         || patchdata[1] != 'A'
+         || patchdata[2] != 'T'
+         || patchdata[3] != 'C'
+         || patchdata[4] != 'H')
       return PATCH_PATCH_INVALID;
 
    if ((error_patch = ips_alloc_targetdata(
@@ -639,11 +639,11 @@ static enum patch_error xdelta_apply_patch(
    xd3_source source;
 
    /* Validate the magic number, as given by RFC 3284 section 4.1 */
-   if (patchlen      < 8    ||
-       patchdata[0] != 0xD6 ||
-       patchdata[1] != 0xC3 ||
-       patchdata[2] != 0xC4 ||
-       patchdata[3] != 0x00)
+   if (   patchlen      < 8
+       || patchdata[0] != 0xD6
+       || patchdata[1] != 0xC3
+       || patchdata[2] != 0xC4
+       || patchdata[3] != 0x00)
       return PATCH_PATCH_INVALID_HEADER;
 
    xd3_init_config(&config, XD3_SKIP_EMIT);
@@ -727,9 +727,6 @@ static bool apply_patch_content(uint8_t **buf,
       ssize_t *size, const char *patch_desc, const char *patch_path,
       patch_func_t func, void *patch_data, int64_t patch_size)
 {
-   settings_t *settings     = config_get_ptr();
-   bool show_notification   = settings ?
-         settings->bools.notification_show_patch_applied : false;
    enum patch_error err     = PATCH_UNKNOWN;
    ssize_t ret_size         = *size;
    uint8_t *ret_buf         = *buf;
@@ -747,7 +744,7 @@ static bool apply_patch_content(uint8_t **buf,
       *size = target_size;
 
       /* Show an OSD message */
-      if (show_notification)
+      if (config_get_ptr()->bools.notification_show_patch_applied)
       {
          char msg[128];
          const char *patch_filename = path_basename_nocompression(patch_path);

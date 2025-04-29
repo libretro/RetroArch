@@ -162,8 +162,11 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #ifdef HAVE_OSMESA
    &gfx_ctx_osmesa,
 #endif
-#ifdef EMSCRIPTEN
+#if (defined(EMSCRIPTEN) && defined(HAVE_EGL))
    &gfx_ctx_emscripten,
+#endif
+#ifdef EMSCRIPTEN
+   &gfx_ctx_emscripten_webgl,
 #endif
    &gfx_ctx_null,
    NULL
@@ -198,18 +201,15 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { 4.0f / 3.0f  , ""              }  /* full -          initialized in video_driver_init_internal */
 };
 
-static INLINE bool realloc_checked(void **ptr, size_t size)
+static INLINE bool realloc_checked(void **ptr, size_t len)
 {
    void *nptr = NULL;
-
    if (*ptr)
-      nptr = realloc(*ptr, size);
+      nptr = realloc(*ptr, len);
    else
-      nptr = malloc(size);
-
+      nptr = malloc(len);
    if (nptr)
       *ptr = nptr;
-
    return *ptr == nptr;
 }
 
@@ -1006,7 +1006,7 @@ video_pixel_scaler_t *video_driver_pixel_converter_init(
    if (!scaler_ctx_gen_filter(scalr_ctx))
       goto error;
 
-   if (!(scalr_out = calloc(sizeof(uint16_t), size * size)))
+   if (!(scalr_out = calloc(size * size, sizeof(uint16_t))))
       goto error;
 
    scalr->scaler_out                        = scalr_out;
@@ -1927,7 +1927,7 @@ void video_driver_unset_stub_frame(void)
 }
 
 /* Get time diff between frames in usec (microseconds) */
-uint32_t video_driver_get_frame_time_delta_usec(void)
+retro_time_t video_driver_get_frame_time_delta_usec(void)
 {
    static retro_time_t last_time;
    retro_time_t now_time   = cpu_features_get_time_usec();
@@ -2512,11 +2512,15 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             if (overscale_h_diff <= underscale_h_diff)
                max_scale_h = overscale_h;
 
+            /* Limit width overscale */
+            if (max_scale_w * content_width >= width + ((int)content_width / 2))
+               max_scale_w = underscale_w;
+
             /* Allow overscale when it is close enough */
             if (scale_h_diff > 0 && scale_h_diff < 64)
                max_scale_h = overscale_h;
             /* Overscale will be too much even if it is closer */
-            else if ((scale_h_diff < -155 && scale_h_diff > (int)-content_height / 2)
+            else if ((scale_h_diff < -140 && scale_h_diff >= (int)-content_height / 2)
                   || (scale_h_diff < -30 && scale_h_diff > -50)
                   || (scale_h_diff > 20))
                max_scale_h = underscale_h;
@@ -2617,7 +2621,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
                   || axis == VIDEO_SCALE_INTEGER_AXIS_XHALF)
             {
                if (     max_scale_h == (height / content_height)
-                     && content_height / 300
+                     && content_height / ((rotation % 2) ? 288 : 300)
                      && content_height * max_scale_h < height * 0.90f
                   )
                {
@@ -3641,7 +3645,7 @@ void video_driver_frame(const void *data, unsigned width,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps, frame_time;
-   static uint16_t frame_time_accumulator;
+   static int32_t frame_time_accumulator;
    /* Mark the start of nonblock state for
     * ignoring initial previous frame time */
    static int8_t nonblock_active;
@@ -3725,7 +3729,7 @@ void video_driver_frame(const void *data, unsigned width,
             || (last_frame_duped && !!data))
       )
    {
-      uint16_t frame_time_accumulator_prev = frame_time_accumulator;
+      int32_t frame_time_accumulator_prev  = frame_time_accumulator;
       uint16_t frame_time_delta            = new_time - last_time;
       uint16_t frame_time_target           = video_info.frame_time_target;
 
@@ -3793,11 +3797,17 @@ void video_driver_frame(const void *data, unsigned width,
       video_st->frame_time_samples[write_index] = frame_time;
       fps_time                                  = new_time;
 
-      /* Consider frame dropped when frame time exceeds 1.75x target */
+      /* Try to count dropped frames */
       if (     video_st->frame_count > 4
-            && !menu_is_alive
-            && frame_time > 1000000.0f / video_info.refresh_rate * 1.75f)
-         video_st->frame_drop_count++;
+            && !menu_is_alive)
+      {
+         float frame_time_av_info = 1000000.0f / video_st->av_info.timing.fps;
+
+         if (     (frame_time > frame_time_av_info * 1.75f)
+               || (runloop_st->core_run_time > frame_time_av_info * 1.5f)
+            )
+            video_st->frame_drop_count++;
+      }
 
       if (video_info.fps_show)
       {
@@ -4132,55 +4142,57 @@ void video_driver_frame(const void *data, unsigned width,
                " Viewport:    %u x %u\n"
                " - Scale:     %u x %u\n"
                " - Scale X/Y: %2.2f / %2.2f\n"
-               " Refresh:     %5.2f hz\n"
-               " Frame Rate:  %5.2f fps\n"
-               " Frame Time:  %5.2f ms\n"
-               " - Deviation: %5.2f %%\n"
+               " Refresh:    %6.2f hz\n"
+               " Frame Rate:%7.2f fps\n"
+               " Frame Time: %6.2f ms\n"
+               " - Deviation:%6.2f %%\n"
                " Frames:   %8" PRIu64"\n"
                " - Dropped:   %5u\n"
                "AUDIO: %s\n"
-               " Saturation:  %5.2f %%\n"
-               " Deviation:   %5.2f %%\n"
-               " Underrun:    %5.2f %%\n"
-               " Blocking:    %5.2f %%\n"
+               " Saturation: %6.2f %%\n"
+               " Deviation:  %6.2f %%\n"
+               " Underrun:   %6.2f %%\n"
+               " Blocking:   %6.2f %%\n"
                " Samples:  %8d\n"
                ,
-            video_st->frame_cache_width,
-            video_st->frame_cache_height,
-            av_info->geometry.base_width,
-            av_info->geometry.base_height,
-            av_info->geometry.max_width,
-            av_info->geometry.max_height,
-            av_info->geometry.aspect_ratio,
-            av_info->timing.fps,
-            av_info->timing.sample_rate,
-            video_st->current_video->ident,
-            video_info.width,
-            video_info.height,
-            video_info.scale_width,
-            video_info.scale_height,
-            (float)video_info.scale_width  / ((rotation % 2) ? (float)video_st->frame_cache_height : (float)video_st->frame_cache_width),
-            (float)video_info.scale_height / ((rotation % 2) ? (float)video_st->frame_cache_width : (float)video_st->frame_cache_height),
-            video_info.refresh_rate,
-            last_fps,
-            frame_time / 1000.0f,
-            100.0f * stddev,
-            video_st->frame_count,
-            video_st->frame_drop_count,
-            audio_state_get_ptr()->current_audio->ident,
-            audio_stats.average_buffer_saturation,
-            audio_stats.std_deviation_percentage,
-            audio_stats.close_to_underrun,
-            audio_stats.close_to_blocking,
-            audio_stats.samples
+               video_st->frame_cache_width,
+               video_st->frame_cache_height,
+               av_info->geometry.base_width,
+               av_info->geometry.base_height,
+               av_info->geometry.max_width,
+               av_info->geometry.max_height,
+               av_info->geometry.aspect_ratio,
+               av_info->timing.fps,
+               av_info->timing.sample_rate,
+               video_st->current_video->ident,
+               video_info.width,
+               video_info.height,
+               video_info.scale_width,
+               video_info.scale_height,
+               (float)video_info.scale_width  / ((rotation % 2)
+                     ? (float)video_st->frame_cache_height : (float)video_st->frame_cache_width),
+               (float)video_info.scale_height / ((rotation % 2)
+                     ? (float)video_st->frame_cache_width : (float)video_st->frame_cache_height),
+               video_info.refresh_rate,
+               last_fps,
+               frame_time / 1000.0f,
+               100.0f * stddev,
+               video_st->frame_count,
+               video_st->frame_drop_count,
+               audio_state_get_ptr()->current_audio->ident,
+               audio_stats.average_buffer_saturation,
+               audio_stats.std_deviation_percentage,
+               audio_stats.close_to_underrun,
+               audio_stats.close_to_blocking,
+               audio_stats.samples
                );
 
-
          /* TODO/FIXME - localize */
-         if (  (video_st->frame_delay_target > 0)
-            || (video_info.runahead && !video_info.runahead_second_instance))
-         __len += strlcpy(video_info.stat_text + __len, "LATENCY\n",
-                   sizeof(video_info.stat_text) - __len);
+         if (     (video_st->frame_delay_target > 0)
+               || (video_info.runahead)
+               || (video_info.preemptive_frames))
+            __len += strlcpy(video_info.stat_text + __len, "LATENCY\n",
+                  sizeof(video_info.stat_text) - __len);
 
          /* TODO/FIXME - localize */
          if (video_st->frame_delay_target > 0)
@@ -4301,7 +4313,9 @@ void video_driver_frame(const void *data, unsigned width,
             video_info.monitor_index,
             dynamic_super_width,
             video_info.crt_switch_resolution_super,
-            video_info.crt_switch_hires_menu);
+            video_info.crt_switch_hires_menu,
+            config_get_ptr()->uints.video_aspect_ratio_idx
+            );
    }
    else if (!video_info.crt_switch_resolution)
 #endif
@@ -4673,7 +4687,9 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
    uint8_t count_pos              = 0;
    uint8_t count_min              = 0;
    uint8_t count_med              = 0;
+#if FRAME_DELAY_AUTO_DEBUG
    uint8_t count_max              = 0;
+#endif
    int8_t mode                    = 0;
 
    /* Calculate average frame time */
@@ -4702,8 +4718,10 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
             count_min++;
          if (frame_time_i > frame_time_limit_med)
             count_med++;
+#if FRAME_DELAY_AUTO_DEBUG
          if (frame_time_i > frame_time_limit_max)
             count_max++;
+#endif
       }
 
       frame_time_avg += frame_time_i;

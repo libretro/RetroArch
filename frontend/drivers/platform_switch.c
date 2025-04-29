@@ -76,6 +76,37 @@ static enum frontend_fork switch_fork_mode = FRONTEND_FORK_NONE;
 bool platform_switch_has_focus = true;
 
 #ifdef HAVE_LIBNX
+char *SWITCH_CPU_PROFILES[] = {
+    "Maximum Performance",
+    "High Performance",
+    "Boost Performance",
+    "Stock Performance",
+    "Powersaving Mode 1",
+    "Powersaving Mode 2",
+    "Powersaving Mode 3",
+    NULL
+};
+char *SWITCH_CPU_SPEEDS[] = {
+    "1785 MHz",
+    "1581 MHz",
+    "1224 MHz",
+    "1020 MHz",
+    "918 MHz",
+    "816 MHz",
+    "714 MHz",
+    NULL
+};
+unsigned SWITCH_CPU_SPEEDS_VALUES[] = {
+    1785000000,
+    1581000000,
+    1224000000,
+    1020000000,
+    918000000,
+    816000000,
+    714000000,
+    0
+};
+
 static bool psmInitialized  = false;
 
 static AppletHookCookie applet_hook_cookie;
@@ -87,7 +118,7 @@ extern bool nxlink_connected;
 void libnx_apply_overclock(void)
 {
    const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)
-      / sizeof(SWITCH_CPU_PROFILES[1]);
+      / sizeof(SWITCH_CPU_PROFILES[1]) - 1;
    settings_t *settings        = config_get_ptr();
    unsigned libnx_overclock    = settings->uints.libnx_overclock;
 

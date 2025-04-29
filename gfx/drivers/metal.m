@@ -1578,23 +1578,19 @@ typedef struct MTLALIGN(16)
          _engine.pass[i].frame_direction = -1;
       else
 #else
-      _engine.pass[i].frame_direction = 1;
+      _engine.pass[i].frame_direction    = 1;
 #endif
+      _engine.pass[i].frame_time_delta   = (uint32_t)video_driver_get_frame_time_delta_usec();
+      _engine.pass[i].original_fps       = video_driver_get_original_fps();
+      _engine.pass[i].rotation           = retroarch_get_rotation();
+      _engine.pass[i].core_aspect        = video_driver_get_core_aspect();
 
-      _engine.pass[i].frame_time_delta = video_driver_get_frame_time_delta_usec();
-
-      _engine.pass[i].original_fps = video_driver_get_original_fps();
-
-      _engine.pass[i].rotation = retroarch_get_rotation();
-
-      _engine.pass[i].core_aspect = video_driver_get_core_aspect();
-
-      /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
-      int rot = retroarch_get_rotation();
-      float core_aspect_rot = video_driver_get_core_aspect();
+      /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
+      int rot                            = retroarch_get_rotation();
+      float core_aspect_rot              = video_driver_get_core_aspect();
       if (rot == 1 || rot == 3)
-         core_aspect_rot = 1/core_aspect_rot;
-      _engine.pass[i].core_aspect_rot  = core_aspect_rot;
+         core_aspect_rot                 = 1 / core_aspect_rot;
+      _engine.pass[i].core_aspect_rot    = core_aspect_rot;
 
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {

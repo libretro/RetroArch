@@ -70,6 +70,38 @@ struct v4l2_capbuf
    size_t   len;
 };
 
+struct v4l2_resolution
+{
+   int width;
+   int height;
+};
+
+struct v4l2_resolution v4l2_resolutions[] =
+{
+   //4:3
+   {160,120},
+   {320,240},
+   {480,320},
+   {640,480},
+   {720,480},
+   {800,600},
+   {960,720},
+   {1024,768},
+   {1280,960},
+   {1440,1050},
+   {1440,1080},
+   {1600,1200},
+   {1920,1440},
+	//16:9
+   {640,360},
+   {960,540},
+   {1280,720},
+   {1600,900},
+   {1920,1080},
+   {1920,1200},
+   {2560,1440},
+   {3840,2160}
+};
 /*
  * Video capture state
  */
@@ -84,6 +116,7 @@ static struct  v4l2_buffer video_buf;
 static uint8_t v4l2_ncapbuf_target;
 static size_t  v4l2_ncapbuf;
 static struct  v4l2_capbuf v4l2_capbuf[VIDEO_BUFFERS_MAX];
+struct v4l2_capability caps;
 
 static float   dummy_pos=0;
 
@@ -92,6 +125,7 @@ static uint32_t video_cap_width;
 static uint32_t video_cap_height;
 static uint32_t video_out_height;
 static char     video_capture_mode[ENVVAR_BUFLEN];
+static char     video_capture_resolution[ENVVAR_BUFLEN];
 static char     video_output_mode[ENVVAR_BUFLEN];
 static char     video_frame_times[ENVVAR_BUFLEN];
 
@@ -143,23 +177,17 @@ static void audio_callback(void)
    }
 }
 
-static void
-audio_set_state(bool enable)
-{
-}
+static void audio_set_state(bool enable) { }
 #endif
 
-static void
-appendstr(char *dst, const char *src, size_t dstsize)
+static void appendstr(char *s, const char *in, size_t len)
 {
-   size_t resid = dstsize - (strlen(dst) + 1);
-   if (resid == 0)
-      return;
-   strncat(dst, src, resid);
+   size_t resid = len - (strlen(s) + 1);
+   if (resid != 0)
+      strncat(s, in, resid);
 }
 
-static void
-enumerate_video_devices(char *buf, size_t buflen)
+static void enumerate_video_devices(char *s, size_t len)
 {
 #ifdef HAVE_UDEV
    int ndevs;
@@ -170,9 +198,8 @@ enumerate_video_devices(char *buf, size_t buflen)
    struct udev *udev = NULL;
 #endif
 
-   memset(buf, 0, buflen);
-
-   appendstr(buf, "Video capture device; ", buflen);
+   memset(s, 0, len);
+   appendstr(s, "Video capture device; ", len);
 
 #ifdef HAVE_UDEV
    /* Get a list of devices matching the "video4linux" subsystem from udev */
@@ -214,8 +241,8 @@ enumerate_video_devices(char *buf, size_t buflen)
       if (strncmp(name, "/dev/video", strlen("/dev/video")) == 0)
       {
          if (ndevs > 0)
-            appendstr(buf, "|", buflen);
-         appendstr(buf, name, buflen);
+            appendstr(s, "|", len);
+         appendstr(s, name, len);
          ndevs++;
       }
 
@@ -226,57 +253,99 @@ enumerate_video_devices(char *buf, size_t buflen)
    udev_unref(udev);
 #else
    /* Just return a few options. We'll fail later if the device is not found. */
-   appendstr(buf, "/dev/video0|/dev/video1|/dev/video2|/dev/video3", buflen);
+   appendstr(s, "/dev/video0|/dev/video1|/dev/video2|/dev/video3", len);
 #endif
-
 }
 
-static void
-enumerate_audio_devices(char *buf, size_t buflen)
+static void enumerate_audio_devices(char *s, size_t len)
 {
-   memset(buf, 0, buflen);
+#ifdef HAVE_ALSA
+   int ndevs;
+   void **hints, **n;
+   char *ioid, *name, *descr;
+#endif
 
-   appendstr(buf, "Audio capture device; ", buflen);
+   memset(s, 0, len);
+   appendstr(s, "Audio capture device; ", len);
 
 #ifdef HAVE_ALSA
-   void **hints, **n;
-   char *ioid, *name;
-   int ndevs;
-
    if (snd_device_name_hint(-1, "pcm", &hints) < 0)
       return;
 
    ndevs = 0;
    for (n = hints; *n; n++)
    {
-      name = snd_device_name_get_hint(*n, "NAME");
       ioid = snd_device_name_get_hint(*n, "IOID");
-      if ((ioid == NULL || string_is_equal(ioid, "Input")) &&
-          (!strncmp(name, "hw:", strlen("hw:")) ||
-           !strncmp(name, "default:", strlen("default:"))))
+      if (ioid != NULL && strcmp(ioid, "Input") != 0)
       {
-         if (ndevs > 0)
-            appendstr(buf, "|", buflen);
-         appendstr(buf, name, buflen);
-         ++ndevs;
+         free(ioid);
+         ioid = NULL;
+         continue;
       }
-      free(name);
-      free(ioid);
+
+      name = snd_device_name_get_hint(*n, "NAME");
+      if (name == NULL || strstr(name, "front:") == NULL)
+      {
+         free(name);
+         name = NULL;
+         continue;
+      }
+
+      //todo: add more info to make picking audio device more user friendly
+      descr = snd_device_name_get_hint(*n, "DESC");
+      if (!descr)
+      {
+         free(descr);
+         descr = NULL;
+         continue;
+      }
+
+      if (ndevs > 0)
+         appendstr(s, "|", len);
+      appendstr(s, name, len);
+      ++ndevs;
+
+      // not sure if this is necessary but ensuring things are free/null
+      if(name != NULL)
+      {
+         free(name);
+         name = NULL;
+      }
+      if(ioid != NULL)
+      {
+         free(ioid);
+         ioid = NULL;
+      }
+      if(descr != NULL)
+      {
+         free(descr);
+         descr = NULL;
+      }
    }
 
    snd_device_name_free_hint(hints);
 #endif
 }
 
+static void list_resolutions(char *capture_resolutions, size_t len)
+{
+   size_t i, written;
+   written = snprintf(capture_resolutions, len, "Capture resolution; ");
+   for (i = 0; i < sizeof(v4l2_resolutions) / sizeof(v4l2_resolutions[0]); i++)
+      written += snprintf(capture_resolutions + written, len - written, "%s%dx%d", i > 0 ? "|" : "",
+         v4l2_resolutions[i].width,v4l2_resolutions[i].height);
+}
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
    bool no_content = true;
    char video_devices[ENVVAR_BUFLEN];
    char audio_devices[ENVVAR_BUFLEN];
+   char capture_resolutions[ENVVAR_BUFLEN];
    struct retro_variable envvars[] = {
       { "videoproc_videodev", NULL },
       { "videoproc_audiodev", NULL },
-      { "videoproc_capture_mode", "Capture mode; alternate|interlaced|top|bottom|alternate_hack" },
+      { "videoproc_capture_mode", "Capture mode; alternate|deinterlaced|interlaced|top|bottom|alternate_hack" },
+      { "videoproc_capture_resolution", NULL },
       { "videoproc_output_mode","Output mode; progressive|deinterlaced|interlaced" },
       { "videoproc_frame_times","Print frame times to terminal (v4l2 only); Off|On" },
       { NULL, NULL }
@@ -301,6 +370,13 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
    envvars[0].value = video_devices;
    envvars[1].key   = "videoproc_audiodev";
    envvars[1].value = audio_devices;
+
+   if(envvars[3].value == NULL)
+      list_resolutions(capture_resolutions, sizeof(capture_resolutions));
+   appendstr(capture_resolutions, "|auto", ENVVAR_BUFLEN);
+   envvars[3].key   = "videoproc_capture_resolution";
+   envvars[3].value = capture_resolutions;
+   printf("captures: %s\n", envvars[3].value);
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_VARIABLES, envvars);
 }
@@ -330,24 +406,22 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_input_state)(retro_input_state_t 
    VIDEOPROC_CORE_PREFIX(input_state_cb) = cb;
 }
 
-RETRO_API void VIDEOPROC_CORE_PREFIX(retro_init)(void)
-{
-}
+RETRO_API void VIDEOPROC_CORE_PREFIX(retro_init)(void) { }
 
 static bool open_devices(void)
 {
    struct retro_variable videodev = { "videoproc_videodev", NULL };
    struct retro_variable audiodev = { "videoproc_audiodev", NULL };
-   struct v4l2_capability caps;
+   struct retro_variable captureresolution = { "videoproc_capture_resolution", NULL };
    int error;
 
    /* Get the video and audio capture device names from the environment */
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &audiodev);
+   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &captureresolution);
 
-   if (strcmp(videodev.value, "dummy") == 0) {
+   if (strcmp(videodev.value, "dummy") == 0)
       return true;
-   }
 
    /* Video device is required */
    if (videodev.value == NULL)
@@ -499,42 +573,70 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_info)(struct retro_system_
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 {
    struct retro_variable videodev = { "videoproc_videodev", NULL };
+   struct retro_variable capture_resolution = { "videoproc_capture_resolution", NULL };
    struct v4l2_cropcap cc;
    int error;
+   char splitresolution[ENVVAR_BUFLEN];
+   char* token;
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
+   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_resolution);
 
-   if (strcmp(videodev.value, "dummy") == 0) {
+   if (strcmp(videodev.value, "dummy") == 0)
+   {
       info->geometry.aspect_ratio = 4.0/3.0;
-      info->geometry.base_width  = info->geometry.max_width = video_cap_width;
-      info->geometry.base_height = video_cap_height; /* out? */
-      info->geometry.max_height  = video_out_height;
-      info->timing.fps           = 60;
+      info->geometry.base_width   = info->geometry.max_width = video_cap_width;
+      info->geometry.base_height  = video_cap_height; /* out? */
+      info->geometry.max_height   = video_out_height;
+      info->timing.fps            = 60;
+      info->timing.sample_rate    = AUDIO_SAMPLE_RATE;
+   }
+   else
+   {
+      /*
+       * Query the device cropping limits. If available, we can use this to find the capture pixel aspect.
+       */
+      memset(&cc, 0, sizeof(cc));
+      cc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      error = v4l2_ioctl(video_device_fd, VIDIOC_CROPCAP, &cc);
+
+      info->geometry.base_width  = info->geometry.max_width = video_format.fmt.pix.width;
+      info->geometry.base_height = video_format.fmt.pix.height;
+
+      if(capture_resolution.value != NULL)
+         strncpy(video_capture_resolution, capture_resolution.value, ENVVAR_BUFLEN-1);
+      else
+         strncpy(video_capture_resolution, "auto", ENVVAR_BUFLEN-1);
+
+      if (strcmp(video_capture_resolution, "auto") != 0)
+      {
+         strcpy(splitresolution, video_capture_resolution);
+         token = strtok(splitresolution, "x");
+         info->geometry.base_width  = info->geometry.max_width = video_format.fmt.pix.width = atoi(token);
+         token = strtok(NULL, "x");
+         info->geometry.base_height = video_format.fmt.pix.height = atoi(token);
+         printf("Resolution postfix %ux%u\n", info->geometry.base_width,
+                info->geometry.base_height);
+      }
+      // no doubling for interlaced or deinterlaced capture
+      bool nodouble = strcmp(video_capture_mode, "deinterlaced") == 0 || strcmp(video_capture_mode, "interlaced") == 0;
+      info->geometry.max_height = nodouble ? video_format.fmt.pix.height : video_format.fmt.pix.height * 2;
+
+      /* TODO Only double if frames ARE fields (progressive or deinterlaced, full framerate)
+       * *2 for fields
+       */
+      // defaulting to 60 if this this doesn't return a usable number
+      if(video_standard.frameperiod.denominator == 0 || video_standard.frameperiod.numerator == 0)
+         info->timing.fps = 60;
+      else
+         info->timing.fps = ((double)(video_standard.frameperiod.denominator*2)) /
+                             (double)video_standard.frameperiod.numerator;
       info->timing.sample_rate   = AUDIO_SAMPLE_RATE;
-   } else {
-       /*
-        * Query the device cropping limits. If available, we can use this to find the capture pixel aspect.
-        */
-       memset(&cc, 0, sizeof(cc));
-       cc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-       error = v4l2_ioctl(video_device_fd, VIDIOC_CROPCAP, &cc);
 
-       info->geometry.base_width  = info->geometry.max_width = video_format.fmt.pix.width;
-       info->geometry.base_height = video_format.fmt.pix.height;
-       /* TODO Only double if frames are NOT fields (interlaced, full resolution) */
-       info->geometry.max_height = video_format.fmt.pix.height * 2;
-       /* TODO Only double if frames ARE fields (progressive or deinterlaced, full framerate)
-        * *2 for fields
-        */
-       info->timing.fps           = ((double)(video_standard.frameperiod.denominator*2)) /
-                                    (double)video_standard.frameperiod.numerator;
-       info->timing.sample_rate   = AUDIO_SAMPLE_RATE;
-
-       if (error == 0) {
-          /* TODO Allow for fixed 4:3 and 16:9 modes */
-          info->geometry.aspect_ratio = (double)info->geometry.base_width / (double)info->geometry.max_height /\
-                                         ((double)cc.pixelaspect.numerator / (double)cc.pixelaspect.denominator);
-       }
+      /* TODO/FIXME Allow for fixed 4:3 and 16:9 modes */
+      if (error == 0)
+         info->geometry.aspect_ratio = (double)info->geometry.base_width / (double)info->geometry.max_height /
+            ((double)cc.pixelaspect.numerator / (double)cc.pixelaspect.denominator);
    }
 
    printf("Aspect ratio: %f\n",info->geometry.aspect_ratio);
@@ -544,7 +646,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_syst
              info->geometry.max_height);
 }
 
-RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_controller_port_device)(unsigned port, unsigned device)
+RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_controller_port_device)(unsigned a, unsigned b)
 {
 }
 
@@ -555,7 +657,8 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_reset)(void)
 }
 
 /* TODO improve this mess and make it generic enough for use with dummy mode */
-void v4l2_frame_times(struct v4l2_buffer buf) {
+void v4l2_frame_times(struct v4l2_buffer buf)
+{
    if (strcmp("Off", video_frame_times) == 0)
        return;
 
@@ -563,45 +666,49 @@ void v4l2_frame_times(struct v4l2_buffer buf) {
        ft_info = (char*)calloc(5000, sizeof(char));
 
    if ( (buf.timestamp.tv_sec - ft_prevtime.tv_sec >= 1) && \
-        (buf.timestamp.tv_usec + 1000000 - ft_prevtime2.tv_usec) >= 1000000) {
+        (buf.timestamp.tv_usec + 1000000 - ft_prevtime2.tv_usec) >= 1000000)
+   {
        double csec = ((double) buf.timestamp.tv_sec) + (buf.timestamp.tv_usec/1000000);
        double psec = ((double) ft_prevtime.tv_sec) + (ft_prevtime.tv_usec/1000000);
        printf("Fields last %.2f seconds: %d\n", csec - psec, ft_fcount);
        printf("Average frame times: %.3fms\n", ft_favg/(1000*ft_fcount));
        printf("Fields timestampdiffs last second:\n%s\n", ft_info);
        free(ft_info);
-       ft_info = (char*)calloc(5000, sizeof(char));
-       ft_fcount = 0;
-       ft_favg = 0;
+       ft_info     = (char*)calloc(5000, sizeof(char));
+       ft_fcount   = 0;
+       ft_favg     = 0;
        ft_prevtime = buf.timestamp;
    }
    ft_fcount++;
    ft_info2 = strdup(ft_info);
    ft_ftime = (double) (buf.timestamp.tv_usec + ((buf.timestamp.tv_sec - ft_prevtime2.tv_sec >= 1) ? 1000000 : 0)  - ft_prevtime2.tv_usec);
    ft_favg += ft_ftime;
-   snprintf(ft_info, 5000 * sizeof(char), "%s %6.d %d %d %.2fms%s", ft_info2, buf.sequence, buf.index, buf.field, ft_ftime/1000, (!(ft_fcount % 7)) ? "\n" : "");
+   snprintf(ft_info, 5000 * sizeof(char), "%s %6.d %d %d %.2fms%s",
+         ft_info2, buf.sequence, buf.index, buf.field, ft_ftime/1000,
+         (!(ft_fcount % 7)) ? "\n" : "");
    free(ft_info2);
 
    ft_prevtime2 = buf.timestamp;
 }
 
-void source_dummy(int width, int height) {
+void source_dummy(int width, int height)
+{
    int i, triangpos, triangpos_t=0, triangpos_b=0, offset=0;
    bool field_ahead = false;
    uint8_t *src = frame_cap;
    float step = M_PI/64;
 
-   if (video_buf.field == V4L2_FIELD_TOP) {
+   if (video_buf.field == V4L2_FIELD_TOP)
       offset=0;
-   } else if (video_buf.field == V4L2_FIELD_BOTTOM) {
+   else if (video_buf.field == V4L2_FIELD_BOTTOM)
       offset=1;
-   }
 
    dummy_pos += step;
    /* no animation */
    /* dummy_pos = M_PI/4; step = 0; */
    triangpos = (sinf(dummy_pos)+1)/2*width;
-   if (video_buf.field == V4L2_FIELD_INTERLACED) {
+   if (video_buf.field == V4L2_FIELD_INTERLACED)
+   {
       if (video_half_feed_rate == 0)
           video_half_feed_rate = 1;
       triangpos_t = (sinf(dummy_pos)+1)/2*width;
@@ -609,22 +716,28 @@ void source_dummy(int width, int height) {
       triangpos_b = (sinf(dummy_pos)+1)/2*width;
    }
 
-   for (i = 0; i < width * height; i+=1, src+=3) {
+   for (i = 0; i < width * height; i+=1, src+=3)
+   {
       float color = (clamp_float((float)(triangpos - (i%width) + offset)/10, -1, 1)+1)/2;
       src[0] = 0x10 + color*0xE0;
       src[1] = 0x10 + color*0xE0;
       src[2] = 0x10 + color*0xE0;
 
       /* End of a line */
-      if ( ((i+1) % width) == 0 ) {
+      if ( ((i+1) % width) == 0 )
+      {
          triangpos -= 2; /* offset should be half of this? */
          triangpos_t -= 1;
          triangpos_b -= 1;
-         if (video_buf.field == V4L2_FIELD_INTERLACED) {
-            if (field_ahead) {
+         if (video_buf.field == V4L2_FIELD_INTERLACED)
+         {
+            if (field_ahead)
+            {
                triangpos = triangpos_b;
                field_ahead = false;
-            } else {
+            }
+            else
+            {
                triangpos = triangpos_t;
                field_ahead = true;
             }
@@ -638,16 +751,17 @@ void source_dummy(int width, int height) {
       video_buf.field = V4L2_FIELD_TOP;
 }
 
-void source_v4l2_normal(int width, int height) {
+void source_v4l2_normal(int width, int height)
+{
    struct v4l2_buffer bufcp;
 
    int error;
 
    /* Wait until v4l2 dequees a buffer */
    memset(&video_buf, 0, sizeof(struct v4l2_buffer));
-   video_buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+   video_buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    video_buf.memory = V4L2_MEMORY_MMAP;
-   error = v4l2_ioctl(video_device_fd, VIDIOC_DQBUF, &video_buf);
+   error            = v4l2_ioctl(video_device_fd, VIDIOC_DQBUF, &video_buf);
    if (error != 0)
    {
       printf("VIDIOC_DQBUF failed: %s\n", strerror(errno));
@@ -665,7 +779,8 @@ void source_v4l2_normal(int width, int height) {
    v4l2_frame_times(bufcp);
 }
 
-void source_v4l2_alternate_hack(int width, int height) {
+void source_v4l2_alternate_hack(int width, int height)
+{
    struct v4l2_buffer bufcp;
    struct v4l2_format fmt;
    struct v4l2_requestbuffers reqbufs;
@@ -677,7 +792,7 @@ void source_v4l2_alternate_hack(int width, int height) {
    /* For later, saving time */
    memset(&fmt, 0, sizeof(fmt));
    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-   error = v4l2_ioctl(video_device_fd, VIDIOC_G_FMT, &fmt);
+   error    = v4l2_ioctl(video_device_fd, VIDIOC_G_FMT, &fmt);
    if (error != 0)
    {
       printf("VIDIOC_G_FMT failed: %s\n", strerror(errno));
@@ -700,7 +815,9 @@ void source_v4l2_alternate_hack(int width, int height) {
 
    /* Let's get the data as fast as possible! */
    bufcp = video_buf;
-   memcpy( (uint32_t*) frame_cap, (uint8_t*) v4l2_capbuf[video_buf.index].start, video_format.fmt.pix.width * video_format.fmt.pix.height * 3);
+   memcpy( (uint32_t*) frame_cap,
+         (uint8_t*)v4l2_capbuf[video_buf.index].start,
+         video_format.fmt.pix.width * video_format.fmt.pix.height * 3);
 
    v4l2_munmap(v4l2_capbuf[0].start, v4l2_capbuf[0].len);
 
@@ -730,20 +847,20 @@ void source_v4l2_alternate_hack(int width, int height) {
    v4l2_ncapbuf = reqbufs.count;
    /* printf("GOT v4l2_ncapbuf=%ld\n", v4l2_ncapbuf); */
 
-   index = 0;
+   index            = 0;
    memset(&video_buf, 0, sizeof(struct v4l2_buffer));
-   video_buf.index = index;
-   video_buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+   video_buf.index  = index;
+   video_buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    video_buf.memory = V4L2_MEMORY_MMAP;
 
    v4l2_ioctl(video_device_fd, VIDIOC_QUERYBUF, &video_buf);
-   v4l2_capbuf[index].len = video_buf.length;
+   v4l2_capbuf[index].len   = video_buf.length;
    v4l2_capbuf[index].start = v4l2_mmap(NULL, video_buf.length,
          PROT_READ|PROT_WRITE, MAP_SHARED, video_device_fd, video_buf.m.offset);
    memset(&video_buf, 0, sizeof(struct v4l2_buffer));
 
-   video_buf.index = index;
-   video_buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+   video_buf.index  = index;
+   video_buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    video_buf.memory = V4L2_MEMORY_MMAP;
 
    v4l2_ioctl(video_device_fd, VIDIOC_QBUF,& video_buf);
@@ -764,25 +881,31 @@ void source_v4l2_alternate_hack(int width, int height) {
    v4l2_frame_times(bufcp);
 }
 
-void processing_heal(uint8_t *src, int width, int height) {
-   uint32_t *fp1 = frame_prev1;
+void processing_heal(uint8_t *src, int width, int height)
+{
    int i;
-   for (i = 0; i < width * height; i+=1, src += 3, ++fp1) {
+   uint32_t *fp1 = frame_prev1;
+   for (i = 0; i < width * height; i+=1, src += 3, ++fp1)
+   {
       /* Tries to filter a bunch of blanked out scanline sections my capture cards spits out with this crazy hack
        * Since the blanked out scanlines are set to a black value bellow anything that can be captured, it's quite
        * easy to select the scanlines...
        */
-      if (src[0] <= 0 && src[1] <= 0 && src[2] <= 0 && i >= width && i <= width * height - width) {
+      if (src[0] <= 0 && src[1] <= 0 && src[2] <= 0 && i >= width && i <= width * height - width)
+      {
          if (*(src + 0 - width*3) >= ((*fp1>> 0&0xFF)-6) && \
              *(src + 1 - width*3) >= ((*fp1>> 8&0xFF)-6) && \
              *(src + 2 - width*3) >= ((*fp1>>16&0xFF)-6) && \
              *(src + 0 - width*3) <= ((*fp1>> 0&0xFF)+6) && \
              *(src + 1 - width*3) <= ((*fp1>> 8&0xFF)+6) && \
-             *(src + 2 - width*3) <= ((*fp1>>16&0xFF)+6)) {
+             *(src + 2 - width*3) <= ((*fp1>>16&0xFF)+6))
+         {
             src[0] = (*fp1>> 0&0xFF);
             src[1] = (*fp1>> 8&0xFF);
             src[2] = (*fp1>>16&0xFF);
-         } else {
+         }
+         else
+         {
             src[0] = (*(fp1+i+width)>> 0&0xFF);
             src[1] = (*(fp1+i+width)>> 8&0xFF);
             src[2] = (*(fp1+i+width)>>16&0xFF);
@@ -791,7 +914,9 @@ void processing_heal(uint8_t *src, int width, int height) {
    }
 }
 
-void processing_deinterlacing_crap(uint32_t *src, uint32_t *dst, int width, int height, enum v4l2_field field, int skip_lines_src) {
+void processing_deinterlacing_crap(uint32_t *src, uint32_t *dst, int width,
+      int height, enum v4l2_field field, int skip_lines_src)
+{
    int i, targetrow=0;
    uint32_t pixacul=0;
    uint32_t *fp1 = frame_prev1, *fp2 = frame_prev2, *fp3 = frame_prev3;
@@ -806,9 +931,11 @@ void processing_deinterlacing_crap(uint32_t *src, uint32_t *dst, int width, int 
     * On progressive sources, should only skip the destination lines, since all lines the source are the same fields
     * On interlaced sources, should skip both the source and the destination lines, since only half the lines in the source are the same fields (must also skip fields later)
     */
-   if (field == V4L2_FIELD_BOTTOM) {
+   if (field == V4L2_FIELD_BOTTOM)
+   {
       dst += width;
-      if (skip_lines_src == 1) {
+      if (skip_lines_src == 1)
+      {
          src += width;
          fp1 += width;
          fp2 += width;
@@ -816,7 +943,8 @@ void processing_deinterlacing_crap(uint32_t *src, uint32_t *dst, int width, int 
       }
    }
 
-   for (i = 0; i < width * height; i+=1, src += 1, dst += 1, ++fp1, ++fp2, ++fp3) {
+   for (i = 0; i < width * height; i+=1, src += 1, dst += 1, ++fp1, ++fp2, ++fp3)
+   {
       /* Will fill the current destination line with current field
        * The masking is used to prserve some information set by the
        * deinterlacing process, uses the alpha channel to tell if a
@@ -825,32 +953,35 @@ void processing_deinterlacing_crap(uint32_t *src, uint32_t *dst, int width, int 
       *(dst) =  (*(src) & 0x00FFFFFF) | (*dst & 0xFF000000);
 
       /* Crappy deinterlacing */
-      if (i >= width && i <= (width*height-width)) {
+      if (i >= width && i <= (width*height-width))
+      {
          pixacul=((((*(dst)>> 0&0xFF) + (pixacul>> 0&0xFF))>>1<<0 |\
                    ((*(dst)>> 8&0xFF) + (pixacul>> 8&0xFF))>>1<<8 |\
                    ((*(dst)>>16&0xFF) + (pixacul>>16&0xFF))>>1<<16) \
                    & 0x00FFFFFF) | 0xFE000000;
 
          if ( ((*(dst          ) & 0xFF000000) == 0xFE000000) ||\
-              ((*(dst+targetrow) & 0xFF000000) == 0xFE000000) )  {
+              ((*(dst+targetrow) & 0xFF000000) == 0xFE000000) )
+         {
             *dst = pixacul | 0xFF000000;
             *(dst+targetrow) = pixacul | 0xFF000000;
-         } else {
+         }
+         else
+         {
             if (!(((*(src+0)>> 0&0xFF) >= ((*(fp2+0)>> 0&0xFF)-9) ) &&\
                   ((*(src+0)>> 8&0xFF) >= ((*(fp2+0)>> 8&0xFF)-9) ) &&\
                   ((*(src+0)>>16&0xFF) >= ((*(fp2+0)>>16&0xFF)-9) ) &&\
                   ((*(src+0)>> 0&0xFF) <= ((*(fp2+0)>> 0&0xFF)+9) ) &&\
                   ((*(src+0)>> 8&0xFF) <= ((*(fp2+0)>> 8&0xFF)+9) ) &&\
-                  ((*(src+0)>>16&0xFF) <= ((*(fp2+0)>>16&0xFF)+9) )) ) {
+                  ((*(src+0)>>16&0xFF) <= ((*(fp2+0)>>16&0xFF)+9) )) )
                *(dst+targetrow) = pixacul;
-            } else if (!(((*fp3>> 0&0xFF) >= ((*fp1>> 0&0xFF)-9) ) &&\
+            else if (!(((*fp3>> 0&0xFF) >= ((*fp1>> 0&0xFF)-9) ) &&\
                          ((*fp3>> 8&0xFF) >= ((*fp1>> 8&0xFF)-9) ) &&\
                          ((*fp3>>16&0xFF) >= ((*fp1>>16&0xFF)-9) ) &&\
                          ((*fp3>> 0&0xFF) <= ((*fp1>> 0&0xFF)+9) ) &&\
                          ((*fp3>> 8&0xFF) <= ((*fp1>> 8&0xFF)+9) ) &&\
-                         ((*fp3>>16&0xFF) <= ((*fp1>>16&0xFF)+9) ))) {
+                         ((*fp3>>16&0xFF) <= ((*fp1>>16&0xFF)+9) )))
                *(dst+targetrow) = pixacul;
-            }
          }
       }
 
@@ -858,9 +989,11 @@ void processing_deinterlacing_crap(uint32_t *src, uint32_t *dst, int width, int 
        * On progressive sources, should only skip the destination lines,
        * On interlaced sources, should skip both the source and the destination lines
        */
-      if ( ((i+1) % width) == 0 ) {
+      if ( ((i+1) % width) == 0 )
+      {
          dst += width;
-         if (skip_lines_src == 1) {
+         if (skip_lines_src == 1)
+         {
             src += width;
             fp1 += width;
             fp2 += width;
@@ -870,12 +1003,12 @@ void processing_deinterlacing_crap(uint32_t *src, uint32_t *dst, int width, int 
    }
 }
 
-void processing_bgr_xrgb(uint8_t *src, uint32_t *dst, int width, int height) {
+void processing_bgr_xrgb(uint8_t *src, uint32_t *dst, int width, int height)
+{
    /* BGR24 to XRGB8888 conversion */
    int i;
-   for (i = 0; i < width * height; i+=1, src += 3, dst += 1) {
+   for (i = 0; i < width * height; i+=1, src += 3, dst += 1)
       *dst = 0xFF << 24 | src[2] << 16 | src[1] << 8 | src[0] << 0;
-   }
 }
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
@@ -884,15 +1017,17 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
    struct retro_variable videodev    = { "videoproc_videodev", NULL };
    struct retro_variable audiodev    = { "videoproc_audiodev", NULL };
    struct retro_variable capturemode = { "videoproc_capture_mode", NULL };
+   struct retro_variable captureresolution = { "videoproc_capture_resolution", NULL };
    struct retro_variable outputmode  = { "videoproc_output_mode", NULL };
    struct retro_variable frametimes  = { "videoproc_frame_times", NULL };
    bool updated = false;
 
-   if (VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated) {
+   if (VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+   {
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &audiodev);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capturemode);
-      VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &outputmode);
+      VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &captureresolution);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &frametimes);
       /* Video or Audio device(s) has(ve) been changed
        * TODO We may get away without resetting devices when changing output mode...
@@ -900,15 +1035,16 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
       if ((videodev.value    && (strcmp(video_device, videodev.value) != 0)) ||\
           (audiodev.value    && (strcmp(audio_device, audiodev.value) != 0)) ||\
           (capturemode.value && (strcmp(video_capture_mode, capturemode.value) != 0)) ||\
-          (outputmode.value  && (strcmp(video_output_mode,  outputmode.value)  != 0))) {
+          (captureresolution.value && (strcmp(video_capture_resolution, captureresolution.value) != 0)) ||\
+          (outputmode.value  && (strcmp(video_output_mode,  outputmode.value)  != 0)))
+      {
           VIDEOPROC_CORE_PREFIX(retro_unload_game)();
           /* This core does not cares for the retro_game_info * argument? */
           VIDEOPROC_CORE_PREFIX(retro_load_game)(NULL);
       }
 
-      if (frametimes.value != NULL) {
+      if (frametimes.value != NULL)
          strncpy(video_frame_times, frametimes.value, ENVVAR_BUFLEN-1);
-      }
    }
 
    VIDEOPROC_CORE_PREFIX(input_poll_cb)();
@@ -918,36 +1054,45 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
     * half_feed_rate allows interlaced input to be fed at half the calls to this function
     * where the same frame is then read by the deinterlacer twice, for each field
     */
-   if (video_half_feed_rate == 0) {
+   if (video_half_feed_rate == 0)
+   {
       /* Capture */
-      if (strcmp(video_device, "dummy") == 0) {
+      if (strcmp(video_device, "dummy") == 0)
+      {
          source_dummy(video_cap_width, video_cap_height);
-      } else {
-         if (strcmp(video_capture_mode, "alternate_hack") == 0) {
+      }
+      else
+      {
+         if (strcmp(video_capture_mode, "alternate_hack") == 0)
+         {
             source_v4l2_alternate_hack(video_cap_width, video_cap_height);
             processing_heal(frame_cap, video_cap_width, video_cap_height);
-         } else {
+         }
+         else
+         {
             source_v4l2_normal(video_cap_width, video_cap_height);
          }
       }
 
       if (video_buf.field == V4L2_FIELD_INTERLACED)
          video_half_feed_rate = 1;
-   } else {
-      video_half_feed_rate = 0;
    }
+   else
+      video_half_feed_rate = 0;
 
    /* Converts from bgr to xrgb, deinterlacing, final copy to the outpuit buffer (frame_out)
     * Every frame except frame_cap shall be encoded in xrgb
     * Every frame except frame_out shall have the same height
     */
-   if (strcmp(video_output_mode, "deinterlaced") == 0) {
+   if (strcmp(video_output_mode, "deinterlaced") == 0)
+   {
       processing_bgr_xrgb(frame_cap, frame_curr, video_cap_width, video_cap_height);
       /* When deinterlacing a interlaced input, we need to process both fields of a frame,
        * one at a time (retro_run needs to be called twice, vide_half_feed_rate prevents the
        * source from being read twice...
        */
-      if (strcmp(video_capture_mode, "interlaced") == 0) {
+      if (strcmp(video_capture_mode, "interlaced") == 0)
+      {
          enum v4l2_field field_read;
          if (video_half_feed_rate == 0)
             field_read = V4L2_FIELD_TOP;
@@ -957,34 +1102,41 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
           * deinterlacing algo twice, extracting a given field for each run.
           */
          processing_deinterlacing_crap(frame_curr, frame_out, video_cap_width, video_cap_height/2, field_read, 1);
-      } else {
+      }
+      else
+      {
          processing_deinterlacing_crap(frame_curr, frame_out, video_cap_width, video_cap_height, (enum v4l2_field)video_buf.field, 0);
       }
-      aux = frame_prev3;
+      aux         = frame_prev3;
       frame_prev3 = frame_prev2;
       frame_prev2 = frame_prev1;
       frame_prev1 = frame_curr;
-      frame_curr = aux;
+      frame_curr  = aux;
 
       VIDEOPROC_CORE_PREFIX(video_refresh_cb)(frame_out, video_cap_width,
          video_out_height, video_cap_width * sizeof(uint32_t));
-   } else if (strcmp(video_capture_mode, "alternate_hack") == 0) {
-      /* Case where alternate_hack without deinterlacing would not generate previous frame for processing_heal */
+   }
+   else if (strcmp(video_capture_mode, "alternate_hack") == 0)
+   {
+      /* Case where alternate_hack without deinterlacing would
+       * not generate previous frame for processing_heal */
       processing_bgr_xrgb(frame_cap, frame_curr, video_cap_width, video_cap_height);
-      aux = frame_prev3;
+      aux         = frame_prev3;
       frame_prev3 = frame_prev2;
       frame_prev2 = frame_prev1;
       frame_prev1 = frame_curr;
-      frame_curr = aux;
+      frame_curr  = aux;
 
-      aux = frame_out;
-      frame_out = frame_curr;
+      aux         = frame_out;
+      frame_out   = frame_curr;
 
       VIDEOPROC_CORE_PREFIX(video_refresh_cb)(frame_out, video_cap_width,
          video_out_height, video_cap_width * sizeof(uint32_t));
 
-      frame_out = aux;
-   } else {
+      frame_out   = aux;
+   }
+   else
+   {
       processing_bgr_xrgb(frame_cap, frame_out, video_cap_width, video_out_height);
 
       VIDEOPROC_CORE_PREFIX(video_refresh_cb)(frame_out, video_cap_width,
@@ -993,48 +1145,37 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
 }
 
 RETRO_API size_t VIDEOPROC_CORE_PREFIX(retro_serialize_size)(void)
-{
-   return 0;
-}
-
-RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_serialize)(void *data, size_t size)
-{
-   return false;
-}
-
-RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
-{
-   return false;
-}
-
-RETRO_API void VIDEOPROC_CORE_PREFIX(retro_cheat_reset)(void)
-{
-}
-
-RETRO_API void VIDEOPROC_CORE_PREFIX(retro_cheat_set)(unsigned index, bool enabled, const char *code)
-{
-}
+{ return 0; }
+RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_serialize)(
+      void *data, size_t len) { return false; }
+RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_unserialize)(
+      const void *data, size_t len) { return false; }
+RETRO_API void VIDEOPROC_CORE_PREFIX(retro_cheat_reset)(void) { }
+RETRO_API void VIDEOPROC_CORE_PREFIX(retro_cheat_set)(unsigned a,
+      bool b, const char *c) { }
 
 #if 0
-static void videoinput_set_control_v4l2( uint32_t id, double val )
+static void videoinput_set_control_v4l2( uint32_t id, double val)
 {
     struct v4l2_queryctrl query;
 
     query.id = id;
-    if( ioctl( video_device_fd, VIDIOC_QUERYCTRL, &query ) >= 0 && !(query.flags & V4L2_CTRL_FLAG_DISABLED) ) {
+    if(ioctl(video_device_fd, VIDIOC_QUERYCTRL, &query) >= 0 && !(query.flags & V4L2_CTRL_FLAG_DISABLED))
+    {
         struct v4l2_control control;
         control.id = id;
         control.value = query.minimum + ((int) ((val * ((double) (query.maximum - query.minimum))) + 0.5));
-        ioctl( video_device_fd, VIDIOC_S_CTRL, &control );
+        ioctl(video_device_fd, VIDIOC_S_CTRL, &control);
     }
 }
 #endif
 
 RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_info *game)
 {
-   struct retro_variable videodev = { "videoproc_videodev", NULL };
-   struct retro_variable audiodev = { "videoproc_audiodev", NULL };
+   struct retro_variable videodev     = { "videoproc_videodev", NULL };
+   struct retro_variable audiodev     = { "videoproc_audiodev", NULL };
    struct retro_variable capture_mode = { "videoproc_capture_mode", NULL };
+   struct retro_variable capture_resolution = { "videoproc_capture_resolution", NULL };
    struct retro_variable output_mode  = { "videoproc_output_mode", NULL };
    struct retro_variable frame_times  = { "videoproc_frame_times", NULL };
    enum retro_pixel_format pixel_format;
@@ -1047,6 +1188,8 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    uint32_t index;
    bool std_found;
    int error;
+   char splitresolution[ENVVAR_BUFLEN];
+   char* token;
 
    if (open_devices() == false)
    {
@@ -1056,7 +1199,8 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    }
 
 #ifdef HAVE_ALSA
-   if (audio_handle != NULL) {
+   if (audio_handle != NULL)
+   {
        struct retro_audio_callback audio_cb;
        audio_cb.callback = audio_callback;
        audio_cb.set_state = audio_set_state;
@@ -1065,7 +1209,8 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
 #endif
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &videodev);
-   if (videodev.value == NULL) {
+   if (videodev.value == NULL)
+   {
        close_devices();
        return false;
    }
@@ -1073,13 +1218,19 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
 
    /* Audio device is optional... */
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &audiodev);
-   if (audiodev.value != NULL) {
+   if (audiodev.value != NULL)
       strncpy(audio_device, audiodev.value, ENVVAR_BUFLEN-1);
-   }
+
+   VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_resolution);
+   if(capture_resolution.value != NULL)
+      strncpy(video_capture_resolution, capture_resolution.value, ENVVAR_BUFLEN-1);
+   else
+      strncpy(video_capture_resolution, "auto", ENVVAR_BUFLEN-1);
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_mode);
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &output_mode);
-   if (capture_mode.value == NULL || output_mode.value == NULL) {
+   if (capture_mode.value == NULL || output_mode.value == NULL)
+   {
        close_devices();
        return false;
    }
@@ -1087,32 +1238,37 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    strncpy(video_output_mode, output_mode.value, ENVVAR_BUFLEN-1);
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &frame_times);
-   if (frame_times.value != NULL) {
+   if (frame_times.value != NULL)
       strncpy(video_frame_times, frame_times.value, ENVVAR_BUFLEN-1);
-   }
 
-   if (strcmp(video_device, "dummy") == 0) {
-      if (strcmp(video_capture_mode, "interlaced") == 0) {
+   if (strcmp(video_device, "dummy") == 0)
+   {
+      if (strcmp(video_capture_mode, "interlaced") == 0)
+      {
           video_format.fmt.pix.height = 480;
-          video_cap_height = 480;
-          video_buf.field = V4L2_FIELD_INTERLACED;
-      } else if (strcmp(video_capture_mode, "alternate") == 0 ||\
-                 strcmp(video_capture_mode, "top") == 0 ||\
-                 strcmp(video_capture_mode, "bottom") == 0 ||\
-                 strcmp(video_capture_mode, "alternate_hack") == 0) {
+          video_cap_height            = 480;
+          video_buf.field             = V4L2_FIELD_INTERLACED;
+      }
+      else if (     strcmp(video_capture_mode, "alternate") == 0
+                 || strcmp(video_capture_mode, "top") == 0
+                 || strcmp(video_capture_mode, "bottom") == 0
+                 || strcmp(video_capture_mode, "alternate_hack") == 0)
+      {
           video_format.fmt.pix.height = 240;
-          video_cap_height = 240;
-          video_buf.field = V4L2_FIELD_TOP;
+          video_cap_height            = 240;
+          video_buf.field             = V4L2_FIELD_TOP;
       }
 
-      dummy_pos=0;
+      dummy_pos                  = 0;
       video_format.fmt.pix.width = 640;
-      video_cap_width = 640;
-   } else {
+      video_cap_width            = 640;
+   }
+   else
+   {
       memset(&fmt, 0, sizeof(fmt));
       fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-      error = v4l2_ioctl(video_device_fd, VIDIOC_G_FMT, &fmt);
+      error    = v4l2_ioctl(video_device_fd, VIDIOC_G_FMT, &fmt);
 
       if (error != 0)
       {
@@ -1125,33 +1281,48 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       fmt.fmt.pix.colorspace = V4L2_COLORSPACE_SRGB;
       fmt.fmt.pix.quantization = V4L2_QUANTIZATION_LIM_RANGE;
 
-      fmt.fmt.pix.height = 240;
+      // applied set resolution if not set to auto
+      if (strcmp(video_capture_resolution, "auto") != 0)
+      {
+         strcpy(splitresolution, video_capture_resolution);
+         token = strtok(splitresolution, "x");
+         fmt.fmt.pix.width = atoi(token);
+         token = strtok(NULL, "x");
+         fmt.fmt.pix.height = atoi(token);
+      }
       fmt.fmt.pix.field = V4L2_FIELD_TOP;
-
       /* TODO Query the size and FPS */
-      if (strcmp(video_capture_mode, "interlaced") == 0) {
-         v4l2_ncapbuf_target = 2;
-         fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
-         video_format.fmt.pix.height = 480;
-         video_cap_height = 480;
-      } else {
-         v4l2_ncapbuf_target = 2;
-         video_format.fmt.pix.height = 240;
-         video_cap_height = 240;
-         if (strcmp(video_capture_mode, "alternate") == 0)
+      if (strcmp(video_capture_mode, "interlaced") == 0)
+      {
+         v4l2_ncapbuf_target         = 2;
+         fmt.fmt.pix.field           = V4L2_FIELD_INTERLACED;
+         video_format.fmt.pix.height = fmt.fmt.pix.height;
+         video_cap_height            = fmt.fmt.pix.height;
+      }
+      else
+      {
+         v4l2_ncapbuf_target         = 2;
+         video_format.fmt.pix.height = fmt.fmt.pix.height/2;
+         video_cap_height            = fmt.fmt.pix.height/2;
+         if (strcmp(video_capture_mode, "deinterlaced") == 0)
+         {
+            v4l2_ncapbuf_target         = 2;
+            video_format.fmt.pix.height = fmt.fmt.pix.height;
+            video_cap_height            = fmt.fmt.pix.height;
+         } else if (strcmp(video_capture_mode, "alternate") == 0)
             fmt.fmt.pix.field = V4L2_FIELD_ALTERNATE;
          else if (strcmp(video_capture_mode, "top") == 0)
             fmt.fmt.pix.field = V4L2_FIELD_TOP;
          else if (strcmp(video_capture_mode, "bottom") == 0)
             fmt.fmt.pix.field = V4L2_FIELD_BOTTOM;
-         else if (strcmp(video_capture_mode, "alternate_hack") == 0) {
-            fmt.fmt.pix.field = V4L2_FIELD_TOP;
+         else if (strcmp(video_capture_mode, "alternate_hack") == 0)
+         {
+            fmt.fmt.pix.field   = V4L2_FIELD_TOP;
             v4l2_ncapbuf_target = 1;
          }
       }
 
-      video_format.fmt.pix.width = 720;
-      video_cap_width = 720;
+      video_cap_width = fmt.fmt.pix.width;
 
       error = v4l2_ioctl(video_device_fd, VIDIOC_S_FMT, &fmt);
       if (error != 0)
@@ -1160,41 +1331,46 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
          return false;
       }
 
-      error = v4l2_ioctl(video_device_fd, VIDIOC_G_STD, &std_id);
-      if (error != 0)
+      /* skipping this for (magewell usb) since the std ioctl gives errors
+       * unsure if this will impact other cards
+       */
+      if(strcmp((const char*)caps.driver, "uvcvideo")  != 0)
       {
-         printf("VIDIOC_G_STD failed: %s\n", strerror(errno));
-         return false;
-      }
-      for (index = 0, std_found = false; ; index++)
-      {
-         memset(&std, 0, sizeof(std));
-         std.index = index;
-         error = v4l2_ioctl(video_device_fd, VIDIOC_ENUMSTD, &std);
-         if (error)
-            break;
-         if (std.id == std_id)
+         error = v4l2_ioctl(video_device_fd, VIDIOC_G_STD, &std_id);
+         if (error != 0)
          {
-            video_standard = std;
-            std_found = true;
+            printf("VIDIOC_G_STD failed: %s\n", strerror(errno));
+            return false;
          }
-         printf("VIDIOC_ENUMSTD[%u]: %s%s\n", index, std.name, std.id == std_id ? " [*]" : "");
+         for (index = 0, std_found = false; ; index++)
+         {
+            memset(&std, 0, sizeof(std));
+            std.index = index;
+            error     = v4l2_ioctl(video_device_fd, VIDIOC_ENUMSTD, &std);
+            if (error)
+               break;
+            if (std.id == std_id)
+            {
+               video_standard = std;
+               std_found      = true;
+            }
+            printf("VIDIOC_ENUMSTD[%u]: %s%s\n", index, std.name, std.id == std_id ? " [*]" : "");
+         }
+         if (!std_found)
+         {
+            printf("VIDIOC_ENUMSTD did not contain std ID %08x\n", (unsigned)std_id);
+            return false;
+         }
       }
-      if (!std_found)
-      {
-         printf("VIDIOC_ENUMSTD did not contain std ID %08x\n", (unsigned)std_id);
-         return false;
-      }
-
       video_format = fmt;
       /* TODO Check if what we got is indeed what we asked for */
 
       memset(&reqbufs, 0, sizeof(reqbufs));
-      reqbufs.count = v4l2_ncapbuf_target;
-      reqbufs.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      reqbufs.count  = v4l2_ncapbuf_target;
+      reqbufs.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       reqbufs.memory = V4L2_MEMORY_MMAP;
 
-      error = v4l2_ioctl(video_device_fd, VIDIOC_REQBUFS, &reqbufs);
+      error          = v4l2_ioctl(video_device_fd, VIDIOC_REQBUFS, &reqbufs);
       if (error != 0)
       {
          printf("VIDIOC_REQBUFS failed: %s\n", strerror(errno));
@@ -1206,18 +1382,18 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       for (index = 0; index < v4l2_ncapbuf; index++)
       {
          memset(&buf, 0, sizeof(buf));
-         buf.index = index;
-         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+         buf.index  = index;
+         buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
          buf.memory = V4L2_MEMORY_MMAP;
 
-         error = v4l2_ioctl(video_device_fd, VIDIOC_QUERYBUF, &buf);
+         error      = v4l2_ioctl(video_device_fd, VIDIOC_QUERYBUF, &buf);
          if (error != 0)
          {
             printf("VIDIOC_QUERYBUF failed for %u: %s\n", index, strerror(errno));
             return false;
          }
 
-         v4l2_capbuf[index].len = buf.length;
+         v4l2_capbuf[index].len   = buf.length;
          v4l2_capbuf[index].start = v4l2_mmap(NULL, buf.length,
                PROT_READ|PROT_WRITE, MAP_SHARED, video_device_fd, buf.m.offset);
          if (v4l2_capbuf[index].start == MAP_FAILED)
@@ -1230,19 +1406,20 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       for (index = 0; index < v4l2_ncapbuf; index++)
       {
          memset(&buf, 0, sizeof(buf));
-         buf.index = index;
-         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+         buf.index  = index;
+         buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
          buf.memory = V4L2_MEMORY_MMAP;
 
-         error = v4l2_ioctl(video_device_fd, VIDIOC_QBUF, &buf);
+         error      = v4l2_ioctl(video_device_fd, VIDIOC_QBUF, &buf);
          if (error != 0)
          {
-            printf("VIDIOC_QBUF failed for %u: %s\n", index, strerror(errno));
+            printf("VIDIOC_QBUF failed for %u: %s\n", index,
+                  strerror(errno));
             return false;
          }
       }
 
-      type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      type  = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       error = v4l2_ioctl(video_device_fd, VIDIOC_STREAMON, &type);
       if (error != 0)
       {
@@ -1253,33 +1430,41 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       /* videoinput_set_control_v4l2(V4L2_CID_HUE, (double) 0.4f); */
    }
 
-   /* TODO Framerates?
-    * Each frame should combine both fields into a full frame (if not already captured interlaced), half frame-rate
+   /* TODO/FIXME Framerates?
+    * Each frame should combine both fields into a full frame
+    * (if not already captured interlaced), half frame-rate
     */
-   if (strcmp(video_output_mode, "interlaced") == 0) {
-      if (strcmp(video_capture_mode, "interlaced") == 0) {
-         video_out_height = video_cap_height;
-      } else {
-         printf("WARNING: Capture mode %s with output mode %s is not properly supported yet... (Is this even useful?)\n", \
-                 video_capture_mode, video_output_mode);
-         video_out_height = video_cap_height*2;
-      }
-   /* Each frame has one field, full frame-rate */
-   } else if (strcmp(video_output_mode, "progressive") == 0) {
-      video_out_height = video_cap_height;
-   /* Each frame has one or both field to be deinterlaced into a full frame (double the lines if one field), full frame-rate */
-   } else if (strcmp(video_output_mode, "deinterlaced") == 0) {
+   if (strcmp(video_output_mode, "interlaced") == 0)
+   {
       if (strcmp(video_capture_mode, "interlaced") == 0)
          video_out_height = video_cap_height;
       else
+      {
+         printf("WARNING: Capture mode %s with output mode %s is not"
+               " properly supported yet... (Is this even useful?)\n", \
+                 video_capture_mode, video_output_mode);
          video_out_height = video_cap_height*2;
-   } else
+      }
+      /* Each frame has one field, full frame-rate */
+   }
+   /* Each frame has one or both field to be deinterlaced
+    * into a full frame (double the lines if one field), full frame-rate */
+   else if (strcmp(video_output_mode, "progressive") == 0)
+      video_out_height = video_cap_height;
+   else if (strcmp(video_output_mode, "deinterlaced") == 0)
+   {
+      if (strcmp(video_capture_mode, "interlaced") == 0 || strcmp(video_capture_mode, "deinterlaced") == 0)
+         video_out_height = video_cap_height;
+      else
+         video_out_height = video_cap_height*2;
+   }
+   else
       video_out_height = video_cap_height;
 
    printf("Capture Resolution %ux%u\n", video_cap_width, video_cap_height);
    printf("Output Resolution %ux%u\n", video_cap_width, video_out_height);
 
-   frame_cap = (uint8_t*)calloc(1, video_cap_width * video_cap_height * sizeof(uint8_t) * 3);
+   frame_cap = (uint8_t*)calloc (1, video_cap_width * video_cap_height * sizeof(uint8_t) * 3);
    frame_out = (uint32_t*)calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
    /* TODO: Only allocate frames if we are going to use it (for deinterlacing or other filters?) */
    frames[0] = (uint32_t*)calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
@@ -1287,17 +1472,14 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
    frames[2] = (uint32_t*)calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
    frames[3] = (uint32_t*)calloc(1, video_cap_width * video_out_height * sizeof(uint32_t));
 
-   frame_curr = frames[0];
+   frame_curr  = frames[0];
    frame_prev1 = frames[1];
    frame_prev2 = frames[2];
    frame_prev3 = frames[3];
 
    /* TODO: Check frames[] allocation */
    if (!frame_out || !frame_cap)
-   {
-      printf("Cannot allocate buffers\n");
       return false;
-   }
 
    printf("Allocated %" PRI_SIZET " byte conversion buffer\n",
          (size_t)(video_cap_width * video_cap_height) * sizeof(uint32_t));
@@ -1318,7 +1500,8 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
    int i;
 
 #ifdef HAVE_ALSA
-   if (audio_handle != NULL) {
+   if (audio_handle != NULL)
+   {
        VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK, NULL);
    }
 #endif
@@ -1327,7 +1510,8 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
    {
       uint32_t index;
       enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-      int               error = v4l2_ioctl(video_device_fd, VIDIOC_STREAMOFF, &type);
+      int               error = v4l2_ioctl(video_device_fd,
+            VIDIOC_STREAMOFF, &type);
       if (error != 0)
          printf("VIDIOC_STREAMOFF failed: %s\n", strerror(errno));
 
@@ -1351,7 +1535,8 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
       free(frame_cap);
    frame_cap = NULL;
 
-   for (i = 0; i<4; ++i) {
+   for (i = 0; i<4; ++i)
+   {
       if (frames[i])
          free(frames[i]);
       frames[i] = NULL;
@@ -1361,12 +1546,14 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
    frame_prev2 = NULL;
    frame_prev3 = NULL;
 
-   if (ft_info) {
+   if (ft_info)
+   {
       free(ft_info);
       ft_info = NULL;
    }
 
-   if (ft_info2) {
+   if (ft_info2)
+   {
       free(ft_info2);
       ft_info2 = NULL;
    }
@@ -1377,10 +1564,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
 }
 
 RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game_special)(unsigned game_type,
-      const struct retro_game_info *info, size_t num_info)
-{
-   return false;
-}
+      const struct retro_game_info *info, size_t num_info) { return false; }
 
 RETRO_API unsigned VIDEOPROC_CORE_PREFIX(retro_get_region)(void)
 {

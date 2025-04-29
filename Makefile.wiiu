@@ -302,7 +302,38 @@ endif
 
 DEPFLAGS    = -MT $@ -MMD -MP -MF $(BUILD_DIR)/$*.depend
 
-all: $(TARGETS)
+all: info $(TARGETS)
+
+define INFO
+AR: $(AR)
+ASFLAGS: $(ASFLAGS)
+BUILD_DIR: $(BUILD_DIR)
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+DEFINES: $(DEFINES)
+DEPFLAGS: $(DEPFLAGS)
+ELF2RPL: $(ELF2RPL)
+HBL_ELF_LDFLAGS: $(HBL_ELF_LDFLAGS)
+HBL_ELF_OBJ: $(HBL_ELF_OBJ)
+INCDIRS: $(INCDIRS)
+LD: $(LD)
+LDFLAGS: $(LDFLAGS)
+LIBDIRS: $(LIBDIRS)
+LIBS: $(LIBS)
+MAKE: $(MAKE)
+OBJ: $(OBJ)
+RPX_LDFLAGS: $(RPX_LDFLAGS)
+RPX_OBJ: $(RPX_OBJ)
+TARGET: $(TARGET)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 %: $(BUILD_DIR)/%
 	cp $< $@

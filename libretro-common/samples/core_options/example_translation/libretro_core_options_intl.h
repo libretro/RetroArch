@@ -11,9 +11,10 @@
 
 /*
  ********************************
- * VERSION: 1.3
+ * VERSION: 2.0
  ********************************
  *
+ * - 2.0: Add support for core options v2 interface
  * - 1.3: Move translations to libretro_core_options_intl.h
  *        - libretro_core_options_intl.h includes BOM and utf-8
  *          fix for MSVC 2010-2013
@@ -41,11 +42,29 @@ extern "C" {
 
 /* RETRO_LANGUAGE_FRENCH */
 
-struct retro_core_option_definition option_defs_fr[] = {
+struct retro_core_option_v2_category option_cats_fr[] = {
+   {
+      "video",                              /* key must match option_cats_us entry */
+      "Vidéo",                              /* translated category description */
+      "Configurez les options d'affichage." /* translated category sublabel */
+   },
+   {
+      "hacks",
+      "Avancée",
+      "Options affectant les performances et la précision de l'émulation de bas niveau."
+   },
+   { NULL, NULL, NULL },
+};
+
+struct retro_core_option_v2_definition option_defs_fr[] = {
    {
       "mycore_region",                             /* key must match option_defs_us entry */
       "Région de la console",                      /* translated description */
+      NULL,
       "Spécifiez la région d'origine du système.", /* translated sublabel */
+      NULL,
+      NULL,                                        /* category key is taken from option_defs_us
+                                                    * -> can set to NULL here */
       {
          { "auto",   "Auto" },                     /* value must match option_defs_us entry   */
          { "ntsc-j", "Japon" },                    /* > only value_label should be translated */
@@ -53,12 +72,16 @@ struct retro_core_option_definition option_defs_fr[] = {
          { "pal",    "L'Europe" },
          { NULL, NULL },
       },
-      NULL                                         /* default_value is taken from option_defs_us -> can set to NULL here */
+      NULL                                         /* default_value is taken from option_defs_us
+                                                    * -> can set to NULL here */
    },
    {
       "mycore_video_scale",
-      "Échelle vidéo",
+      "Vidéo > Échelle", /* translated description */
+      "Échelle",         /* translated 'categorised' description */
       "Définir le facteur d'échelle vidéo interne.",
+      NULL,
+      NULL,
       {
          { NULL, NULL }, /* If value_labels do not require translation (e.g. numbers), values may be omitted */
       },
@@ -66,14 +89,23 @@ struct retro_core_option_definition option_defs_fr[] = {
    },
    {
       "mycore_overclock",
+      "Avancé > Réduire le ralentissement",
       "Réduire le ralentissement",
-      "Activer l'overclocking du processeur (non sécurisé).",
+      "L'activation de « Avancé > Réduire le ralentissement » réduira la précision.", /* translated sublabel */
+      "L'activation de « Réduire le ralentissement » réduira la précision.",          /* translated 'categorised'
+                                                                                       * sublabel */
+      NULL,
       {
          { NULL, NULL }, /* 'enabled' and 'disabled' values should not be translated */
       },
       NULL
    },
-   { NULL, NULL, NULL, {{0}}, NULL },
+   { NULL, NULL, NULL, NULL, NULL, NULL, {{0}}, NULL },
+};
+
+struct retro_core_options_v2 options_fr = {
+   option_cats_fr,
+   option_defs_fr
 };
 
 /* RETRO_LANGUAGE_SPANISH */

@@ -3257,19 +3257,15 @@ static void vulkan_init_hw_render(vk_t *vk)
    iface->get_instance_proc_addr = vulkan_symbol_wrapper_instance_proc_addr();
 }
 
-static void vulkan_init_readback(vk_t *vk, settings_t *settings)
+static void vulkan_init_readback(vk_t *vk, bool video_gpu_record)
 {
    /* Only bother with this if we're doing GPU recording.
-    * Check recording_st->enable and not
-    * driver.recording_data, because recording is
-    * not initialized yet.
+    * Check rec_st->enable and not driver.recording_data,
+    * because recording is not initialized yet.
     */
-   recording_state_t
-      *recording_st        = recording_state_get_ptr();
-   bool recording_enabled  = recording_st->enable;
-   bool video_gpu_record   = settings->bools.video_gpu_record;
+   recording_state_t *rec_st = recording_state_get_ptr();
 
-   if (!(video_gpu_record && recording_enabled))
+   if (!(video_gpu_record && rec_st->enable))
    {
       vk->flags                       &= ~VK_FLAG_READBACK_STREAMED;
       return;
@@ -3335,10 +3331,10 @@ static void *vulkan_init(const video_info_t *video,
    }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   vk->hdr.max_output_nits             = settings->floats.video_hdr_max_nits;
-   vk->hdr.min_output_nits             = 0.001f;
-   vk->hdr.max_cll                     = 0.0f;
-   vk->hdr.max_fall                    = 0.0f;
+   vk->hdr.max_output_nits            = settings->floats.video_hdr_max_nits;
+   vk->hdr.min_output_nits            = 0.001f;
+   vk->hdr.max_cll                    = 0.0f;
+   vk->hdr.max_fall                   = 0.0f;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    vk->video                          = *video;
@@ -3552,7 +3548,7 @@ static void *vulkan_init(const video_info_t *video,
       is the simplest solution unless reinit tracking is done */
    vk->flags |= VK_FLAG_SHOULD_RESIZE;
 
-   vulkan_init_readback(vk, settings);
+   vulkan_init_readback(vk, settings->bools.video_gpu_record);
    return vk;
 
 error:
@@ -3830,8 +3826,7 @@ static void vulkan_set_viewport(void *data, unsigned vp_width,
 {
    float device_aspect       = (float)vp_width / vp_height;
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
-   settings_t *settings      = config_get_ptr();
-   bool video_scale_integer  = settings->bools.video_scale_integer;
+   bool video_scale_integer  = config_get_ptr()->bools.video_scale_integer;
    vk_t *vk                  = (vk_t*)data;
 
    if (vk->ctx_driver->translate_aspect)
@@ -4572,7 +4567,7 @@ static bool vulkan_frame(void *data, const void *frame,
          1);
 #endif
    vulkan_filter_chain_set_frame_time_delta(
-         (vulkan_filter_chain_t*)vk->filter_chain, video_driver_get_frame_time_delta_usec());
+         (vulkan_filter_chain_t*)vk->filter_chain, (uint32_t)video_driver_get_frame_time_delta_usec());
 
    vulkan_filter_chain_set_original_fps(
          (vulkan_filter_chain_t*)vk->filter_chain, video_driver_get_original_fps());

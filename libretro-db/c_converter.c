@@ -136,22 +136,23 @@ static void dat_converter_list_free(dat_converter_list_t* list)
 {
    if (!list)
       return;
+
    switch (list->type)
    {
-   case DAT_CONVERTER_LIST_LIST:
-      while (list->count--)
-         dat_converter_list_free(list->values[list->count].list);
-      break;
-   case DAT_CONVERTER_MAP_LIST:
-      while (list->count--)
-      {
-         if (list->values[list->count].map.type == DAT_CONVERTER_LIST_MAP)
-            dat_converter_list_free(list->values[list->count].map.value.list);
-      }
-      dat_converter_bt_node_free(list->bt_root);
-      break;
-   default:
-      break;
+      case DAT_CONVERTER_LIST_LIST:
+         while (list->count--)
+            dat_converter_list_free(list->values[list->count].list);
+         break;
+      case DAT_CONVERTER_MAP_LIST:
+         while (list->count--)
+         {
+            if (list->values[list->count].map.type == DAT_CONVERTER_LIST_MAP)
+               dat_converter_list_free(list->values[list->count].map.value.list);
+         }
+         dat_converter_bt_node_free(list->bt_root);
+         break;
+      default:
+         break;
    }
 
    free(list->values);
@@ -190,7 +191,6 @@ static dat_converter_bt_node_t* dat_converter_bt_node_insert(
       if (map->type == DAT_CONVERTER_LIST_MAP)
       {
          int i;
-
          retro_assert(list->values[(*node)->index].map.value.list->type
                == map->value.list->type);
 
@@ -217,54 +217,52 @@ static void dat_converter_list_append(dat_converter_list_t* dst, void* item)
       dst->capacity <<= 1;
       dst->values = realloc(dst->values, sizeof(*dst->values) * dst->capacity);
    }
+
    switch (dst->type)
    {
-   case DAT_CONVERTER_TOKEN_LIST:
-   {
-      dat_converter_token_t* token = (dat_converter_token_t*) item;
-      dst->values[dst->count].token = *token;
-      break;
-   }
-   case DAT_CONVERTER_STRING_LIST:
-   {
-      char* str = (char*) item;
-      dst->values[dst->count].string = str;
-      break;
-   }
-   case DAT_CONVERTER_MAP_LIST:
-   {
-      dat_converter_map_t* map = (dat_converter_map_t*) item;
-      if (!map->key)
-         dst->values[dst->count].map = *map;
-      else
-      {
-         map->hash = djb2_calculate(map->key);
-         dat_converter_bt_node_t* new_node =
-            dat_converter_bt_node_insert(dst, &dst->bt_root, map);
+      case DAT_CONVERTER_TOKEN_LIST:
+         {
+            dat_converter_token_t* token = (dat_converter_token_t*) item;
+            dst->values[dst->count].token = *token;
+            break;
+         }
+      case DAT_CONVERTER_STRING_LIST:
+         dst->values[dst->count].string = (char*)item;
+         break;
+      case DAT_CONVERTER_MAP_LIST:
+         {
+            dat_converter_map_t* map = (dat_converter_map_t*) item;
+            if (!map->key)
+               dst->values[dst->count].map = *map;
+            else
+            {
+               map->hash = djb2_calculate(map->key);
+               dat_converter_bt_node_t* new_node =
+                  dat_converter_bt_node_insert(dst, &dst->bt_root, map);
 
-         if (!new_node)
-            return;
+               if (!new_node)
+                  return;
 
-         dst->values[dst->count].map = *map;
-         new_node->index = dst->count;
-         new_node->hash = map->hash;
-      }
-      break;
-   }
-   case DAT_CONVERTER_LIST_LIST:
-   {
-      dat_converter_list_t* list = (dat_converter_list_t*) item;
-      dst->values[dst->count].list = list;
-      break;
-   }
-   default:
-      return;
+               dst->values[dst->count].map = *map;
+               new_node->index = dst->count;
+               new_node->hash = map->hash;
+            }
+            break;
+         }
+      case DAT_CONVERTER_LIST_LIST:
+         {
+            dat_converter_list_t* list = (dat_converter_list_t*) item;
+            dst->values[dst->count].list = list;
+            break;
+         }
+      default:
+         return;
    }
    dst->count++;
 }
 
 static dat_converter_list_t* dat_converter_lexer(
-      char* src, const char* dat_path)
+      char *src, const char* dat_path)
 {
    dat_converter_list_t* token_list =
       dat_converter_list_create(DAT_CONVERTER_TOKEN_LIST);
@@ -278,7 +276,7 @@ static dat_converter_list_t* dat_converter_lexer(
          *src = '\0';
          src++;
          token.column++;
-         token.label = NULL;
+         token.label  = NULL;
          quoted_token = false;
          continue;
       }
@@ -289,7 +287,7 @@ static dat_converter_list_t* dat_converter_lexer(
          src++;
          token.column = 1;
          token.line_no++;
-         token.label = NULL;
+         token.label  = NULL;
          quoted_token = false;
          continue;
       }
@@ -300,7 +298,7 @@ static dat_converter_list_t* dat_converter_lexer(
          src++;
          token.column++;
          quoted_token = !quoted_token;
-         token.label = NULL;
+         token.label  = NULL;
 
          if (quoted_token)
          {
@@ -410,26 +408,27 @@ struct dat_converter_match_key_t
 static dat_converter_match_key_t* dat_converter_match_key_create(
       const char* format)
 {
-   dat_converter_match_key_t* match_key;
+   char *dot;
    dat_converter_match_key_t* current_mk;
-   char* dot;
-
-   match_key = malloc(sizeof(*match_key));
+   dat_converter_match_key_t*
+      match_key     = (dat_converter_match_key_t*)
+      malloc(sizeof(*match_key));
    match_key->value = strdup(format);
-   match_key->next = NULL;
-   current_mk = match_key;
+   match_key->next  = NULL;
+   current_mk       = match_key;
 
-   dot = match_key->value;
+   dot              = match_key->value;
+
    while (*dot++)
    {
       if (*dot == '.')
       {
          *dot++ = '\0';
-         current_mk->hash = djb2_calculate(current_mk->value);
-         current_mk->next = malloc(sizeof(*match_key));
-         current_mk = current_mk->next;
+         current_mk->hash  = djb2_calculate(current_mk->value);
+         current_mk->next  = malloc(sizeof(*match_key));
+         current_mk        = current_mk->next;
          current_mk->value = dot;
-         current_mk->next = NULL;
+         current_mk->next  = NULL;
       }
    }
    current_mk->hash = djb2_calculate(current_mk->value);
@@ -460,26 +459,26 @@ static const char* dat_converter_get_match(
 
    retro_assert(match_key);
 
-   if (list->type != DAT_CONVERTER_MAP_LIST)
-      return NULL;
-
-   for (i = 0; i < list->count; i++)
+   if (list->type == DAT_CONVERTER_MAP_LIST)
    {
-      if (list->values[i].map.hash == match_key->hash)
+      for (i = 0; i < list->count; i++)
       {
-         retro_assert(string_is_equal(list->values[i].map.key, match_key->value));
+         if (list->values[i].map.hash == match_key->hash)
+         {
+            retro_assert(string_is_equal(list->values[i].map.key, match_key->value));
 
-         if (match_key->next)
-            return dat_converter_get_match(
-                  list->values[i].map.value.list, match_key->next);
+            if (match_key->next)
+               return dat_converter_get_match(
+                     list->values[i].map.value.list, match_key->next);
 
-         if ((list->values[i].map.type == DAT_CONVERTER_STRING_MAP))
-            return list->values[i].map.value.string;
+            if ((list->values[i].map.type == DAT_CONVERTER_STRING_MAP))
+               return list->values[i].map.value.string;
 
-         return NULL;
-
+            break;
+         }
       }
    }
+
    return NULL;
 }
 
@@ -499,9 +498,9 @@ static dat_converter_list_t* dat_converter_parser(
    if (!target)
    {
       dat_converter_map_t map;
-      target = dat_converter_list_create(DAT_CONVERTER_MAP_LIST);
-      map.key = NULL;
-      map.type = DAT_CONVERTER_LIST_MAP;
+      target         = dat_converter_list_create(DAT_CONVERTER_MAP_LIST);
+      map.key        = NULL;
+      map.type       = DAT_CONVERTER_LIST_MAP;
       map.value.list = NULL;
       dat_converter_list_append(target, &map);
    }
@@ -546,8 +545,10 @@ static dat_converter_list_t* dat_converter_parser(
                else
                   map.key = NULL;
 
-               // If we are still not to skip the entry, append it to the list.
-               if (!skip) {
+               /* If we are still not to skip the entry,
+                * append it to the list. */
+               if (!skip)
+               {
                   dat_converter_list_append(target, &map);
                   skip = true;
                }
@@ -591,7 +592,7 @@ dat_converter_rdb_mappings_t rdb_mappings[] =
    {"name",           "name",           DAT_CONVERTER_RDB_TYPE_STRING},
    {"description",    "description",    DAT_CONVERTER_RDB_TYPE_STRING},
    {"genre",          "genre",          DAT_CONVERTER_RDB_TYPE_STRING},
-   
+
    {"achievements",       "achievements",       DAT_CONVERTER_RDB_TYPE_UINT},
    {"category",           "category",           DAT_CONVERTER_RDB_TYPE_STRING},
    {"language",           "language",           DAT_CONVERTER_RDB_TYPE_STRING},
@@ -609,7 +610,7 @@ dat_converter_rdb_mappings_t rdb_mappings[] =
    {"setting",            "setting",            DAT_CONVERTER_RDB_TYPE_STRING},
    {"visual",             "visual",             DAT_CONVERTER_RDB_TYPE_STRING},
    {"vehicular",          "vehicular",          DAT_CONVERTER_RDB_TYPE_STRING},
-   
+
    {"rom.name",       "rom_name",       DAT_CONVERTER_RDB_TYPE_STRING},
    {"rom.size",       "size",           DAT_CONVERTER_RDB_TYPE_UINT},
    {"users",          "users",          DAT_CONVERTER_RDB_TYPE_UINT},
@@ -654,6 +655,7 @@ static void dat_converter_value_provider_init(void)
    for (i = 0; i < (sizeof(rdb_mappings) / sizeof(*rdb_mappings)); i++)
       rdb_mappings_mk[i] = dat_converter_match_key_create(rdb_mappings[i].dat_key);
 }
+
 static void dat_converter_value_provider_free(void)
 {
    int i;
@@ -663,6 +665,7 @@ static void dat_converter_value_provider_free(void)
       rdb_mappings_mk[i] = NULL;
    }
 }
+
 static int dat_converter_value_provider(
       dat_converter_list_item_t** current_item, struct rmsgpack_dom_value* out)
 {
