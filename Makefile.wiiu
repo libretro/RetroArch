@@ -302,7 +302,7 @@ endif
 
 DEPFLAGS    = -MT $@ -MMD -MP -MF $(BUILD_DIR)/$*.depend
 
-all: info $(TARGETS)
+all: $(TARGETS)
 
 define INFO
 AR: $(AR)

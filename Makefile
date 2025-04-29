@@ -171,7 +171,7 @@ ifneq ($(MOC_HEADERS),)
     RARCH_OBJ += $(MOC_OBJ)
 endif
 
-all: info $(TARGET) config.mk
+all: $(TARGET) config.mk
 
 define INFO
 ASFLAGS: $(ASFLAGS)

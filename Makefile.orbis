@@ -182,7 +182,7 @@ endif
 
 TARGETS := $(TARGET).self
 
-all: info $(TARGETS)
+all: $(TARGETS)
 
 define INFO
 CC: $(CC)
