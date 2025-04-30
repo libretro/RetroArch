@@ -3020,6 +3020,9 @@ bool command_event(enum event_command cmd, void *data)
 
    switch (cmd)
    {
+      case CMD_EVENT_LOAD_FILES:
+         event_load_save_files(runloop_st->flags & RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED);
+         break;
       case CMD_EVENT_SAVE_FILES:
          event_save_files(
                runloop_st->flags & RUNLOOP_FLAG_USE_SRAM,
