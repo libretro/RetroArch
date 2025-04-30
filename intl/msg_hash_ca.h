@@ -3515,6 +3515,10 @@ MSG_HASH(
    "Controls del port %u"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "Canvia com les entrades del RetroPad virtual són assignades a les entrades del dispositiu d'entrada físic per aquest port virtual."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
    "Canvia les assignacions d'entrada específiques pel nucli."
    )
@@ -3603,6 +3607,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
    "Intercanvia els botons de desplaçament dels menús"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "Intercanvia els botons de desplaçament. En desactivar aquesta opció, els botons L/R mouran 10 elements i els botons L2/R2 aniran en ordre alfabètic."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
@@ -4095,6 +4103,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    "Tipus d’analògic a digital"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Fes servir un joystick analògic específic per l'entrada de la creueta digital. 'Forçat' ignoren les entrades analògiques natives del nucli."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -10338,6 +10350,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    "Color del tema"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
+   "Selecciona un tema de colors diferent. 'Personalitzat' permet fer servir fitxers d'ajustament de temes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
