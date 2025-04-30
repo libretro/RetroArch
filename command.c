@@ -812,25 +812,31 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
 bool command_save_savefiles(command_t *cmd, const char* arg)
 {
    char reply[4];
+   bool ret;
    size_t  _len  = strlcpy(reply, "OK", sizeof(reply));
    reply[  _len] = '\n';
    reply[++_len] = '\0';
    /* In the future, this should probably send each saved file path
       to the replier. */
-   command_event(CMD_EVENT_SAVE_FILES, NULL);
+   ret = command_event(CMD_EVENT_SAVE_FILES, NULL);
+   if (!ret)
+     strlcpy(reply, "NO", sizeof(reply));
    cmd->replier(cmd, reply, _len);
-   return true;
+   return ret;
 }
 
 bool command_load_savefiles(command_t *cmd, const char* arg)
 {
    char reply[4];
+   bool ret;
    size_t  _len  = strlcpy(reply, "OK", sizeof(reply));
    reply[  _len] = '\n';
    reply[++_len] = '\0';
-   command_event(CMD_EVENT_LOAD_FILES, NULL);
+   ret = command_event(CMD_EVENT_LOAD_FILES, NULL);
+   if (!ret)
+     strlcpy(reply, "NO", sizeof(reply));
    cmd->replier(cmd, reply, _len);
-   return true;
+   return ret;
 }
 
 #if defined(HAVE_CHEEVOS)
