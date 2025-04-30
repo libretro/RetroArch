@@ -516,8 +516,8 @@ struct ozone_handle
    size_t fullscreen_thumbnail_selection;
    size_t num_search_terms_old;
    size_t pointer_categories_selection;
-   size_t first_onscreen_entry;
-   size_t last_onscreen_entry;
+   ssize_t first_onscreen_entry;
+   ssize_t last_onscreen_entry;
    size_t first_onscreen_category;
    size_t last_onscreen_category;
 
@@ -8004,9 +8004,10 @@ static enum menu_action ozone_parse_menu_entry_action(
       enum menu_action action)
 {
    uintptr_t tag;
-   int new_selection;
-   size_t selection;
-   size_t selection_total;
+   ssize_t new_selection;
+   ssize_t tab_selection;
+   ssize_t selection;
+   ssize_t selection_total;
    bool is_current_entry_settings = false;
    struct menu_state *menu_st     = menu_state_get_ptr();
    menu_list_t *menu_list         = menu_st->entries.list;
@@ -8059,11 +8060,11 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             /* If cursor is active, ensure we target
              * an on screen category */
-            size_t tab_selection       = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
+            tab_selection = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
-            if (tab_selection < (size_t)(ozone->system_tab_end + 1))
+            if (tab_selection < (ssize_t)(ozone->system_tab_end + 1))
                break;
 
             new_selection = tab_selection - ozone->system_tab_end - 1;
@@ -8121,7 +8122,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             /* If cursor is active, ensure we target
              * an on screen category */
-            size_t tab_selection  = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
+            tab_selection = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
@@ -8175,7 +8176,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          else if ((ozone->flags & OZONE_FLAG_IS_PLAYLIST)
                || (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST))
          {
-            size_t new_selection = menu_playlist_random_selection(selection, ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST);
+            new_selection = menu_playlist_random_selection(selection, ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST);
 
             if (new_selection != selection)
             {
@@ -8228,7 +8229,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             /* If cursor is active, ensure we target
              * an on screen category */
-            size_t selection   = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
+            selection = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
@@ -8278,7 +8279,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             /* If cursor is active, ensure we target
              * an on screen category */
-            size_t selection   = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
+            selection = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
@@ -8517,14 +8518,14 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             /* If cursor is active, ensure we target
              * an on screen category */
-            size_t tab_selection       = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
+            tab_selection = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
-            new_selection              = (int)tab_selection;
+            new_selection              = tab_selection;
 
             if (menu_st->scroll.mode == MENU_SCROLL_PAGE)
-               new_selection           = (int)(tab_selection - 10);
+               new_selection           = tab_selection - 10;
             else if (ozone->sidebar_index_size)
             {
                /* Alphabetical scroll */
@@ -8538,7 +8539,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                   new_selection        = ozone->sidebar_index_list[l - 1];
             }
 
-            if (tab_selection < (size_t)(ozone->system_tab_end + 1))
+            if (tab_selection < (ozone->system_tab_end + 1))
                new_selection           = 0;
             else if (tab_selection > ozone->system_tab_end - new_selection
                   || new_selection < 0)
@@ -8577,14 +8578,14 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             /* If cursor is active, ensure we target
              * an on screen category */
-            size_t tab_selection       = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
+            tab_selection = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
-            new_selection              = (int)tab_selection;
+            new_selection              = tab_selection;
 
             if (menu_st->scroll.mode == MENU_SCROLL_PAGE)
-               new_selection           = (int)(tab_selection + 10);
+               new_selection           = tab_selection + 10;
             else
             {
                /* Alphabetical scroll */
@@ -8599,7 +8600,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                else if (l == (size_t)(ozone->sidebar_index_size - 1))
                   new_selection        = ozone->system_tab_end + horizontal_list_size;
 
-               if (tab_selection < (size_t)(ozone->system_tab_end + 1))
+               if (tab_selection < (ozone->system_tab_end + 1))
                   new_selection        = ozone->system_tab_end + 1;
             }
 
@@ -8635,7 +8636,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             /* If cursor is active, ensure we target
              * an on screen category */
-            size_t tab_selection       = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
+            tab_selection = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
@@ -8662,7 +8663,7 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             /* If cursor is active, ensure we target
              * an on screen category */
-            size_t tab_selection       = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
+            tab_selection = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
