@@ -166,7 +166,7 @@ endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
-all: info $(TARGET)
+all: $(TARGET)
 
 define INFO
 ASFLAGS: $(ASFLAGS)

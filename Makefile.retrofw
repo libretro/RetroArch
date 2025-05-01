@@ -184,7 +184,7 @@ X-OD-NeedsDownscaling=true
 endef
 export DESKTOP_ENTRY
 
-all: info $(TARGET) opk
+all: $(TARGET) opk
 
 define INFO
 ASFLAGS: $(ASFLAGS)

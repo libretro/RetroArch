@@ -201,7 +201,7 @@ TARGETS := $(TARGET).vpk
 DEPFLAGS    = -MT $@ -MMD -MP -MF $*.Tdepend
 POSTCOMPILE = mv -f $*.Tdepend $*.depend
 
-all: info $(TARGETS)
+all: $(TARGETS)
 
 define INFO
 ASFLAGS: $(ASFLAGS)

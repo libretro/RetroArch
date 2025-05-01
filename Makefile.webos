@@ -204,7 +204,7 @@ define APPINFO
 endef
 export APPINFO
 
-all: info $(TARGET) ipk
+all: $(TARGET) ipk
 
 define INFO
 ASFLAGS: $(ASFLAGS)

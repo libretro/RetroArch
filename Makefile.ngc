@@ -241,7 +241,7 @@ OBJOUT   = -o
 LINKOUT  = -o
 LINK = $(CXX)
 
-all: info $(EXT_TARGET)
+all: $(EXT_TARGET)
 
 define INFO
 CC: $(CC)

@@ -108,7 +108,7 @@ EE_INCS = $(INCDIR)
 EE_BIN = $(TARGET).elf
 EE_GPVAL = $(GPVAL)
 
-all: info $(EE_BIN)
+all: $(EE_BIN)
 
 define INFO
 EE_BIN: $(EE_BIN)

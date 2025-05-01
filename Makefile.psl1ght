@@ -130,7 +130,7 @@ ifneq ($(V),1)
 	Q := @
 endif
 
-all: info $(SELF_TARGET)
+all: $(SELF_TARGET)
 
 define INFO
 CXX: $(CXX)

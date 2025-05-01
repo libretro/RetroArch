@@ -274,7 +274,7 @@ endif
 
 .PHONY: $(BUILD) clean all
 
-all: info $(TARGET)
+all: $(TARGET)
 
 define INFO
 AR: $(AR)
