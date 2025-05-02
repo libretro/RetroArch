@@ -14,7 +14,7 @@ PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 
 INCDIR = libretro-common/include
-CFLAGS = -Wl,-q $(OPTIMIZE_LV) -I$(INCDIR) -std=gnu99 -mfloat-abi=hard -ffast-math -fsingle-precision-constant -mword-relocations
+CFLAGS = -Wl,-q $(OPTIMIZE_LV) -I$(INCDIR) -std=gnu99 -mfloat-abi=hard -fsingle-precision-constant -mword-relocations
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES = -DVITA -DIS_SALAMANDER -DRARCH_CONSOLE

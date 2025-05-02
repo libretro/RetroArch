@@ -22,6 +22,10 @@
 
 /* Bog-standard windowed SINC implementation. */
 
+#if defined(__GNUC__) && defined(__OPTIMIZE__)
+#pragma GCC optimize ("fast-math")
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>

@@ -21,7 +21,7 @@ endif
 
 INCDIR = -Ilibretro-common/include
 INCDIR += -I$(PS2SDK)/ports/include
-CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) -ffast-math -fsingle-precision-constant
+CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES += -DPS2 -DIS_SALAMANDER -DRARCH_CONSOLE

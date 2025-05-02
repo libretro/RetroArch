@@ -118,7 +118,7 @@ TARGET = retroarch
 
 OBJ :=
 LINK := $(CXX)
-DEF_FLAGS := -march=armv5te -mtune=arm926ej-s -ffast-math -fomit-frame-pointer
+DEF_FLAGS := -march=armv5te -mtune=arm926ej-s -fomit-frame-pointer
 DEF_FLAGS += -ffunction-sections -fdata-sections
 DEF_FLAGS += -I. -Ideps -Ideps/stb -DMIYOO=1 -DDINGUX -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable -flto

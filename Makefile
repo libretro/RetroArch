@@ -45,7 +45,6 @@ else
    OBJDIR := $(OBJDIR_BASE)/release
    CFLAGS ?= -O3
    CXXFLAGS ?= -O3
-   DEF_FLAGS += -ffast-math
 endif
 
 DEF_FLAGS += -Wall -Wsign-compare

@@ -94,7 +94,7 @@ LDFLAGS += -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ports/lib -L.
 # Lib cdvd is needed to get proper time
 LIBS += -lpatches -lgskit -ldmakit -lps2_drivers -lz -lelf-loader
 
-CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) $(DEFINES) -DPS2 -ffast-math -fsingle-precision-constant
+CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) $(DEFINES) -DPS2 -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
 EE_OBJS += $(OBJ)
