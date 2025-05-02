@@ -1425,6 +1425,14 @@ MSG_HASH(
    "نواة ليبرترو. اختيار هذا سيربط هذا النواة باللعبة."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "نواة ليبرترو. حدد هذا الملف لتحميل RetroArch هذا النوع."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "الدليل. حدده لفتح هذا الدليل."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
    "خنق الإطار"
    )
