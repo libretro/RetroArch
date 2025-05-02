@@ -120,7 +120,7 @@ APP_ICON := pkg/libnx/retroarch.jpg
 #---------------------------------------------------------------------------------
 ARCH	:=
 
-CFLAGS := -g -Wall -O3 -fcommon -ffast-math -ffunction-sections \
+CFLAGS := -g -Wall -O3 -fcommon -ffunction-sections \
           $(ARCH) $(DEFINES) $(INCLUDE_DIRS)
 
 CFLAGS += $(INCLUDE)

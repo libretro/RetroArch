@@ -203,7 +203,7 @@ INCDIRS += -Iwiiu
 INCDIRS += -Iwiiu/include
 
 CFLAGS  := -mcpu=750 -meabi -mhard-float
-CFLAGS  += -ffast-math -Werror=implicit-function-declaration
+CFLAGS  += -Werror=implicit-function-declaration
 CFLAGS  += -ffunction-sections -fdata-sections
 #CFLAGS += -fomit-frame-pointer -mword-relocations
 CFLAGS += -Wall
