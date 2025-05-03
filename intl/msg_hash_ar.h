@@ -1589,8 +1589,36 @@ MSG_HASH(
    "مشغل الإدخال للاستخدام. تبعاً لمشغل الفيديو، قد يفرض مشغل إدخال مختلف."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "يقوم مشغل udev بقراءة أحداث evdev للحصول على دعم لوحة المفاتيح. كما أنه يدعم رد المكالمات على لوحة المفاتيح والجرذان والملامس.\nبشكل افتراضي في معظم الأقراص، عقد /dev/input هي جذر فقط (الوضع 600). يمكنك إعداد قاعدة udev التي تجعل هذه متاحة لغير الجذر."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
+   "يتطلب مشغل إدخال Linuxraw نشيطا TTY. تُقرأ أحداث لوحة المفاتيح مباشرة من TY مما يجعلها أبسط ولكن ليس مرنة مثل udev. الرماد الخ، غير مدعوم على الإطلاق. يستخدم هذا السائق API القديم عصا التحكم (/dev/input/js*)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "مشغل الإدخال. مشغل الفيديو قد يفرض مشغل إدخال مختلف."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "نظام تشغيل الجوي باد"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   "سائق يد التحكم لاستخدامه. (إعادة التشغيل مطلوبة)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "مشغل وحدة تحكم مباشر الإدخال."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "مشغل جهاز الواجهة الانسانية مستوى منخفض."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "استخدام واجهة برمجة التطبيقات API الموروثة لـ Linux. استخدم udev بدلا من ذلك إذا أمكن."
    )
 
 MSG_HASH(
