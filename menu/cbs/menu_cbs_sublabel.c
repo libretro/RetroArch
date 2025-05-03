@@ -950,6 +950,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_truncate_playlist_name,       
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_sort_after_truncate_playlist_name, MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_thumbnail_upscale_threshold,      MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_thumbnail_background_enable,      MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timedate_enable,                       MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timedate_style,                        MENU_ENUM_SUBLABEL_TIMEDATE_STYLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timedate_date_separator,               MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR)
@@ -2576,6 +2577,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_MATERIALUI
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_thumbnail_background_enable);
 #endif
+            break;
+         case MENU_ENUM_LABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_thumbnail_background_enable);
             break;
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_screen_resolution);

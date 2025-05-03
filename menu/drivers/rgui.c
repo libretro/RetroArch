@@ -2827,7 +2827,8 @@ static void rgui_render_mini_thumbnail(
       unsigned fb_width,
       unsigned fb_height,
       size_t fb_pitch,
-      bool menu_rgui_swap_thumbnails)
+      bool swap_thumbnails,
+      bool thumbnail_background)
 {
    if (thumbnail->is_valid && frame_buf_data && thumbnail->data)
    {
@@ -2848,23 +2849,24 @@ static void rgui_render_mini_thumbnail(
       fb_x_offset = (rgui->term_layout.start_x + term_width) -
             (thumbnail->width + ((thumbnail_fullwidth - thumbnail->width) >> 1));
 
-      if (     ((thumbnail_id == GFX_THUMBNAIL_RIGHT) && !menu_rgui_swap_thumbnails)
-            || ((thumbnail_id == GFX_THUMBNAIL_LEFT)  &&  menu_rgui_swap_thumbnails))
+      if (     ((thumbnail_id == GFX_THUMBNAIL_RIGHT) && !swap_thumbnails)
+            || ((thumbnail_id == GFX_THUMBNAIL_LEFT)  &&  swap_thumbnails))
          fb_y_offset = rgui->term_layout.start_y + ((thumbnail->max_height - thumbnail->height) >> 1);
       else
          fb_y_offset = (rgui->term_layout.start_y + term_height) -
                (thumbnail->height + ((thumbnail->max_height - thumbnail->height) >> 1));
 
       /* Draw background */
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
-            rgui->term_layout.start_x + term_width - thumbnail_fullwidth,
-            (     ((thumbnail_id == GFX_THUMBNAIL_RIGHT) && !menu_rgui_swap_thumbnails)
-               || ((thumbnail_id == GFX_THUMBNAIL_LEFT)  &&  menu_rgui_swap_thumbnails))
-                  ? fb_y_offset : fb_y_offset - ((thumbnail->max_height - thumbnail->height) >> 1),
-            thumbnail_fullwidth, thumbnail->max_height,
-            rgui->colors.shadow_color,
-            rgui->colors.shadow_color,
-            false);
+      if (thumbnail_background)
+         rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+               rgui->term_layout.start_x + term_width - thumbnail_fullwidth,
+               (     ((thumbnail_id == GFX_THUMBNAIL_RIGHT) && !swap_thumbnails)
+                  || ((thumbnail_id == GFX_THUMBNAIL_LEFT)  &&  swap_thumbnails))
+                     ? fb_y_offset : fb_y_offset - ((thumbnail->max_height - thumbnail->height) >> 1),
+               thumbnail_fullwidth, thumbnail->max_height,
+               rgui->colors.shadow_color,
+               rgui->colors.shadow_color,
+               false);
 
       /* Copy thumbnail to framebuffer */
       for (y = 0; y < thumbnail->height; y++)
@@ -5018,6 +5020,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
    bool rgui_inline_thumbnails    = settings->bools.menu_rgui_inline_thumbnails || (rgui->flags & RGUI_FLAG_IS_QUICK_MENU);
    bool menu_battery_level_enable = settings->bools.menu_battery_level_enable;
    bool use_smooth_ticker         = settings->bools.menu_ticker_smooth;
+   bool thumbnail_background      = settings->bools.menu_thumbnail_background_enable;
    bool rgui_swap_thumbnails      = settings->bools.menu_rgui_swap_thumbnails;
    bool rgui_full_width_layout    = settings->bools.menu_rgui_full_width_layout;
    bool rgui_switch_icons         = settings->bools.menu_rgui_switch_icons;
@@ -5717,7 +5720,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
                   rgui->frame_buf.data,
                   (rgui_swap_thumbnails) ? GFX_THUMBNAIL_RIGHT : GFX_THUMBNAIL_LEFT,
                   fb_width, fb_height, fb_pitch,
-                  rgui_swap_thumbnails);
+                  rgui_swap_thumbnails, thumbnail_background);
       }
       else if (show_mini_thumbnails)
       {
@@ -5728,13 +5731,13 @@ static void rgui_render(void *data, unsigned width, unsigned height,
                   rgui->frame_buf.data,
                   GFX_THUMBNAIL_RIGHT,
                   fb_width, fb_height, fb_pitch,
-                  rgui_swap_thumbnails);
+                  rgui_swap_thumbnails, thumbnail_background);
          if (show_left_thumbnail && thumbnail2)
             rgui_render_mini_thumbnail(rgui, thumbnail2,
                   rgui->frame_buf.data,
                   GFX_THUMBNAIL_LEFT,
                   fb_width, fb_height, fb_pitch,
-                  rgui_swap_thumbnails);
+                  rgui_swap_thumbnails, thumbnail_background);
       }
 
       /* Print menu sublabel/core name (if required) */

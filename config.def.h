@@ -156,6 +156,7 @@
  * > Helps to unify menu appearance when viewing
  *   thumbnails of different sizes */
 #define DEFAULT_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE true
+#define DEFAULT_MENU_THUMBNAIL_BACKGROUND_ENABLE false
 
 #define DEFAULT_SCREEN_BRIGHTNESS 100
 

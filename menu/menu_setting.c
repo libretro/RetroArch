@@ -19670,41 +19670,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-
-            /* TODO: These should be removed entirely, but just
-             * comment out for now in case users complain...
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.menu_header_opacity,
-                  MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY,
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-                  DEFAULT_MENU_HEADER_OPACITY,
-                  "%.3f",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-
-            CONFIG_FLOAT(
-                  list, list_info,
-                  &settings->floats.menu_footer_opacity,
-                  MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-                  DEFAULT_MENU_FOOTER_OPACITY,
-                  "%.3f",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-            (*list)[list_info->index - 1].ui_type
-                                  = ST_UI_TYPE_FLOAT_SLIDER_AND_SPINBOX;
-            */
          }
 #endif
 
@@ -19813,6 +19778,26 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_MENU_RGUI_SWAP_THUMBNAILS,
                   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
                   DEFAULT_RGUI_SWAP_THUMBNAILS,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+         }
+
+         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone")
+             || string_is_equal(settings->arrays.menu_driver, "rgui"))
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.menu_thumbnail_background_enable,
+                  MENU_ENUM_LABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+                  DEFAULT_MENU_THUMBNAIL_BACKGROUND_ENABLE,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
