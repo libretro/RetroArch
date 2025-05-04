@@ -1381,11 +1381,8 @@ static void driver_adjust_system_rates(
       video_driver_state_t *video_st,
       settings_t *settings)
 {
-   struct retro_system_av_info *av_info   = &video_st->av_info;
-   const struct retro_system_timing *info =
-      (const struct retro_system_timing*)&av_info->timing;
-   double input_sample_rate               = info->sample_rate;
-   double input_fps                       = info->fps;
+   double input_sample_rate               = video_st->av_info.timing.sample_rate;
+   double input_fps                       = video_st->av_info.timing.fps;
    float video_refresh_rate               = settings->floats.video_refresh_rate;
    float audio_max_timing_skew            = settings->floats.audio_max_timing_skew;
    unsigned video_swap_interval           = settings->uints.video_swap_interval;
@@ -1396,17 +1393,8 @@ static void driver_adjust_system_rates(
 
    /* Update video swap interval if automatic
     * switching is enabled */
-   runloop_set_video_swap_interval(
-         vrr_runloop_enable,
-         (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE) ? true : false,
-         video_swap_interval,
-         black_frame_insertion,
-         shader_subframes,
-         audio_max_timing_skew,
-         video_refresh_rate,
-         input_fps);
-   video_swap_interval = runloop_get_video_swap_interval(
-         video_swap_interval);
+   runloop_set_video_swap_interval(settings);
+   video_swap_interval = runloop_get_video_swap_interval(video_swap_interval);
 
    if (input_sample_rate > 0.0)
    {
@@ -1559,6 +1547,9 @@ void drivers_init(
       menu_st->flags             |= MENU_ST_FLAG_DATA_OWN;
 #endif
 
+   /* Content av_info based automatic swap interval must be set early. */
+   runloop_set_video_swap_interval(settings);
+
    /* Initialize video driver */
    if (flags & DRIVER_VIDEO_MASK)
    {
@@ -1583,16 +1574,15 @@ void drivers_init(
       runloop_st->frame_time_last = 0;
    }
 
-   /* Regular display refresh rate startup autoswitch based on content av_info */
+   /* Regular display refresh rate startup autoswitch based on content av_info. */
    if (     flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK)
          && !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED))
    {
-      struct retro_system_av_info *av_info = &video_st->av_info;
-      float refresh_rate                   = av_info->timing.fps;
-      unsigned autoswitch_refresh_rate     = settings->uints.video_autoswitch_refresh_rate;
-      bool exclusive_fullscreen            = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
-      bool windowed_fullscreen             = settings->bools.video_fullscreen &&  settings->bools.video_windowed_fullscreen;
-      bool all_fullscreen                  = settings->bools.video_fullscreen ||  settings->bools.video_windowed_fullscreen;
+      float refresh_rate               = video_st->av_info.timing.fps;
+      unsigned autoswitch_refresh_rate = settings->uints.video_autoswitch_refresh_rate;
+      bool exclusive_fullscreen        = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
+      bool windowed_fullscreen         = settings->bools.video_fullscreen &&  settings->bools.video_windowed_fullscreen;
+      bool all_fullscreen              = settings->bools.video_fullscreen ||  settings->bools.video_windowed_fullscreen;
 
       /* Making a switch from PC standard 60 Hz to NTSC 59.94 is excluded by the last condition. */
       if (     (refresh_rate > 0.0f)

@@ -4390,29 +4390,28 @@ float runloop_get_fastforward_ratio(
 }
 
 void runloop_set_video_swap_interval(
-      bool vrr_runloop_enable,
-      bool crt_switching_active,
-      unsigned swap_interval_config,
-      unsigned black_frame_insertion,
-      unsigned shader_subframes,
-      float audio_max_timing_skew,
-      float video_refresh_rate,
-      double input_fps)
+      settings_t *settings)
 {
-   runloop_state_t *runloop_st = &runloop_state;
-   float core_hz               = input_fps;
-   float timing_hz             = crt_switching_active ?
-         input_fps : video_refresh_rate;
-   float swap_ratio;
-   unsigned swap_integer;
-   float timing_skew;
+   runloop_state_t *runloop_st    = &runloop_state;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   float video_refresh_rate       = settings->floats.video_refresh_rate;
+   float audio_max_timing_skew    = settings->floats.audio_max_timing_skew;
+   float input_fps                = video_st->av_info.timing.fps;
+   float timing_fps               = (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
+         ? input_fps : video_refresh_rate;
+   float swap_ratio               = 1;
+   float timing_skew              = 0;
+   unsigned swap_interval_config  = settings->uints.video_swap_interval;
+   unsigned black_frame_insertion = settings->uints.video_black_frame_insertion;
+   unsigned shader_subframes      = settings->uints.video_shader_subframes;
+   unsigned swap_integer          = 1;
+   bool vrr_runloop_enable        = settings->bools.vrr_runloop_enable;
 
    /* If automatic swap interval selection is
     * disabled, just record user-set value */
    if (swap_interval_config != 0)
    {
-      runloop_st->video_swap_interval_auto =
-            swap_interval_config;
+      runloop_st->video_swap_interval_auto = swap_interval_config;
       return;
    }
 
@@ -4425,11 +4424,12 @@ void runloop_set_video_swap_interval(
     * > If BFI is active set swap interval to 1
     * > If Shader Subframes active, set swap interval to 1 */
    if (   (vrr_runloop_enable)
-       || (core_hz    > timing_hz)
-       || (core_hz   <= 0.0f)
-       || (timing_hz <= 0.0f)
        || (black_frame_insertion)
-       || (shader_subframes > 1))
+       || (shader_subframes > 1)
+       || (input_fps   > timing_fps)
+       || (input_fps  <= 0.0f)
+       || (timing_fps <= 0.0f)
+      )
    {
       runloop_st->video_swap_interval_auto = 1;
       return;
@@ -4437,7 +4437,7 @@ void runloop_set_video_swap_interval(
 
    /* Check whether display refresh rate is an integer
     * multiple of core fps (within timing skew tolerance) */
-   swap_ratio   = timing_hz / core_hz;
+   swap_ratio   = timing_fps / input_fps;
    swap_integer = (unsigned)(swap_ratio + 0.5f);
 
    /* > Sanity check: swap interval must be in the
@@ -4449,7 +4449,7 @@ void runloop_set_video_swap_interval(
       return;
    }
 
-   timing_skew = fabs(1.0f - core_hz / (timing_hz / (float)swap_integer));
+   timing_skew = fabs(1.0f - input_fps / (timing_fps / (float)swap_integer));
 
    runloop_st->video_swap_interval_auto =
          (timing_skew <= audio_max_timing_skew) ?
