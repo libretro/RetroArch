@@ -40,6 +40,8 @@
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "dshow"
 #elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined (__NetBSD__)
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "bktr"
+#else
+#define FFMPEG_CAMERA_DEFAULT_BACKEND "lavfi"
 #endif
 
 typedef struct ffmpeg_camera
