@@ -2644,6 +2644,10 @@ MSG_HASH(
    "Compensa l'eix Y del punt d'anclatge"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Posició horitzontal de contingut si l'àrea de visualització és més ampla que el contingut. 0.0 per l'extrem esquerre, 0.5 per centrat, 1.0 per per l'extrem dret."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    "Estableix la posició vertical del contingut si l'àrea de visualització és més alta que el contingut. 0,0 per l'extrem superior, 0,5 per a centrar, 1,0 per l'extrem inferior."
    )
@@ -3059,6 +3063,10 @@ MSG_HASH(
    "Latència de l'entrada de so (ms)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "Escull la latència per l'entrada d'àudio en mil·lisegons. Aquest valor pot ser ignorat si el controlador del micròfon no pot generar aquesta latència."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    "Mode WASAPI exclusiu"
    )
@@ -3135,6 +3143,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_INPUT,
    "Seleccioneu el dispositiu d'entrada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_INPUT,
+   "Escull el dispositiu d'entrada. Si està seleccionat a 'Off', l'entrada MIDI estarà deshabilitada. El nom del dispositiu es pot introduir de forma manual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -4913,6 +4925,10 @@ MSG_HASH(
    "Mida de la memòria intermèdia del rebobinat (MB)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+   "La quantitat de memòria (en MB) reservada per la memòria de rebobinat. Augmentar aquest valor, augmentarà la quantitat de rebobinat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
    "Mida de la memòria intermèdia dels passos de rebobinat (MB)"
    )
@@ -5315,6 +5331,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
    "Superposa el ratolí"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   "Configura el senyal d'entrada del ratolí que es transmeten a la superposició. Nota: 1-, 2-, i 3- tocs de dit es transmeten com clic esquerre, dret i mig del ratolí."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
@@ -5370,16 +5390,32 @@ MSG_HASH(
    "Retard en el tret (fotogrames)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Estableix un retard en el senyal d'entrada per donar temps al desplaçament del ratolí. Aquest retard també serveix per comptar correctament els tocs tàctils amb diversos dits."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
    "Entrada de 2 dits"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "Escull l'entrada que s'enviarà si hi ha dos punters en pantalla. El retard del gatell ha de tenir un valor diferent de 0 per poder separar els dos senyals."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
    "Entrada de 3 dits"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "Escull l'entrada que s'enviarà si hi ha tres punters en pantalla. El retard del gatell ha de tenir un valor diferent de 0 per poder separar els dos senyals."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
    "Entrada de 4 dits"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "Escull l'entrada que s'enviarà si hi ha quatre punters en pantalla. El retard del gatell ha de tenir un valor diferent de 0 per poder separar els dos senyals."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
@@ -9329,6 +9365,10 @@ MSG_HASH(
    "Nombre d'iteracions"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
+   "El nombre de vegades que un truc pot ser aplicat. Fes servir amb les altres dues opcions d'iteració per cobrir grans regions de memòria."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
    "Augmenta la direcció en cada iteració"
    )
@@ -10588,6 +10628,10 @@ MSG_HASH(
    "Miniatura superior"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   "Indica el tipus de miniatura que es mostrarà a la part superior dreta de les llistes de reproducció. El tipus escollit es pot canviar clicant al botó RetroPad Y."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "Miniatura inferior"
    )
@@ -11271,6 +11315,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
    "Gira automàticament la barra de navegació"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+   "Mou automàticament la barra de navegació a la part dreta de la pantalla si es fa servir l'orientació horitzontal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
@@ -12732,6 +12780,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
    "%.*s ha accedit amb el dispositiu %.*s"
+   )
+MSG_HASH(
+   MSG_NETPLAY_NOT_RETROARCH,
+   "Una connexió de joc en xarxa ha fallat perquè el client no feia servir RetroArch o feia servir una versió anterior de RetroArch."
    )
 MSG_HASH(
    MSG_NETPLAY_OUT_OF_DATE,
@@ -15151,6 +15203,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "Habilitar la font"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
+   "Mostra la font del menú de la pantalla inferior i les descripcions dels botons, excepte la data dels desats ràpids."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
