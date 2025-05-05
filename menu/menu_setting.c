@@ -12282,6 +12282,59 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
          (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
+#ifdef HAVE_S3
+         /* AWS */
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.s3_url,
+               sizeof(settings->arrays.s3_url),
+               MENU_ENUM_LABEL_CLOUD_SYNC_S3_URL,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_S3_URL,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.access_key_id,
+               sizeof(settings->arrays.access_key_id),
+               MENU_ENUM_LABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+
+         CONFIG_STRING(
+               list, list_info,
+               settings->arrays.secret_access_key,
+               sizeof(settings->arrays.secret_access_key),
+               MENU_ENUM_LABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_password;
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+#endif
+
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
 #endif

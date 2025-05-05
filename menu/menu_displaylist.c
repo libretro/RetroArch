@@ -10364,7 +10364,7 @@ unsigned menu_displaylist_build_list(
                            MENU_ENUM_LABEL_VIDEO_HDR_SCANLINES,
                            PARSE_ONLY_BOOL, false) == 0)
                      count++;
-                     
+
                   if(settings->bools.video_hdr_scanlines)
                   {
                      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -11345,22 +11345,50 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_CLOUD_SYNC_SETTINGS_LIST:
          {
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,       PARSE_ONLY_BOOL,           true},
-               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE,    PARSE_ONLY_UINT,           true},
-               {MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,  PARSE_ONLY_BOOL,           true},
-               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES,   PARSE_ONLY_BOOL,           true},
-               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS, PARSE_ONLY_BOOL,           true},
-               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_THUMBS,  PARSE_ONLY_BOOL,           true},
-               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SYSTEM,  PARSE_ONLY_BOOL,           true},
-               {MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,       PARSE_ONLY_STRING_OPTIONS, true},
-               {MENU_ENUM_LABEL_CLOUD_SYNC_URL,          PARSE_ONLY_STRING,         false},
-               {MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,     PARSE_ONLY_STRING,         false},
-               {MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,     PARSE_ONLY_STRING,         false},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,             PARSE_ONLY_BOOL,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE,          PARSE_ONLY_UINT,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,        PARSE_ONLY_BOOL,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES,         PARSE_ONLY_BOOL,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS,       PARSE_ONLY_BOOL,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_THUMBS,        PARSE_ONLY_BOOL,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SYSTEM,        PARSE_ONLY_BOOL,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,             PARSE_ONLY_STRING_OPTIONS, true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_URL,                PARSE_ONLY_STRING,         false},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,           PARSE_ONLY_STRING,         false},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,           PARSE_ONLY_STRING,         false},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_S3_URL,             PARSE_ONLY_STRING,         false},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_ACCESS_KEY_ID,      PARSE_ONLY_STRING,         false},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,  PARSE_ONLY_STRING,         false},
             };
 
-            if (string_is_equal(settings->arrays.cloud_sync_driver, "webdav"))
-               for (i = 0; i < ARRAY_SIZE(build_list); i++)
-                  build_list[i].checked = true;
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+               switch(build_list[i].enum_idx)
+                  {
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE:
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE:
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE:
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES:
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS:
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_THUMBS:
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SYSTEM:
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER:
+                     if (string_is_equal(settings->arrays.cloud_sync_driver, "webdav")
+                        || string_is_equal(settings->arrays.cloud_sync_driver, "s3"))
+                       build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME:
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_URL:
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD:
+                     if (string_is_equal(settings->arrays.cloud_sync_driver, "webdav"))
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_S3_URL:
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_ACCESS_KEY_ID:
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_SECRET_ACCESS_KEY:
+                     if (string_is_equal(settings->arrays.cloud_sync_driver, "s3"))
+                        build_list[i].checked = true;
+                     break;
+                  }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
