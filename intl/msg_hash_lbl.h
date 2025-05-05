@@ -5223,6 +5223,10 @@ MSG_HASH(
    "materialui_thumbnail_background_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "menu_thumbnail_background_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RENAME_ENTRY,
    "rename_entry"
    )

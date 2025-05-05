@@ -7967,13 +7967,19 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    }
    else if (xmb->fullscreen_thumbnails_available && !xmb->show_fullscreen_thumbnails)
    {
+      float background_color[16] = {
+            0.0f, 0.0f, 0.0f, 1.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+      };
+      bool thumbnail_background = settings->bools.menu_thumbnail_background_enable;
       bool show_right_thumbnail =
                (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
             && (  (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
                || (  xmb->thumbnails.right.status       < GFX_THUMBNAIL_STATUS_AVAILABLE
                   && xmb->thumbnails_right_status_prev <= GFX_THUMBNAIL_STATUS_AVAILABLE
                   && xmb->thumbnails_right_status_prev != GFX_THUMBNAIL_STATUS_UNKNOWN));
-
       bool show_left_thumbnail  =
                (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
             && (  (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
@@ -8005,41 +8011,37 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                float right_thumb_y       = thumb_y_base + thumb_y_offset;
                float left_thumb_y        = thumb_y_base + thumb_height + (xmb->icon_size / 8) + thumb_y_offset;
 
-               float background_color[16]        = {
-                     0.0f, 0.0f, 0.0f, 1.0f,
-                     0.0f, 0.0f, 0.0f, 1.0f,
-                     0.0f, 0.0f, 0.0f, 1.0f,
-                     0.0f, 0.0f, 0.0f, 1.0f,
-               };
-
                /* Darken background */
-               gfx_display_draw_quad(
-                     p_disp,
-                     userdata,
-                     video_width,
-                     video_height,
-                     thumb_x,
-                     right_thumb_y,
-                     scaled_thumb_width,
-                     scaled_thumb_height,
-                     video_width,
-                     video_height,
-                     background_color,
-                     NULL);
+               if (thumbnail_background)
+               {
+                  gfx_display_draw_quad(
+                        p_disp,
+                        userdata,
+                        video_width,
+                        video_height,
+                        thumb_x,
+                        right_thumb_y,
+                        scaled_thumb_width,
+                        scaled_thumb_height,
+                        video_width,
+                        video_height,
+                        background_color,
+                        NULL);
 
-               gfx_display_draw_quad(
-                     p_disp,
-                     userdata,
-                     video_width,
-                     video_height,
-                     thumb_x,
-                     left_thumb_y,
-                     scaled_thumb_width,
-                     scaled_thumb_height,
-                     video_width,
-                     video_height,
-                     background_color,
-                     NULL);
+                  gfx_display_draw_quad(
+                        p_disp,
+                        userdata,
+                        video_width,
+                        video_height,
+                        thumb_x,
+                        left_thumb_y,
+                        scaled_thumb_width,
+                        scaled_thumb_height,
+                        video_width,
+                        video_height,
+                        background_color,
+                        NULL);
+               }
 
                gfx_thumbnail_draw(
                      userdata,
@@ -8076,17 +8078,31 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                                          + ((thumb_width - scaled_thumb_width) / 2.0f);
                float thumb_y             = xmb->margins_screen_top + (xmb->icon_size / 1.5f);
 
+               if (thumbnail_background)
+                  gfx_display_draw_quad(
+                        p_disp,
+                        userdata,
+                        video_width,
+                        video_height,
+                        thumb_x,
+                        thumb_y,
+                        scaled_thumb_width,
+                        scaled_thumb_height,
+                        video_width,
+                        video_height,
+                        background_color,
+                        NULL);
+
                gfx_thumbnail_draw(
                      userdata,
                      video_width,
                      video_height,
-                        show_right_thumbnail
-                     ? &xmb->thumbnails.right : &xmb->thumbnails.left,
+                     (show_right_thumbnail) ? &xmb->thumbnails.right : &xmb->thumbnails.left,
                      thumb_x,
                      thumb_y,
-                     scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
-                     scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
-                     GFX_THUMBNAIL_ALIGN_TOP,
+                     (scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0,
+                     (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0,
+                     (thumbnail_background) ? GFX_THUMBNAIL_ALIGN_CENTRE : GFX_THUMBNAIL_ALIGN_TOP,
                      1.0f, 1.0f, &thumbnail_shadow);
             }
          }
@@ -8103,6 +8119,21 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                                          + ((thumb_width - scaled_thumb_width) / 2.0f);
                float thumb_y             = xmb->margins_screen_top + (xmb->icon_size / 1.5f);
 
+               if (thumbnail_background)
+                  gfx_display_draw_quad(
+                        p_disp,
+                        userdata,
+                        video_width,
+                        video_height,
+                        thumb_x,
+                        thumb_y,
+                        scaled_thumb_width,
+                        scaled_thumb_height,
+                        video_width,
+                        video_height,
+                        background_color,
+                        NULL);
+
                gfx_thumbnail_draw(
                      userdata,
                      video_width,
@@ -8112,7 +8143,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                      thumb_y,
                      (scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0,
                      (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0,
-                     GFX_THUMBNAIL_ALIGN_TOP,
+                     (thumbnail_background) ? GFX_THUMBNAIL_ALIGN_CENTRE : GFX_THUMBNAIL_ALIGN_TOP,
                      1.0f, 1.0f, &thumbnail_shadow);
             }
 
@@ -8129,6 +8160,21 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                                          + ((thumb_width - scaled_thumb_width) / 2.0f);
                float thumb_y             = xmb->margins_screen_top + xmb->icon_size + y_offset;
 
+               if (thumbnail_background)
+                  gfx_display_draw_quad(
+                        p_disp,
+                        userdata,
+                        video_width,
+                        video_height,
+                        thumb_x,
+                        thumb_y,
+                        scaled_thumb_width,
+                        scaled_thumb_height,
+                        video_width,
+                        video_height,
+                        background_color,
+                        NULL);
+
                gfx_thumbnail_draw(
                      userdata,
                      video_width,
@@ -8136,9 +8182,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                      &xmb->thumbnails.left,
                      thumb_x,
                      thumb_y,
-                     scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
-                     scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
-                     GFX_THUMBNAIL_ALIGN_TOP,
+                     (scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0,
+                     (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0,
+                     (thumbnail_background) ? GFX_THUMBNAIL_ALIGN_CENTRE : GFX_THUMBNAIL_ALIGN_TOP,
                      1.0f, 1.0f, &thumbnail_shadow);
             }
          }
@@ -8162,17 +8208,34 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          /* Very small thumbnails look ridiculous
           * > Impose a minimum size limit */
          if (thumb_height > xmb->icon_size)
+         {
+            if (thumbnail_background)
+               gfx_display_draw_quad(
+                     p_disp,
+                     userdata,
+                     video_width,
+                     video_height,
+                     thumb_x,
+                     thumb_y,
+                     scaled_thumb_width,
+                     scaled_thumb_height,
+                     video_width,
+                     video_height,
+                     background_color,
+                     NULL);
+
             gfx_thumbnail_draw(
                   userdata,
                   video_width,
                   video_height,
-                  show_left_thumbnail ? &xmb->thumbnails.left : &xmb->thumbnails.right,
+                  (show_left_thumbnail) ? &xmb->thumbnails.left : &xmb->thumbnails.right,
                   thumb_x,
                   thumb_y,
-                  scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
-                  scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
-                  GFX_THUMBNAIL_ALIGN_TOP,
+                  (scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0,
+                  (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0,
+                  (thumbnail_background) ? GFX_THUMBNAIL_ALIGN_CENTRE : GFX_THUMBNAIL_ALIGN_TOP,
                   1.0f, 1.0f, &thumbnail_shadow);
+         }
       }
    }
 

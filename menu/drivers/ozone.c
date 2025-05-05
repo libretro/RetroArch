@@ -6157,6 +6157,7 @@ static void ozone_draw_thumbnail_bar(
    int bottom_row_y_position         = 0;
    bool show_right_thumbnail         = false;
    bool show_left_thumbnail          = false;
+   bool thumbnail_background         = settings->bools.menu_thumbnail_background_enable;
    unsigned sidebar_height           = video_height
          - ozone->dimensions.header_height
          - ozone->dimensions.sidebar_gradient_height * 2
@@ -6264,6 +6265,7 @@ static void ozone_draw_thumbnail_bar(
             + (int)(1.5f * (float)ozone->dimensions.sidebar_entry_icon_padding);
 
       right_thumbnail_alignment  = GFX_THUMBNAIL_ALIGN_CENTRE;
+      show_left_thumbnail        = false;
       
       if (thumbnail_height > thumbnail_width)
       {
@@ -6326,6 +6328,32 @@ static void ozone_draw_thumbnail_bar(
    /* > If we have a right thumbnail, show it */
    if (show_right_thumbnail)
    {
+      if (thumbnail_background)
+      {
+         float background_color[16] = {
+               0.0f, 0.0f, 0.0f, 1.0f,
+               0.0f, 0.0f, 0.0f, 1.0f,
+               0.0f, 0.0f, 0.0f, 1.0f,
+               0.0f, 0.0f, 0.0f, 1.0f,
+         };
+
+         right_thumbnail_alignment = GFX_THUMBNAIL_ALIGN_CENTRE;
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               thumbnail_x_position,
+               right_thumbnail_y_position,
+               thumbnail_width,
+               thumbnail_height,
+               video_width,
+               video_height,
+               background_color,
+               NULL);
+      }
+
       gfx_thumbnail_draw(
             userdata,
             video_width,
@@ -6408,6 +6436,32 @@ static void ozone_draw_thumbnail_bar(
           * metadata - thumbnail is always shown at full
           * opacity */
          left_thumbnail_alpha      = 1.0f;
+      }
+
+      if (thumbnail_background)
+      {
+         float background_color[16] = {
+               0.0f, 0.0f, 0.0f, 1.0f,
+               0.0f, 0.0f, 0.0f, 1.0f,
+               0.0f, 0.0f, 0.0f, 1.0f,
+               0.0f, 0.0f, 0.0f, 1.0f,
+         };
+
+         left_thumbnail_alignment = GFX_THUMBNAIL_ALIGN_CENTRE;
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               thumbnail_x_position,
+               left_thumbnail_y_position,
+               thumbnail_width,
+               thumbnail_height,
+               video_width,
+               video_height,
+               background_color,
+               NULL);
       }
 
       /* Note: This is a NOOP when alpha is zero
