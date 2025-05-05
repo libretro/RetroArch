@@ -3705,7 +3705,7 @@ static bool ozone_is_main_menu_playlist(void *userdata)
    return entry.type == FILE_TYPE_RPL_ENTRY;
 }
 
-static void ozone_update_savestate_thumbnail_path(void *data, size_t i)
+static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings     = config_get_ptr();
    ozone_handle_t *ozone    = (ozone_handle_t*)data;
@@ -9083,7 +9083,7 @@ static void ozone_update_thumbnail_image(void *data)
             ozone->title);
 }
 
-static void ozone_refresh_thumbnail_image(void *data, unsigned i)
+static void ozone_refresh_thumbnail_image(void *data, size_t i)
 {
    ozone_handle_t *ozone        = (ozone_handle_t*)data;
    struct menu_state   *menu_st = menu_state_get_ptr();
@@ -10290,7 +10290,7 @@ static void ozone_render(void *data,
                            && ozone->depth >= 2)
                            || (ozone->flags & OZONE_FLAG_IS_STATE_SLOT))
                      {
-                        ozone_update_savestate_thumbnail_path(ozone, i);
+                        ozone_update_savestate_thumbnail_path(ozone, (unsigned)i);
                         ozone_update_savestate_thumbnail_image(ozone);
                      }
                   }
@@ -11563,7 +11563,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
             ozone_update_thumbnail_image(ozone);
       }
 
-      ozone_update_savestate_thumbnail_path(ozone, ozone->selection);
+      ozone_update_savestate_thumbnail_path(ozone, (unsigned)ozone->selection);
       ozone_update_savestate_thumbnail_image(ozone);
    }
 }
@@ -12287,7 +12287,7 @@ static void ozone_populate_entries(
          ozone_list_open(ozone, ozone_collapse_sidebar, (!(ozone->flags & OZONE_FLAG_FIRST_FRAME)));
 
    /* Reset savestate thumbnails always */
-   ozone_update_savestate_thumbnail_path(ozone, menu_st->selection_ptr);
+   ozone_update_savestate_thumbnail_path(ozone, (unsigned)menu_st->selection_ptr);
    ozone_update_savestate_thumbnail_image(ozone);
 
    /* Thumbnails
@@ -12316,7 +12316,7 @@ static void ozone_populate_entries(
       {
          ozone->flags &= ~(OZONE_FLAG_WANT_THUMBNAIL_BAR
                          | OZONE_FLAG_SKIP_THUMBNAIL_RESET);
-         ozone_update_savestate_thumbnail_path(ozone, menu_st->selection_ptr);
+         ozone_update_savestate_thumbnail_path(ozone, (unsigned)menu_st->selection_ptr);
          ozone_update_savestate_thumbnail_image(ozone);
       }
       else if (   gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
@@ -12426,7 +12426,7 @@ static void ozone_toggle(void *userdata, bool menu_on)
       ozone->flags              &= ~(OZONE_FLAG_WANT_THUMBNAIL_BAR
                                    | OZONE_FLAG_SKIP_THUMBNAIL_RESET);
       gfx_thumbnail_reset(&ozone->thumbnails.savestate);
-      ozone_update_savestate_thumbnail_path(ozone, menu_st->selection_ptr);
+      ozone_update_savestate_thumbnail_path(ozone, (unsigned)menu_st->selection_ptr);
       ozone_update_savestate_thumbnail_image(ozone);
    }
 

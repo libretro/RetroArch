@@ -2424,7 +2424,7 @@ static void materialui_update_fullscreen_thumbnail_label(
          NULL);
 }
 
-static void materialui_update_savestate_thumbnail_path(void *data, size_t i)
+static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    settings_t *settings     = config_get_ptr();
    materialui_handle_t *mui = (materialui_handle_t*)data;
@@ -9232,7 +9232,7 @@ static void materialui_navigation_set(void *data, bool scroll)
    /* Update savestate thumbnail */
    if (mui->flags & MUI_FLAG_IS_SAVESTATE_LIST)
    {
-      materialui_update_savestate_thumbnail_path(mui, selection);
+      materialui_update_savestate_thumbnail_path(mui, (unsigned)selection);
       materialui_update_savestate_thumbnail_image(mui);
    }
 
@@ -9635,7 +9635,8 @@ static void materialui_populate_entries(void *data, const char *path,
             || string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT))
    {
       mui->flags |= MUI_FLAG_IS_SAVESTATE_LIST;
-      materialui_update_savestate_thumbnail_path(mui, menu_state_get_ptr()->selection_ptr);
+      materialui_update_savestate_thumbnail_path(mui,
+         (unsigned)menu_state_get_ptr()->selection_ptr);
       materialui_update_savestate_thumbnail_image(mui);
    }
    else
@@ -12090,7 +12091,7 @@ static void materialui_list_clear(file_list_t *list)
    }
 }
 
-static void materialui_refresh_thumbnail_image(void *userdata, unsigned i)
+static void materialui_refresh_thumbnail_image(void *userdata, size_t i)
 {
    materialui_handle_t *mui           = (materialui_handle_t*)userdata;
    struct menu_state *menu_st         = menu_state_get_ptr();
