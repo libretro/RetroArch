@@ -7055,6 +7055,10 @@ MSG_HASH(
    "Аўтаматычна маштабаваць эскізы з шырынёй/вышынёй менш зададзенага значэння. Падвышае якасць малюнка, умерана ўплываючы на ​​прадукцыйнасць."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Уключае запаўненне вольнай прасторы вакол мініяцюр суцэльным фонам. Забяспечвае адзіную памернасць для ўсіх малюнкаў, паляпшаючы адлюстраванне меню пры праглядзе эскізаў рознага памеру."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
    "Анімацыя бягучага радка"
    )
@@ -11867,10 +11871,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
    "Уключае дадатковы эскіз пры праглядзе плэйліста ў рэжыме 'Спіс'. Настройка прымяняецца толькі калі шырыні экрана дастаткова для адлюстравання двух эскізаў."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "Дадаваць фон да эскізаў"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,

@@ -6823,6 +6823,10 @@ MSG_HASH(
    "指定された値より小さい幅/高さの画像を自動的に拡大し、画質を改善します。パフォーマンスにやや影響します。"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "サムネイル画像の未使用スペースを単色の背景で塗りつぶします。すべての画像の表示サイズが均一になることで、基本サイズが異なるコンテンツが混在した際のメニューの見栄えを改善します。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
    "ティッカーテキストのアニメーション"
    )
@@ -11523,10 +11527,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
    "[リスト] 形式のサムネイル表示モードを使用している場合、セカンダリーサムネイルを表示します。この設定は画面に 2 つのサムネイルを表示するのに十分な幅がある場合にのみ適用されます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "サムネイルの背景を描画"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,

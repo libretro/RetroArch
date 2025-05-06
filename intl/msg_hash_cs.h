@@ -7039,6 +7039,10 @@ MSG_HASH(
    "Automatické zvětšení velikosti miniatur s šířkou/výškou menší než zadaná hodnota. Zlepšuje kvalitu obrazu. Má mírný dopad na výkon."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Umožňuje vyplnit nevyužité místo v miniaturách s pevným pozadím. Tím je zajištěna jednotná velikost zobrazení všech obrázků, což zlepšuje vzhled nabídky při zobrazení miniatur se smíšeným obsahem a různými základními rozměry."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
    "Animace textu v menu"
    )
@@ -11783,10 +11787,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
    "Zobrazí sekundární miniaturu při použití režimů zobrazení miniatur playlistu typu 'Seznam'. Toto nastavení se použije pouze v případě, že má obrazovka dostatečnou fyzickou šířku pro zobrazení dvou miniatur."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "Vykreslovat pozadí miniatur"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,

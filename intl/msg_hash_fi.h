@@ -6095,6 +6095,14 @@ MSG_HASH(
    "Suurenna automaattisesti esikatselukuvat, joiden leveys / korkeus on pienempi kuin määritetty arvo. Parantaa kuvanlaatua. Vaikuttaa kohtalaisesti suorituskykyyn."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Pikkukuvan taustat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Mahdollistaa käyttämättömän tilan täyttämisen kiinteällä taustalla esikatselukuvissa. Tämä takaa tasaisen esityskoon kaikille kuville ja parantaa valikon ulkoasua katsottaessa erilaisia esikatselukuvia, joilla on vaihtelevat perusmitat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
    "Tekstinauhan animaatio"
    )
@@ -10574,7 +10582,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "Piirrä esikatselukuvan taustat"
+   "Pikkukuvan taustat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,

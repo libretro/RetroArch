@@ -7107,6 +7107,14 @@ MSG_HASH(
    "Belirtilen değerden daha küçük bir genişlik/yüksekliğe sahip küçük resim görüntülerini otomatik olarak yükseltin. Görüntü kalitesini artırır. Orta düzeyde performansa eksi etkisi vardır."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Küçük Resim Arkaplanları"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Sağlam bir arka plana sahip küçük resim görüntülerinde kullanılmayan alanın dolmasını sağlar. Bu, tüm görüntüler için tekdüze bir görüntü boyutu sağlayarak, farklı taban boyutlarına sahip karışık içerikli küçük resimleri görüntülerken menü görünümünü iyileştirir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
    "Kayan Yazı Animasyonu"
    )
@@ -11954,7 +11962,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "Küçük Resim Arkaplan Çizimi"
+   "Küçük Resim Arkaplanları"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,

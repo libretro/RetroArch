@@ -2816,6 +2816,10 @@ MSG_HASH(
    "Estableix quants fotogrames de CPU poden anar per davant de la GPU quan s'usa 'Sincronització dura de GPU'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
+   "Escull quants fotogrames pot anar la CPU per davant de la GPU si es fa servir l'opció 'Sincronia estricta de CPU'. El valor màxim és 3.\n 0: Sincronitza immediatament a la GPU.\n 1: Sincronitza amb el fotograma anterior.\n 2: ..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    "Sincronització a la velocitat de fotogrames del contingut exacta (S-Sync, FreeSync)"
    )
@@ -2939,6 +2943,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    "Volum del so (en dB). 0 dB és el volum normal, sense cap guany afegit."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
+   "Volum de l'àudio, expressat en decibels dB. 0 dB és el volum normal, quan no s'aplica cap guany. El guany es pot controlar en temps real amb Pujar/Baixar volum."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
@@ -4014,6 +4022,10 @@ MSG_HASH(
    "Focus de Joc (commuta)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
+   "Activa o desactiva el mode 'Focus de Joc'. Quan el contingut té el focus es desactiven les dreceres de teclat (l'entrada completa de teclat es passa al nucli que s'executa) i es captura el ratolí."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "Pantalla completa (commuta)"
    )
@@ -4473,6 +4485,10 @@ MSG_HASH(
    "Comprova que el microprogramari necessari estigui disponible abans de carregar el contingut."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
+   "Diversos nuclis poden necessitar fitxers de firmware o de bios. Si aquesta opció està activada, RetroArch no permetrà executar el nucli si algun d'aquests fitxers està absent."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
    "Categories en les opcions dels nuclis"
    )
@@ -4572,6 +4588,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
    "S'han desat els canvis al fitxer de configuració en tancar RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
+   "Desa els canvis al fitxer de configuració en sortir. Això és útil pels canvis fets en el menú. Sobreescriu el fitxer de configuració, #include's i comentaris no es desen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
@@ -4683,6 +4703,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "Augmenta automàticament l'índex de l'estat desat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
+   "Abans de desar un estat, l'índex augmenta automàticament. En carregar el contingut, l'índex s'assignarà al valor més alt possible."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
@@ -4893,6 +4917,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    "Recorda l'última carpeta on has desat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
+   "Obre l'explorador de fitxers a l'última localització que s'ha fet servir quan es carrega contingut des de la carpeta inicial. Nota: La localització torna al seu valor predeterminat en reiniciar RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -6000,6 +6028,10 @@ MSG_HASH(
    "Reprendre contingut després d'utilitzar un desat ràpid"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   "Tanca automàticament el menú i reprèn el contingut després de desar o carregar un estat. Deshabilitar aquesta opció pot millorar el rendiment en maquinari molt lent."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
    "Reprendre contingut al canviar de disc"
    )
@@ -6911,6 +6943,10 @@ MSG_HASH(
    "Llindar d'escalat de miniatures"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+   "Escala automàticament les imatges amb una amplada/alçada més petita que el valor especificat. Millora la qualitat de la imatge. Té un efecte moderat en el rendiment."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
    "Animació de text en moviment"
    )
@@ -7180,6 +7216,10 @@ MSG_HASH(
    "Resum d'inici"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
+   "Mostra informació sobre el joc que s'està carregat i del progrés de l'usuari.\n'Tots els jocs identificats' mostrarà el resum d'aquells jocs que no tenen assoliments publicats."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Tots els jocs identificats"
    )
@@ -7423,6 +7463,10 @@ MSG_HASH(
    "Permet clients en mode esclau"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
+   "Permet les connexions en el mode esclau. Els clients en mode esclau necessiten poca potència de processament en el seu maquinari, però patiran significativament si hi ha latència a la xarxa."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
    "Bloqueja els clients sense el mode esclau"
    )
@@ -7550,8 +7594,16 @@ MSG_HASH(
    "Mostra els nuclis experimentals"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   "Inclou nuclis experimentals a la llista de nuclis per descarregar. Aquests nuclis solen estar en desenvolupament i solen tenir funcions de testatge, i no es recomanen per l'ús general."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
    "Desar una còpia dels nuclis en actualitzar-los"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
+   "Crea automàticament una còpia de seguretat dels nuclis instal·lats quan es faci una actualització en línia. Així es pot recuperar fàcilment un nucli funcional en cas que una actualització inclogui una regressió."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -7725,8 +7777,16 @@ MSG_HASH(
    "Etiqueta de temps de joc a les llistes"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   "Escull quin tipus de registre del temps de joc es mostra a la llista de reproducció. \nCal activar el registre dins de la configuració."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
    "Estil de data i temps de 'Última reproducció'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   "Escull l'estil de la data i l'hora que es mostren a l'etiqueta 'Última partida'. Les opcions AM/PM tenen un petit impacte en el rendiment en algunes plataformes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
@@ -8190,6 +8250,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    "Desa tots els estats desats en aquesta carpeta. Si no hi ha una carpeta assignada, es desaran en la carpeta del contingut."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   "Desa tots els fitxers d'estats desats (*.srm) en aquesta carpeta. Això inclou fitxers relacionats com .rt, .psrm,... Aquesta carpeta serà ignorada si es fa servir la línia d'ordres."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
@@ -9665,6 +9729,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
    "Augmenta o disminueix la quantitat de passes de canalització de shaders. Shaders separats es poden vincular a cada passa de canalització i configurar el seu escalat i filtrat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
+   "Ruta cap a la carpeta de shaders. Tots els shaders han de ser del mateix tipus (per exemple, Cg, GLSL o Slang). Canvia el directori de shaders per indicar on el navegador començarà a cercar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
@@ -11499,10 +11567,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
    "Mostra les miniatures secundàries en les llistes"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "Genera fons de les miniatures"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -14911,6 +14975,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    "Correcció d’overscan (inferior)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   "Estableix la retallada de la imatge traient un nombre concret de línies (a partir de la part inferior de la pantalla). Pot provocar defectes d'escalat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,

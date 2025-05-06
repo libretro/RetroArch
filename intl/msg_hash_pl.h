@@ -6183,6 +6183,14 @@ MSG_HASH(
    "Automatycznie przeskaluj miniatury o szerokości / wysokości mniejszej niż określona wartość. Poprawia jakość obrazu. Ma umiarkowany wpływ na wydajność."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Tła miniaturek"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Umożliwia wypełnianie nieużywanego miejsca w obrazach miniatur jednolitym tłem. Zapewnia to jednolity rozmiar wyświetlania wszystkich obrazów, poprawiając wygląd menu podczas oglądania mieszanych miniatur zawartości o różnych podstawowych wymiarach."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
    "Animacja paska tekstu"
    )
@@ -10362,7 +10370,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "Rysuj tła miniatur"
+   "Tła miniaturek"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,

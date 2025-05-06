@@ -4039,6 +4039,10 @@ MSG_HASH(
    "رفع مستوى الصور المصغرة تلقائياً مع عرض / ارتفاع أصغر من القيمة المحددة. يحسن جودة الصورة. له تأثير متوسط للأداء."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "تمكين تعبئة المساحة غير المستخدمة في الصور المصغرة مع خلفية صلبة. هذا يضمن حجم عرض موحد لجميع الصور، وتحسين مظهر القائمة عند عرض الصور المصغرة للمحتوى المختلط مع أبعاد أساسية مختلفة."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
    "حركة نص المؤشر"
    )
@@ -6867,10 +6871,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
    "يعرض صورة مصغرة ثانوية عند استخدام \"قائمة\" نوع أوضاع عرض الصور المصغرة لقائمة التشغيل. ينطبق هذا الإعداد فقط عندما يكون للشاشة عرض فيزيائي كافٍ لإظهار مصغرتين."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "ارسم خلفيات مصغرة"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
