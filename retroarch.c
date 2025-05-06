@@ -7486,13 +7486,16 @@ static bool retroarch_parse_input_and_config(
             case 'e':
                {
                   char *endptr;
-                  int16_t entry_state_slot = (unsigned)strtoul(optarg, &endptr, 0);
+                  long entry_state_slot = strtol(optarg, &endptr, 0);
 
-                  if (entry_state_slot > -1 && string_is_empty(endptr))
-                     runloop_st->entry_state_slot = entry_state_slot;
-                  else
+                  if (endptr == optarg || *endptr != '\0' ||
+                      entry_state_slot < 0 || entry_state_slot > 999)
+                  {
                      RARCH_WARN("[State]: --entryslot argument \"%s\" is not a valid "
                         "entry state slot index. Ignoring.\n", optarg);
+                  }
+                  else
+                     runloop_st->entry_state_slot = entry_state_slot;
                }
                break;
             case RA_OPT_DATABASE_SCAN:
