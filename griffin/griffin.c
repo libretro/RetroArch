@@ -893,6 +893,9 @@ AUDIO
 #include "../gfx/drivers_context/sdl_gl_ctx.c"
 #ifdef HAVE_MICROPHONE
 #include "../audio/drivers_microphone/sdl_microphone.c"
+#ifdef HAVE_COREAUDIO
+#include "../audio/drivers_microphone/coreaudio_mic.m"
+#endif
 #endif
 #endif
 
