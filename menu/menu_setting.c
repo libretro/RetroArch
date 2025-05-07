@@ -4685,6 +4685,11 @@ static size_t setting_get_string_representation_uint_ozone_menu_color_theme(
             return strlcpy(s,
                   msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE), len);
+         case OZONE_COLOR_THEME_BRIGHT:
+            return strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT),len);
+
       }
    }
    return 0;
