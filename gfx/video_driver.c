@@ -4573,15 +4573,15 @@ void video_frame_delay(video_driver_state_t *video_st,
          || (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
          || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION);
 
-   /* Black frame insertion + swap interval multiplier */
-   refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval / shader_subframes);
-
    /* Treat values 20+ as frame time percentage */
    if (video_frame_delay >= 20)
       video_frame_delay = 1 / refresh_rate * 1000 * (video_frame_delay / 100.0f);
    /* Set 0 (Auto) delay target as 3/4 frame time */
    else if (video_frame_delay == 0 && settings->bools.video_frame_delay_auto)
       video_frame_delay = 1 / refresh_rate * 1000 * 0.75f;
+
+   /* Black frame insertion + swap interval multiplier */
+   refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval / shader_subframes);
 
    if (settings->bools.video_frame_delay_auto)
    {
