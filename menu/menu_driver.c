@@ -2873,15 +2873,31 @@ void menu_shader_manager_apply_changes(
       const char *dir_menu_config)
 {
    enum rarch_shader_type type = RARCH_SHADER_NONE;
+   settings_t *settings        = config_get_ptr();
 
    if (!shader)
       return;
 
    type = menu_shader_manager_get_type(shader);
 
+   /* Allow cold start from hotkey */
+   if (     type == RARCH_SHADER_NONE
+         && settings->bools.video_shader_enable
+         && !(shader->flags & SHDR_FLAG_DISABLED))
+   {
+      const char *preset          = video_shader_get_current_shader_preset();
+      enum rarch_shader_type type = video_shader_parse_type(preset);
+      video_shader_apply_shader(settings, type, preset, false);
+      return;
+   }
+
+   /* Temporary state does not save anything */
+   if (shader->flags & SHDR_FLAG_TEMPORARY)
+      return;
+
    if (     shader->passes
-         && (type != RARCH_SHADER_NONE)
-         && (!(shader->flags & SHDR_FLAG_DISABLED)))
+         && type != RARCH_SHADER_NONE
+         && !(shader->flags & SHDR_FLAG_DISABLED))
    {
       menu_shader_manager_save_preset(shader, NULL,
             dir_video_shader, dir_menu_config, true);
@@ -2889,6 +2905,9 @@ void menu_shader_manager_apply_changes(
    }
 
    menu_shader_manager_set_preset(NULL, type, NULL, true);
+
+   /* Reinforce disabled state on failure */
+   configuration_set_bool(settings, settings->bools.video_shader_enable, false);
 }
 
 static bool menu_shader_manager_save_preset_internal(

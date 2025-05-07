@@ -3091,8 +3091,22 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_SHADER_TOGGLE:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         video_shader_toggle(settings);
+         video_shader_toggle(settings, false);
 #endif
+         break;
+      case CMD_EVENT_SHADER_PRESET_LOADED:
+         ui_companion_event_command(cmd);
+         break;
+      case CMD_EVENT_SHADERS_APPLY_CHANGES:
+#ifdef HAVE_MENU
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         menu_shader_manager_apply_changes(menu_shader_get(),
+               settings->paths.directory_video_shader,
+               settings->paths.directory_menu_config
+               );
+#endif
+#endif
+         ui_companion_event_command(cmd);
          break;
       case CMD_EVENT_AI_SERVICE_TOGGLE:
          {
@@ -3645,6 +3659,16 @@ bool command_event(enum event_command cmd, void *data)
             runloop_st->runtime_shader_preset_path[0] = '\0';
 #endif
 
+#ifdef HAVE_MENU
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            /* Restore shader option state after temporary fast toggling */
+            if (menu_shader_get()->flags & SHDR_FLAG_TEMPORARY)
+            {
+               bool enabled = !(menu_shader_get()->flags & SHDR_FLAG_DISABLED);
+               configuration_set_bool(settings, settings->bools.video_shader_enable, enabled);
+            }
+#endif
+#endif
             video_driver_restore_cached(settings);
 
             if (    (flags & CONTENT_ST_FLAG_IS_INITED)
@@ -4620,20 +4644,6 @@ bool command_event(enum event_command cmd, void *data)
                   p_rarch->path_config_file))
             return false;
 #endif
-         break;
-      case CMD_EVENT_SHADER_PRESET_LOADED:
-         ui_companion_event_command(cmd);
-         break;
-      case CMD_EVENT_SHADERS_APPLY_CHANGES:
-#ifdef HAVE_MENU
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         menu_shader_manager_apply_changes(menu_shader_get(),
-               settings->paths.directory_video_shader,
-               settings->paths.directory_menu_config
-               );
-#endif
-#endif
-         ui_companion_event_command(cmd);
          break;
       case CMD_EVENT_PAUSE_TOGGLE:
          {
@@ -8536,6 +8546,17 @@ bool retroarch_main_quit(void)
          /* Reload the original config */
          config_unload_override();
       }
+#endif
+
+#ifdef HAVE_MENU
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+      /* Restore shader option state after temporary fast toggling */
+      if (menu_shader_get()->flags & SHDR_FLAG_TEMPORARY)
+      {
+         bool enabled = !(menu_shader_get()->flags & SHDR_FLAG_DISABLED);
+         configuration_set_bool(settings, settings->bools.video_shader_enable, enabled);
+      }
+#endif
 #endif
 
       /* Save configs before quitting

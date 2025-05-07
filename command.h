@@ -488,6 +488,7 @@ static const struct cmd_map map[] = {
    { "DISK_PREV",              RARCH_DISK_PREV },
 
    { "SHADER_TOGGLE",          RARCH_SHADER_TOGGLE },
+   { "SHADER_HOLD",            RARCH_SHADER_HOLD },
    { "SHADER_NEXT",            RARCH_SHADER_NEXT },
    { "SHADER_PREV",            RARCH_SHADER_PREV },
 

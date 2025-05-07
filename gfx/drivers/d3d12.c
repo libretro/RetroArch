@@ -1152,6 +1152,7 @@ static uint32_t d3d12_get_flags(void *data)
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
+   BIT32_SET(flags, GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS);
 #endif
 
    return flags;
@@ -3565,7 +3566,7 @@ static bool d3d12_gfx_frame(
 
    texture = d3d12->frame.texture;
 
-   if (d3d12->shader_preset)
+   if (d3d12->shader_preset && video_info->shader_active)
    {
       cmd->lpVtbl->SetGraphicsRootSignature(cmd,
             d3d12->desc.sl_rootSignature);

@@ -6793,6 +6793,18 @@ static enum runloop_state_enum runloop_check_state(
          RARCH_SHADER_PREV,   CMD_EVENT_SHADER_PREV,
          RARCH_SHADER_TOGGLE, CMD_EVENT_SHADER_TOGGLE);
 
+   {
+      /* Check shader hold hotkey */
+      static bool old_shader_hold_button_state = false;
+      bool new_shader_hold_button_state        = BIT256_GET(
+            current_bits, RARCH_SHADER_HOLD);
+
+      if (old_shader_hold_button_state != new_shader_hold_button_state)
+         command_event(CMD_EVENT_SHADER_TOGGLE, NULL);
+
+      old_shader_hold_button_state             = new_shader_hold_button_state;
+   }
+
    if (settings->bools.video_shader_watch_files)
    {
       static rarch_timer_t timer = {0};

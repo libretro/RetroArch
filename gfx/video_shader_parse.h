@@ -88,7 +88,8 @@ enum video_shader_flags
    /* Indicative of whether shader was modified -
     * for instance from the menus */
    SHDR_FLAG_MODIFIED  = (1 << 1),
-   SHDR_FLAG_DISABLED  = (1 << 2)
+   SHDR_FLAG_DISABLED  = (1 << 2),
+   SHDR_FLAG_TEMPORARY = (1 << 3)
 };
 
 enum gfx_wrap_type
@@ -289,7 +290,7 @@ bool video_shader_apply_shader(
 
 const char *video_shader_get_preset_extension(enum rarch_shader_type type);
 
-void video_shader_toggle(settings_t *settings);
+void video_shader_toggle(settings_t *settings, bool write);
 
 RETRO_END_DECLS
 

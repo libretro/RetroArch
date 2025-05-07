@@ -451,6 +451,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_disk_next,             ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_disk_prev,             MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV)
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_shader_toggle,         MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_shader_hold,           MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_shader_next,           MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_shader_prev,           MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV)
 #ifdef HAVE_CHEATS
@@ -2382,6 +2383,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
                return 0;
             case RARCH_SHADER_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_shader_toggle);
+               return 0;
+            case RARCH_SHADER_HOLD:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_shader_hold);
                return 0;
 
             case RARCH_CHEAT_TOGGLE:

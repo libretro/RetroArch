@@ -494,6 +494,7 @@ typedef struct video_frame_info
    bool hdr_enable;
    bool overlay_behind_menu;
    bool scan_subframes;
+   bool shader_active;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);

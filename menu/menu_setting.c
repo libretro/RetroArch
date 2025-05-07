@@ -8136,7 +8136,8 @@ static void general_write_handler(rarch_setting_t *setting)
    {
       case MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         video_shader_toggle(settings);
+         video_shader_toggle(settings, true);
+         configuration_set_bool(settings, settings->bools.video_shader_enable, *setting->value.target.boolean);
 #endif
          break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
