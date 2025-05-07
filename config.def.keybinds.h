@@ -661,16 +661,6 @@ static const struct retro_keybind retro_keybinds_1[] = {
       RARCH_OSK, NO_BTN, NO_BTN, 0,
       true
    },
-#if 0
-   /* Deprecated */
-   {
-      NULL, NULL,
-      AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO, RETROK_UNKNOWN,
-      RARCH_SEND_DEBUG_INFO, NO_BTN, NO_BTN, 0,
-      true
-   },
-#endif
 #elif defined(DINGUX)
    { 
       NULL, NULL,
@@ -1310,16 +1300,6 @@ static const struct retro_keybind retro_keybinds_1[] = {
       RARCH_OSK, NO_BTN, NO_BTN, 0,
       true
    },
-#if 0
-   /* Deprecated */
-   {
-      NULL, NULL,
-      AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO, RETROK_UNKNOWN,
-      RARCH_SEND_DEBUG_INFO, NO_BTN, NO_BTN, 0,
-      true
-   },
-#endif
 #else
    { 
       NULL, NULL,
@@ -1527,15 +1507,15 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START, RETROK_UNKNOWN,
-      RARCH_LIGHTGUN_START, NO_BTN, NO_BTN, 0,
+      MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START, RETROK_RETURN,
+      RARCH_LIGHTGUN_START, RETRO_DEVICE_ID_MOUSE_BUTTON_4, NO_BTN, 0,
       true
    },
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT, RETROK_UNKNOWN,
-      RARCH_LIGHTGUN_SELECT, NO_BTN, NO_BTN, 0,
+      MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT, RETROK_RSHIFT,
+      RARCH_LIGHTGUN_SELECT, RETRO_DEVICE_ID_MOUSE_BUTTON_5, NO_BTN, 0,
       true
    },
    {
@@ -1969,16 +1949,6 @@ static const struct retro_keybind retro_keybinds_1[] = {
       RARCH_OSK, NO_BTN, NO_BTN, 0,
       true
    },
-#if 0
-   /* Deprecated */
-   {
-      NULL, NULL,
-      AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO, RETROK_UNKNOWN,
-      RARCH_SEND_DEBUG_INFO, NO_BTN, NO_BTN, 0,
-      true
-   },
-#endif
 #endif
 };
 
