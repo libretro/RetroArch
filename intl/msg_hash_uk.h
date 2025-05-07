@@ -7083,6 +7083,10 @@ MSG_HASH(
    "Автоматично збільшувати мініатюри зображень з шириною/висотою менше, ніж зазначене значення. Покращує якість зображення. Має помірний вплив продуктивності."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Фони мініатюр"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    "Дозволяє додавати невикористаний простір в мініатюрах із суцільним фоном. Це забезпечує однорідний розмір відображення для всіх зображень, покращує зовнішній вигляд меню, при перегляді змішаних мініатюр вмісту з різними базовими розмірами."
    )
@@ -11959,6 +11963,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
    "Відображає вторинні мініатюри при використанні режимів перегляду списку відтворення. Цей параметр застосовується лише тоді, коли екран має достатню фізичну ширину, щоб показати два ескізи."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
+   "Фони мініатюр"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
