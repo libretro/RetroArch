@@ -448,6 +448,7 @@ typedef struct xmb_handle
    bool show_fullscreen_thumbnails;
    bool want_fullscreen_thumbnails;
    bool skip_thumbnail_reset;
+   bool show_thumbnails;
    bool show_mouse;
    bool show_screensaver;
    bool use_ps3_layout;
@@ -4799,10 +4800,12 @@ static int xmb_draw_item(
    {
       bool show_right_thumbnail         =
                (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
+            && xmb->show_thumbnails
             && (  (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
                || (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_PENDING)));
       bool show_left_thumbnail          =
                (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
+            && xmb->show_thumbnails
             && (  (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
                || (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_PENDING)));
 
@@ -5806,6 +5809,14 @@ static enum menu_action xmb_parse_menu_entry_action(
                }
             }
             return MENU_ACTION_NOOP;
+         }
+         break;
+      case MENU_ACTION_INFO:
+         if (     (xmb->is_playlist)
+               || (xmb->is_explore_list))
+         {
+            xmb->show_thumbnails = !xmb->show_thumbnails;
+            new_action = MENU_ACTION_NOOP;
          }
          break;
       case MENU_ACTION_UP:
@@ -7976,12 +7987,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       bool thumbnail_background = settings->bools.menu_thumbnail_background_enable;
       bool show_right_thumbnail =
                (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
+            && xmb->show_thumbnails
             && (  (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
                || (  xmb->thumbnails.right.status       < GFX_THUMBNAIL_STATUS_AVAILABLE
                   && xmb->thumbnails_right_status_prev <= GFX_THUMBNAIL_STATUS_AVAILABLE
                   && xmb->thumbnails_right_status_prev != GFX_THUMBNAIL_STATUS_UNKNOWN));
       bool show_left_thumbnail  =
                (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+            && xmb->show_thumbnails
             && (  (xmb->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
                || (  xmb->thumbnails.left.status       < GFX_THUMBNAIL_STATUS_AVAILABLE
                   && xmb->thumbnails_left_status_prev <= GFX_THUMBNAIL_STATUS_AVAILABLE
@@ -8700,6 +8713,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->fullscreen_thumbnails_available       = false;
    xmb->show_fullscreen_thumbnails            = false;
    xmb->skip_thumbnail_reset                  = false;
+   xmb->show_thumbnails                       = true;
    xmb->fullscreen_thumbnail_alpha            = 0.0f;
    xmb->fullscreen_thumbnail_selection        = 0;
    xmb->fullscreen_thumbnail_label[0]         = '\0';
