@@ -877,7 +877,7 @@ bool gfx_ctx_wl_init_common(
                wl->deco_manager, wl->xdg_toplevel);
 
       if (wl->xdg_toplevel_icon_manager)
-      wl_create_toplevel_icon(wl);
+         wl_create_toplevel_icon(wl);
 
       /* Waiting for xdg_toplevel to be configured before starting to draw */
       wl_surface_commit(wl->surface);
