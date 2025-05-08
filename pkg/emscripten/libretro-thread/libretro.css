@@ -339,6 +339,9 @@ label {
 	left: 50%;
 	top: 50%;
 	transform: translate(-50%, -50%);
+	left: round(50%, 1px);
+	top: round(50%, 1px);
+	transform: translate(round(-50%, 1px), round(-50%, 1px));
 	max-height: calc(100vh - 40px);
 	max-width: calc(100vw - 40px);
 	width: 750px;
@@ -386,6 +389,19 @@ label {
 
 .modal-body>*:first-child {
 	margin-top: 0px;
+}
+
+/* debug */
+
+.retroarchWebcamVideo, .retroarchWebcamCanvas {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	z-index: 5000;
+}
+
+.retroarchWebcamCanvas {
+	top: 112px;
 }
 
 /* mobile */

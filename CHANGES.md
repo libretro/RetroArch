@@ -1,4 +1,8 @@
 # Future
+- EMSCRIPTEN: Support suspend screensaver
+- EMSCRIPTEN/RWEBCAM: Fix camera driver
+- EMSCRIPTEN/RWEBINPUT: Add accelerometer/gyroscope support
+- EMSCRIPTEN/RWEBPAD: Add rumble support
 
 # 1.21.0
 - 3DS: Fix unique IDs for newer cores

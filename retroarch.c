@@ -6029,7 +6029,11 @@ void emscripten_mainloop(void)
    bool runloop_is_slowmotion             = (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false;
    bool runloop_is_paused                 = (runloop_flags & RUNLOOP_FLAG_PAUSED)     ? true : false;
 
-   /* firefox especially seems to bug without this */
+   /* Prevents the program from running in any of the following conditions:
+    * 1. requestAnimationFrame is being used and the window is not visible.
+    * Firefox likes to call requestAnimationFrame at 1 FPS when the window isn't focused,
+    * we want to avoid this.
+    * 2. The GL context is lost and hasn't been recovered yet. */
    if (platform_emscripten_should_drop_iter())
       return;
 
