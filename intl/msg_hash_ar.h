@@ -1517,10 +1517,6 @@ MSG_HASH(
    "المستخدم"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "تغيير إعدادات الحساب واسم المستخدم واللغة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "الدلائل"
    )

@@ -1505,10 +1505,6 @@ MSG_HASH(
    "Usuari"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Canvia les opcions del compte, el nom d’usuari i la llengua."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Directoris"
    )
@@ -2780,6 +2776,10 @@ MSG_HASH(
    "Redueix la latència a canvi d'augmentar la probabilitat que es produeixen estrebades de vídeo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
+   "Selecciona quants mil·lisegons passen entre l'execució del nucli i la presentació de la imatge. Redueix la latència a canvi d'augmentar el risc d'estrebades.\nEls valors iguals o superiors a 20 es consideren com un percentatge de duració dels fotogrames."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Retard automàtic de fotograma"
    )
@@ -3161,6 +3161,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    "Ajuda a mitigar imperfeccions en la sincronització de l'àudio i vídeo. Teniu en compte que si es desactiva és pràcticament impossible obtenir una sincronització correcta."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
+   "Establir aquest valor a 0 per desactivar el control de la freqüència. Qualsevol altre valor canviarà el valor delta de control de la freqüència d'àudio.\nDefineix la quantitat de freqüències d'entrada que poden ajustar-se dinàmicament. La freqüència d'entrada es defineix com:\nFreqüències d'entra * (1.0 +/- (delta de control de freqüència))"
+   )
 
 /* Settings > Audio > MIDI */
 
@@ -3517,6 +3521,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
    "Mode clàssic de maneig amb dos botons. Manté clicat un botó i clica el botó Turbo al mateix temps per activar la seqüència.\nEl turbo es pot assignar mitjançant la configuració."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Mode d'alternança. Clica al botó Turbo una vegada per activar la seqüència de clicar i alliberar el botó seleccionat i torna a clicar el botó Turbo per desactivar-lo.\nEl turbo pot assignar-se a la configuració."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
@@ -4665,6 +4673,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
    "Fes servir el fitxer global d'opcions del nucli"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
+   "Desa tota la configuració dels nuclis en un únic fitxer comú (retroarch-core-options.cfg). Si aquesta opció no està activada, les opcions de cada nucli es desaran en fitxers separats en les carpetes que marqui la configuració de RetroArch."
+   )
 
 /* Settings > Saving */
 
@@ -4727,6 +4739,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
    "Marca automàticament i a intervals regulars (en segons) l'estat del joc a mesura que s'enregistra una repetició."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "Desa automàticament l'estat del joc a intervals regulars durant la reproducció de la repetició. Aquesta opció està desactivada per defecte. L'interval es mesura en mil·lisegons. Un valor de 0 deshabilita el punt de control de la gravació."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -6987,6 +7003,10 @@ MSG_HASH(
    "Fons de les miniatures"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Permet cobrir l'espai no utilitzat en les miniatures amb fons pla. Això garanteix que totes les imatges tinguin una mida uniforme, millorant visualment els menús en veure miniatures de continguts i mides diferents."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
    "Animació de text en moviment"
    )
@@ -8011,6 +8031,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
    "Guanya assoliments en jocs clàssics. Per a més informació visiteu «https://retroachievements.org»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "Detalls d'inici de sessió pel teu compte de RetroAchievements. Ves a retroachievements.org per aconseguir un compte gratuït.\nDesprés de fer el registre correctament, cal posar el nom d'usuari i la contrasenya a RetroArch."
    )
 
 /* Settings > User > Accounts > RetroAchievements */
@@ -9662,6 +9686,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Expulsar disc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+   "Obre la safata del disc virtual i extreu el disc que s'estava carregant. Si l'opció 'Fes pausa al contingut quan el menú estigui actiu' està activada, alguns nuclis no poden registrar canvis fins que hagin passat uns segons amb el contingut reprès i després de cada acció de control de discs."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -11643,6 +11671,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
    "Fons de les miniatures"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
+   "Permet cobrir l'espai no utilitzat en les miniatures amb fons pla. Això garanteix que totes les imatges tinguin una mida uniforme, millorant visualment els menús en veure miniatures de continguts i mides diferents."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,

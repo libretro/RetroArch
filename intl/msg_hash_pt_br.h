@@ -1497,10 +1497,6 @@ MSG_HASH(
    "Usuário"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Altera as configurações de conta, nome de usuário e idioma."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Diretório"
    )

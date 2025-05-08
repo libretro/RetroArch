@@ -1269,10 +1269,6 @@ MSG_HASH(
    "Gebruiker"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Wijzig account-, gebruikersnaam- en taalinstellingen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Map"
    )

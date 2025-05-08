@@ -1505,10 +1505,6 @@ MSG_HASH(
    "Kullanıcı"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Hesap, kullanıcı adı veya dil ayarlarını değiştir."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Dizin"
    )

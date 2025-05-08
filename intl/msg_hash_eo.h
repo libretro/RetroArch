@@ -297,10 +297,6 @@ MSG_HASH(
    "Change settings for the playlists."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Change accounts, username, and language."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
    "Change default directories for this system."
    )

@@ -1481,10 +1481,6 @@ MSG_HASH(
    "Uživatel"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Změnit účet, uživatelské jméno a nastavení jazyka."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Adresáře"
    )

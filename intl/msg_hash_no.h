@@ -1289,10 +1289,6 @@ MSG_HASH(
    "Bruker"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Endre innstillinger for brukerkonto, brukernavn og språk."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Mapper"
    )

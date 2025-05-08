@@ -1325,10 +1325,6 @@ MSG_HASH(
    "Používateľ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Zmeniť účet, užívateľské meno a nastavenie jazyka."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Priečinok"
    )

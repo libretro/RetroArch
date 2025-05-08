@@ -1517,10 +1517,6 @@ MSG_HASH(
    "Користувач"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Зміна налаштувань облікового запису, користувача та мови."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Каталоги"
    )

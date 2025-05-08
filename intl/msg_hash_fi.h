@@ -1485,10 +1485,6 @@ MSG_HASH(
    "Käyttäjä"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Muuta tiliä, käyttäjänimeä ja kielen asetuksia."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Kansio"
    )

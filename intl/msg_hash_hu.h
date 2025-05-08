@@ -1493,10 +1493,6 @@ MSG_HASH(
    "Felhasználó"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Fiókok, felhasználónév, és a nyelv beállítása."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Könyvtárak"
    )

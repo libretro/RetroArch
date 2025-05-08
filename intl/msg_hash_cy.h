@@ -957,10 +957,6 @@ MSG_HASH(
    "Defnyddiwr"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Newid gosodiadau cyfrif, enw defnyddiwr a iaith."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Cyfeiriadur"
    )

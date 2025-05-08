@@ -1521,10 +1521,6 @@ MSG_HASH(
    "用户"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "更改帐号、用户名和语言设置。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "文件夹"
    )

@@ -1169,10 +1169,6 @@ MSG_HASH(
    "Người dùng"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Thay đổi cài đặt tài khoản, tên đăng nhập và ngôn ngữ."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Thư mục"
    )

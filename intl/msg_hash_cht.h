@@ -1449,10 +1449,6 @@ MSG_HASH(
    "使用者"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "變更帳號和名稱的設定。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "資料夾"
    )

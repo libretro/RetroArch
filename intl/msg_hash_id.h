@@ -1285,10 +1285,6 @@ MSG_HASH(
    "Pengguna"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Ubah pengaturan akun, nama pengguna, dan bahasa."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Direktori"
    )

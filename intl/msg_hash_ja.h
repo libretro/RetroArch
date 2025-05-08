@@ -1509,10 +1509,6 @@ MSG_HASH(
    "ユーザー"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "アカウント、ユーザー名および言語の設定を変更します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "ディレクトリ"
    )
