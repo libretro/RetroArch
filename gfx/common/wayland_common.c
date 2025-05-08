@@ -608,6 +608,11 @@ static bool wl_create_toplevel_icon(gfx_ctx_wayland_data_t *wl)
       xdg_toplevel_icon_v1_add_buffer(
          wl->xdg_toplevel_icon, icon_buffer->wl_buffer, 1);
    }
+   else
+   {
+      RARCH_ERR("[Wayland] Failed to create toplevel icon buffer\n");
+      return false;
+   }
 
    xdg_toplevel_icon_manager_v1_set_icon(
       wl->xdg_toplevel_icon_manager, wl->xdg_toplevel, wl->xdg_toplevel_icon);
