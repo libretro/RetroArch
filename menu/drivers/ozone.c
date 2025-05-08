@@ -6438,7 +6438,7 @@ static void ozone_draw_thumbnail_bar(
          left_thumbnail_alpha      = 1.0f;
       }
 
-      if (thumbnail_background)
+      if (thumbnail_background && !(ozone->flags & OZONE_FLAG_FORCE_METADATA_DISPLAY))
       {
          float background_color[16] = {
                0.0f, 0.0f, 0.0f, 1.0f,
