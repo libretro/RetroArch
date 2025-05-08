@@ -3135,7 +3135,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          height = d3d12->vp.height;
       }
 
-      RARCH_LOG("[D3D12]: Updating framebuffer size %ux%u.\n", width, height);
+      RARCH_DBG("[D3D12]: Updating framebuffer size %ux%u.\n", width, height);
 
       if (i == (d3d12->shader_preset->passes - 1))
       {
@@ -3588,25 +3588,23 @@ static bool d3d12_gfx_frame(
          cmd->lpVtbl->SetPipelineState(cmd, d3d12->pass[i].pipe);
 
          if (d3d12->shader_preset->pass[i].frame_count_mod)
-            d3d12->pass[i].frame_count = frame_count
-                  % d3d12->shader_preset->pass[i].frame_count_mod;
+            d3d12->pass[i].frame_count = frame_count % d3d12->shader_preset->pass[i].frame_count_mod;
          else
             d3d12->pass[i].frame_count = frame_count;
 
 #ifdef HAVE_REWIND
-         if (state_manager_frame_is_reversed())
-            d3d12->pass[i].frame_direction = -1;
-         else
+         d3d12->pass[i].frame_direction  = state_manager_frame_is_reversed() ? -1 : 1;
+#else
+         d3d12->pass[i].frame_direction  = 1;
 #endif
-         d3d12->pass[i].frame_direction    = 1;
-         d3d12->pass[i].frame_time_delta   = (uint32_t)video_driver_get_frame_time_delta_usec();
-         d3d12->pass[i].original_fps       = video_driver_get_original_fps();
-         d3d12->pass[i].rotation           = retroarch_get_rotation();
-         d3d12->pass[i].core_aspect        = video_driver_get_core_aspect();
+         d3d12->pass[i].frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
+         d3d12->pass[i].original_fps     = video_driver_get_original_fps();
+         d3d12->pass[i].rotation         = retroarch_get_rotation();
+         d3d12->pass[i].core_aspect      = video_driver_get_core_aspect();
          /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
-         d3d12->pass[i].core_aspect_rot    = video_driver_get_core_aspect();
-         uint32_t rot = retroarch_get_rotation();
-         if (rot == 1 || rot == 3)
+         d3d12->pass[i].core_aspect_rot  = d3d12->pass[i].core_aspect;
+         if (     d3d12->pass[i].rotation == VIDEO_ROTATION_90_DEG
+               || d3d12->pass[i].rotation == VIDEO_ROTATION_270_DEG)
             d3d12->pass[i].core_aspect_rot = 1 / d3d12->pass[i].core_aspect_rot;
 
          /* Sub-frame info for multiframe shaders (per real content frame).
