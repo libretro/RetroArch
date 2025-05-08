@@ -44,6 +44,7 @@
 #include "../../gfx/common/wayland/viewporter.h"
 #include "../../gfx/common/wayland/xdg-decoration-unstable-v1.h"
 #include "../../gfx/common/wayland/xdg-shell.h"
+#include "../../gfx/common/wayland/xdg-toplevel-icon-v1.h"
 
 #define FRACTIONAL_SCALE_V1_DEN 120
 #define FRACTIONAL_SCALE_MULT(v, scale_num) \
@@ -159,6 +160,8 @@ typedef struct gfx_ctx_wayland_data
    struct wp_fractional_scale_v1 *fractional_scale;
    struct xdg_wm_base *xdg_shell;
    struct xdg_toplevel *xdg_toplevel;
+   struct xdg_toplevel_icon_v1 *xdg_toplevel_icon;
+   struct xdg_toplevel_icon_manager_v1 *xdg_toplevel_icon_manager;
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
    struct zwp_relative_pointer_v1 *wl_relative_pointer;
