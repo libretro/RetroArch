@@ -592,11 +592,11 @@ static void shm_buffer_paint_icon(
    }
 }
 
-static bool wl_create_toplevel_icon(gfx_ctx_wayland_data_t *wl)
+static bool wl_create_toplevel_icon(gfx_ctx_wayland_data_t *wl, struct xdg_toplevel *toplevel)
 {
-   wl->xdg_toplevel_icon = xdg_toplevel_icon_manager_v1_create_icon(
+   struct xdg_toplevel_icon_v1 *icon = xdg_toplevel_icon_manager_v1_create_icon(
       wl->xdg_toplevel_icon_manager);
-   xdg_toplevel_icon_v1_set_name(wl->xdg_toplevel_icon, WAYLAND_APP_ID);
+   xdg_toplevel_icon_v1_set_name(icon, WAYLAND_APP_ID);
 
    const int icon_size = wl->buffer_scale > 1 ? 128 : 64;
    shm_buffer_t *icon_buffer = create_shm_buffer(wl,
@@ -606,7 +606,7 @@ static bool wl_create_toplevel_icon(gfx_ctx_wayland_data_t *wl)
    {
       shm_buffer_paint_icon(icon_buffer, icon_size, icon_size, 1, icon_size / 16);
       xdg_toplevel_icon_v1_add_buffer(
-         wl->xdg_toplevel_icon, icon_buffer->wl_buffer, 1);
+         icon, icon_buffer->wl_buffer, 1);
    }
    else
    {
@@ -615,7 +615,18 @@ static bool wl_create_toplevel_icon(gfx_ctx_wayland_data_t *wl)
    }
 
    xdg_toplevel_icon_manager_v1_set_icon(
-      wl->xdg_toplevel_icon_manager, wl->xdg_toplevel, wl->xdg_toplevel_icon);
+      wl->xdg_toplevel_icon_manager, toplevel, icon);
+
+#ifdef HAVE_LIBDECOR_H
+   if (wl->libdecor_frame)
+   {
+      wl->libdecor_icon = icon;
+   }
+   else
+#endif
+   {
+      wl->xdg_toplevel_icon = icon;
+   }
 
    return true;
 }
@@ -848,6 +859,9 @@ bool gfx_ctx_wl_init_common(
          goto error;
       }
 
+      struct xdg_toplevel *xdg_toplevel = wl->libdecor_frame_get_xdg_toplevel(wl->libdecor_frame);
+      wl_create_toplevel_icon(wl, xdg_toplevel);
+
       wl->libdecor_frame_set_app_id(wl->libdecor_frame, WAYLAND_APP_ID);
       wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
       wl->libdecor_frame_map(wl->libdecor_frame);
@@ -882,7 +896,7 @@ bool gfx_ctx_wl_init_common(
                wl->deco_manager, wl->xdg_toplevel);
 
       if (wl->xdg_toplevel_icon_manager)
-         wl_create_toplevel_icon(wl);
+         wl_create_toplevel_icon(wl, wl->xdg_toplevel);
 
       /* Waiting for xdg_toplevel to be configured before starting to draw */
       wl_surface_commit(wl->surface);

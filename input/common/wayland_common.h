@@ -175,6 +175,7 @@ typedef struct gfx_ctx_wayland_data
 #ifdef HAVE_LIBDECOR_H
    struct libdecor *libdecor_context;
    struct libdecor_frame *libdecor_frame;
+   struct xdg_toplevel_icon_v1 *libdecor_icon;
 #ifdef HAVE_DYLIB
    dylib_t libdecor;
 #define RA_WAYLAND_SYM(rc,fn,params) rc (*fn) params;
