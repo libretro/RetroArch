@@ -259,7 +259,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
       else
          vulkan_present(&wl->vk, wl->vk.context.current_swapchain_index);
    }
-   if (wl->presentation)
+   if (wl->present_clock)
       wl_request_presentation_feedback(wl);
 
    vulkan_acquire_next_image(&wl->vk);

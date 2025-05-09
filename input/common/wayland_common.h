@@ -281,6 +281,8 @@ extern const struct wl_seat_listener seat_listener;
 
 extern const struct wp_fractional_scale_v1_listener wp_fractional_scale_v1_listener;
 
+extern const struct wp_presentation_listener presentation_listener;
+
 extern const struct wl_surface_listener wl_surface_listener;
 
 extern const struct xdg_wm_base_listener xdg_shell_listener;

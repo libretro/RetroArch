@@ -510,7 +510,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 
    wl->swap_complete = false;
 
-   if (wl->presentation)
+   if (wl->present_clock)
    {
       wl_request_presentation_feedback(wl);
    }

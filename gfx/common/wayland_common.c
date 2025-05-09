@@ -22,6 +22,7 @@
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <poll.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "wayland_common.h"
@@ -476,22 +477,20 @@ bool gfx_ctx_wl_get_metrics_common(void *data,
 }
 
 static void presentation_handle_clock_id(void *data,
-   struct wp_presentation *wp_presentation,
-   uint32_t clk_id)
+   struct wp_presentation *presentation,
+   uint32_t clock_id)
 
 {
    gfx_ctx_wayland_data_t *wl = data;
-   (void)data;
-   (void)wp_presentation;
-   (void)clk_id;
+
+   if (clock_id == CLOCK_MONOTONIC || clock_id == CLOCK_MONOTONIC_RAW)
+      wl->present_clock = true;
 }
 
 static void presentation_feedback_sync_output(void *data,
    struct wp_presentation_feedback *feedback,
    struct wl_output *output)
 {
-   wp_presentation_feedback_t *fb = data;
-   fb->output = output;
 }
 
 static void presentation_feedback_presented(void *data,
@@ -523,7 +522,7 @@ static void presentation_feedback_discarded(void *data,
    free(fb);
 }
 
-static const struct wp_presentation_listener presentation_listener = {
+const struct wp_presentation_listener presentation_listener = {
    presentation_handle_clock_id,
 };
 
@@ -946,8 +945,10 @@ bool gfx_ctx_wl_init_common(
       }
 
       if (wl->xdg_toplevel_icon_manager)
+      {
          struct xdg_toplevel *xdg_toplevel = wl->libdecor_frame_get_xdg_toplevel(wl->libdecor_frame);
          wl_create_toplevel_icon(wl, xdg_toplevel);
+      }
 
       wl->libdecor_frame_set_app_id(wl->libdecor_frame, WAYLAND_APP_ID);
       wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
