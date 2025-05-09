@@ -259,6 +259,9 @@ static void gfx_ctx_wl_swap_buffers(void *data)
       else
          vulkan_present(&wl->vk, wl->vk.context.current_swapchain_index);
    }
+   if (wl->presentation)
+      wl_request_presentation_feedback(wl);
+
    vulkan_acquire_next_image(&wl->vk);
    flush_wayland_fd(&wl->input);
 }

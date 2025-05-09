@@ -39,6 +39,7 @@
 #include "../../gfx/common/wayland/fractional-scale-v1.h"
 #include "../../gfx/common/wayland/idle-inhibit-unstable-v1.h"
 #include "../../gfx/common/wayland/pointer-constraints-unstable-v1.h"
+#include "../../gfx/common/wayland/presentation-time.h"
 #include "../../gfx/common/wayland/relative-pointer-unstable-v1.h"
 #include "../../gfx/common/wayland/single-pixel-buffer-v1.h"
 #include "../../gfx/common/wayland/viewporter.h"
@@ -157,6 +158,7 @@ typedef struct gfx_ctx_wayland_data
    struct wl_surface *surface;
    struct xdg_surface *xdg_surface;
    struct wp_viewport *viewport;
+   struct wp_presentation *presentation;
    struct wp_fractional_scale_v1 *fractional_scale;
    struct xdg_wm_base *xdg_shell;
    struct xdg_toplevel *xdg_toplevel;
@@ -235,7 +237,20 @@ typedef struct gfx_ctx_wayland_data
    bool activated;
    bool reported_display_size;
    bool swap_complete;
+   bool present_clock;
 } gfx_ctx_wayland_data_t;
+
+typedef struct wp_presentation_feedback
+{
+   struct wp_presentation_feedback *feedback;
+   struct wl_output *output;
+   bool is_presented;
+   uint32_t flags;
+   uint64_t tv_sec;
+   uint32_t tv_nsec;
+   uint32_t refresh;
+   uint64_t seq;
+} wp_presentation_feedback_t;
 
 #ifdef HAVE_XKBCOMMON
 /* FIXME: Move this into a header? */
@@ -249,6 +264,8 @@ void free_xkb(void);
 void gfx_ctx_wl_show_mouse(void *data, bool state);
 
 void flush_wayland_fd(void *data);
+
+void wl_request_presentation_feedback(gfx_ctx_wayland_data_t *wl);
 
 extern const struct wl_keyboard_listener keyboard_listener;
 
