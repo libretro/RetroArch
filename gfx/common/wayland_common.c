@@ -860,8 +860,10 @@ bool gfx_ctx_wl_init_common(
       }
 
       if (wl->xdg_toplevel_icon_manager)
+      {
          struct xdg_toplevel *xdg_toplevel = wl->libdecor_frame_get_xdg_toplevel(wl->libdecor_frame);
          wl_create_toplevel_icon(wl, xdg_toplevel);
+      }
 
       wl->libdecor_frame_set_app_id(wl->libdecor_frame, WAYLAND_APP_ID);
       wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
