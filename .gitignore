@@ -241,6 +241,8 @@ gfx/common/wayland/content-type-v1.h
 gfx/common/wayland/content-type-v1.c
 gfx/common/wayland/single-pixel-buffer-v1.h
 gfx/common/wayland/single-pixel-buffer-v1.c
+gfx/common/wayland/xdg-toplevel-icon-v1.h
+gfx/common/wayland/xdg-toplevel-icon-v1.c
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip
