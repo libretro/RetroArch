@@ -1290,11 +1290,7 @@
 #endif
 
 /* Pause gameplay when window loses focus. */
-#if defined(EMSCRIPTEN)
-#define DEFAULT_PAUSE_NONACTIVE false
-#else
 #define DEFAULT_PAUSE_NONACTIVE true
-#endif
 
 /* Pause gameplay when controller disconnects. */
 #define DEFAULT_PAUSE_ON_DISCONNECT false

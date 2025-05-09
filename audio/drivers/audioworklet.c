@@ -382,6 +382,9 @@ bool audioworklet_external_block(void)
 {
    audioworklet_data_t *audioworklet = audioworklet_static_data;
 
+   if (!audioworklet)
+      return false;
+
 #ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK
    if (!audioworklet->block_requested)
       return false;

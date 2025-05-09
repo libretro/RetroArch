@@ -168,4 +168,4 @@ var LibraryRWebAudio = {
 };
 
 autoAddDeps(LibraryRWebAudio, '$RA');
-mergeInto(LibraryManager.library, LibraryRWebAudio);
+addToLibrary(LibraryRWebAudio);

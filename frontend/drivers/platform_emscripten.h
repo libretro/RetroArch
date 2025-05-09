@@ -20,6 +20,23 @@
 
 #include <boolean.h>
 
+enum platform_emscripten_browser
+{
+   PLATFORM_EMSCRIPTEN_BROWSER_OTHER = 0,
+   PLATFORM_EMSCRIPTEN_BROWSER_CHROMIUM,
+   PLATFORM_EMSCRIPTEN_BROWSER_FIREFOX,
+   PLATFORM_EMSCRIPTEN_BROWSER_SAFARI
+};
+
+enum platform_emscripten_os
+{
+   PLATFORM_EMSCRIPTEN_OS_OTHER = 0,
+   PLATFORM_EMSCRIPTEN_OS_WINDOWS,
+   PLATFORM_EMSCRIPTEN_OS_LINUX,
+   PLATFORM_EMSCRIPTEN_OS_IOS,
+   PLATFORM_EMSCRIPTEN_OS_MACOS
+};
+
 /**
  * Synchronously run a function on the browser thread.
  *
@@ -78,6 +95,15 @@ void platform_emscripten_get_canvas_size(int *width, int *height);
 double platform_emscripten_get_dpr(void);
 
 /**
+ * Get the minimum amount of time that setTimeout (retro_sleep on browser thread) can
+ * sleep for in a loop.
+ * This may vary between browsers: usually 5 ms, but much higher for firefox on windows.
+ *
+ * @return Minimum sleep in milliseconds.
+ */
+unsigned platform_emscripten_get_min_sleep_ms(void);
+
+/**
  * Check if the browser supports Atomics.waitAsync.
  *
  * @return True if async atomics are available.
@@ -127,5 +153,35 @@ void platform_emscripten_exit_fake_block(void);
  * Use 0 to disable vsync.
  */
 void platform_emscripten_set_main_loop_interval(int interval);
+
+/**
+ * Hide or show the cursor.
+ *
+ * @param state True to show, false to hide.
+ */
+void platform_emscripten_set_pointer_visibility(bool state);
+
+/**
+ * Try to enter or exit fullscreen.
+ *
+ * @param state True to enter, false to exit.
+ */
+void platform_emscripten_set_fullscreen_state(bool state);
+
+/**
+ * Try to prevent the screen from dimming.
+ *
+ * @param state True to request, false to release.
+ */
+void platform_emscripten_set_wake_lock(bool state);
+
+/**
+ * Try to set the real screen dimensions of the canvas.
+ * Will only work if explicitly enabled by the embedder.
+ *
+ * @param width New width
+ * @param height New height
+ */
+void platform_emscripten_set_canvas_size(int width, int height);
 
 #endif
