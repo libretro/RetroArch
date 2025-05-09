@@ -1505,6 +1505,10 @@ MSG_HASH(
    "Kullanıcı"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Gizlilik, hesap ve kullanıcı adı ayarlarınızı değiştirin."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Dizin"
    )
@@ -3970,6 +3974,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    "Seçili olan gölgelendiriciyi açar/kapatır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_HOLD,
+   "Gölgelendiriciler (Basılı Tut)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
+   "Tuşa basılı tutulduğu sürece seçili olan gölgelendiriciyi açık/kapalı tutar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,

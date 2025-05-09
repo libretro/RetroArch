@@ -1505,6 +1505,10 @@ MSG_HASH(
    "Usuari"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Canvia la configuració de la privacitat, el compte i el nom d'usuari."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Directoris"
    )
@@ -3523,6 +3527,10 @@ MSG_HASH(
    "Mode clàssic de maneig amb dos botons. Manté clicat un botó i clica el botó Turbo al mateix temps per activar la seqüència.\nEl turbo es pot assignar mitjançant la configuració."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "Ús clàssic dels dos botons. Manté clicat un botó i clica a la vegada el botó de turbo per activar el mode turbo. Desactivar turbo: manté clicat el botó i torna a clicar el botó turbo.\nEl botó turbo es pot assignar dins de la configuració."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
    "Mode d'alternança. Clica al botó Turbo una vegada per activar la seqüència de clicar i alliberar el botó seleccionat i torna a clicar el botó Turbo per desactivar-lo.\nEl turbo pot assignar-se a la configuració."
    )
@@ -3585,6 +3593,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    "Assignacions dels RetroPad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "Libretro fa servir un controlador virtual conegut com 'RetroPad' per comunicar els senyals entre els nuclis i els frontends i viceversa. Aquest menú determina com s'assignen els senyals dels controladors físics al RetroPad virtual i quins ports fa servir cada dispositiu.\nSi un controlador físic és reconegut i configurat automàticament, els usuaris no hauran d'utilitzar aquest menú en cap moment, i per canvis propis de cada nucli, caldria fer servir el menú ràpid."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -3920,6 +3932,14 @@ MSG_HASH(
    "Activa o desactiva el shader seleccionat."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_HOLD,
+   "Shaders (Mantenir)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
+   "Manté el shader seleccionat activat o desactivat mentre la tecla és clicada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
    "Següent shader"
    )
@@ -4199,6 +4219,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
    "Fes servir un joystick analògic específic per l'entrada de la creueta digital. 'Forçat' ignoren les entrades analògiques natives del nucli."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
+   "Assigna el joystick analògic especificat com a senyal d'entrada de la creueta.\nSi el nucli suporta el control analògic de forma nativa, les assignacions de la creueta s'anul·laran a no ser que s'hagin forçat.\nEn forçar les assingaciona de creuete, el nucli no rebrà senyal de cap entrada analògica del joystick especificat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -5388,8 +5412,16 @@ MSG_HASH(
    "Separació horitzontal de superposició (mode horitzontal)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "Si la configuració actual ho permet, ajusta l'espai entre els elements de la interfície de les meitats esquerra i dreta d'una superposició en fer servir l'a orientació horitzontal de pantalla. Els valors positius augmenten la separació entre les dues meitats i els valors negatius redueixen la separació."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
    "Separació vertical de superposició (mode horitzontal)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "Si la configuració actual ho permet, ajusta l'espai entre els elements de la interfície de les meitats superior i inferior d'una superposició en fer servir l'a orientació horitzontal de pantalla. Els valors positius augmenten la separació entre les dues meitats i els valors negatius redueixen la separació."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
@@ -5428,8 +5460,16 @@ MSG_HASH(
    "Separació vertical de superposició (mode vertical)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   "Si la configuració actual ho permet, ajusta l'espai entre els elements de la interfície de les meitats esquerra i dreta d'una superposició en fer servir l'a orientació vertical de pantalla. Els valors positius augmenten la separació entre les dues meitats i els valors negatius redueixen la separació."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
    "Separació vertical de superposició (mode vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "Si la configuració actual ho permet, ajusta l'espai entre els elements de la interfície de les meitats superior i inferior d'una superposició en fer servir l'a orientació vertical de pantalla. Els valors positius augmenten la separació entre les dues meitats i els valors negatius redueixen la separació."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
@@ -7669,6 +7709,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
    "Mida de l'historial de còpies de seguretat del nucli"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   "Especifica la quantitat de còpies de seguretat automàtiques que es desaran per cada nucli instal·lat. En arribar a aquest límit, la següent còpia de seguretat produïda eliminarà la còpia de seguretat més antiga. Les còpies de seguretat manuals no es veuen afectades per aquesta opció."
+   )
 
 /* Settings > Playlists */
 
@@ -7691,6 +7735,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
    "Mida dels favorits"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+   "Limita el nombre d'entrades a la llista 'Preferits'. Un cop s'arriba al límit, les noves incorporacions no s'afegiran fins que altres entrades siguin eliminades. Posar un valor de -1 per tenir un valor d'entrades il·limitat.\nAVÍS: Si es disminueix aquest valor, s'eliminaran les entrades existents!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -7855,6 +7903,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
    "Cerca aproximada de fitxers"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+   "Quan es fa una cerca en els fitxers comprimits d'una llista de reproducció, només es cercarà la coincidència en el nom del fitxer. Això evita que apareguin duplicats en l'historial."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
@@ -9696,6 +9748,10 @@ MSG_HASH(
    "Insereix disc"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   "Insereix un disc i tanca la safata virtual. Si l'opció 'Fes pausa al contingut quan el menú estigui actiu' està activada, alguns nuclis no poden registrar canvis fins que hagin passat uns segons amb el contingut reprès i després de cada acció de control de discs."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Carrega un nou disc"
    )
@@ -9745,6 +9801,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    "Carrega un shader predefinit. El pipeline de shaders es configurarà automàticament."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
+   "Carrega directament una configuració de shaders. El menú de shaders s'actualitzarà.\nEl factor d'escala que es mostra en el menú serà correcte només si es fa servir mètodes d'escalat simples."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
@@ -10838,6 +10898,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
    "Reescalat intern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+   "Escala la interfície del menú abans de mostrar-la en pantalla. Si l'opció 'Filtre lineal del menú' està activada, elimina els efectes d'escalat (píxels no proporcionals) mantenint una imatge nítida. Té un impacte significatiu en el rendiment que augmenta si ho fa l'escalat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
@@ -12504,6 +12568,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "Avisa al controlador de vídeo que faci servir un mode de búfer concret."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Nombre màxim d'imatges en swap chain. Això indica al controlador de vídeo que faci servir un búfer de vídeo concret.\nBúfer simple: 1\nBúfer doble: 2\nBúfer triple: 3\nEscull el búfer més apropiat per millorar la latència."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,

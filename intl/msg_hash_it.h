@@ -3904,6 +3904,14 @@ MSG_HASH(
    "Attiva o disattiva lo shader attualmente selezionato."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_HOLD,
+   "Shader (Premuto)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
+   "Tieni premuto lo shader attualmente selezionato/disattivato mentre il tasto viene premuto."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
    "Shader successiva"
    )
