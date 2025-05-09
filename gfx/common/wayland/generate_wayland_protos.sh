@@ -63,6 +63,7 @@ generate_source () {
 
 generate_source 'stable/viewporter' 'viewporter'
 generate_source 'stable/xdg-shell' 'xdg-shell'
+generate_source 'stable/presentation-time' 'presentation-time'
 generate_source 'unstable/xdg-decoration' 'xdg-decoration-unstable-v1'
 generate_source 'unstable/idle-inhibit' 'idle-inhibit-unstable-v1'
 generate_source 'unstable/pointer-constraints' 'pointer-constraints-unstable-v1'
