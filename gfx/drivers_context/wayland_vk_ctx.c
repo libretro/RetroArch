@@ -56,6 +56,7 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
    if (!wl)
       return;
+
    vulkan_context_destroy(&wl->vk, wl->surface);
    gfx_ctx_wl_destroy_resources_common(wl);
 }
@@ -249,6 +250,9 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+   if (wl->present_clock)
+      wl_request_presentation_feedback(wl);
+
    if (wl->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
       wl->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
@@ -259,6 +263,8 @@ static void gfx_ctx_wl_swap_buffers(void *data)
       else
          vulkan_present(&wl->vk, wl->vk.context.current_swapchain_index);
    }
+
+   wait_for_next_frame(wl);
    vulkan_acquire_next_image(&wl->vk);
    flush_wayland_fd(&wl->input);
 }
