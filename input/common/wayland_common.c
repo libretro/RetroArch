@@ -742,7 +742,7 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
    else if (string_is_equal(interface, wp_presentation_interface.name) && found++)
    {
       wl->presentation = (struct wp_presentation*)wl_registry_bind(reg,
-         id, &wp_presentation_interface, MIN(version, 2));
+         id, &wp_presentation_interface, MIN(version, 1));
       wp_presentation_add_listener(wl->presentation, &presentation_listener, wl);
    }
    else if (string_is_equal(interface, wp_fractional_scale_manager_v1_interface.name) && found++)

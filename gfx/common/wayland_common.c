@@ -479,7 +479,6 @@ bool gfx_ctx_wl_get_metrics_common(void *data,
 static void presentation_handle_clock_id(void *data,
    struct wp_presentation *presentation,
    uint32_t clock_id)
-
 {
    gfx_ctx_wayland_data_t *wl = data;
 
