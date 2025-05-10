@@ -3526,8 +3526,24 @@ MSG_HASH(
    "Analog Sensitivity"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Accelerometer Sensitivity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "Gyroscope Sensitivity"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Adjust the sensitivity of analog sticks."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Adjust the sensitivity of the Accelerometer."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+  "Adjust the sensitivity of the Gyroscope."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -4405,8 +4421,50 @@ MSG_HASH(
    "Mouse Index"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_INDEX,
+   "Sensor Index"
+   )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_X,
+   "Accelerometer X Binding"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_Y,
+   "Accelerometer Y Binding"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_Z,
+   "Accelerometer Z Binding"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_X,
+   "Gyroscope X Binding"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_Y,
+   "Gyroscope Y Binding"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_Z,
+   "Gyroscope Z Binding"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_ABS_SOURCE_AUTO,
+   "ABS Source %u Value"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_ABS_SOURCE,
+   "ABS Source %u"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_ABS_SOURCE_INVERTED,
+   "ABS Source %u Inverted"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
    "The physical mouse as recognized by RetroArch."
+
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
