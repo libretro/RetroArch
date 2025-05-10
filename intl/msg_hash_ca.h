@@ -3158,6 +3158,10 @@ MSG_HASH(
    "El canvi màxim en la freqüència d'entrada d'àudio. Augmentar això activa canvis molt grans en la sincronització a cost d'un to d'àudio imprecís (ex. executar nuclis PAL a pantalles NTSC)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
+   "La variació màxima de la sincronia d'àudio.\nDefineix la variació màxima de la freqüència d'entrada. Es pot augmentar el valor per canviar la sincronia (per exemple, si executes nuclis PAL en pantalles NTSC) a canvi de canviar el to de l'àudio.\nLa freqüència d'entrada es calcula com:\nfreqüència d'entrada * (1.0 +/- (variació màxima de sincronia))"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    "Control dinàmic de freqüència d'àudio"
    )
@@ -3368,6 +3372,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
    "Fes servir aquest dispositiu per un teclat físic i no per un controlador."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Si RetroArch identifica un teclat físic com algun tipus de controlador, aquí pots obligar a configurar el dispositiu com un teclat.\nÉs útil si vols intentar emular un ordinador en un dispositiu tipus Android TV i també tens un teclat físic que es pot connectar al dispostiu."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
@@ -3535,6 +3543,10 @@ MSG_HASH(
    "Mode d'alternança. Clica al botó Turbo una vegada per activar la seqüència de clicar i alliberar el botó seleccionat i torna a clicar el botó Turbo per desactivar-lo.\nEl turbo pot assignar-se a la configuració."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Mode de bloqueig de botó. LA seqüència de clicar i soltar el botó predeterminat seleccionat es mantindrà activa sempre que es mantingui clicat el botó de turbo.\nEl turbo pot assignar-se a configuració.\nSi vols emular el mètode de tir automàtic d'èpoques anteriors, assigna els botons de turbo i predeterminat per a què siguin el mateix botó del controlador."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
    "Assignació del turbo"
    )
@@ -3593,6 +3605,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    "Assignacions dels RetroPad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "Canvia les assignacions del RetroPad virtual respecte a un dispositiu d'entrada físic. Si es reconeix i configura automàticament un dispositiu d'entrada correctament, els usuaris no necessitaran aquest menú.\nNota: per fer canvis específics segons cada nucli, fes servir el menú 'Controls' del menú ràpid."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
@@ -3718,6 +3734,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "Activa Dreceres de Teclat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
+   "Si aquesta tecla ràpida està assignada a un teclat, un botó o l'eix d'un controlador, la resta de tecles ràpides es desactivaran a no ser que aquesta tecla sigui clicada al mateix temps.\nAixò serveix per implementacions centrades en RETRO_KEYBOARD, que fan servir una gran part del teclat i en les que no vols que les tecles ràpides interfereixin amb el funcionament normal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
@@ -4463,6 +4483,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "Determina el nombre de fotogrames a executar de bestreta. Poden haver fluctuacions de senyal si el nombre de fotogrames endarrerits supera al valor intern del joc."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "Executa lògiques addicionals del nucli per reduir la latència. Una instància executa la lògica fins al següent fotograma i torna a carregar l'estat actual. Una segona instància només per a vídeo per evitar errors amb l'estat de l'àudio. Fotogrames preventius executa els fotogrames anteriors amb accions d'entrada noves quan cal millorar l'eficàcia."
+   )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
@@ -4523,6 +4547,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
    "Existeixen nuclis amb opció de tancat. Activant aquesta opció, RetroArch carregarà un nucli buit evitant que es tanqui soles."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
+   "Diversos nuclis tenen la funció pròpia d'apagada. Si desactives aquesta opció, en apagar el nucli, també s'apaga RetroArch. \nAl contrari, en apagar el nucli es carregarà un nucli buit. Així, podràs seguir dins del menú sense tancar RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
@@ -4797,6 +4825,10 @@ MSG_HASH(
    "Nombre màxim de repeticions automàtiques a conservar"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Limita el nombre de repeticions que es crearan quan s’habiliti l’opció «Incrementa l’índex de repeticions automàticament». Si se sobrepassa el límit quan es crea una nova repetició s’esborrarà la repetició amb l'índex més baix. Un valor de «0» significa que es crearan repeticions sense límit."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Desat ràpid automàtic"
    )
@@ -4920,6 +4952,10 @@ MSG_HASH(
    "Estableix el nivell de registre pels nuclis. Si un nivell de registre emès per un nucli es troba per sota d’aquest valor, s’ignorarà."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
+   "Estableix el nivell de registre dels nuclis libretro (GET_LOG_INTERFACE). Si el nivell de registre d'un nucli libretro es troba per sota del nivell indicat a libretro_log, s'ignorarà. Els registres DEBUG són sempre ignorats a no ser que estigui activat el mode de verbositat (--verbose).\nDEBUG = 0\nINFO  = 1\nWARN  = 2\nERROR = 3"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
    "0 (Depurador)"
    )
@@ -5024,6 +5060,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    "La velocitat màxima a la qual s'executa el contingut en un avançament ràpid (per exemple, 5.0x per un contingut a 60 fps serà 300 fps). Si el valor 0, l'avançament ràpid anirà a la màxima velocitat possible."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
+   "Indica la velocitat màxima a la qual s'executarà el contingut durant l'avançament ràpid (per exemple, 5.0 per un contingut a 60 fps => 300 fps).\nRetroArch passarà a segon pla per assegurar que no se supera la velocitat màxima. Aquest límit no és completament precís."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
@@ -7591,6 +7631,10 @@ MSG_HASH(
    "El nombre de fotogrames de latència d’entrada per al joc en línia que s’usarà per amagar la latència de la xarxa. Redueix la fluctuació de senyal i l’ús de CPU del joc en línia a canvi d’introduir una latència d’entrada considerable."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "El nombre de fotogrames de retard en l'entrada que farà servir el joc en xarxa per amagar la latència de la xarxa.\nAquesta opció retarda l'entrada local en el joc en xarxa perquè el fotograma executat més proper als fotogrames que es rebin de la xarxa, reduint les distorsions visuals i el consum de la CPU, però genera un retard en la entrada visible."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    "Rang de fotogrames de latència d'entrada"
    )
@@ -7921,6 +7965,10 @@ MSG_HASH(
    "Comprova els duplicats mitjançant les sumes de verificació CRC"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "A vegades, els fitxers ISO tenen nombres de sèrie duplicats, sobretot en contingut de PSP/PSN. En dependre únicament del nombre de sèrie, el sistema pot cercar contingut en el sistema erroni. Aquesta opció afegeix una comprovació mitjançant sumes de verificació CRC, això disminueix la velocitat de la cerca però fa que sigui més precisa."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Gestiona les llistes de reproducció"
    )
@@ -8049,6 +8097,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_LANGUAGE,
    "Estableix la llengua de la interfície d’usuari."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
+   "Tradueix el menú i tots els missatges en pantalla a l'idioma que has seleccionat. Cal reiniciar per poder aplicar els canvis.\nNota:Al costat de cada idioma, es mostrarà el grau de finalització de cada traducció. Si algun element del menú no està traduït a l'idioma seleccionat, es mostrarà en anglès."
    )
 
 /* Settings > User > Privacy */
@@ -9756,6 +9808,14 @@ MSG_HASH(
    "Carrega un nou disc"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Expulsa el disc actual, selecciona un nou disc des del sistema de fitxers, insereix-lo i tanca la safata virtual del disc.\nNOTA: Aquesta és una característica heretada. Es recomana carregar contingut de diversos discs a les llistes de reproducció M3U, les quals permeten seleccionar discs mitjançant les opcions 'Expulsar disc', 'Introduir disc' i 'Índex del disc actual'."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
+   "Escull un nou disc des del sistema de fitxers i insereix-lo sense tancar la safata virtual de disc.\nNOTA: Aquesta és una característica heretada. Es recomana carregar títols de diversos discs fent servir les llistes de reproducció M3U, les quals permeten seleccionar discs mitjançant l'opció 'Índex del disc actual'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    "Índex del disc actual"
    )
@@ -9861,6 +9921,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
    "Augmenta o disminueix la quantitat de passes de canalització de shaders. Shaders separats es poden vincular a cada passa de canalització i configurar el seu escalat i filtrat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
+   "RetroArch permet combinar diversos shaders amb passades arbitràries, filtres personals de maquinari i factors d'escala.\nAquesta opció especifica la quantitat de passades de shaders que es faran servir. Si esculls 0 i després 'Aplicar canvis en els shaders', faràs servir un shader 'en blanc'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
@@ -12472,6 +12536,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
    "Selecciona el contingut des d'una llista de reproducció recent."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
+   "Quan es carrega un contingut, es desarà a l'historial juntament amb les combinacions de nuclis de libretro.\nL'historial es desa en un fitxer situat a la mateixa carpeta on estigui el fitxer de configuració de RetroArch. Si no s'ha carregat un fitxer de configuració en iniciar RetroArch, no es desarà ni carregarà l'historial i l'opció desapareixerà del menú principal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
