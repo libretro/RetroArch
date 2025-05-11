@@ -15941,4 +15941,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_GAME_AI,
    "Паказваць 'Гульнявы ШІ'"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
+   "Паказваць опцыю 'Гульнявы ШІ'."
+   )
 #endif

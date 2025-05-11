@@ -2351,6 +2351,10 @@ MSG_HASH(
    "La freqüència d'actualització precisa estimada de la pantalla en Hz."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
+   "La freqüència exacta d'actualització del teu monitor (en Hz). Serveix per calcular la freqüència d'entrada d'àudio com:\nfreqüència d'entrada d'àudio = velocitat entrada del joc * freqüència d'actualització del monitor/freqüència d'actualització del joc.\nSi el nucli no indica un valor, s'assumeix el format NTSC per motius de compatibilitat.\nAquest valor serà similar a 60 Hz per evitar canvis en el to. Si el teu monitor no és compatible amb 60 Hz, desactiva la sincronia vertica[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
    "Estableix la freqüència d'actualització notificada per la pantalla"
    )
@@ -3197,6 +3201,10 @@ MSG_HASH(
    "Seleccioneu el dispositiu de sortida."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
+   "Escull el dispositiu de sortida (específic del controlador). La sortida de so MIDI es desactivarà si aquesta opció està desactivada. També es pot introduir el nom del dispositiu manualment.\nSi s'activa la sortida MIDI i el nucli/joc/aplicació son compatibles amb la sortida MIDI, alguns o tots els sons es generaran pel dispositiu MIDI. Si es selecciona un controlador MIDI 'null', aquests sons no es reproduiran."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
    "Volum"
    )
@@ -3328,6 +3336,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    "Afecta com RetroArch realitza el sondeig d'entrada. Depenent de la vostra configuració, establir-ho a 'Prest' o 'Tard' pot significar menys latència."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
+   "Influeix en la forma de testejar el senyal d'entrada a RetroArch.\nPrimerenc: El test es fa abans de processar el fotograma.\nNormal: El test es fa quan es sol·liciti.\nTardà: el test es fa després de la primera petició de l'estat d'entrada de cada fotograma.\nSi es selecciona Primerenc o Tardà, es pot reduir la latència. Aquesta configuració no tindrà efecte durant una sessió de joc en xarxa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -3734,6 +3746,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
    "Activa Dreceres de Teclat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "Si la tecla per activar tecles ràpides està assignada, és necessari mantenir-la clicada abans de clicar qualsevol altra tecla ràpida. Això permet assignar botons dels controladors a funcions de tecles ràpides sense influenciar a les entrades normals. Si s'assigna la tecla a un sol comandament, aquest comandament no serà imprescindible per les tecles ràpides del teclat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
@@ -7623,6 +7639,10 @@ MSG_HASH(
    "La freqüència (en fotogrames) amb la qual es comprovarà que l’amfitrió i el client estan sincronitzats."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
+   "Indica la freqüència (en fotogrames) amb el que el servidor del joc en xarxa verificarà la sincronia entre els clients. Aquest valor no tindrà efectes visibles en gran part dels nuclis i pot ser ignorat. En nuclis no deterministes determinarà l'interval de temps per sincronitzar entre clients. En nuclis amb errors, pot produir errors greus en el rendiment si el valor és diferent de 0. Selecciona 0 per no haver de fer comprovacions. Aquest valor només el fa servir el servidor del joc en xa[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
    "Fotogrames de latència d'entrada"
    )
@@ -7641,6 +7661,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    "El rang de fotogrames de latència d’entrada que es poden fer servir per amagar la latència de la xarxa. Redueix la fluctuació de senyal i l’ús de CPU del joc en línia a canvi d’una latència d’entrada imprevisible."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "El rang de fotogrames de retard d'entrada que pot utilitzar el joc en xarxa per amagar la latència de la xarxa.\nSi aquesta opció està activada, el joc en xarxa ajustarà dinàmicament el nombre de fotogrames de retard d'entrada per equilibrar l'ús de la CPU; el retard d'entrada i latència de xarxa. Redueix les distorsions visuals i el consum de la CPU, però genera un retard entre les entrades/controladors."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -9907,6 +9931,10 @@ MSG_HASH(
    "Els canvis de la configuració de shaders tindran efecte immediat. Fes servir aquesta opció en canviar la quantitat de passades, filtrat,..."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
+   "Després de canviar la configuració de shaders (com el nombre de passades, el filtratge, l'escala...) pots fer servir aquesta opció per aplicar els canvis.\nCanviar aquesta configuració és una opció que consumeix molts recursos, així que cal fer-la de forma explícita.\nEn aplicar els shaders, es desarà la configuració del menú en un fitxer temporal(retroarch.slangp/.cgp/.glslp) i es carregaran. El fitxer no s'eliminarà en tancar RetroArch i es desarà a la carpeta de shaders."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
    "Paràmetres del shader"
    )
@@ -9941,6 +9969,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,
    "Escala"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
+   "Ajusta l'escala per aquesta passada. El factor d'escala és acumulatiu, per exemple: 2x per a la primera passada i 2x per a la segona serà una escala global de 4x.\nSi l'última passada té un factor d'escala, el resultat final estirarà per tota la pantalla amb el filtre predeterminat segons la configuració del filtre bilineal (en la configuració de vídeo).\nSi has escollit 'Irellevant', es farà servir l'escala 1x o bé s'estirarà a pantalla completa, en funció de si és l'última passad[...]"
    )
 
 /* Quick Menu > Shaders > Save */
@@ -11642,6 +11674,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
    "Mostra metadades de continguts en moviment"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "Si actives aquesta opció, cadascun dels elements de les metadades d'un contingut que es mostren a la part dreta de les llistes de reproducció (nucli associat, temps de joc,...) ocuparà una única fila, i el text que superi l'amplada disponible, es desplaçarà lateralment automàticament. Si desactives aquesta opció, cada element de les metadades es mostrarà de forma estàtica, ocupant les línies que facin falta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
@@ -15319,6 +15355,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
    "Pot millorar el rendiment, reduir la latència i arreglar problemes d’àudio crepitant. Necessitareu https://github.com/FeralInteractive/gamemode perquè funcioni."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
+   "Activar del mode de joc de Linux pot millorar la latència, corregir errors en l'àudio i maximitzar el rendiment general configurat automàticament la teva CPU i la teva GPU per optimitzar el seu rendiment.\nCal tenir instal·lat el programari GameMode perquè aquesta opció funcioni. Si necessites més informació sobre GameMode, visita la pàgina https://github.com/FeralInteractive/gamemode."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
