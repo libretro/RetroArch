@@ -451,6 +451,7 @@ typedef struct xmb_handle
    bool show_thumbnails;
    bool show_mouse;
    bool show_screensaver;
+   bool show_playlist_tabs;
    bool use_ps3_layout;
    bool last_use_ps3_layout;
    bool assets_missing;
@@ -2634,7 +2635,6 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    menu_displaylist_info_t info;
    settings_t *settings             = config_get_ptr();
    const char *dir_playlist         = settings->paths.directory_playlist;
-   bool menu_content_show_playlists = settings->bools.menu_content_show_playlist_tabs;
    bool truncate_playlist_name      = settings->bools.ozone_truncate_playlist_name;
    bool sort_after_truncate         = settings->bools.ozone_sort_after_truncate_playlist_name;
 
@@ -2647,7 +2647,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    info.type_default                = FILE_TYPE_PLAIN;
    info.enum_idx                    = MENU_ENUM_LABEL_PLAYLISTS_TAB;
 
-   if (menu_content_show_playlists && !string_is_empty(info.path))
+   if (!string_is_empty(info.path))
    {
       size_t i;
 
@@ -3007,6 +3007,8 @@ static void xmb_populate_entries(void *data,
 
    if (!xmb)
       return;
+
+   xmb->show_playlist_tabs            = settings->bools.menu_content_show_playlist_tabs;
 
    xmb->skip_thumbnail_reset          = false;
    if (xmb->is_quick_menu && depth < xmb->old_depth)
@@ -7779,7 +7781,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Horizontal tab icons */
    if (!xmb->assets_missing)
    {
-      for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + xmb->system_tab_end; i++)
+      unsigned horizontal_list_size = (xmb->show_playlist_tabs)
+            ? (unsigned)xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
+            : 0;
+
+      for (i = 0; i <= xmb->system_tab_end + horizontal_list_size; i++)
       {
          xmb_node_t *node = xmb_get_node(xmb, i);
 
@@ -8965,6 +8971,9 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
    file_list_t *menu_stack    = MENU_LIST_GET(menu_list, 0);
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t selection           = menu_st->selection_ptr;
+   unsigned horizontal_list_size = (xmb->show_playlist_tabs)
+         ? (unsigned)xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
+         : 0;
 
    if (!xmb)
       return;
@@ -8996,7 +9005,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
    else
       xmb->selection_ptr_old = selection;
 
-   list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + xmb->system_tab_end;
+   list_size = xmb->system_tab_end + horizontal_list_size;
 
    switch (type)
    {
