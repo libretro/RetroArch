@@ -5629,19 +5629,13 @@ unsigned menu_event(
       else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
          ret = MENU_ACTION_CANCEL;
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
-      {
-         if (!settings->bools.menu_disable_search_button)
-            ret = MENU_ACTION_SEARCH;
-      }
+         ret = MENU_ACTION_SEARCH;
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
          ret = MENU_ACTION_SCAN;
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
          ret = MENU_ACTION_START;
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-      {
-         if (!settings->bools.menu_disable_info_button)
-            ret = MENU_ACTION_INFO;
-      }
+         ret = MENU_ACTION_INFO;
       else if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
          ret = MENU_ACTION_TOGGLE;
 
@@ -7911,8 +7905,8 @@ bool menu_driver_iterate(
 bool menu_input_dialog_start_search(void)
 {
    input_driver_state_t *input_st          = input_state_get_ptr();
-#ifdef HAVE_ACCESSIBILITY
    settings_t *settings                    = config_get_ptr();
+#ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable               = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
    access_state_t *access_st               = access_state_get_ptr();
@@ -7920,7 +7914,7 @@ bool menu_input_dialog_start_search(void)
    struct menu_state *menu_st              = &menu_driver_state;
    menu_handle_t         *menu             = menu_st->driver_data;
 
-   if (!menu)
+   if (!menu || settings->bools.menu_disable_search_button)
       return false;
 
 #ifdef HAVE_MIST
