@@ -42,6 +42,9 @@ static int action_info_default(unsigned type, const char *label)
    bool audio_enable_menu_notice = settings->bools.audio_enable_menu_notice;
 #endif
 
+   if (settings->bools.menu_disable_info_button)
+      goto error;
+
    menu_displaylist_info_init(&info);
 
    info.list                    = menu_stack;
