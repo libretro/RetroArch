@@ -3249,16 +3249,8 @@ MSG_HASH(
    "Poista tietopainike käytöstä"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "Jos käytössä, tiedot-painikkeen painallukset jätetään huomiotta."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "Poista hakupainike käytöstä"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "Jos käytössä, hakupainikkeen painallukset jätetään huomiotta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,

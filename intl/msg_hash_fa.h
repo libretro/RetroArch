@@ -2357,16 +2357,8 @@ MSG_HASH(
    "غیرفعال کردن دکمهٔ اطلاعات"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "اگر فعال باشد، فشرده شدن دکمهٔ اطلاعات نادیده گرفته می‌شود."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "غیرفعال‌سازی دکمهٔ جستجو"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "اگر فعال باشد، فشرده شدن دکمهٔ جستجو نادیده گرفته می‌شود."
    )
 
 /* Settings > Input > Hotkeys */

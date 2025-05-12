@@ -3629,16 +3629,8 @@ MSG_HASH(
    "Zakázat info tlačítko"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "Pokud je povoleno, stisknutí tlačítka Info bude ignorováno."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "Zakázat tlačítko hledat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "Pokud je povoleno, budou stisknutí tlačítka Hledat ignorována."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,

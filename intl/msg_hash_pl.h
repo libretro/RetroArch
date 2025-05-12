@@ -3353,16 +3353,8 @@ MSG_HASH(
    "Wyłącz przycisk informacyjny"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "Jeśli włączone, naciśnięcia przycisku Informacji będą ignorowane."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "Wyłącz przycisk wyszukiwania"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "Jeśli włączone, naciśnięcia przycisku wyszukiwania będzie ignorowane."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,

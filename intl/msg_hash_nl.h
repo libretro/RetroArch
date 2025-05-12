@@ -2801,16 +2801,8 @@ MSG_HASH(
    "Infoknop uitschakelen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "Indien ingeschakeld worden Info-toetsen genegeerd."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "Zoekknop uitschakelen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "Indien ingeschakeld wordt het indrukken van zoekknoppen genegeerd."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,

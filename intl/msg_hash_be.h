@@ -3649,16 +3649,8 @@ MSG_HASH(
    "Адключэнне кнопкі даведкі"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "Калі ўключана, націсканні кнопкі даведкі будуць ігнаравацца."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "Адключэнне кнопкі пошуку"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "Калі ўключана, націсканні кнопкі пошуку будуць ігнаравацца."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,

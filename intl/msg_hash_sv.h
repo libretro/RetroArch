@@ -1469,6 +1469,10 @@ MSG_HASH(
    "Användare"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Ändra inställningar för integritet, konto och användarnamn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Katalog"
    )
@@ -3477,16 +3481,8 @@ MSG_HASH(
    "Inaktivera info-knapp"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "Aktiverad kommer Info-knapp tryckningar att ignoreras."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "Inaktivera Sökknapp"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "Aktiverad kommer Sök-knapp tryckningar att ignoreras."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
@@ -3730,6 +3726,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    "Slår på/av den för närvarande valda shadern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_HOLD,
+   "Shaders (Håll)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
@@ -4815,6 +4815,10 @@ MSG_HASH(
    "Inspelnings-trådar"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+   "Använd inspelning med efterfilter"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
    "Fånga bilden efter att filter (men inte shaders) har tillämpats. Videon kommer att se lika snygg ut som det du ser på din skärm."
    )
@@ -5339,6 +5343,10 @@ MSG_HASH(
    "Uppdateringsintervall för minnesanvändning (i bildrutor)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
+   "Minnesanvändningen uppdateras med inställt intervall i bildrutor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
    "Visa Netplay Ping"
    )
@@ -5371,12 +5379,24 @@ MSG_HASH(
    "Visa ett meddelande på skärmen när spelkontroller ansluts/kopplas från."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Visa ett meddelande på skärmen när inmatningsenheter inte kunde konfigureras."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
    "Notifieringar vid inlästa inmatningsommappningar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
    "Visa ett meddelande på skärmen vid inläsning av ommappningsfiler för inmatning."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "Meddelanden vid inläsning av konfigurationsåsidosättning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "Visa ett meddelande på skärmen vid inläsning av filer för åsidosättning av konfiguration."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
@@ -5981,6 +6001,10 @@ MSG_HASH(
    "Visa 'Utforska'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
+   "Visa alternativ för innehållsutforskare. (Omstart krävs på Ozone/XMB)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "Visa 'Innehållslösa kärnor'"
    )
@@ -6499,6 +6523,10 @@ MSG_HASH(
    "Uppskala automatiskt miniatyrbilder med en bredd/höjd som är mindre än det angivna värdet. Förbättrar bildkvalitén. Har en måttlig inverkan på prestanda."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Miniatyrbildsbakgrunder"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    "Möjliggör utfyllnad av oanvänt utrymme i miniatyrbilder med en solid bakgrund. Detta säkerställer en enhetlig visningsstorlek för alla bilder, vilket förbättrar menyutseendet när du tittar på miniatyrbilder av blandat innehåll med olika basmått."
    )
@@ -6808,12 +6836,28 @@ MSG_HASH(
    "Visa en indikationer på skärmen när framsteg görs mot vissa prestationer."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   "Meddelanden om starter för topplista"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
    "Visar en beskrivning av en topplista när den blir aktiv."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   "Meddelanden om insändningar för topplista"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
    "Visar ett meddelande med det värde som skickas in när ett topplisteförsök har slutförts."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Meddelanden om misslyckanden för topplista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   "Visar ett meddelande när ett topplisteförsök misslyckas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
@@ -6917,6 +6961,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
    "Lösenordet som används av klienter för att ansluta till värden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
+   "Serverlösenord för endast åskådare"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
@@ -10563,6 +10611,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
    "Visar en sekundär miniatyrbild när du använder miniatyrvisningslägen av typen 'Lista'. Den här inställningen gäller endast när skärmen har tillräcklig fysisk bredd för att visa två miniatyrer."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
+   "Miniatyrbildsbakgrunder"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,

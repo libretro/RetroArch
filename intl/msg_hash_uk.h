@@ -3709,16 +3709,8 @@ MSG_HASH(
    "Вимкнути кнопку «Інформація»"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "Якщо буде увімкнено, натискання кнопки \"Інформація\" буде проігноровано."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "Вимкнути кнопку «Пошук»"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "Якщо буде увімкнено, натискання кнопки \"Пошук\" буде проігноровано."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
