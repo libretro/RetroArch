@@ -7195,15 +7195,56 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 
                if (ret)
                {
-                  if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff < -joypad_info.axis_threshold)
-                     BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
-                  else if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff > joypad_info.axis_threshold)
-                     BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
+                  bool playlist = false;
 
+                  /* Replace right analog stick navigation in playlists to thumbnail cycling. */
+                  if (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                  {
+                     menu_entry_t entry;
+                     MENU_ENTRY_INITIALIZE(entry);
+                     menu_entry_get(&entry, 0, 0, NULL, true);
+
+                     switch (entry.type)
+                     {
+                        case FILE_TYPE_RPL_ENTRY:
+                        case FILE_TYPE_PLAYLIST_ENTRY:
+                        case FILE_TYPE_PLAIN:
+                        case FILE_TYPE_RDB:
+                           playlist = true;
+                           break;
+                        default:
+                           break;
+                     }
+                  }
+
+                  if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff < -joypad_info.axis_threshold)
+                  {
+                     if (playlist)
+                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_Y_MINUS);
+                     else
+                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
+                  }
+                  else if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff > joypad_info.axis_threshold)
+                  {
+                     if (playlist)
+                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_Y_PLUS);
+                     else
+                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
+                  }
                   if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret / 0x7fff < -joypad_info.axis_threshold)
-                     BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
+                  {
+                     if (playlist)
+                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_X_MINUS);
+                     else
+                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
+                  }
                   else if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret / 0x7fff > joypad_info.axis_threshold)
-                     BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+                  {
+                     if (playlist)
+                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_X_PLUS);
+                     else
+                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+                  }
                }
             }
          }

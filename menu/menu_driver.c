@@ -5624,6 +5624,15 @@ unsigned menu_event(
          ret = MENU_ACTION_SCROLL_END;
       }
 
+      if (BIT256_GET_PTR(p_trigger_input, RARCH_ANALOG_RIGHT_Y_MINUS))
+         ret = MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY;
+      else if (BIT256_GET_PTR(p_trigger_input, RARCH_ANALOG_RIGHT_Y_PLUS))
+         ret = MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY;
+      else if (BIT256_GET_PTR(p_trigger_input, RARCH_ANALOG_RIGHT_X_MINUS))
+         ret = MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY;
+      else if (BIT256_GET_PTR(p_trigger_input, RARCH_ANALOG_RIGHT_X_PLUS))
+         ret = MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY;
+
       if (ok_trigger)
          ret = MENU_ACTION_OK;
       else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
@@ -6975,6 +6984,69 @@ clear:
 }
 #endif
 
+/**
+ * action_cycle_thumbnail:
+ * @mode                     : menu action (primary/secondary)
+ *
+ * Common thumbnail cycler
+ *
+ * Returns: 0 on success, -1 on fail.
+**/
+int action_cycle_thumbnail(unsigned mode)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+
+   if (!settings)
+      return -1;
+
+   if (mode == MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY)
+   {
+      uint8_t cur_primary   = settings->uints.gfx_thumbnails;
+      uint8_t cur_secondary = settings->uints.menu_left_thumbnails;
+
+      cur_primary++;
+
+      /* Prevent dupe image */
+      if (cur_primary == cur_secondary && cur_secondary)
+         cur_primary++;
+
+      /* Wrap primary to first image type, and skip logo */
+      if (cur_primary > PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 2)
+         cur_primary = 1;
+
+      /* Final dupe check */
+      if (cur_primary == cur_secondary && cur_secondary)
+         cur_primary++;
+
+      configuration_set_uint(settings, settings->uints.gfx_thumbnails, cur_primary);
+   }
+   else if (mode == MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY)
+   {
+      uint8_t cur_primary   = settings->uints.gfx_thumbnails;
+      uint8_t cur_secondary = settings->uints.menu_left_thumbnails;
+
+      cur_secondary++;
+
+      /* Prevent dupe image */
+      if (cur_primary == cur_secondary)
+         cur_secondary++;
+
+      /* Wrap secondary to no image, and skip logo */
+      if (cur_secondary > PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 2)
+         cur_secondary = 0;
+
+      configuration_set_uint(settings, settings->uints.menu_left_thumbnails, cur_secondary);
+   }
+
+   if (menu_st->driver_ctx)
+   {
+      if (menu_st->driver_ctx->refresh_thumbnail_image)
+         menu_st->driver_ctx->refresh_thumbnail_image(menu_st->userdata, menu_st->selection_ptr);
+   }
+
+   return 0;
+}
 
 /**
  * menu_iterate:
@@ -7639,6 +7711,10 @@ int generic_menu_entry_action(
 #endif
          break;
       }
+      case MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY:
+      case MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY:
+         action_cycle_thumbnail(action);
+         break;
       case MENU_ACTION_CANCEL:
          if (cbs && cbs->action_cancel)
             ret = cbs->action_cancel(entry->path,
