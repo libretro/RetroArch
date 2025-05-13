@@ -7155,10 +7155,8 @@ static void rgui_refresh_thumbnail_image(void *userdata, size_t i)
    rgui_inline_thumbnails      = settings->bools.menu_rgui_inline_thumbnails
          || (rgui->flags & RGUI_FLAG_IS_QUICK_MENU);
 
-   /* Only refresh thumbnails if thumbnails are enabled */
-   if (     ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) || rgui_inline_thumbnails)
-         && (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
-         ||  gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)))
+   /* Only refresh thumbnails if thumbnails are visible */
+   if ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) || rgui_inline_thumbnails)
    {
       /* In all cases, reset current thumbnails */
       rgui->fs_thumbnail.width           = 0;
@@ -7176,6 +7174,11 @@ static void rgui_refresh_thumbnail_image(void *userdata, size_t i)
       rgui->mini_left_thumbnail.is_valid = false;
       rgui->mini_left_thumbnail.path[0]  = '\0';
 
+      /* Skip thumbnail scan if neither are enabled */
+      if (     !gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
+            && !gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+         return;
+
       /* Only load thumbnails if currently viewing a
        * playlist (note that thumbnails are loaded
        * immediately, for an optimal user experience) */
@@ -7190,49 +7193,49 @@ static void rgui_action_switch_thumbnail(rgui_t *rgui)
 {
    settings_t *settings = config_get_ptr();
 
-   if (settings->uints.gfx_thumbnails == 0)
+   if (!settings)
+      return;
+
+   if (settings->uints.gfx_thumbnails)
    {
-      configuration_set_uint(settings,
-            settings->uints.menu_left_thumbnails,
-            settings->uints.menu_left_thumbnails + 1);
+      uint8_t cur_primary   = settings->uints.gfx_thumbnails;
+      uint8_t cur_secondary = settings->uints.menu_left_thumbnails;
 
+      cur_primary++;
+
+      /* Prevent dupe image */
       if (     (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
-            && (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails))
-         configuration_set_uint(settings,
-               settings->uints.menu_left_thumbnails,
-               settings->uints.menu_left_thumbnails + 1);
+            && (cur_primary == cur_secondary && cur_secondary))
+         cur_primary++;
 
-      if (settings->uints.menu_left_thumbnails > 3)
-         configuration_set_uint(settings,
-               settings->uints.menu_left_thumbnails, 1);
+      /* Wrap primary to first image type, and skip logo */
+      if (cur_primary > PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 2)
+         cur_primary = 1;
 
+      /* Final dupe check */
       if (     (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
-            && (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails))
-         configuration_set_uint(settings,
-               settings->uints.menu_left_thumbnails,
-               settings->uints.menu_left_thumbnails + 1);
+            && (cur_primary == cur_secondary && cur_secondary))
+         cur_primary++;
+
+      configuration_set_uint(settings, settings->uints.gfx_thumbnails, cur_primary);
    }
    else
    {
-      configuration_set_uint(settings,
-            settings->uints.gfx_thumbnails,
-            settings->uints.gfx_thumbnails + 1);
+      uint8_t cur_primary   = settings->uints.gfx_thumbnails;
+      uint8_t cur_secondary = settings->uints.menu_left_thumbnails;
 
+      cur_secondary++;
+
+      /* Prevent dupe image */
       if (     (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
-            && (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails))
-         configuration_set_uint(settings,
-               settings->uints.gfx_thumbnails,
-               settings->uints.gfx_thumbnails + 1);
+            && (cur_primary == cur_secondary))
+         cur_secondary++;
 
-      if (settings->uints.gfx_thumbnails > 3)
-         configuration_set_uint(settings,
-               settings->uints.gfx_thumbnails, 1);
+      /* Wrap secondary to no image, and skip logo */
+      if (cur_secondary > PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 2)
+         cur_secondary = 0;
 
-      if (     (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
-            && (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails))
-         configuration_set_uint(settings,
-               settings->uints.gfx_thumbnails,
-               settings->uints.gfx_thumbnails + 1);
+      configuration_set_uint(settings, settings->uints.menu_left_thumbnails, cur_secondary);
    }
 
    rgui_refresh_thumbnail_image(rgui, 0);
@@ -8201,6 +8204,15 @@ static enum menu_action rgui_parse_menu_entry_action(
          /* Playlist thumbnail cycle */
          if (     (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
                || ((rgui->flags & RGUI_FLAG_IS_QUICK_MENU) && !menu_is_running_quick_menu()))
+         {
+            rgui_action_switch_thumbnail(rgui);
+            new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      case MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY:
+      case MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY:
+         /* Use rgui internal cycle method always in fullscreen mode */
+         if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
          {
             rgui_action_switch_thumbnail(rgui);
             new_action = MENU_ACTION_NOOP;

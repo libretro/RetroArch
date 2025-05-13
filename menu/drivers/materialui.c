@@ -151,6 +151,9 @@
 #define MUI_BATTERY_PERCENT_MAX_LENGTH 12
 #define MUI_TIMEDATE_MAX_LENGTH        255
 
+/* Allow force enabling secondary thumbnail */
+#define MUI_FORCE_ENABLE_SECONDARY 0
+
 /* Forward declarations */
 extern int action_switch_thumbnail(const char *path, const char *label, unsigned type, size_t idx);
 
@@ -3045,10 +3048,7 @@ static void materialui_compute_entries_box_playlist_list(
 
       /* Account for additional padding in portrait mode */
       if (mui->flags & MUI_FLAG_IS_PORTRAIT)
-      {
-         if (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
-            thumbnail_margin = (int)mui->scrollbar.width;
-      }
+         thumbnail_margin    = (int)mui->scrollbar.width;
       /* Account for additional padding in landscape mode */
       else
          thumbnail_margin    = (int)mui->margin;
@@ -4735,10 +4735,7 @@ static void materialui_render_menu_entry_playlist_list(
        * width (to prevent the scroll bar from being
        * drawn on top of the secondary thumbnail) */
       if (mui->flags & MUI_FLAG_IS_PORTRAIT)
-      {
-         if (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
-            thumbnail_margin = (int)mui->scrollbar.width;
-      }
+         thumbnail_margin = (int)mui->scrollbar.width;
       /* When using landscape display orientations, we
        * have enough screen space to improve thumbnail
        * appearance by adding left/right margins */
@@ -8496,6 +8493,7 @@ static void materialui_set_thumbnail_dimensions(materialui_handle_t *mui)
    }
 }
 
+#if MUI_FORCE_ENABLE_SECONDARY
 /* Checks global 'Secondary Thumbnail' option - if
  * currently set to 'OFF', changes value to
  * MUI_DEFAULT_SECONDARY_THUMBNAIL_TYPE
@@ -8549,6 +8547,7 @@ static bool materialui_force_enable_secondary_thumbnail(
    return gfx_thumbnail_is_enabled(
          menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT);
 }
+#endif
 
 /* Determines whether dual thumbnails should be enabled
  * based on current list view mode, thumbnail dimensions
@@ -8582,10 +8581,12 @@ static void materialui_set_secondary_thumbnail_enable(materialui_handle_t *mui,
             if (!menu_materialui_dual_thumbnail_list_view_enable)
                return;
 
+#if MUI_FORCE_ENABLE_SECONDARY
             /* Attempt to force enable secondary thumbnails if
              * global 'Secondary Thumbnail' type is set to OFF */
             if (!materialui_force_enable_secondary_thumbnail(mui, menu_st, settings))
                return;
+#endif
 
             /* Secondary thumbnails are supported/enabled
              * Check whether screen has sufficient
@@ -8609,6 +8610,9 @@ static void materialui_set_secondary_thumbnail_enable(materialui_handle_t *mui,
              *   primary + secondary thumbnails */
             usable_width -= 2 * ((int)mui->thumbnail_width_max + thumbnail_margin);
 
+            if (!gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+               break;
+
             /* > A secondary thumbnail may only be drawn
              *   if the remaining (text) width is greater
              *   than twice the thumbnail width */
@@ -8620,6 +8624,7 @@ static void materialui_set_secondary_thumbnail_enable(materialui_handle_t *mui,
          break;
       case MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON:
       case MUI_LIST_VIEW_PLAYLIST_THUMB_DESKTOP:
+#if MUI_FORCE_ENABLE_SECONDARY
          /* List view requires secondary thumbnails
           * > Attempt to force enable, but set
           *   MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED to 'true'
@@ -8629,6 +8634,12 @@ static void materialui_set_secondary_thumbnail_enable(materialui_handle_t *mui,
           *   a per-playlist override */
          materialui_force_enable_secondary_thumbnail(mui, menu_st, settings);
          mui->flags |=  MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED;
+#else
+         if (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+            mui->flags |=  MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED;
+         else
+            mui->flags &= ~MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED;
+#endif
          break;
       case MUI_LIST_VIEW_PLAYLIST:
       case MUI_LIST_VIEW_DEFAULT:
@@ -12119,6 +12130,9 @@ static void materialui_refresh_thumbnail_image(void *userdata, size_t i)
 
    if (refresh_enabled)
    {
+      /* Must reset also partially visible items */
+      size_t j                = (mui->first_onscreen_entry) ? mui->first_onscreen_entry - 1 : 0;
+      size_t j_max            = mui->last_onscreen_entry + 1;
       materialui_node_t *node = NULL;
       file_list_t *list       = MENU_LIST_GET_SELECTION(menu_list, 0);
       float stream_delay      = gfx_thumb_get_ptr()->stream_delay;
@@ -12126,12 +12140,17 @@ static void materialui_refresh_thumbnail_image(void *userdata, size_t i)
       if (!list)
          return;
 
-      if (!(node = (materialui_node_t*)list->list[(size_t)i].userdata))
-         return;
+      materialui_update_list_view(mui, menu_st, config_get_ptr());
 
-      /* Reset existing thumbnails */
-      gfx_thumbnail_reset(&node->thumbnails.primary);
-      gfx_thumbnail_reset(&node->thumbnails.secondary);
+      for (; j < j_max; j++)
+      {
+         if (!(node = (materialui_node_t*)list->list[(size_t)j].userdata))
+            continue;
+
+         /* Reset existing thumbnails */
+         gfx_thumbnail_reset(&node->thumbnails.primary);
+         gfx_thumbnail_reset(&node->thumbnails.secondary);
+      }
 
       /* No need to actually request thumbnails here
        * > Just set delay timer to the current maximum
