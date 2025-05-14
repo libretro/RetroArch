@@ -3733,16 +3733,8 @@ MSG_HASH(
    "메뉴에서 왼쪽 아날로그 비활성화"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   "메뉴를 탐색할 때 왼쪽 아날로그 스틱을 비활성화합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "메뉴에서 오른쪽 아날로그 비활성화"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   "메뉴를 탐색할 때 오른쪽 아날로그 스틱을 비활성화합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,

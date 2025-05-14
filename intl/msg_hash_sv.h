@@ -3489,16 +3489,8 @@ MSG_HASH(
    "Inaktivera vänster analog i meny"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   "Förhindra vänster analog spak från menynavigering."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "Inaktivera höger analog i meny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   "Förhindra höger analog spak från menynavigering."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -8639,8 +8631,16 @@ MSG_HASH(
    "Läs in och ersätt nuvarande inmatningsmappningar."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
+   "Spara aktuella inmatningsmappningar som en ny ommappningsfil."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "Spara spelommappningsfil"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
+   "Ta bort fil för spelommappningar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -10776,7 +10776,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
-   "&Avsluta"
+   "A&vsluta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT,
@@ -12131,6 +12131,14 @@ MSG_HASH(
    "Uppdatering misslyckades - ogiltig kärna: "
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   "Uppdatering misslyckades - ogiltig/saknad arcade DAT-fil: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   "Uppdatering misslyckades - arcade DAT-filen är för stor (otillräckligt med minne): "
+   )
+MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "Tillagd i favoriter"
    )
@@ -13123,6 +13131,10 @@ MSG_HASH(
    "Du måste pausa eller inaktivera Hardcore-läget för prestationer för att läsa in tillstånd."
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE,
+   "Du måste pausa eller inaktivera hardcoreläget för prestationer för att läsa in srm-sparningar."
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "Ett sparat tillstånd lästes in. Hardcore-läget för prestationer inaktiverades för aktuell session."
    )
@@ -13255,6 +13267,18 @@ MSG_HASH(
    "Fel vid borttagning av shader-förval."
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "Ogiltig arcade DAT-fil vald."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   "Vald arcade DAT-fil är för stor (otillräckligt med ledigt minne)."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
+   "Misslyckades med att läsa in arcade DAT-fil (ogiltigt format?)"
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
    "Ogiltig konfiguration för manuell genomsökning."
    )
@@ -13305,6 +13329,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORING_CORE,
    "Återställer kärna: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_ALREADY_INSTALLED,
+   "Vald kärnfil är redan installerad: "
    )
 MSG_HASH(
    MSG_INSTALLING_CORE,

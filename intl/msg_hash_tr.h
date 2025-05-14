@@ -3698,7 +3698,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "Etkinleştirilirse Bilgi fonksiyonu devre dışı bırakılır."
+   "Menü bilgisi fonksiyonunu engelle."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
@@ -3706,7 +3706,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "Etkinleştirilirse Arama fonksiyonu devre dışı bırakılır."
+   "Menü arama fonksiyonunu engelle."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
@@ -3714,7 +3714,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   "Sol Analog çubuğun menüde gezinmesini önleyin."
+   "Menü sol analog çubuk girişini engelle."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
@@ -3722,7 +3722,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   "Sağ Analog çubuğun menüde gezinmesini önleyin."
+   "Menü sağ analog çubuk girişini engelle. Sağ analog çubuk, oynatma listelerindeki küçük resimleri döndürür."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,

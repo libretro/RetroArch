@@ -3602,7 +3602,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "Wenn aktiviert, wird die Info-Funktion ausgeschaltet."
+   "Menü-Info-Funktion verhindern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
@@ -3610,7 +3610,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "Wenn aktiviert, wird die Suchfunktion ausgeschaltet."
+   "Menü-Suchen-Funktion verhindern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
@@ -3618,7 +3618,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   "Linken Analogstick am Navigieren im Menü hindern."
+   "Eingabe von linkem Analogstick im Menü verhindern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
@@ -3626,7 +3626,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   "Rechten Analogstick am Navigieren im Menü hindern."
+   "Eingabe von rechtem Analogstick im Menü verhindern. Der rechte Analogstick wechselt die Miniaturansichten in Wiedergabelisten durch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
