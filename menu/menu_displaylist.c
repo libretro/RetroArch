@@ -10731,37 +10731,41 @@ unsigned menu_displaylist_build_list(
          }
          break;
       case DISPLAYLIST_CONFIGURATIONS_LIST:
-         if (menu_entries_append(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS),
-                  MENU_ENUM_LABEL_CONFIGURATIONS,
-                  MENU_SETTING_ACTION, 0, 0, NULL))
-            count++;
-         if (menu_entries_append(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG),
-                  msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG),
-                  MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
-                  MENU_SETTING_ACTION, 0, 0, NULL))
-            count++;
-         if (menu_entries_append(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG),
-                  msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG),
-                  MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
-                  MENU_SETTING_ACTION, 0, 0, NULL))
-            count++;
-         if (menu_entries_append(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG),
-                  msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG),
-                  MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
-                  MENU_SETTING_ACTION, 0, 0, NULL))
-            count++;
-         if (!settings->bools.global_core_options && menu_entries_append(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET),
-               "",
-               MENU_ENUM_LABEL_CORE_OPTIONS_RESET,
-               MENU_SETTING_ACTION_CORE_OPTIONS_RESET, 0, 0, NULL))
-            count++;
-         break;
+         {
+            rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS),
+                     MENU_ENUM_LABEL_CONFIGURATIONS,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG),
+                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG),
+                     MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG),
+                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG),
+                     MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG),
+                     msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG),
+                     MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+            if (!settings->bools.global_core_options && !string_is_empty(sys_info->info.library_name)
+                && menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET),
+                  "",
+                  MENU_ENUM_LABEL_CORE_OPTIONS_RESET,
+                  MENU_SETTING_ACTION_CORE_OPTIONS_RESET, 0, 0, NULL))
+               count++;
+            break;
+         }
       case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
