@@ -22,7 +22,7 @@ SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/downloa
 #########################
 #########################
 
-PACKAGE_NAME ?= com.retroarch.webos
+APP_PACKAGE_NAME ?= com.retroarch.webos
 PACKAGE_VERSION := $(patsubst "%",%,$(RARCH_VERSION))
 
 DEBUG ?= 0
@@ -197,7 +197,7 @@ RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 define APPINFO
 {
-    "id": "$(PACKAGE_NAME)",
+    "id": "$(APP_PACKAGE_NAME)",
     "version": "$(PACKAGE_VERSION)",
     "vendor": "webosbrew.org",
     "title": "RetroArch",
@@ -291,10 +291,10 @@ endif
 	cd webos && ares-package dist
 
 install: ipk
-	ares-install webos/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(ARCH).ipk
+	ares-install webos/$(APP_PACKAGE_NAME)_$(PACKAGE_VERSION)_$(ARCH).ipk
 
 launch: install
-	ares-launch $(PACKAGE_NAME)
+	ares-launch $(APP_PACKAGE_NAME)
 
 .PHONY: all clean ipk
 
