@@ -67,6 +67,16 @@ jobs:
           . /tmp/arm-webos-linux-gnueabi_sdk-buildroot/environment-setup
           make -f Makefile.webos ipk PACKAGE_NAME=${PACKAGE_NAME} ADD_SDL2_LIB=1 -j$(getconf _NPROCESSORS_ONLN)
 
+      - name: Get short SHA
+        id: slug
+        run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: com.retroarch.webos_${{ steps.slug.outputs.sha8 }}_arm.ipk
+          path: |
+            webos/*.ipk
+
       - name: Generate Manifest
         shell: bash
         run: |
@@ -87,4 +97,3 @@ jobs:
           omitBody: true
           omitPrereleaseDuringUpdate: true
           artifacts: webos/*.ipk,webos/*.manifest.json
->>>>>>> 0c0fb0eaf4 (added release workflow)
