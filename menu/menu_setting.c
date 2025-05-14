@@ -6425,43 +6425,45 @@ static size_t setting_get_string_representation_video_frame_delay(
 
    value = *setting->value.target.unsigned_integer;
 
-   if (!settings->bools.video_frame_delay_auto
-     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
-   {
-      if (value >= 20)
-         _len = snprintf(s, len, "%u%% (%ums)",
-               value,
-               (unsigned)(1 / settings->floats.video_refresh_rate
-               * 1000 * (value / 100.0f)));
-      else
-         _len  = snprintf(s, len, "%ums", value);
-      return _len;
-   }
-
    menu_stack = MENU_LIST_GET(menu_st->entries.list, 0);
    if (menu_stack && menu_stack->size)
       label = menu_stack->list[menu_stack->size - 1].label;
 
-   if (value == 0)
+   /* Non-automatic and dropdown list */
+   if (     !settings->bools.video_frame_delay_auto
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
    {
-      _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC), len);
-      if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
-         _len += snprintf(s + _len, len - _len, " (%ums %s)",
-               video_st->frame_delay_effective,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+      if (value == 0)
+         _len = snprintf(s, len, "%s",
+               (settings->bools.video_frame_delay_auto)
+                  ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC)
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+      else if (value >= 20)
+         _len = snprintf(s, len, "%u%% (%ums)",
+               value,
+               (unsigned)(1 / settings->floats.video_refresh_rate * 1000 * (value / 100.0f)));
+      else
+         _len = snprintf(s, len, "%ums", value);
+      return _len;
    }
+
+   /* Automatic delay also shows current effective delay */
+   if (value == 0)
+      _len = snprintf(s, len, "%s (%ums %s)",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC),
+            video_st->frame_delay_effective,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
    else if (value >= 20)
       _len = snprintf(s, len, "%u%% (%ums, %ums %s)",
-             value,
-             (unsigned)(1 / settings->floats.video_refresh_rate
-             * 1000 * (value / 100.0f)),
-             video_st->frame_delay_effective,
-             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+            value,
+            (unsigned)(1 / settings->floats.video_refresh_rate * 1000 * (value / 100.0f)),
+            video_st->frame_delay_effective,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
    else
       _len = snprintf(s, len, "%ums (%ums %s)",
-             value,
-             video_st->frame_delay_effective,
-             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+            value,
+            video_st->frame_delay_effective,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
 
    return _len;
 }
