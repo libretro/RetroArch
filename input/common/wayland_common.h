@@ -202,6 +202,7 @@ typedef struct gfx_ctx_wayland_data
    input_ctx_wayland_data_t input; /* ptr alignment */
    struct wl_list all_outputs;
    struct wl_list current_outputs;
+   struct wl_list feedbacks;
 
    struct
    {
@@ -214,6 +215,10 @@ typedef struct gfx_ctx_wayland_data
 
    int num_active_touches;
    int swap_interval;
+   int64_t last_ust;
+   int64_t last_sbc;
+   int64_t last_msc;
+   int64_t refresh_interval;
    touch_pos_t active_touch_positions[MAX_TOUCHES]; /* int32_t alignment */
    unsigned width;
    unsigned height;
@@ -243,13 +248,7 @@ typedef struct gfx_ctx_wayland_data
 typedef struct wp_presentation_feedback
 {
    struct wp_presentation_feedback *feedback;
-   struct wl_output *output;
-   bool is_presented;
-   uint32_t flags;
-   uint64_t tv_sec;
-   uint32_t tv_nsec;
-   uint32_t refresh;
-   uint64_t seq;
+   struct wl_list link;
 } wp_presentation_feedback_t;
 
 #ifdef HAVE_XKBCOMMON

@@ -498,27 +498,42 @@ static void presentation_feedback_presented(void *data,
    uint32_t refresh, uint32_t seq_hi, uint32_t seq_lo,
    uint32_t flags)
 {
-   wp_presentation_feedback_t *fb = data;
+   gfx_ctx_wayland_data_t *wl = data;
+   wp_presentation_feedback_t *fb;
 
-   fb->is_presented = true;
-   fb->tv_sec = ((uint64_t)tv_sec_hi << 32) | tv_sec_lo;
-   fb->tv_nsec = tv_nsec;
-   fb->refresh = refresh;
-   fb->seq = ((uint64_t)seq_hi << 32) | seq_lo;
-   fb->flags = flags;
-      
-   wp_presentation_feedback_destroy(feedback);
-   free(fb);
+   wl_list_for_each(fb, &wl->feedbacks, link)
+   {
+      if (fb->feedback == feedback)
+      {
+         wl_list_remove(&fb->link);
+         wp_presentation_feedback_destroy(fb->feedback);
+         free(fb);
+         break;
+      }
+   }
+
+   int64_t sec = (uint64_t)tv_sec_lo + ((uint64_t)tv_sec_hi << 32);
+   wl->last_ust = sec * 1000000LL + tv_nsec / 1000;
+   wl->last_msc = (uint64_t)seq_lo + ((uint64_t)seq_hi << 32);
+   wl->refresh_interval = (int64_t)refresh;
 }
 
 static void presentation_feedback_discarded(void *data,
    struct wp_presentation_feedback *feedback)
 {
-   wp_presentation_feedback_t *fb = data;
-   fb->is_presented = false;
+   gfx_ctx_wayland_data_t *wl = data;
+   wp_presentation_feedback_t *fb;
 
-   wp_presentation_feedback_destroy(feedback);
-   free(fb);
+   wl_list_for_each(fb, &wl->feedbacks, link)
+   {
+      if (fb->feedback == feedback)
+      {
+         wl_list_remove(&fb->link);
+         wp_presentation_feedback_destroy(fb->feedback);
+         free(fb);
+         break;
+      }
+   }
 }
 
 const struct wp_presentation_listener presentation_listener = {
@@ -549,7 +564,8 @@ void wl_request_presentation_feedback(gfx_ctx_wayland_data_t *wl)
    }
 
    wp_presentation_feedback_add_listener(fb->feedback,
-         &presentation_feedback_listener, fb);
+         &presentation_feedback_listener, wl);
+   wl_list_insert(&wl->feedbacks, &fb->link);
 }
 
 static int create_shm_file(off_t size)
@@ -910,6 +926,19 @@ bool gfx_ctx_wl_init_common(
    if (!wl->xdg_toplevel_icon_manager)
    {
       RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", xdg_toplevel_icon_manager_v1_interface.name);
+   }
+
+   if (wl->presentation)
+   {
+      wl_list_init(&wl->feedbacks);
+      wl->last_ust = 0;
+      wl->last_sbc = 0;
+      wl->last_msc = 0;
+      wl->refresh_interval = 0;
+   }
+   else
+   {
+      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_presentation_interface.name);
    }
 
    wl->surface = wl_compositor_create_surface(wl->compositor);
