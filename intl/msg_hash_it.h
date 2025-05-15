@@ -1469,6 +1469,10 @@ MSG_HASH(
    "Utente"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Cambia le impostazioni di privacy, account e username."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Cartella"
    )

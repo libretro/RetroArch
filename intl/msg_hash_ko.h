@@ -1521,6 +1521,10 @@ MSG_HASH(
    "사용자"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "개인정보 보호, 계정, 사용자 이름 등의 설정을 변경합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "디렉토리"
    )
@@ -3605,16 +3609,32 @@ MSG_HASH(
    "정보 버튼 사용 안 함"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   "메뉴 정보 기능을 비활성화합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "검색 버튼 사용 안 함"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "메뉴 검색 기능을 비활성화합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
    "메뉴에서 왼쪽 아날로그 비활성화"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "메뉴에서 왼쪽 아날로그 스틱 입력을 비활성화합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "메뉴에서 오른쪽 아날로그 비활성화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "메뉴에서 오른쪽 아날로그 스틱 입력을 비활성화합니다. 오른쪽 아날로그 스틱은 실행목록 화면에서 미리보기를 전환하는 데 사용됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3866,6 +3886,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    "현재 선택된 셰이더를 활성화/비활성화합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_HOLD,
+   "셰이더 (홀드)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
+   "현재 선택된 셰이더를 키가 눌려있는 동안 활성화/비활성화합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
@@ -7008,7 +7036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
-   "썸네일 백그라운드"
+   "미리보기 배경"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
@@ -11818,7 +11846,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "썸네일 백그라운드"
+   "미리보기 배경"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
@@ -14836,7 +14864,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE,
-   "Srm 저장 파일을 불러오려면 업적 하드코어 모드를 일시 정지하거나 비활성화해야 합니다."
+   "srm 저장 파일을 불러오려면 도전과제 하드코어 모드를 일시 정지하거나 비활성화해야 합니다."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,

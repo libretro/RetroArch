@@ -1493,6 +1493,10 @@ MSG_HASH(
    "Felhasználó"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Felhasználónevek, fiókok, és az adatvédelem beállításai."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Könyvtárak"
    )
@@ -3565,16 +3569,32 @@ MSG_HASH(
    "Info gomb kikapcsolása"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   "Az Info funkció kikapcsolása a menüben."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "Keresés gomb kikapcsolása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "A Keresés funkció kikapcsolása a menüben."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
    "A bal analóg kar letiltása a menüben"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "A bal analóg kar letiltása a menüben."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "A jobb analóg kar letiltása a menüben"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "A jobb analóg kar letiltása a menüben. A jobb analóg kar a bélyegképeket váltja a játéklistákban."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3826,6 +3846,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    "Az aktuális shadert be/ki kapcsolja."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_HOLD,
+   "Shaderek (pillanatgomb)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
+   "Az éppen kiválasztott shader ki/be kapcsolása, amíg a gomb le van nyomva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
@@ -6949,6 +6977,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    "A megadott értéknél kevésbé széles/magas bélyegképeket automatikusan felskálázza. Javítja a képminőséget, mérsékelt hatása van a teljesítményre."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Háttér a bélyegképekhez"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
@@ -11541,6 +11573,10 @@ MSG_HASH(
    "Második bélyegkép megjelenítése \"Lista\" típusú nézetekben. Csak akkor érvényes, ha a képernyő ténylegesen elég széles két bélyegképhez."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
+   "Háttér a bélyegképekhez"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
    "A bélyegképek körüli felhasználatlan terület kitöltése tömör háttérszínnel. Ez javítja a menü megjelenését, ha változó méretű bélyegképek szerepelnek benne, mert azokat egyenletes méretben jeleníti meg."
    )
@@ -14469,6 +14505,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "A Hardcore trófea módot fel kell függeszteni vagy ki kell kapcsolni az állás betöltéséhez."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE,
+   "A Hardcore trófea módot fel kell függeszteni vagy ki kell kapcsolni az srm mentések betöltéséhez."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
