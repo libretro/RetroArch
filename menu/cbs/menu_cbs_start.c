@@ -39,6 +39,7 @@
 #endif
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "../../paths.h"
 #include "../../performance_counters.h"
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
@@ -634,8 +635,8 @@ static int action_start_load_core(
       unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st  = menu_state_get_ptr();
-   int ret                     = generic_action_ok_command(
-         CMD_EVENT_UNLOAD_CORE);
+   int ret                     = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
+   path_clear(RARCH_PATH_CORE_LAST);
    menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                |  MENU_ST_FLAG_PREVENT_POPULATE;
    return ret;

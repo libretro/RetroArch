@@ -9884,7 +9884,6 @@ static bool setting_append_list(
                      &group_info,
                      &subgroup_info,
                      parent_group);
-               MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_UNLOAD_CORE);
             }
          }
 

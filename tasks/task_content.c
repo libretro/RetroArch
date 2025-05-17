@@ -2114,6 +2114,7 @@ bool task_push_load_content_from_playlist_from_menu(
     * > Forget manually loaded core */
    path_set(RARCH_PATH_CORE, core_path);
    path_clear(RARCH_PATH_CORE_LAST);
+
 #ifdef HAVE_DYNAMIC
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #else
@@ -2469,6 +2470,7 @@ bool task_push_load_content_with_new_core_from_menu(
 
    path_set(RARCH_PATH_CONTENT, fullpath);
    path_set(RARCH_PATH_CORE, core_path);
+   path_clear(RARCH_PATH_CORE_LAST);
 
 #ifdef HAVE_DYNAMIC
    /* Load core */
