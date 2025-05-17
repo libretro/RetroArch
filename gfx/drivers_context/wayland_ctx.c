@@ -32,6 +32,8 @@
 #include "../../input/input_keymaps.h"
 #include "../../verbosity.h"
 
+#include <retro_timers.h>
+
 #ifdef HAVE_EGL
 #include <wayland-egl.h>
 #include <poll.h>
@@ -76,6 +78,17 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
    if (!wl)
       return;
+
+   wp_presentation_feedback_t *fb, *tmp;
+   wl_list_for_each_safe(fb, tmp, &wl->feedbacks, link)
+   {
+      wl_list_remove(&fb->link);
+      if (fb->feedback)
+      {
+         wp_presentation_feedback_destroy(fb->feedback);
+      }
+      free(fb);
+   }
 
 #ifdef HAVE_EGL
    egl_destroy(&wl->egl);
@@ -500,15 +513,36 @@ static const struct wl_callback_listener wl_surface_frame_listener = {
    .done = wl_surface_frame_done,
 };
 
+static void wait_for_next_frame(gfx_ctx_wayland_data_t *wl)
+{
+    if (!wl->present_clock || wl->refresh_interval <= 0)
+        return;
+
+    struct timespec now;
+    clock_gettime(wl->present_clock, &now);
+    int64_t current_time = now.tv_sec * 1000000LL + now.tv_nsec / 1000;
+    int64_t next_frame = wl->last_ust + (wl->refresh_interval / 1000);
+
+    if (current_time < next_frame) {
+        int64_t sleep_us = next_frame - current_time;
+        usleep(sleep_us);
+    }
+}
+
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
-   struct wl_callback *cb; 
-   gfx_ctx_wayland_data_t *wl     = (gfx_ctx_wayland_data_t*)data;
-   settings_t *settings           = config_get_ptr();
-   unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
+   gfx_ctx_wayland_data_t *wl    = (gfx_ctx_wayland_data_t*)data;
+   settings_t *settings          = config_get_ptr();
+   unsigned max_swapchain_images = settings->uints.video_max_swapchain_images;
+   struct wl_callback *cb        = NULL;
 
-   if (max_swapchain_images <= 2)
+   if (wl->present_clock)
+   {
+      wl_request_presentation_feedback(wl);
+   }
+
+   else if (max_swapchain_images <= 2)
    {
       /* Set Wayland frame callback. */
       cb = wl_surface_frame(wl->surface);
@@ -516,8 +550,9 @@ static void gfx_ctx_wl_swap_buffers(void *data)
    }
 
    egl_swap_buffers(&wl->egl);
+   wait_for_next_frame(wl);
 
-   if (max_swapchain_images <= 2)
+   if (cb)
    {
       /* Wait for the frame callback we set earlier. */
       struct pollfd pollfd = {.fd = wl->input.fd, .events = POLLIN};

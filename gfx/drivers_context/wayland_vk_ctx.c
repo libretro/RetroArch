@@ -56,6 +56,17 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
    if (!wl)
       return;
+
+   wp_presentation_feedback_t *fb, *tmp;
+   wl_list_for_each_safe(fb, tmp, &wl->feedbacks, link)
+   {
+      wl_list_remove(&fb->link);
+      if (fb->feedback)
+      {
+         wp_presentation_feedback_destroy(fb->feedback);
+      }
+      free(fb);
+   }
    vulkan_context_destroy(&wl->vk, wl->surface);
    gfx_ctx_wl_destroy_resources_common(wl);
 }
@@ -245,9 +256,28 @@ static void *gfx_ctx_wl_get_context_data(void *data)
    return &wl->vk.context;
 }
 
+static void wait_for_next_frame(gfx_ctx_wayland_data_t *wl)
+{
+    if (!wl->present_clock || wl->refresh_interval <= 0)
+        return;
+
+    struct timespec now;
+    clock_gettime(wl->present_clock, &now);
+    int64_t current_time = now.tv_sec * 1000000LL + now.tv_nsec / 1000;
+    int64_t next_frame = wl->last_ust + (wl->refresh_interval / 1000);
+
+    if (current_time < next_frame) {
+        int64_t sleep_us = next_frame - current_time;
+        usleep(sleep_us);
+    }
+}
+
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   if (wl->present_clock)
+      wl_request_presentation_feedback(wl);
 
    if (wl->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
@@ -259,6 +289,8 @@ static void gfx_ctx_wl_swap_buffers(void *data)
       else
          vulkan_present(&wl->vk, wl->vk.context.current_swapchain_index);
    }
+
+   wait_for_next_frame(wl);
    vulkan_acquire_next_image(&wl->vk);
    flush_wayland_fd(&wl->input);
 }
