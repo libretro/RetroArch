@@ -2863,11 +2863,11 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
    {
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(
-      vk->filter_chain);
+      vk->filter_chain_default);
       VkFormat rt_format = (shader_preset && shader_preset->passes)
-         ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain, shader_preset->passes - 1)
+         ? vulkan_filter_chain_get_pass_rt_format(vk->filter_chain_default, shader_preset->passes - 1)
          : VK_FORMAT_UNDEFINED;
-      bool emits_hdr10 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain);
+      bool emits_hdr10 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain_default);
 
       if (vulkan_is_hdr10_format(rt_format))
       {
