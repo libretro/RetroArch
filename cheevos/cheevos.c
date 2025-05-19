@@ -1279,6 +1279,13 @@ static void rcheevos_show_game_placard(void)
          runloop_msg_queue_push(msg, _len, 0, 3 * 60, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
+
+   if (summary.num_unsupported_achievements)
+   {
+      const char* warning = msg_hash_to_str(MSG_CHEEVOS_UNSUPPORTED_WARNING);
+      runloop_msg_queue_push(warning, strlen(warning), 0, 3 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   }
 }
 
 static uint32_t rcheevos_client_read_memory(uint32_t address,
