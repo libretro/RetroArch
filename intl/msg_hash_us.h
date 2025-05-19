@@ -15595,6 +15595,10 @@ MSG_HASH(
    "%d unsupported"
 )
 MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   "Unsupported achievements detected. Please try a different core or update RetroArch."
+)
+MSG_HASH(
    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
    "Spectating %s"
    )
