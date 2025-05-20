@@ -14807,6 +14807,10 @@ MSG_HASH(
    "%d no compatibles"
 )
 MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   "Se han detectado logros no soportados. Prueba otro núcleo o actualiza RetroArch."
+)
+MSG_HASH(
    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
    "Observando %s"
    )

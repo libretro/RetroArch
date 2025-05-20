@@ -14899,6 +14899,10 @@ MSG_HASH(
    "%d desteklenmiyor"
 )
 MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   "Desteklenmeyen başarımlar algılandı. Lütfen farklı bir çekirdek deneyin veya RetroArch'ı güncelleyin."
+)
+MSG_HASH(
    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
    "İzleyici %s"
    )

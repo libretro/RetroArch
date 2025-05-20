@@ -14851,6 +14851,10 @@ MSG_HASH(
    "%d не поддерживаются"
 )
 MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   "Обнаружены неподдерживаемые достижения. Пожалуйста, попробуйте другое ядро или обновите RetroArch."
+)
+MSG_HASH(
    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
    "Наблюдают %s"
    )
