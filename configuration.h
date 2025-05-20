@@ -731,7 +731,6 @@ typedef struct settings
       bool frame_time_counter_reset_after_save_state;
 
       /* Menu */
-      bool filter_by_current_core;
       bool menu_enable_widgets;
       bool menu_show_load_content_animation;
       bool notification_show_autoconfig;
@@ -1037,8 +1036,11 @@ typedef struct settings
       bool sort_screenshots_by_content_enable;
       bool config_save_on_exit;
       bool remap_save_on_exit;
+
       bool show_hidden_files;
+      bool filter_by_current_core;
       bool use_last_start_directory;
+      bool core_suggest_always;
 
       bool savefiles_in_content_dir;
       bool savestates_in_content_dir;

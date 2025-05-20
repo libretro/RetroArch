@@ -1930,6 +1930,7 @@ static bool menu_content_find_first_core(
       menu_content_ctx_defer_info_t *def_info,
       bool load_content_with_current_core, char *s, size_t len)
 {
+   settings_t *settings             = config_get_ptr();
    const core_info_t *info          = NULL;
    size_t supported                 = 0;
    core_info_list_t *core_info      = (core_info_list_t*)def_info->data;
@@ -1960,6 +1961,11 @@ static bool menu_content_find_first_core(
       core_info_list_get_supported_cores(core_info,
             def_info->s, &info,
             &supported);
+
+   /* Don't suggest cores if a core is already loaded. */
+   if (     !path_is_empty(RARCH_PATH_CORE)
+         && !settings->bools.core_suggest_always)
+      load_content_with_current_core = true;
 
    /* We started the menu with 'Load Content', we are
     * going to use the current core to load this. */
@@ -9691,8 +9697,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             else
             {
-               if (     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES))
-                     && path_is_empty(RARCH_PATH_CORE))
+               if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
                   BIND_ACTION_OK(cbs, action_ok_compressed_archive_push_detect_core);
                else
                   BIND_ACTION_OK(cbs, action_ok_compressed_archive_push);
