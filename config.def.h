@@ -570,6 +570,7 @@
 #define DEFAULT_REMAP_SAVE_ON_EXIT true
 
 #define DEFAULT_SHOW_HIDDEN_FILES false
+#define DEFAULT_CORE_SUGGEST_ALWAYS false
 
 /* Initialise file browser with the last used start directory */
 #define DEFAULT_USE_LAST_START_DIRECTORY false

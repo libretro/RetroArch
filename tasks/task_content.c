@@ -2470,7 +2470,6 @@ bool task_push_load_content_with_new_core_from_menu(
 
    path_set(RARCH_PATH_CONTENT, fullpath);
    path_set(RARCH_PATH_CORE, core_path);
-   path_clear(RARCH_PATH_CORE_LAST);
 
 #ifdef HAVE_DYNAMIC
    /* Load core */
