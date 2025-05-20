@@ -468,7 +468,7 @@ font_renderer_t ps2_font = {
  */
 
 /* PRIVATE METHODS */
-static int vsync_handler(void)
+static int vsync_handler(int reason)
 {
    iSignalSema(vsync_sema_id);
 
