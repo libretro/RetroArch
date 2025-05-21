@@ -62,7 +62,6 @@ id<ApplePlatform> apple_platform;
 #else
 static id apple_platform;
 #endif
-static CFRunLoopObserverRef iterate_observer;
 
 static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd) { }
@@ -146,49 +145,6 @@ static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
    }
 
    return [textures[iconName] unsignedLongValue];
-}
-
-static void rarch_draw_observer(CFRunLoopObserverRef observer,
-    CFRunLoopActivity activity, void *info)
-{
-   uint32_t runloop_flags;
-   int          ret   = runloop_iterate();
-
-   if (ret == -1)
-   {
-      ui_companion_cocoatouch_event_command(
-            NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
-      main_exit(NULL);
-      exit(0);
-      return;
-   }
-
-   task_queue_check();
-
-   runloop_flags = runloop_get_flags();
-   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
-      CFRunLoopWakeUp(CFRunLoopGetMain());
-}
-
-void rarch_start_draw_observer(void)
-{
-   if (iterate_observer && CFRunLoopObserverIsValid(iterate_observer))
-       return;
-
-   if (iterate_observer != NULL)
-      CFRelease(iterate_observer);
-   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
-                                              true, 0, rarch_draw_observer, 0);
-   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
-}
-
-void rarch_stop_draw_observer(void)
-{
-    if (!iterate_observer || !CFRunLoopObserverIsValid(iterate_observer))
-        return;
-    CFRunLoopObserverInvalidate(iterate_observer);
-    CFRelease(iterate_observer);
-    iterate_observer = NULL;
 }
 
 void get_ios_version(int *major, int *minor)
