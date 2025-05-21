@@ -57,6 +57,10 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#ifdef HAVE_MIST
+#include "steam/steam.h"
+#endif
+
 #if IOS
 #import <UIKit/UIAccessibility.h>
 extern bool RAIsVoiceOverRunning(void)
