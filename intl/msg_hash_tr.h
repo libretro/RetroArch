@@ -4935,6 +4935,14 @@ MSG_HASH(
    "Başlangıç ​​Dizininden içerik yüklerken son kullanılan konumda dosya tarayıcısını açın. Not: RetroArch yeniden başlatıldığında konum varsayılana sıfırlanacaktır."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+   "Her Zaman Çekirdekleri Öner"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "Bir çekirdek zaten yüklü olsa bile kullanılabilir çekirdekleri öner."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "Dahili Medya Oynatıcı Kullan"
    )

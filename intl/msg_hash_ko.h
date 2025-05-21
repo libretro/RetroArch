@@ -14915,6 +14915,10 @@ MSG_HASH(
    "%d개 지원 안 됨"
 )
 MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   "지원되지 않는 도전 과제가 있습니다. 다른 코어를 사용해보거나 RetroArch를 업데이트하십시오."
+)
+MSG_HASH(
    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
    "%s 관전 중"
    )

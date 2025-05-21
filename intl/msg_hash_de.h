@@ -4827,6 +4827,14 @@ MSG_HASH(
    "Den Dateibrowser im zuletzt verwendeten Pfad öffnen, wenn Inhalte aus dem Startverzeichnis geladen werden. Hinweis: Der Pfad wird beim Neustart von RetroArch zurückgesetzt."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+   "Cores immer vorschlagen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "Verfügbare Cores vorschlagen, auch wenn bereits ein Core geladen ist."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "Eingebauten Mediaplayer verwenden"
    )
@@ -14473,6 +14481,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_UNSUPPORTED_COUNT,
    "%d nicht unterstützt"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   "Nicht unterstützte Errungenschaft entdeckt. Bitte einen anderen Core versuchen oder RetroArch aktualisieren."
 )
 MSG_HASH(
    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,

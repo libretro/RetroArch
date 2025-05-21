@@ -4935,6 +4935,14 @@ MSG_HASH(
    "Abre el explorador de archivos en el último directorio usado al cargar contenidos desde el directorio inicial. Nota: la posición volverá a su valor predeterminado al reiniciar RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+   "Sugerir núcleos siempre"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "Sugiere los núcleos disponbles, aunque haya otro ya cargado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "Usar visor de medios integrado"
    )

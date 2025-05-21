@@ -4895,6 +4895,14 @@ MSG_HASH(
    "Ouvrir le navigateur de fichiers au dernier emplacement utilisé lors du chargement du contenu depuis le dossier de démarrage. Remarque : L'emplacement sera réinitialisé par défaut au redémarrage de RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+   "Toujours suggérer des cœurs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "Suggérer des cœurs disponibles même lorsqu'un cœur est déjà chargé."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "Utiliser le lecteur média intégré"
    )
@@ -14765,6 +14773,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_UNSUPPORTED_COUNT,
    "%d non pris en charge"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   "Succès non pris en charge détectés. Veuillez essayer un autre cœur ou mettre à jour RetroArch."
 )
 MSG_HASH(
    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,

@@ -4923,6 +4923,14 @@ MSG_HASH(
    "Obre l'explorador de fitxers a l'última localització que s'ha fet servir quan es carrega contingut des de la carpeta inicial. Nota: La localització torna al seu valor predeterminat en reiniciar RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+   "Suggereix nuclis sempre"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "Suggereix tots els nuclis disponibles quan es carrega un nucli."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "Fes servir el reproductor integrat"
    )
@@ -14709,6 +14717,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_UNSUPPORTED_COUNT,
    "%d no compatible"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   "S'han trobat assoliments que no estan suportats. Prova amb un nucli diferent o prova d'actualitzar RetroArch."
 )
 MSG_HASH(
    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
