@@ -4494,8 +4494,41 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
  **/
 float input_get_sensor_state(unsigned port, unsigned id)
 {
-   bool input_sensors_enable              = config_get_ptr()->bools.input_sensors_enable;
-   return input_driver_get_sensor(port, input_sensors_enable, id);
+   settings_t *settings                   = config_get_ptr();
+   bool input_sensors_enable              = settings->bools.input_sensors_enable;
+   float sensitivity;
+   int remapped_port;
+   int invert;
+   unsigned remapped_input_sensor_id;
+   if (id >= RETRO_SENSOR_END) {
+      RARCH_DBG("[input_driver] Invalid Sensor ID %u\n", id);
+      return 0.f;
+   }
+   if (port >= MAX_USERS) {
+      RARCH_DBG("[input_driver] Port number given (%u) is greater than the maximum number of users\n", port);
+      return 0.f;
+   }
+   remapped_port = settings->uints.input_sensor_index[port];
+   remapped_input_sensor_id =
+      id == RETRO_SENSOR_ILLUMINANCE ?
+      RETRO_SENSOR_ILLUMINANCE :
+      settings->uints.input_sensor_ids[port][id]/2;
+   if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z) {
+      invert=(settings->uints.input_sensor_ids[port][id]%2)?-1:1;
+      sensitivity=settings->floats.input_sensor_accelerometer_sensitivity;
+   } else if (id >= RETRO_SENSOR_GYROSCOPE_X && id <= RETRO_SENSOR_GYROSCOPE_Z) {
+      invert=(settings->uints.input_sensor_ids[port][id]%2)?-1:1;
+      sensitivity=settings->floats.input_sensor_gyroscope_sensitivity;
+   } else {
+      invert=1;
+      sensitivity=0.f;
+   }
+   return input_driver_get_sensor(
+         remapped_port,
+         input_sensors_enable,
+         remapped_input_sensor_id)
+      *invert*((float)pow(2,sensitivity));
+   
 }
 
 /**
@@ -4965,23 +4998,44 @@ const char *input_config_get_mouse_display_name(unsigned port)
       return NULL;
    return input_st->input_mouse_info[port].display_name;
 }
-
-void input_config_set_mouse_display_name(unsigned port, const char *name)
+const char *input_config_get_sensor_display_name(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (string_is_empty(input_st->input_sensor_info[port].display_name))
+      return NULL;
+   return input_st->input_sensor_info[port].display_name;
+}
+enum aux_device_type{
+   MOUSE_AUX_DEVICE,
+   SENSOR_AUX_DEVICE
+};
+static void input_config_set_auxiliary_device_display_name(unsigned port, const char *name, enum aux_device_type aux_device_type)
 {
    char name_ascii[NAME_MAX_LENGTH];
    input_driver_state_t *input_st = &input_driver_st;
+   input_mouse_info_t * aux_device_info;
 
    name_ascii[0] = '\0';
 
    /* Strip non-ASCII characters */
    if (!string_is_empty(name))
       string_copy_only_ascii(name_ascii, name);
-
+   if (aux_device_type == SENSOR_AUX_DEVICE) 
+      aux_device_info=&input_st->input_sensor_info[port];
+   else /*(aux_device_type == MOUSE_AUX_DEVICE)*/
+      aux_device_info=&input_st->input_mouse_info[port]; 
    if (!string_is_empty(name_ascii))
-      strlcpy(input_st->input_mouse_info[port].display_name, name_ascii,
-            sizeof(input_st->input_mouse_info[port].display_name));
+      strlcpy(aux_device_info->display_name, name_ascii,
+            sizeof(aux_device_info->display_name));
 }
-
+void input_config_set_sensor_display_name(unsigned port, const char *name)
+{
+   input_config_set_auxiliary_device_display_name(port, name, SENSOR_AUX_DEVICE);
+}
+void input_config_set_mouse_display_name(unsigned port, const char *name)
+{
+   input_config_set_auxiliary_device_display_name(port, name, MOUSE_AUX_DEVICE);
+}
 void input_keyboard_mapping_bits(unsigned mode, unsigned key)
 {
    input_driver_state_t *input_st = &input_driver_st;
