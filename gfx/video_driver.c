@@ -2817,8 +2817,15 @@ void video_driver_build_info(video_frame_info_t *video_info)
    input_driver_state_t *input_st          = input_state_get_ptr();
 #ifdef HAVE_MENU
    struct menu_state *menu_st              = menu_state_get_ptr();
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   struct video_shader *menu_shader        = menu_shader_get();
+#else
+   struct video_shader *menu_shader        = NULL;
 #endif
-   uint8_t menu_shdr_flags                 = 0;
+#else
+   struct video_shader *menu_shader        = NULL;
+#endif /* HAVE_MENU */
+   uint8_t menu_shdr_flags                 = (menu_shader) ? menu_shader->flags : 0;
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t *p_dispwidget          = dispwidget_get_ptr();
 #endif
@@ -2829,11 +2836,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    VIDEO_DRIVER_THREADED_LOCK(video_st, is_threaded);
 #endif
 
-#ifdef HAVE_MENU
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   menu_shdr_flags                         = menu_shader_get()->flags;
-#endif
-#endif
    custom_vp                               = &settings->video_vp_custom;
 #ifdef HAVE_GFX_WIDGETS
    video_info->widgets_active              = p_dispwidget->active;
