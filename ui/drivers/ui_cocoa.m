@@ -642,7 +642,13 @@ static ui_application_t ui_application_cocoa = {
    [self setupMainWindow];
 #endif
 
+#ifdef HAVE_QT
+   /* I think the draw observer should be absolutely fine for qt but I'm not testing it;
+    * whoever does test it and confirm it works can just delete this */
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
+#else
+   rarch_start_draw_observer();
+#endif
 }
 
 #pragma mark - ApplePlatform
@@ -788,6 +794,7 @@ static ui_application_t ui_application_cocoa = {
 }
 #endif
 
+#ifdef HAVE_QT
 - (void) rarch_main
 {
     for (;;)
@@ -822,6 +829,7 @@ static ui_application_t ui_application_cocoa = {
 
     main_exit(NULL);
 }
+#endif
 
 - (void)applicationDidBecomeActive:(NSNotification *)notification  { }
 - (void)applicationWillResignActive:(NSNotification *)notification
@@ -838,6 +846,8 @@ static ui_application_t ui_application_cocoa = {
       reply = NSTerminateCancel;
 
    command_event(CMD_EVENT_QUIT, NULL);
+
+   rarch_stop_draw_observer();
 
    return reply;
 }
