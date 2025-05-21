@@ -4489,9 +4489,19 @@ float input_get_sensor_state(unsigned port, unsigned id)
    settings_t *settings                   = config_get_ptr();
    bool input_sensors_enable              = settings->bools.input_sensors_enable;
    float sensitivity;
-   int remapped_port=settings->uints.input_sensor_index[port];
+   int remapped_port;
    int invert;
-   unsigned remapped_input_sensor_id = 
+   unsigned remapped_input_sensor_id;
+   if (id >= RETRO_SENSOR_END) {
+      RARCH_DBG("[input_driver] Invalid Sensor ID %u\n", id);
+      return 0.f;
+   }
+   if (port >= MAX_USERS) {
+      RARCH_DBG("[input_driver] Port number given (%u) is greater than the maximum number of users\n", port);
+      return 0.f;
+   }
+   remapped_port = settings->uints.input_sensor_index[port];
+   remapped_input_sensor_id =
       id == RETRO_SENSOR_ILLUMINANCE ?
       RETRO_SENSOR_ILLUMINANCE :
       settings->uints.input_sensor_ids[port][id]/2;

@@ -4522,6 +4522,7 @@ enum retro_sensor_selector
     * @see https://en.wikipedia.org/wiki/Lux for a table of common lux values.
     */
    RETRO_SENSOR_ILLUMINANCE,
+   RETRO_SENSOR_END,
 
    /** Dummy value to ensure sizeof(enum retro_sensor_selector) == sizeof(int). Do not use. */
    RETRO_SENSOR_SELECTOR_DUMMY=INT_MAX
