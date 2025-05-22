@@ -840,10 +840,6 @@ static ui_application_t ui_application_cocoa = {
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
    NSApplicationTerminateReply reply = NSTerminateNow;
-   uint32_t runloop_flags            = runloop_get_flags();
-
-   if (runloop_flags & RUNLOOP_FLAG_IS_INITED)
-      reply = NSTerminateCancel;
 
    command_event(CMD_EVENT_QUIT, NULL);
 
