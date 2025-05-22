@@ -221,6 +221,7 @@ else
                 quicknes
                 race
                 sameboy
+                sameduck
                 scummvm
                 smsplus
                 snes9x
