@@ -243,6 +243,7 @@ typedef struct gfx_ctx_wayland_data
    bool reported_display_size;
    bool swap_complete;
    bool present_clock;
+   bool is_presented;
 } gfx_ctx_wayland_data_t;
 
 typedef struct wp_presentation_feedback

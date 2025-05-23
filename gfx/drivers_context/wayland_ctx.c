@@ -515,7 +515,7 @@ static const struct wl_callback_listener wl_surface_frame_listener = {
 
 static void wait_for_next_frame(gfx_ctx_wayland_data_t *wl)
 {
-    if (!wl->present_clock || wl->refresh_interval <= 0)
+    if (!wl->present_clock || wl->refresh_interval <= 0 || !wl->is_presented)
         return;
 
     struct timespec now;

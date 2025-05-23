@@ -516,6 +516,7 @@ static void presentation_feedback_presented(void *data,
    wl->last_ust = sec * 1000000LL + tv_nsec / 1000;
    wl->last_msc = (uint64_t)seq_lo + ((uint64_t)seq_hi << 32);
    wl->refresh_interval = (int64_t)refresh;
+   wl->is_presented = true;
 }
 
 static void presentation_feedback_discarded(void *data,
@@ -563,6 +564,7 @@ void wl_request_presentation_feedback(gfx_ctx_wayland_data_t *wl)
       return;
    }
 
+   wl->is_presented = false;
    wp_presentation_feedback_add_listener(fb->feedback,
          &presentation_feedback_listener, wl);
    wl_list_insert(&wl->feedbacks, &fb->link);
