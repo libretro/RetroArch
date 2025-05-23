@@ -4857,6 +4857,10 @@ MSG_HASH(
    "content_show_favorites"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES_FIRST,
+   "content_show_favorites_first"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES,
    "content_show_images"
    )

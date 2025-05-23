@@ -820,6 +820,7 @@ typedef struct settings
       bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;
       bool menu_content_show_favorites;
+      bool menu_content_show_favorites_first;
       bool menu_content_show_images;
       bool menu_content_show_music;
       bool menu_content_show_video;
