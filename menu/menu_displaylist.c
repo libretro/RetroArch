@@ -4317,21 +4317,42 @@ static unsigned menu_displaylist_parse_playlists(
 
       if (show_history)
       {
-         if (settings->bools.menu_content_show_history)
-            if (menu_entries_append(info_list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY),
-                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
-                     MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
+         if (settings->bools.menu_content_show_favorites_first)
+         {
+            if (settings->bools.menu_content_show_favorites)
+               if (menu_entries_append(info_list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+                        MENU_ENUM_LABEL_GOTO_FAVORITES,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
 
-         if (settings->bools.menu_content_show_favorites)
-            if (menu_entries_append(info_list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
-                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
-                     MENU_ENUM_LABEL_GOTO_FAVORITES,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
+            if (settings->bools.menu_content_show_history)
+               if (menu_entries_append(info_list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY),
+                        msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
+                        MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+         }
+         else
+         {
+            if (settings->bools.menu_content_show_history)
+               if (menu_entries_append(info_list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY),
+                        msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
+                        MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+
+            if (settings->bools.menu_content_show_favorites)
+               if (menu_entries_append(info_list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+                        MENU_ENUM_LABEL_GOTO_FAVORITES,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+         }
       }
 
       if (settings->bools.menu_content_show_images)
@@ -10088,6 +10109,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLIST_TABS,                            PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES,                                PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES_FIRST,                          PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES,                                   PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC,                                    PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO,                                    PARSE_ONLY_BOOL, true  },
@@ -15135,19 +15157,38 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      || (string_is_equal(menu_ident, "glui")
                      && !settings->bools.menu_materialui_show_nav_bar))
                {
-                  if (settings->bools.menu_content_show_history)
-                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-                              MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
-                              PARSE_ACTION, false) == 0)
-                        count++;
+                  if (settings->bools.menu_content_show_favorites_first)
+                  {
+                     if (settings->bools.menu_content_show_favorites)
+                        if (menu_entries_append(info->list,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+                                 MENU_ENUM_LABEL_GOTO_FAVORITES,
+                                 MENU_SETTING_ACTION, 0, 0, NULL))
+                           count++;
 
-                  if (settings->bools.menu_content_show_favorites)
-                     if (menu_entries_append(info->list,
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
-                              msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
-                              MENU_ENUM_LABEL_GOTO_FAVORITES,
-                              MENU_SETTING_ACTION, 0, 0, NULL))
-                        count++;
+                     if (settings->bools.menu_content_show_history)
+                        if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                                 MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
+                                 PARSE_ACTION, false) == 0)
+                           count++;
+                  }
+                  else
+                  {
+                     if (settings->bools.menu_content_show_history)
+                        if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                                 MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
+                                 PARSE_ACTION, false) == 0)
+                           count++;
+
+                     if (settings->bools.menu_content_show_favorites)
+                        if (menu_entries_append(info->list,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+                                 MENU_ENUM_LABEL_GOTO_FAVORITES,
+                                 MENU_SETTING_ACTION, 0, 0, NULL))
+                           count++;
+                  }
                }
 
 #ifdef HAVE_CDROM
