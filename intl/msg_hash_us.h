@@ -15019,6 +15019,10 @@ MSG_HASH(
    "Rewinding."
    )
 MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Buffer capacity insufficient."
+   )
+MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
    "Rewind unavailable because this core lacks serialized save state support."
    )
