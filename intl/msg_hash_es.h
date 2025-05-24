@@ -6361,6 +6361,14 @@ MSG_HASH(
    "Muestra el menú Favoritos (es necesario reiniciar en Ozone/XMB)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
+   "Mostrar Favoritos en primer lugar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
+   "Muestra el menú de favoritos antes que el historial (es necesario reiniciar en Ozone/XMB)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "Mostrar Imágenes"
    )

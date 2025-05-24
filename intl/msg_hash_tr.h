@@ -6365,6 +6365,14 @@ MSG_HASH(
    "'Sık Kullanılanlar' menüsünü gösterin. (Ozon/XMB'de Yeniden Başlatılmalı)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
+   "Sık Kullanılanları Öncelikli Göster"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
+   "'Geçmiş' bölümünden önce 'Sık Kullanılanları' göster. (Ozone/XMB yeniden başlatılmalı)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "'Resimler' Göster"
    )

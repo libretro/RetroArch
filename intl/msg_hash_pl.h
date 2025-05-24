@@ -5489,6 +5489,10 @@ MSG_HASH(
    "Pokaż menu 'Ulubione'. (Wymagany restart w Ozone/XMB)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
+   "Pokaż zakładkę Ulubione"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "Pokaż 'Obrazy'"
    )
