@@ -4129,15 +4129,6 @@ MSG_HASH(
    "Перемикання між згасаючими та статичними повідомленнями чату netplay."
    )
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
-   "Відправити зневаджувальну інформацію"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
-   "Надсилає діагностичну інформацію про ваш пристрій і конфігурацію RetroArch на наші сервери для аналізу."
-   )
-
 /* Settings > Input > Port # Controls */
 
 MSG_HASH(
@@ -6381,14 +6372,6 @@ MSG_HASH(
    "Показати останнє меню історії. (Для перезапуску, потрібен Ozone/XMB)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
-   "Показати 'Зміст імпорту'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "Показати меню 'Зміст імпорту'. (Перезапустити необхідні в Ozone/XMB)"
-   )
-MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    "Показати 'Зміст імпорту'"
    )
@@ -12821,10 +12804,6 @@ MSG_HASH(
 /* Unused (Only Exist in Translation Files) */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
-   "Авто співвідношення сторін"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
    "Псевдонім (LAN): %s"
    )
@@ -12835,10 +12814,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
    "Фонова музика системи"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
-   "Користувацьке співвідношення"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
@@ -12859,14 +12834,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
    "Виберіть матч для перегляду."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
-   "Примусове співвідношення сторін"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-   "Вибір зі списку відтворення"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
@@ -12943,14 +12910,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
    "Що таке ядро?"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
-   "Відправити зневаджувальну інформацію"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
-   "Відправляє діагностичну інформацію про ваш пристрій та конфігурацію RetroArch для аналізу наших серверів."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
@@ -13232,30 +13191,6 @@ MSG_HASH( /* FIXME Should be MSG_ */
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "Натисніть праворуч п'ять разів, щоб видалити всі чіти."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SAVE_DEBUG_INFO,
-   "Не вдалося зберегти інформацію для налагодження."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SEND_DEBUG_INFO,
-   "Не вдалося надіслати дані для налагодження на сервер."
-   )
-MSG_HASH(
-   MSG_SENDING_DEBUG_INFO,
-   "Надсилання зневаджувальної інформації..."
-   )
-MSG_HASH(
-   MSG_SENT_DEBUG_INFO,
-   "Інформація про налагодження успішно надіслана на сервер. Ваш ідентифікаційний номер %u."
-   )
-MSG_HASH(
-   MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
-   "Натисніть ще два рази для передачі діагностичної інформації в команду RetroArch."
-   )
-MSG_HASH(
-   MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
-   "Натисніть ще раз для передачі діагностичної інформації в команду RetroArch."
    )
 MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,

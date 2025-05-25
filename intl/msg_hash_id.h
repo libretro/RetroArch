@@ -2625,11 +2625,6 @@ MSG_HASH(
    "Main Netplay/Mode Menonton (Mati/Nyala)"
    )
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
-   "Kirim Info Awakutu"
-   )
-
 /* Settings > Input > Port # Controls */
 
 MSG_HASH(
@@ -4049,10 +4044,6 @@ MSG_HASH(
    "Bantuan"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
-   "Kirim Info Awakutu"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
    "Pindai jejaring setempat"
    )
@@ -4113,22 +4104,6 @@ MSG_HASH(
 
 /* Notifications */
 
-MSG_HASH(
-   MSG_FAILED_TO_SAVE_DEBUG_INFO,
-   "Gagal menyimpan info awakutu."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SEND_DEBUG_INFO,
-   "Gagal mengirim info awakutu ke server."
-   )
-MSG_HASH(
-   MSG_SENDING_DEBUG_INFO,
-   "Mengirim info awakutu..."
-   )
-MSG_HASH(
-   MSG_SENT_DEBUG_INFO,
-   "Info awakutu berhasil dikirim. Nomor ID Anda %u."
-   )
 MSG_HASH(
    MSG_NATIVE,
    "Lokal"

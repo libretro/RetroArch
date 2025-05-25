@@ -5494,10 +5494,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NONE:
          return false;
 
-      /* Deprecated */
-      case CMD_EVENT_SEND_DEBUG_INFO:
-         break;
-
       /* Do nothing about the special negative value */
       case CMD_SPECIAL:
          break;

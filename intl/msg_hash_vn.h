@@ -2401,10 +2401,6 @@ MSG_HASH(
    "Enable Recording"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-   "Select from Playlst"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
    "Kích hoạt Netplay"
    )
