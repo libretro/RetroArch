@@ -273,8 +273,6 @@ enum event_command
    /* Reinitializes microphone driver. */
    CMD_EVENT_MICROPHONE_REINIT,
 #endif
-   /* Deprecated */
-   CMD_EVENT_SEND_DEBUG_INFO,
    /* Add a playlist entry to another playlist. */
    CMD_EVENT_ADD_TO_PLAYLIST
 };
