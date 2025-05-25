@@ -596,15 +596,15 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    unsigned runloop_audio_latency = runloop_state_get_ptr()->audio_latency;
    unsigned audio_latency         = (runloop_audio_latency > setting_audio_latency)
          ? runloop_audio_latency : setting_audio_latency;
+   size_t max_buffer_samples      = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    /* Accommodate rewind since at some point we might have two full buffers. */
-   size_t outsamples_max          = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO * slowmotion_ratio;
+   size_t outsamples_max          = max_buffer_samples * AUDIO_MAX_RATIO * slowmotion_ratio;
    int16_t *out_conv_buf          = (int16_t*)memalign_alloc(64, outsamples_max * sizeof(int16_t));
-   size_t audio_buf_length        = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float);
+   size_t audio_buf_length        = max_buffer_samples * sizeof(float);
    float *audio_buf               = (float*)memalign_alloc(64, audio_buf_length);
    bool verbosity_enabled         = verbosity_is_enabled();
 #ifdef HAVE_REWIND
    int16_t *rewind_buf            = NULL;
-   size_t max_buffer_samples      = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    /* Needs to be able to hold full content of a full max_buffer_samples
     * in addition to its own. */
    if (!(rewind_buf = (int16_t*)memalign_alloc(64, max_buffer_samples * sizeof(int16_t))))
@@ -620,7 +620,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    if (!out_conv_buf || !audio_buf)
       goto error;
 
-   memset(audio_buf, 0, AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float));
+   memset(audio_buf, 0, max_buffer_samples * sizeof(float));
 
    audio_driver_st.input_data                     = audio_buf;
    audio_driver_st.input_data_length              = audio_buf_length;
