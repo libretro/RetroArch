@@ -620,7 +620,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    if (!out_conv_buf || !audio_buf)
       goto error;
 
-   memset(audio_buf, 0, max_buffer_samples * sizeof(float));
+   memset(audio_buf, 0, audio_buf_length);
 
    audio_driver_st.input_data                     = audio_buf;
    audio_driver_st.input_data_length              = audio_buf_length;
