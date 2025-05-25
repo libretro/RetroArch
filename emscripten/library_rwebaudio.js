@@ -4,9 +4,10 @@ var LibraryRWebAudio = {
    $RWA: {
       /* add 10 ms of silence on start, seems to prevent underrun on start/unpausing (terrible crackling in firefox) */
       MIN_START_OFFSET_SEC: 0.01,
-      /* firefox needs more latency (transparent to audio driver) */
-      EXTRA_LATENCY_FIREFOX_SEC: 0.01,
-      PLATFORM_EMSCRIPTEN_BROWSER_FIREFOX: 2,
+      /* firefox and safari need more latency (transparent to audio driver) */
+      EXTRA_LATENCY_SEC_NONCHROME: 0.01,
+      EXTRA_LATENCY_SEC_CHROME: 0,
+      PLATFORM_EMSCRIPTEN_BROWSER_CHROMIUM: 1,
       context: null,
       contextRunning: false,
       nonblock: false,
@@ -44,7 +45,7 @@ var LibraryRWebAudio = {
       RWA.virtualBufferFrames = Math.round(RWA.latency * RWA.context.sampleRate / 1000);
       RWA.context.addEventListener("statechange", RWebAudioStateChangeCB);
       RWebAudioStateChangeCB();
-      RWA.extraLatencySec = (_platform_emscripten_get_browser() == RWA.PLATFORM_EMSCRIPTEN_BROWSER_FIREFOX) ? RWA.EXTRA_LATENCY_FIREFOX_SEC : 0;
+      RWA.extraLatencySec = (_platform_emscripten_get_browser() == RWA.PLATFORM_EMSCRIPTEN_BROWSER_CHROMIUM) ? RWA.EXTRA_LATENCY_SEC_CHROME : RWA.EXTRA_LATENCY_SEC_NONCHROME;
 
       return 1;
    },
@@ -66,7 +67,8 @@ var LibraryRWebAudio = {
       bufferSource.connect(RWA.context.destination);
 
       var currentTime = RWebAudioGetCurrentTime();
-      var startTime = RWA.endTime > currentTime ? RWA.endTime : currentTime + RWA.MIN_START_OFFSET_SEC;
+      /* when empty, start rounded up to nearest 1 ms, add MIN_START_OFFSET_SEC */
+      var startTime = RWA.endTime > currentTime ? RWA.endTime : Math.ceil(currentTime * 1000) / 1000 + RWA.MIN_START_OFFSET_SEC;
       RWA.endTime = startTime + buffer.duration;
       bufferSource.start(startTime + RWA.extraLatencySec);
 
