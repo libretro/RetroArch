@@ -14323,6 +14323,10 @@ MSG_HASH(
    "Geri sarılıyor."
    )
 MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Arabellek kapasitesi yetersiz."
+   )
+MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
    "Bu çekirdekte serileştirilmiş durum kaydı desteği bulunmadığından geri sarma kullanılamıyor."
    )

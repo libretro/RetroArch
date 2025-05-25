@@ -14235,6 +14235,10 @@ MSG_HASH(
    "Rebobinando."
    )
 MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Capacidad de búfer insuficiente."
+   )
+MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
    "El rebobinado no está disponible porque este núcleo no tiene soporte para guardados rápidos serializados."
    )

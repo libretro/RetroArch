@@ -6393,6 +6393,14 @@ MSG_HASH(
    "Показывать меню 'Избранное' (требуется перезапуск для Ozone/XMB)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
+   "Показывать сначала 'Избранное'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
+   "Показывать вкладку 'Избранное' перед 'Историей запуска' (требуется перезапуск для Ozone/XMB)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "Показывать 'Изображения'"
    )
@@ -14265,6 +14273,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWINDING,
    "Перемотка."
+   )
+MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Недостаточная ёмкость буфера."
    )
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,

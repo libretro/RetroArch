@@ -12595,6 +12595,10 @@ MSG_HASH(
    "Przewijanie."
    )
 MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Niewystarczająca pojemność bufora."
+   )
+MSG_HASH(
    MSG_REWIND_INIT,
    "Inicjowanie bufora przewijania z rozmiarem"
    )
