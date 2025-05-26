@@ -552,10 +552,6 @@ MSG_HASH(
    "Κλείδωμα Εγκατεστημένου Πυρήνα"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Αποτροπή τροποποιήσεων του τρέχοντος εγκατεστημένου πυρήνα. Μπορεί να χρησιμοποιηθεί για αποφυγή ανεπιθύμητων ενημερώσεων όταν το περιεχόμενο απαιτεί συγκεκριμένη έκδοση πυρήνα (π.χ. Παιχνίδια Arcade)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Εξαίρεση από το μενού 'Πυρήνες χωρίς περιεχόμενο'"
    )
@@ -2395,6 +2391,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "Υπηρεσία Τεχνητής Νοημοσύνης"
    )
+
 
 /* Settings > Input > Port # Controls */
 

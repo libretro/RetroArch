@@ -560,10 +560,6 @@ MSG_HASH(
    "Zablokuj zainstalowany rdzeń"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Zapobiegaj modyfikacjom aktualnie zainstalowanego rdzenia. Może być użyty w celu uniknięcia niechcianych aktualizacji, gdy zawartość wymaga określonej wersji głównej (np. zestawy ROM Arcade)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Wyklucz z menu 'Rdzenie bez zawartości'"
    )
@@ -7856,12 +7852,20 @@ MSG_HASH(
    "Zapisz stan w aktualnie wybranym gnieździe."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVE_STATE,
+   "Zapisz stan w aktualnie wybranym slocie. Uwaga: Zapisywanie stanów nie jest zazwyczaj przenośne i może nie działać z innymi wersjami tego rdzenia."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
    "Wczytaj zapis"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
    "Załaduj zapisany stan z aktualnie wybranego gniazda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_STATE,
+   "Załaduj zapisany stan z aktualnie wybranego miejsca. Uwaga: może nie działać, jeśli stan został zapisany w innej wersji rdzenia."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,

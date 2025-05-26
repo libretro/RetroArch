@@ -565,7 +565,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Evita la modificació del nucli instal·lat actualment. Es podria utilitzar per a evitar actualitzacions no desitjades quan el contingut requereix una versió específica del nucli (p. ex., conjunts de ROM d'arcade)."
+   "Evita la modificació del nucli instal·lat actualment. Es podria utilitzar per a evitar actualitzacions no desitjades quan el contingut requereix una versió específica del nucli (p. ex., conjunts de ROM d'arcade) o les modificacions que faci el nucli."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -9016,12 +9016,20 @@ MSG_HASH(
    "Desa un estat a la posició actualment seleccionada."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVE_STATE,
+   "Desa un estat a la ranura seleccionada. Nota: Els estats desats no es poden compartir i no funcionaran amb altres versions del nucli."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
    "Carrega estat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
    "Carrega un estat desat des de la posició actual."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_STATE,
+   "Carrega un estat desat des de la ranura seleccionada. Nota: No funcionarà si l'estat es va desar amb una versió anterior del nucli."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -14076,6 +14084,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWINDING,
    "Retrocedint."
+   )
+MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Capacitat de memòria intermèdia insuficient."
    )
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,

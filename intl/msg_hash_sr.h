@@ -492,10 +492,6 @@ MSG_HASH(
    "Zaključaj instalirano jezgro"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Spreči modifikaciju trenutno instaliranog jezgra. Može koristiti da se izbegnu nepoželjna ažuriranja kada sadržaj zahteva specifičnu verziju jezgra (npr. ROM-kompleti za arkadne mašine)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Izuzmi iz menija „Jezgra bez sadržaja”"
    )
@@ -1927,7 +1923,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "VI servis"
    )
-
 
 
 /* Settings > Input > Port # Controls */

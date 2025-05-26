@@ -561,7 +561,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Empêche la modification du cœur actuellement installé. Peut être utilisé pour éviter les mises à jour indésirables lorsque le contenu nécessite une version spécifique (les sets de ROMs d'arcade par exemple)."
+   "Empêcher la modification du cœur actuellement installé. Peut être utilisé pour éviter les mises à jour indésirables lorsque le contenu nécessite une version spécifique (les sets de ROMs d'arcade par exemple) ou les modifications du format des sauvegardes instantanées du cœur."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -6365,7 +6365,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Afficher une entrée 'Importer du contenu' dans le menu principal ou le sous-menu des listes de lecture."
+   "Afficher l'entrée 'Importer du contenu' dans le menu principal ou le sous-menu des listes de lecture."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -8980,12 +8980,20 @@ MSG_HASH(
    "Effectue une sauvegarde instantanée dans l'emplacement actuellement sélectionné."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVE_STATE,
+   "Enregistrer une sauvegarde instantanée dans l'emplacement actuellement sélectionné. Remarque : les sauvegardes instantanées ne sont généralement pas portables et peuvent ne pas fonctionner avec d'autres versions de ce cœur."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
    "Charger une sauvegarde instantanée"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
    "Charge une sauvegarde instantanée depuis l'emplacement actuellement sélectionné."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_STATE,
+   "Charger une sauvegarde instantanée à partir de l'emplacement actuellement sélectionné. Remarque : peut ne pas fonctionner si la sauvegarde instantanée a été créée avec une autre version du cœur."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -14128,6 +14136,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWINDING,
    "Rembobinage."
+   )
+MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Capacité de mémoire tampon insuffisante."
    )
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,

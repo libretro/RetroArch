@@ -540,10 +540,6 @@ MSG_HASH(
    "قفل کردن هستهٔ نصب‌شده"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "از ایجاد تغییر در هستهٔ نصب‌شدهٔ فعلی جلوگیری کنید. ممکن است برای جلوگیری از به‌روزرسانی‌های ناخواسته در زمانی که محتوا به نسخهٔ خاصی از هسته نیاز داشته باشد مفید باشد (مثلاً ROM های آرکید)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "از گزینگان «هسته‌های بدون محتوا» حذف کن"
    )
@@ -2439,7 +2435,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "خدمت هوش مصنوعی"
    )
-
 
 
 /* Settings > Input > Port # Controls */

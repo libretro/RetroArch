@@ -552,10 +552,6 @@ MSG_HASH(
    "鎖定核心"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "防止修改目前使用的核心, 遊戲僅限此核心版本才可執行時, 可用於避免不必要的更新。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "在「應用核心」選項中不顯示"
    )
@@ -5966,10 +5962,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    "顯示「匯入遊戲」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "在主選單或列表選單中顯示「匯入遊戲」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,

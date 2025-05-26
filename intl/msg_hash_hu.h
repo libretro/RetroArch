@@ -556,10 +556,6 @@ MSG_HASH(
    "Telepített mag zárolása"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "A jelenleg telepített mag módosításának megakadályozása. Használható a nemkívánatos frissítések elkerülésére (pl. Arcade ROM készletek)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Kihagyás a \"Tartalmat nem igénylő magok\" menüből"
    )
@@ -6374,10 +6370,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    "\"Tartalom importálása\" látható"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "A \"Tartalom importálása\" lehetőség jelenjen meg a főmenüben vagy a játéklisták almenüjében."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,

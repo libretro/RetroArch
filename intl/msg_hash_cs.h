@@ -552,10 +552,6 @@ MSG_HASH(
    "Zamknout nainstalované jádro"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Zabránit úpravě aktuálně nainstalovaného jádra. Lze použít k zamezení nechtěných aktualizací, pokud obsah vyžaduje určitou verzi jádra (např. sady Arcade ROM)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Vyloučit z menu 'Jádra bez obsahu'"
    )
@@ -6294,10 +6290,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    "Zobrazit 'Importovat obsah'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Zobrazení položky 'Importovat obsah' v hlavní nabídce nebo v podnabídce seznamů skladeb."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,

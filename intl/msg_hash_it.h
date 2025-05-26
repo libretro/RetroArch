@@ -557,7 +557,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Impedisci la modifica del core attualmente installato. Può essere usato per evitare aggiornamenti indesiderati quando il contenuto richiede una specifica versione del core (ad es. i ROM set degli Arcade)."
+   "Evitare la modifica del nucleo attualmente installato. Può essere usato per evitare aggiornamenti indesiderati quando il contenuto richiede una specifica versione core (e.. Arcade ROM sets) o le modifiche del formato di salvataggio del core stesso."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -6305,7 +6305,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Mostra una voce 'Importa contenuto' nel menu principale o nel sottomenu delle playlist."
+   "Mostra la voce 'Importa contenuto' nel menu principale o nel sottomenu delle playlist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -8896,12 +8896,20 @@ MSG_HASH(
    "Salva uno stato nello slot selezionato"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVE_STATE,
+   "Salva uno stato nello slot attualmente selezionato. Nota: gli stati di salvataggio non sono in genere portatili e potrebbero non funzionare con altre versioni di questo nucleo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
    "Carica Stato"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
    "Carica un salvataggio dallo slot attualmente selezionato"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_STATE,
+   "Carica uno stato salvato dallo slot attualmente selezionato. Nota: potrebbe non funzionare se lo stato è stato salvato con un'altra versione del nucleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,

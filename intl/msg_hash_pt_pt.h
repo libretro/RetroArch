@@ -548,10 +548,6 @@ MSG_HASH(
    "Bloquear núcleo instalado"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Previne que o núcleo atualmente instalado seja modificado. Pode ser usado para evitar atualizações indesejadas quando o conteúdo requer uma versão específica do núcleo (por exemplo, conjuntos de ROM Arcade)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Excluir do menu 'Núcleos sem conteúdo'"
    )
@@ -2628,7 +2624,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
    "Envia uma mensagem de chat para a sessão atual de netplay."
    )
-
 
 /* Settings > Input > Port # Controls */
 

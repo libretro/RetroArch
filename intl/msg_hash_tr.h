@@ -561,7 +561,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Kurulu olan çekirdeğin değiştirilmesini önle. İçerik belirli bir çekirdek sürüm gerektirdiğinde istenmeyen güncellemeleri önlemek için kullanılabilir (örn. Arcade ROM setleri)."
+   "Kurulu olan çekirdeğin değiştirilmesini önle. İçerik belirli bir çekirdek sürüm gerektirdiğinde istenmeyen güncellemeleri önlemek için kullanılabilir (örn. Arcade ROM setleri). veya çekirdeğin kendi durum kayıt biçimi değişir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -9036,12 +9036,20 @@ MSG_HASH(
    "Seçili yuvaya durumu kaydedin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVE_STATE,
+   "Şu anda seçili yuvaya bir durum kaydedin. Not: durum kayıtları genellikle taşınabilir değildir ve bu çekirdeğin diğer sürümleriyle çalışmayabilir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
    "Durum Yükle"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
    "Seçili yuvadan kaydedilmiş durum yükleyin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_STATE,
+   "Şu anda seçili yuvadan kaydedilmiş bir durumu yükleyin. Not: durum çekirdeğin başka bir sürümüyle kaydedilmişse çalışmayabilir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,

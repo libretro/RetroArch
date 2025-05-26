@@ -568,10 +568,6 @@ MSG_HASH(
    "Блакаванне ўсталяванага ядра"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Забараняе змену ўсталяванага ядра. Выключае непажаданыя абнаўленні, калі кантэнту патрабуецца пэўная версія ядра (напрыклад для аркадных набораў ROM)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Выключыць з меню 'Аўтаномныя ядры'"
    )
@@ -6310,10 +6306,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    "Паказ 'Імпартаваць змесціва'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Паказваць опцыю 'Імпарт кантэнту' у галоўным меню ці на ўкладцы плэйлістоў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,

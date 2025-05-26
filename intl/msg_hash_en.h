@@ -645,7 +645,6 @@ MSG_HASH(
    "Toggle between fading and static net-play chat messages."
    )
 
-
 /* Settings > Input > Port # Controls */
 
 MSG_HASH(
