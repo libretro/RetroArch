@@ -483,8 +483,10 @@ static void presentation_handle_clock_id(void *data,
    gfx_ctx_wayland_data_t *wl = data;
 
    if (clock_id == CLOCK_MONOTONIC || clock_id == CLOCK_MONOTONIC_RAW)
+   {
       wl->present_clock = true;
       wl->present_clock_id = (clockid_t)clock_id;
+   }
 }
 
 static void presentation_feedback_sync_output(void *data,
@@ -569,6 +571,27 @@ void wl_request_presentation_feedback(gfx_ctx_wayland_data_t *wl)
    wp_presentation_feedback_add_listener(fb->feedback,
          &presentation_feedback_listener, wl);
    wl_list_insert(&wl->feedbacks, &fb->link);
+}
+
+void wait_for_next_frame(gfx_ctx_wayland_data_t *wl)
+{
+    if (!wl->present_clock || wl->refresh_interval <= 0 || !wl->is_presented)
+        return;
+
+    struct timespec now;
+    clockid_t clock_type = (wl->present_clock_id == CLOCK_MONOTONIC ||
+                            wl->present_clock_id == CLOCK_MONOTONIC_RAW)
+                            ? wl->present_clock_id
+                            : CLOCK_MONOTONIC;
+    clock_gettime(clock_type, &now);
+    int64_t current_time = now.tv_sec * 1000000LL + now.tv_nsec / 1000;
+    int64_t next_frame = wl->last_ust + (wl->refresh_interval / 1000);
+
+    if (current_time < next_frame) {
+        int64_t sleep_us = next_frame - current_time;
+        const int64_t max_sleep = 1000000;
+        usleep(sleep_us > max_sleep ? max_sleep : sleep_us);
+    }
 }
 
 static int create_shm_file(off_t size)

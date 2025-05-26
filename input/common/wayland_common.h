@@ -268,6 +268,8 @@ void flush_wayland_fd(void *data);
 
 void wl_request_presentation_feedback(gfx_ctx_wayland_data_t *wl);
 
+void wait_for_next_frame(gfx_ctx_wayland_data_t *wl);
+
 extern const struct wl_keyboard_listener keyboard_listener;
 
 extern const struct wl_pointer_listener pointer_listener;
