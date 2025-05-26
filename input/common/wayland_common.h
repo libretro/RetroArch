@@ -220,6 +220,7 @@ typedef struct gfx_ctx_wayland_data
    int64_t last_msc;
    int64_t refresh_interval;
    touch_pos_t active_touch_positions[MAX_TOUCHES]; /* int32_t alignment */
+   clockid_t present_clock_id;
    unsigned width;
    unsigned height;
    unsigned buffer_width;

@@ -484,6 +484,7 @@ static void presentation_handle_clock_id(void *data,
 
    if (clock_id == CLOCK_MONOTONIC || clock_id == CLOCK_MONOTONIC_RAW)
       wl->present_clock = true;
+      wl->present_clock_id = (clockid_t)clock_id;
 }
 
 static void presentation_feedback_sync_output(void *data,
