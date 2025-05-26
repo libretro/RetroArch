@@ -6004,11 +6004,17 @@ int rarch_main(int argc, char *argv[], void *data)
 
 #if defined(EMSCRIPTEN)
 
-#if defined(EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK) && defined(HAVE_AUDIOWORKLET)
+#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
+#ifdef HAVE_AUDIOWORKLET
 bool audioworklet_external_block(void);
 #endif
 #ifdef HAVE_RWEBAUDIO
-void RWebAudioRecalibrateTime(void);
+bool rwebaudio_external_block(void);
+#endif
+#endif
+
+#ifdef HAVE_RWEBAUDIO
+void rwebaudio_recalibrate_time(void);
 #endif
 
 void emscripten_mainloop(void)
@@ -6033,13 +6039,19 @@ void emscripten_mainloop(void)
    if (platform_emscripten_should_drop_iter())
       return;
 
-#if defined(EMSCRIPTEN_AUDIO_FAKE_BLOCK) && defined(HAVE_AUDIOWORKLET)
+#ifdef HAVE_RWEBAUDIO
+   rwebaudio_recalibrate_time();
+#endif
+
+#ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK
+#ifdef HAVE_AUDIOWORKLET
    if (audioworklet_external_block())
       return;
 #endif
-
 #ifdef HAVE_RWEBAUDIO
-   RWebAudioRecalibrateTime();
+   if (rwebaudio_external_block())
+      return;
+#endif
 #endif
 
    emscripten_frame_count++;
@@ -6064,8 +6076,13 @@ void emscripten_mainloop(void)
 
    ret = runloop_iterate();
 
-#if defined(EMSCRIPTEN_AUDIO_ASYNC_BLOCK) && defined(HAVE_AUDIOWORKLET)
+#ifdef EMSCRIPTEN_AUDIO_ASYNC_BLOCK
+#ifdef HAVE_AUDIOWORKLET
    audioworklet_external_block();
+#endif
+#ifdef HAVE_RWEBAUDIO
+   rwebaudio_external_block();
+#endif
 #endif
 
    task_queue_check();

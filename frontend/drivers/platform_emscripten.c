@@ -532,6 +532,16 @@ void platform_emscripten_set_canvas_size(int width, int height)
    PlatformEmscriptenSetCanvasSize(width, height);
 }
 
+enum platform_emscripten_browser platform_emscripten_get_browser(void)
+{
+   return emscripten_platform_data->browser;
+}
+
+enum platform_emscripten_os platform_emscripten_get_os(void)
+{
+   return emscripten_platform_data->os;
+}
+
 /* frontend driver impl */
 
 static void frontend_emscripten_get_env(int *argc, char *argv[],

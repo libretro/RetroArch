@@ -1177,7 +1177,7 @@
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && !defined(HAVE_AUDIOWORKLET))
+#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && defined(HAVE_AL))
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #define DEFAULT_IN_LATENCY 128
@@ -1683,7 +1683,7 @@
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__) || defined(__PS3__)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWER
-#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX) || defined(EMSCRIPTEN)
+#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWEST
 #else
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_NORMAL
