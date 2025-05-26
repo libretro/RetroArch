@@ -1,3 +1,4 @@
+
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
@@ -120,6 +121,9 @@ enum
    XMB_TEXTURE_SETTINGS,
    XMB_TEXTURE_HISTORY,
    XMB_TEXTURE_FAVORITES,
+#ifdef HAVE_IMAGEVIEWER
+   XMB_TEXTURE_IMAGES,
+#endif
    XMB_TEXTURE_MUSICS,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    XMB_TEXTURE_MOVIES,
@@ -130,9 +134,6 @@ enum
    XMB_TEXTURE_ROOM,
    XMB_TEXTURE_ROOM_LAN,
    XMB_TEXTURE_ROOM_RELAY,
-#endif
-#ifdef HAVE_IMAGEVIEWER
-   XMB_TEXTURE_IMAGES,
 #endif
    XMB_TEXTURE_SETTING,
    XMB_TEXTURE_SUBSETTING,
@@ -163,8 +164,8 @@ enum
    XMB_TEXTURE_ZIP,
    XMB_TEXTURE_FAVORITE,
    XMB_TEXTURE_ADD_FAVORITE,
-   XMB_TEXTURE_MUSIC,
    XMB_TEXTURE_IMAGE,
+   XMB_TEXTURE_MUSIC,
    XMB_TEXTURE_MOVIE,
    XMB_TEXTURE_CORE,
    XMB_TEXTURE_RDB,
@@ -3378,12 +3379,12 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_GOTO_IMAGES:
          return xmb->textures.list[XMB_TEXTURE_IMAGES];
 #endif
+      case MENU_ENUM_LABEL_GOTO_MUSIC:
+         return xmb->textures.list[XMB_TEXTURE_MUSICS];
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case MENU_ENUM_LABEL_GOTO_VIDEO:
          return xmb->textures.list[XMB_TEXTURE_MOVIES];
 #endif
-      case MENU_ENUM_LABEL_GOTO_MUSIC:
-         return xmb->textures.list[XMB_TEXTURE_MUSICS];
       case MENU_ENUM_LABEL_GOTO_EXPLORE:
          if (!string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE)))
             return xmb->textures.list[XMB_TEXTURE_CURSOR];
@@ -3800,21 +3801,21 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   }
                   else
                   {
-                     if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
-                        return xmb->textures.list[XMB_TEXTURE_MUSIC];
-                     else if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
+                     if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
                         return xmb->textures.list[XMB_TEXTURE_IMAGE];
+                     else if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
+                        return xmb->textures.list[XMB_TEXTURE_MUSIC];
                      else if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
                         return xmb->textures.list[XMB_TEXTURE_MOVIE];
                   }
                }
                break;
-            case XMB_SYSTEM_TAB_MUSIC:
-               return xmb->textures.list[XMB_TEXTURE_MUSIC];
 #ifdef HAVE_IMAGEVIEWER
             case XMB_SYSTEM_TAB_IMAGES:
                return xmb->textures.list[XMB_TEXTURE_IMAGE];
 #endif
+            case XMB_SYSTEM_TAB_MUSIC:
+               return xmb->textures.list[XMB_TEXTURE_MUSIC];
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             case XMB_SYSTEM_TAB_VIDEO:
                return xmb->textures.list[XMB_TEXTURE_MOVIE];
@@ -3832,11 +3833,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
       case FILE_TYPE_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_ZIP];
-      case FILE_TYPE_MUSIC:
-         return xmb->textures.list[XMB_TEXTURE_MUSIC];
       case FILE_TYPE_IMAGE:
       case FILE_TYPE_IMAGEVIEWER:
          return xmb->textures.list[XMB_TEXTURE_IMAGE];
+      case FILE_TYPE_MUSIC:
+         return xmb->textures.list[XMB_TEXTURE_MUSIC];
       case FILE_TYPE_MOVIE:
          return xmb->textures.list[XMB_TEXTURE_MOVIE];
       case FILE_TYPE_CORE:
@@ -5145,6 +5146,16 @@ static int xmb_draw_item(
             texture = xmb->textures.list[XMB_TEXTURE_HISTORY];
          else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
             texture = xmb->textures.list[XMB_TEXTURE_FAVORITES];
+#ifdef HAVE_IMAGEVIEWER
+         else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
+            texture = xmb->textures.list[XMB_TEXTURE_IMAGES];
+#endif
+         else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
+            texture = xmb->textures.list[XMB_TEXTURE_MUSICS];
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+         else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
+            texture = xmb->textures.list[XMB_TEXTURE_MOVIES];
+#endif
          else if (i < xmb->horizontal_list.size)
          {
             xmb_node_t *sidebar_node = NULL;
@@ -6114,15 +6125,15 @@ static const char *xmb_texture_path(unsigned id)
          return "favorites.png";
       case XMB_TEXTURE_ADD_FAVORITE:
          return "add-favorite.png";
+#ifdef HAVE_IMAGEVIEWER
+      case XMB_TEXTURE_IMAGES:
+         return "images.png";
+#endif
       case XMB_TEXTURE_MUSICS:
          return "musics.png";
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case XMB_TEXTURE_MOVIES:
          return "movies.png";
-#endif
-#ifdef HAVE_IMAGEVIEWER
-      case XMB_TEXTURE_IMAGES:
-         return "images.png";
 #endif
       case XMB_TEXTURE_SETTING:
          return "setting.png";
@@ -6194,12 +6205,12 @@ static const char *xmb_texture_path(unsigned id)
          return "folder.png";
       case XMB_TEXTURE_ZIP:
          return "zip.png";
-      case XMB_TEXTURE_MUSIC:
-         return "music.png";
       case XMB_TEXTURE_FAVORITE:
          return "favorites-content.png";
       case XMB_TEXTURE_IMAGE:
          return "image.png";
+      case XMB_TEXTURE_MUSIC:
+         return "music.png";
       case XMB_TEXTURE_MOVIE:
          return "movie.png";
       case XMB_TEXTURE_CORE:
@@ -6453,6 +6464,12 @@ static bool xmb_context_reset_textures(
    xmb->favorites_tab_node.alpha  = xmb->categories_active_alpha;
    xmb->favorites_tab_node.zoom   = xmb->categories_active_zoom;
 
+#ifdef HAVE_IMAGEVIEWER
+   xmb->images_tab_node.icon      = xmb->textures.list[XMB_TEXTURE_IMAGES];
+   xmb->images_tab_node.alpha     = xmb->categories_active_alpha;
+   xmb->images_tab_node.zoom      = xmb->categories_active_zoom;
+#endif
+
    xmb->music_tab_node.icon       = xmb->textures.list[XMB_TEXTURE_MUSICS];
    xmb->music_tab_node.alpha      = xmb->categories_active_alpha;
    xmb->music_tab_node.zoom       = xmb->categories_active_zoom;
@@ -6461,12 +6478,6 @@ static bool xmb_context_reset_textures(
    xmb->video_tab_node.icon       = xmb->textures.list[XMB_TEXTURE_MOVIES];
    xmb->video_tab_node.alpha      = xmb->categories_active_alpha;
    xmb->video_tab_node.zoom       = xmb->categories_active_zoom;
-#endif
-
-#ifdef HAVE_IMAGEVIEWER
-   xmb->images_tab_node.icon      = xmb->textures.list[XMB_TEXTURE_IMAGES];
-   xmb->images_tab_node.alpha     = xmb->categories_active_alpha;
-   xmb->images_tab_node.zoom      = xmb->categories_active_zoom;
 #endif
 
    xmb->add_tab_node.icon         = xmb->textures.list[XMB_TEXTURE_ADD];

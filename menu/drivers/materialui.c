@@ -207,10 +207,10 @@ enum
    MUI_TEXTURE_KEY_HOVER,
    MUI_TEXTURE_FOLDER,
    MUI_TEXTURE_PARENT_DIRECTORY,
-   MUI_TEXTURE_IMAGE,
    MUI_TEXTURE_ARCHIVE,
-   MUI_TEXTURE_VIDEO,
+   MUI_TEXTURE_IMAGE,
    MUI_TEXTURE_MUSIC,
+   MUI_TEXTURE_VIDEO,
    MUI_TEXTURE_QUIT,
    MUI_TEXTURE_HELP,
    MUI_TEXTURE_HISTORY,
@@ -2095,10 +2095,10 @@ static const char *materialui_texture_path(unsigned id)
          return "parent_directory.png";
       case MUI_TEXTURE_IMAGE:
          return "image.png";
-      case MUI_TEXTURE_VIDEO:
-         return "video.png";
       case MUI_TEXTURE_MUSIC:
          return "music.png";
+      case MUI_TEXTURE_VIDEO:
+         return "video.png";
       case MUI_TEXTURE_ARCHIVE:
          return "archive.png";
       case MUI_TEXTURE_QUIT:
@@ -12049,7 +12049,7 @@ static void materialui_list_insert(void *userdata,
             /* Playlist manager icons */
             else if (string_is_equal(fullpath, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST)))
             {
-               size_t path_siz          = strlen(path);
+               size_t path_size         = strlen(path);
                /* Set defaults */
                node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
@@ -12057,13 +12057,20 @@ static void materialui_list_insert(void *userdata,
                      && !string_is_empty(path))
                {
                   if (string_ends_with_size(path, "_history.lpl",
-                        path_siz, STRLEN_CONST("_history.lpl")))
+                        path_size, STRLEN_CONST("_history.lpl")))
                   {
                      node->icon_texture_index = MUI_TEXTURE_HISTORY;
                      node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+
+                     if (strstr(path, "image_history"))
+                        node->icon_texture_index = MUI_TEXTURE_IMAGE;
+                     else if (strstr(path, "music_history"))
+                        node->icon_texture_index = MUI_TEXTURE_MUSIC;
+                     else if (strstr(path, "video_history"))
+                        node->icon_texture_index = MUI_TEXTURE_VIDEO;
                   }
                   else if (string_ends_with_size(path, "_favorites.lpl",
-                        path_siz, STRLEN_CONST("_favorites.lpl")))
+                        path_size, STRLEN_CONST("_favorites.lpl")))
                   {
                      node->icon_texture_index = MUI_TEXTURE_ADD_TO_FAVORITES;
                      node->icon_type          = MUI_ICON_TYPE_INTERNAL;
