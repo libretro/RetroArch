@@ -137,12 +137,12 @@ enum
    OZONE_SYSTEM_TAB_SETTINGS,
    OZONE_SYSTEM_TAB_HISTORY,
    OZONE_SYSTEM_TAB_FAVORITES,
+#ifdef HAVE_IMAGEVIEWER
+   OZONE_SYSTEM_TAB_IMAGES,
+#endif
    OZONE_SYSTEM_TAB_MUSIC,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    OZONE_SYSTEM_TAB_VIDEO,
-#endif
-#ifdef HAVE_IMAGEVIEWER
-   OZONE_SYSTEM_TAB_IMAGES,
 #endif
 #ifdef HAVE_NETWORKING
    OZONE_SYSTEM_TAB_NETPLAY,
@@ -181,9 +181,9 @@ enum OZONE_TAB_TEXTURES
    OZONE_TAB_TEXTURE_SETTINGS,
    OZONE_TAB_TEXTURE_HISTORY,
    OZONE_TAB_TEXTURE_FAVORITES,
+   OZONE_TAB_TEXTURE_IMAGE,
    OZONE_TAB_TEXTURE_MUSIC,
    OZONE_TAB_TEXTURE_VIDEO,
-   OZONE_TAB_TEXTURE_IMAGE,
    OZONE_TAB_TEXTURE_NETWORK,
    OZONE_TAB_TEXTURE_SCAN_CONTENT,
    OZONE_TAB_TEXTURE_CONTENTLESS_CORES,
@@ -198,6 +198,9 @@ enum
    OZONE_ENTRIES_ICONS_TEXTURE_SETTINGS,
    OZONE_ENTRIES_ICONS_TEXTURE_HISTORY,
    OZONE_ENTRIES_ICONS_TEXTURE_FAVORITES,
+#ifdef HAVE_IMAGEVIEWER
+   OZONE_ENTRIES_ICONS_TEXTURE_IMAGES,
+#endif
    OZONE_ENTRIES_ICONS_TEXTURE_MUSICS,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    OZONE_ENTRIES_ICONS_TEXTURE_MOVIES,
@@ -207,9 +210,6 @@ enum
    OZONE_ENTRIES_ICONS_TEXTURE_ROOM,
    OZONE_ENTRIES_ICONS_TEXTURE_ROOM_LAN,
    OZONE_ENTRIES_ICONS_TEXTURE_ROOM_RELAY,
-#endif
-#ifdef HAVE_IMAGEVIEWER
-   OZONE_ENTRIES_ICONS_TEXTURE_IMAGES,
 #endif
    OZONE_ENTRIES_ICONS_TEXTURE_SETTING,
    OZONE_ENTRIES_ICONS_TEXTURE_SUBSETTING,
@@ -240,8 +240,8 @@ enum
    OZONE_ENTRIES_ICONS_TEXTURE_ZIP,
    OZONE_ENTRIES_ICONS_TEXTURE_FAVORITE,
    OZONE_ENTRIES_ICONS_TEXTURE_ADD_FAVORITE,
-   OZONE_ENTRIES_ICONS_TEXTURE_MUSIC,
    OZONE_ENTRIES_ICONS_TEXTURE_IMAGE,
+   OZONE_ENTRIES_ICONS_TEXTURE_MUSIC,
    OZONE_ENTRIES_ICONS_TEXTURE_MOVIE,
    OZONE_ENTRIES_ICONS_TEXTURE_CORE,
    OZONE_ENTRIES_ICONS_TEXTURE_RDB,
@@ -1920,12 +1920,12 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_GOTO_IMAGES:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGES];
 #endif
+      case MENU_ENUM_LABEL_GOTO_MUSIC:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSICS];
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case MENU_ENUM_LABEL_GOTO_VIDEO:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MOVIES];
 #endif
-      case MENU_ENUM_LABEL_GOTO_MUSIC:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSICS];
       case MENU_ENUM_LABEL_GOTO_EXPLORE:
          if (!string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE)))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
@@ -2313,19 +2313,19 @@ static uintptr_t ozone_entries_icon_get_texture(
          switch (ozone->tabs[ozone->categories_selection_ptr])
          {
             case OZONE_SYSTEM_TAB_MAIN:
-               if (string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
-                  return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
-               else if (string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
+               if (string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
                   return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
+               else if (string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
+                  return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
                else if (string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
                   return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MOVIE];
                break;
-            case OZONE_SYSTEM_TAB_MUSIC:
-               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
 #ifdef HAVE_IMAGEVIEWER
             case OZONE_SYSTEM_TAB_IMAGES:
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
 #endif
+            case OZONE_SYSTEM_TAB_MUSIC:
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             case OZONE_SYSTEM_TAB_VIDEO:
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MOVIE];
@@ -2339,11 +2339,11 @@ static uintptr_t ozone_entries_icon_get_texture(
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS];
       case FILE_TYPE_CARCHIVE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ZIP];
-      case FILE_TYPE_MUSIC:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
       case FILE_TYPE_IMAGE:
       case FILE_TYPE_IMAGEVIEWER:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
+      case FILE_TYPE_MUSIC:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
       case FILE_TYPE_MOVIE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MOVIE];
       case FILE_TYPE_CORE:
@@ -2603,15 +2603,15 @@ static const char *ozone_entries_icon_texture_path(unsigned id)
          return "favorites.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ADD_FAVORITE:
          return "add-favorite.png";
+#ifdef HAVE_IMAGEVIEWER
+      case OZONE_ENTRIES_ICONS_TEXTURE_IMAGES:
+         return "images.png";
+#endif
       case OZONE_ENTRIES_ICONS_TEXTURE_MUSICS:
          return "musics.png";
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case OZONE_ENTRIES_ICONS_TEXTURE_MOVIES:
          return "movies.png";
-#endif
-#ifdef HAVE_IMAGEVIEWER
-      case OZONE_ENTRIES_ICONS_TEXTURE_IMAGES:
-         return "images.png";
 #endif
       case OZONE_ENTRIES_ICONS_TEXTURE_SETTING:
          return "setting.png";
@@ -2683,12 +2683,12 @@ static const char *ozone_entries_icon_texture_path(unsigned id)
          return "folder.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_ZIP:
          return "zip.png";
-      case OZONE_ENTRIES_ICONS_TEXTURE_MUSIC:
-         return "music.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_FAVORITE:
          return "favorites-content.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_IMAGE:
          return "image.png";
+      case OZONE_ENTRIES_ICONS_TEXTURE_MUSIC:
+         return "music.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_MOVIE:
          return "movie.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_CORE:
@@ -3291,12 +3291,12 @@ static void ozone_draw_sidebar(
       MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
       MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
       MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+#ifdef HAVE_IMAGEVIEWER
+      MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+#endif
       MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-#endif
-#ifdef HAVE_IMAGEVIEWER
-      MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
 #endif
 #ifdef HAVE_NETWORKING
       MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
@@ -3312,12 +3312,12 @@ static void ozone_draw_sidebar(
       OZONE_TAB_TEXTURE_SETTINGS,
       OZONE_TAB_TEXTURE_HISTORY,
       OZONE_TAB_TEXTURE_FAVORITES,
+#ifdef HAVE_IMAGEVIEWER
+      OZONE_TAB_TEXTURE_IMAGE,
+#endif
       OZONE_TAB_TEXTURE_MUSIC,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       OZONE_TAB_TEXTURE_VIDEO,
-#endif
-#ifdef HAVE_IMAGEVIEWER
-      OZONE_TAB_TEXTURE_IMAGE,
 #endif
 #ifdef HAVE_NETWORKING
       OZONE_TAB_TEXTURE_NETWORK,
@@ -4605,12 +4605,12 @@ static void ozone_sidebar_goto(ozone_handle_t *ozone, size_t new_selection)
       MENU_ENUM_LABEL_SETTINGS_TAB,
       MENU_ENUM_LABEL_HISTORY_TAB,
       MENU_ENUM_LABEL_FAVORITES_TAB,
+#ifdef HAVE_IMAGEVIEWER
+      MENU_ENUM_LABEL_IMAGES_TAB,
+#endif
       MENU_ENUM_LABEL_MUSIC_TAB,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       MENU_ENUM_LABEL_VIDEO_TAB,
-#endif
-#ifdef HAVE_IMAGEVIEWER
-      MENU_ENUM_LABEL_IMAGES_TAB,
 #endif
 #ifdef HAVE_NETWORKING
       MENU_ENUM_LABEL_NETPLAY_TAB,
@@ -4626,12 +4626,12 @@ static void ozone_sidebar_goto(ozone_handle_t *ozone, size_t new_selection)
       MENU_SETTINGS_TAB,
       MENU_HISTORY_TAB,
       MENU_FAVORITES_TAB,
+#ifdef HAVE_IMAGEVIEWER
+      MENU_IMAGES_TAB,
+#endif
       MENU_MUSIC_TAB,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       MENU_VIDEO_TAB,
-#endif
-#ifdef HAVE_IMAGEVIEWER
-      MENU_IMAGES_TAB,
 #endif
 #ifdef HAVE_NETWORKING
       MENU_NETPLAY_TAB,
@@ -5898,6 +5898,16 @@ border_iterate:
                texture = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_HISTORY];
             else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
                texture = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITES];
+#ifdef HAVE_IMAGEVIEWER
+            else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
+               texture = ozone->icons_textures[OZONE_TAB_TEXTURE_IMAGE];
+#endif
+            else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
+               texture = ozone->icons_textures[OZONE_TAB_TEXTURE_MUSIC];
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+            else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
+               texture = ozone->icons_textures[OZONE_TAB_TEXTURE_VIDEO];
+#endif
             else if (i < ozone->horizontal_list.size)
             {
                ozone_node_t *sidebar_node = NULL;
@@ -9485,9 +9495,9 @@ static void ozone_context_reset(void *data, bool is_threaded)
       "settings.png",  /* SETTINGS_TAB */
       "history.png",   /* HISTORY_TAB */
       "favorites.png", /* FAVORITES_TAB */
+      "image.png",     /* IMAGES_TAB */
       "music.png",     /* MUSIC_TAB */
       "video.png",     /* VIDEO_TAB */
-      "image.png",     /* IMAGES_TAB */
       "netplay.png",   /* NETPLAY_TAB */
       "add.png",       /* ADD_TAB */
       "core.png",      /* CONTENTLESS_CORES_TAB */

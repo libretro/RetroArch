@@ -4826,6 +4826,37 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
                MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
 
+#ifdef HAVE_IMAGEVIEWER
+   /* Add image history */
+   if (playlist_size(g_defaults.image_history) > 0)
+      if (menu_entries_append(list,
+            playlist_get_conf_path(g_defaults.image_history),
+            "",
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+#endif
+
+   /* Add music history */
+   if (playlist_size(g_defaults.music_history) > 0)
+      if (menu_entries_append(list,
+            playlist_get_conf_path(g_defaults.music_history),
+            "",
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+   /* Add video history */
+   if (playlist_size(g_defaults.video_history) > 0)
+      if (menu_entries_append(list,
+            playlist_get_conf_path(g_defaults.video_history),
+            "",
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+#endif
+
    return count;
 }
 
@@ -4833,7 +4864,8 @@ static bool menu_displaylist_parse_playlist_manager_settings(
       menu_handle_t *menu, settings_t *settings, file_list_t *list,
       const char *playlist_path)
 {
-   bool is_content_history;
+   bool is_content_history      = false;
+   bool is_media_history        = false;
    enum msg_hash_enums right_thumbnail_label_value;
    enum msg_hash_enums left_thumbnail_label_value;
    const char *playlist_file    = NULL;
@@ -4863,6 +4895,16 @@ static bool menu_displaylist_parse_playlist_manager_settings(
    is_content_history = string_ends_with_size(
          playlist_path, "_history.lpl", strlen(playlist_path),
          STRLEN_CONST("_history.lpl"));
+   is_media_history   =
+            string_ends_with_size(
+               playlist_path, "_image_history.lpl", strlen(playlist_path),
+               STRLEN_CONST("_image_history.lpl"))
+         || string_ends_with_size(
+               playlist_path, "_music_history.lpl", strlen(playlist_path),
+               STRLEN_CONST("_music_history.lpl"))
+         || string_ends_with_size(
+               playlist_path, "_video_history.lpl", strlen(playlist_path),
+               STRLEN_CONST("_video_history.lpl"));
 
    /* Label display mode */
    menu_entries_append(list,
@@ -4898,19 +4940,22 @@ static bool menu_displaylist_parse_playlist_manager_settings(
    }
 #endif
 
-   /* > Right thumbnail mode */
-   menu_entries_append(list,
-         msg_hash_to_str(right_thumbnail_label_value),
-         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE),
-         MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,
-         MENU_SETTING_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE, 0, 0, NULL);
+   if (!is_media_history)
+   {
+      /* > Right thumbnail mode */
+      menu_entries_append(list,
+            msg_hash_to_str(right_thumbnail_label_value),
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE),
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,
+            MENU_SETTING_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE, 0, 0, NULL);
 
-   /* > Left thumbnail mode */
-   menu_entries_append(list,
-         msg_hash_to_str(left_thumbnail_label_value),
-         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE),
-         MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
-         MENU_SETTING_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE, 0, 0, NULL);
+      /* > Left thumbnail mode */
+      menu_entries_append(list,
+            msg_hash_to_str(left_thumbnail_label_value),
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE),
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE,
+            MENU_SETTING_PLAYLIST_MANAGER_LEFT_THUMBNAIL_MODE, 0, 0, NULL);
+   }
 
    /* Sorting mode
     * > Not relevant for history playlists  */
