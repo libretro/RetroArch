@@ -1860,10 +1860,9 @@ static void menu_input_get_mouse_hw_state(
       menu_input_pointer_hw_state_t *hw_state)
 {
    rarch_joypad_info_t joypad_info;
-   static int16_t last_x           = 0;
-   static int16_t last_y           = 0;
-   static int16_t initial_x        = 0;
-   static int16_t initial_y        = 0;
+   static int16_t last_x           = -0x7fff;
+   static int16_t last_y           = -0x7fff;
+   bool ignore_position            = false;
    bool is_select_pressed          = false;
    bool is_cancel_pressed          = false;
    static bool last_select_pressed = false;
@@ -1923,14 +1922,8 @@ static void menu_input_get_mouse_hw_state(
    }
 
    /* Start reading mouse position after moving it once */
-   initial_x = (initial_x) ? initial_x : hw_state->x;
-   initial_y = (initial_y) ? initial_y : hw_state->y;
-
-   if ((hw_state->x == initial_x && hw_state->y == initial_y))
-   {
-      hw_state->flags &= ~MENU_INP_PTR_FLG_ACTIVE;
-      return;
-   }
+   if (last_x == -0x7fff && last_y == -0x7fff)
+      ignore_position = true;
 
    last_x                          = hw_state->x;
    last_y                          = hw_state->y;
@@ -2068,6 +2061,9 @@ static void menu_input_get_mouse_hw_state(
       hw_state->flags  |= MENU_INP_PTR_FLG_ACTIVE;
    last_select_pressed  = (hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT) > 0;
    last_cancel_pressed  = (hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL) > 0;
+
+   if (ignore_position)
+      hw_state->flags &= ~MENU_INP_PTR_FLG_ACTIVE;
 }
 
 static void menu_input_get_touchscreen_hw_state(
