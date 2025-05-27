@@ -1862,6 +1862,8 @@ static void menu_input_get_mouse_hw_state(
    rarch_joypad_info_t joypad_info;
    static int16_t last_x           = 0;
    static int16_t last_y           = 0;
+   static int16_t initial_x        = 0;
+   static int16_t initial_y        = 0;
    bool is_select_pressed          = false;
    bool is_cancel_pressed          = false;
    static bool last_select_pressed = false;
@@ -1918,6 +1920,16 @@ static void menu_input_get_mouse_hw_state(
                   0,
                   RETRO_DEVICE_ID_MOUSE_Y)) != last_y)
          hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
+   }
+
+   /* Start reading mouse position after moving it once */
+   initial_x = (initial_x) ? initial_x : hw_state->x;
+   initial_y = (initial_y) ? initial_y : hw_state->y;
+
+   if ((hw_state->x == initial_x && hw_state->y == initial_y))
+   {
+      hw_state->flags &= ~MENU_INP_PTR_FLG_ACTIVE;
+      return;
    }
 
    last_x                          = hw_state->x;
