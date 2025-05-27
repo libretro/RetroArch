@@ -2996,7 +2996,7 @@ static void materialui_compute_entries_box_default(
       node->entry_height = node->text_height +
             mui->dip_base_unit_size / 10;
 
-      node->entry_height      += mui->dip_base_unit_size / 15;
+      node->entry_height      += mui->dip_base_unit_size / 13;
       node->y                  = sum;
 
       node->entry_width        = node_entry_width;
