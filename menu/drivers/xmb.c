@@ -2886,6 +2886,68 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
    xmb_context_reset_horizontal_list(xmb);
 }
 
+static void xmb_refresh_system_tabs_list(xmb_handle_t *xmb)
+{
+   settings_t *settings = config_get_ptr();
+
+   xmb->system_tab_end                = 0;
+   xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
+
+   if (      settings->bools.menu_content_show_settings
+         && !settings->bools.kiosk_mode_enable)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
+
+   if (settings->bools.menu_content_show_favorites_first)
+   {
+      if (settings->bools.menu_content_show_favorites)
+         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
+      if (settings->bools.menu_content_show_history)
+         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
+   }
+   else
+   {
+      if (settings->bools.menu_content_show_history)
+         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
+      if (settings->bools.menu_content_show_favorites)
+         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
+   }
+
+#ifdef HAVE_IMAGEVIEWER
+   if (settings->bools.menu_content_show_images)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
+#endif
+
+   if (settings->bools.menu_content_show_music)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
+
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+   if (settings->bools.menu_content_show_video)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
+#endif
+
+#if 0 /* Move Netplay to Main Menu */
+#ifdef HAVE_NETWORKING
+   if (settings->bools.menu_content_show_netplay)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
+#endif
+#endif /* 0 */
+
+   if (      settings->uints.menu_content_show_add_entry == MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
+         && !settings->bools.kiosk_mode_enable)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
+
+#if defined(HAVE_DYNAMIC)
+   if (     settings->uints.menu_content_show_contentless_cores
+         != MENU_CONTENTLESS_CORES_DISPLAY_NONE)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_CONTENTLESS_CORES;
+#endif
+
+#if defined(HAVE_LIBRETRODB)
+   if (settings->bools.menu_content_show_explore)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_EXPLORE;
+#endif
+}
+
 static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
 {
    xmb_handle_t *xmb     = (xmb_handle_t*)userdata;
@@ -2902,6 +2964,7 @@ static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
          xmb->show_mouse = false;
          break;
       case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
+         xmb_refresh_system_tabs_list(xmb);
          xmb_refresh_horizontal_list(xmb);
          break;
       case MENU_ENVIRON_ENABLE_SCREENSAVER:
@@ -3363,6 +3426,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS:
          return xmb->textures.list[XMB_TEXTURE_FOLDER];
       case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
+         if (xmb->depth > 1)
+            return xmb->textures.list[XMB_TEXTURE_ADD];
          return xmb->textures.list[XMB_TEXTURE_MENU_ADD];
       case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:
       case MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB:
@@ -8659,65 +8724,10 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->old_depth                     = 1;
    xmb->alpha                         = 1.0f;
 
-   xmb->system_tab_end                = 0;
-   xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
+   xmb_refresh_system_tabs_list(xmb);
 
    for (i = 0; i < XMB_TAB_MAX_LENGTH; i++)
       xmb->tab_selection[i]           = 0;
-
-   if (      settings->bools.menu_content_show_settings
-         && !settings->bools.kiosk_mode_enable)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
-
-   if (settings->bools.menu_content_show_favorites_first)
-   {
-      if (settings->bools.menu_content_show_favorites)
-         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
-      if (settings->bools.menu_content_show_history)
-         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
-   }
-   else
-   {
-      if (settings->bools.menu_content_show_history)
-         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
-      if (settings->bools.menu_content_show_favorites)
-         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
-   }
-
-#ifdef HAVE_IMAGEVIEWER
-   if (settings->bools.menu_content_show_images)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
-#endif
-
-   if (settings->bools.menu_content_show_music)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
-
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-   if (settings->bools.menu_content_show_video)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
-#endif
-
-#if 0 /* Move Netplay and Import Content to Main Menu */
-#ifdef HAVE_NETWORKING
-   if (settings->bools.menu_content_show_netplay)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
-#endif
-
-   if (      settings->bools.menu_content_show_add
-         && !settings->bools.kiosk_mode_enable)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
-#endif /* 0 */
-
-#if defined(HAVE_DYNAMIC)
-   if (     settings->uints.menu_content_show_contentless_cores
-         != MENU_CONTENTLESS_CORES_DISPLAY_NONE)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_CONTENTLESS_CORES;
-#endif
-
-#if defined(HAVE_LIBRETRODB)
-   if (settings->bools.menu_content_show_explore)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_EXPLORE;
-#endif
 
    menu_st->flags         &= ~MENU_ST_FLAG_PREVENT_POPULATE;
 

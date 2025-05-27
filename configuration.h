@@ -826,7 +826,6 @@ typedef struct settings
       bool menu_content_show_video;
       bool menu_content_show_netplay;
       bool menu_content_show_history;
-      bool menu_content_show_add;
       bool menu_content_show_playlists;
       bool menu_content_show_playlist_tabs;
       bool menu_content_show_explore;

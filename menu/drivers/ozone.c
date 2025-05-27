@@ -2182,6 +2182,8 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_SETTINGS_SHOW_USER:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_USER];
       case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
+            if (ozone->depth > 1)
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ADD];
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MENU_ADD];
       case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY:
@@ -5118,6 +5120,68 @@ static void ozone_refresh_horizontal_list(ozone_handle_t *ozone,
    ozone_init_horizontal_list(ozone, settings);
 
    ozone_context_reset_horizontal_list(ozone);
+}
+
+static void ozone_refresh_system_tabs_list(ozone_handle_t * ozone)
+{
+   settings_t *settings = config_get_ptr();
+
+   ozone->system_tab_end              = 0;
+   ozone->tabs[ozone->system_tab_end] = OZONE_SYSTEM_TAB_MAIN;
+
+   if (      settings->bools.menu_content_show_settings
+         && !settings->bools.kiosk_mode_enable)
+      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_SETTINGS;
+
+   if (settings->bools.menu_content_show_favorites_first)
+   {
+      if (settings->bools.menu_content_show_favorites)
+         ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_FAVORITES;
+      if (settings->bools.menu_content_show_history)
+         ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_HISTORY;
+   }
+   else
+   {
+      if (settings->bools.menu_content_show_history)
+         ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_HISTORY;
+      if (settings->bools.menu_content_show_favorites)
+         ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_FAVORITES;
+   }
+
+#ifdef HAVE_IMAGEVIEWER
+   if (settings->bools.menu_content_show_images)
+      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_IMAGES;
+#endif
+
+   if (settings->bools.menu_content_show_music)
+      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_MUSIC;
+
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+   if (settings->bools.menu_content_show_video)
+      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_VIDEO;
+#endif
+
+#if 0 /* Move Netplay to Main Menu */
+#ifdef HAVE_NETWORKING
+   if (settings->bools.menu_content_show_netplay)
+      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_NETPLAY;
+#endif
+#endif /* 0 */
+
+   if (      settings->uints.menu_content_show_add_entry == MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
+         && !settings->bools.kiosk_mode_enable)
+      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_ADD;
+
+#if defined(HAVE_DYNAMIC)
+   if (settings->uints.menu_content_show_contentless_cores !=
+         MENU_CONTENTLESS_CORES_DISPLAY_NONE)
+      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_CONTENTLESS_CORES;
+#endif
+
+#if defined(HAVE_LIBRETRODB)
+   if (settings->bools.menu_content_show_explore)
+      ozone->tabs[++ozone->system_tab_end] = OZONE_SYSTEM_TAB_EXPLORE;
+#endif
 }
 
 static int ozone_get_entries_padding_old_list(ozone_handle_t* ozone)
@@ -8186,7 +8250,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             if (list_selection < 0)
             {
-               enum msg_hash_enums value_idx = ozone_system_tabs_label[tab_selection];
+               enum msg_hash_enums value_idx = ozone_system_tabs_label[ozone->tabs[tab_selection]];
                const char *tab_title;
 
                switch (value_idx)
@@ -8996,63 +9060,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    gfx_thumbnail_set_fade_missing(false);
 
    ozone_sidebar_update_collapse(ozone, settings->bools.ozone_collapse_sidebar, false);
-
-   ozone->system_tab_end                        = 0;
-   ozone->tabs[ozone->system_tab_end]           = OZONE_SYSTEM_TAB_MAIN;
-
-   if (      settings->bools.menu_content_show_settings
-         && !settings->bools.kiosk_mode_enable)
-      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_SETTINGS;
-
-   if (settings->bools.menu_content_show_favorites_first)
-   {
-      if (settings->bools.menu_content_show_favorites)
-         ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_FAVORITES;
-      if (settings->bools.menu_content_show_history)
-         ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_HISTORY;
-   }
-   else
-   {
-      if (settings->bools.menu_content_show_history)
-         ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_HISTORY;
-      if (settings->bools.menu_content_show_favorites)
-         ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_FAVORITES;
-   }
-
-#ifdef HAVE_IMAGEVIEWER
-   if (settings->bools.menu_content_show_images)
-      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_IMAGES;
-#endif
-
-   if (settings->bools.menu_content_show_music)
-      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_MUSIC;
-
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-   if (settings->bools.menu_content_show_video)
-      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_VIDEO;
-#endif
-
-#if 0 /* Move Netplay and Import Content to Main Menu */
-#ifdef HAVE_NETWORKING
-   if (settings->bools.menu_content_show_netplay)
-      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_NETPLAY;
-#endif
-
-   if (      settings->bools.menu_content_show_add
-         && !settings->bools.kiosk_mode_enable)
-      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_ADD;
-#endif /* 0 */
-
-#if defined(HAVE_DYNAMIC)
-   if (settings->uints.menu_content_show_contentless_cores !=
-         MENU_CONTENTLESS_CORES_DISPLAY_NONE)
-      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_CONTENTLESS_CORES;
-#endif
-
-#if defined(HAVE_LIBRETRODB)
-   if (settings->bools.menu_content_show_explore)
-      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_EXPLORE;
-#endif
+   ozone_refresh_system_tabs_list(ozone);
 
    for (i = 0; i < OZONE_TAB_MAX_LENGTH; i++)
       ozone->tab_selection[i]                   = 0;
@@ -12713,8 +12721,7 @@ static int ozone_environ_cb(enum menu_environ_cb type, void *data, void *userdat
          ozone->flags &= ~OZONE_FLAG_SHOW_CURSOR;
          break;
       case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
-         if (!ozone)
-            return -1;
+         ozone_refresh_system_tabs_list(ozone);
          ozone_refresh_horizontal_list(ozone, config_get_ptr());
          break;
       case MENU_ENVIRON_ENABLE_SCREENSAVER:

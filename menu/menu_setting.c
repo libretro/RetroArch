@@ -8848,6 +8848,24 @@ static void general_write_handler(rarch_setting_t *setting)
          }
          break;
 #endif
+      case MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES_FIRST:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_MUSIC:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_VIDEO:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLIST_TABS:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE:
+      case MENU_ENUM_LABEL_CONTENT_SHOW_CONTENTLESS_CORES:
+         {
+            struct menu_state *menu_st = menu_state_get_ptr();
+            if (menu_st->driver_ctx->environ_cb)
+               menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+                     NULL, menu_st->userdata);
+         }
+         break;
       default:
          /* Special cases */
 
