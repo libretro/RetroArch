@@ -6429,7 +6429,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "Show the 'Settings' menu. (Restart required on Ozone/XMB)"
+   "Show the 'Settings' menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -6445,7 +6445,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Show the 'Favorites' menu. (Restart required on Ozone/XMB)"
+   "Show the 'Favorites' menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
@@ -6453,7 +6453,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
-   "Show 'Favorites' before 'History'. (Restart required on Ozone/XMB)"
+   "Show 'Favorites' before 'History'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
@@ -6461,7 +6461,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "Show the 'Images' menu. (Restart required on Ozone/XMB)"
+   "Show the 'Images' menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
@@ -6469,7 +6469,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "Show the 'Music' menu. (Restart required on Ozone/XMB)"
+   "Show the 'Music' menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
@@ -6477,7 +6477,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "Show the 'Videos' menu. (Restart required on Ozone/XMB)"
+   "Show the 'Videos' menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
@@ -6485,7 +6485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Show the 'Netplay' menu. (Restart required on Ozone/XMB)"
+   "Show the 'Netplay' menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -6493,7 +6493,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Show the recent history menu. (Restart required on Ozone/XMB)"
+   "Show the recent history menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -6501,7 +6501,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Show the 'Import Content' entry inside the main menu or playlists submenu."
+   "Show the 'Import Content' entry inside the Main Menu or Playlists."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -6525,7 +6525,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
-   "Show the playlist tabs. Does not affect RGUI. Navbar must be enabled in GLUI. (Restart required on Ozone/XMB)"
+   "Show the playlist tabs. Does not affect RGUI. Navbar must be enabled in GLUI."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
@@ -6533,7 +6533,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "Show the content explorer option. (Restart required on Ozone/XMB)"
+   "Show the content explorer option."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
@@ -6541,7 +6541,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Specify the type of core (if any) to show in the 'Contentless Cores' menu. When set to 'Custom', individual core visibility may be toggled via the 'Manage Cores' menu. (Restart required on Ozone/XMB)"
+   "Specify the type of core (if any) to show in the 'Contentless Cores' menu. When set to 'Custom', individual core visibility may be toggled via the 'Manage Cores' menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
