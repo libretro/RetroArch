@@ -8634,7 +8634,6 @@ static int action_ok_delete_playlist(const char *path,
 {
    playlist_t       *playlist = playlist_get_cached();
    struct menu_state *menu_st = menu_state_get_ptr();
-   menu_entry_t entry;
 
    if (!playlist)
       return -1;
@@ -8647,12 +8646,7 @@ static int action_ok_delete_playlist(const char *path,
       menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
                NULL, menu_st->userdata);
 
-   MENU_ENTRY_INITIALIZE(entry);
-   menu_entry_get(&entry, 0, 0, NULL, false);
-
-   /* Ozone sidebar quick manager needs 'MENU_ACTION_CANCEL' instead
-    * of 'action_cancel_pop_default' to return back to sidebar cleanly */
-   return menu_entry_action(&entry, 0, MENU_ACTION_CANCEL);
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
 #ifdef HAVE_NETWORKING

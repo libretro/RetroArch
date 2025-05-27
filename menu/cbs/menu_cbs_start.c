@@ -897,13 +897,6 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
          case MENU_ENUM_LABEL_MENU_WALLPAPER:
             BIND_ACTION_START(cbs, action_start_menu_wallpaper);
             break;
-         case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
-         case MENU_ENUM_LABEL_GOTO_FAVORITES:
-         case MENU_ENUM_LABEL_GOTO_IMAGES:
-         case MENU_ENUM_LABEL_GOTO_MUSIC:
-         case MENU_ENUM_LABEL_GOTO_VIDEO:
-            BIND_ACTION_START(cbs, action_ok_push_playlist_manager_settings);
-            break;
          default:
             return -1;
       }
