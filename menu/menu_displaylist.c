@@ -4321,7 +4321,7 @@ static unsigned menu_displaylist_parse_playlists(
          {
             if (settings->bools.menu_content_show_favorites)
                if (menu_entries_append(info_list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                        FILE_PATH_CONTENT_FAVORITES,
                         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                         MENU_ENUM_LABEL_GOTO_FAVORITES,
                         MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4329,7 +4329,7 @@ static unsigned menu_displaylist_parse_playlists(
 
             if (settings->bools.menu_content_show_history)
                if (menu_entries_append(info_list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY),
+                        FILE_PATH_CONTENT_HISTORY,
                         msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                         MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4339,7 +4339,7 @@ static unsigned menu_displaylist_parse_playlists(
          {
             if (settings->bools.menu_content_show_history)
                if (menu_entries_append(info_list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY),
+                        FILE_PATH_CONTENT_HISTORY,
                         msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                         MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4347,7 +4347,7 @@ static unsigned menu_displaylist_parse_playlists(
 
             if (settings->bools.menu_content_show_favorites)
                if (menu_entries_append(info_list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                        FILE_PATH_CONTENT_FAVORITES,
                         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                         MENU_ENUM_LABEL_GOTO_FAVORITES,
                         MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4357,7 +4357,7 @@ static unsigned menu_displaylist_parse_playlists(
 
       if (settings->bools.menu_content_show_images)
          if (menu_entries_append(info_list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_IMAGES),
+                  FILE_PATH_CONTENT_IMAGE_HISTORY,
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
                   MENU_ENUM_LABEL_GOTO_IMAGES,
                   MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4365,7 +4365,7 @@ static unsigned menu_displaylist_parse_playlists(
 
       if (settings->bools.menu_content_show_music)
          if (menu_entries_append(info_list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_MUSIC),
+                  FILE_PATH_CONTENT_MUSIC_HISTORY,
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
                   MENU_ENUM_LABEL_GOTO_MUSIC,
                   MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4374,7 +4374,7 @@ static unsigned menu_displaylist_parse_playlists(
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       if (settings->bools.menu_content_show_video)
          if (menu_entries_append(info_list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_VIDEO),
+                  FILE_PATH_CONTENT_VIDEO_HISTORY,
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
                   MENU_ENUM_LABEL_GOTO_VIDEO,
                   MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4971,18 +4971,20 @@ static bool menu_displaylist_parse_playlist_manager_settings(
     *   (i.e. it is not relevant for history/favourites) */
    if (   !is_content_history
        && !string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
+   {
       menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE),
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE),
             MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
             MENU_SETTING_PLAYLIST_MANAGER_DEFAULT_CORE, 0, 0, NULL);
 
-   /* Reset core associations */
-   menu_entries_append(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES),
-         msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES),
-         MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,
-         MENU_SETTING_ACTION_PLAYLIST_MANAGER_RESET_CORES, 0, 0, NULL);
+      /* Reset core associations */
+      menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES),
+            msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES),
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,
+            MENU_SETTING_ACTION_PLAYLIST_MANAGER_RESET_CORES, 0, 0, NULL);
+   }
 
    /* Refresh playlist */
    if (playlist_scan_refresh_enabled(playlist))
@@ -13704,15 +13706,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         &ret);
 
                if (count == 0)
+               {
                   if (menu_entries_append(info->list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE),
                            msg_hash_to_str(MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE),
                            MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE,
                            MENU_INFO_MESSAGE, 0, 0, NULL))
                      count++;
+                  info->flags    &= ~MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
+               }
             }
 
-            ret                         = 0;
+            ret                   = 0;
             /* Playlists themselves are sorted
              * > Display lists generated from playlists
              *   must never be sorted */
@@ -13744,7 +13749,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_INFO_MESSAGE, 0, 0, NULL))
                      count++;
                   info->flags       &= ~MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
-                  ret                = 0;
                }
 
                ret                   = 0;
@@ -15208,29 +15212,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      if (settings->bools.menu_content_show_favorites)
                         if (menu_entries_append(info->list,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                                 FILE_PATH_CONTENT_FAVORITES,
                                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                                  MENU_ENUM_LABEL_GOTO_FAVORITES,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
                            count++;
 
                      if (settings->bools.menu_content_show_history)
-                        if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                        if (menu_entries_append(info->list,
+                                 FILE_PATH_CONTENT_HISTORY,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                                  MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
-                                 PARSE_ACTION, false) == 0)
+                                 MENU_SETTING_ACTION, 0, 0, NULL))
                            count++;
                   }
                   else
                   {
                      if (settings->bools.menu_content_show_history)
-                        if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                        if (menu_entries_append(info->list,
+                                 FILE_PATH_CONTENT_HISTORY,
+                                 msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                                  MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
-                                 PARSE_ACTION, false) == 0)
+                                 MENU_SETTING_ACTION, 0, 0, NULL))
                            count++;
 
                      if (settings->bools.menu_content_show_favorites)
                         if (menu_entries_append(info->list,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                                 FILE_PATH_CONTENT_FAVORITES,
                                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                                  MENU_ENUM_LABEL_GOTO_FAVORITES,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
