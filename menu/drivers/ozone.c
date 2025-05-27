@@ -3273,6 +3273,28 @@ static void ozone_draw_cursor(
             alpha);
 }
 
+const enum msg_hash_enums ozone_system_tabs_label[OZONE_SYSTEM_TAB_LAST] = {
+      MENU_ENUM_LABEL_MAIN_MENU,
+      MENU_ENUM_LABEL_SETTINGS_TAB,
+      MENU_ENUM_LABEL_HISTORY_TAB,
+      MENU_ENUM_LABEL_FAVORITES_TAB,
+#ifdef HAVE_IMAGEVIEWER
+      MENU_ENUM_LABEL_IMAGES_TAB,
+#endif
+      MENU_ENUM_LABEL_MUSIC_TAB,
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+      MENU_ENUM_LABEL_VIDEO_TAB,
+#endif
+#ifdef HAVE_NETWORKING
+      MENU_ENUM_LABEL_NETPLAY_TAB,
+#endif
+      MENU_ENUM_LABEL_ADD_TAB,
+      MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB,
+#ifdef HAVE_LIBRETRODB
+      MENU_ENUM_LABEL_EXPLORE_TAB
+#endif
+};
+
 static void ozone_draw_sidebar(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
@@ -7678,7 +7700,11 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
                break;
 
             default:
-               ozone->flags |=  OZONE_FLAG_WANT_THUMBNAIL_BAR;
+               if (     string_ends_with(playlist_get_conf_path(pl), FILE_PATH_CONTENT_MUSIC_HISTORY)
+                     || string_ends_with(playlist_get_conf_path(pl), FILE_PATH_CONTENT_VIDEO_HISTORY))
+                  ozone->flags &= ~OZONE_FLAG_WANT_THUMBNAIL_BAR;
+               else
+                  ozone->flags |=  OZONE_FLAG_WANT_THUMBNAIL_BAR;
                break;
          }
       }
@@ -7931,7 +7957,21 @@ static bool ozone_manage_available(ozone_handle_t *ozone, size_t current_selecti
    switch (last_entry.type)
    {
       case FILE_TYPE_PLAYLIST_COLLECTION:
+      case FILE_TYPE_RPL_ENTRY:
          return true;
+      default:
+         break;
+   }
+   switch (last_entry.enum_idx)
+   {
+      case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
+      case MENU_ENUM_LABEL_GOTO_FAVORITES:
+      case MENU_ENUM_LABEL_GOTO_IMAGES:
+      case MENU_ENUM_LABEL_GOTO_MUSIC:
+      case MENU_ENUM_LABEL_GOTO_VIDEO:
+         return true;
+      default:
+         break;
    }
    return false;
 }
@@ -8131,23 +8171,59 @@ static enum menu_action ozone_parse_menu_entry_action(
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          {
             char playlist_path[PATH_MAX_LENGTH];
-
+            ssize_t list_selection;
             /* If cursor is active, ensure we target
              * an on screen category */
             size_t tab_selection       = (ozone->flags & OZONE_FLAG_CURSOR_MODE)
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
-            if (tab_selection < (size_t)(ozone->system_tab_end + 1))
+            if (!ozone_manage_available(ozone, ozone->selection))
                break;
 
-            new_selection = tab_selection - ozone->system_tab_end - 1;
-            new_action    = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
+            list_selection = tab_selection - ozone->system_tab_end - 1;
+            new_action     = MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE;
 
-            fill_pathname_join(playlist_path,
-                  settings->paths.directory_playlist,
-                  ozone->horizontal_list.list[new_selection].path,
-                  sizeof(playlist_path));
+            if (list_selection < 0)
+            {
+               enum msg_hash_enums value_idx = ozone_system_tabs_label[tab_selection];
+               const char *tab_title;
+
+               switch (value_idx)
+               {
+                  case MENU_ENUM_LABEL_HISTORY_TAB:
+                     tab_title = FILE_PATH_CONTENT_HISTORY;
+                     break;
+                  case MENU_ENUM_LABEL_FAVORITES_TAB:
+                     tab_title = FILE_PATH_CONTENT_FAVORITES;
+                     break;
+                  case MENU_ENUM_LABEL_IMAGES_TAB:
+                     tab_title = FILE_PATH_CONTENT_IMAGE_HISTORY;
+                     break;
+                  case MENU_ENUM_LABEL_MUSIC_TAB:
+                     tab_title = FILE_PATH_CONTENT_MUSIC_HISTORY;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_TAB:
+                     tab_title = FILE_PATH_CONTENT_VIDEO_HISTORY;
+                     break;
+                  default:
+                     tab_title = "";
+                     break;
+               }
+
+               if (string_is_empty(tab_title))
+                  break;
+
+               fill_pathname_join(playlist_path,
+                     "",
+                     tab_title,
+                     sizeof(playlist_path));
+            }
+            else
+               fill_pathname_join(playlist_path,
+                     settings->paths.directory_playlist,
+                     ozone->horizontal_list.list[list_selection].path,
+                     sizeof(playlist_path));
 
             generic_action_ok_displaylist_push(
                   playlist_path,

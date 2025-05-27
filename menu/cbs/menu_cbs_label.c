@@ -112,6 +112,11 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
+         case MENU_ENUM_LABEL_GOTO_FAVORITES:
+         case MENU_ENUM_LABEL_GOTO_IMAGES:
+         case MENU_ENUM_LABEL_GOTO_MUSIC:
+         case MENU_ENUM_LABEL_GOTO_VIDEO:
          case MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY:
             BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
             break;
