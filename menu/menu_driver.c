@@ -5300,7 +5300,11 @@ unsigned menu_event(
          memcpy(pointer_hw_state, &touchscreen_hw_state, sizeof(menu_input_pointer_hw_state_t));
 
       if (pointer_hw_state->flags & MENU_INP_PTR_FLG_ACTIVE)
+      {
          menu_st->input_last_time_us = menu_st->current_time_us;
+         /* Prevent double trigger when OK/Cancel has mouse binds */
+         menu_st->input_driver_flushing_input = 1;
+      }
    }
 
    /* Populate menu_input_state
