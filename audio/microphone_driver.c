@@ -79,11 +79,12 @@ bool microphone_driver_start(void)
    microphone_driver_state_t *mic_st = &mic_driver_st;
    retro_microphone_t    *microphone = &mic_st->microphone;
 
+   /* If there's an opened microphone that the core turned on... */
    if (microphone->flags & MICROPHONE_FLAG_ACTIVE)
-   { /* If there's an opened microphone that the core turned on... */
-
+   { 
+      /* If this microphone was requested before the driver was ready...*/
       if (microphone->flags & MICROPHONE_FLAG_PENDING)
-      { /* If this microphone was requested before the driver was ready...*/
+      {
          retro_assert(microphone->microphone_context == NULL);
          /* The microphone context shouldn't have been created yet */
 
@@ -102,8 +103,9 @@ bool microphone_driver_start(void)
              * what if the player just unplugged their mic? */
          }
       }
+      /* The microphone was already created, so let's just unpause it */
       else
-      { /* The mic was already created, so let's just unpause it */
+      {
          microphone_driver_set_mic_state(microphone, true);
 
          RARCH_DBG("[Microphone]: Started a microphone that was enabled when the driver was last stopped.\n");
@@ -117,18 +119,16 @@ bool microphone_driver_stop(void)
 {
    microphone_driver_state_t *mic_st = &mic_driver_st;
    retro_microphone_t    *microphone = &mic_st->microphone;
-   bool result                       = true;
 
-   if ((microphone->flags & MICROPHONE_FLAG_ACTIVE)
-         && (microphone->flags & MICROPHONE_FLAG_ENABLED)
+   /* If there's an opened microphone that the core 
+    * turned on and received... */
+   if (      (microphone->flags & MICROPHONE_FLAG_ACTIVE)
+         &&  (microphone->flags & MICROPHONE_FLAG_ENABLED)
          && !(microphone->flags & MICROPHONE_FLAG_PENDING))
-   { /* If there's an opened microphone that the core turned on and received... */
-
-      result = mic_st->driver->stop_mic(mic_st->driver_context, microphone->microphone_context);
-   }
+      return mic_st->driver->stop_mic(mic_st->driver_context,
+               microphone->microphone_context);
    /* If the mic is pending, then we don't need to do anything. */
-
-   return result;
+   return true;
 }
 
 /**
@@ -388,14 +388,14 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
          && mic_driver->mic_use_float(mic_st->driver_context, microphone->microphone_context))
       microphone->flags      |= MICROPHONE_FLAG_USE_FLOAT;
 
-   microphone->original_ratio = (double)microphone->effective_params.rate / microphone->actual_params.rate;
+   microphone->orig_ratio = (double)microphone->effective_params.rate / microphone->actual_params.rate;
 
    if (!retro_resampler_realloc(
          &microphone->resampler_data,
          &microphone->resampler,
          mic_st->resampler_ident,
          mic_st->resampler_quality,
-         microphone->original_ratio))
+         microphone->orig_ratio))
    {
       RARCH_ERR("[Microphone]: Failed to initialize resampler \"%s\".\n", mic_st->resampler_ident);
       goto error;

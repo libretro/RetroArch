@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2021 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- *  Copyright (C) 2014-2017 - Jean-Andr� Santoni
+ *  Copyright (C) 2014-2017 - Jean-Andr  Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -1979,8 +1979,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             video_monitor_set_refresh_rate(*hz);
 
             /* Sets audio monitor rate to new value. */
-            audio_st->source_ratio_original   =
-            audio_st->source_ratio_current    =
+            audio_st->src_ratio_orig   =
+            audio_st->src_ratio_curr   =
             (double)audio_output_sample_rate / audio_st->input;
 
             driver_adjust_system_rates(runloop_st, video_st, settings);

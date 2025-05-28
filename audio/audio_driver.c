@@ -59,6 +59,12 @@
 #include "../tasks/task_content.h"
 #include "../verbosity.h"
 
+#define AUDIO_CHUNK_SIZE_BLOCKING      512
+
+/* Fastforward timing calculations running average samples. Helps with
+ * a consistent pitch when fast-forwarding. */
+#define AUDIO_FF_EXP_AVG_SAMPLES       16
+
 #define MENU_SOUND_FORMATS "ogg|mod|xm|s3m|mp3|flac|wav"
 
  /* Converts decibels to voltage gain. returns voltage gain value. */
@@ -199,20 +205,13 @@ const char *config_get_audio_driver_options(void)
    return char_list_new_special(STRING_LIST_AUDIO_DRIVERS, NULL);
 }
 
-unsigned audio_driver_get_sample_size(void)
-{
-   audio_driver_state_t *audio_st = &audio_driver_st;
-   return (audio_st->flags & AUDIO_FLAG_USE_FLOAT) ? sizeof(float) : sizeof(int16_t);
-}
-
 #ifdef HAVE_TRANSLATE
 /* TODO/FIXME - Doesn't currently work.  Fix this. */
 bool audio_driver_is_ai_service_speech_running(void)
 {
 #ifdef HAVE_AUDIOMIXER
    enum audio_mixer_state res = audio_driver_mixer_get_stream_state(10);
-   bool ret = (res == AUDIO_STREAM_STATE_NONE) || (res == AUDIO_STREAM_STATE_STOPPED);
-   if (!ret)
+   if (!((res == AUDIO_STREAM_STATE_NONE) || (res == AUDIO_STREAM_STATE_STOPPED)))
       return true;
 #endif
    return false;
@@ -235,7 +234,7 @@ static bool audio_driver_free_devices_list(void)
 }
 
 #ifdef DEBUG
-static void report_audio_buffer_statistics(void)
+static void audio_driver_report_audio_buffer_statistics(void)
 {
    audio_statistics_t audio_stats;
    audio_stats.samples                   = 0;
@@ -268,7 +267,6 @@ static void audio_driver_deinit_resampler(void)
    audio_st->resampler_ident[0] = '\0';
    audio_st->resampler_quality  = RESAMPLER_QUALITY_DONTCARE;
 }
-
 
 static bool audio_driver_deinit_internal(bool audio_enable)
 {
@@ -314,7 +312,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_driver_dsp_filter_free();
 #endif
 #ifdef DEBUG
-   report_audio_buffer_statistics();
+   audio_driver_report_audio_buffer_statistics();
 #endif
 
    return true;
@@ -392,8 +390,7 @@ bool audio_driver_find_driver(const char *audio_drv,
  * @param is_slowmotion True if the core is currently running in slow motion.
  * @param is_fastmotion True if the core is currently running in fast-forward.
  **/
-static void audio_driver_flush(
-      audio_driver_state_t *audio_st,
+static void audio_driver_flush(audio_driver_state_t *audio_st,
       float slowmotion_ratio,
       const int16_t *data, size_t samples,
       bool is_slowmotion, bool is_fastforward)
@@ -410,41 +407,46 @@ static void audio_driver_flush(
 
    convert_s16_to_float(audio_st->input_data, data, samples,
          audio_volume_gain);
-   /* The resampler operates on floating-point frames,
-    * so we gotta convert the input first */
 
+   /* The resampler operates on floating-point frames,
+    * so we have to convert the input first */
    src_data.data_in                  = audio_st->input_data;
    src_data.input_frames             = samples >> 1;
+
    /* Remember, we allocated buffers that are twice as big as needed.
     * (see audio_driver_init) */
 
 #ifdef HAVE_DSP_FILTER
+   /* If we want to process our audio for reasons besides resampling... */
    if (audio_st->dsp)
-   { /* If we want to process our audio for reasons besides resampling... */
+   {
       struct retro_dsp_data dsp_data;
 
       dsp_data.input                 = audio_st->input_data;
       dsp_data.input_frames          = (unsigned)(samples >> 1);
       dsp_data.output                = NULL;
       dsp_data.output_frames         = 0;
+
       /* Initialize the DSP input/output.
-       * Our DSP implementations generally operate directly on the input buffer,
-       * so the output/output_frames attributes here are zero;
-       * the DSP filter will set them to useful values,
-       * most likely to be the same as the inputs. */
+       * Our DSP implementations generally operate directly on the 
+       * input buffer, so the output/output_frames attributes here are zero;
+       * the DSP filter will set them to useful values, most likely to be 
+       * the same as the inputs. */
 
       retro_dsp_filter_process(audio_st->dsp, &dsp_data);
 
+      /* If the DSP filter succeeded... */
       if (dsp_data.output)
-      { /* If the DSP filter succeeded... */
+      {
+         /* Then let's pass the DSP's output to the resampler's input */
          src_data.data_in            = dsp_data.output;
          src_data.input_frames       = dsp_data.output_frames;
-         /* Then let's pass the DSP's output to the resampler's input */
       }
    }
 #endif
 
    src_data.data_out                 = audio_st->output_samples_buf;
+
    /* Now the resampler will write to the driver state's scratch buffer */
 
    /* Count samples. */
@@ -462,10 +464,8 @@ static void audio_driver_flush(
          double direction            = (double)delta_mid / half_size;
          double adjust               = 1.0 + audio_st->rate_control_delta * direction;
 
-         audio_st->free_samples_buf[write_idx]
-                                     = avail;
-         audio_st->source_ratio_current
-                                     = audio_st->source_ratio_original * adjust;
+         audio_st->free_samples_buf[write_idx] = avail;
+         audio_st->src_ratio_curr = audio_st->src_ratio_orig * adjust;
 
 #if 0
          if (verbosity_is_enabled())
@@ -474,14 +474,14 @@ static void audio_driver_flush(
                   (unsigned)(100 - (avail * 100) /
                      audio_st->buffer_size));
             RARCH_LOG_OUTPUT("[Audio]: New rate: %lf, Orig rate: %lf\n",
-                  audio_st->source_ratio_current,
-                  audio_st->source_ratio_original);
+                  audio_st->src_ratio_curr,
+                  audio_st->src_ratio_orig);
          }
 #endif
       }
    }
 
-   src_data.ratio           = audio_st->source_ratio_current;
+   src_data.ratio           = audio_st->src_ratio_curr;
 
    if (is_slowmotion)
       src_data.ratio       *= slowmotion_ratio;
@@ -520,8 +520,7 @@ static void audio_driver_flush(
       audio_st->last_flush_time = flush_time;
    }
 
-   audio_st->resampler->process(
-         audio_st->resampler_data, &src_data);
+   audio_st->resampler->process(audio_st->resampler_data, &src_data);
 
 #ifdef HAVE_AUDIOMIXER
    if (audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE)
@@ -722,8 +721,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       audio_driver_st.input = settings->uints.audio_output_sample_rate;
    }
 
-   audio_driver_st.source_ratio_original   =
-      audio_driver_st.source_ratio_current =
+   audio_driver_st.src_ratio_orig    =
+      audio_driver_st.src_ratio_curr =
       (double)settings->uints.audio_output_sample_rate / audio_driver_st.input;
 
    if (!string_is_empty(settings->arrays.audio_resampler))
@@ -740,7 +739,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
             &audio_driver_st.resampler,
             audio_driver_st.resampler_ident,
             audio_driver_st.resampler_quality,
-            audio_driver_st.source_ratio_original))
+            audio_driver_st.src_ratio_orig))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
             audio_driver_st.resampler_ident);
