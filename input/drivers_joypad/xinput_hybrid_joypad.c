@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <time.h>
 
 #include <boolean.h>
 #include <retro_inline.h>
@@ -68,6 +69,8 @@ typedef struct
    bool         connected;
 } xinput_joypad_state;
 
+#define RUMBLE_INTERVAL 0.005
+
 /* TODO/FIXME - static globals */
 static int g_xinput_pad_indexes[MAX_USERS];
 static unsigned g_last_xinput_pad_idx       = 0;
@@ -90,6 +93,7 @@ static XINPUT_FEEDBACK     g_xinput_rumble_states[4];
 static XINPUT_VIBRATION    g_xinput_rumble_states[4];
 #endif
 static xinput_joypad_state g_xinput_states[4];
+static clock_t last_rumble_time[4] = {0};
 
 /* Buttons are provided by XInput as bits of a uint16.
  * Map from rarch button index (0..10) to a mask to
@@ -646,17 +650,31 @@ static bool xinput_joypad_rumble(unsigned pad,
    if (xuser == -1)
       return dinput_joypad_set_rumble(pad, effect, strength);
 
+   XINPUT_VIBRATION *state          = &g_xinput_rumble_states[xuser];
+   XINPUT_VIBRATION new_state       = *state;
+
    /* Consider the low frequency (left) motor the "strong" one. */
    if (effect == RETRO_RUMBLE_STRONG)
-      g_xinput_rumble_states[xuser].wLeftMotorSpeed  = strength;
+      new_state.wLeftMotorSpeed  = strength;
    else if (effect == RETRO_RUMBLE_WEAK)
-      g_xinput_rumble_states[xuser].wRightMotorSpeed = strength;
+      new_state.wRightMotorSpeed = strength;
+
+   bool rumble_state_unchanged      = ((new_state.wLeftMotorSpeed  == state->wLeftMotorSpeed) && 
+                                       (new_state.wRightMotorSpeed == state->wRightMotorSpeed));
+
+   clock_t now                      = clock();
+   double time_since_last_rumble    = (double)(now - last_rumble_time[xuser]) / CLOCKS_PER_SEC;
+   bool rumble_interval_unelapsed = (time_since_last_rumble < RUMBLE_INTERVAL);
+
+   if (rumble_state_unchanged || rumble_interval_unelapsed)
+      return true;
 
    if (!g_XInputSetState)
       return false;
 
-   return (g_XInputSetState(xuser, &g_xinput_rumble_states[xuser])
-      == 0);
+   *state = new_state;
+   last_rumble_time[xuser] = now;
+   return (g_XInputSetState(xuser, state) == ERROR_SUCCESS);
 }
 
 static void xinput_joypad_destroy(void)
