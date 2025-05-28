@@ -93,7 +93,11 @@ static XINPUT_FEEDBACK     g_xinput_rumble_states[4];
 static XINPUT_VIBRATION    g_xinput_rumble_states[4];
 #endif
 static xinput_joypad_state g_xinput_states[4];
+static bool xinput_active_port[4] = {0};
 static clock_t last_rumble_time[4] = {0};
+
+static unsigned xinput_hotplug_index = 0;
+static unsigned xinput_poll_counter = 0;
 
 /* Buttons are provided by XInput as bits of a uint16.
  * Map from rarch button index (0..10) to a mask to
@@ -428,6 +432,9 @@ static void *xinput_joypad_init(void *data)
          !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
    }
 
+   for (i = 0; i < 4; ++i)
+      xinput_active_port[i] = false;
+
    if (  (!g_xinput_states[0].connected) &&
          (!g_xinput_states[1].connected) &&
          (!g_xinput_states[2].connected) &&
@@ -471,6 +478,13 @@ static void *xinput_joypad_init(void *data)
                vid,
                pid);
       }
+   }
+
+   for (i = 0; i < MAX_USERS; ++i)
+   {
+      int xuser = PAD_INDEX_TO_XUSER_INDEX(i);
+      if (xuser >= 0 && xuser < 4)
+         xinput_active_port[xuser] = true;
    }
 
 #ifdef __WINRT__
@@ -562,10 +576,41 @@ static int16_t xinput_joypad_state_func(
 
 static void xinput_joypad_poll(void)
 {
-   unsigned i;
+   /* Hotplugging detection: scanning one port at a time every few frames,
+    * to avoid polling overload and framerate drops. */
+   xinput_poll_counter++;
+   if (xinput_poll_counter >= 15)
+   {
+      xinput_poll_counter = 0;
+      if (!xinput_active_port[xinput_hotplug_index])
+      {
+         XINPUT_STATE tmp_state;
+         DWORD result = g_XInputGetStateEx(xinput_hotplug_index, &tmp_state);
+         if (result == ERROR_SUCCESS)
+         {
+            const char *name = xinput_joypad_name(xinput_hotplug_index);
+            int32_t vid = 0;
+            int32_t pid = 0;
+            input_autoconfigure_connect(
+               name,
+               NULL,
+               xinput_joypad.ident,
+               xinput_hotplug_index,
+               vid,
+               pid);
 
+            xinput_active_port[xinput_hotplug_index] = true;
+         }
+      }
+         xinput_hotplug_index = (xinput_hotplug_index + 1) % 4;
+   }
+
+   unsigned i;
    for (i = 0; i < 4; ++i)
    {
+      if (!xinput_active_port[i])
+         continue;
+
       xinput_joypad_state *state = &g_xinput_states[i];
       DWORD status               = g_XInputGetStateEx(i, &state->xstate);
       bool success               = (status == ERROR_SUCCESS);
