@@ -245,7 +245,7 @@ bool disk_index_file_init(
          disk_index_file->file_path, disk_index_file_dir,
          content_name, sizeof(disk_index_file->file_path));
    strlcpy(disk_index_file->file_path       + _len,
-         ".ldci",
+         FILE_PATH_DISK_CONTROL_INDEX_EXTENSION,
          sizeof(disk_index_file->file_path) - _len);
 
    /* All is well - reset disk_index_file_t and
