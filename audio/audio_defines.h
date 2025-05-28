@@ -21,12 +21,6 @@
 
 RETRO_BEGIN_DECLS
 
-/* So we don't get complete line-noise when fast-forwarding audio. */
-#define AUDIO_CHUNK_SIZE_NONBLOCKING   2048
-
-#define AUDIO_MAX_RATIO                16
-#define AUDIO_MIN_RATIO                0.0625
-
 #define AUDIO_MIXER_MAX_STREAMS        16
 
 #define AUDIO_MIXER_MAX_SYSTEM_STREAMS (AUDIO_MIXER_MAX_STREAMS + 8)

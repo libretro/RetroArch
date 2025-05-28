@@ -857,9 +857,6 @@ RSOUND
 AUDIO
 ============================================================ */
 #include "../audio/audio_driver.c"
-#ifdef HAVE_MICROPHONE
-#include "../audio/microphone_driver.c"
-#endif
 #if defined(__PS3__) || defined (__PSL1GHT__)
 #include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
