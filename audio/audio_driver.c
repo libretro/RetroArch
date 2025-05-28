@@ -454,9 +454,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       unsigned write_idx             =
             audio_st->free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
 
+      /* Readjust the audio input rate. */
       if (audio_st->flags & AUDIO_FLAG_CONTROL)
       {
-         /* Readjust the audio input rate. */
          int avail                   = (int)audio_st->current_audio->write_avail(
                audio_st->context_audio_data);
          int half_size               = (int)(audio_st->buffer_size / 2);
@@ -506,11 +506,12 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
             https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
           */
-         const retro_time_t n = AUDIO_FF_EXP_AVG_SAMPLES;
+         const retro_time_t n      = AUDIO_FF_EXP_AVG_SAMPLES;
          audio_st->avg_flush_delta = audio_st->avg_flush_delta * (n - 1) / n +
             (flush_time - audio_st->last_flush_time) / n;
 
-         /* How much does the avg_flush_delta deviate from the delta at 1.0x speed? */
+         /* How much does the avg_flush_delta deviate 
+          * from the delta at 1.0x speed? */
          src_data.ratio *=
             MAX(AUDIO_MIN_RATIO,
                   MIN(AUDIO_MAX_RATIO,
@@ -542,11 +543,14 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 #endif
 
    /* Now we write our processed audio output to the driver.
-    * It may not be played immediately, depending on the driver implementation. */
+    * It may not be played immediately, depending on 
+    * the driver implementation. */
    {
       const void *output_data = audio_st->output_samples_buf;
       unsigned output_frames  = (unsigned)src_data.output_frames; /* Unit: frames */
 
+      /* If the audio driver supports float samples,
+       * we don't have to do conversion */
       if (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
          output_frames       *= sizeof(float); /* Unit: bytes */
       else
@@ -746,7 +750,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       audio_driver_st.flags &= ~AUDIO_FLAG_ACTIVE;
    }
 
-   audio_driver_st.data_ptr   = 0;
+   audio_driver_st.data_ptr = 0;
 
    out_samples_buf = (float*)memalign_alloc(64, outsamples_max * sizeof(float));
 
@@ -813,14 +817,14 @@ void audio_driver_sample(int16_t left, int16_t right)
    runloop_flags                   = runloop_get_flags();
    recording_st                    = recording_state_get_ptr();
 
-   if (  recording_st->data     &&
-         recording_st->driver   &&
-         recording_st->driver->push_audio)
+   if (     recording_st->data
+         && recording_st->driver
+         && recording_st->driver->push_audio)
    {
       struct record_audio_data ffemu_data;
 
-      ffemu_data.data                    = audio_st->output_samples_conv_buf;
-      ffemu_data.frames                  = audio_st->data_ptr / 2;
+      ffemu_data.data               = audio_st->output_samples_conv_buf;
+      ffemu_data.frames             = audio_st->data_ptr / 2;
 
       recording_st->driver->push_audio(recording_st->data, &ffemu_data);
    }
@@ -841,6 +845,8 @@ void audio_driver_sample(int16_t left, int16_t right)
 size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
 {
    uint32_t runloop_flags;
+   bool recording_push_audio      = false;
+   bool flush_audio               = false;
    size_t frames_remaining        = frames;
    recording_state_t *record_st   = recording_state_get_ptr();
    audio_driver_state_t *audio_st = &audio_driver_st;
@@ -848,7 +854,13 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    if ((audio_st->flags & AUDIO_FLAG_SUSPENDED) || (frames < 1))
       return frames;
 
-   runloop_flags                   = runloop_get_flags();
+   runloop_flags                  = runloop_get_flags();
+   flush_audio                    = !((runloop_flags & RUNLOOP_FLAG_PAUSED)
+            || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
+            || !(audio_st->output_samples_buf));
+   recording_push_audio           = record_st->data
+           && record_st->driver
+           && record_st->driver->push_audio;
 
    /* We want to run this loop at least once, so use a
     * do...while (do...while has only a single conditional
@@ -856,15 +868,15 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
     * conditional jump and an unconditional jump). Note,
     * however, that this is only relevant for compilers
     * that are poor at optimisation... */
+
    do
    {
       size_t frames_to_write =
-            (frames_remaining > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)) ?
-                  (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1) : frames_remaining;
+            (frames_remaining > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
+                  ? (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1) 
+                  : frames_remaining;
 
-      if (    record_st->data
-           && record_st->driver
-           && record_st->driver->push_audio)
+      if (recording_push_audio)
       {
          struct record_audio_data ffemu_data;
 
@@ -874,9 +886,7 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
          record_st->driver->push_audio(record_st->data, &ffemu_data);
       }
 
-      if (!(    (runloop_flags & RUNLOOP_FLAG_PAUSED)
-            || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
-            || !(audio_st->output_samples_buf)))
+      if (flush_audio)
          audio_driver_flush(audio_st,
                config_get_ptr()->floats.slowmotion_ratio,
                data,
@@ -886,8 +896,7 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
 
       frames_remaining -= frames_to_write;
       data             += frames_to_write << 1;
-   }
-   while (frames_remaining > 0);
+   } while (frames_remaining > 0);
 
    return frames;
 }
@@ -914,7 +923,6 @@ size_t audio_driver_sample_batch_rewind(
    {
       if (audio_st->rewind_ptr < 1)
          break;
-
       audio_st->rewind_buf[--audio_st->rewind_ptr] = data[i];
    }
 
@@ -1038,7 +1046,7 @@ static int audio_mixer_find_index(
 static void audio_mixer_play_stop_cb(
       audio_mixer_sound_t *sound, unsigned reason)
 {
-   int                     idx = audio_mixer_find_index(sound);
+   int idx = audio_mixer_find_index(sound);
 
    switch (reason)
    {
@@ -1071,7 +1079,7 @@ static void audio_mixer_play_stop_cb(
 static void audio_mixer_menu_stop_cb(
       audio_mixer_sound_t *sound, unsigned reason)
 {
-   int                     idx = audio_mixer_find_index(sound);
+   int idx = audio_mixer_find_index(sound);
 
    switch (reason)
    {
@@ -1092,7 +1100,7 @@ static void audio_mixer_menu_stop_cb(
 static void audio_mixer_play_stop_sequential_cb(
       audio_mixer_sound_t *sound, unsigned reason)
 {
-   int                     idx = audio_mixer_find_index(sound);
+   int idx = audio_mixer_find_index(sound);
 
    switch (reason)
    {
@@ -1141,13 +1149,13 @@ static void audio_mixer_play_stop_sequential_cb(
 static bool audio_driver_mixer_get_free_stream_slot(
       unsigned *id, enum audio_mixer_stream_type type)
 {
-   unsigned                  i = AUDIO_MIXER_MAX_STREAMS;
-   unsigned              count = AUDIO_MIXER_MAX_SYSTEM_STREAMS;
+   unsigned     i = AUDIO_MIXER_MAX_STREAMS;
+   unsigned count = AUDIO_MIXER_MAX_SYSTEM_STREAMS;
 
    if (type == AUDIO_STREAM_TYPE_USER)
    {
-      i                        = 0;
-      count                    = AUDIO_MIXER_MAX_STREAMS;
+      i           = 0;
+      count       = AUDIO_MIXER_MAX_STREAMS;
    }
 
    for (; i < count; i++)
@@ -1184,7 +1192,6 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
           * before assigning the new one */
          audio_driver_mixer_stop_stream(free_slot);
          audio_driver_mixer_remove_stream(free_slot);
-
          break;
       case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
       default:
@@ -1305,14 +1312,14 @@ static void audio_driver_mixer_play_stream_internal(
    }
 }
 
+#if defined(HAVE_MENU)
 static void audio_driver_load_menu_bgm_callback(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
-#if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
    if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
       audio_driver_mixer_play_menu_sound_looped(AUDIO_MIXER_SYSTEM_SLOT_BGM);
-#endif
 }
+#endif
 
 void audio_driver_load_system_sounds(void)
 {
@@ -1421,10 +1428,15 @@ void audio_driver_load_system_sounds(void)
       if (path_notice_back)
           task_push_audio_mixer_load(path_notice_back, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
    }
+
+#if defined(HAVE_MENU)
    if (path_bgm && audio_enable_menu_bgm)
       task_push_audio_mixer_load(path_bgm, audio_driver_load_menu_bgm_callback, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_BGM);
+#endif
+
    if (path_cheevo_unlock && audio_enable_cheevo_unlock)
       task_push_audio_mixer_load(path_cheevo_unlock, NULL, NULL, true, AUDIO_MIXER_SLOT_SELECTION_MANUAL, AUDIO_MIXER_SYSTEM_SLOT_ACHIEVEMENT_UNLOCK);
+
    if (audio_enable_menu_scroll)
    {
       if (path_up)
@@ -1695,9 +1707,9 @@ void audio_driver_frame_is_reverse(void)
    uint32_t runloop_flags          = runloop_get_flags();
 
    /* We just rewound. Flush rewind audio buffer. */
-   if (  recording_st->data   &&
-         recording_st->driver &&
-         recording_st->driver->push_audio)
+   if (     recording_st->data
+         && recording_st->driver
+         && recording_st->driver->push_audio)
    {
       struct record_audio_data ffemu_data;
 
@@ -1718,10 +1730,8 @@ void audio_driver_frame_is_reverse(void)
       if (!(audio_st->flags & AUDIO_FLAG_SUSPENDED))
          audio_driver_flush(audio_st,
                config_get_ptr()->floats.slowmotion_ratio,
-               audio_st->rewind_buf  +
-               audio_st->rewind_ptr,
-               audio_st->rewind_size -
-               audio_st->rewind_ptr,
+               audio_st->rewind_buf  + audio_st->rewind_ptr,
+               audio_st->rewind_size - audio_st->rewind_ptr,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
 }
@@ -1867,6 +1877,7 @@ void audio_driver_menu_sample(void)
    bool check_flush                       = !(
             !(audio_st->flags & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf);
+
    if ((audio_st->flags & AUDIO_FLAG_SUSPENDED))
       check_flush                         = false;
 
@@ -1893,6 +1904,7 @@ void audio_driver_menu_sample(void)
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
       sample_count -= 1024;
    }
+
    if (     recording_st->data
          && recording_st->driver
          && recording_st->driver->push_audio)
@@ -1905,6 +1917,7 @@ void audio_driver_menu_sample(void)
       recording_st->driver->push_audio(
             recording_st->data, &ffemu_data);
    }
+
    if (check_flush)
       audio_driver_flush(audio_st,
             slowmotion_ratio, samples_buf, sample_count,
