@@ -1602,7 +1602,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Input driver to use. Some video drivers force a different input driver."
+   "Input driver to use. Some video drivers force a different input driver. (Restart required)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
