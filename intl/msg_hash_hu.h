@@ -6308,10 +6308,6 @@ MSG_HASH(
    "\"Beállítások\" látható"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "A \"Beállítások\" menü jelenjen meg. (Ozone / XMB esetén újraindítás szükséges.)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "Jelszó beállítása a \"Beállítások\" engedélyezéséhez"
    )
@@ -6324,48 +6320,24 @@ MSG_HASH(
    "\"Kedvencek\" látható"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "A \"Kedvencek\" menü jelenjen meg. (Ozone / XMB esetén újraindítás szükséges.)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "\"Képek\" látható"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "A \"Képek\" menü jelenjen meg. (Ozone / XMB esetén újraindítás szükséges.)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "\"Zenék\" látható"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "A \"Zenék\" menü jelenjen meg. (Ozone / XMB esetén újraindítás szükséges.)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "\"Filmek\" látható"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "A \"Filmek\" menü jelenjen meg. (Ozone / XMB esetén újraindítás szükséges.)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "\"Netplay\" látható"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "A \"Netplay\" menü jelenjen meg. (Ozone / XMB esetén újraindítás szükséges.)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "\"Előzmények\" látható"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Az \"Előzmények\" menü jelenjen meg. (Ozone / XMB esetén újraindítás szükséges.)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -6392,24 +6364,12 @@ MSG_HASH(
    "Fülek a játéklistáknak"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
-   "A játéklisták megjelenítése külön füleken. RGUI-ra nincs hatása. GLUI esetén a navigációs sávot be kell kapcsolni. (Újraindítás szükséges Ozone/XMB esetén)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "\"Felfedezés\" látható"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "A \"Felfedezés\" lehetőség jelenjen meg. (Ozone / XMB esetén újraindítás szükséges.)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "\"Tartalmat nem igénylő magok\" látható"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "A \"Tartalmat nem igénylő magok\" menüben megjelenő magok típusa. \"Egyedi\" esetben az egyes magok láthatóságát a \"Magok kezelése\" menüben lehet állítani. (Ozone/XMB esetén újraindítás szükséges.)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,

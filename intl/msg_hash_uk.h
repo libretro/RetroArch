@@ -568,6 +568,10 @@ MSG_HASH(
    "Блокувати встановлене ядро"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   "Запобігти зміні встановлених в даний момент. Може використовуватися для уникнення небажаних оновлень, коли контент вимагає конкретної версії ядра (наприклад,. Аркада ПЗУ набору) або власний формат стану \"збереження\"."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Виключити з меню 'Автономні ядра'"
    )
@@ -6308,10 +6312,6 @@ MSG_HASH(
    "Показати \"Налаштування\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "Показувати меню 'Параметри'. (Для перезапуску необхідно перезавантажити пристрій Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "Встановити пароль для активування 'Параметри'"
    )
@@ -6324,48 +6324,28 @@ MSG_HASH(
    "Показувати 'Обране'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Показувати меню «Улюблене». (Для перезавантаження потрібен Ozone/XMB)"
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
+   "Показати улюблені спочатку"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "Показати \"Зображення\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "Відображати меню 'Зображення'. (Перезапуск необхідного для Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "Показати 'Музика'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "Показувати меню 'Музика'. (Потрібно перезапустити з Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "Показати 'Відео'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "Показувати меню 'Відео'. (Для перезапуску потрібен Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "Показати 'Netplay'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Відображати меню 'Netplay'. (Перезапустіть необхідну для Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Показати \"Історія\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Показати останнє меню історії. (Для перезапуску, потрібен Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -6392,24 +6372,12 @@ MSG_HASH(
    "Показати вкладки списку відтворення"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
-   "Показати вкладки списку відтворення. Не впливає на RGUI. Панель навігації має бути ввімкнена в GLUI. (Потрібен перезапуск Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "Показати 'Explore'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "Показати кнопку провідника вмісту. (Перезапустити необхідні для Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "Показати 'Автономні Ядра'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Визначає тип ядра (якщо є) для відображення в меню 'Без змісту'. Якщо встановлено значення 'Користувачна', індивідуальна базова видимість може бути переключена через меню 'Керувати Cores'. (Перезапустити необхідну для Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -8984,12 +8952,20 @@ MSG_HASH(
    "Зберегти стан у вибрану вами комірку."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVE_STATE,
+   "Зберегти стан в поточний слот. Примітка: збереження станів зазвичай не є портативним і не може працювати з іншими версіями цього ядра."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
    "Завантажити стан"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
    "Завантажити збережений стан з обраного вами слота."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_STATE,
+   "Завантажити збережений стан з обраного в даний час слота. Примітка: може не працювати, якщо стан був збережений в іншій версії ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -14248,6 +14224,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWINDING,
    "Відмотати назад."
+   )
+MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Недостатньо ємності буфера."
    )
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,

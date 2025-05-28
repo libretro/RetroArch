@@ -12798,6 +12798,10 @@ MSG_HASH(
    "Kelataan taakse."
    )
 MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Puskurin kapasiteetti on riittämätön."
+   )
+MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
    "Takaisinkelaus ei saatavilla, sillä tämä ydin ei tue tilatallennuksia."
    )
@@ -13288,6 +13292,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
    "Olet avannut %d/%d saavutusta"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   "Ei-tuettuja saavutuksia havaittu. Kokeile toista ydintä tai päivitä RetroArch."
 )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

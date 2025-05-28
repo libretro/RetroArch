@@ -1000,10 +1000,6 @@ MSG_HASH(
    "Show 'Favourites'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Show the 'Favourites' menu. (Restart required on Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "Show 'Net-play'"
    )

@@ -2800,16 +2800,8 @@ MSG_HASH(
    "Vis \"Utforsk\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "Vis innholdsutforsker alternativet. (Omstart kreves på Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "Vis 'Innholdløse kjerner'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Angi type kjerne (hvis noen) som skal vises i 'Contentless Cores' menyen. Når satt til \"Tilpasset\", kan enkeltkjernen slås av via \"Behandle kjerner\"-menyen. (Omstart kreves på Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
