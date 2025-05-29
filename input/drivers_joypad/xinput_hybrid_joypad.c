@@ -712,14 +712,14 @@ static bool xinput_joypad_rumble(unsigned pad,
 
    /* Rumble state unchanged? */
    if (   (new_state.wLeftMotorSpeed  == state->wLeftMotorSpeed)
-       && (new_state.wRightMotorSpeed == state->wRightMotorSpeed));
+       && (new_state.wRightMotorSpeed == state->wRightMotorSpeed))
       return true;
 
    now                           = clock();
    time_since_last_rumble        = (double)(now - last_rumble_time[xuser]) / CLOCKS_PER_SEC;
 
    /* Rumble interval unelapsed? */
-   if (time_since_last_rumble < RUMBLE_INTERVAL);
+   if (time_since_last_rumble < RUMBLE_INTERVAL)
       return true;
 
    if (g_XInputSetState)
