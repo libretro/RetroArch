@@ -7837,7 +7837,7 @@ void runloop_path_set_basename(const char *path)
    runloop_state_t *runloop_st = &runloop_state;
    char *dst                   = NULL;
 
-   path_set(RARCH_PATH_CONTENT,  path);
+   path_set(RARCH_PATH_CONTENT, path);
    strlcpy(runloop_st->runtime_content_path_basename, path,
          sizeof(runloop_st->runtime_content_path_basename));
 
@@ -7867,7 +7867,10 @@ void runloop_path_set_basename(const char *path)
             "", sizeof(runloop_st->runtime_content_path_basename));
 #endif
 
-   if ((dst = strrchr(runloop_st->runtime_content_path_basename, '.')))
+   /* Truncate path to last dot, but not when the path is
+    * relative and begins with a dot. */
+   if (     (dst = strrchr(runloop_st->runtime_content_path_basename, '.'))
+         && (dst - runloop_st->runtime_content_path_basename > 0))
       *dst = '\0';
 }
 
@@ -7917,14 +7920,14 @@ void runloop_path_set_redirect(settings_t *settings,
    char new_savestate_dir[DIR_MAX_LENGTH];
    char intermediate_savefile_dir[DIR_MAX_LENGTH];
    char intermediate_savestate_dir[DIR_MAX_LENGTH];
-   runloop_state_t *runloop_st            = &runloop_state;
-   struct retro_system_info *sysinfo      = &runloop_st->system.info;
-   bool sort_savefiles_enable             = settings->bools.sort_savefiles_enable;
-   bool sort_savefiles_by_content_enable  = settings->bools.sort_savefiles_by_content_enable;
-   bool sort_savestates_enable            = settings->bools.sort_savestates_enable;
-   bool sort_savestates_by_content_enable = settings->bools.sort_savestates_by_content_enable;
-   bool savefiles_in_content_dir          = settings->bools.savefiles_in_content_dir;
-   bool savestates_in_content_dir         = settings->bools.savestates_in_content_dir;
+   runloop_state_t *runloop_st       = &runloop_state;
+   struct retro_system_info *sysinfo = &runloop_st->system.info;
+   bool sort_savefiles               = settings->bools.sort_savefiles_enable;
+   bool sort_savefiles_by_content    = settings->bools.sort_savefiles_by_content_enable;
+   bool sort_savestates              = settings->bools.sort_savestates_enable;
+   bool sort_savestates_by_content   = settings->bools.sort_savestates_by_content_enable;
+   bool savefiles_in_content_dir     = settings->bools.savefiles_in_content_dir;
+   bool savestates_in_content_dir    = settings->bools.savestates_in_content_dir;
 
    content_dir_name[0] = '\0';
 
@@ -7935,9 +7938,8 @@ void runloop_path_set_redirect(settings_t *settings,
 
    /* Get content directory name, if per-content-directory
     * saves/states are enabled */
-   if ((   sort_savefiles_by_content_enable
-        || sort_savestates_by_content_enable)
-       && !string_is_empty(runloop_st->runtime_content_path_basename))
+   if (     (sort_savefiles_by_content || sort_savestates_by_content)
+         && !string_is_empty(runloop_st->runtime_content_path_basename))
       fill_pathname_parent_dir_name(content_dir_name,
             runloop_st->runtime_content_path_basename,
             sizeof(content_dir_name));
@@ -7956,8 +7958,8 @@ void runloop_path_set_redirect(settings_t *settings,
    }
 
    /* Set savestate directory if empty based on content directory */
-   if (   string_is_empty(intermediate_savestate_dir)
-       || savestates_in_content_dir)
+   if (     string_is_empty(intermediate_savestate_dir)
+         || savestates_in_content_dir)
    {
       fill_pathname_basedir(intermediate_savestate_dir,
             runloop_st->runtime_content_path_basename,
@@ -7976,74 +7978,75 @@ void runloop_path_set_redirect(settings_t *settings,
    {
 #ifdef HAVE_MENU
       if (!string_is_equal(sysinfo->library_name,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
 #endif
       {
          /* Per-core and/or per-content-directory saves */
-         if ((sort_savefiles_enable
-              || sort_savefiles_by_content_enable)
-             && !string_is_empty(new_savefile_dir))
+         if (     (sort_savefiles || sort_savefiles_by_content)
+               && !string_is_empty(new_savefile_dir))
          {
             /* Append content directory name to save location */
-            if (sort_savefiles_by_content_enable)
-               fill_pathname_join_special(new_savefile_dir,
-                  intermediate_savefile_dir,
-                  content_dir_name,
-                  sizeof(new_savefile_dir));
+            if (sort_savefiles_by_content)
+               fill_pathname_join_special(
+                     new_savefile_dir,
+                     intermediate_savefile_dir,
+                     content_dir_name,
+                     sizeof(new_savefile_dir));
 
             /* Append library_name to the save location */
-            if (sort_savefiles_enable)
-               fill_pathname_join(new_savefile_dir,
-                  new_savefile_dir,
-                  sysinfo->library_name,
-                  sizeof(new_savefile_dir));
+            if (sort_savefiles)
+               fill_pathname_join(
+                     new_savefile_dir,
+                     new_savefile_dir,
+                     sysinfo->library_name,
+                     sizeof(new_savefile_dir));
 
             /* If path doesn't exist, try to create it,
              * if everything fails revert to the original path. */
-            if (!path_is_directory(new_savefile_dir))
-               if (!path_mkdir(new_savefile_dir))
-               {
-                  RARCH_LOG("%s %s\n",
-                            msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
-                            intermediate_savefile_dir);
-                  strlcpy(new_savefile_dir,
-                        intermediate_savefile_dir,
-                        sizeof(new_savefile_dir));
-               }
+            if (     !path_is_directory(new_savefile_dir)
+                  && !path_mkdir(new_savefile_dir))
+            {
+               RARCH_LOG("%s %s\n",
+                     msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
+                     intermediate_savefile_dir);
+               strlcpy(new_savefile_dir,
+                     intermediate_savefile_dir,
+                     sizeof(new_savefile_dir));
+            }
          }
 
          /* Per-core and/or per-content-directory savestates */
-         if ((sort_savestates_enable || sort_savestates_by_content_enable)
-             && !string_is_empty(new_savestate_dir))
+         if (     (sort_savestates || sort_savestates_by_content)
+               && !string_is_empty(new_savestate_dir))
          {
             /* Append content directory name to savestate location */
-            if (sort_savestates_by_content_enable)
+            if (sort_savestates_by_content)
                fill_pathname_join_special(
-                  new_savestate_dir,
-                  intermediate_savestate_dir,
-                  content_dir_name,
-                  sizeof(new_savestate_dir));
+                     new_savestate_dir,
+                     intermediate_savestate_dir,
+                     content_dir_name,
+                     sizeof(new_savestate_dir));
 
             /* Append library_name to the savestate location */
-            if (sort_savestates_enable)
+            if (sort_savestates)
                fill_pathname_join(
-                  new_savestate_dir,
-                  new_savestate_dir,
-                  sysinfo->library_name,
-                  sizeof(new_savestate_dir));
+                     new_savestate_dir,
+                     new_savestate_dir,
+                     sysinfo->library_name,
+                     sizeof(new_savestate_dir));
 
             /* If path doesn't exist, try to create it.
              * If everything fails, revert to the original path. */
-            if (!path_is_directory(new_savestate_dir))
-               if (!path_mkdir(new_savestate_dir))
-               {
-                  RARCH_LOG("%s %s\n",
-                            msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
-                            intermediate_savestate_dir);
-                  strlcpy(new_savestate_dir,
-                          intermediate_savestate_dir,
-                          sizeof(new_savestate_dir));
-               }
+            if (     !path_is_directory(new_savestate_dir)
+                  && !path_mkdir(new_savestate_dir))
+            {
+               RARCH_LOG("%s %s\n",
+                     msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
+                     intermediate_savestate_dir);
+               strlcpy(new_savestate_dir,
+                     intermediate_savestate_dir,
+                     sizeof(new_savestate_dir));
+            }
          }
       }
    }
