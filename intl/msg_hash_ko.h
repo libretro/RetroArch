@@ -1581,10 +1581,6 @@ MSG_HASH(
    "입력 드라이버"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "사용할 입력 드라이버입니다. 비디오 드라이버에 따라 다른 입력 드라이버를 사용해야 할 수 있습니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "udev 드라이버는 키보드 지원을 위해 evdev 이벤트를 읽습니다. 또한 키보드 콜백, 마우스, 터치패드도 지원합니다.\n기본적으로 대부분의 배포판에서, /dev/input 노드는 루트 전용입니다(모드 600). 루트가 아닌 사용자도 접속할 수 있도록 udev 규칙을 설정할 수 있습니다."
    )

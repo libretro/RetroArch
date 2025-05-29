@@ -1505,10 +1505,6 @@ MSG_HASH(
    "輸入"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "設定鍵盤、滑鼠和光線槍等輸入裝置使用的驅動程式, 此選項會依據顯示驅動程式強制變更。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "udev 驅動程式讀取支援鍵盤的 evdev 事件，還支援鍵盤回呼、滑鼠和觸控板。\n大多數發行版預設情況下, /dev/input裝置節點僅限root權限使用（mode 600），可以設定一個裝置管理員（udev）規則，用於非root權限時使用。"
    )

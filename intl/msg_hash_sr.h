@@ -1253,10 +1253,6 @@ MSG_HASH(
    "Ulaz"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Drajver za ulaz. Neki video drajveri forsiraju drugi drajver za ulaz."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Kontroler"
    )

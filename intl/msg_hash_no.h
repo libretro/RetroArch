@@ -1325,10 +1325,6 @@ MSG_HASH(
    "Inndata"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Inndatadriveren for å bruke. Noen videodrivere tvinger en annen inndatadriver."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Kontroller"
    )

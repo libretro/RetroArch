@@ -1537,10 +1537,6 @@ MSG_HASH(
    "Entrada"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Driver de entrada a ser usado. Alguns drivers de vídeo podem forçar um driver de entrada diferente."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "O driver udev lê eventos evdev para suporte de teclado. Ele também suporta callback de teclado, ratos e touchpads.\nPor padrão na maioria das distribuições, os nós /dev/input são apenas para root (modo 600). Pode configurar uma regra udev que os torna acessíveis a quem não é root."
    )

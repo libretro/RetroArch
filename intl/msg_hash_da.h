@@ -852,10 +852,6 @@ MSG_HASH(
 
 /* Settings > Drivers */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Input driver til brug. Nogle videodrivere tvinger en anden inputdriver."
-   )
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,

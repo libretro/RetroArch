@@ -1513,10 +1513,6 @@ MSG_HASH(
    "Inmatning"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Inmatningsdrivrutin att använda. Vissa videodrivrutiner tvingar fram en annan inmatningsdrivrutin."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "Udev-drivrutinen läser evdev-händelser för tangentbordsstöd. Den stöder också tangentbordsåteruppringning, möss och pekplattor.\nSom standard i de flesta distros är /dev/input-noder endast root (läge 600). Du kan konfigurera en udev-regel som gör dessa tillgängliga för icke-root."
    )

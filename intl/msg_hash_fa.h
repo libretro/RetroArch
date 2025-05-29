@@ -1425,10 +1425,6 @@ MSG_HASH(
    "ورودی"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "درایور ورودی برای استفاده. بعضی از درایورهای ویدیویی، یک درایور ورودی متفاوت را اجبار می‌کنند."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
    "راه‌انداز ورودی. راه‌انداز ورودی ممکن است راه‌انداز دیگری را اجبار کند."
    )

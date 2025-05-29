@@ -1537,10 +1537,6 @@ MSG_HASH(
    "Vstup"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Vstupní ovladač k použití. Některé video ovladače vynutí jiný vstupní ovladač."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "Ovladač udev čte události evdev pro podporu klávesnice. Podporuje také zpětné volání klávesnice, myši a touchpady.\nVe většině distribucí jsou uzly /dev/input ve výchozím nastavení určeny pouze pro uživatele root (režim 600). Můžete nastavit pravidlo udev, které je zpřístupní i uživatelům bez rootu."
    )
