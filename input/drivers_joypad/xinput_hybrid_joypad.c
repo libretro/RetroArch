@@ -694,9 +694,8 @@ static bool xinput_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    clock_t now;
+   bool rumble_state;
    double time_since_last_rumble;
-   bool rumble_state_unchanged;
-   bool rumble_interval_unelapsed;
    XINPUT_VIBRATION new_state, *state;
    int xuser = PAD_INDEX_TO_XUSER_INDEX(pad);
 
@@ -712,22 +711,26 @@ static bool xinput_joypad_rumble(unsigned pad,
    else if (effect == RETRO_RUMBLE_WEAK)
       new_state.wRightMotorSpeed = strength;
 
-   rumble_state_unchanged        = ((new_state.wLeftMotorSpeed  == state->wLeftMotorSpeed) && 
-                                    (new_state.wRightMotorSpeed == state->wRightMotorSpeed));
+   rumble_state                  = ((new_state.wLeftMotorSpeed  == state->wLeftMotorSpeed)
+                               &&   (new_state.wRightMotorSpeed == state->wRightMotorSpeed));
+   /* Rumble state unchanged? */
+   if (rumble_state_unchanged)
+      return true;
 
    now                           = clock();
    time_since_last_rumble        = (double)(now - last_rumble_time[xuser]) / CLOCKS_PER_SEC;
-   rumble_interval_unelapsed     = (time_since_last_rumble < RUMBLE_INTERVAL);
-
-   if (rumble_state_unchanged || rumble_interval_unelapsed)
+   rumble_state                  = (time_since_last_rumble < RUMBLE_INTERVAL);
+   /* Rumble interval unelapsed? */
+   if (rumble_state)
       return true;
-
-   if (!g_XInputSetState)
-      return false;
-
-   *state                  = new_state;
-   last_rumble_time[xuser] = now;
-   return (g_XInputSetState(xuser, state) == ERROR_SUCCESS);
+   if (g_XInputSetState)
+   {
+      *state                  = new_state;
+      last_rumble_time[xuser] = now;
+      if (g_XInputSetState(xuser, state) == ERROR_SUCCESS)
+         return true;
+   }
+   return false;
 }
 
 static void xinput_joypad_destroy(void)
