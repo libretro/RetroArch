@@ -78,7 +78,7 @@ static bool xinput_active_port[4] = {0};
 static clock_t last_rumble_time[4] = {0};
 
 static unsigned xinput_hotplug_index = 0;
-static unsigned xinput_poll_counter = 0;
+static unsigned xinput_poll_counter  = 0;
 
 /* Buttons are provided by XInput as bits of a uint16.
  * Map from rarch button index (0..10) to a mask to
@@ -149,7 +149,7 @@ static void *xinput_joypad_init(void *data)
 
    if (!g_XInputGetStateEx)
    {
-      /* no ordinal 100. (Presumably a wrapper.) Load the ordinary
+      /* No ordinal 100. (Presumably a wrapper.) Load the ordinary
        * XInputGetState, at the cost of losing guide button support.
        */
       g_xinput_guide_button_supported = false;
@@ -202,10 +202,10 @@ static void *xinput_joypad_init(void *data)
          !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
    }
 
-   if (  (!g_xinput_states[0].connected) &&
-         (!g_xinput_states[1].connected) &&
-         (!g_xinput_states[2].connected) &&
-         (!g_xinput_states[3].connected))
+   if (     (!g_xinput_states[0].connected)
+         && (!g_xinput_states[1].connected)
+         && (!g_xinput_states[2].connected)
+         && (!g_xinput_states[3].connected))
 #ifdef __WINRT__
       goto succeeded;
 #else
@@ -382,14 +382,17 @@ static void xinput_joypad_poll(void)
    unsigned i;
    for (i = 0; i < 4; ++i)
    {
+      DWORD status;
+      bool success, new_connected;
+      xinput_joypad_state *state;
       if (!xinput_active_port[i])
          continue;
 
-      xinput_joypad_state
-         *state          = &g_xinput_states[i];
-      DWORD status       = g_XInputGetStateEx(i, &state->xstate);
-      bool success       = status == ERROR_SUCCESS;
-      bool new_connected = status != ERROR_DEVICE_NOT_CONNECTED;
+      state          = &g_xinput_states[i];
+      status         = g_XInputGetStateEx(i, &state->xstate);
+      success        = status == ERROR_SUCCESS;
+      new_connected  = status != ERROR_DEVICE_NOT_CONNECTED;
+      
       if (new_connected != state->connected)
       {
          /* Normally, dinput handles device insertion/removal for us, but
@@ -415,13 +418,16 @@ static void xinput_joypad_poll(void)
 static bool xinput_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   int xuser = pad_index_to_xuser_index(pad);
+   clock_t now;
+   double time_since_last_rumble;
+   XINPUT_VIBRATION *state, new_state;
+   int xuser   = pad_index_to_xuser_index(pad);
 
    if (xuser == -1)
       return false;
 
-   XINPUT_VIBRATION *state    = &g_xinput_rumble_states[xuser];
-   XINPUT_VIBRATION new_state = *state;
+   state     = &g_xinput_rumble_states[xuser];
+   new_state = *state;
 
    /* Consider the low frequency (left) motor the "strong" one. */
    if (effect == RETRO_RUMBLE_STRONG)
@@ -429,22 +435,27 @@ static bool xinput_joypad_rumble(unsigned pad,
    else if (effect == RETRO_RUMBLE_WEAK)
       new_state.wRightMotorSpeed = strength;
 
-   bool rumble_state_unchanged = ((new_state.wLeftMotorSpeed  == state->wLeftMotorSpeed) &&
-                                  (new_state.wRightMotorSpeed == state->wRightMotorSpeed));
-
-   clock_t now = clock();
-   double time_since_last_rumble = (double)(now - last_rumble_time[xuser]) / CLOCKS_PER_SEC;
-   bool rumble_interval_unelapsed = (time_since_last_rumble < RUMBLE_INTERVAL);
-
-   if (rumble_state_unchanged || rumble_interval_unelapsed)
+   /* Rumble state unchanged? */
+   if (   (new_state.wLeftMotorSpeed  == state->wLeftMotorSpeed)
+       && (new_state.wRightMotorSpeed == state->wRightMotorSpeed));
       return true;
 
-   if (!g_XInputSetState)
-      return false;
+   now                    = clock();
+   time_since_last_rumble = (double)(now - last_rumble_time[xuser]) / CLOCKS_PER_SEC;
+   
+   /* Rumble interval unelapsed? */
+   if (time_since_last_rumble < RUMBLE_INTERVAL)
+      return true;
 
-   *state = new_state;
-   last_rumble_time[xuser] = now;
-   return (g_XInputSetState(xuser, state) == ERROR_SUCCESS);
+   if (g_XInputSetState)
+   {
+      *state = new_state;
+      last_rumble_time[xuser] = now;
+      if (g_XInputSetState(xuser, state) == ERROR_SUCCESS)
+         return true;
+   }
+
+   return false;
 }
 
 input_device_driver_t xinput_joypad = {
