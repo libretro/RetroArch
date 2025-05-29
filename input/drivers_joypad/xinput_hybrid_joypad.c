@@ -714,7 +714,7 @@ static bool xinput_joypad_rumble(unsigned pad,
    rumble_state                  = ((new_state.wLeftMotorSpeed  == state->wLeftMotorSpeed)
                                &&   (new_state.wRightMotorSpeed == state->wRightMotorSpeed));
    /* Rumble state unchanged? */
-   if (rumble_state_unchanged)
+   if (rumble_state)
       return true;
 
    now                           = clock();
