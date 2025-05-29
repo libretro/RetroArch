@@ -537,59 +537,66 @@ static void generateColorBars(uint32_t *buffer, size_t width, size_t height) {
 static void *avfoundation_init(const char *device, uint64_t caps,
                              unsigned width, unsigned height)
 {
-    RARCH_LOG("[Camera]: Initializing AVFoundation camera %ux%u\n", width, height);
-
     avfoundation_t *avf = (avfoundation_t*)calloc(1, sizeof(avfoundation_t));
-    if (!avf) {
+    RARCH_LOG("[Camera]: Initializing AVFoundation camera %ux%u\n", width, height);
+    if (!avf)
+    {
         RARCH_ERR("[Camera]: Failed to allocate avfoundation_t\n");
         return NULL;
     }
 
-    avf->manager = [AVCameraManager sharedInstance];
-    avf->width = width;
-    avf->height = height;
-    avf->manager.width = width;
+    avf->manager        = [AVCameraManager sharedInstance];
+    avf->width          = width;
+    avf->height         = height;
+    avf->manager.width  = width;
     avf->manager.height = height;
 
-    // Check if we're on the main thread
-    if ([NSThread isMainThread]) {
+    /* Check if we're on the main thread */
+    if ([NSThread isMainThread])
+    {
         RARCH_LOG("[Camera]: Initializing on main thread\n");
-        // Direct initialization on main thread
+        /* Direct initialization on main thread */
         [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
             AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
-            if (status != AVAuthorizationStatusAuthorized) {
+            if (status != AVAuthorizationStatusAuthorized)
+            {
                 RARCH_ERR("[Camera]: Camera access not authorized (status: %d)\n", (int)status);
                 free(avf);
                 return;
             }
         }];
-    } else {
+    }
+    else 
+    {
         RARCH_LOG("[Camera]: Initializing on background thread\n");
-        // Use dispatch_sync to run authorization check on main thread
+        /* Use dispatch_sync to run authorization check on main thread */
         __block AVAuthorizationStatus status;
         dispatch_sync(dispatch_get_main_queue(), ^{
             status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
         });
 
-        if (status != AVAuthorizationStatusAuthorized) {
+        if (status != AVAuthorizationStatusAuthorized)
+        {
             RARCH_ERR("[Camera]: Camera access not authorized (status: %d)\n", (int)status);
             free(avf);
             return NULL;
         }
     }
 
-    // Allocate frame buffer
+    /* Allocate frame buffer */
     avf->manager.frameBuffer = (uint32_t*)calloc(width * height, sizeof(uint32_t));
-    if (!avf->manager.frameBuffer) {
+    if (!avf->manager.frameBuffer)
+    {
         RARCH_ERR("[Camera]: Failed to allocate frame buffer\n");
         free(avf);
         return NULL;
     }
 
-    // Initialize capture session on main thread
+    /* Initialize capture session on main thread */
     __block bool setupSuccess = false;
 
-    if ([NSThread isMainThread]) {
+    if ([NSThread isMainThread])
+    {
         @autoreleasepool {
             setupSuccess = [avf->manager setupCameraSession];
             if (setupSuccess) {
@@ -597,7 +604,9 @@ static void *avfoundation_init(const char *device, uint64_t caps,
                 RARCH_LOG("[Camera]: Started camera session\n");
             }
         }
-    } else {
+    }
+    else
+    {
         dispatch_sync(dispatch_get_main_queue(), ^{
             @autoreleasepool {
                 setupSuccess = [avf->manager setupCameraSession];
@@ -609,15 +618,17 @@ static void *avfoundation_init(const char *device, uint64_t caps,
         });
     }
 
-    if (!setupSuccess) {
+    if (!setupSuccess)
+    {
         RARCH_ERR("[Camera]: Failed to setup camera\n");
         free(avf->manager.frameBuffer);
         free(avf);
         return NULL;
     }
 
-    // Add a check to verify the session is actually running
-    if (!avf->manager.session.isRunning) {
+    /* Add a check to verify the session is actually running */
+    if (!avf->manager.session.isRunning)
+    {
         RARCH_ERR("[Camera]: Failed to start camera session\n");
         free(avf->manager.frameBuffer);
         free(avf);
@@ -636,11 +647,11 @@ static void avfoundation_free(void *data)
 
     RARCH_LOG("[Camera]: Freeing AVFoundation camera\n");
 
-    if (avf->manager.session) {
+    if (avf->manager.session)
         [avf->manager.session stopRunning];
-    }
 
-    if (avf->manager.frameBuffer) {
+    if (avf->manager.frameBuffer)
+    {
         free(avf->manager.frameBuffer);
         avf->manager.frameBuffer = NULL;
     }
@@ -651,8 +662,10 @@ static void avfoundation_free(void *data)
 
 static bool avfoundation_start(void *data)
 {
+    bool isRunning;
     avfoundation_t *avf = (avfoundation_t*)data;
-    if (!avf || !avf->manager.session) {
+    if (!avf || !avf->manager.session)
+    {
         RARCH_ERR("[Camera]: Cannot start - invalid data\n");
         return false;
     }
@@ -664,10 +677,10 @@ static bool avfoundation_start(void *data)
         RARCH_LOG("[Camera]: Camera session started on background thread\n");
     });
 
-    // Give the session a moment to start
-    usleep(100000); // 100ms
+    /* Give the session a moment to start */
+    usleep(100000); /* 100ms */
 
-    bool isRunning = avf->manager.session.isRunning;
+    isRunning = avf->manager.session.isRunning;
     RARCH_LOG("[Camera]: Camera session running: %s\n", isRunning ? "YES" : "NO");
     return isRunning;
 }
@@ -691,15 +704,18 @@ static bool avfoundation_poll(void *data,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
     avfoundation_t *avf = (avfoundation_t*)data;
-    if (!avf || !frame_raw_cb) {
+    if (!avf || !frame_raw_cb)
+    {
         RARCH_ERR("[Camera]: Cannot poll - invalid data or callback\n");
         return false;
     }
 
-    if (!avf->manager.session.isRunning) {
+    if (!avf->manager.session.isRunning)
+    {
         RARCH_LOG("[Camera]: Camera not running, generating color bars\n");
         uint32_t *tempBuffer = (uint32_t*)calloc(avf->width * avf->height, sizeof(uint32_t));
-        if (tempBuffer) {
+        if (tempBuffer)
+        {
             generateColorBars(tempBuffer, avf->width, avf->height);
             frame_raw_cb(tempBuffer, avf->width, avf->height, avf->width * 4);
             free(tempBuffer);

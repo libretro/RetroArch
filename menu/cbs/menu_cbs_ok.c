@@ -7795,7 +7795,7 @@ static int action_ok_unload_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st  = menu_state_get_ptr();
-   int ret                     = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
+   generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
    path_clear(RARCH_PATH_CORE_LAST);
    menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                |  MENU_ST_FLAG_PREVENT_POPULATE;
