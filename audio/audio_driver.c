@@ -902,6 +902,7 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    size_t frames_remaining        = frames;
    recording_state_t *record_st   = recording_state_get_ptr();
    audio_driver_state_t *audio_st = &audio_driver_st;
+   float slowmotion_ratio         = config_get_ptr()->floats.slowmotion_ratio;
 
    if ((audio_st->flags & AUDIO_FLAG_SUSPENDED) || (frames < 1))
       return frames;
@@ -939,9 +940,7 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
       }
 
       if (flush_audio)
-         audio_driver_flush(audio_st,
-               config_get_ptr()->floats.slowmotion_ratio,
-               data,
+         audio_driver_flush(audio_st, slowmotion_ratio, data,
                frames_to_write << 1,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
@@ -1971,8 +1970,7 @@ void audio_driver_menu_sample(void)
    }
 
    if (check_flush)
-      audio_driver_flush(audio_st,
-            slowmotion_ratio, samples_buf, sample_count,
+      audio_driver_flush(audio_st, slowmotion_ratio, samples_buf, sample_count,
             (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
             (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
 }
