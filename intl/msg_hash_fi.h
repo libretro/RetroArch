@@ -1541,6 +1541,10 @@ MSG_HASH(
    "Syöte"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Käytettävä syöteajuri. Jotkin videoajurit pakottavat eri syöteajurin. (Vaatii uudelleenkäynnistyksen)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
    "Linuxraw-syöttölaitteen ohjain vaatii aktiivisen TTY:n. Näppäintapahtumat luetaan suoraan TTY:ltä, mikä tekee siitä yksinkertaisemman, mutta ei yhtä joustavan kuin udev. Hiiriä ja muita laitteita ei tueta lainkaan. Tämä ohjain käyttää vanhempaa joystick API:a (/dev/input/js*)."
    )

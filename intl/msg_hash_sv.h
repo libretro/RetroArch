@@ -552,6 +552,10 @@ MSG_HASH(
    "Lås installerad kärna"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   "Förhindrar modifiering av den nuvarande installerade kärnan. Kan användas för att undvika oönskade uppdateringar när innehållet kräver en specifik kärnversion (t.ex. Arcade ROM-uppsättningar) eller när kärnans eget format för sparning ändras."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Uteslut från 'Innehållslösa kärnor'-menyn"
    )
@@ -1511,6 +1515,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "Inmatning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Inmatningsdrivrutin som ska användas. Vissa videodrivrutiner tvingar fram en annan inmatningsdrivrutin. (Omstart krävs)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
@@ -4360,6 +4368,14 @@ MSG_HASH(
    "Autospara status"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   "Spara automatiskt när innehållet stängs. Denna sparade status läses in vid start om ”Läs in tillstånd automatiskt” är aktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   "Läs in tillstånd automatiskt"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Laddar automatiskt upp den sparade statusen vid spelstart."
    )
@@ -4544,6 +4560,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    "Öppna filbläddraren på den senast använda platsen när du laddar innehåll från startkatalogen. Obs: Platsen återställs till standard när RetroArch startas om."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+   "Föreslå alltid kärnor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "Föreslå tillgängliga kärnor även när en kärna redan har lästs in."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4861,6 +4885,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Överlager"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   "Läs automatiskt in föredraget överlägg"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
@@ -5760,6 +5788,10 @@ MSG_HASH(
    "Visa 'Inställningar'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
+   "Visa 'Inställningar'-menyn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "Ange lösenord för 'Inställningar'"
    )
@@ -5772,28 +5804,64 @@ MSG_HASH(
    "Visa 'Favoriter'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
+   "Visa 'Favoriter'-menyn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
+   "Visa favoriter först"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
+   "Visa 'Favoriter' före 'Historik'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "Visa 'Bilder'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
+   "Visa 'Bilder'-menyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "Visa 'Musik'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
+   "Visa 'Musik'-menyn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "Visa 'Videor'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
+   "Visa 'Videor'-menyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "Visa 'Netplay'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
+   "Visa 'Netplay'-menyn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Visa 'Historik'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
+   "Visa senaste historikmenyn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    "Visa 'Importera Innehåll'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
+   "Visa 'Importera innehåll' inne i huvudmenyn eller spellistor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -5816,8 +5884,16 @@ MSG_HASH(
    "Visa spellistflikar"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
+   "Visa spellisteflikar. Påverkar inte RGUI. Navigeringsfältet måste vara aktiverat i GLUI."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "Visa 'Utforska'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
+   "Visa alternativ för innehållsutforskaren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
@@ -6065,6 +6141,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
    "Visa 'Lägg till i spellista'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Visa alternativet 'Lägg till i spellista'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
@@ -6702,6 +6782,14 @@ MSG_HASH(
    "Använd reläserver"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+   "Vidarebefordra nätverksanslutningar via en mellanliggande server. Användbart om värden ligger bakom en brandvägg eller har problem med NAT/UPnP."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
+   "Plats för reläserver"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
    "Välj en specifik reläserver att använda. Geografiskt närmare platser tenderar att ha lägre latens."
    )
@@ -6794,6 +6882,10 @@ MSG_HASH(
    "Starta netplay i åskådarläge."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
+   "Huruvida netplay ska startas i åskådarläge. Om inställt på true kommer netplay att starta i åskådarläge. Det går alltid att ändra läge senare."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
    "Tona ut chatt"
    )
@@ -6826,12 +6918,28 @@ MSG_HASH(
    "Tillåt spelare att pausa under Netplay."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
+   "Tillåt klienter i slavläge"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
    "Tillåt anslutningar i slavläge. Klienter i slavläge kräver mycket lite processorkraft på båda sidor, men kommer att drabbas avsevärt av nätverksfördröjning."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
+   "Tillåt inte klienter i icke-slavläge"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
    "Tillåt inte anslutningar som inte är i slavläge. Rekommenderas inte, utom för mycket snabba nätverk med mycket svaga maskiner."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
+   "Kontrollbildrutor för netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
+   "Hur ofta (i bildrutor) som netplay ska kontrollera att värden och klienten är synkroniserade."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
@@ -6852,6 +6960,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
    "Det intervall av bildrutor med inmatningslatens som kan användas av netplay för att dölja nätverkslatens.\nOm det är inställt kommer netplay att justera antalet bildrutor med inmatningslatens dynamiskt för att balansera CPU-tid, inmatningslatens och nätverkslatens. Detta minskar jitter och gör netplay mindre CPU-intensivt, men till priset av oförutsägbar inmatningsfördröjning."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
+   "När du är värd, försök att lyssna efter anslutningar från det offentliga Internet med hjälp av UPnP eller liknande tekniker för att komma ut från LAN."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
@@ -9787,6 +9899,10 @@ MSG_HASH(
    "Genomskinlighet"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   "Aktivera bakgrundsvisning av innehåll när snabbmenyn är aktiv. Om du inaktiverar transparens kan temafärgerna ändras."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Skuggeffekter"
    )
@@ -9813,6 +9929,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
    "Bakgrundsanimering för skärmsläckare"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Visa partikelanimationseffekt i bakgrunden när menyskärmsläckaren är aktiv."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
@@ -10850,6 +10970,14 @@ MSG_HASH(
    "Förlopp:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   "Max antal listposter för \"Alla spellistor\":"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   "Max antal rutnätsposter för \"Alla spellistor\":"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
    "Visa dolda filer och mappar:"
    )
@@ -11296,6 +11424,10 @@ MSG_HASH(
    "Visa träff #"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
+   "Välj matchningen för att visa."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Visa listan över %u träffar"
    )
@@ -11613,6 +11745,10 @@ MSG_HASH(
    "Global ljudmixervolym"
    )
 MSG_HASH(
+   MSG_NETPLAY_LAN_SCAN_COMPLETE,
+   "Netplay-sökning färdigställd."
+   )
+MSG_HASH(
    MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
    "Tyvärr, inte implementerat: kärnor som inte efterfrågar innehåll kan inte delta i netplay."
    )
@@ -11635,6 +11771,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_GOT_CONNECTION_FROM_NAME,
    "Fick anslutning från: \"%s (%s)\""
+   )
+MSG_HASH(
+   MSG_PUBLIC_ADDRESS,
+   "Portmappning för Netplay lyckades"
    )
 MSG_HASH(
    MSG_PRIVATE_OR_SHARED_ADDRESS,
@@ -12012,6 +12152,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_PING_TOO_HIGH,
    "Din pingtid är för hög för denna värd."
+   )
+MSG_HASH(
+   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
+   "Inläsning av innehåll hoppades över. Implementeringen läser in det själv."
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
@@ -12510,12 +12654,20 @@ MSG_HASH(
    "Återställde äldre sparad status."
    )
 MSG_HASH(
+   MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
+   "Återställer katalog för sparade filer till"
+   )
+MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
    "Återställer katalogen för sparad status-filer till"
    )
 MSG_HASH(
    MSG_REWINDING,
    "Spolar tillbaka."
+   )
+MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Buffertkapaciteten räcker inte till."
    )
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
@@ -12958,6 +13110,10 @@ MSG_HASH(
    "%d stöds inte"
 )
 MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   "Prestationer som inte stöds upptäcktes. Prova en annan kärna eller uppdatera RetroArch."
+)
+MSG_HASH(
    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
    "Åskådarläge för %s"
    )
@@ -13276,8 +13432,16 @@ MSG_HASH(
    "CPU-prestanda och ström"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE,
+   "Styrande läge"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
    "Manuell"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   "Gör det möjligt att manuellt justera varje detalj i varje CPU: regulator, frekvenser etc. Rekommenderas endast för avancerade användare."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
@@ -13332,8 +13496,24 @@ MSG_HASH(
    "Maximal kärnfrekvens"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR,
+   "CPU-regulator"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR,
+   "Kärnregulator"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
+   "Menyregulator"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
    "Spelläge"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   "Kan förbättra prestanda, minska fördröjningar och åtgärda problem med knastrande ljud. Du behöver https://github.com/FeralInteractive/gamemode för att detta ska fungera."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
@@ -13534,6 +13714,10 @@ MSG_HASH(
    )
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Aktivera tillsammans med mus för att använda pekskärmen som pekplatta."
+   )
 #endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(

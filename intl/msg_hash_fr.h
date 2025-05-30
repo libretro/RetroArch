@@ -1545,6 +1545,10 @@ MSG_HASH(
    "Entrées "
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Pilote d'entrées à utiliser. Certains pilotes vidéo forcent l'utilisation d'un pilote d'entrées différent. (Redémarrage requis)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "Le pilote d'entrées udev lit les événements evdev pour la prise en charge du clavier. Il prend également en charge le rappel de clavier, les souris et les pavés tactiles.\nPar défaut dans la plupart des distributions, les nœuds /dev/input sont en mode root-uniquement (mode 600). Vous pouvez mettre en place une règle udev qui rend ceux-ci accessibles en mode non-root."
    )

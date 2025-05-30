@@ -1105,6 +1105,10 @@ MSG_HASH(
    "Izmeni podešavanja za usnimavanje."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "Korisničko Ime"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Beleženje"
    )

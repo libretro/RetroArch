@@ -1497,6 +1497,10 @@ MSG_HASH(
    "Eingabetreiber"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Zu verwendender Eingabetreiber. Einige Videotreiber erzwingen einen anderen Eingabetreiber. (Neustart erforderlich)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "Der udev-Treiber liest evdev-Ereignisse für Tastaturunterstützung. Er unterstützt auch Tastaturrückrufe, Mäuse und Touchpads.\nIn den meisten Distributionen sind /dev/input-nodes standardmäßig root-only (Modus 600). Es kann eine udev-Regel eingerichtet werden, die diese für non-root zugänglich macht."
    )

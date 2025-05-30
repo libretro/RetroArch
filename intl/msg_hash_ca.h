@@ -1565,6 +1565,10 @@ MSG_HASH(
    "Entrada"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Controlador d'entrada a utilitzar. Alguns controladors de vídeo en forcen un diferent. (Es requereix reiniciar)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "El controlador udev llegeix els esdeveniments evdev per a la compatibilitat del teclat. També és compatible amb les trucades del teclat, ratolí i panells tàctils.\nDe manera predefinida en la majoria de les distribucions, els nodes /dev/input són només per a root (mode 600). Pots definir una regla udev que els faci accessibles a altres usuaris."
    )

@@ -1569,6 +1569,10 @@ MSG_HASH(
    "Giriş"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Kullanılacak giriş sürücüsü. Bazı video sürücüleri farklı bir giriş sürücüsünü zorlar. (Yeniden başlatılmalı)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "Udev sürücüsü, klavye desteği olaylarını okur. Ayrıca klavye geri çağırmayı, fareleri ve dokunmatik yüzeyleri de destekler.\nÇoğu dağıtımda varsayılan olarak, /dev/input düğümleri yalnızca root (mod 600). Bunları root olmayanlar için erişilebilir kılan bir udev kuralı oluşturabilirsiniz."
    )
