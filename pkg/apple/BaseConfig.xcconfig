@@ -19,6 +19,7 @@ OTHER_CFLAGS = $(inherited) -DHAVE_CHEATS
 OTHER_CFLAGS = $(inherited) -DHAVE_CHEEVOS
 OTHER_CFLAGS = $(inherited) -DHAVE_CLOUDSYNC
 OTHER_CFLAGS = $(inherited) -DHAVE_COCOA_METAL
+OTHER_CFLAGS = $(inherited) -DHAVE_COMMAND
 OTHER_CFLAGS = $(inherited) -DHAVE_CONFIGFILE
 OTHER_CFLAGS = $(inherited) -DHAVE_COREAUDIO
 OTHER_CFLAGS = $(inherited) -DHAVE_CORELOCATION
@@ -49,6 +50,7 @@ OTHER_CFLAGS = $(inherited) -DHAVE_NETPLAYDISCOVERY
 OTHER_CFLAGS = $(inherited) -DHAVE_NETPLAYDISCOVERY_NSNET
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORKGAMEPAD
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORKING
+OTHER_CFLAGS = $(inherited) -DHAVE_NETWORK_CMD
 OTHER_CFLAGS = $(inherited) -DHAVE_NO_BUILTINZLIB
 OTHER_CFLAGS = $(inherited) -DHAVE_OPENGL
 OTHER_CFLAGS = $(inherited) -DHAVE_OVERLAY
@@ -92,7 +94,6 @@ OTHER_CFLAGS[arch=arm64*] = $(inherited) -D__ARM_NEON__ -DHAVE_NEON
 
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DGL_SILENCE_DEPRECATION
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_AVF
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COMMAND
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COREAUDIO3
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COREMIDI
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DISCORD
@@ -100,7 +101,6 @@ OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DYLIB
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_GETOPT_LONG
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_IOHIDMANAGER
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_MATERIALUI
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_NETWORK_CMD
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_OPENGL_CORE
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_PRESENCE
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_STDIN_CMD
