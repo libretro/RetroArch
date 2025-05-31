@@ -1525,6 +1525,10 @@ MSG_HASH(
    "Driver di input"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Driver di input da usare. Alcuni driver video forzano un driver di input diverso. (Restart richiesto)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "Il driver udev legge gli eventi evdev per il supporto della tastiera. Supporta anche la callback della tastiera, topi e touchpad.\nCome impostazione predefinita nella maggior parte dei distros, i nodi /dev/input sono solo root (modalità 600). È possibile impostare una regola udev che li rende accessibili a non-root."
    )

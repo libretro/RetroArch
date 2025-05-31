@@ -6317,7 +6317,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "Mostra el menú 'Configuració'."
+   "Mostra el menú «Configuració»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -6333,7 +6333,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Mostra el menú 'Preferits'."
+   "Mostra el menú «Preferits»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
@@ -6341,7 +6341,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
-   "Mostra el menú 'Preferits' abans que 'Historial'."
+   "Mostra el menú «Preferits» abans que «Historial»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
@@ -6349,7 +6349,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "Mostra el menú 'Imatges'."
+   "Mostra el menú «Imatges»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
@@ -6357,7 +6357,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "Mostra el menú 'Música'."
+   "Mostra el menú «Música»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
@@ -6365,7 +6365,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "Mostra el menú 'Vídeos'."
+   "Mostra el menú «Vídeos»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
@@ -6373,7 +6373,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Mostra el menú 'Joc en xarxa'."
+   "Mostra el menú «Joc en xarxa»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -6389,7 +6389,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Mostra l'entrada 'Importa contingut' dins del menú principal o les llistes de reproducció."
+   "Mostra l'entrada «Importa contingut» dins del menú principal o les llistes de reproducció."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -6429,7 +6429,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Especifica el tipus de nucli (si hi ha cap) per mostrar al menú «Nuclis sense continguts». En establir-ho com a «Personalitzat», la visibilitat individual dels nuclis es pot canviar mitjançant el menú «Gestiona els nuclis»."
+   "Especifica el tipus de nucli (si n'hi ha cap) per mostrar al menú «Nuclis sense continguts». En establir-ho com a «Personalitzat», la visibilitat individual dels nuclis es pot canviar mitjançant el menú «Gestiona els nuclis»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -14675,7 +14675,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MSG_CHEEVOS_UNSUPPORTED_WARNING,
-   "S'han trobat assoliments que no estan suportats. Prova amb un nucli diferent o prova d'actualitzar RetroArch."
+   "S'han trobat assoliments que no són compatibles. Proveu amb un nucli diferent o actualitzeu el RetroArch."
 )
 MSG_HASH(
    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
