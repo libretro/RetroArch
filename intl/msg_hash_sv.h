@@ -4605,6 +4605,10 @@ MSG_HASH(
    "Snabbspola framåt-bildrutshopp"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "Hoppa över bildrutor enligt snabbspolningshastigheten. Detta sparar ström och möjliggör användning av bildrutebegränsning från tredje part."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    "Slow motion hastighet"
    )
@@ -8852,6 +8856,10 @@ MSG_HASH(
    "Antal gånger fusket kommer att tillämpas. Använd tillsammans med de andra två alternativen för ”Iteration” för att påverka stora minnesområden."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+   "Efter varje iteration kommer ”Värde” att ökas med denna mängd."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
    "Rumble-värde"
    )
@@ -9861,6 +9869,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
    "Intern uppskalning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+   "Uppskalar menygränssnittet innan det ritas upp på skärmen. När det används med ”Linjärt menyfilter” aktiverat, tar det bort skalningsartefakter (ojämna bildpunkter) samtidigt som bilden förblir skarp. Har en betydande inverkan på prestandan som ökar med uppskalningsnivån."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
@@ -11400,6 +11412,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
    "Kompatibelt innehåll hittades"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
+   "Det gick inte att hitta något matchande innehåll med hjälp av CRC eller filnamn"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
@@ -11781,6 +11797,10 @@ MSG_HASH(
    "Externt nätverk har en privat eller delad adress. Överväg att använda en reläserver."
    )
 MSG_HASH(
+   MSG_UPNP_FAILED,
+   "Netplay UPnP-portmappning misslyckades"
+   )
+MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
    "Inga argument angavs och ingen meny inbyggd, visar hjälp..."
    )
@@ -12038,6 +12058,14 @@ MSG_HASH(
    "Spellista rensad: "
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   "Uppdatering misslyckades - spellistan innehåller inga giltiga sökposter: "
+   )
+MSG_HASH(
+   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   "Uppdatering misslyckades - ogiltig/saknad innehållskatalog: "
+   )
+MSG_HASH(
    MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
    "Uppdatering misslyckades - ogiltigt/saknat systemnamn: "
    )
@@ -12160,6 +12188,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "Kärnan har inget stöd för sparat tillstånd."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
+   "Kärnans alternativfil skapades."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
+   "Kärnans alternativfil togs bort."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_RESET,
@@ -12808,6 +12844,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
    "Använder kärnnamnet för ny konfiguration."
+   )
+MSG_HASH(
+   MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
+   "Använder libretros dummy-kärna. Hoppar över inspelning."
    )
 MSG_HASH(
    MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
@@ -13796,12 +13836,24 @@ MSG_HASH(
    "Typsnittsfärg röd"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
+   "Justera den röda färgen på teckensnittet i nedre skärmen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
    "Typsnittsfärg grön"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   "Justera den gröna färgen på teckensnittet i nedre skärmen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
    "Typsnittsfärg blå"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
+   "Justera den blåa färgen på teckensnittet i nedre skärmen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
@@ -13819,6 +13871,10 @@ MSG_HASH(
    "stoppad."
    )
 #ifdef HAVE_GAME_AI
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION,
+   "Åsidosätt AI-spelare"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS,
