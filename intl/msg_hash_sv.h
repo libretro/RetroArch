@@ -1939,6 +1939,10 @@ MSG_HASH(
    "GPU-skärmdump"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "Rullande skanlinjesimulering"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    "VARNING: Snabbt flimmer kan orsaka bildbeständighet på vissa skärmar. Använd på egen risk // Simulerar en grundläggande rullande scanline över flera underrutor genom att dela upp skärmen vertikalt och rendera varje del av skärmen beroende på hur många underrutor det finns."
    )
@@ -3046,6 +3050,10 @@ MSG_HASH(
    "Pollningsbeteende (omstart krävs)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+   "Påverkar hur inmatningspollning görs i RetroArch. Om du ställer in den på ”Tidig” eller ”Sen” kan det resultera i mindre fördröjning, beroende på din konfiguration."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
    "Påverkar hur input polling utförs i RetroArch.\nEarly - Input polling utförs innan ramen bearbetas.\nNormal - Input polling utförs när polling begärs.\nLate - Input polling utförs vid första begäran om inputstatus per ram.\nAtt ställa in den på 'Early' eller 'Late' kan resultera i mindre latens, beroende på din konfiguration. Kommer att ignoreras när du använder netplay."
    )
@@ -3361,8 +3369,16 @@ MSG_HASH(
    "Inaktivera info-knapp"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   "Förhindra menyinformationsfunktion."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "Inaktivera Sökknapp"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "Förhindra menysökningsfunktion."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
@@ -4708,6 +4724,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    "Använd GPU-inspelning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
+   "Spela in GPU-skuggade material om tillgängligt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
@@ -6966,6 +6986,10 @@ MSG_HASH(
    "Det intervall av bildrutor med inmatningslatens som kan användas av netplay för att dölja nätverkslatens.\nOm det är inställt kommer netplay att justera antalet bildrutor med inmatningslatens dynamiskt för att balansera CPU-tid, inmatningslatens och nätverkslatens. Detta minskar jitter och gör netplay mindre CPU-intensivt, men till priset av oförutsägbar inmatningsfördröjning."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
+   "Netplay NAT-traversering"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
    "När du är värd, försök att lyssna efter anslutningar från det offentliga Internet med hjälp av UPnP eller liknande tekniker för att komma ut från LAN."
    )
@@ -8352,6 +8376,10 @@ MSG_HASH(
    "Ångra Läs in tillstånd"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
+   "Om ett tillstånd har lästs in återgår innehållet till det tillstånd som gällde före inläsningen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
    "Ångra Spara status"
    )
@@ -8854,6 +8882,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
    "Antal gånger fusket kommer att tillämpas. Använd tillsammans med de andra två alternativen för ”Iteration” för att påverka stora minnesområden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
+   "Adressökning vid varje iteration"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+   "Efter varje iteration kommer ”Minnesadress” att ökas med detta tal gånger ”Sökstorlek för minne”."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
+   "Värdeökning vid varje iteration"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
@@ -11671,6 +11711,10 @@ MSG_HASH(
    "Innehåll"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_DIR,
+   "Vanligtvis inställd av utvecklare som paketerar libretro/RetroArch-appar för att peka på resurser."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
    "Fråga"
    )
@@ -12638,6 +12682,22 @@ MSG_HASH(
    "Fel vid sparning av åsidosättningar."
    )
 MSG_HASH(
+   MSG_OVERRIDES_ERROR_REMOVING,
+   "Fel vid borttagning av åsidosättningar."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_SAVED_SUCCESSFULLY,
+   "Åsidosättningar sparades."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
+   "Åsidosättningar togs bort."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
+   "Åsidosättningar lästes ur."
+   )
+MSG_HASH(
    MSG_OVERRIDES_NOT_SAVED,
    "Inget att spara. Åsidosättningar inte sparade."
    )
@@ -13302,6 +13362,10 @@ MSG_HASH(
    "Återställer kärna: "
    )
 MSG_HASH(
+   MSG_CORE_RESTORATION_COMPLETE,
+   "Kärnåterställningen färdig: "
+   )
+MSG_HASH(
    MSG_CORE_INSTALLATION_ALREADY_INSTALLED,
    "Vald kärnfil är redan installerad: "
    )
@@ -13310,8 +13374,16 @@ MSG_HASH(
    "Installerar kärna: "
    )
 MSG_HASH(
+   MSG_CORE_INSTALLATION_COMPLETE,
+   "Kärninstallationen färdig: "
+   )
+MSG_HASH(
    MSG_CORE_RESTORATION_INVALID_CONTENT,
    "Ogiltig kärnfil vald: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_FAILED,
+   "Säkerhetskopiering av kärna misslyckades: "
    )
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
@@ -13344,6 +13416,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    "Misslyckades med att gå in i GameMode - kontrollera att GameMode-daemon är installerad och körs"
+   )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Videouppdateringsfrekvens ändrad till %s Hz."
    )
 
 /* Lakka */
@@ -13440,6 +13516,10 @@ MSG_HASH(
    "Öppna en annan katalog med hjälp av systemets filväljare"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   "Videogamma"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
    "Skanna efter bluetooth-enheter och anslut dem."
    )
@@ -13464,8 +13544,16 @@ MSG_HASH(
    "Koppla från"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+   "Justera beskärning av överskanning av skärmen genom att minska bildstorleken med ett angivet antal skanningslinjer (tagen från skärmens övre del). Kan orsaka skalningsartefakter."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    "Justera beskärning av överskanning av skärmen genom att minska bildstorleken med ett angivet antal skanlinjer (tagen från skärmens nedre kant). Kan orsaka skalningsartefakter."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
+   "Långvarigt prestandaläge"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER,
@@ -13765,6 +13853,14 @@ MSG_HASH(
    "RGA-skalning"
    )
 #else
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+   "Kontextspecifik skalning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+   "Kontextskalning med hårdvara (om tillgänglig)."
+   )
 #endif
 #ifdef _3DS
 MSG_HASH(
@@ -13866,6 +13962,10 @@ MSG_HASH(
    "Genomsökning slutförd.<br><br>\nFör att innehållet ska sökas igenom korrekt måste du:\n<ul><li>ha en kompatibel kärna redan hämtad</li>\n<li>ha ”Core Info Files” uppdaterat via Online Updater</li>\n<li>ha ”Databases” uppdaterat via Online Updater</li>\n<li>starta om RetroArch om något av ovanstående just har gjorts</li></ul>\nSlutligen måste innehållet matcha befintliga databaser från <a href=\"https://docs. libretro.com/guides/roms-playlists-thumbnails/#sources\">här</a>. Om det fortfarande inte fungerar kan du överväga att <a href=”https://www.github.com/libretro/RetroArch/issues”>skicka in en felrapport</a>."
    )
 #endif
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "sdl2-mikrofonen kräver sdl2-ljuddrivrutin"
+   )
 MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "stoppad."
