@@ -1244,6 +1244,9 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
    }
    slock_unlock(tcs_running_lock);
 
+   if (task->flags & RETRO_TASK_FLG_FINISHED)
+       goto task_finished;
+
    switch (sync_state->phase)
    {
       case CLOUD_SYNC_PHASE_BEGIN:
