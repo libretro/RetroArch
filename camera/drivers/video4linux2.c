@@ -310,7 +310,8 @@ static void *v4l_init(const char *device, uint64_t caps,
    if (!path_is_character_special(v4l->dev_name))
    {
       RARCH_ERR("[V4L2]: %s is no device.\n", v4l->dev_name);
-      goto error;
+      free(v4l);
+      return NULL;
    }
 
    v4l->fd = open(v4l->dev_name, O_RDWR | O_NONBLOCK, 0);
