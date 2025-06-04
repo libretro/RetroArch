@@ -973,40 +973,45 @@ static bool net_http_connect(struct http_t *state)
 #else
    if (state->ssl)
    {
-      if (!conn || conn->fd < 0)
+      if (!conn)
          return false;
 
-      if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, state->request.domain)))
+      for (next_addr = addr; conn->fd >= 0; conn->fd = socket_next((void**)&next_addr))
       {
-         net_http_conn_pool_remove(conn);
-         state->conn = NULL;
-         state->error = true;
-         return false;
-      }
+         if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, state->request.domain)))
+         {
+            socket_close(conn->fd);
+            break;
+         }
 
-      /* TODO: Properly figure out what's going wrong when the newer
-         timeout/poll code interacts with mbed and winsock
-         https://github.com/libretro/RetroArch/issues/14742 */
+         /* TODO: Properly figure out what's going wrong when the newer
+          timeout/poll code interacts with mbed and winsock
+          https://github.com/libretro/RetroArch/issues/14742 */
 
-      /* Temp fix, don't use new timeout/poll code for cheevos http requests */
+         /* Temp fix, don't use new timeout/poll code for cheevos http requests */
          bool timeout = true;
 #ifdef __WIN32
-      if (!strcmp(state->request.domain, "retroachievements.org"))
-         timeout = false;
+         if (!strcmp(state->request.domain, "retroachievements.org"))
+            timeout = false;
 #endif
 
-      if (ssl_socket_connect(conn->ssl_ctx, addr, timeout, true) < 0)
-      {
-         net_http_conn_pool_remove(conn);
-         state->conn = NULL;
-         state->error = true;
-         return false;
+         if (ssl_socket_connect(conn->ssl_ctx, next_addr, timeout, true) < 0)
+         {
+            ssl_socket_close(conn->ssl_ctx);
+            ssl_socket_free(conn->ssl_ctx);
+            conn->ssl_ctx = NULL;
+         }
+         else
+         {
+            conn->connected = true;
+            return true;
+         }
       }
-      else
-      {
-         conn->connected = true;
-         return true;
-      }
+      conn->fd = -1; /* already closed */
+      net_http_conn_pool_remove(conn);
+      state->conn = NULL;
+      state->error = true;
+      return false;
    }
    else
 #endif
