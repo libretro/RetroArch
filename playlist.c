@@ -1144,58 +1144,31 @@ enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlis
 void playlist_resolve_path(enum playlist_file_mode mode,
       bool is_core, char *s, size_t len)
 {
+   bool resolve_symlinks = true;
+
 #if IOS
    char tmp[PATH_MAX_LENGTH];
-   int _len = 0;
 
    if (mode == PLAYLIST_LOAD)
    {
-      if (   is_core
-          && string_starts_with(s, ":/modules/")
-          && string_ends_with(s, ".dylib"))
-      {
-         /* iOS cores used to be packaged as .dylib files in the modules
-          * directory; App Store rules require turning them into Frameworks and
-          * putting them in the Frameworks directory. Because some playlists
-          * include the old core path, we'll translate it here.
-          */
-         s[string_index_last_occurance(s, '.')] = '\0';
-         if (string_ends_with(s, "_ios"))
-            s[string_index_last_occurance(s, '_')] = '\0';
-         _len += strlcpy(tmp + _len, ":/Frameworks/", STRLEN_CONST(":/Frameworks/") + 1);
-         _len += strlcpy(tmp + _len, s + STRLEN_CONST(":/modules/"), sizeof(tmp) - _len);
-         /* iOS framework names, to quote Apple:
-          * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
-          *
-          * Since core names include underscore, which is not allowed, but not dot,
-          * which is, we change underscore to dot.
-          */
-         string_replace_all_chars(tmp, '_', '.');
-         strlcpy(tmp + _len, ".framework", sizeof(tmp));
-         fill_pathname_expand_special(s, tmp, len);
-      }
-      else
-      {
-         fill_pathname_expand_special(tmp, s, sizeof(tmp));
-         strlcpy(s, tmp, len);
-      }
+      /* This is probably safe for all platforms, it should end up being just a
+       * lot of string copies without changing it */
+      fill_pathname_expand_special(tmp, s, sizeof(tmp));
+      strlcpy(s, tmp, len);
    }
    else
    {
-      /* iOS needs to call realpath here since the call
-       * above fails due to possibly buffer related issues.
-       * Try to expand the path to ensure that it gets saved
-       * correctly. The path can be abbreviated if saving to
-       * a playlist from another playlist (ex: content history to favorites)
-       */
-      char tmp2[PATH_MAX_LENGTH];
+      /* Try to expand the path to ensure that it gets saved correctly. The path
+       * can be abbreviated if saving to a playlist from another playlist (ex:
+       * content history to favorites). This is probably safe for all
+       * platforms */
       fill_pathname_expand_special(tmp, s, sizeof(tmp));
-      realpath(tmp, tmp2);
-      fill_pathname_abbreviate_special(s, tmp2, len);
+      path_resolve_realpath(tmp, sizeof(tmp), resolve_symlinks);
+      /* iOS requries this because the full path can change after app update;
+       * it's probably safe for all platforms... */
+      fill_pathname_abbreviate_special(s, tmp, len);
    }
 #else
-   bool resolve_symlinks = true;
-
    if (mode == PLAYLIST_LOAD)
       return;
 
