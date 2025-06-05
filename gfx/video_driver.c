@@ -2548,9 +2548,12 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             float underscale_ratio    = 0;
             float overscale_ratio     = 0;
             uint16_t content_width_ar = content_width;
+            uint16_t height_threshold = height * 1.12f;
             uint8_t overscale_w       = 0;
             uint8_t overscale_h       = 0;
             uint8_t i                 = 0;
+            bool hires_w              = false;
+            bool hires_h              = false;
 
             /* Reset width to exact width */
             content_width = (rotation % 2)
@@ -2573,7 +2576,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
                }
 
                if (scaling == VIDEO_SCALE_INTEGER_SCALING_SMART)
-                  max_scale_h = ((int)(height - content_height * overscale_h) < -(int)(height * 0.20f))
+                  max_scale_h = ((content_height * overscale_h) > height_threshold)
                      ? overscale_h - 1
                      : overscale_h;
                else if (scaling == VIDEO_SCALE_INTEGER_SCALING_OVERSCALE)
@@ -2601,46 +2604,82 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             else if (i > 1)
                max_scale_w = i - 1;
 
-            /* Special half width scale for hi-res */
-            if (     axis == VIDEO_SCALE_INTEGER_AXIS_Y_XHALF
-                  || axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF
-                  || axis == VIDEO_SCALE_INTEGER_AXIS_XHALF)
-            {
-               float scale_w_ratio    = (float)(content_width * max_scale_w) / (float)(content_height * max_scale_h);
-               uint8_t hires_w        = content_width / 512;
-               int content_width_diff = content_width_ar - (content_width / (hires_w + 1));
-
-               if (     content_width_ar - content_width_diff == (int)content_width / 2
-                     && content_width_diff < 20
-                     && scale_w_ratio - target_ratio > 0.25f)
-                  half_w = -1;
-            }
+            /* Decide hi-res source */
+            hires_w = content_width  / 512;
+            hires_h = content_height / ((rotation % 2) ? 288 : 300);
 
             /* Special half height scale for hi-res */
-            if (     axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF
-                  || axis == VIDEO_SCALE_INTEGER_AXIS_XHALF)
+            if (     (hires_h)
+                  && (axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF)
+                  && (scaling != VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE))
             {
                if (     max_scale_h == (height / content_height)
-                     && content_height / ((rotation % 2) ? 288 : 300)
                      && content_height * max_scale_h < height * 0.90f
+                     && content_height * (max_scale_h + 0.5f) < height_threshold
                   )
+                  half_h = 1;
+            }
+
+            /* Special half width scale for hi-res */
+            if (     (hires_w || hires_h)
+                  && (  axis == VIDEO_SCALE_INTEGER_AXIS_Y_XHALF
+                     || axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF
+                     || axis == VIDEO_SCALE_INTEGER_AXIS_XHALF))
+            {
+               float diff   = 1.0f;
+               uint8_t mode = 0;
+
+               /* Reset current target ratio for stable width matching */
+               if (!hires_w && half_h)
+                  target_ratio = (float)(content_width * max_scale_w) / (float)(content_height * max_scale_h);
+
+               /* Find the nearest ratio */
+               for (i = 0; i < 4; i++)
                {
-                  float halfstep_prev_ratio = (float)(content_width * max_scale_w) / (float)(content_height * max_scale_h);
-                  float halfstep_next_ratio = (float)(content_width * max_scale_w) / (float)(content_height * (max_scale_h + 0.5f));
+                  float diff_mode = content_width;
 
-                  if (content_height * (max_scale_h + 0.5f) < height * 1.12f)
+                  /* Skip half scales with lo-res width */
+                  if (!hires_w && !(i % 2))
+                     continue;
+
+                  switch (i)
                   {
-                     half_h = 1;
-
-                     if (halfstep_next_ratio - target_ratio <= target_ratio - halfstep_prev_ratio)
-                        half_w = 1;
+                     case 0: diff_mode *= (max_scale_w - 0.5f); break;
+                     case 1: diff_mode *= (max_scale_w);        break;
+                     case 2: diff_mode *= (max_scale_w + 0.5f); break;
+                     case 3: diff_mode *= (max_scale_w + 1.0f); break;
                   }
+
+                  diff_mode /= (content_height * (max_scale_h + (half_h * 0.5f)));
+                  diff_mode  = fabsf(diff_mode - target_ratio);
+
+                  if (diff_mode <= diff)
+                  {
+                     diff = diff_mode;
+                     mode = i;
+                  }
+               }
+
+               switch (mode)
+               {
+                  case 0: half_w = -1; break;
+                  case 1: half_w = 0;  break;
+                  case 2: half_w = 1;  break;
+                  case 3: half_w = 2;  break;
                }
             }
          }
 
          padding_x = width  - content_width  * (max_scale_w + (half_w * 0.5f));
          padding_y = height - content_height * (max_scale_h + (half_h * 0.5f));
+
+         /* Use regular scaling if overscale is unreasonable */
+         if (     padding_x <= (int)-video_st->av_info.geometry.base_width
+               || padding_y <= (int)-video_st->av_info.geometry.base_height)
+         {
+            video_viewport_get_scaled_aspect(vp, width, height, y_down);
+            return;
+         }
       }
       else
       {
