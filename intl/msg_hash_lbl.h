@@ -4148,11 +4148,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,
-	  "crt_switch_center_adjust"
+	  "crt_switch_horizontal_shift"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST,
-	  "crt_switch_porch_adjust"
+	  "crt_switch_horizontal_size"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST,
+	  "crt_switch_vertical_size"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,
