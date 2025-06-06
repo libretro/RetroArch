@@ -11,7 +11,7 @@ TARGET_BASE := $(subst .js,,$(TARGET))
 
 OS = Emscripten
 OBJ :=
-DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN -DEMSCRIPTEN -DNO_CANVAS_RESIZE
+DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN -DEMSCRIPTEN
 DEFINES += -DHAVE_FILTERS_BUILTIN -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORE_INFO
 
 HAVE_PATCH = 1
@@ -27,7 +27,7 @@ HAVE_GLSL = 1
 HAVE_SCREENSHOTS = 1
 HAVE_REWIND = 1
 HAVE_AUDIOMIXER = 1
-HAVE_CC_RESAMPLER = 1
+HAVE_CC_RESAMPLER ?= 1
 HAVE_EGL ?= 0
 HAVE_OPENGLES = 1
 HAVE_RJPEG = 0
@@ -54,8 +54,6 @@ HAVE_BSV_MOVIE = 1
 HAVE_CHD ?= 0
 HAVE_NETPLAYDISCOVERY ?= 0
 
-HAVE_AL ?= 1
-
 # enables pthreads, requires special headers on the web server:
 # see https://web.dev/articles/coop-coep
 HAVE_THREADS ?= 0
@@ -63,18 +61,14 @@ HAVE_THREADS ?= 0
 # requires HAVE_THREADS
 HAVE_AUDIOWORKLET ?= 0
 
-# WARNING -- READ BEFORE ENABLING
-# The rwebaudio driver is known to have several audio bugs, such as
-#  minor crackling, or the entire page freezing/crashing.
-#  It works perfectly on chrome, but even firefox has really bad audio quality.
-#  I should also note, the driver on iOS is completely broken (crashes the page).
-#  You have been warned.
-HAVE_RWEBAUDIO ?= 0
+# doesn't work on PROXY_TO_PTHREAD
+HAVE_RWEBAUDIO ?= 1
 
-# whether the browser thread is allowed to block to wait for audio to play,
-# may lead to the issues mentioned above.
-# currently this variable is only used by audioworklet;
-# rwebaudio will always busywait and openal will never busywait.
+# requires ASYNC or PROXY_TO_PTHREAD
+HAVE_AL ?= 0
+
+# whether the browser thread is allowed to block to wait for audio to play, not CPU usage-friendly!
+# currently this variable is only used by rwebaudio and audioworklet; openal will never busywait.
 ALLOW_AUDIO_BUSYWAIT ?= 0
 
 # minimal asyncify; better performance than full asyncify,
@@ -106,6 +100,9 @@ ASYNC ?= 0
 LTO ?= 0
 PTHREAD_POOL_SIZE ?= 4
 
+ASYNCIFY_ADD ?= dynCall_*,emscripten_mainloop
+ASYNCIFY_REMOVE ?= threaded_worker
+
 STACK_SIZE ?= 4194304
 INITIAL_HEAP ?= 134217728
 
@@ -123,7 +120,7 @@ INITIAL_HEAP ?= 134217728
 
 OBJDIR := obj-emscripten
 
-EXPORTED_FUNCTIONS = _main,_malloc,_free,_cmd_savefiles,_cmd_save_state,_cmd_load_state,_cmd_undo_save_state,_cmd_undo_load_state,_cmd_take_screenshot,\
+EXPORTED_FUNCTIONS = _main,_malloc,_free,_cmd_savefiles,_cmd_save_state,_cmd_load_state,_cmd_undo_save_state,_cmd_undo_load_state,_cmd_toggle_fullscreen,_cmd_take_screenshot,\
 _cmd_toggle_menu,_cmd_reload_config,_cmd_toggle_grab_mouse,_cmd_toggle_game_focus,_cmd_reset,_cmd_toggle_pause,_cmd_pause,_cmd_unpause,\
 _cmd_set_volume,_cmd_set_shader,_cmd_cheat_set_code,_cmd_cheat_get_code,_cmd_cheat_toggle_index,_cmd_cheat_get_code_state,_cmd_cheat_realloc,\
 _cmd_cheat_get_size,_cmd_cheat_apply_cheats,EmscriptenSendCommand,EmscriptenReceiveCommandReply
@@ -168,7 +165,7 @@ LDFLAGS := -L. --no-heap-copy -s STACK_SIZE=$(STACK_SIZE) -s INITIAL_MEMORY=$(IN
            -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="$(EXPORTED_FUNCTIONS)" \
            -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME="libretro_$(subst -,_,$(LIBRETRO))" \
            -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 \
-           -s ENVIRONMENT=web,worker \
+           -s ENVIRONMENT=web,worker -s WASM_BIGINT=1 \
            --extern-pre-js emscripten/pre.js \
            --js-library emscripten/library_rwebcam.js \
            --js-library emscripten/library_platform_emscripten.js
@@ -193,6 +190,9 @@ endif
 ifeq ($(HAVE_RWEBAUDIO), 1)
    LDFLAGS += --js-library emscripten/library_rwebaudio.js
    DEFINES += -DHAVE_RWEBAUDIO
+   ifeq ($(PROXY_TO_PTHREAD), 1)
+      $(error ERROR: RWEBAUDIO is incompatible with PROXY_TO_PTHREAD)
+   endif
 endif
 
 ifeq ($(HAVE_AUDIOWORKLET), 1)
@@ -202,18 +202,24 @@ ifeq ($(HAVE_AUDIOWORKLET), 1)
    ifeq ($(HAVE_THREADS), 0)
       $(error ERROR: AUDIOWORKLET requires HAVE_THREADS)
    endif
-   ifeq ($(PROXY_TO_PTHREAD), 1)
-   else ifeq ($(ASYNC), 1)
+endif
+
+ifeq ($(HAVE_AL), 1)
+   LDFLAGS += -lopenal
+   DEFINES += -DHAVE_AL
+endif
+
+ifeq ($(PROXY_TO_PTHREAD), 1)
+else ifeq ($(ASYNC), 1)
+else
+   DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
+   ifeq ($(MIN_ASYNC), 1)
+      DEFINES += -DEMSCRIPTEN_AUDIO_ASYNC_BLOCK
    else
-      DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
-      ifeq ($(MIN_ASYNC), 1)
-         DEFINES += -DEMSCRIPTEN_AUDIO_ASYNC_BLOCK
-      else
-         DEFINES += -DEMSCRIPTEN_AUDIO_FAKE_BLOCK
-      endif
-      ifneq ($(ALLOW_AUDIO_BUSYWAIT), 1)
-         DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
-      endif
+      DEFINES += -DEMSCRIPTEN_AUDIO_FAKE_BLOCK
+   endif
+   ifneq ($(ALLOW_AUDIO_BUSYWAIT), 1)
+      DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
    endif
 endif
 
@@ -224,15 +230,10 @@ endif
 # explanation of some of these defines:
 # EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK: audio blocking occurs in the main loop instead of in the audio driver functions.
 # EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK: along with above, enables external blocking in the write function.
-# ALLOW_AUDIO_BUSYWAIT: write function will busywait. init function may still use an external block.
+# EMSCRIPTEN_AUDIO_BUSYWAIT: write function will busywait. init function may still use an external block.
 # EMSCRIPTEN_AUDIO_ASYNC_BLOCK: external block uses emscripten_sleep (requires MIN_ASYNC).
 # EMSCRIPTEN_AUDIO_FAKE_BLOCK: external block uses main loop timing (doesn't require asyncify).
 # when building with either PROXY_TO_PTHREAD or ASYNC (full asyncify), none of the above are required.
-
-ifeq ($(HAVE_AL), 1)
-   LDFLAGS += -lopenal
-   DEFINES += -DHAVE_AL
-endif
 
 ifeq ($(HAVE_THREADS), 1)
    LDFLAGS += -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD_POOL_SIZE)
@@ -240,7 +241,7 @@ ifeq ($(HAVE_THREADS), 1)
 endif
 
 ifeq ($(WASM_WORKERS), 1)
-   LDFLAGS += -s WASM_WORKERS=2
+   LDFLAGS += -s WASM_WORKERS=1
 endif
 
 ifeq ($(ASYNC), 1)
@@ -251,7 +252,7 @@ ifeq ($(ASYNC), 1)
    endif
 else ifeq ($(MIN_ASYNC), 1)
    DEFINES += -DEMSCRIPTEN_ASYNCIFY -DEMSCRIPTEN_MIN_ASYNCIFY
-   LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=8192 -s ASYNCIFY_IGNORE_INDIRECT=1 -s ASYNCIFY_ADD='dynCall_*,emscripten_mainloop' -s ASYNCIFY_REMOVE='threaded_worker'
+   LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=8192 -s ASYNCIFY_IGNORE_INDIRECT=1 -s ASYNCIFY_ADD='$(ASYNCIFY_ADD)' -s ASYNCIFY_REMOVE='$(ASYNCIFY_REMOVE)'
    ifeq ($(DEBUG), 1)
       LDFLAGS += -s ASYNCIFY_ADVISE #-s ASYNCIFY_DEBUG=1
    endif
@@ -297,21 +298,11 @@ all: $(TARGET)
 $(libretro_new): ;
 
 mv_libretro:
-	mv -f $(libretro) $(libretro_new) || true
+	$(Q)mv -f $(libretro) $(libretro_new) || true
 
-# until emscripten adds something like WASM_WORKERS=2 but for audio worklets, DIY.
-ifeq ($(HAVE_AUDIOWORKLET), 1)
 $(TARGET): $(RARCH_OBJ) $(libretro_new) mv_libretro
 	@$(if $(Q), $(shell echo echo "LD $@ \<obj\> $(libretro_new) $(LIBS) $(LDFLAGS)"),)
 	$(Q)$(LD) -o $@ $(RARCH_OBJ) $(libretro_new) $(LIBS) $(LDFLAGS)
-	$(Q)tr -d '\n' < "$(TARGET_BASE).aw.js" | sed -e "s/[\/&]/\\\\&/g" -e "s/'/\\\\\\\\&/g" > _audioworklet.js
-	$(Q)sed -i.bak -e "s/\"$(TARGET_BASE)\.aw\.js\"/URL.createObjectURL(new Blob(['$$(cat _audioworklet.js)'],{type:'text\/javascript'}))/" -- "$@"
-	$(Q)rm -f "$(TARGET_BASE).aw.js" _audioworklet.js "$@".bak
-else
-$(TARGET): $(RARCH_OBJ) $(libretro_new) mv_libretro
-	@$(if $(Q), $(shell echo echo "LD $@ \<obj\> $(libretro_new) $(LIBS) $(LDFLAGS)"),)
-	$(Q)$(LD) -o $@ $(RARCH_OBJ) $(libretro_new) $(LIBS) $(LDFLAGS)
-endif
 
 $(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@)

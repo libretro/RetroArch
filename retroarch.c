@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2021 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- *  Copyright (C) 2014-2017 - Jean-Andr� Santoni
+ *  Copyright (C) 2014-2017 - Jean-Andr  Santoni
  *  Copyright (C) 2016-2019 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -1381,11 +1381,8 @@ static void driver_adjust_system_rates(
       video_driver_state_t *video_st,
       settings_t *settings)
 {
-   struct retro_system_av_info *av_info   = &video_st->av_info;
-   const struct retro_system_timing *info =
-      (const struct retro_system_timing*)&av_info->timing;
-   double input_sample_rate               = info->sample_rate;
-   double input_fps                       = info->fps;
+   double input_sample_rate               = video_st->av_info.timing.sample_rate;
+   double input_fps                       = video_st->av_info.timing.fps;
    float video_refresh_rate               = settings->floats.video_refresh_rate;
    float audio_max_timing_skew            = settings->floats.audio_max_timing_skew;
    unsigned video_swap_interval           = settings->uints.video_swap_interval;
@@ -1396,17 +1393,8 @@ static void driver_adjust_system_rates(
 
    /* Update video swap interval if automatic
     * switching is enabled */
-   runloop_set_video_swap_interval(
-         vrr_runloop_enable,
-         (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE) ? true : false,
-         video_swap_interval,
-         black_frame_insertion,
-         shader_subframes,
-         audio_max_timing_skew,
-         video_refresh_rate,
-         input_fps);
-   video_swap_interval = runloop_get_video_swap_interval(
-         video_swap_interval);
+   runloop_set_video_swap_interval(settings);
+   video_swap_interval = runloop_get_video_swap_interval(video_swap_interval);
 
    if (input_sample_rate > 0.0)
    {
@@ -1559,6 +1547,9 @@ void drivers_init(
       menu_st->flags             |= MENU_ST_FLAG_DATA_OWN;
 #endif
 
+   /* Content av_info based automatic swap interval must be set early. */
+   runloop_set_video_swap_interval(settings);
+
    /* Initialize video driver */
    if (flags & DRIVER_VIDEO_MASK)
    {
@@ -1583,16 +1574,15 @@ void drivers_init(
       runloop_st->frame_time_last = 0;
    }
 
-   /* Regular display refresh rate startup autoswitch based on content av_info */
+   /* Regular display refresh rate startup autoswitch based on content av_info. */
    if (     flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK)
          && !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED))
    {
-      struct retro_system_av_info *av_info = &video_st->av_info;
-      float refresh_rate                   = av_info->timing.fps;
-      unsigned autoswitch_refresh_rate     = settings->uints.video_autoswitch_refresh_rate;
-      bool exclusive_fullscreen            = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
-      bool windowed_fullscreen             = settings->bools.video_fullscreen &&  settings->bools.video_windowed_fullscreen;
-      bool all_fullscreen                  = settings->bools.video_fullscreen ||  settings->bools.video_windowed_fullscreen;
+      float refresh_rate               = video_st->av_info.timing.fps;
+      unsigned autoswitch_refresh_rate = settings->uints.video_autoswitch_refresh_rate;
+      bool exclusive_fullscreen        = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
+      bool windowed_fullscreen         = settings->bools.video_fullscreen &&  settings->bools.video_windowed_fullscreen;
+      bool all_fullscreen              = settings->bools.video_fullscreen ||  settings->bools.video_windowed_fullscreen;
 
       /* Making a switch from PC standard 60 Hz to NTSC 59.94 is excluded by the last condition. */
       if (     (refresh_rate > 0.0f)
@@ -1989,8 +1979,8 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             video_monitor_set_refresh_rate(*hz);
 
             /* Sets audio monitor rate to new value. */
-            audio_st->source_ratio_original   =
-            audio_st->source_ratio_current    =
+            audio_st->src_ratio_orig   =
+            audio_st->src_ratio_curr   =
             (double)audio_output_sample_rate / audio_st->input;
 
             driver_adjust_system_rates(runloop_st, video_st, settings);
@@ -3020,8 +3010,19 @@ bool command_event(enum event_command cmd, void *data)
 
    switch (cmd)
    {
+      case CMD_EVENT_LOAD_FILES:
+#ifdef HAVE_CHEEVOS
+         if (rcheevos_hardcore_active())
+         {
+            const char *_msg = msg_hash_to_str(MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 180, true, NULL,
+                                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+            return false;
+         }
+#endif
+         return event_load_save_files(runloop_st->flags & RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED);
       case CMD_EVENT_SAVE_FILES:
-         event_save_files(
+         return event_save_files(
                runloop_st->flags & RUNLOOP_FLAG_USE_SRAM,
 #if defined(HAVE_ZLIB)
                settings->bools.save_file_compression,
@@ -3033,8 +3034,7 @@ bool command_event(enum event_command cmd, void *data)
 #else
                NULL
 #endif
-               );
-         break;
+         );
       case CMD_EVENT_OVERLAY_UNLOAD:
 #ifdef HAVE_OVERLAY
          input_overlay_unload();
@@ -3091,8 +3091,22 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_SHADER_TOGGLE:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         video_shader_toggle(settings);
+         video_shader_toggle(settings, false);
 #endif
+         break;
+      case CMD_EVENT_SHADER_PRESET_LOADED:
+         ui_companion_event_command(cmd);
+         break;
+      case CMD_EVENT_SHADERS_APPLY_CHANGES:
+#ifdef HAVE_MENU
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         menu_shader_manager_apply_changes(menu_shader_get(),
+               settings->paths.directory_video_shader,
+               settings->paths.directory_menu_config
+               );
+#endif
+#endif
+         ui_companion_event_command(cmd);
          break;
       case CMD_EVENT_AI_SERVICE_TOGGLE:
          {
@@ -3645,6 +3659,16 @@ bool command_event(enum event_command cmd, void *data)
             runloop_st->runtime_shader_preset_path[0] = '\0';
 #endif
 
+#ifdef HAVE_MENU
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            /* Restore shader option state after temporary fast toggling */
+            if (menu_shader_get()->flags & SHDR_FLAG_TEMPORARY)
+            {
+               bool enabled = !(menu_shader_get()->flags & SHDR_FLAG_DISABLED);
+               configuration_set_bool(settings, settings->bools.video_shader_enable, enabled);
+            }
+#endif
+#endif
             video_driver_restore_cached(settings);
 
             if (    (flags & CONTENT_ST_FLAG_IS_INITED)
@@ -4621,20 +4645,6 @@ bool command_event(enum event_command cmd, void *data)
             return false;
 #endif
          break;
-      case CMD_EVENT_SHADER_PRESET_LOADED:
-         ui_companion_event_command(cmd);
-         break;
-      case CMD_EVENT_SHADERS_APPLY_CHANGES:
-#ifdef HAVE_MENU
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         menu_shader_manager_apply_changes(menu_shader_get(),
-               settings->paths.directory_video_shader,
-               settings->paths.directory_menu_config
-               );
-#endif
-#endif
-         ui_companion_event_command(cmd);
-         break;
       case CMD_EVENT_PAUSE_TOGGLE:
          {
             bool paused          = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
@@ -5484,10 +5494,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NONE:
          return false;
 
-      /* Deprecated */
-      case CMD_EVENT_SEND_DEBUG_INFO:
-         break;
-
       /* Do nothing about the special negative value */
       case CMD_SPECIAL:
          break;
@@ -5998,11 +6004,17 @@ int rarch_main(int argc, char *argv[], void *data)
 
 #if defined(EMSCRIPTEN)
 
-#if defined(EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK) && defined(HAVE_AUDIOWORKLET)
+#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
+#ifdef HAVE_AUDIOWORKLET
 bool audioworklet_external_block(void);
 #endif
 #ifdef HAVE_RWEBAUDIO
-void RWebAudioRecalibrateTime(void);
+bool rwebaudio_external_block(void);
+#endif
+#endif
+
+#ifdef HAVE_RWEBAUDIO
+void rwebaudio_recalibrate_time(void);
 #endif
 
 void emscripten_mainloop(void)
@@ -6019,17 +6031,27 @@ void emscripten_mainloop(void)
    bool runloop_is_slowmotion             = (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false;
    bool runloop_is_paused                 = (runloop_flags & RUNLOOP_FLAG_PAUSED)     ? true : false;
 
-   /* firefox especially seems to bug without this */
+   /* Prevents the program from running in any of the following conditions:
+    * 1. requestAnimationFrame is being used and the window is not visible.
+    * Firefox likes to call requestAnimationFrame at 1 FPS when the window isn't focused,
+    * we want to avoid this.
+    * 2. The GL context is lost and hasn't been recovered yet. */
    if (platform_emscripten_should_drop_iter())
       return;
 
-#if defined(EMSCRIPTEN_AUDIO_FAKE_BLOCK) && defined(HAVE_AUDIOWORKLET)
+#ifdef HAVE_RWEBAUDIO
+   rwebaudio_recalibrate_time();
+#endif
+
+#ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK
+#ifdef HAVE_AUDIOWORKLET
    if (audioworklet_external_block())
       return;
 #endif
-
 #ifdef HAVE_RWEBAUDIO
-   RWebAudioRecalibrateTime();
+   if (rwebaudio_external_block())
+      return;
+#endif
 #endif
 
    emscripten_frame_count++;
@@ -6054,8 +6076,13 @@ void emscripten_mainloop(void)
 
    ret = runloop_iterate();
 
-#if defined(EMSCRIPTEN_AUDIO_ASYNC_BLOCK) && defined(HAVE_AUDIOWORKLET)
+#ifdef EMSCRIPTEN_AUDIO_ASYNC_BLOCK
+#ifdef HAVE_AUDIOWORKLET
    audioworklet_external_block();
+#endif
+#ifdef HAVE_RWEBAUDIO
+   rwebaudio_external_block();
+#endif
 #endif
 
    task_queue_check();
@@ -6980,8 +7007,11 @@ static bool retroarch_parse_input_and_config(
       BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
 
 #if defined(WEBOS)
-   argv                            = &(argv[1]);
-   argc                            = argc - 1;
+   if (argv[1][0] == '{')
+   {
+      argv                            = &(argv[1]);
+      argc                            = argc - 1;
+   }
 #endif
 
 #ifndef HAVE_MENU
@@ -7476,13 +7506,16 @@ static bool retroarch_parse_input_and_config(
             case 'e':
                {
                   char *endptr;
-                  int16_t entry_state_slot = (unsigned)strtoul(optarg, &endptr, 0);
+                  long entry_state_slot = strtol(optarg, &endptr, 0);
 
-                  if (entry_state_slot > -1 && string_is_empty(endptr))
-                     runloop_st->entry_state_slot = entry_state_slot;
-                  else
+                  if (endptr == optarg || *endptr != '\0' ||
+                      entry_state_slot < 0 || entry_state_slot > 999)
+                  {
                      RARCH_WARN("[State]: --entryslot argument \"%s\" is not a valid "
                         "entry state slot index. Ignoring.\n", optarg);
+                  }
+                  else
+                     runloop_st->entry_state_slot = entry_state_slot;
                }
                break;
             case RA_OPT_DATABASE_SCAN:
@@ -8533,6 +8566,17 @@ bool retroarch_main_quit(void)
          /* Reload the original config */
          config_unload_override();
       }
+#endif
+
+#ifdef HAVE_MENU
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+      /* Restore shader option state after temporary fast toggling */
+      if (menu_shader_get()->flags & SHDR_FLAG_TEMPORARY)
+      {
+         bool enabled = !(menu_shader_get()->flags & SHDR_FLAG_DISABLED);
+         configuration_set_bool(settings, settings->bools.video_shader_enable, enabled);
+      }
+#endif
 #endif
 
       /* Save configs before quitting

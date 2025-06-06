@@ -351,7 +351,6 @@ endif
 
 ifeq ($(HAVE_MICROPHONE), 1)
    DEFINES += -DHAVE_MICROPHONE
-   OBJ += audio/microphone_driver.o
 endif
 
 ifeq ($(HAVE_REWIND), 1)
@@ -1284,6 +1283,7 @@ ifeq ($(HAVE_WAYLAND), 1)
         gfx/common/wayland_common.o \
         gfx/common/wayland/fractional-scale-v1.o \
         gfx/common/wayland/viewporter.o \
+        gfx/common/wayland/xdg-toplevel-icon-v1.o \
         gfx/common/wayland/xdg-shell.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o \

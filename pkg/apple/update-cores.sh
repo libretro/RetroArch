@@ -172,6 +172,8 @@ else
                 fuse
                 gambatte
                 gearboy
+                gearcoleco
+                geargrafx
                 gearsystem
                 genesis_plus_gx
                 genesis_plus_gx_wide
@@ -221,6 +223,7 @@ else
                 quicknes
                 race
                 sameboy
+                sameduck
                 scummvm
                 smsplus
                 snes9x

@@ -156,6 +156,7 @@
  * > Helps to unify menu appearance when viewing
  *   thumbnails of different sizes */
 #define DEFAULT_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE true
+#define DEFAULT_MENU_THUMBNAIL_BACKGROUND_ENABLE false
 
 #define DEFAULT_SCREEN_BRIGHTNESS 100
 
@@ -569,6 +570,7 @@
 #define DEFAULT_REMAP_SAVE_ON_EXIT true
 
 #define DEFAULT_SHOW_HIDDEN_FILES false
+#define DEFAULT_CORE_SUGGEST_ALWAYS false
 
 /* Initialise file browser with the last used start directory */
 #define DEFAULT_USE_LAST_START_DIRECTORY false
@@ -793,6 +795,7 @@
 #define DEFAULT_CONTENT_SHOW_SETTINGS true
 #define DEFAULT_CONTENT_SHOW_HISTORY true
 #define DEFAULT_CONTENT_SHOW_FAVORITES true
+#define DEFAULT_CONTENT_SHOW_FAVORITES_FIRST false
 #ifdef HAVE_IMAGEVIEWER
 #define DEFAULT_CONTENT_SHOW_IMAGES true
 #endif
@@ -808,7 +811,7 @@
 #endif
 #endif
 
-#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB
+#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
 
 #define DEFAULT_CONTENT_SHOW_PLAYLISTS true
 #define DEFAULT_CONTENT_SHOW_PLAYLIST_TABS true
@@ -1174,7 +1177,7 @@
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && !defined(HAVE_AUDIOWORKLET))
+#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && defined(HAVE_AL))
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #define DEFAULT_IN_LATENCY 128
@@ -1289,11 +1292,7 @@
 #endif
 
 /* Pause gameplay when window loses focus. */
-#if defined(EMSCRIPTEN)
-#define DEFAULT_PAUSE_NONACTIVE false
-#else
 #define DEFAULT_PAUSE_NONACTIVE true
-#endif
 
 /* Pause gameplay when controller disconnects. */
 #define DEFAULT_PAUSE_ON_DISCONNECT false
@@ -1402,7 +1401,12 @@
 #define DEFAULT_SAVESTATE_AUTO_SAVE false
 #define DEFAULT_SAVESTATE_AUTO_LOAD false
 
+/* Take screenshots for save states */
+#if defined(__x86_64__)
+#define DEFAULT_SAVESTATE_THUMBNAIL_ENABLE true
+#else
 #define DEFAULT_SAVESTATE_THUMBNAIL_ENABLE false
+#endif
 
 /* When creating save (srm) files, compress
  * written data */
@@ -1684,7 +1688,7 @@
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__) || defined(__PS3__)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWER
-#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX) || defined(EMSCRIPTEN)
+#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWEST
 #else
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_NORMAL

@@ -120,7 +120,7 @@ OPK_NAME = retroarch_retrofw.opk
 
 OBJ :=
 LINK := $(CXX)
-DEF_FLAGS := -march=mips32 -mtune=mips32 -mhard-float -ffast-math -fomit-frame-pointer
+DEF_FLAGS := -march=mips32 -mtune=mips32 -mhard-float -fomit-frame-pointer
 DEF_FLAGS += -mplt -mno-shared
 DEF_FLAGS += -ffunction-sections -fdata-sections
 DEF_FLAGS += -I. -Ideps -Ideps/stb -DDINGUX=1 -DRETROFW=1 -MMD
@@ -184,7 +184,7 @@ X-OD-NeedsDownscaling=true
 endef
 export DESKTOP_ENTRY
 
-all: info $(TARGET) opk
+all: $(TARGET) opk
 
 define INFO
 ASFLAGS: $(ASFLAGS)

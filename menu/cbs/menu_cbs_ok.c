@@ -1930,6 +1930,7 @@ static bool menu_content_find_first_core(
       menu_content_ctx_defer_info_t *def_info,
       bool load_content_with_current_core, char *s, size_t len)
 {
+   settings_t *settings             = config_get_ptr();
    const core_info_t *info          = NULL;
    size_t supported                 = 0;
    core_info_list_t *core_info      = (core_info_list_t*)def_info->data;
@@ -1960,6 +1961,11 @@ static bool menu_content_find_first_core(
       core_info_list_get_supported_cores(core_info,
             def_info->s, &info,
             &supported);
+
+   /* Don't suggest cores if a core is already loaded. */
+   if (     !path_is_empty(RARCH_PATH_CORE)
+         && !settings->bools.core_suggest_always)
+      load_content_with_current_core = true;
 
    /* We started the menu with 'Load Content', we are
     * going to use the current core to load this. */
@@ -2829,7 +2835,6 @@ static int action_ok_playlist_entry_collection(const char *path,
       }
       else
       {
-#ifndef IOS
          core_info = playlist_entry_get_core_info(entry);
 
          if (core_info && !string_is_empty(core_info->path))
@@ -2837,7 +2842,6 @@ static int action_ok_playlist_entry_collection(const char *path,
          else
             /* Core path is invalid - just copy what we have
              * and hope for the best... */
-#endif
          {
             strlcpy(core_path, entry->core_path, sizeof(core_path));
             playlist_resolve_path(PLAYLIST_LOAD, true, core_path, sizeof(core_path));
@@ -7785,6 +7789,17 @@ static int action_ok_start_core(const char *path,
    return 0;
 }
 
+static int action_ok_unload_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
+   path_clear(RARCH_PATH_CORE_LAST);
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                               |  MENU_ST_FLAG_PREVENT_POPULATE;
+   return 0;
+}
+
 static int action_ok_contentless_core_run(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -8617,6 +8632,7 @@ static int action_ok_delete_playlist(const char *path,
 {
    playlist_t       *playlist = playlist_get_cached();
    struct menu_state *menu_st = menu_state_get_ptr();
+   menu_entry_t entry;
 
    if (!playlist)
       return -1;
@@ -8629,7 +8645,12 @@ static int action_ok_delete_playlist(const char *path,
       menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
                NULL, menu_st->userdata);
 
-   return action_cancel_pop_default(NULL, NULL, 0, 0);
+   MENU_ENTRY_INITIALIZE(entry);
+   menu_entry_get(&entry, 0, 0, NULL, false);
+
+   /* Ozone sidebar quick manager needs 'MENU_ACTION_CANCEL' instead
+    * of 'action_cancel_pop_default' to return back to sidebar cleanly */
+   return menu_entry_action(&entry, 0, MENU_ACTION_CANCEL);
 }
 
 #ifdef HAVE_NETWORKING
@@ -9030,6 +9051,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_FILE_BROWSER_CORE,                   action_ok_load_core},
          {MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,action_ok_core_deferred_set},
          {MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE,action_ok_core_deferred_set},
+         {MENU_ENUM_LABEL_CORE_LIST_UNLOAD,                    action_ok_unload_core},
          {MENU_ENUM_LABEL_START_CORE,                          action_ok_start_core},
          {MENU_ENUM_LABEL_START_NET_RETROPAD,                  action_ok_start_net_retropad_core},
          {MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,               action_ok_start_video_processor_core},
@@ -9679,8 +9701,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             else
             {
-               if (     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES))
-                     && path_is_empty(RARCH_PATH_CORE))
+               if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
                   BIND_ACTION_OK(cbs, action_ok_compressed_archive_push_detect_core);
                else
                   BIND_ACTION_OK(cbs, action_ok_compressed_archive_push);

@@ -731,7 +731,6 @@ typedef struct settings
       bool frame_time_counter_reset_after_save_state;
 
       /* Menu */
-      bool filter_by_current_core;
       bool menu_enable_widgets;
       bool menu_show_load_content_animation;
       bool notification_show_autoconfig;
@@ -803,6 +802,7 @@ typedef struct settings
       bool menu_materialui_auto_rotate_nav_bar;
       bool menu_materialui_dual_thumbnail_list_view_enable;
       bool menu_materialui_thumbnail_background_enable;
+      bool menu_thumbnail_background_enable;
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;
@@ -820,12 +820,12 @@ typedef struct settings
       bool menu_xmb_vertical_thumbnails;
       bool menu_content_show_settings;
       bool menu_content_show_favorites;
+      bool menu_content_show_favorites_first;
       bool menu_content_show_images;
       bool menu_content_show_music;
       bool menu_content_show_video;
       bool menu_content_show_netplay;
       bool menu_content_show_history;
-      bool menu_content_show_add;
       bool menu_content_show_playlists;
       bool menu_content_show_playlist_tabs;
       bool menu_content_show_explore;
@@ -1036,8 +1036,11 @@ typedef struct settings
       bool sort_screenshots_by_content_enable;
       bool config_save_on_exit;
       bool remap_save_on_exit;
+
       bool show_hidden_files;
+      bool filter_by_current_core;
       bool use_last_start_directory;
+      bool core_suggest_always;
 
       bool savefiles_in_content_dir;
       bool savestates_in_content_dir;

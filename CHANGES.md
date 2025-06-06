@@ -1,8 +1,16 @@
 # Future
+- EMSCRIPTEN: Support suspend screensaver
+- EMSCRIPTEN/RWEBCAM: Fix camera driver
+- EMSCRIPTEN/RWEBINPUT: Add accelerometer/gyroscope support
+- EMSCRIPTEN/RWEBPAD: Add rumble support
+- EMSCRIPTEN/RWEBAUDIO: Rewrite driver, set as default audio driver
 
 # 1.21.0
 - 3DS: Fix unique IDs for newer cores
-- 3DS: Fixes
+- 3DS: Enable TLS (SSL)
+- 3DS: Fix UI freeze when threaded rendering is enabled
+- 3DS: Fix crash on load content
+- 3DS: Other minor fixes
 - APPLE: Enable Vulkan emulated mailbox
 - APPLE: Include b2 core in App Store builds
 - APPLE: CoreMIDI driver for IOS/MacOS

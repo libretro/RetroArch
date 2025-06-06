@@ -544,10 +544,6 @@ MSG_HASH(
    "Lås Installert Kjerne"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Forhindre modifisering av nåværende installerte kjerne. Kan brukes for å unngå uønskede oppdateringer når innholdet krever en spesifikk kjerneversjon (f.eks. Arkade ROM-sett)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Ekskluder fra \"Innholdsløse kjerner\" menyen"
    )
@@ -1289,10 +1285,6 @@ MSG_HASH(
    "Bruker"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Endre innstillinger for brukerkonto, brukernavn og språk."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Mapper"
    )
@@ -1331,10 +1323,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "Inndata"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Inndatadriveren for å bruke. Noen videodrivere tvinger en annen inndatadriver."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -2305,7 +2293,6 @@ MSG_HASH(
    "Nettspill spiller chat"
    )
 
-
 /* Settings > Input > Port # Controls */
 
 MSG_HASH(
@@ -2789,16 +2776,8 @@ MSG_HASH(
    "Vis 'Historie'"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
-   "Vis 'Importert innhold'"
-   )
-MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    "Vis 'Importert innhold'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Vis et \"Importer innhold\" element i hovedmenyen eller spillelister undermenyen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -2817,16 +2796,8 @@ MSG_HASH(
    "Vis \"Utforsk\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "Vis innholdsutforsker alternativet. (Omstart kreves på Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "Vis 'Innholdløse kjerner'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Angi type kjerne (hvis noen) som skal vises i 'Contentless Cores' menyen. Når satt til \"Tilpasset\", kan enkeltkjernen slås av via \"Behandle kjerner\"-menyen. (Omstart kreves på Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -4768,14 +4739,6 @@ MSG_HASH(
 
 /* Unused (Only Exist in Translation Files) */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
-   "Tving størrelsesforhold"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-   "Velg fra en spilleliste"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
    "Nettspill"

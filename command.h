@@ -258,6 +258,7 @@ enum event_command
    CMD_EVENT_AI_SERVICE_CALL,
    /* Misc. */
    CMD_EVENT_SAVE_FILES,
+   CMD_EVENT_LOAD_FILES,
    CMD_EVENT_CONTROLLER_INIT,
    CMD_EVENT_DISCORD_INIT,
    CMD_EVENT_PRESENCE_UPDATE,
@@ -272,8 +273,6 @@ enum event_command
    /* Reinitializes microphone driver. */
    CMD_EVENT_MICROPHONE_REINIT,
 #endif
-   /* Deprecated */
-   CMD_EVENT_SEND_DEBUG_INFO,
    /* Add a playlist entry to another playlist. */
    CMD_EVENT_ADD_TO_PLAYLIST
 };
@@ -420,6 +419,8 @@ bool command_get_config_param(command_t *cmd, const char* arg);
 bool command_show_osd_msg(command_t *cmd, const char* arg);
 bool command_load_state_slot(command_t *cmd, const char* arg);
 bool command_play_replay_slot(command_t *cmd, const char* arg);
+bool command_save_savefiles(command_t *cmd, const char* arg);
+bool command_load_savefiles(command_t *cmd, const char* arg);
 #ifdef HAVE_CHEEVOS
 bool command_read_ram(command_t *cmd, const char *arg);
 bool command_write_ram(command_t *cmd, const char *arg);
@@ -446,6 +447,9 @@ static const struct cmd_action_map action_map[] = {
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>"},
    { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},
+
+   { "SAVE_FILES", command_save_savefiles, "No argument"},
+   { "LOAD_FILES", command_load_savefiles, "No argument"},
 };
 
 static const struct cmd_map map[] = {
@@ -482,6 +486,7 @@ static const struct cmd_map map[] = {
    { "DISK_PREV",              RARCH_DISK_PREV },
 
    { "SHADER_TOGGLE",          RARCH_SHADER_TOGGLE },
+   { "SHADER_HOLD",            RARCH_SHADER_HOLD },
    { "SHADER_NEXT",            RARCH_SHADER_NEXT },
    { "SHADER_PREV",            RARCH_SHADER_PREV },
 

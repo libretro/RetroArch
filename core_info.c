@@ -1571,7 +1571,7 @@ static size_t core_info_get_file_id(const char *core_filename,
        && !string_is_equal(last_underscore, "_libretro"))
    {
       *last_underscore = '\0';
-      _len = strlen(s); /* TODO/FIXME - make this unnecessary later on */
+      _len = last_underscore - s;
    }
    return _len;
 }

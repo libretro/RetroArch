@@ -1190,16 +1190,18 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
          break;
-#ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
+#ifdef HAVE_CLIP_WINDOW
          if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
+#endif
          break;
       case WM_KILLFOCUS:
+#ifdef HAVE_CLIP_WINDOW
          if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
-         break;
 #endif
+         break;
       case WM_DISPLAYCHANGE:  /* Fix size after display mode switch when using SR */
          {
             HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
@@ -1463,16 +1465,34 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
          break;
-#ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
+#ifdef HAVE_CLIP_WINDOW
          if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
+#endif
+#if !defined(_XBOX)
+         {
+            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+#endif
          break;
       case WM_KILLFOCUS:
+#ifdef HAVE_CLIP_WINDOW
          if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
-         break;
 #endif
+#if !defined(_XBOX)
+         {
+            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+#endif
+         break;
       case WM_DISPLAYCHANGE:  /* Fix size after display mode switch when using SR */
          {
             HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);

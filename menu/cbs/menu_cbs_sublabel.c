@@ -451,6 +451,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_disk_next,             ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_disk_prev,             MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV)
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_shader_toggle,         MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_shader_hold,           MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_shader_next,           MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_shader_prev,           MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV)
 #ifdef HAVE_CHEATS
@@ -950,6 +951,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_truncate_playlist_name,       
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_sort_after_truncate_playlist_name, MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_thumbnail_upscale_threshold,      MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_thumbnail_background_enable,      MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timedate_enable,                       MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timedate_style,                        MENU_ENUM_SUBLABEL_TIMEDATE_STYLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timedate_date_separator,               MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR)
@@ -1067,6 +1069,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_entry_remove,              
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_system_directory,                      MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rgui_browser_directory,                MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_use_last_start_directory,              MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_suggest_always,                   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_dir,                           MENU_ENUM_SUBLABEL_CONTENT_DIR)
 DEFAULT_SUBLABEL_MACRO(action_bind_dynamic_wallpapers_directory,                   MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_thumbnails_directory,                           MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY)
@@ -1161,6 +1164,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_enable_kiosk_mode,             
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_disable_kiosk_mode,               MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_kiosk_mode_password,              MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_favorites_tab,                    MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_favorites_first,                  MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_images_tab,                       MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_core,                   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_content,                MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT)
@@ -1192,7 +1196,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_netplay_tab,                   
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_settings_tab,                     MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_settings_tab_enable_password,     MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_history_tab,                      MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_import_content_tab,               MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_import_content_entry,             MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_playlists_tab,                    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_playlist_tabs,                    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS)
@@ -2382,6 +2385,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             case RARCH_SHADER_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_shader_toggle);
                return 0;
+            case RARCH_SHADER_HOLD:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_shader_hold);
+               return 0;
 
             case RARCH_CHEAT_TOGGLE:
 #ifdef HAVE_CHEATS
@@ -2576,6 +2582,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_MATERIALUI
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_materialui_thumbnail_background_enable);
 #endif
+            break;
+         case MENU_ENUM_LABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_thumbnail_background_enable);
             break;
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_screen_resolution);
@@ -2825,9 +2834,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rgui_show_start_screen);
             break;
-         case MENU_ENUM_LABEL_CONTENT_SHOW_ADD:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_import_content_tab);
-            break;
          case MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_import_content_entry);
             break;
@@ -3045,6 +3051,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_favorites_tab);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES_FIRST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_favorites_first);
             break;
          case MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_images_tab);
@@ -4893,6 +4902,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_USE_LAST_START_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_use_last_start_directory);
+            break;
+         case MENU_ENUM_LABEL_CORE_SUGGEST_ALWAYS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_suggest_always);
             break;
          case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_toggle_gamepad_combo);

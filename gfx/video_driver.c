@@ -2548,9 +2548,12 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             float underscale_ratio    = 0;
             float overscale_ratio     = 0;
             uint16_t content_width_ar = content_width;
+            uint16_t height_threshold = height * 1.12f;
             uint8_t overscale_w       = 0;
             uint8_t overscale_h       = 0;
             uint8_t i                 = 0;
+            bool hires_w              = false;
+            bool hires_h              = false;
 
             /* Reset width to exact width */
             content_width = (rotation % 2)
@@ -2573,7 +2576,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
                }
 
                if (scaling == VIDEO_SCALE_INTEGER_SCALING_SMART)
-                  max_scale_h = ((int)(height - content_height * overscale_h) < -(int)(height * 0.20f))
+                  max_scale_h = ((content_height * overscale_h) > height_threshold)
                      ? overscale_h - 1
                      : overscale_h;
                else if (scaling == VIDEO_SCALE_INTEGER_SCALING_OVERSCALE)
@@ -2601,46 +2604,82 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             else if (i > 1)
                max_scale_w = i - 1;
 
-            /* Special half width scale for hi-res */
-            if (     axis == VIDEO_SCALE_INTEGER_AXIS_Y_XHALF
-                  || axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF
-                  || axis == VIDEO_SCALE_INTEGER_AXIS_XHALF)
-            {
-               float scale_w_ratio    = (float)(content_width * max_scale_w) / (float)(content_height * max_scale_h);
-               uint8_t hires_w        = content_width / 512;
-               int content_width_diff = content_width_ar - (content_width / (hires_w + 1));
-
-               if (     content_width_ar - content_width_diff == (int)content_width / 2
-                     && content_width_diff < 20
-                     && scale_w_ratio - target_ratio > 0.25f)
-                  half_w = -1;
-            }
+            /* Decide hi-res source */
+            hires_w = content_width  / 512;
+            hires_h = content_height / ((rotation % 2) ? 288 : 300);
 
             /* Special half height scale for hi-res */
-            if (     axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF
-                  || axis == VIDEO_SCALE_INTEGER_AXIS_XHALF)
+            if (     (hires_h)
+                  && (axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF)
+                  && (scaling != VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE))
             {
                if (     max_scale_h == (height / content_height)
-                     && content_height / ((rotation % 2) ? 288 : 300)
                      && content_height * max_scale_h < height * 0.90f
+                     && content_height * (max_scale_h + 0.5f) < height_threshold
                   )
+                  half_h = 1;
+            }
+
+            /* Special half width scale for hi-res */
+            if (     (hires_w || hires_h)
+                  && (  axis == VIDEO_SCALE_INTEGER_AXIS_Y_XHALF
+                     || axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF
+                     || axis == VIDEO_SCALE_INTEGER_AXIS_XHALF))
+            {
+               float diff   = 1.0f;
+               uint8_t mode = 0;
+
+               /* Reset current target ratio for stable width matching */
+               if (!hires_w && half_h)
+                  target_ratio = (float)(content_width * max_scale_w) / (float)(content_height * max_scale_h);
+
+               /* Find the nearest ratio */
+               for (i = 0; i < 4; i++)
                {
-                  float halfstep_prev_ratio = (float)(content_width * max_scale_w) / (float)(content_height * max_scale_h);
-                  float halfstep_next_ratio = (float)(content_width * max_scale_w) / (float)(content_height * (max_scale_h + 0.5f));
+                  float diff_mode = content_width;
 
-                  if (content_height * (max_scale_h + 0.5f) < height * 1.12f)
+                  /* Skip half scales with lo-res width */
+                  if (!hires_w && !(i % 2))
+                     continue;
+
+                  switch (i)
                   {
-                     half_h = 1;
-
-                     if (halfstep_next_ratio - target_ratio <= target_ratio - halfstep_prev_ratio)
-                        half_w = 1;
+                     case 0: diff_mode *= (max_scale_w - 0.5f); break;
+                     case 1: diff_mode *= (max_scale_w);        break;
+                     case 2: diff_mode *= (max_scale_w + 0.5f); break;
+                     case 3: diff_mode *= (max_scale_w + 1.0f); break;
                   }
+
+                  diff_mode /= (content_height * (max_scale_h + (half_h * 0.5f)));
+                  diff_mode  = fabsf(diff_mode - target_ratio);
+
+                  if (diff_mode <= diff)
+                  {
+                     diff = diff_mode;
+                     mode = i;
+                  }
+               }
+
+               switch (mode)
+               {
+                  case 0: half_w = -1; break;
+                  case 1: half_w = 0;  break;
+                  case 2: half_w = 1;  break;
+                  case 3: half_w = 2;  break;
                }
             }
          }
 
          padding_x = width  - content_width  * (max_scale_w + (half_w * 0.5f));
          padding_y = height - content_height * (max_scale_h + (half_h * 0.5f));
+
+         /* Use regular scaling if overscale is unreasonable */
+         if (     padding_x <= (int)-video_st->av_info.geometry.base_width
+               || padding_y <= (int)-video_st->av_info.geometry.base_height)
+         {
+            video_viewport_get_scaled_aspect(vp, width, height, y_down);
+            return;
+         }
       }
       else
       {
@@ -2817,7 +2856,15 @@ void video_driver_build_info(video_frame_info_t *video_info)
    input_driver_state_t *input_st          = input_state_get_ptr();
 #ifdef HAVE_MENU
    struct menu_state *menu_st              = menu_state_get_ptr();
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   struct video_shader *menu_shader        = menu_shader_get();
+#else
+   struct video_shader *menu_shader        = NULL;
 #endif
+#else
+   struct video_shader *menu_shader        = NULL;
+#endif /* HAVE_MENU */
+   uint8_t menu_shdr_flags                 = (menu_shader) ? menu_shader->flags : 0;
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t *p_dispwidget          = dispwidget_get_ptr();
 #endif
@@ -2827,6 +2874,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    VIDEO_DRIVER_THREADED_LOCK(video_st, is_threaded);
 #endif
+
    custom_vp                               = &settings->video_vp_custom;
 #ifdef HAVE_GFX_WIDGETS
    video_info->widgets_active              = p_dispwidget->active;
@@ -2896,6 +2944,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->scale_width                 = video_st->scale_width;
    video_info->scale_height                = video_st->scale_height;
 
+   video_info->shader_active               = !(menu_shdr_flags & SHDR_FLAG_DISABLED) ? true : false;
    video_info->hdr_enable                  = settings->bools.video_hdr_enable;
 
    video_info->libretro_running            = false;
@@ -4573,15 +4622,15 @@ void video_frame_delay(video_driver_state_t *video_st,
          || (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
          || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION);
 
-   /* Black frame insertion + swap interval multiplier */
-   refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval / shader_subframes);
-
    /* Treat values 20+ as frame time percentage */
    if (video_frame_delay >= 20)
       video_frame_delay = 1 / refresh_rate * 1000 * (video_frame_delay / 100.0f);
    /* Set 0 (Auto) delay target as 3/4 frame time */
    else if (video_frame_delay == 0 && settings->bools.video_frame_delay_auto)
       video_frame_delay = 1 / refresh_rate * 1000 * 0.75f;
+
+   /* Black frame insertion + swap interval multiplier */
+   refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval / shader_subframes);
 
    if (settings->bools.video_frame_delay_auto)
    {

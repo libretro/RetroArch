@@ -72,6 +72,14 @@ MSG_HASH(
    "حدد النواة المستخدمة."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "إيقاف تشغيل النواة"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "إلغاء تحميل النواة."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "تصفح لتنفيذ أساسيات ليبرترو. حيث يبدأ المتصفح يعتمد على مسار الدليل الأساسي الخاص بك. إذا كان فارغاً، فسيبدأ في الجذر.\nإذا كان الدليل الأساسي هو الدليل، فستستخدم القائمة ذلك كالمجلد الأعلى. إذا كان الدليل الأساسي هو المسار الكامل، فإنه سيبدأ في المجلد الذي يوجد فيه الملف."
    )
@@ -524,12 +532,20 @@ MSG_HASH(
    "متسلسل (حفظ/تحميل, إعادة)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "سلوك الأداء (الحفظ، الرجوع، التشغيل المسبق، اللعب الجماعي)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "البرنامج الثابت فيرموير"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
    "- ملاحظة: تم تمكين 'ملفات النظام في دليل المحتوى' حاليا."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "البحث في: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -552,12 +568,12 @@ MSG_HASH(
    "قفل النواة المثبتة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "منع تعديل النواة المثبتة حاليا. يمكن استخدامها لتجنب التحديثات غير المرغوب فيها عندما يتطلب المحتوى إصدار أساسي محدد (على سبيل المثال مجموعة رومات الآركيد)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "استبعاد من قائمة 'نوى بلا محتوى'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   "لا تُعرض هذه النواة في تبويب \"النوى غير المرتبطة\"، ويظهر ذلك فقط عند تفعيل وضع العرض المخصص."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -633,6 +649,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "نَوَيات المُعالِجْ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "يدعم الترجمة الفورية JIT"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -715,6 +735,30 @@ MSG_HASH(
    "SDL 1-2 دعم"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
+   "دعم Direct3D 8"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
+   "دعم Direct3D 9"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
+   "دعم Direct3D 10"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
+   "دعم Direct3D 11"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
+   "دعم Direct3D 12"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
+   "دعم GDI"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
    "دعم vulkan"
    )
@@ -793,6 +837,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
    "دعم PulseAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
+   "دعم PipeWire"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
@@ -875,6 +923,10 @@ MSG_HASH(
    "دعم Video4Linux2"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
+   "دعم SSL"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
    "دعم libusb"
    )
@@ -917,6 +969,14 @@ MSG_HASH(
    "المنطقة"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   "حصري على جهاز الألعاب"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   "حصري على المنصة"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
    "النقاط"
    )
@@ -929,12 +989,20 @@ MSG_HASH(
    "التحكم"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   "النمط الفني"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
    "أسلوب اللعب"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
    "سرد"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
+   "نمط الإيقاع"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
@@ -947,6 +1015,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
    "بصري"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
+   "نمط المركبات"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
@@ -983,6 +1055,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
    "مراجعة مجلة edg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "شهر الإصدار"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "سنة الإصدار"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -1028,16 +1108,32 @@ MSG_HASH(
    "تحميل ملف التكوين"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   "تحميل الإعدادات الحالية واستبدال القيم الموجودة"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "قراءة إعدادات التكوين الحالية"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   "استبدال ملف الإعدادات الحالي"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "حفظ الإعدادات"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   "حفظ الإعدادات الحالية في ملف منفصل"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "إعادة التعيين إلى الافتراضي"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "إعادة الإعدادات للوضع الافتراضي."
    )
 
 /* Main Menu > Help */
@@ -1105,6 +1201,10 @@ MSG_HASH(
    "الصوت"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "تعديل إعدادات الصوت والإدخال/الإخراج."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "أجهزة الادخال"
    )
@@ -1145,12 +1245,92 @@ MSG_HASH(
    "تغيير اعدادات النواة."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "مزامنة سحابية"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "تغيير إعدادات المزامنة السحابية."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "تفعيل المزامنة السحابية"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   "محاولة مزامنة الإعدادات، والبيانات المحفوظة، ولقطات الحفظ مع التخزين السحابي."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "مزامنة سحابية تمسح القديم"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "مزامنة الحفظ والتقدم"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "مزامنة ملفات الإعدادات"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "مزامنة الصور المصغّرة للألعاب"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "مزامنة ملفات النظام"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "عند التفعيل، سيتم مزامنة بيانات الحفظ والحالة مع السحابة."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "عند التفعيل، سيتم مزامنة ملفات الإعدادات مع السحابة."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "عند التفعيل، سيتم مزامنة الصور المصغّرة مع السحابة. لا يُنصح بها عادةً إلا عند وجود مجموعة كبيرة من الصور المخصصة. في الحالات الأخرى يُفضّل استخدام أداة تحميل الصور المصغّرة."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "عند التفعيل، تتم مزامنة ملفات النظام للسحابة. قد تؤثر على سرعة المزامنة."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "إذا تم التعطيل، سيتم نقل الملفات إلى مجلد النسخ الاحتياطي قبل الحذف أو الاستبدال."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "خدمة المزامنة السحابية"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "اختيار خدمة التخزين السحابي."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "عنوان موقع التخزين السحابي"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "رابط خدمة التخزين السحابي."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "اسم المستخدم"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "اسم المستخدم في السحابة."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    "كلمة المرور"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "كلمة المرور لحساب السحابة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1165,6 +1345,26 @@ MSG_HASH(
    "مستعرض الملفات"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "تعديل إعدادات مستعرض الملفات.مستعرض الملفات"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "ملف الإعدادات."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "ملف أرشيف مضغوط."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "ملف إعدادات التسجيل."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   "ملف مؤشر قاعدة البيانات."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_CONFIG,
    "ملف الإعدادات."
    )
@@ -1177,8 +1377,24 @@ MSG_HASH(
    "مِلف المظلل."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   "ملف تخصيص أزرار التحكم."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
    "ملف الغش."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "ملف التراكب."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "ملف قاعدة البيانات."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "ملف خط TrueType."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
@@ -1199,6 +1415,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
    "صورة. حدده لفتح هذا الملف مع عارض الصورة."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "نواة ليبرترو. اختيار هذا سيربط هذا النواة باللعبة."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "نواة ليبرترو. حدد هذا الملف لتحميل RetroArch هذا النوع."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "الدليل. حدده لفتح هذا الدليل."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1285,10 +1513,6 @@ MSG_HASH(
    "المستخدم"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "تغيير إعدادات الحساب واسم المستخدم واللغة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "الدلائل"
    )
@@ -1353,12 +1577,36 @@ MSG_HASH(
    "نظام تشغيل أجهزة الادخال"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "مشغل الإدخال للاستخدام. تبعاً لمشغل الفيديو، قد يفرض مشغل إدخال مختلف."
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "يقوم مشغل udev بقراءة أحداث evdev للحصول على دعم لوحة المفاتيح. كما أنه يدعم رد المكالمات على لوحة المفاتيح والجرذان والملامس.\nبشكل افتراضي في معظم الأقراص، عقد /dev/input هي جذر فقط (الوضع 600). يمكنك إعداد قاعدة udev التي تجعل هذه متاحة لغير الجذر."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
+   "يتطلب مشغل إدخال Linuxraw نشيطا TTY. تُقرأ أحداث لوحة المفاتيح مباشرة من TY مما يجعلها أبسط ولكن ليس مرنة مثل udev. الرماد الخ، غير مدعوم على الإطلاق. يستخدم هذا السائق API القديم عصا التحكم (/dev/input/js*)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   "مشغل الإدخال. مشغل الفيديو قد يفرض مشغل إدخال مختلف."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "نظام تشغيل الجوي باد"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   "سائق يد التحكم لاستخدامه. (إعادة التشغيل مطلوبة)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "مشغل وحدة تحكم مباشر الإدخال."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "مشغل جهاز الواجهة الانسانية مستوى منخفض."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "استخدام واجهة برمجة التطبيقات API الموروثة لـ Linux. استخدم udev بدلا من ذلك إذا أمكن."
    )
 
 MSG_HASH(
@@ -1468,6 +1716,26 @@ MSG_HASH(
    "نظام تشغيل القائمة"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "نوع الواجهة الرئيسية. (يتطلب إعادة التشغيل)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "واجهة XMB مستوحاة من قوائم أجهزة الجيل السابع مثل PS3، وتقدم ميزات مشابهة لـ Ozone."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   "واجهة Ozone هي الواجهة الرئيسية الافتراضية في RetroArch، ومصممة خصيصًا لتسهيل التنقل بيد التحكم."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
+   "واجهة RGUI هي واجهة مدمجة وبسيطة في RetroArch. تُعد الأقل من حيث متطلبات الأداء بين جميع مشغّلات القوائم، ويمكن استخدامها على الشاشات منخفضة الدقة."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "في الأجهزة المحمولة، يستخدم RetroArch واجهة المستخدم الخاصة بالموبايل بشكل افتراضي، والمعروفة باسم MaterialUI. تم تصميم هذه الواجهة خصيصًا لتناسب أجهزة اللمس والمؤشرات مثل الماوس أو التراكبول."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "نظام تشغيل التسجيل"
    )
@@ -1555,8 +1823,16 @@ MSG_HASH(
    "يحسن الأداء على حساب التأخير والمزيد من مقاطع الفيديو. يستخدم فقط إذا لم يكن من الممكن الحصول على السرعة الكاملة خلاف ذلك."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "تمكين المعالجة المتعددة للفيديو قد يرفع الأداء، لكن فيه احتمال يصير فيه تأخير أو تقطيع بسيط."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "إدراج الإطار الأسود"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "تحذير: الوميض السريع قد يسبب أثرًا دائمًا على بعض الشاشات. استخدم هذا الخيار على مسؤوليتك. إدراج إطار أسود بين الفريمات يقلل بشكل كبير من ضبابية الحركة ويحاكي عرض CRT، لكن يقلل من سطوع الشاشة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -2647,15 +2923,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
    "تبديل جلسة الشبكة الحالية بين وضع 'تشغيل' و 'نظرة'."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
-   "إرسال معلومات التصحيح"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
-   "يرسل معلومات تشخيصية حول جهازك وتكوين RetroArch إلى خوادمنا للتحليل."
    )
 
 /* Settings > Input > Port # Controls */
@@ -3749,6 +4016,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    "رفع مستوى الصور المصغرة تلقائياً مع عرض / ارتفاع أصغر من القيمة المحددة. يحسن جودة الصورة. له تأثير متوسط للأداء."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "تمكين تعبئة المساحة غير المستخدمة في الصور المصغرة مع خلفية صلبة. هذا يضمن حجم عرض موحد لجميع الصور، وتحسين مظهر القائمة عند عرض الصور المصغرة للمحتوى المختلط مع أبعاد أساسية مختلفة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
@@ -6581,10 +6852,6 @@ MSG_HASH(
    "يعرض صورة مصغرة ثانوية عند استخدام \"قائمة\" نوع أوضاع عرض الصور المصغرة لقائمة التشغيل. ينطبق هذا الإعداد فقط عندما يكون للشاشة عرض فيزيائي كافٍ لإظهار مصغرتين."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "ارسم خلفيات مصغرة"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
    "تمكين تعبئة المساحة غير المستخدمة في الصور المصغرة مع خلفية صلبة. هذا يضمن حجم عرض موحد لجميع الصور، وتحسين مظهر القائمة عند عرض الصور المصغرة للمحتوى المختلط مع أبعاد أساسية مختلفة."
    )
@@ -7477,10 +7744,6 @@ MSG_HASH(
 /* Unused (Only Exist in Translation Files) */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
-   "نسبة الجوانب التلقائية"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
    "الاسم المستعار (الشبكة): %s"
    )
@@ -7491,10 +7754,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
    "نظام BGM"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
-   "نسبة مخصصة"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
@@ -7515,14 +7774,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
    "اختر المطابقة لعرضها."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
-   "نسبة الجاذبية"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-   "حدد من قائمة التشغيل"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
@@ -7591,14 +7842,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
    "تحميل المحتوى"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
-   "إرسال معلومات التصحيح"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
-   "يرسل معلومات تشخيصية حول جهازك وتكوين RetroArch إلى خوادمنا للتحليل."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
@@ -7812,30 +8055,6 @@ MSG_HASH( /* FIXME Should be MSG_ */
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "اضغط على اليمين خمس مرات لحذف جميع الغش."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SAVE_DEBUG_INFO,
-   "فشل في حفظ معلومات التصحيح."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SEND_DEBUG_INFO,
-   "فشل في إرسال معلومات التصحيح إلى الخادم."
-   )
-MSG_HASH(
-   MSG_SENDING_DEBUG_INFO,
-   "جارٍ إرسال معلومات التصحيح..."
-   )
-MSG_HASH(
-   MSG_SENT_DEBUG_INFO,
-   "تم إرسال معلومات التصحيح إلى الخادم بنجاح. رقم التعريف الخاص بك هو %u."
-   )
-MSG_HASH(
-   MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
-   "اضغط مرتين أخريين لتقديم معلومات تشخيصية لفريق RetroArch."
-   )
-MSG_HASH(
-   MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
-   "اضغط مرة أخرى لتقديم معلومات تشخيصية لفريق RetroArch."
    )
 MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,

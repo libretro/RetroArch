@@ -57,12 +57,6 @@ static void gfx_ctx_emscripten_webgl_check_window(void *data, bool *quit,
    *quit   = false;
 }
 
-/* https://github.com/emscripten-core/emscripten/issues/17816#issuecomment-1249719343 */
-static void gfx_ctx_emscripten_webgl_swap_buffers(void *data)
-{
-   (void)data;
-}
-
 static void gfx_ctx_emscripten_webgl_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
@@ -114,7 +108,7 @@ static void *gfx_ctx_emscripten_webgl_init(void *video_driver)
 
    EmscriptenWebGLContextAttributes attrs = {0};
    emscripten_webgl_init_context_attributes(&attrs);
-   attrs.alpha = false;
+   attrs.alpha = true;
    attrs.depth = true;
    attrs.stencil = true;
    attrs.antialias = false;
@@ -152,57 +146,24 @@ error:
    return NULL;
 }
 
-static bool gfx_ctx_emscripten_webgl_set_canvas_size(int width, int height)
-{
-#ifdef NO_CANVAS_RESIZE
-   return false;
-#endif
-   double dpr = platform_emscripten_get_dpr();
-   EMSCRIPTEN_RESULT r = emscripten_set_element_css_size("#canvas", (double)width / dpr, (double)height / dpr);
-   RARCH_LOG("[EMSCRIPTEN/WebGL]: set canvas size to %d, %d\n", width, height);
-
-   if (r != EMSCRIPTEN_RESULT_SUCCESS)
-   {
-      RARCH_ERR("[EMSCRIPTEN/WebGL]: error resizing canvas: %d\n", r);
-      return false;
-   }
-   return true;
-}
-
 static bool gfx_ctx_emscripten_webgl_set_video_mode(void *data,
-      unsigned width, unsigned height,
-      bool fullscreen)
+      unsigned width, unsigned height, bool fullscreen)
 {
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
    if (!emscripten || !emscripten->ctx)
       return false;
 
-   if (width != 0 && height != 0)
-   { 
-      if (!gfx_ctx_emscripten_webgl_set_canvas_size(width, height))
-         return false;
-   }
-   emscripten->fb_width = width;
-   emscripten->fb_height = height;
+   platform_emscripten_set_fullscreen_state(fullscreen);
+   if (!fullscreen)
+      platform_emscripten_set_canvas_size(width, height);
 
    return true;
-}
-
-bool gfx_ctx_emscripten_webgl_set_resize(void *data, unsigned width, unsigned height)
-{
-   emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
-   if (!emscripten || !emscripten->ctx)
-      return false;
-   return gfx_ctx_emscripten_webgl_set_canvas_size(width, height);
 }
 
 static enum gfx_ctx_api gfx_ctx_emscripten_webgl_get_api(void *data) { return GFX_CTX_OPENGL_ES_API; }
 
 static bool gfx_ctx_emscripten_webgl_bind_api(void *data,
-      enum gfx_ctx_api api, unsigned major, unsigned minor)
-{
-   return true;
-}
+      enum gfx_ctx_api api, unsigned major, unsigned minor) { return true; }
 
 static void gfx_ctx_emscripten_webgl_input_driver(void *data,
       const char *name,
@@ -216,10 +177,19 @@ static void gfx_ctx_emscripten_webgl_input_driver(void *data,
 static bool gfx_ctx_emscripten_webgl_has_focus(void *data)
 {
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
-   return emscripten && emscripten->ctx;
+   return emscripten && emscripten->ctx && !platform_emscripten_is_window_hidden();
 }
 
-static bool gfx_ctx_emscripten_webgl_suppress_screensaver(void *data, bool enable) { return false; }
+static bool gfx_ctx_emscripten_webgl_suppress_screensaver(void *data, bool enable)
+{
+   platform_emscripten_set_wake_lock(enable);
+   return true;
+}
+
+static void gfx_ctx_emscripten_webgl_show_mouse(void *data, bool state)
+{
+   platform_emscripten_set_pointer_visibility(state);
+}
 
 static float gfx_ctx_emscripten_webgl_translate_aspect(void *data,
       unsigned width, unsigned height) { return (float)width / height; }
@@ -239,6 +209,11 @@ static uint32_t gfx_ctx_emscripten_webgl_get_flags(void *data)
 
 static void gfx_ctx_emscripten_webgl_set_flags(void *data, uint32_t flags) { }
 
+static gfx_ctx_proc_t gfx_ctx_emscripten_webgl_get_proc_address(const char *symbol)
+{
+   return emscripten_webgl_get_proc_address(symbol);
+}
+
 const gfx_ctx_driver_t gfx_ctx_emscripten_webgl = {
    gfx_ctx_emscripten_webgl_init,
    gfx_ctx_emscripten_webgl_destroy,
@@ -255,16 +230,16 @@ const gfx_ctx_driver_t gfx_ctx_emscripten_webgl = {
    gfx_ctx_emscripten_webgl_translate_aspect,
    NULL, /* update_title */
    gfx_ctx_emscripten_webgl_check_window,
-   gfx_ctx_emscripten_webgl_set_resize,
+   NULL, /* set_resize: no-op */
    gfx_ctx_emscripten_webgl_has_focus,
    gfx_ctx_emscripten_webgl_suppress_screensaver,
-   false,
-   gfx_ctx_emscripten_webgl_swap_buffers,
+   true, /* has_windowed */
+   NULL, /* swap_buffers: no-op: https://github.com/emscripten-core/emscripten/issues/17816#issuecomment-1249719343 */
    gfx_ctx_emscripten_webgl_input_driver,
+   gfx_ctx_emscripten_webgl_get_proc_address,
    NULL,
    NULL,
-   NULL,
-   NULL,
+   gfx_ctx_emscripten_webgl_show_mouse,
    "webgl_emscripten",
    gfx_ctx_emscripten_webgl_get_flags,
    gfx_ctx_emscripten_webgl_set_flags,

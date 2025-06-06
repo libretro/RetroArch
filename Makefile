@@ -45,7 +45,6 @@ else
    OBJDIR := $(OBJDIR_BASE)/release
    CFLAGS ?= -O3
    CXXFLAGS ?= -O3
-   DEF_FLAGS += -ffast-math
 endif
 
 DEF_FLAGS += -Wall -Wsign-compare
@@ -171,7 +170,7 @@ ifneq ($(MOC_HEADERS),)
     RARCH_OBJ += $(MOC_OBJ)
 endif
 
-all: info $(TARGET) config.mk
+all: $(TARGET) config.mk
 
 define INFO
 ASFLAGS: $(ASFLAGS)

@@ -130,7 +130,7 @@ ifneq ($(V),1)
 	Q := @
 endif
 
-all: info $(SELF_TARGET)
+all: $(SELF_TARGET)
 
 define INFO
 CXX: $(CXX)
@@ -159,11 +159,8 @@ pkg: create-core
 #	$(PACKAGE_FINALIZE) $(PACKAGE_BASENAME).gnpdrm.pkg
 
 clean:
-ifneq ($(V),1)
-	@echo RM
-else
-	rm -f $(ELF_TARGET)
-	rm -f $(OBJ)
-endif
+	@$(if $(Q), echo $@,)
+	$(Q)rm -f $(ELF_TARGET)
+	$(Q)rm -f $(OBJ)
 
 .PHONY: clean

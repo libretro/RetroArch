@@ -4390,29 +4390,28 @@ float runloop_get_fastforward_ratio(
 }
 
 void runloop_set_video_swap_interval(
-      bool vrr_runloop_enable,
-      bool crt_switching_active,
-      unsigned swap_interval_config,
-      unsigned black_frame_insertion,
-      unsigned shader_subframes,
-      float audio_max_timing_skew,
-      float video_refresh_rate,
-      double input_fps)
+      settings_t *settings)
 {
-   runloop_state_t *runloop_st = &runloop_state;
-   float core_hz               = input_fps;
-   float timing_hz             = crt_switching_active ?
-         input_fps : video_refresh_rate;
-   float swap_ratio;
-   unsigned swap_integer;
-   float timing_skew;
+   runloop_state_t *runloop_st    = &runloop_state;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   float video_refresh_rate       = settings->floats.video_refresh_rate;
+   float audio_max_timing_skew    = settings->floats.audio_max_timing_skew;
+   float input_fps                = video_st->av_info.timing.fps;
+   float timing_fps               = (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
+         ? input_fps : video_refresh_rate;
+   float swap_ratio               = 1;
+   float timing_skew              = 0;
+   unsigned swap_interval_config  = settings->uints.video_swap_interval;
+   unsigned black_frame_insertion = settings->uints.video_black_frame_insertion;
+   unsigned shader_subframes      = settings->uints.video_shader_subframes;
+   unsigned swap_integer          = 1;
+   bool vrr_runloop_enable        = settings->bools.vrr_runloop_enable;
 
    /* If automatic swap interval selection is
     * disabled, just record user-set value */
    if (swap_interval_config != 0)
    {
-      runloop_st->video_swap_interval_auto =
-            swap_interval_config;
+      runloop_st->video_swap_interval_auto = swap_interval_config;
       return;
    }
 
@@ -4425,11 +4424,12 @@ void runloop_set_video_swap_interval(
     * > If BFI is active set swap interval to 1
     * > If Shader Subframes active, set swap interval to 1 */
    if (   (vrr_runloop_enable)
-       || (core_hz    > timing_hz)
-       || (core_hz   <= 0.0f)
-       || (timing_hz <= 0.0f)
        || (black_frame_insertion)
-       || (shader_subframes > 1))
+       || (shader_subframes > 1)
+       || (input_fps   > timing_fps)
+       || (input_fps  <= 0.0f)
+       || (timing_fps <= 0.0f)
+      )
    {
       runloop_st->video_swap_interval_auto = 1;
       return;
@@ -4437,7 +4437,7 @@ void runloop_set_video_swap_interval(
 
    /* Check whether display refresh rate is an integer
     * multiple of core fps (within timing skew tolerance) */
-   swap_ratio   = timing_hz / core_hz;
+   swap_ratio   = timing_fps / input_fps;
    swap_integer = (unsigned)(swap_ratio + 0.5f);
 
    /* > Sanity check: swap interval must be in the
@@ -4449,7 +4449,7 @@ void runloop_set_video_swap_interval(
       return;
    }
 
-   timing_skew = fabs(1.0f - core_hz / (timing_hz / (float)swap_integer));
+   timing_skew = fabs(1.0f - input_fps / (timing_fps / (float)swap_integer));
 
    runloop_st->video_swap_interval_auto =
          (timing_skew <= audio_max_timing_skew) ?
@@ -6793,6 +6793,18 @@ static enum runloop_state_enum runloop_check_state(
          RARCH_SHADER_PREV,   CMD_EVENT_SHADER_PREV,
          RARCH_SHADER_TOGGLE, CMD_EVENT_SHADER_TOGGLE);
 
+   {
+      /* Check shader hold hotkey */
+      static bool old_shader_hold_button_state = false;
+      bool new_shader_hold_button_state        = BIT256_GET(
+            current_bits, RARCH_SHADER_HOLD);
+
+      if (old_shader_hold_button_state != new_shader_hold_button_state)
+         command_event(CMD_EVENT_SHADER_TOGGLE, NULL);
+
+      old_shader_hold_button_state             = new_shader_hold_button_state;
+   }
+
    if (settings->bools.video_shader_watch_files)
    {
       static rarch_timer_t timer = {0};
@@ -7825,7 +7837,7 @@ void runloop_path_set_basename(const char *path)
    runloop_state_t *runloop_st = &runloop_state;
    char *dst                   = NULL;
 
-   path_set(RARCH_PATH_CONTENT,  path);
+   path_set(RARCH_PATH_CONTENT, path);
    strlcpy(runloop_st->runtime_content_path_basename, path,
          sizeof(runloop_st->runtime_content_path_basename));
 
@@ -7855,7 +7867,10 @@ void runloop_path_set_basename(const char *path)
             "", sizeof(runloop_st->runtime_content_path_basename));
 #endif
 
-   if ((dst = strrchr(runloop_st->runtime_content_path_basename, '.')))
+   /* Truncate path to last dot, but not when the path is
+    * relative and begins with a dot. */
+   if (     (dst = strrchr(runloop_st->runtime_content_path_basename, '.'))
+         && (dst - runloop_st->runtime_content_path_basename > 0))
       *dst = '\0';
 }
 
@@ -7905,14 +7920,14 @@ void runloop_path_set_redirect(settings_t *settings,
    char new_savestate_dir[DIR_MAX_LENGTH];
    char intermediate_savefile_dir[DIR_MAX_LENGTH];
    char intermediate_savestate_dir[DIR_MAX_LENGTH];
-   runloop_state_t *runloop_st            = &runloop_state;
-   struct retro_system_info *sysinfo      = &runloop_st->system.info;
-   bool sort_savefiles_enable             = settings->bools.sort_savefiles_enable;
-   bool sort_savefiles_by_content_enable  = settings->bools.sort_savefiles_by_content_enable;
-   bool sort_savestates_enable            = settings->bools.sort_savestates_enable;
-   bool sort_savestates_by_content_enable = settings->bools.sort_savestates_by_content_enable;
-   bool savefiles_in_content_dir          = settings->bools.savefiles_in_content_dir;
-   bool savestates_in_content_dir         = settings->bools.savestates_in_content_dir;
+   runloop_state_t *runloop_st       = &runloop_state;
+   struct retro_system_info *sysinfo = &runloop_st->system.info;
+   bool sort_savefiles               = settings->bools.sort_savefiles_enable;
+   bool sort_savefiles_by_content    = settings->bools.sort_savefiles_by_content_enable;
+   bool sort_savestates              = settings->bools.sort_savestates_enable;
+   bool sort_savestates_by_content   = settings->bools.sort_savestates_by_content_enable;
+   bool savefiles_in_content_dir     = settings->bools.savefiles_in_content_dir;
+   bool savestates_in_content_dir    = settings->bools.savestates_in_content_dir;
 
    content_dir_name[0] = '\0';
 
@@ -7923,9 +7938,8 @@ void runloop_path_set_redirect(settings_t *settings,
 
    /* Get content directory name, if per-content-directory
     * saves/states are enabled */
-   if ((   sort_savefiles_by_content_enable
-        || sort_savestates_by_content_enable)
-       && !string_is_empty(runloop_st->runtime_content_path_basename))
+   if (     (sort_savefiles_by_content || sort_savestates_by_content)
+         && !string_is_empty(runloop_st->runtime_content_path_basename))
       fill_pathname_parent_dir_name(content_dir_name,
             runloop_st->runtime_content_path_basename,
             sizeof(content_dir_name));
@@ -7944,8 +7958,8 @@ void runloop_path_set_redirect(settings_t *settings,
    }
 
    /* Set savestate directory if empty based on content directory */
-   if (   string_is_empty(intermediate_savestate_dir)
-       || savestates_in_content_dir)
+   if (     string_is_empty(intermediate_savestate_dir)
+         || savestates_in_content_dir)
    {
       fill_pathname_basedir(intermediate_savestate_dir,
             runloop_st->runtime_content_path_basename,
@@ -7964,74 +7978,75 @@ void runloop_path_set_redirect(settings_t *settings,
    {
 #ifdef HAVE_MENU
       if (!string_is_equal(sysinfo->library_name,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
 #endif
       {
          /* Per-core and/or per-content-directory saves */
-         if ((sort_savefiles_enable
-              || sort_savefiles_by_content_enable)
-             && !string_is_empty(new_savefile_dir))
+         if (     (sort_savefiles || sort_savefiles_by_content)
+               && !string_is_empty(new_savefile_dir))
          {
             /* Append content directory name to save location */
-            if (sort_savefiles_by_content_enable)
-               fill_pathname_join_special(new_savefile_dir,
-                  intermediate_savefile_dir,
-                  content_dir_name,
-                  sizeof(new_savefile_dir));
+            if (sort_savefiles_by_content)
+               fill_pathname_join_special(
+                     new_savefile_dir,
+                     intermediate_savefile_dir,
+                     content_dir_name,
+                     sizeof(new_savefile_dir));
 
             /* Append library_name to the save location */
-            if (sort_savefiles_enable)
-               fill_pathname_join(new_savefile_dir,
-                  new_savefile_dir,
-                  sysinfo->library_name,
-                  sizeof(new_savefile_dir));
+            if (sort_savefiles)
+               fill_pathname_join(
+                     new_savefile_dir,
+                     new_savefile_dir,
+                     sysinfo->library_name,
+                     sizeof(new_savefile_dir));
 
             /* If path doesn't exist, try to create it,
              * if everything fails revert to the original path. */
-            if (!path_is_directory(new_savefile_dir))
-               if (!path_mkdir(new_savefile_dir))
-               {
-                  RARCH_LOG("%s %s\n",
-                            msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
-                            intermediate_savefile_dir);
-                  strlcpy(new_savefile_dir,
-                        intermediate_savefile_dir,
-                        sizeof(new_savefile_dir));
-               }
+            if (     !path_is_directory(new_savefile_dir)
+                  && !path_mkdir(new_savefile_dir))
+            {
+               RARCH_LOG("%s %s\n",
+                     msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
+                     intermediate_savefile_dir);
+               strlcpy(new_savefile_dir,
+                     intermediate_savefile_dir,
+                     sizeof(new_savefile_dir));
+            }
          }
 
          /* Per-core and/or per-content-directory savestates */
-         if ((sort_savestates_enable || sort_savestates_by_content_enable)
-             && !string_is_empty(new_savestate_dir))
+         if (     (sort_savestates || sort_savestates_by_content)
+               && !string_is_empty(new_savestate_dir))
          {
             /* Append content directory name to savestate location */
-            if (sort_savestates_by_content_enable)
+            if (sort_savestates_by_content)
                fill_pathname_join_special(
-                  new_savestate_dir,
-                  intermediate_savestate_dir,
-                  content_dir_name,
-                  sizeof(new_savestate_dir));
+                     new_savestate_dir,
+                     intermediate_savestate_dir,
+                     content_dir_name,
+                     sizeof(new_savestate_dir));
 
             /* Append library_name to the savestate location */
-            if (sort_savestates_enable)
+            if (sort_savestates)
                fill_pathname_join(
-                  new_savestate_dir,
-                  new_savestate_dir,
-                  sysinfo->library_name,
-                  sizeof(new_savestate_dir));
+                     new_savestate_dir,
+                     new_savestate_dir,
+                     sysinfo->library_name,
+                     sizeof(new_savestate_dir));
 
             /* If path doesn't exist, try to create it.
              * If everything fails, revert to the original path. */
-            if (!path_is_directory(new_savestate_dir))
-               if (!path_mkdir(new_savestate_dir))
-               {
-                  RARCH_LOG("%s %s\n",
-                            msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
-                            intermediate_savestate_dir);
-                  strlcpy(new_savestate_dir,
-                          intermediate_savestate_dir,
-                          sizeof(new_savestate_dir));
-               }
+            if (     !path_is_directory(new_savestate_dir)
+                  && !path_mkdir(new_savestate_dir))
+            {
+               RARCH_LOG("%s %s\n",
+                     msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
+                     intermediate_savestate_dir);
+               strlcpy(new_savestate_dir,
+                     intermediate_savestate_dir,
+                     sizeof(new_savestate_dir));
+            }
          }
       }
    }

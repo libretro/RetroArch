@@ -1332,6 +1332,10 @@ static void gl3_destroy_resources(gl3_t *gl)
       gl3_filter_chain_free(gl->filter_chain);
    gl->filter_chain = NULL;
 
+   if (gl->filter_chain_default)
+      gl3_filter_chain_free(gl->filter_chain_default);
+   gl->filter_chain_default = NULL;
+
    glBindVertexArray(0);
    if (gl->vao != 0)
       glDeleteVertexArrays(1, &gl->vao);
@@ -1710,14 +1714,17 @@ static bool gl3_init_default_filter_chain(gl3_t *gl)
    if (!gl->ctx_driver)
       return false;
 
-   gl->filter_chain = gl3_filter_chain_create_default(
+   if (gl->filter_chain_default)
+      return true;
+
+   gl->filter_chain_default = gl3_filter_chain_create_default(
          gl->video_info.smooth
          ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST);
 
-   if (!gl->filter_chain)
+   if (!gl->filter_chain_default)
    {
-      RARCH_ERR("Failed to create filter chain.\n");
+      RARCH_ERR("[GLCore]: Failed to create default filter chain.\n");
       return false;
    }
 
@@ -1726,6 +1733,9 @@ static bool gl3_init_default_filter_chain(gl3_t *gl)
 
 static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
 {
+   if (!gl->ctx_driver)
+      return false;
+
    gl->filter_chain = gl3_filter_chain_create_from_preset(
          shader_path,
          gl->video_info.smooth
@@ -2107,7 +2117,7 @@ static void *gl3_init(const video_info_t *video,
 
    if (!gl_check_error(&error_string))
    {
-      RARCH_ERR("%s\n", error_string);
+      RARCH_ERR("[GLCore]: %s\n", error_string);
       free(error_string);
       goto error;
    }
@@ -2650,6 +2660,7 @@ static bool gl3_frame(void *data, const void *frame,
 {
    struct gl3_filter_chain_texture texture;
    struct gl3_streamed_texture *streamed   = NULL;
+   gl3_filter_chain_t *filter_chain        = NULL;
    gl3_t *gl                               = (gl3_t*)data;
    unsigned width                          = video_info->width;
    unsigned height                         = video_info->height;
@@ -2734,26 +2745,44 @@ static bool gl3_frame(void *data, const void *frame,
       texture.padded_width  = streamed->width;
       texture.padded_height = streamed->height;
    }
-   gl3_filter_chain_set_frame_count(gl->filter_chain, frame_count);
+
+   /* Fast toggle shader filter chain logic */
+   filter_chain = gl->filter_chain;
+
+   if (!video_info->shader_active && gl->filter_chain != gl->filter_chain_default)
+   {
+      if (!gl->filter_chain_default)
+         gl3_init_default_filter_chain(gl);
+
+      if (gl->filter_chain_default)
+         filter_chain = gl->filter_chain_default;
+      else
+         return false;
+   }
+
+   if (!filter_chain && gl->filter_chain_default)
+      filter_chain = gl->filter_chain_default;
+
+   gl3_filter_chain_set_frame_count(filter_chain, frame_count);
 #ifdef HAVE_REWIND
-   gl3_filter_chain_set_frame_direction(gl->filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
+   gl3_filter_chain_set_frame_direction(filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
 #else
-   gl3_filter_chain_set_frame_direction(gl->filter_chain, 1);
+   gl3_filter_chain_set_frame_direction(filter_chain, 1);
 #endif
-   gl3_filter_chain_set_frame_time_delta(gl->filter_chain, (uint32_t)video_driver_get_frame_time_delta_usec());
+   gl3_filter_chain_set_frame_time_delta(filter_chain, (uint32_t)video_driver_get_frame_time_delta_usec());
 
-   gl3_filter_chain_set_original_fps(gl->filter_chain, video_driver_get_original_fps());
+   gl3_filter_chain_set_original_fps(filter_chain, video_driver_get_original_fps());
 
-   gl3_filter_chain_set_rotation(gl->filter_chain, retroarch_get_rotation());
+   gl3_filter_chain_set_rotation(filter_chain, retroarch_get_rotation());
 
-   gl3_filter_chain_set_core_aspect(gl->filter_chain, video_driver_get_core_aspect());
+   gl3_filter_chain_set_core_aspect(filter_chain, video_driver_get_core_aspect());
 
    /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
    uint32_t rot = retroarch_get_rotation();
    float core_aspect_rot = video_driver_get_core_aspect();
    if (rot == 1 || rot == 3)
       core_aspect_rot = 1/core_aspect_rot;
-   gl3_filter_chain_set_core_aspect_rot(gl->filter_chain, core_aspect_rot);
+   gl3_filter_chain_set_core_aspect_rot(filter_chain, core_aspect_rot);
 
    /* Sub-frame info for multiframe shaders (per real content frame).
       Should always be 1 for non-use of subframes*/
@@ -2765,13 +2794,13 @@ static bool gl3_frame(void *data, const void *frame,
            || video_info->runloop_is_paused
            || (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
         gl3_filter_chain_set_shader_subframes(
-           gl->filter_chain, 1);
+           filter_chain, 1);
      else
         gl3_filter_chain_set_shader_subframes(
-           gl->filter_chain, video_info->shader_subframes);
+           filter_chain, video_info->shader_subframes);
 
      gl3_filter_chain_set_current_shader_subframe(
-           gl->filter_chain, 1);
+           filter_chain, 1);
    }
 
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
@@ -2783,25 +2812,25 @@ static bool gl3_frame(void *data, const void *frame,
          &&  !video_info->runloop_is_paused
          &&  (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)))
       gl3_filter_chain_set_simulate_scanline(
-            gl->filter_chain, true);
+            filter_chain, true);
    else
       gl3_filter_chain_set_simulate_scanline(
-            gl->filter_chain, false);
+            filter_chain, false);
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
-   gl3_filter_chain_set_input_texture(gl->filter_chain, &texture);
-   gl3_filter_chain_build_offscreen_passes(gl->filter_chain,
+   gl3_filter_chain_set_input_texture(filter_chain, &texture);
+   gl3_filter_chain_build_offscreen_passes(filter_chain,
          &gl->filter_chain_vp);
 
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
    glClear(GL_COLOR_BUFFER_BIT);
-   gl3_filter_chain_build_viewport_pass(gl->filter_chain,
+   gl3_filter_chain_build_viewport_pass(filter_chain,
          &gl->filter_chain_vp,
          (gl->flags & GL3_FLAG_HW_RENDER_BOTTOM_LEFT)
          ? gl->mvp.data
          : gl->mvp_yflip.data);
-   gl3_filter_chain_end_frame(gl->filter_chain);
+   gl3_filter_chain_end_frame(filter_chain);
 
 #ifdef HAVE_OVERLAY
    if ((gl->flags & GL3_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
@@ -2940,9 +2969,9 @@ static bool gl3_frame(void *data, const void *frame,
       for (i = 1; i < (int) video_info->shader_subframes; i++)
       {
          gl3_filter_chain_set_shader_subframes(
-            gl->filter_chain, video_info->shader_subframes);
+            filter_chain, video_info->shader_subframes);
          gl3_filter_chain_set_current_shader_subframe(
-            gl->filter_chain, i+1);
+            filter_chain, i+1);
 
          if (!gl3_frame(gl, NULL, 0, 0, frame_count, 0, msg,
                   video_info))
@@ -2975,6 +3004,7 @@ static uint32_t gl3_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
+   BIT32_SET(flags, GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS);
 
    return flags;
 }

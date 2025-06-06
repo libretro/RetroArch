@@ -1505,18 +1505,19 @@ static int16_t input_state_device(
 #endif
             }
 
-            /* Don't allow turbo for D-pad unless explicitly allowed. */
-            if (          (id  < RETRO_DEVICE_ID_JOYPAD_UP)
-                  || (    ((settings->bools.input_turbo_allow_dpad || settings->ints.input_turbo_bind != -1)
-                       || (id  > RETRO_DEVICE_ID_JOYPAD_RIGHT))
-                       && (id <= RETRO_DEVICE_ID_JOYPAD_R3)))
+            if (id <= RETRO_DEVICE_ID_JOYPAD_R3)
             {
-               /*
-                * Apply turbo button if activated.
-                */
+               /* Apply turbo button if activated. */
                uint8_t turbo_period     = settings->uints.input_turbo_period;
                uint8_t turbo_duty_cycle = settings->uints.input_turbo_duty_cycle;
                uint8_t turbo_mode       = settings->uints.input_turbo_mode;
+
+               /* Don't allow classic mode turbo for D-pad unless explicitly allowed. */
+               if (     turbo_mode <= INPUT_TURBO_MODE_CLASSIC_TOGGLE
+                     && !settings->bools.input_turbo_allow_dpad
+                     && id >= RETRO_DEVICE_ID_JOYPAD_UP
+                     && id <= RETRO_DEVICE_ID_JOYPAD_RIGHT)
+                  break;
 
                if (turbo_duty_cycle == 0)
                   turbo_duty_cycle = turbo_period / 2;
@@ -1528,9 +1529,16 @@ static int16_t input_state_device(
 
                if (turbo_mode > INPUT_TURBO_MODE_CLASSIC_TOGGLE)
                {
-                  /* Pressing turbo button toggles turbo mode on or off.
-                   * Holding the button will
-                   * pass through, else the pressed state will be modulated by a
+                  unsigned turbo_button = settings->uints.input_turbo_button;
+                  unsigned remap_button = settings->uints.input_remap_ids[port][turbo_button];
+
+                  /* Single button modes only care about the defined button. */
+                  if (id != remap_button)
+                     break;
+
+                  /* Pressing turbo bind toggles turbo button on or off.
+                   * Holding the button will pass through, else
+                   * the pressed state will be modulated by a
                    * periodic pulse defined by the configured duty cycle.
                    */
 
@@ -1539,13 +1547,10 @@ static int16_t input_state_device(
                      input_st->turbo_btns.turbo_pressed[port] &= ~(1 << 31);
                   else if (input_st->turbo_btns.turbo_pressed[port] >= 0)
                   {
-                     unsigned turbo_button = settings->uints.input_turbo_button;
-                     unsigned remap_button = settings->uints.input_remap_ids[port][turbo_button];
-
                      input_st->turbo_btns.turbo_pressed[port] |= (1 << 31);
-                     /* Toggle turbo for selected buttons. */
-                     if (input_st->turbo_btns.enable[port] != (1 << remap_button))
-                        input_st->turbo_btns.enable[port] = (1 << remap_button);
+                     /* Toggle turbo for selected button. */
+                     if (input_st->turbo_btns.enable[port] != (1 << id))
+                        input_st->turbo_btns.enable[port] = (1 << id);
                      input_st->turbo_btns.mode1_enable[port] ^= 1;
                   }
 
@@ -1559,8 +1564,6 @@ static int16_t input_state_device(
                      {
                         uint16_t enable_new;
                         input_st->turbo_btns.turbo_pressed[port] |= 1 << id;
-                        /* Toggle turbo for pressed button but make
-                         * sure at least one button has turbo */
                         enable_new = input_st->turbo_btns.enable[port] ^ (1 << id);
                         if (enable_new)
                            input_st->turbo_btns.enable[port] = enable_new;
@@ -1579,8 +1582,8 @@ static int16_t input_state_device(
                }
                else if (turbo_mode == INPUT_TURBO_MODE_CLASSIC)
                {
-                  /* If turbo button is held, all buttons pressed except
-                   * for D-pad will go into a turbo mode. Until the button is
+                  /* If turbo button is held, all buttons pressed
+                   * will go into a turbo mode. Until the button is
                    * released again, the input state will be modulated by a
                    * periodic pulse defined by the configured duty cycle.
                    */
@@ -7195,15 +7198,56 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 
                if (ret)
                {
-                  if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff < -joypad_info.axis_threshold)
-                     BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
-                  else if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff > joypad_info.axis_threshold)
-                     BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
+                  bool playlist = false;
 
+                  /* Replace right analog stick navigation in playlists to thumbnail cycling. */
+                  if (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                  {
+                     menu_entry_t entry;
+                     MENU_ENTRY_INITIALIZE(entry);
+                     menu_entry_get(&entry, 0, 0, NULL, true);
+
+                     switch (entry.type)
+                     {
+                        case FILE_TYPE_RPL_ENTRY:
+                        case FILE_TYPE_PLAYLIST_ENTRY:
+                        case FILE_TYPE_PLAIN:
+                        case FILE_TYPE_RDB:
+                           playlist = true;
+                           break;
+                        default:
+                           break;
+                     }
+                  }
+
+                  if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff < -joypad_info.axis_threshold)
+                  {
+                     if (playlist)
+                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_Y_MINUS);
+                     else
+                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
+                  }
+                  else if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff > joypad_info.axis_threshold)
+                  {
+                     if (playlist)
+                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_Y_PLUS);
+                     else
+                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
+                  }
                   if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret / 0x7fff < -joypad_info.axis_threshold)
-                     BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
+                  {
+                     if (playlist)
+                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_X_MINUS);
+                     else
+                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
+                  }
                   else if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret / 0x7fff > joypad_info.axis_threshold)
-                     BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+                  {
+                     if (playlist)
+                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_X_PLUS);
+                     else
+                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+                  }
                }
             }
          }

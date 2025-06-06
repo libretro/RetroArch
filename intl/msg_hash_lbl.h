@@ -934,10 +934,6 @@ MSG_HASH(
    "custom_bind_all"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CUSTOM_RATIO,
-   "custom_ratio"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_DATABASE_MANAGER,
    "database_manager"
    )
@@ -4163,10 +4159,6 @@ MSG_HASH(
    "video_aspect_ratio"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_AUTO,
-   "video_aspect_ratio_auto"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
    "aspect_ratio_index"
    )
@@ -4413,10 +4405,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_FONT_SIZE,
    "video_font_size"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_FORCE_ASPECT,
-   "video_force_aspect"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE,
@@ -4833,10 +4821,6 @@ MSG_HASH(
    "content_show_history"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CONTENT_SHOW_ADD,
-   "content_show_add"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY,
    "content_show_add_entry"
    )
@@ -4855,6 +4839,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES,
    "content_show_favorites"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES_FIRST,
+   "content_show_favorites_first"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES,
@@ -5221,6 +5209,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
    "materialui_thumbnail_background_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "menu_thumbnail_background_enable"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RENAME_ENTRY,
@@ -6205,10 +6197,6 @@ MSG_HASH(
    "playlist_allow_non_png"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
-   "help_send_debug_info"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
    "vibrate_on_keypress"
    )
@@ -6621,8 +6609,8 @@ MSG_HASH(
    "input_turbo_duty_cycle"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_ALLOW_TURBO_DPAD,
-   "input_allow_turbo_dpad"
+   MENU_ENUM_LABEL_INPUT_TURBO_ALLOW_DPAD,
+   "input_turbo_allow_dpad"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,

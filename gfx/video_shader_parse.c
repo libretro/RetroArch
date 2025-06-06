@@ -3140,27 +3140,41 @@ const char *video_shader_get_current_shader_preset(void)
    return NULL;
 }
 
-void video_shader_toggle(settings_t *settings)
+void video_shader_toggle(settings_t *settings, bool write)
 {
-   bool toggle                     = !settings->bools.video_shader_enable;
+   bool enabled                    = settings->bools.video_shader_enable;
 #ifdef HAVE_MENU
    struct video_shader *menu_shdr  = menu_shader_get();
    struct menu_state *menu_st      = menu_state_get_ptr();
-   menu_shdr->flags               |=  SHDR_FLAG_MODIFIED;
 
-   if (toggle)
+   menu_shdr->flags               &= ~SHDR_FLAG_MODIFIED;
+   menu_shdr->flags               &= ~SHDR_FLAG_TEMPORARY;
+#endif
+
+   /* Cold start from hotkey requires enabling shaders initially */
+   if (!write && !enabled)
+   {
+      write   = true;
+      enabled = true;
+      configuration_set_bool(settings, settings->bools.video_shader_enable, true);
+   }
+#ifdef HAVE_MENU
+   else if (!write)
+      enabled = (menu_shdr->flags & SHDR_FLAG_DISABLED);
+#endif
+
+#ifdef HAVE_MENU
+   if (enabled)
       menu_shdr->flags            &= ~SHDR_FLAG_DISABLED;
    else
       menu_shdr->flags            |=  SHDR_FLAG_DISABLED;
+
+   if (!write && video_driver_test_all_flags(GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS))
+      menu_shdr->flags            |=  SHDR_FLAG_TEMPORARY;
 
    menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                    |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
 
    command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
-
-   /* TODO/FIXME: Due to general_write_handler being called twice,
-    * this has be done in this order in order to truly disable */
-   if (!toggle)
-      configuration_set_bool(settings, settings->bools.video_shader_enable, toggle);
 }
