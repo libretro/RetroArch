@@ -3465,7 +3465,7 @@ bool command_event(enum event_command cmd, void *data)
       /* Kiosk Mode Fix */
       case CMD_EVENT_KIOSK:
          /* If were already in Kiosk Mode, ask for the Password! */
-         if (settings->bools.kiosk_mode_enable && settings->paths.kiosk_mode_password != "")
+         if (settings->bools.kiosk_mode_enable && !string_is_empty(settings->paths.kiosk_mode_password))
          {
             menu_input_ctx_line_t line;
             line.label                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD);
