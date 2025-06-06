@@ -105,7 +105,7 @@ typedef struct surface_output
    struct wl_list link;
 } surface_output_t;
 
-struct gfx_ctx_wayland_data;
+typedef struct gfx_ctx_wayland_data gfx_ctx_wayland_data_t;
 
 typedef struct input_ctx_wayland_data
 {
@@ -143,6 +143,10 @@ typedef struct data_offer_ctx
   bool dropped;
   enum wl_data_device_manager_dnd_action supported_actions;
 } data_offer_ctx;
+
+typedef struct wayland_configuration wayland_configuration_t;
+
+typedef void (*driver_configure_handler_t)(gfx_ctx_wayland_data_t *wl);
 
 typedef struct gfx_ctx_wayland_data
 {
@@ -213,6 +217,8 @@ typedef struct gfx_ctx_wayland_data
    int num_active_touches;
    int swap_interval;
    touch_pos_t active_touch_positions[MAX_TOUCHES]; /* int32_t alignment */
+   wayland_configuration_t *pending_configuration;
+   driver_configure_handler_t driver_configure_handler;
    unsigned width;
    unsigned height;
    unsigned buffer_width;
@@ -231,7 +237,6 @@ typedef struct gfx_ctx_wayland_data
    bool maximized;
    bool resize;
    bool configured;
-   bool ignore_configuration;
    bool activated;
    bool reported_display_size;
    bool swap_complete;
@@ -267,8 +272,6 @@ extern const struct wp_fractional_scale_v1_listener wp_fractional_scale_v1_liste
 extern const struct wl_surface_listener wl_surface_listener;
 
 extern const struct xdg_wm_base_listener xdg_shell_listener;
-
-extern const struct xdg_surface_listener xdg_surface_listener;
 
 extern const struct wl_output_listener output_listener;
 
