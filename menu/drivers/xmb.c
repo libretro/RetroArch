@@ -5859,16 +5859,17 @@ static enum menu_action xmb_parse_menu_entry_action(
             }
             else
             {
-               /* Kiosk Mode Fix - Only jump to Main Menu if not in Kiosk Mode!*/
+               /* Jump to Main Menu */
                settings_t *settings      = config_get_ptr();
+               size_t i           = 0;
+               size_t current_tab = xmb->categories_selection_ptr;
+               
+               /* Kiosk Mode Fix - Only jump to Main Menu if not in Kiosk Mode!*/
                if(settings->bools.kiosk_mode_enable)
                {
                   return MENU_ACTION_NOOP;
                }
-               /* Jump to Main Menu */
-               size_t i           = 0;
-               size_t current_tab = xmb->categories_selection_ptr;
-
+               
                menu_entry_t entry;
                MENU_ENTRY_INITIALIZE(entry);
                menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
