@@ -2366,6 +2366,10 @@ MSG_HASH(
    "Skala antingen höjd eller bredd, eller både höjd och bredd. Halva steg gäller endast för källor med hög upplösning."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   "Heltalsskalning"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    "Avrunda nedåt eller uppåt till nästa heltal. ”Smart” sjunker till underskala när bilden beskärs för mycket."
    )
@@ -2420,10 +2424,34 @@ MSG_HASH(
    "Anpassa bildformat (X-position)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   "Anpassad visningsförskjutning som används för att definiera visningsområdets X-axelposition."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Anpassa bildformat (Y-position)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Anpassad visningsförskjutning som används för att definiera visningsområdets Y-axelposition."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Horisontell position för innehåll när visningsområdet är bredare än innehållets bredd. 0,0 är längst till vänster, 0,5 är i mitten och 1,0 är längst till höger."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Vertikal position för innehåll när visningsområdet är högre än innehållets höjd. 0,0 är överst, 0,5 är i mitten, 1,0 är nederst."
+   )
 #if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Horisontell position för innehåll när visningsområdet är bredare än innehållets bredd. 0,0 är längst till vänster, 0,5 är i mitten, 1,0 är längst till höger. (Stående orientering)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Vertikal position för innehåll när visningsområdet är högre än innehållets höjd. 0,0 är överst, 0,5 är i mitten, 1,0 är nederst. (Stående orientering)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2554,6 +2582,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    "Ställ in hur många bildrutor CPUn kan köra före GPUn när 'Hård GPU-synk' används."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
+   "Ställer in hur många bildrutor CPU:n kan köra i förväg för GPU:n när ”Hård GPU-synk” används. Max är 3.\n 0: Synkronisera med GPU omedelbart.\n 1: Synkronisera med föregående bildruta.\n 2: Etc ..."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -3894,6 +3926,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Mappad Port"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "Anger vilken kärnport som ska ta emot inmatning från frontend-kontrollerport %u."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
