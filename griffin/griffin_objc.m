@@ -61,6 +61,10 @@
 #include "../audio/drivers/coreaudio3.m"
 #endif
 
+#if defined(HAVE_COREAUDIO) && defined(HAVE_MICROPHONE)
+#include "../audio/drivers_microphone/coreaudio_mic.m"
+#endif
+
 #ifdef HAVE_CORELOCATION
 #include "../location/drivers/corelocation.m"
 #endif

@@ -231,7 +231,7 @@ microphone_driver_t *microphone_drivers[] = {
 #ifdef HAVE_PIPEWIRE
       &microphone_pipewire,
 #endif
-#ifdef HAVE_COREAUDIO
+#if defined(HAVE_COREAUDIO) && IOS
       &microphone_coreaudio,
 #endif
       &microphone_null,

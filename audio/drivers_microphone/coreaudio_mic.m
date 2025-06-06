@@ -208,6 +208,7 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
         rate = 48000;
     }
 
+#if TARGET_OS_IPHONE
     /// Configure audio session
     AVAudioSession *audioSession = [AVAudioSession sharedInstance];
     NSError *error = nil;
@@ -232,6 +233,9 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
     microphone->sample_rate = (int)actualRate;
 
     RARCH_LOG("[CoreAudio] Using sample rate: %d Hz\n", microphone->sample_rate);
+#else
+
+#endif
 
     /// Set format using helper method
     coreaudio_microphone_set_format(microphone, false); /// Default to 16-bit integer
