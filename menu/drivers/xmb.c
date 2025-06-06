@@ -5863,14 +5863,14 @@ static enum menu_action xmb_parse_menu_entry_action(
                settings_t *settings      = config_get_ptr();
                size_t i           = 0;
                size_t current_tab = xmb->categories_selection_ptr;
+               menu_entry_t entry;
                
                /* Kiosk Mode Fix - Only jump to Main Menu if not in Kiosk Mode!*/
                if(settings->bools.kiosk_mode_enable)
                {
                   return MENU_ACTION_NOOP;
                }
-               
-               menu_entry_t entry;
+            
                MENU_ENTRY_INITIALIZE(entry);
                menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
 
@@ -6448,6 +6448,7 @@ static bool xmb_context_reset_textures(
       const char *iconpath,
       unsigned menu_xmb_theme)
 {
+   settings_t *settings       = config_get_ptr();
    unsigned i;
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
@@ -6519,7 +6520,6 @@ static bool xmb_context_reset_textures(
       }
    }
    /* Kiosk Mode Fix - Hide Main Menu Icon if kiosk mode is enabled */
-   settings_t *settings       = config_get_ptr();
    if (!settings->bools.kiosk_mode_enable)
    {
       xmb->main_menu_node.icon       = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
