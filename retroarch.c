@@ -2985,6 +2985,38 @@ bool is_accessibility_enabled(bool accessibility_enable, bool accessibility_enab
 }
 #endif
 
+
+/* Kiosk Mode Fix - Confirm User Input - slighlty modified menu_input_st_string_cb_disable_kiosk_mode function from menu_cbs_ok.c */ 
+static void kiosk_password_input_complete(void *userdata, const char *line)
+{
+   if (line && *line)
+   {
+      const char                    *label = menu_input_dialog_get_buffer();
+      settings_t                 *settings = config_get_ptr();
+      const char *path_kiosk_mode_password =
+         settings->paths.kiosk_mode_password;
+
+      if (string_is_equal(label, path_kiosk_mode_password))
+      {
+         const char *_msg = msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_OK);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         /* Disable Kiosk Mode and Restart RetroArch! */
+         settings->bools.kiosk_mode_enable = false;
+         command_event(CMD_EVENT_RESTART_RETROARCH, NULL);  
+      }
+      else
+      {
+         const char *_msg = msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
+   }
+
+   menu_input_dialog_end();
+}
+
+
 /**
  * command_event:
  * @cmd                  : Event command index.
@@ -3430,6 +3462,24 @@ bool command_event(enum event_command cmd, void *data)
             retroarch_menu_running();
 #endif
          break;
+      /* Kiosk Mode Fix */
+      case CMD_EVENT_KIOSK:
+         /* If were already in Kiosk Mode, ask for the Password! */
+         if (settings->bools.kiosk_mode_enable && settings->paths.kiosk_mode_password != "")
+         {
+            menu_input_ctx_line_t line;
+            line.label                 = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD);
+            line.label_setting         = NULL;
+            line.type                  = 0;
+            line.idx                   = 0;
+            line.cb                    = kiosk_password_input_complete;
+            menu_input_dialog_start(&line);
+            break;
+         }
+         /* Toggle Kiosk mode then Restart Retroarch */
+         settings->bools.kiosk_mode_enable = !(settings->bools.kiosk_mode_enable);
+         command_event(CMD_EVENT_RESTART_RETROARCH, NULL);          
+         break;      
       case CMD_EVENT_RESET:
          {
             const char *_msg = msg_hash_to_str(MSG_RESET);
