@@ -9059,6 +9059,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
    file_list_t *menu_stack    = MENU_LIST_GET(menu_list, 0);
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t selection           = menu_st->selection_ptr;
+   settings_t *settings       = config_get_ptr();
    unsigned horizontal_list_size = (xmb->show_playlist_tabs)
          ? (unsigned)xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
          : 0;
