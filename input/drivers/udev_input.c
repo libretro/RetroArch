@@ -3933,6 +3933,10 @@ static void udev_input_free(void *data)
    if (!data || !udev)
       return;
 
+#ifdef __linux__
+   linux_terminal_restore_input();
+#endif
+
    if (udev->fd >= 0)
       close(udev->fd);
 
