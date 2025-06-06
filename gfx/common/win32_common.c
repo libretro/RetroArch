@@ -802,6 +802,8 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                win32_load_content_from_gui(win32_file);
          }
          break;
+      case ID_M_KIOSK:
+         command_event(CMD_EVENT_KIOSK, NULL);      
       case ID_M_RESET:
          command_event(CMD_EVENT_RESET, NULL);
          break;
@@ -2028,6 +2030,8 @@ static enum msg_hash_enums menu_id_to_label_enum(unsigned int menuId)
    {
       case ID_M_LOAD_CONTENT:
          return MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST;
+      case ID_M_KIOSK:
+         return MENU_ENUM_LABEL_VALUE_INPUT_META_KIOSK;      
       case ID_M_RESET:
          return MENU_ENUM_LABEL_VALUE_RESTART_CONTENT;
       case ID_M_QUIT:
@@ -2068,6 +2072,8 @@ static unsigned int menu_id_to_meta_key(unsigned int menu_id)
 {
    switch (menu_id)
    {
+      case ID_M_KIOSK:
+         return RARCH_KIOSK_MODE;      
       case ID_M_RESET:
          return RARCH_RESET;
       case ID_M_QUIT:
