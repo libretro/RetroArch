@@ -9578,8 +9578,8 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked = settings->bools.settings_show_file_browser;
                      break;
                   case MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD:
-                     if (kiosk_mode_enable)
-                        build_list[i].checked = true;
+                     /* Kiosk Mode Fix - Always show Kiosk Password Settings Option */
+                     build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT:
                      if (menu_screensaver_supported)
@@ -15407,6 +15407,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
 
                info->flags       |=  MD_FLAG_NEED_PUSH;
+               /* Kiosk Mode Fix - Add empty entry if list is empty */    
+               if(info->list->size <= 0 || settings->bools.kiosk_mode_enable)
+               {
+                  menu_entries_clear(info->list);
+                  menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_NO_ITEM, 0, 0, NULL);
+   
+                  info->flags       |=  MD_FLAG_NEED_REFRESH
+                                     |  MD_FLAG_NEED_PUSH;    
+                  break;
+               } 
             }
             break;
          case DISPLAYLIST_HELP:

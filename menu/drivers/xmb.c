@@ -473,6 +473,10 @@ typedef struct xmb_handle
 
    /* Whether to show entry index for current list */
    bool entry_idx_enabled;
+
+   /* Kiosk Mode Fix - Makes sure we only call our function once after menu is ready */
+   bool is_kiosk_init;
+
 } xmb_handle_t;
 
 static float xmb_scale_mod[8]   = {
@@ -5856,10 +5860,17 @@ static enum menu_action xmb_parse_menu_entry_action(
             else
             {
                /* Jump to Main Menu */
+               settings_t *settings      = config_get_ptr();
                size_t i           = 0;
                size_t current_tab = xmb->categories_selection_ptr;
-
                menu_entry_t entry;
+               
+               /* Kiosk Mode Fix - Only jump to Main Menu if not in Kiosk Mode!*/
+               if(settings->bools.kiosk_mode_enable)
+               {
+                  return MENU_ACTION_NOOP;
+               }
+            
                MENU_ENTRY_INITIALIZE(entry);
                menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
 
@@ -6437,6 +6448,7 @@ static bool xmb_context_reset_textures(
       const char *iconpath,
       unsigned menu_xmb_theme)
 {
+   settings_t *settings       = config_get_ptr();
    unsigned i;
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
@@ -6507,11 +6519,13 @@ static bool xmb_context_reset_textures(
          }
       }
    }
-
-   xmb->main_menu_node.icon       = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
-   xmb->main_menu_node.alpha      = xmb->categories_active_alpha;
-   xmb->main_menu_node.zoom       = xmb->categories_active_zoom;
-
+   /* Kiosk Mode Fix - Hide Main Menu Icon if kiosk mode is enabled */
+   if (!settings->bools.kiosk_mode_enable)
+   {
+      xmb->main_menu_node.icon       = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
+      xmb->main_menu_node.alpha      = xmb->categories_active_alpha;
+      xmb->main_menu_node.zoom       = xmb->categories_active_zoom;
+   }
    xmb->settings_tab_node.icon    = xmb->textures.list[XMB_TEXTURE_SETTINGS];
    xmb->settings_tab_node.alpha   = xmb->categories_active_alpha;
    xmb->settings_tab_node.zoom    = xmb->categories_active_zoom;
@@ -8718,7 +8732,10 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->depth                         = 1;
    xmb->old_depth                     = 1;
    xmb->alpha                         = 1.0f;
-
+   
+   /* Kiosk Mode Fix */
+   xmb->is_kiosk_init                 = false;
+   
    xmb_refresh_system_tabs_list(xmb);
 
    for (i = 0; i < XMB_TAB_MAX_LENGTH; i++)
@@ -8785,6 +8802,45 @@ error:
    file_list_deinitialize(&xmb->horizontal_list);
    RHMAP_FREE(xmb->playlist_db_node_map);
    return NULL;
+}
+
+/* Kiosk Mode Fix  */
+static void xmb_kiosk_mode_fix(xmb_handle_t *xmb)
+{
+   settings_t *settings = config_get_ptr();
+   if (settings->bools.kiosk_mode_enable)
+   {
+      /* Only jump if we have a Horizontal Menu ( if Play lists Tab is not empty ! ) */
+      /* If we have no playlists on the playlists tab, disable Kiosk mode and reset !*/
+      if((unsigned)xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) <= 0)
+      {  
+         /* Disable Kiosk Mode ( Prevents Crash when kiosk mode enabled with no playlists ) */
+         settings->bools.kiosk_mode_enable = false;
+         /* Re-Enable Main Menu Icon! */
+         xmb->main_menu_node.icon       = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
+         xmb->main_menu_node.alpha      = xmb->categories_active_alpha;
+         xmb->main_menu_node.zoom       = xmb->categories_active_zoom;   
+         /* Refresh list */      
+         xmb_refresh_system_tabs_list(xmb);
+      }
+      else
+      {
+         /* Jump one Categorie Right after init ( "hides" main menu ) */
+         /* Only happens once on init */
+         if (!xmb->is_kiosk_init)
+         {
+            struct menu_state   *menu_st = menu_state_get_ptr();
+            menu_list_t *menu_list       = menu_st->entries.list;
+
+            menu_entry_t entry;
+            MENU_ENTRY_INITIALIZE(entry);
+            menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+
+            xmb_menu_entry_action(xmb, &entry, menu_st->selection_ptr, MENU_ACTION_RIGHT);
+            xmb->is_kiosk_init = true;
+         }
+      }
+   }
 }
 
 static void xmb_free(void *data)
@@ -9004,6 +9060,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
    file_list_t *menu_stack    = MENU_LIST_GET(menu_list, 0);
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t selection           = menu_st->selection_ptr;
+   settings_t *settings       = config_get_ptr();
    unsigned horizontal_list_size = (xmb->show_playlist_tabs)
          ? (unsigned)xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
          : 0;
@@ -9053,23 +9110,54 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
          switch (action)
          {
             case MENU_ACTION_LEFT:
-               if (xmb->categories_selection_ptr == 0)
+               /* Kiosk Mode Fix - Only allow categorie movement between idx 1 and last instead of 0 ( skips main menu ) */
+               if (settings->bools.kiosk_mode_enable)
                {
-                  xmb->categories_selection_ptr = list_size;
-                  xmb->categories_active_idx    = (unsigned)(list_size - 1);
+                  if (xmb->categories_selection_ptr == 1)
+                  {
+                     xmb->categories_selection_ptr = list_size;
+                     xmb->categories_active_idx    = (unsigned)(list_size - 1);
+                  }
+                  else
+                     xmb->categories_selection_ptr--;
+                  break;
                }
                else
-                  xmb->categories_selection_ptr--;
-               break;
+               {            
+                  if (xmb->categories_selection_ptr == 0)
+                  {
+                     xmb->categories_selection_ptr = list_size;
+                     xmb->categories_active_idx    = (unsigned)(list_size - 1);
+                  }
+                  else
+                     xmb->categories_selection_ptr--;
+                  break;
+               }
             default:
-               if (xmb->categories_selection_ptr == list_size)
+               /* Kiosk Mode Fix - Only allow categorie movement between idx 1 and last instead of 0 ( skips main menu ) */
+               if (settings->bools.kiosk_mode_enable)
                {
-                  xmb->categories_selection_ptr = 0;
-                  xmb->categories_active_idx    = 1;
+                  if (xmb->categories_selection_ptr == list_size)
+                  {
+                     xmb->categories_selection_ptr = 1;
+                     xmb->categories_active_idx    = 2; 
+                  }
+                  else
+                     xmb->categories_selection_ptr++;
+                  break;
                }
                else
-                  xmb->categories_selection_ptr++;
-               break;
+               {                           
+                  if (xmb->categories_selection_ptr == list_size)
+                  {
+                     xmb->categories_selection_ptr = 0;
+                     xmb->categories_active_idx    = 1;
+                  }
+                  else
+                     xmb->categories_selection_ptr++;
+                  break;
+               }
+            
          }
 
          stack_size = menu_stack->size;
@@ -9207,7 +9295,10 @@ static void xmb_toggle(void *userdata, bool menu_on)
       xmb_fade_out(xmb);
       return;
    }
-
+   
+   /* Kiosk Mode Fix */
+   xmb_kiosk_mode_fix(xmb);
+   
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
     * 'save state' option */
