@@ -49,6 +49,10 @@
 #include <process.h>
 #endif
 
+#if defined(WEBOS)
+#include <sys/resource.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -5891,6 +5895,11 @@ int rarch_main(int argc, char *argv[], void *data)
       RARCH_ERR("FATAL: Failed to initialize the COM interface\n");
       return 1;
    }
+#endif
+
+#if defined(WEBOS)
+   struct rlimit limit = {0, 0};
+   setrlimit(RLIMIT_CORE, &limit);
 #endif
 
    rtime_init();
