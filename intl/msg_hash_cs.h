@@ -4255,6 +4255,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "Zbraň D-Pad Vpravo"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "Turbo střelba"
+   )
 
 /* Settings > Latency */
 

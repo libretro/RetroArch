@@ -4389,7 +4389,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
-   "터보"
+   "터보 입력"
    )
 
 /* Settings > Latency */

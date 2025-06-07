@@ -1411,6 +1411,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
    "סוג התקן"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "ירי טורבו"
+   )
 
 /* Settings > Latency */
 

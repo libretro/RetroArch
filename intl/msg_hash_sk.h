@@ -2771,6 +2771,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
    "Spustenie zbrane"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "Rýchlo streľba"
+   )
 
 /* Settings > Latency */
 

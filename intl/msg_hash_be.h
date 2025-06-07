@@ -4269,7 +4269,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
-   "Турба"
+   "Турба-кнопкі"
    )
 
 /* Settings > Latency */

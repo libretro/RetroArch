@@ -4051,6 +4051,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "光線槍 十字鍵 右"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "連發設定"
+   )
 
 /* Settings > Latency */
 

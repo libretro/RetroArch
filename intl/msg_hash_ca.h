@@ -4347,6 +4347,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "Creueta dreta de la pistola"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "Disparador de turbo"
+   )
 
 /* Settings > Latency */
 

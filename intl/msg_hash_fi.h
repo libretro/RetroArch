@@ -3739,6 +3739,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "Pyssy. ristiohjain oikea"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "Turbotulitus"
+   )
 
 /* Settings > Latency */
 
