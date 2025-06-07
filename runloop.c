@@ -6118,9 +6118,6 @@ static enum runloop_state_enum runloop_check_state(
    /* Check close content hotkey */
    HOTKEY_CHECK(RARCH_CLOSE_CONTENT_KEY, CMD_EVENT_CLOSE_CONTENT, true, NULL);
 
-   /* Check Kiosk hotkey */
-   HOTKEY_CHECK(RARCH_KIOSK_MODE, CMD_EVENT_KIOSK, true, NULL);
-
    /* Check FPS hotkey */
    HOTKEY_CHECK(RARCH_FPS_TOGGLE, CMD_EVENT_FPS_TOGGLE, true, NULL);
 

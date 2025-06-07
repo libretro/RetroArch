@@ -40,4 +40,3 @@
 #define ID_M_TAKE_SCREENSHOT                    40035
 #define ID_M_MUTE_TOGGLE                        40036
 #define ID_M_TOGGLE_DESKTOP                     40037
-#define ID_M_KIOSK                     			40038

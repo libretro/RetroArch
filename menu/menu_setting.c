@@ -18608,8 +18608,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
             (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
             (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
-            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_RESTART_RETROARCH);/* Kiosk Mode Fix - RESTART RETROARCH UPON SETTING KIOSK MODE!*/
-            
+
             CONFIG_STRING(
                   list, list_info,
                   settings->paths.kiosk_mode_password,

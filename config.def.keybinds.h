@@ -573,13 +573,6 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_META_KIOSK, RETROK_UNKNOWN,
-      RARCH_KIOSK_MODE, NO_BTN, NO_BTN, 0,
-      true
-   },  
-   {
-      NULL, NULL,
-      AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE, RETROK_UNKNOWN,
       RARCH_VRR_RUNLOOP_TOGGLE, NO_BTN, NO_BTN, 0,
       true
@@ -1216,13 +1209,6 @@ static const struct retro_keybind retro_keybinds_1[] = {
       RARCH_UI_COMPANION_TOGGLE, NO_BTN, NO_BTN, 0,
       true
    },
-   {
-      NULL, NULL,
-      AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_META_KIOSK, RETROK_UNKNOWN,
-      RARCH_KIOSK_MODE, NO_BTN, NO_BTN, 0,
-      true
-   }, 
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE,
@@ -1870,13 +1856,6 @@ static const struct retro_keybind retro_keybinds_1[] = {
       AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE, RETROK_F5,
       RARCH_UI_COMPANION_TOGGLE, NO_BTN, NO_BTN, 0,
-      true
-   },
-   {
-      NULL, NULL,
-      AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_META_KIOSK, RETROK_F5,
-      RARCH_KIOSK_MODE, NO_BTN, NO_BTN, 0,
       true
    },
    {
