@@ -114,6 +114,7 @@ typedef struct settings
       int replay_slot;
       int crt_switch_center_adjust;
       int crt_switch_porch_adjust;
+      int crt_switch_vertical_adjust;
 #ifdef HAVE_VULKAN
       int vulkan_gpu_index;
 #endif
