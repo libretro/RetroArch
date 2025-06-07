@@ -16116,14 +16116,6 @@ MSG_HASH(
    "Use PAL60 Mode"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_KIOSK,
-   "Kiosk Mode (Toggle)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_KIOSK,
-   "Toggles Kiosk Mode."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "Restart RetroArch"
    )

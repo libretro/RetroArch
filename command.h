@@ -43,8 +43,6 @@ enum event_command
 {
    CMD_SPECIAL = -1,
    CMD_EVENT_NONE = 0,
-   /* Toggle Kiosk Mode*/
-   CMD_EVENT_KIOSK,
    /* Resets RetroArch. */
    CMD_EVENT_RESET,
    CMD_EVENT_SET_PER_GAME_RESOLUTION,
@@ -458,7 +456,6 @@ static const struct cmd_map map[] = {
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "QUIT",                   RARCH_QUIT_KEY },
    { "CLOSE_CONTENT",          RARCH_CLOSE_CONTENT_KEY },
-   { "KIOSK_MODE",             RARCH_KIOSK_MODE },
    { "RESET",                  RARCH_RESET },
 
    { "FAST_FORWARD",           RARCH_FAST_FORWARD_KEY },

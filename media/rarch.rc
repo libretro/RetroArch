@@ -47,7 +47,6 @@ IDR_MENU MENU
             MENUITEM "Load State", ID_M_LOAD_STATE
             MENUITEM "Save State", ID_M_SAVE_STATE
         }
-        MENUITEM "Kiosk", ID_M_KIOSK
         MENUITEM "Reset", ID_M_RESET
         MENUITEM "Pause Toggle", ID_M_PAUSE_TOGGLE
         MENUITEM "Menu Toggle", ID_M_MENU_TOGGLE
