@@ -14094,7 +14094,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = -3;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_range(list, list_info, -20, 20, 2.0, true, true);
+         menu_settings_list_current_add_range(list, list_info, -50, 50, 1.0, true, true);
 
          CONFIG_INT(
 				  list, list_info,
@@ -14111,7 +14111,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = 0;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_range(list, list_info, -50, 50, 2.0, true, true);
+         menu_settings_list_current_add_range(list, list_info, -50, 100, 1.0, true, true);
 
          CONFIG_INT(
 				  list, list_info,
@@ -14128,7 +14128,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          (*list)[list_info->index - 1].offset_by     = 0;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_range(list, list_info, -10, 10, 2.0, true, true);
+         menu_settings_list_current_add_range(list, list_info, -20, 20, 1.0, true, true);
 
          CONFIG_BOOL(
                list, list_info,
