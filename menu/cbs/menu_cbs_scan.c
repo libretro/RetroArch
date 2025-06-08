@@ -258,6 +258,7 @@ static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
          return 0;
 #endif
       case FILE_TYPE_RPL_ENTRY:
+      case FILE_TYPE_DESCENDANT_ENTRY:
          BIND_ACTION_SCAN(cbs, action_switch_thumbnail);
          return 0;
 

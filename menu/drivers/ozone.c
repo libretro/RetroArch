@@ -2311,6 +2311,7 @@ static uintptr_t ozone_entries_icon_get_texture(
       case FILE_TYPE_IN_CARCHIVE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
       case FILE_TYPE_RPL_ENTRY:
+      case FILE_TYPE_DESCENDANT_ENTRY:
       case FILE_TYPE_PLAYLIST_COLLECTION:
          switch (ozone->tabs[ozone->categories_selection_ptr])
          {
@@ -3726,7 +3727,8 @@ static bool ozone_is_main_menu_playlist(void *userdata)
 
    MENU_ENTRY_INITIALIZE(entry);
    menu_entry_get(&entry, 0, 0, NULL, true);
-   return entry.type == FILE_TYPE_RPL_ENTRY;
+   return (entry.type == FILE_TYPE_RPL_ENTRY)
+         || (entry.type == FILE_TYPE_DESCENDANT_ENTRY);
 }
 
 static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
@@ -4232,7 +4234,8 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
        * to the selected entry */
       else if (list
             && (selection < list_size)
-            && (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+            && ((list->list[selection].type == FILE_TYPE_RPL_ENTRY)
+                  || (list->list[selection].type == FILE_TYPE_DESCENDANT_ENTRY)))
       {
          playlist_index        = list->list[selection].entry_idx;
 
@@ -5961,7 +5964,8 @@ border_iterate:
       if (texture)
       {
          /* Console specific icons */
-         if (     entry.type == FILE_TYPE_RPL_ENTRY
+         if (     ((entry.type == FILE_TYPE_RPL_ENTRY)
+               || (entry.type == FILE_TYPE_DESCENDANT_ENTRY))
                && ozone->categories_selection_ptr > ozone->system_tab_end)
          {
             ozone_node_t *sidebar_node = (ozone_node_t*)
@@ -6035,7 +6039,8 @@ border_iterate:
             }
          }
          /* History/Favorite console specific content icons */
-         else if (   entry.type == FILE_TYPE_RPL_ENTRY
+         else if (   ((entry.type == FILE_TYPE_RPL_ENTRY)
+                  || (entry.type == FILE_TYPE_DESCENDANT_ENTRY))
                   && show_history_icons != PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT)
          {
             switch (ozone->tabs[ozone->categories_selection_ptr])
@@ -7738,7 +7743,8 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
           * to the selected entry */
          if (      list
                && (selection < list_size)
-               && (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+               && ((list->list[selection].type == FILE_TYPE_RPL_ENTRY)
+                     || (list->list[selection].type == FILE_TYPE_DESCENDANT_ENTRY)))
          {
             selection = list->list[selection].entry_idx;
             pl        = playlist_get_cached();
@@ -8016,6 +8022,7 @@ static bool ozone_manage_available(ozone_handle_t *ozone, size_t current_selecti
    {
       case FILE_TYPE_PLAYLIST_COLLECTION:
       case FILE_TYPE_RPL_ENTRY:
+      case FILE_TYPE_DESCENDANT_ENTRY:
          return true;
       default:
          break;
@@ -12345,7 +12352,8 @@ static void ozone_populate_entries(
 
                if (!list || (list->size < 1))
                   goto_sidebar         = true;
-               else if ((list->list[0].type != FILE_TYPE_RPL_ENTRY))
+               else if ((list->list[0].type != FILE_TYPE_RPL_ENTRY)
+                     || (list->list[0].type != FILE_TYPE_DESCENDANT_ENTRY))
                   goto_sidebar         = true;
 
                if (goto_sidebar)
@@ -12405,6 +12413,7 @@ static void ozone_populate_entries(
       ozone->flags &= ~OZONE_FLAG_IS_FILE_LIST;
 
    if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST)))
       ozone->flags2 |=  OZONE_FLAG2_IS_QUICK_MENU;

@@ -79,6 +79,11 @@ int action_cancel_pop_default(const char *path,
          filebrowser_clear_type();
    }
 
+   if (menu_type == DISPLAYLIST_DESCENDANT
+         && menu_st->driver_ctx
+         && menu_st->driver_ctx->refresh_thumbnail_image)
+      menu_st->driver_ctx->refresh_thumbnail_image(menu_st->userdata, menu_st->selection_ptr);
+
    new_selection_ptr      = menu_st->selection_ptr;
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
    menu_st->selection_ptr = new_selection_ptr;

@@ -2953,6 +2953,10 @@ MSG_HASH(
    "playlist_entry"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DESCENDANT_ENTRY,
+   "descendant_entry"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_SETTINGS,
    "playlist_settings"
    )
@@ -4957,6 +4961,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,
    "deferred_rpl_entry_actions"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS,
+   "deferred_descendant_entry_actions"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_SETTINGS,

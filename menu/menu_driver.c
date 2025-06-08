@@ -1062,7 +1062,8 @@ size_t menu_entries_get_title(char *s, size_t len)
       const char *label       = (list->size) ? list->list[list->size - 1].label : NULL;
 
       /* Show playlist entry instead of "Quick Menu" */
-      if (string_is_equal(label, "deferred_rpl_entry_actions"))
+      if (string_is_equal(label, "deferred_rpl_entry_actions")
+            || string_is_equal(label, "deferred_descendant_entry_actions"))
       {
          playlist_t *playlist  = playlist_get_cached();
          if (playlist)
@@ -7907,6 +7908,16 @@ int generic_menu_entry_action(
              )
          {
             flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
+            break;
+         }
+         else if (    string_is_equal(parent_label,
+                 msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS))
+              && (!string_is_empty(deferred_path)
+              && !string_is_empty(content_path)
+              && string_is_equal(deferred_path, content_path))
+             )
+         {
+            flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS);
             break;
          }
          /* If core was launched via 'Contentless Cores' menu,

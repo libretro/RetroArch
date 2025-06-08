@@ -1035,6 +1035,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_RDB:
          case FILE_TYPE_RDB_ENTRY:
          case FILE_TYPE_RPL_ENTRY:
+         case FILE_TYPE_DESCENDANT_ENTRY:
          case FILE_TYPE_SHADER:
          case FILE_TYPE_SHADER_PRESET:
          case FILE_TYPE_IMAGE:

@@ -7210,6 +7210,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                      switch (entry.type)
                      {
                         case FILE_TYPE_RPL_ENTRY:
+                        case FILE_TYPE_DESCENDANT_ENTRY:
                         case FILE_TYPE_PLAYLIST_ENTRY:
                         case FILE_TYPE_PLAIN:
                         case FILE_TYPE_RDB:
