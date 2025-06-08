@@ -1,5 +1,6 @@
 # Future
 - APPLE: Include sameduck, gearcoleco, geargrafx core in App Store builds
+- AUDIO: Microphone CoreAudio driver for iOS and macOS
 - CAMERA: Use ffmpeg libavfilter virtual input device as default
 - CHEEVOS: Show additional message for unsupported achievements
 - CLOUDSYNC: Enable icloud_drive cloud sync backend on MacOS / iOS
