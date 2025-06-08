@@ -1558,20 +1558,8 @@ MSG_HASH(
    "Mengganti ke resolusi lokal atau super ultra lebar."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "Pemusatan Sumbu-X"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Atur opsi ini jika gambar tidak dapat ditampilkan memusat semestinya."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "Serambi Sesuaikan"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "Atur opsi ini untuk menyesuaikan pengaturan teras untuk mengubah ukuran gambar."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,

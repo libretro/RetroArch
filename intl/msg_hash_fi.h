@@ -1978,20 +1978,8 @@ MSG_HASH(
    "Vaihda natiivin ja ultraleveän superresoluution välillä."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "X-akselin keskitys"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Vaihdä tätä asetusta, jos kuva ei ole keskitetty oikein näytöllä."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "Säädä porch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "Selaa näitä asetuksia, jotta voit säätää porch-asetuksia kuvan koon muuttamiseksi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,

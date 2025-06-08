@@ -2098,20 +2098,8 @@ MSG_HASH(
    "ネイティブとウルトラワイドの超解像度を切り替えます。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "X 軸センタリング"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "画像がディスプレイ上で正しく中央寄せされていない場合はこのオプションを微調整してください。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "ポーチの調整"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "これらのオプションを微調整し、ポーチの設定を合わせ画像のサイズを変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,

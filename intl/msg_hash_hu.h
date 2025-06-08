@@ -2102,20 +2102,8 @@ MSG_HASH(
    "Váltás az eredeti és az ultraszéles szuperfelbontások közt."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "Vízszintes központosítás"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Ha a kép nincs középen a megjelenítőn, próbáld változtatni az értékeket."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "Szinkronvállak állítása"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "A szinkronvállak különféle beállítása változtathat a képméreten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,

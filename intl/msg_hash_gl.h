@@ -2110,20 +2110,8 @@ MSG_HASH(
    "Cambia entre super resolucións nativas ou ultraanchas."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "Centrado do eixo X"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Vai xirando sobre estas opcións se a imaxe non está correctamente centrada na pantalla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "Axuste de porche"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "Vai xirando sobre estas opcións para axustar os axustes de porche para cambiar o tamaño de imaxe."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,

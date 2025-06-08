@@ -1638,20 +1638,8 @@ MSG_HASH(
    "Prepínanie medzi natívnym a ultraširokým super rozlíšením."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "Centrovanie X-Axis"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Ak obraz nie je správne vycentrovaný na displeji, môžete prenastaviť tieto možnosti."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "Porch Nastevenie"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "Pomocou týchto možností môžete upravovať nastavenia verandy a meniť veľkosť obrázka."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,

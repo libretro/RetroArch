@@ -2114,20 +2114,8 @@ MSG_HASH(
    "Пераключэнне паміж роднымі ды ўльтрашырокімі суперраздзяляльнасцямі."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "Цэнтраванне па восі X"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Прайдзіце праз гэтыя наладкі, калі выява не належным чынам адцэнтравана на дысплэі."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "Карэкцыя імпульсу"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "Прайдзіце праз гэтыя наладкі, каб наладзіць карэкцыю імпульсу для змены памеру выявы."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,

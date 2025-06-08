@@ -2082,20 +2082,8 @@ MSG_HASH(
    "Passa dalle risoluzioni native a risoluzioni super e ultralarghe."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "Centraggio dell'asse X"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Utilizzare queste opzioni se l'immagine non è centrata correttamente sullo schermo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "Regolazione portico"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "Scorri queste opzioni per regolare le impostazioni del portico per cambiare la dimensione dell'immagine."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
