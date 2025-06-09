@@ -2547,7 +2547,6 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             float target_ratio        = (float)content_width / (float)content_height;
             float underscale_ratio    = 0;
             float overscale_ratio     = 0;
-            uint16_t content_width_ar = content_width;
             uint16_t height_threshold = height * 1.12f;
             uint8_t overscale_w       = 0;
             uint8_t overscale_h       = 0;
