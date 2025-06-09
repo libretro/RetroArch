@@ -1,9 +1,42 @@
 # Future
+- APPLE: Include sameduck, gearcoleco, geargrafx core in App Store builds
+- AUDIO: Microphone CoreAudio driver for iOS and macOS
+- CAMERA: Use ffmpeg libavfilter virtual input device as default
+- CHEEVOS: Show additional message for unsupported achievements
+- CLOUDSYNC: Enable icloud_drive cloud sync backend on MacOS / iOS
+- CLOUDSYNC: Don't always trust the server hash
+- CLOUDSYNC: Enable WebDAV support for Android
 - EMSCRIPTEN: Support suspend screensaver
 - EMSCRIPTEN/RWEBCAM: Fix camera driver
 - EMSCRIPTEN/RWEBINPUT: Add accelerometer/gyroscope support
 - EMSCRIPTEN/RWEBPAD: Add rumble support
 - EMSCRIPTEN/RWEBAUDIO: Rewrite driver, set as default audio driver
+- INPUT: Default key and mouse binds for lightgun Start and Select buttons
+- INPUT: Turbo mode corrections
+- INPUT: Turbo fire settings are now saved to remaps, not to overrides
+- INPUT: Fix menu usage when OK/Cancel has mouse binds
+- INPUT: Ignore menu mouse startup position before moving
+- INPUT: Fix heavy slowdown when using Bluetooth XInput controllers with rumble
+- INPUT/UDEV: Fix lost terminal settings after restart from menu
+- MENU: Common Thumbnail Background option for all menu drivers
+- MENU: Move core options reset from Settings/Configuration to Main Menu / Configuration Files
+- MENU: Use right analog stick for thumbnail cycling in playlists
+- MENU: Option to always suggest cores, even when a core is already loaded
+- MENU: Option to show Favorites before History
+- MENU: Media history playlists are now visible in playlist manager
+- MENU: Import Content visibility defaults reverted
+- MENU: Update CRTSwitchRes menu options for future use
+- MENU/XMB: Select button toggles thumbnails in playlists
+- MENU/XMB,OZONE: Fix content icons when playlist tabs are hidden
+- NETWORK: Fixes for nmcli wifi driver
+- NETWORK: Network command interface enabled for Android, iOS, TVOS
+- SAVESTATES: Savestate thumbnails are default enabled for x86_64 builds
+- VIDEO: Fix auto swap interval setup
+- VIDEO: Improvements for integer scale half scaling
+- VIDEO/SHADER: Shader hold function, useful for some lightguns and shader comparison
+- VIDEO/WAYLAND: Support for xdg-toplevel-icon-v1
+- WEBOS: Various fixes and tunings
+- WEBOS: Disable core dumps
 
 # 1.21.0
 - 3DS: Fix unique IDs for newer cores
