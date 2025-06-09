@@ -48,8 +48,10 @@ typedef struct videocrt_switch
 
    int center_adjust;
    int porch_adjust;
+   int vert_adjust;
    int tmp_porch_adjust;
    int tmp_center_adjust;
+   int tmp_vert_adjust;
    int rtn;
    int interlace;
    int doublescan;
@@ -85,7 +87,8 @@ void crt_switch_res_core(
       bool dynamic,
       int super_width,
       bool hires_menu,
-      unsigned video_aspect_ratio_idx);
+      unsigned video_aspect_ratio_idx,
+      int crt_switch_vert_adjust);
 
 void crt_destroy_modes(videocrt_switch_t *p_switch);
 

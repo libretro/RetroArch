@@ -2890,6 +2890,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;
    video_info->crt_switch_center_adjust    = settings->ints.crt_switch_center_adjust;
    video_info->crt_switch_porch_adjust     = settings->ints.crt_switch_porch_adjust;
+   video_info->crt_switch_vert_adjust      = settings->ints.crt_switch_vertical_adjust;
    video_info->crt_switch_hires_menu       = settings->bools.crt_switch_hires_menu;
    video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
    video_info->bfi_dark_frames             = settings->uints.video_bfi_dark_frames;
@@ -4363,8 +4364,8 @@ void video_driver_frame(const void *data, unsigned width,
             dynamic_super_width,
             video_info.crt_switch_resolution_super,
             video_info.crt_switch_hires_menu,
-            config_get_ptr()->uints.video_aspect_ratio_idx
-            );
+            config_get_ptr()->uints.video_aspect_ratio_idx,
+            video_info.crt_switch_vert_adjust);
    }
    else if (!video_info.crt_switch_resolution)
 #endif
