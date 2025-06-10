@@ -73,6 +73,11 @@ struct conn_pool_entry
 static struct conn_pool_entry *conn_pool = NULL;
 #ifdef HAVE_THREADS
 static slock_t *conn_pool_lock = NULL;
+#define LOCK_POOL() slock_lock(conn_pool_lock)
+#define UNLOCK_POOL() slock_unlock(conn_pool_lock)
+#else
+#define LOCK_POOL()
+#define UNLOCK_POOL()
 #endif
 
 struct http_t
@@ -142,6 +147,11 @@ static const retro_time_t dns_cache_timeout = 1000 /* usec/ms */ * 1000 /* ms/s 
 static const retro_time_t dns_cache_fail_timeout = 1000 /* usec/ms */ * 1000 /* ms/s */ * 30 /* s */;
 #ifdef HAVE_THREADS
 static slock_t *dns_cache_lock = NULL;
+#define LOCK_DNS_CACHE() slock_lock(dns_cache_lock)
+#define UNLOCK_DNS_CACHE() slock_unlock(dns_cache_lock)
+#else
+#define LOCK_DNS_CACHE()
+#define UNLOCK_DNS_CACHE()
 #endif
 
 /**
@@ -637,9 +647,8 @@ static void net_http_conn_pool_remove(struct conn_pool_entry *entry)
    struct conn_pool_entry *current;
    if (!entry)
       return;
-#ifdef HAVE_THREADS
-   slock_lock(conn_pool_lock);
-#endif
+
+   LOCK_POOL();
    current = conn_pool;
    while (current)
    {
@@ -650,17 +659,13 @@ static void net_http_conn_pool_remove(struct conn_pool_entry *entry)
          else
             conn_pool = current->next;
          net_http_conn_pool_free(current);
-#ifdef HAVE_THREADS
-         slock_unlock(conn_pool_lock);
-#endif
+         UNLOCK_POOL();
          return;
       }
       prev = current;
       current = current->next;
    }
-#ifdef HAVE_THREADS
-   slock_unlock(conn_pool_lock);
-#endif
+   UNLOCK_POOL();
 }
 
 /* *NOT* thread safe, caller must lock */
@@ -756,9 +761,7 @@ static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int p
 {
    struct conn_pool_entry *entry;
 
-#ifdef HAVE_THREADS
-   slock_lock(conn_pool_lock);
-#endif
+   LOCK_POOL();
 
    net_http_conn_pool_remove_expired();
 
@@ -769,16 +772,12 @@ static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int p
       {
          entry->in_use = true;
          net_http_conn_pool_move_to_end(entry);
-#ifdef HAVE_THREADS
-         slock_unlock(conn_pool_lock);
-#endif
+         UNLOCK_POOL();
          return entry;
       }
       entry = entry->next;
    }
-#ifdef HAVE_THREADS
-   slock_unlock(conn_pool_lock);
-#endif
+   UNLOCK_POOL();
    return NULL;
 }
 
@@ -793,13 +792,9 @@ static struct conn_pool_entry *net_http_conn_pool_add(const char *domain, int po
    entry->in_use = true;
    entry->ssl = ssl;
    entry->connected = false;
-#ifdef HAVE_THREADS
-   slock_lock(conn_pool_lock);
-#endif
+   LOCK_POOL();
    net_http_conn_pool_move_to_end(entry);
-#ifdef HAVE_THREADS
-   slock_unlock(conn_pool_lock);
-#endif
+   UNLOCK_POOL();
    return entry;
 }
 
@@ -857,25 +852,17 @@ static void net_http_resolve(void *data)
    hints.ai_socktype = SOCK_STREAM;
    hints.ai_flags |= AI_NUMERICSERV;
 
-#ifdef HAVE_THREADS
-   slock_lock(dns_cache_lock);
-#endif
+   LOCK_DNS_CACHE();
    domain = strdup(entry->domain);
    port = entry->port;
-#ifdef HAVE_THREADS
-   slock_unlock(dns_cache_lock);
-#endif
+   UNLOCK_DNS_CACHE();
 
    if (!network_init())
    {
-#ifdef HAVE_THREADS
-      slock_lock(dns_cache_lock);
-#endif
+      LOCK_DNS_CACHE();
       entry->valid = true;
       entry->addr = NULL;
-#ifdef HAVE_THREADS
-      slock_unlock(dns_cache_lock);
-#endif
+      UNLOCK_DNS_CACHE();
       free(domain);
       return;
    }
@@ -885,14 +872,10 @@ static void net_http_resolve(void *data)
    getaddrinfo_retro(domain, port_buf, &hints, &addr);
    free(domain);
 
-#ifdef HAVE_THREADS
-   slock_lock(dns_cache_lock);
-#endif
+   LOCK_DNS_CACHE();
    entry->valid = true;
    entry->addr = addr;
-#ifdef HAVE_THREADS
-   slock_unlock(dns_cache_lock);
-#endif
+   UNLOCK_DNS_CACHE();
 }
 
 static bool net_http_new_socket(struct http_t *state)
@@ -905,7 +888,11 @@ static bool net_http_new_socket(struct http_t *state)
 
    if (!dns_cache_lock)
       dns_cache_lock = slock_new();
-   slock_lock(dns_cache_lock);
+   LOCK_DNS_CACHE();
+
+   /* need some place to create this, I guess */
+   if (!conn_pool_lock)
+      conn_pool_lock = slock_new();
 #endif
 
    entry = net_http_dns_cache_find(state->request.domain, state->request.port);
@@ -916,27 +903,21 @@ static bool net_http_new_socket(struct http_t *state)
          int fd;
          if (!entry->addr)
          {
-#ifdef HAVE_THREADS
-            slock_unlock(dns_cache_lock);
-#endif
+            UNLOCK_DNS_CACHE();
             return false;
          }
          addr = entry->addr;
          fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
          if (fd >= 0)
             state->conn = net_http_conn_pool_add(state->request.domain, state->request.port, fd, state->ssl);
-#ifdef HAVE_THREADS
          /* still waiting on thread */
-         slock_unlock(dns_cache_lock);
-#endif
+         UNLOCK_DNS_CACHE();
          return (fd >= 0);
       }
       else
       {
-#ifdef HAVE_THREADS
          /* still waiting on thread */
-         slock_unlock(dns_cache_lock);
-#endif
+         UNLOCK_DNS_CACHE();
          return true;
       }
    }
@@ -952,9 +933,7 @@ static bool net_http_new_socket(struct http_t *state)
 #endif
    }
 
-#ifdef HAVE_THREADS
-   slock_unlock(dns_cache_lock);
-#endif
+   UNLOCK_DNS_CACHE();
 
    return true;
 }
