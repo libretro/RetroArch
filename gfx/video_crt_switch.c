@@ -305,6 +305,8 @@ static void switch_res_crt(
    {
       int ret;
       int flags = 0;
+      int temph = 640;
+      int tempw = 480;
       char current_core_name[NAME_MAX_LENGTH];
       char current_content_dir[DIR_MAX_LENGTH];
       double rr              = p_switch->ra_core_hz;
@@ -313,10 +315,10 @@ static void switch_res_crt(
       const char* hSize = (const char*)_hSize;
       const char* hShift = (const char*)_hShift;
       const char* vShift = (const char*)_vShift;
+
+      if (p_switch->rotated)
+         flags |= SR_MODE_ROTATED;
       
-      sr_set_option(SR_OPT_H_SIZE, hSize);
-      sr_set_option(SR_OPT_H_SHIFT, hShift);
-      sr_set_option(SR_OPT_V_SHIFT, vShift);
       /* Check for core and content changes in case we need
          to make any adjustments */
       if (string_is_empty(_core_name))
@@ -340,8 +342,37 @@ static void switch_res_crt(
          p_switch->hh_core = false;
       }
 
-      if (p_switch->rotated)
-         flags |= SR_MODE_ROTATED;
+      #if defined(_WIN32)
+      if (p_switch->center_adjust  != p_switch->tmp_center_adjust ||
+         p_switch->vert_adjust   != p_switch->tmp_vert_adjust)
+      {
+
+         if (w > 320 || h > 240)
+         {
+            temph = 240;
+            tempw = 320;
+            RARCH_LOG("[CRT]: SR temporary mode for windows geometry adjustment (320x240)\n");
+         }else{
+
+            RARCH_LOG("[CRT]: SR temporary mode for windows geometry adjustment (640x400)\n");
+         }
+   
+         ret = sr_add_mode(tempw, temph, rr, flags, &srm);
+
+         if (!ret)
+            RARCH_ERR("[CRT]: SR failed to add temporary mode for windows geometry adjustment\n");
+         else
+         {
+            ret = sr_set_mode(srm.id);
+            RARCH_LOG("[CRT]: SR added temporary mode for windows geometry adjustment\n");
+         }
+           
+      }
+      #endif
+
+      sr_set_option(SR_OPT_H_SIZE, hSize);
+      sr_set_option(SR_OPT_H_SHIFT, hShift);
+      sr_set_option(SR_OPT_V_SHIFT, vShift);
 
       RARCH_DBG("%dx%d rotation: %d rotated: %d core rotation:%d\n", w, h, p_switch->rotated, flags & SR_MODE_ROTATED, retroarch_get_rotation());
       ret = sr_add_mode(w, h, rr, flags, &srm);
