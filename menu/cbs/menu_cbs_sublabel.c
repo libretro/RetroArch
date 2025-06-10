@@ -2530,6 +2530,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_crt_switchres_porch_adjust);
             break;
+         case MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_crt_switchres_vertical_adjust);
+            break;
          case MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_crt_switchres_use_custom_refresh_rate);
             break;
