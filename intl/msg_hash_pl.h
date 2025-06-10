@@ -2094,10 +2094,6 @@ MSG_HASH(
    "Przebiegnij przez te opcje, aby dostosować ustawienia poziome, aby zmienić rozmiar obrazu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
-   "Rozmiar pionowy"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "Użyj menu wysokiej rozdzielczości"
    )
