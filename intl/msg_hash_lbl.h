@@ -4963,10 +4963,6 @@ MSG_HASH(
    "deferred_rpl_entry_actions"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS,
-   "deferred_descendant_entry_actions"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_OVERLAY_SETTINGS,
    "overlay_settings"
    )

@@ -1062,8 +1062,7 @@ size_t menu_entries_get_title(char *s, size_t len)
       const char *label       = (list->size) ? list->list[list->size - 1].label : NULL;
 
       /* Show playlist entry instead of "Quick Menu" */
-      if (string_is_equal(label, "deferred_rpl_entry_actions")
-            || string_is_equal(label, "deferred_descendant_entry_actions"))
+      if (string_is_equal(label, "deferred_rpl_entry_actions"))
       {
          playlist_t *playlist  = playlist_get_cached();
          if (playlist)
@@ -3331,6 +3330,7 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
                     || (type == MENU_IMAGES_TAB)
                     || (type == MENU_MUSIC_TAB)
                     || (type == MENU_VIDEO_TAB)
+                    || (type == FILE_TYPE_DESCENDANT_ENTRY)
                     || (type == FILE_TYPE_PLAYLIST_COLLECTION);
 
    if (!filter_enabled && !string_is_empty(label))
@@ -7911,13 +7911,13 @@ int generic_menu_entry_action(
             break;
          }
          else if (    string_is_equal(parent_label,
-                 msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS))
+                 msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY))
               && (!string_is_empty(deferred_path)
               && !string_is_empty(content_path)
               && string_is_equal(deferred_path, content_path))
              )
          {
-            flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS);
+            flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY);
             break;
          }
          /* If core was launched via 'Contentless Cores' menu,

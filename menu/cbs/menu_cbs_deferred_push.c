@@ -250,7 +250,6 @@ GENERIC_DEFERRED_PUSH(deferred_push_accounts_facebook_list,         DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_help,                           DISPLAYLIST_HELP_SCREEN_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_rdb_entry_detail,               DISPLAYLIST_DATABASE_ENTRY)
 GENERIC_DEFERRED_PUSH(deferred_push_rpl_entry_actions,              DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS)
-GENERIC_DEFERRED_PUSH(deferred_push_descendant_entry_actions,       DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS)
 GENERIC_DEFERRED_PUSH(deferred_push_core_list_deferred,             DISPLAYLIST_CORES_SUPPORTED)
 GENERIC_DEFERRED_PUSH(deferred_push_core_collection_list_deferred,  DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
 GENERIC_DEFERRED_PUSH(deferred_push_menu_sounds_list,               DISPLAYLIST_MENU_SOUNDS_LIST)
@@ -621,7 +620,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_default, PUSH_DEFAULT, DISPLAYLIST_D
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_favorites_list, PUSH_DEFAULT, DISPLAYLIST_FAVORITES)
 
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_playlist_list, PUSH_DEFAULT, DISPLAYLIST_PLAYLIST)
-GENERIC_DEFERRED_PUSH_GENERAL(deferred_descendant_list, PUSH_DEFAULT, DISPLAYLIST_DESCENDANT)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_descendant_list, PUSH_DEFAULT, DISPLAYLIST_DESCENDANT_LIST)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_music_history_list, PUSH_DEFAULT, DISPLAYLIST_MUSIC_HISTORY)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_image_history_list, PUSH_DEFAULT, DISPLAYLIST_IMAGES_HISTORY)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_video_history_list, PUSH_DEFAULT, DISPLAYLIST_VIDEO_HISTORY)
@@ -777,7 +776,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_MUSIC, deferred_music_list},
       {MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST, deferred_music_history_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST, deferred_playlist_list},
-      {MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS, deferred_descendant_list},
+      {MENU_ENUM_LABEL_DESCENDANT_ENTRY, deferred_descendant_list},
       {MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST, deferred_image_history_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST, deferred_video_history_list},
       {MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST, deferred_explore_list},
@@ -791,7 +790,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DISC_INFORMATION, deferred_push_disc_information},
       {MENU_ENUM_LABEL_SYSTEM_INFORMATION, deferred_push_system_information},
       {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS, deferred_push_rpl_entry_actions},
-      {MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS, deferred_push_descendant_entry_actions},
       {MENU_ENUM_LABEL_DEFERRED_NETPLAY, deferred_push_netplay_sublist},
       {MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST, deferred_push_driver_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST, deferred_push_video_settings_list},

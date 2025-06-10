@@ -9506,7 +9506,7 @@ static void materialui_populate_entries(void *data, const char *path,
                            | MUI_FLAG_IS_DROPDOWN_LIST);
 
    if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))

@@ -7385,7 +7385,7 @@ static void rgui_populate_entries(
 
    /* Check whether we are currently viewing a playlist */
    if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
@@ -7403,7 +7403,6 @@ static void rgui_populate_entries(
 
    /* Determine whether this is the quick menu */
    if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST)))
       rgui->flags |=  RGUI_FLAG_IS_QUICK_MENU;

@@ -1078,13 +1078,13 @@ int generic_action_ok_displaylist_push(
          break;
       case ACTION_OK_DL_DESCENDANT_ENTRY:
          fill_pathname_expand_special(menu->deferred_path, label, sizeof(menu->deferred_path));
-         info_label = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS);
+         info_label = msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY);
          info_path = menu->deferred_path;
-         info.enum_idx                 = MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS;
+         info.enum_idx                 = MENU_ENUM_LABEL_DESCENDANT_ENTRY;
          info.directory_ptr            = idx;
          menu->rpl_entry_selection_ptr = (unsigned)entry_idx;
-         dl_type                       = DISPLAYLIST_GENERIC;
-         info.type                     = DISPLAYLIST_DESCENDANT;
+         dl_type                       = DISPLAYLIST_DESCENDANT;
+         info.type                     = type;
          break;
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
          filebrowser_clear_type();

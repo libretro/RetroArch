@@ -1850,7 +1850,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER,                      action_get_title_dropdown_item},
 #endif
       {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,                                          action_get_quick_menu_views_settings_list},
-      {MENU_ENUM_LABEL_DEFERRED_DESCENDANT_ENTRY_ACTIONS,                                   action_get_quick_menu_views_settings_list},
+      {MENU_ENUM_LABEL_DESCENDANT_ENTRY,                                                    action_get_title_deferred_playlist_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST,                                              action_get_title_deferred_playlist_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS,                                  action_get_title_deferred_playlist_list},
       {MENU_ENUM_LABEL_PLAYLISTS_TAB,                                                       action_get_title_collection},
@@ -1864,6 +1864,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 
    if (cbs->enum_idx != MENU_ENUM_LABEL_PLAYLIST_ENTRY &&
        cbs->enum_idx != MENU_ENUM_LABEL_EXPLORE_ITEM &&
+       cbs->enum_idx != MENU_ENUM_LABEL_DESCENDANT_ENTRY &&
        menu_cbs_init_bind_title_compare_label(cbs, label) == 0)
       return 0;
 

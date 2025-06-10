@@ -15438,6 +15438,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_FILE_BROWSER_SELECT_CORE:
          case DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION:
          case DISPLAYLIST_GENERIC:
+         case DISPLAYLIST_DESCENDANT:
             info->flags         |=  MD_FLAG_NEED_NAVIGATION_CLEAR;
             /* fall-through */
          case DISPLAYLIST_PENDING_CLEAR:
@@ -15616,7 +15617,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             use_filebrowser    = true;
             break;
          case DISPLAYLIST_PLAYLIST:
-         case DISPLAYLIST_DESCENDANT:
+         case DISPLAYLIST_DESCENDANT_LIST:
             {
                const char *_msg = path_basename_nocompression(info->path);
                menu_entries_clear(info->list);
