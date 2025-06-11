@@ -39,23 +39,22 @@ enum d3d11_state_flags
 {
    D3D11_ST_FLAG_VSYNC               = (1 << 0),
    D3D11_ST_FLAG_WAITABLE_SWAPCHAINS = (1 << 1),
-   D3D11_ST_FLAG_WAIT_FOR_VBLANK     = (1 << 2),
-   D3D11_ST_FLAG_RESIZE_CHAIN        = (1 << 3),
-   D3D11_ST_FLAG_KEEP_ASPECT         = (1 << 4),
-   D3D11_ST_FLAG_RESIZE_VIEWPORT     = (1 << 5),
-   D3D11_ST_FLAG_RESIZE_RTS          = (1 << 6), /* RT = Render Target */
-   D3D11_ST_FLAG_INIT_HISTORY        = (1 << 7),
-   D3D11_ST_FLAG_HAS_FLIP_MODEL      = (1 << 8),
-   D3D11_ST_FLAG_HAS_ALLOW_TEARING   = (1 << 9),
-   D3D11_ST_FLAG_HW_IFACE_ENABLE     = (1 << 10),
-   D3D11_ST_FLAG_HDR_SUPPORT         = (1 << 11),
-   D3D11_ST_FLAG_HDR_ENABLE          = (1 << 12),
-   D3D11_ST_FLAG_SPRITES_ENABLE      = (1 << 13),
-   D3D11_ST_FLAG_OVERLAYS_ENABLE     = (1 << 14),
-   D3D11_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 15),
-   D3D11_ST_FLAG_MENU_ENABLE         = (1 << 16),
-   D3D11_ST_FLAG_MENU_FULLSCREEN     = (1 << 17),
-   D3D11_ST_FLAG_FRAME_DUPE_LOCK     = (1 << 18)
+   D3D11_ST_FLAG_RESIZE_CHAIN        = (1 << 2),
+   D3D11_ST_FLAG_KEEP_ASPECT         = (1 << 3),
+   D3D11_ST_FLAG_RESIZE_VIEWPORT     = (1 << 4),
+   D3D11_ST_FLAG_RESIZE_RTS          = (1 << 5), /* RT = Render Target */
+   D3D11_ST_FLAG_INIT_HISTORY        = (1 << 6),
+   D3D11_ST_FLAG_HAS_FLIP_MODEL      = (1 << 7),
+   D3D11_ST_FLAG_HAS_ALLOW_TEARING   = (1 << 8),
+   D3D11_ST_FLAG_HW_IFACE_ENABLE     = (1 << 9),
+   D3D11_ST_FLAG_HDR_SUPPORT         = (1 << 10),
+   D3D11_ST_FLAG_HDR_ENABLE          = (1 << 11),
+   D3D11_ST_FLAG_SPRITES_ENABLE      = (1 << 12),
+   D3D11_ST_FLAG_OVERLAYS_ENABLE     = (1 << 13),
+   D3D11_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 14),
+   D3D11_ST_FLAG_MENU_ENABLE         = (1 << 15),
+   D3D11_ST_FLAG_MENU_FULLSCREEN     = (1 << 16),
+   D3D11_ST_FLAG_FRAME_DUPE_LOCK     = (1 << 17)
 };
 
 enum d3d11_feature_level_hint
@@ -218,6 +217,7 @@ typedef struct
    DXGI_FORMAT           format;
    float                 clearcolor[4];
    unsigned              swap_interval;
+   int8_t                wait_for_vblank;
    uint32_t              flags;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
 #ifdef HAVE_DXGI_HDR

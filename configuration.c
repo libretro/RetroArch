@@ -2505,7 +2505,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_hard_sync_frames",        &settings->uints.video_hard_sync_frames, true, DEFAULT_HARD_SYNC_FRAMES, false);
    SETTING_UINT("video_frame_delay",             &settings->uints.video_frame_delay,      true, DEFAULT_FRAME_DELAY, false);
    SETTING_UINT("video_max_swapchain_images",    &settings->uints.video_max_swapchain_images, true, DEFAULT_MAX_SWAPCHAIN_IMAGES, false);
-   SETTING_UINT("video_max_frame_latency",       &settings->uints.video_max_frame_latency, true, DEFAULT_MAX_FRAME_LATENCY, false);
    SETTING_UINT("video_black_frame_insertion",   &settings->uints.video_black_frame_insertion, true, DEFAULT_BLACK_FRAME_INSERTION, false);
    SETTING_UINT("video_bfi_dark_frames",         &settings->uints.video_bfi_dark_frames, true, DEFAULT_BFI_DARK_FRAMES, false);
    SETTING_UINT("video_shader_subframes",        &settings->uints.video_shader_subframes, true, DEFAULT_SHADER_SUBFRAMES, false);
@@ -2692,6 +2691,7 @@ static struct config_int_setting *populate_settings_int(
    SETTING_INT("video_window_offset_x",          &settings->ints.video_window_offset_x, true, DEFAULT_WINDOW_OFFSET_X, false);
    SETTING_INT("video_window_offset_y",          &settings->ints.video_window_offset_y, true, DEFAULT_WINDOW_OFFSET_Y, false);
 #endif
+   SETTING_INT("video_max_frame_latency",        &settings->ints.video_max_frame_latency, true, DEFAULT_MAX_FRAME_LATENCY, false);
 
 #ifdef HAVE_D3D10
    SETTING_INT("d3d10_gpu_index",                &settings->ints.d3d10_gpu_index, true, DEFAULT_D3D10_GPU_INDEX, false);

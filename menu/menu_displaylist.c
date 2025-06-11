@@ -9947,7 +9947,7 @@ unsigned menu_displaylist_build_list(
                if (video_wait_swap)
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
-                           PARSE_ONLY_UINT, false) == 0)
+                           PARSE_ONLY_INT, false) == 0)
                      count++;
             }
 
@@ -10536,7 +10536,7 @@ unsigned menu_displaylist_build_list(
                {
                   MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,
-                        PARSE_ONLY_UINT, false);
+                        PARSE_ONLY_INT, false);
                      count++;
                }
             }
