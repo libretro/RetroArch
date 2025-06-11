@@ -647,6 +647,10 @@ MSG_HASH(
    "JIT Mevcut"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
+   "Paket Tanımlayıcı"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Ön Uç Tanımlayıcı"
    )
