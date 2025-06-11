@@ -148,7 +148,6 @@ wiiu/wut/elf2rpl/elf2rpl
 /pkg/android/phoenix/bin/
 /pkg/android/phoenix/gen/
 /pkg/android/phoenix/local.properties
-/pkg/android/phoenix/gradle.properties
 /pkg/android/phoenix/.gradle
 /pkg/android/phoenix/.externalNativeBuild
 /pkg/android/phoenix/build
