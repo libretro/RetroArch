@@ -115,6 +115,7 @@ typedef struct settings
       int crt_switch_center_adjust;
       int crt_switch_porch_adjust;
       int crt_switch_vertical_adjust;
+      int video_max_frame_latency;
 #ifdef HAVE_VULKAN
       int vulkan_gpu_index;
 #endif
@@ -247,7 +248,6 @@ typedef struct settings
       unsigned video_scale_integer_axis;
       unsigned video_scale_integer_scaling;
       unsigned video_max_swapchain_images;
-      unsigned video_max_frame_latency;
       unsigned video_swap_interval;
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;

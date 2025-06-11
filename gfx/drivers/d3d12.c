@@ -882,7 +882,6 @@ static void d3d12_font_render_line(
    size_t i;
    D3D12_RANGE     range;
    unsigned        count;
-   void*           mapped_vbo       = NULL;
    d3d12_sprite_t* v                = NULL;
    d3d12_sprite_t* vbo_start        = NULL;
    int x                            = pre_x;
@@ -2369,24 +2368,29 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    if (     (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
          && (d3d12->chain.frameLatencyWaitableObject = DXGIGetFrameLatencyWaitableObject(d3d12->chain.handle)))
    {
-      settings_t* settings = config_get_ptr();
-      UINT max_latency     = settings->uints.video_max_frame_latency;
-      UINT cur_latency     = 0;
+      settings_t* settings      = config_get_ptr();
+      int8_t opt_latency        = settings->ints.video_max_frame_latency;
+      UINT max_latency          = 0;
+      UINT cur_latency          = 0;
 
-      if (max_latency == 0)
+      if (opt_latency < 1)
       {
-         d3d12->flags     |=  D3D12_ST_FLAG_WAIT_FOR_VBLANK;
-         max_latency       = 1;
+         max_latency            = 1;
+         d3d12->wait_for_vblank = (!opt_latency) ? 1 : -1;
       }
       else
-         d3d12->flags     &= ~D3D12_ST_FLAG_WAIT_FOR_VBLANK;
+      {
+         max_latency            = opt_latency;
+         d3d12->wait_for_vblank = 0;
+      }
 
       DXGISetMaximumFrameLatency(d3d12->chain.handle, max_latency);
       DXGIGetMaximumFrameLatency(d3d12->chain.handle, &cur_latency);
       RARCH_LOG("[D3D12]: Requesting %u maximum frame latency, using %u%s.\n",
-            settings->uints.video_max_frame_latency,
+            max_latency,
             cur_latency,
-            (d3d12->flags & D3D12_ST_FLAG_WAIT_FOR_VBLANK) ? " with WaitForVBlank" : "");
+            ((d3d12->wait_for_vblank < 0) ? " with WaitForVBlank before Present" :
+             (d3d12->wait_for_vblank > 0) ? " with WaitForVBlank after Present"  : ""));
    }
 
 #ifdef HAVE_WINDOW
@@ -3244,6 +3248,14 @@ static void dx12_inject_black_frame(d3d12_video_t* d3d12)
 
 }
 
+static INLINE void d3d12_wait_for_vblank(d3d12_video_t* d3d12)
+{
+   IDXGIOutput *pOutput;
+   DXGIGetContainingOutput(d3d12->chain.handle, &pOutput);
+   DXGIWaitForVBlank(pOutput);
+   Release(pOutput);
+}
+
 static bool d3d12_gfx_frame(
       void*               data,
       const void*         frame,
@@ -3258,7 +3270,6 @@ static bool d3d12_gfx_frame(
    d3d12_texture_t* texture       = NULL;
    d3d12_video_t*   d3d12         = (d3d12_video_t*)data;
    bool vsync                     = (d3d12->flags & D3D12_ST_FLAG_VSYNC) ? true : false;
-   bool wait_for_vblank           = (d3d12->flags & D3D12_ST_FLAG_WAIT_FOR_VBLANK) ? true : false;
    unsigned present_flags         = (vsync) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
    const char *stat_text          = video_info->stat_text;
    bool statistics_show           = video_info->statistics_show;
@@ -4045,15 +4056,17 @@ static bool d3d12_gfx_frame(
    cmd->lpVtbl->Close(cmd);
    d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
          (ID3D12CommandList* const*)&d3d12->queue.cmd);
-   DXGIPresent(d3d12->chain.handle, d3d12->chain.swap_interval, present_flags);
 
-   if (vsync && wait_for_vblank)
+   if (vsync && d3d12->wait_for_vblank < 0)
    {
-      IDXGIOutput *pOutput;
-      DXGIGetContainingOutput(d3d12->chain.handle, &pOutput);
-      DXGIWaitForVBlank(pOutput);
-      Release(pOutput);
+      d3d12_wait_for_vblank(d3d12);
+      DXGIPresent(d3d12->chain.handle, 0, (present_flags | DXGI_PRESENT_ALLOW_TEARING));
    }
+   else
+      DXGIPresent(d3d12->chain.handle, d3d12->chain.swap_interval, present_flags);
+
+   if (vsync && d3d12->wait_for_vblank > 0)
+      d3d12_wait_for_vblank(d3d12);
 
    if (
            black_frame_insertion
