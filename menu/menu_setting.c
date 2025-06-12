@@ -9544,10 +9544,31 @@ static bool setting_append_list_input_player_options(
                && (i != RARCH_TURBO_ENABLE)
             )
          {
-            if (sys_info->input_desc_btn[user][i])
-               strlcpy(label       + _len,
-                     sys_info->input_desc_btn[user][i],
-                     sizeof(label) - _len);
+            const char *input_desc_btn;
+
+            input_desc_btn = sys_info->input_desc_btn[user][i];
+            if (!string_is_empty(input_desc_btn))
+            {
+               char input_description[NAME_MAX_LENGTH];
+               /* > Up to RARCH_FIRST_CUSTOM_BIND, inputs
+                *   are buttons - description can be used
+                *   directly
+                * > Above RARCH_FIRST_CUSTOM_BIND, inputs
+                *   are analog axes - have to add +/-
+                *   indicators */
+               size_t _len = strlcpy(input_description, input_desc_btn,
+                     sizeof(input_description));
+               if (i >= RARCH_FIRST_CUSTOM_BIND)
+               {
+                  if ((i % 2) == 0)
+                     input_description[  _len] = '+';
+                  else
+                     input_description[  _len] = '-';
+                  input_description   [++_len] = '\0';
+               }
+
+               strlcpy(label, input_description, sizeof(label));
+            }
             else
             {
                snprintf(label, sizeof(label), "%s (%s)",
