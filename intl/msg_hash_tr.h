@@ -2668,10 +2668,6 @@ MSG_HASH(
    "Uyarlamalı VSync"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "V-Sync, performans hedef yenileme hızının altına düşene kadar etkinleştirilir. Performans gerçek zamanın altına düştüğünde aksaklığı en aza indirebilir ve daha enerji tasarruflu olabilir."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Kare Gecikmesi"
    )

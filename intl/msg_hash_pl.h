@@ -2556,10 +2556,6 @@ MSG_HASH(
    "Adaptacyjna VSync"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "VSync jest włączony, dopóki wydajność nie spadnie poniżej docelowej szybkości odświeżania. Można zminimalizować stłuczenie, gdy wydajność spadnie poniżej czasu rzeczywistego, i być bardziej energooszczędna."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Opóźnienie ramki"
    )

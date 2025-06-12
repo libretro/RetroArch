@@ -2676,10 +2676,6 @@ MSG_HASH(
    "적응형 수직 동기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "설정된 주사율보다 낮은 성능이 감지될 경우 수직 동기화가 자동으로 비활성화됩니다. 퍼포먼스가 떨어질 때 버벅임을 방지할 수 있습니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "프레임 지연"
    )

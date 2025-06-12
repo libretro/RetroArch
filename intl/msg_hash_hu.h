@@ -2656,10 +2656,6 @@ MSG_HASH(
    "Adaptív VSync"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "A VSync aktív, amíg a teljesítmény a megcélzott képfrissítés alá nem esik. Minimalizálja a döcögősséget, amikor a teljesítmény nem éri el a valós időt, és energiát takaríthat meg."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Képvárakoztatás"
    )

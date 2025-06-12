@@ -2628,10 +2628,6 @@ MSG_HASH(
    "VSync adaptativo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "VSync está habilitado ata que o rendemento cae por debaixo da taxa de actualización obxectivo. Pode minimizar o tartamudeo cando o rendemento cae por debaixo do tempo real e ser máis eficiente enerxéticamente."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Retraso de fotogramas"
    )

@@ -1900,10 +1900,6 @@ MSG_HASH(
    "Otomatis"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "VSync akan aktif sampai kinerja kurang dari laju segar yang dituju. Dapat mengurangi patah-patah saat kinerja kurang dari waktu nyata, dan lebih hemat tenaga."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Tundaan Bingkai"
    )

@@ -2548,10 +2548,6 @@ MSG_HASH(
    "智能垂直同步"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "當檢測到效能低於設定的更新率時, 垂直同步將自動禁用, 用於防止效能下降時造成的延遲。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "幀數延遲"
    )

@@ -2408,10 +2408,6 @@ MSG_HASH(
    "Mukautuva VSync"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "VSync on käytössä, kunnes suorituskyky laskee tavoitellun virkistysnopeuden alapuolelle. Voi vähentää nykimistä, kun suorituskyky laskee reaaliajan alapuolelle ja on energiatehokkaampi."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automaattinen kuvan viive"
    )

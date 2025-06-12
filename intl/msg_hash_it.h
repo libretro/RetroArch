@@ -2604,10 +2604,6 @@ MSG_HASH(
    "VSync Adattivo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "VSync è abilitato fino a quando le prestazioni non scendono al di sotto della velocità di aggiornamento di destinazione. Può minimizzare l'oscuramento quando le prestazioni scendono al di sotto del tempo reale ed essere più efficienti dal punto di vista energetico."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Ritardo del Frame"
    )

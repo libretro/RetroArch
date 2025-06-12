@@ -1860,10 +1860,6 @@ MSG_HASH(
    "Sincronització vertical adaptativa"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "La sincronització vertical es mantindrà activa fins que el rendiment siga inferior al necessari per mantindre la freqüència de refresc d'imatge del monitor/pantalla. Pot reduir el sacseig de la imatge quan el rendiment cau per baix de la velocitat real, alforrant recursos energètics."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Retardament automàtic de fotogrames"
    )

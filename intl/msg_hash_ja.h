@@ -2592,10 +2592,6 @@ MSG_HASH(
    "適応型垂直同期"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "実行速度がターゲットフレームレートを下回るまで垂直同期が有効になります。実行速度がリアルタイムを下回ったときのカクつきを最小限に抑え、電力効率を向上させます。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "フレーム遅延"
    )

@@ -360,10 +360,6 @@ MSG_HASH(
    "Adaptive V-Sync"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "V-Sync is enabled until performance falls below the target refresh rate. Can minimize stuttering when performance falls below real time, and be more energy efficient."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
    "Hard-synchronise the CPU and GPU. Reduces latency at the cost of performance."
    )

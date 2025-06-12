@@ -2648,10 +2648,6 @@ MSG_HASH(
    "Synchronisation verticale (V-Sync) adaptative"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "La synchronisation verticale (V-Sync) est activée jusqu'à ce que les performances descendent en dessous de la fréquence de rafraîchissement cible. Peut minimiser les saccades lorsque les performances sont inférieures au temps réel, et être plus économe en énergie."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Retard d'images "
    )

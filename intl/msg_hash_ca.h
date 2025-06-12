@@ -2660,10 +2660,6 @@ MSG_HASH(
    "VSync adaptatiu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "La sincronització vertical roman activa fins que el rendiment cau per davall de la freqüència d'actualització establerta. Pot minimitzar l'entretallament quan el rendiment cau per davall del temps real, i pot ser més energèticament eficient."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Retard dels fotogrames"
    )

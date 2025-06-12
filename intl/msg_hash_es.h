@@ -2673,7 +2673,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "La sincronía vertical se mantendrá activada hasta que el rendimiento sea inferior al necesario para mantener la frecuencia de actualización de la pantalla. Puede reducir los tirones provocados al caer el rendimiento por debajo de la velocidad real y mejorar la eficiencia energética."
+   "La sincronía vertical se mantendrá activada hasta que el rendimiento sea inferior al necesario para mantener la frecuencia de actualización de la pantalla. Puede reducir los tirones provocados al caer el rendimiento por debajo de la velocidad real y mejorar la eficiencia energética. Esta opción no es compatible con el retraso de fotogramas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
