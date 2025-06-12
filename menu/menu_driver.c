@@ -6924,9 +6924,6 @@ bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
          || !(video_shader_load_preset_into_shader(preset_path, menu_shader)))
       goto end;
 
-   /* TODO/FIXME - localize */
-   RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
-
    ret = true;
 
 end:
@@ -6973,10 +6970,7 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
             type, shader, preset_path, dir_video_shader, prepend, true))
       goto clear;
 
-   /* TODO/FIXME - localize */
-   RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
-
-   ret             = true;
+   ret = true;
 
    menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
