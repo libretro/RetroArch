@@ -4000,7 +4000,8 @@ static bool config_load_file(global_t *global,
             settings->arrays.midi_output,
             DEFAULT_MIDI_OUTPUT);
 
-   path_config = path_get(RARCH_PATH_CONFIG);
+   /* History playlists must stay in default config path */
+   path_config = g_defaults.path_config;
 
    if (string_is_empty(settings->paths.path_content_favorites))
       strlcpy(settings->paths.directory_content_favorites, "default",

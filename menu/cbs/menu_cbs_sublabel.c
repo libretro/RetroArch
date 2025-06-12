@@ -236,6 +236,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accessibility_narrator_speech_speed,
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_load_config,                      MENU_ENUM_SUBLABEL_CONFIGURATIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_current_config,              MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_new_config,                  MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_as_config,                   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_save_main_config,                 MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_reset_to_default_config,          MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_override_options,             MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_start_streaming,             MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING)
@@ -3435,6 +3437,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SAVE_NEW_CONFIG:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_new_config);
+            break;
+         case MENU_ENUM_LABEL_SAVE_AS_CONFIG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_as_config);
+            break;
+         case MENU_ENUM_LABEL_SAVE_MAIN_CONFIG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_save_main_config);
             break;
          case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_reset_to_default_config);
