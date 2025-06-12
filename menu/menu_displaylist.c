@@ -534,6 +534,42 @@ end:
    return count;
 }
 
+static int menu_core_info_md5_parse(core_info_t *core_info, unsigned i, unsigned *j_ret)
+{
+   int spc;
+   unsigned j;
+   unsigned pos = 0;
+   char firmware_basename[64];
+   char tmp[64];
+
+   strlcpy(tmp,
+         core_info->firmware[i].desc, sizeof(tmp));
+
+   spc = string_find_index_substring_string(tmp, " (");
+   if (spc >= 0)
+      tmp[spc] = '\0';
+
+   spc = string_find_index_substring_string(tmp, " |");
+   if (spc >= 0)
+      tmp[spc] = '\0';
+
+   fill_pathname_base(firmware_basename,
+         tmp, sizeof(firmware_basename));
+
+   for (j = 0; j < core_info->note_list->size; j++)
+   {
+      if (     !strstr(core_info->note_list->elems[j].data, firmware_basename)
+            || !strstr(core_info->note_list->elems[j].data, "(md5)"))
+         continue;
+
+      pos = string_find_index_substring_string(core_info->note_list->elems[j].data, "(md5)");
+      break;
+   }
+
+   *j_ret = j;
+   return pos;
+}
+
 static int menu_displaylist_parse_core_info(
       file_list_t *list,
       uint32_t info_type,
@@ -748,6 +784,7 @@ static int menu_displaylist_parse_core_info(
    if (core_info->firmware_count > 0)
    {
       char tmp_path[PATH_MAX_LENGTH];
+      char tmp_desc[PATH_MAX_LENGTH];
       core_info_ctx_firmware_t firmware_info;
       uint8_t flags                   = content_get_flags();
       bool update_missing_firmware    = false;
@@ -848,34 +885,38 @@ static int menu_displaylist_parse_core_info(
                         : (core_info->firmware[i].optional ? present_optional : present_required),
                   core_info->firmware[i].desc ? core_info->firmware[i].desc : rdb_entry_name
             );
+            tmp_desc[0] = '\0';
 
-            if (menu_entries_append(list, tmp, "",
+            /* Parse md5 checksum rows as sublabels */
+            if (     core_info->notes
+                  && settings->bools.menu_show_sublabels)
+            {
+               unsigned j;
+               unsigned pos = menu_core_info_md5_parse(core_info, i, &j);
+
+               if (pos)
+               {
+                  core_info_list_hide[j] = true;
+                  strlcpy(tmp_desc,
+                        core_info->note_list->elems[j].data + pos,
+                        sizeof(tmp_desc));
+               }
+            }
+
+            if (menu_entries_append(list, tmp, tmp_desc,
                   MENU_ENUM_LABEL_CORE_INFO_ENTRY,
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, i, NULL))
                count++;
 
             /* Show relevant note row and skip showing it later */
-            if (core_info->notes)
+            if (     core_info->notes
+                  && !settings->bools.menu_show_sublabels)
             {
-               int spc;
                unsigned j;
-               char firmware_basename[64];
-               fill_pathname_base(firmware_basename,
-                     core_info->firmware[i].desc, sizeof(firmware_basename));
+               unsigned pos = menu_core_info_md5_parse(core_info, i, &j);
 
-               spc = string_find_index_substring_string(firmware_basename, " ");
-               if (spc >= 0)
-                  firmware_basename[spc] = '\0';
-
-               for (j = 0; j < core_info->note_list->size; j++)
+               if (pos)
                {
-                  unsigned pos;
-                  if (     !strstr(core_info->note_list->elems[j].data, firmware_basename)
-                        || !strstr(core_info->note_list->elems[j].data, "(md5)"))
-                     continue;
-
-                  pos = string_find_index_substring_string(core_info->note_list->elems[j].data, "(md5)");
-
                   core_info_list_hide[j] = true;
                   __len = strlcpy(tmp, "- ", sizeof(tmp));
                   strlcpy(      tmp + __len,
@@ -886,7 +927,6 @@ static int menu_displaylist_parse_core_info(
                         MENU_ENUM_LABEL_CORE_INFO_ENTRY,
                         MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                      count++;
-                  break;
                }
             }
          }

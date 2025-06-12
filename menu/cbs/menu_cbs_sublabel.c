@@ -1460,6 +1460,21 @@ static int action_bind_sublabel_systeminfo_controller_entry(
    return 0;
 }
 
+static int action_bind_sublabel_core_info_entry(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   if (list && list->list[i].label && strstr(list->list[i].label, "(md5)"))
+   {
+      int pos = string_find_index_substring_string(list->list[i].label, "(md5)");
+      snprintf(s, len, "%s", list->list[i].label + pos);
+   }
+
+   return 0;
+}
+
 #ifdef HAVE_BLUETOOTH
 static int action_bind_sublabel_bluetooth_list(
       file_list_t *list,
@@ -4915,6 +4930,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_QUIT_GAMEPAD_COMBO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quit_gamepad_combo);
+            break;
+         case MENU_ENUM_LABEL_CORE_INFO_ENTRY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_info_entry);
             break;
          case MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_systeminfo_controller_entry);
