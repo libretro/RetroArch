@@ -309,7 +309,7 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
             strlcpy(title,
                msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED), sizeof(title));
 
-         snprintf(subtitle, sizeof(subtitle), "%s (%d)", cheevo->title, cheevo->points);
+         snprintf(subtitle, sizeof(subtitle), "%s (%lu)", cheevo->title, (unsigned long)cheevo->points);
 
          gfx_widgets_push_achievement(title, subtitle, cheevo->badge_name);
       }
@@ -990,7 +990,7 @@ void rcheevos_test(void)
 #ifdef HAVE_THREADS
    if (rcheevos_locals.queued_command != CMD_EVENT_NONE)
    {
-      if ((int)rcheevos_locals.queued_command == CMD_CHEEVOS_FINALIZE_LOAD)
+      if (rcheevos_locals.queued_command == CMD_CHEEVOS_FINALIZE_LOAD)
          rcheevos_finalize_game_load_on_ui_thread();
       else
          command_event(rcheevos_locals.queued_command, NULL);
@@ -1279,6 +1279,13 @@ static void rcheevos_show_game_placard(void)
          runloop_msg_queue_push(msg, _len, 0, 3 * 60, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
+
+   if (summary.num_unsupported_achievements)
+   {
+      const char* warning = msg_hash_to_str(MSG_CHEEVOS_UNSUPPORTED_WARNING);
+      runloop_msg_queue_push(warning, strlen(warning), 0, 3 * 60, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   }
 }
 
 static uint32_t rcheevos_client_read_memory(uint32_t address,
@@ -1382,12 +1389,10 @@ static void rcheevos_client_login_callback(int result,
 
 static void rcheevos_finalize_game_load(rc_client_t* client)
 {
-#if defined(HAVE_GFX_WIDGETS) /* We always want badges if widgets are enabled */
-   bool want_badges     = true;
-#else
    settings_t* settings = config_get_ptr();
    bool want_badges     = settings->bools.cheevos_badges_enable;
-   /* Badges are only needed for xmb and ozone menus */
+#if !defined(HAVE_GFX_WIDGETS)
+   /* Then badges are only needed for xmb and ozone menus */
    want_badges          = want_badges &&
       (        string_is_equal(settings->arrays.menu_driver, "xmb")
             || string_is_equal(settings->arrays.menu_driver, "ozone"));

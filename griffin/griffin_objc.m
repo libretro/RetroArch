@@ -61,6 +61,10 @@
 #include "../audio/drivers/coreaudio3.m"
 #endif
 
+#if defined(HAVE_COREAUDIO) && defined(HAVE_MICROPHONE)
+#include "../audio/drivers_microphone/coreaudio_mic.m"
+#endif
+
 #ifdef HAVE_CORELOCATION
 #include "../location/drivers/corelocation.m"
 #endif
@@ -84,4 +88,8 @@
 
 #if defined(HAVE_CLOUDSYNC) && defined(HAVE_ICLOUD)
 #include "../network/cloud_sync/icloud.m"
+#endif
+
+#if defined(HAVE_CLOUDSYNC) && defined(HAVE_ICLOUD_DRIVE)
+#include "../network/cloud_sync/icloud_drive.m"
 #endif

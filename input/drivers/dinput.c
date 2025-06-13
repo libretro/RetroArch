@@ -18,6 +18,8 @@
 #pragma comment(lib, "dinput8")
 #endif
 
+#define WIN32_LEAN_AND_MEAN
+
 #undef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
 
@@ -81,7 +83,8 @@ enum dinput_input_flags
    DINP_FLAG_MOUSE_WU_BTN      = (1 << 10),
    DINP_FLAG_MOUSE_WD_BTN      = (1 << 11),
    DINP_FLAG_MOUSE_HWU_BTN     = (1 << 12),
-   DINP_FLAG_MOUSE_HWD_BTN     = (1 << 13)
+   DINP_FLAG_MOUSE_HWD_BTN     = (1 << 13),
+   DINP_FLAG_MOUSE_IGNORE      = (1 << 14)
 };
 
 struct dinput_input
@@ -388,6 +391,15 @@ static void dinput_poll(void *data)
       ScreenToClient((HWND)video_driver_window_get(), &point);
       di->mouse_x = point.x;
       di->mouse_y = point.y;
+
+      /* Ignore application focusing mouse clicks */
+      if (di->flags & DINP_FLAG_MOUSE_IGNORE)
+      {
+         if (mouse_state.rgbButtons[0] || mouse_state.rgbButtons[1])
+            di->flags &= ~(DINP_FLAG_MOUSE_L_BTN | DINP_FLAG_MOUSE_R_BTN);
+         else if (!mouse_state.rgbButtons[0] && !mouse_state.rgbButtons[1])
+            di->flags &= ~DINP_FLAG_MOUSE_IGNORE;
+      }
    }
 }
 
@@ -891,6 +903,10 @@ bool dinput_handle_message(void *data,
 
    switch (message)
    {
+      case WM_SETFOCUS:
+      case WM_KILLFOCUS:
+         di->flags       |= DINP_FLAG_MOUSE_IGNORE;
+         break;
       case WM_NCLBUTTONDBLCLK:
          di->flags       |= DINP_FLAG_DBCLK_ON_TITLEBAR;
          break;

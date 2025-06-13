@@ -558,7 +558,7 @@ static void task_save_handler(retro_task_t *task)
       {
          size_t _len = strlcpy(msg,
                msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
-               sizeof(msg));
+               sizeof(msg) - 2);
          msg[  _len] = ' ';
          msg[++_len] = '\0';
          strlcpy(msg + _len, state->path, sizeof(msg) - _len);

@@ -142,8 +142,10 @@ static void power_callback(void)
 }
 #endif
 
-static void reset_cb(void)
+static void reset_cb(unsigned int a, void *b)
 {
+   (void)a;
+   (void)b;
    g_menu = true;
 }
 

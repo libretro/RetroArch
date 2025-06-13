@@ -183,7 +183,7 @@ static u32 get_threads_limit(void)
    Handle resource_limit_handle;
    s64 thread_limit_current;
    s64 thread_limit_max;
-   u32 thread_limit_name = RESOURCE_LIMIT_THREADS;
+   ResourceLimitType thread_limit_name = RESOURCE_LIMIT_THREADS;
 
    svcGetResourceLimit(&resource_limit_handle, CURRENT_KPROCESS_HANDLE);
    svcGetResourceLimitCurrentValues(&thread_limit_current, resource_limit_handle, &thread_limit_name, 1);

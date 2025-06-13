@@ -397,13 +397,16 @@ static int action_get_title_deferred_playlist_list(const char *path, const char 
          if (string_is_equal_noncase(path_get_extension(playlist_file),
                   "lpl"))
          {
-            /* Handle content history */
             if (string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY))
                strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), len);
-            /* Handle favourites */
             else if (string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
                strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB), len);
-            /* Handle collection playlists */
+            else if (string_is_equal(playlist_file, FILE_PATH_CONTENT_IMAGE_HISTORY))
+               strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB), len);
+            else if (string_is_equal(playlist_file, FILE_PATH_CONTENT_MUSIC_HISTORY))
+               strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB), len);
+            else if (string_is_equal(playlist_file, FILE_PATH_CONTENT_VIDEO_HISTORY))
+               strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB), len);
             else
                fill_pathname(s, playlist_file, "", len);
          }
@@ -525,6 +528,7 @@ static int action_get_title_dropdown_input_description_common(
    const char *input_label_ptr = input_name;
    char input_label[NAME_MAX_LENGTH];
 
+   input_label[0] = '\0';
    if (!string_is_empty(input_label_ptr))
    {
       /* Strip off 'Auto:' prefix, if required */

@@ -1004,6 +1004,7 @@ static uint32_t d3d11_get_flags(void *data)
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
+   BIT32_SET(flags, GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS);
 #endif
 
    return flags;
@@ -2006,27 +2007,32 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
 
 #endif    /* __WINRT__ */
 
-   if    (   (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
-          && (d3d11->frameLatencyWaitableObject = DXGIGetFrameLatencyWaitableObject(d3d11->swapChain)))
+   if (     (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
+         && (d3d11->frameLatencyWaitableObject = DXGIGetFrameLatencyWaitableObject(d3d11->swapChain)))
    {
-      settings_t* settings      =  config_get_ptr();
-      UINT max_latency          =  settings->uints.video_max_frame_latency;
-      UINT cur_latency          =  0;
+      settings_t* settings      = config_get_ptr();
+      int8_t opt_latency        = settings->ints.video_max_frame_latency;
+      UINT max_latency          = 0;
+      UINT cur_latency          = 0;
 
-      if (max_latency == 0)
+      if (opt_latency < 1)
       {
-         max_latency            =  1;
-         d3d11->flags          |=  D3D11_ST_FLAG_WAIT_FOR_VBLANK;
+         max_latency            = 1;
+         d3d11->wait_for_vblank = (!opt_latency) ? 1 : -1;
       }
       else
-         d3d11->flags          &= ~D3D11_ST_FLAG_WAIT_FOR_VBLANK;
+      {
+         max_latency            = opt_latency;
+         d3d11->wait_for_vblank = 0;
+      }
 
       DXGISetMaximumFrameLatency(d3d11->swapChain, max_latency);
       DXGIGetMaximumFrameLatency(d3d11->swapChain, &cur_latency);
       RARCH_LOG("[D3D11]: Requesting %u maximum frame latency, using %u%s.\n",
-            settings->uints.video_max_frame_latency,
+            max_latency,
             cur_latency,
-            (d3d11->flags & D3D11_ST_FLAG_WAIT_FOR_VBLANK) ? " with WaitForVBlank" : "");
+            ((d3d11->wait_for_vblank < 0) ? " with WaitForVBlank before Present" :
+             (d3d11->wait_for_vblank > 0) ? " with WaitForVBlank after Present"  : ""));
    }
 
 #ifdef HAVE_DXGI_HDR
@@ -2735,7 +2741,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
          height = d3d11->vp.height;
       }
 
-      RARCH_LOG("[D3D11]: Updating framebuffer size %ux%u.\n", width, height);
+      RARCH_DBG("[D3D11]: Updating framebuffer size %ux%u.\n", width, height);
 
       if (     (i != (d3d11->shader_preset->passes - 1))
             || (width  != d3d11->vp.width)
@@ -2774,6 +2780,14 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
    d3d11->flags &= ~D3D11_ST_FLAG_RESIZE_RTS;
 }
 
+static INLINE void d3d11_wait_for_vblank(d3d11_video_t* d3d11)
+{
+   IDXGIOutput *pOutput;
+   DXGIGetContainingOutput(d3d11->swapChain, &pOutput);
+   DXGIWaitForVBlank(pOutput);
+   Release(pOutput);
+}
+
 static bool d3d11_gfx_frame(
       void*               data,
       const void*         frame,
@@ -2790,9 +2804,8 @@ static bool d3d11_gfx_frame(
    d3d11_video_t* d3d11           = (d3d11_video_t*)data;
    D3D11DeviceContext context     = d3d11->context;
    bool vsync                     = (d3d11->flags & D3D11_ST_FLAG_VSYNC) ? true : false;
-   bool wait_for_vblank           = (d3d11->flags & D3D11_ST_FLAG_WAIT_FOR_VBLANK) ? true : false;
-   unsigned present_flags         = (vsync || !(d3d11->flags & D3D11_ST_FLAG_HAS_ALLOW_TEARING))
-         ? 0 : DXGI_PRESENT_ALLOW_TEARING;
+   unsigned present_flags         = (!vsync && (d3d11->flags & D3D11_ST_FLAG_HAS_ALLOW_TEARING))
+         ? DXGI_PRESENT_ALLOW_TEARING : 0;
    const char *stat_text          = video_info->stat_text;
    unsigned video_width           = video_info->width;
    unsigned video_height          = video_info->height;
@@ -3056,7 +3069,7 @@ static bool d3d11_gfx_frame(
 
    texture = d3d11->frame.texture;
 
-   if (d3d11->shader_preset)
+   if (d3d11->shader_preset && video_info->shader_active)
    {
       for (i = 0; i < d3d11->shader_preset->passes; i++)
       {
@@ -3081,10 +3094,9 @@ static bool d3d11_gfx_frame(
          }
 
          if (d3d11->shader_preset->pass[i].frame_count_mod)
-            d3d11->pass[i].frame_count   =
-               frame_count % d3d11->shader_preset->pass[i].frame_count_mod;
+            d3d11->pass[i].frame_count = frame_count % d3d11->shader_preset->pass[i].frame_count_mod;
          else
-            d3d11->pass[i].frame_count   = frame_count;
+            d3d11->pass[i].frame_count = frame_count;
 
 #ifdef HAVE_REWIND
          d3d11->pass[i].frame_direction  = state_manager_frame_is_reversed() ? -1 : 1;
@@ -3096,10 +3108,10 @@ static bool d3d11_gfx_frame(
          d3d11->pass[i].rotation         = retroarch_get_rotation();
          d3d11->pass[i].core_aspect      = video_driver_get_core_aspect();
          /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
-         d3d11->pass[i].core_aspect_rot = video_driver_get_core_aspect();
-         uint32_t rot = retroarch_get_rotation();
-         if (rot == 1 || rot == 3)
-            d3d11->pass[i].core_aspect_rot = 1/d3d11->pass[i].core_aspect_rot;
+         d3d11->pass[i].core_aspect_rot  = d3d11->pass[i].core_aspect;
+         if (     d3d11->pass[i].rotation == VIDEO_ROTATION_90_DEG
+               || d3d11->pass[i].rotation == VIDEO_ROTATION_270_DEG)
+            d3d11->pass[i].core_aspect_rot = 1 / d3d11->pass[i].core_aspect_rot;
 
          /* Sub-frame info for multiframe shaders (per real content frame).
             Should always be 1 for non-use of subframes */
@@ -3475,15 +3487,19 @@ static bool d3d11_gfx_frame(
    }
 #endif
 
-   DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
-
-   if (vsync && wait_for_vblank)
+   if (vsync && d3d11->wait_for_vblank < 0)
    {
-      IDXGIOutput *pOutput;
-      DXGIGetContainingOutput(d3d11->swapChain, &pOutput);
-      DXGIWaitForVBlank(pOutput);
-      Release(pOutput);
+      d3d11->context->lpVtbl->Flush(d3d11->context);
+      d3d11_wait_for_vblank(d3d11);
+      DXGIPresent(d3d11->swapChain, 0,
+            (present_flags | (d3d11->flags & D3D11_ST_FLAG_HAS_ALLOW_TEARING) ? DXGI_PRESENT_ALLOW_TEARING : 0)
+      );
    }
+   else
+      DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
+
+   if (vsync && d3d11->wait_for_vblank > 0)
+      d3d11_wait_for_vblank(d3d11);
 
    if (
            black_frame_insertion

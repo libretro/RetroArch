@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <malloc.h>
 
 #ifdef GEKKO
 #include <gccore.h>

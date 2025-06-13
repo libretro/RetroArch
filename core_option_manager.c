@@ -1204,7 +1204,7 @@ core_option_manager_t *core_option_manager_new(
          }
          else
          {
-            size_t __len      = strlcpy(address, category_key, sizeof(address));
+            size_t __len      = strlcpy(address, category_key, sizeof(address) - 3);
             address[  __len]  = ':';
             address[++__len]  = '#';
             address[++__len]  = '\0';

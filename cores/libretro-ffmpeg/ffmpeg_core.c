@@ -1330,7 +1330,7 @@ static bool init_media_info(void)
          media.duration.hours   = 0;
          media.duration.minutes = 0;
          media.duration.seconds = 0;
-         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not determine media duration\n");
+         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not determine media duration.\n");
       }
    }
 
@@ -2161,7 +2161,7 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    if (!CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Cannot set pixel format.");
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Cannot set pixel format.\n");
       goto error;
    }
 
@@ -2192,13 +2192,13 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    if (!open_codecs())
    {
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to find codec.");
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to find codec.\n");
       goto error;
    }
 
    if (!init_media_info())
    {
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to init media info.");
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to init media info.\n");
       goto error;
    }
 

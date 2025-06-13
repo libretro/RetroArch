@@ -59,7 +59,7 @@ jobs:
         run: |
           echo "Building RetroArch in ${{ matrix.sys }} environment"
           ./configure
-          make -j$(nproc)
+          make -j$(nproc) info all
 
       - name: Collect DLLs and binaries
         shell: msys2 {0}

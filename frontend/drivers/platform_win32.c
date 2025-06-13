@@ -25,6 +25,11 @@
 #include <process.h>
 #endif
 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+#include <winreg.h>
+#include <winerror.h>
+#endif
+
 #include <boolean.h>
 #include <compat/strl.h>
 #include <dynamic/dylib.h>
@@ -278,15 +283,25 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    /* Windows 2000 and later */
    SYSTEM_INFO si         = {{0}};
    OSVERSIONINFOEX vi     = {0};
+#ifndef _MSC_VER
+   /* Vista and later, MSYS2/MINGW64 build */
+   const char win_ver_reg_key[]    = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
+   const DWORD reg_read_flags      = RRF_RT_REG_SZ; /* Only read strings (REG_SZ) */
+   const int ProductName_2nd_digit = 9; /* second digit in the string 'Windows 10' */
+   char str_ProductName[64]        = {0};
+   char str_DisplayVersion[64]     = {0};
+   char str_LCUVer[64]             = {0};
+   char str_CurrentBuild[64]       = {0};
+   DWORD key_type                  = 0; /* null pointer */
+   DWORD data_size                 = 0;
+   long reg_read_result;
+   bool read_success               = TRUE;
+   /* end Vista and later; still within Windows 2000 and later block */
+#endif
+
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
 
    GetSystemInfo(&si);
-
-   /* Available from NT 3.5 and Win95 */
-   GetVersionEx((OSVERSIONINFO*)&vi);
-
-   server = vi.wProductType != VER_NT_WORKSTATION;
-
    switch (si.wProcessorArchitecture)
    {
       case PROCESSOR_ARCHITECTURE_AMD64:
@@ -301,6 +316,73 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
       default:
          break;
    }
+
+#ifndef _MSC_VER
+   /* Vista and later, MSYS2/MINGW64 build
+    * Check for Win11 by looking for a specific Registry value.
+    * The behavior of GetVersionEx is changed under Win11 and no longer provides
+    * relevant data. If the specific Registry value is present, read version data
+    * directly from registry and skip remainder of function.
+    * Each read is paired for string values; the first gets the size of the
+    * string (read into data_size); the second passes data_size back as an
+    * argument and reads the actual string. */
+   reg_read_result = RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "LCUVer",
+         reg_read_flags, &key_type, 0, &data_size);
+   
+   if (reg_read_result == ERROR_SUCCESS)
+   {
+      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "LCUVer",
+            reg_read_flags, &key_type, str_LCUVer, &data_size) != ERROR_SUCCESS)
+         read_success = FALSE;
+
+      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "ProductName",
+            reg_read_flags, &key_type, 0, &data_size) != ERROR_SUCCESS)
+         read_success = FALSE;
+      
+      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "ProductName",
+            reg_read_flags, &key_type, str_ProductName, &data_size) != ERROR_SUCCESS)
+         read_success = FALSE;
+
+      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "DisplayVersion",
+            reg_read_flags, &key_type, 0, &data_size) != ERROR_SUCCESS)
+         read_success = FALSE;
+
+      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "DisplayVersion",
+            reg_read_flags, &key_type, str_DisplayVersion, &data_size) != ERROR_SUCCESS)
+         read_success = FALSE;
+
+      if (read_success)
+      {
+         str_ProductName[ProductName_2nd_digit] = '1';
+         /* Even the version in the Registry still says Windows 10 and requires
+          * string manipulation. */
+         
+          _len = strlcpy(s, str_ProductName, len);
+                  if (!string_is_empty(arch))
+         {
+            _len += strlcat(s, " ",  len);
+            _len += strlcat(s, arch, len);
+         }
+         _len = strlcat(s, " ", len);
+         _len = strlcat(s, str_DisplayVersion, len);
+         _len = strlcat(s, " (", len);
+         _len = strlcat(s, str_LCUVer, len);
+         _len = strlcat(s, ")", len);
+
+         *major = 10;
+         *minor = 0;
+         
+         return _len;
+      }
+   }
+   /* End registry-check-and-read code; still within 2000-and-later block */
+#endif
+
+   /* GetVersionEx call changed in Win2K and later */
+   GetVersionEx((OSVERSIONINFO*)&vi);
+
+   server = vi.wProductType != VER_NT_WORKSTATION;
+
 #else
    OSVERSIONINFO vi = {0};
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);

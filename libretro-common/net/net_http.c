@@ -73,6 +73,11 @@ struct conn_pool_entry
 static struct conn_pool_entry *conn_pool = NULL;
 #ifdef HAVE_THREADS
 static slock_t *conn_pool_lock = NULL;
+#define LOCK_POOL() slock_lock(conn_pool_lock)
+#define UNLOCK_POOL() slock_unlock(conn_pool_lock)
+#else
+#define LOCK_POOL()
+#define UNLOCK_POOL()
 #endif
 
 struct http_t
@@ -142,6 +147,11 @@ static const retro_time_t dns_cache_timeout = 1000 /* usec/ms */ * 1000 /* ms/s 
 static const retro_time_t dns_cache_fail_timeout = 1000 /* usec/ms */ * 1000 /* ms/s */ * 30 /* s */;
 #ifdef HAVE_THREADS
 static slock_t *dns_cache_lock = NULL;
+#define LOCK_DNS_CACHE() slock_lock(dns_cache_lock)
+#define UNLOCK_DNS_CACHE() slock_unlock(dns_cache_lock)
+#else
+#define LOCK_DNS_CACHE()
+#define UNLOCK_DNS_CACHE()
 #endif
 
 /**
@@ -152,7 +162,7 @@ static slock_t *dns_cache_lock = NULL;
  **/
 void net_http_urlencode(char **dest, const char *source)
 {
-   static const char urlencode_lut[256] =
+   static const char urlencode_lut[] =
    {
       0,       /* 0   */
       0,       /* 1   */
@@ -276,140 +286,7 @@ void net_http_urlencode(char **dest, const char *source)
       'w',     /* 119 */
       'x',     /* 120 */
       'y',     /* 121 */
-      'z',     /* 122 */
-      0,       /* 123 */
-      0,       /* 124 */
-      0,       /* 125 */
-      0,       /* 126 */
-      0,       /* 127 */
-      0,       /* 128 */
-      0,       /* 129 */
-      0,       /* 130 */
-      0,       /* 131 */
-      0,       /* 132 */
-      0,       /* 133 */
-      0,       /* 134 */
-      0,       /* 135 */
-      0,       /* 136 */
-      0,       /* 137 */
-      0,       /* 138 */
-      0,       /* 139 */
-      0,       /* 140 */
-      0,       /* 141 */
-      0,       /* 142 */
-      0,       /* 143 */
-      0,       /* 144 */
-      0,       /* 145 */
-      0,       /* 146 */
-      0,       /* 147 */
-      0,       /* 148 */
-      0,       /* 149 */
-      0,       /* 150 */
-      0,       /* 151 */
-      0,       /* 152 */
-      0,       /* 153 */
-      0,       /* 154 */
-      0,       /* 155 */
-      0,       /* 156 */
-      0,       /* 157 */
-      0,       /* 158 */
-      0,       /* 159 */
-      0,       /* 160 */
-      0,       /* 161 */
-      0,       /* 162 */
-      0,       /* 163 */
-      0,       /* 164 */
-      0,       /* 165 */
-      0,       /* 166 */
-      0,       /* 167 */
-      0,       /* 168 */
-      0,       /* 169 */
-      0,       /* 170 */
-      0,       /* 171 */
-      0,       /* 172 */
-      0,       /* 173 */
-      0,       /* 174 */
-      0,       /* 175 */
-      0,       /* 176 */
-      0,       /* 177 */
-      0,       /* 178 */
-      0,       /* 179 */
-      0,       /* 180 */
-      0,       /* 181 */
-      0,       /* 182 */
-      0,       /* 183 */
-      0,       /* 184 */
-      0,       /* 185 */
-      0,       /* 186 */
-      0,       /* 187 */
-      0,       /* 188 */
-      0,       /* 189 */
-      0,       /* 190 */
-      0,       /* 191 */
-      0,       /* 192 */
-      0,       /* 193 */
-      0,       /* 194 */
-      0,       /* 195 */
-      0,       /* 196 */
-      0,       /* 197 */
-      0,       /* 198 */
-      0,       /* 199 */
-      0,       /* 200 */
-      0,       /* 201 */
-      0,       /* 202 */
-      0,       /* 203 */
-      0,       /* 204 */
-      0,       /* 205 */
-      0,       /* 206 */
-      0,       /* 207 */
-      0,       /* 208 */
-      0,       /* 209 */
-      0,       /* 210 */
-      0,       /* 211 */
-      0,       /* 212 */
-      0,       /* 213 */
-      0,       /* 214 */
-      0,       /* 215 */
-      0,       /* 216 */
-      0,       /* 217 */
-      0,       /* 218 */
-      0,       /* 219 */
-      0,       /* 220 */
-      0,       /* 221 */
-      0,       /* 222 */
-      0,       /* 223 */
-      0,       /* 224 */
-      0,       /* 225 */
-      0,       /* 226 */
-      0,       /* 227 */
-      0,       /* 228 */
-      0,       /* 229 */
-      0,       /* 230 */
-      0,       /* 231 */
-      0,       /* 232 */
-      0,       /* 233 */
-      0,       /* 234 */
-      0,       /* 235 */
-      0,       /* 236 */
-      0,       /* 237 */
-      0,       /* 238 */
-      0,       /* 239 */
-      0,       /* 240 */
-      0,       /* 241 */
-      0,       /* 242 */
-      0,       /* 243 */
-      0,       /* 244 */
-      0,       /* 245 */
-      0,       /* 246 */
-      0,       /* 247 */
-      0,       /* 248 */
-      0,       /* 249 */
-      0,       /* 250 */
-      0,       /* 251 */
-      0,       /* 252 */
-      0,       /* 253 */
-      0,       /* 254 */
-      0        /* 255 */
+      'z'      /* 122 */
    };
 
    /* Assume every character will be encoded, so we need 3 times the space. */
@@ -770,9 +647,8 @@ static void net_http_conn_pool_remove(struct conn_pool_entry *entry)
    struct conn_pool_entry *current;
    if (!entry)
       return;
-#ifdef HAVE_THREADS
-   slock_lock(conn_pool_lock);
-#endif
+
+   LOCK_POOL();
    current = conn_pool;
    while (current)
    {
@@ -783,17 +659,13 @@ static void net_http_conn_pool_remove(struct conn_pool_entry *entry)
          else
             conn_pool = current->next;
          net_http_conn_pool_free(current);
-#ifdef HAVE_THREADS
-         slock_unlock(conn_pool_lock);
-#endif
+         UNLOCK_POOL();
          return;
       }
       prev = current;
       current = current->next;
    }
-#ifdef HAVE_THREADS
-   slock_unlock(conn_pool_lock);
-#endif
+   UNLOCK_POOL();
 }
 
 /* *NOT* thread safe, caller must lock */
@@ -889,9 +761,7 @@ static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int p
 {
    struct conn_pool_entry *entry;
 
-#ifdef HAVE_THREADS
-   slock_lock(conn_pool_lock);
-#endif
+   LOCK_POOL();
 
    net_http_conn_pool_remove_expired();
 
@@ -902,16 +772,12 @@ static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int p
       {
          entry->in_use = true;
          net_http_conn_pool_move_to_end(entry);
-#ifdef HAVE_THREADS
-         slock_unlock(conn_pool_lock);
-#endif
+         UNLOCK_POOL();
          return entry;
       }
       entry = entry->next;
    }
-#ifdef HAVE_THREADS
-   slock_unlock(conn_pool_lock);
-#endif
+   UNLOCK_POOL();
    return NULL;
 }
 
@@ -926,13 +792,9 @@ static struct conn_pool_entry *net_http_conn_pool_add(const char *domain, int po
    entry->in_use = true;
    entry->ssl = ssl;
    entry->connected = false;
-#ifdef HAVE_THREADS
-   slock_lock(conn_pool_lock);
-#endif
+   LOCK_POOL();
    net_http_conn_pool_move_to_end(entry);
-#ifdef HAVE_THREADS
-   slock_unlock(conn_pool_lock);
-#endif
+   UNLOCK_POOL();
    return entry;
 }
 
@@ -990,25 +852,17 @@ static void net_http_resolve(void *data)
    hints.ai_socktype = SOCK_STREAM;
    hints.ai_flags |= AI_NUMERICSERV;
 
-#ifdef HAVE_THREADS
-   slock_lock(dns_cache_lock);
-#endif
+   LOCK_DNS_CACHE();
    domain = strdup(entry->domain);
    port = entry->port;
-#ifdef HAVE_THREADS
-   slock_unlock(dns_cache_lock);
-#endif
+   UNLOCK_DNS_CACHE();
 
    if (!network_init())
    {
-#ifdef HAVE_THREADS
-      slock_lock(dns_cache_lock);
-#endif
+      LOCK_DNS_CACHE();
       entry->valid = true;
       entry->addr = NULL;
-#ifdef HAVE_THREADS
-      slock_unlock(dns_cache_lock);
-#endif
+      UNLOCK_DNS_CACHE();
       free(domain);
       return;
    }
@@ -1018,14 +872,10 @@ static void net_http_resolve(void *data)
    getaddrinfo_retro(domain, port_buf, &hints, &addr);
    free(domain);
 
-#ifdef HAVE_THREADS
-   slock_lock(dns_cache_lock);
-#endif
+   LOCK_DNS_CACHE();
    entry->valid = true;
    entry->addr = addr;
-#ifdef HAVE_THREADS
-   slock_unlock(dns_cache_lock);
-#endif
+   UNLOCK_DNS_CACHE();
 }
 
 static bool net_http_new_socket(struct http_t *state)
@@ -1038,7 +888,11 @@ static bool net_http_new_socket(struct http_t *state)
 
    if (!dns_cache_lock)
       dns_cache_lock = slock_new();
-   slock_lock(dns_cache_lock);
+   LOCK_DNS_CACHE();
+
+   /* need some place to create this, I guess */
+   if (!conn_pool_lock)
+      conn_pool_lock = slock_new();
 #endif
 
    entry = net_http_dns_cache_find(state->request.domain, state->request.port);
@@ -1049,27 +903,21 @@ static bool net_http_new_socket(struct http_t *state)
          int fd;
          if (!entry->addr)
          {
-#ifdef HAVE_THREADS
-            slock_unlock(dns_cache_lock);
-#endif
+            UNLOCK_DNS_CACHE();
             return false;
          }
          addr = entry->addr;
          fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
          if (fd >= 0)
             state->conn = net_http_conn_pool_add(state->request.domain, state->request.port, fd, state->ssl);
-#ifdef HAVE_THREADS
          /* still waiting on thread */
-         slock_unlock(dns_cache_lock);
-#endif
+         UNLOCK_DNS_CACHE();
          return (fd >= 0);
       }
       else
       {
-#ifdef HAVE_THREADS
          /* still waiting on thread */
-         slock_unlock(dns_cache_lock);
-#endif
+         UNLOCK_DNS_CACHE();
          return true;
       }
    }
@@ -1081,13 +929,11 @@ static bool net_http_new_socket(struct http_t *state)
       thread = sthread_create(net_http_resolve, entry);
       sthread_detach(thread);
 #else
-      net_http_resolve(state);
+      net_http_resolve(entry);
 #endif
    }
 
-#ifdef HAVE_THREADS
-   slock_unlock(dns_cache_lock);
-#endif
+   UNLOCK_DNS_CACHE();
 
    return true;
 }
@@ -1106,40 +952,45 @@ static bool net_http_connect(struct http_t *state)
 #else
    if (state->ssl)
    {
-      if (!conn || conn->fd < 0)
+      if (!conn)
          return false;
 
-      if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, state->request.domain)))
+      for (next_addr = addr; conn->fd >= 0; conn->fd = socket_next((void**)&next_addr))
       {
-         net_http_conn_pool_remove(conn);
-         state->conn = NULL;
-         state->error = true;
-         return false;
-      }
+         if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, state->request.domain)))
+         {
+            socket_close(conn->fd);
+            break;
+         }
 
-      /* TODO: Properly figure out what's going wrong when the newer
-         timeout/poll code interacts with mbed and winsock
-         https://github.com/libretro/RetroArch/issues/14742 */
+         /* TODO: Properly figure out what's going wrong when the newer
+          timeout/poll code interacts with mbed and winsock
+          https://github.com/libretro/RetroArch/issues/14742 */
 
-      /* Temp fix, don't use new timeout/poll code for cheevos http requests */
+         /* Temp fix, don't use new timeout/poll code for cheevos http requests */
          bool timeout = true;
 #ifdef __WIN32
-      if (!strcmp(state->request.domain, "retroachievements.org"))
-         timeout = false;
+         if (!strcmp(state->request.domain, "retroachievements.org"))
+            timeout = false;
 #endif
 
-      if (ssl_socket_connect(conn->ssl_ctx, addr, timeout, true) < 0)
-      {
-         net_http_conn_pool_remove(conn);
-         state->conn = NULL;
-         state->error = true;
-         return false;
+         if (ssl_socket_connect(conn->ssl_ctx, next_addr, timeout, true) < 0)
+         {
+            ssl_socket_close(conn->ssl_ctx);
+            ssl_socket_free(conn->ssl_ctx);
+            conn->ssl_ctx = NULL;
+         }
+         else
+         {
+            conn->connected = true;
+            return true;
+         }
       }
-      else
-      {
-         conn->connected = true;
-         return true;
-      }
+      conn->fd = -1; /* already closed */
+      net_http_conn_pool_remove(conn);
+      state->conn = NULL;
+      state->error = true;
+      return false;
    }
    else
 #endif

@@ -48,7 +48,8 @@ enum menu_state_flags
     * - Does menu driver support screensaver functionality?
     * - Is screensaver currently active? */
    MENU_ST_FLAG_SCREENSAVER_SUPPORTED       = (1 << 10),
-   MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11)
+   MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11),
+   MENU_ST_FLAG_PENDING_RELOAD_CORE         = (1 << 12)
 };
 
 enum menu_scroll_mode
@@ -165,9 +166,7 @@ enum menu_timedate_date_separator_type
    MENU_TIMEDATE_DATE_SEPARATOR_LAST
 };
 
-/* Specifies location of the 'Scan Content' menu
- * entry when using menu drivers without a
- * dedicated 'Import Content' (horizontal) tab */
+/* Specifies location of the 'Import Content' menu */
 enum menu_add_content_entry_display_type
 {
    MENU_ADD_CONTENT_ENTRY_DISPLAY_HIDDEN = 0,
@@ -458,6 +457,8 @@ enum menu_action
    MENU_ACTION_SCROLL_UP,
    MENU_ACTION_SCROLL_HOME,
    MENU_ACTION_SCROLL_END,
+   MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY,
+   MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY,
    MENU_ACTION_TOGGLE,
    MENU_ACTION_RESUME,
    MENU_ACTION_POINTER_MOVED,

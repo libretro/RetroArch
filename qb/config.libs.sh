@@ -313,6 +313,7 @@ if [ "$HAVE_QT" != 'no' ]; then
       then
          HAVE_QT6='yes'
          add_define MAKEFILE HAVE_QT6 1
+         add_define CONFIG HAVE_QT6 1
       fi
    fi
    if [ "$HAVE_QT6" != 'yes' ]; then
@@ -544,6 +545,7 @@ if [ "$HAVE_X11" != 'no' ]; then
    check_val '' XEXT -lXext '' xext '' '' false
    check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
    check_val '' XSCRNSAVER -lXss '' xscrnsaver '' '' false
+   check_val '' XI2 -lXi '' xi '' '' false
 else
    die : 'Notice: X11 not present. Skipping X11 code paths.'
 fi
@@ -562,7 +564,7 @@ check_header '' XSHM X11/Xlib.h X11/extensions/XShm.h
 check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
 check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 10.1.0 '' false
 check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.12 '' false
-check_pkgconf WAYLAND_PROTOS wayland-protocols 1.32
+check_pkgconf WAYLAND_PROTOS wayland-protocols 1.37
 check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
 
 if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&

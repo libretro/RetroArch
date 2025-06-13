@@ -4554,9 +4554,9 @@ static void *gl2_init(const video_info_t *video,
 
    /* Empty buffer that we use to clear out
     * the texture with on res change. */
-   gl->empty_buf             = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
+   gl->empty_buf             = calloc(gl->tex_w * gl->tex_h, sizeof(uint32_t));
 
-   gl->conv_buffer           = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
+   gl->conv_buffer           = calloc(gl->tex_w * gl->tex_h, sizeof(uint32_t));
 
    if (!gl->conv_buffer)
       goto error;

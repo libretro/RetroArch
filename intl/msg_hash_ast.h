@@ -1481,7 +1481,6 @@ MSG_HASH(
    )
 
 
-
 /* Settings > Input > Port # Controls */
 
 MSG_HASH(
@@ -3878,14 +3877,6 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "El xuegu en llinia aníciase cuando se carga conteníu."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SAVE_DEBUG_INFO,
-   "Hebo un error al guardar la información de depuración."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SEND_DEBUG_INFO,
-   "Hebo un error al unviar la información de depuración al sirvidor."
-   )
-MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
    "Colesti de la partida"
    )
@@ -4049,10 +4040,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_READING_FIRST_DATA_TRACK,
    "Lleendo la primer pista de datos…"
-   )
-MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Guardóse una configuración nueva en"
    )
 MSG_HASH(
    MSG_SHADER,

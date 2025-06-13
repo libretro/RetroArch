@@ -46,6 +46,9 @@ static void crt_adjust_sr_ini(videocrt_switch_t *p_switch);
 static bool ini_overrides_loaded = false;
 static char core_name[NAME_MAX_LENGTH]; /* Same size as library_name on retroarch_data.h */
 static char content_dir[DIR_MAX_LENGTH];
+static char _hSize[12];
+static char _hShift[12];
+static char _vShift[12];
 
 #if defined(HAVE_VIDEOCORE) /* Need to add video core to SR2 */
 #include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
@@ -56,8 +59,9 @@ static bool crt_check_for_changes(videocrt_switch_t *p_switch)
 {
    if (   (p_switch->ra_core_height != p_switch->ra_tmp_height)
        || (p_switch->ra_core_width  != p_switch->ra_tmp_width)
-       || (p_switch->center_adjust  != p_switch->tmp_center_adjust
-       ||  p_switch->porch_adjust   != p_switch->tmp_porch_adjust)
+       || (p_switch->center_adjust  != p_switch->tmp_center_adjust)
+       || (p_switch->porch_adjust   != p_switch->tmp_porch_adjust)
+       || (p_switch->vert_adjust   != p_switch->tmp_vert_adjust)
        || (p_switch->ra_core_hz     != p_switch->ra_tmp_core_hz)
        || (p_switch->rotated        != p_switch->tmp_rotated))
       return true;
@@ -72,6 +76,7 @@ static void crt_store_temp_changes(videocrt_switch_t *p_switch)
    p_switch->tmp_porch_adjust  = p_switch->porch_adjust;
    p_switch->ra_tmp_core_hz    = p_switch->ra_core_hz;
    p_switch->tmp_rotated       = p_switch->rotated;
+   p_switch->tmp_vert_adjust   = p_switch->vert_adjust;
 }
 
 static void crt_aspect_ratio_switch(
@@ -300,10 +305,20 @@ static void switch_res_crt(
    {
       int ret;
       int flags = 0;
+      int temph = 640;
+      int tempw = 480;
       char current_core_name[NAME_MAX_LENGTH];
       char current_content_dir[DIR_MAX_LENGTH];
       double rr              = p_switch->ra_core_hz;
       const char *_core_name = (const char*)runloop_state_get_ptr()->system.info.library_name;
+      
+      const char* hSize = (const char*)_hSize;
+      const char* hShift = (const char*)_hShift;
+      const char* vShift = (const char*)_vShift;
+
+      if (p_switch->rotated)
+         flags |= SR_MODE_ROTATED;
+      
       /* Check for core and content changes in case we need
          to make any adjustments */
       if (string_is_empty(_core_name))
@@ -327,8 +342,37 @@ static void switch_res_crt(
          p_switch->hh_core = false;
       }
 
-      if (p_switch->rotated)
-         flags |= SR_MODE_ROTATED;
+      #if defined(_WIN32)
+      if (p_switch->center_adjust  != p_switch->tmp_center_adjust ||
+         p_switch->vert_adjust   != p_switch->tmp_vert_adjust)
+      {
+
+         if (w > 320 || h > 240)
+         {
+            temph = 240;
+            tempw = 320;
+            RARCH_LOG("[CRT]: SR temporary mode for windows geometry adjustment (320x240)\n");
+         }else{
+
+            RARCH_LOG("[CRT]: SR temporary mode for windows geometry adjustment (640x400)\n");
+         }
+   
+         ret = sr_add_mode(tempw, temph, rr, flags, &srm);
+
+         if (!ret)
+            RARCH_ERR("[CRT]: SR failed to add temporary mode for windows geometry adjustment\n");
+         else
+         {
+            ret = sr_set_mode(srm.id);
+            RARCH_LOG("[CRT]: SR added temporary mode for windows geometry adjustment\n");
+         }
+           
+      }
+      #endif
+
+      sr_set_option(SR_OPT_H_SIZE, hSize);
+      sr_set_option(SR_OPT_H_SHIFT, hShift);
+      sr_set_option(SR_OPT_V_SHIFT, vShift);
 
       RARCH_DBG("%dx%d rotation: %d rotated: %d core rotation:%d\n", w, h, p_switch->rotated, flags & SR_MODE_ROTATED, retroarch_get_rotation());
       ret = sr_add_mode(w, h, rr, flags, &srm);
@@ -386,8 +430,11 @@ void crt_switch_res_core(
       int crt_switch_porch_adjust,
       int monitor_index, bool dynamic,
       int super_width, bool hires_menu,
-      unsigned video_aspect_ratio_idx)
+      unsigned video_aspect_ratio_idx,
+      int crt_switch_vert_adjust)
 {
+   
+
    if (height <= 4)
    {
       hz              = 60;
@@ -400,7 +447,7 @@ void crt_switch_res_core(
       {
          native_width = 320;
          height       = 240;
-      }
+      } 
       width           = native_width;
    }
 
@@ -408,6 +455,7 @@ void crt_switch_res_core(
    {
       p_switch->menu_active           = false;
       p_switch->porch_adjust          = crt_switch_porch_adjust;
+      p_switch->vert_adjust           = crt_switch_vert_adjust;
       p_switch->ra_core_height        = height;
       p_switch->ra_core_hz            = hz;
 
@@ -425,7 +473,13 @@ void crt_switch_res_core(
 #if defined(HAVE_VIDEOCORE)
          crt_rpi_switch(p_switch, width, height, hz, 0, native_width);
 #else
-
+         
+         sprintf(_hSize, "%lf", 1+
+            ((float)crt_switch_porch_adjust/100.0));
+         sprintf(_hShift, "%d",
+            crt_switch_center_adjust);
+         sprintf(_vShift, "%d",
+            crt_switch_vert_adjust);
          if (p_switch->hh_core)
          {
             int corrected_width  = 320;

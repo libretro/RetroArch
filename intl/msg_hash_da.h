@@ -436,10 +436,6 @@ MSG_HASH(
    "Lås installeret kerne"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Forhindre ændring af den aktuelt installerede kerne. Kan bruges til at undgå uønskede opdateringer, når indhold kræver en bestemt kerneversion (f.eks Arcade ROM sæt)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
    "Slet kerne"
    )
@@ -841,10 +837,6 @@ MSG_HASH(
    "Bruger"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Skift konto, brugernavn og sprogindstillinger."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Mappe"
    )
@@ -860,10 +852,6 @@ MSG_HASH(
 
 /* Settings > Drivers */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Input driver til brug. Nogle videodrivere tvinger en anden inputdriver."
-   )
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
@@ -1047,7 +1035,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "AI Tjeneste"
    )
-
 
 
 /* Settings > Input > Port # Controls */

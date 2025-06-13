@@ -169,8 +169,8 @@ typedef struct audio_driver
 
 typedef struct
 {
-   double source_ratio_original;
-   double source_ratio_current;
+   double src_ratio_orig;
+   double src_ratio_curr;
 
    uint64_t free_samples_count;
 
@@ -320,17 +320,6 @@ bool audio_driver_start(bool is_shutdown);
 
 bool audio_driver_stop(void);
 
-/**
- * If you need to query the size of audio samples,
- * use this function instead of checking the flags directly.
- *
- * @return The size of a single audio sample in bytes,
- * as determined by the presence of the \c AUDIO_FLAG_USE_FLOAT flag.
- * Will currently return either 2 (for \c uint16_t) or 4 (for \c float),
- * although this may change if we add support for more sample types.
- */
-unsigned audio_driver_get_sample_size(void);
-
 #ifdef HAVE_TRANSLATE
 /* TODO/FIXME - Doesn't currently work.  Fix this. */
 bool audio_driver_is_ai_service_speech_running(void);
@@ -344,9 +333,7 @@ bool audio_driver_is_ai_service_speech_running(void);
  **/
 bool audio_compute_buffer_statistics(audio_statistics_t *stats);
 
-bool audio_driver_init_internal(
-      void *settings_data,
-      bool audio_cb_inited);
+bool audio_driver_init_internal(void *data, bool audio_cb_inited);
 
 bool audio_driver_deinit(void);
 
@@ -439,6 +426,7 @@ extern audio_driver_t audio_switch_thread;
 extern audio_driver_t audio_switch_libnx_audren;
 extern audio_driver_t audio_switch_libnx_audren_thread;
 extern audio_driver_t audio_rwebaudio;
+extern audio_driver_t audio_audioworklet;
 
 audio_driver_state_t *audio_state_get_ptr(void);
 

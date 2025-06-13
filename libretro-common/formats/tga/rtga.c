@@ -265,9 +265,7 @@ static uint8_t *rtga_tga_load(rtga_context *s,
       int RLE_repeating          = 0;
       int RLE_count              = 0;
       int read_next_pixel        = 1;
-      /* Needs to be at least 33 bytes to silence a GCC warning,
-       * only 4 are actually used */
-      unsigned char raw_data[33] = {0};
+      unsigned char raw_data[4] = {0};
       unsigned char *tga_palette = NULL;
 
       /*   Do I need to load a palette? */
@@ -337,8 +335,14 @@ static uint8_t *rtga_tga_load(rtga_context *s,
             else
             {
                /* read in the data raw */
-               for (j = 0; j*8 < tga_bits_per_pixel; ++j)
-                  raw_data[j] = rtga_get8(s);
+               /* manually unroll, probably GCC bug 92955 */
+               j = 0;
+               switch (tga_bits_per_pixel) {
+                  case 32: raw_data[j++] = rtga_get8(s); /* fallthrough */
+                  case 24: raw_data[j++] = rtga_get8(s); /* fallthrough */
+                  case 16: raw_data[j++] = rtga_get8(s); /* fallthrough */
+                  case  8: raw_data[j++] = rtga_get8(s);
+               }
             }
 
             /*   clear the reading flag for the next pixel */

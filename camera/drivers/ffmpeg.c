@@ -40,6 +40,8 @@
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "dshow"
 #elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined (__NetBSD__)
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "bktr"
+#else
+#define FFMPEG_CAMERA_DEFAULT_BACKEND "lavfi"
 #endif
 
 typedef struct ffmpeg_camera
@@ -275,7 +277,6 @@ static void ffmpeg_camera_poll_thread(void *data);
 
 static bool ffmpeg_camera_start(void *data)
 {
-   const settings_t *settings = config_get_ptr();
    ffmpeg_camera_t *ffmpeg = data;
    int result = 0;
    AVStream *stream = NULL;

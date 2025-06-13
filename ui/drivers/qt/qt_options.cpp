@@ -1574,6 +1574,7 @@ QWidget *CrtSwitchresPage::widget()
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION));
    layout->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER), m_crtSuperResolutionCombo);
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE));
 
    connect(m_crtSuperResolutionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onCrtSuperResolutionComboIndexChanged(int)));

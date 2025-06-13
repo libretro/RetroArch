@@ -3787,7 +3787,7 @@ static int16_t udev_input_state(
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
+         if (binds)
          {
             int id_minus_key      = 0;
             int id_plus_key       = 0;
@@ -3932,6 +3932,10 @@ static void udev_input_free(void *data)
 
    if (!data || !udev)
       return;
+
+#ifdef __linux__
+   linux_terminal_restore_input();
+#endif
 
    if (udev->fd >= 0)
       close(udev->fd);
@@ -4126,7 +4130,28 @@ static void *udev_input_init(const char *joypad_driver)
    /* If using KMS and we forgot this,
     * we could lock ourselves out completely. */
    if (!udev->num_devices)
+   {
+      settings_t *settings = config_get_ptr();
       RARCH_WARN("[udev]: Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event* and /run/udev/?\n");
+      /* Start screen is not used nowadays, but it still gets true value only
+       * on first startup without config file, so it should be good to catch
+       * initial boots without udev devices available. */
+#if defined(__linux__) && !defined(ANDROID)
+      if (settings->bools.menu_show_start_screen)
+      {
+         /* Force fallback to linuxraw. Driver reselection would happen even
+          * without overwriting input_driver setting, but that would not be saved
+          * as input driver auto-changes are not stored (due to interlock with
+          * video context driver), and on next boot user would be stuck with a
+          * possibly nonworking configuration.
+          */
+         strlcpy(settings->arrays.input_driver, "linuxraw",
+                 sizeof(settings->arrays.input_driver));
+         RARCH_WARN("[udev]: First boot and without input devices, forcing fallback to linuxraw.\n");
+         goto error;
+      }
+#endif
+   }
 
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 

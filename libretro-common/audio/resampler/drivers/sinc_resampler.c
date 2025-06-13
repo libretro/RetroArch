@@ -22,6 +22,11 @@
 
 /* Bog-standard windowed SINC implementation. */
 
+#if defined(__GNUC__) && defined(__OPTIMIZE__) && !defined(__clang__)
+#pragma GCC push_options
+#pragma GCC optimize ("fast-math")
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
@@ -1023,3 +1028,7 @@ retro_resampler_t sinc_resampler = {
    "sinc",
    "sinc"
 };
+
+#if defined(__GNUC__) && defined(__OPTIMIZE__) && !defined(__clang__)
+#pragma GCC pop_options
+#endif

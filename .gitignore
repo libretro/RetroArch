@@ -148,7 +148,6 @@ wiiu/wut/elf2rpl/elf2rpl
 /pkg/android/phoenix/bin/
 /pkg/android/phoenix/gen/
 /pkg/android/phoenix/local.properties
-/pkg/android/phoenix/gradle.properties
 /pkg/android/phoenix/.gradle
 /pkg/android/phoenix/.externalNativeBuild
 /pkg/android/phoenix/build
@@ -241,6 +240,8 @@ gfx/common/wayland/content-type-v1.h
 gfx/common/wayland/content-type-v1.c
 gfx/common/wayland/single-pixel-buffer-v1.h
 gfx/common/wayland/single-pixel-buffer-v1.c
+gfx/common/wayland/xdg-toplevel-icon-v1.h
+gfx/common/wayland/xdg-toplevel-icon-v1.c
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip

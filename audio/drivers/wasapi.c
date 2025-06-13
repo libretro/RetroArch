@@ -443,10 +443,13 @@ static size_t wasapi_write_avail(void *wh)
 {
    wasapi_t *w    = (wasapi_t*)wh;
    UINT32 padding = 0;
+
+   if (w->flags & WASAPI_FLG_EXCLUSIVE && w->buffer)
+      return FIFO_WRITE_AVAIL(w->buffer);
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
       return 0;
    if (w->buffer) /* Exaggerate available size for best results.. */
-      return FIFO_WRITE_AVAIL(w->buffer) + padding * 2;
+      return FIFO_WRITE_AVAIL(w->buffer) + padding;
    return w->engine_buffer_size - padding * w->frame_size;
 }
 

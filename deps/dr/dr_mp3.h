@@ -1064,12 +1064,22 @@ static void drmp3_L3_midside_stereo(float *left, int n)
     int i = 0;
     float *right = left + 576;
 #if DRMP3_HAVE_SIMD
-    if (drmp3_have_simd()) for (; i < n - 3; i += 4)
+    if (drmp3_have_simd())
     {
-        drmp3_f4 vl = DRMP3_VLD(left + i);
-        drmp3_f4 vr = DRMP3_VLD(right + i);
-        DRMP3_VSTORE(left + i, DRMP3_VADD(vl, vr));
-        DRMP3_VSTORE(right + i, DRMP3_VSUB(vl, vr));
+        for (; i < n - 3; i += 4)
+        {
+            drmp3_f4 vl = DRMP3_VLD(left + i);
+            drmp3_f4 vr = DRMP3_VLD(right + i);
+            DRMP3_VSTORE(left + i, DRMP3_VADD(vl, vr));
+            DRMP3_VSTORE(right + i, DRMP3_VSUB(vl, vr));
+        }
+#ifdef __GNUC__
+        /* Workaround for spurious -Waggressive-loop-optimizations warning from gcc.
+         * For more info see: https://github.com/lieff/minimp3/issues/88
+         */
+        if (__builtin_constant_p(n % 4 == 0) && n % 4 == 0)
+            return;
+#endif
     }
 #endif
     for (; i < n; i++)

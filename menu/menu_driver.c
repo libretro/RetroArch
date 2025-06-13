@@ -49,6 +49,7 @@
 #include "../driver.h"
 #include "../list_special.h"
 #include "../paths.h"
+#include "../tasks/task_content.h"
 #include "../tasks/task_powerstate.h"
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
@@ -1859,8 +1860,9 @@ static void menu_input_get_mouse_hw_state(
       menu_input_pointer_hw_state_t *hw_state)
 {
    rarch_joypad_info_t joypad_info;
-   static int16_t last_x           = 0;
-   static int16_t last_y           = 0;
+   static int16_t last_x           = -0x7fff;
+   static int16_t last_y           = -0x7fff;
+   bool ignore_position            = false;
    bool is_select_pressed          = false;
    bool is_cancel_pressed          = false;
    static bool last_select_pressed = false;
@@ -1918,6 +1920,10 @@ static void menu_input_get_mouse_hw_state(
                   RETRO_DEVICE_ID_MOUSE_Y)) != last_y)
          hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
    }
+
+   /* Start reading mouse position after moving it once */
+   if (last_x == -0x7fff && last_y == -0x7fff)
+      ignore_position = true;
 
    last_x                          = hw_state->x;
    last_y                          = hw_state->y;
@@ -2055,6 +2061,9 @@ static void menu_input_get_mouse_hw_state(
       hw_state->flags  |= MENU_INP_PTR_FLG_ACTIVE;
    last_select_pressed  = (hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT) > 0;
    last_cancel_pressed  = (hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL) > 0;
+
+   if (ignore_position)
+      hw_state->flags &= ~MENU_INP_PTR_FLG_ACTIVE;
 }
 
 static void menu_input_get_touchscreen_hw_state(
@@ -2872,15 +2881,31 @@ void menu_shader_manager_apply_changes(
       const char *dir_menu_config)
 {
    enum rarch_shader_type type = RARCH_SHADER_NONE;
+   settings_t *settings        = config_get_ptr();
 
    if (!shader)
       return;
 
    type = menu_shader_manager_get_type(shader);
 
+   /* Allow cold start from hotkey */
+   if (     type == RARCH_SHADER_NONE
+         && settings->bools.video_shader_enable
+         && !(shader->flags & SHDR_FLAG_DISABLED))
+   {
+      const char *preset          = video_shader_get_current_shader_preset();
+      enum rarch_shader_type type = video_shader_parse_type(preset);
+      video_shader_apply_shader(settings, type, preset, false);
+      return;
+   }
+
+   /* Temporary state does not save anything */
+   if (shader->flags & SHDR_FLAG_TEMPORARY)
+      return;
+
    if (     shader->passes
-         && (type != RARCH_SHADER_NONE)
-         && (!(shader->flags & SHDR_FLAG_DISABLED)))
+         && type != RARCH_SHADER_NONE
+         && !(shader->flags & SHDR_FLAG_DISABLED))
    {
       menu_shader_manager_save_preset(shader, NULL,
             dir_video_shader, dir_menu_config, true);
@@ -2888,6 +2913,9 @@ void menu_shader_manager_apply_changes(
    }
 
    menu_shader_manager_set_preset(NULL, type, NULL, true);
+
+   /* Reinforce disabled state on failure */
+   configuration_set_bool(settings, settings->bools.video_shader_enable, false);
 }
 
 static bool menu_shader_manager_save_preset_internal(
@@ -3498,25 +3526,25 @@ static int menu_dialog_iterate(
                   s2, sizeof(s2));
 
             snprintf(s, len,
-                  "%s"
+                  "%.250s"
                   "[%s]: "
-                  "%-20s\n"
+                  "%-20.20s\n"
                   "[%s]: "
-                  "%-20s\n"
+                  "%-20.20s\n"
                   "[%s]: "
-                  "%-20s\n"
+                  "%-20.20s\n"
                   "[%s]: "
-                  "%-20s\n"
+                  "%-20.20s\n"
                   "[%s]: "
-                  "%-20s\n"
+                  "%-20.20s\n"
                   "[%s]: "
-                  "%-20s\n"
+                  "%-20.20s\n"
                   "[%s]: "
-                  "%-20s\n"
+                  "%-20.20s\n"
                   "[%s]: "
-                  "%-20s\n"
+                  "%-20.20s\n"
                   "[%s]: "
-                  "%-20s\n",
+                  "%-20.20s\n",
 
                   s2,
 
@@ -5150,6 +5178,43 @@ bool menu_input_dialog_get_display_kb(void)
    return ((menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY) > 0);
 }
 
+/* Menu action buttons that need to be processed on key up
+ * when toggle combos are active */
+static unsigned input_combo_type_onkeyup_lut[INPUT_COMBO_LAST] =
+{
+   /* INPUT_COMBO_NONE */               0,
+   /* INPUT_COMBO_DOWN_Y_L_R */         (1 << RETRO_DEVICE_ID_JOYPAD_Y) | (1 << RETRO_DEVICE_ID_JOYPAD_L) | (1 << RETRO_DEVICE_ID_JOYPAD_R),
+   /* INPUT_COMBO_L3_R3 */              (1 << RETRO_DEVICE_ID_JOYPAD_L3) | (1 << RETRO_DEVICE_ID_JOYPAD_R3),
+   /* INPUT_COMBO_L1_R1_START_SELECT */ (1 << RETRO_DEVICE_ID_JOYPAD_L) | (1 << RETRO_DEVICE_ID_JOYPAD_R) | (1 << RETRO_DEVICE_ID_JOYPAD_START) | (1 << RETRO_DEVICE_ID_JOYPAD_SELECT),
+   /* INPUT_COMBO_START_SELECT */       (1 << RETRO_DEVICE_ID_JOYPAD_START) | (1 << RETRO_DEVICE_ID_JOYPAD_SELECT),
+   /* INPUT_COMBO_L3_R */               (1 << RETRO_DEVICE_ID_JOYPAD_L3) | (1 << RETRO_DEVICE_ID_JOYPAD_R),
+   /* INPUT_COMBO_L_R */                (1 << RETRO_DEVICE_ID_JOYPAD_L) | (1 << RETRO_DEVICE_ID_JOYPAD_R),
+   /* INPUT_COMBO_HOLD_START */         (1 << RETRO_DEVICE_ID_JOYPAD_START),
+   /* INPUT_COMBO_HOLD_SELECT */        (1 << RETRO_DEVICE_ID_JOYPAD_SELECT),
+   /* INPUT_COMBO_DOWN_SELECT */        (1 << RETRO_DEVICE_ID_JOYPAD_SELECT),
+   /* INPUT_COMBO_L2_R2 */              (1 << RETRO_DEVICE_ID_JOYPAD_L2) | (1 << RETRO_DEVICE_ID_JOYPAD_R2)
+};
+
+#define MENU_ACTION_RET(id, action) \
+{ \
+   if (onkeyup & (1 << id)) \
+   { \
+      if (BIT256_GET_PTR(p_input, id)) \
+         keydown[id] = true; \
+      else if (keydown[id]) \
+      { \
+         keydown[id] = false; \
+         ret = action; \
+      } \
+   } \
+   else \
+   { \
+      if (BIT256_GET_PTR(p_trigger_input, id)) \
+         ret = action; \
+   } \
+} \
+
+
 unsigned menu_event(
       settings_t *settings,
       input_bits_t *p_input,
@@ -5166,7 +5231,7 @@ unsigned menu_event(
    static unsigned ok_old                          = 0;
    unsigned ret                                    = MENU_ACTION_NOOP;
    bool set_scroll                                 = false;
-   size_t new_scroll_accel                         = 0;
+   unsigned new_scroll_accel                       = 0;
    struct menu_state *menu_st                      = &menu_driver_state;
    menu_input_t *menu_input                        = &menu_st->input_state;
    input_driver_state_t *input_st                  = input_state_get_ptr();
@@ -5280,7 +5345,11 @@ unsigned menu_event(
          memcpy(pointer_hw_state, &touchscreen_hw_state, sizeof(menu_input_pointer_hw_state_t));
 
       if (pointer_hw_state->flags & MENU_INP_PTR_FLG_ACTIVE)
+      {
          menu_st->input_last_time_us = menu_st->current_time_us;
+         /* Prevent double trigger when OK/Cancel has mouse binds */
+         menu_st->input_driver_flushing_input = 1;
+      }
    }
 
    /* Populate menu_input_state
@@ -5379,7 +5448,7 @@ unsigned menu_event(
          p_trigger_input->data[0]  |= p_input->data[0] & input_repeat;
          set_scroll                 = true;
          hold_reset                 = true;
-         new_scroll_accel           = MIN(menu_st->scroll.acceleration + 1, (menu_scroll_fast) ? 25 : 5);
+         new_scroll_accel           = MIN(menu_st->scroll.acceleration + 1, menu_scroll_fast ? 25U : 5U);
       }
    }
    else
@@ -5391,7 +5460,7 @@ unsigned menu_event(
    }
 
    if (set_scroll)
-      menu_st->scroll.acceleration  = (unsigned)(new_scroll_accel);
+      menu_st->scroll.acceleration  = new_scroll_accel;
 
    if (display_kb)
    {
@@ -5504,7 +5573,9 @@ unsigned menu_event(
    else
    {
       static uint8_t switch_old = 0;
-      static bool down[MENU_ACTION_TOGGLE] = {false};
+      static bool keydown[RARCH_FIRST_CUSTOM_BIND] = {false};
+      unsigned onkeyup          =
+            input_combo_type_onkeyup_lut[settings->uints.input_menu_toggle_gamepad_combo];
       uint8_t switch_current    = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
                                 | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
       uint8_t switch_trigger    = switch_current & ~switch_old;
@@ -5544,85 +5615,59 @@ unsigned menu_event(
             switch_trigger      = 1;
       }
 
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
-      {
-         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_UP))
-            ret = MENU_ACTION_UP;
-      }
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
-      {
-         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
-            ret = MENU_ACTION_DOWN;
-      }
+      if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP)
+            && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+         ret = MENU_ACTION_UP;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN)
+            && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+         ret = MENU_ACTION_DOWN;
       if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
-            && switch_trigger)
-      {
-         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
-            ret = MENU_ACTION_LEFT;
-      }
+            && switch_trigger
+            && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+         ret = MENU_ACTION_LEFT;
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT)
-            && switch_trigger)
-      {
-         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
-            ret = MENU_ACTION_RIGHT;
-      }
+            && switch_trigger
+            && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+         ret = MENU_ACTION_RIGHT;
+
+      if (BIT256_GET_PTR(p_trigger_input, RARCH_ANALOG_RIGHT_Y_MINUS))
+         ret = MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY;
+      else if (BIT256_GET_PTR(p_trigger_input, RARCH_ANALOG_RIGHT_Y_PLUS))
+         ret = MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY;
+      else if (BIT256_GET_PTR(p_trigger_input, RARCH_ANALOG_RIGHT_X_MINUS))
+         ret = MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY;
+      else if (BIT256_GET_PTR(p_trigger_input, RARCH_ANALOG_RIGHT_X_PLUS))
+         ret = MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY;
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
-      {
          menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_START_LETTER : MENU_SCROLL_PAGE;
-         ret = MENU_ACTION_SCROLL_UP;
-      }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
-      {
          menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_START_LETTER : MENU_SCROLL_PAGE;
-         ret = MENU_ACTION_SCROLL_DOWN;
-      }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L2))
-      {
          menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_PAGE : MENU_SCROLL_START_LETTER;
-         ret = MENU_ACTION_SCROLL_UP;
-      }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R2))
-      {
          menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_PAGE : MENU_SCROLL_START_LETTER;
-         ret = MENU_ACTION_SCROLL_DOWN;
-      }
 
-      if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
-         down[MENU_ACTION_SCROLL_HOME] = true;
-      else if (down[MENU_ACTION_SCROLL_HOME])
-      {
-         down[MENU_ACTION_SCROLL_HOME] = false;
-         ret = MENU_ACTION_SCROLL_HOME;
-      }
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_L, MENU_ACTION_SCROLL_UP);
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_R, MENU_ACTION_SCROLL_DOWN);
 
-      if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
-         down[MENU_ACTION_SCROLL_END] = true;
-      else if (down[MENU_ACTION_SCROLL_END])
-      {
-         down[MENU_ACTION_SCROLL_END] = false;
-         ret = MENU_ACTION_SCROLL_END;
-      }
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_L2, MENU_ACTION_SCROLL_UP);
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_R2, MENU_ACTION_SCROLL_DOWN);
+
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_L3, MENU_ACTION_SCROLL_HOME);
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_R3, MENU_ACTION_SCROLL_END);
+
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_X, MENU_ACTION_SEARCH);
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_Y, MENU_ACTION_SCAN);
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_START, MENU_ACTION_START);
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_SELECT, MENU_ACTION_INFO);
 
       if (ok_trigger)
          ret = MENU_ACTION_OK;
       else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
          ret = MENU_ACTION_CANCEL;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
-      {
-         if (!settings->bools.menu_disable_search_button)
-            ret = MENU_ACTION_SEARCH;
-      }
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
-         ret = MENU_ACTION_SCAN;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
-         ret = MENU_ACTION_START;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-      {
-         if (!settings->bools.menu_disable_info_button)
-            ret = MENU_ACTION_INFO;
-      }
-      else if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
+
+      if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
          ret = MENU_ACTION_TOGGLE;
 
       if (ret != MENU_ACTION_NOOP)
@@ -6417,6 +6462,7 @@ void retroarch_menu_running(void)
    struct menu_state *menu_st      = &menu_driver_state;
    menu_handle_t *menu             = menu_st->driver_data;
    menu_input_t *menu_input        = &menu_st->input_state;
+
    if (menu)
    {
       if (menu->driver_ctx && menu->driver_ctx->toggle)
@@ -6485,6 +6531,11 @@ void retroarch_menu_running_finished(bool quit)
    struct menu_state *menu_st      = &menu_driver_state;
    menu_handle_t *menu             = menu_st->driver_data;
    menu_input_t *menu_input        = &menu_st->input_state;
+
+   /* Only allow toggling menu off with a proper core */
+   if (runloop_st->current_core_type == CORE_TYPE_DUMMY && !quit)
+      return;
+
    if (menu)
    {
       if (menu->driver_ctx && menu->driver_ctx->toggle)
@@ -6883,9 +6934,6 @@ bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
          || !(video_shader_load_preset_into_shader(preset_path, menu_shader)))
       goto end;
 
-   /* TODO/FIXME - localize */
-   RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
-
    ret = true;
 
 end:
@@ -6932,10 +6980,7 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
             type, shader, preset_path, dir_video_shader, prepend, true))
       goto clear;
 
-   /* TODO/FIXME - localize */
-   RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
-
-   ret             = true;
+   ret = true;
 
    menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
@@ -6955,6 +7000,69 @@ clear:
 }
 #endif
 
+/**
+ * action_cycle_thumbnail:
+ * @mode                     : menu action (primary/secondary)
+ *
+ * Common thumbnail cycler
+ *
+ * Returns: 0 on success, -1 on fail.
+**/
+int action_cycle_thumbnail(unsigned mode)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+
+   if (!settings)
+      return -1;
+
+   if (mode == MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY)
+   {
+      uint8_t cur_primary   = settings->uints.gfx_thumbnails;
+      uint8_t cur_secondary = settings->uints.menu_left_thumbnails;
+
+      cur_primary++;
+
+      /* Prevent dupe image */
+      if (cur_primary == cur_secondary && cur_secondary)
+         cur_primary++;
+
+      /* Wrap primary to first image type, and skip logo */
+      if (cur_primary > PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 2)
+         cur_primary = 1;
+
+      /* Final dupe check */
+      if (cur_primary == cur_secondary && cur_secondary)
+         cur_primary++;
+
+      configuration_set_uint(settings, settings->uints.gfx_thumbnails, cur_primary);
+   }
+   else if (mode == MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY)
+   {
+      uint8_t cur_primary   = settings->uints.gfx_thumbnails;
+      uint8_t cur_secondary = settings->uints.menu_left_thumbnails;
+
+      cur_secondary++;
+
+      /* Prevent dupe image */
+      if (cur_primary == cur_secondary)
+         cur_secondary++;
+
+      /* Wrap secondary to no image, and skip logo */
+      if (cur_secondary > PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 2)
+         cur_secondary = 0;
+
+      configuration_set_uint(settings, settings->uints.menu_left_thumbnails, cur_secondary);
+   }
+
+   if (menu_st->driver_ctx)
+   {
+      if (menu_st->driver_ctx->refresh_thumbnail_image)
+         menu_st->driver_ctx->refresh_thumbnail_image(menu_st->userdata, menu_st->selection_ptr);
+   }
+
+   return 0;
+}
 
 /**
  * menu_iterate:
@@ -7619,6 +7727,10 @@ int generic_menu_entry_action(
 #endif
          break;
       }
+      case MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY:
+      case MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY:
+         action_cycle_thumbnail(action);
+         break;
       case MENU_ACTION_CANCEL:
          if (cbs && cbs->action_cancel)
             ret = cbs->action_cancel(entry->path,
@@ -7839,6 +7951,25 @@ int generic_menu_entry_action(
                         | MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH);
       menu_st->pending_env_shutdown_content_path[0] = '\0';
    }
+   else if (menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE)
+   {
+      menu_st->flags &= ~MENU_ST_FLAG_PENDING_RELOAD_CORE;
+
+      if (!string_is_empty(path_get(RARCH_PATH_CORE_LAST)))
+      {
+         content_ctx_info_t content_info = {0};
+         if (task_push_load_new_core(
+                     path_get(RARCH_PATH_CORE_LAST),
+                     NULL,
+                     &content_info,
+                     CORE_TYPE_PLAIN,
+                     NULL, NULL))
+         {
+            menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                            |  MENU_ST_FLAG_PREVENT_POPULATE;
+         }
+      }
+   }
 
    return ret;
 }
@@ -7866,8 +7997,8 @@ bool menu_driver_iterate(
 bool menu_input_dialog_start_search(void)
 {
    input_driver_state_t *input_st          = input_state_get_ptr();
-#ifdef HAVE_ACCESSIBILITY
    settings_t *settings                    = config_get_ptr();
+#ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable               = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
    access_state_t *access_st               = access_state_get_ptr();
@@ -7875,7 +8006,7 @@ bool menu_input_dialog_start_search(void)
    struct menu_state *menu_st              = &menu_driver_state;
    menu_handle_t         *menu             = menu_st->driver_data;
 
-   if (!menu)
+   if (!menu || settings->bools.menu_disable_search_button)
       return false;
 
 #ifdef HAVE_MIST

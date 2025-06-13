@@ -394,33 +394,21 @@ static void cheat_manager_load_cb_first_pass(char *key, char *value)
 
 static void cheat_manager_load_cb_second_pass(char *s, char *value)
 {
-   size_t _len;
-   char cheat_num_str[20];
    unsigned cheat_num, cheat_idx;
-   unsigned idx                = 5;
+   char *numend                = NULL;
    cheat_manager_t *cheat_st   = &cheat_manager_state;
 
-   errno                       = 0;
-
-   if (strncmp(s, "cheat", 5) != 0)
+   if (strncmp(s, "cheat", 5) != 0 || s[5] == '\0')
       return;
 
-   _len = strlen((const char*)s);
-
-   while (idx < _len && s[idx] >= '0' && s[idx] <= '9' && idx < 24)
-   {
-      cheat_num_str[idx - 5] = s[idx];
-      idx++;
-   }
-
-   cheat_num_str[idx - 5] = '\0';
-
-   cheat_num = (unsigned)strtoul(cheat_num_str, NULL, 0);
+   cheat_num = (unsigned)strtoul(&s[5], &numend, 10);
+   if (numend == &s[5] || *numend == '\0')
+      return;
 
    if (cheat_num + cheat_st->loading_cheat_offset >= cheat_st->size)
       return;
 
-   s = s + idx + 1;
+   s = numend + 1;
 
    cheat_idx = cheat_num + cheat_st->loading_cheat_offset;
 

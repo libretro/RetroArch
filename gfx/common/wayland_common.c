@@ -295,6 +295,10 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       zxdg_toplevel_decoration_v1_destroy(wl->deco);
    if (wl->xdg_toplevel)
       xdg_toplevel_destroy(wl->xdg_toplevel);
+   if (wl->xdg_toplevel_icon_manager)
+      xdg_toplevel_icon_manager_v1_destroy(wl->xdg_toplevel_icon_manager);
+   if (wl->xdg_toplevel_icon)
+      xdg_toplevel_icon_v1_destroy(wl->xdg_toplevel_icon);
    if (wl->xdg_surface)
       xdg_surface_destroy(wl->xdg_surface);
    if (wl->surface)
@@ -363,30 +367,32 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       wl_display_disconnect(wl->input.dpy);
    }
 
-   wl->input.dpy                = NULL;
-   wl->registry                 = NULL;
-   wl->compositor               = NULL;
-   wl->shm                      = NULL;
-   wl->data_device_manager      = NULL;
-   wl->xdg_shell                = NULL;
-   wl->seat                     = NULL;
-   wl->relative_pointer_manager = NULL;
-   wl->pointer_constraints      = NULL;
-   wl->content_type             = NULL;
-   wl->content_type_manager     = NULL;
-   wl->cursor_shape_manager     = NULL;
-   wl->cursor_shape_device      = NULL;
-   wl->idle_inhibit_manager     = NULL;
-   wl->deco_manager             = NULL;
-   wl->single_pixel_manager     = NULL;
-   wl->surface                  = NULL;
-   wl->xdg_surface              = NULL;
-   wl->xdg_toplevel             = NULL;
-   wl->deco                     = NULL;
-   wl->idle_inhibitor           = NULL;
-   wl->wl_touch                 = NULL;
-   wl->wl_pointer               = NULL;
-   wl->wl_keyboard              = NULL;
+   wl->input.dpy                 = NULL;
+   wl->registry                  = NULL;
+   wl->compositor                = NULL;
+   wl->shm                       = NULL;
+   wl->data_device_manager       = NULL;
+   wl->xdg_shell                 = NULL;
+   wl->seat                      = NULL;
+   wl->relative_pointer_manager  = NULL;
+   wl->pointer_constraints       = NULL;
+   wl->content_type              = NULL;
+   wl->content_type_manager      = NULL;
+   wl->cursor_shape_manager      = NULL;
+   wl->cursor_shape_device       = NULL;
+   wl->idle_inhibit_manager      = NULL;
+   wl->deco_manager              = NULL;
+   wl->single_pixel_manager      = NULL;
+   wl->surface                   = NULL;
+   wl->xdg_surface               = NULL;
+   wl->xdg_toplevel              = NULL;
+   wl->xdg_toplevel_icon         = NULL;
+   wl->xdg_toplevel_icon_manager = NULL;
+   wl->deco                      = NULL;
+   wl->idle_inhibitor            = NULL;
+   wl->wl_touch                  = NULL;
+   wl->wl_pointer                = NULL;
+   wl->wl_keyboard               = NULL;
 
    wl->width                    = 0;
    wl->height                   = 0;
@@ -586,6 +592,45 @@ static void shm_buffer_paint_icon(
    }
 }
 
+static bool wl_create_toplevel_icon(gfx_ctx_wayland_data_t *wl, struct xdg_toplevel *toplevel)
+{
+   struct xdg_toplevel_icon_v1 *icon = xdg_toplevel_icon_manager_v1_create_icon(
+      wl->xdg_toplevel_icon_manager);
+   xdg_toplevel_icon_v1_set_name(icon, WAYLAND_APP_ID);
+
+   const int icon_size = wl->buffer_scale > 1 ? 128 : 64;
+   shm_buffer_t *icon_buffer = create_shm_buffer(wl,
+      icon_size, icon_size, WL_SHM_FORMAT_ARGB8888);
+
+   if (icon_buffer)
+   {
+      shm_buffer_paint_icon(icon_buffer, icon_size, icon_size, 1, icon_size / 16);
+      xdg_toplevel_icon_v1_add_buffer(
+         icon, icon_buffer->wl_buffer, 1);
+   }
+   else
+   {
+      RARCH_ERR("[Wayland] Failed to create toplevel icon buffer\n");
+      return false;
+   }
+
+   xdg_toplevel_icon_manager_v1_set_icon(
+      wl->xdg_toplevel_icon_manager, toplevel, icon);
+
+#ifdef HAVE_LIBDECOR_H
+   if (wl->libdecor_frame)
+   {
+      wl->libdecor_icon = icon;
+   }
+   else
+#endif
+   {
+      wl->xdg_toplevel_icon = icon;
+   }
+
+   return true;
+}
+
 static void shm_buffer_paint_checkerboard(
       shm_buffer_t *buffer,
       int width, int height, int scale,
@@ -778,6 +823,11 @@ bool gfx_ctx_wl_init_common(
       RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_single_pixel_buffer_manager_v1_interface.name);
    }
 
+   if (!wl->xdg_toplevel_icon_manager)
+   {
+      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", xdg_toplevel_icon_manager_v1_interface.name);
+   }
+
    wl->surface = wl_compositor_create_surface(wl->compositor);
    if (wl->viewporter)
       wl->viewport = wp_viewporter_get_viewport(wl->viewporter, wl->surface);
@@ -807,6 +857,12 @@ bool gfx_ctx_wl_init_common(
       {
          RARCH_ERR("[Wayland]: Failed to create libdecor frame\n");
          goto error;
+      }
+
+      if (wl->xdg_toplevel_icon_manager)
+      {
+         struct xdg_toplevel *xdg_toplevel = wl->libdecor_frame_get_xdg_toplevel(wl->libdecor_frame);
+         wl_create_toplevel_icon(wl, xdg_toplevel);
       }
 
       wl->libdecor_frame_set_app_id(wl->libdecor_frame, WAYLAND_APP_ID);
@@ -841,6 +897,9 @@ bool gfx_ctx_wl_init_common(
       if (wl->deco_manager)
          wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
                wl->deco_manager, wl->xdg_toplevel);
+
+      if (wl->xdg_toplevel_icon_manager)
+         wl_create_toplevel_icon(wl, wl->xdg_toplevel);
 
       /* Waiting for xdg_toplevel to be configured before starting to draw */
       wl_surface_commit(wl->surface);

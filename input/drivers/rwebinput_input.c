@@ -25,6 +25,7 @@
 
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+#include "../../frontend/drivers/platform_emscripten.h"
 
 #include "../input_driver.h"
 #include "../input_types.h"
@@ -44,8 +45,6 @@
 #define RWEBINPUT_MOUSE_BTN5 4
 
 #define MAX_TOUCH 32
-
-double platform_emscripten_get_dpr(void);
 
 typedef struct rwebinput_key_to_code_map_entry
 {
@@ -88,11 +87,21 @@ typedef struct rwebinput_mouse_states
    uint8_t buttons;
 } rwebinput_mouse_state_t;
 
+typedef struct rwebinput_motion_states
+{
+   float x;
+   float y;
+   float z;
+   bool enabled;
+} rwebinput_motion_state_t;
+
 typedef struct rwebinput_input
 {
    rwebinput_mouse_state_t mouse;                /* double alignment */
    rwebinput_keyboard_event_queue_t keyboard;    /* ptr alignment */
    rwebinput_pointer_state_t pointer[MAX_TOUCH]; /* int alignment */
+   rwebinput_motion_state_t accelerometer;       /* float alignment */
+   rwebinput_motion_state_t gyroscope;           /* float alignment */
    unsigned pointer_count;
    bool keys[RETROK_LAST];
    bool pointerlock_active;
@@ -403,6 +412,26 @@ static EM_BOOL rwebinput_pointerlockchange_cb(int event_type,
          command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
       }
    }
+
+   return EM_TRUE;
+}
+
+static EM_BOOL rwebinput_devicemotion_cb(int event_type,
+   const EmscriptenDeviceMotionEvent *device_motion_event, void *user_data)
+{
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)user_data;
+
+   /* TODO: what units does mGBA want? does something need to be changed on the core side? */
+   /* given in m/s^2 (inverted) */
+   rwebinput->accelerometer.x = device_motion_event->accelerationIncludingGravityX / -9.8;
+   rwebinput->accelerometer.y = device_motion_event->accelerationIncludingGravityY / -9.8;
+   rwebinput->accelerometer.z = device_motion_event->accelerationIncludingGravityZ / -9.8;
+   /* XYZ == BetaGammaAlpha according to W3C? in my testing it is AlphaBetaGamma... */
+   /* libretro wants radians/s but it is too fast in mGBA, see above comment */
+   /* given in degrees/s */
+   rwebinput->gyroscope.x = device_motion_event->rotationRateAlpha / 180;
+   rwebinput->gyroscope.y = device_motion_event->rotationRateBeta  / 180;
+   rwebinput->gyroscope.z = device_motion_event->rotationRateGamma / 180;
 
    return EM_TRUE;
 }
@@ -732,15 +761,97 @@ static int16_t rwebinput_input_state(
    return 0;
 }
 
+static void rwebinput_remove_event_listeners(void *data)
+{
+   /* *currently* not automatically proxied in the case of PROXY_TO_PTHREAD */
+   emscripten_html5_remove_all_event_listeners();
+}
+
 static void rwebinput_input_free(void *data)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
 
-   emscripten_html5_remove_all_event_listeners();
-
+   platform_emscripten_run_on_browser_thread_sync(rwebinput_remove_event_listeners, NULL);
    free(rwebinput->keyboard.events);
-
    free(data);
+}
+
+static bool rwebinput_set_sensor_state(void *data, unsigned port,
+      enum retro_sensor_action action, unsigned rate)
+{
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
+   EMSCRIPTEN_RESULT r;
+   bool old_state = rwebinput->accelerometer.enabled || rwebinput->gyroscope.enabled;
+   bool new_state;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         rwebinput->accelerometer.enabled = true;
+         break;
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         rwebinput->accelerometer.enabled = false;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         rwebinput->gyroscope.enabled = true;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         rwebinput->gyroscope.enabled = false;
+         break;
+      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+         return false; /* not supported (browsers removed support for now) */
+      default:
+         return false;
+   }
+
+   new_state = rwebinput->accelerometer.enabled || rwebinput->gyroscope.enabled;
+
+   if (!old_state && new_state)
+   {
+      r = emscripten_set_devicemotion_callback(rwebinput, false, rwebinput_devicemotion_cb);
+      if (r != EMSCRIPTEN_RESULT_SUCCESS)
+      {
+         RARCH_ERR(
+            "[EMSCRIPTEN/INPUT] failed to create devicemotion callback: %d\n", r);
+         return false;
+      }
+   }
+   else if (old_state && !new_state)
+   {
+      r = emscripten_set_devicemotion_callback(rwebinput, false, NULL);
+      if (r != EMSCRIPTEN_RESULT_SUCCESS)
+      {
+         RARCH_ERR(
+            "[EMSCRIPTEN/INPUT] failed to remove devicemotion callback: %d\n", r);
+         return false;
+      }
+   }
+
+   return true;
+}
+
+static float rwebinput_get_sensor_input(void *data, unsigned port, unsigned id)
+{
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
+
+   switch (id)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_X:
+         return rwebinput->accelerometer.x;
+      case RETRO_SENSOR_ACCELEROMETER_Y:
+         return rwebinput->accelerometer.y;
+      case RETRO_SENSOR_ACCELEROMETER_Z:
+         return rwebinput->accelerometer.z;
+      case RETRO_SENSOR_GYROSCOPE_X:
+         return rwebinput->gyroscope.x;
+      case RETRO_SENSOR_GYROSCOPE_Y:
+         return rwebinput->gyroscope.y;
+      case RETRO_SENSOR_GYROSCOPE_Z:
+         return rwebinput->gyroscope.z;
+   }
+
+   return 0.0f;
 }
 
 static void rwebinput_process_keyboard_events(
@@ -837,8 +948,8 @@ input_driver_t input_rwebinput = {
    rwebinput_input_poll,
    rwebinput_input_state,
    rwebinput_input_free,
-   NULL,
-   NULL,
+   rwebinput_set_sensor_state,
+   rwebinput_get_sensor_input,
    rwebinput_get_capabilities,
    "rwebinput",
    rwebinput_grab_mouse,

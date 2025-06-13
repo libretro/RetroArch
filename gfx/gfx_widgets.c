@@ -48,7 +48,7 @@
 static dispgfx_widget_t dispwidget_st = {0}; /* uint64_t alignment */
 
 /* Widgets list */
-const static gfx_widget_t* const widgets[] = {
+static const gfx_widget_t* const widgets[] = {
 #ifdef HAVE_NETWORKING
    &gfx_widget_netplay_chat,
    &gfx_widget_netplay_ping,

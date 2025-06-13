@@ -492,10 +492,6 @@ MSG_HASH(
    "Zaključaj instalirano jezgro"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Spreči modifikaciju trenutno instaliranog jezgra. Može koristiti da se izbegnu nepoželjna ažuriranja kada sadržaj zahteva specifičnu verziju jezgra (npr. ROM-kompleti za arkadne mašine)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Izuzmi iz menija „Jezgra bez sadržaja”"
    )
@@ -1109,6 +1105,10 @@ MSG_HASH(
    "Izmeni podešavanja za usnimavanje."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   "Korisničko Ime"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    "Beleženje"
    )
@@ -1233,10 +1233,6 @@ MSG_HASH(
    "Korisnik"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Izmeni podešavanja naloga, korisničkog imena i jezika."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Direktorijum"
    )
@@ -1259,10 +1255,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "Ulaz"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Drajver za ulaz. Neki video drajveri forsiraju drugi drajver za ulaz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -1506,20 +1498,8 @@ MSG_HASH(
    "Biraj između prirodne i ultraširoke super rezolucije."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "Centriranje po X osi"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Prođi kroz ove opcije ako slika nije pravilno centrirana na displeju."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "Podesi trem"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "Prodji kroz ove opcije da podesiš trem da bi promenio veličinu slike."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
@@ -1931,7 +1911,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "VI servis"
    )
-
 
 
 /* Settings > Input > Port # Controls */

@@ -551,6 +551,7 @@ struct vk_draw_triangles
 typedef struct vk
 {
    vulkan_filter_chain_t *filter_chain;
+   vulkan_filter_chain_t *filter_chain_default;
    vulkan_context_t *context;
    void *ctx_data;
    const gfx_ctx_driver_t *ctx_driver;

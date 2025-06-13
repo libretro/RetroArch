@@ -857,9 +857,6 @@ RSOUND
 AUDIO
 ============================================================ */
 #include "../audio/audio_driver.c"
-#ifdef HAVE_MICROPHONE
-#include "../audio/microphone_driver.c"
-#endif
 #if defined(__PS3__) || defined (__PSL1GHT__)
 #include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
@@ -868,7 +865,7 @@ AUDIO
 #include "../audio/drivers/gx_audio.c"
 #elif defined(__wiiu__)
 #include "../audio/drivers/wiiu_audio.c"
-#elif defined(EMSCRIPTEN)
+#elif defined(HAVE_RWEBAUDIO)
 #include "../audio/drivers/rwebaudio.c"
 #elif defined(PSP) || defined(VITA) || defined(ORBIS)
 #include "../audio/drivers/psp_audio.c"

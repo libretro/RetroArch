@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #ifdef CXX_BUILD
@@ -638,6 +639,10 @@ static void winraw_poll(void *data)
 
    for (i = 0; i < wr->mouse_cnt; ++i)
    {
+      /* Clear buttons when not focused */
+      if (!winraw_focus)
+         g_mice[i].flags = 0;
+
       wr->mice[i].x       = g_mice[i].x;
       wr->mice[i].y       = g_mice[i].y;
       wr->mice[i].dlt_x   = InterlockedExchange(&g_mice[i].dlt_x, 0);

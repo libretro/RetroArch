@@ -39,6 +39,7 @@
 #endif
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "../../paths.h"
 #include "../../performance_counters.h"
 #include "../../playlist.h"
 #include "../../manual_content_scan.h"
@@ -634,8 +635,8 @@ static int action_start_load_core(
       unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st  = menu_state_get_ptr();
-   int ret                     = generic_action_ok_command(
-         CMD_EVENT_UNLOAD_CORE);
+   int ret                     = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
+   path_clear(RARCH_PATH_CORE_LAST);
    menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                |  MENU_ST_FLAG_PREVENT_POPULATE;
    return ret;
@@ -798,6 +799,7 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
       switch (cbs->enum_idx)
       {
          case MENU_ENUM_LABEL_CORE_LIST:
+         case MENU_ENUM_LABEL_CORE_LIST_UNLOAD:
             BIND_ACTION_START(cbs, action_start_load_core);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
@@ -894,6 +896,13 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_MENU_WALLPAPER:
             BIND_ACTION_START(cbs, action_start_menu_wallpaper);
+            break;
+         case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
+         case MENU_ENUM_LABEL_GOTO_FAVORITES:
+         case MENU_ENUM_LABEL_GOTO_IMAGES:
+         case MENU_ENUM_LABEL_GOTO_MUSIC:
+         case MENU_ENUM_LABEL_GOTO_VIDEO:
+            BIND_ACTION_START(cbs, action_ok_push_playlist_manager_settings);
             break;
          default:
             return -1;

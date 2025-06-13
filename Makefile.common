@@ -351,7 +351,6 @@ endif
 
 ifeq ($(HAVE_MICROPHONE), 1)
    DEFINES += -DHAVE_MICROPHONE
-   OBJ += audio/microphone_driver.o
 endif
 
 ifeq ($(HAVE_REWIND), 1)
@@ -789,6 +788,9 @@ ifeq ($(HAVE_EMSCRIPTEN), 1)
           camera/drivers/rwebcam.o
    ifeq ($(HAVE_RWEBAUDIO), 1)
       OBJ += audio/drivers/rwebaudio.o
+   endif
+   ifeq ($(HAVE_AUDIOWORKLET), 1)
+      OBJ += audio/drivers/audioworklet.o
    endif
 endif
 
@@ -1281,6 +1283,7 @@ ifeq ($(HAVE_WAYLAND), 1)
         gfx/common/wayland_common.o \
         gfx/common/wayland/fractional-scale-v1.o \
         gfx/common/wayland/viewporter.o \
+        gfx/common/wayland/xdg-toplevel-icon-v1.o \
         gfx/common/wayland/xdg-shell.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o \
@@ -1346,6 +1349,10 @@ ifeq ($(HAVE_X11), 1)
    DEF_FLAGS += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
    ifeq ($(HAVE_XCB),1)
       LIBS += -lX11-xcb
+   endif
+   ifeq ($(HAVE_XI2),1)
+      LIBS += -lXi
+      DEFINES += -DHAVE_XI2
    endif
    ifeq ($(HAVE_XSCRNSAVER),1)
       LIBS += -lXss
@@ -1504,6 +1511,7 @@ ifeq ($(HAVE_PLAIN_DRM), 1)
       INCLUDE_DIRS += -I/usr/include/libdrm
    endif
    LIBS += -ldrm
+   HAVE_AND_WILL_USE_DRM = 1
 endif
 
 ifeq ($(HAVE_VITAGL), 1)
@@ -2004,6 +2012,7 @@ ifeq ($(HAVE_BUILTINZLIB), 1)
    HAVE_ZLIB_COMMON = 1
    OBJ += $(DEPS_DIR)/libz/adler32.o \
           $(DEPS_DIR)/libz/libz-crc32.o \
+          $(DEPS_DIR)/libz/compress.o \
           $(DEPS_DIR)/libz/deflate.o \
           $(DEPS_DIR)/libz/gzclose.o \
           $(DEPS_DIR)/libz/gzlib.o \
@@ -2013,6 +2022,7 @@ ifeq ($(HAVE_BUILTINZLIB), 1)
           $(DEPS_DIR)/libz/inflate.o \
           $(DEPS_DIR)/libz/inftrees.o \
           $(DEPS_DIR)/libz/trees.o \
+          $(DEPS_DIR)/libz/uncompr.o \
           $(DEPS_DIR)/libz/zutil.o
    INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
 else ifeq ($(HAVE_ZLIB),1)

@@ -57,6 +57,10 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#ifdef HAVE_MIST
+#include "steam/steam.h"
+#endif
+
 #if IOS
 #import <UIKit/UIAccessibility.h>
 extern bool RAIsVoiceOverRunning(void)
@@ -95,6 +99,56 @@ void cocoa_file_load_with_detect_core(const char *filename);
 >
 @end
 #endif
+
+static CFRunLoopObserverRef iterate_observer;
+
+static void rarch_draw_observer(CFRunLoopObserverRef observer,
+    CFRunLoopActivity activity, void *info)
+{
+   uint32_t runloop_flags;
+   int          ret   = runloop_iterate();
+
+   if (ret == -1)
+   {
+#ifdef HAVE_QT
+      application->quit();
+#endif
+      main_exit(NULL);
+      exit(0);
+      return;
+   }
+
+   task_queue_check();
+
+#ifdef HAVE_MIST
+   steam_poll();
+#endif
+
+   runloop_flags = runloop_get_flags();
+   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
+      CFRunLoopWakeUp(CFRunLoopGetMain());
+}
+
+void rarch_start_draw_observer(void)
+{
+   if (iterate_observer && CFRunLoopObserverIsValid(iterate_observer))
+       return;
+
+   if (iterate_observer != NULL)
+      CFRelease(iterate_observer);
+   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
+                                              true, 0, rarch_draw_observer, 0);
+   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
+}
+
+void rarch_stop_draw_observer(void)
+{
+    if (!iterate_observer || !CFRunLoopObserverIsValid(iterate_observer))
+        return;
+    CFRunLoopObserverInvalidate(iterate_observer);
+    CFRelease(iterate_observer);
+    iterate_observer = NULL;
+}
 
 @implementation CocoaView
 
@@ -584,9 +638,9 @@ void cocoa_file_load_with_detect_core(const char *filename);
   {
     if (self.shouldLockCurrentInterfaceOrientation)
       return 1 << self.lockInterfaceOrientation;
-    return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
+    return UIInterfaceOrientationMaskAll;
   }
-  return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
+  return UIInterfaceOrientationMaskAll;
 }
 
 /* NOTE: This does not run on iOS 16+ */
@@ -600,29 +654,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
 /* NOTE: This version runs on iOS2-iOS5, but not iOS6+. */
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
-   unsigned orientation_flags = apple_frontend_settings.orientation_flags;
-
-   switch (interfaceOrientation)
-   {
-      case UIInterfaceOrientationPortrait:
-         return (orientation_flags
-               & UIInterfaceOrientationMaskPortrait);
-      case UIInterfaceOrientationPortraitUpsideDown:
-         return (orientation_flags
-               & UIInterfaceOrientationMaskPortraitUpsideDown);
-      case UIInterfaceOrientationLandscapeLeft:
-         return (orientation_flags
-               & UIInterfaceOrientationMaskLandscapeLeft);
-      case UIInterfaceOrientationLandscapeRight:
-         return (orientation_flags
-               & UIInterfaceOrientationMaskLandscapeRight);
-
-      default:
-         break;
-   }
-
-   return (orientation_flags
-            & UIInterfaceOrientationMaskAll);
+   return YES;
 }
 #endif
 

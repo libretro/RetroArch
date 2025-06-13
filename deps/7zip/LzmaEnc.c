@@ -2828,12 +2828,13 @@ SRes LzmaEnc_CodeOneMemBlock(CLzmaEncHandle pp, BoolInt reInit,
 
   nowPos64 = p->nowPos64;
   RangeEnc_Init(&p->rc);
-  p->rc.outStream = &outStream.vt;
 
   if (desiredPackSize == 0)
     return SZ_ERROR_OUTPUT_EOF;
 
+  p->rc.outStream = &outStream.vt;
   res = LzmaEnc_CodeOneBlock(p, desiredPackSize, *unpackSize);
+  p->rc.outStream = NULL;
   
   *unpackSize = (uint32_t)(p->nowPos64 - nowPos64);
   *destLen -= outStream.rem;

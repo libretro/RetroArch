@@ -541,13 +541,24 @@ static void task_cloud_sync_backup_file(struct item_file *file)
    filestream_rename(file->path, new_path);
 }
 
+typedef struct
+{
+   task_cloud_sync_state_t *sync_state;
+   struct item_file        *server_file;
+} task_cloud_sync_fetch_state_t;
+
 static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool success, RFILE *file)
 {
-   task_cloud_sync_state_t *sync_state = (task_cloud_sync_state_t *)user_data;
-   char                    *hash = NULL;
+   task_cloud_sync_fetch_state_t *fetch_state = (task_cloud_sync_fetch_state_t *)user_data;
+   task_cloud_sync_state_t       *sync_state;
+   struct item_file              *server_file;
+   char                          *hash = NULL;
 
-   if (!sync_state)
+   if (!fetch_state)
       return;
+
+   sync_state = fetch_state->sync_state;
+   server_file = fetch_state->server_file;
 
    if (success && file)
    {
@@ -555,6 +566,10 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
       filestream_close(file);
       RARCH_LOG(CSPFX "successfully fetched %s\n", path);
       task_cloud_sync_add_to_updated_manifest(sync_state, path, hash, false);
+      task_cloud_sync_add_to_updated_manifest(sync_state, path, hash, true);
+      /* if the file fetched from the server does not match its own hash, the manifest needs to be updated */
+      if (!string_is_equal(hash, CS_FILE_HASH(server_file)))
+         sync_state->need_manifest_uploaded = true;
       sync_state->downloads++;
    }
    else
@@ -564,34 +579,43 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
          RARCH_WARN(CSPFX "failed to fetch %s\n", path);
       else
          RARCH_WARN(CSPFX "failed to write file from server: %s\n", path);
+      task_cloud_sync_add_to_updated_manifest(sync_state, path, CS_FILE_HASH(server_file), true);
       sync_state->failures = true;
    }
 
    slock_lock(tcs_running_lock);
    sync_state->waiting--;
    slock_unlock(tcs_running_lock);
+
+   free(fetch_state);
 }
 
 static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_state)
 {
-   size_t              i;
-   char                filename[PATH_MAX_LENGTH];
-   char                directory[DIR_MAX_LENGTH];
-   struct string_list *dirlist     = task_cloud_sync_directory_map();
-   struct item_file   *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
-   const char         *key         = CS_FILE_KEY(server_file);
+   size_t                         i;
+   char                           filename[PATH_MAX_LENGTH];
+   char                           directory[DIR_MAX_LENGTH];
+   struct string_list            *dirlist     = task_cloud_sync_directory_map();
+   struct item_file              *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
+   const char                    *key         = CS_FILE_KEY(server_file);
    /* the key from the server file is in "portable" format, use '/' */
-   const char         *path        = strchr(key, '/') + 1;
-   settings_t         *settings    = config_get_ptr();
+   const char                    *path        = strchr(key, '/') + 1;
+   settings_t                    *settings    = config_get_ptr();
+   task_cloud_sync_fetch_state_t *fetch_state;
 
-   /* we're just fetching a file the server has, we can update this now */
-   task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
-   /* no need to mark need_manifest_uploaded, nothing changed */
+   /* there is a weird thing that can happen, where the server file changes but
+    * the manifest does not have the updated hash. in that case when the file is
+    * downloaded we have an opportunity to check that the hash matches and
+    * update the server manifest, and correct the issue. to do this the server
+    * manifest cannot be updated early; only on error or after the download is
+    * successful. on error just add to the updated manifest without marking
+    * need_manifest_uplaod. */
 
    if (task_cloud_sync_should_ignore_file(key))
    {
       /* don't fetch a file we're supposed to ignore, even if the server has it */
       RARCH_LOG(CSPFX "ignoring %s\n", key);
+      task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
       return;
    }
    RARCH_LOG(CSPFX "fetching %s\n", key);
@@ -609,6 +633,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    {
       /* how did this end up here? we don't know where to put it... */
       RARCH_WARN(CSPFX "don't know where to put %s!\n", key);
+      task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
       return;
    }
 
@@ -621,12 +646,24 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
 
    fill_pathname_basedir(directory, filename, sizeof(directory));
    path_mkdir(directory);
-   if (cloud_sync_read(key, filename, task_cloud_sync_fetch_cb, sync_state))
+   fetch_state = malloc(sizeof(task_cloud_sync_fetch_state_t));
+   if (!fetch_state)
+   {
+      RARCH_WARN(CSPFX "wanted to fetch %s but failed to malloc\n", key);
+      task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
+      sync_state->failures = true;
+      return;
+   }
+   fetch_state->sync_state  = sync_state;
+   fetch_state->server_file = server_file;
+   if (cloud_sync_read(key, filename, task_cloud_sync_fetch_cb, fetch_state))
       sync_state->waiting++;
    else
    {
       RARCH_WARN(CSPFX "wanted to fetch %s but failed\n", key);
+      task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
       sync_state->failures = true;
+      free(fetch_state);
    }
 }
 
@@ -872,7 +909,7 @@ static void task_cloud_sync_delete_server_file(task_cloud_sync_state_t *sync_sta
 static void task_cloud_sync_maybe_ignore(task_cloud_sync_state_t *sync_state)
 {
    struct string_list *dirlist = task_cloud_sync_directory_map();
-   int i;
+   size_t i;
    bool found;
 
    if (sync_state->local_manifest)
@@ -1199,13 +1236,16 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
 
    slock_lock(tcs_running_lock);
    /* we can transfer more than one file at a time */
-   if (sync_state->waiting > ((sync_state->phase == CLOUD_SYNC_PHASE_DIFF) ? 4 : 0))
+   if (sync_state->waiting > ((sync_state->phase == CLOUD_SYNC_PHASE_DIFF) ? 4U : 0U))
    {
       task->when = cpu_features_get_time_usec() + 17 * 1000; /* 17ms */
       slock_unlock(tcs_running_lock);
       return;
    }
    slock_unlock(tcs_running_lock);
+
+   if (task->flags & RETRO_TASK_FLG_FINISHED)
+       goto task_finished;
 
    switch (sync_state->phase)
    {

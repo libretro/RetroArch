@@ -395,6 +395,7 @@ typedef struct video_frame_info
    int custom_vp_y;
    int crt_switch_center_adjust;
    int crt_switch_porch_adjust;
+   int crt_switch_vert_adjust;
 
    unsigned hard_sync_frames;
    unsigned runahead_frames;
@@ -494,6 +495,7 @@ typedef struct video_frame_info
    bool hdr_enable;
    bool overlay_behind_menu;
    bool scan_subframes;
+   bool shader_active;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);

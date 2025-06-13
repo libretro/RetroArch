@@ -44,6 +44,11 @@
 #include "../../deps/xxHash/xxhash.h"
 #endif
 
+#if defined(VITA)
+#include <psp2/kernel/threadmgr/thread.h>
+#include <psp2/power.h>
+#endif
+
 #define PREV_TEXTURES (GFX_MAX_TEXTURES - 1)
 
 /* Cache the VBO. */

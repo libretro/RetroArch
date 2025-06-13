@@ -126,10 +126,29 @@ else
    CXXFLAGS += -03 -g
 endif
 
+ifneq ($(V),1)
+	Q := @
+endif
+
 all: $(SELF_TARGET)
 
+define INFO
+CXX: $(CXX)
+LDFLAGS: $(LDFLAGS)
+LIBDIRS: $(LIBDIRS)
+LIBS: $(LIBS)
+OBJ: $(OBJ)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
+
 $(ELF_TARGET): $(OBJ)
-	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
 
 create-core: $(SELF_TARGET)
 	cp $(SELF_TARGET) $(CORE_PATH)
@@ -140,7 +159,8 @@ pkg: create-core
 #	$(PACKAGE_FINALIZE) $(PACKAGE_BASENAME).gnpdrm.pkg
 
 clean:
-	rm -f $(ELF_TARGET)
-	rm -f $(OBJ)
+	@$(if $(Q), echo $@,)
+	$(Q)rm -f $(ELF_TARGET)
+	$(Q)rm -f $(OBJ)
 
 .PHONY: clean

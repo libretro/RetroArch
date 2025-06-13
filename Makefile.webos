@@ -5,10 +5,10 @@ ifneq ($(CROSS_COMPILE),arm-webos-linux-gnueabi-)
 endif
 
 ifdef SDKTARGETSYSROOT
-    $(warning OE-based toolchain isn't supported anymore. Please use https://github.com/webosbrew/native-toolchain)
+    $(warning "OE-based toolchain isn't supported anymore. Please use https://github.com/webosbrew/native-toolchain")
     STAGING_DIR = $(SDKTARGETSYSROOT)
 else ifndef STAGING_DIR
-    $(error Can't find buildroot based toolchain. Please use https://github.com/webosbrew/native-toolchain)
+    $(error "Can't find buildroot based toolchain. Please use https://github.com/webosbrew/native-toolchain")
 endif
 
 WEBOS_FREETYPE_CONFIG ?= $(STAGING_DIR)/usr/bin/freetype-config
@@ -17,12 +17,12 @@ WEBOS_INC_DIR         ?= $(STAGING_DIR)/usr/include
 WEBOS_LIB_DIR         ?= $(STAGING_DIR)/usr/lib
 
 ADD_SDL2_LIB          ?= 0
-SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.0-webos.2/SDL2-2.30.0-webos.tar.gz
+SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.8-webos.3/SDL2-2.30.8-webos-abi.tar.gz
 
 #########################
 #########################
 
-PACKAGE_NAME = com.retroarch
+APP_PACKAGE_NAME ?= com.retroarch.webos
 PACKAGE_VERSION := $(patsubst "%",%,$(RARCH_VERSION))
 
 DEBUG ?= 0
@@ -60,8 +60,8 @@ HAVE_DR_MP3 = 1
 HAVE_DYNAMIC = 1
 HAVE_DYLIB = 1
 HAVE_EGL = 0
-HAVE_FREETYPE = 0
-HAVE_GDI = 1
+HAVE_FREETYPE = 1
+HAVE_GDI = 0
 HAVE_GETADDRINFO = 1
 HAVE_GETOPT_LONG = 1
 HAVE_GLSL = 1
@@ -107,7 +107,7 @@ HAVE_RUNAHEAD = 1
 HAVE_SDL = 0
 HAVE_SDL2 = 1
 HAVE_SHADERPIPELINE = 1
-HAVE_STB_FONT = 1
+HAVE_STB_FONT = 0
 HAVE_STB_IMAGE = 1
 HAVE_STB_VORBIS = 1
 HAVE_STDIN_CMD = 1
@@ -138,9 +138,10 @@ DEF_FLAGS += -ffunction-sections -fdata-sections
 DEF_FLAGS += -I. -Ideps -Ideps/stb -DWEBOS=1 -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable
 LIBS := -ldl -lz -lrt -pthread
-CFLAGS :=
-CXXFLAGS := -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
-ASFLAGS :=
+ARCHFLAGS := -mcpu=cortex-a9 -mtune=cortex-a53 -mfloat-abi=softfp
+CFLAGS := $(ARCHFLAGS)
+CXXFLAGS := $(ARCHFLAGS) -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
+ASFLAGS := $(ARCHFLAGS)
 LDFLAGS := -Wl,-rpath=\$$ORIGIN/lib,--gc-sections
 INCLUDE_DIRS = -I$(WEBOS_INC_DIR)
 LIBRARY_DIRS = -L$(WEBOS_LIB_DIR)
@@ -151,6 +152,8 @@ DEFINES += -DHAVE_FILTERS_BUILTIN
 DEFINES += -DHAVE_SDL2
 DEFINES += -DHAVE_PULSE
 DEFINES += -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES
+DEFINES += -DHAVE_NETWORKGAMEPAD
+DEFINES += -DHAVE_FREETYPE
 DEFINES += -DHAVE_UPDATE_CORE_INFO
 
 PKG_CONFIG=pkg-config
@@ -159,6 +162,10 @@ SDL2_CFLAGS := $(shell $(PKG_CONFIG) --cflags sdl2)
 SDL2_LIBS := $(shell $(PKG_CONFIG) --libs sdl2)
 OPENGLES_LIBS = -lGLESv2
 PULSE_LIBS = $(shell $(PKG_CONFIG) --libs libpulse)
+FREETYPE_CFLAGS := $(shell $(PKG_CONFIG) --cflags freetype2)
+FREETYPE_LIBS := $(shell $(PKG_CONFIG) --libs freetype2)
+FONTCONFIG_CFLAGS := $(shell $(PKG_CONFIG) --cflags fontconfig)
+FONTCONFIG_LIBS := $(shell $(PKG_CONFIG) --libs fontconfig)
 MMAP_LIBS = -lc
 NEON_CFLAGS = -mfpu=neon
 NEON_ASFLAGS = -mfpu=neon
@@ -183,13 +190,15 @@ CXXFLAGS += $(DEF_FLAGS)
 
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
-Q := @
+ifneq ($(V),1)
+        Q := @
+endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 define APPINFO
 {
-    "id": "$(PACKAGE_NAME)",
+    "id": "$(APP_PACKAGE_NAME)",
     "version": "$(PACKAGE_VERSION)",
     "vendor": "webosbrew.org",
     "title": "RetroArch",
@@ -203,6 +212,28 @@ endef
 export APPINFO
 
 all: $(TARGET) ipk
+
+define INFO
+ASFLAGS: $(ASFLAGS)
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CPPFLAGS: $(CPPFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+DEFINES: $(DEFINES)
+LDFLAGS: $(LDFLAGS)
+LIBRARY_DIRS: $(LIBRARY_DIRS)
+LIBS: $(LIBS)
+LINK: $(LINK)
+OBJCFLAGS: $(OBJCFLAGS)
+RARCH_OBJ: $(RARCH_OBJ)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 -include $(RARCH_OBJ:.o=.d)
 
@@ -233,12 +264,13 @@ $(OBJDIR)/%.o: %.S $(HEADERS)
 	$(Q)$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
 
 clean:
-	rm -rf $(OBJDIR_BASE)
-	rm -f $(TARGET)
-	rm -f *.d
-	rm -rf SDL
-	rm -rf webos/*.ipk
-	rm -rf webos/dist
+	@$(if $(Q), echo $@,)
+	$(Q)rm -rf $(OBJDIR_BASE)
+	$(Q)rm -f $(TARGET)
+	$(Q)rm -f *.d
+	$(Q)rm -rf SDL
+	$(Q)rm -rf webos/*.ipk
+	$(Q)rm -rf webos/dist
 
 sdl2: $(TARGET)
 ifeq ($(ADD_SDL2_LIB), 1)
@@ -260,10 +292,10 @@ endif
 	cd webos && ares-package dist
 
 install: ipk
-	ares-install webos/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(ARCH).ipk
+	ares-install webos/$(APP_PACKAGE_NAME)_$(PACKAGE_VERSION)_$(ARCH).ipk
 
 launch: install
-	ares-launch com.retroarch
+	ares-launch $(APP_PACKAGE_NAME)
 
 .PHONY: all clean ipk
 

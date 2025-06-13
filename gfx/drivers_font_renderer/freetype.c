@@ -403,6 +403,10 @@ static const char *font_paths[] = {
    "/Library/Fonts/Microsoft/Candara.ttf",
    "/Library/Fonts/Verdana.ttf",
    "/Library/Fonts/Tahoma.ttf",
+#elif defined(WEBOS)
+  "/usr/share/fonts/MuseoSans-Medium.ttf",
+  "/usr/share/fonts/LG_Smart_UI-Regular.ttf",
+  "/usr/share/fonts/DroidSans.ttf",
 #else
    "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
    "/usr/share/fonts/TTF/DejaVuSans.ttf",

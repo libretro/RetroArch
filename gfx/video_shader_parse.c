@@ -262,7 +262,7 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                }
                break;
             case RARCH_WILDCARD_CORE:
-               strlcpy(replace_text, runloop_state_get_ptr()->system.info.library_name, sizeof(replace_text));
+               _len = strlcpy(replace_text, runloop_state_get_ptr()->system.info.library_name, sizeof(replace_text));
                break;
             case RARCH_WILDCARD_GAME:
                {
@@ -276,7 +276,7 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                }
                break;
             case RARCH_WILDCARD_VIDEO_DRIVER:
-               strlcpy(replace_text, config_get_ptr()->arrays.video_driver, sizeof(replace_text));
+               _len = strlcpy(replace_text, config_get_ptr()->arrays.video_driver, sizeof(replace_text));
                break;
             case RARCH_WILDCARD_CORE_REQUESTED_ROTATION:
                _len  = strlcpy(replace_text, "CORE-REQ-ROT-", sizeof(replace_text));
@@ -412,7 +412,7 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
             char *replace_output = string_replace_substring(replaced_path,
                sizeof(replaced_path),
                wildcard_tokens[i].token_name,
-               STRLEN_CONST(wildcard_tokens[i].token_name),
+               strlen(wildcard_tokens[i].token_name),
                replace_text,
                _len);
             strlcpy(replaced_path, replace_output, sizeof(replaced_path));
@@ -427,7 +427,7 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
    {
       /* If a file does not exist at the location of the replaced path
        * then output the original path instead */
-      RARCH_DBG("\n[Shaders]: Filepath after wildcard replacement can't be found:\n");
+      RARCH_DBG("[Shaders]: Filepath after wildcard replacement can't be found:\n");
       RARCH_DBG("                \"%s\" \n", replaced_path);
       RARCH_DBG("           Falling back to original Filepath\n");
       RARCH_DBG("                \"%s\" \n\n", s);
@@ -474,7 +474,7 @@ static void video_shader_gather_reference_path_list(
    }
    else
    {
-      RARCH_WARN("\n[Shaders]: No Preset located at \"%s\".\n", path);
+      RARCH_WARN("[Shaders]: No Preset located at \"%s\".\n", path);
    }
    config_file_free(conf);
 }
@@ -2266,7 +2266,7 @@ bool video_shader_load_preset_into_shader(const char *path,
    conf = config_file_new_from_path_to_string(path);
 
 #ifdef DEBUG
-   RARCH_DBG("\n[Shaders]: Crawl preset reference chain..\n");
+   RARCH_DBG("[Shaders]: Crawl preset reference chain..\n");
 #endif
 
    /**
@@ -2292,7 +2292,7 @@ bool video_shader_load_preset_into_shader(const char *path,
             parameter values and texture overrides */
          if (config_get_entry(tmp_conf, "shaders"))
          {
-            RARCH_WARN("\n[Shaders]: Additional #reference entries pointing at shader chain presets are not supported: \"%s\".\n", path_to_ref);
+            RARCH_WARN("[Shaders]: Additional #reference entries pointing at shader chain presets are not supported: \"%s\".\n", path_to_ref);
             config_file_free(tmp_conf);
             ret = false;
             goto end;
@@ -2301,7 +2301,7 @@ bool video_shader_load_preset_into_shader(const char *path,
       }
       else
       {
-         RARCH_WARN("\n[Shaders]: Could not load root preset for #reference entry: \"%s\".\n", path_to_ref);
+         RARCH_WARN("[Shaders]: Could not load root preset for #reference entry: \"%s\".\n", path_to_ref);
          ret = false;
          goto end;
       }
@@ -2316,7 +2316,7 @@ bool video_shader_load_preset_into_shader(const char *path,
    strlcpy(shader->loaded_preset_path, path, sizeof(shader->loaded_preset_path));
 
 #ifdef DEBUG
-   RARCH_DBG("\n[Shaders]: Start applying simple preset overrides..\n");
+   RARCH_DBG("[Shaders]: Start applying simple preset overrides..\n");
 #endif
 
    /* Gather all the paths of all of the presets in all reference chains */
@@ -3140,27 +3140,41 @@ const char *video_shader_get_current_shader_preset(void)
    return NULL;
 }
 
-void video_shader_toggle(settings_t *settings)
+void video_shader_toggle(settings_t *settings, bool write)
 {
-   bool toggle                     = !settings->bools.video_shader_enable;
+   bool enabled                    = settings->bools.video_shader_enable;
 #ifdef HAVE_MENU
    struct video_shader *menu_shdr  = menu_shader_get();
    struct menu_state *menu_st      = menu_state_get_ptr();
-   menu_shdr->flags               |=  SHDR_FLAG_MODIFIED;
 
-   if (toggle)
+   menu_shdr->flags               &= ~SHDR_FLAG_MODIFIED;
+   menu_shdr->flags               &= ~SHDR_FLAG_TEMPORARY;
+#endif
+
+   /* Cold start from hotkey requires enabling shaders initially */
+   if (!write && !enabled)
+   {
+      write   = true;
+      enabled = true;
+      configuration_set_bool(settings, settings->bools.video_shader_enable, true);
+   }
+#ifdef HAVE_MENU
+   else if (!write)
+      enabled = (menu_shdr->flags & SHDR_FLAG_DISABLED);
+#endif
+
+#ifdef HAVE_MENU
+   if (enabled)
       menu_shdr->flags            &= ~SHDR_FLAG_DISABLED;
    else
       menu_shdr->flags            |=  SHDR_FLAG_DISABLED;
+
+   if (!write && video_driver_test_all_flags(GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS))
+      menu_shdr->flags            |=  SHDR_FLAG_TEMPORARY;
 
    menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                    |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
 
    command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
-
-   /* TODO/FIXME: Due to general_write_handler being called twice,
-    * this has be done in this order in order to truly disable */
-   if (!toggle)
-      configuration_set_bool(settings, settings->bools.video_shader_enable, toggle);
 }

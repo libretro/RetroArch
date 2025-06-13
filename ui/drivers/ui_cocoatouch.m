@@ -62,7 +62,6 @@ id<ApplePlatform> apple_platform;
 #else
 static id apple_platform;
 #endif
-static CFRunLoopObserverRef iterate_observer;
 
 static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd) { }
@@ -147,51 +146,6 @@ static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
 
    return [textures[iconName] unsignedLongValue];
 }
-
-static void rarch_draw_observer(CFRunLoopObserverRef observer,
-    CFRunLoopActivity activity, void *info)
-{
-   uint32_t runloop_flags;
-   int          ret   = runloop_iterate();
-
-   if (ret == -1)
-   {
-      ui_companion_cocoatouch_event_command(
-            NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
-      main_exit(NULL);
-      exit(0);
-      return;
-   }
-
-   task_queue_check();
-
-   runloop_flags = runloop_get_flags();
-   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
-      CFRunLoopWakeUp(CFRunLoopGetMain());
-}
-
-void rarch_start_draw_observer(void)
-{
-   if (iterate_observer && CFRunLoopObserverIsValid(iterate_observer))
-       return;
-
-   if (iterate_observer != NULL)
-      CFRelease(iterate_observer);
-   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
-                                              true, 0, rarch_draw_observer, 0);
-   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
-}
-
-void rarch_stop_draw_observer(void)
-{
-    if (!iterate_observer || !CFRunLoopObserverIsValid(iterate_observer))
-        return;
-    CFRunLoopObserverInvalidate(iterate_observer);
-    CFRelease(iterate_observer);
-    iterate_observer = NULL;
-}
-
-apple_frontend_settings_t apple_frontend_settings;
 
 void get_ios_version(int *major, int *minor)
 {
@@ -713,7 +667,6 @@ enum
 
    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:[AVAudioSession sharedInstance]];
 
-   [self refreshSystemConfig];
    [self showGameView];
 
    rarch_main(argc, argv, NULL);
@@ -913,7 +866,6 @@ enum
 #if TARGET_OS_IOS
    [self setToolbarHidden:![[viewController toolbarItems] count] animated:YES];
 #endif
-   [self refreshSystemConfig];
 }
 
 - (void)showGameView
@@ -931,22 +883,6 @@ enum
    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
          command_event(CMD_EVENT_AUDIO_START, NULL);
          });
-}
-
-- (void)refreshSystemConfig
-{
-#if TARGET_OS_IOS
-   /* Get enabled orientations */
-   apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
-
-   if (string_is_equal(apple_frontend_settings.orientations, "landscape"))
-      apple_frontend_settings.orientation_flags =
-           UIInterfaceOrientationMaskLandscape;
-   else if (string_is_equal(apple_frontend_settings.orientations, "portrait"))
-      apple_frontend_settings.orientation_flags =
-           UIInterfaceOrientationMaskPortrait
-         | UIInterfaceOrientationMaskPortraitUpsideDown;
-#endif
 }
 
 - (void)supportOtherAudioSessions { }

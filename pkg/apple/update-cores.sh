@@ -156,6 +156,7 @@ else
                 cap32
                 crocods
                 desmume
+                dice
                 dinothawr
                 dirksimple
                 dosbox_pure
@@ -171,6 +172,8 @@ else
                 fuse
                 gambatte
                 gearboy
+                gearcoleco
+                geargrafx
                 gearsystem
                 genesis_plus_gx
                 genesis_plus_gx_wide
@@ -220,6 +223,7 @@ else
                 quicknes
                 race
                 sameboy
+                sameduck
                 scummvm
                 smsplus
                 snes9x

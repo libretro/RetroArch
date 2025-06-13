@@ -166,7 +166,9 @@ CXXFLAGS += $(DEF_FLAGS)
 
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
-Q := @
+ifneq ($(V),1)
+        Q := @
+endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
@@ -185,6 +187,28 @@ endef
 export DESKTOP_ENTRY
 
 all: $(TARGET) opk
+
+define INFO
+ASFLAGS: $(ASFLAGS)
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CPPFLAGS: $(CPPFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+DEFINES: $(DEFINES)
+LDFLAGS: $(LDFLAGS)
+LIBRARY_DIRS: $(LIBRARY_DIRS)
+LIBS: $(LIBS)
+LINK: $(LINK)
+OBJCFLAGS: $(OBJCFLAGS)
+RARCH_OBJ: $(RARCH_OBJ)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 -include $(RARCH_OBJ:.o=.d)
 
@@ -215,10 +239,11 @@ $(OBJDIR)/%.o: %.S $(HEADERS)
 	$(Q)$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
 
 clean:
-	rm -rf $(OBJDIR_BASE)
-	rm -f $(TARGET)
-	rm -f *.d
-	rm -rf $(OPK_NAME)
+	@$(if $(Q), echo $@,)
+	$(Q)rm -rf $(OBJDIR_BASE)
+	$(Q)rm -f $(TARGET)
+	$(Q)rm -f *.d
+	$(Q)rm -rf $(OPK_NAME)
 
 opk: $(TARGET)
 	echo "$$DESKTOP_ENTRY" > default.rs90.desktop
