@@ -4649,6 +4649,53 @@ bool command_event(enum event_command cmd, void *data)
             return false;
 #endif
          break;
+      case CMD_EVENT_MENU_SAVE_AS_CONFIG:
+         {
+            char as_path[PATH_MAX_LENGTH];
+            char conf_path[PATH_MAX_LENGTH];
+
+            snprintf(as_path, sizeof(as_path), "%s", (char *)data);
+
+            /* Prepend '.cfg' extension if missing */
+            if (!string_ends_with(as_path, FILE_PATH_CONFIG_EXTENSION))
+               strlcat(as_path, FILE_PATH_CONFIG_EXTENSION, sizeof(as_path));
+
+            fill_pathname_join(conf_path,
+                  settings->paths.directory_menu_config,
+                  as_path, sizeof(conf_path));
+
+            path_set(RARCH_PATH_CONFIG, conf_path);
+#ifdef HAVE_CONFIGFILE
+            command_event_save_current_config(OVERRIDE_NONE);
+#endif
+         }
+         break;
+      case CMD_EVENT_MENU_SAVE_MAIN_CONFIG:
+         {
+            char app_path[PATH_MAX_LENGTH] = {0};
+            char conf_path[PATH_MAX_LENGTH];
+
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+            /* On UWP, the app install directory is not writable so use the writable LocalState dir instead */
+            fill_pathname_home_dir(app_path, sizeof(app_path));
+#else
+            fill_pathname_application_dir(app_path, sizeof(app_path));
+#endif
+            fill_pathname_resolve_relative(conf_path, app_path,
+                  FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
+#elif !defined(RARCH_CONSOLE)
+            if (fill_pathname_application_data(app_path, sizeof(app_path)))
+               fill_pathname_join_special(conf_path, app_path,
+                     FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
+#endif
+
+            path_set(RARCH_PATH_CONFIG, conf_path);
+#ifdef HAVE_CONFIGFILE
+            command_event_save_current_config(OVERRIDE_NONE);
+#endif
+         }
+         break;
       case CMD_EVENT_PAUSE_TOGGLE:
          {
             bool paused          = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;

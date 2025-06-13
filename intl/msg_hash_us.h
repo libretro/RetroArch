@@ -1152,6 +1152,22 @@ MSG_HASH(
    "Save current configuration to separate file."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Save Configuration As"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Save current configuration as custom configuration file."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Save Main Configuration"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "Save current configuration as main configuration."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Reset to Defaults"
    )
@@ -14995,7 +15011,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
-   "Saved new config to"
+   "Saved config to"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,

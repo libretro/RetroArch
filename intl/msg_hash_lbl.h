@@ -3637,6 +3637,14 @@ MSG_HASH(
    "save_new_config"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SAVE_AS_CONFIG,
+   "save_as_config"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SAVE_MAIN_CONFIG,
+   "save_main_config"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SAVE_STATE,
    "save_state"
    )
