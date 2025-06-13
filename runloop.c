@@ -5566,12 +5566,11 @@ static enum runloop_state_enum runloop_check_state(
 
 #ifdef HAVE_MENU
    last_input                       = current_bits;
-   if (
-         ((menu_toggle_gamepad_combo != INPUT_COMBO_NONE)
-          && input_driver_button_combo(
-             menu_toggle_gamepad_combo,
-             current_time,
-             &last_input)))
+   if (     menu_toggle_gamepad_combo != INPUT_COMBO_NONE
+         && input_driver_button_combo(
+               menu_toggle_gamepad_combo,
+               current_time,
+               &last_input))
       BIT256_SET(current_bits, RARCH_MENU_TOGGLE);
 
    if (menu_st->input_driver_flushing_input > 0)
@@ -5627,21 +5626,13 @@ static enum runloop_state_enum runloop_check_state(
       BIT256_CLEAR_ALL(current_bits);
 #endif
 
-   /* Check fullscreen hotkey */
-   HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE, true, NULL);
-
-   /* Check turbo toggle hotkey */
-   HOTKEY_CHECK(RARCH_TURBO_FIRE_TOGGLE, CMD_EVENT_TURBO_FIRE_TOGGLE, true, NULL);
-
-   /* Check mouse grab hotkey */
-   HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true, NULL);
-
    /* Automatic mouse grab on focus */
    if (     settings->bools.input_auto_mouse_grab
          && (is_focused)
          && (is_focused != (((runloop_st->flags & RUNLOOP_FLAG_FOCUSED)) > 0))
          && !(input_st->flags & INP_FLAG_GRAB_MOUSE_STATE))
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+
    if (is_focused)
       runloop_st->flags |=  RUNLOOP_FLAG_FOCUSED;
    else
@@ -6105,6 +6096,19 @@ static enum runloop_state_enum runloop_check_state(
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
       }
    }
+
+   /* Don't bother with the rest of the hotkeys when flushing */
+   if (menu_st->input_driver_flushing_input)
+      goto end;
+
+   /* Check fullscreen hotkey */
+   HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE, true, NULL);
+
+   /* Check turbo toggle hotkey */
+   HOTKEY_CHECK(RARCH_TURBO_FIRE_TOGGLE, CMD_EVENT_TURBO_FIRE_TOGGLE, true, NULL);
+
+   /* Check mouse grab hotkey */
+   HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true, NULL);
 
    /* Check Game Focus hotkey */
    {
@@ -6883,6 +6887,7 @@ static enum runloop_state_enum runloop_check_state(
    }
 #endif
 
+end:
    if (runloop_paused)
    {
       cbs->poll_cb();
