@@ -8882,10 +8882,6 @@ MSG_HASH(
    "وصلت إلى نهاية التجديد المؤقت."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "تم حفظ الإعدادات الجديدة إلى"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "حفظ الحالة إلى فتحة #%d."
    )

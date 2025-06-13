@@ -13982,10 +13982,6 @@ MSG_HASH(
    "Dosažen konec vyrovnávací paměti pro převíjení."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Nová konfigurace byla uložena do"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Uložen stav do slotu #%d."
    )

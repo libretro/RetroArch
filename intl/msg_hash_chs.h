@@ -13778,10 +13778,6 @@ MSG_HASH(
    "到达回溯缓存末端。"
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "已保存新配置到"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "已保存状态到卡槽 #%d。"
    )

@@ -13954,10 +13954,6 @@ MSG_HASH(
    "Visszatekerési puffer vége."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Új konfiguráció mentve ide"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Játékállás elmentve a #%d. rekeszbe."
    )

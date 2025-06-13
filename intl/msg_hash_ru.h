@@ -14226,10 +14226,6 @@ MSG_HASH(
    "Достигнут предел буфера перемотки."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Новая конфигурация сохранена в"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Сохранено в слот #%d."
    )

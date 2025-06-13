@@ -14214,10 +14214,6 @@ MSG_HASH(
    "Se ha alcanzado el final del búfer de rebobinado."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Se ha guardado una nueva configuración en"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Guardado rápido n.º %d terminado."
    )

@@ -2086,10 +2086,6 @@ MSG_HASH(
    "Failed to initialise rewind buffer. Rewinding will be disabled."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Saved new configuration to"
-   )
-MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,
    "Starting film playback."
    )

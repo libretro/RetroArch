@@ -14290,10 +14290,6 @@ MSG_HASH(
    "뒤로 감기 버퍼 끝에 도달했습니다."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "새 구성 저장 위치:"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "슬롯 #%d에 상태저장."
    )

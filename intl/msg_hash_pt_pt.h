@@ -5614,10 +5614,6 @@ MSG_HASH(
    "Alcançado o final do buffer do recurso de retrocedimento do tempo."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Guardar nova configuração em"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Estado guardado na posição #%d."
    )

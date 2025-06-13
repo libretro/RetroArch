@@ -12702,10 +12702,6 @@ MSG_HASH(
    "Final do buffer de rebobinamento atingido."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Salvado em"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Salvo no compartimento %d."
    )

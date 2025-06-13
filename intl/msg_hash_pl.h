@@ -12510,10 +12510,6 @@ MSG_HASH(
    "Osiągnięto koniec bufora przewijania."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Zapisano nową konfigurację do"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Zapisany stan do gniazda #%d."
    )

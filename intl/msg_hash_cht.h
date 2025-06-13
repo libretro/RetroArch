@@ -13826,10 +13826,6 @@ MSG_HASH(
    "倒帶緩衝區已用盡。"
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "已儲存設定檔到"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "儲存即時存檔 (%d)。"
    )

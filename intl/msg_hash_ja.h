@@ -13706,10 +13706,6 @@ MSG_HASH(
    "巻き戻しバッファの終わりに達しました。"
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "新しい設定を保存しました to"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "スロット #%d にステートを保存しました。"
    )

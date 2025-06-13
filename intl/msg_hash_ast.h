@@ -4042,10 +4042,6 @@ MSG_HASH(
    "Lleendo la primer pista de datos…"
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Guardóse una configuración nueva en"
-   )
-MSG_HASH(
    MSG_SHADER,
    "Asolombrador"
    )

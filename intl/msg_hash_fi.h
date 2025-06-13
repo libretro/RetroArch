@@ -12846,10 +12846,6 @@ MSG_HASH(
    "Saavutettiin takaisinkelauksen puskurin loppu."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Uusi asetus tallennettu kansioon"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Tila tallennettu lohkoon #%d."
    )

@@ -14302,10 +14302,6 @@ MSG_HASH(
    "Досягнуто кінця буферу перемотування."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Збережено нову конфігурацію в"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Стан завантаження зі слота #%d."
    )

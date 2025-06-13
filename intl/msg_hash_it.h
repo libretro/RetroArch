@@ -14002,10 +14002,6 @@ MSG_HASH(
    "Raggiunto la fine del buffer di riavvolgimento."
    )
 MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Salvata la nuova configurazione su"
-   )
-MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Stato salvato nello slot #%d."
    )
