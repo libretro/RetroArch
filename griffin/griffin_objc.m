@@ -62,7 +62,11 @@
 #endif
 
 #if defined(HAVE_COREAUDIO) && defined(HAVE_MICROPHONE)
-#include "../audio/drivers_microphone/coreaudio_mic.m"
+#if defined(OSX)
+#include "../audio/drivers_microphone/coreaudio_mic_macos.m"
+#else
+#include "../audio/drivers_microphone/coreaudio_mic_ios.m"
+#endif
 #endif
 
 #ifdef HAVE_CORELOCATION
