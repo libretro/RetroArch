@@ -4689,6 +4689,30 @@ static size_t setting_get_string_representation_uint_ozone_menu_color_theme(
    }
    return 0;
 }
+static size_t setting_get_string_representation_uint_ozone_header_separator(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE), len);
+         case 2:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_MAXIMUM), len);
+         case 1:
+         default:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NORMAL), len);
+      }
+   }
+   return 0;
+}
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -19723,6 +19747,37 @@ static bool setting_append_list(
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 1.0, 2.0, 0.05, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.ozone_padding_factor,
+                  MENU_ENUM_LABEL_OZONE_PADDING_FACTOR,
+                  MENU_ENUM_LABEL_VALUE_OZONE_PADDING_FACTOR,
+                  DEFAULT_OZONE_PADDING_FACTOR,
+                  "%.2fx",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0.0, 2.0, 0.01, true, true);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_ozone_header_separator,
+                  MENU_ENUM_LABEL_OZONE_HEADER_SEPARATOR,
+                  MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
+                  DEFAULT_OZONE_HEADER_SEPARATOR,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_ozone_header_separator;
+            menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
          }
 #endif
 
