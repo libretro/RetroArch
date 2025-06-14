@@ -945,6 +945,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_thumbnails_rgui,               MENU_
 #ifdef HAVE_OZONE
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_left_thumbnails_ozone,                   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_menu_color_theme,                  MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_padding_factor,                    MENU_ENUM_SUBLABEL_OZONE_PADDING_FACTOR)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_header_separator,                  MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_collapse_sidebar,                  MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_scroll_content_metadata,           MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_thumbnail_scale_factor,            MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR)
@@ -3207,6 +3209,16 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME:
 #ifdef HAVE_OZONE
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_menu_color_theme);
+#endif
+            break;
+         case MENU_ENUM_LABEL_OZONE_PADDING_FACTOR:
+#ifdef HAVE_OZONE
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_padding_factor);
+#endif
+            break;
+         case MENU_ENUM_LABEL_OZONE_HEADER_SEPARATOR:
+#ifdef HAVE_OZONE
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_header_separator);
 #endif
             break;
          case MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR:
