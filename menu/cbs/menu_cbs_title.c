@@ -907,7 +907,7 @@ static int action_get_title_group_settings(const char *path, const char *label,
    /* Note: MENU_ENUM_LABEL_HORIZONTAL_MENU *is* a playlist
     * tab, but its actual title is set elsewhere - so treat
     * it as a generic top-level item */
-   title_info_list_t info_list[] = {
+   static const title_info_list_t info_list[] = {
       {MENU_ENUM_LABEL_MAIN_MENU,             MENU_ENUM_LABEL_VALUE_MAIN_MENU,             false },
       {MENU_ENUM_LABEL_HISTORY_TAB,           MENU_ENUM_LABEL_VALUE_HISTORY_TAB,           true  },
       {MENU_ENUM_LABEL_FAVORITES_TAB,         MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,         true  },
@@ -978,7 +978,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             unsigned type, char *s, size_t len);
    } title_info_list_t;
 
-   title_info_list_t info_list[] = {
+   static const title_info_list_t info_list[] = {
       {MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST,                 action_get_title_remap_port},
       {MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST,                   action_get_core_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST,                action_get_core_information_list},
@@ -1812,7 +1812,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
             unsigned type, char *s, size_t len);
    } title_info_list_t;
 
-   title_info_list_t info_list[] = {
+   static const title_info_list_t info_list[] = {
 #ifdef HAVE_AUDIOMIXER
       {MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST,                                 action_get_title_mixer_stream_actions},
 #endif

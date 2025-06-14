@@ -669,7 +669,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       int (*cb)(menu_displaylist_info_t *info);
    } deferred_info_list_t;
 
-   const deferred_info_list_t info_list[] = {
+   static const deferred_info_list_t info_list[] = {
       {MENU_ENUM_LABEL_DEFERRED_DUMP_DISC_LIST, deferred_push_dump_disk_list},
 #ifdef HAVE_LAKKA
       {MENU_ENUM_LABEL_DEFERRED_EJECT_DISC, deferred_push_eject_disc},

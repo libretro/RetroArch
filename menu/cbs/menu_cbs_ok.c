@@ -8998,7 +8998,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
                size_t idx, size_t entry_idx);
       } temp_ok_list_t;
 
-      temp_ok_list_t ok_list[] = {
+      static const temp_ok_list_t ok_list[] = {
          {MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING,          action_ok_start_recording},
          {MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING,          action_ok_start_streaming},
          {MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING,           action_ok_stop_recording},
@@ -9380,7 +9380,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
                size_t idx, size_t entry_idx);
       } temp_ok_list_t;
 
-      temp_ok_list_t ok_list[] = {
+      static const temp_ok_list_t ok_list[] = {
          {MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE,            action_ok_open_archive_detect_core},
          {MENU_ENUM_LABEL_OPEN_ARCHIVE,                        action_ok_open_archive},
          {MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE,            action_ok_load_archive_detect_core},
