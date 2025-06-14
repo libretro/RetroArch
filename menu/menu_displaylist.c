@@ -10888,15 +10888,15 @@ unsigned menu_displaylist_build_list(
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
             if (menu_entries_append(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG),
-                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_AS_CONFIG),
-                     MENU_ENUM_LABEL_SAVE_AS_CONFIG,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-            if (menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG),
                      msg_hash_to_str(MENU_ENUM_LABEL_SAVE_MAIN_CONFIG),
                      MENU_ENUM_LABEL_SAVE_MAIN_CONFIG,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG),
+                     msg_hash_to_str(MENU_ENUM_LABEL_SAVE_AS_CONFIG),
+                     MENU_ENUM_LABEL_SAVE_AS_CONFIG,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
             if (menu_entries_append(list,
