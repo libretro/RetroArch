@@ -1096,6 +1096,22 @@ MSG_HASH(
    "Sparar nuvarande konfiguration till ny separat fil."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Spara konfiguration som"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Spara aktuell konfiguration som anpassad konfigurationsfil."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Spara huvudkonfiguration"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "Spara aktuell konfiguration som huvudkonfiguration."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Återställ grundinställningar"
    )
@@ -10516,6 +10532,10 @@ MSG_HASH(
 /* XMB: Settings Options */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
+   "Ribbon (Förenklad)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
    "Enkel snö"
    )
@@ -11609,6 +11629,10 @@ MSG_HASH(
    "Säger till videodrivrutinen att uttryckligen använda ett specificerat buffringsläge."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+   "Ändrar den förinställda shader som för närvarande används i menyn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
    "Förinställd Shader"
    )
@@ -12390,6 +12414,10 @@ MSG_HASH(
    "Kontrollerprofilen sparades."
    )
 MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "Kontrollerprofilen sparad i katalogen för kontrollerprofiler som\n\"%s\""
+   )
+MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "Kunde inte initiera automatisk sparning."
    )
@@ -12496,6 +12524,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_DECOMPRESSION_FAILED,
    "Dekomprimeringen misslyckades."
+   )
+MSG_HASH(
+   MSG_DETECTED_VIEWPORT_OF,
+   "Upptäckte visningsområde för"
    )
 MSG_HASH(
    MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
@@ -12972,6 +13004,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Återställde äldre sparad status."
+   )
+MSG_HASH(
+   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+   "Shaders: återställer standardförval för shader till"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -13526,6 +13562,10 @@ MSG_HASH(
    "Ingen skiva har matats in i enheten."
    )
 MSG_HASH(
+   MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
+   "Förval för shader togs bort."
+   )
+MSG_HASH(
    MSG_ERROR_REMOVING_SHADER_PRESET,
    "Fel vid borttagning av shader-förval."
    )
@@ -13590,6 +13630,10 @@ MSG_HASH(
    "Säkerhetskopiering av kärna slutförd: "
    )
 MSG_HASH(
+   MSG_CORE_RESTORATION_ALREADY_INSTALLED,
+   "Vald säkerhetskopia för kärna redan installerad: "
+   )
+MSG_HASH(
    MSG_RESTORING_CORE,
    "Återställer kärna: "
    )
@@ -13618,8 +13662,16 @@ MSG_HASH(
    "Säkerhetskopiering av kärna misslyckades: "
    )
 MSG_HASH(
+   MSG_CORE_RESTORATION_FAILED,
+   "Återställning av kärna misslyckades: "
+   )
+MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
    "Installation av kärna misslyckades: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_DISABLED,
+   "Återställning av kärna inaktiverad - kärnan är låst: "
    )
 MSG_HASH(
    MSG_CORE_INSTALLATION_DISABLED,
@@ -13924,8 +13976,20 @@ MSG_HASH(
    "Blockera bildrutor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+   "Mappning för tangentbordskontroller"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   "Mappningstyp för tangentbordskontroller"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    "Litet tangentbord"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
+   "Antalet millisekunders väntetid för att få ett komplett inmatningsprov. Använd det om du har problem med samtidiga knapptryckningar (endast Android)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,

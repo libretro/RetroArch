@@ -1124,6 +1124,22 @@ MSG_HASH(
    "Desa la configuració actual en un fitxer nou."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Desa la configuració com a"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Desa la configuració actual com el fitxer de configuració predeterminada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Desa la configuració principal"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "Desa la configuració actual com a configuració principal."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Restaura els valors predefinits"
    )
@@ -14120,6 +14136,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "S'ha arribat al final de la memòria intermèdia de rebobinat."
+   )
+MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Desa la configuració a"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,

@@ -1128,6 +1128,22 @@ MSG_HASH(
    "Mecvut yapılandırmayı ayrı bir dosyaya kaydedin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Yapılandırmayı Farklı Kaydet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Mevcut yapılandırmayı özel yapılandırma dosyası olarak kaydet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Ana Yapılandırmayı Kaydet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "Mevcut yapılandırmayı ana yapılandırma olarak kaydet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Varsayılanlara Sıfırla"
    )
@@ -14300,6 +14316,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "Geri sarma ara belleğinin sonuna erişildi."
+   )
+MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Yapılandırma kaydedildi"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,

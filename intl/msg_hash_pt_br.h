@@ -1116,6 +1116,22 @@ MSG_HASH(
    "Salva a configuração atual em um arquivo separado."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Salvar Configuração Como"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Salvar a configuração atual como arquivo de configuração personalizado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Salvar Configuração Principal"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "Salvar a configuração atual como configuração principal."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Redefinir"
    )
@@ -12700,6 +12716,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "Final do buffer de rebobinamento atingido."
+   )
+MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Configuração salva em"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,

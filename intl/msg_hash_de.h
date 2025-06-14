@@ -1084,6 +1084,22 @@ MSG_HASH(
    "Aktuelle Konfiguration als gesonderte Datei speichern."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Konfiguration speichern unter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Aktuelle Konfiguration als angepasste Konfiguration speichern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Hauptkonfiguration speichern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "Aktuelle Konfiguration als Hauptkonfiguration speichern."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Auf Standardwerte zurücksetzen"
    )
@@ -13880,6 +13896,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "Ende des Rückspul-Puffers erreicht."
+   )
+MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Konfiguration gespeichert in"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,

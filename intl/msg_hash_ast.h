@@ -69,7 +69,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Seleiciona'l nucleu a usar."
+   "Seleiciona'l nucleu que quies usar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -77,7 +77,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "Seleiciona'l conteníu a aniciar."
+   "Seleiciona'l conteníu que quies aniciar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -107,7 +107,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Crea y anueva llistes pente la busca de conteníu."
+   "Crea ya anueva llistes pente la busca de conteníu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -127,7 +127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Baxa complementos, componentes y conteníu pa RetroArch."
+   "Baxa complementos, componentes ya conteníu pa RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
@@ -159,7 +159,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   "Xestiona y crea ficheros de configuración."
+   "Xestiona ya crea ficheros de configuración."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
@@ -291,7 +291,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   "Troca tolos nucleos heredaos ya instalaos a mano poles últimes versiones de la Play Store onde seya posible."
+   "Sustitúi tolos nucleos heredaos ya instalaos manualmente poles últimes versiones de la Play Store onde seya posible."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
@@ -362,7 +362,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   "Visualiza les interfaces de rede y les direiciones IP asociaes."
+   "Visualiza les interfaces de rede ya les direiciones IP asociaes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
@@ -827,6 +827,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Guardar la configuración nueva"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Guardar la configuración principal"
+   )
 
 /* Main Menu > Help */
 
@@ -1160,7 +1164,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-   "Recordar la posición y el tamañu de la ventana"
+   "Recordar la posición ya'l tamañu de la ventana"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
@@ -1287,7 +1291,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-   "Ayuda a amenorgar les imperfeiciones na sincronización del audiu y videu. Ten curiáu si esta opción ta desactivada, la sincronización correuta ye cuasi imposible de consiguir."
+   "Ayuda a amenorgar les imperfeiciones na sincronización del audiu ya videu. Ten curiáu si esta opción ta desactivada, la sincronización correuta ye cuasi imposible de consiguir."
    )
 
 /* Settings > Audio > MIDI */
@@ -1764,7 +1768,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "Zarra automáticamente'l menú y resume'l conteníu dempués de guardar o cargar un puntu de guardáu. La desactivación d'esta opción pue ameyorar el rindimientu de los puntos de guardáu en preseos perlentos."
+   "Zarra automáticamente'l menú ya resume'l conteníu dempués de guardar o cargar un puntu de guardáu. La desactivación d'esta opción pue ameyorar el rindimientu de los puntos de guardáu en preseos perlentos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
@@ -1893,11 +1897,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
-   "Amosar la data y hora"
+   "Amosar la data ya hora"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
-   "Estilu de la data y hora"
+   "Estilu de la data ya hora"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
@@ -2259,7 +2263,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-   "Introduz el to nome d'usuariu equí. Va usase nes sesiones de xuegu en llinia y n'otres coses."
+   "Introduz el to nome d'usuariu equí. Va usase nes sesiones de xuegu en llinia ya n'otres coses."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
@@ -2640,6 +2644,10 @@ MSG_HASH(
    "Siguir"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
+   "Reaniciar"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Zarrar el conteníu"
    )
@@ -2901,7 +2909,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
-   "Historial y favoritos"
+   "Historial ya favoritos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
@@ -2913,7 +2921,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
-   "Historial y favoritos"
+   "Historial ya favoritos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
@@ -3703,7 +3711,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
-   "Yá hai una descarga en cursu."
+   "Xá hai una descarga en cursu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
@@ -4133,7 +4141,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER,
-   "Rindimientu y potencia de la CPU"
+   "Rindimientu ya potencia de la CPU"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY,
@@ -4221,7 +4229,7 @@ MSG_HASH(
 #ifdef _3DS
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
-   "Activa la velocidá de reló (804MHz) y la caché L2 de New3DS."
+   "Activa la velocidá de reló (804MHz) ya la caché L2 de New3DS."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
@@ -4229,7 +4237,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM,
-   "Activa l'apaición de la información d'estáu na pantalla baxera. Desactiva esta opción p'aumentar la duración de la batería y ameyorar el rindimientu."
+   "Activa l'apaición de la información d'estáu na pantalla baxera. Desactiva esta opción p'aumentar la duración de la batería ya ameyorar el rindimientu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,

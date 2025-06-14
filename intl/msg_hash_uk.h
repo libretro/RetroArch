@@ -1136,6 +1136,22 @@ MSG_HASH(
    "Зберегти поточну конфігурацію в окремий файл."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Зберегти Конфігурацію Як"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Зберегти поточну конфігурацію як файл користувацької конфігурації."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Зберегти Основну Конфігурацію"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "Зберегти поточну конфігурацію як основну конфігурацію."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Відновити стандартні налаштування"
    )
@@ -2686,6 +2702,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    "Адаптивна VSync"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "VSync буде увімкнена, доки продуктивність не впаде нижче цільової частоти оновлення. Може зменшити затримки та ривки зображення, коли продуктивність падає нижче реального часу, а також бути більш енергоефективною. Несумісна з опцією 'Затримка Кадру'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -14300,6 +14320,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "Досягнуто кінця буферу перемотування."
+   )
+MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Конфігурацію збережено у"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
