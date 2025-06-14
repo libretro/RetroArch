@@ -11903,6 +11903,25 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    font_bind(&ozone->fonts.entries_sublabel);
    font_bind(&ozone->fonts.sidebar);
 
+   /* Blank dummy core output */
+   if (!libretro_running)
+   {
+      float pure_black[16] = COLOR_HEX_TO_FLOAT(0x000000, 1.00f);
+
+      gfx_display_draw_quad(p_disp,
+            userdata,
+            video_width,
+            video_height,
+            0,
+            0,
+            video_width,
+            video_height,
+            video_width,
+            video_height,
+            pure_black,
+            NULL);
+   }
+
    /* Background (Always use running background due to overlays) */
    if (menu_framebuffer_opacity < 1.0f)
    {
