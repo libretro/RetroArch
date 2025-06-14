@@ -723,7 +723,6 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             char win32_file[PATH_MAX_LENGTH] = {0};
             settings_t *settings    = config_get_ptr();
             char    *title_cp       = NULL;
-            size_t converted        = 0;
             const char *extensions  = "Libretro core (.dll)\0*.dll\0All Files\0*.*\0\0";
             const char *title       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST);
             const char *initial_dir = settings->paths.directory_libretro;
@@ -762,7 +761,6 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             char win32_file[PATH_MAX_LENGTH] = {0};
             char *title_cp          = NULL;
             wchar_t *title_wide     = NULL;
-            size_t converted        = 0;
             const char *extensions  = "All Files (*.*)\0*.*\0\0";
             const char *title       = msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
@@ -1088,10 +1086,7 @@ static LRESULT CALLBACK wnd_proc_common(
          }
          break;
       case WM_COMMAND:
-         {
-            settings_t *settings     = config_get_ptr();
-            win32_menu_loop(main_window.hwnd, wparam);
-         }
+         win32_menu_loop(main_window.hwnd, wparam);
          break;
    }
    return 0;

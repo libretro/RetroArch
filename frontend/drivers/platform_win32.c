@@ -291,7 +291,6 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    char str_ProductName[64]        = {0};
    char str_DisplayVersion[64]     = {0};
    char str_LCUVer[64]             = {0};
-   char str_CurrentBuild[64]       = {0};
    DWORD key_type                  = 0; /* null pointer */
    DWORD data_size                 = 0;
    long reg_read_result;
@@ -917,6 +916,7 @@ static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
+#if 0
 static const char *accessibility_win_language_id(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -981,6 +981,7 @@ static const char *accessibility_win_language_id(const char* language)
       return "405";
    return "";
 }
+#endif
 
 static const char *accessibility_win_language_code(const char* language)
 {
@@ -1164,10 +1165,10 @@ static bool accessibility_speak_windows(int speed,
    char cmd[512];
    const char *voice      = get_user_language_iso639_1(true);
    const char *language   = accessibility_win_language_code(voice);
+#if 0
    const char *langid     = accessibility_win_language_id(voice);
-   bool res               = false;
-   const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
-   size_t nbytes_cmd      = 0;
+#endif
+   const char *speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
    if (speed < 1)
       speed               = 1;
    else if (speed > 10)
@@ -1184,8 +1185,8 @@ static bool accessibility_speak_windows(int speed,
 
    if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_POWERSHELL)
    {
-      const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak($input);\"";
-      const char * template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak($input);\"";
+      const char *template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak($input);\"";
+      const char *template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak($input);\"";
       if (language && language[0] != '\0')
          snprintf(cmd, sizeof(cmd), template_lang, language, speeds[speed-1]);
       else
