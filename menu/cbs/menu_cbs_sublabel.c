@@ -1115,7 +1115,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_wallpaper_opacity,             
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_framebuffer_opacity,              MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_horizontal_animation,             MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_ribbon_enable,                    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_font,                             MENU_ENUM_SUBLABEL_XMB_FONT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_xmb_font,                         MENU_ENUM_SUBLABEL_XMB_FONT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_ozone_font,                       MENU_ENUM_SUBLABEL_OZONE_FONT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings_show_drivers,                 MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings_show_video,                   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings_show_audio,                   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO)
@@ -3160,7 +3161,10 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_video_tab);
             break;
          case MENU_ENUM_LABEL_XMB_FONT:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_font);
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_xmb_font);
+            break;
+         case MENU_ENUM_LABEL_OZONE_FONT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_ozone_font);
             break;
          case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_ribbon_enable);

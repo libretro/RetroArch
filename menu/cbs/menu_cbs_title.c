@@ -771,6 +771,7 @@ DEFAULT_FILL_TITLE_MACRO(action_get_title_extraction_directory,   MENU_ENUM_LABE
 DEFAULT_FILL_TITLE_MACRO(action_get_title_menu,                   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_video_font_path,        MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_xmb_font,               MENU_ENUM_LABEL_VALUE_XMB_FONT)
+DEFAULT_FILL_TITLE_MACRO(action_get_title_ozone_font,             MENU_ENUM_LABEL_VALUE_OZONE_FONT)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_log_dir,                MENU_ENUM_LABEL_VALUE_LOG_DIR)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_manual_content_scan_dir, MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR)
 
@@ -1296,6 +1297,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_title_video_font_path},
       {MENU_ENUM_LABEL_XMB_FONT,
          action_get_title_xmb_font},
+      {MENU_ENUM_LABEL_OZONE_FONT,
+         action_get_title_ozone_font},
       {MENU_ENUM_LABEL_VIDEO_FILTER,
          action_get_title_video_filter},
       {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,
@@ -1736,6 +1739,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_XMB_FONT:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_xmb_font);
+            break;
+         case MENU_ENUM_LABEL_OZONE_FONT:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_ozone_font);
             break;
          case MENU_ENUM_LABEL_VIDEO_FILTER:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_video_filter);

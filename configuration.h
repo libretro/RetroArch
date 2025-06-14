@@ -578,6 +578,7 @@ typedef struct settings
       char bundle_assets_src[PATH_MAX_LENGTH];
       char bundle_assets_dst[PATH_MAX_LENGTH];
       char path_menu_xmb_font[PATH_MAX_LENGTH];
+      char path_menu_ozone_font[PATH_MAX_LENGTH];
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];

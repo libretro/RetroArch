@@ -151,6 +151,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_input_overlay,                  DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_input_osk_overlay,              DISPLAYLIST_OSK_OVERLAYS)
 GENERIC_DEFERRED_PUSH(deferred_push_video_font_path,                DISPLAYLIST_VIDEO_FONTS)
 GENERIC_DEFERRED_PUSH(deferred_push_xmb_font_path,                  DISPLAYLIST_FONTS)
+GENERIC_DEFERRED_PUSH(deferred_push_ozone_font_path,                DISPLAYLIST_FONTS)
 GENERIC_DEFERRED_PUSH(deferred_push_content_history_path,           DISPLAYLIST_CONTENT_HISTORY)
 GENERIC_DEFERRED_PUSH(deferred_push_disc_information,               DISPLAYLIST_DISC_INFO)
 GENERIC_DEFERRED_PUSH(deferred_push_system_information,             DISPLAYLIST_SYSTEM_INFO)
@@ -887,6 +888,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_INPUT_OSK_OVERLAY, deferred_push_input_osk_overlay},
       {MENU_ENUM_LABEL_VIDEO_FONT_PATH, deferred_push_video_font_path},
       {MENU_ENUM_LABEL_XMB_FONT, deferred_push_xmb_font_path},
+      {MENU_ENUM_LABEL_OZONE_FONT, deferred_push_ozone_font_path},
       {MENU_ENUM_LABEL_CHEAT_FILE_LOAD, deferred_push_cheat_file_load},
       {MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND, deferred_push_cheat_file_load_append},
       {MENU_ENUM_LABEL_REMAP_FILE_LOAD, deferred_push_remap_file_load},
@@ -1252,6 +1254,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_XMB_FONT:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_xmb_font_path);
+            break;
+         case MENU_ENUM_LABEL_OZONE_FONT:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_ozone_font_path);
             break;
          case MENU_ENUM_LABEL_CONTENT_HISTORY_PATH:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);

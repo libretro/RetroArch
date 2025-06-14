@@ -2367,6 +2367,10 @@ MSG_HASH(
    "rgui_menu_theme_preset"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_OZONE_FONT,
+   "ozone_font"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME,
    "ozone_menu_color_theme"
    )

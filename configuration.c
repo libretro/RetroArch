@@ -1693,6 +1693,9 @@ static struct config_path_setting *populate_settings_path(
 #ifdef HAVE_XMB
    SETTING_PATH("xmb_font",                      settings->paths.path_menu_xmb_font, false, NULL, true);
 #endif
+#ifdef HAVE_OZONE
+   SETTING_PATH("ozone_font",                    settings->paths.path_menu_ozone_font, false, NULL, true);
+#endif
 #endif /* HAVE_MENU */
 
 #ifdef HAVE_OVERLAY
@@ -2916,6 +2919,9 @@ void config_set_defaults(void *data)
             def_menu);
 #ifdef HAVE_XMB
    *settings->paths.path_menu_xmb_font            = '\0';
+#endif
+#ifdef HAVE_OZONE
+   *settings->paths.path_menu_ozone_font          = '\0';
 #endif
 
    configuration_set_string(settings,
@@ -5352,6 +5358,9 @@ bool config_save_file(const char *path)
    config_set_path(conf, "xmb_font",
          !string_is_empty(settings->paths.path_menu_xmb_font)
          ? settings->paths.path_menu_xmb_font : "");
+   config_set_path(conf, "ozone_font",
+         !string_is_empty(settings->paths.path_menu_ozone_font)
+         ? settings->paths.path_menu_ozone_font : "");
 #endif
 
    /* String settings  */

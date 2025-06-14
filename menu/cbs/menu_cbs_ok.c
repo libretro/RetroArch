@@ -9722,6 +9722,8 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   || string_is_equal(menu_label,
                      msg_hash_to_str(MENU_ENUM_LABEL_XMB_FONT))
                   || string_is_equal(menu_label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_OZONE_FONT))
+                  || string_is_equal(menu_label,
                      msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN))
                   || string_is_equal(menu_label,
                      msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FILTER)))

@@ -19718,6 +19718,24 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
+            CONFIG_PATH(
+                  list, list_info,
+                  settings->paths.path_menu_ozone_font,
+                  sizeof(settings->paths.path_menu_ozone_font),
+                  MENU_ENUM_LABEL_OZONE_FONT,
+                  MENU_ENUM_LABEL_VALUE_OZONE_FONT,
+                  settings->paths.directory_assets,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_video_font_path;
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FONT_SELECTOR;
+            MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "ttf");
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.ozone_scroll_content_metadata,

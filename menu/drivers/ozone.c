@@ -7136,7 +7136,7 @@ static void ozone_draw_messagebox(
       return;
 
    scale_factor             = ozone->last_scale_factor;
-   usable_width             = (int)width - (100 * 8 * scale_factor);
+   usable_width             = (int)width - (150 * 8 * scale_factor) / ((float)width / (float)height * 2.0f);
    line_height              = font_data.line_height * 1.10f;
 
    if (usable_width < 1)
@@ -9275,6 +9275,10 @@ static bool ozone_init_font(
       font_data->font            = NULL;
    }
 
+   /* Enforce minimum readable font size for small screens */
+   if (font_size < 9)
+      font_size = 9;
+
    /* Cache approximate dimensions */
    font_data->line_height        = (int)(font_size + 0.5f);
    font_data->glyph_width        = (int)((font_size * (3.0f / 4.0f)) + 0.5f);
@@ -9394,6 +9398,7 @@ static void ozone_set_layout(
       bool is_threaded)
 {
    settings_t *settings                             = config_get_ptr();
+   const char *path_menu_font                       = settings->paths.path_menu_ozone_font;
    char tmp_dir[DIR_MAX_LENGTH];
    char font_path[PATH_MAX_LENGTH];
    bool font_inited                                 = false;
@@ -9474,6 +9479,9 @@ static void ozone_set_layout(
          break;
    }
 
+   if (!string_is_empty(path_menu_font))
+      strlcpy(font_path, path_menu_font, sizeof(font_path));
+
    font_inited = ozone_init_font(&ozone->fonts.title,
          is_threaded, font_path, FONT_SIZE_TITLE * scale_factor);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
@@ -9499,6 +9507,9 @@ static void ozone_set_layout(
          fill_pathname_join_special(font_path, ozone->assets_path, "regular.ttf", sizeof(font_path));
          break;
    }
+
+   if (!string_is_empty(path_menu_font))
+      strlcpy(font_path, path_menu_font, sizeof(font_path));
 
    /* Sidebar */
    font_inited = ozone_init_font(&ozone->fonts.sidebar,
