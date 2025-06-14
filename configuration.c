@@ -3522,6 +3522,8 @@ static config_file_t *open_default_config_file(void)
       goto error;
 
    path_set(RARCH_PATH_CONFIG, conf_path);
+   if (path_is_empty(RARCH_PATH_CONFIG_DEFAULT))
+      path_set(RARCH_PATH_CONFIG_DEFAULT, conf_path);
 
    return conf;
 
@@ -4003,7 +4005,7 @@ static bool config_load_file(global_t *global,
             DEFAULT_MIDI_OUTPUT);
 
    /* History playlists must stay in default config path */
-   path_config = g_defaults.path_config;
+   path_config = path_get(RARCH_PATH_CONFIG_DEFAULT);
 
    if (string_is_empty(settings->paths.path_content_favorites))
       strlcpy(settings->paths.directory_content_favorites, "default",

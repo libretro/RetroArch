@@ -328,6 +328,7 @@ struct rarch_state
    char path_libretro[PATH_MAX_LENGTH];
    char path_libretro_last[PATH_MAX_LENGTH];
    char path_config_file[PATH_MAX_LENGTH];
+   char path_config_default_file[PATH_MAX_LENGTH];
    char path_config_append_file[PATH_MAX_LENGTH];
    char path_config_override_file[PATH_MAX_LENGTH];
    char path_core_options_file[PATH_MAX_LENGTH];
@@ -2415,6 +2416,10 @@ char *path_get_ptr(enum rarch_path_type type)
          if (!path_is_empty(RARCH_PATH_CONFIG))
             return p_rarch->path_config_file;
          break;
+      case RARCH_PATH_CONFIG_DEFAULT:
+         if (!path_is_empty(RARCH_PATH_CONFIG_DEFAULT))
+            return p_rarch->path_config_default_file;
+         break;
       case RARCH_PATH_CONFIG_APPEND:
          if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
             return p_rarch->path_config_append_file;
@@ -2452,6 +2457,10 @@ const char *path_get(enum rarch_path_type type)
       case RARCH_PATH_CONFIG:
          if (!path_is_empty(RARCH_PATH_CONFIG))
             return p_rarch->path_config_file;
+         break;
+      case RARCH_PATH_CONFIG_DEFAULT:
+         if (!path_is_empty(RARCH_PATH_CONFIG_DEFAULT))
+            return p_rarch->path_config_default_file;
          break;
       case RARCH_PATH_CONFIG_APPEND:
          if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
@@ -2491,6 +2500,8 @@ size_t path_get_realsize(enum rarch_path_type type)
          return sizeof(p_rarch->path_core_options_file);
       case RARCH_PATH_CONFIG:
          return sizeof(p_rarch->path_config_file);
+      case RARCH_PATH_CONFIG_DEFAULT:
+         return sizeof(p_rarch->path_config_default_file);
       case RARCH_PATH_CONFIG_APPEND:
          return sizeof(p_rarch->path_config_append_file);
       case RARCH_PATH_CONFIG_OVERRIDE:
@@ -2539,13 +2550,17 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(p_rarch->path_default_shader_preset, path,
                sizeof(p_rarch->path_default_shader_preset));
          break;
-      case RARCH_PATH_CONFIG_APPEND:
-         strlcpy(p_rarch->path_config_append_file, path,
-               sizeof(p_rarch->path_config_append_file));
-         break;
       case RARCH_PATH_CONFIG:
          strlcpy(p_rarch->path_config_file, path,
                sizeof(p_rarch->path_config_file));
+         break;
+      case RARCH_PATH_CONFIG_DEFAULT:
+         strlcpy(p_rarch->path_config_default_file, path,
+               sizeof(p_rarch->path_config_default_file));
+         break;
+      case RARCH_PATH_CONFIG_APPEND:
+         strlcpy(p_rarch->path_config_append_file, path,
+               sizeof(p_rarch->path_config_append_file));
          break;
       case RARCH_PATH_CONFIG_OVERRIDE:
          strlcpy(p_rarch->path_config_override_file, path,
@@ -2588,6 +2603,10 @@ bool path_is_empty(enum rarch_path_type type)
          break;
       case RARCH_PATH_CONFIG:
          if (string_is_empty(p_rarch->path_config_file))
+            return true;
+         break;
+      case RARCH_PATH_CONFIG_DEFAULT:
+         if (string_is_empty(p_rarch->path_config_default_file))
             return true;
          break;
       case RARCH_PATH_CONFIG_APPEND:
@@ -2651,6 +2670,9 @@ void path_clear(enum rarch_path_type type)
          break;
       case RARCH_PATH_CONFIG:
          *p_rarch->path_config_file = '\0';
+         break;
+      case RARCH_PATH_CONFIG_DEFAULT:
+         *p_rarch->path_config_default_file = '\0';
          break;
       case RARCH_PATH_CONFIG_APPEND:
          *p_rarch->path_config_append_file = '\0';
@@ -4672,23 +4694,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_MENU_SAVE_MAIN_CONFIG:
          {
-            char app_path[PATH_MAX_LENGTH] = {0};
-            char conf_path[PATH_MAX_LENGTH];
-
-#if defined(_WIN32) && !defined(_XBOX)
-#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
-            /* On UWP, the app install directory is not writable so use the writable LocalState dir instead */
-            fill_pathname_home_dir(app_path, sizeof(app_path));
-#else
-            fill_pathname_application_dir(app_path, sizeof(app_path));
-#endif
-            fill_pathname_resolve_relative(conf_path, app_path,
-                  FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
-#elif !defined(RARCH_CONSOLE)
-            if (fill_pathname_application_data(app_path, sizeof(app_path)))
-               fill_pathname_join_special(conf_path, app_path,
-                     FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
-#endif
+            const char *conf_path = path_get(RARCH_PATH_CONFIG_DEFAULT);
 
             path_set(RARCH_PATH_CONFIG, conf_path);
 #ifdef HAVE_CONFIGFILE
