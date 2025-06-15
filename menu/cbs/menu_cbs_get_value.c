@@ -2123,7 +2123,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
             char *s2, size_t len2);
    } info_range_list_t;
 
-   info_range_list_t info_list[] = {
+   static const info_range_list_t info_list[] = {
 #ifdef HAVE_AUDIOMIXER
       {
          MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN,

@@ -2202,7 +2202,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             char *s, size_t len);
    } info_range_list_t;
 
-   info_range_list_t info_list[] = {
+   static const info_range_list_t info_list[] = {
       {
          MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
          MENU_SETTINGS_INPUT_DESC_KBD_END,
@@ -5797,7 +5797,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       } info_single_list_t;
 
       /* Entries with %u player index placeholder. */
-      info_single_list_t info_list[] = {
+      static const info_single_list_t info_list[] = {
 #if 0
          {
             MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE,
