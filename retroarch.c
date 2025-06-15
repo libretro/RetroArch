@@ -4122,36 +4122,48 @@ bool command_event(enum event_command cmd, void *data)
 
             /* Note: Sorting is disabled by default for
              * all content history playlists */
-            RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
-                  path_content_history);
-            playlist_config_set_path(&playlist_config, path_content_history);
-            g_defaults.content_history = playlist_init(&playlist_config);
-            playlist_set_sort_mode(
-                  g_defaults.content_history, PLAYLIST_SORT_MODE_OFF);
-
-            RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
-                  path_content_music_history);
-            playlist_config_set_path(&playlist_config, path_content_music_history);
-            g_defaults.music_history = playlist_init(&playlist_config);
-            playlist_set_sort_mode(
-                  g_defaults.music_history, PLAYLIST_SORT_MODE_OFF);
-
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-            RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
-                  path_content_video_history);
-            playlist_config_set_path(&playlist_config, path_content_video_history);
-            g_defaults.video_history = playlist_init(&playlist_config);
-            playlist_set_sort_mode(
-                  g_defaults.video_history, PLAYLIST_SORT_MODE_OFF);
-#endif
+            if (!string_is_empty(path_content_history))
+            {
+               RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
+                     path_content_history);
+               playlist_config_set_path(&playlist_config, path_content_history);
+               g_defaults.content_history = playlist_init(&playlist_config);
+               playlist_set_sort_mode(
+                     g_defaults.content_history, PLAYLIST_SORT_MODE_OFF);
+            }
 
 #ifdef HAVE_IMAGEVIEWER
-            RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
-                  path_content_image_history);
-            playlist_config_set_path(&playlist_config, path_content_image_history);
-            g_defaults.image_history = playlist_init(&playlist_config);
-            playlist_set_sort_mode(
-                  g_defaults.image_history, PLAYLIST_SORT_MODE_OFF);
+            if (!string_is_empty(path_content_image_history))
+            {
+               RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
+                     path_content_image_history);
+               playlist_config_set_path(&playlist_config, path_content_image_history);
+               g_defaults.image_history = playlist_init(&playlist_config);
+               playlist_set_sort_mode(
+                     g_defaults.image_history, PLAYLIST_SORT_MODE_OFF);
+            }
+#endif
+
+            if (!string_is_empty(path_content_music_history))
+            {
+               RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
+                     path_content_music_history);
+               playlist_config_set_path(&playlist_config, path_content_music_history);
+               g_defaults.music_history = playlist_init(&playlist_config);
+               playlist_set_sort_mode(
+                     g_defaults.music_history, PLAYLIST_SORT_MODE_OFF);
+            }
+
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+            if (!string_is_empty(path_content_video_history))
+            {
+               RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
+                     path_content_video_history);
+               playlist_config_set_path(&playlist_config, path_content_video_history);
+               g_defaults.video_history = playlist_init(&playlist_config);
+               playlist_set_sort_mode(
+                     g_defaults.video_history, PLAYLIST_SORT_MODE_OFF);
+            }
 #endif
          }
          break;
@@ -4665,7 +4677,8 @@ bool command_event(enum event_command cmd, void *data)
                   settings->paths.directory_menu_config,
                   as_path, sizeof(conf_path));
 
-            path_set(RARCH_PATH_CONFIG, conf_path);
+            if (!string_is_empty(conf_path))
+               path_set(RARCH_PATH_CONFIG, conf_path);
 #ifdef HAVE_CONFIGFILE
             command_event_save_current_config(OVERRIDE_NONE);
 #endif
@@ -8737,7 +8750,7 @@ void retroarch_favorites_init(void)
 
    retroarch_favorites_deinit();
 
-   if (!playlist_config.capacity)
+   if (!playlist_config.capacity || string_is_empty(path_content_favorites))
       return;
 
    RARCH_LOG("[Playlist]: %s: \"%s\".\n",
