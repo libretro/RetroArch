@@ -224,6 +224,7 @@ static char *get_tmpdir_alloc(const char *override_dir)
    free(wide_str);
 #endif
 #else
+   const char *src    = NULL;
 #if defined ANDROID
    src                = override_dir;
 #else
