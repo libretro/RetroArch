@@ -158,8 +158,6 @@ static void crt_switch_set_aspect(
 static bool crt_sr2_init(videocrt_switch_t *p_switch,
       int monitor_index, unsigned int crt_mode, unsigned int super_width)
 {
-   char *mode;
-   const char *err_msg;
    char index[10];
    gfx_ctx_ident_t gfxctx;
    char ra_config_path[PATH_MAX_LENGTH];

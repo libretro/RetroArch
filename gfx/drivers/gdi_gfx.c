@@ -489,7 +489,6 @@ static void *gdi_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
-   void *ctx_data                       = NULL;
    unsigned mode_width = 0, mode_height = 0;
    unsigned win_width  = 0, win_height  = 0;
    unsigned temp_width = 0, temp_height = 0;
@@ -901,7 +900,6 @@ static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
 static uintptr_t gdi_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
-   void *tmpdata               = NULL;
    gdi_texture_t *texture      = NULL;
    struct texture_image *image = (struct texture_image*)data;
 

@@ -328,8 +328,6 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       }
       else
       {
-         int bottom      = wr->prev_rect.bottom;
-         int right       = wr->prev_rect.right;
          wr->active_rect = wr->prev_rect;
          winraw_init_mouse_xy_mapping(wr);
          wr->rect_delay  = 0;

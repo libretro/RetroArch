@@ -1211,9 +1211,6 @@ static void gl1_set_viewport(gl1_t *gl1,
       bool force_full, bool allow_rotate)
 {
    settings_t *settings     = config_get_ptr();
-   unsigned height          = gl1->video_height;
-   int x                    = 0;
-   int y                    = 0;
    float device_aspect      = (float)vp_width / vp_height;
 
    if (gl1->ctx_driver->translate_aspect)
@@ -2125,7 +2122,6 @@ static uintptr_t gl1_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      gl1_t                   *gl1 = (gl1_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl1;
 
       return video_thread_texture_handle(data, func);

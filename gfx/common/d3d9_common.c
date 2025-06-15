@@ -1340,7 +1340,6 @@ void d3d9_calculate_rect(d3d9_video_t *d3d,
       bool force_full,
       bool allow_rotate)
 {
-   float device_aspect   = (float)*width / *height;
    settings_t *settings  = config_get_ptr();
    bool video_scale_integer    = settings->bools.video_scale_integer;
    struct video_viewport vp;
@@ -1376,7 +1375,6 @@ void d3d9_calculate_rect(d3d9_video_t *d3d,
 void d3d9_set_rotation(void *data, unsigned rot)
 {
    d3d9_video_t        *d3d = (d3d9_video_t*)data;
-   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!d3d)
       return;
@@ -1466,7 +1464,6 @@ static bool d3d9_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
    unsigned i, y;
-   overlay_t *new_overlays            = NULL;
    d3d9_video_t *d3d                  = (d3d9_video_t*)data;
    const struct texture_image *images = (const struct texture_image*)
       image_data;

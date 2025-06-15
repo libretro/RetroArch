@@ -468,7 +468,10 @@ static void *xinput_joypad_init(void *data)
          int32_t dinput_index = 0;
          bool success         = dinput_joypad_get_vidpid_from_xinput_index((int32_t)PAD_INDEX_TO_XUSER_INDEX(j), (int32_t*)&vid, (int32_t*)&pid,
 			 (int32_t*)&dinput_index);
+
          /* On success, found VID/PID from dinput index */
+         if (!success)
+            continue;
 
          input_autoconfigure_connect(
                name,

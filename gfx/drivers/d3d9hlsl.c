@@ -294,7 +294,6 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
       gfx_display_t *p_disp,
       void *data, unsigned video_width, unsigned video_height)
 {
-   static float t                    = 0;
    video_coord_array_t *ca           = NULL;
 
    if (!draw)

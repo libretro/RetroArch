@@ -72,13 +72,8 @@ typedef struct
 
 static input_test_step_t input_test_steps[MAX_TEST_STEPS];
 
-static uint32_t current_frame         = 0;
-static uint32_t next_teststep_frame   = 0;
 static unsigned current_test_step     = 0;
 static unsigned last_test_step        = MAX_TEST_STEPS + 1;
-static uint32_t input_state_validated = 0;
-static uint32_t combo_state_validated = 0;
-static bool     dump_state_blocked    = false;
 
 /************************************/
 /* JSON Helpers for test input file */
@@ -344,7 +339,6 @@ static void *test_joypad_init(void *data)
 
 static int32_t test_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   int16_t ret                          = 0;
    if (port_num >= DEFAULT_MAX_PADS)
       return 0;
    if (joykey < NUM_BUTTONS)

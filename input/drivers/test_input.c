@@ -72,13 +72,8 @@ typedef struct
 
 static input_test_step_t input_test_steps[MAX_TEST_STEPS];
 
-static unsigned current_frame         = 0;
-static unsigned next_teststep_frame   = 0;
 static unsigned current_test_step     = 0;
 static unsigned last_test_step        = MAX_TEST_STEPS + 1;
-static uint32_t input_state_validated = 0;
-static uint32_t combo_state_validated = 0;
-static bool     dump_state_blocked    = false;
 
 /************************************/
 /* JSON Helpers for test input file */
@@ -367,7 +362,6 @@ static void test_input_free_input(void *data)
 static void* test_input_init(const char *joypad_driver)
 {
    settings_t *settings = config_get_ptr();
-   unsigned i;
 
    RARCH_DBG("[Test input driver]: start\n");
 

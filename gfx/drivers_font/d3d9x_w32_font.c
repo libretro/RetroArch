@@ -223,8 +223,6 @@ static void d3d9x_win32_font_render_msg(
    else
    {
       settings_t *settings     = config_get_ptr();
-      float video_msg_pos_x    = settings->floats.video_msg_pos_x;
-      float video_msg_pos_y    = settings->floats.video_msg_pos_y;
       float video_msg_color_r  = settings->floats.video_msg_color_r;
       float video_msg_color_g  = settings->floats.video_msg_color_g;
       float video_msg_color_b  = settings->floats.video_msg_color_b;
