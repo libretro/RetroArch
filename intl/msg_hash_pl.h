@@ -10019,6 +10019,10 @@ MSG_HASH(
 /* Ozone: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT,
+   "Czcionka"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_FONT,
    "Wybierz inną główną czcionkę, która ma być używana w menu."
    )

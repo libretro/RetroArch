@@ -1116,6 +1116,22 @@ MSG_HASH(
    "Tallenna nykyinen kokoonpano erilliseen tiedostoon."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Tallenna kokoonpano nimellä"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Tallenna nykyinen kokoonpano mukautettuna asetustiedostona."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Tallenna pääasiallinen kokoonpano"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "Tallenna nykyinen kokoonpano pääasiallisena asetustiedostona."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Palauta oletusarvot"
    )
@@ -12860,6 +12876,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "Saavutettiin takaisinkelauksen puskurin loppu."
+   )
+MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Tallennettu asetustiedostoon"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,

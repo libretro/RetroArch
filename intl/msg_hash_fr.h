@@ -11643,6 +11643,22 @@ MSG_HASH(
    "Mettre à l'échelle la taille de la barre des miniatures."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_PADDING_FACTOR,
+   "Facteur de remplissage"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_PADDING_FACTOR,
+   "Mettre à l'échelle la taille du remplissage horizontal."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
+   "Séparateur d'en-tête"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
+   "Largeur alternative pour les séparateurs d'en-tête et de pied de page."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
    "Ne pas partager"
    )
