@@ -24,6 +24,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
+#include <file/config_file.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -1316,6 +1317,8 @@ int8_t config_save_overrides(enum override_type type,
  * another one. Will load a dummy core to flush state
  * properly. */
 bool config_replace(bool config_save_on_exit, char *path);
+
+config_file_t *open_default_config_file(void);
 #endif
 
 bool config_overlay_enable_default(void);

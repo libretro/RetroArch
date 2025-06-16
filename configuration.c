@@ -3368,7 +3368,7 @@ static bool check_menu_driver_compatibility(settings_t *settings)
  *
  * Returns: handle to config file if found, otherwise NULL.
  **/
-static config_file_t *open_default_config_file(void)
+config_file_t *open_default_config_file(void)
 {
    char conf_path[PATH_MAX_LENGTH];
    config_file_t *conf                    = NULL;
@@ -3528,7 +3528,6 @@ static config_file_t *open_default_config_file(void)
       goto error;
 
    path_set(RARCH_PATH_CONFIG, conf_path);
-   path_set(RARCH_PATH_CONFIG_DEFAULT, conf_path);
 
    return conf;
 
@@ -4009,11 +4008,7 @@ static bool config_load_file(global_t *global,
             settings->arrays.midi_output,
             DEFAULT_MIDI_OUTPUT);
 
-   /* History playlists must stay in default config path */
-   if (!path_is_empty(RARCH_PATH_CONFIG_DEFAULT))
-      path_config = path_get(RARCH_PATH_CONFIG_DEFAULT);
-   else
-      path_config = path_get(RARCH_PATH_CONFIG);
+   path_config = path_get(RARCH_PATH_CONFIG);
 
    if (string_is_empty(settings->paths.path_content_favorites))
       strlcpy(settings->paths.directory_content_favorites, "default",
