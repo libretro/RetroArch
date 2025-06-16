@@ -11732,6 +11732,7 @@ unsigned menu_displaylist_build_list(
             unsigned menu_rgui_color_theme             = settings->uints.menu_rgui_color_theme;
             unsigned menu_rgui_particle_effect         = settings->uints.menu_rgui_particle_effect;
             unsigned menu_screensaver_timeout          = settings->uints.menu_screensaver_timeout;
+            unsigned ozone_font_scale                  = settings->uints.menu_ozone_font_scale;
 
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_MENU_SCALE_FACTOR,                            PARSE_ONLY_FLOAT,  true},
@@ -11795,6 +11796,14 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,             PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_XMB_FONT,                                     PARSE_ONLY_PATH,   true},
                {MENU_ENUM_LABEL_OZONE_FONT,                                   PARSE_ONLY_PATH,   true},
+               {MENU_ENUM_LABEL_OZONE_FONT_SCALE,                             PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,               PARSE_ONLY_FLOAT,  false},
+               {MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TITLE,                PARSE_ONLY_FLOAT,  false},
+               {MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,              PARSE_ONLY_FLOAT,  false},
+               {MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_LABEL,                PARSE_ONLY_FLOAT,  false},
+               {MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,             PARSE_ONLY_FLOAT,  false},
+               {MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TIME,                 PARSE_ONLY_FLOAT,  false},
+               {MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,               PARSE_ONLY_FLOAT,  false},
                {MENU_ENUM_LABEL_MENU_FONT_COLOR_RED,                          PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN,                        PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE,                         PARSE_ONLY_UINT,   true},
@@ -11852,6 +11861,19 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME:
                      if (!menu_use_preferred_system_color_theme)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL:
+                     if (ozone_font_scale == 1)
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TITLE:
+                  case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR:
+                  case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_LABEL:
+                  case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL:
+                  case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TIME:
+                  case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_FOOTER:
+                     if (ozone_font_scale == 2)
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME:

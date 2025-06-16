@@ -12339,6 +12339,78 @@ MSG_HASH(
    "Select a different main font to be used by the menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Font Scale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
+   "Define whether the font size in the menu should have its own scaling, and if it should be scaled globally or with separate values for each part of the menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
+   "Global"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   "Separate values"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Font Scale Factor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Scale the font size linearly across the menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Title Font Scale Factor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Scale the font size for the title text in the menu header."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Left Sidebar Font Scale Factor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Scale the font size for the text in the left sidebar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Labels Font Scale Factor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Scale the font size for the labels of menu options and playlist entries. Also affects text size in the help boxes."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Sublabels Font Scale Factor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Scale the font size for the sublabels of menu options and playlist entries."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Timedate Font Scale Factor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Scale the font size of the time and date indicator in the top-right corner of the menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Footer Font Scale Factor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Scale the font size of the text in the menu footer. Also affects text size in the right thumbnail sidebar."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Collapse the Sidebar"
    )

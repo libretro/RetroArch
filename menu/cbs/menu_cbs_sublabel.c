@@ -950,6 +950,14 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_header_separator,             
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_collapse_sidebar,                  MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_scroll_content_metadata,           MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_thumbnail_scale_factor,            MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_font_scale,                        MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_font_scale_factor_global,          MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_font_scale_factor_title,           MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_font_scale_factor_sidebar,         MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_font_scale_factor_label,           MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_font_scale_factor_sublabel,        MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_font_scale_factor_time,            MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_font_scale_factor_footer,          MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER)
 #endif
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ozone_truncate_playlist_name,            MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME)
@@ -3248,6 +3256,46 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_OZONE_THUMBNAIL_SCALE_FACTOR:
 #ifdef HAVE_OZONE
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_thumbnail_scale_factor);
+#endif
+            break;
+         case MENU_ENUM_LABEL_OZONE_FONT_SCALE:
+#ifdef HAVE_OZONE
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_font_scale);
+#endif
+            break;
+         case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL:
+#ifdef HAVE_OZONE
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_font_scale_factor_global);
+#endif
+            break;
+         case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TITLE:
+#ifdef HAVE_OZONE
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_font_scale_factor_title);
+#endif
+            break;
+         case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR:
+#ifdef HAVE_OZONE
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_font_scale_factor_sidebar);
+#endif
+            break;
+         case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_LABEL:
+#ifdef HAVE_OZONE
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_font_scale_factor_label);
+#endif
+            break;
+         case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL:
+#ifdef HAVE_OZONE
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_font_scale_factor_sublabel);
+#endif
+            break;
+         case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TIME:
+#ifdef HAVE_OZONE
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_font_scale_factor_time);
+#endif
+            break;
+         case MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_FOOTER:
+#ifdef HAVE_OZONE
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ozone_font_scale_factor_footer);
 #endif
             break;
          case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
