@@ -242,7 +242,10 @@ static float cocoa_gl_gfx_ctx_get_refresh_rate(void *data)
     CFRelease(currentMode);
     return currentRate;
 #else
-    return [UIScreen mainScreen].maximumFramesPerSecond;
+    if (@available(iOS 10.3, tvOS 10.2, *))
+       return [UIScreen mainScreen].maximumFramesPerSecond;
+    else
+       return 60;
 #endif
 }
 
