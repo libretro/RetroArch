@@ -6097,10 +6097,6 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 
-   /* Don't bother with the rest of the hotkeys when flushing */
-   if (menu_st->input_driver_flushing_input)
-      goto end;
-
    /* Check fullscreen hotkey */
    HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE, true, NULL);
 
@@ -6291,6 +6287,9 @@ static enum runloop_state_enum runloop_check_state(
    /* Stop checking the rest of the hotkeys if menu is alive */
    if (menu_st->flags & MENU_ST_FLAG_ALIVE)
       return RUNLOOP_STATE_MENU;
+   /* Or when flushing input */
+   if (menu_st->input_driver_flushing_input)
+      goto end;
 #endif
 
 #ifdef HAVE_NETWORKING
