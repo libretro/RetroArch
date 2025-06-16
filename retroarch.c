@@ -2704,6 +2704,7 @@ static void path_clear_all(void)
    path_clear(RARCH_PATH_CORE_LAST);
    path_clear(RARCH_PATH_CORE_OPTIONS);
    path_clear(RARCH_PATH_CONFIG);
+   path_clear(RARCH_PATH_CONFIG_DEFAULT);
    path_clear(RARCH_PATH_CONFIG_APPEND);
    path_clear(RARCH_PATH_CONFIG_OVERRIDE);
    path_clear(RARCH_PATH_DEFAULT_SHADER_PRESET);
