@@ -66,6 +66,8 @@ jobs:
         run: |
           . /tmp/arm-webos-linux-gnueabi_sdk-buildroot/environment-setup
           make -f Makefile.webos ipk PACKAGE_NAME=${PACKAGE_NAME} ADD_SDL2_LIB=1 -j$(getconf _NPROCESSORS_ONLN)
+        env:
+          DEBUG: ${{ github.event_name == 'release' && '0' || '1' }}
 
       - name: Get short SHA
         id: slug
