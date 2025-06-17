@@ -655,6 +655,10 @@ MSG_HASH(
    "JIT 사용 가능"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
+   "번들 식별자"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "프론트엔드 식별자"
    )
@@ -1134,6 +1138,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
    "현재 구성을 별도의 파일에 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "다른 이름으로 구성 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "현재 구성을 사용자 정의 구성 파일에 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "메인 구성 저장하기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "현재 구성을 메인 구성 파일에 저장합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
@@ -2146,8 +2166,24 @@ MSG_HASH(
    "기본/고화질 해상도 중 하나를 선택합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "가로 중앙 정렬"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "이미지가 디스플레이 중앙에 표시되지 않는다면 이 옵션들을 변경해가며 적용해보세요."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   "가로 크기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "화면의 가로 설정과 이미지 크기를 조정하려면 이 값을 변경하십시오."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   "세로 중앙 정렬"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -2674,6 +2710,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    "적응형 수직 동기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "설정된 주사율보다 낮은 성능이 감지될 경우 수직 동기화가 자동으로 비활성화됩니다. 퍼포먼스가 떨어질 때 버벅임을 방지할 수 있습니다. '프레임 지연' 기능과 호환되지 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -11687,6 +11727,22 @@ MSG_HASH(
    "섬네일 바의 크기 배율을 설정합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_PADDING_FACTOR,
+   "패딩 배율"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_PADDING_FACTOR,
+   "가로 패딩 크기를 조절합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
+   "헤더 구분선"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
+   "헤더와 푸터 구분선의 대체 너비입니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
    "없음"
    )
@@ -14308,6 +14364,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "뒤로 감기 버퍼 끝에 도달했습니다."
+   )
+MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "구성을 다음 위치에 저장함:"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
