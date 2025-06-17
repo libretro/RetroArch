@@ -1490,8 +1490,8 @@ static bool content_load(content_ctx_info_t *info,
 #endif
 #endif
 
-   command_event(CMD_EVENT_HISTORY_INIT, NULL);
    retroarch_favorites_init();
+   command_event(CMD_EVENT_HISTORY_INIT, NULL);
    command_event(CMD_EVENT_RESUME, NULL);
    command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
