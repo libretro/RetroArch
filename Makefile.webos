@@ -288,7 +288,9 @@ ipk: $(TARGET) sdl2
 ifeq ($(ADD_SDL2_LIB), 1)
 	cp -t webos/dist/lib -vf SDL/lib/libSDL2-2.0.so.0
 endif
+ifneq ($(DEBUG), 1)
 	$(STRIP) webos/dist/$(TARGET)
+endif
 	cd webos && ares-package dist
 
 install: ipk

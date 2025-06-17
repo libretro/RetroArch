@@ -5928,6 +5928,11 @@ int rarch_main(int argc, char *argv[], void *data)
 #endif
 
 #if defined(WEBOS)
+   // compatibility with webOS 3 - 5
+   if(getenv("XDG_RUNTIME_DIR") == NULL) {
+      setenv("XDG_RUNTIME_DIR", "/tmp/xdg", 0);
+    }
+
    struct rlimit limit = {0, 0};
    setrlimit(RLIMIT_CORE, &limit);
 #endif
@@ -7046,7 +7051,7 @@ static bool retroarch_parse_input_and_config(
       BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG CONFIG_FILE_ARG;
 
 #if defined(WEBOS)
-   if (argv[1][0] == '{')
+   if (argc > 1 && argv[1][0] == '{')
    {
       argv                            = &(argv[1]);
       argc                            = argc - 1;
