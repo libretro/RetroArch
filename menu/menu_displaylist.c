@@ -2268,7 +2268,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
    /* Supports %s: yes/no */
    {
-      struct menu_features_info
+      static const struct menu_features_info
       {
          bool enabled;
          enum msg_hash_enums msg;
@@ -7391,7 +7391,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_INPUT_TURBO_ENABLE,         PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_INPUT_TURBO_MODE,           PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_INPUT_TURBO_BIND,           PARSE_ONLY_INT},
@@ -9195,7 +9195,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_CHEATS
          {
             char cheat_label[64];
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CHEAT_START_OR_RESTART,                                PARSE_ONLY_UINT  },
                {MENU_ENUM_LABEL_CHEAT_BIG_ENDIAN,                                      PARSE_ONLY_BOOL  },
                {MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT,                                    PARSE_ONLY_UINT  },
@@ -9298,7 +9298,7 @@ unsigned menu_displaylist_build_list(
             }
 
             {
-               menu_displaylist_build_info_t build_list[] = {
+               static const menu_displaylist_build_info_t build_list[] = {
                   {MENU_ENUM_LABEL_CHEAT_IDX,                                             PARSE_ONLY_UINT  },
                   {MENU_ENUM_LABEL_CHEAT_STATE,                                           PARSE_ONLY_BOOL  },
                   {MENU_ENUM_LABEL_CHEAT_DESC,                                            PARSE_ONLY_STRING},
@@ -9323,7 +9323,7 @@ unsigned menu_displaylist_build_list(
             }
             else
             {
-               menu_displaylist_build_info_t build_list[] = {
+               static const menu_displaylist_build_info_t build_list[] = {
                   {MENU_ENUM_LABEL_CHEAT_MEMORY_SEARCH_SIZE,                              PARSE_ONLY_UINT  },
                   {MENU_ENUM_LABEL_CHEAT_TYPE,                                            PARSE_ONLY_UINT  },
                   {MENU_ENUM_LABEL_CHEAT_VALUE,                                           PARSE_ONLY_UINT  },
@@ -9428,7 +9428,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_YOUTUBE_STREAM_KEY,                                    PARSE_ONLY_STRING},
             };
 
@@ -9693,7 +9693,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_MIDI_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_MIDI_OUTPUT,                                           PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_MIDI_INPUT,                                            PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_MIDI_VOLUME,                                           PARSE_ONLY_UINT  },
@@ -10147,7 +10147,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,                                 PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,                           PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,                           PARSE_ONLY_INT },
@@ -10169,7 +10169,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_LAKKA
       case DISPLAYLIST_LAKKA_SERVICES_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_SSH_ENABLE,                                            PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SAMBA_ENABLE,                                          PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_BLUETOOTH_ENABLE,                                      PARSE_ONLY_BOOL},
@@ -10190,7 +10190,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_LAKKA_SWITCH
       case DISPLAYLIST_LAKKA_SWITCH_OPTIONS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_SWITCH_OC_ENABLE,                                            PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SWITCH_CEC_ENABLE,                                           PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_BLUETOOTH_ERTM_DISABLE,                                      PARSE_ONLY_BOOL},
@@ -10276,7 +10276,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,                                PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_CACHE_DIRECTORY,                                       PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_SHOW_HIDDEN_FILES,                                     PARSE_ONLY_BOOL},
@@ -10299,7 +10299,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_ACCOUNTS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,            PARSE_ACTION},
                {MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE,                       PARSE_ACTION},
                {MENU_ENUM_LABEL_ACCOUNTS_TWITCH,                        PARSE_ACTION},
@@ -10317,7 +10317,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CHEEVOS_USERNAME,                       PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_CHEEVOS_PASSWORD,                       PARSE_ONLY_STRING},
             };
@@ -10916,7 +10916,7 @@ unsigned menu_displaylist_build_list(
          }
       case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CAMERA_ALLOW,    PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_DISCORD_ALLOW,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_LOCATION_ALLOW,  PARSE_ONLY_BOOL},
@@ -11192,7 +11192,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP,      PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CPU_PERFPOWER,              PARSE_ACTION},
@@ -11226,7 +11226,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
          {
             /* Not used */
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS, PARSE_ACTION},
 #if defined(HAVE_OVERLAY)
                {MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,       PARSE_ACTION},
@@ -11244,7 +11244,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_USER_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_PRIVACY_SETTINGS,  PARSE_ACTION},
                {MENU_ENUM_LABEL_ACCOUNTS_LIST,     PARSE_ACTION},
                {MENU_ENUM_LABEL_NETPLAY_NICKNAME,  PARSE_ONLY_STRING},
@@ -11261,7 +11261,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_UPDATER_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,             PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,                   PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,     PARSE_ONLY_BOOL},
@@ -11281,7 +11281,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_MENU_SOUNDS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_AUDIO_ENABLE_MENU, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_MENU_SOUND_OK,     PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_MENU_SOUND_CANCEL, PARSE_ONLY_BOOL},
@@ -11301,7 +11301,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_SETTINGS_SHOW_USER_INTERFACE,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SETTINGS_SHOW_FILE_BROWSER,     PARSE_ONLY_BOOL},
@@ -11346,7 +11346,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESUME_CONTENT,         PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESTART_CONTENT,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,          PARSE_ONLY_BOOL},
@@ -11409,7 +11409,7 @@ unsigned menu_displaylist_build_list(
 #endif
 
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION, PARSE_ONLY_BOOL},
 #ifdef HAVE_NETWORKING
@@ -11430,7 +11430,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_CORE_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE,            PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE,        PARSE_ONLY_BOOL},
@@ -11472,7 +11472,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT,         PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,      PARSE_ONLY_BOOL},
@@ -11493,7 +11493,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,          PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_CACHE_DIRECTORY,                 PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_SYSTEM_DIRECTORY,                PARSE_ONLY_DIR},
@@ -11547,7 +11547,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_DRIVER_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
+            static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_MENU_DRIVER,           PARSE_ONLY_STRING_OPTIONS},
                {MENU_ENUM_LABEL_VIDEO_DRIVER,          PARSE_ONLY_STRING_OPTIONS},
                {MENU_ENUM_LABEL_AUDIO_DRIVER,          PARSE_ONLY_STRING_OPTIONS},
