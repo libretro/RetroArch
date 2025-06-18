@@ -1985,6 +1985,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             size_t _len    = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER),
                   sizeof(entry));
+            _len          += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
             Boolean result = CFStringGetCString(bundleIdentifier, entry + _len, sizeof(entry) - _len, kCFStringEncodingUTF8);
             if (result) {
                if (menu_entries_append(list, entry, "",
