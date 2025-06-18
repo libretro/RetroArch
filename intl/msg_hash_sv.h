@@ -2568,6 +2568,10 @@ MSG_HASH(
    "Adaptiv VSynk"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "VSync är aktiverat tills prestandan sjunker under den önskade uppdateringsfrekvensen. Kan minimera hackighet när prestandan sjunker under realtid och vara mer energieffektivt. Inte kompatibelt med ”Bildrutefördröjning”."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Bildrutefördröjning"
    )
@@ -2582,6 +2586,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatisk bildfördröjning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Justera effektiv 'Bildrutefördröjning' dynamiskt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
+   "Försök att hålla önskat mål för 'Bildrutefördröjning' och minimera bildförluster. Utgångspunkten är 3/4 av bildrutans tid när bildfördröjningen är 0 (Auto)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
