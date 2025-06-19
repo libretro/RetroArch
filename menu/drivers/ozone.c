@@ -573,6 +573,13 @@ struct ozone_handle
    float last_scale_factor;
    float last_thumbnail_scale_factor;
    float last_padding_factor;
+   float last_font_scale_factor_global;
+   float last_font_scale_factor_title;
+   float last_font_scale_factor_sidebar;
+   float last_font_scale_factor_label;
+   float last_font_scale_factor_sublabel;
+   float last_font_scale_factor_time;
+   float last_font_scale_factor_footer;
    float pure_white[16];
 
    struct
@@ -9404,6 +9411,14 @@ static void ozone_set_layout(
    bool font_inited                                 = false;
    float scale_factor                               = ozone->last_scale_factor;
    float padding_factor                             = settings->floats.ozone_padding_factor;
+   unsigned font_scale                              = settings->uints.menu_ozone_font_scale;
+   float font_scale_factor_global                   = (font_scale == 1) ? (settings->floats.ozone_font_scale_factor_global) : 1.0f;
+   float font_scale_factor_title                    = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_title) : 1.0f;
+   float font_scale_factor_sidebar                  = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_sidebar) : 1.0f;
+   float font_scale_factor_label                    = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_label) : 1.0f;
+   float font_scale_factor_sublabel                 = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_sublabel) : 1.0f;
+   float font_scale_factor_time                     = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_time) : 1.0f;
+   float font_scale_factor_footer                   = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_footer) : 1.0f;
 
    /* Calculate dimensions */
    ozone->dimensions.header_height                  = HEADER_HEIGHT * scale_factor;
@@ -9483,7 +9498,7 @@ static void ozone_set_layout(
       strlcpy(font_path, path_menu_font, sizeof(font_path));
 
    font_inited = ozone_init_font(&ozone->fonts.title,
-         is_threaded, font_path, FONT_SIZE_TITLE * scale_factor);
+         is_threaded, font_path, FONT_SIZE_TITLE * scale_factor * font_scale_factor_global * font_scale_factor_title);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
 
@@ -9513,31 +9528,31 @@ static void ozone_set_layout(
 
    /* Sidebar */
    font_inited = ozone_init_font(&ozone->fonts.sidebar,
-         is_threaded, font_path, FONT_SIZE_SIDEBAR * scale_factor);
+         is_threaded, font_path, FONT_SIZE_SIDEBAR * scale_factor * font_scale_factor_global * font_scale_factor_sidebar);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
 
    /* Entries */
    font_inited = ozone_init_font(&ozone->fonts.entries_label,
-         is_threaded, font_path, FONT_SIZE_ENTRIES_LABEL * scale_factor);
+         is_threaded, font_path, FONT_SIZE_ENTRIES_LABEL * scale_factor * font_scale_factor_global * font_scale_factor_label);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
 
    /* Sublabels */
    font_inited = ozone_init_font(&ozone->fonts.entries_sublabel,
-         is_threaded, font_path, FONT_SIZE_ENTRIES_SUBLABEL * scale_factor);
+         is_threaded, font_path, FONT_SIZE_ENTRIES_SUBLABEL * scale_factor * font_scale_factor_global * font_scale_factor_sublabel);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
 
    /* Time */
    font_inited = ozone_init_font(&ozone->fonts.time,
-         is_threaded, font_path, FONT_SIZE_TIME * scale_factor);
+         is_threaded, font_path, FONT_SIZE_TIME * scale_factor * font_scale_factor_global * font_scale_factor_time);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
 
    /* Footer */
    font_inited = ozone_init_font(&ozone->fonts.footer,
-         is_threaded, font_path, FONT_SIZE_FOOTER * scale_factor);
+         is_threaded, font_path, FONT_SIZE_FOOTER * scale_factor * font_scale_factor_global * font_scale_factor_footer);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
 
@@ -10103,6 +10118,13 @@ static void ozone_render(void *data,
    volatile float scale_factor;
    volatile float thumbnail_scale_factor;
    volatile float padding_factor;
+   volatile float font_scale_factor_global;
+   volatile float font_scale_factor_title;
+   volatile float font_scale_factor_sidebar;
+   volatile float font_scale_factor_label;
+   volatile float font_scale_factor_sublabel;
+   volatile float font_scale_factor_time;
+   volatile float font_scale_factor_footer;
    struct menu_state *menu_st         = menu_state_get_ptr();
    menu_input_t *menu_input           = &menu_st->input_state;
    menu_list_t *menu_list             = menu_st->entries.list;
@@ -10114,28 +10136,50 @@ static void ozone_render(void *data,
    gfx_animation_t          *p_anim   = anim_get_ptr();
    settings_t             *settings   = config_get_ptr();
    bool ozone_collapse_sidebar        = settings->bools.ozone_collapse_sidebar;
+   unsigned font_scale                = settings->uints.menu_ozone_font_scale;
 
    if (!ozone)
       return;
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */
-   scale_factor           = gfx_display_get_dpi_scale(p_disp, settings,
-         width, height, false, false);
-   thumbnail_scale_factor = settings->floats.ozone_thumbnail_scale_factor;
-   padding_factor         = settings->floats.ozone_padding_factor;
+   scale_factor               = gfx_display_get_dpi_scale(p_disp, settings,
+            width, height, false, false);
+   thumbnail_scale_factor     = settings->floats.ozone_thumbnail_scale_factor;
+   padding_factor             = settings->floats.ozone_padding_factor;
+   font_scale_factor_global   = (font_scale == 1) ? (settings->floats.ozone_font_scale_factor_global) : 1.0f;
+   font_scale_factor_title    = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_title) : 1.0f;
+   font_scale_factor_sidebar  = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_sidebar) : 1.0f;
+   font_scale_factor_label    = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_label) : 1.0f;
+   font_scale_factor_sublabel = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_sublabel) : 1.0f;
+   font_scale_factor_time     = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_time) : 1.0f;
+   font_scale_factor_footer   = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_footer) : 1.0f;
 
    if (     (scale_factor != ozone->last_scale_factor)
          || (thumbnail_scale_factor != ozone->last_thumbnail_scale_factor)
          || (padding_factor != ozone->last_padding_factor)
+         || (font_scale_factor_global != ozone->last_font_scale_factor_global)
+         || (font_scale_factor_title != ozone->last_font_scale_factor_title)
+         || (font_scale_factor_sidebar != ozone->last_font_scale_factor_sidebar)
+         || (font_scale_factor_label != ozone->last_font_scale_factor_label)
+         || (font_scale_factor_sublabel != ozone->last_font_scale_factor_sublabel)
+         || (font_scale_factor_time != ozone->last_font_scale_factor_time)
+         || (font_scale_factor_footer != ozone->last_font_scale_factor_footer)
          || (width != ozone->last_width)
          || (height != ozone->last_height))
    {
-      ozone->last_scale_factor           = scale_factor;
-      ozone->last_thumbnail_scale_factor = thumbnail_scale_factor;
-      ozone->last_padding_factor         = padding_factor;
-      ozone->last_width                  = width;
-      ozone->last_height                 = height;
+      ozone->last_scale_factor               = scale_factor;
+      ozone->last_thumbnail_scale_factor     = thumbnail_scale_factor;
+      ozone->last_padding_factor             = padding_factor;
+      ozone->last_font_scale_factor_global   = font_scale_factor_global;
+      ozone->last_font_scale_factor_title    = font_scale_factor_title;
+      ozone->last_font_scale_factor_sidebar  = font_scale_factor_sidebar;
+      ozone->last_font_scale_factor_label    = font_scale_factor_label;
+      ozone->last_font_scale_factor_sublabel = font_scale_factor_sublabel;
+      ozone->last_font_scale_factor_time     = font_scale_factor_time;
+      ozone->last_font_scale_factor_footer   = font_scale_factor_footer;
+      ozone->last_width                      = width;
+      ozone->last_height                     = height;
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */

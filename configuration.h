@@ -307,6 +307,7 @@ typedef struct settings
       unsigned menu_materialui_landscape_layout_optimization;
       unsigned menu_ozone_color_theme;
       unsigned menu_ozone_header_separator;
+      unsigned menu_ozone_font_scale;
       unsigned menu_font_color_red;
       unsigned menu_font_color_green;
       unsigned menu_font_color_blue;
@@ -421,6 +422,13 @@ typedef struct settings
       float menu_screensaver_animation_speed;
       float ozone_padding_factor;
       float ozone_thumbnail_scale_factor;
+      float ozone_font_scale_factor_global;
+      float ozone_font_scale_factor_title;
+      float ozone_font_scale_factor_sidebar;
+      float ozone_font_scale_factor_label;
+      float ozone_font_scale_factor_sublabel;
+      float ozone_font_scale_factor_time;
+      float ozone_font_scale_factor_footer;
 
       float cheevos_appearance_padding_h;
       float cheevos_appearance_padding_v;

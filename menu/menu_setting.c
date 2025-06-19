@@ -4713,6 +4713,30 @@ static size_t setting_get_string_representation_uint_ozone_header_separator(
    }
    return 0;
 }
+static size_t setting_get_string_representation_uint_ozone_font_scale(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case OZONE_FONT_SCALE_SEPARATE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE), len);
+         case OZONE_FONT_SCALE_GLOBAL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL), len);
+         case OZONE_FONT_SCALE_NONE:
+         default:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OFF), len);
+      }
+   }
+   return 0;
+}
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -19735,6 +19759,129 @@ static bool setting_append_list(
             MENU_SETTINGS_LIST_CURRENT_ADD_VALUES(list, list_info, "ttf");
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_ozone_font_scale,
+                  MENU_ENUM_LABEL_OZONE_FONT_SCALE,
+                  MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+                  DEFAULT_OZONE_FONT_SCALE,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_left   = setting_uint_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = setting_uint_action_right_with_refresh;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_ozone_font_scale;
+            menu_settings_list_current_add_range(list, list_info, 0, OZONE_FONT_SCALE_LAST-1, 1, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.ozone_font_scale_factor_global,
+                  MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+                  MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+                  DEFAULT_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+                  "%.2fx",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0.0, 3.0, 0.05, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.ozone_font_scale_factor_title,
+                  MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
+                  MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
+                  DEFAULT_OZONE_FONT_SCALE_FACTOR_TITLE,
+                  "%.2fx",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0.0, 3.0, 0.05, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.ozone_font_scale_factor_sidebar,
+                  MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+                  MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+                  DEFAULT_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+                  "%.2fx",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0.0, 3.0, 0.05, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.ozone_font_scale_factor_label,
+                  MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
+                  MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
+                  DEFAULT_OZONE_FONT_SCALE_FACTOR_LABEL,
+                  "%.2fx",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0.0, 3.0, 0.05, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.ozone_font_scale_factor_sublabel,
+                  MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+                  MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+                  DEFAULT_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+                  "%.2fx",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0.0, 3.0, 0.05, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.ozone_font_scale_factor_time,
+                  MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_TIME,
+                  MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
+                  DEFAULT_OZONE_FONT_SCALE_FACTOR_TIME,
+                  "%.2fx",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0.0, 3.0, 0.05, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.ozone_font_scale_factor_footer,
+                  MENU_ENUM_LABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
+                  MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
+                  DEFAULT_OZONE_FONT_SCALE_FACTOR_FOOTER,
+                  "%.2fx",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0.0, 3.0, 0.05, true, true);
 
             CONFIG_BOOL(
                   list, list_info,
