@@ -11651,6 +11651,10 @@ MSG_HASH(
    "Выбрать основной шрифт для меню интерфейса."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Размер шрифта"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Сворачивать боковую панель"
    )

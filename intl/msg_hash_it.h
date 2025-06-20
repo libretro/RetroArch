@@ -11439,6 +11439,10 @@ MSG_HASH(
    "Seleziona un altro tipo di carattere principale da utilizzare dal menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Dimensione del font"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Comprimi la barra laterale"
    )

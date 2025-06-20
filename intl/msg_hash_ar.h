@@ -6731,6 +6731,10 @@ MSG_HASH(
    "اختر خطا رئيسيا مغايرا ليستعمل في القائمة."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "مقياس الخط"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "قم بطي الشريط الجانبي"
    )

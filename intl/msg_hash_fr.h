@@ -11595,6 +11595,10 @@ MSG_HASH(
    "Sélectionner une police principale différente à utiliser pour le menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Échelle de la police"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Réduire la barre latérale"
    )

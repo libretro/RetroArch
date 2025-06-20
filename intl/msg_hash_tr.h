@@ -11687,6 +11687,10 @@ MSG_HASH(
    "Menü tarafından kullanılacak farklı bir ana yazı tipi seç."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Yazı Tipi Ölçeği"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Kenar Çubuğunu Daralt"
    )

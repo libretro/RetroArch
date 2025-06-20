@@ -11691,6 +11691,10 @@ MSG_HASH(
    "Виберіть інший основний шрифт, який буде використовуватися в меню."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Масштаб шрифту"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Згорнути бічну панель"
    )

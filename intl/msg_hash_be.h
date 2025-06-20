@@ -11475,6 +11475,10 @@ MSG_HASH(
    "Выбраць асноўны шрыфт для меню інтэрфейсу."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Памер шрыфта"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Згортваць бакавую панэль"
    )

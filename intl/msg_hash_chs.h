@@ -11159,6 +11159,10 @@ MSG_HASH(
    "设置菜单中使用的自定义字体文件。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "字体缩放"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "折叠侧边栏"
    )

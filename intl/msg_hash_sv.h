@@ -10715,6 +10715,10 @@ MSG_HASH(
    "Välj ett annat huvudsakligt teckensnitt som ska användas av menyn."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Typsnittsskala"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Dölj sidofältet"
    )

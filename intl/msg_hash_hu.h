@@ -11427,6 +11427,10 @@ MSG_HASH(
    "Más betűtípus választása a menühöz."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Betűméret"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Oldalsáv összecsukása"
    )

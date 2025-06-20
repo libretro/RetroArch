@@ -11159,6 +11159,10 @@ MSG_HASH(
    "メニューで使用する別のメインフォントを選択します。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "フォントの大きさ"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "サイドバーを折りたたむ"
    )

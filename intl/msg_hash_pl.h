@@ -10027,6 +10027,10 @@ MSG_HASH(
    "Wybierz inną główną czcionkę, która ma być używana w menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Skala czcionki"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Zwiń pasek boczny"
    )

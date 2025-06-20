@@ -10243,6 +10243,10 @@ MSG_HASH(
    "Selecione uma fonte principal diferente para ser usada pelo menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Tamanho da fonte"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Recolher a barra lateral"
    )

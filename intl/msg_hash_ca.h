@@ -11563,6 +11563,10 @@ MSG_HASH(
    "Seleccioneu un altre tipus de lletra principal pel menú."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Mida de la font"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Replega la barra lateral"
    )

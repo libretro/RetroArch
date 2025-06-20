@@ -11375,6 +11375,10 @@ MSG_HASH(
    "Eine andere Schriftart wählen, die im Menü verwendet werden soll."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Schriftgröße"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Seitenleiste einklappen"
    )

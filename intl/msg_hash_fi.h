@@ -10303,6 +10303,10 @@ MSG_HASH(
    "Valitse eri fontti valikossa käytettäväksi."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Fontin koko"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Piilota sivupalkki"
    )
