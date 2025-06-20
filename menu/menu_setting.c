@@ -7012,6 +7012,7 @@ static size_t setting_get_string_representation_uint_user_language(
    LANG_DATA(BELARUSIAN)
    LANG_DATA(GALICIAN)
    LANG_DATA(NORWEGIAN)
+   LANG_DATA(IRISH)
 
    if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_ENGLISH)
       return strlcpy(s, modes[*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE)], len);
