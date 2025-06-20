@@ -621,6 +621,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_default, PUSH_DEFAULT, DISPLAYLIST_D
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_favorites_list, PUSH_DEFAULT, DISPLAYLIST_FAVORITES)
 
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_playlist_list, PUSH_DEFAULT, DISPLAYLIST_PLAYLIST)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_descendant_list, PUSH_DEFAULT, DISPLAYLIST_DESCENDANT_LIST)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_music_history_list, PUSH_DEFAULT, DISPLAYLIST_MUSIC_HISTORY)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_image_history_list, PUSH_DEFAULT, DISPLAYLIST_IMAGES_HISTORY)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_video_history_list, PUSH_DEFAULT, DISPLAYLIST_VIDEO_HISTORY)
@@ -776,6 +777,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_MUSIC, deferred_music_list},
       {MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST, deferred_music_history_list},
       {MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST, deferred_playlist_list},
+      {MENU_ENUM_LABEL_DESCENDANT_ENTRY, deferred_descendant_list},
       {MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST, deferred_image_history_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST, deferred_video_history_list},
       {MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST, deferred_explore_list},
