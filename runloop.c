@@ -2110,7 +2110,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                }
             }
 
-            RARCH_LOG("[Environ]: SET_INPUT_DESCRIPTORS:\n");
+            RARCH_LOG("[Environ]: SET_INPUT_DESCRIPTORS.\n");
 
             {
                unsigned log_level = settings->uints.libretro_log_level;
@@ -2135,6 +2135,19 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
                         RARCH_DBG("      \"%s\" => \"%s\"\n",
                               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B + bind_index),
+                              description);
+                     }
+
+                     for (retro_id = RARCH_FIRST_CUSTOM_BIND; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
+                     {
+                        unsigned bind_index     = input_config_bind_order[retro_id];
+                        const char *description = sys_info->input_desc_btn[mapped_port][bind_index];
+
+                        if (!description)
+                           continue;
+
+                        RARCH_DBG("      \"%s\" => \"%s\"\n",
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS + bind_index - RARCH_FIRST_CUSTOM_BIND),
                               description);
                      }
                   }
