@@ -46,8 +46,8 @@
 #include <libchdr/chd.h>
 #include <libchdr/minmax.h>
 #include <libchdr/cdrom.h>
-#include <libchdr/lzma.h>
 #include <libchdr/huffman.h>
+#include <libchdr/lzma.h>
 
 #include <retro_inline.h>
 #include <streams/file_stream.h>
@@ -357,6 +357,7 @@ chd_error cdlz_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 		sector = (uint8_t *)&dest[framenum * CD_FRAME_SIZE];
 		if ((src[framenum / 8] & (1 << (framenum % 8))) != 0)
 		{
+			const uint8_t s_cd_sync_header[12] = { 0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00 };
 			memcpy(sector, s_cd_sync_header, sizeof(s_cd_sync_header));
 			ecc_generate(sector);
 		}

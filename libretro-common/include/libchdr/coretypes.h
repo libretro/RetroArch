@@ -8,10 +8,6 @@
 #include <streams/file_stream_transforms.h>
 #endif
 
-#ifdef WANT_RAW_DATA_SECTOR
-extern const uint8_t s_cd_sync_header[12];
-#endif
-
 typedef uint64_t UINT64;
 #ifndef OSD_CPU_H
 typedef uint32_t UINT32;
