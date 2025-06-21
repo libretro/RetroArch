@@ -2899,7 +2899,8 @@ static const char* accessibility_unix_language_code(const char* language)
          string_is_equal(language, "ta") ||
          string_is_equal(language, "te") ||
          string_is_equal(language, "ur") ||
-         string_is_equal(language, "cy")
+         string_is_equal(language, "cy") ||
+         string_is_equal(language, "ca")
       )
       return language;
    else if (
@@ -2908,19 +2909,16 @@ static const char* accessibility_unix_language_code(const char* language)
       )
       return "nb";
    else if (string_is_equal(language, "en_gb"))
-      return "en-gb";
-   else if (
-         string_is_equal(language, "ca") ||
-         string_is_equal(language, "ca_ES@valencia")
-      )
-      return "ca";
+      return "en-GB";
+   else if (string_is_equal(language, "ca_ES@valencia"))
+      return "ca-VA";
    else if (
          string_is_equal(language, "pt_pt") ||
          string_is_equal(language, "pt")
       )
       return "pt";
    else if (string_is_equal(language, "pt_bt"))
-      return "pt-br";
+      return "pt-BR";
    else if (
          string_is_equal(language, "zh") ||
          string_is_equal(language, "zh_cn") ||
@@ -2942,7 +2940,7 @@ static bool accessibility_speak_unix(int speed,
    const char* language   = accessibility_unix_language_code(get_user_language_iso639_1(true));
    char* voice_out        = (char*)malloc(3 + strlen(language));
    char* speed_out        = (char*)malloc(3 + 3);
-   const char* speeds[10] = {"80", "100", "125", "150", "170", "210", "260", "310", "380", "450"};
+   const char* speeds[10] = {"-99", "-75", "-50", "-25", "0", "20", "40", "60", "80", "100"};
 
    if (speed < 1)
       speed = 1;
@@ -2950,14 +2948,14 @@ static bool accessibility_speak_unix(int speed,
       speed = 10;
 
    voice_out[0] = '-';
-   voice_out[1] = 'v';
+   voice_out[1] = 'l';
    voice_out[2] = '\0';
-   strlcat(voice_out, language, 3 + strlen(language));
+   strlcat(voice_out, language, sizeof(voice_out));
 
    speed_out[0] = '-';
-   speed_out[1] = 's';
+   speed_out[1] = 'r';
    speed_out[2] = '\0';
-   strlcat(speed_out, speeds[speed-1], 6);
+   strlcat(speed_out, speeds[speed-1], sizeof(speed_out));
 
    if (priority < 10 && speak_pid > 0)
    {
@@ -2968,7 +2966,7 @@ static bool accessibility_speak_unix(int speed,
 
    if (speak_pid > 0)
    {
-      /* Kill the running espeak */
+      /* Kill the running spd-say */
       kill(speak_pid, SIGTERM);
       speak_pid = 0;
    }
@@ -2978,19 +2976,19 @@ static bool accessibility_speak_unix(int speed,
    {
       case 0:
          {
-            /* child process: replace process with the espeak command */
-            char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL };
+            /* child process: replace process with the spd-say command */
+            char* cmd[] = { (char*) "spd-say", NULL, NULL, NULL, NULL };
             cmd[1] = voice_out;
             cmd[2] = speed_out;
             cmd[3] = (char*)speak_text;
-            execvp("espeak", cmd);
+            execvp("spd-say", cmd);
 
-            RARCH_WARN("Could not execute espeak.\n");
+            RARCH_WARN("Could not execute spd-say.\n");
             /* Prevent interfere with the parent process */
             _exit(EXIT_FAILURE);
          }
       case -1:
-         RARCH_ERR("Could not fork for espeak.\n");
+         RARCH_ERR("Could not fork for spd-say.\n");
       default:
          {
             /* parent process */
