@@ -68,6 +68,8 @@
 #define __MACTYPES__
 #endif
 
+#define TRUE 1
+#define FALSE 0
 #define SHA1_DIGEST_SIZE 20
 
 /***************************************************************************
@@ -2318,7 +2320,7 @@ static uint64_t core_stdio_fsize(core_file *file) {
 #elif defined(__WIN32__) || defined(_WIN32) || defined(WIN32) || defined(__WIN64__)
 	#define core_stdio_fseek_impl _fseeki64
 	#define core_stdio_ftell_impl _ftelli64
-#elif defined(_LARGEFILE_SOURCE) && defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64
+#elif defined(_LARGEFILE_SOURCE) && defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64 && defined(fseeko64) && defined(ftello64)
 	#define core_stdio_fseek_impl fseeko64
 	#define core_stdio_ftell_impl ftello64
 #elif defined(__PS3__) && !defined(__PSL1GHT__) || defined(__SWITCH__) || defined(__vita__)
