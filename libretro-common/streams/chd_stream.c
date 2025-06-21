@@ -31,7 +31,8 @@
 #include <libchdr/chd.h>
 #include <string/stdstring.h>
 
-#define SECTOR_SIZE 2352
+#define SECTOR_RAW_SIZE 2352
+#define SECTOR_SIZE 2048
 #define SUBCODE_SIZE 96
 #define TRACK_PAD 4
 
@@ -125,6 +126,16 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
              md->subtype, &md->frames, &md->pad, &md->pregap, md->pgtype,
              md->pgsub, &md->postgap);
       md->extra = padding_frames(md->frames);
+      return true;
+   }
+
+   err = chd_get_metadata(chd, DVD_METADATA_TAG, idx, meta,
+         sizeof(meta), &meta_size, NULL, NULL);
+
+   if (err == CHDERR_NONE)
+   {
+      md->track = 1;
+      strlcpy(md->type, "DVD", sizeof(md->type));
       return true;
    }
 
@@ -243,13 +254,20 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->hunkmem         = hunkmem;
 
    if (string_is_equal(meta.type, "MODE1_RAW"))
-      stream->frame_size   = SECTOR_SIZE;
+      stream->frame_size   = SECTOR_RAW_SIZE;
    else if (string_is_equal(meta.type, "MODE2_RAW"))
+      stream->frame_size   = SECTOR_RAW_SIZE;
+   else if (string_is_equal(meta.type, "MODE1"))
       stream->frame_size   = SECTOR_SIZE;
    else if (string_is_equal(meta.type, "AUDIO"))
    {
-      stream->frame_size   = SECTOR_SIZE;
+      stream->frame_size   = SECTOR_RAW_SIZE;
       stream->swab         = true;
+   }
+   else if (string_is_equal(meta.type, "DVD"))
+   {
+      stream->frame_size   = hd->unitbytes;
+      meta.frames          = hd->totalhunks;
    }
    else
       stream->frame_size   = hd->unitbytes;

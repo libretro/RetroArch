@@ -47,13 +47,11 @@
 #include <libchdr/cdrom.h>
 #include <libchdr/flac.h>
 #include <libchdr/huffman.h>
+#include <libchdr/libchdr_zlib.h>
 #include <zlib.h>
 
 #include <retro_inline.h>
 #include <streams/file_stream.h>
-
-#define TRUE 1
-#define FALSE 0
 
 /***************************************************************************
  *  CD FLAC DECOMPRESSOR
@@ -61,26 +59,82 @@
  */
 
 /*------------------------------------------------------
- *  cdfl_codec_blocksize - return the optimal block size
+ *  flac_codec_blocksize - return the optimal block size
  *------------------------------------------------------
  */
 
-static uint32_t cdfl_codec_blocksize(uint32_t bytes)
+static uint32_t flac_codec_blocksize(uint32_t bytes)
 {
 	/* determine FLAC block size, which must be 16-65535
 	 * clamp to 2k since that's supposed to be the sweet spot */
-	uint32_t hunkbytes = bytes / 4;
-	while (hunkbytes > 2048)
-		hunkbytes /= 2;
-	return hunkbytes;
+	uint32_t blocksize = bytes / 4;
+	while (blocksize > 2048)
+		blocksize /= 2;
+	return blocksize;
+}
+
+chd_error flac_codec_init(void *codec, uint32_t hunkbytes)
+{
+	uint16_t native_endian = 0;
+	flac_codec_data *flac = (flac_codec_data*)codec;
+
+	/* make sure the CHD's hunk size is an even multiple of the sample size */
+	if (hunkbytes % 4 != 0)
+		return CHDERR_CODEC_ERROR;
+
+	/* determine whether we want native or swapped samples */
+	*(uint8_t *)(&native_endian) = 1;
+	flac->native_endian = (native_endian & 1);
+
+	/* flac decoder init */
+	if (flac_decoder_init(&flac->decoder))
+		return CHDERR_OUT_OF_MEMORY;
+
+	return CHDERR_NONE;
+}
+
+void flac_codec_free(void *codec)
+{
+	flac_codec_data *flac = (flac_codec_data*)codec;
+	flac_decoder_free(&flac->decoder);
+}
+
+chd_error flac_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
+{
+	flac_codec_data *flac = (flac_codec_data*)codec;
+	int swap_endian;
+
+	if (src[0] == 'L')
+		swap_endian = !flac->native_endian;
+	else if (src[0] == 'B')
+		swap_endian = flac->native_endian;
+	else
+		return CHDERR_DECOMPRESSION_ERROR;
+
+	if (!flac_decoder_reset(&flac->decoder, 44100, 2, flac_codec_blocksize(destlen), src + 1, complen - 1))
+		return CHDERR_DECOMPRESSION_ERROR;
+	if (!flac_decoder_decode_interleaved(&flac->decoder, (int16_t *)(dest), destlen/4, swap_endian))
+		return CHDERR_DECOMPRESSION_ERROR;
+	flac_decoder_finish(&flac->decoder);
+
+	return CHDERR_NONE;
+}
+
+static uint32_t cdfl_codec_blocksize(uint32_t bytes)
+{
+	/* for CDs it seems that CD_MAX_SECTOR_DATA is the right target */
+	uint32_t blocksize = bytes / 4;
+	while (blocksize > CD_MAX_SECTOR_DATA)
+		blocksize /= 2;
+	return blocksize;
 }
 
 chd_error cdfl_codec_init(void *codec, uint32_t hunkbytes)
 {
 #ifdef WANT_SUBCODE
-   chd_error ret;
+	chd_error ret;
 #endif
-   uint16_t native_endian = 0;
+	uint16_t native_endian = 0;
 	cdfl_codec_data *cdfl = (cdfl_codec_data*)codec;
 
 	/* make sure the CHD's hunk size is an even multiple of the frame size */
@@ -103,8 +157,7 @@ chd_error cdfl_codec_init(void *codec, uint32_t hunkbytes)
 #endif
 
 	/* flac decoder init */
-	flac_decoder_init(&cdfl->decoder);
-	if (cdfl->decoder.decoder == NULL)
+	if (flac_decoder_init(&cdfl->decoder))
 		return CHDERR_OUT_OF_MEMORY;
 
 	return CHDERR_NONE;
@@ -124,10 +177,10 @@ void cdfl_codec_free(void *codec)
 chd_error cdfl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
 	uint32_t framenum;
-   uint8_t *buffer;
+	uint8_t *buffer;
 #ifdef WANT_SUBCODE
-   uint32_t offset;
-   chd_error ret;
+	uint32_t offset;
+	chd_error ret;
 #endif
 	cdfl_codec_data *cdfl = (cdfl_codec_data*)codec;
 

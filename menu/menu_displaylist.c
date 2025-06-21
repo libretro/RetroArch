@@ -2410,6 +2410,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_7ZIP
          {SUPPORTS_7ZIP        ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT},
 #endif
+#ifdef HAVE_ZSTD
+         {SUPPORTS_ZSTD        ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT},
+#endif
 #ifdef HAVE_DYLIB
          {SUPPORTS_DYLIB       ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT},
 #endif

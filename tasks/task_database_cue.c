@@ -60,6 +60,7 @@ static struct magic_entry MAGIC_NUMBERS[] = {
    { "Sony - PlayStation",          "Sony Computer ",   0x0024f8}, /* PS1 CD license string, PS2 CD doesnt have this string */
    { "Sony - PlayStation 2",        "PLAYSTATION",      0x009320}, /* PS1 CD and PS2 CD */
    { "Sony - PlayStation 2",        "PLAYSTATION",      0x008008}, /* PS2 DVD */
+   { "Sony - PlayStation 2",        "           ",      0x008008}, /* PS2 DVD */
    { "Sony - PlayStation Portable", "PSP GAME",         0x008008},
    { NULL,                          NULL,               0}
 };
@@ -284,7 +285,7 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
 int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
-   #define DISC_DATA_SIZE_PS2 0x84000
+   #define DISC_DATA_SIZE_PS2 600000
    int pos;
    char raw_game_id[50];
    char *disc_data;
@@ -382,6 +383,11 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
                raw_game_id[8] = raw_game_id[9];
                raw_game_id[9] = raw_game_id[10];
             }
+            /* Wild character conversions */
+            if (raw_game_id[8] == 18)
+               raw_game_id[8] = 51; 
+            if (raw_game_id[9] == 18)
+               raw_game_id[9] = 51; 
             raw_game_id[10] = '\0';
 
             string_remove_all_whitespace(s, raw_game_id);
@@ -410,7 +416,7 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
 int detect_psp_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
-   #define DISC_DATA_SIZE_PSP 40000
+   #define DISC_DATA_SIZE_PSP 300000
    int pos;
    char *disc_data = malloc(DISC_DATA_SIZE_PSP);
 

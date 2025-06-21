@@ -879,6 +879,10 @@ MSG_HASH(
    "7zip Support"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "ZStandard Support"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
    "Dynamic Library Support"
    )
