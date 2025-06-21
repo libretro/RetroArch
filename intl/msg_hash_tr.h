@@ -11691,6 +11691,74 @@ MSG_HASH(
    "Yazı Tipi Ölçeği"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
+   "Menüdeki yazı tipi boyutunun kendi ölçeklemesine sahip olup olmayacağını ve menünün her bir bölümü için ayrı değerlerle mi yoksa genel olarak mı ölçekleneceğini tanımlayın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
+   "Genel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   "Ayrı değerler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Yazı Tipi Ölçeklendirme Etkeni"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Menüde yazı tipi boyutunu doğrusal olarak ölçeklendirin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Başlık Yazı Tipi Ölçeklendirme Etkeni"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Menü başlığındaki başlık metninin yazı tipi boyutunu ölçeklendirin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Sol Kenar Çubuğu Yazı Tipi Ölçek Etkeni"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Sol kenar çubuğundaki metnin yazı tipi boyutunu ölçeklendirin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Etiketler Yazı Tipi Ölçek Etkeni"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Menü seçenekleri ve oynatma listesi girişlerinin etiketleri için yazı tipi boyutunu ölçeklendirin. Ayrıca yardım kutularındaki metin boyutunu da etkiler."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Alt Etiketler Yazı Tipi Ölçek Etkeni"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Menü seçeneklerinin ve oynatma listesi girişlerinin alt etiketleri için yazı tipi boyutunu ölçeklendirin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Zaman Tarih Yazı Tipi Ölçek Etkeni"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Menünün sağ üst köşesindeki saat ve tarih göstergesinin yazı tipi boyutunu ölçeklendirin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Altbilgi Yazı Tipi Ölçek Etkeni"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Menü altbilgisindeki metnin yazı tipi boyutunu ölçeklendirin. Ayrıca sağ küçük resim kenar çubuğundaki metin boyutunu da etkiler."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Kenar Çubuğunu Daralt"
    )

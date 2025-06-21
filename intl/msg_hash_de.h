@@ -11379,6 +11379,70 @@ MSG_HASH(
    "Schriftgröße"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
+   "Festlegen, ob die Schriftgröße im Menü eine eigene Skalierung haben soll, und ob sie global oder mit separaten Werten für jeden Teil des Menüs skaliert werden soll."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   "Getrennte Werte"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Schriftgrößenfaktor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Skaliert die Schriftgröße linear im gesamten Menü."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Schriftgröße für Titel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Skaliert die Schriftgröße für den Titeltext in der Kopfzeile des Menüs."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Schriftgröße für linke Seitenleiste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Skaliert die Schriftgröße für den Text der linken Seitenleiste."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Schriftgröße für Labels"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Skaliert die Schriftgröße für die Beschriftung von Menüoptionen und Wiedergabelisteneinträgen. Wirkt sich auch auf die Textgröße in den Hilfefeldern aus."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Schriftgröße für Untereinträge"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Skaliert die Schriftgröße für die Untereinträge von Menüoptionen und Wiedergabelisteneinträgen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Schriftgröße für Datum/Zeit"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Skaliert die Schriftgröße der Zeit- und Datumsanzeige in der oberen rechten Ecke des Menüs."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Skalierungsfaktor für Fußzeile"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Skaliert die Schriftgröße des Textes der Fußzeile in den Menüs. Wirkt sich auch auf die Textgröße in der rechten Miniaturansicht-Seitenleiste aus."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Seitenleiste einklappen"
    )

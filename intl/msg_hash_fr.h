@@ -11599,6 +11599,74 @@ MSG_HASH(
    "Échelle de la police"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
+   "Définir si la taille de police dans le menu doit avoir sa propre mise à l'échelle, et si elle doit être mise à l'échelle globalement ou avec des valeurs distinctes pour chaque partie du menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
+   "Globale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   "Valeurs distinctes"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Facteur de mise à l'échelle de police "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Mettre à l'échelle la taille de la police de manière linéaire dans tout le menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Facteur de mise à l'échelle de la police du titre "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Mettre à l'échelle la taille de police pour le texte du titre dans l'en-tête du menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Facteur de mise à l'échelle de la police de la barre latérale gauche "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Mettre à l'échelle la taille de police pour le texte dans la barre latérale gauche."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Facteur de mise à l'échelle de la police des descriptions "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Mettre à l'échelle la taille de police pour les descriptions des options du menu et des entrées de liste de lecture. Cela affecte également la taille du texte dans les boîtes d'aide."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Facteur de mise à l'échelle de la police des sous-descriptions "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Mettre à l'échelle la taille de police pour les sous-descriptions des options du menu et des entrées de liste de lecture."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Facteur de mise à l'échelle de la police de date et heure "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Mettre à l'échelle la taille de police pour l'indicateur de date et heure dans le coin supérieur droit du menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Facteur de mise à l'échelle de la police du pied de page "
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Mettre à l'échelle la taille de police pour le texte du pied de page du menu. Cela affecte également la taille du texte dans la barre latérale des miniatures de droite."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Réduire la barre latérale"
    )
