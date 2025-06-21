@@ -1478,6 +1478,7 @@ static bool rgui_fonts_init(rgui_t *rgui)
       case RETRO_LANGUAGE_CATALAN:
       case RETRO_LANGUAGE_GALICIAN:
       case RETRO_LANGUAGE_NORWEGIAN:
+      case RETRO_LANGUAGE_IRISH:
          /* We have at least partial support for
           * these languages, but extended ASCII
           * is required */
