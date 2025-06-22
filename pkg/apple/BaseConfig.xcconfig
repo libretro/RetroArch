@@ -46,6 +46,7 @@ OTHER_CFLAGS = $(inherited) -DHAVE_MENU
 OTHER_CFLAGS = $(inherited) -DHAVE_METAL
 OTHER_CFLAGS = $(inherited) -DHAVE_MFI
 OTHER_CFLAGS = $(inherited) -DHAVE_MMAP
+OTHER_CFLAGS = $(inherited) -DHAVE_NEAREST_RESAMPLER
 OTHER_CFLAGS = $(inherited) -DHAVE_NETPLAYDISCOVERY
 OTHER_CFLAGS = $(inherited) -DHAVE_NETPLAYDISCOVERY_NSNET
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORKGAMEPAD
@@ -80,6 +81,7 @@ OTHER_CFLAGS = $(inherited) -DHAVE_VULKAN
 OTHER_CFLAGS = $(inherited) -DHAVE_XDELTA
 OTHER_CFLAGS = $(inherited) -DHAVE_XMB
 OTHER_CFLAGS = $(inherited) -DHAVE_ZLIB
+OTHER_CFLAGS = $(inherited) -DHAVE_ZSTD
 OTHER_CFLAGS = $(inherited) -DINLINE=inline
 OTHER_CFLAGS = $(inherited) -DRARCH_INTERNAL
 OTHER_CFLAGS = $(inherited) -DRC_DISABLE_LUA
@@ -141,7 +143,23 @@ OTHER_CFLAGS[config=Release] = $(inherited) -DNDEBUG -DNS_BLOCK_ASSERTIONS=1
 
 SRCBASE  = $(SRCROOT)/../..
 DEPS_DIR = $(SRCBASE)/deps
-HEADER_SEARCH_PATHS = $(inherited) $(SRCBASE) $(SRCBASE)/gfx/include $(SRCBASE)/libretro-common/include $(DEPS_DIR)/libFLAC/include $(DEPS_DIR)/rcheevos/include $(DEPS_DIR)/7zip $(DEPS_DIR)/stb $(DEPS_DIR) $(DEPS_DIR)/SPIRV-Cross $(DEPS_DIR)/glslang $(DEPS_DIR)/glslang/glslang/glslang/Public $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent $(DEPS_DIR)/glslang/glslang/SPIRV $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix
+
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/7zip
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/SPIRV-Cross
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang/glslang/SPIRV
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang/glslang/glslang/Public
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libFLAC/include
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/rcheevos/include
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/stb
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/zstd/lib
+HEADER_SEARCH_PATHS = $(inherited) $(SRCBASE)
+HEADER_SEARCH_PATHS = $(inherited) $(SRCBASE)/gfx/include
+HEADER_SEARCH_PATHS = $(inherited) $(SRCBASE)/libretro-common/include
+
 CLANG_CXX_LANGUAGE_STANDARD=c++11
 CLANG_ENABLE_OBJC_ARC=YES
 INFOPLIST_FILE[sdk=macosx*] = $(SRCROOT)/OSX/Info_Metal.plist
