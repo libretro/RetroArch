@@ -8082,6 +8082,11 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_NOTCH_WRITE_OVER,
                      PARSE_ONLY_BOOL, false) == 0)
                      count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+                     PARSE_ONLY_BOOL, false) == 0)
+                     count++;
          }
          break;
       case DISPLAYLIST_OPTIONS_REMAPPINGS:

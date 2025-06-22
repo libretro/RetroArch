@@ -4577,6 +4577,10 @@ MSG_HASH(
    "video_notch_write_over"
 )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "video_use_metal_arg_buffers"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,
    "video_output_settings"
    )

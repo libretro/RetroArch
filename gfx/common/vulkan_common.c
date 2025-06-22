@@ -2370,6 +2370,13 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 #ifdef _WIN32
       vulkan_library = dylib_load("vulkan-1.dll");
 #elif __APPLE__
+      /* allow overriding by environment variable; this means restart is required to change */
+      if (!getenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS"))
+      {
+         settings_t *settings             = config_get_ptr();
+         int use_mab                      = settings->bools.video_use_metal_arg_buffers;
+         setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", use_mab ? "1" : "0", 1);
+      }
       if (__builtin_available(macOS 10.15, iOS 13, tvOS 12, *))
          vulkan_library = dylib_load("MoltenVK");
       if (!vulkan_library)
