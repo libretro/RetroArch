@@ -491,19 +491,22 @@ static char *task_cloud_sync_md5_rfile(RFILE *file)
    char         *hash = malloc(33);
    unsigned char buf[4096];
    unsigned char digest[16];
+   libretro_vfs_implementation_file *hfile = filestream_get_vfs_handle(file);
 
    if (!hash)
       return NULL;
 
    MD5_Init(&md5);
 
-   do
-   {
-      rv = (int)filestream_read(file, buf, sizeof(buf));
-      if (rv > 0)
-         MD5_Update(&md5, buf, rv);
-   } while (rv > 0);
-
+   if (hfile && hfile->mapped)
+      MD5_Update(&md5, hfile->mapped, hfile->size);
+   else
+      do
+      {
+         rv = (int)filestream_read(file, buf, sizeof(buf));
+         if (rv > 0)
+            MD5_Update(&md5, buf, rv);
+      } while (rv > 0);
    MD5_Final(digest, &md5);
 
    snprintf(hash, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
@@ -748,7 +751,7 @@ static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_st
    }
 
    file = filestream_open(filename,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
    if (!file)
       return;
 
@@ -803,7 +806,7 @@ static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_s
    }
 
    file = filestream_open(filename,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
    if (!file)
       return;
 
