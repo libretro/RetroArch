@@ -496,7 +496,7 @@ static const codec_interface codec_interfaces[] =
 	/* V5 zstd compression */
 	{
 		CHD_CODEC_ZSTD,
-		"ZStandard",
+		"zstd (Zstandard)",
 		FALSE,
 		zstd_codec_init,
 		zstd_codec_free,
@@ -506,7 +506,7 @@ static const codec_interface codec_interfaces[] =
 	/* V5 CD zstd compression */
 	{
 		CHD_CODEC_CD_ZSTD,
-		"cdzs (CD ZStandard)",
+		"cdzs (CD Zstandard)",
 		FALSE,
 		cdzs_codec_init,
 		cdzs_codec_free,
