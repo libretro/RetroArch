@@ -1458,6 +1458,7 @@ DEPENDENCIES
 #include "../libretro-common/formats/libchdr/libchdr_bitstream.c"
 #include "../libretro-common/formats/libchdr/libchdr_cdrom.c"
 #include "../libretro-common/formats/libchdr/libchdr_chd.c"
+#include "../libretro-common/formats/libchdr/libchdr_huffman.c"
 
 #ifdef HAVE_FLAC
 #include "../libretro-common/formats/libchdr/libchdr_flac.c"
@@ -1468,7 +1469,9 @@ DEPENDENCIES
 #include "../libretro-common/formats/libchdr/libchdr_lzma.c"
 #endif
 
-#include "../libretro-common/formats/libchdr/libchdr_huffman.c"
+#ifdef HAVE_ZSTD
+#include "../libretro-common/formats/libchdr/libchdr_zstd.c"
+#endif
 
 #include "../libretro-common/streams/chd_stream.c"
 #endif
@@ -1492,6 +1495,18 @@ DEPENDENCIES
 #include "../deps/7zip/Bcj2.c"
 #include "../deps/7zip/7zFile.c"
 #include "../deps/7zip/7zStream.c"
+#endif
+
+#ifdef HAVE_ZSTD
+#include "../deps/zstd/lib/common/entropy_common.c"
+#include "../deps/zstd/lib/common/error_private.c"
+#include "../deps/zstd/lib/common/fse_decompress.c"
+#include "../deps/zstd/lib/common/zstd_common.c"
+#include "../deps/zstd/lib/common/xxhash.c"
+#include "../deps/zstd/lib/decompress/huf_decompress.c"
+#include "../deps/zstd/lib/decompress/zstd_ddict.c"
+#include "../deps/zstd/lib/decompress/zstd_decompress.c"
+#include "../deps/zstd/lib/decompress/zstd_decompress_block.c"
 #endif
 
 #ifdef WANT_LIBFAT

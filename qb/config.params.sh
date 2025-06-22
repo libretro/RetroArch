@@ -142,6 +142,7 @@ HAVE_FLOATSOFTFP=no        # Force soft float ABI (for ARM)
 HAVE_CHD=yes               # Compile in chd support
 CXX_CHD=no
 HAVE_7ZIP=yes              # Compile in 7z support
+HAVE_ZSTD=yes              # Compile in Zstandard support
 HAVE_FLAC=auto             # Compile in flac support
 HAVE_DR_MP3=yes            # Compile in Dr. MP3 support
 HAVE_BUILTINFLAC=auto      # Bake in flac support

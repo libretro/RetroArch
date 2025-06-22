@@ -1971,6 +1971,22 @@ ifeq ($(HAVE_7ZIP),1)
            $(7ZOBJ)
 endif
 
+ifeq ($(HAVE_ZSTD),1)
+   INCLUDE_DIRS += -I$(DEPS_DIR)/zstd/lib
+   DEFINES += -DHAVE_ZSTD -DZSTD_DISABLE_ASM
+   ZSOBJ = $(DEPS_DIR)/zstd/lib/common/entropy_common.o \
+           $(DEPS_DIR)/zstd/lib/common/error_private.o \
+           $(DEPS_DIR)/zstd/lib/common/fse_decompress.o \
+           $(DEPS_DIR)/zstd/lib/common/zstd_common.o \
+           $(DEPS_DIR)/zstd/lib/common/xxhash.o \
+           $(DEPS_DIR)/zstd/lib/decompress/huf_decompress.o \
+           $(DEPS_DIR)/zstd/lib/decompress/zstd_ddict.o \
+           $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress.o \
+           $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress_block.o
+
+   OBJ +=  $(ZSOBJ)
+endif
+
 ifeq ($(HAVE_IBXM), 1)
    DEFINES += -DHAVE_IBXM
    OBJ += $(DEPS_DIR)/ibxm/ibxm.o
@@ -2123,6 +2139,13 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
          DEFINES += -Dcdlz_codec_init=retroarch_internal_cdlz_codec_init
          DEFINES += -Dcdlz_codec_free=retroarch_internal_cdlz_codec_free
          DEFINES += -Dcdlz_codec_decompress=retroarch_internal_cdlz_codec_decompress
+
+         DEFINES += -Dzstd_codec_init=retroarch_internal_zstd_codec_init
+         DEFINES += -Dzstd_codec_free=retroarch_internal_zstd_codec_free
+         DEFINES += -Dzstd_codec_decompress=retroarch_internal_zstd_codec_decompress
+         DEFINES += -Dcdzs_codec_init=retroarch_internal_cdzs_codec_init
+         DEFINES += -Dcdzs_codec_free=retroarch_internal_cdzs_codec_free
+         DEFINES += -Dcdzs_codec_decompress=retroarch_internal_cdzs_codec_decompress
       endif
       OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
                  $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
@@ -2138,6 +2161,10 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
 
       ifeq ($(HAVE_7ZIP), 1)
          OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
+      endif
+
+      ifeq ($(HAVE_ZSTD), 1)
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zstd.o
       endif
    endif
 endif
