@@ -11567,6 +11567,70 @@ MSG_HASH(
    "Mida de la font"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
+   "Defineix si la mida de la tipografia en el menú hauria de tenir escala pròpia i si l'escala ha de ser global o, en canvi, tenir valors independents per cada part del menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   "Valors separats"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Factor d'escala de la mida de la tipografia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Escala la mida de la tipografia linealment al llarg del menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Factor d'escala de la mida de la tipografia del títol"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Escala la mida de la tipografia pels títols de la capçalera."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Factor d'escala de la mida de la tipografia de la barra esquerra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Escala la mida de la tipografia pel text de la barra esquerra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Factor d'escala de la mida de la tipografia de les etiquetes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Escala la mida de la tipografia per les etiquetes del menú opcions i les entrades de la llista de reproducció. Això afecta també a la mida del text de les caixes d'ajuda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Factor d'escala de la mida de la tipografia de les subetiquetes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Escala la mida de la tipografia per les subetiquetes del menú opcions i les entrades de la llista de reproducció."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Factor d'escala de la mida de la tipografia de la marca de temps"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Escala la mida de la tipografia per l'hora i la data indicades a la part superior dret del menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Factor d'escala de la mida de la tipografia del peu de pàgina"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Escala la mida de la tipografia pel text del peu de pàgina. Això afecta també a la mida del text de la barra lateral dreta."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Replega la barra lateral"
    )
