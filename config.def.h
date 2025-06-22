@@ -489,6 +489,10 @@
 /* Choose if the screen will be able to write around the notch or not */
 #define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
 
+#ifdef __APPLE__
+#define DEFAULT_USE_METAL_ARG_BUFFERS (!!__builtin_available(macOS 12, iOS 13, tvOS 12, *))
+#endif
+
 /* Enable use of shaders. */
 #ifdef RARCH_CONSOLE
 #define DEFAULT_SHADER_ENABLE true

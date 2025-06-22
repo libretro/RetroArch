@@ -1284,6 +1284,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_rs90_softfilter_type,  
 #endif
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_screen_resolution,               MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_use_metal_arg_buffers,     MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_gpu_index,                 MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_custom_height,          MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_custom_width,           MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH)
@@ -2620,6 +2621,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_screen_resolution);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_USE_METAL_ARG_BUFFERS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_use_metal_arg_buffers);
             break;
          case MENU_ENUM_LABEL_VIDEO_GPU_INDEX:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_gpu_index);

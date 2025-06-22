@@ -2174,6 +2174,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "Enable fullscreen over notch in Android and iOS devices"
 )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Use Metal Argument Buffers (Restart required)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Try to improve performance by using Metal argument buffers. Some cores may require this. This may break some shaders, particularly on old hardware or OS versions."
+)
 
 /* Settings > Video > CRT SwitchRes */
 

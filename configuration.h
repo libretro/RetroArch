@@ -660,6 +660,7 @@ typedef struct settings
       bool video_notch_write_over_enable;
       bool video_hdr_enable;
       bool video_hdr_expand_gamut;
+      bool video_use_metal_arg_buffers;
 
       /* Accessibility */
       bool accessibility_enable;
