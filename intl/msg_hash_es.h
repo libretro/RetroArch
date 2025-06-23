@@ -871,6 +871,10 @@ MSG_HASH(
    "Soporte de 7zip"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "Soporte de Zstandard"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
    "Soporte de librerías dinámicas"
    )
@@ -2125,6 +2129,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "Permitir que la pantalla completa sobrepase la muesca («notch») de los dispositivos Android e iOS"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Utilizar búferes de argumentos de Metal (es necesario reiniciar)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Intenta mejorar el rendimiento mediante el uso de los búferes de argumentos de Metal. Es posible que algunos núcleos los necesiten. Podría dar problemas con algunos shaders, sobre todo en hardware obsoleto o versiones antiguas del sistema operativo."
 )
 
 /* Settings > Video > CRT SwitchRes */

@@ -851,6 +851,10 @@ MSG_HASH(
    "7zip-Unterstützung"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "Zstandard-Unterstützung"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
    "Unterstützung für dynamische Bibliotheken"
    )
@@ -2053,6 +2057,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "Vollbild über Notch auf Android und iOS-Geräten aktivieren"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Metallargumentpuffer verwenden (Neustart erforderlich)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Versuchen, die Leistung durch Verwendung von Metallargumentpuffer zu verbessern. Einige Cores können dies erfordern. Dies kann einige Shader stören, insbesondere bei alten Hardware- oder Betriebssystemversionen."
 )
 
 /* Settings > Video > CRT SwitchRes */

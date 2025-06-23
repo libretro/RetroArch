@@ -867,6 +867,10 @@ MSG_HASH(
    "7zip Desteği"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "Zstandard Desteği"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
    "Dinamik Kütüphane Desteği"
    )
@@ -2117,6 +2121,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "Android ve iOS cihazlarda çentik üzerinde tam ekranı etkinleştir"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Metal Argüman Arabelleklerini Kullan (Yeniden başlatılmalı)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Metal argüman arabelleklerini kullanarak performansı artırmayı deneyin. Bazı çekirdekler buna ihtiyaç duyabilir. Bu özellikle eski donanım veya işletim sistemi sürümlerinde bazı gölgelendiricileri bozabilir."
 )
 
 /* Settings > Video > CRT SwitchRes */
