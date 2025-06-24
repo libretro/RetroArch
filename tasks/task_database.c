@@ -815,7 +815,17 @@ static int database_info_list_iterate_found_match(
    /* Use database name for label if found,
     * otherwise use filename without extension */
    if (!string_is_empty(db_info_entry->name))
+   {
+      /* Use the archive as path instead of the file inside the archive
+       * if the file is a multidisk game, because database entry
+       * matches with the last disk, which is never bootable */
+      char *delim = (char*)strchr(entry_path_str, '#');
+
+      if (delim && strcasestr(entry_path_str, " (Disk "))
+         *delim = '\0';
+
       strlcpy(entry_lbl, db_info_entry->name, sizeof(entry_lbl));
+   }
    else if (!string_is_empty(entry_path))
    {
       char *delim = (char*)strchr(entry_path, '#');
@@ -838,15 +848,15 @@ static int database_info_list_iterate_found_match(
        *hash = '\0';
 
 #if !defined(RARCH_INTERNAL)
-   fprintf(stderr, "Found match in database !\n");
+   fprintf(stderr, "*** Found match in database! ***\n");
 
-   fprintf(stderr, "Path: %s\n", db_path);
-   fprintf(stderr, "CRC : %s\n", db_crc);
-   fprintf(stderr, "Playlist Path: %s\n", db_playlist_path);
-   fprintf(stderr, "Entry Path: %s\n", entry_path);
-   fprintf(stderr, "Playlist not NULL: %d\n", playlist != NULL);
-   fprintf(stderr, "ZIP entry: %s\n", archive_name);
-   fprintf(stderr, "entry path str: %s\n", entry_path_str);
+   fprintf(stderr, "\tPath: %s\n", db_path);
+   fprintf(stderr, "\tCRC : %s\n", db_crc);
+   fprintf(stderr, "\tPlaylist Path: %s\n", db_playlist_path);
+   fprintf(stderr, "\tEntry Path: %s\n", entry_path);
+   fprintf(stderr, "\tPlaylist not NULL: %d\n", playlist != NULL);
+   fprintf(stderr, "\tZIP entry: %s\n", archive_name);
+   fprintf(stderr, "\tentry path str: %s\n", entry_path_str);
 #endif
 
    if (!playlist_entry_exists(playlist, entry_path_str))
