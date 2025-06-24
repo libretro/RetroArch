@@ -2230,11 +2230,11 @@ static bool JSONEndArrayHandler(void *context)
    if (     (pCtx->flags & JSON_CTX_FLG_IN_ITEMS)
          && (pCtx->array_depth  == 0)
          && (pCtx->object_depth <= 1))
-      pCtx->flags &= (JSON_CTX_FLG_IN_ITEMS);
+      pCtx->flags &= ~(JSON_CTX_FLG_IN_ITEMS);
    else if ((pCtx->flags & JSON_CTX_FLG_IN_SUBSYSTEM_CONTENT)
          && (pCtx->array_depth  <= 1)
          && (pCtx->object_depth <= 2))
-      pCtx->flags &= (JSON_CTX_FLG_IN_SUBSYSTEM_CONTENT);
+      pCtx->flags &= ~(JSON_CTX_FLG_IN_SUBSYSTEM_CONTENT);
 
    return true;
 }
