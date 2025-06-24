@@ -867,6 +867,10 @@ MSG_HASH(
    "Tacaíocht 7zip"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "Tacaíocht Zstandard"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
    "Tacaíocht Leabharlainne Dinimiciúil"
    )
@@ -2126,6 +2130,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "Cumasaigh lánscáileán thar an notch i bhfeistí Android agus iOS"
 )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Bain úsáid as Maoláin Argóintí Miotail (Atosú ag teastáil)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Déan iarracht feidhmíocht a fheabhsú trí mhaoláin argóintí miotail a úsáid. D’fhéadfadh sé seo a bheith ag teastáil ó roinnt croíleacán. D’fhéadfadh sé seo roinnt scáthaitheoirí a bhriseadh, go háirithe ar sheanleaganacha crua-earraí nó OS."
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -3324,6 +3336,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    "Cumasaigh mód 'Fócas Cluiche' i gcónaí agus ábhar á sheoladh agus á atosú. Nuair a shocraítear é go 'Braith', cuirfear an rogha ar siúl má chuireann an croí reatha feidhmiúlacht athghlaoite méarchláir tosaigh i bhfeidhm."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   "AS"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -4547,6 +4563,10 @@ MSG_HASH(
    "Taispeáin an rogha 'Bainistigh croíthe' sa Phríomh-Roghchlár."
 )
 
+MSG_HASH(
+   MSG_CORE_STEAM_INSTALLING,
+   "Croí a shuiteáil: "
+)
 
 MSG_HASH(
    MSG_CORE_STEAM_UNINSTALLED,
@@ -5108,6 +5128,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
    "Mód Sruthaithe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
+   "Áitiúil"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
@@ -6455,9 +6479,181 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
    "Taispeáin leibhéal reatha na ceallraí taobh istigh den roghchlár."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
+   "Taispeáin Ainm an Chroí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_ENABLE,
+   "Taispeáin ainm an chroí reatha taobh istigh den roghchlár."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   "Taispeáin Fo-lipéid an Roghchláir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   "Taispeáin faisnéis bhreise le haghaidh míreanna roghchláir."
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   "Taispeáin an Scáileán Tosaigh"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+   "Taispeáin an scáileán tosaithe sa roghchlár. Socraítear é seo go bréagach go huathoibríoch tar éis don chlár tosú den chéad uair."
+   )
 
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+   "Taispeáin 'Atosú'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
+   "Taispeáin an rogha ábhar atosú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "Taispeáin 'Atosaigh'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "Taispeáin an rogha ábhar atosaithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   "Taispeáin 'Dún Ábhar'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   "Taispeáin an rogha 'Dún Ábhar'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "Taispeáin Fo-roghchlár 'Sábháil Stáit'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "Taispeáin roghanna stádais sábhála i bhfo-roghchlár."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+   "Taispeáin 'Stádas Sábháil/Lódála'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+   "Taispeáin na roghanna chun stát a shábháil/a luchtú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   "Taispeáin 'Rialuithe Athsheinm'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
+   "Taispeáin na roghanna maidir le comhaid athsheinm a thaifeadadh/a sheinm."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Taispeáin 'Cealaigh Stádas Sábháil/Lódála'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   "Taispeáin na roghanna chun an staid sábhála/lódála a chealú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
+   "Taispeáin 'Croí-Roghanna'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
+   "Taispeáin an rogha 'Croí-Roghanna'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Taispeáin 'Roghanna Glanadh go Diosca'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   "Taispeáin an iontráil 'Sruthlaigh Roghanna chuig Diosca' sa roghchlár 'Roghanna > Bainistigh Croí-Roghanna'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
+   "Taispeáin 'Rialuithe'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
+   "Taispeáin an rogha 'Rialuithe'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+   "Taispeáin 'Tóg Seat Scáileáin'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+   "Taispeáin an rogha 'Tóg Seat Scáileáin'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+   "Taispeáin 'Tosaigh ag Taifeadadh'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+   "Taispeáin an rogha 'Tosaigh ag Taifeadadh'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+   "Taispeáin 'Tosaigh ag Sruthú'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+   "Taispeáin an rogha 'Tosaigh ag Sruthú'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
+   "Taispeáin 'Forleagan Ar an Scáileán'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   "Taispeáin an rogha 'Forleagan Ar an Scáileán'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
+   "Taispeáin 'Leagan Amach Físe'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
+   "Taispeáin an rogha 'Leagan Amach Físe'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
+   "Taispeáin 'Aga folaigh'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
+   "Taispeáin an rogha 'Aga folaigh'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
+   "Taispeáin 'Athchasadh'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+   "Taispeáin an rogha 'Athchasadh'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+   "Taispeáin 'Sábháil Croí-Sháruithe'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+   "Taispeáin an rogha 'Sábháil Forrialuithe Croí' sa roghchlár 'Forrialuithe'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Taispeáin 'Sáruithe ar Eolaire Ábhar a Shábháil'"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
    "Taispeáin an rogha 'Sábháil Forbhreathnú Eolaire Ábhair' sa roghchlár 'Forbhreathnú'."
@@ -6570,6 +6766,10 @@ MSG_HASH(
    "Taispeáin socruithe 'Ionchuir'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
+   "Taispeáin 'Aga folaigh'"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
    "Taispeáin socruithe 'Aga folaigh'."
    )
@@ -6666,6 +6866,22 @@ MSG_HASH(
    "Taispeáin 'Bainistíocht Cumhachta'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+   "Taispeáin socruithe 'Bainistíocht Cumhachta'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
+   "Taispeáin 'Gnóthachtálacha'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+   "Taispeáin socruithe 'Gnóthachtálacha'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
+   "Taispeáin 'Líonra'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
    "Taispeáin 'Seinmliostaí'"
    )
@@ -6734,6 +6950,10 @@ MSG_HASH(
    "Úsáid téama dathanna an chórais oibriúcháin (más ann dó). Sáraíonn sé socruithe téama."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
+   "Mionsamhail Phríomhúil"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS,
    "Cineál mionsamhail le taispeáint."
    )
@@ -6748,6 +6968,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    "Cúlraí Mionsamhlacha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   "Cumasaíonn sé líonadh spáis neamhúsáidte in íomhánna mionsamhlacha le cúlra soladach. Cinntíonn sé seo méid taispeána aonfhoirmeach do na híomhánna uile, rud a fheabhsaíonn cuma an roghchláir agus mionsamhlacha ábhar measctha le toisí bunúsacha éagsúla á bhféachaint."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
@@ -6780,6 +7004,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
    "Cuimhnigh ar shuíomh an chúrsóra roimhe seo i gcluaisíní. Níl cluaisíní ag RGUI, ach oibríonn Seinmliostaí agus Socruithe ar an gcaoi chéanna."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   "I gcónaí"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
@@ -7527,6 +7755,18 @@ MSG_HASH(
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Athnuaigh Seinmliosta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Cuir ábhar nua leis agus bain iontrálacha neamhbhailí tríd an oibríocht 'Scanadh Láimhe' a úsáideadh go deireanach chun an seinmliosta a chruthú nó a chur in eagar a athdhéanamh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+   "Scrios Seinmliosta"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
    "Bain seinmliosta as an gcóras comhad."
    )
@@ -7974,15 +8214,143 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
    "Cuir le Meascthóir"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
+   "Cuir an rian fuaime seo le sliotán srutha fuaime atá ar fáil.\nMura bhfuil aon sliotáin ar fáil faoi láthair, déanfar neamhaird de."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
+   "Cuir le Meascthóir agus Seinn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
+   "Cuir an rian fuaime seo le sliotán srutha fuaime atá ar fáil agus seinn é.\nMura bhfuil aon sliotáin ar fáil faoi láthair, déanfar neamhaird de."
+   )
 
 /* Netplay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
+   "Óstach"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
+   "Ceangail le hÓstach Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
+   "Cuir isteach seoladh freastalaí netplay agus ceangail i mód cliaint."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
+   "Dícheangail ó Óstach Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
+   "Dícheangail nasc líonra gníomhach."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
+   "Scagairí Stocaireachta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "Seomraí Incheangailte Amháin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   "Croíthe Suiteáilte Amháin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
+   "Seomraí Pasfhocail"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
+   "Athnuaigh Liosta Óstach Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
+   "Scanáil le haghaidh óstaigh netplay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   "Athnuaigh Liosta LAN Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   "Scanáil le haghaidh óstaigh netplay ar LAN."
+   )
 
 /* Netplay > Host */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
+   "Tosaigh Óstach Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
+   "Tosaigh netplay i mód óstach (freastalaí)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
+   "Stop Óstach Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   "Ciceáil an Cliant"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Cliant a dhíbirt as an seomra atá á óstáil agat faoi láthair."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   "Cliant Cosc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "Cosc ar chliant as do sheomra atá á óstáil agat faoi láthair."
+   )
 
 /* Import Content */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
+   "Eolaire Scanadh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
+   "Scanann sé eolaire le haghaidh ábhar a mheaitseálann an bunachar sonraí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
+   "<Scan an Eolaire seo>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SCAN_THIS_DIRECTORY,
+   "Roghnaigh é seo chun an t-eolaire reatha a scanadh le haghaidh ábhair."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_FILE,
+   "Scanadh Comhad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_FILE,
+   "Scanann sé comhad le haghaidh ábhar a mheaitseálann an bunachar sonraí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+   "Scanadh Láimhe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
+   "Scanadh inchumraithe bunaithe ar ainmneacha comhad ábhair. Ní gá go mbeadh an t-ábhar ag teacht leis an mbunachar sonraí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
+   "Scanadh"
+   )
 
 /* Import Content > Scan File */
 
@@ -7990,9 +8358,73 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
    "Cuir le Meascthóir"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
+   "Cuir le Meascthóir agus Seinn"
+   )
 
 /* Import Content > Manual Scan */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
+   "Eolaire Ábhair"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
+   "Roghnaigh eolaire le scanadh le haghaidh ábhair."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "Ainm an Chórais"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+   "Sonraigh 'ainm córais' chun ábhar scanta a cheangal leis. Úsáidtear é chun ainm a thabhairt don chomhad seinmliosta a ghintear agus chun mionsamhlacha seinmliosta a aithint."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "Ainm an Chórais Saincheaptha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   "Sonraigh 'ainm córais' de láimh le haghaidh ábhar scanta. Ní úsáidtear é ach amháin nuair a shocraítear 'Ainm an Chórais' go '<Saincheaptha>'."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+   "Roghnaigh croí réamhshocraithe le húsáid agus ábhar scanta á sheoladh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
+   "Síneadh Comhaid"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
+   "Liosta de chineálacha comhad le cur san áireamh sa scanadh, scartha le spásanna. Más folamh é, áirítear gach cineál comhaid, nó má shonraítear croí, áirítear gach comhad a dtacaítear leis an gcroí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
+   "Scanadh go hathchúrsach"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
+   "Nuair a bheidh sé cumasaithe, cuirfear gach fo-eolaire den 'Eolaire Ábhair' sonraithe san áireamh sa scanadh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+   "Scanáil Taobh Istigh de na Cartlanna"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+   "Nuair a bheidh sé cumasaithe, déanfar cuardach ar chomhaid chartlainne (.zip, .7z, srl.) le haghaidh ábhar bailí/tacaithe. D’fhéadfadh tionchar suntasach a bheith aige seo ar fheidhmíocht an scanadh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
+   "Comhad DAT Arcade"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
+   "Roghnaigh comhad DAT XML Logiqx nó MAME List chun ainmniú uathoibríoch ábhar stuara scanta (MAME, FinalBurn Neo, srl.) a chumasú."
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
    "Nuair a bheidh sé cumasaithe, scriosfar aon seinmliosta atá ann cheana sula ndéanfar scanadh ar an ábhar. Nuair a bheidh sé díchumasaithe, coimeádtar iontrálacha seinmliosta atá ann cheana agus ní chuirfear leis ach an t-ábhar atá in easnamh ón seinmliosta faoi láthair."
@@ -8248,6 +8680,18 @@ MSG_HASH(
    "Stop Taifeadadh/Athsheinm"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+   "Stop a Thaifeadadh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
+   "Stop an taifeadadh físe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
+   "Tosaigh ag Sruthú"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
    "Tosaigh ag sruthú chuig an gceann scríbe roghnaithe."
    )
@@ -8473,15 +8917,243 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
    "Scrios an comhad athmhapála a bheidh i bhfeidhm ar an ábhar go léir a lódáladh ón eolaire céanna leis an gcomhad reatha."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
+   "Sábháil Comhad Athmhapála Cluiche"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
+   "Sábháil comhad athmhapála a bhainfidh leis an ábhar reatha amháin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
+   "Bain Comhad Athmhapála Cluiche"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
+   "Scrios an comhad athmhapála a bhainfidh leis an ábhar reatha amháin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
+   "Athshocraigh Mapáil Ionchuir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
+   "Socraigh na roghanna athmhapála ionchuir go léir go luachanna réamhshocraithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "Nuashonraigh Comhad Athmhapála Ionchuir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "Scríobh an comhad athmhapála gníomhach leis na roghanna athmhapála ionchuir reatha."
+   )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE,
+   "Athmhapáil Comhad"
+   )
 
 /* Quick Menu > Cheats */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
+   "Tosaigh nó Lean ar aghaidh le Cuardach Mealltóireachta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
+   "Scanadh cuimhne chun cleasanna nua a chruthú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
+   "Luchtaigh Comhad Cheat (Athsholáthar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
+   "Luchtaigh comhad aicearra agus cuir aicearraí atá ann cheana ina áit."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
+   "Luchtaigh Comhad Aicearra (Iarchláir)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
+   "Luchtaigh comhad aicearra agus cuir le aicearraí atá ann cheana é."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
+   "Athlódáil Aicearraí Sainiúla Cluiche"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
+   "Sábháil Comhad Aicearra Mar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
+   "Sábháil aicearraí reatha mar chomhad aicearra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
+   "Cuir Aicearra Nua leis an mBarr"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
+   "Cuir Aicearra Nua leis an mBun"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
+   "Scrios Gach Aicearraí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+   "Cuir Aicearraí i bhFeidhm go Hathoibríoch le linn Luchtaithe Cluiche"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
+   "Cuir aicearraí i bhfeidhm go huathoibríoch nuair a lódálann an cluiche."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+   "Cuir i bhFeidhm Tar éis Scoránaigh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+   "Cuir aicearra díreach tar éis scoránaigh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
+   "Cuir Athruithe i bhFeidhm"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+   "Tiocfaidh athruithe ar cheats i bhfeidhm láithreach."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT,
+   "Aicearra"
+   )
 
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
+   "Tosaigh nó Atosaigh Cuardach Aicearra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
+   "Brúigh Clé nó Deas chun méid an ghiotáin a athrú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_BIG_ENDIAN,
+   "Endian Mór"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
+   "Endian Mór: 258 = 0x0102\nEndian Beag: 258 = 0x0201"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
+   "Cuardaigh Cuimhne le haghaidh Luachanna"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
+   "Brúigh Clé nó Deas chun an luach a athrú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
+   "Cothrom le %u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LT,
+   "Cuardaigh Cuimhne le haghaidh Luachanna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL,
+   "Níos lú ná roimhe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LTE,
+   "Cuardaigh Cuimhne le haghaidh Luachanna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL,
+   "Níos lú ná nó cothrom le Roimhe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GT,
+   "Cuardaigh Cuimhne le haghaidh Luachanna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL,
+   "Níos Mó Ná Roimhe Seo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GTE,
+   "Cuardaigh Cuimhne le haghaidh Luachanna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
+   "Níos mó ná nó Cothrom le Roimhe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQ,
+   "Cuardaigh Cuimhne le haghaidh Luachanna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
+   "Cothrom le Roimhe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
+   "Cuardaigh Cuimhne le haghaidh Luachanna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL,
+   "Ní Cothrom le Roimhe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
+   "Cuardaigh Cuimhne le haghaidh Luachanna"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
+   "Brúigh Clé nó Deas chun an luach a athrú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
+   "Cothrom le Roimh +%u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
+   "Cuardaigh Cuimhne le haghaidh Luachanna"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
+   "Brúigh Clé nó Deas chun an luach a athrú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
+   "Cothrom le Roimh -%u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+   "Cuir na %u Meaitseálacha le do Liosta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
+   "Scrios Meaitseáil #"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
+   "Cruthaigh Meaitseáil Cód #"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
+   "Seoladh Meaitseála: %08X Masc: %02X"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Replace) */
 
@@ -8701,6 +9373,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
    "Réamhshocrú a Chur Roimh"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
+   "Cuir Athruithe i bhFeidhm"
+   )
 
 /* Quick Menu > Shaders > Save */
 
@@ -8715,6 +9391,18 @@ MSG_HASH(
 
 /* Quick Menu > Overrides */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
+   "Sábháil an chumraíocht reatha mar chomhad sáraithe nua."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Sábháil Croí-Sháruithe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Sábháil comhad cumraíochta sáraithe a bheidh i bhfeidhm ar gach ábhar a luchtófar leis an gcroílár seo. Beidh tosaíocht aige seo thar an bpríomhchumraíocht."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "Bain Sáruithe Croí"
@@ -8928,12 +9616,196 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_CORE,
    "Gan Croí"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SEARCH,
+   "Cuardaigh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
+   "Mionsamhlacha rothlacha"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Roghnaigh randamach"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
+   "Ar ais"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
+   "Ceart go leor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
+   "Eolaire na dTuismitheoirí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_PARENT_DIRECTORY,
+   "Téigh ar ais chuig an eolaire tuismitheora."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
+   "Eolaire Gan Aimsiú"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ITEMS,
+   "Gan aon earraí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SELECT_FILE,
+   "Roghnaigh Comhad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_90_DEG,
+   "90 céim"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_180_DEG,
+   "180 céim"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_270_DEG,
+   "270 céim"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,
+   "90 céim"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
+   "180 céim"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
+   "270 céim"
+   )
 
 /* Settings Options */
 
+MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
+   MSG_UNKNOWN_COMPILER,
+   "Tiomsaitheoir anaithnid"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
+   "Comhroinn"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_XOR,
+   "Greim"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
+   "Vótaigh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
+   "Comhroinnt Ionchuir Analógach"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
+   "Uasmhéid"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
+   "Meán"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   "Dada"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
+   "Gan aon rogha"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE,
+   "Preab ar Chlé/Ar Dheis"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP,
+   "Scrollaigh ar Chlé"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
+   "Mód Íomhá"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
+   "Mód Urlabhra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
+   "Mód Scéalaí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
+   "Stair agus Rogha na Rudaí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
+   "Gach Seinmliosta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+   "AS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
+   "Stair agus Rogha na Rudaí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
+   "I gcónaí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER,
+   "Riamh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE,
+   "In aghaidh an Chroí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
+   "Comhiomlán"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
+   "Luchtaithe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
+   "Ag luchtú"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
+   "Ag díluchtú"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
+   "Gan foinse"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
+   "<Úsáid an Eolaire seo>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY,
+   "Roghnaigh é seo chun é seo a shocrú mar an eolaire."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+   "<Réamhshocrú>"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
    "RetroPad le Analógach"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NONE,
+   "Dada"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN,
@@ -9044,6 +9916,10 @@ MSG_HASH(
    "1-Giotán, Uasluach = 0x01"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   "Dada"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
    "Ealaín Bosca"
    )
@@ -9056,12 +9932,28 @@ MSG_HASH(
    "Scáileán Teidil"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OFF,
+   "AS"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLED,
    "Cumasaithe"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT,
    "Ábhar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
+   "Luch 2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
+   "Luch 3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4,
+   "Luch 4"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5,
@@ -9270,12 +10162,168 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    "Téama Dathanna"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
+   "Roghnaigh téama dathanna difriúil. Má roghnaíonn tú 'Saincheaptha', is féidir comhaid réamhshocraithe téama roghchláir a úsáid."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+   "Réamhshocrú Téama Saincheaptha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
+   "Roghnaigh réamhshocrú téama roghchláir ón mBrabhsálaí Comhad."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "Trédhearcacht"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   "Cumasaigh taispeáint ábhair sa chúlra agus an Roghchlár Tapa gníomhach. D’fhéadfadh sé go n-athródh díchumasú trédhearcachta dathanna an téama."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
+   "Éifeachtaí Scáth"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SHADOWS,
+   "Cumasaigh scáthanna titime le haghaidh téacs roghchláir, teorainneacha agus mionsamhlacha. Tá tionchar measartha aige ar fheidhmíocht."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
+   "Beochan Cúlra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT,
+   "Cumasaigh éifeacht beochana cáithníní sa chúlra. Tá tionchar suntasach aige ar fheidhmíocht."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
+   "Luas Beochana Cúlra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
+   "Coigeartaigh luas éifeachtaí beochana cáithníní cúlra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Beochan Cúlra Sábhálaí Scáileáin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Taispeáin éifeacht beochana cáithníní sa chúlra agus an spárálaíscáileáin roghchláir gníomhach."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
+   "Taispeáin Mionsamhlacha Seinmliosta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+   "Cumasaigh taispeáint mionsamhlacha inlíne atá laghdaithe agus seinmliostaí á bhféachaint. Is féidir iad a athrú le RetroPad Select. Nuair a bhíonn siad díchumasaithe, is féidir mionsamhlacha a athrú go lánscáileáin fós le RetroPad Start."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
+   "Mionsamhail Barr"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   "Cineál mionsamhail le taispeáint ag barr ar dheis seinmliostaí. Is féidir an cineál mionsamhail seo a athrú trí bhrú ar RetroPad Y."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
+   "Mionsamhail Bun"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
+   "Cineál mionsamhail le taispeáint ag bun ar dheis seinmliostaí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
+   "Malartaigh Mionsamhlacha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
+   "Malartaíonn sé suíomhanna taispeána 'Mionsamhail Barr' agus 'Mionsamhail Bun'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+   "Modh Laghdaithe Mionsamhail"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+   "Modh athshamplála a úsáidtear agus mionsamhlacha móra á gcrapadh chun go n-oirfidh siad don taispeáint."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   "Moill Mionsamhail (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   "Cuireann sé moill ama i bhfeidhm idir iontráil seinmliosta a roghnú agus a mionsamhlacha gaolmhara a luchtú. Má shocraítear é seo go luach 256 ms ar a laghad, is féidir scrollú tapa gan mhoill a dhéanamh fiú ar na gléasanna is moille."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
+   "Tacaíocht ASCII Leathnaithe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
+   "Cumasaigh taispeáint carachtair ASCII neamhchaighdeánacha. Riachtanach le haghaidh comhoiriúnachta le teangacha áirithe Iartharacha nach Béarla iad. Tá tionchar measartha aige ar fheidhmíocht."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
+   "Deilbhíní Athraigh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
+   "Bain úsáid as deilbhíní in ionad téacs AR/AS chun iontrálacha socruithe roghchláir 'lasc scoránaigh' a léiriú."
+   )
 
 /* RGUI: Settings Options */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
+   "An chomharsa is gaire (Tapa)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
+   "Délíneach"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
+   "Sinc/Lanczos3 (Mall)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   "Dada"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+   "Uathoibríoch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+   "16:9 (Láraithe)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+   "16:10 (Láraithe)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
+   "21:9 (Láraithe)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
    "5:3 (Láraithe)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
+   "Uathoibríoch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+   "AS"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
@@ -9402,6 +10450,10 @@ MSG_HASH(
    "Solas Liath"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
+   "AS"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
    "Sneachta (Éadrom)"
    )
@@ -9420,6 +10472,10 @@ MSG_HASH(
 
 /* XMB: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+   "Mionsamhail Thánaisteach"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    "Cineál mionsamhail le taispeáint ar chlé."
@@ -9449,6 +10505,18 @@ MSG_HASH(
    "Cumasaigh beochan cothrománach don roghchlár. Beidh tionchar aige seo ar fheidhmíocht."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
+   "Deilbhíní Athraigh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
+   "Bain úsáid as deilbhíní in ionad téacs AR/AS chun iontrálacha socruithe roghchláir 'lasc scoránaigh' a léiriú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
+   "Éifeachtaí Scáth"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    "Téama Dathanna"
    )
@@ -9462,6 +10530,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
    "Úll Glas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
+   "Dorcha"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT,
+   "Solas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE,
+   "Gorm na Maidine"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
@@ -9627,6 +10707,10 @@ MSG_HASH(
    "Déanfar seinmliostaí a athshórtáil in ord aibítre tar éis an chomhpháirt mhonaróra a bhaint dá n-ainmneacha."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "Mionsamhail Thánaisteach"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
    "Cuir mionsamhail eile in ionad phainéal meiteashonraí an ábhair."
    )
@@ -9657,6 +10741,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
    "Leithead malartach do dheighilteoirí ceanntásca agus buntásca."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
+   "Dada"
    )
 
 MSG_HASH(
@@ -9720,16 +10808,144 @@ MSG_HASH(
    "Taispeáin deilbhíní ar chlé na n-iontrálacha roghchláir."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_SWITCH_ICONS,
+   "Deilbhíní Athraigh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
+   "Bain úsáid as deilbhíní in ionad téacs AR/AS chun iontrálacha socruithe roghchláir 'lasc scoránaigh' a léiriú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "Deilbhíní Seinmliosta (Atosú ag teastáil)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "Taispeáin deilbhíní córas-shonracha sna seinmliostaí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+   "Leagan Amach Tírdhreacha a Uasmhéadú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+   "Coigeartaigh leagan amach an roghchláir go huathoibríoch chun go n-oirfidh sé níos fearr don scáileán agus treoshuíomhanna taispeána tírdhreacha in úsáid."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
+   "Taispeáin Barra Nascleanúna"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
+   "Taispeáin aicearraí buana nascleanúna roghchláir ar an scáileán. Cumasaíonn sé aistriú tapa idir catagóirí roghchláir. Molta do ghléasanna tadhaill."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+   "Rothlaigh an Barra Nascleanúna go huathoibríoch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+   "Bog an barra nascleanúna go huathoibríoch go dtí taobh na láimhe deise den scáileán agus treoshuíomhanna taispeána tírdhreacha in úsáid."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
    "Téama Dathanna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   "Beochan Trasdula"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   "Cumasaigh éifeachtaí beochana réidh agus tú ag nascleanúint idir leibhéil éagsúla den roghchlár."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+   "Amharc Mionsamhail Portráide"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+   "Sonraigh mód radhairc mionsamhlacha seinmliosta agus treoshuíomhanna taispeána portráide in úsáid."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+   "Radharc Mionsamhail Tírdhreacha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+   "Sonraigh mód radhairc mionsamhlacha seinmliosta agus treoshuíomhanna taispeána tírdhreacha in úsáid."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+   "Taispeáin Mionsamhail Thánaisteach i Radharcanna Liosta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+   "Taispeántar mionsamhail thánaisteach nuair a úsáidtear modhanna radhairc mionsamhail seinmliosta de chineál 'Liosta'. Ní bhaineann an socrú seo ach amháin nuair a bhíonn leithead fisiceach leordhóthanach ar an scáileán chun dhá mhionsamhail a thaispeáint."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
    "Cúlraí Mionsamhlacha"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
+   "Cumasaíonn sé líonadh spáis neamhúsáidte in íomhánna mionsamhlacha le cúlra soladach. Cinntíonn sé seo méid taispeána aonfhoirmeach do na híomhánna uile, rud a fheabhsaíonn cuma an roghchláir agus mionsamhlacha ábhar measctha le toisí bunúsacha éagsúla á bhféachaint."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
+   "Mionsamhail Phríomhúil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
+   "Príomhchineál mionsamhail le ceangal le gach iontráil seinmliosta. De ghnáth feidhmíonn sé mar dheilbhín ábhair."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
+   "Mionsamhail Thánaisteach"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_MATERIALUI,
+   "Cineál cúnta mionsamhail le ceangal le gach iontráil seinmliosta. Braitheann an úsáid ar an modh radhairc mionsamhail seinmliosta reatha."
+   )
 
 /* MaterialUI: Settings Options */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
+   "Gorm"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY,
+   "Gorm Liath"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE,
+   "Gorm Dorcha"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN,
+   "Glas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD,
+   "Sciath"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED,
+   "Dearg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW,
+   "Buí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK,
+   "Material UI Dorcha"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK,
+   "Dorchadas Ózóin"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK,
    "Gruvbox Dorcha"
@@ -9737,6 +10953,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
    "Solarized Dorcha"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE,
+   "Gorm Gleoite"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
+   "Cian Gleoite"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN,
+   "Glas Gleoite"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_ORANGE,
+   "Oráiste Gleoite"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PINK,
+   "Bándearg gleoite"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PURPLE,
+   "Corcra gleoite"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED,
+   "Dearg Gleoite"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_VIRTUAL_BOY,
+   "Buachaill Fíorúil"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_HACKING_THE_KERNEL,
@@ -9749,6 +10997,66 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
    "Solas Liath"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
+   "Uathoibríoch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE,
+   "Céimnigh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE,
+   "Sleamhnán"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
+   "AS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
+   "AS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL,
+   "Liosta (Beag)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM,
+   "Liosta (Meánach)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON,
+   "Deilbhín Dúbailte"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
+   "AS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL,
+   "Liosta (Beag)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM,
+   "Liosta (Meánach)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE,
+   "Liosta (Mór)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DESKTOP,
+   "Deasc"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
+   "AS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
+   "Eisiamh Radharcanna Mionsamhail"
    )
 
 /* Qt (Desktop Menu) */
@@ -9800,6 +11108,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_SYSTEM_DEFAULT,
    "<Réamhshocrú an Chórais>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
+   "Dorcha"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
@@ -9880,6 +11192,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
    "Lógó"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
+   "Gach Seinmliosta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE,
@@ -9994,12 +11310,28 @@ MSG_HASH(
    "Zúmáil"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
+   "Scrios Seinmliosta"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
    "Croí:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_REMOVE,
    "Bain"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_APPLY,
+   "Cuir isteach"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHADER_ADD_PASS,
+   "Cuir Pas leis"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHADER_CLEAR_ALL_PASSES,
+   "Glan Gach Pas"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
@@ -10185,6 +11517,10 @@ MSG_HASH(
    "Socruithe Aicearra"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
+   "Tosaigh nó Lean ar aghaidh le Cuardach Mealltóireachta"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
    "Seinn i Seinnteoir Meán"
    )
@@ -10213,19 +11549,215 @@ MSG_HASH(
    "Úsáideoir"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Uasta Íomhánna Swapchain"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Insíonn sé don tiománaí físe modh maolánaithe sonraithe a úsáid go sainráite."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   "Uasmhéid íomhánna swapchain. Is féidir leis seo a rá leis an tiománaí físe modh maolánaithe físe ar leith a úsáid.\nMaolánú aonair - 1\nMaolánú dúbailte - 2\nMaolánú triarach - 3\nIs féidir tionchar mór a bheith ag socrú an mhodha maolánaithe cheart ar an moill."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+   "Slabhraí Malartaithe Infheithiclí"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
    "Sioncrónaigh an LAP agus an GPU go crua. Laghdaíonn sé moill ar chostas feidhmíochta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   "Uasmhéid Moille Fráma"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   "Insíonn sé don tiománaí físe modh maolánaithe sonraithe a úsáid go sainráite."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+   "Athraíonn sé seo an réamhshocrú scáthaithe féin atá in úsáid faoi láthair sa roghchlár."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   "Réamhshocrú Scáthóra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   "Réamhshocrú Scáthóra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
+   "Réamhshocrú Scáthóra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
+   "Brabhsáil URL"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSE_URL,
+   "Cosán URL"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Tosaigh"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
+   "Leasainm: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
+   "Ag lorg ábhar comhoiriúnach..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
+   "Níor aimsíodh aon croí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
+   "Níor aimsíodh aon seinmliostaí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
+   "Ábhar comhoiriúnach aimsithe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
+   "Theip ar an ábhar comhoiriúnach a aimsiú de réir CRC ná ainm comhaid"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_START_GONG,
+   "Tosaigh Gong"
+   )
 
 /* Unused (Only Exist in Translation Files) */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
+   "Leasainm (LAN): %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STATUS,
+   "Stádas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
+   "BGM an Chórais"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
+   "Tacaíocht Taifeadta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_PATH,
+   "Sábháil Taifeadadh Aschuir mar..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
+   "Sábháil Taifeadtaí san Eolaire Aschuir"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
+   "Féach ar an gComórtas #"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
+   "Roghnaigh an cluiche le féachaint air."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
+   "Féach ar an Liosta de %u Meaitseálacha"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,
+   "Cruthaigh Cód Ón Meaitseáil Seo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
+   "Scrios an Meaitseáil seo"
+   )
+MSG_HASH( /* FIXME Still exists in a comment about being removed */
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
+   "Teimhneacht an bhuntásc"
+   )
+MSG_HASH( /* FIXME Still exists in a comment about being removed */
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
+   "Modhnaigh teimhneacht na grafaice bunúsa."
+   )
+MSG_HASH( /* FIXME Still exists in a comment about being removed */
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
+   "Teimhneacht Ceanntásca"
+   )
+MSG_HASH( /* FIXME Still exists in a comment about being removed */
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
+   "Modhnaigh teimhneacht na grafaice ceanntásca."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
+   "Tosaigh Ábhar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
+   "Cosán Stair Ábhair"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+   "Aitheantas Taispeána Aschuir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
+   "Roghnaigh an port aschuir atá ceangailte leis an taispeáint CRT."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Cabhair"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
+   "Fabhtcheartú Fuaime/Físe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
+   "Athrú ar Fhorleagan Rialaitheora Fíorúil"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
+   "Ag Lódáil Ábhar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
+   "Ag scanadh le haghaidh ábhair"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
+   "Cad is Croi ann?"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGEMENT,
+   "Socruithe Bunachar Sonraí"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
+   "Frámaí Moill Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
+   "Scanadh líonra áitiúil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
+   "Cuardaigh agus ceangail le hóstaigh netplay ar an líonra áitiúil."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
+   "Cliant Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
+   "Breathnóir Netplay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
@@ -10246,6 +11778,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_DETAILS,
    "Bainistíonn sé socruithe sonraí na gcleasanna."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
+   "Tosaigh nó Lean ar aghaidh le Cuardach Mealltóireachta"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
@@ -10277,6 +11813,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
    "Analógach Deas Y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
+   "Tosaigh nó Lean ar aghaidh le Cuardach Mealltóireachta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
@@ -10468,7 +12008,19 @@ MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
    "Ag imirt"
    )
+MSG_HASH(
+   MSG_NETPLAY_SLOWDOWNS_CAUSED,
+   "Moillithe De dheasca"
+   )
 
+MSG_HASH(
+   MSG_AUDIO_VOLUME,
+   "Toirt fuaime"
+   )
+MSG_HASH(
+   MSG_AUTODETECT,
+   "Brath uathoibríoch"
+   )
 MSG_HASH(
    MSG_CAPABILITIES,
    "Cumais"
@@ -10666,8 +12218,196 @@ MSG_HASH(
    "bearta"
    )
 MSG_HASH(
+   MSG_CANNOT_INFER_NEW_CONFIG_PATH,
+   "Ní féidir cosán cumraíochta nua a thuar. Bain úsáid as an am reatha."
+   )
+MSG_HASH(
+   MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
+   "Ag comparáid le huimhreacha draíochta aitheanta..."
+   )
+MSG_HASH(
+   MSG_COMPILED_AGAINST_API,
+   "Tiomsaithe i gcoinne API"
+   )
+MSG_HASH(
+   MSG_CONFIG_DIRECTORY_NOT_SET,
+   "Níl an eolaire cumraíochta socraithe. Ní féidir an chumraíocht nua a shábháil."
+   )
+MSG_HASH(
+   MSG_CONNECTED_TO,
+   "Ceangailte le"
+   )
+MSG_HASH(
+   MSG_CONTENT_CRC32S_DIFFER,
+   "Tá difríocht idir ábhar CRC32anna. Ní féidir cluichí difriúla a úsáid."
+   )
+MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "Tá cluiche difriúil á rith ag an óstach."
+   )
+MSG_HASH(
+   MSG_PING_TOO_HIGH,
+   "Tá do phing ró-ard don óstach seo."
+   )
+MSG_HASH(
+   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
+   "Lódáil ábhair scipeáilte. Lódálfaidh an cur i bhfeidhm é leis féin."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Ní thacaíonn Core le stáit sábhála."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
+   "Cruthaíodh comhad roghanna lárnacha go rathúil."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
+   "Baineadh an comhad roghanna lárnacha go rathúil."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_RESET,
+   "Athshocraítear na roghanna lárnacha go léir go dtí an réamhshocrú."
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSHED,
+   "Roghanna lárnacha sábháilte chuig:"
+   )
+MSG_HASH(
+   MSG_CORE_OPTIONS_FLUSH_FAILED,
+   "Theip ar na roghanna lárnacha a shábháil chuig:"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
+   "Níorbh fhéidir aon tiománaí eile a aimsiú"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
+   "Níorbh fhéidir córas comhoiriúnach a aimsiú."
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
+   "Níorbh fhéidir rian sonraí bailí a aimsiú"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_OPEN_DATA_TRACK,
+   "Níorbh fhéidir an rian sonraí a oscailt"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_CONTENT_FILE,
+   "Níorbh fhéidir an comhad ábhair a léamh"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_MOVIE_HEADER,
+   "Níorbh fhéidir ceanntásc an scannáin a léamh."
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
+   "Níorbh fhéidir an stát a léamh ón scannán."
+   )
+MSG_HASH(
+   MSG_CRC32_CHECKSUM_MISMATCH,
+   "Neamhoiriúnacht suime seiceála CRC32 idir an comhad ábhair agus suim seiceála an ábhair shábháilte i gceanntásc an chomhaid athsheinm. Is dócha go ndíshioncrónóidh an t-athsheinm le linn athsheinm."
+   )
+MSG_HASH(
+   MSG_CUSTOM_TIMING_GIVEN,
+   "Am saincheaptha tugtha"
+   )
+MSG_HASH(
+   MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
+   "Tá dí-chomhbhrú ar siúl cheana féin."
+   )
+MSG_HASH(
+   MSG_DECOMPRESSION_FAILED,
+   "Theip ar an dí-chomhbhrú."
+   )
+MSG_HASH(
+   MSG_DETECTED_VIEWPORT_OF,
+   "Radharcphoirt braite de"
+   )
+MSG_HASH(
+   MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
+   "Ní bhfuarthas paiste ábhair bailí."
+   )
+MSG_HASH(
+   MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
+   "Dícheangail gléas ó phort bailí."
+   )
+MSG_HASH(
+   MSG_DISK_CLOSED,
+   "Tráidire diosca fíorúil dúnta."
+   )
+MSG_HASH(
+   MSG_DISK_EJECTED,
+   "Tráidire diosca fíorúil curtha amach."
+   )
+MSG_HASH(
+   MSG_DOWNLOADING,
+   "Ag íoslódáil"
+   )
+MSG_HASH(
+   MSG_INDEX_FILE,
+   "innéacs"
+   )
+MSG_HASH(
+   MSG_DOWNLOAD_FAILED,
+   "Theip ar an íoslódáil"
+   )
+MSG_HASH(
    MSG_ERROR,
    "Earráid"
+   )
+MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
+   "Éilíonn croí Libretro ábhar, ach níor cuireadh aon rud ar fáil."
+   )
+MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
+   "Éilíonn croí Libretro ábhar speisialta, ach níor cuireadh aon cheann ar fáil."
+   )
+MSG_HASH(
+   MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
+   "Ní thacaíonn Croi le VFS, agus theip ar luchtú ó chóip áitiúil"
+   )
+MSG_HASH(
+   MSG_ERROR_PARSING_ARGUMENTS,
+   "Earráid ag parsáil argóintí."
+   )
+MSG_HASH(
+   MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
+   "Earráid ag sábháil an chomhaid roghanna lárnacha."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_CORE_OPTIONS_FILE,
+   "Earráid ag scriosadh an chomhaid roghanna lárnacha."
+   )
+MSG_HASH(
+   MSG_ERROR_SAVING_REMAP_FILE,
+   "Earráid ag sábháil an chomhaid athmhapála."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_REMAP_FILE,
+   "Earráid ag baint an chomhaid athmhapála."
+   )
+MSG_HASH(
+   MSG_ERROR_SAVING_SHADER_PRESET,
+   "Earráid ag sábháil réamhshocrú scáthaithe."
+   )
+MSG_HASH(
+   MSG_EXTERNAL_APPLICATION_DIR,
+   "Eolaire Feidhmchláir Sheachtracha"
+   )
+MSG_HASH(
+   MSG_EXTRACTING,
+   "Ag eastóscadh"
+   )
+MSG_HASH(
+   MSG_EXTRACTING_FILE,
+   "Ag eastóscadh comhaid"
+   )
+MSG_HASH(
+   MSG_FAILED_SAVING_CONFIG_TO,
+   "Theip ar an chumraíocht a shábháil chuig"
    )
 MSG_HASH(
    MSG_FAILED_TO_APPLY_SHADER_PRESET,
@@ -10870,29 +12610,813 @@ MSG_HASH(
    "Stádas greim na luiche"
    )
 MSG_HASH(
+   MSG_RECORDING_TO,
+   "Ag taifeadadh chuig"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_CHEATFILE_TO,
+   "Ag atreorú comhad aicearra chuig"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_SAVEFILE_TO,
+   "Ag atreorú an chomhaid shábháilte chuig"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_SAVESTATE_TO,
+   "Ag atreorú an stáit shábhála chuig"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
+   "Sábháladh an comhad athmhapála go rathúil."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
+   "Baineadh an comhad athmhapála go rathúil."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_RESET,
+   "Athshocraítear gach rogha athmhapála ionchuir go dtí an réamhshocrú."
+   )
+MSG_HASH(
+   MSG_REMOVED_DISK_FROM_TRAY,
+   "Diosca bainte as an tráidire."
+   )
+MSG_HASH(
+   MSG_REMOVING_TEMPORARY_CONTENT_FILE,
+   "Comhad ábhair shealadaigh á bhaint"
+   )
+MSG_HASH(
    MSG_RESET,
    "Athshocraigh"
+   )
+MSG_HASH(
+   MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
+   "Ag atosú taifeadta mar gheall ar aththosú an tiománaí."
+   )
+MSG_HASH(
+   MSG_RESTORED_OLD_SAVE_STATE,
+   "Sean-stádas sábhála athchóirithe."
+   )
+MSG_HASH(
+   MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
+   "Scáthóirí: réamhshocrú scáthóra réamhshocraithe a athbhunú go"
+   )
+MSG_HASH(
+   MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
+   "Ag filleadh ar an eolaire comhad sábhála"
+   )
+MSG_HASH(
+   MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
+   "Ag filleadh ar an eolaire stáit sábhála"
+   )
+MSG_HASH(
+   MSG_REWINDING,
+   "Ag athchasadh."
+   )
+MSG_HASH(
+   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   "Cumas maoláin neamhleor."
+   )
+MSG_HASH(
+   MSG_REWIND_UNSUPPORTED,
+   "Níl athchasadh ar fáil mar níl tacaíocht stáit sábhála sraitheach ag an gcroílár seo."
+   )
+MSG_HASH(
+   MSG_REWIND_INIT,
+   "Ag tosú maolán athchasadh le méid"
+   )
+MSG_HASH(
+   MSG_REWIND_INIT_FAILED,
+   "Theip ar thosú an mhaoláin athchasála. Díchumasófar an athchasáil."
+   )
+MSG_HASH(
+   MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
+   "Úsáideann an cur i bhfeidhm fuaim snáithithe. Ní féidir athchasadh a úsáid."
+   )
+MSG_HASH(
+   MSG_REWIND_REACHED_END,
+   "Shroich deireadh an mhaoláin athchasála."
+   )
+MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Cumraíocht shábháilte chuig"
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Stádas sábháilte chuig sliotán #%d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Stádas sábháilte chuig sliotán #-1 (Uathoibríoch)."
+   )
+MSG_HASH(
+   MSG_SAVED_SUCCESSFULLY_TO,
+   "Sábháilte go rathúil chuig"
+   )
+MSG_HASH(
+   MSG_SAVING_RAM_TYPE,
+   "Cineál RAM a shábháil"
+   )
+MSG_HASH(
+   MSG_SAVING_STATE,
+   "Stát sábhála"
+   )
+MSG_HASH(
+   MSG_SCANNING,
+   "Ag scanadh"
+   )
+MSG_HASH(
+   MSG_SCANNING_OF_DIRECTORY_FINISHED,
+   "Scanadh an eolaire críochnaithe."
+   )
+MSG_HASH(
+   MSG_SENDING_COMMAND,
+   "Ordú á sheoladh"
+   )
+MSG_HASH(
+   MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
+   "Sainmhínítear roinnt paistí go sainráite, ag neamhaird a dhéanamh ar gach..."
+   )
+MSG_HASH(
+   MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
+   "Sábháileadh réamhshocrú scáthaithe go rathúil."
+   )
+MSG_HASH(
+   MSG_SLOW_MOTION,
+   "Gluaiseacht Mhall."
+   )
+MSG_HASH(
+   MSG_FAST_FORWARD,
+   "Mear-Ar Aghaidh."
+   )
+MSG_HASH(
+   MSG_SLOW_MOTION_REWIND,
+   "Athchasadh mallghluaiseachta."
+   )
+MSG_HASH(
+   MSG_SKIPPING_SRAM_LOAD,
+   "Ag scipeáil ualach SRAM."
+   )
+MSG_HASH(
+   MSG_SRAM_WILL_NOT_BE_SAVED,
+   "Ní shábhálfar SRAM."
+   )
+MSG_HASH(
+   MSG_BLOCKING_SRAM_OVERWRITE,
+   "Blocáil Forscríobh SRAM"
+   )
+MSG_HASH(
+   MSG_STARTING_MOVIE_PLAYBACK,
+   "Ag tosú athsheinm scannáin."
+   )
+MSG_HASH(
+   MSG_STARTING_MOVIE_RECORD_TO,
+   "Ag tosú taifeadadh scannáin chuig"
+   )
+MSG_HASH(
+   MSG_STATE_SIZE,
+   "Méid an stáit"
+   )
+MSG_HASH(
+   MSG_STATE_SLOT,
+   "Sliotán stáit"
+   )
+MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Sliotán athimeartha"
+   )
+MSG_HASH(
+   MSG_TAKING_SCREENSHOT,
+   "Ag glacadh scáileáin."
+   )
+MSG_HASH(
+   MSG_SCREENSHOT_SAVED,
+   "Scáileán sábháilte"
+   )
+MSG_HASH(
+   MSG_ACHIEVEMENT_UNLOCKED,
+   "Éacht Díghlasáilte"
+   )
+MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Éacht Neamhchoitianta Díghlasáilte"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_STARTED,
+   "Iarracht tosaithe ar an gclár ceannaireachta"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_FAILED,
+   "Theip ar iarracht ar chlár ceannaireachta"
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "%s curtha isteach le haghaidh %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
    MSG_UNKNOWN,
    "Anaithnid"
    )
+MSG_HASH(
+   MSG_CORE_REMAP_FILE_LOADED,
+   "Luchtaíodh comhad athmhapála croí."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "Roghanna athmhapála ionchuir sábháilte chuig:"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "Theip ar roghanna athmhapála ionchuir a shábháil chuig:"
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED,
+   "Cumasaíodh Run-Ahead. Frámaí moille bainte: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "Cumasaíodh Run-Ahead le hÁiseamh Tánaisteach. Frámaí moille bainte: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_DISABLED,
+   "Díchumasaíodh Run-Ahead."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Tá Run-Ahead díchumasaithe mar ní thacaíonn an croí seo le stáit sábhála."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
+   "Níl Run-Ahead ar fáil mar gheall nach bhfuil tacaíocht chinntitheach ag an gcroílár seo don staid sábhála."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+   "Theip ar an stát a shábháil. Tá Run-Ahead díchumasaithe."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+   "Theip ar an stát a lódáil. Tá Run-Ahead díchumasaithe."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+   "Theip ar an dara sampla a chruthú. Ní úsáidfidh Run-Ahead ach sampla amháin anois."
+   )
+MSG_HASH(
+   MSG_PREEMPT_ENABLED,
+   "Frámaí Réamhghníomhacha cumasaithe. Frámaí moille bainte: %u."
+   )
+MSG_HASH(
+   MSG_PREEMPT_DISABLED,
+   "Frámaí Réamhghníomhacha díchumasaithe."
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Tá Frámaí Réamhghníomhacha díchumasaithe mar ní thacaíonn an croí seo le stáit sábhála."
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
+   "Níl Frámaí Réamhghníomhacha ar fáil mar níl tacaíocht chinntitheach ag an gcroílár seo do staid sábhála."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_ALLOCATE,
+   "Theip ar chuimhne a leithdháileadh do Fhrámaí Réamhghníomhacha."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_SAVE_STATE,
+   "Theip ar an staid a shábháil. Tá Frámaí Réamhghníomhacha díchumasaithe."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_LOAD_STATE,
+   "Theip ar an stát a lódáil. Tá Frámaí Réamhghníomhacha díchumasaithe."
+   )
+MSG_HASH(
+   MSG_SCANNING_OF_FILE_FINISHED,
+   "Scanadh an chomhaid críochnaithe."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_SUCCESS,
+   "Cuireadh tús le cuardach meabhlaireachta go rathúil."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_FAIL,
+   "Theip ar chuardach meabhlaireachta a thosú."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   "Níl an cuardach tosaithe/tosaithe fós."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_FOUND_MATCHES,
+   "Líon na gcluichí nua = %u"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "Cuireadh %u cluichí leis."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   "Theip ar mheaitseálacha a chur leis."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   "Cód cruthaithe ón gcluiche."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   "Theip ar chód a chruthú."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "Cluiche scriosta."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
+   "Níl dóthain spáis ann. Is é 100 an líon uasta meabhlaireachta comhuaineach."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_TOP_SUCCESS,
+   "Cleas nua curtha le barr an liosta."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BOTTOM_SUCCESS,
+   "Cleas nua curtha le bun an liosta."
+   )
+MSG_HASH(
+   MSG_CHEAT_DELETE_ALL_SUCCESS,
+   "Scriosadh gach aicearra."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_BEFORE_SUCCESS,
+   "Cuireadh aicearra nua leis roimh an gceann seo."
+   )
+MSG_HASH(
+   MSG_CHEAT_ADD_AFTER_SUCCESS,
+   "Cuireadh aicearra nua leis i ndiaidh an cheann seo."
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_BEFORE_SUCCESS,
+   "Cóipeáladh an aicearra roimh an gceann seo."
+   )
+MSG_HASH(
+   MSG_CHEAT_COPY_AFTER_SUCCESS,
+   "Cóipeáladh an aicearra i ndiaidh an cheann seo."
+   )
+MSG_HASH(
+   MSG_CHEAT_DELETE_SUCCESS,
+   "Scriosadh an aicearra."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Theip ar an diosca a shocrú."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Theip ar shocrú an diosca deireanach a úsáideadh."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Theip ar cheangal leis an gcliant."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Theip ar cheangal leis an óstach."
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Óstach Netplay lán."
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Tá cosc ​​ort ón óstach seo."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Theip ar an gceannteideal a fháil ón óstach."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "Éachtaí Retro: Logáilte isteach mar \"%s\"."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
+   "Ní mór duit Mód Crua-Éachtaí a chur ar sos nó a dhíchumasú chun stáit a luchtú."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE,
+   "Ní mór duit Mód Crua-Éachtaí a chur ar sos nó a dhíchumasú chun sábhálacha srm a luchtú."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
+   "Luchtaíodh staid sábhála. Mód Crua-Éachtaí díchumasaithe don seisiún reatha."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
+   "Gníomhaíodh cleas. Mód Crua-Éachtaí díchumasaithe don seisiún reatha."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "Athraíodh Mód Crua na nGnóthachtálacha ag an óstach."
+   )
+MSG_HASH(
+   MSG_RESTORING_CORE,
+   "Croi á athchóiriú: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_COMPLETE,
+   "Athchóiriú croí críochnaithe: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_ALREADY_INSTALLED,
+   "Tá an comhad lárnach roghnaithe suiteáilte cheana féin: "
+   )
+MSG_HASH(
+   MSG_INSTALLING_CORE,
+   "Croí a shuiteáil: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_COMPLETE,
+   "Suiteáil croí críochnaithe: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_INVALID_CONTENT,
+   "Comhad croí neamhbhailí roghnaithe: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_FAILED,
+   "Theip ar chúltaca croí: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_FAILED,
+   "Theip ar athchóiriú croí: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_FAILED,
+   "Theip ar shuiteáil an chroí: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_DISABLED,
+   "Athchóiriú croí díchumasaithe - tá an croí faoi ghlas: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_DISABLED,
+   "Suiteáil croí díchumasaithe - tá an croí faoi ghlas: "
+   )
+MSG_HASH(
+   MSG_CORE_LOCK_FAILED,
+   "Theip ar an gcroílár a ghlasáil: "
+   )
+MSG_HASH(
+   MSG_CORE_UNLOCK_FAILED,
+   "Theip ar an gcroílár a dhíghlasáil: "
+   )
+MSG_HASH(
+   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+   "Theip ar an gcroí a bhaint den liosta 'Croíthe Gan Ábhar': "
+   )
+MSG_HASH(
+   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
+   "Theip ar chroílár a chur leis an liosta 'Croíthe Gan Ábhar': "
+   )
+MSG_HASH(
+   MSG_CORE_DELETE_DISABLED,
+   "Scriosadh croí díchumasaithe - tá an croí faoi ghlas: "
+   )
+MSG_HASH(
+   MSG_UNSUPPORTED_VIDEO_MODE,
+   "Mód físe gan tacaíocht"
+   )
+MSG_HASH(
+   MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   "Ní féidir scríobh chuig an eolaire croí-fhaisnéise - díchumasófar taisce croí-fhaisnéise"
+   )
+MSG_HASH(
+   MSG_FOUND_ENTRY_STATE_IN,
+   "Fuarthas stát iontrála i"
+   )
+MSG_HASH(
+   MSG_LOADING_ENTRY_STATE_FROM,
+   "Ag lódáil stát iontrála ó"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE,
+   "Theip ar dul isteach i Mód Cluiche"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   "Theip ar dhul isteach i GameMode - cinntigh go bhfuil daemon GameMode suiteáilte/ag rith"
+   )
+MSG_HASH(
+   MSG_VRR_RUNLOOP_ENABLED,
+   "Cumasaíodh sioncrónú le ráta fráma an ábhair chruinn."
+   )
+MSG_HASH(
+   MSG_VRR_RUNLOOP_DISABLED,
+   "Tá sioncrónú le ráta fráma an ábhair chruinn díchumasaithe."
+   )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Athraíodh ráta athnuachana físe go %s Hz."
+   )
 
 /* Lakka */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA,
+   "Nuashonraigh Lakka"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
+   "Ainm an tosaigh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   "Leagan Lakka"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REBOOT,
+   "Atosaigh"
+   )
 
 /* Environment Specific Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+   "Joy-Con Scoilte"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+   "Sárú Scála Giuirléidí Grafaicí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
+   "Cuir sárú fachtóra scálúcháin láimhe i bhfeidhm agus giuirléidí taispeána á dtarraingt. Ní bhaineann sé seo ach amháin nuair a bhíonn 'Scálú Giuirléidí Grafaicí go hUathoibríoch' díchumasaithe. Is féidir é seo a úsáid chun méid fógraí, táscairí agus rialuithe maisithe a mhéadú nó a laghdú go neamhspleách ar an roghchlár féin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+   "Rún Scáileáin"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Rún Scáileáin: Réamhshocrú"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_NO_DESC,
+   "Rún Scáileáin: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DESC,
+   "Taifeach Scáileáin: %dx%d - %s"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Ag cur i bhfeidhm: Réamhshocrú"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "Ag cur i bhfeidhm: %dx%d\nSTART chun athshocrú"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "Ag cur i bhfeidhm: %dx%d - %s\nTOSAIGH le hathshocrú"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "Ag athshocrú go: Réamhshocrú"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "Ag athshocrú go: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "Ag athshocrú go: %dx%d - %s"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Roghnaigh modh taispeána (Atosú ag teastáil)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHUTDOWN,
+   "Múchadh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "Cumasaigh rochtain ar chomhaid sheachtracha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "Oscail socruithe ceadanna rochtana comhad Windows"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "Oscail socruithe ceadanna Windows chun an cumas broadFileSystemAccess a chumasú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
+   "Oscail..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
+   "Méarchlár Beag"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
+   "Am Teorannú Bloc Ionchuir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
+   "Líon na milleasoicindí le fanacht chun sampla ionchuir iomlán a fháil. Bain úsáid as má bhíonn fadhbanna agat le brúigh cnaipe ag an am céanna (Android amháin)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
+   "Taispeáin 'Atosaigh'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
+   "Taispeáin an rogha 'Atosaigh'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
+   "Taispeáin 'Múchadh'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
+   "Taispeáin an rogha 'Múchadh'."
+   )
+MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Pasfhocal curtha leis"
+   )
+MSG_HASH(
+   MSG_INTERNET,
+   "Idirlíon"
+   )
+MSG_HASH(
+   MSG_INTERNET_RELAY,
+   "Idirlíon (Athsheoladh)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Idirlíon (Ní féidir ceangal leis)"
+   )
+MSG_HASH(
+   MSG_LOCAL,
+   "Áitiúil"
+   )
+MSG_HASH(
+   MSG_READ_WRITE,
+   "Stádas Stórála Inmheánaigh: Léigh/Scríobh"
+   )
+MSG_HASH(
+   MSG_READ_ONLY,
+   "Stádas Stórála Inmheánaigh: Léite Amháin"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+   "Gile an Scáileáin"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
+   "Méadaigh nó laghdaigh gile an scáileáin."
+   )
 #ifdef HAVE_LIBNX
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+   "Róchlogáil LAP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+   "Róchlogáil LAP an Switch."
+   )
 #endif
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
+   "Cinntigh staid Bluetooth."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
+   "Seirbhísí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
+   "Bainistigh seirbhísí ar leibhéal an chórais oibriúcháin."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
+   "Comhroinn fillteáin líonra tríd an bprótacal SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SSH_ENABLE,
+   "Bain úsáid as SSH chun rochtain a fháil ar an líne ordaithe go cianda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+   "Pointe Rochtana Wi-Fi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
+   "Cumasaigh nó díchumasaigh Pointe Rochtana Wi-Fi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEZONE,
+   "Crios ama"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEZONE,
+   "Roghnaigh do chrios ama chun an dáta agus an t-am a choigeartú de réir do shuíomh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TIMEZONE,
+   "Taispeánann sé liosta de na criosanna ama atá ar fáil. Tar éis crios ama a roghnú, déantar an t-am agus an dáta a choigeartú don chrios ama roghnaithe. Glactar leis go bhfuil clog an chórais/chrua-earraí socraithe go UTC."
+   )
 #ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+   "Roghanna Nintendo Switch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
+   "Bainistigh Roghanna Sainiúla Nintendo Switch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+   "Róchlogáil LAP"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
+   "Cumasaigh minicíochtaí róchlogála LAP"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+   "Tacaíocht CEC"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
+   "Cumasaigh Croitheadh ​​Láimhe CEC leis an teilifís agus í á dugáil"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
+   "Díchumasaigh Bluetooth ERTM"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
+   "Díchumasaigh Bluetooth ERTM chun péireáil roinnt gléasanna a shocrú"
+   )
 #endif
+MSG_HASH(
+   MSG_LOCALAP_SWITCHING_OFF,
+   "Ag múchadh Pointe Rochtana Wi-Fi."
+   )
+MSG_HASH(
+   MSG_WIFI_DISCONNECT_FROM,
+   "Ag dícheangal ó Wi-Fi '%s'"
+   )
+MSG_HASH(
+   MSG_WIFI_CONNECTING_TO,
+   "Ag ceangal le Wi-Fi '%s'"
+   )
+MSG_HASH(
+   MSG_WIFI_EMPTY_SSID,
+   "[Gan SSID]"
+   )
+MSG_HASH(
+   MSG_LOCALAP_ALREADY_RUNNING,
+   "Tá Pointe Rochtana Wi-Fi tosaithe cheana féin"
+   )
+MSG_HASH(
+   MSG_LOCALAP_NOT_RUNNING,
+   "Níl an Pointe Rochtana Wi-Fi ag rith"
+   )
+MSG_HASH(
+   MSG_LOCALAP_STARTING,
+   "Ag tosú Pointe Rochtana Wi-Fi le SSID=%s agus Eochairfhocail=%s"
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_CREATE,
+   "Níorbh fhéidir comhad cumraíochta Pointe Rochtana Wi-Fi a chruthú."
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_PARSE,
+   "Comhad cumraíochta mícheart - níor aimsíodh APNAME ná PASFHOCAL i %s"
+   )
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
+   "Scála Luiche"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
+   "Coigeartaigh an scála x/y do luas gunna solais Wiimote."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   "Scála Tadhaill"
+   )
 #ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
@@ -10902,10 +13426,62 @@ MSG_HASH(
 #endif
 #ifdef HAVE_QT
 #endif
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "Inrochtaineacht RetroArch ar siúl. Príomh-Roghchlár Luchtaigh an Croí."
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "stad."
+   )
 #ifdef HAVE_GAME_AI
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION,
+   "Sárú imreoir AI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
+   "Lipéad forsháraithe imreora AI"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS,
+   "AI Cluiche"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P1,
+   "Sáraigh p1"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
+   "Sáraigh imreoir 01"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P2,
+   "Sáraigh p2"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P2,
+   "Sáraigh imreoir 02"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_SHOW_DEBUG,
+   "Taispeáin Dífhabhtú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_SHOW_DEBUG,
+   "Taispeáin Dífhabhtú"
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_GAME_AI,
+   "Taispeáin 'Cluiche Intleacht Shaorga'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
+   "Taispeáin an rogha 'Cluiche AI'."
+   )
 #endif

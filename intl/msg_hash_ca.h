@@ -867,6 +867,10 @@ MSG_HASH(
    "Compatibilitat amb 7zip"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "Suport per Zstandard"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
    "Compatibilitat amb biblioteques dinàmiques"
    )
@@ -2117,6 +2121,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "Activa la pantalla completa sobre l'osca als dispositius Android i iOS"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Fes servir la memòria intermèdia pels arguments de Metal (Cal reiniciar)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Pots provar d'augmentar el rendiment si fas servir la memòria intermèdia pels arguments de Metal. Alguns nuclis necessiten tenir aquesta opció activada. Aquesta opció pot fer malbé alguns shaders, sobretot en maquinari més antic o versions del sistema operatiu anteriors."
 )
 
 /* Settings > Video > CRT SwitchRes */

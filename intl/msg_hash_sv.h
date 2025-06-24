@@ -851,6 +851,10 @@ MSG_HASH(
    "7zip-stöd"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "Stöd för Zstandard"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
    "Dynamic Library-stöd"
    )
@@ -2057,6 +2061,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "Aktivera helskärm utan hänsyn till notch på Android och iOS-enheter"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Använd Metal-argumentbuffertar (kräver omstart)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Försök att förbättra prestandan genom att använda Metal-argumentbuffertar. Vissa kärnor kan kräva detta. Detta kan göra att vissa shaders slutar fungera, särskilt på äldre hårdvara eller operativsystem."
 )
 
 /* Settings > Video > CRT SwitchRes */

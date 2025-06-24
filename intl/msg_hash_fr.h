@@ -867,6 +867,10 @@ MSG_HASH(
    "Prise en charge de 7zip "
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "Prise en charge de Zstandard"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
    "Prise en charge des bibliothèques dynamiques "
    )
@@ -2101,6 +2105,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "Activer le dépassement de l'encoche (notch) en plein écran sur les appareils Android et iOS"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Utiliser les mémoires tampon d'arguments de Metal (Redémarrage requis)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Essaye d'améliorer les performances en utilisant les mémoires tampon pour les arguments de Metal. Certains cœurs peuvent nécessiter cette option. Cela peut empêcher certains shaders de fonctionner, en particulier sur du matériel ancien ou d'anciennes versions du système d'exploitation."
 )
 
 /* Settings > Video > CRT SwitchRes */
