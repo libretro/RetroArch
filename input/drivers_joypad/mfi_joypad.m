@@ -351,14 +351,6 @@ static void mfi_joypad_autodetect_add(unsigned autoconf_pad, const char *display
     [self.engines addObject:engine];
 
     __weak MFIRumbleController *weakSelf = self;
-    engine.stoppedHandler = ^(CHHapticEngineStoppedReason stoppedReason)
-    {
-        MFIRumbleController *strongSelf = weakSelf;
-        if (!strongSelf)
-            return;
-
-        [strongSelf shutdown];
-    };
     engine.resetHandler = ^{
         MFIRumbleController *strongSelf = weakSelf;
         if (!strongSelf)
