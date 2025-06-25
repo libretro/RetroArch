@@ -2772,8 +2772,14 @@ static void video_driver_default_settings(global_t *global)
          sizeof(tmp_str)); \
    if (path_is_valid(playlist_path)) \
    { \
-      rename(playlist_path, new_file); \
-      if (!path_is_valid(new_file)) \
+      if (!filestream_copy(playlist_path, new_file)) \
+         RARCH_LOG("[Config]: Copied file \"%s\" to \"%s\".\n", playlist_path, new_file); \
+      if (path_is_valid(new_file) && !filestream_cmp(playlist_path, new_file)) \
+      { \
+         if (!filestream_delete(playlist_path)) \
+            RARCH_LOG("[Config]: Deleted file \"%s\".\n", playlist_path); \
+      } \
+      else \
          new_file[0] = '\0'; \
    } \
    if (!string_is_empty(new_file)) \
