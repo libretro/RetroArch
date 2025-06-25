@@ -34,6 +34,8 @@
 #include <compat/msvc.h>
 #endif
 
+#include <retro_miscellaneous.h>
+#include <file/file_path.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #define VFS_FRONTEND
@@ -44,7 +46,7 @@
 struct RFILE
 {
    struct retro_vfs_file_handle *hfile;
-	bool error_flag;
+   bool error_flag;
 };
 
 static retro_vfs_get_path_t filestream_get_path_cb = NULL;
@@ -434,6 +436,72 @@ int filestream_rename(const char *old_path, const char *new_path)
       return filestream_rename_cb(old_path, new_path);
 
    return retro_vfs_file_rename_impl(old_path, new_path);
+}
+
+int filestream_copy(const char *src, const char *dst)
+{
+   char buf[256] = {0};
+   int64_t n     = 0;
+   int ret       = 0;
+   char path_dst[PATH_MAX_LENGTH] = {0};
+
+   RFILE *fp_src = filestream_open(src, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   RFILE *fp_dst = filestream_open(dst, RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!fp_src || !fp_dst)
+      ret = -1;
+
+   if (ret < 0)
+      goto close;
+
+   snprintf(path_dst, sizeof(path_dst), "%s", dst);
+   path_basedir(path_dst);
+
+   if (!path_is_directory(path_dst))
+      path_mkdir(path_dst);
+
+   while ((n = filestream_read(fp_src, buf, sizeof(buf))) > 0 && ret == 0)
+   {
+      if (filestream_write(fp_dst, buf, sizeof(buf)) != n)
+         ret = -1;
+   }
+
+close:
+   if (fp_src)
+      filestream_close(fp_src);
+   if (fp_dst)
+      filestream_close(fp_dst);
+   return ret;
+}
+
+int filestream_cmp(const char *src, const char *dst)
+{
+   char buf_src[256] = {0};
+   char buf_dst[256] = {0};
+   int64_t n         = 0;
+   int ret           = 0;
+
+   RFILE *fp_src = filestream_open(src, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   RFILE *fp_dst = filestream_open(dst, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!fp_src || !fp_dst)
+      ret = -1;
+
+   if (ret < 0)
+      goto close;
+
+   while ((n = filestream_read(fp_src, buf_src, sizeof(buf_src))) > 0 && ret == 0)
+   {
+      filestream_read(fp_dst, buf_dst, sizeof(buf_dst));
+      ret = memcmp(buf_src, buf_dst, sizeof(buf_src));
+   }
+
+close:
+   if (fp_src)
+      filestream_close(fp_src);
+   if (fp_dst)
+      filestream_close(fp_dst);
+   return ret;
 }
 
 const char* filestream_get_path(RFILE *stream)
