@@ -855,6 +855,10 @@ MSG_HASH(
    "Suporte ao 7zip"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "Suporte a Zstandard"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
    "Suporte à biblioteca dinâmica"
    )
@@ -2089,6 +2093,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "Habilitar tela cheia sobre o entalhe (“notch”) em dispositivos Android"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Usar Buffers de Argumento do Metal (Reinício necessário)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Tentar melhorar o desempenho usando buffers de argumento do Metal. Alguns núcleos podem exigir isso. Isso pode causar problemas com alguns shaders, especialmente em hardware antigo ou versões antigas do sistema operacional."
 )
 
 /* Settings > Video > CRT SwitchRes */
@@ -10244,7 +10256,71 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
-   "Tamanho da fonte"
+   "Escala da Fonte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
+   "Define se o tamanho da fonte no menu deve ter sua própria escala e se ela deve ser aplicada globalmente ou com valores separados para cada parte do menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   "Valores separados"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Fator de Escala da Fonte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Dimensiona o tamanho da fonte de forma linear em todo o menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Fator de Escala da Fonte do Título"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Dimensiona o tamanho da fonte do texto do título no cabeçalho do menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Fator de Escala da Fonte da Barra Lateral Esquerda"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Dimensiona o tamanho da fonte do texto na barra lateral esquerda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Fator de Escala da Fonte dos Rótulos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Dimensiona o tamanho da fonte dos rótulos das opções do menu e das entradas da lista de reprodução. Também afeta o tamanho do texto nas caixas de ajuda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Fator de Escala da Fonte dos Subrótulos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Dimensiona o tamanho da fonte dos subrótulos das opções do menu e das entradas da lista de reprodução."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Fator de Escala da Fonte de Data e Hora"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Dimensiona o tamanho da fonte do indicador de data e hora no canto superior direito do menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Fator de Escala da Fonte do Rodapé"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Dimensiona o tamanho da fonte do texto no rodapé do menu. Também afeta o tamanho do texto na barra lateral de miniaturas à direita."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,

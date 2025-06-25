@@ -2138,6 +2138,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "Увімкнення повноекранного режиму поверх вирізу на пристроях Android та iOS"
 )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Використовувати буфери аргументів Metal (потрібен перезапуск)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Спроба покращити продуктивність за допомогою буферів аргументів Metal. Для деяких ядер це може бути необхідно. Може викликати збої в роботі шейдерів, особливо на застарілому обладнанні чи старих версіях ОС."
+)
 
 /* Settings > Video > CRT SwitchRes */
 

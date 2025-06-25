@@ -3465,6 +3465,10 @@ MSG_HASH(
    "Inaktivera höger analog i meny"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Förhindra högerspaksinmatning för menyn. Höger analogspak växlar miniatyrbilder i spellistor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
    "Skifta OK/Avbryt-knappen"
    )
@@ -3720,8 +3724,16 @@ MSG_HASH(
    "Nästa Shader"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
+   "Läser in och tillämpar nästa shader-förvalsfil i roten av katalogen 'Video Shaders'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
    "Föregående Shader"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
+   "Läser in och tillämpar föregående shader-förvalsfil i roten av katalogen 'Video Shaders'."
    )
 
 MSG_HASH(
@@ -10731,6 +10743,34 @@ MSG_HASH(
    "Typsnittsskala"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Skala teckenstorleken för etiketterna för menyalternativ och spellistposter. Påverkar även textstorleken i hjälpfönstren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Faktor för typsnittsskalning för underetiketter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Skala teckenstorleken för underetiketterna för menyalternativ och spellistposter."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Faktor för typsnittsskalning för tid och datum"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Skala teckenstorleken för tids- och datumindikatorn i det övre högra hörnet av menyn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Faktor för typsnittsskalning för menyfot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Skala teckenstorleken för texten i menyfoten. Påverkar även textstorleken i den högra miniatyrbildsfältet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Dölj sidofältet"
    )
@@ -10773,6 +10813,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
    "Skala storleken på miniatyrfältet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_PADDING_FACTOR,
+   "Utfyllnadsfaktor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_PADDING_FACTOR,
+   "Skala storleken på horisontell utfyllnad."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
