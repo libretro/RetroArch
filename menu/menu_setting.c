@@ -12098,15 +12098,23 @@ static bool setting_append_list(
                   CHEAT_TYPE_DISABLED,CHEAT_TYPE_RUN_NEXT_IF_GT,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
-            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.value, CHEAT_VALUE,
-                  setting_uint_action_left_default,
-                  setting_uint_action_right_default,
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &cheat_manager_state.working_cheat.value,
+                  MENU_ENUM_LABEL_CHEAT_VALUE,
+                  MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
                   0,
-                  &setting_get_string_representation_hex_and_uint,
-                  0,
-                  cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size),
-                  1);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 
+                  0, cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size), 1, true, true);
+            (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_hex_and_uint;
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.address,
                   CHEAT_ADDRESS,
@@ -12184,16 +12192,21 @@ static bool setting_append_list(
                   RUMBLE_TYPE_DISABLED,RUMBLE_TYPE_END_LIST-1,1);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
 
-            CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_value,
-                  CHEAT_RUMBLE_VALUE,
-                  setting_uint_action_left_default,
-                  setting_uint_action_right_default,
+            CONFIG_UINT(
+                  list, list_info,
+                  &cheat_manager_state.working_cheat.rumble_value,
+                  MENU_ENUM_LABEL_CHEAT_RUMBLE_VALUE,
+                  MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
                   0,
-                  &setting_get_string_representation_hex_and_uint,
-                  0,
-                  cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size),
-                  1);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 
+                  0, cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size), 1, true, true);
+            (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_hex_and_uint;
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
             CONFIG_UINT_CBS(cheat_manager_state.working_cheat.rumble_port, CHEAT_RUMBLE_PORT,
                   setting_uint_action_left_default,setting_uint_action_right_default,
