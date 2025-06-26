@@ -9273,7 +9273,6 @@ static bool setting_append_list_input_player_options(
     * Keep it up to date or you'll get some really obvious bugs.
     * 2 is the length of '99'; we don't need more users than that.
     */
-   static char buffer[MAX_USERS][13+2+1];
    static char group_label[MAX_USERS][NAME_MAX_LENGTH];
    unsigned i, j;
    rarch_setting_group_info_t group_info;
@@ -9288,8 +9287,6 @@ static bool setting_append_list_input_player_options(
    group_info.name                            = NULL;
    subgroup_info.name                         = NULL;
 
-   strlcat(buffer[user], "", sizeof(buffer[user]));
-
    strlcpy(group_label[user], temp_value, sizeof(group_label[user]));
 
    START_GROUP(list, list_info, &group_info, group_label[user], parent_group);
@@ -9299,7 +9296,7 @@ static bool setting_append_list_input_player_options(
    START_SUB_GROUP(
          list,
          list_info,
-         buffer[user],
+         "",
          &group_info,
          &subgroup_info,
          parent_group);
@@ -9576,15 +9573,7 @@ static bool setting_append_list_input_player_options(
             continue;
 
          name[0]          = '\0';
-
-         if (!string_is_empty(buffer[user]))
-         {
-            _len          = strlcpy(label, buffer[user], sizeof(label));
-            label[  _len] = ' ';
-            label[++_len] = '\0';
-         }
-         else
-            label[0]      = '\0';
+         label[0]         = '\0';
 
          if (
                settings->bools.input_descriptor_label_show
