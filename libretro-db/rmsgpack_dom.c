@@ -342,7 +342,7 @@ void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
    }
 }
 
-int rmsgpack_dom_write(RFILE *fd, const struct rmsgpack_dom_value *obj)
+int rmsgpack_dom_write(intfstream_t *fd, const struct rmsgpack_dom_value *obj)
 {
    unsigned i;
    int rv = 0;
@@ -403,7 +403,7 @@ static struct rmsgpack_read_callbacks dom_reader_callbacks = {
 	dom_read_array_start
 };
 
-int rmsgpack_dom_read(RFILE *fd, struct rmsgpack_dom_value *out)
+int rmsgpack_dom_read(intfstream_t *fd, struct rmsgpack_dom_value *out)
 {
    int rv;
    struct dom_reader_state s;
@@ -417,7 +417,7 @@ int rmsgpack_dom_read(RFILE *fd, struct rmsgpack_dom_value *out)
    return rv;
 }
 
-int rmsgpack_dom_read_into(RFILE *fd, ...)
+int rmsgpack_dom_read_into(intfstream_t *fd, ...)
 {
    int rv;
    va_list ap;
