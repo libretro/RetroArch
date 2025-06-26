@@ -11671,6 +11671,10 @@ MSG_HASH(
    "Roghnaigh cló príomhúil difriúil le húsáid ag an roghchlár."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Scála Cló"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
    "Sainigh an gcaithfidh méid an chló sa roghchlár a scálú féin a bheith aige, agus an gcaithfidh sé a bheith scálaithe go domhanda nó le luachanna ar leithligh do gach cuid den roghchlár."
    )
@@ -13259,7 +13263,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
-   "Sa Chluiche (Ar Sos)"
+   "Sa Chluiche (Curtha ar Shos)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
@@ -13267,7 +13271,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
-   "Sosaithe"
+   "Curtha ar Shos"
    )
 
 /* Notifications */
@@ -14254,6 +14258,50 @@ MSG_HASH(
    "Níl aon stát sábhála róscríofa go fóill."
    )
 MSG_HASH(
+   MSG_NO_STATE_HAS_BEEN_LOADED_YET,
+   "Níl aon stát lódáilte fós."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ERROR_SAVING,
+   "Earráid ag sábháil na sáruithe."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ERROR_REMOVING,
+   "Earráid ag baint sár-roghanna."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_SAVED_SUCCESSFULLY,
+   "Sábháladh na sáruithe go rathúil."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
+   "Baineadh na sáruithe go rathúil."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
+   "Díluchtaíodh na sáruithe go rathúil."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_NOT_SAVED,
+   "Níl aon rud le sábháil. Níor sábháladh na sáruithe."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "Gan sábháil. Sáraíonn sé gníomhach."
+   )
+MSG_HASH(
+   MSG_PAUSED,
+   "Curtha ar Shos."
+   )
+MSG_HASH(
+   MSG_READING_FIRST_DATA_TRACK,
+   "Ag léamh an chéad rian sonraí..."
+   )
+MSG_HASH(
+   MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
+   "Cuireadh deireadh leis an taifeadadh mar gheall ar athrú méide."
+   )
+MSG_HASH(
    MSG_RECORDING_TO,
    "Ag taifeadadh chuig"
    )
@@ -14462,8 +14510,164 @@ MSG_HASH(
    "%s curtha isteach le haghaidh %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "Rang: %d" /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "Is Fearr: %s" /* Best: [value] */
+   )
+MSG_HASH(
+   MSG_CHANGE_THUMBNAIL_TYPE,
+   "Athraigh cineál mionsamhlacha"
+   )
+MSG_HASH(
+   MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
+   "Mionsamhlacha lánscáileáin"
+   )
+MSG_HASH(
+   MSG_TOGGLE_CONTENT_METADATA,
+   "Meiteashonraí a scoránaigh"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_AVAILABLE,
+   "Níl aon mhionsonra ar fáil"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Rinneadh iarracht cheana féin gach íoslódáil mionsamhlacha a d'fhéadfaí a dhéanamh don iontráil seinmliosta seo."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_QUIT,
+   "Brúigh arís le scor..."
+   )
+MSG_HASH(
+   MSG_TO,
+   "go"
+   )
+MSG_HASH(
+   MSG_UNDID_LOAD_STATE,
+   "Stádas lódála cealaithe."
+   )
+MSG_HASH(
+   MSG_UNDOING_SAVE_STATE,
+   "Ag cealú an stáit shábhála"
+   )
+MSG_HASH(
    MSG_UNKNOWN,
    "Anaithnid"
+   )
+MSG_HASH(
+   MSG_UNPAUSED,
+   "Bainte den Shos."
+   )
+MSG_HASH(
+   MSG_UNRECOGNIZED_COMMAND,
+   "Ordú neamhaitheanta \"%s\" faighte.\n"
+   )
+MSG_HASH(
+   MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
+   "Ag úsáid ainm croí don chumraíocht nua."
+   )
+MSG_HASH(
+   MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
+   "Ag baint úsáide as croíleacán bréige libretro. Ag scipeáil an taifeadta."
+   )
+MSG_HASH(
+   MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
+   "Ceangail gléas ó phort bailí."
+   )
+MSG_HASH(
+   MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
+   "Gléas a dhínascadh ón bport"
+   )
+MSG_HASH(
+   MSG_VALUE_REBOOTING,
+   "Ag atosú..."
+   )
+MSG_HASH(
+   MSG_VALUE_SHUTTING_DOWN,
+   "Ag múchadh..."
+   )
+MSG_HASH(
+   MSG_VERSION_OF_LIBRETRO_API,
+   "Leagan de API libretro"
+   )
+MSG_HASH(
+   MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
+   "Theip ar ríomh mhéid an radhairc! Leanfar le húsáid sonraí amha. Is dócha nach n-oibreoidh sé seo i gceart..."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_EJECT,
+   "Theip ar an tráidire diosca fíorúil a dhíbirt."
+   )
+MSG_HASH(
+   MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   "Theip ar an tráidire diosca fíorúil a dhúnadh."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Ag luchtú an stáit sábhála go huathoibríoch ó"
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FAILED,
+   "Theip ar uathlódáil an stáit shábhála ó \"%s\"."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "D'éirigh le huathluchtú an stáit shábhála ó \"%s\"."
+   )
+MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT,
+   "cumraithe sa phort"
+   )
+MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   "%s cumraithe i bport %u"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT,
+   "dícheangailte ó phort"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   "%s dícheangailte ó phort %u"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED,
+   "gan chumrú"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_NR,
+   "%s (%u/%u) gan chumrú"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
+   "gan chumrú, ag baint úsáide as rogha eile"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   "%s (%u/%u) gan chumrú, ag baint úsáide as rogha eile"
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_SCAN_COMPLETE,
+   "Scanadh Bluetooth críochnaithe."
+   )
+MSG_HASH(
+   MSG_BLUETOOTH_PAIRING_REMOVED,
+   "Baineadh an péireáil. Atosaigh RetroArch le ceangal/péireáil arís."
+   )
+MSG_HASH(
+   MSG_WIFI_SCAN_COMPLETE,
+   "Scanadh Wi-Fi críochnaithe."
+   )
+MSG_HASH(
+   MSG_SCANNING_BLUETOOTH_DEVICES,
+   "Ag scanadh gléasanna bluetooth..."
+   )
+MSG_HASH(
+   MSG_SCANNING_WIRELESS_NETWORKS,
+   "Ag scanadh líonraí gan sreang..."
    )
 MSG_HASH(
    MSG_ENABLING_WIRELESS,
@@ -15683,9 +15887,53 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
    "Dath Cló Glas"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   "Coigeartaigh dath glas cló bun an scáileáin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   "Dath Cló Gorm"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
+   "Coigeartaigh dath gorm cló bun an scáileáin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   "Teimhneacht Dath Cló"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
+   "Coigeartaigh teimhneacht cló bun an scáileáin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
+   "Scála Cló"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
+   "Coigeartaigh scála cló bun an scáileáin."
+   )
 #endif
 #ifdef HAVE_QT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+   "Scanadh Críochnaithe.<br><br>\nChun go ndéanfar an t-ábhar a scanadh i gceart, ní mór duit:\n<ul><li>croílár comhoiriúnach a bheith íoslódáilte agat cheana féin</li>\n<li>\"Comhaid Faisnéise Lárnacha\" a bheith nuashonraithe tríd an Nuashonraitheoir Ar Líne</li>\n<li>\"Bunachair Shonraí\" a bheith nuashonraithe tríd an Nuashonraitheoir Ar Líne</li>\n<li>RetroArch a atosú má rinneadh aon cheann de na rudaí thuas díreach</li></ul>\nAr deireadh, ní mór don ábhar a bheith ag teacht le bunachair shonraí atá ann cheana féin ó <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">anseo</a>. Mura bhfuil sé ag obair fós, smaoinigh ar <a href=\"https://www.github.com/libretro/RetroArch/issues\">tuairisc fabht a chur isteach</a>."
+   )
 #endif
+MSG_HASH(
+   MSG_IOS_TOUCH_MOUSE_ENABLED,
+   "Tá an luch tadhaill cumasaithe"
+   )
+MSG_HASH(
+   MSG_IOS_TOUCH_MOUSE_DISABLED,
+   "Tá an luch tadhaill díchumasaithe"
+   )
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "Éilíonn micreafón sdl2 tiománaí fuaime sdl2"
+   )
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,
    "Inrochtaineacht RetroArch ar siúl. Príomh-Roghchlár Luchtaigh an Croí."
