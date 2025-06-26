@@ -431,8 +431,10 @@ size_t fill_pathname_parent_dir_name(char *s,
  * - Can call strlcpy if (@out_dir != @in_dir)
  * - Calls strlen if (@out_dir == @in_dir)
  * - Calls path_parent_dir()
+ *
+ * @return Length of the string copied into @s
  **/
-void fill_pathname_parent_dir(char *s,
+size_t fill_pathname_parent_dir(char *s,
       const char *in_dir, size_t len);
 
 /**

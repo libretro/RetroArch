@@ -993,7 +993,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
             s[  _len] = ' ';
             s[++_len] = '\0';
             if ((runtime_last_played_human(runtime_log, s + _len, len - _len - 2)) == 0)
-               strlcat(s + _len,
+               strlcpy(s + _len,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER),
                      len - _len - 2);

@@ -1559,6 +1559,7 @@ int generic_action_ok_displaylist_push(
 #endif
          }
 
+         /* TODO/FIXME - do we need the recursive calls here? */
          fill_pathname_parent_dir(parent_dir,
                tmp, sizeof(parent_dir));
          fill_pathname_parent_dir(parent_dir,
@@ -5063,16 +5064,18 @@ finish:
             STRLEN_CONST(FILE_PATH_INDEX_DIRS_URL)
             ))
    {
+      size_t _len;
       char parent_dir_encoded[DIR_MAX_LENGTH];
       file_transfer_t *transf     = (file_transfer_t*)malloc(sizeof(*transf));
       parent_dir_encoded[0]       = '\0';
 
       transf->enum_idx            = MSG_UNKNOWN;
 
-      fill_pathname_parent_dir(transf->path,
+      _len = fill_pathname_parent_dir(transf->path,
             state->path, sizeof(transf->path));
-      strlcat(transf->path, FILE_PATH_INDEX_DIRS_URL,
-            sizeof(transf->path));
+      strlcpy(transf->path       + _len,
+            FILE_PATH_INDEX_DIRS_URL,
+            sizeof(transf->path) - _len);
 
       net_http_urlencode_full(parent_dir_encoded, transf->path,
             sizeof(parent_dir_encoded));

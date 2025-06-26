@@ -241,7 +241,7 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_BREAK,         "Break"},
    {RETROK_MENU,          "Menu"},
    {RETROK_POWER,         "Power"},
-   {RETROK_EURO,          {-30, -126, -84, 0}}, /* "�" */
+   {RETROK_EURO,          {-30, -126, -84, 0}}, /* " " */
    {RETROK_UNDO,          "Undo"},
    {RETROK_OEM_102,       "OEM-102"},
 
@@ -4007,21 +4007,22 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
        && (search->size > 0)
        && s)
    {
-      size_t current_len = strlen_size(s, len);
+      size_t curr_len = strlen_size(s, len);
       size_t i;
 
       /* If buffer is already 'full', nothing
        * further can be added */
-      if (current_len >= len)
+      if (curr_len >= len)
          return;
 
-      s   += current_len;
-      len -= current_len;
+      s           += curr_len;
+      len         -= curr_len;
+      curr_len     = 0;
 
       for (i = 0; i < search->size; i++)
       {
-         strlcat(s, " > ", len);
-         strlcat(s, search->terms[i], len);
+         curr_len += strlcpy(s + curr_len, " > ", len - curr_len);
+         curr_len += strlcpy(s + curr_len, search->terms[i], len - curr_len);
       }
    }
 }

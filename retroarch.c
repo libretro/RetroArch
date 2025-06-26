@@ -4664,18 +4664,14 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_MENU_SAVE_AS_CONFIG:
          {
-            char as_path[PATH_MAX_LENGTH];
             char conf_path[PATH_MAX_LENGTH];
-
-            snprintf(as_path, sizeof(as_path), "%s", (char *)data);
-
-            /* Prepend '.cfg' extension if missing */
-            if (!string_ends_with(as_path, FILE_PATH_CONFIG_EXTENSION))
-               strlcat(as_path, FILE_PATH_CONFIG_EXTENSION, sizeof(as_path));
-
-            fill_pathname_join(conf_path,
+            size_t _len = fill_pathname_join(conf_path,
                   settings->paths.directory_menu_config,
-                  as_path, sizeof(conf_path));
+                  (char*)data, sizeof(conf_path));
+
+            /* Append '.cfg' extension if missing */
+            if (!string_ends_with(conf_path, FILE_PATH_CONFIG_EXTENSION))
+               strlcpy(conf_path + _len, FILE_PATH_CONFIG_EXTENSION, sizeof(conf_path) - _len);
 
             if (!string_is_empty(conf_path))
                path_set(RARCH_PATH_CONFIG, conf_path);
