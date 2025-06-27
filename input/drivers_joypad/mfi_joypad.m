@@ -403,11 +403,13 @@ static void mfi_joypad_autodetect_add(unsigned autoconf_pad, const char *display
 {
     if (@available(iOS 14, tvOS 14, macOS 11, *))
     {
-        if (_weakPlayer) [_weakPlayer stopAtTime:0 error:nil];
-        _weakPlayer   = nil;
-        if (_strongPlayer) [_strongPlayer stopAtTime:0 error:nil];
-        _strongPlayer = nil;
+        for (CHHapticEngine *eng in self.engines)
+            eng.resetHandler = ^{};
         [self.engines removeAllObjects];
+        if (_weakPlayer) [_weakPlayer cancelAndReturnError:nil];
+        _weakPlayer   = nil;
+        if (_strongPlayer) [_strongPlayer cancelAndReturnError:nil];
+        _strongPlayer = nil;
     }
 }
 
