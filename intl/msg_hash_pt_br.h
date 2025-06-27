@@ -505,7 +505,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "Suporte a Salvar Estado (Save State)"
+   "Suporte a Ponto de Save"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
@@ -513,15 +513,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
-   "Básico (Salva/Carrega)"
+   "Básico (Salvar/Carregar)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   "Serialização (salva/carrega e rebobina)"
+   "Serializado (Salvar/Carregar, Rebobinar)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   "Determinístico (Salva/Carrega, Rebobina, Execução antecipada, Netplay)"
+   "Determinístico (Salvar/Carregar, Retroceder, Antecipação de Frames, Netplay)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
@@ -550,6 +550,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Bloquear núcleo instalado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   "Impede a modificação do núcleo atualmente instalado. Pode ser usado para evitar atualizações indesejadas quando o conteúdo requer uma versão específica do núcleo (por exemplo, conjuntos de ROMs de Arcade) ou quando o formato de ponto de save do próprio núcleo é alterado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -1270,7 +1274,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
-   "Sincronização: Salvas/Estados"
+   "Sincronização: Pontos/Saves"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
@@ -1286,7 +1290,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
-   "Quando ativado, salvar/estados serão sincronizados para a nuvem."
+   "Quando ativado, pontos/saves serão sincronizados na nuvem."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
@@ -2239,6 +2243,10 @@ MSG_HASH(
    "A taxa de atualização estimada da tela em Hz."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
+   "A taxa de atualização precisa do seu monitor (Hz). Isso é usado para calcular a taxa de entrada de áudio com a fórmula:\naudio_input_rate = taxa de entrada do jogo * taxa de atualização da tela / taxa de atualização do jogo\nSe o núcleo não relatar nenhum valor, os padrões NTSC serão assumidos para compatibilidade.\nEsse valor deve permanecer próximo de 60Hz para evitar grandes alterações no tom. Se o seu monitor não operar em ou próximo de 60Hz, desative o VSync e deixe este v[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
    "Definir taxa de atualização reportada"
    )
@@ -2855,6 +2863,10 @@ MSG_HASH(
    "Modo WASAPI exclusivo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Permite que o RetroArch assuma controle exclusivo do dispositivo de microfone ao usar o driver de microfone WASAPI. Se desativado, o RetroArch usará o modo compartilhado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
    "Formato WASAPI de ponto flutuante"
    )
@@ -2906,12 +2918,20 @@ MSG_HASH(
    "A alteração máxima da taxa da entrada de áudio. Se aumentado ativa alterações maiores na regulagem ao custo de imprecisão no timbre do áudio (ex: rodando núcleos PAL em modo NTSC)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
+   "Desvio máximo de tempo do áudio.\nDefine a alteração máxima na taxa de entrada. Você pode querer aumentar isso para permitir mudanças muito grandes no tempo, por exemplo, ao rodar núcleos PAL em telas NTSC, ao custo de uma afinação de áudio imprecisa.\nA taxa de entrada é definida como:\ninput rate * (1.0 +/- (max timing skew))"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    "Controle dinâmico da frequência de áudio"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    "Ajuda a suavizar as imperfeições na regulagem ao sincronizar áudio e vídeo. Esteja ciente que se desativado, será quase impossível de se obter a sincronia adequada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
+   "Definir este valor como 0 desativa o controle de taxa. Qualquer outro valor controla o delta do controle de taxa de áudio.\nDefine o quanto a taxa de entrada pode ser ajustada dinamicamente. A taxa de entrada é definida como:\ninput rate * (1.0 +/- (rate control delta))"
    )
 
 /* Settings > Audio > MIDI */
@@ -2925,12 +2945,20 @@ MSG_HASH(
    "Selecione o dispositivo de entrada."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_INPUT,
+   "Define o dispositivo de entrada (específico do driver). Quando definido como 'Desligado', a entrada MIDI será desativada. O nome do dispositivo também pode ser digitado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    "Saída"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
    "Selecione o dispositivo de saída."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
+   "Define o dispositivo de saída (específico do driver). Quando definido como 'Desligado', a saída MIDI será desativada. O nome do dispositivo também pode ser digitado.\nQuando a saída MIDI está habilitada e o núcleo e o jogo/aplicativo suportam saída MIDI, alguns ou todos os sons (dependendo do jogo/aplicativo) serão gerados pelo dispositivo MIDI. No caso do driver MIDI 'nulo', isso significa que esses sons não serão audíveis."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_VOLUME,
@@ -3195,6 +3223,10 @@ MSG_HASH(
    "Modo turbo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
+   "Desativado interrompe todas as operações de turbo fire."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Período do turbo"
    )
@@ -3221,6 +3253,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
    "Botão Único (Segurar)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "Modo clássico de alternância, operação com dois botões. Segure um botão e toque no botão Turbo para ativar o turbo para esse botão. Para desativar o turbo: segure o botão e pressione o botão Turbo novamente.\nA atribuição do botão Turbo pode ser configurada em Configurações/Entrada/Controles da Porta X."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -3257,6 +3293,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Corrigir os desconectamentos (Android)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Solução alternativa para controladores que desconectam e reconectam. Impede que 2 jogadores usem controladores idênticos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
@@ -3301,8 +3341,32 @@ MSG_HASH(
    "Desativar botão de informações"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   "Impede a função de informações do menu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    "Desativar botão de pesquisa"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   "Impede a função de busca no menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Desativa o Analógico Esquerdo no Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Impede a entrada do analógico esquerdo no menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Desativa o Analógico Direito no Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Impede a entrada do analógico direito no menu. O analógico direito percorre as miniaturas nas listas de reprodução."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3336,6 +3400,10 @@ MSG_HASH(
    "Ativar tecla de atalho"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
+   "Se esta tecla de atalho estiver vinculada ao teclado, botão do controle ou eixo do controle, todas as outras teclas de atalho serão desativadas, a menos que esta tecla de atalho também esteja sendo pressionada ao mesmo tempo.\nIsso é útil para implementações centradas no RETRO_KEYBOARD que verificam uma grande área do teclado, onde não é desejável que as teclas de atalho atrapalhem."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
    "Atraso da tecla de atalho (quadros)"
    )
@@ -3354,6 +3422,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
    "Ativar menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
+   "Alterna a exibição atual entre o menu e o conteúdo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
@@ -3471,31 +3543,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "Carrega um jogo salvo do espaço atualmente selecionado."
+   "Carrega o ponto de save do slot atualmente selecionado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "Salvar jogo"
+   "Ponto de Save"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
-   "Salva um jogo no espaço atualmente selecionado."
+   "Salva o ponto de save no slot atualmente selecionado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "Próximo Espaço de Salvamento"
+   "Próximo Slot de Ponto de Save"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "Aumenta o índice do compartimento de jogo salvo atualmente selecionado."
+   "Incrementa o índice do slot de ponto de save atualmente selecionado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "Espaço de Salvamento Anterior"
+   "Slot Anterior do Ponto de Save"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "Diminui o índice do compartimento de jogo salvo atualmente selecionado."
+   "Decrementa o índice do slot de ponto de save atualmente selecionado."
    )
 
 MSG_HASH(
@@ -3680,11 +3752,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
-   "Execução antecipada (alternar)"
+   "Antecipação de Frames (Alternar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
-   "Alterna a execução antecipada entre ligada e desligada."
+   "Ativa/desativa a Antecipação de Frames."
    )
 
 MSG_HASH(
@@ -3766,6 +3838,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    "Tipo de analógico para digital"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
+   "Mapeia o direcional analógico especificado para entrada do D-Pad.\nSe o núcleo tiver suporte nativo para analógico, o mapeamento do D-Pad será desativado, a menos que a opção '(Forçado)' seja selecionada.\nSe o mapeamento do D-Pad for forçado, o núcleo não receberá entrada analógica do direcional especificado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -3948,19 +4024,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
-   "[Execução antecipada indisponível]"
+   "[Antecipação de Frames Indisponível]"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
-   "Núcleo atual é incompatível com a execução antecipada, porque não tem suporte determinístico ao jogo salvo."
+   "O núcleo atual é incompatível com antecipação de frames devido à falta de suporte a pontos de save determinísticos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE,
-   "Executar à frente"
+   "Antecipação de Frames"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
-   "Número de quadros para a execução antecipada"
+   "Número de Frames para Antecipação de Frames"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
@@ -3970,11 +4046,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-   "Ocultar avisos de execução antecipada de quadros"
+   "Ocultar Avisos de Antecipação de Frames"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "Oculta a mensagem de advertência que aparece ao usar a \"Execução antecipada\" se o núcleo é compatível com os jogos salvos."
+   "Oculta a mensagem de aviso que aparece ao usar a Antecipação de Frames quando o núcleo não suporta pontos de save."
    )
 
 /* Settings > Core */
@@ -4002,6 +4078,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
    "Alguns núcleos têm um recurso de desligamento. Ao carregar um núcleo falso impedirá o RetroArch de desligar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
+   "Alguns núcleos podem ter um recurso de desligamento. Se esta opção ficar desativada, selecionar o procedimento de desligamento fará com que o RetroArch seja encerrado.\nAtivar esta opção carregará um núcleo fictício para que permaneçamos dentro do menu e o RetroArch não seja encerrado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
@@ -4034,6 +4114,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
    "Mantem um cache local persistente da informação principal instalada. Reduz significativamente o tempo de carregamento em plataformas com acesso lento ao disco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
+   "Ignorar Recursos de Pontos de Save das Informações do Núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "Especifica se as capacidades de ponto de save informadas pelo núcleo devem ser ignoradas, permitindo experimentar funcionalidades relacionadas (antecipação de frames, retroceder, etc)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4149,6 +4237,14 @@ MSG_HASH(
    "Carrega os controles personalizados na inicialização."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "Carregar Arquivos Iniciais de Índice de Disco Automaticamente"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "Alterar para o último disco usado ao iniciar conteúdo multi-discos."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
    "Carregar automaticamente predefinições de shader"
    )
@@ -4173,11 +4269,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Ordenar os jogos salvos em pastas por nome do núcleo"
+   "Classificar Pontos de Save em Pastas pelo Nome do Núcleo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-   "Ordena os jogos salvos em pastas com o nome do diretório no qual o conteúdo está localizado."
+   "Classifica pontos de save em pastas nomeadas pelo núcleo usado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -4189,19 +4285,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Ordenar os jogos salvos em pastas por diretório de conteúdo"
+   "Classificar Pontos de Save em Pastas pelo Diretório do Conteúdo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Ordena os jogos salvos em pastas com o nome do diretório no qual o conteúdo está localizado."
+   "Classifica pontos de save em pastas nomeadas de acordo com o diretório em que o conteúdo está localizado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Não sobrescrever a SRAM ao carregar jogo salvo"
+   "Não Sobrescrever o SaveRAM ao Carregar o Ponto de Save"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   "Bloqueia a SRAM de ser sobrescrita ao carregar um jogo salvo. Pode causar problemas no jogo."
+   "Impede que a SaveRAM seja sobrescrita ao carregar pontos de save. Pode, potencialmente, causar falhas nos jogos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -4212,40 +4308,52 @@ MSG_HASH(
    "Salve automaticamente o SaveRAM não volátil em um intervalo regular (em segundos)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
+   "Salva automaticamente a SRAM não volátil em intervalos regulares. Isso está desativado por padrão, a menos que configurado de outra forma. O intervalo é medido em segundos. O valor 0 desativa o salvamento automático."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   "Salva automaticamente o estado do jogo durante a gravação de replay em intervalos regulares. Isso está desativado por padrão, a menos que configurado de outra forma. O intervalo é medido em segundos. O valor 0 desativa a gravação de checkpoints."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Aumentar índice de jogos salvos automaticamente"
+   "Incrementar Automaticamente o Índice do Ponto de Save"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   "Antes de criar um jogo salvo, o índice do do salvamento é aumentado automaticamente. Ao carregar o conteúdo, o índice será definido como o índice mais alto existente."
+   "Antes de criar um ponto de save, o índice do ponto de save é incrementado automaticamente. Ao carregar o conteúdo, o índice será definido como o maior índice existente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Quantidade máxima do incremento dos estados salvos dos jogos"
+   "Máximo de Pontos de Save com Incremento Automático a Manter"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Limita a quantidade dos estados dos jogos salvos que serão criados ao ativar a opção \"Aumentar o índice dos jogos salvos automaticamente\". Caso salve um novo jogo e o limite for excedido, o jogo com o índice mais baixo será excluído. O valor \"0\" significa que o estado dos jogos serão salvos de maneira ilimitada."
+   "Limita o número de pontos de save que serão criados quando 'Incrementar Automaticamente o Índice do Ponto de Save' estiver ativado. Se o limite for excedido ao salvar um novo ponto de save, o ponto existente com o menor índice será excluído. Um valor de '0' significa que um número ilimitado de pontos de save será gravado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Salvar jogo automaticamente"
+   "Ponto de Save Automático"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   "Cria automaticamente um ponto de save ao fechar o conteúdo. Esse ponto de save é carregado na inicialização se 'Carregar Estado Automaticamente' estiver ativado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Carregar jogo automaticamente"
+   "Carregar Estado Automaticamente"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-   "Carrega o último jogo salvo automaticamente na inicialização do RetroArch."
+   "Carrega automaticamente o ponto de save automático na inicialização."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Miniaturas dos jogos salvos"
+   "Miniaturas dos Pontos de Save"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Mostre miniaturas de estados salvos no menu."
+   "Exibe miniaturas dos pontos de save no menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
@@ -4257,11 +4365,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Compressão do jogo salvo"
+   "Compressão dos Pontos de Save"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "Salva arquivos de jogos salvos em um formato arquivado. Reduz drasticamente o tamanho do arquivo às custas do aumento de tempo de salvamento e carregamento."
+   "Grava arquivos de ponto de save em formato compactado. Reduz drasticamente o tamanho dos arquivos, em troca de tempos maiores para salvamento/carregamento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -4277,7 +4385,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Gravar jogos salvos no diretório de conteúdo"
+   "Gravar Pontos de Save no Diretório do Conteúdo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Usa o diretório do conteúdo como diretório de ponto de save."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
@@ -4503,8 +4615,12 @@ MSG_HASH(
    "Reiniciar o contador de tempo do quadro após carregar um jogo salvo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+   "Reiniciar Após o Ponto de Save"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reiniciar o contador de tempo do quadro depois de salvar um jogo."
+   "Reinicia o contador de tempo de frame após salvar um ponto de save."
    )
 
 /* Settings > Recording */
@@ -4869,12 +4985,32 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Ajusta a sobreposição do teclado para sua proporção original. Desative para esticar na tela."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
    "Qualquer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "Seleciona a entrada a ser enviada quando dois ponteiros estiverem na tela. O Atraso do Gatilho deve ser diferente de zero para distinguir das outras entradas."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "Seleciona a entrada a ser enviada quando três ponteiros estiverem na tela. O Atraso do Gatilho deve ser diferente de zero para distinguir das outras entradas."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "Seleciona a entrada a ser enviada quando quatro ponteiros estiverem na tela. O Atraso do Gatilho deve ser diferente de zero para distinguir das outras entradas."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "Permitir mira fora dos limites. Desative para restringir a mira fora da tela à borda dentro dos limites."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
@@ -5038,6 +5174,10 @@ MSG_HASH(
    "Exibe uma mensagem na tela ao conectar ou desconectar os dispositivos da entrada."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Exibe uma mensagem na tela quando os dispositivos de entrada não puderem ser configurados."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
    "Notificações da recarga do remapeamento da entrada"
    )
@@ -5166,6 +5306,10 @@ MSG_HASH(
    "Tamanho da notificações na tela"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "Especifique o tamanho da fonte em pontos. Quando widgets são usados, esse tamanho afeta apenas a exibição de estatísticas na tela."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Posição X da notificação na tela"
    )
@@ -5276,7 +5420,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Retornar ao conteúdo ao usar salvamento"
+   "Retomar o Conteúdo Após usar Pontos de Save"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
@@ -5373,6 +5517,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    "Os gerenciadores da janela usam uma composição para aplicar os efeitos visuais, para detectar as janelas não estejam responsivas, entre outras coisas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
+   "Desativa a composição à força. A desativação é válida apenas no Windows Vista/7 por enquanto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
@@ -5739,24 +5887,28 @@ MSG_HASH(
    "Mostra a opção \"Fechar conteúdo\"."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "Mostrar Submenu de 'Pontos de Save'"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Mostra as opções do salvar jogo em um submenu."
+   "Mostra as opções de ponto de save em um submenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Mostrar 'Salvar/Carregar jogo salvo'"
+   "Mostrar 'Salvar/Carregar Ponto de Save''"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Mostre as opções para salvar/carregar um jogo salvo."
+   "Mostra as opções para salvar/carregar um ponto de save."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Mostrar 'Desfazer salvamento/carregamento de jogo salvo'"
+   "Mostrar 'Desfazer Salvar/Carregar Ponto de Save'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Mostre as opções para desfazer o salvamento ou carregamento de um jogo salvo."
+   "Mostraras opções para desfazer salvar/carregar ponto de save."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -6290,7 +6442,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Desabilita trapaças, rebobinar, camera lenta e carregamento de estados salvos. As conquistas adquiridas no modo hardcore são marcadas unicamente para que você possa mostrar aos outros o que você alcançou sem os recursos de assistência do emulador. Alternar esta configuração durante a execução irá reiniciar o jogo."
+   "Desativa cheats, retroceder, câmera lenta e carregamento de pontos de save. Conquistas obtidas no modo hardcore são marcadas de forma única para que você possa mostrar aos outros o que alcançou sem recursos auxiliares do emulador. Alterar essa configuração em tempo de execução reiniciará o jogo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -6379,12 +6531,28 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_AUTO,
    "Preenchimento alinhado"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   "Define se as notificações de conquistas devem alinhar-se com outros tipos de notificações na tela. Desative para definir manualmente os valores de espaçamento/posição."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   "Distância da borda esquerda/direita da tela, que pode compensar o overscan do display."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V,
+   "Distância da borda superior/inferior da tela, que pode compensar o overscan do display."
+   )
 
 /* Settings > Achievements > Visibility */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
    "Visibilidade"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   "Altera quais mensagens e elementos na tela são exibidos. Não desativa funcionalidades."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
@@ -7312,7 +7480,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-   "Arquivos de jogos salvos"
+   "Pontos de Save"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+   "Pontos de save e replays são armazenados neste diretório. Se não estiver definido, tentará salvá-los no diretório onde o conteúdo está localizado."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -7973,11 +8145,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   "Salvar jogo"
+   "Ponto de Save"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_STATE,
-   "Salva um jogo no compartimento selecionado atualmente."
+   "Salva um ponto de save no slot atualmente selecionado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVE_STATE,
+   "Salva um ponto de save no slot atualmente selecionado. Nota: pontos de save normalmente não são portáteis e podem não funcionar em outras versões deste núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
@@ -7985,7 +8161,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
-   "Carrega um jogo salvo do compartimento selecionado atualmente."
+   "Carrega um ponto de save do slot atualmente selecionado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_STATE,
+   "Carrega um ponto de save do slot atualmente selecionado. Nota: pode não funcionar se o ponto de save foi criado com outra versão do núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -8001,7 +8181,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-   "Se o jogo salvo foi sobrescrito, ele voltará ao jogo salvo anteriormente."
+   "Se um ponto de save for sobrescrito, ele voltará para o ponto de save anterior."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_SLOT,
@@ -8073,7 +8253,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_LIST,
-   "Acessa as opções do salvar jogo."
+   "Acessar opções do ponto de save."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
@@ -8634,6 +8814,10 @@ MSG_HASH(
    "Aplicar automaticamente as mudanças feitas nos arquivos de shader no disco."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
+   "Monitora arquivos de shader para novas alterações. Após salvar mudanças em um shader no disco, ele será recompilado e aplicado automaticamente ao conteúdo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
    "Lembrar do último diretório de shader usado"
    )
@@ -8644,6 +8828,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
    "Carregar uma predefinição de shader. Será definido automaticamente."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
+   "Carrega um preset de shader diretamente. O menu de shaders é atualizado de acordo.\nO fator de escala exibido no menu é confiável apenas se o preset usar métodos de escala simples (ou seja, escala da fonte, mesmo fator de escala para X/Y)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
@@ -8876,7 +9064,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Pausar conquistas no modo hardcore para a sessão atual. Esta ação permitirá trapaças, retroceder, câmera lenta e carregar estados de salvamento."
+   "Pausa o modo hardcore de conquistas para a sessão atual. Esta ação ativará cheats, retroceder, câmera lenta e carregamento de pontos de save."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
@@ -8884,7 +9072,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Inicia conquistas no modo hardcore para a sessão atual. Esta ação permitirá trapaças, retroceder, câmera lenta e carregar estados de salvamento."
+   "Inicia conquistas no modo hardcore para a sessão atual. Esta ação permitirá trapaças, rebobinar, câmera lenta e carregar estados de salvamento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
@@ -9675,6 +9863,10 @@ MSG_HASH(
    "Transparência"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   "Ativa a exibição de fundo do conteúdo enquanto o Menu Rápido está ativo. Desativar a transparência pode alterar as cores do tema."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Efeitos de sombra"
    )
@@ -9711,8 +9903,16 @@ MSG_HASH(
    "Mostrar miniaturas na lista de reprodução"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+   "Ativa a exibição de miniaturas redimensionadas embutidas ao visualizar listas de reprodução. Pode ser alternado com RetroPad Select. Quando desativado, as miniaturas ainda podem ser exibidas em tela cheia com RetroPad Start."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    "Miniatura superior"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   "Tipo de miniatura exibida no canto superior direito das listas de reprodução. Esse tipo de miniatura pode ser alterado pressionando RetroPad Y."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -9985,6 +10185,10 @@ MSG_HASH(
    "Tipo de miniatura para exibir à esquerda."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Tipo de miniatura do ícone da lista de reprodução a ser exibida."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    "Plano de fundo dinâmico"
    )
@@ -10079,6 +10283,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    "Cor do Tema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   "Disposição Vertical das Miniaturas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -12203,7 +12411,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
-   "Salvar automaticamente jogo em"
+   "Salvar ponto de save automático em"
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -12243,7 +12451,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "O núcleo não suporta jogos salvos."
+   "O núcleo não suporta pontos de save."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
@@ -12495,7 +12703,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
-   "Falha em salvar o jogo em"
+   "Falha ao salvar ponto de save em"
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME,
@@ -12539,7 +12747,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_UNDO_SAVE_STATE,
-   "Falha em desfazer o salvamento de jogo."
+   "Falha ao desfazer ponto de save."
    )
 MSG_HASH(
    MSG_FAILED_TO_UNMUTE_AUDIO,
@@ -12555,7 +12763,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOUND_AUTO_SAVESTATE_IN,
-   "Jogo salvo automático encontrado em"
+   "Ponto de save automático encontrado em"
    )
 MSG_HASH(
    MSG_FOUND_DISK_LABEL,
@@ -12715,7 +12923,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
-   "Nenhum jogo salvo foi sobrescrito até o momento."
+   "Nenhum ponto de save foi sobrescrito ainda."
    )
 MSG_HASH(
    MSG_NO_STATE_HAS_BEEN_LOADED_YET,
@@ -12755,7 +12963,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
-   "Redirecionando o jogo salvo em"
+   "Redirecionando ponto de save para"
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
@@ -12787,7 +12995,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
-   "Jogo salvo antigo restaurado."
+   "Ponto de save antigo restaurado."
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
@@ -12799,7 +13007,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-   "Revertendo diretório de jogo salvo em"
+   "Revertendo diretório do ponto de save para"
    )
 MSG_HASH(
    MSG_REWINDING,
@@ -12811,7 +13019,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
-   "Rebobinamento indisponível, porque o núcleo não tem suporte de serialização ao jogo salvo."
+   "Rebobinar indisponível porque este núcleo não possui suporte a ponto de save serializado."
    )
 MSG_HASH(
    MSG_REWIND_INIT,
@@ -12836,6 +13044,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Salvo no compartimento %d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Ponto de save no slot #-1 (Automático)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
@@ -12971,7 +13183,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Desfazendo o salvamento de jogo"
+   "Desfazendo ponto de save"
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -13027,15 +13239,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Autocarregando jogo salvo de"
+   "Carregando automaticamente ponto de save de"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
-   "O carregamento automático do jogo salvo a partir de \"%s\" falhou."
+   "O carregamento automático do ponto de save de \"%s\" falhou."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
-   "O carregamento automático do jogo salvo a partir de \"%s\" foi bem-sucedido."
+   "O carregamento automático do ponto de save de \"%s\" foi bem-sucesso."
    )
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT,
@@ -13151,35 +13363,55 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,
-   "Execução antecipada ativada. Latência dos quadros que foram removidos: %u."
+   "Antecipação de Frames ativada. Frames de latência removidos: %u."
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
-   "Execução antecipada ativada com instância secundária. Latência dos quadros que foram removidos: %u."
+   "Antecipação de Frames ativada com Instância Secundária. Frames de latência removidos: %u."
    )
 MSG_HASH(
    MSG_RUNAHEAD_DISABLED,
-   "Execução antecipada desativada."
+   "Antecipação de Frames desativada."
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "A \"Execução antecipada\" foi desativada porque esse núcleo não suporta jogos salvos."
+   "A Antecipação de Frames foi desativada porque este núcleo não suporta pontos de save."
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
-   "Execução antecipada indisponível, porque o núcleo não tem suporte determinístico ao jogo salvo."
+   "Antecipação de Frames indisponível porque este núcleo não possui suporte determinístico a pontos de save."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Houve uma falha ao carregar o estado do jogo. A \"Execução antecipada\" foi desativada."
+   "Falha ao salvar o ponto de save. A Antecipação de Frames foi desativada."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Houve uma falha ao salvar o estado do jogo. A \"Execução antecipada\" foi desativada."
+   "Falha ao carregar o ponto de save. A Antecipação de Frames foi desativada."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "Houve uma falha ao criar uma segunda instância. A \"Execução antecipada\" agora usará apenas uma instância."
+   "Falha ao criar segunda instância. A Antecipação de Frames agora usará apenas uma instância."
+   )
+MSG_HASH(
+   MSG_PREEMPT_DISABLED,
+   "Frames Preemptivos desativados."
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   "Os Frames Preemptivos foram desativados porque este núcleo não suporta pontos de save."
+   )
+MSG_HASH(
+   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
+   "Os Frames Preemptivos indisponíveis porque este núcleo não possui suporte determinístico a pontos de save."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_SAVE_STATE,
+   "Falha no ponto de save. Os Frames Preemptivos foram desativados."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_LOAD_STATE,
+   "Falha no ponto de save. Os Frames Preemptivos foram desativados."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
@@ -13226,6 +13458,14 @@ MSG_HASH(
    "Trapaça excluída."
    )
 MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Falha ao definir disco."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SET_INITIAL_DISK,
+   "Falha ao definir o último disco usado."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "Você deve pausar ou desativar as conquistas no modo hardcore para carregar jogos salvos."
    )
@@ -13235,11 +13475,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "Um jogo salvo foi carregado. Conquistas no Modo Hardcore foram desativadas para a sessão atual."
+   "Um ponto de save foi carregado. As Conquistas do Modo Hardcore estão desativadas para a sessão atual."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
    "Uma trapaça foi ativada. As conquistas no Modo Hardcore estão desativadas para a sessão atual."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "O host do Netplay precisa ser atualizado. Conquistas do Modo Hardcore desativadas para a sessão atual."
    )
 MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
@@ -13251,7 +13495,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Modo Hardcore habilitado: jogos salvos e rebobinamento foram desativados."
+   "As Conquistas do Modo Hardcore foram ativadas. Os pontos de save e o rebobinar foram desativados."
    )
 MSG_HASH(
    MSG_CHEEVOS_UNSUPPORTED_COUNT,
@@ -13538,6 +13782,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DESC,
    "Redefinindo para: %dx%d - %s"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   "Seleciona o Modo de Exibição (Reinício Necessário)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
@@ -13862,10 +14110,22 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Selecione seu fuso horário para ajustar a data e a hora à sua localização."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TIMEZONE,
+   "Exibe uma lista de fusos horários disponíveis. Após selecionar um fuso horário, a data e a hora são ajustadas para o fuso selecionado. Pressupõe que o relógio do sistema/hardware esteja configurado para UTC."
+   )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
    "Overclock da CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
+   "Desativar ERTM do Bluetooth"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
+   "Desativa o ERTM do Bluetooth para corrigir o pareamento de alguns dispositivos"
    )
 #endif
 MSG_HASH(
@@ -14001,7 +14261,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Criar um ponto\nde restauração"
+   "Criar\nPonto de Restauração"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
@@ -14018,6 +14278,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "Ativar fonte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
+   "Exibe a fonte do menu inferior. Ative para mostrar as descrições dos botões na parte inferior da tela. Isso exclui a data do jogo salvo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
