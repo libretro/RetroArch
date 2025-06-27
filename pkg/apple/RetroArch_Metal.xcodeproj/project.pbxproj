@@ -1212,8 +1212,8 @@
 				0798404A2E0F20D50079E1A3 /* zstd */,
 			);
 			name = deps;
-			path = "/Users/eric/src/libretro-super/RetroArch/deps";
-			sourceTree = "<absolute>";
+			path = ../../deps;
+			sourceTree = SOURCE_ROOT;
 		};
 		0798403C2E0F20D50079E1A3 /* decompress */ = {
 			isa = PBXGroup;
