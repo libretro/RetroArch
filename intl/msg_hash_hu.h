@@ -639,6 +639,10 @@ MSG_HASH(
    "JIT elérhető"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
+   "Csomagazonosító"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Frontend azonosító"
    )
@@ -849,6 +853,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
    "7zip támogatás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "Zstandart támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
@@ -1106,6 +1114,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
    "A jelenlegi konfiguráció mentése külön fájlba."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Beállítások mentése mint"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Aktuális beállítások mentése mint egyéni konfigurációs fájl"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Fő konfiguráció mentése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "Aktuális konfiguráció mentése mint fő konfiguráció."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
@@ -2090,6 +2114,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "A teljes képernyő kiterjesztése a bevágásra Android és iOS eszközökön"
 )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Metal argumens pufferek használata (újraindítás szükséges)"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -2654,6 +2682,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    "Adaptív VSync"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "A VSync aktív, amíg a teljesítmény a megcélzott képfrissítés alá nem esik. Minimalizálhatja a döcögősséget amikor a teljesítmény nem éri el a valós időt, és energiát takaríthat meg. Nem kompatibilis "
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -11431,6 +11463,18 @@ MSG_HASH(
    "Betűméret"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
+   "Globális"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   "Külön értékek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Betűméret szorzója"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Oldalsáv összecsukása"
    )
@@ -13976,6 +14020,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "Visszatekerési puffer vége."
+   )
+MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Konfiiguráció mentve ide"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
