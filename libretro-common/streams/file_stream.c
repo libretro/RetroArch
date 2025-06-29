@@ -462,7 +462,7 @@ int filestream_copy(const char *src, const char *dst)
 
    while ((n = filestream_read(fp_src, buf, sizeof(buf))) > 0 && ret == 0)
    {
-      if (filestream_write(fp_dst, buf, sizeof(buf)) != n)
+      if (filestream_write(fp_dst, buf, n) != n)
          ret = -1;
    }
 
@@ -484,7 +484,7 @@ int filestream_cmp(const char *src, const char *dst)
    RFILE *fp_src = filestream_open(src, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    RFILE *fp_dst = filestream_open(dst, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
-   if (!fp_src || !fp_dst)
+   if (!fp_src || !fp_dst || filestream_get_size(fp_src) != filestream_get_size(fp_dst))
       ret = -1;
 
    if (ret < 0)
