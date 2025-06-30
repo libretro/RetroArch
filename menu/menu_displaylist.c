@@ -2503,6 +2503,8 @@ static int menu_displaylist_parse_playlist(
    bool pl_show_sublabels            = settings->bools.playlist_show_sublabels;
    void (*sanitization)(char*)       = NULL;
    unsigned count                    = 0;
+   enum msg_file_type type_target    = FILE_TYPE_RPL_ENTRY;
+   enum msg_hash_enums enum_idx      = MENU_ENUM_LABEL_PLAYLIST_ENTRY;
 
    if (list_size == 0)
       return 0;
@@ -2667,10 +2669,17 @@ static int menu_displaylist_parse_playlist(
          }
       }
 
+      if (entry && string_is_equal(entry->core_path, "virtual")
+            && string_is_equal(entry->core_name, "playlist"))
+      {
+         type_target = FILE_TYPE_DESCENDANT_ENTRY;
+         enum_idx = MENU_ENUM_LABEL_DESCENDANT_ENTRY;
+      }
+
       /* Add menu entry */
       if (entry_valid && menu_entries_append(info_list,
             menu_entry_lbl, entry_path,
-            MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i, NULL))
+            enum_idx, type_target, 0, i, NULL))
          count++;
    }
 
@@ -15539,6 +15548,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_FILE_BROWSER_SELECT_CORE:
          case DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION:
          case DISPLAYLIST_GENERIC:
+         case DISPLAYLIST_DESCENDANT:
             info->flags         |=  MD_FLAG_NEED_NAVIGATION_CLEAR;
             /* fall-through */
          case DISPLAYLIST_PENDING_CLEAR:
@@ -15717,6 +15727,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             use_filebrowser    = true;
             break;
          case DISPLAYLIST_PLAYLIST:
+         case DISPLAYLIST_DESCENDANT_LIST:
             {
                const char *_msg = path_basename_nocompression(info->path);
                menu_entries_clear(info->list);

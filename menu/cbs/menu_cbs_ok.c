@@ -1076,6 +1076,16 @@ int generic_action_ok_displaylist_push(
          menu->rpl_entry_selection_ptr = (unsigned)entry_idx;
          dl_type                       = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_DESCENDANT_ENTRY:
+         fill_pathname_expand_special(menu->deferred_path, label, sizeof(menu->deferred_path));
+         info_label = msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY);
+         info_path = menu->deferred_path;
+         info.enum_idx                 = MENU_ENUM_LABEL_DESCENDANT_ENTRY;
+         info.directory_ptr            = idx;
+         menu->rpl_entry_selection_ptr = (unsigned)entry_idx;
+         dl_type                       = DISPLAYLIST_DESCENDANT;
+         info.type                     = type;
+         break;
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
          filebrowser_clear_type();
          info.directory_ptr = idx;
@@ -6587,6 +6597,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_overlay_preset, ACTION_OK_DL_OVERLAY_PRE
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_osk_overlay_preset, ACTION_OK_DL_OSK_OVERLAY_PRESET)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_video_font, ACTION_OK_DL_VIDEO_FONT)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_rpl_entry, ACTION_OK_DL_RPL_ENTRY)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_descendant_entry, ACTION_OK_DL_DESCENDANT_ENTRY)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_open_archive_detect_core, ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_file_load_music, ACTION_OK_DL_MUSIC)
@@ -9636,6 +9647,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #endif
          case FILE_TYPE_RPL_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_rpl_entry);
+            break;
+         case FILE_TYPE_DESCENDANT_ENTRY:
+            BIND_ACTION_OK(cbs, action_ok_descendant_entry);
             break;
          case FILE_TYPE_PLAYLIST_COLLECTION:
             BIND_ACTION_OK(cbs, action_ok_playlist_collection);

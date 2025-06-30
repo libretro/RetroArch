@@ -2957,6 +2957,10 @@ MSG_HASH(
    "playlist_entry"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DESCENDANT_ENTRY,
+   "descendant_entry"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_SETTINGS,
    "playlist_settings"
    )
