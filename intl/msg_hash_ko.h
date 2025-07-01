@@ -875,6 +875,10 @@ MSG_HASH(
    "7zip 지원"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "Zstandard 지원"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
    "다이나믹 라이브러리 지원"
    )
@@ -2145,6 +2149,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "Android 및 iOS 기기에서 노치보다 전체 화면을 활성화"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Metal Argument Buffers 사용 (재시작 필요)"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "Metal Argument Buffers 기능을 사용하여 성능 향상을 도모합니다. 일부 코어는 이 기능을 필요로 할 수 있습니다. 특히 주로 오래된 하드웨어와 OS 버전에서, 이 기능은 일부 셰이더를 망가트릴 수 있습니다."
 )
 
 /* Settings > Video > CRT SwitchRes */
@@ -11681,6 +11693,74 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
    "폰트 크기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
+   "메뉴의 폰트 크기를 조정할 것인지, 그리고 조정할 경우 모든 폰트에 전역 배율을 적용할지 메뉴의 각 부분마다 별개의 배율을 적용할지 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
+   "전역"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   "개별 값"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "폰트 크기 배율"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "메뉴 전역에서 사용될 폰트 크기의 배율을 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "제목 폰트 크기 배율"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "메뉴 헤더의 제목 텍스트의 폰트 크기의 배율을 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "왼쪽 사이드바 폰트 크기 배율"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "왼쪽 사이드바의 텍스트의 폰트 크기의 배율을 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "라벨 폰트 크기 배율"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "메뉴 옵션과 실행목록 항목의 라벨 텍스트의 폰트 크기의 배율을 설정합니다. 도움말 상자의 텍스트 크기에도 이 배율이 적용됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "하위 라벨 폰트 크기 배율"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "메뉴 옵션과 실행목록 항목의 하위 라벨 텍스트의 폰트 크기의 배율을 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
+   "날짜와 시간 폰트 크기 배율"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
+   "메뉴 오른쪽 위의 날짜와 시간 표시기 텍스트의 폰트 크기의 배율을 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "푸터 폰트 크기 배율"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "메뉴 푸터의 텍스트의 폰트 크기의 배율을 설정합니다. 오른쪽 미리보기 사이드바의 폰트 크기에도 이 배율이 적용됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
