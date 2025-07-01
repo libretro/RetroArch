@@ -3330,6 +3330,7 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
                     || (type == MENU_IMAGES_TAB)
                     || (type == MENU_MUSIC_TAB)
                     || (type == MENU_VIDEO_TAB)
+                    || (type == FILE_TYPE_DESCENDANT_ENTRY)
                     || (type == FILE_TYPE_PLAYLIST_COLLECTION);
 
    if (!filter_enabled && !string_is_empty(label))
@@ -7912,6 +7913,16 @@ int generic_menu_entry_action(
              )
          {
             flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
+            break;
+         }
+         else if (    string_is_equal(parent_label,
+                 msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY))
+              && (!string_is_empty(deferred_path)
+              && !string_is_empty(content_path)
+              && string_is_equal(deferred_path, content_path))
+             )
+         {
+            flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY);
             break;
          }
          /* If core was launched via 'Contentless Cores' menu,

@@ -9506,6 +9506,7 @@ static void materialui_populate_entries(void *data, const char *path,
                            | MUI_FLAG_IS_DROPDOWN_LIST);
 
    if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
@@ -9587,7 +9588,8 @@ static void materialui_populate_entries(void *data, const char *path,
 
       if (   (list)
           && (list_size > 0)
-          && (list->list[0].type == FILE_TYPE_RPL_ENTRY))
+          && ((list->list[0].type == FILE_TYPE_RPL_ENTRY)
+                || (list->list[0].type == FILE_TYPE_DESCENDANT_ENTRY)))
          mui->playlist = playlist_get_cached();
    }
 
@@ -11508,6 +11510,7 @@ static void materialui_list_insert(void *userdata,
                node->icon_type          = MUI_ICON_TYPE_NONE;
             break;
          case FILE_TYPE_RPL_ENTRY:
+         case FILE_TYPE_DESCENDANT_ENTRY:
          case MENU_SETTING_DROPDOWN_ITEM:
          case MENU_SETTING_DROPDOWN_ITEM_RESOLUTION:
          case MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_PARAM:

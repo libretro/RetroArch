@@ -1473,7 +1473,8 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
           * to the selected entry */
          if (    list
              && (selection < list_size)
-             && (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+             && ((list->list[selection].type == FILE_TYPE_RPL_ENTRY)
+                   || (list->list[selection].type == FILE_TYPE_DESCENDANT_ENTRY)))
          {
             playlist_valid = true;
             playlist_index = list->list[selection].entry_idx;
@@ -1722,7 +1723,8 @@ static void xmb_set_dynamic_icon_content(
        * to the selected entry */
       if (    list
             && (selection < list_size)
-            && (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+            && ((list->list[selection].type == FILE_TYPE_RPL_ENTRY)
+                  || (list->list[selection].type == FILE_TYPE_DESCENDANT_ENTRY)))
       {
          playlist_valid = true;
          playlist_index = list->list[selection].entry_idx;
@@ -3101,7 +3103,8 @@ static void xmb_populate_entries(void *data,
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST));
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY));
 
    xmb->is_playlist |=
             (xmb_horizontal_type == FILE_TYPE_PLAYLIST_COLLECTION)
@@ -3152,6 +3155,8 @@ static void xmb_populate_entries(void *data,
    xmb->is_quick_menu =
             string_is_equal(label,
                   msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS))
+         || string_is_equal(label,
+               msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY))
          || string_is_equal(label,
                msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
          || string_is_equal(label,
@@ -3839,6 +3844,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case FILE_TYPE_IN_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_FILE];
       case FILE_TYPE_RPL_ENTRY:
+      case FILE_TYPE_DESCENDANT_ENTRY:
       case FILE_TYPE_PLAYLIST_COLLECTION:
          if (core_node)
             return core_node->content_icon;
@@ -3859,6 +3865,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                      switch (type)
                      {
                         case FILE_TYPE_RPL_ENTRY:
+                        case FILE_TYPE_DESCENDANT_ENTRY:
                            return db_node->content_icon;
                         case FILE_TYPE_PLAYLIST_COLLECTION:
                            return db_node->icon;
@@ -5250,7 +5257,7 @@ static int xmb_draw_item(
             texture = sidebar_node->icon;
       }
       /* History/Favorite console specific content icons */
-      else if (entry_type == FILE_TYPE_RPL_ENTRY
+      else if ((entry_type == FILE_TYPE_RPL_ENTRY)
             && show_history_icons != PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT)
       {
          switch (xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr))

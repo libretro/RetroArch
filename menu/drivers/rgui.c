@@ -7027,7 +7027,8 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
           * to the selected entry */
          if (   (list)
              && (selection < list_size)
-             && (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+             && ((list->list[selection].type == FILE_TYPE_RPL_ENTRY)
+                   || (list->list[selection].type == FILE_TYPE_DESCENDANT_ENTRY)))
          {
             playlist_valid       = true;
             playlist_index       = list->list[selection].entry_idx;
@@ -7385,6 +7386,7 @@ static void rgui_populate_entries(
 
    /* Check whether we are currently viewing a playlist */
    if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))

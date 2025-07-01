@@ -2321,6 +2321,7 @@ static uintptr_t ozone_entries_icon_get_texture(
       case FILE_TYPE_IN_CARCHIVE:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
       case FILE_TYPE_RPL_ENTRY:
+      case FILE_TYPE_DESCENDANT_ENTRY:
       case FILE_TYPE_PLAYLIST_COLLECTION:
          switch (ozone->tabs[ozone->categories_selection_ptr])
          {
@@ -3728,14 +3729,19 @@ static bool ozone_is_main_menu_playlist(void *userdata)
 {
    ozone_handle_t *ozone      = (ozone_handle_t*)userdata;
    menu_entry_t entry;
+   MENU_ENTRY_INITIALIZE(entry);
+   menu_entry_get(&entry, 0, 0, NULL, true);
+
+   if (entry.type == FILE_TYPE_DESCENDANT_ENTRY)
+      return true;
+
+
 
    if (     (ozone->depth != 3)
          || (ozone->flags & OZONE_FLAG_IS_DB_MANAGER_LIST)
          || (ozone->flags & OZONE_FLAG_IS_FILE_LIST))
       return false;
 
-   MENU_ENTRY_INITIALIZE(entry);
-   menu_entry_get(&entry, 0, 0, NULL, true);
    return entry.type == FILE_TYPE_RPL_ENTRY;
 }
 
@@ -4176,7 +4182,7 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
 
    if (!string_is_empty(menu_st->thumbnail_path_data->content_core_name))
    {
-      if (     string_is_equal(
+      if (     (string_is_equal(
                menu_st->thumbnail_path_data->content_core_name,
                "imageviewer")
             || string_is_equal(
@@ -4185,6 +4191,8 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
             || string_is_equal(
                menu_st->thumbnail_path_data->content_core_name,
                "movieplayer"))
+            && (( !(ozone->flags & OZONE_FLAG_IS_PLAYLIST))
+            && ( !(ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU))))
          ozone->flags2 |=  OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
       else
          ozone->flags2 &= ~OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
@@ -4242,7 +4250,8 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
        * to the selected entry */
       else if (list
             && (selection < list_size)
-            && (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+            && ((list->list[selection].type == FILE_TYPE_RPL_ENTRY)
+                  || (list->list[selection].type == FILE_TYPE_DESCENDANT_ENTRY)))
       {
          playlist_index        = list->list[selection].entry_idx;
 
@@ -5947,7 +5956,7 @@ border_iterate:
       if (texture)
       {
          /* Console specific icons */
-         if (     entry.type == FILE_TYPE_RPL_ENTRY
+         if (     (entry.type == FILE_TYPE_RPL_ENTRY)
                && ozone->categories_selection_ptr > ozone->system_tab_end)
          {
             ozone_node_t *sidebar_node = (ozone_node_t*)
@@ -6021,7 +6030,7 @@ border_iterate:
             }
          }
          /* History/Favorite console specific content icons */
-         else if (   entry.type == FILE_TYPE_RPL_ENTRY
+         else if (   (entry.type == FILE_TYPE_RPL_ENTRY)
                   && show_history_icons != PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT)
          {
             switch (ozone->tabs[ozone->categories_selection_ptr])
@@ -7723,7 +7732,8 @@ static void ozone_set_thumbnail_content(void *data, const char *s)
           * to the selected entry */
          if (      list
                && (selection < list_size)
-               && (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+               && ((list->list[selection].type == FILE_TYPE_RPL_ENTRY)
+                     || (list->list[selection].type == FILE_TYPE_DESCENDANT_ENTRY)))
          {
             selection = list->list[selection].entry_idx;
             pl        = playlist_get_cached();
@@ -8001,6 +8011,7 @@ static bool ozone_manage_available(ozone_handle_t *ozone, size_t current_selecti
    {
       case FILE_TYPE_PLAYLIST_COLLECTION:
       case FILE_TYPE_RPL_ENTRY:
+      case FILE_TYPE_DESCENDANT_ENTRY:
          return true;
       default:
          break;
@@ -11749,8 +11760,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
          bool update_thumbnails = false;
 
          /* Playlist updates */
-         if (     (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
-               && (ozone->depth == 1 || ozone->depth == 3))
+         if (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
          {
             ozone_set_thumbnail_content(ozone, "");
             update_thumbnails = true;
@@ -12425,7 +12435,7 @@ static void ozone_populate_entries(
 
                if (!list || (list->size < 1))
                   goto_sidebar         = true;
-               else if ((list->list[0].type != FILE_TYPE_RPL_ENTRY))
+               else if (list->list[0].type != FILE_TYPE_RPL_ENTRY)
                   goto_sidebar         = true;
 
                if (goto_sidebar)
@@ -12502,7 +12512,8 @@ static void ozone_populate_entries(
    else
       ozone->flags &= ~OZONE_FLAG_IS_STATE_SLOT;
 
-   if (ozone_is_playlist(ozone, true))
+   if (ozone_is_playlist(ozone, true)
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DESCENDANT_ENTRY)))
       ozone->flags |=  OZONE_FLAG_IS_PLAYLIST;
    else
       ozone->flags &= ~OZONE_FLAG_IS_PLAYLIST;
@@ -12642,7 +12653,7 @@ static void ozone_populate_entries(
     * and savestate slots */
    if (
             (   (ozone->flags  & OZONE_FLAG_WANT_THUMBNAIL_BAR))
-         && (  ((ozone->flags  & OZONE_FLAG_IS_PLAYLIST) && (ozone->depth == 1 || ozone->depth == 3))
+         && (  ((ozone->flags  & OZONE_FLAG_IS_PLAYLIST))
             || ((ozone->flags  & OZONE_FLAG_IS_DB_MANAGER_LIST) && (ozone->depth >= 4))
             ||  (ozone->flags  & OZONE_FLAG_IS_EXPLORE_LIST)
             ||  (ozone->flags  & OZONE_FLAG_IS_FILE_LIST)
