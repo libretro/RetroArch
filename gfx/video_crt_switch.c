@@ -46,6 +46,8 @@ static void crt_adjust_sr_ini(videocrt_switch_t *p_switch);
 static bool ini_overrides_loaded = false;
 static char core_name[NAME_MAX_LENGTH]; /* Same size as library_name on retroarch_data.h */
 static char content_dir[DIR_MAX_LENGTH];
+static char current_content_name[256];
+static char content_name[256];
 static char _hSize[12];
 static char _hShift[12];
 static char _vShift[12];
@@ -310,6 +312,8 @@ static void switch_res_crt(
       double rr              = p_switch->ra_core_hz;
       const char *_core_name = (const char*)runloop_state_get_ptr()->system.info.library_name;
       
+      
+
       const char* hSize = (const char*)_hSize;
       const char* hShift = (const char*)_hShift;
       const char* vShift = (const char*)_vShift;
@@ -329,12 +333,14 @@ static void switch_res_crt(
             sizeof(current_content_dir));
 
       if (     !string_is_equal(core_name,   current_core_name)
-            || !string_is_equal(content_dir, current_content_dir))
+            || !string_is_equal(content_dir, current_content_dir)
+            || !string_is_equal(current_content_name ,content_name))
       {
          /* A core or content change was detected,
             we update the current values and make adjustments */
          strlcpy(core_name,   current_core_name,   sizeof(core_name));
          strlcpy(content_dir, current_content_dir, sizeof(content_dir));
+         strlcpy(content_name, current_content_name, sizeof(current_content_name));
          RARCH_LOG("[CRT]: Current running core %s \n", core_name);
          crt_adjust_sr_ini(p_switch);
          p_switch->hh_core = false;
@@ -509,10 +515,40 @@ void crt_switch_res_core(
    }
 }
 
+static char* get_game_name(char* full_path)
+{
+   int n = strlen(full_path);
+   char* rom_filename = full_path + n;
+   char delimiter = (char)  path_get(RARCH_PATH_BASENAME)[0];
+
+   for( int i = 0; i < n; i++)
+   {
+      if (full_path[i] == '/' || full_path[i] =='\\')
+      {
+         delimiter = full_path[i];
+         break; 
+      }
+   }
+
+   while (0 < n && (full_path[--n] != delimiter ));
+   if (full_path[n] == delimiter ) {
+   rom_filename = full_path + n + 1;
+
+   }
+   return rom_filename;
+
+}
+
 void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
 {
    char config_directory[DIR_MAX_LENGTH];
    char switchres_ini_override_file[PATH_MAX_LENGTH];
+
+   char* rom_filename = get_game_name((char*) path_get(RARCH_PATH_BASENAME));
+
+   strlcpy(content_name, rom_filename, sizeof(current_content_name));
+
+   RARCH_LOG("[CRT]: Game Info %s\n", rom_filename); 
 
    if (p_switch->sr2_active)
    {
@@ -534,6 +570,7 @@ void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
          fill_pathname_application_special(config_directory,
                sizeof(config_directory),
                APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+
          fill_pathname_join_special_ext(switchres_ini_override_file,
                config_directory, core_name, core_name,
                ".switchres.ini", sizeof(switchres_ini_override_file));
@@ -553,6 +590,18 @@ void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
          if (path_is_valid(switchres_ini_override_file))
          {
             RARCH_LOG("[CRT]: Loading switchres.ini content directory override file from %s \n", switchres_ini_override_file);
+            sr_load_ini(switchres_ini_override_file);
+            ini_overrides_loaded = true;
+         }
+
+         /* Next up we load game overrides, if any */
+         fill_pathname_join_special_ext(switchres_ini_override_file,
+               config_directory, core_name, content_name,
+               ".switchres.ini", sizeof(switchres_ini_override_file));
+
+         if (path_is_valid(switchres_ini_override_file))
+         {
+            RARCH_LOG("[CRT]: Loading switchres.ini game override file from %s \n", switchres_ini_override_file);
             sr_load_ini(switchres_ini_override_file);
             ini_overrides_loaded = true;
          }
