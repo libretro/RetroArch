@@ -12574,6 +12574,10 @@ MSG_HASH(
    "Tar upp kommandogränssnitt på port"
    )
 MSG_HASH(
+   MSG_CANNOT_INFER_NEW_CONFIG_PATH,
+   "Kan inte sluta sig till ny konfigurationssökväg. Använd aktuell tid."
+   )
+MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "Jämför med kända magic numbers..."
    )
@@ -13378,6 +13382,10 @@ MSG_HASH(
    "Misslyckades med att automatiskt läsa in sparat tillstånd från \"%s\"."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   "Automatisk inläsning av sparat tillstånd från \"%s\" lyckades."
+   )
+MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT,
    "konfigurerad i port"
    )
@@ -14002,6 +14010,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
    "Öppna en annan katalog med hjälp av systemets filväljare"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
+   "Flimmerfilter"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
