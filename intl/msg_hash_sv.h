@@ -2398,6 +2398,10 @@ MSG_HASH(
    "Skala video endast i heltalssteg. Basstorleken beror på core-rapporterad geometri och bildförhållande."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "Axel för heltalsskalning"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    "Skala antingen höjd eller bredd, eller både höjd och bredd. Halva steg gäller endast för källor med hög upplösning."
    )
@@ -3461,6 +3465,10 @@ MSG_HASH(
    "Inaktivera vänster analog i meny"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Förhindra inmatning från analog spak i menyn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "Inaktivera höger analog i meny"
    )
@@ -3804,6 +3812,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
    "Stoppa Inspelning/Repris"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   "Stoppar inspelning/uppspelning av aktuell repris."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
@@ -4195,8 +4207,20 @@ MSG_HASH(
 /* Settings > Latency */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
+   "[Kör i förväg inte tillgängligt]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE,
+   "Kör i förväg"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Antal bildrutor att köra före"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+   "Antalet bildrutor som ska köras i förväg. Orsakar problem i spelet, t. ex. hackighet, om antalet fördröjda bildrutor i spelet överskrids."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
@@ -4776,6 +4800,10 @@ MSG_HASH(
    "Återgå till en tidigare punkt i den senaste spelningen. Detta orsakar en allvarlig prestandaförlust när du spelar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
+   "Spola tillbaka bildrutor"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
    "Antalet bildrutor som ska spolas tillbaka per steg. Högre värden ökar återspolningshastigheten."
    )
@@ -4791,6 +4819,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
    "Stegstorlek för återspolningsbuffert (MB)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
+   "Varje gång som tillbakaspolningsbuffertens storleksvärde ökas eller minskas, kommer det att ändras med denna mängd."
+   )
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
@@ -4799,8 +4831,24 @@ MSG_HASH(
    "Nollställ efter snabbspolning"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "Nollställ bildtidsräknaren efter snabbspolning framåt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+   "Nollställ efter inläsning av tillstånd"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+   "Nollställ bildruteräknaren efter att ett tillstånd har lästs in."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
    "Återställ efter sparad status"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+   "Nollställ bildtidsräknaren efter sparning av ett tillstånd."
    )
 
 /* Settings > Recording */
@@ -5233,6 +5281,10 @@ MSG_HASH(
    "Alla"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Avtryckarfördröjning (bildrutor)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
    "Välj den inmatning som ska skickas när fyra pekare visas på skärmen. Utlösarfördröjningen bör vara inte vara noll för att skilja den från andra inmatningar."
    )
@@ -5400,6 +5452,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    "\"Läs in innehåll\"-notifiering vid uppstart"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "Visa en kort animering med återkoppling vid start när innehåll läses in."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -9641,6 +9697,10 @@ MSG_HASH(
    "Sök"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
+   "Växla miniatyrbilder"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
    "Välj slumpmässigt"
    )
@@ -10741,6 +10801,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
    "Typsnittsskala"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   "Separata värden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
@@ -13486,8 +13550,32 @@ MSG_HASH(
    "Åsidosättning av konfiguration inläst."
    )
 MSG_HASH(
+   MSG_RUNAHEAD_ENABLED,
+   "Kör i förväg aktiverat. Latensbildrutor borttagna: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   "Kör i förväg aktiverat med sekundär instans. Latensbildrutor borttagna: %u."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_DISABLED,
+   "Kör i förväg inaktiverat."
+   )
+MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "Run-Ahead har inaktiverats för att denna Kärna saknar stöd för Spara Statusar."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+   "Misslyckades med att spara tillstånd. Kör i förväg har inaktiverats."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+   "Misslyckades med att läsa in tillstånd. Kör i förväg har inaktiverats."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+   "Misslyckades med att skapa sekundär instans. Kör i förväg kommer nu endast använda en instans."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
