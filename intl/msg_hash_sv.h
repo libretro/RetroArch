@@ -5285,6 +5285,14 @@ MSG_HASH(
    "Avtryckarfördröjning (bildrutor)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "Välj inmatning som ska skickas när två pekare är på skärmen. Utlösarfördröjning ska vara större än noll för att skilja från annan inmatning."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "Välj inmatning som ska skickas när tre pekare är på skärmen. Utlösarfördröjning ska vara större än noll för att skilja från annan inmatning."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
    "Välj den inmatning som ska skickas när fyra pekare visas på skärmen. Utlösarfördröjningen bör vara inte vara noll för att skilja den från andra inmatningar."
    )
@@ -5973,11 +5981,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   "Visa 'Online Uppdaterare'"
+   "Visa 'Online-uppdaterare'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   "Visa alternativet 'Online Uppdaterare' i huvudmenyn."
+   "Visa alternativet 'Online-uppdaterare' i huvudmenyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
@@ -5985,7 +5993,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-   "Visa möjligheten att uppdatera kärnor (och kärninfofiler) i 'Online Uppdaterare'."
+   "Visa möjligheten att uppdatera kärnor (och kärninfofiler) i 'Online-uppdaterare'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+   "Visa föråldrad 'Uppdatera miniatyrbilder'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
+   "Visa posten för att hämta miniatyrbildspaket i alternativet 'Online-uppdaterare'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
@@ -6144,6 +6160,10 @@ MSG_HASH(
    "Visa 'Innehållslösa kärnor'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
+   "Ange vilken typ av kärna (om någon) som ska visas i menyn 'Innehållslösa kärnor'. När inställningen är ’Anpassad’ kan synligheten för enskilda kärnor växlas via menyn ”Hantera kärnor”."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
    "Alla"
    )
@@ -6153,7 +6173,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
-   "Anpassa"
+   "Anpassad"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
@@ -9286,6 +9306,10 @@ MSG_HASH(
    "Lägg till förval"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   "Lägg till förval till de redan inlästa förvalen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
    "Spara förinställning"
    )
@@ -9324,6 +9348,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
    "Shaderpass"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
+   "Öka eller minska antalet shader-pipeline-pass. Separata shaders kan kopplas till varje pipeline-pass och dess skala och filtrering kan konfigureras."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
@@ -14595,7 +14623,7 @@ MSG_HASH(
 #ifdef HAVE_QT
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Genomsökning slutförd.<br><br>\nFör att innehållet ska sökas igenom korrekt måste du:\n<ul><li>ha en kompatibel kärna redan hämtad</li>\n<li>ha ”Core Info Files” uppdaterat via Online Updater</li>\n<li>ha ”Databases” uppdaterat via Online Updater</li>\n<li>starta om RetroArch om något av ovanstående just har gjorts</li></ul>\nSlutligen måste innehållet matcha befintliga databaser från <a href=\"https://docs. libretro.com/guides/roms-playlists-thumbnails/#sources\">här</a>. Om det fortfarande inte fungerar kan du överväga att <a href=”https://www.github.com/libretro/RetroArch/issues”>skicka in en felrapport</a>."
+   "Genomsökning slutförd.<br><br>\nFör att innehållet ska sökas igenom korrekt måste du:\n<ul><li>ha en kompatibel kärna redan hämtat</li>\n<li>ha ”Kärninfofiler” uppdaterade via Online-uppdaterare</li>\n<li>ha ”Databaser” uppdaterade via Online-uppdaterare</li>\n<li>starta om RetroArch om något av ovanstående just har gjorts</li></ul>\nSlutligen måste innehållet matcha befintliga databaser från <a href=\"https://docs. libretro.com/guides/roms-playlists-thumbnails/#sources\">här</a>. Om det fortfarande inte fungerar kan du överväga att <a href=”https://www.github.com/libretro/RetroArch/issues”>skicka in en felrapport</a>."
    )
 #endif
 MSG_HASH(
