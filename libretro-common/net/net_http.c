@@ -1053,7 +1053,7 @@ static bool net_http_send_request(struct http_t *state)
    net_http_send_str(state, "Host: ", STRLEN_CONST("Host: "));
    net_http_send_str(state, request->domain, strlen(request->domain));
 
-   if (request->port)
+   if (request->port && request->port != 80 && request->port != 443)
    {
       char portstr[16];
       size_t _len     = 0;
