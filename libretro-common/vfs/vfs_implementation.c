@@ -254,6 +254,7 @@ int64_t retro_vfs_file_seek_internal(
       /* fseek() returns error on under/overflow but
        * allows cursor > EOF for
        read-only file descriptors. */
+      /* The file position must never be negative. */
       switch (whence)
       {
          case SEEK_SET:
@@ -264,15 +265,18 @@ int64_t retro_vfs_file_seek_internal(
             break;
 
          case SEEK_CUR:
-            if (  (offset < 0 && stream->mappos + offset > stream->mappos) ||
-                  (offset > 0 && stream->mappos + offset < stream->mappos))
-               return -1;
+            if (stream->mappos + offset < 0)
+              return -1;
 
             stream->mappos += offset;
             break;
 
          case SEEK_END:
-            if (stream->mapsize + offset < stream->mapsize)
+            /* RETRO_VFS_SEEK_POSITION_END states offset should be negative.
+             * However, this is impractical because we would be forcing the
+             * end of file to always be off by one.
+             */
+            if (offset > 0 || stream->mapsize + offset < 0)
                return -1;
 
             stream->mappos = stream->mapsize + offset;
