@@ -3255,8 +3255,28 @@ MSG_HASH(
    "Botão Único (Segurar)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "Modo clássico com operação de dois botões. Segure um botão e aperte o botão Turbo para ativar a sequência segure-solte.\nO botão Turbo pode ser assinado em Configurações/Entrada/Controles da Porta X."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
    "Modo clássico de alternância, operação com dois botões. Segure um botão e toque no botão Turbo para ativar o turbo para esse botão. Para desativar o turbo: segure o botão e pressione o botão Turbo novamente.\nA atribuição do botão Turbo pode ser configurada em Configurações/Entrada/Controles da Porta X."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Modo de alternância. Aperte o botão Turbo uma vez para ativar a sequência segure-solte para o botão selecionado, aperte novamente para desligá-lo.\nO botão Turbo pode ser designado em Configurações/Entrada/Controles da Porta X."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Modo segurar. A sequência segurar-soltar para o botão designado estará ativo enquanto o botão Turbo estiver sendo pressionado.\n O botão Turbo pode ser assinalado em Configurações/Entrada/Controles da Porta X.\n Para simular a função autofogo de época dos computadores antigos, defina o Turbo e os botões padrão para o mesmo botão de disparos do joystick."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+   "Botão Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   "Turbo ativando o botão RetroPad. Vazio usa o botão específico da porta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,

@@ -1430,7 +1430,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "Ändra inställningar för bild- och tangentbodsöverlager samt skärm-notis."
+   "Ändra inställningar för bild- och tangentbordsöverlager samt skärmmeddelanden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -3104,7 +3104,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-   "Aktivera för 'Notis'"
+   "Aktivera för 'Meddelande'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -4966,19 +4966,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "Skärm-notiser"
+   "Skärmmeddelanden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "Hantera notiser som visas på skärmen."
+   "Hantera meddelanden som visas på skärmen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "Synliga notiser"
+   "Synlighet för meddelanden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "Slå på/av synligheten för specifika typer av notiser."
+   "Slå på/av synligheten för specifika typer av meddelanden."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
@@ -5375,7 +5375,7 @@ MSG_HASH( /* FIXME Unused */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
-   "Skärm-notiser"
+   "Skärmmeddelanden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
@@ -5383,7 +5383,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-   "Grafikwidgets"
+   "Grafikwidgetar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
@@ -5391,19 +5391,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
-   "Auto-skala Grafikwidgets"
+   "Skala grafikwidgetar automatiskt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
    "Ändra automatiskt storlek på dekorerade meddelanden, indikatorer och kontroller baserat på aktuell menyskala."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   "Åsidosätt skalning av grafikwidgetar (helskärm)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   "Tillämpa en manuell skalningsfaktor när du ritar grafikwidgets i helskärmsläge. Gäller endast när ”Skala grafikwidgets automatiskt” är inaktiverat. Kan användas för att öka eller minska storleken på dekorerade meddelanden, indikatorer och kontroller oberoende av själva menyn."
+   "Tillämpa en manuell skalningsfaktor när du ritar grafikwidgetar i helskärmsläge. Gäller endast när ”Skala grafikwidgetar automatiskt” är inaktiverat. Kan användas för att öka eller minska storleken på dekorerade meddelanden, indikatorer och kontroller oberoende av själva menyn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   "Åsidosätt skalning av grafikwidgetar (fönsterläge)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   "Använd en manuell skalningsfaktor när du ritar displaywidgets i fönsterläge. Gäller endast när ”Skala grafikwidgets automatiskt” är inaktiverat. Kan användas för att öka eller minska storleken på dekorerade meddelanden, indikatorer och kontroller oberoende av själva menyn."
+   "Använd en manuell skalningsfaktor när du ritar grafikwidgetar i fönsterläge. Gäller endast när ”Skala grafikwidgetar automatiskt” är inaktiverat. Kan användas för att öka eller minska storleken på dekorerade meddelanden, indikatorer och kontroller oberoende av själva menyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
@@ -5459,7 +5467,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-   "\"Läs in innehåll\"-notifiering vid uppstart"
+   "\"Läs in innehåll\"-meddelande vid uppstart"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -5475,7 +5483,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Fuskkod Notiser"
+   "Fuskkodsmeddelanden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
@@ -5483,7 +5491,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
-   "Patch Notiser"
+   "Patchmeddelanden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
@@ -5499,7 +5507,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
-   "Notifieringar vid inlästa inmatningsommappningar"
+   "Meddelanden vid inlästa inmatningsommappningar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
@@ -5535,7 +5543,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Snabbspola Notiser"
+   "Snabbspolningsmeddelanden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -5543,7 +5551,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
-   "Skärmdump Notiser"
+   "Skärmdumpsmeddelanden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
@@ -5551,7 +5559,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-   "Tidsgräns skärmdumpsnotis"
+   "Tidsgräns för skärmdumpsmeddelanden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
@@ -5587,7 +5595,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
-   "Uppdateringsfrekvens Notiser"
+   "Meddelanden för uppdateringsfrekvens"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
@@ -5595,7 +5603,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Extra Netplay Notiser"
+   "Meddelanden för Extra Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
@@ -5603,23 +5611,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
-   "Endast-meny Notiser"
+   "Meddelanden för endast-meny"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
-   "Visa notiser endast när menyn är öppen."
+   "Visa meddelanden endast när menyn är öppen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
-   "Typsnitt notiser"
+   "Typsnitt för meddelanden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
-   "Välj typsnittet för skärm-notiser."
+   "Välj typsnittet för skärmmeddelanden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
-   "Notis-storlek"
+   "Meddelandestorlek"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
@@ -5627,7 +5635,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
-   "Notisposition (horisontellt)"
+   "Meddelandeposition (horisontellt)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
@@ -5635,7 +5643,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
-   "Notisposition (vertikalt)"
+   "Meddelandeposition (vertikalt)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
@@ -5643,59 +5651,59 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
-   "Notisfärg (röd)"
+   "Meddelandefärg (röd)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
-   "Ställer in det röda värdet för textfärgen för skärm-notiser. Giltiga värden är mellan 0 och 255."
+   "Ställer in det röda värdet för textfärgen för skärmmeddelanden. Giltiga värden är mellan 0 och 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
-   "Notisfärg (grön)"
+   "Meddelandefärg (grön)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
-   "Ställer in det gröna värdet för textfärgen för skärm-notiser. Giltiga värden är mellan 0 och 255."
+   "Ställer in det gröna värdet för textfärgen för skärmmeddelanden. Giltiga värden är mellan 0 och 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
-   "Notisfärg (blå)"
+   "Meddelandefärg (blå)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
-   "Ställer in det blåa värdet för textfärgen för skärm-notiser. Giltiga värden är mellan 0 och 255."
+   "Ställer in det blåa värdet för textfärgen för skärmmeddelanden. Giltiga värden är mellan 0 och 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-   "Notis bakgrund"
+   "Meddelandebakgrund"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-   "Aktiverar en bakgrundsfärg för skärm-notiser."
+   "Aktiverar en bakgrundsfärg för skärmmeddelanden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
-   "Notis bakgrundsfärg (röd)"
+   "Meddelandens bakgrundsfärg (röd)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
-   "Ställer in det röda värdet för bakgrundsfärgen för skärm-notiser. Giltiga värden är mellan 0 och 255."
+   "Ställer in det röda värdet för bakgrundsfärgen för skärmmeddelanden. Giltiga värden är mellan 0 och 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
-   "Notis bakgrundsfärg (grön)"
+   "Meddelandens bakgrundsfärg (grön)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
-   "Ställer in det gröna värdet för bakgrundsfärgen för skärm-notiser. Giltiga värden är mellan 0 och 255."
+   "Ställer in det gröna värdet för bakgrundsfärgen för skärmmeddelanden. Giltiga värden är mellan 0 och 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
-   "Notis bakgrundsfärg (blå)"
+   "Meddelandens bakgrundsfärg (blå)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
-   "Ställer in det blåa värdet för bakgrundsfärgen för skärm-notiser. Giltiga värden är mellan 0 och 255."
+   "Ställer in det blåa värdet för bakgrundsfärgen för skärmmeddelanden. Giltiga värden är mellan 0 och 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
@@ -6889,7 +6897,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
-   "Ändra position och förskjutningar för prestationsnotiser på skärmen."
+   "Ändra position och förskjutningar för prestationsmeddelanden på skärmen."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_ANCHOR,
@@ -6925,7 +6933,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
-   "Ange om prestationsnotiser ska överensstämma med andra typer av skärm-notiser. Inaktivera för att ställa in manuella utfyllnads-/positionsvärden."
+   "Ange om prestationsmeddelanden ska överensstämma med andra typer av skärmmeddelanden. Inaktivera för att ställa in manuella utfyllnads-/positionsvärden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
@@ -6972,19 +6980,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
-   "Upplåst Notiser"
+   "Upplåsningsmeddelanden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
-   "Visar en notis när en prestation är upplåst."
+   "Visar ett meddelande när en prestation är upplåst."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
-   "Mästerlig Notiser"
+   "Mästerliga meddelanden"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
-   "Visar en notis när alla prestationer för ett spel är upplåsta."
+   "Visar ett meddelande när alla prestationer för ett spel är upplåsta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
@@ -10121,7 +10129,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_NOTIFICATIONS_ONLY,
-   "Endast notiser"
+   "Endast meddelanden"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DONT_CARE,
@@ -14056,8 +14064,12 @@ MSG_HASH(
    "Delade Joy-Con"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+   "Åsidosätt skalning av grafikwidgetar"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-   "Tillämpa en manuell skalningsfaktor vid ritning av displaywidgets. Gäller endast när ”Skala grafikwidgets automatiskt” är inaktiverat. Kan användas för att öka eller minska storleken på dekorerade meddelanden, indikatorer och kontroller oberoende av själva menyn."
+   "Tillämpa en manuell skalningsfaktor vid ritning av grafikwidgetar. Gäller endast när ”Skala grafikwidgetar automatiskt” är inaktiverat. Kan användas för att öka eller minska storleken på dekorerade meddelanden, indikatorer och kontroller oberoende av själva menyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
@@ -14495,6 +14507,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
    "RGA-skalning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
+   "RGA-skalning och bikubisk filtrering. Kan göra sönder widgetar."
    )
 #else
 MSG_HASH(
