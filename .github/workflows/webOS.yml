@@ -51,14 +51,14 @@ jobs:
         with:
           repository: "openlgtv/buildroot-nc4"
           latest: true
-          fileName: "arm-webos-linux-gnueabi_sdk-buildroot.tar.gz"
+          fileName: "linux-intel-webos-sdk.tar.gz"
           out-file-path: "/tmp"
 
       - name: Extract webOS NDK
         shell: bash
         working-directory: /tmp
         run: |
-          tar xzf arm-webos-linux-gnueabi_sdk-buildroot.tar.gz
+          tar xzf linux-intel-webos-sdk.tar.gz
           ./arm-webos-linux-gnueabi_sdk-buildroot/relocate-sdk.sh
 
       - name: Compile RA
