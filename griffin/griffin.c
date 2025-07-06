@@ -1498,6 +1498,9 @@ DEPENDENCIES
 #endif
 
 #ifdef HAVE_ZSTD
+#if (DEBUGLEVEL>=2)
+#include "../deps/zstd/lib/common/debug.c"
+#endif
 #include "../deps/zstd/lib/common/entropy_common.c"
 #include "../deps/zstd/lib/common/error_private.c"
 #include "../deps/zstd/lib/common/fse_decompress.c"
