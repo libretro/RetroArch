@@ -130,10 +130,11 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
 static void cocoa_vk_gfx_ctx_get_video_size(void *data,
       unsigned* width, unsigned* height)
 {
-    float screenscale               = cocoa_screen_get_native_scale();
-    CGRect size                     = [apple_platform.renderView bounds];
-    *width                          = CGRectGetWidth(size)  * screenscale;
-    *height                         = CGRectGetHeight(size) * screenscale;
+    UIView *renderView              = apple_platform.renderView;
+    CGRect size                     = [renderView bounds];
+    float viewScale                 = [renderView contentScaleFactor];
+    *width                          = CGRectGetWidth(size)  * viewScale;
+    *height                         = CGRectGetHeight(size) * viewScale;
 }
 #endif
 
@@ -385,7 +386,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_has_focus,
    cocoa_vk_gfx_ctx_suppress_screensaver,
 #if defined(HAVE_COCOATOUCH)
-   false,
+   true,
 #else
    true,
 #endif
