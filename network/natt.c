@@ -273,47 +273,49 @@ static bool parse_desc_node(rxml_node_t *node,
 {
    rxml_node_t *child = node->children;
 
-   if (!child)
-      return false;
-
-   /* We only care for services. */
-   if (string_is_equal_case_insensitive(node->name, "service"))
+   if (child)
    {
-      rxml_node_t *service_type = NULL;
-      rxml_node_t *control_url  = NULL;
+      /* We only care for services. */
+      if (string_is_equal_case_insensitive(node->name, "service"))
+      {
+         rxml_node_t *service_type = NULL;
+         rxml_node_t *control_url  = NULL;
 
+         do
+         {
+            if (string_is_equal_case_insensitive(child->name, "serviceType"))
+               service_type = child;
+            else if (string_is_equal_case_insensitive(child->name, "controlURL"))
+               control_url  = child;
+            if (service_type && control_url)
+               break;
+         } while ((child = child->next));
+
+         if (service_type && control_url)
+         {
+            /* These two are the only IGD service types we can work with. */
+            if (  strstr(service_type->data, ":WANIPConnection:")
+               || strstr(service_type->data, ":WANPPPConnection:"))
+            {
+               if (build_control_url(control_url, device))
+               {
+                  strlcpy(device->service_type, service_type->data,
+                     sizeof(device->service_type));
+                  return true;
+               }
+            }
+          }
+      }
+   }
+   else
+   {
+      /* XML recursion */
       do
       {
-        if (string_is_equal_case_insensitive(child->name, "serviceType"))
-           service_type = child;
-        else if (string_is_equal_case_insensitive(child->name, "controlURL"))
-           control_url  = child;
-        if (service_type && control_url)
-           break;
+         if (parse_desc_node(child, device))
+            return true;
       } while ((child = child->next));
-
-      if (!service_type || !control_url)
-         return false;
-
-      /* These two are the only IGD service types we can work with. */
-      if (!strstr(service_type->data, ":WANIPConnection:") &&
-            !strstr(service_type->data, ":WANPPPConnection:"))
-         return false;
-      if (!build_control_url(control_url, device))
-         return false;
-
-      strlcpy(device->service_type, service_type->data,
-         sizeof(device->service_type));
-
-      return true;
    }
-
-   /* XML recursion */
-   do
-   {
-      if (parse_desc_node(child, device))
-         return true;
-   } while ((child = child->next));
 
    return false;
 }

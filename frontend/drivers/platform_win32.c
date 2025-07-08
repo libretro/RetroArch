@@ -357,16 +357,17 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
           * string manipulation. */
          
           _len = strlcpy(s, str_ProductName, len);
-                  if (!string_is_empty(arch))
+
+         if (!string_is_empty(arch))
          {
-            _len += strlcat(s, " ",  len);
-            _len += strlcat(s, arch, len);
+            _len += strlcpy(s + _len, " ",  len - _len);
+            _len += strlcpy(s + _len, arch, len - _len);
          }
-         _len = strlcat(s, " ", len);
-         _len = strlcat(s, str_DisplayVersion, len);
-         _len = strlcat(s, " (", len);
-         _len = strlcat(s, str_LCUVer, len);
-         _len = strlcat(s, ")", len);
+         _len = strlcpy(s + _len, " ", len - _len);
+         _len = strlcpy(s + _len, str_DisplayVersion, len - _len);
+         _len = strlcpy(s + _len, " (", len - _len);
+         _len = strlcpy(s + _len, str_LCUVer, len - _len);
+         _len = strlcpy(s + _len, ")", len - _len);
 
          *major = 10;
          *minor = 0;

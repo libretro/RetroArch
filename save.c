@@ -401,18 +401,20 @@ static bool content_load_ram_file(unsigned slot)
 static bool dump_to_file_desperate(const void *data,
       size_t len, unsigned type)
 {
+   size_t _len;
    char path[PATH_MAX_LENGTH + 256 + 32];
-   path            [0]    = '\0';
+   path[0] = '\0';
+   _len    = fill_pathname_application_data(path,
+            sizeof(path));
 
-   if (fill_pathname_application_data(path,
-            sizeof(path)))
+   if (_len)
    {
-      size_t _len;
       time_t time_;
       struct tm tm_;
+
       time(&time_);
       rtime_localtime(&time_, &tm_);
-      _len  = strlcat(path, "/RetroArch-recovery-", sizeof(path));
+      _len += strlcpy(path  + _len, "/RetroArch-recovery-", sizeof(path) - _len);
       _len += snprintf(path + _len, sizeof(path) - _len, "%u", type);
       strftime(path + _len, sizeof(path) - _len,
             "%Y-%m-%d-%H-%M-%S", &tm_);

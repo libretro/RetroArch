@@ -667,9 +667,9 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
 static uint32_t netplay_impl_magic(void)
 {
    size_t i;
-   uint32_t res                        = 0;
-   const char *ver                     = PACKAGE_VERSION;
-   size_t _len                         = strlen(ver);
+   uint32_t res    = 0;
+   const char *ver = PACKAGE_VERSION;
+   size_t _len     = strlen(ver);
 
    for (i = 0; i < _len; i++)
       res ^= ver[i] << (i & 0xf);
@@ -1439,7 +1439,6 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
    ssize_t recvd;
    struct nick_buf_s nick_buf;
    int32_t ping         = 0;
-   settings_t *settings = config_get_ptr();
 
    RECV(&nick_buf, sizeof(nick_buf)) {}
 
@@ -1471,6 +1470,8 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
 
    if (netplay->is_server)
    {
+      settings_t *settings = config_get_ptr();
+
       if (!netplay_handshake_nick(netplay, connection))
          return false;
 
@@ -4936,14 +4937,16 @@ static void netplay_handle_play_spectate(netplay_t *netplay,
 
             if (connection)
             {
-               bool       slave     = false;
-               settings_t *settings = config_get_ptr();
+               bool       slave            = false;
+               settings_t *settings        = config_get_ptr();
+               bool netplay_allow_slaves   = settings->bools.netplay_allow_slaves;
+               bool netplay_require_slaves = settings->bools.netplay_require_slaves;
 
                /* Slave mode unused when core uses netpacket interface */
-               if (     settings->bools.netplay_allow_slaves
+               if (     netplay_allow_slaves
                      && netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
                {
-                  if (settings->bools.netplay_require_slaves)
+                  if (netplay_require_slaves)
                      slave = true;
                   else if (mode & NETPLAY_CMD_PLAY_BIT_SLAVE)
                      slave = true;
@@ -5005,7 +5008,7 @@ static void netplay_handle_play_spectate(netplay_t *netplay,
                mode = NETPLAY_CMD_MODE_BIT_PLAYING;
 
                netplay->self_devices = devices;
-               netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
+               netplay->self_mode    = NETPLAY_CONNECTION_PLAYING;
 
                netplay_announce_play_spectate(netplay, NULL,
                   netplay->self_mode, devices, -1, client_num);
