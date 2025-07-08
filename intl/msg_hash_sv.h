@@ -5426,6 +5426,10 @@ MSG_HASH(
    "Bildfrekvensens uppdateringsintervall (i bildrutor)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
+   "Bildfrekvensen uppdateras med det inställda intervallet i bildrutor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
    "Visa bildruteräknare"
    )
@@ -7298,6 +7302,10 @@ MSG_HASH(
    "stdin kommandogränssnitt."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
+   "Hämta miniatyrbilder vid behov"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    "Hämta automatiskt ner saknade miniatyrbilder när du bläddrar i spellistor. Har en stor prestandapåverkan."
    )
@@ -7518,6 +7526,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
    "sedan"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
+   "Visa postens nummer när du visar spellistor. Visningsformatet beror på den valda menydrivrutinen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
@@ -9282,6 +9294,14 @@ MSG_HASH(
 /* Quick Menu > Shaders */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
+   "Aktivera pipeline för video shader."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
+   "Bevaka shader-filer för ändringar"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    "Tillämpa automatiskt ändringar som gjorts i shader-filer på disken."
    )
@@ -9308,6 +9328,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    "Läs in en shader-förinställning direkt. Shader-menyn uppdateras i enlighet med detta.\nSkaleringsfaktorn som visas i menyn är tillförlitlig endast om förinställningen använder enkla skalningsmetoder (dvs. källskalning, samma skalningsfaktor för X/Y)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   "Lägg till förinställning före"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "Lägg till förinställning före den aktuella inlästa förinställningen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
@@ -10367,6 +10395,14 @@ MSG_HASH(
    "Växla miniatyrbilder"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+   "Omsamplingsmetod som används när stora miniatyrbilder krymps för att passa skärmen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   "Miniatyrbildsfördröjning (ms)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
    "Tillämpar en tidsfördröjning mellan valet av en spellistepost och laddningen av dess tillhörande miniatyrbilder. Om du ställer in detta till ett värde på minst 256 ms möjliggörs snabb och fördröjningsfri rullning även på de långsammaste enheterna."
    )
@@ -10681,8 +10717,16 @@ MSG_HASH(
    "Välj ett annat bakgrundsfärg tema."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
+   "Visa den vänstra miniatyrbilden under den högra, på den högra sidan av skärmen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
    "Miniatyrskalfaktor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   "Minska visningsstorlek för miniatyrbild genom att skala maximal tillåten bredd."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
@@ -10839,8 +10883,28 @@ MSG_HASH(
    "Typsnittsskala"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
+   "Ange om teckenstorleken i menyn ska ha egen skalning och om den ska skalas globalt eller med separata värden för varje del av menyn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
+   "Globalt"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
    "Separata värden"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Skalningsfaktor för typsnitt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "Skala typsnittsstorleken linjärt över hela menyn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Skalningsfaktor för titeltypsnitt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
