@@ -3667,10 +3667,13 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             /* Restore shader option state after temporary fast toggling */
-            if (menu_shader_get()->flags & SHDR_FLAG_TEMPORARY)
             {
-               bool enabled = !(menu_shader_get()->flags & SHDR_FLAG_DISABLED);
-               configuration_set_bool(settings, settings->bools.video_shader_enable, enabled);
+               const struct video_shader *menu_shader = menu_shader_get();
+               if (menu_shader && menu_shader->flags & SHDR_FLAG_TEMPORARY)
+               {
+                  bool enabled = !(menu_shader->flags & SHDR_FLAG_DISABLED);
+                  configuration_set_bool(settings, settings->bools.video_shader_enable, enabled);
+               }
             }
 #endif
 #endif
@@ -8627,10 +8630,13 @@ bool retroarch_main_quit(void)
 #ifdef HAVE_MENU
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
       /* Restore shader option state after temporary fast toggling */
-      if (menu_shader_get()->flags & SHDR_FLAG_TEMPORARY)
       {
-         bool enabled = !(menu_shader_get()->flags & SHDR_FLAG_DISABLED);
-         configuration_set_bool(settings, settings->bools.video_shader_enable, enabled);
+         const struct video_shader *menu_shader = menu_shader_get();
+         if (menu_shader && menu_shader->flags & SHDR_FLAG_TEMPORARY)
+         {
+            bool enabled = !(menu_shader->flags & SHDR_FLAG_DISABLED);
+            configuration_set_bool(settings, settings->bools.video_shader_enable, enabled);
+         }
       }
 #endif
 #endif
