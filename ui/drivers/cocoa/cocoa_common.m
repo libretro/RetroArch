@@ -592,14 +592,23 @@ void rarch_stop_draw_observer(void)
          return;
 
       CGRect screenSize    = [screen bounds];
-      CGRect currentBounds = self.view.bounds;
 
-      bool isMultitasking  = (currentBounds.size.width < screenSize.size.width ||
-                             currentBounds.size.height < screenSize.size.height);
+      if (ios_running_on_ipad())
+      {
+         CGRect currentBounds = self.view.bounds;
+         bool isMultitasking  = (currentBounds.size.width < screenSize.size.width ||
+                                 currentBounds.size.height < screenSize.size.height);
 
-      /* In multitasking mode, don't override the frame - let iOS handle it */
-      if (isMultitasking)
+         /* In multitasking mode, don't override the frame - let iOS handle it */
+         if (isMultitasking)
+            return;
+      }
+
+      if (settings->bools.video_notch_write_over_enable)
+      {
+         self.view.frame = screenSize;
          return;
+      }
 
       /* Only apply safe area adjustments when in full screen mode */
       UIWindow *window     = [[UIApplication sharedApplication] delegate].window;
@@ -608,12 +617,6 @@ void rarch_stop_draw_observer(void)
 
       UIEdgeInsets inset   = window.safeAreaInsets;
       UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
-
-      if (settings->bools.video_notch_write_over_enable)
-      {
-         self.view.frame = screenSize;
-         return;
-      }
 
       switch (orientation)
       {
