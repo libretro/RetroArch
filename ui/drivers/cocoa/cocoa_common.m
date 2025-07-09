@@ -769,8 +769,10 @@ void rarch_stop_draw_observer(void)
 -(void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+#if !TARGET_OS_SIMULATOR
     [[WebServer sharedInstance] startServers];
     [WebServer sharedInstance].webUploader.delegate = self;
+#endif
 }
 
 #if TARGET_OS_IOS && HAVE_IOS_TOUCHMOUSE
