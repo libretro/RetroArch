@@ -209,9 +209,6 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
    CGRect bounds;
    CGSize advance;
    CGContextRef offscreen;
-   CFDictionaryRef attr;
-   CFTypeRef values[1] = {face};
-   CFStringRef keys[1] = {kCTFontAttributeName};
    void *bitmapData;
    UniChar character = (UniChar)charcode;
    CFStringRef glyph_cfstr;
@@ -220,7 +217,6 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
    uint8_t *dst;
    const uint8_t *src;
    unsigned r, c;
-
 
    /* Get glyph for character */
    bool has_glyph = CTFontGetGlyphsForCharacters(face, &character, &glyph, 1);
@@ -270,10 +266,10 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
          &glyph, &advance, 1);
 
    /* Set up glyph metrics using cached ascent */
-   slot->glyph.draw_offset_x = (int)floor(bounds.origin.x);
-   slot->glyph.draw_offset_y = (int)floor(-handle->cached_ascent);
-   slot->glyph.advance_x     = (int)ceil(advance.width);
-   slot->glyph.advance_y     = (int)ceil(advance.height);
+   slot->glyph.draw_offset_x = (int)ceil(bounds.origin.x);
+   slot->glyph.draw_offset_y = (int)floor(-bounds.origin.y) - (int)floor(handle->cached_ascent) + 1;
+   slot->glyph.advance_x     = (int)round(advance.width);
+   slot->glyph.advance_y     = (int)round(advance.height);
 
    /* Create bitmap context */
    bitmapData = calloc(slot->glyph.height, slot->glyph.width);
@@ -296,7 +292,7 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
    CFRelease(attrString);
 
    /* Render glyph */
-   CGContextSetTextPosition(offscreen, -bounds.origin.x, CTFontGetDescent(face));
+   CGContextSetTextPosition(offscreen, -bounds.origin.x, -bounds.origin.y);
    CTLineDraw(line, offscreen);
    CFRelease(line);
 
