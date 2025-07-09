@@ -14311,11 +14311,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
-   "cores updated: "
+   "Cores updated: "
    )
 MSG_HASH(
    MSG_NUM_CORES_LOCKED,
-   "cores skipped: "
+   "Cores skipped: "
    )
 MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,

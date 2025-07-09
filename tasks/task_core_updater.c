@@ -259,7 +259,7 @@ static void cb_http_task_core_updater_get_list(
 finish:
    /* Log any error messages */
    if (!success)
-      RARCH_ERR("[core updater] Download of core list '%s' failed: %s\n",
+      RARCH_ERR("[Core Updater] Download of core list '%s' failed: %s\n",
             (transf ? transf->path: "unknown"),
             (err ? err : "unknown"));
 
@@ -572,7 +572,7 @@ static void cb_decompress_task_core_updater_download(
 
    /* Log any error messages */
    if (!string_is_empty(err))
-      RARCH_ERR("[core updater] %s", err);
+      RARCH_ERR("[Core Updater] %s", err);
 }
 
 void cb_http_task_core_updater_download(
@@ -651,7 +651,7 @@ finish:
    /* Log any error messages */
    if (!string_is_empty(err))
    {
-      RARCH_ERR("[core updater] Download of '%s' failed: %s\n",
+      RARCH_ERR("[Core Updater] Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
       download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
    }
@@ -777,7 +777,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
                /* This cannot realistically happen...
                 * > If it does, just log an error and initialise
                 *   download */
-               RARCH_ERR("[core updater] Failed to backup core: %s\n",
+               RARCH_ERR("[Core Updater] Failed to backup core: %s\n",
                      download_handle->local_core_path);
                download_handle->backup_enabled = false;
                download_handle->status         = CORE_UPDATER_DOWNLOAD_START_TRANSFER;
@@ -1071,7 +1071,7 @@ void *task_push_core_updater_download(
     *   updater list provides 'sane' core paths */
    if (core_info_get_core_lock(list_entry->local_core_path, false))
    {
-      RARCH_ERR("[core updater] Update disabled - core is locked: %s\n",
+      RARCH_ERR("[Core Updater] Update disabled - core is locked: %s\n",
             list_entry->local_core_path);
 
       /* If task is not muted, generate notification */
@@ -1332,7 +1332,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
              *   updater list provides 'sane' core paths */
             if (core_info_get_core_lock(list_entry->local_core_path, false))
             {
-               RARCH_LOG("[core updater] Skipping locked core: %s\n",
+               RARCH_LOG("[Core Updater] Skipping locked core: %s\n",
                      list_entry->display_name);
 
                /* Core update is disabled
@@ -1454,7 +1454,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                      snprintf(
                            task_title         + _len,
                            sizeof(task_title) - _len,
-                           " [%s%u, %s%u]",
+                           " (%s%u, %s%u)",
                            msg_hash_to_str(MSG_NUM_CORES_UPDATED),
                            update_installed_handle->num_updated,
                            msg_hash_to_str(MSG_NUM_CORES_LOCKED),
@@ -1463,7 +1463,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                      snprintf(
                            task_title         + _len,
                            sizeof(task_title) - _len,
-                           " [%s%u]",
+                           " (%s%u)",
                            msg_hash_to_str(MSG_NUM_CORES_UPDATED),
                            update_installed_handle->num_updated);
                }
@@ -1471,7 +1471,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                   snprintf(
                         task_title         + _len,
                         sizeof(task_title) - _len,
-                        " [%s%u]",
+                        " (%s%u)",
                         msg_hash_to_str(MSG_NUM_CORES_LOCKED),
                         update_installed_handle->num_locked);
 
