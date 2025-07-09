@@ -1184,7 +1184,7 @@ static void gfx_widgets_draw_task_msg(
       _len = snprintf(task_percentage, sizeof(task_percentage),
             "%i%%", msg->task_progress);
 
-   task_percentage_offset = p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * _len;
+   task_percentage_offset = p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * (_len + 1);
    rect_width             = p_dispwidget->msg_queue_padding * 5.0f + msg->width  + task_percentage_offset;
    bar_width              = rect_width * msg->task_progress/100.0f;
    text_color             = COLOR_TEXT_ALPHA(0xFFFFFF00, (unsigned)(msg->alpha*255.0f));
