@@ -13210,14 +13210,6 @@ MSG_HASH(
    "Az összes támogatott mag átváltva a Play áruház verzióira"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "magok frissítve: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "magok kihagyva: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Magok frissítése letiltva - a mag zárolva: "
    )

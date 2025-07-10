@@ -5386,10 +5386,6 @@ MSG_HASH(
    "Όλοι οι εγκατεστημένοι πυρήνες βρίσκονται στην τελευταία έκδοση"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "πυρήνες που ενημερώθηκαν: "
-   )
-MSG_HASH(
    MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
    "Καθαρισμός Λίστας Παιχνιδιών: "
    )

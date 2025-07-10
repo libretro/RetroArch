@@ -13398,14 +13398,6 @@ MSG_HASH(
    "Todos os núcleos compatibles cambiaron ás versións de Play Store"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "núcleos actualizados: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "núcleos omitidos: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Actualización do núcleo desactivada - o núcleo está bloqueado: "
    )

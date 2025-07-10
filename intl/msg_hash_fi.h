@@ -12086,14 +12086,6 @@ MSG_HASH(
    "Kaikki tuetut ytimet vaihdettu play kaupan versioihin"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "ytimet päivitetty: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "ytimet ohitettu: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Ydinpäivitys poistettu käytöstä - ydin on lukittu: "
    )

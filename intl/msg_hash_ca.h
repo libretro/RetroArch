@@ -13443,11 +13443,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
-   "nuclis actualitzats: "
+   "Nuclis actualitzats: "
    )
 MSG_HASH(
    MSG_NUM_CORES_LOCKED,
-   "nuclis omesos: "
+   "Nuclis omesos: "
    )
 MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,

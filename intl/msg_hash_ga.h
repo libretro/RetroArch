@@ -13606,14 +13606,6 @@ MSG_HASH(
    "Aistríodh na croíleacáin uile a dtacaítear leo chuig leaganacha Play Store"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "croíleacáin nuashonraithe: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "croíleacáin scipeáilte: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Nuashonrú croí díchumasaithe - tá an croí faoi ghlas: "
    )

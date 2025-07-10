@@ -13626,14 +13626,6 @@ MSG_HASH(
    "Всі підтримувані ядра перемикаються на версії Play Store"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "оновлено ядер: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "пропущено ядер: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Оновлення ядра вимкнено - ядро заблоковано: "
    )

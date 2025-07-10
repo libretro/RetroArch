@@ -13535,11 +13535,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
-   "núcleos actualizados: "
+   "Núcleos actualizados: "
    )
 MSG_HASH(
    MSG_NUM_CORES_LOCKED,
-   "núcleos omitidos: "
+   "Núcleos omitidos: "
    )
 MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,

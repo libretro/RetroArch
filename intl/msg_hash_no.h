@@ -4862,14 +4862,6 @@ MSG_HASH(
    "Alle støttede kjerner byttet til Play Store versjoner"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "kjerner oppdatert: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "hoppet over kjerner: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Kjerneoppdatering deaktivert - kjernen er låst: "
    )

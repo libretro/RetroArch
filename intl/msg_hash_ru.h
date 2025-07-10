@@ -13570,14 +13570,6 @@ MSG_HASH(
    "Все поддерживаемые ядра изменены на версии из Play Store"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "обновлено ядер: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "пропущено ядер: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Обновление ядра отключено - ядро заблокировано: "
    )

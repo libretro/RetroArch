@@ -6358,14 +6358,6 @@ MSG_HASH(
    "Kontrola jadra: "
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "aktualizované jadrá: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "preskočené jadrá: "
-   )
-MSG_HASH(
    MSG_AUDIO_MUTED,
    "Zvuk stlmený."
    )

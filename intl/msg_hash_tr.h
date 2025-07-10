@@ -13619,11 +13619,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
-   "çekirdekler güncellendi: "
+   "Çekirdekler güncellendi: "
    )
 MSG_HASH(
    MSG_NUM_CORES_LOCKED,
-   "atlanan çekirdekler: "
+   "Atlanan çekirdekler: "
    )
 MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,

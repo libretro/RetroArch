@@ -13634,14 +13634,6 @@ MSG_HASH(
    "가능한 모든 코어를 Play 스토어 버전으로 교체했습니다"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "업데이트된 코어: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "건너뛴 코어: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "코어 업데이트 사용중지 - 코어 잠김: "
    )

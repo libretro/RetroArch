@@ -12986,14 +12986,6 @@ MSG_HASH(
    "所有支持的核心已切换到 Play 商店版本"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "已更新核心："
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "跳过核心："
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "核心更新禁用——核心已锁定："
    )

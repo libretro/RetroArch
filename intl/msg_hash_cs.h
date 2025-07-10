@@ -13198,14 +13198,6 @@ MSG_HASH(
    "Všechna podporovaná jádra přešla na verze pro Obchod Play"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "jádra aktualizována: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "přeskočena jádra: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Aktualizace jádra zakázána - jádro je uzamčeno: "
    )

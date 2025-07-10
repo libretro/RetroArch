@@ -12918,14 +12918,6 @@ MSG_HASH(
    "対応しているすべてのコアが Play ストアバージョンに切り替わりました"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "更新したコア: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "スキップしたコア: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "コアの更新は無効です - コアがロックされています: "
    )

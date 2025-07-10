@@ -13034,14 +13034,6 @@ MSG_HASH(
    "全部支援的核心已更新為Google Play商店版本。"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "已更新核心: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "已跳過核心: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "更新核心關閉 - 已鎖定核心: "
    )

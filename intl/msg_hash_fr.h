@@ -13499,11 +13499,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
-   "cœurs mis à jour : "
+   "Cœurs mis à jour : "
    )
 MSG_HASH(
    MSG_NUM_CORES_LOCKED,
-   "cœurs ignorés : "
+   "Cœurs ignorés : "
    )
 MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,

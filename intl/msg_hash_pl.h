@@ -11786,14 +11786,6 @@ MSG_HASH(
    "Wszystkie obsługiwane rdzenie przełącz na wersje że Sklepu Play"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "rdzenie zaktualizowane: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "pominięte rdzenie: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Aktualizacja rdzenia wyłączona - rdzeń jest zablokowany: "
    )

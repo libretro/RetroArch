@@ -12311,11 +12311,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
-   "núcleos atualizados: "
+   "Núcleos atualizados: "
    )
 MSG_HASH(
    MSG_NUM_CORES_LOCKED,
-   "núcleos ignorados: "
+   "Núcleos ignorados: "
    )
 MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,

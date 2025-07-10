@@ -12610,14 +12610,6 @@ MSG_HASH(
    "Alla kärnor som stöds ersatta till Play-butiksversioner"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "Kärnor uppdaterade: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "Kärnor ignorerade: "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Kärnuppdatering inaktiverad - kärnan är låst: "
    )

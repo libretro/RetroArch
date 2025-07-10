@@ -8262,14 +8262,6 @@ MSG_HASH(
    "جميع النواة المثبتة في الإصدار الأحدث"
    )
 MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "تم تحديث النواة: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "تم تخطي النواة "
-   )
-MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "تم تعطيل تحديث النواة - النواة الأساسية مقفلة: "
    )
