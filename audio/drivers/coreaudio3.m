@@ -227,7 +227,7 @@ static bool g_interrupted;
 
       _au = au;
 
-      RARCH_LOG("[CoreAudio3]: Using buffer size of %u bytes: (latency = %u ms)\n", (unsigned)self.bufferSizeInBytes, latency);
+      RARCH_LOG("[CoreAudio3] Using buffer size of %u bytes: (latency = %u ms).\n", (unsigned)self.bufferSizeInBytes, latency);
 
       [self start];
    }

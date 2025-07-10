@@ -884,7 +884,7 @@ font_renderer_t metal_raster_font = {
       _t_pipelineState = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
       if (err != nil)
       {
-         RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+         RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
          return NO;
       }
 
@@ -893,7 +893,7 @@ font_renderer_t metal_raster_font = {
       _t_pipelineStateNoAlpha = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
       if (err != nil)
       {
-         RARCH_ERR("[Metal]: error creating pipeline state (no alpha) %s\n", err.localizedDescription.UTF8String);
+         RARCH_ERR("[Metal] Error creating pipeline state (no alpha) %s.\n", err.localizedDescription.UTF8String);
          return NO;
       }
    }
@@ -1907,11 +1907,11 @@ typedef struct MTLALIGN(16)
                if (lib == nil)
                {
                   save_msl = true;
-                  RARCH_ERR("[Metal]: unable to compile vertex shader: %s\n", err.localizedDescription.UTF8String);
+                  RARCH_ERR("[Metal] Unable to compile vertex shader: %s.\n", err.localizedDescription.UTF8String);
                   return NO;
                }
 #if DEBUG
-               RARCH_WARN("[Metal]: warnings compiling vertex shader: %s\n", err.localizedDescription.UTF8String);
+               RARCH_WARN("[Metal] Warnings compiling vertex shader: %s.\n", err.localizedDescription.UTF8String);
 #endif
             }
 
@@ -1923,11 +1923,11 @@ typedef struct MTLALIGN(16)
                if (lib == nil)
                {
                   save_msl = true;
-                  RARCH_ERR("[Metal]: unable to compile fragment shader: %s\n", err.localizedDescription.UTF8String);
+                  RARCH_ERR("[Metal] Unable to compile fragment shader: %s.\n", err.localizedDescription.UTF8String);
                   return NO;
                }
 #if DEBUG
-               RARCH_WARN("[Metal]: warnings compiling fragment shader: %s\n", err.localizedDescription.UTF8String);
+               RARCH_WARN("[Metal] Warnings compiling fragment shader: %s.\n", err.localizedDescription.UTF8String);
 #endif
             }
             psd.fragmentFunction = [lib newFunctionWithName:@"main0"];
@@ -1937,7 +1937,7 @@ typedef struct MTLALIGN(16)
             if (err != nil)
             {
                save_msl = true;
-               RARCH_ERR("[Metal]: error creating pipeline state for pass %d: %s\n", i,
+               RARCH_ERR("[Metal] Error creating pipeline state for pass %d: %s.\n", i,
                          err.localizedDescription.UTF8String);
                return NO;
             }
@@ -1966,7 +1966,7 @@ typedef struct MTLALIGN(16)
                              error:&err];
                if (err != nil)
                {
-                  RARCH_ERR("[Metal]: unable to save vertex shader source: %s\n", err.localizedDescription.UTF8String);
+                  RARCH_ERR("[Metal] Unable to save vertex shader source: %s.\n", err.localizedDescription.UTF8String);
                }
 
                err = nil;
@@ -1976,7 +1976,7 @@ typedef struct MTLALIGN(16)
                              error:&err];
                if (err != nil)
                {
-                  RARCH_ERR("[Metal]: unable to save fragment shader source: %s\n",
+                  RARCH_ERR("[Metal] Unable to save fragment shader source: %s.\n",
                             err.localizedDescription.UTF8String);
                }
             }
@@ -2446,7 +2446,7 @@ static void metal_set_video_mode(void *data,
                                  unsigned width, unsigned height,
                                  bool fullscreen)
 {
-   RARCH_LOG("[Metal]: set_video_mode res=%dx%d fullscreen=%s\n",
+   RARCH_DBG("[Metal] set_video_mode res=%dx%d fullscreen=%s\n",
              width, height,
              fullscreen ? "YES" : "NO");
 }

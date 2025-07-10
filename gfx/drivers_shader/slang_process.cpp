@@ -128,7 +128,7 @@ static bool slang_process_reflection(
    if (!slang_reflect(*vs_compiler, *ps_compiler,
             vs_resources, ps_resources, &sl_reflection))
    {
-      RARCH_ERR("[slang]: Failed to reflect SPIR-V."
+      RARCH_ERR("[Slang] Failed to reflect SPIR-V."
             " Resource usage is inconsistent with "
                 "expectations.\n");
       return false;
@@ -361,7 +361,7 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
                meta.parameters[i].maximum != itr->maximum ||
                meta.parameters[i].step    != itr->step)
          {
-            RARCH_ERR("[slang]: Duplicate parameters"
+            RARCH_ERR("[Slang] Duplicate parameters"
                   " found for \"%s\", but arguments do not match.\n",
                   itr->id);
             mismatch_dup = true;
@@ -607,7 +607,7 @@ bool slang_process(
    }
    catch (const std::exception& e)
    {
-      RARCH_ERR("[slang]: SPIRV-Cross threw exception: %s.\n", e.what());
+      RARCH_ERR("[Slang] SPIRV-Cross threw exception: %s.\n", e.what());
       goto error;
    }
 

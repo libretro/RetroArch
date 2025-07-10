@@ -49,11 +49,11 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
 
    if (!alsa)
    {
-      RARCH_ERR("[ALSA]: Failed to allocate driver context\n");
+      RARCH_ERR("[ALSA] Failed to allocate driver context.\n");
       return NULL;
    }
 
-   RARCH_LOG("[ALSA]: Using ALSA version %s\n", snd_asoundlib_version());
+   RARCH_LOG("[ALSA] Using ALSA version %s.\n", snd_asoundlib_version());
 
    if (alsa_init_pcm(&alsa->pcm, device, SND_PCM_STREAM_PLAYBACK, rate, latency, 2, &alsa->stream_info, new_rate, SND_PCM_NONBLOCK) < 0)
    {
@@ -63,7 +63,7 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
    return alsa;
 
 error:
-   RARCH_ERR("[ALSA]: Failed to initialize...\n");
+   RARCH_ERR("[ALSA] Failed to initialize.\n");
 
    alsa_free(alsa);
 
@@ -86,7 +86,7 @@ static bool alsa_start(void *data, bool is_shutdown)
 
       if (ret < 0)
       {
-         RARCH_ERR("[ALSA]: Failed to unpause: %s.\n",
+         RARCH_ERR("[ALSA] Failed to unpause: %s.\n",
                snd_strerror(ret));
          return false;
       }

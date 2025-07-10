@@ -68,18 +68,18 @@ static void *libnx_audren_audio_init(
    size_t mempool_size;
    unsigned real_latency;
 
-   RARCH_LOG("[Audio]: Using libnx_audren driver\n");
+   RARCH_LOG("[Audren] Using libnx_audren driver.\n");
 
    aud = (libnx_audren_t*)calloc(1, sizeof(libnx_audren_t));
 
    if (!aud)
    {
-      RARCH_ERR("[Audio]: struct alloc failed\n");
+      RARCH_ERR("[Audren] struct alloc failed.\n");
       goto fail;
    }
 
    real_latency = MAX(5, latency);
-   RARCH_LOG("[Audio]: real_latency is %u\n", real_latency);
+   RARCH_LOG("[Audren] real_latency is %u.\n", real_latency);
 
    aud->nonblock     = !block_frames;
    aud->buffer_size  = (real_latency * sample_rate / 1000);
@@ -91,21 +91,21 @@ static void *libnx_audren_audio_init(
    aud->mempool      = memalign(AUDREN_MEMPOOL_ALIGNMENT, mempool_size);
    if (!aud->mempool)
    {
-      RARCH_ERR("[Audio]: mempool alloc failed\n");
+      RARCH_ERR("[Audren] mempool alloc failed.\n");
       goto fail;
    }
 
    rc = audrenInitialize(&audio_renderer_config);
    if (R_FAILED(rc))
    {
-      RARCH_ERR("[Audio]: audrenInitialize: %x\n", rc);
+      RARCH_ERR("[Audren] audrenInitialize: %x.\n", rc);
       goto fail;
    }
 
    rc = audrvCreate(&aud->drv, &audio_renderer_config, num_channels);
    if (R_FAILED(rc))
    {
-      RARCH_ERR("[Audio]: audrvCreate: %x\n", rc);
+      RARCH_ERR("[Audren] audrvCreate: %x\n", rc);
       goto fail_init;
    }
 
@@ -127,7 +127,7 @@ static void *libnx_audren_audio_init(
    rc = audrenStartAudioRenderer();
    if (R_FAILED(rc))
    {
-      RARCH_ERR("[Audio]: audrenStartAudioRenderer: %x\n", rc);
+      RARCH_ERR("[Audren] audrenStartAudioRenderer: %x.\n", rc);
    }
 
    audrvVoiceInit(&aud->drv, 0, num_channels, PcmFormat_Int16, sample_rate);

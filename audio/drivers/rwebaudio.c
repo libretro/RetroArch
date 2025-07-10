@@ -76,7 +76,7 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
    rwebaudio_data_t *rwebaudio;
    if (rwebaudio_static_data)
    {
-      RARCH_ERR("[RWebAudio] Tried to start already running driver!\n");
+      RARCH_ERR("[RWebAudio] Tried to start already running driver.\n");
       return NULL;
    }
 
@@ -85,7 +85,7 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
       return NULL;
    if (!RWebAudioInit(latency))
    {
-      RARCH_ERR("[RWebAudio] Failed to initialize driver!\n");
+      RARCH_ERR("[RWebAudio] Failed to initialize driver.\n");
       return NULL;
    }
    rwebaudio_static_data = rwebaudio;

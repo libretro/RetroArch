@@ -417,7 +417,7 @@ static void wasapi_free(void *wh)
 
    ir = WaitForSingleObject(write_event, 20);
    if (ir == WAIT_FAILED)
-      RARCH_ERR("[WASAPI]: WaitForSingleObject failed with error %d.\n", GetLastError());
+      RARCH_ERR("[WASAPI] WaitForSingleObject failed with error %d.\n", GetLastError());
 
    if (!(ir == WAIT_OBJECT_0))
       return;

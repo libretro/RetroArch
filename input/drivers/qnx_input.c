@@ -590,7 +590,7 @@ static void qnx_handle_screen_event(qnx_input_t *qnx, bps_event_t *event)
                {
                   if (device == qnx->devices[i].handle)
                   {
-                     RARCH_LOG("Device %s: Disconnected.\n",
+                     RARCH_DBG("Device %s: Disconnected.\n",
                            qnx->devices[i].id);
                      qnx_init_controller(qnx, &qnx->devices[i]);
                      break;

@@ -116,7 +116,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    if (!sl)
       goto error;
 
-   RARCH_LOG("[OpenSL]: Requested audio latency: %u ms.\n", latency);
+   RARCH_LOG("[OpenSL] Requested audio latency: %u ms.\n", latency);
 
    GOTO_IF_FAIL(slCreateEngine(&sl->engine_object, 0, NULL, 0, NULL, NULL));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->engine_object, SL_BOOLEAN_FALSE));
@@ -147,7 +147,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    for (i = 0; i < sl->buf_count; i++)
       sl->buffer[i] = sl->buffer_chunk + i * sl->buf_size;
 
-   RARCH_LOG("[OpenSL]: Setting audio latency: Block size = %u, Blocks = %u, Total = %u ...\n",
+   RARCH_LOG("[OpenSL] Setting audio latency: Block size = %u, Blocks = %u, Total = %u...\n",
          sl->buf_size, sl->buf_count, sl->buf_size * sl->buf_count);
 
    fmt_pcm.formatType     = SL_DATAFORMAT_PCM;
@@ -195,7 +195,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    return sl;
 
 error:
-   RARCH_ERR("[OpenSL]: Couldn't initialize OpenSL ES driver, error code: [%d].\n", (int)res);
+   RARCH_ERR("[OpenSL] Couldn't initialize OpenSL ES driver. Error code: %d.\n", (int)res);
    sl_free(sl);
    return NULL;
 }
@@ -275,7 +275,7 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
 
          if (res != SL_RESULT_SUCCESS)
          {
-            RARCH_ERR("[OpenSL]: Failed to write! (Error: 0x%x)\n", (unsigned)res);
+            RARCH_ERR("[OpenSL] Failed to write. Error: 0x%x.\n", (unsigned)res);
             return -1;
          }
       }

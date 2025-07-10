@@ -66,7 +66,7 @@ static void playback_process_cb(void *data)
 
    if ((b = pw_stream_dequeue_buffer(audio->stream)) == NULL)
    {
-      RARCH_WARN("[Audio] [PipeWire]: Out of buffers: %s\n", strerror(errno));
+      RARCH_WARN("[PipeWire] Out of buffers: %s.\n", strerror(errno));
       return pw_thread_loop_signal(audio->pw->thread_loop, false);
    }
 
@@ -112,7 +112,7 @@ static void stream_state_changed_cb(void *data,
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
 
-   RARCH_DBG("[Audio] [PipeWire]: Stream state changed %s -> %s\n",
+   RARCH_DBG("[PipeWire] Stream state changed %s -> %s.\n",
              pw_stream_state_as_string(old),
              pw_stream_state_as_string(state));
 
@@ -143,12 +143,12 @@ static void registry_event_global(void *data, uint32_t id,
       {
          attr.i = id;
          string_list_append(pw->devicelist, sink, attr);
-         RARCH_LOG("[Audio] [PipeWire]: Found Sink Node: %s\n", sink);
+         RARCH_LOG("[PipeWire] Found Sink Node: %s.\n", sink);
       }
 
-      RARCH_DBG("[Audio] [PipeWire]: Object: id:%u Type:%s/%d\n", id, type, version);
+      RARCH_DBG("[PipeWire] Object: id:%u Type:%s/%d.\n", id, type, version);
       spa_dict_for_each(item, props)
-         RARCH_DBG("[Audio] [PipeWire]: \t\t%s: \"%s\"\n", item->key, item->value);
+         RARCH_DBG("[PipeWire] \t\t%s: \"%s\".\n", item->key, item->value);
    }
 }
 
@@ -238,7 +238,7 @@ static void *pipewire_init(const char *device, unsigned rate,
 unlock_error:
    pw_thread_loop_unlock(audio->pw->thread_loop);
 error:
-   RARCH_ERR("[Audio] [PipeWire]: Failed to initialize audio\n");
+   RARCH_ERR("[PipeWire] Failed to initialize audio.\n");
    pipewire_free(audio);
    return NULL;
 }
@@ -255,7 +255,7 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t len)
 
    if (len > audio->highwater_mark)
    {
-      RARCH_ERR("[Audio] [PipeWire]: Buffer too small! Please try increasing the latency.\n");
+      RARCH_ERR("[PipeWire] Buffer too small. Please try increasing the latency.\n");
       return 0;
    }
 
@@ -267,7 +267,7 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t len)
       avail = audio->highwater_mark - filled;
 
 #if 0  /* Useful for tracing */
-      RARCH_DBG("[Audio] [PipeWire]: Ringbuffer utilization: filled %d, avail %d, index %d, size %d\n",
+      RARCH_DBG("[PipeWire] Ringbuffer utilization: filled %d, avail %d, index %d, size %d.\n",
                 filled, avail, idx, len);
 #endif
 
@@ -293,12 +293,12 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t len)
    }
 
    if (filled < 0)
-      RARCH_ERR("[Audio] [Pipewire]: %p: underrun write:%u filled:%d\n", audio, idx, filled);
+      RARCH_ERR("[Pipewire] %p: underrun write:%u filled:%d\n", audio, idx, filled);
    else
    {
       if ((uint32_t) filled + len > RINGBUFFER_SIZE)
       {
-         RARCH_ERR("[Audio] [PipeWire]: %p: overrun write:%u filled:%d + size:%zu > max:%u\n",
+         RARCH_ERR("[PipeWire] %p: overrun write:%u filled:%d + size:%zu > max:%u\n",
          audio, idx, filled, len, RINGBUFFER_SIZE);
       }
    }

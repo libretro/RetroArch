@@ -120,14 +120,14 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
 
    if (!file)
    {
-      RARCH_ERR("Failed to open runtime log file: %s\n", runtime_log->path);
+      RARCH_ERR("[Runtime] Failed to open runtime log file: \"%s\".\n", runtime_log->path);
       return;
    }
 
    /* Initialise JSON parser */
    if (!(parser = rjson_open_rfile(file)))
    {
-      RARCH_ERR("Failed to create JSON parser.\n");
+      RARCH_ERR("[Runtime] Failed to create JSON parser.\n");
       goto end;
    }
 
@@ -145,13 +145,13 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    {
       if (rjson_get_source_context_len(parser))
       {
-         RARCH_ERR("Error parsing chunk of runtime log file: %s\n---snip---\n%.*s\n---snip---\n",
+         RARCH_ERR("[Runtime] Error parsing chunk of runtime log file: %s\n---snip---\n%.*s\n---snip---\n",
                runtime_log->path,
                rjson_get_source_context_len(parser),
                rjson_get_source_context_buf(parser));
       }
-      RARCH_WARN("Error parsing runtime log file: %s\n", runtime_log->path);
-      RARCH_ERR("Error: Invalid JSON at line %d, column %d - %s.\n",
+      RARCH_ERR("[Runtime] Error parsing runtime log file: \"%s\".\n", runtime_log->path);
+      RARCH_ERR("[Runtime] Error: Invalid JSON at line %d, column %d - %s.\n",
             (int)rjson_get_source_line(parser),
             (int)rjson_get_source_column(parser),
             (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
@@ -171,7 +171,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
                &runtime_minutes,
                &runtime_seconds) != 3)
       {
-         RARCH_ERR("Runtime log file - invalid 'runtime' entry detected: %s\n", runtime_log->path);
+         RARCH_ERR("[Runtime] Invalid \"runtime\" entry detected: \"%s\".\n", runtime_log->path);
          goto end;
       }
    }
@@ -188,7 +188,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
                &last_played_minute,
                &last_played_second) != 6)
       {
-         RARCH_ERR("Runtime log file - invalid 'last played' entry detected: %s\n", runtime_log->path);
+         RARCH_ERR("[Runtime] Invalid \"last played\" entry detected: \"%s\".\n", runtime_log->path);
          goto end;
       }
    }
@@ -244,7 +244,7 @@ runtime_log_t *runtime_log_init(
    if (     string_is_empty(dir_runtime_log)
          && string_is_empty(dir_playlist))
    {
-      RARCH_ERR("Runtime log directory is undefined - cannot save"
+      RARCH_ERR("[Runtime] Runtime log directory is undefined - cannot save"
             " runtime log files.\n");
       return NULL;
    }
@@ -304,8 +304,8 @@ runtime_log_t *runtime_log_init(
    {
       if (!path_mkdir(log_file_dir))
       {
-         RARCH_ERR("[runtime] failed to create directory for"
-               " runtime log: %s.\n", log_file_dir);
+         RARCH_ERR("[Runtime] Failed to create directory for"
+               " runtime log: \"%s\".\n", log_file_dir);
          return NULL;
       }
    }
@@ -1053,20 +1053,20 @@ void runtime_log_save(runtime_log_t *runtime_log)
    if (!runtime_log)
       return;
 
-   RARCH_LOG("[Runtime]: Saving runtime log file: \"%s\".\n", runtime_log->path);
+   RARCH_LOG("[Runtime] Saving runtime log file: \"%s\".\n", runtime_log->path);
 
    /* Attempt to open log file */
    if (!(file = filestream_open(runtime_log->path,
          RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
    {
-      RARCH_ERR("[Runtime]: Failed to open runtime log file: \"%s\".\n", runtime_log->path);
+      RARCH_ERR("[Runtime] Failed to open runtime log file: \"%s\".\n", runtime_log->path);
       return;
    }
 
    /* Initialise JSON writer */
    if (!(writer = rjsonwriter_open_rfile(file)))
    {
-      RARCH_ERR("[Runtime]: Failed to create JSON writer.\n");
+      RARCH_ERR("[Runtime] Failed to create JSON writer.\n");
       goto end;
    }
 
@@ -1121,7 +1121,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
    /* Free JSON writer */
    if (!rjsonwriter_free(writer))
    {
-      RARCH_ERR("Error writing runtime log file: %s\n", runtime_log->path);
+      RARCH_ERR("[Runtime] Error writing runtime log file: \"%s\".\n", runtime_log->path);
    }
 
 end:

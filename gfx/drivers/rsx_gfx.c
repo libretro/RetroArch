@@ -1317,7 +1317,7 @@ static void rsx_init_shader(rsx_t *rsx)
    rsx->fp_buffer[RSX_SHADER_MENU]          = (u32*)rsxMemalign(64, fpsize);
    if (!rsx->fp_buffer[RSX_SHADER_MENU])
    {
-      RARCH_ERR("failed to allocate fp_buffer\n");
+      RARCH_ERR("[RSX] Failed to allocate fp_buffer.\n");
       return;
    }
    memcpy(rsx->fp_buffer[RSX_SHADER_MENU], rsx->fp_ucode[RSX_SHADER_MENU], fpsize);
@@ -1337,7 +1337,7 @@ static void rsx_init_shader(rsx_t *rsx)
    rsx->fp_buffer[RSX_SHADER_STOCK_BLEND]   = (u32 *)rsxMemalign(64, fpsize);
    if (!rsx->fp_buffer[RSX_SHADER_STOCK_BLEND])
    {
-      RARCH_ERR("failed to allocate fp_buffer\n");
+      RARCH_ERR("[RSX] Failed to allocate fp_buffer.\n");
       return;
    }
    memcpy(rsx->fp_buffer[RSX_SHADER_STOCK_BLEND], rsx->fp_ucode[RSX_SHADER_STOCK_BLEND], fpsize);

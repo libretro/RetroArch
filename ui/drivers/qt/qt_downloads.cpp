@@ -45,7 +45,7 @@ static void cb_extract_thumbnail_pack(retro_task_t *task,
    MainWindow *mainwindow      = (MainWindow*)user_data;
 
    if (err)
-      RARCH_ERR("%s", err);
+      RARCH_ERR("[Qt] %s", err);
 
    if (dec)
    {
@@ -74,7 +74,7 @@ void MainWindow::onThumbnailPackDownloadNetworkError(
    errorStringArray = reply->errorString().toUtf8();
    errorStringData  = errorStringArray.constData();
 
-   RARCH_ERR("[Qt]: Network error code %d received: %s\n",
+   RARCH_ERR("[Qt] Network error code %d received: %s\n",
          code, errorStringData);
 
 #if 0
@@ -105,7 +105,7 @@ void MainWindow::onThumbnailPackDownloadNetworkSslErrors(
          + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
-      RARCH_ERR("[Qt]: %s\n", stringData);
+      RARCH_ERR("[Qt] %s\n", stringData);
    }
 
    /* Ignore all SSL errors for now, like self-signed, expired etc. */
@@ -153,7 +153,7 @@ void MainWindow::onThumbnailPackDownloadFinished()
          QByteArray redirectUrlArray = redirectUrl.toString().toUtf8();
          const char *redirectUrlData = redirectUrlArray.constData();
 
-         RARCH_LOG("[Qt]: Thumbnail pack download got redirect with HTTP code %d: %s\n",
+         RARCH_LOG("[Qt] Thumbnail pack download got redirect with HTTP code %d: \"%s\".\n",
                code, redirectUrlData);
 
          reply->disconnect();
@@ -172,7 +172,7 @@ void MainWindow::onThumbnailPackDownloadFinished()
 
       m_thumbnailPackDownloadFile.remove();
 
-      RARCH_ERR("[Qt]: Thumbnail pack download failed with HTTP status code: %d\n", code);
+      RARCH_ERR("[Qt] Thumbnail pack download failed with HTTP status code: %d.\n", code);
 
       reply->disconnect();
       reply->abort();
@@ -189,7 +189,7 @@ void MainWindow::onThumbnailPackDownloadFinished()
 
       /* rename() requires the old file to be deleted first if it exists */
       if (newFile.exists() && !newFile.remove())
-         RARCH_ERR("[Qt]: Thumbnail pack download finished, but old file could not be deleted.\n");
+         RARCH_ERR("[Qt] Thumbnail pack download finished, but old file could not be deleted.\n");
       else
       {
          if (m_thumbnailPackDownloadFile.rename(newFileName))
@@ -197,7 +197,7 @@ void MainWindow::onThumbnailPackDownloadFinished()
             settings_t *settings = config_get_ptr();
             if (settings)
             {
-               RARCH_LOG("[Qt]: Thumbnail pack download finished successfully.\n");
+               RARCH_LOG("[Qt] Thumbnail pack download finished successfully.\n");
                emit extractArchiveDeferred(newFileName,
                      settings->paths.directory_thumbnails,
                      TEMP_EXTENSION, cb_extract_thumbnail_pack);
@@ -205,7 +205,7 @@ void MainWindow::onThumbnailPackDownloadFinished()
          }
          else
          {
-            RARCH_ERR("[Qt]: Thumbnail pack download finished, but temp file could not be renamed.\n");
+            RARCH_ERR("[Qt] Thumbnail pack download finished, but temp file could not be renamed.\n");
             emit showErrorMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
          }
       }
@@ -217,7 +217,7 @@ void MainWindow::onThumbnailPackDownloadFinished()
 
       m_thumbnailPackDownloadFile.remove();
 
-      RARCH_ERR("[Qt]: Thumbnail pack download ended prematurely: %s\n", errorData);
+      RARCH_ERR("[Qt] Thumbnail pack download ended prematurely: %s.\n", errorData);
       emit showErrorMessageDeferred(QString(msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR))
                 + QStringLiteral(": Code ")
@@ -276,7 +276,7 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
 
    if (m_thumbnailPackDownloadFile.isOpen())
    {
-      RARCH_ERR("[Qt]: File is already open.\n");
+      RARCH_ERR("[Qt] File is already open.\n");
       return;
    }
    else
@@ -303,13 +303,13 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
          showMessageBox(msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED),
                MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-         RARCH_ERR("[Qt]: Could not open file for writing: %s\n", fileNameData);
+         RARCH_ERR("[Qt] Could not open file for writing: \"%s\".\n", fileNameData);
          return;
       }
    }
 
-   RARCH_LOG("[Qt]: Starting thumbnail pack download...\n");
-   RARCH_LOG("[Qt]: Downloading URL %s\n", urlData);
+   RARCH_LOG("[Qt] Starting thumbnail pack download...\n");
+   RARCH_LOG("[Qt] Downloading URL \"%s\"\n", urlData);
 
    request.setHeader(QNetworkRequest::UserAgentHeader, USER_AGENT);
 
@@ -356,12 +356,12 @@ void MainWindow::onThumbnailPackExtractFinished(bool success)
 
    if (!success)
    {
-      RARCH_ERR("[Qt]: Thumbnail pack extraction failed.\n");
+      RARCH_ERR("[Qt] Thumbnail pack extraction failed.\n");
       emit showErrorMessageDeferred(msg_hash_to_str(MSG_DECOMPRESSION_FAILED));
       return;
    }
 
-   RARCH_LOG("[Qt]: Thumbnail pack extracted successfully.\n");
+   RARCH_LOG("[Qt] Thumbnail pack extracted successfully.\n");
 
    emit showInfoMessageDeferred(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY));
@@ -390,7 +390,7 @@ void MainWindow::onThumbnailDownloadNetworkError(QNetworkReply::NetworkError cod
    errorStringArray = reply->errorString().toUtf8();
    errorStringData  = errorStringArray.constData();
 
-   RARCH_ERR("[Qt]: Network error code %d received: %s\n",
+   RARCH_ERR("[Qt] Network error code %d received: %s\n",
          code, errorStringData);
 
 #if 0
@@ -421,7 +421,7 @@ void MainWindow::onThumbnailDownloadNetworkSslErrors(
          + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
-      RARCH_ERR("[Qt]: %s\n", stringData);
+      RARCH_ERR("[Qt] %s\n", stringData);
    }
 
    /* Ignore all SSL errors for now, like self-signed, expired etc. */
@@ -478,7 +478,7 @@ void MainWindow::onThumbnailDownloadFinished()
 
          m_pendingThumbnailDownloadTypes.prepend(downloadType);
 
-         RARCH_LOG("[Qt]: Thumbnail download got redirect with HTTP code %d: %s\n",
+         RARCH_LOG("[Qt] Thumbnail download got redirect with HTTP code %d: \"%s\".\n",
                code, redirectUrlData);
 
          reply->disconnect();
@@ -492,7 +492,7 @@ void MainWindow::onThumbnailDownloadFinished()
 
       m_thumbnailDownloadFile.remove();
 
-      RARCH_ERR("[Qt]: Thumbnail download failed with HTTP status code: %d\n", code);
+      RARCH_ERR("[Qt] Thumbnail download failed with HTTP status code: %d.\n", code);
 
       reply->disconnect();
       reply->abort();
@@ -513,12 +513,12 @@ void MainWindow::onThumbnailDownloadFinished()
 
       /* rename() requires the old file to be deleted first if it exists */
       if (newFile.exists() && !newFile.remove())
-         RARCH_ERR("[Qt]: Thumbnail download finished, but old file could not be deleted.\n");
+         RARCH_ERR("[Qt] Thumbnail download finished, but old file could not be deleted.\n");
       else
       {
          if (m_thumbnailDownloadFile.rename(newFileName))
          {
-            RARCH_LOG("[Qt]: Thumbnail download finished successfully.\n");
+            RARCH_LOG("[Qt] Thumbnail download finished successfully.\n");
             /* reload thumbnail image */
             m_playlistModel->reloadThumbnailPath(
                   m_thumbnailDownloadFile.fileName());
@@ -527,7 +527,7 @@ void MainWindow::onThumbnailDownloadFinished()
          }
          else
          {
-            RARCH_ERR("[Qt]: Thumbnail download finished, but temp file could not be renamed.\n");
+            RARCH_ERR("[Qt] Thumbnail download finished, but temp file could not be renamed.\n");
             emit showErrorMessageDeferred(msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
          }
@@ -540,7 +540,7 @@ void MainWindow::onThumbnailDownloadFinished()
 
       m_thumbnailDownloadFile.remove();
 
-      RARCH_ERR("[Qt]: Thumbnail download ended prematurely: %s\n", errorData);
+      RARCH_ERR("[Qt] Thumbnail download ended prematurely: %s\n", errorData);
       emit showErrorMessageDeferred(
               QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR))
             + QStringLiteral(": Code ")
@@ -615,7 +615,7 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
 
    if (m_thumbnailDownloadFile.isOpen())
    {
-      RARCH_ERR("[Qt]: File is already open.\n");
+      RARCH_ERR("[Qt] File is already open.\n");
       return;
    }
    else
@@ -645,7 +645,7 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
          showMessageBox(msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED),
                MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-         RARCH_ERR("[Qt]: Could not open file for writing: %s\n",
+         RARCH_ERR("[Qt] Could not open file for writing: \"%s\".\n",
                fileNameData);
 
          if (m_thumbnailDownloadReply)
@@ -664,8 +664,8 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
       }
    }
 
-   RARCH_LOG("[Qt]: Starting thumbnail download...\n");
-   RARCH_LOG("[Qt]: Downloading URL %s\n", urlData);
+   RARCH_LOG("[Qt] Starting thumbnail download...\n");
+   RARCH_LOG("[Qt] Downloading URL %s\n", urlData);
 
    request.setHeader(QNetworkRequest::UserAgentHeader, USER_AGENT);
 
@@ -725,7 +725,7 @@ void MainWindow::onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslErr
          + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
-      RARCH_ERR("[Qt]: %s\n", stringData);
+      RARCH_ERR("[Qt] %s\n", stringData);
    }
 
    /* Ignore all SSL errors for now, like self-signed, expired etc. */
@@ -736,7 +736,7 @@ void MainWindow::onPlaylistThumbnailDownloadCanceled()
 {
    m_playlistThumbnailDownloadProgressDialog->cancel();
    m_playlistThumbnailDownloadWasCanceled = true;
-   RARCH_LOG("[Qt]: Playlist thumbnail download was canceled.\n");
+   RARCH_LOG("[Qt] Playlist thumbnail download was canceled.\n");
 }
 
 void MainWindow::onPlaylistThumbnailDownloadFinished()
@@ -793,7 +793,7 @@ void MainWindow::onPlaylistThumbnailDownloadFinished()
       if (newFile.exists() && !newFile.remove())
       {
          m_failedThumbnails++;
-         RARCH_ERR("[Qt]: Thumbnail download finished, but old file could not be deleted.\n");
+         RARCH_ERR("[Qt] Thumbnail download finished, but old file could not be deleted.\n");
       }
       else
       {
@@ -825,7 +825,7 @@ void MainWindow::onPlaylistThumbnailDownloadFinished()
    }
    else
    {
-      RARCH_LOG("[Qt]: Playlist thumbnails finished downloading.\n");
+      RARCH_LOG("[Qt] Playlist thumbnails finished downloading.\n");
       /* Update thumbnail */
       emit itemChanged();
    }
@@ -883,7 +883,7 @@ void MainWindow::downloadNextPlaylistThumbnail(
 
    if (m_playlistThumbnailDownloadFile.isOpen())
    {
-      RARCH_ERR("[Qt]: File is already open.\n");
+      RARCH_ERR("[Qt] File is already open.\n");
       return;
    }
    else
@@ -913,7 +913,7 @@ void MainWindow::downloadNextPlaylistThumbnail(
       {
          m_failedThumbnails++;
 
-         RARCH_ERR("[Qt]: Could not open file for writing: %s\n", fileNameData);
+         RARCH_ERR("[Qt] Could not open file for writing: \"%s\".\n", fileNameData);
 
          if (m_pendingPlaylistThumbnails.count() > 0)
          {

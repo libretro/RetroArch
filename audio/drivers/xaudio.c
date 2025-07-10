@@ -250,7 +250,7 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
             {
                if (isdigit(device[0]))
                {
-                  RARCH_LOG("[XAudio2]: Fallback, device index is a single number index instead: %d.\n", idx_found);
+                  RARCH_LOG("[XAudio2] Fallback, device index is a single number index instead: %d.\n", idx_found);
                   idx_found = strtoul(device, NULL, 0);
                }
             }
@@ -335,7 +335,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
       return NULL;
    }
 
-   RARCH_LOG("[XAudio2]: Requesting %u ms latency, using %d ms latency.\n",
+   RARCH_LOG("[XAudio2] Requesting %u ms latency, using %d ms latency.\n",
          latency, (int)bufsize * 1000 / rate);
 
    return xa;

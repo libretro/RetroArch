@@ -125,13 +125,13 @@ static void *sdl_ctx_init(void *video_driver)
       sdl->subsystem_inited = true;
    }
 
-   RARCH_LOG("[SDL_GL] SDL %i.%i.%i gfx context driver initialized.\n",
+   RARCH_LOG("[SDL GL] SDL %i.%i.%i gfx context driver initialized.\n",
          SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
 
    return sdl;
 
 error:
-   RARCH_WARN("[SDL_GL]: Failed to initialize SDL gfx context driver: %s\n",
+   RARCH_WARN("[SDL GL] Failed to initialize SDL gfx context driver: %s.\n",
          SDL_GetError());
 
    sdl_ctx_destroy(sdl);
@@ -242,7 +242,7 @@ static bool sdl_ctx_set_video_mode(void *data,
    if (sdl->ctx)
    {
       video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
-      RARCH_LOG("[SDL_GL]: Using cached GL context.\n");
+      RARCH_LOG("[SDL GL] Using cached GL context.\n");
    }
    else
    {
@@ -258,7 +258,7 @@ static bool sdl_ctx_set_video_mode(void *data,
    return true;
 
 error:
-   RARCH_WARN("[SDL_GL]: Failed to set video mode: %s\n", SDL_GetError());
+   RARCH_WARN("[SDL GL] Failed to set video mode: %s.\n", SDL_GetError());
    return false;
 }
 
@@ -280,13 +280,13 @@ static void sdl_ctx_get_video_size(void *data,
       SDL_DisplayMode mode = {0};
       int i                = settings->uints.video_monitor_index;
       if (SDL_GetCurrentDisplayMode(i, &mode) < 0)
-         RARCH_WARN("[SDL_GL]: Failed to get display #%i mode: %s\n", i,
+         RARCH_WARN("[SDL GL] Failed to get display #%i mode: %s.\n", i,
                     SDL_GetError());
 #else
       SDL_Rect **modes     = SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_HWSURFACE);
       SDL_Rect mode        = {0};
       if (!modes)
-         RARCH_WARN("[SDL_GL]: Failed to detect available video modes: %s\n",
+         RARCH_WARN("[SDL GL] Failed to detect available video modes: %s.\n",
                     SDL_GetError());
       else if (*modes)
          mode              = **modes;

@@ -59,7 +59,7 @@ static bool alsa_midi_get_avail_ports(struct string_list *ports, unsigned caps)
    r = snd_seq_open(&seq, "default", SND_SEQ_OPEN_DUPLEX, SND_SEQ_NONBLOCK);
    if (r < 0)
    {
-      RARCH_ERR("[MIDI]: snd_seq_open failed with error %d.\n", r);
+      RARCH_ERR("[MIDI] snd_seq_open failed with error %d.\n", r);
       return false;
    }
 
@@ -84,7 +84,7 @@ static bool alsa_midi_get_avail_ports(struct string_list *ports, unsigned caps)
 
             if (!string_list_append(ports, port_name, attr))
             {
-               RARCH_ERR("[MIDI]: string_list_append failed.\n");
+               RARCH_ERR("[MIDI] string_list_append failed.\n");
                snd_seq_close(seq);
 
                return false;
@@ -191,7 +191,7 @@ static bool alsa_midi_set_input(void *p, const char *input)
          SND_SEQ_PORT_CAP_SUBS_WRITE, SND_SEQ_PORT_TYPE_APPLICATION);
    if (r < 0)
    {
-      RARCH_ERR("[MIDI]: snd_seq_create_simple_port failed with error %d.\n", r);
+      RARCH_ERR("[MIDI] snd_seq_create_simple_port failed with error %d.\n", r);
       return false;
    }
 
@@ -203,7 +203,7 @@ static bool alsa_midi_set_input(void *p, const char *input)
    snd_seq_port_subscribe_set_dest(sub, &d->in_dest);
    r = snd_seq_subscribe_port(d->seq, sub);
    if (r < 0)
-      RARCH_ERR("[MIDI]: snd_seq_subscribe_port failed with error %d.\n", r);
+      RARCH_ERR("[MIDI] snd_seq_subscribe_port failed with error %d.\n", r);
 
    return r >= 0;
 }
@@ -238,7 +238,7 @@ static bool alsa_midi_set_output(void *p, const char *output)
          SND_SEQ_PORT_CAP_SUBS_READ, SND_SEQ_PORT_TYPE_APPLICATION);
    if (r < 0)
    {
-      RARCH_ERR("[MIDI]: snd_seq_create_simple_port failed with error %d.\n", r);
+      RARCH_ERR("[MIDI] snd_seq_create_simple_port failed with error %d.\n", r);
       return false;
    }
 
@@ -248,21 +248,21 @@ static bool alsa_midi_set_output(void *p, const char *output)
    r = snd_seq_connect_to(d->seq, d->out_src.port, d->out.client, d->out.port);
    if (r < 0)
    {
-      RARCH_ERR("[MIDI]: snd_seq_connect_to failed with error %d.\n", r);
+      RARCH_ERR("[MIDI] snd_seq_connect_to failed with error %d.\n", r);
       return false;
    }
 
    d->out_queue = snd_seq_alloc_queue(d->seq);
    if (d->out_queue < 0)
    {
-      RARCH_ERR("[MIDI]: snd_seq_alloc_queue failed with error %d.\n", d->out_queue);
+      RARCH_ERR("[MIDI] snd_seq_alloc_queue failed with error %d.\n", d->out_queue);
       return false;
    }
 
    r = snd_seq_start_queue(d->seq, d->out_queue, NULL);
    if (r < 0)
    {
-       RARCH_ERR("[MIDI]: snd_seq_start_queue failed with error %d.\n", r);
+       RARCH_ERR("[MIDI] snd_seq_start_queue failed with error %d.\n", r);
        return false;
    }
 
@@ -277,7 +277,7 @@ static void *alsa_midi_init(const char *input, const char *output)
 
    if (!d)
    {
-      RARCH_ERR("[MIDI]: Out of memory.\n");
+      RARCH_ERR("[MIDI] Out of memory.\n");
       return NULL;
    }
 
@@ -288,7 +288,7 @@ static void *alsa_midi_init(const char *input, const char *output)
    r = snd_seq_open(&d->seq, "default", SND_SEQ_OPEN_DUPLEX, SND_SEQ_NONBLOCK);
    if (r < 0)
    {
-      RARCH_ERR("[MIDI]: snd_seq_open failed with error %d.\n", r);
+      RARCH_ERR("[MIDI] snd_seq_open failed with error %d.\n", r);
       err = true;
    }
    else if (!alsa_midi_set_input(d, input))
@@ -316,7 +316,7 @@ static bool alsa_midi_read(void *p, midi_event_t *event)
    {
 #ifdef DEBUG
       if (r != -EAGAIN)
-         RARCH_ERR("[MIDI]: snd_seq_event_input failed with error %d.\n", r);
+         RARCH_ERR("[MIDI] snd_seq_event_input failed with error %d.\n", r);
 #endif
       return false;
    }
@@ -383,7 +383,7 @@ static bool alsa_midi_read(void *p, midi_event_t *event)
 #ifdef DEBUG
       else
       {
-         RARCH_ERR("[MIDI]: SysEx event too big.\n");
+         RARCH_ERR("[MIDI] SysEx event too big.\n");
          r = -1;
       }
 #endif
@@ -452,7 +452,7 @@ static bool alsa_midi_write(void *p, const midi_event_t *event)
    r = snd_seq_event_output(d->seq, &ev);
 #ifdef DEBUG
    if (r < 0)
-      RARCH_ERR("[MIDI]: snd_seq_event_output failed with error %d.\n", r);
+      RARCH_ERR("[MIDI] snd_seq_event_output failed with error %d.\n", r);
 #endif
 
    d->out_ev_time.tv_sec  = ev.time.time.tv_sec;
@@ -469,7 +469,7 @@ static bool alsa_midi_flush(void *p)
    r = snd_seq_drain_output(d->seq);
 #ifdef DEBUG
    if (r < 0)
-      RARCH_ERR("[MIDI]: snd_seq_drain_output failed with error %d.\n", r);
+      RARCH_ERR("[MIDI] snd_seq_drain_output failed with error %d.\n", r);
 #endif
 
    return r == 0;

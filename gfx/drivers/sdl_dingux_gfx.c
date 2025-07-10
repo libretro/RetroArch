@@ -472,7 +472,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 
    if (hw_refresh_rate == 0.0f)
    {
-      RARCH_ERR("[SDL1]: Failed to set video refresh rate\n");
+      RARCH_ERR("[SDL1] Failed to set video refresh rate.\n");
       goto error;
    }
 
@@ -489,7 +489,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 
    if (!vid->screen)
    {
-      RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL1] Failed to init SDL surface: %s.\n", SDL_GetError());
       goto error;
    }
 
@@ -520,7 +520,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
        || vid->osd_font->glyph_max <
             (SDL_DINGUX_NUM_FONT_GLYPHS - 1))
    {
-      RARCH_ERR("[SDL1]: Failed to init OSD font\n");
+      RARCH_ERR("[SDL1] Failed to init OSD font.\n");
       goto error;
    }
 
@@ -638,7 +638,7 @@ static void sdl_dingux_set_output(
    /* Check whether selected display mode is valid */
    if (unlikely(!vid->screen))
    {
-      RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL1] Failed to init SDL surface: %s.\n", SDL_GetError());
 
       /* We must have a valid SDL surface
        * > Use known good fallback display mode
@@ -653,7 +653,7 @@ static void sdl_dingux_set_output(
             surface_flags);
 
       if (unlikely(!vid->screen))
-         RARCH_ERR("[SDL1]: Critical - Failed to init fallback SDL surface: %s\n", SDL_GetError());
+         RARCH_ERR("[SDL1] Critical - Failed to init fallback SDL surface: %s.\n", SDL_GetError());
 
       vid->mode_valid = false;
    }

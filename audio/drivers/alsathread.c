@@ -43,11 +43,11 @@ static void alsa_worker_thread(void *data)
 
    if (!buf)
    {
-      RARCH_ERR("[ALSA] [playback thread %u]: Failed to allocate audio buffer\n", thread_id);
+      RARCH_ERR("[ALSA] [playback thread %u] Failed to allocate audio buffer.\n", thread_id);
       goto end;
    }
 
-   RARCH_DBG("[ALSA] [playback thread %p]: Beginning playback worker thread\n", thread_id);
+   RARCH_DBG("[ALSA] [playback thread %p] Beginning playback worker thread.\n", thread_id);
    while (!alsa->info.thread_dead)
    {
       size_t avail;
@@ -70,7 +70,7 @@ static void alsa_worker_thread(void *data)
       {
          if (snd_pcm_recover(alsa->info.pcm, frames, false) < 0)
          {
-            RARCH_ERR("[ALSA] [playback thread %u]: Failed to recover from error: %s\n",
+            RARCH_ERR("[ALSA] [playback thread %u] Failed to recover from error: %s.\n",
                thread_id,
                snd_strerror(frames));
             break;
@@ -80,7 +80,7 @@ static void alsa_worker_thread(void *data)
       }
       else if (frames < 0)
       {
-         RARCH_ERR("[ALSA] [playback thread %u]: Error writing audio to device: %s\n",
+         RARCH_ERR("[ALSA] [playback thread %u] Error writing audio to device: %s.\n",
             thread_id,
             snd_strerror(frames));
          break;
@@ -93,7 +93,7 @@ end:
    scond_signal(alsa->info.cond);
    slock_unlock(alsa->info.cond_lock);
    free(buf);
-   RARCH_DBG("[ALSA] [playback thread %p]: Ending playback worker thread\n", thread_id);
+   RARCH_DBG("[ALSA] [playback thread %p] Ending playback worker thread...\n", thread_id);
 }
 
 static bool alsa_thread_use_float(void *data)
@@ -122,11 +122,11 @@ static void *alsa_thread_init(const char *device,
 
    if (!alsa)
    {
-      RARCH_ERR("[ALSA] Failed to allocate driver context\n");
+      RARCH_ERR("[ALSA] Failed to allocate driver context.\n");
       return NULL;
    }
 
-   RARCH_LOG("[ALSA] Using ALSA version %s\n", snd_asoundlib_version());
+   RARCH_LOG("[ALSA] Using ALSA version %s.\n", snd_asoundlib_version());
 
    if (alsa_init_pcm(&alsa->info.pcm, device, SND_PCM_STREAM_PLAYBACK, rate, latency, 2, &alsa->info.stream_info, new_rate, 0) < 0)
    {
@@ -143,14 +143,14 @@ static void *alsa_thread_init(const char *device,
    alsa->info.worker_thread = sthread_create(alsa_worker_thread, alsa);
    if (!alsa->info.worker_thread)
    {
-      RARCH_ERR("[ALSA]: Failed to initialize worker thread\n");
+      RARCH_ERR("[ALSA] Failed to initialize worker thread.\n");
       goto error;
    }
 
    return alsa;
 
 error:
-   RARCH_ERR("[ALSA]: Failed to initialize...\n");
+   RARCH_ERR("[ALSA] Failed to initialize.\n");
 
    alsa_thread_free(alsa);
 

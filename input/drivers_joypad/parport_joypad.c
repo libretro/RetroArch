@@ -172,8 +172,8 @@ static bool parport_joypad_init_pad(
          data = pad->saved_data;
 #if 0
          if (ioctl(pad->fd, PPWDATA, &data) < 0)
-            RARCH_WARN("[Joypad]: Failed to restore original data register on %s\n", path);
-         RARCH_WARN("[Joypad]: Failed to save original control register on %s\n", path);
+            RARCH_WARN("[Parport] Failed to restore original data register on %s.\n", path);
+         RARCH_WARN("[Parport] Failed to save original control register on %s.\n", path);
 #endif
          goto error;
       }
@@ -182,7 +182,7 @@ static bool parport_joypad_init_pad(
        * Controllers using an alternative power source will still work.
        * Failure to disable interrupts slightly increases CPU usage. */
       if (!set_control)
-         RARCH_WARN("[Joypad]: Failed to clear nStrobe and nIRQ bits on %s\n", path);
+         RARCH_WARN("[Parport] Failed to clear nStrobe and nIRQ bits on %s.\n", path);
 
       strlcpy(pad->ident, path, input_config_get_device_name_size(0));
 
@@ -215,14 +215,14 @@ static void parport_free_pad(struct parport_joypad *pad)
    char data = pad->saved_data;
 
    if (ioctl(pad->fd, PPWDATA, &data) < 0)
-      RARCH_ERR("[Joypad]: Failed to restore original data register on %s\n", pad->ident);
+      RARCH_ERR("[Parport] Failed to restore original data register on %s.\n", pad->ident);
 
    data = pad->saved_control;
    if (ioctl(pad->fd, PPWDATA, &data) < 0)
-      RARCH_ERR("[Joypad]: Failed to restore original control register on %s\n", pad->ident);
+      RARCH_ERR("[Parport] Failed to restore original control register on %s.\n", pad->ident);
 
    if (ioctl(pad->fd, PPRELEASE) < 0)
-      RARCH_ERR("[Joypad]: Failed to release parallel port %s\n", pad->ident);
+      RARCH_ERR("[Parport] Failed to release parallel port %s.\n", pad->ident);
 
    close(pad->fd);
    pad->fd = -1;
@@ -290,15 +290,15 @@ static void *parport_joypad_init(void *data)
                      strlcpy(buf + _len, pin, sizeof(buf) - _len);
                   }
                }
-               RARCH_WARN("[Joypad]: Pin(s) %son %s were low"
-                     " on init, assuming not connected\n", \
+               RARCH_WARN("[Parport] Pin(s) %son %s were low"
+                     " on init, assuming not connected.\n", \
                      buf, path);
             }
          }
          else
          {
-            RARCH_WARN("[Joypad]: All pins low on %s, assuming"
-                  " nothing connected\n", path);
+            RARCH_WARN("[Parport] All pins low on %s, assuming"
+                  " nothing connected.\n", path);
             parport_free_pad(pad);
          }
       }

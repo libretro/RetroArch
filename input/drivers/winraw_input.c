@@ -159,7 +159,7 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 
       input_config_set_mouse_display_name(i, name);
 
-      RARCH_LOG("[WinRaw]: Mouse #%u: \"%s\".\n", i + 1, name);
+      RARCH_LOG("[WinRaw] Mouse #%u: \"%s\".\n", i + 1, name);
    }
 }
 
@@ -373,9 +373,9 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
          InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
 
          if (!GetCursorPos(&crs_pos))
-            RARCH_DBG("[WinRaw]: GetCursorPos failed with error %lu.\n", GetLastError());
+            RARCH_DBG("[WinRaw] GetCursorPos failed with error %lu.\n", GetLastError());
          else if (!ScreenToClient((HWND)video_driver_window_get(), &crs_pos))
-            RARCH_DBG("[WinRaw]: ScreenToClient failed with error %lu.\n", GetLastError());
+            RARCH_DBG("[WinRaw] ScreenToClient failed with error %lu.\n", GetLastError());
       }
       else
       {

@@ -198,7 +198,7 @@ void create_gl_context(HWND hwnd, bool *quit)
    if (win32_hrc)
    {
       video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
-      RARCH_LOG("[WGL]: Using cached GL context.\n");
+      RARCH_LOG("[WGL] Using cached GL context.\n");
    }
    else
    {
@@ -211,7 +211,7 @@ void create_gl_context(HWND hwnd, bool *quit)
          {
             if (!wglShareLists(win32_hrc, win32_hw_hrc))
             {
-               RARCH_LOG("[WGL]: Failed to share contexts.\n");
+               RARCH_LOG("[WGL] Failed to share contexts.\n");
                *quit    = true;
             }
          }
@@ -324,7 +324,7 @@ void create_gl_context(HWND hwnd, bool *quit)
 
                   if (!win32_hw_hrc)
                   {
-                     RARCH_ERR("[WGL]: Failed to create shared context.\n");
+                     RARCH_ERR("[WGL] Failed to create shared context.\n");
                      *quit = true;
                      break;
                   }
@@ -346,12 +346,12 @@ void create_gl_context(HWND hwnd, bool *quit)
 
          if (!context)
          {
-            RARCH_ERR("[WGL]: Failed to create core context. Falling back to legacy context.\n");
+            RARCH_ERR("[WGL] Failed to create core context. Falling back to legacy context.\n");
             *quit = true;
          }
       }
       else
-         RARCH_ERR("[WGL]: wglCreateContextAttribsARB not supported.\n");
+         RARCH_ERR("[WGL] wglCreateContextAttribsARB not supported.\n");
    }
 
    {
@@ -364,10 +364,10 @@ void create_gl_context(HWND hwnd, bool *quit)
       if (wglGetExtensionsStringARB)
       {
          exts = wglGetExtensionsStringARB(win32_hdc);
-         RARCH_LOG("[WGL]: Extensions: %s\n", exts);
+         RARCH_LOG("[WGL] Extensions: %s\n", exts);
          if (wgl_has_extension("WGL_EXT_swap_control_tear", exts))
          {
-            RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
+            RARCH_LOG("[WGL] Adaptive VSync supported.\n");
             wgl_flags |= WGL_FLAG_ADAPTIVE_VSYNC;
          }
       }
@@ -439,7 +439,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, int interval)
             return;
 
          if (!p_swap_interval(win32_interval))
-            RARCH_WARN("[WGL]: wglSwapInterval(%i) failed.\n", win32_interval);
+            RARCH_WARN("[WGL] wglSwapInterval(%i) failed.\n", win32_interval);
 #endif
          break;
 
@@ -614,7 +614,7 @@ static void *gfx_ctx_wgl_init(void *video_driver)
    create_gl_context(uwp_get_corewindow(), &quit);
    if (quit)
    {
-      RARCH_ERR("[UWP WGL]: create_gl_context failed.\n");
+      RARCH_ERR("[WGL UWP] create_gl_context failed.\n");
       free(wgl);
       return NULL;
    }
@@ -628,7 +628,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
 {
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
-      RARCH_ERR("[WGL]: win32_set_video_mode failed.\n");
+      RARCH_ERR("[WGL] win32_set_video_mode failed.\n");
       gfx_ctx_wgl_destroy(data);
       return false;
    }

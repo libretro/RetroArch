@@ -86,7 +86,7 @@ extern "C" {
 #ifdef HAVE_OPENGLES3
          case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
 #if 0
-            RARCH_WARN("[GLCore]: No CLAMP_TO_BORDER in GLES3. Falling back to edge clamp.\n");
+            RARCH_WARN("[GLCore] No CLAMP_TO_BORDER in GLES3. Falling back to edge clamp.\n");
 #endif
             return GL_CLAMP_TO_EDGE;
 #else
@@ -191,7 +191,7 @@ GLuint gl3_cross_compile_program(
 
       if (vertex_resources.push_constant_buffers.size() > 1)
       {
-         RARCH_ERR("[GLCore]: Cannot have more than one push constant buffer.\n");
+         RARCH_ERR("[GLCore] Cannot have more than one push constant buffer.\n");
          return 0;
       }
 
@@ -203,7 +203,7 @@ GLuint gl3_cross_compile_program(
 
       if (vertex_resources.uniform_buffers.size() > 1)
       {
-         RARCH_ERR("[GLCore]: Cannot have more than one uniform buffer.\n");
+         RARCH_ERR("[GLCore] Cannot have more than one uniform buffer.\n");
          return 0;
       }
 
@@ -219,7 +219,7 @@ GLuint gl3_cross_compile_program(
 
       if (fragment_resources.push_constant_buffers.size() > 1)
       {
-         RARCH_ERR("[GLCore]: Cannot have more than one push constant block.\n");
+         RARCH_ERR("[GLCore] Cannot have more than one push constant block.\n");
          return 0;
       }
 
@@ -231,7 +231,7 @@ GLuint gl3_cross_compile_program(
 
       if (fragment_resources.uniform_buffers.size() > 1)
       {
-         RARCH_ERR("[GLCore]: Cannot have more than one uniform buffer.\n");
+         RARCH_ERR("[GLCore] Cannot have more than one uniform buffer.\n");
          return 0;
       }
 
@@ -262,14 +262,9 @@ GLuint gl3_cross_compile_program(
       GLuint vertex_shader   = gl3_compile_shader(GL_VERTEX_SHADER, vertex_source.c_str());
       GLuint fragment_shader = gl3_compile_shader(GL_FRAGMENT_SHADER, fragment_source.c_str());
 
-#if 0
-      RARCH_LOG("[GLCore]: Vertex shader:\n========\n%s\n=======\n", vertex_source.c_str());
-      RARCH_LOG("[GLCore]: Fragment shader:\n========\n%s\n=======\n", fragment_source.c_str());
-#endif
-
       if (!vertex_shader || !fragment_shader)
       {
-         RARCH_ERR("[GLCore]: One or more shaders failed to compile.\n");
+         RARCH_ERR("[GLCore] One or more shaders failed to compile.\n");
          if (vertex_shader)
             glDeleteShader(vertex_shader);
          if (fragment_shader)
@@ -304,7 +299,7 @@ GLuint gl3_cross_compile_program(
             if (info_log)
             {
                glGetProgramInfoLog(program, length, &length, info_log);
-               RARCH_ERR("[GLCore]: Failed to link program: %s\n", info_log);
+               RARCH_ERR("[GLCore] Failed to link program: %s\n", info_log);
                free(info_log);
                glDeleteProgram(program);
                return 0;
@@ -351,7 +346,7 @@ GLuint gl3_cross_compile_program(
    }
    catch (const std::exception &e)
    {
-      RARCH_ERR("[GLCore]: Failed to cross compile program: %s\n", e.what());
+      RARCH_ERR("[GLCore] Failed to cross compile program: %s\n", e.what());
       if (program != 0)
          glDeleteProgram(program);
       return 0;
@@ -644,18 +639,18 @@ void Framebuffer::init()
       switch (status)
       {
          case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            RARCH_ERR("[GLCore]: Incomplete attachment.\n");
+            RARCH_ERR("[GLCore] Incomplete attachment.\n");
             break;
 
          case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            RARCH_ERR("[GLCore]: Incomplete, missing attachment.\n");
+            RARCH_ERR("[GLCore] Incomplete, missing attachment.\n");
             break;
 
          case GL_FRAMEBUFFER_UNSUPPORTED:
             {
                unsigned levels;
 
-               RARCH_ERR("[GLCore]: Unsupported FBO, falling back to RGBA8.\n");
+               RARCH_ERR("[GLCore] Unsupported FBO, falling back to RGBA8.\n");
 
                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
                glDeleteTextures(1, &image);
@@ -2063,7 +2058,7 @@ bool gl3_filter_chain::init_history()
 
    if (required_images < 2)
    {
-      RARCH_LOG("[GLCore]: Not using frame history.\n");
+      RARCH_LOG("[GLCore] Not using frame history.\n");
       return true;
    }
 
@@ -2076,7 +2071,7 @@ bool gl3_filter_chain::init_history()
    for (i = 0; i < required_images; i++)
       original_history.emplace_back(new gl3_shader::Framebuffer(0, 1));
 
-   RARCH_LOG("[GLCore]: Using history of %u frames.\n", unsigned(required_images));
+   RARCH_LOG("[GLCore] Using history of %u frames.\n", unsigned(required_images));
 
    /* On first frame, we need to clear the textures to
     * a known state, but we need
@@ -2114,12 +2109,12 @@ bool gl3_filter_chain::init_feedback()
          return false;
 
       if (use_feedback)
-         RARCH_LOG("[GLCore]: Using framebuffer feedback for pass #%u.\n", i);
+         RARCH_LOG("[GLCore] Using framebuffer feedback for pass #%u.\n", i);
    }
 
    if (!use_feedbacks)
    {
-      RARCH_LOG("[GLCore]: Not using framebuffer feedback.\n");
+      RARCH_LOG("[GLCore] Not using framebuffer feedback.\n");
       return true;
    }
 
@@ -2223,7 +2218,7 @@ bool gl3_filter_chain::init()
 
    for (i = 0; i < passes.size(); i++)
    {
-      RARCH_LOG("[slang]: Building pass #%u (%s)\n", i,
+      RARCH_LOG("[GLCore] Building pass #%u (%s)\n", i,
             passes[i]->get_name().empty() ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
             passes[i]->get_name().c_str());
@@ -2447,7 +2442,7 @@ static bool gl3_filter_chain_load_luts(
       std::unique_ptr<gl3_shader::StaticTexture> image = gl3_filter_chain_load_lut(chain, &shader->lut[i]);
       if (!image)
       {
-         RARCH_ERR("[GLCore]: Failed to load LUT \"%s\".\n", shader->lut[i].path);
+         RARCH_ERR("[GLCore] Failed to load LUT \"%s\".\n", shader->lut[i].path);
          return false;
       }
 
@@ -2535,7 +2530,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
 
       if (!glslang_compile_shader(pass->source.path, &output))
       {
-         RARCH_ERR("[GLCore]: Failed to compile shader: \"%s\".\n",
+         RARCH_ERR("[GLCore] Failed to compile shader: \"%s\".\n",
                pass->source.path);
          return nullptr;
       }
@@ -2544,7 +2539,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       {
          if (shader->num_parameters >= GFX_MAX_PARAMETERS)
          {
-            RARCH_ERR("[GLCore]: Exceeded maximum number of parameters (%u).\n", GFX_MAX_PARAMETERS);
+            RARCH_ERR("[GLCore] Exceeded maximum number of parameters (%u).\n", GFX_MAX_PARAMETERS);
             return nullptr;
          }
 
@@ -2564,7 +2559,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
                 || meta_param.maximum != itr->maximum
                 || meta_param.step    != itr->step)
             {
-               RARCH_ERR("[GLCore]: Duplicate parameters found for \"%s\", but arguments do not match.\n",
+               RARCH_ERR("[GLCore] Duplicate parameters found for \"%s\", but arguments do not match.\n",
                      itr->id);
                return nullptr;
             }
@@ -2653,13 +2648,13 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
             pass_info.rt_format    = 0;
 
             if (explicit_format)
-               RARCH_WARN("[slang]: Using explicit format for last pass in chain,"
+               RARCH_WARN("[GLCore] Using explicit format for last pass in chain,"
                      " but it is not rendered to framebuffer, using swapchain format instead.\n");
          }
          else
          {
             pass_info.rt_format = gl3_shader::convert_glslang_format(output.meta.rt_format);
-            RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
+            RARCH_LOG("[GLCore] Using render target format %s for pass output #%u.\n",
                   glslang_format_to_string(output.meta.rt_format), i);
          }
       }
@@ -2673,7 +2668,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
             output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
 
          pass_info.rt_format = gl3_shader::convert_glslang_format(output.meta.rt_format);
-         RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
+         RARCH_LOG("[GLCore] Using render target format %s for pass output #%u.\n",
                glslang_format_to_string(output.meta.rt_format), i);
 
          switch (pass->fbo.type_x)

@@ -132,7 +132,7 @@ static void audioworklet_processor_inited_cb(EMSCRIPTEN_WEBAUDIO_T context, bool
 
    if (!success)
    {
-      RARCH_ERR("[AudioWorklet] Failed to init AudioWorkletProcessor!\n");
+      RARCH_ERR("[AudioWorklet] Failed to init AudioWorkletProcessor.\n");
       audioworklet->init_error = true;
       audioworklet->init_done = true;
       return;
@@ -208,7 +208,7 @@ static void audioworklet_init_error(void *data)
 {
    audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;
 
-   RARCH_ERR("[AudioWorklet] Failed to initialize driver!\n");
+   RARCH_ERR("[AudioWorklet] Failed to initialize driver.\n");
    free(audioworklet->worklet_stack);
    free(audioworklet->tmpbuf);
    free(audioworklet);
@@ -235,7 +235,7 @@ static void *audioworklet_init(const char *device, unsigned rate,
    {
       if (audioworklet_static_data->driver_running || audioworklet_static_data->initing)
       {
-         RARCH_ERR("[AudioWorklet] Tried to start already running driver!\n");
+         RARCH_ERR("[AudioWorklet] Tried to start already running driver.\n");
          return NULL;
       }
       RARCH_LOG("[AudioWorklet] Reusing old context.\n");
@@ -316,7 +316,7 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
       if (!emscripten_lock_busyspin_wait_acquire(&audioworklet->buffer_lock, 2.5))
 #endif
       {
-         RARCH_WARN("[AudioWorklet] Main thread: could not acquire lock\n");
+         RARCH_WARN("[AudioWorklet] Main thread: could not acquire lock.\n");
          break;
       }
 
@@ -464,7 +464,7 @@ static void audioworklet_free(void *data)
    /* that's not good... this shouldn't happen? */
    if (!audioworklet->driver_running)
    {
-      RARCH_ERR("[AudioWorklet] Tried to free before done initing!\n");
+      RARCH_ERR("[AudioWorklet] Tried to free before done initing.\n");
       return;
    }
 
@@ -474,7 +474,7 @@ static void audioworklet_free(void *data)
    if (!emscripten_lock_busyspin_wait_acquire(&audioworklet->buffer_lock, 10))
 #endif
    {
-      RARCH_ERR("[AudioWorklet] Main thread: could not acquire lock to free buffer!\n");
+      RARCH_ERR("[AudioWorklet] Main thread: could not acquire lock to free buffer.\n");
       return;
    }
    audioworklet->driver_running = false;

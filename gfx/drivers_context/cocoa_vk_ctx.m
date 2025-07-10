@@ -242,7 +242,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
    cocoa_ctx->width               = width;
    cocoa_ctx->height              = height;
 
-   RARCH_LOG("[macOS]: Native window size: %u x %u.\n",
+   RARCH_LOG("[Vulkan] Native window size: %ux%u.\n",
          cocoa_ctx->width, cocoa_ctx->height);
 
    if (!vulkan_surface_create(
@@ -254,7 +254,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
             cocoa_ctx->height,
             cocoa_ctx->swap_interval))
    {
-      RARCH_ERR("[macOS]: Failed to create surface.\n");
+      RARCH_ERR("[Vulkan] Failed to create surface.\n");
       return false;
    }
 
@@ -303,7 +303,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
                               cocoa_ctx->height,
                               cocoa_ctx->swap_interval))
    {
-      RARCH_ERR("[iOS Vulkan]: Failed to create surface.\n");
+      RARCH_ERR("[Vulkan] Failed to create surface.\n");
       return false;
    }
 
@@ -342,7 +342,7 @@ static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
    if (!vulkan_create_swapchain(&cocoa_ctx->vk,
             width, height, cocoa_ctx->swap_interval))
    {
-      RARCH_ERR("[macOS/Vulkan]: Failed to update swapchain.\n");
+      RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       return false;
    }
 

@@ -35,41 +35,41 @@ static void wiiu_hid_report_hid_error(const char *msg, wiiu_adapter_t *adapter, 
    switch (hid_error_code)
    {
       case -100:
-         RARCH_ERR("[hid]: Invalid RM command (%s)\n", device);
+         RARCH_ERR("[HID] Invalid RM command (%s).\n", device);
          break;
       case -102:
-         RARCH_ERR("[hid]: Invalid IOCTL command (%s)\n", device);
+         RARCH_ERR("[HID] Invalid IOCTL command (%s).\n", device);
          break;
       case -103:
-         RARCH_ERR("[hid]: bad vector count (%s)\n", device);
+         RARCH_ERR("[HID] Bad vector count (%s).\n", device);
          break;
       case -104:
-         RARCH_ERR("[hid]: invalid memory bank (%s)\n", device);
+         RARCH_ERR("[HID] Invalid memory bank (%s).\n", device);
          break;
       case -105:
-         RARCH_ERR("[hid]: invalid memory alignment (%s)\n", device);
+         RARCH_ERR("[HID] Invalid memory alignment (%s).\n", device);
          break;
       case -106:
-         RARCH_ERR("[hid]: invalid data size (%s)\n", device);
+         RARCH_ERR("[HID] Invalid data size (%s).\n", device);
          break;
       case -107:
-         RARCH_ERR("[hid]: request cancelled (%s)\n", device);
+         RARCH_ERR("[HID] Request cancelled (%s).\n", device);
          break;
       case -108:
-         RARCH_ERR("[hid]: request timed out (%s)\n", device);
+         RARCH_ERR("[HID] Request timed out (%s).\n", device);
          break;
       case -109:
-         RARCH_ERR("[hid]: request aborted (%s)\n", device);
+         RARCH_ERR("[HID] Request aborted (%s).\n", device);
          break;
       case -110:
-         RARCH_ERR("[hid]: client priority error (%s)\n", device);
+         RARCH_ERR("[HID] Client priority error (%s).\n", device);
          break;
       case -111:
-         RARCH_ERR("[hid]: invalid device handle (%s)\n", device);
+         RARCH_ERR("[HID] Invalid device handle (%s).\n", device);
          break;
       default:
 #if 0
-         RARCH_ERR("[hid]: Unknown error (%d:%d: %s)\n",
+         RARCH_ERR("[HID] Unknown error (%d:%d: %s).\n",
             error_category, hid_error_code, device);
 #else
          (void)error_category;
@@ -244,7 +244,7 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
    int retries             = 0;
    wiiu_adapter_t *adapter = NULL;
 
-   RARCH_LOG("Waiting for in-flight reads to finish.\n");
+   RARCH_LOG("[HID] Waiting for in-flight reads to finish.\n");
 
    /* We don't need to protect the adapter list here because nothing else
       will access it during this method (the HID system is shut down, and
@@ -260,10 +260,10 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
 
       if (incomplete == 0)
       {
-         RARCH_LOG("All in-flight reads complete.\n");
+         RARCH_LOG("[HID] All in-flight reads complete.\n");
          while (adapters.list)
          {
-            RARCH_LOG("[hid]: shutting down adapter..\n");
+            RARCH_LOG("[HID] Shutting down adapter...\n");
             adapter = adapters.list;
             adapters.list = adapter->next;
             pad_connection_pad_deregister(joypad_state.pads, adapter->pad_driver, adapter->pad_driver_data);
@@ -276,7 +276,7 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
 
       if (++retries >= 1000)
       {
-         RARCH_WARN("[hid]: timed out waiting for in-flight read to finish.\n");
+         RARCH_WARN("[HID] Timed out waiting for in-flight read to finish.\n");
          incomplete = 0;
       }
    } while (incomplete);
@@ -346,7 +346,7 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
    wiiu_adapter_t *adapter = (wiiu_adapter_t *)userdata;
    if (!adapter)
    {
-      RARCH_ERR("read_loop_callback: bad userdata\n");
+      RARCH_ERR("[HID] read_loop_callback: Bad userdata.\n");
       return;
    }
 
@@ -419,7 +419,7 @@ static void wiiu_hid_start_polling_thread(wiiu_hid_t *hid)
    OSThread *thread              = wiiu_hid_new_thread();
    void *stack                   = wiiu_hid_alloc_zeroed(16, stack_size);
 
-   RARCH_LOG("[hid]: starting polling thread.\n");
+   RARCH_LOG("[HID] Starting polling thread.\n");
 
    if (!thread || !stack)
       goto error;
@@ -431,7 +431,7 @@ static void wiiu_hid_start_polling_thread(wiiu_hid_t *hid)
             priority,
             attributes))
    {
-      RARCH_LOG("[hid]: OSCreateThread failed.\n");
+      RARCH_LOG("[HID] OSCreateThread failed.\n");
       goto error;
    }
 
@@ -493,15 +493,15 @@ static void wiiu_hid_synchronized_add_to_adapters_list(wiiu_adapter_t *adapter)
 
 static void wiiu_hid_log_device(HIDDevice *device)
 {
-   RARCH_LOG("                handle: %d\n",     device->handle);
-   RARCH_LOG("  physical_device_inst: %d\n",     device->physical_device_inst);
-   RARCH_LOG("                   vid: 0x%04x\n", SWAP_IF_BIG(device->vid));
-   RARCH_LOG("                   pid: 0x%04x\n", SWAP_IF_BIG(device->pid));
-   RARCH_LOG("       interface_index: %d\n",     device->interface_index);
-   RARCH_LOG("             sub_class: %d\n",     device->sub_class);
-   RARCH_LOG("              protocol: %d\n",     device->protocol);
-   RARCH_LOG("    max_packet_size_rx: %d\n",     device->max_packet_size_rx);
-   RARCH_LOG("    max_packet_size_tx: %d\n",     device->max_packet_size_tx);
+   RARCH_DBG("                handle: %d\n",     device->handle);
+   RARCH_DBG("  physical_device_inst: %d\n",     device->physical_device_inst);
+   RARCH_DBG("                   vid: 0x%04x\n", SWAP_IF_BIG(device->vid));
+   RARCH_DBG("                   pid: 0x%04x\n", SWAP_IF_BIG(device->pid));
+   RARCH_DBG("       interface_index: %d\n",     device->interface_index);
+   RARCH_DBG("             sub_class: %d\n",     device->sub_class);
+   RARCH_DBG("              protocol: %d\n",     device->protocol);
+   RARCH_DBG("    max_packet_size_rx: %d\n",     device->max_packet_size_rx);
+   RARCH_DBG("    max_packet_size_tx: %d\n",     device->max_packet_size_tx);
 }
 
 static void wiiu_hid_get_device_name(HIDDevice *device, wiiu_attach_event *event)
@@ -571,7 +571,7 @@ static int32_t wiiu_attach_callback(HIDClient *client,
    else
    {
       if (attach)
-         RARCH_LOG("NULL device.\n");
+         RARCH_LOG("[HID] NULL device.\n");
       return DEVICE_UNUSED;
    }
 
@@ -648,14 +648,14 @@ static uint8_t wiiu_hid_try_init_driver(wiiu_adapter_t *adapter)
    joypad_connection_entry_t *entry = find_connection_entry(adapter->vendor_id, adapter->product_id, adapter->device_name);
    if (!entry)
    {
-      RARCH_LOG("Failed to find entry for vid: 0x%04x, pid: 0x%04x, name: %s\n",
+      RARCH_LOG("[HID] Failed to find entry for vid: 0x%04x, pid: 0x%04x, name: %s.\n",
             SWAP_IF_BIG(adapter->vendor_id),
             SWAP_IF_BIG(adapter->product_id),
             adapter->device_name);
       return ADAPTER_STATE_DONE;
    }
 
-   RARCH_LOG("Found entry for: vid: 0x%04x, pid: 0x%04x, name: %s\n",
+   RARCH_LOG("[HID] Found entry for: vid: 0x%04x, pid: 0x%04x, name: %s.\n",
          SWAP_IF_BIG(adapter->vendor_id),
          SWAP_IF_BIG(adapter->product_id),
          adapter->device_name);
@@ -668,7 +668,7 @@ static uint8_t wiiu_hid_try_init_driver(wiiu_adapter_t *adapter)
    slot = pad_connection_find_vacant_pad(joypad_state.pads);
    if (slot < 0)
    {
-      RARCH_LOG("wiiu_hid_try_init_driver: no slot available\n");
+      RARCH_LOG("[HID] wiiu_hid_try_init_driver: No slot available.\n");
       return ADAPTER_STATE_DONE;
    }
 
@@ -676,7 +676,7 @@ static uint8_t wiiu_hid_try_init_driver(wiiu_adapter_t *adapter)
 
    if (!adapter->pad_driver_data)
    {
-      RARCH_LOG("wiiu_hid_try_init_driver: pad init failed\n");
+      RARCH_LOG("[HID] wiiu_hid_try_init_driver: Pad init failed.\n");
       return ADAPTER_STATE_DONE;
    }
 
@@ -728,7 +728,7 @@ static void synchronized_process_adapters(wiiu_hid_t *hid)
             break;
 
          default:
-            RARCH_ERR("[hid]: Invalid adapter state: %d\n", adapter->state);
+            RARCH_ERR("[HID] Invalid adapter state: %d.\n", adapter->state);
             break;
       }
       if (!keep_prev)
@@ -754,7 +754,7 @@ static void wiiu_hid_send_control(void *data, uint8_t *s, size_t len)
 
    if (!adapter)
    {
-      RARCH_ERR("[hid]: send_control: bad adapter.\n");
+      RARCH_ERR("[HID] send_control: Bad adapter.\n");
       return;
    }
 
@@ -770,7 +770,7 @@ static void wiiu_hid_send_control(void *data, uint8_t *s, size_t len)
    {
       int16_t r1 =  (result & 0x0000FFFF);
       int16_t r2 = ((result & 0xFFFF0000) >> 16);
-      RARCH_LOG("[hid]: write failed: %08x (%d:%d)\n", result, r2, r1);
+      RARCH_LOG("[HID] Write failed: %08x (%d:%d)\n", result, r2, r1);
    }
 }
 
@@ -892,7 +892,7 @@ static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event)
 
    if (!adapter)
    {
-      RARCH_ERR("[hid]: Failed to allocate adapter.\n");
+      RARCH_ERR("[HID] Failed to allocate adapter.\n");
       wiiu_hid_delete_adapter(adapter);
       return;
    }

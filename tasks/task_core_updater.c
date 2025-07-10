@@ -259,7 +259,7 @@ static void cb_http_task_core_updater_get_list(
 finish:
    /* Log any error messages */
    if (!success)
-      RARCH_ERR("[Core Updater] Download of core list '%s' failed: %s\n",
+      RARCH_ERR("[Core Updater] Download of core list \"%s\" failed: %s.\n",
             (transf ? transf->path: "unknown"),
             (err ? err : "unknown"));
 
@@ -651,7 +651,7 @@ finish:
    /* Log any error messages */
    if (!string_is_empty(err))
    {
-      RARCH_ERR("[Core Updater] Download of '%s' failed: %s\n",
+      RARCH_ERR("[Core Updater] Download of \"%s\" failed: %s.\n",
             (transf ? transf->path: "unknown"), err);
       download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
    }
@@ -777,7 +777,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
                /* This cannot realistically happen...
                 * > If it does, just log an error and initialise
                 *   download */
-               RARCH_ERR("[Core Updater] Failed to backup core: %s\n",
+               RARCH_ERR("[Core Updater] Failed to backup core: \"%s\".\n",
                      download_handle->local_core_path);
                download_handle->backup_enabled = false;
                download_handle->status         = CORE_UPDATER_DOWNLOAD_START_TRANSFER;
@@ -1071,7 +1071,7 @@ void *task_push_core_updater_download(
     *   updater list provides 'sane' core paths */
    if (core_info_get_core_lock(list_entry->local_core_path, false))
    {
-      RARCH_ERR("[Core Updater] Update disabled - core is locked: %s\n",
+      RARCH_ERR("[Core Updater] Update disabled - core is locked: \"%s\".\n",
             list_entry->local_core_path);
 
       /* If task is not muted, generate notification */

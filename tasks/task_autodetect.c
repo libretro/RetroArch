@@ -439,7 +439,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
             != INPUT_DEVICE_RESERVATION_RESERVED)
       {
          first_free_player_slot = player;
-         RARCH_DBG("[Autoconf]: First unconfigured / unreserved player is %d\n",
+         RARCH_DBG("[Autoconf] First unconfigured / unreserved player is %d.\n",
                    player+1);
       }
       prev_assigned_player_slots[settings->uints.input_joypad_index[player]] = player;
@@ -448,12 +448,12 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
    }
    if (first_free_player_slot > settings->uints.input_max_users)
    {
-      RARCH_ERR( "[Autoconf]: No free and unreserved player slots found for adding new device"
-            " \"%s\"! Detected port %d, max_users: %d, first free slot %d\n",
+      RARCH_ERR("[Autoconf] No free and unreserved player slots found for adding new device"
+            " \"%s\"! Detected port %d, max_users: %d, first free slot %d.\n",
             device_name, detected_port,
             settings->uints.input_max_users,
             first_free_player_slot+1);
-      RARCH_WARN("[Autoconf]: Leaving detected player slot in place: %d\n",
+      RARCH_WARN("[Autoconf] Leaving detected player slot in place: %d.\n",
             prev_assigned_player_slots[detected_port]);
       return;
    }
@@ -468,8 +468,8 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
 
       if (!string_is_empty(settings_value))
       {
-         RARCH_DBG("[Autoconf]: Examining reserved device for player %d "
-                   "type %d: %s against %04x:%04x\n",
+         RARCH_DBG("[Autoconf] Examining reserved device for player %d "
+                   "type %d: %s against %04x:%04x.\n",
                    player+1,
                    settings->uints.input_device_reservation_type[player],
                    settings_value, vendor_id, product_id);
@@ -497,12 +497,12 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
                     settings_value_product_id == input_config_get_device_pid(prev_assigned_port)) ||
                   strcmp(input_config_get_device_name(prev_assigned_port), settings_value_device_name) == 0))
             {
-               RARCH_DBG("[Autoconf]: Same type of device already took this slot, continuing search\n");
+               RARCH_DBG("[Autoconf] Same type of device already took this slot, continuing search...\n");
                device_has_reserved_slot = false;
             }
             else
             {
-               RARCH_DBG("[Autoconf]: Reserved device matched\n");
+               RARCH_DBG("[Autoconf] Reserved device matched.\n");
                break;
             }
          }
@@ -514,15 +514,15 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
       unsigned prev_assigned_port = settings->uints.input_joypad_index[player];
       if (detected_port != prev_assigned_port)
       {
-         RARCH_LOG("[Autoconf]: Device \"%s\" (%x:%x) is reserved "
+         RARCH_LOG("[Autoconf] Device \"%s\" (%x:%x) is reserved "
                    "for player %d, updating.\n",
                    device_name, vendor_id, product_id, player+1);
 
          /* todo: fix the pushed info message */
          settings->uints.input_joypad_index[player] = detected_port;
 
-         RARCH_LOG("[Autoconf]: Preferred slot was taken earlier by "
-                   "\"%s\", reassigning that to %d\n",
+         RARCH_LOG("[Autoconf] Preferred slot was taken earlier by "
+                   "\"%s\", reassigning that to %d.\n",
                     input_config_get_device_name(prev_assigned_port),
                     prev_assigned_player_slots[detected_port]+1);
          settings->uints.input_joypad_index[prev_assigned_player_slots[detected_port]] = prev_assigned_port;
@@ -530,8 +530,8 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
          {
             unsigned prev_assigned_port_l2 = settings->uints.input_joypad_index[first_free_player_slot];
 
-            RARCH_LOG("[Autoconf]: 2nd level reassignment, moving "
-                      "previously assigned port %d to first free player %d\n",
+            RARCH_LOG("[Autoconf] 2nd level reassignment, moving "
+                      "previously assigned port %d to first free player %d.\n",
                       prev_assigned_port_l2, first_free_player_slot+1);
             settings->uints.input_joypad_index[prev_assigned_player_slots[detected_port]] = prev_assigned_port_l2;
             settings->uints.input_joypad_index[first_free_player_slot]                    = prev_assigned_port;
@@ -539,7 +539,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
       }
       else
       {
-         RARCH_DBG("[Autoconf]: Device \"%s\" (%x:%x) is reserved for "
+         RARCH_DBG("[Autoconf] Device \"%s\" (%x:%x) is reserved for "
                    "player %d, same as default assignment.\n",
                    device_name, vendor_id, product_id, player+1);
       }
@@ -547,7 +547,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
    }
    else
    {
-      RARCH_DBG("[Autoconf]: Device \"%s\" (%x:%x) is not reserved for "
+      RARCH_DBG("[Autoconf] Device \"%s\" (%x:%x) is not reserved for "
                 "any player slot.\n",
                 device_name, vendor_id, product_id);
       /* Fallback in case no reservation is set up at all - to preserve any previous setup where input_joypad_index may have been customized. */
@@ -561,7 +561,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
          unsigned prev_assigned_port = settings->uints.input_joypad_index[first_free_player_slot];
          settings->uints.input_joypad_index[first_free_player_slot] = detected_port;
          settings->uints.input_joypad_index[prev_assigned_player_slots[detected_port]] = prev_assigned_port;
-         RARCH_DBG("[Autoconf]: Earlier free player slot found, "
+         RARCH_DBG("[Autoconf] Earlier free player slot found, "
                    "reassigning to player %d.\n",
                    first_free_player_slot+1);
       }
@@ -779,7 +779,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    if (!string_is_empty(task_title))
    {
       task_set_title(task, strdup(task_title));
-      RARCH_LOG("[Autoconf]: %s.\n", task_title);
+      RARCH_LOG("[Autoconf] %s.\n", task_title);
    }
 
 task_finished:
@@ -1030,7 +1030,7 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
    if (!(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS))
       task_set_title(task, strdup(task_title));
    if (!string_is_empty(task_title))
-      RARCH_LOG("[Autoconf]: %s.\n", task_title);
+      RARCH_LOG("[Autoconf] %s.\n", task_title);
 
 task_finished:
 

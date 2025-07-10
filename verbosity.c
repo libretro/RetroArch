@@ -188,7 +188,7 @@ void retro_main_log_file_init(const char *path, bool append)
 
    if (!tmp)
    {
-      RARCH_ERR("Failed to open system event log file: %s\n", path);
+      RARCH_ERR("Failed to open system event log file: \"%s\".\n", path);
       return;
    }
 

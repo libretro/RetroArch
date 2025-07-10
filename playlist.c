@@ -963,7 +963,7 @@ bool playlist_push_runtime(playlist_t *playlist,
 
    if (string_is_empty(entry->core_path))
    {
-      RARCH_ERR("[Playlist]: Cannot push NULL or empty core path into the playlist.\n");
+      RARCH_ERR("[Playlist] Cannot push NULL or empty core path into the playlist.\n");
       goto error;
    }
 
@@ -980,7 +980,7 @@ bool playlist_push_runtime(playlist_t *playlist,
 
    if (string_is_empty(real_core_path))
    {
-      RARCH_ERR("[Playlist]: Cannot push NULL or empty core path into the playlist.\n");
+      RARCH_ERR("[Playlist] Cannot push NULL or empty core path into the playlist.\n");
       goto error;
    }
 
@@ -1295,7 +1295,7 @@ bool playlist_push(playlist_t *playlist,
 
    if (string_is_empty(entry->core_path))
    {
-      RARCH_ERR("[Playlist]: Cannot push NULL or empty core path into the playlist.\n");
+      RARCH_ERR("[Playlist] Cannot push NULL or empty core path into the playlist.\n");
       goto error;
    }
 
@@ -1312,7 +1312,7 @@ bool playlist_push(playlist_t *playlist,
 
    if (string_is_empty(real_core_path))
    {
-      RARCH_ERR("[Playlist]: Cannot push NULL or empty core path into the playlist.\n");
+      RARCH_ERR("[Playlist] Cannot push NULL or empty core path into the playlist.\n");
       goto error;
    }
 
@@ -1326,7 +1326,7 @@ bool playlist_push(playlist_t *playlist,
 
       if (string_is_empty(core_name))
       {
-         RARCH_ERR("[Playlist]: Cannot push NULL or empty core name into the playlist.\n");
+         RARCH_ERR("[Playlist] Cannot push NULL or empty core name into the playlist.\n");
          goto error;
       }
    }
@@ -1558,13 +1558,13 @@ void playlist_write_runtime_file(playlist_t *playlist)
    if (!(file = intfstream_open_file(playlist->config.path,
          RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
    {
-      RARCH_ERR("[Playlist]: Failed to write to file: \"%s\".\n", playlist->config.path);
+      RARCH_ERR("[Playlist] Failed to write to file: \"%s\".\n", playlist->config.path);
       return;
    }
 
    if (!(writer = rjsonwriter_open_stream(file)))
    {
-      RARCH_ERR("[Playlist]: Failed to create JSON writer\n");
+      RARCH_ERR("[Playlist] Failed to create JSON writer.\n");
       goto end;
    }
 
@@ -1697,7 +1697,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
                                | CNT_PLAYLIST_FLG_OLD_FMT
                                | CNT_PLAYLIST_FLG_COMPRESSED);
 
-   RARCH_LOG("[Playlist]: Written to file: \"%s\".\n", playlist->config.path);
+   RARCH_LOG("[Playlist] Written to file: \"%s\".\n", playlist->config.path);
 end:
    intfstream_close(file);
    free(file);
@@ -1741,7 +1741,7 @@ void playlist_write_file(playlist_t *playlist)
 
    if (!file)
    {
-      RARCH_ERR("[Playlist]: Failed to write to file: \"%s\".\n", playlist->config.path);
+      RARCH_ERR("[Playlist] Failed to write to file: \"%s\".\n", playlist->config.path);
       return;
    }
 
@@ -1786,7 +1786,7 @@ void playlist_write_file(playlist_t *playlist)
       rjsonwriter_t* writer = rjsonwriter_open_stream(file);
       if (!writer)
       {
-         RARCH_ERR("[Playlist]: Failed to create JSON writer\n");
+         RARCH_ERR("[Playlist] Failed to create JSON writer.\n");
          goto end;
       }
       /*  When compressing playlists, human readability
@@ -2090,7 +2090,7 @@ void playlist_write_file(playlist_t *playlist)
 
       if (!rjsonwriter_free(writer))
       {
-         RARCH_ERR("[Playlist]: Failed to write to file: \"%s\".\n", playlist->config.path);
+         RARCH_ERR("[Playlist] Failed to write to file: \"%s\".\n", playlist->config.path);
       }
 
       playlist->flags  &= ~(CNT_PLAYLIST_FLG_OLD_FMT);
@@ -2103,7 +2103,7 @@ void playlist_write_file(playlist_t *playlist)
    else
       playlist->flags  &= ~(CNT_PLAYLIST_FLG_COMPRESSED);
 
-   RARCH_LOG("[Playlist]: Written to file: \"%s\".\n", playlist->config.path);
+   RARCH_LOG("[Playlist] Written to file: \"%s\".\n", playlist->config.path);
 end:
    intfstream_close(file);
    free(file);
@@ -2270,7 +2270,7 @@ static bool JSONStartObjectHandler(void *context)
             /* Hit max item limit.
              * Note: We can't just abort here, since there may
              * be more metadata to read at the end of the file... */
-            RARCH_WARN("[Playlist]: JSON file contains more entries than current playlist capacity. Excess entries will be discarded.\n");
+            RARCH_WARN("[Playlist] JSON file contains more entries than current playlist capacity. Excess entries will be discarded.\n");
             pCtx->flags             |= JSON_CTX_FLG_CAPACITY_EXCEEDED;
             pCtx->current_entry      = NULL;
             /* In addition, since we are discarding excess entries,
@@ -2627,7 +2627,7 @@ static bool playlist_read_file(playlist_t *playlist)
 
       if (!(parser = rjson_open_stream(file)))
       {
-         RARCH_ERR("[Playlist]: Failed to create JSON parser\n");
+         RARCH_ERR("[Playlist] Failed to create JSON parser.\n");
          goto end;
       }
 
@@ -2651,15 +2651,15 @@ static bool playlist_read_file(playlist_t *playlist)
       {
          if (context.flags & JSON_CTX_FLG_OOM)
          {
-            RARCH_WARN("[Playlist]: Ran out of memory while parsing JSON playlist\n");
+            RARCH_WARN("[Playlist] Ran out of memory while parsing JSON playlist.\n");
             res = false;
          }
          else
          {
-            RARCH_WARN("[Playlist]: Error parsing chunk:\n---snip---\n%.*s\n---snip---\n",
+            RARCH_WARN("[Playlist] Error parsing chunk:\n---snip---\n%.*s\n---snip---\n",
                   rjson_get_source_context_len(parser),
                   rjson_get_source_context_buf(parser));
-            RARCH_WARN("[Playlist]: Error: Invalid JSON at line %d, column %d - %s.\n",
+            RARCH_WARN("[Playlist] Error: Invalid JSON at line %d, column %d - %s.\n",
                   (int)rjson_get_source_line(parser),
                   (int)rjson_get_source_column(parser),
                   (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));

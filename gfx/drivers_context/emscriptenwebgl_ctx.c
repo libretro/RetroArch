@@ -130,14 +130,14 @@ static void *gfx_ctx_emscripten_webgl_init(void *video_driver)
    emscripten->ctx = emscripten_webgl_create_context("#canvas", &attrs);
    if (!emscripten->ctx)
    {
-      RARCH_ERR("[EMSCRIPTEN/WebGL]: Failed to initialize webgl\n");
+      RARCH_ERR("[EMSCRIPTEN/WebGL] Failed to initialize webgl.\n");
       goto error;
    }
    emscripten_webgl_get_drawing_buffer_size(emscripten->ctx, &width, &height);
    emscripten_webgl_make_context_current(emscripten->ctx);
    emscripten->fb_width = (unsigned)width;
    emscripten->fb_height = (unsigned)height;
-   RARCH_LOG("[EMSCRIPTEN/WebGL]: Dimensions: %ux%u\n", emscripten->fb_width, emscripten->fb_height);
+   RARCH_LOG("[EMSCRIPTEN/WebGL] Dimensions: %ux%u.\n", emscripten->fb_width, emscripten->fb_height);
 
    return emscripten;
 

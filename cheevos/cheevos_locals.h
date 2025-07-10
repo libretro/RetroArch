@@ -42,7 +42,7 @@ RETRO_BEGIN_DECLS
 /* Define this macro to get extra-verbose log for cheevos. */
 #define CHEEVOS_VERBOSE
 
-#define RCHEEVOS_TAG "[RCHEEVOS]: "
+#define RCHEEVOS_TAG "[RCHEEVOS] "
 #define CHEEVOS_FREE(p) do { void* q = (void*)p; if (q) free(q); } while (0)
 
 #ifdef CHEEVOS_VERBOSE

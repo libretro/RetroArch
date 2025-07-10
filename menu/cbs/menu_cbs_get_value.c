@@ -519,7 +519,7 @@ static size_t menu_action_setting_disp_set_label_core_manager_steam_entry(
 
          if (MIST_IS_ERROR(result))
          {
-            RARCH_ERR("[Steam]: Failed to get dlc install status (%d-%d)\n",
+            RARCH_ERR("[Steam] Failed to get DLC install status (%d-%d).\n",
                   MIST_UNPACK_RESULT(result));
             return 0;
          }

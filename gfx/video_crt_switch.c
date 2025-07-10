@@ -94,14 +94,14 @@ static void crt_aspect_ratio_switch(
    /* We only force aspect ratio for the core provided setting */
    if (video_aspect_ratio_idx != ASPECT_RATIO_CORE)
    {
-      RARCH_LOG("[CRT]: Aspect ratio forced by user: %f\n", video_st->aspect_ratio);
+      RARCH_LOG("[CRT] Aspect ratio forced by user: %f.\n", video_st->aspect_ratio);
       return;
    }
 
    /* Send aspect float to video_driver */
    video_st->aspect_ratio         = fly_aspect;
-   RARCH_LOG("[CRT]: Setting Aspect Ratio: %f \n", fly_aspect);
-   RARCH_LOG("[CRT]: Setting Video Screen Size to: %dx%d \n",
+   RARCH_LOG("[CRT] Setting aspect ratio: %f.\n", fly_aspect);
+   RARCH_LOG("[CRT] Setting screen size: %dx%d.\n",
          width, height);
    video_driver_set_size(width, height);
    if (video_st->current_video && video_st->current_video->set_viewport)
@@ -143,9 +143,9 @@ static void crt_switch_set_aspect(
    sr_get_state(&state);
 
    if ((int)srm_width >= state.super_width && !srm_isstretched)
-      RARCH_LOG("[CRT]: Super resolution detected. Fractal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);
+      RARCH_LOG("[CRT] Super resolution detected. Fractal scaling @ X:%f Y:%f.\n", srm_xscale, srm_yscale);
    else if (srm_isstretched && srm_width > 0 )
-      RARCH_LOG("[CRT]: Resolution is stretched. Fractal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);
+      RARCH_LOG("[CRT] Resolution is stretched. Fractal scaling @ X:%f Y:%f.\n", srm_xscale, srm_yscale);
 #endif
 
    scaled_width  = roundf(patched_width  * srm_xscale);
@@ -175,7 +175,7 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch,
    p_switch->kms_ctx = (gfxctx.ident && strncmp(gfxctx.ident, "kms", 3) == 0);
    p_switch->khr_ctx = (gfxctx.ident && strncmp(gfxctx.ident, "khr_display", 11) == 0);
 
-   RARCH_LOG("[CRT] Video context is: %s\n", gfxctx.ident);
+   RARCH_LOG("[CRT] Video context is: %s.\n", gfxctx.ident);
 
    if (!p_switch->sr2_active)
    {
@@ -190,18 +190,18 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch,
       {
          case 1:
             sr_set_monitor("arcade_15");
-            RARCH_LOG("[CRT]: CRT Mode: %d - arcade_15 \n", crt_mode);
+            RARCH_LOG("[CRT] CRT mode: %d - arcade_15.\n", crt_mode);
             break;
          case 2:
             sr_set_monitor("arcade_31");
-            RARCH_LOG("[CRT]: CRT Mode: %d - arcade_31 \n", crt_mode);
+            RARCH_LOG("[CRT] CRT mode: %d - arcade_31.\n", crt_mode);
             break;
          case 3:
             sr_set_monitor("pc_31_120");
-            RARCH_LOG("[CRT]: CRT Mode: %d - pc_31_120 \n", crt_mode);
+            RARCH_LOG("[CRT] CRT mode: %d - pc_31_120.\n", crt_mode);
             break;
          case 4:
-            RARCH_LOG("[CRT]: CRT Mode: %d - Selected from ini \n", crt_mode);
+            RARCH_LOG("[CRT] CRT mode: %d - Selected from ini.\n", crt_mode);
             break;
          default:
             break;
@@ -219,16 +219,16 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch,
             p_switch->rtn = sr_init_disp("dummy", NULL);
       else if (monitor_index + 1 > 0)
       {
-         RARCH_LOG("[CRT]: Monitor Index Manual: %s\n", &index[0]);
+         RARCH_LOG("[CRT] Monitor index manual: %s.\n", &index[0]);
          p_switch->rtn = sr_init_disp(index, NULL);
       }
       else
       {
-         RARCH_LOG("[CRT]: Monitor Index Auto: %s\n","auto");
+         RARCH_LOG("[CRT] Monitor index auto: %s.\n", "auto");
          p_switch->rtn = sr_init_disp("auto", NULL);
       }
 
-      RARCH_LOG("[CRT]: SR rtn %d \n", p_switch->rtn);
+      RARCH_LOG("[CRT] SR rtn %d.\n", p_switch->rtn);
 
       if (p_switch->rtn >= 0)
       {
@@ -240,7 +240,7 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch,
                ra_config_path, "switchres.ini", sizeof(sr_ini_file));
          if (path_is_valid(sr_ini_file))
          {
-            RARCH_LOG("[CRT]: Loading switchres.ini override file from %s \n", sr_ini_file);
+            RARCH_LOG("[CRT] Loading switchres.ini override file from \"%s\".\n", sr_ini_file);
             sr_load_ini(sr_ini_file);
          }
       }
@@ -254,17 +254,17 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch,
    else if (p_switch->rtn >= 0 && p_switch->kms_ctx)
    {
       p_switch->sr2_active = true;
-      RARCH_LOG("[CRT]: KMS context detected, keeping SR alive\n");
+      RARCH_LOG("[CRT] KMS context detected, keeping SR alive.\n");
       return true;
    }
    else if (p_switch->rtn >= 0 && p_switch->khr_ctx)
    {
       p_switch->sr2_active = true;
-      RARCH_LOG("[CRT]: Vulkan context detected, keeping SR alive\n");
+      RARCH_LOG("[CRT] Vulkan context detected, keeping SR alive.\n");
       return true;
    }
 
-   RARCH_ERR("[CRT]: error at init, CRT modeswitching disabled\n");
+   RARCH_ERR("[CRT] Error at init, CRT modeswitching disabled.\n");
    sr_deinit();
    p_switch->sr2_active = false;
 
@@ -341,7 +341,7 @@ static void switch_res_crt(
          strlcpy(core_name,   current_core_name,   sizeof(core_name));
          strlcpy(content_dir, current_content_dir, sizeof(content_dir));
          strlcpy(content_name, current_content_name, sizeof(current_content_name));
-         RARCH_LOG("[CRT]: Current running core %s \n", core_name);
+         RARCH_LOG("[CRT] Current running core: %s.\n", core_name);
          crt_adjust_sr_ini(p_switch);
          p_switch->hh_core = false;
       }
@@ -355,20 +355,20 @@ static void switch_res_crt(
          {
             temph = 240;
             tempw = 320;
-            RARCH_LOG("[CRT]: SR temporary mode for windows geometry adjustment (320x240)\n");
+            RARCH_LOG("[CRT] SR temporary mode for windows geometry adjustment (320x240).\n");
          }else{
 
-            RARCH_LOG("[CRT]: SR temporary mode for windows geometry adjustment (640x400)\n");
+            RARCH_LOG("[CRT] SR temporary mode for windows geometry adjustment (640x400).\n");
          }
    
          ret = sr_add_mode(tempw, temph, rr, flags, &srm);
 
          if (!ret)
-            RARCH_ERR("[CRT]: SR failed to add temporary mode for windows geometry adjustment\n");
+            RARCH_ERR("[CRT] SR failed to add temporary mode for windows geometry adjustment.\n");
          else
          {
             ret = sr_set_mode(srm.id);
-            RARCH_LOG("[CRT]: SR added temporary mode for windows geometry adjustment\n");
+            RARCH_LOG("[CRT] SR added temporary mode for windows geometry adjustment.\n");
          }
            
       }
@@ -378,21 +378,21 @@ static void switch_res_crt(
       sr_set_option(SR_OPT_H_SHIFT, hShift);
       sr_set_option(SR_OPT_V_SHIFT, vShift);
 
-      RARCH_DBG("%dx%d rotation: %d rotated: %d core rotation:%d\n", w, h, p_switch->rotated, flags & SR_MODE_ROTATED, retroarch_get_rotation());
+      RARCH_DBG("[CRT] %dx%d rotation: %d rotated: %d core rotation:%d\n", w, h, p_switch->rotated, flags & SR_MODE_ROTATED, retroarch_get_rotation());
       ret = sr_add_mode(w, h, rr, flags, &srm);
       if (!ret)
-         RARCH_ERR("[CRT]: SR failed to add mode\n");
+         RARCH_ERR("[CRT] SR failed to add mode.\n");
       if (p_switch->kms_ctx)
       {
          get_modeline_for_kms(p_switch, &srm);
          video_driver_set_video_mode(srm.width, srm.height, true);
       }
       else if (p_switch->khr_ctx)
-         RARCH_WARN("[CRT]: Vulkan -> Can't modeswitch for now\n");
+         RARCH_WARN("[CRT] Vulkan -> Can't modeswitch for now.\n");
       else
          ret = sr_set_mode(srm.id);
       if (!p_switch->kms_ctx && !ret)
-         RARCH_ERR("[CRT]: SR failed to switch mode\n");
+         RARCH_ERR("[CRT] SR failed to switch mode.\n");
       p_switch->sr_core_hz = (float)srm.vfreq;
 
       crt_switch_set_aspect(p_switch,
@@ -472,7 +472,7 @@ void crt_switch_res_core(
       /* Detect resolution change and switch */
       if (crt_check_for_changes(p_switch))
       {
-         RARCH_LOG("[CRT]: Requested Resolution: %dx%d@%f orientation: %s\n",
+         RARCH_LOG("[CRT] Requested resolution: %dx%d@%f, orientation: %s.\n",
                   native_width, height, hz, rotated? "rotated" : "normal");
 #if defined(HAVE_VIDEOCORE)
          crt_rpi_switch(p_switch, width, height, hz, 0, native_width);
@@ -508,7 +508,7 @@ void crt_switch_res_core(
       {
          video_driver_state_t *video_st = video_state_get_ptr();
          float fly_aspect               = (float)p_switch->fly_aspect;
-         RARCH_LOG("[CRT]: Restoring Aspect Ratio: %f \n", fly_aspect);
+         RARCH_LOG("[CRT] Restoring aspect ratio: %f.\n", fly_aspect);
          video_st->aspect_ratio         = fly_aspect;
          video_driver_apply_state_changes();
       }
@@ -548,7 +548,7 @@ void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
 
    strlcpy(content_name, rom_filename, sizeof(current_content_name));
 
-   RARCH_LOG("[CRT]: Game Info %s\n", rom_filename); 
+   RARCH_LOG("[CRT] Game info \"%s\".\n", rom_filename); 
 
    if (p_switch->sr2_active)
    {
@@ -557,7 +557,7 @@ void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
          loaded for another core */
       if (ini_overrides_loaded)
       {
-         RARCH_LOG("[CRT]: Loading default switchres.ini... \n");
+         RARCH_LOG("[CRT] Loading default switchres.ini...\n");
          sr_load_ini((char *)"switchres.ini");
          ini_overrides_loaded = false;
       }
@@ -577,7 +577,7 @@ void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
 
          if (path_is_valid(switchres_ini_override_file))
          {
-            RARCH_LOG("[CRT]: Loading switchres.ini core override file from %s \n", switchres_ini_override_file);
+            RARCH_LOG("[CRT] Loading switchres.ini core override file from \"%s\".\n", switchres_ini_override_file);
             sr_load_ini(switchres_ini_override_file);
             ini_overrides_loaded = true;
          }
@@ -589,7 +589,7 @@ void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
 
          if (path_is_valid(switchres_ini_override_file))
          {
-            RARCH_LOG("[CRT]: Loading switchres.ini content directory override file from %s \n", switchres_ini_override_file);
+            RARCH_LOG("[CRT] Loading switchres.ini content directory override file from \"%s\".\n", switchres_ini_override_file);
             sr_load_ini(switchres_ini_override_file);
             ini_overrides_loaded = true;
          }
@@ -601,7 +601,7 @@ void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
 
          if (path_is_valid(switchres_ini_override_file))
          {
-            RARCH_LOG("[CRT]: Loading switchres.ini game override file from %s \n", switchres_ini_override_file);
+            RARCH_LOG("[CRT] Loading switchres.ini game override file from \"%s\".\n", switchres_ini_override_file);
             sr_load_ini(switchres_ini_override_file);
             ini_overrides_loaded = true;
          }

@@ -191,7 +191,7 @@ static void x11_set_window_pid(Display *dpy, Window win)
         return;
 
     if (gethostname(hostname, scret + 1) == -1)
-        RARCH_WARN("Failed to get hostname.\n");
+        RARCH_WARN("[X11] Failed to get hostname.\n");
     else
         XChangeProperty(dpy, win, XA_WM_CLIENT_MACHINE, XA_STRING, 8,
             PropModeReplace, (unsigned char *)hostname, strlen(hostname));
@@ -235,7 +235,7 @@ static void xdg_screensaver_inhibit(Window wnd)
 
    title[0] = '\0';
 
-   RARCH_LOG("[X11]: Suspending screensaver (X11, xdg-screensaver).\n");
+   RARCH_LOG("[X11] Suspending screensaver (X11, xdg-screensaver).\n");
 
    if (g_x11_dpy && g_x11_win)
    {
@@ -256,12 +256,12 @@ static void xdg_screensaver_inhibit(Window wnd)
    if ((ret = system(cmd)) == -1)
    {
       xdg_screensaver_available = false;
-      RARCH_WARN("Failed to launch xdg-screensaver.\n");
+      RARCH_WARN("[X11] Failed to launch xdg-screensaver.\n");
    }
    else if (WEXITSTATUS(ret))
    {
       xdg_screensaver_available = false;
-      RARCH_WARN("Could not suspend screen saver.\n");
+      RARCH_WARN("[X11] Could not suspend screensaver.\n");
    }
 }
 
@@ -454,14 +454,14 @@ static bool x11_create_input_context(Display *dpy,
 
    if (!(*xim = XOpenIM(dpy, NULL, NULL, NULL)))
    {
-      RARCH_ERR("[X11]: Failed to open input method.\n");
+      RARCH_ERR("[X11] Failed to open input method.\n");
       return false;
    }
 
    if (!(*xic = XCreateIC(*xim, XNInputStyle,
          XIMPreeditNothing | XIMStatusNothing, XNClientWindow, win, NULL)))
    {
-      RARCH_ERR("[X11]: Failed to create input context.\n");
+      RARCH_ERR("[X11] Failed to create input context.\n");
       return false;
    }
 
@@ -658,11 +658,6 @@ bool x11_alive(void *data)
             switch (event.xbutton.button)
             {
                case 1: /* Left click */
-#if 0
-                  RARCH_LOG("Click occurred : [%d, %d]\n",
-                        event.xbutton.x_root,
-                        event.xbutton.y_root);
-#endif
                   break;
                case 2: /* Grabbed  */
                        /* Middle click */

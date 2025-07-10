@@ -49,7 +49,7 @@ static void stream_state_changed_cb(void *data,
 {
    pipewire_microphone_t *mic = (pipewire_microphone_t*)data;
 
-   RARCH_DBG("[Microphone] [PipeWire]: Stream state changed %s -> %s\n",
+   RARCH_DBG("[Microphone] [PipeWire] Stream state changed %s -> %s.\n",
              pw_stream_state_as_string(old),
              pw_stream_state_as_string(state));
 
@@ -77,7 +77,7 @@ static void capture_process_cb(void *data)
 
    if (!(b = pw_stream_dequeue_buffer(mic->stream)))
    {
-      RARCH_ERR("[Microphone] [PipeWire]: Out of buffers: %s\n", strerror(errno));
+      RARCH_ERR("[Microphone] [PipeWire] Out of buffers: %s.\n", strerror(errno));
       return pw_thread_loop_signal(mic->pw->thread_loop, false);
    }
 
@@ -89,11 +89,11 @@ static void capture_process_cb(void *data)
    n_bytes = MIN(buf->datas[0].chunk->size, buf->datas[0].maxsize - offs);
 
    if ((filled = spa_ringbuffer_get_write_index(&mic->ring, &idx)) < 0)
-      RARCH_ERR("[Microphone] [PipeWire]: %p: underrun write:%u filled:%d\n", p, idx, filled);
+      RARCH_ERR("[Microphone] [PipeWire] %p: underrun write:%u filled:%d.\n", p, idx, filled);
    else
    {
       if ((uint32_t)filled + n_bytes > RINGBUFFER_SIZE)
-         RARCH_ERR("[Microphone] [PipeWire]: %p: overrun write:%u filled:%d + size:%u > max:%u\n",
+         RARCH_ERR("[Microphone] [PipeWire] %p: overrun write:%u filled:%d + size:%u > max:%u.\n",
                    p, idx, filled, n_bytes, RINGBUFFER_SIZE);
    }
    spa_ringbuffer_write_data(&mic->ring,
@@ -134,12 +134,12 @@ static void registry_event_global(void *data, uint32_t id,
       {
          attr.i = id;
          string_list_append(pw->devicelist, sink, attr);
-         RARCH_LOG("[Microphone] [PipeWire]: Found Source Node: %s\n", sink);
+         RARCH_LOG("[Microphone] [PipeWire] Found Source Node: %s.\n", sink);
       }
 
-      RARCH_DBG("[Microphone] [PipeWire]: Object: id:%u Type:%s/%d\n", id, type, version);
+      RARCH_DBG("[Microphone] [PipeWire] Object: id:%u Type:%s/%d\n", id, type, version);
       spa_dict_for_each(item, props)
-         RARCH_DBG("[Microphone] [PipeWire]: \t\t%s: \"%s\"\n", item->key, item->value);
+         RARCH_DBG("[Microphone] [PipeWire] \t\t%s: \"%s\"\n", item->key, item->value);
    }
 }
 
@@ -173,7 +173,7 @@ static void *pipewire_microphone_init(void)
    return pw;
 
 error:
-   RARCH_ERR("[Microphone] [PipeWire]: Failed to initialize microphone\n");
+   RARCH_ERR("[Microphone] [PipeWire] Failed to initialize microphone.\n");
    pipewire_microphone_free(pw);
    return NULL;
 }
@@ -346,7 +346,7 @@ static void *pipewire_microphone_open_mic(void *driver_context,
 unlock_error:
    pw_thread_loop_unlock(mic->pw->thread_loop);
 error:
-   RARCH_ERR("[Microphone] [PipeWire]: Failed to initialize microphone...\n");
+   RARCH_ERR("[Microphone] [PipeWire] Failed to initialize microphone.\n");
    pipewire_microphone_close_mic(mic->pw, mic);
    return NULL;
 }

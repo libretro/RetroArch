@@ -1290,7 +1290,7 @@ static bool d3d10_gfx_set_shader(void* data,
 
    if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_WARN("[D3D10]: Only Slang shaders are supported. Falling back to stock.\n");
+      RARCH_WARN("[D3D10] Only Slang shaders are supported. Falling back to stock.\n");
       return false;
    }
 
@@ -1615,7 +1615,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
    if (!win32_set_video_mode(d3d10,
             d3d10->vp.full_width, d3d10->vp.full_height, video->fullscreen))
    {
-      RARCH_ERR("[D3D10]: win32_set_video_mode failed.\n");
+      RARCH_ERR("[D3D10] win32_set_video_mode failed.\n");
       goto error;
    }
 
@@ -2002,7 +2002,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
          utf16_to_char_string((const uint16_t*)
                desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D10]: Found GPU at index %d: \"%s\".\n", i, str);
+         RARCH_LOG("[D3D10] Found GPU at index %d: \"%s\".\n", i, str);
 
          string_list_append(d3d10->gpu_list, str, attr);
 
@@ -2018,11 +2018,11 @@ static void *d3d10_gfx_init(const video_info_t* video,
       {
          d3d10->current_adapter = d3d10->adapters[gpu_index];
          d3d10->adapter         = d3d10->current_adapter;
-         RARCH_LOG("[D3D10]: Using GPU index %d.\n", gpu_index);
+         RARCH_LOG("[D3D10] Using GPU index %d.\n", gpu_index);
       }
       else
       {
-         RARCH_WARN("[D3D10]: Invalid GPU index %d, using first device found.\n", gpu_index);
+         RARCH_WARN("[D3D10] Invalid GPU index %d, using first device found.\n", gpu_index);
          d3d10->current_adapter = d3d10->adapters[0];
          d3d10->adapter         = d3d10->current_adapter;
       }
@@ -2114,7 +2114,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
          height = d3d10->vp.height;
       }
 
-      RARCH_LOG("[D3D10]: Updating framebuffer size %ux%u.\n", width, height);
+      RARCH_LOG("[D3D10] Updating framebuffer size %ux%u.\n", width, height);
 
       if (     (i != (d3d10->shader_preset->passes - 1))
             || (width  != d3d10->vp.width)

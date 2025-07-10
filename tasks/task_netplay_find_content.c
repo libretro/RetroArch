@@ -278,9 +278,9 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
    if (data->current.core_loaded && data->crc > 0 && data->current.crc > 0)
    {
-      RARCH_LOG("[Lobby] Testing CRC matching for: %08lX\n",
+      RARCH_LOG("[Lobby] Testing CRC matching for: %08lX...\n",
          (unsigned long)data->crc);
-      RARCH_LOG("[Lobby] Current content CRC: %08lX\n",
+      RARCH_LOG("[Lobby] Current content CRC: %08lX.\n",
          (unsigned long)data->current.crc);
 
       if (data->current.crc == data->crc)
@@ -556,7 +556,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             if (data->current.core_loaded)
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
-            RARCH_LOG("[Lobby] Loading core '%s' with content file '%s'.\n",
+            RARCH_LOG("[Lobby] Loading core \"%s\" with content file \"%s\".\n",
                data->core, content_path);
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -603,7 +603,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             if (data->current.core_loaded)
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
-            RARCH_LOG("[Lobby] Loading core '%s' with subsystem '%s'.\n",
+            RARCH_LOG("[Lobby] Loading core \"%s\" with subsystem \"%s\".\n",
                data->core, subsystem);
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -657,7 +657,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             if (data->current.core_loaded)
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
-            RARCH_LOG("[Lobby] Loading contentless core '%s'.\n", data->core);
+            RARCH_LOG("[Lobby] Loading contentless core \"%s\".\n", data->core);
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 

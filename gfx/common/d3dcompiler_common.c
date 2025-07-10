@@ -135,7 +135,7 @@ bool d3d_compile(const char* src, size_t len,
       if (error_msg)
       {
          const char* msg = (const char*)error_msg->lpVtbl->GetBufferPointer(error_msg);
-         RARCH_ERR("D3DCompile failed :\n%s\n", msg);
+         RARCH_ERR("D3DCompile failed: %s.\n", msg);
          /* Place a breakpoint here, if you want,
             to see shader compilation issues */
          Release(error_msg);
@@ -162,7 +162,7 @@ bool d3d_compile_from_file(LPCWSTR filename,
    {
       if (error_msg)
       {
-         RARCH_ERR("D3DCompile failed :\n%s\n",
+         RARCH_ERR("D3DCompile failed: %s.\n",
                (const char*)error_msg->lpVtbl->GetBufferPointer(error_msg));
          Release(error_msg);
       }

@@ -202,7 +202,7 @@ void system_exec_wii(const char *_path, bool should_load_game)
    fp = fopen(path, "rb");
    if (!fp)
    {
-      RARCH_ERR("Could not open DOL file %s.\n", path);
+      RARCH_ERR("Could not open DOL file \"%s\".\n", path);
       goto exit;
    }
 
@@ -214,7 +214,7 @@ void system_exec_wii(const char *_path, bool should_load_game)
    dol = malloc(_len);
    if (!dol)
    {
-      RARCH_ERR("Could not execute DOL file %s.\n", path);
+      RARCH_ERR("Could not execute DOL file \"%s\".\n", path);
       fclose(fp);
       goto exit;
    }

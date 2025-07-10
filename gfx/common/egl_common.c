@@ -240,7 +240,7 @@ void egl_report_error(void)
          break;
    }
 
-   RARCH_ERR("[EGL]: #0x%x, %s\n", (unsigned)error, str);
+   RARCH_ERR("[EGL] #0x%x, %s.\n", (unsigned)error, str);
 }
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
@@ -348,7 +348,7 @@ void egl_set_swap_interval(egl_ctx_data_t *egl, int interval)
 
    if (!_egl_swap_interval(egl->dpy, interval))
    {
-      RARCH_ERR("[EGL]: eglSwapInterval(%i) failed.\n", interval);
+      RARCH_ERR("[EGL] eglSwapInterval(%i) failed.\n", interval);
       egl_report_error();
    }
 }
@@ -432,7 +432,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
             (EGLenum platform, void *native_display, const EGLAttrib *attrib_list);
          pfn_eglGetPlatformDisplay ptr_eglGetPlatformDisplay;
 
-         RARCH_LOG("[EGL] Found EGL client version >= 1.5, trying eglGetPlatformDisplay\n");
+         RARCH_LOG("[EGL] Found EGL client version >= 1.5, trying eglGetPlatformDisplay.\n");
          ptr_eglGetPlatformDisplay = (pfn_eglGetPlatformDisplay)
             egl_get_proc_address("eglGetPlatformDisplay");
 
@@ -450,7 +450,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
       {
          PFNEGLGETPLATFORMDISPLAYEXTPROC ptr_eglGetPlatformDisplayEXT;
 
-         RARCH_LOG("[EGL] Found EGL_EXT_platform_base, trying eglGetPlatformDisplayEXT\n");
+         RARCH_LOG("[EGL] Found EGL_EXT_platform_base, trying eglGetPlatformDisplayEXT.\n");
          ptr_eglGetPlatformDisplayEXT = (PFNEGLGETPLATFORMDISPLAYEXTPROC)
             egl_get_proc_address("eglGetPlatformDisplayEXT");
 
@@ -467,7 +467,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
    /* Either the caller didn't provide a platform type, or the EGL
     * implementation doesn't support eglGetPlatformDisplay. In this case, try
     * eglGetDisplay and hope for the best. */
-   RARCH_LOG("[EGL] Falling back to eglGetDisplay\n");
+   RARCH_LOG("[EGL] Falling back to eglGetDisplay.\n");
    return _egl_get_display((EGLNativeDisplayType) native);
 }
 
@@ -476,7 +476,7 @@ bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value)
    if (!egl_get_config_attrib(egl->dpy, egl->config,
          EGL_NATIVE_VISUAL_ID, value))
    {
-      RARCH_ERR("[EGL]: egl_get_native_visual_id failed.\n");
+      RARCH_ERR("[EGL] egl_get_native_visual_id failed.\n");
       return false;
    }
 
@@ -514,7 +514,7 @@ bool egl_init_context_common(
 
    if (!_egl_get_configs(egl->dpy, NULL, 0, count) || *count < 1)
    {
-      RARCH_ERR("[EGL]: No configs to choose from.\n");
+      RARCH_ERR("[EGL] No configs to choose from.\n");
       return false;
    }
 
@@ -525,7 +525,7 @@ bool egl_init_context_common(
    if (!_egl_choose_config(egl->dpy, attrib_ptr,
             configs, *count, &matched) || !matched)
    {
-      RARCH_ERR("[EGL]: No EGL configs with appropriate attributes.\n");
+      RARCH_ERR("[EGL] No EGL configs with appropriate attributes.\n");
       return false;
    }
 
@@ -542,7 +542,7 @@ bool egl_init_context_common(
 
    if (i == *count)
    {
-      RARCH_ERR("[EGL]: No EGL config found which satisfies requirements.\n");
+      RARCH_ERR("[EGL] No EGL config found which satisfies requirements.\n");
       return false;
    }
 
@@ -564,7 +564,7 @@ bool egl_init_context(egl_ctx_data_t *egl,
 
    if (dpy == EGL_NO_DISPLAY)
    {
-      RARCH_ERR("[EGL]: Couldn't get EGL display.\n");
+      RARCH_ERR("[EGL] Couldn't get EGL display.\n");
       return false;
    }
 
@@ -573,7 +573,7 @@ bool egl_init_context(egl_ctx_data_t *egl,
    if (!egl_initialize(egl->dpy, major, minor))
       return false;
 
-   RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
+   RARCH_LOG("[EGL] EGL version: %d.%d.\n", *major, *minor);
 
    return egl_init_context_common(egl, count, attrib_ptr, cb,
          display_data);
@@ -594,7 +594,7 @@ bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
    {
       egl->hw_ctx = _egl_create_context(egl->dpy, egl->config, egl->ctx,
             egl_attribs);
-      RARCH_LOG("[EGL]: Created shared context: %p.\n", (void*)egl->hw_ctx);
+      RARCH_LOG("[EGL] Created shared context: %p.\n", (void*)egl->hw_ctx);
 
       if (egl->hw_ctx == EGL_NO_CONTEXT)
          return false;
@@ -619,7 +619,7 @@ bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
    if (!_egl_make_current(egl->dpy, egl->surf, egl->surf, egl->ctx))
       return false;
 
-   RARCH_LOG("[EGL]: Current context: %p.\n", (void*)_egl_get_current_context());
+   RARCH_LOG("[EGL] Current context: %p.\n", (void*)_egl_get_current_context());
 
    return true;
 }

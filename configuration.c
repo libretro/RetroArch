@@ -2773,11 +2773,11 @@ static void video_driver_default_settings(global_t *global)
    if (path_is_valid(playlist_path)) \
    { \
       if (!filestream_copy(playlist_path, new_file)) \
-         RARCH_LOG("[Config]: Copied file \"%s\" to \"%s\".\n", playlist_path, new_file); \
+         RARCH_LOG("[Config] Copied file \"%s\" to \"%s\".\n", playlist_path, new_file); \
       if (path_is_valid(new_file) && !filestream_cmp(playlist_path, new_file)) \
       { \
          if (!filestream_delete(playlist_path)) \
-            RARCH_LOG("[Config]: Deleted file \"%s\".\n", playlist_path); \
+            RARCH_LOG("[Config] Deleted file \"%s\".\n", playlist_path); \
       } \
       else \
          new_file[0] = '\0'; \
@@ -3565,12 +3565,12 @@ config_file_t *open_default_config_file(void)
       if (!saved)
       {
          /* WARN here to make sure user has a good chance of seeing it. */
-         RARCH_ERR("[Config]: Failed to create new config file in: \"%s\".\n",
+         RARCH_ERR("[Config] Failed to create new config file in: \"%s\".\n",
                conf_path);
          goto error;
       }
 
-      RARCH_WARN("[Config]: Created new config file in: \"%s\".\n", conf_path);
+      RARCH_LOG("[Config] Created new config file in: \"%s\".\n", conf_path);
    }
 #elif defined(OSX)
    if (!fill_pathname_application_data(application_data,
@@ -3598,12 +3598,12 @@ config_file_t *open_default_config_file(void)
       if (!saved)
       {
          /* WARN here to make sure user has a good chance of seeing it. */
-         RARCH_ERR("Failed to create new config file in: \"%s\".\n",
+         RARCH_ERR("[Config] Failed to create new config file in: \"%s\".\n",
                conf_path);
          goto error;
       }
 
-      RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
+      RARCH_LOG("[Config] Created new config file in: \"%s\".\n", conf_path);
    }
 #elif !defined(RARCH_CONSOLE)
    bool has_application_data =
@@ -3614,7 +3614,7 @@ config_file_t *open_default_config_file(void)
    {
       fill_pathname_join_special(conf_path, application_data,
             FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
-      RARCH_LOG("[Config]: Looking for config in: \"%s\".\n", conf_path);
+      RARCH_LOG("[Config] Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new_from_path_to_string(conf_path);
    }
 
@@ -3623,7 +3623,7 @@ config_file_t *open_default_config_file(void)
    {
       fill_pathname_join_special(conf_path, getenv("HOME"),
             "." FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
-      RARCH_LOG("[Config]: Looking for config in: \"%s\".\n", conf_path);
+      RARCH_LOG("[Config] Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new_from_path_to_string(conf_path);
    }
 
@@ -3644,7 +3644,7 @@ config_file_t *open_default_config_file(void)
          fill_pathname_join_special(skeleton_conf, GLOBAL_CONFIG_DIR,
             FILE_PATH_MAIN_CONFIG, sizeof(skeleton_conf));
          if ((conf = config_file_new_from_path_to_string(skeleton_conf)))
-            RARCH_WARN("[Config]: Using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
+            RARCH_LOG("[Config] Using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
          else
             conf = config_file_new_alloc();
 
@@ -3659,12 +3659,12 @@ config_file_t *open_default_config_file(void)
          if (!saved)
          {
             /* WARN here to make sure user has a good chance of seeing it. */
-            RARCH_ERR("[Config]: Failed to create new config file in: \"%s\".\n",
+            RARCH_ERR("[Config] Failed to create new config file in: \"%s\".\n",
                   conf_path);
             goto error;
          }
 
-         RARCH_WARN("[Config]: Created new config file in: \"%s\".\n",
+         RARCH_LOG("[Config] Created new config file in: \"%s\".\n",
                conf_path);
       }
    }
@@ -3839,9 +3839,9 @@ static bool config_load_file(global_t *global,
    if (!first_load)
    {
       if (!path)
-         RARCH_LOG("[Config]: Loading default config.\n");
+         RARCH_LOG("[Config] Loading default config.\n");
       else
-         RARCH_LOG("[Config]: Loading config: \"%s\".\n", path);
+         RARCH_LOG("[Config] Loading config: \"%s\".\n", path);
    }
 
    if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
@@ -3860,10 +3860,10 @@ static bool config_load_file(global_t *global,
 
          if (!first_load)
          {
-            RARCH_LOG("[Config]: Appending config: \"%s\".\n", extra_path);
+            RARCH_LOG("[Config] Appending config: \"%s\".\n", extra_path);
 
             if (!result)
-               RARCH_ERR("[Config]: Failed to append config: \"%s\".\n", extra_path);
+               RARCH_ERR("[Config] Failed to append config: \"%s\".\n", extra_path);
          }
          extra_path = strtok_r(NULL, "|", &save);
       }
@@ -3892,10 +3892,10 @@ static bool config_load_file(global_t *global,
 
          if (!first_load)
          {
-            RARCH_LOG("[Config]: Appending override config: \"%s\".\n", extra_path);
+            RARCH_LOG("[Config] Appending override config: \"%s\".\n", extra_path);
 
             if (!result)
-               RARCH_ERR("[Config]: Failed to append override config: \"%s\".\n", extra_path);
+               RARCH_ERR("[Config] Failed to append override config: \"%s\".\n", extra_path);
          }
          extra_path = strtok_r(NULL, "|", &save);
       }
@@ -3908,15 +3908,6 @@ static bool config_load_file(global_t *global,
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL);
 #endif
    }
-
-#if 0
-   if (verbosity_is_enabled())
-   {
-      RARCH_LOG_OUTPUT("=== Config ===\n");
-      config_file_dump_all(conf);
-      RARCH_LOG_OUTPUT("=== Config end ===\n");
-   }
-#endif
 
    /* Special case for perfcnt_enable */
    {
@@ -4259,7 +4250,7 @@ static bool config_load_file(global_t *global,
          *settings->paths.directory_screenshot = '\0';
       else if (!path_is_directory(settings->paths.directory_screenshot))
       {
-         RARCH_WARN("[Config]: 'screenshot_directory' is not an existing directory, ignoring..\n");
+         RARCH_WARN("[Config] \"screenshot_directory\" is not an existing directory, ignoring...\n");
          *settings->paths.directory_screenshot = '\0';
       }
    }
@@ -4424,7 +4415,7 @@ static bool config_load_file(global_t *global,
                sizeof(runloop_st->name.savefile));
       }
       else
-         RARCH_WARN("[Config]: 'savefile_directory' is not a directory, ignoring..\n");
+         RARCH_WARN("[Config] \"savefile_directory\" is not a directory, ignoring...\n");
    }
 
    if (    !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL)
@@ -4450,7 +4441,7 @@ static bool config_load_file(global_t *global,
                sizeof(runloop_st->name.replay));
       }
       else
-         RARCH_WARN("[Config]: 'savestate_directory' is not a directory, ignoring..\n");
+         RARCH_WARN("[Config] \"savestate_directory\" is not a directory, ignoring...\n");
    }
 
    config_read_keybinds_conf(conf);
@@ -4508,7 +4499,7 @@ static bool config_load_file(global_t *global,
          !frontend_driver_set_gamemode(settings->bools.gamemode_enable) &&
          settings->bools.gamemode_enable)
    {
-      RARCH_WARN("[Config]: GameMode unsupported - disabling..\n");
+      RARCH_WARN("[Config] GameMode unsupported - disabling...\n");
       configuration_set_bool(settings,
             settings->bools.gamemode_enable, false);
    }
@@ -4639,7 +4630,7 @@ bool config_load_override(void *data)
    if (path_is_valid(core_path))
    {
 
-      RARCH_LOG("[Overrides]: Core-specific overrides found at \"%s\".\n",
+      RARCH_LOG("[Override] Core-specific overrides found at \"%s\".\n",
             core_path);
 
       if (should_append && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
@@ -4652,7 +4643,7 @@ bool config_load_override(void *data)
          tmp_path[++_len] = '\0';
          strlcpy(tmp_path + _len, core_path, sizeof(tmp_path) - _len);
          path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
-         RARCH_LOG("[Overrides]: Core-specific overrides stacking on top of previous overrides.\n");
+         RARCH_LOG("[Override] Core-specific overrides stacking on top of previous overrides.\n");
       }
       else
          path_set(RARCH_PATH_CONFIG_OVERRIDE, core_path);
@@ -4667,7 +4658,7 @@ bool config_load_override(void *data)
       /* Create a new config file from content_path */
       if (path_is_valid(content_path))
       {
-         RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
+         RARCH_LOG("[Override] Content dir-specific overrides found at \"%s\".\n",
                content_path);
 
          if (should_append && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
@@ -4680,7 +4671,7 @@ bool config_load_override(void *data)
             tmp_path[++_len] = '\0';
             strlcpy(tmp_path + _len, content_path, sizeof(tmp_path) - _len);
             path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
-            RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
+            RARCH_LOG("[Override] Content dir-specific overrides stacking on top of previous overrides.\n");
          }
          else
             path_set(RARCH_PATH_CONFIG_OVERRIDE, content_path);
@@ -4693,7 +4684,7 @@ bool config_load_override(void *data)
       /* Create a new config file from game_path */
       if (path_is_valid(game_path))
       {
-         RARCH_LOG("[Overrides]: Game-specific overrides found at \"%s\".\n",
+         RARCH_LOG("[Override] Game-specific overrides found at \"%s\".\n",
                game_path);
 
          if (should_append && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
@@ -4706,7 +4697,7 @@ bool config_load_override(void *data)
             tmp_path[++_len] = '\0';
             strlcpy(tmp_path + _len, game_path, sizeof(tmp_path) - _len);
             path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
-            RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
+            RARCH_LOG("[Override] Game-specific overrides stacking on top of previous overrides.\n");
          }
          else
             path_set(RARCH_PATH_CONFIG_OVERRIDE, game_path);
@@ -4836,7 +4827,7 @@ bool config_unload_override(void)
    if (settings->bools.auto_remaps_enable)
       config_load_remap(settings->paths.directory_input_remapping, &runloop_st->system);
 
-   RARCH_LOG("[Overrides]: Configuration overrides unloaded, original configuration restored.\n");
+   RARCH_LOG("[Override] Configuration overrides unloaded, original configuration restored.\n");
 
    /* Reset save paths */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -4925,7 +4916,7 @@ bool config_load_remap(const char *directory_input_remapping,
          bool ret = input_remapping_load_file(new_conf, game_path);
          config_file_free(new_conf);
          new_conf = NULL;
-         RARCH_LOG("[Remaps]: Game-specific remap found at \"%s\".\n", game_path);
+         RARCH_LOG("[Remap] Game-specific remap found at \"%s\".\n", game_path);
          if (ret)
          {
             retroarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
@@ -4950,7 +4941,7 @@ bool config_load_remap(const char *directory_input_remapping,
          bool ret = input_remapping_load_file(new_conf, content_path);
          config_file_free(new_conf);
          new_conf = NULL;
-         RARCH_LOG("[Remaps]: Content-dir-specific remap found at \"%s\".\n", content_path);
+         RARCH_LOG("[Remap] Content-dir-specific remap found at \"%s\".\n", content_path);
          if (ret)
          {
             retroarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
@@ -4972,7 +4963,7 @@ bool config_load_remap(const char *directory_input_remapping,
       bool ret = input_remapping_load_file(new_conf, core_path);
       config_file_free(new_conf);
       new_conf = NULL;
-      RARCH_LOG("[Remaps]: Core-specific remap found at \"%s\".\n", core_path);
+      RARCH_LOG("[Remap] Core-specific remap found at \"%s\".\n", core_path);
       if (ret)
       {
          retroarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
@@ -5010,7 +5001,7 @@ static void config_parse_file(global_t *global)
 
    if (!config_load_file(global, config_path, config_st))
    {
-      RARCH_ERR("[Config]: Config not found at: \"%s\".\n",
+      RARCH_ERR("[Config] Config not found at: \"%s\".\n",
             config_path);
    }
 }
@@ -5277,7 +5268,7 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
       if (bind->mbutton != override_bind->mbutton)
          save_keybind_mbutton(conf, prefix, base, override_bind, true);
 
-      RARCH_DBG("[Overrides]: %s = \"%s\"\n", key, btn);
+      RARCH_DBG("[Override] %s = \"%s\"\n", key, btn);
    }
 }
 
@@ -5427,7 +5418,7 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
       }
    }
 
-   RARCH_LOG("[Autoconf]: Writing autoconf file for device \"%s\" to \"%s\".\n", device_name, autoconf_file);
+   RARCH_LOG("[Autoconf] Writing autoconf file for device \"%s\" to \"%s\".\n", device_name, autoconf_file);
    ret = config_file_write(conf, autoconf_file, false);
 
 end:
@@ -5795,7 +5786,7 @@ int8_t config_save_overrides(enum override_type type,
    path_overrides      = populate_settings_path(overrides,  &tmp_i);
 
    if (conf->flags & CONF_FILE_FLG_MODIFIED)
-      RARCH_LOG("[Overrides]: Looking for changed settings..\n");
+      RARCH_LOG("[Override] Looking for changed settings...\n");
 
    if (conf)
    {
@@ -5809,7 +5800,7 @@ int8_t config_save_overrides(enum override_type type,
          {
             config_set_string(conf, bool_overrides[i].ident,
                   (*bool_overrides[i].ptr) ? "true" : "false");
-            RARCH_DBG("[Overrides]: %s = \"%s\"\n",
+            RARCH_DBG("[Override] %s = \"%s\"\n",
                   bool_overrides[i].ident,
                   (*bool_overrides[i].ptr) ? "true" : "false");
          }
@@ -5823,7 +5814,7 @@ int8_t config_save_overrides(enum override_type type,
          {
             config_set_int(conf, int_overrides[i].ident,
                   (*int_overrides[i].ptr));
-            RARCH_DBG("[Overrides]: %s = \"%d\"\n",
+            RARCH_DBG("[Override] %s = \"%d\"\n",
                   int_overrides[i].ident, *int_overrides[i].ptr);
          }
       }
@@ -5836,7 +5827,7 @@ int8_t config_save_overrides(enum override_type type,
          {
             config_set_int(conf, uint_overrides[i].ident,
                   (*uint_overrides[i].ptr));
-            RARCH_DBG("[Overrides]: %s = \"%d\"\n",
+            RARCH_DBG("[Override] %s = \"%d\"\n",
                   uint_overrides[i].ident, *uint_overrides[i].ptr);
          }
       }
@@ -5846,7 +5837,7 @@ int8_t config_save_overrides(enum override_type type,
          {
             config_set_int(conf, size_overrides[i].ident,
                   (int)(*size_overrides[i].ptr));
-            RARCH_DBG("[Overrides]: %s = \"%d\"\n",
+            RARCH_DBG("[Override] %s = \"%d\"\n",
                   size_overrides[i].ident, *size_overrides[i].ptr);
          }
       }
@@ -5856,7 +5847,7 @@ int8_t config_save_overrides(enum override_type type,
          {
             config_set_float(conf, float_overrides[i].ident,
                   *float_overrides[i].ptr);
-            RARCH_DBG("[Overrides]: %s = \"%f\"\n",
+            RARCH_DBG("[Override] %s = \"%f\"\n",
                   float_overrides[i].ident, *float_overrides[i].ptr);
          }
       }
@@ -5883,7 +5874,7 @@ int8_t config_save_overrides(enum override_type type,
 #endif
             config_set_string(conf, array_overrides[i].ident,
                   array_overrides[i].ptr);
-            RARCH_DBG("[Overrides]: %s = \"%s\"\n",
+            RARCH_DBG("[Override] %s = \"%s\"\n",
                   array_overrides[i].ident, array_overrides[i].ptr);
          }
       }
@@ -5898,7 +5889,7 @@ int8_t config_save_overrides(enum override_type type,
 #endif
             config_set_path(conf, path_overrides[i].ident,
                   path_overrides[i].ptr);
-            RARCH_DBG("[Overrides]: %s = \"%s\"\n",
+            RARCH_DBG("[Override] %s = \"%s\"\n",
                   path_overrides[i].ident, path_overrides[i].ptr);
          }
       }
@@ -5919,7 +5910,7 @@ int8_t config_save_overrides(enum override_type type,
             size_t _len = strlcpy(cfg, "input_device_p", sizeof(cfg));
             strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_device[i]);
-            RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_device[i]);
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_device[i]);
          }
 
          _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
@@ -5930,7 +5921,7 @@ int8_t config_save_overrides(enum override_type type,
          {
             strlcpy(cfg + _len, "_mouse_index",   sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_mouse_index[i]);
-            RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_mouse_index[i]);
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_mouse_index[i]);
          }
 
          if (settings->uints.input_joypad_index[i]
@@ -5938,7 +5929,7 @@ int8_t config_save_overrides(enum override_type type,
          {
             strlcpy(cfg + _len, "_joypad_index",  sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_joypad_index[i]);
-            RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_joypad_index[i]);
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_joypad_index[i]);
          }
 
          if (settings->uints.input_analog_dpad_mode[i]
@@ -5946,7 +5937,7 @@ int8_t config_save_overrides(enum override_type type,
          {
             strlcpy(cfg + _len, "_analog_dpad_mode", sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_analog_dpad_mode[i]);
-            RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_analog_dpad_mode[i]);
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_analog_dpad_mode[i]);
          }
 
         if (settings->uints.input_device_reservation_type[i]
@@ -5954,7 +5945,7 @@ int8_t config_save_overrides(enum override_type type,
          {
             strlcpy(cfg + _len, "_device_reservation_type", sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_device_reservation_type[i]);
-            RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_device_reservation_type[i]);
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_device_reservation_type[i]);
          }
 
          /* TODO: is this whole section really necessary? Does the loop above not do this? */
@@ -5964,7 +5955,7 @@ int8_t config_save_overrides(enum override_type type,
 
             config_set_string(conf, cfg,
                   overrides->arrays.input_reserved_devices[i]);
-            RARCH_DBG("[Overrides]: %s = \"%s\"\n",
+            RARCH_DBG("[Override] %s = \"%s\"\n",
                   cfg, overrides->arrays.input_reserved_devices[i]);
          }
 
@@ -6041,7 +6032,7 @@ int8_t config_save_overrides(enum override_type type,
             if (filestream_delete(override_path) == 0)
             {
                ret = -1;
-               RARCH_LOG("[Overrides]: %s: \"%s\".\n",
+               RARCH_LOG("[Override] %s: \"%s\".\n",
                      "Deleted", override_path);
             }
          }
@@ -6052,12 +6043,12 @@ int8_t config_save_overrides(enum override_type type,
             if (ret)
             {
                path_set(RARCH_PATH_CONFIG_OVERRIDE, override_path);
-               RARCH_LOG("[Overrides]: %s: \"%s\".\n",
+               RARCH_LOG("[Override] %s: \"%s\".\n",
                      "Saved", override_path);
             }
             else
             {
-               RARCH_LOG("[Overrides]: %s: \"%s\".\n",
+               RARCH_LOG("[Override] %s: \"%s\".\n",
                      "Failed to save", override_path);
             }
          }
@@ -6351,7 +6342,7 @@ bool input_remapping_save_file(const char *path)
 
       _len = snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
       if (_len >= sizeof(formatted_number)) {
-         RARCH_ERR("[Config]: unexpectedly high number of users");
+         RARCH_ERR("[Config] Unexpectedly high number of users.");
          break;
       }
       _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
@@ -6519,7 +6510,7 @@ void config_load_file_salamander(void)
 
    /* Read 'libretro_path' value and update
     * RARCH_PATH_CORE */
-   RARCH_LOG("[Config]: Loading salamander config from: \"%s\".\n",
+   RARCH_LOG("[Config] Loading salamander config from: \"%s\".\n",
          config_path);
 
    if (config_get_path(config, "libretro_path",
@@ -6564,10 +6555,10 @@ void config_save_file_salamander(void)
 
 end:
    if (success)
-      RARCH_LOG("[Config]: Saving salamander config to: \"%s\".\n",
+      RARCH_LOG("[Config] Saving salamander config to: \"%s\".\n",
             config_path);
    else
-      RARCH_ERR("[Config]: Failed to create new salamander config file in: \"%s\".\n",
+      RARCH_ERR("[Config] Failed to create new salamander config file in: \"%s\".\n",
             config_path);
 
    if (conf)

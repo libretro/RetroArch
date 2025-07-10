@@ -1679,7 +1679,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_WARN("[D3D12]: Only Slang shaders are supported. Falling back to stock.\n");
+      RARCH_WARN("[D3D12] Only Slang shaders are supported. Falling back to stock.\n");
       return false;
    }
 
@@ -2361,7 +2361,7 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 #endif
    if (FAILED(hr))
    {
-      RARCH_ERR("[D3D12]: Failed to create the swap chain (0x%08X)\n", hr);
+      RARCH_ERR("[D3D12] Failed to create the swap chain (0x%08X).\n", hr);
       return false;
    }
 
@@ -2386,7 +2386,7 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 
       DXGISetMaximumFrameLatency(d3d12->chain.handle, max_latency);
       DXGIGetMaximumFrameLatency(d3d12->chain.handle, &cur_latency);
-      RARCH_LOG("[D3D12]: Requesting %u maximum frame latency, using %u%s.\n",
+      RARCH_LOG("[D3D12] Requesting %u maximum frame latency, using %u%s.\n",
             max_latency,
             cur_latency,
             ((d3d12->wait_for_vblank < 0) ? " with WaitForVBlank before Present" :
@@ -2501,7 +2501,7 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
 
          utf16_to_char_string((const uint16_t*)desc.Description, str, sizeof(str));
 
-         RARCH_LOG("[D3D12]: Found GPU at index %d: \"%s\".\n", i, str);
+         RARCH_LOG("[D3D12] Found GPU at index %d: \"%s\".\n", i, str);
 
          string_list_append(d3d12->gpu_list, str, attr);
 
@@ -2524,17 +2524,17 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
       {
          d3d12->adapter = d3d12->adapters[gpu_index];
          AddRef(d3d12->adapter);
-         RARCH_LOG("[D3D12]: Using GPU index %d.\n", gpu_index);
+         RARCH_LOG("[D3D12] Using GPU index %d.\n", gpu_index);
       }
       else
       {
-         RARCH_WARN("[D3D12]: Invalid GPU index %d, using first device found.\n", gpu_index);
+         RARCH_WARN("[D3D12] Invalid GPU index %d, using first device found.\n", gpu_index);
          d3d12->adapter = d3d12->adapters[0];
          AddRef(d3d12->adapter);
       }
 
       if (!SUCCEEDED(D3D12CreateDevice((IUnknown*)d3d12->adapter, D3D_FEATURE_LEVEL_11_0, uuidof(ID3D12Device), (void**)&d3d12->device)))
-         RARCH_WARN("[D3D12]: Could not create D3D12 device.\n");
+         RARCH_WARN("[D3D12] Could not create D3D12 device.\n");
    }
 
 #ifdef DEVICE_DEBUG
@@ -2542,7 +2542,7 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
    if (d3d12->device)
    {
       if (SUCCEEDED(d3d12->device->lpVtbl->QueryInterface(d3d12->device, uuidof(ID3D12DebugDevice), (void*)&d3d12->debug_device)))
-         RARCH_WARN("[D3D12]: Could not create D3D12 debug device.\n");
+         RARCH_WARN("[D3D12] Could not create D3D12 debug device.\n");
 
       if (SUCCEEDED(d3d12->device->lpVtbl->QueryInterface(d3d12->device, uuidof(ID3D12InfoQueue), (void*)&d3d12->info_queue)))
       {
@@ -2557,7 +2557,7 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
    }
 
    if (!SUCCEEDED(D3D12GetDebugInterface(uuidof(ID3D12DeviceRemovedExtendedDataSettings), (void*)&d3d12->device_removed_info)))
-      RARCH_WARN("[D3D12]: Could not create D3D12 device removed info.\n");
+      RARCH_WARN("[D3D12] Could not create D3D12 device removed info.\n");
 
    /* Turn on AutoBreadcrumbs and Page Fault reporting */
    d3d12->device_removed_info->lpVtbl->SetAutoBreadcrumbsEnablement(d3d12->device_removed_info, D3D12_DRED_ENABLEMENT_FORCED_ON);
@@ -2585,7 +2585,7 @@ static bool d3d12_create_root_signature(
    if (error)
    {
       RARCH_ERR(
-            "[D3D12]: CreateRootSignature failed : %s\n", (const char*)error->lpVtbl->GetBufferPointer(error));
+            "[D3D12] CreateRootSignature failed: \"%s\".\n", (const char*)error->lpVtbl->GetBufferPointer(error));
       Release(error);
       return false;
    }
@@ -2897,7 +2897,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
 
    if (!win32_set_video_mode(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, video->fullscreen))
    {
-      RARCH_ERR("[D3D12]: win32_set_video_mode failed.\n");
+      RARCH_ERR("[D3D12] win32_set_video_mode failed.\n");
       goto error;
    }
 
@@ -3056,7 +3056,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    return d3d12;
 
 error:
-   RARCH_ERR("[D3D12]: Failed to init video driver.\n");
+   RARCH_ERR("[D3D12] Failed to init video driver.\n");
    d3d12_gfx_free(d3d12);
    return NULL;
 }
@@ -3139,7 +3139,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          height = d3d12->vp.height;
       }
 
-      RARCH_DBG("[D3D12]: Updating framebuffer size %ux%u.\n", width, height);
+      RARCH_DBG("[D3D12] Updating framebuffer size %ux%u.\n", width, height);
 
       if (i == (d3d12->shader_preset->passes - 1))
       {

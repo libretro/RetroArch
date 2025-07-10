@@ -225,18 +225,18 @@ static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
    switch (error)
    {
       case CG_INVALID_PARAM_HANDLE_ERROR:
-         RARCH_ERR("CG: Invalid param handle.\n");
+         RARCH_ERR("[Cg] Invalid param handle.\n");
          break;
 
       case CG_INVALID_PARAMETER_ERROR:
-         RARCH_ERR("CG: Invalid parameter.\n");
+         RARCH_ERR("[Cg] Invalid parameter.\n");
          break;
 
       default:
          break;
    }
 
-   RARCH_ERR("CG error: \"%s\"\n", cgGetErrorString(error));
+   RARCH_ERR("[Cg] Error: \"%s\".\n", cgGetErrorString(error));
 }
 #endif
 
@@ -442,7 +442,7 @@ static void gl_cg_deinit_progs(void *data)
    if (!cg)
       return;
 
-   RARCH_LOG("[CG]: Destroying programs.\n");
+   RARCH_LOG("[Cg] Destroying programs.\n");
    cgGLUnbindProgram(cg->cgFProf);
    cgGLUnbindProgram(cg->cgVProf);
 
@@ -489,7 +489,7 @@ static void gl_cg_deinit_context_state(void *data)
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
    if (cg->cgCtx)
    {
-      RARCH_LOG("[CG]: Destroying context.\n");
+      RARCH_LOG("[Cg] Destroying context.\n");
       cgDestroyContext(cg->cgCtx);
    }
    cg->cgCtx = NULL;
@@ -566,11 +566,11 @@ static bool gl_cg_compile_program(
 
    if (!program->fprg || !program->vprg)
    {
-      RARCH_ERR("CG error: %s\n", cgGetErrorString(cgGetError()));
+      RARCH_ERR("[Cg] Error: %s.\n", cgGetErrorString(cgGetError()));
       if (listing_f)
-         RARCH_ERR("Fragment:\n%s\n", listing_f);
+         RARCH_ERR("[Cg] Fragment: %s.\n", listing_f);
       else if (listing_v)
-         RARCH_ERR("Vertex:\n%s\n", listing_v);
+         RARCH_ERR("[Cg] Vertex: %s.\n", listing_v);
 
       ret = false;
       goto end;
@@ -602,7 +602,7 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
       if (!semantic)
          continue;
 
-      RARCH_LOG("[CG]: Found semantic \"%s\" in prog #%u.\n", semantic, i);
+      RARCH_LOG("[Cg] Found semantic \"%s\" in prog #%u.\n", semantic, i);
 
       if (
             string_is_equal(semantic, "TEXCOORD") ||
@@ -646,7 +646,7 @@ static bool gl_cg_load_stock(void *data)
    return true;
 
 error:
-   RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
+   RARCH_ERR("[Cg] Failed to compile passthrough shader, is something wrong with your environment?\n");
    return false;
 }
 
@@ -666,7 +666,7 @@ static bool gl_cg_load_plain(void *data, const char *path)
 
    if (string_is_empty(path))
    {
-      RARCH_LOG("[CG]: Loading stock Cg file.\n");
+      RARCH_LOG("[Cg] Loading stock Cg file.\n");
       cg->prg[1] = cg->prg[0];
    }
    else
@@ -676,7 +676,7 @@ static bool gl_cg_load_plain(void *data, const char *path)
       program_info.combined = path;
       program_info.is_file  = true;
 
-      RARCH_LOG("[CG]: Loading Cg file: %s\n", path);
+      RARCH_LOG("[Cg] Loading Cg file: \"%s\".\n", path);
       strlcpy(cg->shader->pass[0].source.path, path,
             sizeof(cg->shader->pass[0].source.path));
       if (!gl_cg_compile_program(data, 1, &cg->prg[1], &program_info))
@@ -696,7 +696,7 @@ static bool gl_cg_load_shader(void *data, unsigned i)
    program_info.combined = cg->shader->pass[i].source.path;
    program_info.is_file  = true;
 
-   RARCH_LOG("[CG]: Loading Cg shader: \"%s\".\n",
+   RARCH_LOG("[Cg] Loading Cg shader: \"%s\".\n",
          cg->shader->pass[i].source.path);
 
    if (!gl_cg_compile_program(data, i + 1, &cg->prg[i + 1],&program_info))
@@ -713,7 +713,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
    if (!gl_cg_load_stock(cg))
       return false;
 
-   RARCH_LOG("[CG]: Loading Cg meta-shader: %s\n", path);
+   RARCH_LOG("[Cg] Loading Cg meta-shader: \"%s\".\n", path);
 
    cg->shader = (struct video_shader*)calloc(1, sizeof(*cg->shader));
    if (!cg->shader)
@@ -723,13 +723,13 @@ static bool gl_cg_load_preset(void *data, const char *path)
 
    if (!video_shader_load_preset_into_shader(path, cg->shader))
    {
-      RARCH_ERR("Failed to parse CGP file.\n");
+      RARCH_ERR("[Cg] Failed to parse CGP file.\n");
       return false;
    }
 
    if (cg->shader->passes > GFX_MAX_SHADERS - 3)
    {
-      RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n",
+      RARCH_WARN("[Cg] Too many shaders... Capping shader amount to %d.\n",
             GFX_MAX_SHADERS - 3);
       cg->shader->passes = GFX_MAX_SHADERS - 3;
    }
@@ -747,14 +747,14 @@ static bool gl_cg_load_preset(void *data, const char *path)
    {
       if (!gl_cg_load_shader(cg, i))
       {
-         RARCH_ERR("Failed to load shaders ...\n");
+         RARCH_ERR("[Cg] Failed to load shaders.\n");
          return false;
       }
    }
 
    if (!gl2_load_luts(cg->shader, cg->lut_textures))
    {
-      RARCH_ERR("Failed to load lookup textures ...\n");
+      RARCH_ERR("[Cg] Failed to load lookup textures.\n");
       return false;
    }
 
@@ -971,7 +971,7 @@ static void *gl_cg_init(void *data, const char *path)
 
    if (!cg->cgCtx)
    {
-      RARCH_ERR("Failed to create Cg context.\n");
+      RARCH_ERR("[Cg] Failed to create Cg context.\n");
       goto error;
    }
 
@@ -987,12 +987,12 @@ static void *gl_cg_init(void *data, const char *path)
          cg->cgFProf == CG_PROFILE_UNKNOWN ||
          cg->cgVProf == CG_PROFILE_UNKNOWN)
    {
-      RARCH_ERR("Invalid profile type\n");
+      RARCH_ERR("[Cg] Invalid profile type.\n");
       goto error;
    }
 
-   RARCH_LOG("[CG]: Vertex profile: %s\n",   cgGetProfileString(cg->cgVProf));
-   RARCH_LOG("[CG]: Fragment profile: %s\n", cgGetProfileString(cg->cgFProf));
+   RARCH_LOG("[Cg] Vertex profile: %s.\n",   cgGetProfileString(cg->cgVProf));
+   RARCH_LOG("[Cg] Fragment profile: %s.\n", cgGetProfileString(cg->cgFProf));
    cgGLSetOptimalOptions(cg->cgFProf);
    cgGLSetOptimalOptions(cg->cgVProf);
    cgGLEnableProfile(cg->cgFProf);
@@ -1007,7 +1007,7 @@ static void *gl_cg_init(void *data, const char *path)
 
       if (!string_is_empty(path) && type != RARCH_SHADER_CG)
       {
-         RARCH_ERR("[CG]: Invalid shader type, falling back to stock.\n");
+         RARCH_ERR("[Cg] Invalid shader type, falling back to stock.\n");
          path = NULL;
       }
 

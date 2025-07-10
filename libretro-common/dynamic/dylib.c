@@ -94,7 +94,7 @@ dylib_t dylib_load(const char *path)
    relative_path_abbrev[0] = '\0';
 
    if (!path_is_absolute(path))
-      RARCH_WARN("Relative path in dylib_load! This is likely an attempt to load a system library that will fail\n");
+      RARCH_WARN("Relative path in dylib_load! This is likely an attempt to load a system library that will fail.\n");
 
    fill_pathname_abbreviate_special(relative_path_abbrev, path, sizeof(relative_path_abbrev));
 

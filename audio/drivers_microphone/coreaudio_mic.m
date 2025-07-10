@@ -49,14 +49,14 @@ static OSStatus coreaudio_input_callback(
     /// Calculate required buffer size
     size_t bufferSize = inNumberFrames * microphone->format.mBytesPerFrame;
     if (bufferSize == 0) {
-        RARCH_ERR("[CoreAudio]: Invalid buffer size calculation\n");
+        RARCH_ERR("[CoreAudio] Invalid buffer size calculation.\n");
         return kAudio_ParamError;
     }
 
     /// Allocate temporary buffer
     tempBuffer = malloc(bufferSize);
     if (!tempBuffer) {
-        RARCH_ERR("[CoreAudio]: Failed to allocate temporary buffer\n");
+        RARCH_ERR("[CoreAudio] Failed to allocate temporary buffer.\n");
         return kAudio_MemFullError;
     }
 
@@ -79,7 +79,7 @@ static OSStatus coreaudio_input_callback(
                   bufferList.mBuffers[0].mData,
                   bufferList.mBuffers[0].mDataByteSize);
     } else {
-        RARCH_ERR("[CoreAudio]: Failed to render audio: %d\n", status);
+        RARCH_ERR("[CoreAudio] Failed to render audio: %d.\n", status);
     }
 
     /// Clean up temporary buffer
@@ -92,7 +92,7 @@ static void *coreaudio_microphone_init(void)
 {
     coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)calloc(1, sizeof(*microphone));
     if (!microphone) {
-        RARCH_ERR("[CoreAudio]: Failed to allocate microphone driver\n");
+        RARCH_ERR("[CoreAudio] Failed to allocate microphone driver.\n");
         return NULL;
     }
 
@@ -135,7 +135,7 @@ static int coreaudio_microphone_read(void *driver_context,
     size_t avail, read_amt;
 
     if (!microphone || !buf) {
-        RARCH_ERR("[CoreAudio]: Invalid parameters in read\n");
+        RARCH_ERR("[CoreAudio] Invalid parameters in read.\n");
         return -1;
     }
 
@@ -149,7 +149,7 @@ static int coreaudio_microphone_read(void *driver_context,
     if (read_amt > 0) {
         fifo_read(microphone->sample_buffer, buf, read_amt);
 #if DEBUG
-        RARCH_LOG("[CoreAudio]: Read %zu bytes from microphone\n", read_amt);
+        RARCH_LOG("[CoreAudio] Read %zu bytes from microphone.\n", read_amt);
 #endif
     }
 
@@ -179,7 +179,7 @@ static void coreaudio_microphone_set_format(coreaudio_microphone_t *microphone, 
     microphone->format.mBytesPerFrame = microphone->format.mChannelsPerFrame * microphone->format.mBitsPerChannel / 8;
     microphone->format.mBytesPerPacket = microphone->format.mBytesPerFrame * microphone->format.mFramesPerPacket;
 
-    RARCH_LOG("[CoreAudio] Format setup: sample_rate=%d, bits=%d, bytes_per_frame=%d\n",
+    RARCH_LOG("[CoreAudio] Format setup: sample_rate=%d, bits=%d, bytes_per_frame=%d.\n",
               (int)microphone->format.mSampleRate,
               microphone->format.mBitsPerChannel,
               microphone->format.mBytesPerFrame);
@@ -194,7 +194,7 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
 {
     coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)driver_context;
     if (!microphone) {
-        RARCH_ERR("[CoreAudio]: Invalid driver context\n");
+        RARCH_ERR("[CoreAudio] Invalid driver context.\n");
         return NULL;
     }
 
@@ -204,7 +204,7 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
 
     /// Validate requested sample rate
     if (rate != 44100 && rate != 48000) {
-        RARCH_WARN("[CoreAudio]: Requested sample rate %u not supported, defaulting to 48000\n", rate);
+        RARCH_WARN("[CoreAudio] Requested sample rate %u not supported, defaulting to 48000.\n", rate);
         rate = 48000;
     }
 
@@ -214,14 +214,14 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
     NSError *error = nil;
     [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord error:&error];
     if (error) {
-        RARCH_ERR("[CoreAudio]: Failed to set audio session category: %s\n", [[error localizedDescription] UTF8String]);
+        RARCH_ERR("[CoreAudio] Failed to set audio session category: %s.\n", [[error localizedDescription] UTF8String]);
         return NULL;
     }
 
     /// Set preferred sample rate
     [audioSession setPreferredSampleRate:rate error:&error];
     if (error) {
-        RARCH_ERR("[CoreAudio]: Failed to set preferred sample rate: %s\n", [[error localizedDescription] UTF8String]);
+        RARCH_ERR("[CoreAudio] Failed to set preferred sample rate: %s.\n", [[error localizedDescription] UTF8String]);
         return NULL;
     }
 
@@ -232,7 +232,7 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
     }
     microphone->sample_rate = (int)actualRate;
 
-    RARCH_LOG("[CoreAudio] Using sample rate: %d Hz\n", microphone->sample_rate);
+    RARCH_LOG("[CoreAudio] Using sample rate: %d Hz.\n", microphone->sample_rate);
 #else
 
 #endif
@@ -243,17 +243,17 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
     /// Calculate FIFO buffer size
     size_t fifoBufferSize = (latency * microphone->sample_rate * microphone->format.mBytesPerFrame) / 1000;
     if (fifoBufferSize == 0) {
-        RARCH_WARN("[CoreAudio]: Calculated FIFO buffer size is 0 for latency: %u, sample_rate: %d, bytes_per_frame: %d\n",
+        RARCH_WARN("[CoreAudio] Calculated FIFO buffer size is 0 for latency: %u, sample_rate: %d, bytes_per_frame: %d.\n",
                   latency, microphone->sample_rate, microphone->format.mBytesPerFrame);
         fifoBufferSize = 1024; /// Default to a reasonable buffer size
     }
 
-    RARCH_LOG("[CoreAudio] FIFO buffer size: %zu bytes\n", fifoBufferSize);
+    RARCH_LOG("[CoreAudio] FIFO buffer size: %zu bytes.\n", fifoBufferSize);
 
     /// Create sample buffer
     microphone->sample_buffer = fifo_new(fifoBufferSize);
     if (!microphone->sample_buffer) {
-        RARCH_ERR("[CoreAudio]: Failed to create sample buffer\n");
+        RARCH_ERR("[CoreAudio] Failed to create sample buffer.\n");
         return NULL;
     }
 
@@ -273,7 +273,7 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
     AudioComponent comp = AudioComponentFindNext(NULL, &desc);
     OSStatus status = AudioComponentInstanceNew(comp, &microphone->audio_unit);
     if (status != noErr) {
-        RARCH_ERR("[CoreAudio]: Failed to create audio unit\n");
+        RARCH_ERR("[CoreAudio] Failed to create audio unit.\n");
         goto error;
     }
 
@@ -286,7 +286,7 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
                                  &flag,
                                  sizeof(flag));
     if (status != noErr) {
-        RARCH_ERR("[CoreAudio]: Failed to enable input\n");
+        RARCH_ERR("[CoreAudio] Failed to enable input.\n");
         goto error;
     }
 
@@ -299,7 +299,7 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
                                  &microphone->format,
                                  sizeof(microphone->format));
     if (status != noErr) {
-        RARCH_ERR("[CoreAudio]: Failed to set format: %d\n", status);
+        RARCH_ERR("[CoreAudio] Failed to set format: %d.\n", status);
         goto error;
     }
 
@@ -312,21 +312,21 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
                                  &callback,
                                  sizeof(callback));
     if (status != noErr) {
-        RARCH_ERR("[CoreAudio]: Failed to set callback\n");
+        RARCH_ERR("[CoreAudio] Failed to set callback.\n");
         goto error;
     }
 
     /// Initialize audio unit
     status = AudioUnitInitialize(microphone->audio_unit);
     if (status != noErr) {
-        RARCH_ERR("[CoreAudio]: Failed to initialize audio unit: %d\n", status);
+        RARCH_ERR("[CoreAudio] Failed to initialize audio unit: %d.\n", status);
         goto error;
     }
 
     /// Start audio unit
     status = AudioOutputUnitStart(microphone->audio_unit);
     if (status != noErr) {
-        RARCH_ERR("[CoreAudio]: Failed to start audio unit: %d\n", status);
+        RARCH_ERR("[CoreAudio] Failed to start audio unit: %d.\n", status);
         goto error;
     }
 
@@ -359,28 +359,28 @@ static void coreaudio_microphone_close_mic(void *driver_context, void *microphon
             fifo_free(microphone->sample_buffer);
         free(microphone);
     } else {
-        RARCH_ERR("[CoreAudio]: Failed to close microphone\n");
+        RARCH_ERR("[CoreAudio] Failed to close microphone.\n");
     }
 }
 
 /// Start microphone
 static bool coreaudio_microphone_start_mic(void *driver_context, void *microphone_context)
 {
-    RARCH_LOG("[CoreAudio]: Starting microphone\n");
+    RARCH_LOG("[CoreAudio] Starting microphone.\n");
     coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)microphone_context;
     if (!microphone) {
-        RARCH_ERR("[CoreAudio]: Failed to start microphone\n");
+        RARCH_ERR("[CoreAudio] Failed to start microphone.\n");
         return false;
     }
-    RARCH_LOG("[CoreAudio]: Starting audio unit\n");
+    RARCH_LOG("[CoreAudio] Starting audio unit...\n");
 
     OSStatus status = AudioOutputUnitStart(microphone->audio_unit);
     if (status == noErr) {
-        RARCH_LOG("[CoreAudio]: Audio unit started successfully\n");
+        RARCH_LOG("[CoreAudio] Audio unit started successfully.\n");
         microphone->is_running = true;
         return true;
     } else {
-        RARCH_ERR("[CoreAudio]: Failed to start microphone: %d\n", status);
+        RARCH_ERR("[CoreAudio] Failed to start microphone: %d.\n", status);
     }
     return false;
 }
@@ -390,7 +390,7 @@ static bool coreaudio_microphone_stop_mic(void *driver_context, void *microphone
 {
     coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)microphone_context;
     if (!microphone) {
-        RARCH_ERR("[CoreAudio]: Failed to stop microphone\n");
+        RARCH_ERR("[CoreAudio] Failed to stop microphone.\n");
         return false;
     }
 
@@ -400,7 +400,7 @@ static bool coreaudio_microphone_stop_mic(void *driver_context, void *microphone
             microphone->is_running = false;
             return true;
         } else {
-            RARCH_ERR("[CoreAudio]: Failed to stop microphone: %d\n", status);
+            RARCH_ERR("[CoreAudio] Failed to stop microphone: %d.\n", status);
         }
     }
     return true; /// Already stopped

@@ -187,12 +187,12 @@ static bool gfx_ctx_uwp_set_video_mode(void *data,
 
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
-      RARCH_ERR("[UWP EGL]: win32_set_video_mode failed.\n");
+      RARCH_ERR("[UWP EGL] win32_set_video_mode failed.\n");
    }
 
    if (!create_gles_context(uwp_get_corewindow()))
    {
-      RARCH_ERR("[UWP EGL]: create_gles_context failed.\n");
+      RARCH_ERR("[UWP EGL] create_gles_context failed.\n");
       gfx_ctx_uwp_destroy(data);
       return false;
    }

@@ -453,7 +453,7 @@ static const input_device_driver_t *input_joypad_init_first(void *data)
          void *ptr = joypad_drivers[i]->init(data);
          if (ptr)
          {
-            RARCH_LOG("[Joypad]: Found joypad driver: \"%s\".\n",
+            RARCH_LOG("[Input] Found joypad driver: \"%s\".\n",
                   joypad_drivers[i]->ident);
             return joypad_drivers[i];
          }
@@ -566,7 +566,7 @@ const input_device_driver_t *input_joypad_init_driver(
             void *ptr = joypad_drivers[i]->init(data);
             if (ptr)
             {
-               RARCH_LOG("[Joypad]: Found joypad driver: \"%s\".\n",
+               RARCH_LOG("[Input] Found joypad driver: \"%s\".\n",
                      joypad_drivers[i]->ident);
                return joypad_drivers[i];
             }
@@ -1337,7 +1337,7 @@ static bool input_remote_init_network(input_remote_t *handle,
    if (!network_init())
       return false;
 
-   RARCH_LOG("Bringing up remote interface on port %hu.\n",
+   RARCH_LOG("[Network] Bringing up remote interface on port %hu.\n",
          (unsigned short)port);
 
    if ((fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM, AF_INET)) < 0)
@@ -4385,7 +4385,7 @@ bool input_driver_find_driver(
    if (i >= 0)
    {
       input_driver_st.current_driver = (input_driver_t*)input_drivers[i];
-      RARCH_LOG("[Input]: Found %s: \"%s\".\n", prefix,
+      RARCH_LOG("[Input] Found %s: \"%s\".\n", prefix,
             input_driver_st.current_driver->ident);
    }
    else
@@ -4610,23 +4610,23 @@ bool video_driver_init_input(
    input_driver_t         **input = &input_driver_st.current_driver;
    if (*input)
 #if HAVE_TEST_DRIVERS
-      if (strcmp(settings->arrays.input_driver,"test") != 0)
+      if (strcmp(settings->arrays.input_driver, "test") != 0)
          /* Test driver not in use, keep selected driver */
          return true;
       else if (string_is_empty(settings->paths.test_input_file_general))
-          {
-            RARCH_LOG("[Input]: Test input driver selected, but no input file provided - falling back.\n");
-            return true;
-          }
+      {
+         RARCH_LOG("[Input] Test input driver selected, but no input file provided - falling back.\n");
+         return true;
+      }
       else
-         RARCH_LOG("[Video]: Graphics driver initialized an input driver, but ignoring it as test input driver is in use.\n");
+         RARCH_LOG("[Video] Graphics driver initialized an input driver, but ignoring it as test input driver is in use.\n");
 #else
       return true;
 #endif
    else
       /* Video driver didn't provide an input driver,
        * so we use configured one. */
-      RARCH_LOG("[Video]: Graphics driver did not initialize an input driver."
+      RARCH_LOG("[Video] Graphics driver did not initialize an input driver."
          " Attempting to pick a suitable driver.\n");
 
    if (tmp)
@@ -4637,7 +4637,7 @@ bool video_driver_init_input(
             settings, "input driver",
             verbosity_enabled)))
       {
-         RARCH_ERR("[Video]: Cannot find input driver. Exiting ...\n");
+         RARCH_ERR("[Video] Cannot find input driver. Exiting...\n");
          return false;
       }
    }
@@ -4650,7 +4650,7 @@ bool video_driver_init_input(
                input_driver_st.current_driver,
                settings->arrays.input_joypad_driver)))
    {
-      RARCH_ERR("[Video]: Cannot initialize input driver. Exiting ...\n");
+      RARCH_ERR("[Video] Cannot initialize input driver. Exiting...\n");
       return false;
    }
 
@@ -5170,7 +5170,7 @@ static void input_overlay_enable_(bool enable)
       ol->iface_data = video_st->data;
       if (!video_driver_overlay_interface(&ol->iface) || !ol->iface)
       {
-         RARCH_ERR("Overlay interface is not present in video driver.\n");
+         RARCH_ERR("[Input] Overlay interface is not present in video driver.\n");
          ol->flags &= ~INPUT_OVERLAY_ALIVE;
          return;
       }
@@ -5541,7 +5541,7 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
 {
    if (port >= MAX_USERS || !driver)
    {
-      RARCH_ERR("[Input]: input_pad_connect: bad parameters\n");
+      RARCH_ERR("[Input] input_pad_connect: Bad parameters.\n");
       return;
    }
 
@@ -6072,7 +6072,7 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
                   sizeof(bsv_key_data_t)) != sizeof(bsv_key_data_t))
          {
             /* Unnatural EOF */
-            RARCH_ERR("[Replay] Keyboard replay ran out of keyboard inputs too early\n");
+            RARCH_ERR("[Replay] Keyboard replay ran out of keyboard inputs too early.\n");
             input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
             return;
          }
@@ -6080,7 +6080,7 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
    }
    else
    {
-      RARCH_LOG("[Replay] EOF after buttons\n");
+      RARCH_LOG("[Replay] EOF after buttons.\n");
       /* Natural(?) EOF */
       input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
       return;
@@ -6097,7 +6097,7 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
                      sizeof(bsv_input_data_t)) != sizeof(bsv_input_data_t))
             {
                /* Unnatural EOF */
-               RARCH_ERR("[Replay] Input replay ran out of inputs too early\n");
+               RARCH_ERR("[Replay] Input replay ran out of inputs too early.\n");
                input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
                return;
             }
@@ -6105,7 +6105,7 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
       }
       else
       {
-         RARCH_LOG("[Replay] EOF after inputs\n");
+         RARCH_LOG("[Replay] EOF after inputs.\n");
          /* Natural(?) EOF */
          input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
          return;
@@ -6118,7 +6118,7 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
                sizeof(uint8_t)) != sizeof(uint8_t))
       {
          /* Unnatural EOF */
-         RARCH_ERR("[Replay] Replay ran out of frames\n");
+         RARCH_ERR("[Replay] Replay ran out of frames.\n");
          input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
          return;
       }
@@ -6131,7 +6131,7 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
          if (intfstream_read(handle->file, &(size),
              sizeof(uint64_t)) != sizeof(uint64_t))
          {
-            RARCH_ERR("[Replay] Replay ran out of frames\n");
+            RARCH_ERR("[Replay] Replay ran out of frames.\n");
             input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
             return;
          }
@@ -6140,7 +6140,7 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
          st   = (uint8_t*)malloc(size);
          if (intfstream_read(handle->file, st, size) != (int64_t)size)
          {
-            RARCH_ERR("[Replay] Replay checkpoint truncated\n");
+            RARCH_ERR("[Replay] Replay checkpoint truncated.\n");
             input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
             free(st);
             return;
@@ -6256,7 +6256,7 @@ bool replay_get_serialized_data(void* buffer)
       intfstream_rewind(handle->file);
       read_amt                = intfstream_read(handle->file, (void *)buf, file_end);
       if (read_amt != file_end)
-         RARCH_ERR("[Replay] Failed to write correct number of replay bytes into state file: %d / %d\n",
+         RARCH_ERR("[Replay] Failed to write correct number of replay bytes into state file: %d / %d.\n",
                read_amt, file_end);
    }
    return true;
@@ -6938,7 +6938,7 @@ const hid_driver_t *input_hid_init_first(void)
 
       if (input_st->hid_data)
       {
-         RARCH_LOG("[Input]: Found HID driver: \"%s\".\n",
+         RARCH_LOG("[Input] Found HID driver: \"%s\".\n",
                hid_drivers[i]->ident);
          return hid_drivers[i];
       }

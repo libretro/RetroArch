@@ -137,7 +137,7 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
 #ifdef HAVE_EGL
    if (g_egl_inited)
    {
-      RARCH_LOG("[EMSCRIPTEN/EGL]: Attempted to re-initialize driver.\n");
+      RARCH_LOG("[EMSCRIPTEN/EGL] Attempted to re-initialize driver.\n");
       return (void*)"emscripten";
    }
 
@@ -161,7 +161,7 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
 
    emscripten->fb_width  = width;
    emscripten->fb_height = height;
-   RARCH_LOG("[EMSCRIPTEN/EGL]: Dimensions: %ux%u\n", width, height);
+   RARCH_LOG("[EMSCRIPTEN/EGL] Dimensions: %ux%u.\n", width, height);
 #endif
 
    return emscripten;

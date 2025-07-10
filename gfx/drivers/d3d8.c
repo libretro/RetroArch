@@ -205,7 +205,7 @@ bool d3d8_reset(void *data, void *d3dpp)
          D3D_OK)
       return true;
 #ifndef _XBOX
-   RARCH_WARN("[D3D]: Attempting to recover from dead state...\n");
+   RARCH_WARN("[D3D8] Attempting to recover from dead state...\n");
    /* Try to recreate the device completely. */
    switch (IDirect3DDevice8_TestCooperativeLevel(dev))
    {
@@ -224,7 +224,7 @@ bool d3d8_reset(void *data, void *d3dpp)
       default:
          err = "Unknown";
    }
-   RARCH_WARN("[D3D]: recovering from dead state: (%s).\n", err);
+   RARCH_WARN("[D3D8] Recovering from dead state: (%s).\n", err);
 #endif
    return false;
 }
@@ -1259,7 +1259,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
          g_pD3D8 = NULL;
 
          if ((ret = d3d8_init_base(d3d, info)))
-            RARCH_LOG("[D3D8]: Recovered from dead state.\n");
+            RARCH_LOG("[D3D8] Recovered from dead state.\n");
       }
 
 #ifdef HAVE_MENU
@@ -1327,7 +1327,7 @@ static bool d3d8_restore(void *data)
 
    if (!d3d8_initialize(d3d, &d3d->video_info))
    {
-      RARCH_ERR("[D3D8]: Restore error.\n");
+      RARCH_ERR("[D3D8] Restore error.\n");
       return false;
    }
 
@@ -1591,7 +1591,7 @@ static void *d3d8_init(const video_info_t *info,
 
    if (!d3d8_init_internal(d3d, info, input, input_data))
    {
-      RARCH_ERR("[D3D8]: Failed to init D3D.\n");
+      RARCH_ERR("[D3D8] Failed to init D3D.\n");
       free(d3d);
       return NULL;
    }
@@ -1837,7 +1837,7 @@ static bool d3d8_frame(void *data, const void *frame,
 
       if (!d3d8_restore(d3d))
       {
-         RARCH_ERR("[D3D8]: Failed to restore.\n");
+         RARCH_ERR("[D3D8] Failed to restore.\n");
          return false;
       }
    }

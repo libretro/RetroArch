@@ -41,11 +41,11 @@ static void *alsa_microphone_init(void)
 
    if (!alsa)
    {
-      RARCH_ERR("[ALSA]: Failed to allocate driver context\n");
+      RARCH_ERR("[ALSA] Failed to allocate driver context.\n");
       return NULL;
    }
 
-   RARCH_LOG("[ALSA]: Using ALSA version %s\n", snd_asoundlib_version());
+   RARCH_LOG("[ALSA] Using ALSA version %s.\n", snd_asoundlib_version());
 
    return alsa;
 }
@@ -85,14 +85,14 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
    state = snd_pcm_state(mic->pcm);
    if (state != SND_PCM_STATE_RUNNING)
    {
-      RARCH_WARN("[ALSA]: Expected microphone \"%s\" to be in state RUNNING, was in state %s\n",
+      RARCH_WARN("[ALSA] Expected microphone \"%s\" to be in state RUNNING, was in state %s.\n",
                  snd_pcm_name(mic->pcm),
                  snd_pcm_state_name(state));
 
       errnum = snd_pcm_start(mic->pcm);
       if (errnum < 0)
       {
-         RARCH_ERR("[ALSA]: Failed to start microphone \"%s\": %s\n",
+         RARCH_ERR("[ALSA] Failed to start microphone \"%s\": %s.\n",
                    snd_pcm_name(mic->pcm),
                    snd_strerror(errnum));
 
@@ -111,8 +111,8 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
             errnum = snd_pcm_recover(mic->pcm, frames, 0);
             if (errnum < 0)
             {
-               RARCH_ERR("[ALSA]: Failed to read from microphone: %s\n", snd_strerror(frames));
-               RARCH_ERR("[ALSA]: Additionally, recovery failed with: %s\n", snd_strerror(errnum));
+               RARCH_ERR("[ALSA] Failed to read from microphone: %s.\n", snd_strerror(frames));
+               RARCH_ERR("[ALSA] Additionally, recovery failed with: %s.\n", snd_strerror(errnum));
                return -1;
             }
 
@@ -229,7 +229,7 @@ static void *alsa_microphone_open_mic(void *driver_context,
    return mic;
 
 error:
-   RARCH_ERR("[ALSA]: Failed to initialize microphone...\n");
+   RARCH_ERR("[ALSA] Failed to initialize microphone.\n");
 
    alsa_microphone_close_mic(alsa, mic);
 

@@ -150,7 +150,7 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
       if (arg)
       {
          if (!action_map[index].action(handle, arg))
-            RARCH_ERR("Command \"%s\" failed.\n", arg);
+            RARCH_ERR("[Command] Command \"%s\" failed.\n", arg);
       }
       else
          handle->state[map[index].id] = true;
@@ -235,7 +235,7 @@ command_t* command_network_new(uint16_t port)
    int fd = socket_init((void**)&res, port, NULL,
          SOCKET_TYPE_DATAGRAM, AF_INET);
 
-   RARCH_LOG("[NetCMD]: %s %hu.\n",
+   RARCH_LOG("[NetCMD] %s %hu.\n",
          msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
          (unsigned short)port);
 
@@ -253,7 +253,7 @@ command_t* command_network_new(uint16_t port)
 
    if (!socket_bind(netcmd->net_fd, (void*)res))
    {
-      RARCH_ERR("[NetCMD]: %s.\n",
+      RARCH_ERR("[NetCMD] %s\n",
             msg_hash_to_str(MSG_FAILED_TO_BIND_SOCKET));
       goto error;
    }
@@ -629,13 +629,13 @@ static bool command_verify(const char *cmd)
    if (command_get_arg(cmd, NULL, NULL))
       return true;
 
-   RARCH_ERR("[NetCMD]: Command \"%s\" is not recognized by the program.\n", cmd);
-   RARCH_ERR("[NetCMD]: \tValid commands:\n");
+   RARCH_ERR("[NetCMD] Command \"%s\" is not recognized by the program.\n", cmd);
+   RARCH_ERR("[NetCMD] \tValid commands:\n");
    for (i = 0; i < ARRAY_SIZE(map); i++)
-      RARCH_ERR("\t\t%s\n", map[i].str);
+      RARCH_ERR("[NetCMD] \t\t%s\n", map[i].str);
 
    for (i = 0; i < ARRAY_SIZE(action_map); i++)
-      RARCH_ERR("\t\t%s %s\n", action_map[i].str, action_map[i].arg_desc);
+      RARCH_ERR("[NetCMD] \t\t%s %s\n", action_map[i].str, action_map[i].arg_desc);
 
    return false;
 }
@@ -714,7 +714,7 @@ bool command_network_send(const char *cmd_)
       if (port_)
          port = strtoul(port_, NULL, 0);
 
-      RARCH_LOG("[NetCMD]: %s: \"%s\" to %s:%hu\n",
+      RARCH_LOG("[NetCMD] %s: \"%s\" to %s:%hu.\n",
             msg_hash_to_str(MSG_SENDING_COMMAND),
             cmd, host, (unsigned short)port);
 
@@ -887,7 +887,7 @@ bool command_write_ram(command_t *cmd, const char *arg)
 
    if (rcheevos_hardcore_active())
    {
-      RARCH_LOG("[Command]: Achievements hardcore mode disabled by WRITE_CORE_RAM.\n");
+      RARCH_LOG("[Command] Achievements hardcore mode disabled by WRITE_CORE_RAM.\n");
       rcheevos_pause_hardcore();
    }
 
@@ -1098,7 +1098,7 @@ bool command_write_memory(command_t *cmd, const char *arg)
 #ifdef HAVE_CHEEVOS
       if (rcheevos_hardcore_active())
       {
-         RARCH_LOG("[Command]: Achievements hardcore mode disabled by WRITE_CORE_MEMORY.\n");
+         RARCH_LOG("[Command] Achievements hardcore mode disabled by WRITE_CORE_MEMORY.\n");
          rcheevos_pause_hardcore();
       }
 #endif
@@ -1142,7 +1142,7 @@ void command_event_set_volume(
       runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-   RARCH_LOG("[Audio]: %s\n", msg);
+   RARCH_LOG("[Audio] %s.\n", msg);
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
 }
@@ -1178,7 +1178,7 @@ void command_event_set_mixer_volume(
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-   RARCH_LOG("[Audio]: %s\n", msg);
+   RARCH_LOG("[Audio] %s.\n", msg);
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, new_volume);
 }
@@ -1227,7 +1227,7 @@ void command_event_init_controllers(rarch_system_info_t *sys_info,
             /* Do not fix device,
              * because any use of dummy core will reset this,
              * which is not a good idea. */
-            RARCH_WARN("[Input]: Input device ID %u is unknown to this "
+            RARCH_WARN("[Input] Input device ID %u is unknown to this "
                   "libretro implementation. Using RETRO_DEVICE_JOYPAD.\n",
                   device);
             device = RETRO_DEVICE_JOYPAD;
@@ -1266,7 +1266,7 @@ static size_t command_event_save_config(const char *config_path,
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
 #endif
-      RARCH_LOG("[Config]: %s\n", s);
+      RARCH_LOG("[Config] %s\n", s);
       return _len;
    }
 
@@ -1275,7 +1275,7 @@ static size_t command_event_save_config(const char *config_path,
       _len = snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
-      RARCH_ERR("[Config]: %s\n", s);
+      RARCH_ERR("[Config] %s\n", s);
    }
 
    return _len;
@@ -1347,11 +1347,11 @@ size_t command_event_save_auto_state(void)
    _len += strlcpy(savestate_name_auto + _len, ".auto",
            sizeof(savestate_name_auto) - _len);
    if (content_auto_save_state((const char*)savestate_name_auto))
-	   RARCH_LOG("[State]: %s \"%s\" %s.\n",
+	   RARCH_LOG("[State] %s \"%s\" %s.\n",
 			   msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
 			   savestate_name_auto, "succeeded");
    else
-	   RARCH_LOG("[State]: %s \"%s\" %s.\n",
+	   RARCH_LOG("[State] %s \"%s\" %s.\n",
 			   msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
 			   savestate_name_auto, "failed");
    return _len;
@@ -1425,10 +1425,10 @@ bool command_event_load_entry_state(settings_t *settings)
 
    ret = content_load_state(entry_state_path, false, true);
 
-   RARCH_LOG("[State]: %s \"%s\".\n",
+   RARCH_LOG("[State] %s \"%s\".\n",
          msg_hash_to_str(MSG_FOUND_ENTRY_STATE_IN),
          entry_state_path);
-   RARCH_LOG("[State]: %s \"%s\" %s.\n",
+   RARCH_LOG("[State] %s \"%s\" %s.\n",
          msg_hash_to_str(MSG_LOADING_ENTRY_STATE_FROM),
          entry_state_path, ret ? "succeeded" : "failed"
          );
@@ -1466,16 +1466,16 @@ void command_event_load_auto_state(void)
    if (!path_is_valid(savestate_name_auto))
       return;
 
-   RARCH_LOG("[State]: %s \"%s\".\n",
+   RARCH_LOG("[State] %s \"%s\".\n",
          msg_hash_to_str(MSG_FOUND_AUTO_SAVESTATE_IN),
          savestate_name_auto);
 
    if ((content_load_state(savestate_name_auto, false, true)))
-      RARCH_LOG("[State]: %s \"%s\" %s.\n",
+      RARCH_LOG("[State] %s \"%s\" %s.\n",
             msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
             savestate_name_auto, "succeeded");
    else
-      RARCH_LOG("[State]: %s \"%s\" %s.\n",
+      RARCH_LOG("[State] %s \"%s\" %s.\n",
             msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
             savestate_name_auto, "failed");
 }
@@ -1660,7 +1660,7 @@ static void command_scan_states(
          loa_idx = gap_idx - 1;
    }
 
-   RARCH_DBG("[State]: Save state scanning finished, used slots (in range): "
+   RARCH_DBG("[State] Save state scanning finished, used slots (in range): "
              "%d (%d), max:%d, load index %d, gap index %d, delete index %d.\n",
              cnt, cnt_in_range, max_idx, loa_idx, gap_idx, del_idx);
 
@@ -1721,7 +1721,7 @@ void command_event_set_savestate_auto_index(settings_t *settings)
          settings->uints.savestate_max_keep,
          settings->ints.state_slot, &max_idx, NULL);
    configuration_set_int(settings, settings->ints.state_slot, max_idx);
-   RARCH_LOG("[State]: %s: #%d.\n",
+   RARCH_LOG("[State] %s: #%d.\n",
          msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
          max_idx);
 }
@@ -1746,13 +1746,13 @@ static void command_event_set_savestate_garbage_collect(settings_t *settings)
    if (!string_is_empty(state_to_delete))
    {
       filestream_delete(state_to_delete);
-      RARCH_DBG("[State]: Garbage collect, deleting \"%s\".\n",state_to_delete);
+      RARCH_DBG("[State] Garbage collect, deleting \"%s\".\n",state_to_delete);
       /* Construct the save state thumbnail name
        * and delete that one as well. */
       i = strlen(state_to_delete);
       strlcpy(state_to_delete + i,".png",STRLEN_CONST(".png")+1);
       filestream_delete(state_to_delete);
-      RARCH_DBG("[State]: Garbage collect, deleting \"%s\".\n",state_to_delete);
+      RARCH_DBG("[State] Garbage collect, deleting \"%s\".\n",state_to_delete);
    }
 }
 
@@ -1812,7 +1812,7 @@ void command_event_set_replay_auto_index(settings_t *settings)
    configuration_set_int(settings, settings->ints.replay_slot, max_idx);
 
    if (max_idx)
-      RARCH_LOG("[Replay]: %s: #%d\n",
+      RARCH_LOG("[Replay] %s: #%d\n",
             msg_hash_to_str(MSG_FOUND_LAST_REPLAY_SLOT),
             max_idx);
 }
@@ -1953,7 +1953,7 @@ bool command_event_save_core_config(
       const char *_msg = msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_ERR("[Config]: %s\n", _msg);
+      RARCH_ERR("[Config] %s\n", _msg);
       return false;
    }
 
@@ -1964,7 +1964,7 @@ bool command_event_save_core_config(
    {
       unsigned i;
       char tmp[PATH_MAX_LENGTH + 8];
-      RARCH_LOG("[Config]: %s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
+      RARCH_LOG("[Config] %s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
 
       fill_pathname(config_name, path_basename(core_path), "",
             sizeof(config_name));
@@ -1992,7 +1992,7 @@ bool command_event_save_core_config(
    if (!new_path_available)
    {
       /* Fallback to system time... */
-      RARCH_WARN("[Config]: %s\n",
+      RARCH_WARN("[Config] %s\n",
             msg_hash_to_str(MSG_CANNOT_INFER_NEW_CONFIG_PATH));
       fill_dated_filename(config_name, ".cfg", sizeof(config_name));
       fill_pathname_join_special(config_path, config_dir, config_name,
@@ -2081,7 +2081,7 @@ void command_event_save_current_config(enum override_type type)
                   break;
             }
 
-            RARCH_LOG("[Overrides]: %s\n", msg);
+            RARCH_LOG("[Overrides] %s\n", msg);
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -2117,7 +2117,7 @@ void command_event_remove_current_config(enum override_type type)
             else
                _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_REMOVING), sizeof(msg));
 
-            RARCH_LOG("[Overrides]: %s\n", msg);
+            RARCH_LOG("[Overrides] %s\n", msg);
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_MENU
@@ -2224,12 +2224,12 @@ bool command_event_main_state(unsigned cmd)
               input_driver_state_t *input_st   = input_state_get_ptr();
               if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
               {
-                 RARCH_ERR("[State]: Can't undo load state during movie record.\n");
+                 RARCH_ERR("[State] Can't undo load state during movie record.\n");
                  return false;
               }
               if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
               {
-                 RARCH_LOG("[State]: Undo load state during movie playback, halting playback.\n");
+                 RARCH_LOG("[State] Undo load state during movie playback, halting playback.\n");
                  movie_stop(input_st);
               }
 #endif
@@ -2251,7 +2251,7 @@ bool command_event_main_state(unsigned cmd)
    {
       runloop_msg_queue_push(msg, _len, 2, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("[State]: %s\n", msg);
+      RARCH_LOG("[State] %s\n", msg);
    }
 
    return ret;

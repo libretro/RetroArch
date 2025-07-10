@@ -2868,7 +2868,7 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       if (!content_set_subsystem_by_name(entry->subsystem_ident))
       {
-         RARCH_LOG("[playlist] subsystem not found in implementation\n");
+         RARCH_LOG("[Playlist] Subsystem not found in implementation.\n");
          goto error;
       }
 
@@ -3004,7 +3004,7 @@ static int action_ok_load_cdrom(const char *path,
    if (!cdrom_drive_has_media(label[0]))
    {
       const char *_msg = msg_hash_to_str(MSG_NO_DISC_INSERTED);
-      RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
+      RARCH_LOG("[CDROM] No media is inserted or drive is not ready.\n");
 
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -3019,7 +3019,7 @@ static int action_ok_load_cdrom(const char *path,
       char cdrom_path[256];
       cdrom_device_fillpath(cdrom_path, sizeof(cdrom_path), label[0], 0, true);
 
-      RARCH_LOG("[CDROM]: Loading disc from path: %s\n", cdrom_path);
+      RARCH_LOG("[CDROM] Loading disc from path: %s\n", cdrom_path);
 
       path_clear(RARCH_PATH_CONTENT);
       if (!string_is_empty(cdrom_path))
@@ -3043,7 +3043,7 @@ static int action_ok_load_cdrom(const char *path,
    else
    {
       const char *_msg = msg_hash_to_str(MSG_LOAD_CORE_FIRST);
-      RARCH_LOG("[CDROM]: Cannot load disc without a core.\n");
+      RARCH_LOG("[CDROM] Cannot load disc without a core.\n");
 
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -3063,7 +3063,7 @@ static int action_ok_dump_cdrom(const char *path,
    if (!cdrom_drive_has_media(label[0]))
    {
       const char *_msg = msg_hash_to_str(MSG_NO_DISC_INSERTED);
-      RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
+      RARCH_LOG("[CDROM] No media is inserted or drive is not ready.\n");
 
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -3815,7 +3815,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          /* TODO/FIXME - localize */
-         RARCH_LOG("[Remap]: File saved successfully: \"%s\".\n",remap_file_path);
+         RARCH_LOG("[Remap] File saved successfully: \"%s\".\n",remap_file_path);
       }
       else
       {
@@ -3823,7 +3823,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          /* TODO/FIXME - localize */
-         RARCH_ERR("[Remap]: File save unsuccessful: \"%s\".\n",remap_file_path);
+         RARCH_ERR("[Remap] File save unsuccessful: \"%s\".\n",remap_file_path);
       }
    }
    else
@@ -3989,7 +3989,7 @@ static int action_ok_remap_file_flush(const char *path,
    {
       /* TODO/FIXME - localize */
       RARCH_LOG(
-            "[Remaps]: Saved input remapping options to \"%s\".\n",
+            "[Remap] Saved input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
       _len = snprintf(msg, sizeof(msg), "%s \"%s\"",
             msg_hash_to_str(MSG_REMAP_FILE_FLUSHED),
@@ -3999,7 +3999,7 @@ static int action_ok_remap_file_flush(const char *path,
    {
       /* TODO/FIXME - localize */
       RARCH_LOG(
-            "[Remaps]: Failed to save input remapping options to \"%s\".\n",
+            "[Remap] Failed to save input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
       _len = snprintf(msg, sizeof(msg), "%s \"%s\"",
             msg_hash_to_str(MSG_REMAP_FILE_FLUSH_FAILED),
@@ -5310,7 +5310,7 @@ void cb_generic_download(retro_task_t *task,
          dir_path = buf;
          break;
       default:
-         RARCH_WARN("Unknown transfer type '%s' bailing out.\n",
+         RARCH_WARN("[Download] Unknown transfer type '%s' bailing out.\n",
                msg_hash_to_str(transf->enum_idx));
          break;
    }
@@ -5381,12 +5381,12 @@ void cb_generic_download(retro_task_t *task,
 finish:
    if (err)
    {
-      RARCH_ERR("[Updater]: Download of \"%s\" failed: %s\n",
+      RARCH_ERR("[Updater] Download of \"%s\" failed: %s.\n",
             (transf ? transf->path : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)), err);
    }
    else
    {
-      RARCH_LOG("[Updater]: Download \"%s\".\n",
+      RARCH_LOG("[Updater] Download \"%s\".\n",
             (transf ? transf->path : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)));
 
 #ifdef HAVE_DISCORD
@@ -6770,12 +6770,12 @@ static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data,
 
    if (error)
    {
-      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), error);
+      RARCH_ERR("[Netplay] %s: %s.\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), error);
       goto done;
    }
    if (!data || !data->data || !data->len || data->status != 200)
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED));
+      RARCH_ERR("[Netplay] %s.\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED));
       goto done;
    }
 
@@ -8496,7 +8496,7 @@ int action_ok_core_lock(const char *path,
          _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
       /* Generate log + notification */
-      RARCH_ERR("%s\n", msg);
+      RARCH_ERR("[Core] %s\n", msg);
 
       runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -8557,7 +8557,7 @@ int action_ok_core_set_standalone_exempt(const char *path,
          _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
       /* Generate log + notification */
-      RARCH_ERR("%s\n", msg);
+      RARCH_ERR("[Core] %s\n", msg);
 
       runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -8814,7 +8814,7 @@ static int action_ok_playlist_refresh(const char *path,
          case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CONTENT_DIR:
             msg_prefix     = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR);
             msg_subject    = playlist_get_scan_content_dir(playlist);
-            log_text       = "[Playlist Refresh]: Invalid content directory: %s\n";
+            log_text       = "[Playlist Refresh] Invalid content directory: \"%s\".\n";
             break;
          case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME:
             {
@@ -8827,29 +8827,29 @@ static int action_ok_playlist_refresh(const char *path,
 
                msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME);
                msg_subject = system_name;
-               log_text    = "[Playlist Refresh]: Invalid system name: %s\n";
+               log_text    = "[Playlist Refresh] Invalid system name: \"%s\".\n";
             }
             break;
          case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CORE:
             msg_prefix     = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE);
             msg_subject    = playlist_get_default_core_name(playlist);
-            log_text       = "[Playlist Refresh]: Invalid core name: %s\n";
+            log_text       = "[Playlist Refresh] Invalid core name: \"%s\".\n";
             break;
          case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_DAT_FILE:
             msg_prefix     = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE);
             msg_subject    = playlist_get_scan_dat_file_path(playlist);
-            log_text       = "[Playlist Refresh]: Invalid arcade dat file: %s\n";
+            log_text       = "[Playlist Refresh] Invalid arcade dat file: \"%s\".\n";
             break;
          case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_DAT_FILE_TOO_LARGE:
             msg_prefix     = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE);
             msg_subject    = playlist_get_scan_dat_file_path(playlist);
-            log_text       = "[Playlist Refresh]: Arcade dat file too large: %s\n";
+            log_text       = "[Playlist Refresh] Arcade dat file too large: \"%s\".\n";
             break;
          case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_MISSING_CONFIG:
          default:
             msg_prefix     = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG);
             msg_subject    = path_basename(playlist_config->path);
-            log_text       = "[Playlist Refresh]: No scan record found: %s\n";
+            log_text       = "[Playlist Refresh] No scan record found: \"%s\".\n";
             break;
       }
 

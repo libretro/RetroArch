@@ -152,27 +152,27 @@ static void *sdl_audio_init(const char *device,
    if (sdl->speaker_device < 0)
 #endif
    {
-      RARCH_ERR("[SDL audio]: Failed to open SDL audio output device: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL audio] Failed to open SDL audio output device: %s.\n", SDL_GetError());
       goto error;
    }
 
    *new_rate                = out.freq;
-   RARCH_DBG("[SDL audio]: Opened SDL audio out device with ID %u\n",
+   RARCH_DBG("[SDL audio] Opened SDL audio out device with ID %u.\n",
              sdl->speaker_device);
-   RARCH_DBG("[SDL audio]: Requested a speaker frequency of %u Hz, got %u Hz\n",
+   RARCH_DBG("[SDL audio] Requested a speaker frequency of %u Hz, got %u Hz.\n",
              spec.freq, out.freq);
-   RARCH_DBG("[SDL audio]: Requested %u channels for speaker, got %u\n",
+   RARCH_DBG("[SDL audio] Requested %u channels for speaker, got %u.\n",
              spec.channels, out.channels);
-   RARCH_DBG("[SDL audio]: Requested a %u-frame speaker buffer, got %u frames (%u bytes)\n",
+   RARCH_DBG("[SDL audio] Requested a %u-frame speaker buffer, got %u frames (%u bytes).\n",
              frames, out.samples, out.size);
-   RARCH_DBG("[SDL audio]: Got a speaker silence value of %u\n", out.silence);
-   RARCH_DBG("[SDL audio]: Requested speaker audio format: %u-bit %s %s %s endian\n",
+   RARCH_DBG("[SDL audio] Got a speaker silence value of %u.\n", out.silence);
+   RARCH_DBG("[SDL audio] Requested speaker audio format: %u-bit %s %s %s endian.\n",
              SDL_AUDIO_BITSIZE(spec.format),
              SDL_AUDIO_ISSIGNED(spec.format) ? "signed" : "unsigned",
              SDL_AUDIO_ISFLOAT(spec.format) ? "floating-point" : "integer",
              SDL_AUDIO_ISBIGENDIAN(spec.format) ? "big" : "little");
 
-   RARCH_DBG("[SDL audio]: Received speaker audio format: %u-bit %s %s %s endian\n",
+   RARCH_DBG("[SDL audio] Received speaker audio format: %u-bit %s %s %s endian.\n",
              SDL_AUDIO_BITSIZE(spec.format),
              SDL_AUDIO_ISSIGNED(spec.format) ? "signed" : "unsigned",
              SDL_AUDIO_ISFLOAT(spec.format) ? "floating-point" : "integer",
@@ -183,7 +183,7 @@ static void *sdl_audio_init(const char *device,
    sdl->cond                = scond_new();
 #endif
 
-   RARCH_LOG("[SDL audio]: Requested %u ms latency for output device, got %d ms\n",
+   RARCH_LOG("[SDL audio] Requested %u ms latency for output device, got %d ms.\n",
          latency, (int)(out.samples * 4 * 1000 / (*new_rate)));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
@@ -197,7 +197,7 @@ static void *sdl_audio_init(const char *device,
       free(tmp);
    }
 
-   RARCH_DBG("[SDL audio]: Initialized speaker sample queue with %u bytes\n", bufsize);
+   RARCH_DBG("[SDL audio] Initialized speaker sample queue with %u bytes.\n", bufsize);
 
    SDL_PauseAudioDevice(sdl->speaker_device, false);
 

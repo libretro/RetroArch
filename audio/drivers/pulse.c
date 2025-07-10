@@ -90,7 +90,7 @@ static void context_state_cb(pa_context *c, void *data)
          pa_threaded_mainloop_signal(pa->mainloop, 0);
          break;
       case PA_CONTEXT_FAILED:
-         RARCH_ERR("[PulseAudio]: Connection failed\n");
+         RARCH_ERR("[PulseAudio] Connection failed.\n");
          pa->is_ready = false;
          pa_threaded_mainloop_signal(pa->mainloop, 0);
          break;
@@ -117,7 +117,7 @@ static void pa_sinklist_cb(pa_context *c, const pa_sink_info *l, int eol, void *
    if (eol > 0)
       return;
 
-   RARCH_DBG("[PulseAudio]: Sink detected: %s\n",l->name);
+   RARCH_DBG("[PulseAudio] Sink detected: %s.\n", l->name);
    string_list_append(pa->devicelist, l->name, attr);
 }
 
@@ -161,7 +161,7 @@ static void underrun_update_cb(pa_stream *s, void *data)
 
    (void)s;
 
-   RARCH_LOG("[PulseAudio]: Underrun (Buffer: %u, Writable size: %u).\n",
+   RARCH_LOG("[PulseAudio] Underrun (Buffer: %u, Writable size: %u).\n",
          (unsigned)pa->buffer_size,
          (unsigned)pa_stream_writable_size(pa->stream));
 #endif
@@ -175,7 +175,7 @@ static void buffer_attr_cb(pa_stream *s, void *data)
       pa->buffer_size = server_attr->tlength;
 
 #if 0
-   RARCH_LOG("[PulseAudio]: Got new buffer size %u.\n", (unsigned)pa->buffer_size);
+   RARCH_LOG("[PulseAudio] Got new buffer size %u.\n", (unsigned)pa->buffer_size);
 #endif
 }
 
@@ -257,7 +257,7 @@ static void *pulse_init(const char *device, unsigned rate,
    if (server_attr)
    {
       pa->buffer_size = server_attr->tlength;
-      RARCH_LOG("[PulseAudio]: Requested %u bytes buffer, got %u.\n",
+      RARCH_LOG("[PulseAudio] Requested %u bytes buffer, got %u.\n",
             (unsigned)buffer_attr.tlength,
             (unsigned)pa->buffer_size);
    }

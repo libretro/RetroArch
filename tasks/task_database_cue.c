@@ -512,7 +512,7 @@ size_t detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filenam
    if (raw_game_id[0] == '\0' || raw_game_id[0] == ' ')
    {
 #ifdef DEBUG
-      RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
+      RARCH_LOG("[Scanner] Scrubbing: \"%s\".\n", filename);
 #endif
       return 0;
    }
@@ -605,7 +605,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 #ifdef DEBUG
    /** Scrub files with bad data and log **/
    if (raw_game_id[0] == '\0' || raw_game_id[0] == ' ' || raw_game_id[0] == '0')
-      RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
+      RARCH_LOG("[Scanner] Scrubbing: \"%s\".\n", filename);
 #endif
 
    /** convert raw Sega - Mega-CD - Sega CD serial to redump serial. **/
@@ -719,7 +719,7 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    if (raw_game_id[0] == '\0' || raw_game_id[0] == ' ')
    {
 #ifdef DEBUG
-      RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
+      RARCH_LOG("[Scanner] Scrubbing: \"%s\".\n", filename);
 #endif
       return false;
    }
@@ -806,7 +806,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          || raw_game_id[0] == ' ')
    {
 #ifdef DEBUG
-      RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
+      RARCH_LOG("[Scanner] Scrubbing: \"%s\".\n", filename);
 #endif
       return false;
    }
@@ -998,7 +998,7 @@ size_t detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filena
          || raw_game_id[0] == ' ')
    {
 #ifdef DEBUG
-      RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
+      RARCH_LOG("[Scanner] Scrubbing: \"%s\".\n", filename);
 #endif
       return 0;
    }
@@ -1064,7 +1064,7 @@ int detect_system(intfstream_t *fd, const char **system_name, const char * filen
    int i;
    char magic[50];
 #ifdef DEBUG
-   RARCH_LOG("[Scanner]: %s\n", msg_hash_to_str(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS));
+   RARCH_LOG("[Scanner] %s\n", msg_hash_to_str(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS));
 #endif
    for (i = 0; MAGIC_NUMBERS[i].system_name != NULL; i++)
    {
@@ -1078,8 +1078,8 @@ int detect_system(intfstream_t *fd, const char **system_name, const char * filen
             {
                *system_name = MAGIC_NUMBERS[i].system_name;
 #ifdef DEBUG
-               RARCH_LOG("[Scanner]: Name: %s\n", filename);
-               RARCH_LOG("[Scanner]: System: %s\n", MAGIC_NUMBERS[i].system_name);
+               RARCH_LOG("[Scanner] Name: %s\n", filename);
+               RARCH_LOG("[Scanner] System: %s\n", MAGIC_NUMBERS[i].system_name);
 #endif
                return true;
             }
@@ -1088,8 +1088,8 @@ int detect_system(intfstream_t *fd, const char **system_name, const char * filen
    }
 
 #ifdef DEBUG
-   RARCH_LOG("[Scanner]: Name: %s\n", filename);
-   RARCH_LOG("[Scanner]: System: Unknown\n");
+   RARCH_LOG("[Scanner] Name: %s\n", filename);
+   RARCH_LOG("[Scanner] System: Unknown\n");
 #endif
    return false;
 }
@@ -1157,13 +1157,13 @@ int cue_find_track(const char *cue_path, bool first,
             RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE))
    {
 #ifdef DEBUG
-      RARCH_LOG("Could not open CUE file '%s'\n", cue_path);
+      RARCH_LOG("[Scanner] Could not open CUE file \"%s\".\n", cue_path);
 #endif
       goto error;
    }
 
 #ifdef DEBUG
-   RARCH_LOG("Parsing CUE file '%s'...\n", cue_path);
+   RARCH_LOG("[Scanner] Parsing CUE file \"%s\"...\n", cue_path);
 #endif
 
    tmp_token[0] = '\0';
@@ -1213,7 +1213,7 @@ int cue_find_track(const char *cue_path, bool first,
          if (sscanf(tmp_token, "%02d:%02d:%02d", &_m, &_s, &_f) < 3)
          {
 #ifdef DEBUG
-            RARCH_LOG("Error parsing time stamp '%s'\n", tmp_token);
+            RARCH_LOG("[Scanner] Error parsing time stamp \"%s\".\n", tmp_token);
 #endif
             goto error;
          }
@@ -1307,13 +1307,13 @@ int gdi_find_track(const char *gdi_path, bool first, char *s, size_t len)
             RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE))
    {
 #ifdef DEBUG
-      RARCH_LOG("Could not open GDI file '%s'\n", gdi_path);
+      RARCH_LOG("[Scanner] Could not open GDI file \"%s\".\n", gdi_path);
 #endif
       goto error;
    }
 
 #ifdef DEBUG
-   RARCH_LOG("Parsing GDI file '%s'...\n", gdi_path);
+   RARCH_LOG("[Scanner] Parsing GDI file \"%s\"...\n", gdi_path);
 #endif
 
    tmp_token[0] = '\0';

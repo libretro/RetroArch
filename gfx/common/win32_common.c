@@ -1871,7 +1871,7 @@ bool win32_window_create(void *data, unsigned style,
       main_window.hwnd, &notification_filter, DEVICE_NOTIFY_WINDOW_HANDLE);
 
    if (!notification_handler)
-      RARCH_ERR("Error registering for notifications\n");
+      RARCH_ERR("[Win32] Error registering for notifications.\n");
 #endif
 
    video_driver_display_type_set(RARCH_DISPLAY_WIN32);
@@ -2436,7 +2436,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
          if (win32_monitor_set_fullscreen(*width, *height,
                (int)refresh_rate, false, current_mon->szDevice))
          {
-            RARCH_LOG("[Video]: Fullscreen set to %ux%u @ %uHz on device %s.\n",
+            RARCH_LOG("[Video] Fullscreen set to %ux%u @ %uHz on device %s.\n",
                   *width, *height, (int)refresh_rate, current_mon->szDevice);
          }
 
@@ -2585,7 +2585,7 @@ bool win32_set_video_mode(void *data,
    {
       if (res == -1)
       {
-         RARCH_ERR("GetMessage error code %d\n", GetLastError());
+         RARCH_ERR("[Win32] GetMessage error code %d.\n", GetLastError());
          break;
       }
 

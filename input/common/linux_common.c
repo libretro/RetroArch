@@ -185,12 +185,12 @@ static void linux_poll_illuminance_sensor(void *data)
         retro_sleep(1000 / poll_rate);
         if (errno == EINTR)
         {
-           RARCH_ERR("Illuminance sensor thread interrupted\n");
+           RARCH_ERR("Illuminance sensor thread interrupted.\n");
            break;
         }
    }
 
-   RARCH_DBG("Illuminance sensor thread for %s exiting\n", sensor->path);
+   RARCH_DBG("Illuminance sensor thread for %s exiting.\n", sensor->path);
 }
 
 linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
@@ -217,7 +217,7 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 
       if (!name)
       {
-         RARCH_ERR("Error reading " IIO_DEVICES_DIR "\n");
+         RARCH_ERR("Error reading " IIO_DEVICES_DIR ".\n");
          goto error;
       }
 
@@ -236,18 +236,18 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 
          if (!sensor->thread)
          {
-            RARCH_ERR("Failed to spawn thread for illuminance sensor\n");
+            RARCH_ERR("Failed to spawn thread for illuminance sensor.\n");
             goto error;
          }
 
-         RARCH_LOG("Opened illuminance sensor at %s, polling at %u Hz\n", sensor->path, sensor->poll_rate);
+         RARCH_LOG("Opened illuminance sensor at %s, polling at %u Hz.\n", sensor->path, sensor->poll_rate);
 
          goto done;
       }
    }
 
 error:
-   RARCH_ERR("Failed to find an illuminance sensor in " IIO_DEVICES_DIR "\n");
+   RARCH_ERR("Failed to find an illuminance sensor in " IIO_DEVICES_DIR ".\n");
    retro_closedir(device);
 
    free(sensor);
@@ -274,7 +274,7 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
          int err = errno;
          char errmesg[NAME_MAX_LENGTH];
          strerror_r(err, errmesg, sizeof(errmesg));
-         RARCH_ERR("Failed to cancel illuminance sensor thread: %s\n", errmesg);
+         RARCH_ERR("Failed to cancel illuminance sensor thread: %s.\n", errmesg);
          /* this doesn't happen often, it should probably be logged */
       }
 
@@ -322,13 +322,13 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    in_illuminance_input = filestream_open(sensor->path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!in_illuminance_input)
    {
-      RARCH_ERR("Failed to open %s\n", sensor->path);
+      RARCH_ERR("Failed to open \"%s\".\n", sensor->path);
       goto done;
    }
 
    if (!filestream_gets(in_illuminance_input, buffer, sizeof(buffer)))
    { /* Read the illuminance value from the file. If that fails... */
-      RARCH_ERR("Illuminance sensor read failed\n");
+      RARCH_ERR("Illuminance sensor read failed.\n");
       illuminance = -1.0;
       goto done;
    }
@@ -341,7 +341,7 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    err = errno;
    if (err != 0)
    {
-      RARCH_ERR("Failed to parse input \"%s\" into a floating-point value: %s\n", buffer, strerror(err));
+      RARCH_ERR("Failed to parse input \"%s\" into a floating-point value: %s.\n", buffer, strerror(err));
       illuminance = -1.0;
       goto done;
    }

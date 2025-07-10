@@ -86,7 +86,7 @@ static void sdl_microphone_close_mic(void *driver_context, void *mic_context)
       scond_free(mic->cond);
 #endif
 
-      RARCH_LOG("[SDL audio]: Freed microphone with former device ID %u\n", mic->device_id);
+      RARCH_LOG("[SDL audio] Freed microphone with former device ID %u.\n", mic->device_id);
       free(mic);
    }
 }
@@ -137,7 +137,7 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
    /* If the audio driver wasn't initialized yet... */
    if (!SDL_WasInit(SDL_INIT_AUDIO))
    {
-      RARCH_ERR("[SDL mic]: Attempted to initialize input device before initializing the audio subsystem\n");
+      RARCH_ERR("[SDL mic] Attempted to initialize input device before initializing the audio subsystem.\n");
       return NULL;
    }
 
@@ -150,9 +150,9 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
    {
       int i;
       int num_available_microphones = SDL_GetNumAudioDevices(true);
-      RARCH_DBG("[SDL mic]: %d audio capture devices found:\n", num_available_microphones);
+      RARCH_DBG("[SDL mic] %d audio capture devices found:\n", num_available_microphones);
       for (i = 0; i < num_available_microphones; ++i)
-         RARCH_DBG("[SDL mic]:    - %s\n", SDL_GetAudioDeviceName(i, true));
+         RARCH_DBG("[SDL mic]    - %s\n", SDL_GetAudioDeviceName(i, true));
    }
 
    /* We have to buffer up some data ourselves, so we let SDL
@@ -178,25 +178,25 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
 
    if (mic->device_id == 0)
    {
-      RARCH_ERR("[SDL mic]: Failed to open SDL audio input device: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL mic] Failed to open SDL audio input device: %s.\n", SDL_GetError());
       goto error;
    }
-   RARCH_DBG("[SDL mic]: Opened SDL audio input device with ID %u\n",
+   RARCH_DBG("[SDL mic] Opened SDL audio input device with ID %u.\n",
              mic->device_id);
-   RARCH_DBG("[SDL mic]: Requested a microphone frequency of %u Hz, got %u Hz\n",
+   RARCH_DBG("[SDL mic] Requested a microphone frequency of %u Hz, got %u Hz.\n",
              desired_spec.freq, mic->device_spec.freq);
-   RARCH_DBG("[SDL mic]: Requested %u channels for microphone, got %u\n",
+   RARCH_DBG("[SDL mic] Requested %u channels for microphone, got %u.\n",
              desired_spec.channels, mic->device_spec.channels);
-   RARCH_DBG("[SDL mic]: Requested a %u-sample microphone buffer, got %u samples (%u bytes)\n",
+   RARCH_DBG("[SDL mic] Requested a %u-sample microphone buffer, got %u samples (%u bytes).\n",
              frames, mic->device_spec.samples, mic->device_spec.size);
-   RARCH_DBG("[SDL mic]: Got a microphone silence value of %u\n", mic->device_spec.silence);
-   RARCH_DBG("[SDL mic]: Requested microphone audio format: %u-bit %s %s %s endian\n",
+   RARCH_DBG("[SDL mic] Got a microphone silence value of %u.\n", mic->device_spec.silence);
+   RARCH_DBG("[SDL mic] Requested microphone audio format: %u-bit %s %s %s endian.\n",
              SDL_AUDIO_BITSIZE(desired_spec.format),
              SDL_AUDIO_ISSIGNED(desired_spec.format) ? "signed" : "unsigned",
              SDL_AUDIO_ISFLOAT(desired_spec.format) ? "floating-point" : "integer",
              SDL_AUDIO_ISBIGENDIAN(desired_spec.format) ? "big" : "little");
 
-   RARCH_DBG("[SDL mic]: Received microphone audio format: %u-bit %s %s %s endian\n",
+   RARCH_DBG("[SDL mic] Received microphone audio format: %u-bit %s %s %s endian.\n",
              SDL_AUDIO_BITSIZE(desired_spec.format),
              SDL_AUDIO_ISSIGNED(desired_spec.format) ? "signed" : "unsigned",
              SDL_AUDIO_ISFLOAT(desired_spec.format) ? "floating-point" : "integer",
@@ -210,7 +210,7 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
    mic->cond = scond_new();
 #endif
 
-   RARCH_LOG("[SDL audio]: Requested %u ms latency for input device, got %d ms\n",
+   RARCH_LOG("[SDL audio] Requested %u ms latency for input device, got %d ms.\n",
              latency, (int)(mic->device_spec.samples * 4 * 1000 / mic->device_spec.freq));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
@@ -218,7 +218,7 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
    tmp                = calloc(1, bufsize);
    mic->sample_buffer = fifo_new(bufsize);
 
-   RARCH_DBG("[SDL audio]: Initialized microphone sample queue with %u bytes\n", bufsize);
+   RARCH_DBG("[SDL audio] Initialized microphone sample queue with %u bytes.\n", bufsize);
 
    if (tmp)
    {
@@ -226,7 +226,7 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
       free(tmp);
    }
 
-   RARCH_LOG("[SDL audio]: Initialized microphone with device ID %u\n", mic->device_id);
+   RARCH_LOG("[SDL audio] Initialized microphone with device ID %u.\n", mic->device_id);
    return mic;
 
 error:
@@ -251,10 +251,10 @@ static bool sdl_microphone_start_mic(void *driver_context, void *mic_context)
    SDL_PauseAudioDevice(mic->device_id, false);
    if (SDL_GetAudioDeviceStatus(mic->device_id) != SDL_AUDIO_PLAYING)
    {
-      RARCH_ERR("[SDL mic]: Failed to start microphone %u: %s\n", mic->device_id, SDL_GetError());
+      RARCH_ERR("[SDL mic] Failed to start microphone %u: %s.\n", mic->device_id, SDL_GetError());
       return false;
    }
-   RARCH_DBG("[SDL mic]: Started microphone %u\n", mic->device_id);
+   RARCH_DBG("[SDL mic] Started microphone %u.\n", mic->device_id);
    return true;
 }
 
@@ -271,16 +271,16 @@ static bool sdl_microphone_stop_mic(void *driver_context, void *mic_context)
    switch (SDL_GetAudioDeviceStatus(mic->device_id))
    {
       case SDL_AUDIO_PLAYING:
-         RARCH_ERR("[SDL mic]: Microphone %u failed to pause\n", mic->device_id);
+         RARCH_ERR("[SDL mic] Microphone %u failed to pause.\n", mic->device_id);
          return false;
       case SDL_AUDIO_STOPPED:
-         RARCH_WARN("[SDL mic]: Microphone %u is in state STOPPED; it may not start again\n",
+         RARCH_WARN("[SDL mic] Microphone %u is in state STOPPED; it may not start again.\n",
                mic->device_id);
          /* fall-through */
       case SDL_AUDIO_PAUSED:
          break;
       default:
-         RARCH_ERR("[SDL mic]: Microphone %u is in unknown state\n",
+         RARCH_ERR("[SDL mic] Microphone %u is in unknown state.\n",
                mic->device_id);
          return false;
    }

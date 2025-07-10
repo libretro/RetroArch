@@ -221,28 +221,28 @@ static void ffmpeg_audio_resolve_format(struct ff_audio_info *audio,
       audio->codec->sample_fmt = AV_SAMPLE_FMT_FLTP;
       audio->use_float         = true;
       audio->is_planar         = true;
-      RARCH_LOG("[FFmpeg]: Using sample format FLTP.\n");
+      RARCH_LOG("[FFmpeg] Using sample format FLTP.\n");
    }
    else if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_FLT, codec->sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_FLT;
       audio->use_float         = true;
       audio->is_planar         = false;
-      RARCH_LOG("[FFmpeg]: Using sample format FLT.\n");
+      RARCH_LOG("[FFmpeg] Using sample format FLT.\n");
    }
    else if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_S16P, codec->sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_S16P;
       audio->use_float         = false;
       audio->is_planar         = true;
-      RARCH_LOG("[FFmpeg]: Using sample format S16P.\n");
+      RARCH_LOG("[FFmpeg] Using sample format S16P.\n");
    }
    else if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_S16, codec->sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
       audio->use_float         = false;
       audio->is_planar         = false;
-      RARCH_LOG("[FFmpeg]: Using sample format S16.\n");
+      RARCH_LOG("[FFmpeg] Using sample format S16.\n");
    }
    audio->sample_size = audio->use_float ? sizeof(float) : sizeof(int16_t);
 }
@@ -281,7 +281,7 @@ static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
       }
 
       params->sample_rate = best_rate;
-      RARCH_LOG("[FFmpeg]: Using output sampling rate: %d.\n", best_rate);
+      RARCH_LOG("[FFmpeg] Using output sampling rate: %d.\n", best_rate);
    }
 }
 
@@ -294,7 +294,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
          *params->acodec ? params->acodec : "flac");
    if (!codec)
    {
-      RARCH_ERR("[FFmpeg]: Cannot find acodec %s.\n",
+      RARCH_ERR("[FFmpeg] Cannot find acodec %s.\n",
             *params->acodec ? params->acodec : "flac");
       return false;
    }
@@ -402,7 +402,7 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 
    if (!codec)
    {
-      RARCH_ERR("[FFmpeg]: Cannot find vcodec %s.\n",
+      RARCH_ERR("[FFmpeg] Cannot find vcodec %s.\n",
             *params->vcodec ? params->vcodec : "libx264rgb");
       return false;
    }
@@ -1192,9 +1192,9 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
    if (ret < 0)
    {
 #ifdef __cplusplus
-      RARCH_ERR("[FFmpeg]: Cannot send video frame. Error code: %d.\n", ret);
+      RARCH_ERR("[FFmpeg] Cannot send video frame. Error code: %d.\n", ret);
 #else
-      RARCH_ERR("[FFmpeg]: Cannot send video frame. Error code: %s.\n", av_err2str(ret));
+      RARCH_ERR("[FFmpeg] Cannot send video frame. Error code: %s.\n", av_err2str(ret));
 #endif
       return false;
    }
@@ -1207,9 +1207,9 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
       else if (ret < 0)
       {
 #ifdef __cplusplus
-         RARCH_ERR("[FFmpeg]: Cannot receive video packet. Error code: %d.\n", ret);
+         RARCH_ERR("[FFmpeg] Cannot receive video packet. Error code: %d.\n", ret);
 #else
-         RARCH_ERR("[FFmpeg]: Cannot receive video packet. Error code: %s.\n", av_err2str(ret));
+         RARCH_ERR("[FFmpeg] Cannot receive video packet. Error code: %s.\n", av_err2str(ret));
 #endif
          return false;
       }
@@ -1228,9 +1228,9 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
       if (ret < 0)
       {
 #ifdef __cplusplus
-         RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %d.\n", ret);
+         RARCH_ERR("[FFmpeg] Cannot write video packet to output file. Error code: %d.\n", ret);
 #else
-         RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %s.\n", av_err2str(ret));
+         RARCH_ERR("[FFmpeg] Cannot write video packet to output file. Error code: %s.\n", av_err2str(ret));
 #endif
          return false;
       }
@@ -1392,9 +1392,9 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
    {
       av_frame_free(&frame);
 #ifdef __cplusplus
-      RARCH_ERR("[FFmpeg]: Cannot send audio frame. Return code: %d.\n", ret);
+      RARCH_ERR("[FFmpeg] Cannot send audio frame. Return code: %d.\n", ret);
 #else
-      RARCH_ERR("[FFmpeg]: Cannot send audio frame. Return code: %s.\n", av_err2str(ret));
+      RARCH_ERR("[FFmpeg] Cannot send audio frame. Return code: %s.\n", av_err2str(ret));
 #endif
       return false;
    }
@@ -1408,9 +1408,9 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
       {
          av_frame_free(&frame);
 #ifdef __cplusplus
-         RARCH_ERR("[FFmpeg]: Cannot receive audio packet. Return code: %d.\n", ret);
+         RARCH_ERR("[FFmpeg] Cannot receive audio packet. Return code: %d.\n", ret);
 #else
-         RARCH_ERR("[FFmpeg]: Cannot receive audio packet. Return code: %s.\n", av_err2str(ret));
+         RARCH_ERR("[FFmpeg] Cannot receive audio packet. Return code: %s.\n", av_err2str(ret));
 #endif
          return false;
       }
@@ -1430,9 +1430,9 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
       {
          av_frame_free(&frame);
 #ifdef __cplusplus
-         RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %d.\n", ret);
+         RARCH_ERR("[FFmpeg] Cannot write video packet to output file. Error code: %d.\n", ret);
 #else
-         RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %s.\n", av_err2str(ret));
+         RARCH_ERR("[FFmpeg] Cannot write video packet to output file. Error code: %s.\n", av_err2str(ret));
 #endif
          return false;
       }

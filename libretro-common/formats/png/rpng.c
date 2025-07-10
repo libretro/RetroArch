@@ -163,7 +163,7 @@ static bool rpng_process_ihdr(struct png_ihdr *ihdr)
       case PNG_IHDR_COLOR_RGBA:
          if (ihdr_depth != 8 && ihdr_depth != 16)
          {
-            fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+            fprintf(stderr, "[RPNG] Error in line %d.\n", __LINE__);
             return false;
          }
          break;
@@ -171,7 +171,7 @@ static bool rpng_process_ihdr(struct png_ihdr *ihdr)
          /* Valid bitdepths are: 1, 2, 4, 8, 16 */
          if (ihdr_depth > 16 || (0x977F7FFF << ihdr_depth) & 0x80000000)
          {
-            fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+            fprintf(stderr, "[RPNG] Error in line %d.\n", __LINE__);
             return false;
          }
          break;
@@ -179,12 +179,12 @@ static bool rpng_process_ihdr(struct png_ihdr *ihdr)
          /* Valid bitdepths are: 1, 2, 4, 8 */
          if (ihdr_depth > 8 || (0x977F7FFF << ihdr_depth)  & 0x80000000)
          {
-            fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+            fprintf(stderr, "[RPNG] Error in line %d.\n", __LINE__);
             return false;
          }
          break;
       default:
-         fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+         fprintf(stderr, "[RPNG] Error in line %d.\n", __LINE__);
          return false;
    }
 
@@ -1028,7 +1028,7 @@ bool rpng_iterate_image(rpng_t *rpng)
          if (rpng->ihdr.compression != 0)
          {
 #if defined(DEBUG) || defined(RPNG_TEST)
-            fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__);
+            fprintf(stderr, "[RPNG] Error in line %d.\n", __LINE__);
 #endif
             return false;
          }

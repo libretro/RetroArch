@@ -1280,7 +1280,7 @@ static unsigned menu_displaylist_parse_core_manager_steam_list(file_list_t *list
    if (MIST_IS_ERROR(result))
    {
       /* TODO/FIXME: Send error notification */
-      RARCH_ERR("[Steam] Error enumerating core dlcs for core manager (%d-%d)\n", MIST_UNPACK_RESULT(result));
+      RARCH_ERR("[Steam] Error enumerating core dlcs for core manager (%d-%d).\n", MIST_UNPACK_RESULT(result));
       return 0;
    }
 
@@ -1343,7 +1343,7 @@ static unsigned menu_displaylist_parse_core_information_steam(
    return count;
 error:
    /* TODO: Send error notification */
-   RARCH_ERR("[Steam] Error getting core information (%d-%d)\n", MIST_UNPACK_RESULT(result));
+   RARCH_ERR("[Steam] Error getting core information (%d-%d).\n", MIST_UNPACK_RESULT(result));
    return count;
 }
 #endif
@@ -12889,16 +12889,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         }
                      }
                      else
-                        RARCH_ERR("[CDROM]: Could not detect any disc info.\n");
+                        RARCH_ERR("[CDROM] Could not detect any disc info.\n");
                   }
                   else
-                     RARCH_ERR("[CDROM]: Error opening file for reading: %s\n", file_path);
+                     RARCH_ERR("[CDROM] Error opening file for reading: %s.\n", file_path);
                }
                else
                {
                   const char *_msg = msg_hash_to_str(MSG_NO_DISC_INSERTED);
                   /* TODO/FIXME - localize */
-                  RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
+                  RARCH_LOG("[CDROM] No media is inserted or drive is not ready.\n");
                   runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                }

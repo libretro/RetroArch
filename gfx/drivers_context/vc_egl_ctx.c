@@ -80,7 +80,7 @@ static INLINE bool gfx_ctx_vc_egl_query_extension(vc_ctx_data_t *vc, const char 
 {
    const char *str = (const char*)eglQueryString(vc->egl.dpy, EGL_EXTENSIONS);
    bool        ret = str && strstr(str, ext);
-   RARCH_LOG("Querying EGL extension: %s => %s\n",
+   RARCH_LOG("[VC/EGL] Querying EGL extension: %s => %s.\n",
          ext, ret ? "exists" : "doesn't exist");
 
    return ret;
@@ -297,7 +297,7 @@ static void *gfx_ctx_vc_init(void *video_driver)
 
    if (g_egl_inited)
    {
-      RARCH_ERR("[VC/EGL]: Attempted to re-initialize driver.\n");
+      RARCH_ERR("[VC/EGL] Attempted to re-initialize driver.\n");
       return NULL;
    }
 
@@ -519,14 +519,14 @@ static bool gfx_ctx_vc_image_buffer_init(void *data,
 
    if (vc->pbuff_surf == EGL_NO_SURFACE)
    {
-      RARCH_ERR("[VideoCore:EGLImage] failed to create PbufferSurface\n");
+      RARCH_ERR("[VC/EGL] Failed to create PbufferSurface.\n");
       goto fail;
    }
 
    vc->eglimage_ctx          = eglCreateContext(vc->egl.dpy, vc->egl.config, NULL, NULL);
    if (vc->eglimage_ctx == EGL_NO_CONTEXT)
    {
-      RARCH_ERR("[VideoCore:EGLImage] failed to create context\n");
+      RARCH_ERR("[VC/EGL] Failed to create context.\n");
       goto fail;
    }
 
@@ -534,7 +534,7 @@ static bool gfx_ctx_vc_image_buffer_init(void *data,
    result                    = eglMakeCurrent(vc->egl.dpy, vc->pbuff_surf, vc->pbuff_surf, vc->eglimage_ctx);
    if (result == EGL_FALSE)
    {
-      RARCH_ERR("[VideoCore:EGLImage] failed to make context current\n");
+      RARCH_ERR("[VC/EGL] Failed to make context current.\n");
       goto fail;
    }
 

@@ -184,7 +184,7 @@ static void handle_translation_cb(
 
 #ifdef DEBUG
    if (access_st->ai_service_auto != 2)
-      RARCH_LOG("RESULT FROM AI SERVICE...\n");
+      RARCH_LOG("[Translation] RESULT FROM AI SERVICE...\n");
 #endif
 
    if (!data || error || !data->data)
@@ -257,7 +257,7 @@ static void handle_translation_cb(
    if (string_is_equal(err_str, "No text found."))
    {
 #ifdef DEBUG
-      RARCH_LOG("No text found...\n");
+      RARCH_LOG("[Translation] No text found.\n");
 #endif
       if (txt_str)
       {
@@ -318,7 +318,7 @@ static void handle_translation_cb(
          else
          {
             /* TODO/FIXME - localize */
-            RARCH_LOG("Invalid image type returned from server.\n");
+            RARCH_LOG("[Translation] Invalid image type returned from server.\n");
             goto finish;
          }
 
@@ -328,7 +328,7 @@ static void handle_translation_cb(
          {
             /* TODO/FIXME - localize */
             const char *_msg = "Video driver not supported.";
-            RARCH_LOG("Video driver not supported for AI Service.");
+            RARCH_LOG("[Translation] Video driver not supported for AI Service.");
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
@@ -428,7 +428,7 @@ static void handle_translation_cb(
          }
          else
          {
-            RARCH_LOG("Output from URL not a valid file type, or is not supported.\n");
+            RARCH_LOG("[Translation] Output from URL not a valid file type, or is not supported.\n");
             goto finish;
          }
 
@@ -442,7 +442,7 @@ static void handle_translation_cb(
                and translate it, and we have the translated image in
                the raw_image_data buffer.
             */
-            RARCH_LOG("Hardware frame buffer core, but selected video driver isn't supported.\n");
+            RARCH_LOG("[Translation] Hardware frame buffer core, but selected video driver isn't supported.\n");
             goto finish;
          }
 
@@ -595,7 +595,7 @@ static void handle_translation_cb(
 
 finish:
    if (error)
-      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), error);
+      RARCH_ERR("[Translation] %s: %s.\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), error);
 
    if (user_data)
       free(user_data);
@@ -891,7 +891,7 @@ bool run_translation_service(settings_t *settings, bool paused)
                && video_st->current_video->read_viewport(
                   video_st->data, bit24_image_prev, false)))
       {
-         RARCH_LOG("Could not read viewport for translation service...\n");
+         RARCH_LOG("[Translation] Could not read viewport for translation service.\n");
          goto finish;
       }
 
@@ -1026,7 +1026,7 @@ bool run_translation_service(settings_t *settings, bool paused)
 
 #ifdef DEBUG
    if (access_st->ai_service_auto != 2)
-      RARCH_LOG("Request size: %d\n", bmp64_len);
+      RARCH_LOG("[Translation] Request size: %d\n", bmp64_len);
 #endif
    {
       char new_ai_service_url[PATH_MAX_LENGTH];
@@ -1128,7 +1128,7 @@ bool run_translation_service(settings_t *settings, bool paused)
       }
 #ifdef DEBUG
       if (access_st->ai_service_auto != 2)
-         RARCH_LOG("SENDING... %s\n", new_ai_service_url);
+         RARCH_LOG("[Translation] SENDING... %s\n", new_ai_service_url);
 #endif
       task_push_http_post_transfer(new_ai_service_url,
             json_buffer, true, NULL, handle_translation_cb, NULL);

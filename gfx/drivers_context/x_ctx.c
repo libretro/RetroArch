@@ -153,7 +153,7 @@ static int x_log_error_handler(Display *dpy, XErrorEvent *event)
 {
    char buf[1024];
    XGetErrorText(dpy, event->error_code, buf, sizeof buf);
-   RARCH_WARN("[GLX]: X error message: %s, request code: %d, minor code: %d\n",
+   RARCH_WARN("[GLX] X error message: %s, request code: %d, minor code: %d.\n",
          buf, event->request_code, event->minor_code);
    return 0;
 }
@@ -263,14 +263,14 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
       if (g_pglSwapInterval)
       {
          if (g_pglSwapInterval(x->interval) != 0)
-            RARCH_WARN("[GLX]: glXSwapInterval(%i) failed.\n", x->interval);
+            RARCH_WARN("[GLX] glXSwapInterval(%i) failed.\n", x->interval);
       }
       else if (g_pglSwapIntervalEXT)
          g_pglSwapIntervalEXT(g_x11_dpy, x->glx_win, x->interval);
       else if (g_pglSwapIntervalSGI)
       {
          if (g_pglSwapIntervalSGI(x->interval) != 0)
-            RARCH_WARN("[GLX]: glXSwapIntervalSGI(%i) failed.\n", x->interval);
+            RARCH_WARN("[GLX] glXSwapIntervalSGI(%i) failed.\n", x->interval);
       }
    }
    else
@@ -280,12 +280,12 @@ static void gfx_ctx_x_swap_interval(void *data, int interval)
       else if (g_pglSwapInterval)
       {
          if (g_pglSwapInterval(x->interval) != 0)
-            RARCH_WARN("[GLX]: glXSwapInterval(%i) failed.\n", x->interval);
+            RARCH_WARN("[GLX] glXSwapInterval(%i) failed.\n", x->interval);
       }
       else if (g_pglSwapIntervalSGI)
       {
          if (g_pglSwapIntervalSGI(x->interval) != 0)
-            RARCH_WARN("[GLX]: glXSwapIntervalSGI(%i) failed.\n", x->interval);
+            RARCH_WARN("[GLX] glXSwapIntervalSGI(%i) failed.\n", x->interval);
       }
    }
 #endif
@@ -315,7 +315,7 @@ static bool gfx_ctx_x_set_resize(void *data,
    if (x->is_fullscreen)
    {
       XMapRaised(g_x11_dpy, g_x11_win);
-      RARCH_LOG("[GLX]: Resized fullscreen resolution to %dx%d.\n", width, height);
+      RARCH_LOG("[GLX] Resized fullscreen resolution to %dx%d.\n", width, height);
    }
 
    return true;
@@ -420,7 +420,7 @@ static void *gfx_ctx_x_init(void *data)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
          if (GLXExtensionSupported(g_x11_dpy, "GLX_EXT_swap_control_tear"))
          {
-            RARCH_LOG("[GLX]: GLX_EXT_swap_control_tear supported.\n");
+            RARCH_LOG("[GLX] GLX_EXT_swap_control_tear supported.\n");
             x->adaptive_vsync = true;
          }
 
@@ -524,10 +524,10 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
          if (wm_name)
          {
-            RARCH_LOG("[GLX]: Window manager is %s.\n", wm_name);
+            RARCH_LOG("[GLX] Window manager is %s.\n", wm_name);
             if (strcasestr(wm_name, "xfwm"))
             {
-               RARCH_LOG("[GLX]: Using override-redirect workaround.\n");
+               RARCH_LOG("[GLX] Using override-redirect workaround.\n");
                swa.override_redirect = True;
             }
             free(wm_name);
@@ -537,7 +537,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
             swa.override_redirect = True;
       }
       else
-         RARCH_ERR("[GLX]: Entering true fullscreen failed. Will attempt windowed mode.\n");
+         RARCH_ERR("[GLX] Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 #endif
 
@@ -552,9 +552,9 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
       if (xinerama_get_coord(g_x11_dpy, g_x11_screen,
                &x_off, &y_off, &new_width, &new_height))
-         RARCH_LOG("[GLX]: Using Xinerama on screen #%u.\n", g_x11_screen);
+         RARCH_LOG("[GLX] Using Xinerama on screen #%u.\n", g_x11_screen);
       else
-         RARCH_LOG("[GLX]: Xinerama is not active on screen.\n");
+         RARCH_LOG("[GLX] Xinerama is not active on screen.\n");
 
       if (fullscreen)
       {
@@ -564,7 +564,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    }
 #endif
 
-   RARCH_LOG("[GLX]: X = %d, Y = %d, W = %u, H = %u.\n",
+   RARCH_DBG("[GLX] X = %d, Y = %d, W = %u, H = %u.\n",
          x_off, y_off, width, height);
 
    g_x11_win = XCreateWindow(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
@@ -581,7 +581,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       uint32_t                value = 1;
       Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
 
-      RARCH_LOG("[GLX]: Requesting compositor bypass.\n");
+      RARCH_LOG("[GLX] Requesting compositor bypass.\n");
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
    }
 
@@ -628,7 +628,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 #ifdef HAVE_XF86VM
    if (true_full)
    {
-      RARCH_LOG("[GLX]: Using true fullscreen.\n");
+      RARCH_LOG("[GLX] Using true fullscreen.\n");
       XMapRaised(g_x11_dpy, g_x11_win);
       x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
    }
@@ -640,7 +640,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
        * Attempt using windowed fullscreen. */
 
       XMapRaised(g_x11_dpy, g_x11_win);
-      RARCH_LOG("[GLX]: Using windowed fullscreen.\n");
+      RARCH_LOG("[GLX] Using windowed fullscreen.\n");
 
       /* We have to move the window to the screen we want
        * to go fullscreen on first.
@@ -740,7 +740,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                    * requested version first.
                    * The following code can hopefully be removed in the future:
                    */
-                  RARCH_LOG("[GLX]: Creating context for requested version %u.%u.\n", g_major, g_minor);
+                  RARCH_LOG("[GLX] Creating context for requested version %u.%u.\n", g_major, g_minor);
                   x->ctx = glx_create_context_attribs(g_x11_dpy,
                         x->fbc, NULL, True, attribs);
 
@@ -750,12 +750,12 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
                      if (x->use_hw_ctx)
                      {
-                        RARCH_LOG("[GLX]: Creating shared HW context.\n");
+                        RARCH_LOG("[GLX] Creating shared HW context.\n");
                         x->hw_ctx = glx_create_context_attribs(g_x11_dpy,
                               x->fbc, x->ctx, True, attribs);
 
                         if (!x->hw_ctx)
-                           RARCH_ERR("[GLX]: Failed to create new shared context.\n");
+                           RARCH_ERR("[GLX] Failed to create new shared context.\n");
                      }
 
                      glXMakeContextCurrent(g_x11_dpy,
@@ -772,11 +772,11 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                      glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
                      glXDestroyContext(g_x11_dpy, x->ctx);
 
-                     RARCH_LOG("[GLX]: Not running Mesa, trying higher versions...\n");
+                     RARCH_LOG("[GLX] Not running Mesa, trying higher versions...\n");
                   }
                   else
                   {
-                     RARCH_ERR("[GLX]: Failed to create new context.\n");
+                     RARCH_ERR("[GLX] Failed to create new context.\n");
                      goto error;
                   }
                   /* end of Mesa workaround / code to be removed */
@@ -792,10 +792,10 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                      {
                         attribs[1] = versions[i][0];
                         attribs[3] = versions[i][1];
-                        RARCH_LOG("[GLX]: Creating context for version %d.%d.\n", versions[i][0], versions[i][1]);
+                        RARCH_LOG("[GLX] Creating context for version %d.%d.\n", versions[i][0], versions[i][1]);
                      }
                      else
-                        RARCH_LOG("[GLX]: Creating context for version %u.%u.\n", g_major, g_minor);
+                        RARCH_LOG("[GLX] Creating context for version %u.%u.\n", g_major, g_minor);
 
                      x->ctx = glx_create_context_attribs(g_x11_dpy,
                            x->fbc, NULL, True, attribs);
@@ -804,12 +804,12 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                      {
                         if (x->use_hw_ctx)
                         {
-                           RARCH_LOG("[GLX]: Creating shared HW context.\n");
+                           RARCH_LOG("[GLX] Creating shared HW context.\n");
                            x->hw_ctx = glx_create_context_attribs(g_x11_dpy,
                                  x->fbc, x->ctx, True, attribs);
 
                            if (!x->hw_ctx)
-                              RARCH_ERR("[GLX]: Failed to create new shared context.\n");
+                              RARCH_ERR("[GLX] Failed to create new shared context.\n");
                         }
 
                         break;
@@ -831,25 +831,25 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
                if (x->use_hw_ctx)
                {
-                  RARCH_LOG("[GLX]: Creating shared HW context.\n");
+                  RARCH_LOG("[GLX] Creating shared HW context.\n");
                   x->hw_ctx = glXCreateNewContext(g_x11_dpy, x->fbc,
                         GLX_RGBA_TYPE, x->ctx, True);
 
                   if (!x->hw_ctx)
-                     RARCH_ERR("[GLX]: Failed to create new shared context.\n");
+                     RARCH_ERR("[GLX] Failed to create new shared context.\n");
                }
             }
 
             if (!x->ctx)
             {
-               RARCH_ERR("[GLX]: Failed to create new context.\n");
+               RARCH_ERR("[GLX] Failed to create new context.\n");
                goto error;
             }
          }
          else
          {
             video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
-            RARCH_LOG("[GLX]: Using cached GL context.\n");
+            RARCH_LOG("[GLX] Using cached GL context.\n");
          }
 
          glXMakeContextCurrent(g_x11_dpy,
@@ -892,12 +892,12 @@ static bool gfx_ctx_x_set_video_mode(void *data,
                swap_func = "glXSwapIntervalSGI";
 
             if (!g_pglSwapInterval && !g_pglSwapIntervalEXT && !g_pglSwapIntervalSGI)
-               RARCH_WARN("[GLX]: Cannot find swap interval call.\n");
+               RARCH_WARN("[GLX] Cannot find swap interval call.\n");
             else
-               RARCH_LOG("[GLX]: Found swap function: %s.\n", swap_func);
+               RARCH_LOG("[GLX] Found swap function: %s.\n", swap_func);
          }
          else
-            RARCH_WARN("[GLX]: Context is not double buffered!.\n");
+            RARCH_WARN("[GLX] Context is not double buffered.\n");
 #endif
          break;
 

@@ -205,7 +205,7 @@ static void gfx_ctx_go2_drm_swap_interval(void *data, int interval)
 {
 #ifndef NDEBUG
    if (interval > 1)
-      RARCH_WARN("[KMS]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
+      RARCH_WARN("[KMS] Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
 #endif
 }
 

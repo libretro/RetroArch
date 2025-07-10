@@ -242,7 +242,7 @@ static bool netplay_json_start_array(void* ctx)
 static void netplay_rooms_error(void *context,
       int line, int col, const char* error)
 {
-   RARCH_ERR("[netplay] Error: Invalid JSON at line %d, column %d - %s.\n",
+   RARCH_ERR("[Netplay] Error: Invalid JSON at line %d, column %d - %s.\n",
          line, col, error);
 }
 

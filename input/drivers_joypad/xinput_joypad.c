@@ -162,14 +162,14 @@ static void *xinput_joypad_init(void *data)
 
       if (!g_XInputGetStateEx)
       {
-         RARCH_ERR("[XInput]: Failed to init: DLL is invalid or corrupt.\n");
+         RARCH_ERR("[XInput] Failed to init: DLL is invalid or corrupt.\n");
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
          dylib_close(g_xinput_dll);
 #endif
          /* DLL was loaded but did not contain the correct function. */
          goto error;
       }
-      RARCH_WARN("[XInput]: No guide button support.\n");
+      RARCH_WARN("[XInput] No guide button support.\n");
    }
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
@@ -180,7 +180,7 @@ static void *xinput_joypad_init(void *data)
 #endif
    if (!g_XInputSetState)
    {
-      RARCH_ERR("[XInput]: Failed to init: DLL is invalid or corrupt.\n");
+      RARCH_ERR("[XInput] Failed to init: DLL is invalid or corrupt.\n");
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
       dylib_close(g_xinput_dll);
 #endif

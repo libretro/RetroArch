@@ -161,7 +161,7 @@ static void kpad_register(unsigned channel, uint8_t device_type)
 
       if (slot < 0)
       {
-         RARCH_ERR("Couldn't get a slot for this remote.\n");
+         RARCH_ERR("[kpad] Couldn't get a slot for this remote.\n");
          return;
       }
 
@@ -274,7 +274,7 @@ static const char *kpad_name(unsigned pad)
       case WIIMOTE_TYPE_NONE:
       default:
 #ifdef DEBUG
-         RARCH_LOG("[kpad]: Unknown pad type %d\n", joypad_state.kpad.wiimotes[pad].type);
+         RARCH_LOG("[kpad] Unknown pad type %d\n", joypad_state.kpad.wiimotes[pad].type);
 #endif
          break;
    }

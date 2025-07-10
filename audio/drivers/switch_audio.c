@@ -86,7 +86,7 @@ static ssize_t switch_audio_write(void *data, const void *s, size_t len)
       uint32_t num;
       if (switch_audio_ipc_output_get_released_buffer(swa, num) != 0)
       {
-         RARCH_ERR("[Audio]: Failed to get released buffer?\n");
+         RARCH_ERR("[Switch audio] Failed to get released buffer.\n");
          return -1;
       }
 
@@ -259,7 +259,7 @@ static void *switch_audio_init(const char *device,
 
    if (num_names != 1)
    {
-      RARCH_ERR("got back more than one AudioOut\n");
+      RARCH_ERR("[Switch audio] Got back more than one AudioOut.\n");
       goto fail_audio_ipc;
    }
 
@@ -268,21 +268,21 @@ static void *switch_audio_init(const char *device,
 
    if (swa->output.sample_rate != SAMPLE_RATE)
    {
-      RARCH_ERR("expected sample rate of %d, got sample rate of %d\n",
+      RARCH_ERR("[Switch audio] Expected sample rate of %d, got sample rate of %d.\n",
             SAMPLE_RATE, swa->output.sample_rate);
       goto fail_audio_output;
    }
 
    if (swa->output.num_channels != NUM_CHANNELS)
    {
-      RARCH_ERR("expected %d channels, got %d\n", NUM_CHANNELS,
+      RARCH_ERR("[Switch audio] Expected %d channels, got %d.\n", NUM_CHANNELS,
             swa->output.num_channels);
       goto fail_audio_output;
    }
 
    if (swa->output.sample_format != PCM_INT16)
    {
-      RARCH_ERR("expected PCM_INT16, got %d\n", swa->output.sample_format);
+      RARCH_ERR("[Switch audio] Expected PCM_INT16, got %d.\n", swa->output.sample_format);
       goto fail_audio_output;
    }
 
@@ -331,7 +331,7 @@ static void *switch_audio_init(const char *device,
    swa->blocking       = block_frames;
    swa->is_paused      = true;
 
-   RARCH_LOG("[Audio]: Audio initialized\n");
+   RARCH_LOG("[Switch audio] Audio initialized.\n");
 
    return swa;
 

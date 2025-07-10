@@ -90,7 +90,7 @@ void vulkan_log_textures(void)
    unsigned i;
    for (i = 0; i < vk_count; i++)
    {
-      RARCH_WARN("[Vulkan]: Found leaked texture %llu.\n",
+      RARCH_WARN("[Vulkan] Found leaked texture %llu.\n",
             (unsigned long long)vk_images[i]);
    }
    vk_count = 0;
@@ -100,7 +100,7 @@ void vulkan_log_textures(void)
 static void vulkan_track_alloc(VkImage image)
 {
    vk_images[vk_count++] = image;
-   RARCH_LOG("[Vulkan]: Alloc %llu (%u).\n",
+   RARCH_DBG("[Vulkan] Alloc %llu (%u).\n",
          (unsigned long long)image, track_seq);
    track_seq++;
 }
@@ -450,7 +450,7 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
       if ((format_properties.linearTilingFeatures & required) != required)
       {
 #ifdef VULKAN_DEBUG
-         RARCH_DBG("[Vulkan]: GPU does not support using linear images as textures. Falling back to copy path.\n");
+         RARCH_DBG("[Vulkan] GPU does not support using linear images as textures. Falling back to copy path.\n");
 #endif
          type = VULKAN_TEXTURE_STAGING;
       }
@@ -561,7 +561,7 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
          {
             /* Recreate texture but for STAGING this time ... */
 #ifdef VULKAN_DEBUG
-            RARCH_DBG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
+            RARCH_DBG("[Vulkan] GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
 #endif
             type                  = VULKAN_TEXTURE_STAGING;
             vkDestroyImage(device, tex.image, NULL);
@@ -2855,7 +2855,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 
    if (!vk->filter_chain_default)
    {
-      RARCH_ERR("[Vulkan]: Failed to create default filter chain.\n");
+      RARCH_ERR("[Vulkan] Failed to create default filter chain.\n");
       return false;
    }
 
@@ -2930,7 +2930,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 
    if (!vk->filter_chain)
    {
-      RARCH_ERR("[Vulkan]: Failed to create preset: \"%s\".\n", shader_path);
+      RARCH_ERR("[Vulkan] Failed to create preset: \"%s\".\n", shader_path);
       return false;
    }
 
@@ -2981,13 +2981,13 @@ static bool vulkan_init_filter_chain(vk_t *vk)
 
    if (string_is_empty(shader_path))
    {
-      RARCH_LOG("[Vulkan]: Loading stock shader.\n");
+      RARCH_LOG("[Vulkan] Loading stock shader.\n");
       return vulkan_init_default_filter_chain(vk);
    }
 
    if (type != RARCH_SHADER_SLANG)
    {
-      RARCH_LOG("[Vulkan]: Only Slang shaders are supported, falling back to stock.\n");
+      RARCH_WARN("[Vulkan] Only Slang shaders are supported, falling back to stock.\n");
       return vulkan_init_default_filter_chain(vk);
    }
 
@@ -3301,13 +3301,13 @@ static void vulkan_init_readback(vk_t *vk, bool video_gpu_record)
    if (!scaler_ctx_gen_filter(&vk->readback.scaler_bgr))
    {
       vk->flags &= ~VK_FLAG_READBACK_STREAMED;
-      RARCH_ERR("[Vulkan]: Failed to initialize scaler context.\n");
+      RARCH_ERR("[Vulkan] Failed to initialize scaler context.\n");
    }
 
    if (!scaler_ctx_gen_filter(&vk->readback.scaler_rgb))
    {
       vk->flags &= ~VK_FLAG_READBACK_STREAMED;
-      RARCH_ERR("[Vulkan]: Failed to initialize scaler context.\n");
+      RARCH_ERR("[Vulkan] Failed to initialize scaler context.\n");
    }
 }
 
@@ -3335,7 +3335,7 @@ static void *vulkan_init(const video_info_t *video,
    ctx_driver                         = vulkan_get_context(vk, settings);
    if (!ctx_driver)
    {
-      RARCH_ERR("[Vulkan]: Failed to get Vulkan context.\n");
+      RARCH_ERR("[Vulkan] Failed to get Vulkan context.\n");
       goto error;
    }
 
@@ -3351,7 +3351,7 @@ static void *vulkan_init(const video_info_t *video,
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
-   RARCH_LOG("[Vulkan]: Found vulkan context: \"%s\".\n", ctx_driver->ident);
+   RARCH_DBG("[Vulkan] Found vulkan context: \"%s\".\n", ctx_driver->ident);
 
    if (vk->ctx_driver->get_video_size)
       vk->ctx_driver->get_video_size(vk->ctx_data,
@@ -3359,7 +3359,7 @@ static void *vulkan_init(const video_info_t *video,
 
    if (!video->fullscreen && !vk->ctx_driver->has_windowed)
    {
-      RARCH_DBG("[Vulkan]: Config requires windowed mode, but context driver does not support it. "
+      RARCH_DBG("[Vulkan] Config requires windowed mode, but context driver does not support it. "
                 "Forcing fullscreen for this session.\n");
       force_fullscreen = true;
    }
@@ -3369,7 +3369,7 @@ static void *vulkan_init(const video_info_t *video,
    mode_width                         = 0;
    mode_height                        = 0;
 
-   RARCH_LOG("[Vulkan]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
+   RARCH_DBG("[Vulkan] Detecting screen resolution: %ux%u.\n", full_x, full_y);
    interval = video->vsync ? video->swap_interval : 0;
 
    if (ctx_driver->swap_interval)
@@ -3400,7 +3400,7 @@ static void *vulkan_init(const video_info_t *video,
          || !vk->ctx_driver->set_video_mode(vk->ctx_data,
             win_width, win_height, (video->fullscreen || force_fullscreen)))
    {
-      RARCH_ERR("[Vulkan]: Failed to set video mode.\n");
+      RARCH_ERR("[Vulkan] Failed to set video mode.\n");
       goto error;
    }
 
@@ -3419,11 +3419,11 @@ static void *vulkan_init(const video_info_t *video,
    vk->translate_x       = 0.0;
    vk->translate_y       = 0.0;
 
-   RARCH_LOG("[Vulkan]: Using resolution %ux%u.\n", temp_width, temp_height);
+   RARCH_LOG("[Vulkan] Using resolution %ux%u.\n", temp_width, temp_height);
 
    if (!vk->ctx_driver || !vk->ctx_driver->get_context_data)
    {
-      RARCH_ERR("[Vulkan]: Failed to get context data.\n");
+      RARCH_ERR("[Vulkan] Failed to get context data.\n");
       goto error;
    }
 
@@ -3444,7 +3444,7 @@ static void *vulkan_init(const video_info_t *video,
       vk->flags         |=  VK_FLAG_KEEP_ASPECT;
    else
       vk->flags         &= ~VK_FLAG_KEEP_ASPECT;
-   RARCH_LOG("[Vulkan]: Using %s format.\n", video->rgb32 ? "BGRA8888" : "RGB565");
+   RARCH_LOG("[Vulkan] Using %s format.\n", video->rgb32 ? "BGRA8888" : "RGB565");
 
    /* Set the viewport to fix recording, since it needs to know
     * the viewport sizes before we start running. */
@@ -3533,7 +3533,7 @@ static void *vulkan_init(const video_info_t *video,
 
    if (!vulkan_init_filter_chain(vk))
    {
-      RARCH_ERR("[Vulkan]: Failed to init filter chain.\n");
+      RARCH_ERR("[Vulkan] Failed to init filter chain.\n");
       goto error;
    }
 
@@ -3659,7 +3659,7 @@ static void vulkan_check_swapchain(vk_t *vk)
           (vk->filter_chain) ? vk->filter_chain : vk->filter_chain_default,
           &filter_info)
       )
-      RARCH_ERR("[Vulkan]: Failed to update filter chain info.\n");
+      RARCH_ERR("[Vulkan] Failed to update filter chain info.\n");
 }
 
 static void vulkan_set_nonblock_state(void *data, bool state,
@@ -3739,7 +3739,7 @@ static bool vulkan_set_shader(void *data,
 
    if (!string_is_empty(path) && type != RARCH_SHADER_SLANG)
    {
-      RARCH_WARN("[Vulkan]: Only Slang shaders are supported. Falling back to stock.\n");
+      RARCH_WARN("[Vulkan] Only Slang shaders are supported. Falling back to stock.\n");
       path = NULL;
    }
 
@@ -3751,7 +3751,7 @@ static bool vulkan_set_shader(void *data,
 
    if (!vulkan_init_filter_chain_preset(vk, path))
    {
-      RARCH_ERR("[Vulkan]: Failed to create filter chain: \"%s\". Falling back to stock.\n", path);
+      RARCH_ERR("[Vulkan] Failed to create filter chain: \"%s\". Falling back to stock.\n", path);
       vulkan_init_default_filter_chain(vk);
       return false;
    }
@@ -5618,7 +5618,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
             break;
 
          default:
-            RARCH_ERR("[Vulkan]: Unexpected swapchain format. Cannot readback.\n");
+            RARCH_ERR("[Vulkan] Unexpected swapchain format. Cannot readback.\n");
             break;
       }
 
@@ -5663,7 +5663,9 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
       if (!staging->memory)
       {
-         RARCH_ERR("[Vulkan]: Attempted to readback synchronously, but no image is present.\nThis can happen if vsync is disabled on Windows systems due to mailbox emulation.\n");
+         RARCH_ERR(
+               "[Vulkan] Attempted to readback synchronously, but no image is present.\n"
+               "[Vulkan] This can happen if vsync is disabled on Windows systems due to mailbox emulation.\n");
          return false;
       }
 
@@ -5716,7 +5718,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
                break;
 
             default:
-               RARCH_ERR("[Vulkan]: Unexpected swapchain format.\n");
+               RARCH_ERR("[Vulkan] Unexpected swapchain format.\n");
                break;
          }
       }

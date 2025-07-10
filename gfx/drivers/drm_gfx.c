@@ -263,7 +263,7 @@ static void drm_surface_setup(void *data,  int src_width, int src_height,
 
       if (ret)
       {
-         RARCH_ERR ("DRM: can't create fb\n");
+         RARCH_ERR("[DRM] Can't create fb.\n");
       }
    }
 
@@ -287,7 +287,7 @@ static void drm_page_flip(struct drm_surface *surface)
          drm.plane_fb_prop_id,
          surface->pages[surface->flip_page].buf.fb_id) < 0)
    {
-      RARCH_ERR ("DRM: failed to add atomic property for pageflip\n");
+      RARCH_ERR("[DRM] Failed to add atomic property for pageflip.\n");
    }
    /*... now we just need to do the commit */
 
@@ -298,7 +298,7 @@ static void drm_page_flip(struct drm_surface *surface)
     * you must drain the event queue of that fd. */
    if (drmModeAtomicCommit(drm.fd, req, 0, NULL) < 0)
    {
-      RARCH_ERR ("DRM: failed to commit for pageflip\n");
+      RARCH_ERR("[DRM] Failed to commit for pageflip.\n");
    }
 
    surface->flip_page = !(surface->flip_page);
@@ -364,7 +364,7 @@ static uint32_t get_plane_prop_id(uint32_t obj_id, const char *name)
          if (string_is_equal(props_info[j]->name, name))
             return props_info[j]->prop_id;
       }
-      RARCH_ERR ("DRM: plane %d fb property ID with name %s not found\n",
+      RARCH_ERR("[DRM] Plane %d fb property ID with name %s not found.\n",
             plane->plane_id, name);
    }
    return (0);
@@ -431,10 +431,10 @@ static void drm_plane_setup(struct drm_surface *surface)
    plane_resources = drmModeGetPlaneResources(drm.fd);
    if (!plane_resources)
    {
-      RARCH_ERR ("DRM: No scaling planes available!\n");
+      RARCH_ERR("[DRM] No scaling planes available.\n");
    }
 
-   RARCH_LOG ("DRM: Number of planes on FD %d is %d\n",
+   RARCH_LOG("[DRM] Number of planes on FD %d is %d.\n",
          drm.fd, plane_resources->count_planes);
 
    /* dump_planes(drm.fd); */
@@ -450,7 +450,7 @@ static void drm_plane_setup(struct drm_surface *surface)
       if (drm.crtc_id == drm.resources->crtcs[i])
       {
          crtc_index = i;
-         RARCH_LOG ("DRM: CRTC index found %d with ID %d\n", crtc_index, drm.crtc_id);
+         RARCH_LOG("[DRM] CRTC index found %d with ID %d.\n", crtc_index, drm.crtc_id);
          break;
       }
    }
@@ -466,7 +466,7 @@ static void drm_plane_setup(struct drm_surface *surface)
       plane = drmModeGetPlane(drm.fd, plane_resources->planes[i]);
 
       if (!(plane->possible_crtcs & (1 << crtc_index))){
-         RARCH_LOG ("DRM: plane with ID %d can't be used with current CRTC\n",
+         RARCH_LOG("[DRM] Plane with ID %d can't be used with current CRTC.\n",
                plane->plane_id);
          continue;
       }
@@ -475,14 +475,14 @@ static void drm_plane_setup(struct drm_surface *surface)
        * (no scaling, must cover crtc..etc) so we skip primary planes */
       if (drm_plane_type(plane) != DRM_PLANE_TYPE_OVERLAY)
       {
-         RARCH_LOG ("DRM: plane with ID %d is not an overlay. May be primary or cursor. Not usable.\n",
+         RARCH_LOG("[DRM] Plane with ID %d is not an overlay. May be primary or cursor. Not usable.\n",
                plane->plane_id);
          continue;
       }
 
       if (!format_support(plane, surface->pixformat))
       {
-         RARCH_LOG ("DRM: plane with ID %d does not support framebuffer format\n", plane->plane_id);
+         RARCH_LOG("[DRM] Plane with ID %d does not support framebuffer format.\n", plane->plane_id);
          continue;
       }
 
@@ -492,13 +492,13 @@ static void drm_plane_setup(struct drm_surface *surface)
 
    if (!drm.plane_id)
    {
-      RARCH_LOG ("DRM: couldn't find an usable overlay plane for current CRTC and framebuffer pixel formal.\n");
+      RARCH_LOG("[DRM] Couldn't find an usable overlay plane for current CRTC and framebuffer pixel format.\n");
       deinit_drm();
       exit (0);
    }
    else
    {
-      RARCH_LOG ("DRM: using plane/overlay ID %d\n", drm.plane_id);
+      RARCH_LOG("[DRM] Using plane/overlay ID %d.\n", drm.plane_id);
    }
 
    /* We are going to be changing the framebuffer ID property of the chosen overlay every time
@@ -506,7 +506,7 @@ static void drm_plane_setup(struct drm_surface *surface)
    drm.plane_fb_prop_id = get_plane_prop_id(drm.plane_id, "FB_ID");
    if (!drm.plane_fb_prop_id)
    {
-      RARCH_LOG("[DRM]: Can't get the FB property ID for plane(%u)\n", drm.plane_id);
+      RARCH_LOG("[DRM] Can't get the FB property ID for plane(%u).\n", drm.plane_id);
    }
 
    /* Note src coords (last 4 args) are in Q16 format
@@ -536,15 +536,15 @@ static void drm_plane_setup(struct drm_surface *surface)
             plane_flags, plane_x, plane_y, plane_w, plane_h,
             src_x<<16, src_y<<16, src_w<<16, src_h<<16))
    {
-      RARCH_ERR("[DRM]: failed to enable plane\n");
+      RARCH_ERR("[DRM] Failed to enable plane.\n");
    }
 
-   RARCH_LOG("[DRM]: src_w %d, src_h %d, plane_w %d, plane_h %d\n",
+   RARCH_DBG("[DRM] src_w %d, src_h %d, plane_w %d, plane_h %d\n",
          src_w, src_h, plane_w, plane_h);
 
    /* Report what plane (of overlay type) we're using. */
    drm_format_name(surface->pixformat, fmt_name);
-   RARCH_LOG("[DRM]: Using plane with ID %d on CRTC ID %d format %s\n",
+   RARCH_LOG("[DRM] Using plane with ID %d on CRTC ID %d format %s.\n",
          drm.plane_id, drm.crtc_id, fmt_name);
 }
 
@@ -588,7 +588,7 @@ static int modeset_create_dumbfb(int fd, struct modeset_buf *buf,
          fd, map_dumb.offset);
    if (buf->map == MAP_FAILED)
    {
-      RARCH_ERR ("DRM: cannot mmap dumb buffer\n");
+      RARCH_ERR("[DRM] Cannot mmap dumb buffer.\n");
       return 0;
    }
 
@@ -604,7 +604,7 @@ static bool init_drm(void)
 
    if (drm.fd < 0)
    {
-      RARCH_LOG ("DRM: could not open drm device\n");
+      RARCH_ERR("[DRM] Could not open DRM device.\n");
       return false;
    }
 
@@ -612,23 +612,23 @@ static bool init_drm(void)
     * VERY important or we won't get all the available planes on drmGetPlaneResources()!
     * We also need to enable the ATOMIC cap to see the atomic properties in objects!! */
    if (drmSetClientCap(drm.fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1))
-      RARCH_ERR ("DRM: can't set UNIVERSAL PLANES cap.\n");
+      RARCH_ERR("[DRM] Can't set UNIVERSAL PLANES cap.\n");
    else
-      RARCH_LOG ("DRM: UNIVERSAL PLANES cap set\n");
+      RARCH_LOG("[DRM] UNIVERSAL PLANES cap set.\n");
 
    if (drmSetClientCap(drm.fd, DRM_CLIENT_CAP_ATOMIC, 1))
    {
       /*If this happens, check kernel support and kernel parameters
        * (add i915.nuclear_pageflip=y to the kernel boot line for example) */
-      RARCH_ERR ("DRM: can't set ATOMIC caps\n");
+      RARCH_ERR("[DRM] Can't set ATOMIC caps.\n");
    }
    else
-      RARCH_LOG ("DRM: ATOMIC caps set\n");
+      RARCH_LOG("[DRM] ATOMIC caps set.\n");
 
    drm.resources = drmModeGetResources(drm.fd);
    if (!drm.resources)
    {
-      RARCH_ERR ("DRM: drmModeGetResources failed\n");
+      RARCH_ERR("[DRM] drmModeGetResources failed.\n");
       return false;
    }
 
@@ -645,7 +645,7 @@ static bool init_drm(void)
 
    if (!connector)
    {
-      RARCH_ERR ("DRM: no connected connector found\n");
+      RARCH_ERR("[DRM] No connected connector found.\n");
       return false;
    }
 
@@ -661,7 +661,7 @@ static bool init_drm(void)
 
    if (!drm.encoder)
    {
-      RARCH_ERR ("DRM: no encoder found.\n");
+      RARCH_ERR("[DRM] No encoder found.\n");
       return false;
    }
 
@@ -680,13 +680,13 @@ static bool init_drm(void)
    buf.height = drm.current_mode->vdisplay;
    if (modeset_create_dumbfb(drm.fd, &buf, 4, DRM_FORMAT_XRGB8888))
    {
-      RARCH_ERR ("DRM: can't create dumb fb\n");
+      RARCH_ERR("[DRM] Can't create dumb fb.\n");
    }
 
    if (drmModeSetCrtc(drm.fd, drm.crtc_id, buf.fb_id, 0, 0,
             &drm.connector_id, 1, drm.current_mode))
    {
-      RARCH_ERR ("DRM: failed to set mode\n");
+      RARCH_ERR("[DRM] Failed to set mode.\n");
       return false;
    }
 
@@ -727,12 +727,12 @@ static void *drm_init(const video_info_t *video,
    /* DRM Init */
    if (!init_drm())
    {
-      RARCH_ERR ("DRM: Failed to initialize DRM\n");
+      RARCH_ERR("[DRM] Failed to initialize DRM.\n");
       free(_drmvars);
       return NULL;
    }
 
-   RARCH_LOG ("DRM: Init successful.\n");
+   RARCH_LOG ("[DRM] Init successful.\n");
 
    _drmvars->kms_width  = drm.current_mode->hdisplay;
    _drmvars->kms_height = drm.current_mode->vdisplay;

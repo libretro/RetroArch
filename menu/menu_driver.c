@@ -2507,8 +2507,6 @@ static void menu_cbs_init(
    menu_lbl_len = strlen(menu_lbl);
 
 #ifdef DEBUG_LOG
-   RARCH_LOG("\n");
-
    if (cbs && cbs->enum_idx != MSG_UNKNOWN)
       RARCH_LOG("\t\t\tenum_idx %d [%s]\n", cbs->enum_idx, msg_hash_to_str(cbs->enum_idx));
 #endif
@@ -2950,9 +2948,9 @@ static bool menu_shader_manager_save_preset_internal(
    {
       preset_path = fullname;
       if ((ret    = video_shader_write_preset(preset_path, shader, save_reference)))
-         RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
+         RARCH_LOG("[Shaders] Saved shader preset to \"%s\".\n", preset_path);
       else
-         RARCH_ERR("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
+         RARCH_ERR("[Shaders] Failed writing shader preset to \"%s\".\n", preset_path);
    }
    else
    {
@@ -2971,7 +2969,7 @@ static bool menu_shader_manager_save_preset_internal(
 
          if (!path_is_directory(basedir) && !(ret = path_mkdir(basedir)))
          {
-            RARCH_WARN("[Shaders]: Failed to create preset directory \"%s\".\n", basedir);
+            RARCH_WARN("[Shaders] Failed to create preset directory \"%s\".\n", basedir);
             continue;
          }
 
@@ -2980,15 +2978,15 @@ static bool menu_shader_manager_save_preset_internal(
          if ((ret = video_shader_write_preset(preset_path,
                shader, save_reference)))
          {
-            RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
+            RARCH_LOG("[Shaders] Saved shader preset to \"%s\".\n", preset_path);
             break;
          }
          else
-            RARCH_WARN("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
+            RARCH_WARN("[Shaders] Failed writing shader preset to \"%s\".\n", preset_path);
       }
 
       if (!ret)
-         RARCH_ERR("[Shaders]: Failed to write shader preset. Make sure shader directory "
+         RARCH_ERR("[Shaders] Failed to write shader preset. Make sure shader directory "
                "and/or config directory are writable.\n");
    }
 
@@ -3173,10 +3171,10 @@ static bool menu_shader_manager_operate_auto_preset(
                      if (!filestream_delete(preset_path))
                      {
                         m++;
-                        RARCH_LOG("[Shaders]: Deleted shader preset from \"%s\".\n", preset_path);
+                        RARCH_LOG("[Shaders] Deleted shader preset from \"%s\".\n", preset_path);
                      }
                      else
-                        RARCH_WARN("[Shaders]: Failed to remove shader preset at \"%s\".\n", preset_path);
+                        RARCH_WARN("[Shaders] Failed to remove shader preset at \"%s\".\n", preset_path);
                   }
                }
             }
@@ -3707,7 +3705,7 @@ static void bundle_decompressed(retro_task_t *task,
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
 
    if (err)
-      RARCH_ERR("%s", err);
+      RARCH_ERR("[Bundle] %s", err);
 
    if (dec)
    {
@@ -4726,7 +4724,7 @@ const menu_ctx_driver_t *menu_driver_find_driver(
             RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
          }
       }
-      RARCH_WARN("Going to default to first %s..\n", prefix);
+      RARCH_WARN("Going to default to first %s...\n", prefix);
    }
 
    return (const menu_ctx_driver_t*)menu_ctx_drivers[0];

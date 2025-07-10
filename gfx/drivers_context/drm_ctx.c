@@ -122,7 +122,7 @@ static float mode_vrefresh(drmModeModeInfo *mode)
 
 static void dump_mode(drmModeModeInfo *mode, int index)
 {
-   RARCH_DBG("Mode details:  #%i %s %.2f %d %d %d %d %d %d %d %d %d\n",
+   RARCH_DBG("[KMS] Mode details:  #%i %s %.2f %d %d %d %d %d %d %d %d %d\n",
       index,
       mode->name,
       mode_vrefresh(mode),
@@ -397,7 +397,7 @@ static bool gfx_ctx_drm_load_mode(drmModeModeInfoPtr modeInfo)
                    &timings.interlaced, &timings.pixel_freq, &timings.aspect_ratio);
       if (ret != 17)
       {
-         RARCH_ERR("[DRM]: malformed mode requested: %s\n", crt_switch_timings);
+         RARCH_ERR("[KMS] Malformed mode requested: %s.\n", crt_switch_timings);
          return false;
       }
 
@@ -450,7 +450,7 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
    stride = gbm_bo_get_stride(bo);
    handle = gbm_bo_get_handle(bo).u32;
 
-   RARCH_LOG("[KMS]: New FB: %ux%u (stride: %u).\n",
+   RARCH_LOG("[KMS] New FB: %ux%u (stride: %u).\n",
          width, height, stride);
 
    ret = drmModeAddFB(g_drm_fd, width, height, 24, 32,
@@ -462,7 +462,7 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
    return fb;
 
 error:
-   RARCH_ERR("[KMS]: Failed to create FB.\n");
+   RARCH_ERR("[KMS] Failed to create FB.\n");
    free(fb);
    return NULL;
 }
@@ -473,7 +473,7 @@ static void gfx_ctx_drm_swap_interval(void *data, int interval)
    drm->interval           = interval;
 
    if (interval > 1)
-      RARCH_WARN("[KMS]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
+      RARCH_WARN("[KMS] Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
 }
 
 static void gfx_ctx_drm_check_window(void *data, bool *quit,
@@ -499,7 +499,7 @@ static void drm_flip_handler(int fd, unsigned frame,
    {
       unsigned missed = frame - last_page_flip - 1;
       if (missed)
-         RARCH_LOG("[KMS]: Missed %u VBlank(s) (Frame: %u, DRM frame: %u).\n",
+         RARCH_LOG("[KMS] Missed %u VBlank(s) (Frame: %u, DRM frame: %u).\n",
                missed, frame - first_page_flip, frame);
    }
 
@@ -550,7 +550,7 @@ static bool gfx_ctx_drm_queue_flip(gfx_ctx_drm_data_t *drm)
 
    if (switch_mode)
    {
-      RARCH_DBG("[KMS]: modeswitch detected, creating the new CRTC\n");
+      RARCH_DBG("[KMS] modeswitch detected, creating the new CRTC.\n");
       drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
       switch_mode = false;
    }
@@ -572,7 +572,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
    /* Recreate the surface */
    if (switch_mode)
    {
-      RARCH_DBG("[KMS]: modeswitch detected, doing GBM and EGL stuff\n");
+      RARCH_DBG("[KMS] modeswitch detected, doing GBM and EGL stuff.\n");
       if (drm->gbm_surface)
       {
          if (drm->bo)
@@ -592,7 +592,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
             GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
 
       if (!drm->gbm_surface)
-         RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
+         RARCH_ERR("[KMS] Couldn't create GBM surface.\n");
 
       /* Creates an EGL surface and make it current */
       egl_create_surface(&drm->egl, (EGLNativeWindowType)drm->gbm_surface);
@@ -724,7 +724,7 @@ nextgpu:
 
    if (!gpu_descriptors || gpu_index == gpu_descriptors->size)
    {
-      RARCH_ERR("[KMS]: Couldn't find a suitable DRM device.\n");
+      RARCH_ERR("[KMS] Couldn't find a suitable DRM device.\n");
       goto error;
    }
    gpu = gpu_descriptors->elems[gpu_index++].data;
@@ -732,7 +732,7 @@ nextgpu:
    drm->fd    = open(gpu, O_RDWR);
    if (drm->fd < 0)
    {
-      RARCH_WARN("[KMS]: Couldn't open DRM device.\n");
+      RARCH_WARN("[KMS] Couldn't open DRM device.\n");
       goto nextgpu;
    }
 
@@ -781,7 +781,7 @@ nextgpu:
 
    if (!drm->gbm_dev)
    {
-      RARCH_WARN("[KMS]: Couldn't create GBM device.\n");
+      RARCH_WARN("[KMS] Couldn't create GBM device.\n");
       goto nextgpu;
    }
 
@@ -836,7 +836,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
     * which is not appropriate. */
    if (gfx_ctx_drm_get_mode_from_video_state(&gfx_ctx_crt_switch_mode))
    {
-      RARCH_DBG("[KMS]: New mode detected: %dx%d\n", gfx_ctx_crt_switch_mode.hdisplay, gfx_ctx_crt_switch_mode.vdisplay);
+      RARCH_DBG("[KMS] New mode detected: %dx%d.\n", gfx_ctx_crt_switch_mode.hdisplay, gfx_ctx_crt_switch_mode.vdisplay);
       g_drm_mode     = &gfx_ctx_crt_switch_mode;
       drm->fb_width  = gfx_ctx_crt_switch_mode.hdisplay;
       drm->fb_height = gfx_ctx_crt_switch_mode.vdisplay;
@@ -846,7 +846,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    }
    if ((width == 0 && height == 0) || !fullscreen)
    {
-      RARCH_WARN("[KMS]: Falling back to mode 0 (default)\n");
+      RARCH_WARN("[KMS] Falling back to mode 0 (default).\n");
       g_drm_mode     = &g_drm_connector->modes[0];
    }
    else
@@ -854,7 +854,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       /* check if custom HDMI timings were asked */
       if (gfx_ctx_crt_switch_mode.vdisplay > 0)
       {
-         RARCH_LOG("[DRM]: custom mode requested: %s\n", gfx_ctx_crt_switch_mode.name);
+         RARCH_LOG("[KMS] Custom mode requested: %s.\n", gfx_ctx_crt_switch_mode.name);
          g_drm_mode  = &gfx_ctx_crt_switch_mode;
       }
       else
@@ -893,7 +893,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
    if (!g_drm_mode)
    {
-      RARCH_ERR("[KMS/EGL]: Did not find suitable video mode for %u x %u.\n",
+      RARCH_ERR("[KMS] Did not find suitable video mode for %ux%u.\n",
             width, height);
       goto error;
    }
@@ -911,7 +911,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
    if (!drm->gbm_surface)
    {
-      RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
+      RARCH_ERR("[KMS] Couldn't create GBM surface.\n");
       goto error;
    }
 
@@ -933,7 +933,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
 error:
    gfx_ctx_drm_destroy_resources(drm);
-   RARCH_ERR("[KMS]: Error when switching mode.\n");
+   RARCH_ERR("[KMS] Error when switching mode.\n");
 
    if (drm)
       free(drm);

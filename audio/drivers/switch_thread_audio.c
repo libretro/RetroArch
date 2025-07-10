@@ -77,7 +77,7 @@ static void mainLoop(void* data)
    if (!swa)
       return;
 
-   RARCH_LOG("[Audio]: start mainLoop cpu %u tid %u\n", svcGetCurrentProcessorNumber(), swa->thread.handle);
+   RARCH_LOG("[Switch audio] Start mainLoop cpu %u tid %u.\n", svcGetCurrentProcessorNumber(), swa->thread.handle);
 
    while (swa->running)
    {
@@ -97,7 +97,7 @@ static void mainLoop(void* data)
          if (R_FAILED(rc))
          {
             swa->running = false;
-            RARCH_LOG("[Audio]: audoutGetReleasedAudioOutBuffer failed: %d\n", (int)rc);
+            RARCH_LOG("[Switch audio] audoutGetReleasedAudioOutBuffer failed: %d.\n", (int)rc);
             break;
          }
          released_out_buffer->data_size = 0;
@@ -129,7 +129,7 @@ static void mainLoop(void* data)
          rc = switch_audio_ipc_output_append_buffer(swa, released_out_buffer);
          if (R_FAILED(rc))
          {
-            RARCH_LOG("[Audio]: audoutAppendAudioOutBuffer failed: %d\n", (int)rc);
+            RARCH_LOG("[Switch audio] audoutAppendAudioOutBuffer failed: %d.\n", (int)rc);
          }
          released_out_buffer = NULL;
       }
@@ -160,7 +160,7 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
    rc               = switch_audio_ipc_init();
    if (R_FAILED(rc))
    {
-      RARCH_LOG("[Audio]: audio init failed %d\n", (int)rc);
+      RARCH_LOG("[Switch audio] Audio init failed: %d.\n", (int)rc);
       free(swa);
       return NULL;
    }
@@ -169,7 +169,7 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
    rc = audoutStartAudioOut();
    if (R_FAILED(rc))
    {
-      RARCH_LOG("[Audio]: audio start init failed: %d\n", (int)rc);
+      RARCH_LOG("[Switch audio] Audio start init failed: %d.\n", (int)rc);
       goto fail_audio_ipc;
    }
 
@@ -180,7 +180,7 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
 
    if (num_names != 1)
    {
-	   RARCH_ERR("[Audio]: got back more than one AudioOut\n");
+	   RARCH_ERR("[Switch audio] Got back more than one AudioOut.\n");
 	   goto fail_audio_ipc;
    }
 
@@ -191,14 +191,14 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
 
    if (swa->output.num_channels != 2)
    {
-      RARCH_ERR("expected %d channels, got %d\n", 2,
+      RARCH_ERR("[Switch audio] Expected %d channels, got %d.\n", 2,
             swa->output.num_channels);
       goto fail_audio_output;
    }
 
    if (swa->output.sample_format != PCM_INT16)
    {
-      RARCH_ERR("expected PCM_INT16, got %d\n", swa->output.sample_format);
+      RARCH_ERR("[Switch audio] Expected PCM_INT16, got %d.\n", swa->output.sample_format);
       goto fail_audio_output;
    }
 
@@ -244,7 +244,7 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
 
    compat_condvar_create(&swa->cond);
 
-   RARCH_LOG("[Audio]: switch_thread_audio_init device %s requested rate %hu rate %hu latency %hu block_frames %hu fifoSize %lu\n",
+   RARCH_LOG("[Switch audio] switch_thread_audio_init device %s requested rate %hu rate %hu latency %hu block_frames %hu fifoSize %lu.\n",
          device, rate, swa->sampleRate, swa->latency, block_frames, swa->fifoSize);
 
    svcGetThreadPriority(&prio, 0xffff8000);
@@ -252,14 +252,14 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
 
    if (R_FAILED(rc))
    {
-      RARCH_LOG("[Audio]: thread creation failed create %u\n", swa->thread.handle);
+      RARCH_LOG("[Switch audio] Thread creation failed create %u.\n", swa->thread.handle);
       swa->running = false;
       return NULL;
    }
 
    if (R_FAILED(compat_thread_start(&swa->thread)))
    {
-      RARCH_LOG("[Audio]: thread creation failed start %u\n", swa->thread.handle);
+      RARCH_LOG("[Switch audio] Thread creation failed start %u.\n", swa->thread.handle);
       compat_thread_close(&swa->thread);
       swa->running = false;
       return NULL;
@@ -280,7 +280,6 @@ fail:
 
 static bool switch_thread_audio_start(void *data, bool is_shutdown)
 {
-   /* RARCH_LOG("[Audio]: switch_thread_audio_start\n"); */
    switch_thread_audio_t *swa = (switch_thread_audio_t *)data;
 
    if (!swa)

@@ -66,7 +66,7 @@
 }
 
 - (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error {
-    RARCH_WARN("[LOCATION]: Location manager failed with error: %s\n", error.description.UTF8String);
+    RARCH_WARN("[Location] Location manager failed with error: %s.\n", error.description.UTF8String);
     NSLog(@"Location manager failed with error: %@", error);
 }
 

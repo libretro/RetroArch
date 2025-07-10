@@ -515,7 +515,7 @@ static void state_manager_push_do(state_manager_t *state)
       size_t headpos, tailpos, remaining;
       if (state->capacity < sizeof(size_t) + state->maxcompsize)
       {
-         RARCH_ERR("[Rewind]: %s.\n",
+         RARCH_ERR("[Rewind] %s.\n",
                msg_hash_to_str(MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT));
          return;
       }
@@ -610,14 +610,14 @@ void state_manager_event_init(
 
    if (!core_info_current_supports_rewind())
    {
-      RARCH_ERR("[Rewind]: %s.\n",
+      RARCH_ERR("[Rewind] %s.\n",
             msg_hash_to_str(MSG_REWIND_UNSUPPORTED));
       return;
    }
 
    if (audio_driver_has_callback())
    {
-      RARCH_ERR("[Rewind]: %s.\n",
+      RARCH_ERR("[Rewind] %s.\n",
             msg_hash_to_str(MSG_REWIND_INIT_FAILED_THREADED_AUDIO));
       return;
    }
@@ -626,12 +626,12 @@ void state_manager_event_init(
 
    if (!rewind_st->size)
    {
-      RARCH_ERR("[Rewind]: %s.\n",
+      RARCH_ERR("[Rewind] %s.\n",
             msg_hash_to_str(MSG_REWIND_INIT_FAILED));
       return;
    }
 
-   RARCH_LOG("[Rewind]: %s: %u MB\n",
+   RARCH_LOG("[Rewind] %s: %u MB\n",
          msg_hash_to_str(MSG_REWIND_INIT),
          (unsigned)(rewind_buffer_size / 1000000));
 
@@ -639,7 +639,7 @@ void state_manager_event_init(
          rewind_buffer_size);
 
    if (!rewind_st->state)
-      RARCH_WARN("[Rewind]: %s.\n",
+      RARCH_WARN("[Rewind] %s.\n",
             msg_hash_to_str(MSG_REWIND_INIT_FAILED));
 
    state_manager_push_where(rewind_st->state, &state);

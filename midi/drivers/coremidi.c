@@ -85,37 +85,37 @@ static void midi_read_callback(const MIDIPacketList *pktlist, void *readProcRefC
 static void *coremidi_init(const char *input, const char *output) {
     coremidi_t *d = (coremidi_t *)calloc(1, sizeof(coremidi_t));
     if (!d) {
-        RARCH_ERR("[MIDI]: Out of memory.\n");
+        RARCH_ERR("[MIDI] Out of memory.\n");
         return NULL;
     }
 
     OSStatus err = MIDIClientCreate(CFSTR("RetroArch MIDI Client"), NULL, NULL, &d->client);
     if (err != noErr) {
-        RARCH_ERR("[MIDI]: MIDIClientCreate failed: %d\n", err);
+        RARCH_ERR("[MIDI] MIDIClientCreate failed: %d.\n", err);
         free(d);
         return NULL;
     } else {
-        RARCH_LOG("[MIDI]: CoreMIDI client created successfully\n");
+        RARCH_LOG("[MIDI] CoreMIDI client created successfully.\n");
     }
 
     // Create input port if specified
     if (input) {
         err = MIDIInputPortCreate(d->client, CFSTR("Input Port"), midi_read_callback, d, &d->input_port);
         if (err != noErr) {
-            RARCH_ERR("[MIDI]: MIDIInputPortCreate failed: %d\n", err);
+            RARCH_ERR("[MIDI] MIDIInputPortCreate failed: %d.\n", err);
             MIDIClientDispose(d->client);
             free(d);
             return NULL;
         }
     } else {
-        RARCH_LOG("[MIDI]: CoreMIDI input port created successfully\n");
+        RARCH_LOG("[MIDI] CoreMIDI input port created successfully.\n");
     }
 
     // Create output port if specified
     if (output) {
         err = MIDIOutputPortCreate(d->client, CFSTR("Output Port"), &d->output_port);
         if (err != noErr) {
-            RARCH_ERR("[MIDI]: MIDIOutputPortCreate failed: %d\n", err);
+            RARCH_ERR("[MIDI] MIDIOutputPortCreate failed: %d.\n", err);
             if (d->input_port)
                 MIDIPortDispose(d->input_port);
             MIDIClientDispose(d->client);
@@ -123,7 +123,7 @@ static void *coremidi_init(const char *input, const char *output) {
             return NULL;
         }
     } else {
-        RARCH_LOG("[MIDI]: CoreMIDI output port created successfully\n");
+        RARCH_LOG("[MIDI] CoreMIDI output port created successfully.\n");
     }
 
     return d;
@@ -143,16 +143,16 @@ static bool coremidi_get_avail_inputs(struct string_list *inputs) {
         if (err == noErr) {
             if (CFStringGetCString(name, buf, sizeof(buf), kCFStringEncodingUTF8)) {
                 if (!string_list_append(inputs, buf, attr)) {
-                    RARCH_ERR("[MIDI]: Failed to append input device to list: %s\n", buf);
+                    RARCH_ERR("[MIDI] Failed to append input device to list: %s.\n", buf);
                     CFRelease(name);
                     return false;
                 } else {
-                    RARCH_LOG("[MIDI]: Input device added to list: %s\n", buf);
+                    RARCH_LOG("[MIDI] Input device added to list: %s.\n", buf);
                 }
             }
             CFRelease(name);
         } else {
-            RARCH_WARN("[MIDI]: Failed to get display name for input device %d: %d\n", i, err);
+            RARCH_WARN("[MIDI] Failed to get display name for input device %d: %d.\n", i, err);
         }
     }
 
@@ -173,16 +173,16 @@ static bool coremidi_get_avail_outputs(struct string_list *outputs) {
         if (err == noErr) {
             if (CFStringGetCString(name, buf, sizeof(buf), kCFStringEncodingUTF8)) {
                 if (!string_list_append(outputs, buf, attr)) {
-                    RARCH_ERR("[MIDI]: Failed to append output device to list: %s\n", buf);
+                    RARCH_ERR("[MIDI] Failed to append output device to list: %s.\n", buf);
                     CFRelease(name);
                     return false;
                 } else {
-                    RARCH_LOG("[MIDI]: Output device added to list: %s\n", buf);
+                    RARCH_LOG("[MIDI] Output device added to list: %s.\n", buf);
                 }
             }
             CFRelease(name);
         } else {
-            RARCH_WARN("[MIDI]: Failed to get display name for output device %d: %d\n", i, err);
+            RARCH_WARN("[MIDI] Failed to get display name for output device %d: %d.\n", i, err);
         }
     }
 
@@ -193,20 +193,20 @@ static bool coremidi_get_avail_outputs(struct string_list *outputs) {
 static bool coremidi_set_input(void *p, const char *input) {
     coremidi_t *d = (coremidi_t *)p;
     if (!d || !d->input_port) {
-        RARCH_WARN("[MIDI]: Input port not initialized\n");
+        RARCH_WARN("[MIDI] Input port not initialized.\n");
         return false;
     }
 
     // Disconnect current input endpoint
     if (d->input_endpoint) {
-        RARCH_LOG("[MIDI]: Disconnecting current input endpoint\n");
+        RARCH_LOG("[MIDI] Disconnecting current input endpoint.\n");
         MIDIPortDisconnectSource(d->input_port, d->input_endpoint);
         d->input_endpoint = 0;
     }
 
     // If input is NULL or "Off", just return success
     if (!input || string_is_equal(input, "Off")) {
-        RARCH_LOG("[MIDI]: Input set to Off\n");
+        RARCH_LOG("[MIDI] Input set to Off.\n");
         return true;
     }
 
@@ -224,10 +224,10 @@ static bool coremidi_set_input(void *p, const char *input) {
                 CFRelease(name);
                 if (err == noErr) {
                     d->input_endpoint = endpoint;
-                    RARCH_LOG("[MIDI]: Input endpoint set to %s\n", buf);
+                    RARCH_LOG("[MIDI] Input endpoint set to %s.\n", buf);
                     return true;
                 } else {
-                    RARCH_WARN("[MIDI]: Failed to connect input endpoint: %d\n", err);
+                    RARCH_WARN("[MIDI] Failed to connect input endpoint: %d.\n", err);
                     return false;
                 }
             }
@@ -235,7 +235,7 @@ static bool coremidi_set_input(void *p, const char *input) {
         }
     }
 
-    RARCH_WARN("[MIDI]: Input device not found: %s\n", input);
+    RARCH_WARN("[MIDI] Input device not found: %s.\n", input);
     return false;
 }
 
@@ -243,13 +243,13 @@ static bool coremidi_set_input(void *p, const char *input) {
 static bool coremidi_set_output(void *p, const char *output) {
     coremidi_t *d = (coremidi_t *)p;
     if (!d || !d->output_port) {
-        RARCH_WARN("[MIDI]: Output port not initialized\n");
+        RARCH_WARN("[MIDI] Output port not initialized.\n");
         return false;
     }
 
     // If output is NULL or "Off", just return success
     if (!output || string_is_equal(output, "Off")) {
-        RARCH_LOG("[MIDI]: Output set to Off\n");
+        RARCH_LOG("[MIDI] Output set to Off.\n");
         d->output_endpoint = 0;
         return true;
     }
@@ -265,7 +265,7 @@ static bool coremidi_set_output(void *p, const char *output) {
         if (err == noErr) {
             if (CFStringGetCString(name, buf, sizeof(buf), kCFStringEncodingUTF8) && string_is_equal(output, buf)) {
                 d->output_endpoint = endpoint;
-                RARCH_LOG("[MIDI]: Output endpoint set to %s\n", buf);
+                RARCH_LOG("[MIDI] Output endpoint set to %s.\n", buf);
                 CFRelease(name);
                 return true;
             }
@@ -273,7 +273,7 @@ static bool coremidi_set_output(void *p, const char *output) {
         }
     }
 
-    RARCH_WARN("[MIDI]: Output device not found: %s\n", output);
+    RARCH_WARN("[MIDI] Output device not found: %s.\n", output);
     return false;
 }
 
@@ -292,18 +292,18 @@ static bool coremidi_read(void *p, midi_event_t *event) {
     coremidi_t *d = (coremidi_t *)p;
 
     if (!d || !event) {
-        RARCH_WARN("[MIDI]: Invalid parameters in coremidi_read\n");
+        RARCH_WARN("[MIDI] Invalid parameters in coremidi_read.\n");
         return false;
     }
 
     if (!d->input_port || !d->input_endpoint) {
-        RARCH_WARN("[MIDI]: Input not configured\n");
+        RARCH_WARN("[MIDI] Input not configured.\n");
         return false;
     }
 
     int result = coremidi_queue_read(&d->input_queue, event);
 //    #if DEBUG
-    RARCH_LOG("[MIDI]: Input queue read result: %d\n", result);
+    RARCH_LOG("[MIDI] Input queue read result: %d.\n", result);
 //    #endif
     return result;
 }
@@ -313,18 +313,18 @@ static bool coremidi_write(void *p, const midi_event_t *event) {
     coremidi_t *d = (coremidi_t *)p;
 
     if (!d || !event) {
-        RARCH_WARN("[MIDI]: Invalid parameters in coremidi_write\n");
+        RARCH_WARN("[MIDI] Invalid parameters in coremidi_write.\n");
         return false;
     }
 
     if (!d->output_port || !d->output_endpoint) {
-        RARCH_WARN("[MIDI]: Output not configured\n");
+        RARCH_WARN("[MIDI] Output not configured.\n");
         return false;
     }
 
     // Validate event data
     if (!event->data || event->data_size == 0 || event->data_size > 65535) {
-        RARCH_WARN("[MIDI]: Invalid event data in coremidi_write\n");
+        RARCH_WARN("[MIDI] Invalid event data in coremidi_write.\n");
         return false;
     }
 
@@ -336,14 +336,14 @@ static bool coremidi_write(void *p, const midi_event_t *event) {
     // Add the event to the packet list
     packet = MIDIPacketListAdd(packetList, sizeof(packetListBuffer), packet, 0, event->data_size, event->data);
     if (!packet) {
-        RARCH_WARN("[MIDI]: Failed to create MIDIPacketList\n");
+        RARCH_WARN("[MIDI] Failed to create MIDIPacketList.\n");
         return false;
     }
 
     // Send the packet
     OSStatus err = MIDISend(d->output_port, d->output_endpoint, packetList);
     if (err != noErr) {
-        RARCH_WARN("[MIDI]: MIDISend failed: %d\n", err);
+        RARCH_WARN("[MIDI] MIDISend failed: %d.\n", err);
         return false;
     }
 
@@ -355,17 +355,15 @@ static bool coremidi_flush(void *p) {
     coremidi_t *d = (coremidi_t *)p;
 
     if (!d) {
-        RARCH_WARN("[MIDI]: Invalid parameters in coremidi_flush\n");
+        RARCH_WARN("[MIDI] Invalid parameters in coremidi_flush.\n");
         return false;
     }
 
     if (!d->output_port || !d->output_endpoint) {
-        RARCH_WARN("[MIDI]: Output not configured\n");
+        RARCH_WARN("[MIDI] Output not configured.\n");
         return false;
     }
 
-    // CoreMIDI doesn't require explicit flushing, so we just return success
-    // RARCH_LOG("[MIDI]: Output buffer flushed\n");
     return true;
 }
 
@@ -374,25 +372,25 @@ static void coremidi_free(void *p) {
     coremidi_t *d = (coremidi_t *)p;
 
     if (!d) {
-        RARCH_WARN("[MIDI]: Invalid parameters in coremidi_free\n");
+        RARCH_WARN("[MIDI] Invalid parameters in coremidi_free.\n");
         return;
     }
 
     // Clean up MIDI resources
     if (d->input_port) {
-        RARCH_LOG("[MIDI]: Disconnecting input port\n");
+        RARCH_LOG("[MIDI] Disconnecting input port...\n");
         MIDIPortDisconnectSource(d->input_port, d->input_endpoint);
         MIDIPortDispose(d->input_port);
     }
 
     if (d->output_port) {
-        RARCH_LOG("[MIDI]: Disconnecting output port\n");
+        RARCH_LOG("[MIDI] Disconnecting output port...\n");
         MIDIPortDisconnectSource(d->output_port, d->output_endpoint);
         MIDIPortDispose(d->output_port);
     }
 
     if (d->client) {
-        RARCH_LOG("[MIDI]: Disposing of CoreMIDI client\n");
+        RARCH_LOG("[MIDI] Disposing of CoreMIDI client...\n");
         MIDIClientDispose(d->client);
     }
 

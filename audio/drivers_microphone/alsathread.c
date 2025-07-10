@@ -40,7 +40,7 @@ static void *alsa_thread_microphone_init(void)
 
    if (!alsa)
    {
-      RARCH_ERR("[ALSA] Failed to allocate driver context\n");
+      RARCH_ERR("[ALSA] Failed to allocate driver context.\n");
       return NULL;
    }
 
@@ -71,12 +71,12 @@ static void alsa_microphone_worker_thread(void *mic_context)
 
    if (!(buf = (uint8_t *)calloc(1, mic->info.stream_info.period_size)))
    {
-      RARCH_ERR("[ALSA] [capture thread %p]: Failed to allocate audio buffer\n", thread_id);
+      RARCH_ERR("[ALSA] [capture thread %p] Failed to allocate audio buffer.\n", thread_id);
       goto end;
    }
 
-   RARCH_DBG("[ALSA] [capture thread %p]: Beginning microphone worker thread\n", thread_id);
-   RARCH_DBG("[ALSA] [capture thread %p]: Microphone \"%s\" is in state %s\n",
+   RARCH_DBG("[ALSA] [capture thread %p] Beginning microphone worker thread.\n", thread_id);
+   RARCH_DBG("[ALSA] [capture thread %p] Microphone \"%s\" is in state %s.\n",
              thread_id,
              snd_pcm_name(mic->info.pcm),
              snd_pcm_state_name(snd_pcm_state(mic->info.pcm)));
@@ -110,18 +110,18 @@ static void alsa_microphone_worker_thread(void *mic_context)
 
       if (errnum == 0)
       {
-         RARCH_DBG("[ALSA] [capture thread %p]: Timeout after 33ms waiting for input\n", thread_id);
+         RARCH_DBG("[ALSA] [capture thread %p] Timeout after 33ms waiting for input.\n", thread_id);
          continue;
       }
       else if (errnum == -EPIPE || errnum == -ESTRPIPE || errnum == -EINTR)
       {
-         RARCH_WARN("[ALSA] [capture thread %p]: Wait error: %s\n",
+         RARCH_WARN("[ALSA] [capture thread %p] Wait error: %s.\n",
                     thread_id,
                     snd_strerror(errnum));
 
          if ((errnum = snd_pcm_recover(mic->info.pcm, errnum, false)) < 0)
          {
-            RARCH_ERR("[ALSA] [capture thread %p]: Failed to recover from prior wait error: %s\n",
+            RARCH_ERR("[ALSA] [capture thread %p] Failed to recover from prior wait error: %s.\n",
                       thread_id,
                       snd_strerror(errnum));
 
@@ -135,13 +135,13 @@ static void alsa_microphone_worker_thread(void *mic_context)
 
       if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
       {
-         RARCH_WARN("[ALSA] [capture thread %p]: Read error: %s\n",
+         RARCH_WARN("[ALSA] [capture thread %p] Read error: %s.\n",
                     thread_id,
                     snd_strerror(frames));
 
          if ((errnum = snd_pcm_recover(mic->info.pcm, frames, false)) < 0)
          {
-            RARCH_ERR("[ALSA] [capture thread %p]: Failed to recover from prior read error: %s\n",
+            RARCH_ERR("[ALSA] [capture thread %p] Failed to recover from prior read error: %s.\n",
                       thread_id,
                       snd_strerror(errnum));
             break;
@@ -151,7 +151,7 @@ static void alsa_microphone_worker_thread(void *mic_context)
       }
       else if (frames < 0)
       {
-         RARCH_ERR("[ALSA] [capture thread %p]: Read error: %s.\n",
+         RARCH_ERR("[ALSA] [capture thread %p] Read error: %s.\n",
                    thread_id,
                    snd_strerror(frames));
          break;
@@ -164,7 +164,7 @@ end:
    scond_signal(mic->info.cond);
    slock_unlock(mic->info.cond_lock);
    free(buf);
-   RARCH_DBG("[ALSA] [capture thread %p]: Ending microphone worker thread\n", thread_id);
+   RARCH_DBG("[ALSA] [capture thread %p] Ending microphone worker thread.\n", thread_id);
 }
 
 static int alsa_thread_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
@@ -183,13 +183,13 @@ static int alsa_thread_microphone_read(void *driver_context, void *mic_context, 
    if (state != SND_PCM_STATE_RUNNING)
    {
       int errnum;
-      RARCH_WARN("[ALSA]: Expected microphone \"%s\" to be in state RUNNING, was in state %s\n",
+      RARCH_WARN("[ALSA] Expected microphone \"%s\" to be in state RUNNING, was in state %s.\n",
                  snd_pcm_name(mic->info.pcm), snd_pcm_state_name(state));
 
       errnum = snd_pcm_start(mic->info.pcm);
       if (errnum < 0)
       {
-         RARCH_ERR("[ALSA]: Failed to start microphone \"%s\": %s\n",
+         RARCH_ERR("[ALSA] Failed to start microphone \"%s\": %s.\n",
                    snd_pcm_name(mic->info.pcm), snd_strerror(errnum));
 
          return -1;
@@ -280,7 +280,7 @@ static void *alsa_thread_microphone_open_mic(void *driver_context,
    /* If the microphone context couldn't be allocated... */
    if (!(mic = calloc(1, sizeof(alsa_thread_microphone_handle_t))))
    {
-      RARCH_ERR("[ALSA] Failed to allocate microphone context\n");
+      RARCH_ERR("[ALSA] Failed to allocate microphone context.\n");
       return NULL;
    }
 
@@ -298,15 +298,15 @@ static void *alsa_thread_microphone_open_mic(void *driver_context,
    mic->info.worker_thread = sthread_create(alsa_microphone_worker_thread, mic);
    if (!mic->info.worker_thread)
    {
-      RARCH_ERR("[ALSA]: Failed to initialize microphone worker thread\n");
+      RARCH_ERR("[ALSA] Failed to initialize microphone worker thread.\n");
       goto error;
    }
-   RARCH_DBG("[ALSA]: Initialized microphone worker thread\n");
+   RARCH_DBG("[ALSA] Initialized microphone worker thread.\n");
 
    return mic;
 
 error:
-   RARCH_ERR("[ALSA]: Failed to initialize microphone...\n");
+   RARCH_ERR("[ALSA] Failed to initialize microphone.\n");
 
    if (mic)
    {

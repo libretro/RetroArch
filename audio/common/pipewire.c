@@ -27,7 +27,7 @@ static void core_error_cb(void *data, uint32_t id, int seq, int res, const char 
 {
    pipewire_core_t *pw = (pipewire_core_t*)data;
 
-   RARCH_ERR("[PipeWire]: error id:%u seq:%d res:%d (%s): %s\n",
+   RARCH_ERR("[PipeWire] Error id:%u seq:%d res:%d (%s): %s.\n",
              id, seq, res, spa_strerror(res), message);
 
    pw_thread_loop_stop(pw->thread_loop);
@@ -75,7 +75,7 @@ size_t pipewire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
          sample_size = 4;
          break;
       default:
-         RARCH_ERR("[PipeWire]: Bad spa_audio_format %d\n", fmt);
+         RARCH_ERR("[PipeWire] Bad spa_audio_format %d.\n", fmt);
          break;
    }
    return sample_size * nchannels;
@@ -106,7 +106,7 @@ void pipewire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CH
          position[0] = SPA_AUDIO_CHANNEL_MONO;
          break;
       default:
-         RARCH_ERR("[PipeWire]: Internal error: unsupported channel count %d\n", channels);
+         RARCH_ERR("[PipeWire] Internal error: unsupported channel count %d.\n", channels);
    }
 }
 

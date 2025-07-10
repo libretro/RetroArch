@@ -445,7 +445,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
    {
       if (FAILED(DXGICreateFactory2(&factory)))
       {
-         RARCH_ERR("[DXGI]: Failed to create DXGI factory\n");
+         RARCH_ERR("[DXGI] Failed to create DXGI factory.\n");
          return false;
       }
    }
@@ -456,7 +456,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
    if (FAILED(factory->lpVtbl->EnumAdapters1(factory, 0, &dxgi_adapter)))
 #endif
    {
-      RARCH_ERR("[DXGI]: Failed to enumerate adapters\n");
+      RARCH_ERR("[DXGI] Failed to enumerate adapters.\n");
       return false;
    }
 #else
@@ -468,7 +468,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
    {
       if (FAILED(DXGICreateFactory1(&factory)))
       {
-         RARCH_ERR("[DXGI]: Failed to create DXGI factory\n");
+         RARCH_ERR("[DXGI] Failed to create DXGI factory.\n");
          return false;
       }
    }
@@ -479,7 +479,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
    if (FAILED(factory->lpVtbl->EnumAdapters1(factory, 0, &dxgi_adapter)))
 #endif
    {
-      RARCH_ERR("[DXGI]: Failed to enumerate adapters\n");
+      RARCH_ERR("[DXGI] Failed to enumerate adapters.\n");
       return false;
    }
 #endif
@@ -516,7 +516,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
       if (FAILED(current_output->lpVtbl->GetDesc(current_output, &desc)))
 #endif
       {
-         RARCH_ERR("[DXGI]: Failed to get DXGI output description\n");
+         RARCH_ERR("[DXGI] Failed to get DXGI output description.\n");
          goto error;
       }
 
@@ -576,7 +576,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
       }
       else
       {
-         RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 description\n");
+         RARCH_ERR("[DXGI] Failed to get DXGI Output 6 description.\n");
       }
 #ifdef __cplusplus
       output6->Release();
@@ -586,7 +586,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
    }
    else
    {
-      RARCH_ERR("[DXGI]: Failed to get DXGI Output 6 from best output\n");
+      RARCH_ERR("[DXGI] Failed to get DXGI Output 6 from best output.\n");
    }
 
 error:
@@ -631,7 +631,7 @@ void dxgi_swapchain_color_space(
          if (FAILED(chain_handle->lpVtbl->SetColorSpace1(chain_handle, color_space)))
 #endif
          {
-            RARCH_ERR("[DXGI]: Failed to set DXGI swapchain colour space\n");
+            RARCH_ERR("[DXGI] Failed to set DXGI swapchain colour space.\n");
             /* TODO/FIXME/CLARIFICATION: Was this fall-through intentional?
              * Should chain color space still be set even when this fails?
              * Going to assume this was wrong and early return instead
@@ -680,7 +680,7 @@ void dxgi_set_hdr_metadata(
                   DXGI_HDR_METADATA_TYPE_NONE, 0, NULL)))
 #endif
       {
-         RARCH_ERR("[DXGI]: Failed to set HDR meta data to none\n");
+         RARCH_ERR("[DXGI] Failed to set HDR meta data to none.\n");
       }
       return;
    }
@@ -701,7 +701,7 @@ void dxgi_set_hdr_metadata(
                   DXGI_HDR_METADATA_TYPE_NONE, 0, NULL)))
 #endif
       {
-         RARCH_ERR("[DXGI]: Failed to set HDR meta data to none\n");
+         RARCH_ERR("[DXGI] Failed to set HDR meta data to none.\n");
       }
       return;
    }
@@ -751,7 +751,7 @@ void dxgi_set_hdr_metadata(
                   DXGI_HDR_METADATA_TYPE_HDR10, sizeof(DXGI_HDR_METADATA_HDR10), &hdr10_meta_data)))
 #endif
       {
-         RARCH_ERR("[DXGI]: Failed to set HDR meta data for HDR10\n");
+         RARCH_ERR("[DXGI] Failed to set HDR meta data for HDR10.\n");
          return;
       }
       g_hdr10_meta_data = hdr10_meta_data;

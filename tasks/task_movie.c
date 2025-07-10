@@ -73,7 +73,7 @@ static bool bsv_movie_init_playback(
 
    if (!file)
    {
-      RARCH_ERR("Could not open replay file for playback, path : \"%s\".\n", path);
+      RARCH_ERR("[Replay] Could not open replay file for playback: \"%s\".\n", path);
       return false;
    }
 
@@ -83,13 +83,13 @@ static bool bsv_movie_init_playback(
    intfstream_read(handle->file, header, sizeof(uint32_t) * HEADER_LEN);
    if (swap_if_big32(header[MAGIC_INDEX]) != REPLAY_MAGIC)
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
+      RARCH_ERR("[Replay] %s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
    vsn                = swap_if_big32(header[VERSION_INDEX]);
    if (vsn > REPLAY_FORMAT_VERSION)
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
+      RARCH_ERR("[Replay] %s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
    handle->version    = vsn;
@@ -121,7 +121,7 @@ static bool bsv_movie_init_playback(
       if (intfstream_read(handle->file,
                handle->state, state_size) != state_size)
       {
-         RARCH_ERR("%s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
+         RARCH_ERR("[Replay] %s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
          return false;
       }
       info_size              = core_serialize_size();
@@ -132,7 +132,7 @@ static bool bsv_movie_init_playback(
       core_unserialize(&serial_info);
       if (info_size != state_size)
       {
-         RARCH_WARN("%s\n",
+         RARCH_WARN("[Replay] %s\n",
                msg_hash_to_str(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION));
       }
    }
@@ -160,7 +160,7 @@ static bool bsv_movie_init_record(
 
    if (!file)
    {
-      RARCH_ERR("Could not open replay file for recording, path : \"%s\".\n", path);
+      RARCH_ERR("[Replay] Could not open replay file for recording: \"%s\".\n", path);
       return false;
    }
 
@@ -266,7 +266,7 @@ static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
       const char *_msg = msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_ERR("%s.\n", _msg);
+      RARCH_ERR("[Replay] %s\n", _msg);
       return false;
    }
 
@@ -276,7 +276,7 @@ static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
    _len += snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
    runloop_msg_queue_push(msg, _len, 2, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s \"%s\".\n", _msg, path);
+   RARCH_LOG("[Replay] %s \"%s\".\n", _msg, path);
 
    return true;
 }
@@ -290,7 +290,7 @@ static bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path)
       input_st->bsv_movie_state_handle. */
    if (!(state = bsv_movie_init_internal(path, RARCH_MOVIE_PLAYBACK)))
    {
-      RARCH_ERR("%s: \"%s\".\n",
+      RARCH_ERR("[Replay] %s: \"%s\".\n",
             msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
             path);
       return false;
@@ -301,7 +301,7 @@ static bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path)
 
    runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s.\n", _msg);
+   RARCH_LOG("[Replay] %s\n", _msg);
 
    return true;
 }
@@ -381,7 +381,7 @@ bool movie_stop_playback(input_driver_state_t *input_st)
    _msg = msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED);
    runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", _msg);
+   RARCH_LOG("[Replay] %s\n", _msg);
 
    bsv_movie_deinit_full(input_st);
 
@@ -398,7 +398,7 @@ bool movie_stop_record(input_driver_state_t *input_st)
       return false;
    runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", _msg);
+   RARCH_LOG("[Replay] %s\n", _msg);
    bsv_movie_deinit_full(input_st);
    input_st->bsv_movie_state.flags &= ~(
          BSV_FLAG_MOVIE_END
@@ -414,7 +414,7 @@ bool movie_stop(input_driver_state_t *input_st)
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
       return movie_stop_record(input_st);
    if (input_st->bsv_movie_state_handle)
-      RARCH_ERR("Didn't really stop movie!\n");
+      RARCH_ERR("[Replay] Didn't really stop movie!\n");
    return true;
 }
 

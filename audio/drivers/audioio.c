@@ -158,7 +158,7 @@ static void audioio_set_nonblock_state(void *data, bool state)
    else
       rc = fcntl(*fd, F_SETFL, fcntl(*fd, F_GETFL) & (~O_NONBLOCK));
    if (rc != 0)
-      RARCH_WARN("Could not set nonblocking on audio file descriptor. Will not be able to fast-forward.\n");
+      RARCH_WARN("[AudioIO] Could not set nonblocking on audio file descriptor. Will not be able to fast-forward.\n");
 }
 
 static void audioio_free(void *data)

@@ -229,7 +229,7 @@ void* task_push_http_transfer(const char *url, bool mute,
 void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *user_data)
 {
-   RARCH_ERR("[http] response headers not supported, webdav won't work\n");
+   RARCH_ERR("[HTTP] Response headers not supported, webdav won't work.\n");
    return task_push_http_transfer_generic(url, "OPTIONS", NULL, NULL, headers, mute, cb, user_data);
 }
 
@@ -237,7 +237,7 @@ void* task_push_webdav_mkdir(const char *url, bool mute,
       const char *headers,
       retro_task_callback_t cb, void *user_data)
 {
-   RARCH_ERR("[http] response headers not supported, webdav won't work\n");
+   RARCH_ERR("[HTTP] Response headers not supported, webdav won't work.\n");
    return task_push_http_transfer_generic(url, "MKCOL", NULL, NULL, headers, mute, cb, user_data);
 }
 
@@ -247,7 +247,7 @@ void* task_push_webdav_put(const char *url,
 {
    char                      expect[1024]; /* TODO/FIXME - check size */
    size_t                    _len;
-   RARCH_ERR("[http] response headers not supported, webdav won't work\n");
+   RARCH_ERR("[HTTP] Response headers not supported, webdav won't work.\n");
 
    _len = strlcpy(expect, "Expect: 100-continue\r\n", sizeof(expect));
    if (headers)
@@ -262,7 +262,7 @@ void* task_push_webdav_delete(const char *url, bool mute,
       const char *headers,
       retro_task_callback_t cb, void *user_data)
 {
-   RARCH_ERR("[http] response headers not supported, webdav won't work\n");
+   RARCH_ERR("[HTTP] Response headers not supported, webdav won't work.\n");
    return task_push_http_transfer_generic(url, "DELETE", NULL, NULL, headers, mute, cb, user_data);
 }
 
@@ -272,7 +272,7 @@ void *task_push_webdav_move(const char *url,
 {
    size_t _len;
    char dest_header[PATH_MAX_LENGTH + 512];
-   RARCH_ERR("[http] response headers not supported, webdav won't work\n");
+   RARCH_ERR("[HTTP] Response headers not supported, webdav won't work.\n");
 
    _len  = strlcpy(dest_header, "Destination: ", sizeof(dest_header));
    _len += strlcpy(dest_header + _len, dest,   sizeof(dest_header) - _len);

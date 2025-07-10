@@ -444,13 +444,13 @@ static bool d3d9_hlsl_load_program_from_file(
    if (!d3d9x_compile_shader_from_file(prog, NULL, NULL,
             "main_fragment", "ps_3_0", 0, &code_f, &listing_f, &pass->ftable))
    {
-      RARCH_ERR("Could not compile fragment shader program (%s)..\n", prog);
+      RARCH_ERR("[D3D9 HLSL] Could not compile fragment shader program (%s).\n", prog);
       goto error;
    }
    if (!d3d9x_compile_shader_from_file(prog, NULL, NULL,
             "main_vertex", "vs_3_0", 0, &code_v, &listing_v, &pass->vtable))
    {
-      RARCH_ERR("Could not compile vertex shader program (%s)..\n", prog);
+      RARCH_ERR("[D3D9 HLSL] Could not compile vertex shader program (%s).\n", prog);
       goto error;
    }
 
@@ -466,15 +466,15 @@ static bool d3d9_hlsl_load_program_from_file(
    return true;
 
 error:
-   RARCH_ERR("Cg/HLSL error:\n");
+   RARCH_ERR("[D3D9 HLSL] CG/HLSL error:\n");
    if (listing_f)
    {
-      RARCH_ERR("Fragment:\n%s\n", (char*)listing_f->lpVtbl->GetBufferPointer(listing_f));
+      RARCH_ERR("[D3D9 HLSL] Fragment: %s.\n", (char*)listing_f->lpVtbl->GetBufferPointer(listing_f));
       listing_f->lpVtbl->Release(listing_f);
    }
    if (listing_v)
    {
-      RARCH_ERR("Vertex:\n%s\n", (char*)listing_v->lpVtbl->GetBufferPointer(listing_v));
+      RARCH_ERR("[D3D9 HLSL] Vertex: %s.\n", (char*)listing_v->lpVtbl->GetBufferPointer(listing_v));
       listing_v->lpVtbl->Release(listing_v);
    }
 
@@ -496,14 +496,14 @@ static bool d3d9_hlsl_load_program(
             "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
             &pass->ftable ))
    {
-      RARCH_ERR("Could not compile stock fragment shader..\n");
+      RARCH_ERR("[D3D9 HLSL] Could not compile stock fragment shader.\n");
       goto error;
    }
    if (!d3d9x_compile_shader(prog, prog_len, NULL, NULL,
             "main_vertex", "vs_3_0", 0, &code_v, &listing_v,
             &pass->vtable ))
    {
-      RARCH_ERR("Could not compile stock vertex shader..\n");
+      RARCH_ERR("[D3D9 HLSL] Could not compile stock vertex shader.\n");
       goto error;
    }
 
@@ -519,15 +519,15 @@ static bool d3d9_hlsl_load_program(
    return true;
 
 error:
-   RARCH_ERR("Cg/HLSL error:\n");
+   RARCH_ERR("[D3D9 HLSL] CG/HLSL error:\n");
    if (listing_f)
    {
-      RARCH_ERR("Fragment:\n%s\n", (char*)listing_f->lpVtbl->GetBufferPointer(listing_f));
+      RARCH_ERR("[D3D9 HLSL] Fragment: %s.\n", (char*)listing_f->lpVtbl->GetBufferPointer(listing_f));
       listing_f->lpVtbl->Release(listing_f);
    }
    if (listing_v)
    {
-      RARCH_ERR("Vertex:\n%s\n", (char*)listing_v->lpVtbl->GetBufferPointer(listing_v));
+      RARCH_ERR("[D3D9 HLSL] Vertex: %s.\n", (char*)listing_v->lpVtbl->GetBufferPointer(listing_v));
       listing_v->lpVtbl->Release(listing_v);
    }
    return false;
@@ -1186,7 +1186,7 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
    if (!d3d->renderchain_data)
       return false;
 
-   RARCH_LOG("[D3D9]: Using HLSL shader backend.\n");
+   RARCH_LOG("[D3D9 HLSL] Using HLSL shader backend.\n");
 
    if (
          !hlsl_d3d9_renderchain_init(
@@ -1224,7 +1224,7 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
       if (!hlsl_d3d9_renderchain_add_pass(
                (hlsl_renderchain_t*)d3d->renderchain_data, &link_info))
       {
-         RARCH_ERR("[D3D9]: Failed to add pass.\n");
+         RARCH_ERR("[D3D9 HLSL] Failed to add pass.\n");
          return false;
       }
       d3d9_log_info(&link_info);
@@ -1245,7 +1245,7 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
                   ? video_smooth
                   : (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
          {
-            RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
+            RARCH_ERR("[D3D9 HLSL] Failed to init LUTs.\n");
             return false;
          }
       }
@@ -1284,7 +1284,7 @@ static bool d3d9_hlsl_initialize(
 
          ret     = d3d9_hlsl_init_base(d3d, info);
          if (ret)
-            RARCH_LOG("[D3D9]: Recovered from dead state.\n");
+            RARCH_LOG("[D3D9 HLSL] Recovered from dead state.\n");
       }
 
 #ifdef HAVE_MENU
@@ -1297,7 +1297,7 @@ static bool d3d9_hlsl_initialize(
 
    if (!d3d9_hlsl_init_chain(d3d, info->input_scale, info->rgb32))
    {
-      RARCH_ERR("[D3D9]: Failed to initialize render chain.\n");
+      RARCH_ERR("[D3D9 HLSL] Failed to initialize render chain.\n");
       return false;
    }
 
@@ -1370,7 +1370,7 @@ static bool d3d9_hlsl_restore(d3d9_video_t *d3d)
 
    if (!d3d9_hlsl_initialize(d3d, &d3d->video_info))
    {
-      RARCH_ERR("[D3D9]: Restore error.\n");
+      RARCH_ERR("[D3D9 HLSL] Restore error.\n");
       return false;
    }
 
@@ -1402,12 +1402,12 @@ static bool d3d9_hlsl_set_shader(void *data,
       case RARCH_SHADER_NONE:
          break;
       default:
-         RARCH_WARN("[D3D9]: Only Cg shaders are supported. Falling back to stock.\n");
+         RARCH_WARN("[D3D9 HLSL] Only CG shaders are supported. Falling back to stock.\n");
    }
 
    if (!d3d9_process_shader(d3d) || !d3d9_hlsl_restore(d3d))
    {
-      RARCH_ERR("[D3D9]: Failed to set shader.\n");
+      RARCH_ERR("[D3D9 HLSL] Failed to set shader.\n");
       return false;
    }
 
@@ -1534,8 +1534,8 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
             HIWORD(ident.DriverVersion.LowPart),
             LOWORD(ident.DriverVersion.LowPart));
 
-      RARCH_LOG("[D3D9]: Using GPU: \"%s\".\n", ident.Description);
-      RARCH_LOG("[D3D9]: GPU API Version: %s\n", version_str);
+      RARCH_LOG("[D3D9 HLSL] Using GPU: \"%s\".\n", ident.Description);
+      RARCH_LOG("[D3D9 HLSL] GPU API Version: %s.\n", version_str);
       video_driver_set_gpu_api_version_string(version_str);
    }
 
@@ -1575,7 +1575,7 @@ static void *d3d9_hlsl_init(const video_info_t *info,
    return d3d;
 
 error:
-   RARCH_ERR("[D3D9]: Failed to init D3D.\n");
+   RARCH_ERR("[D3D9 HLSL] Failed to init D3D.\n");
    free(d3d);
    return NULL;
 }
@@ -1659,7 +1659,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 
       if (!d3d9_hlsl_restore(d3d))
       {
-         RARCH_ERR("[D3D9]: Failed to restore.\n");
+         RARCH_ERR("[D3D9 HLSL] Failed to restore.\n");
          return false;
       }
    }

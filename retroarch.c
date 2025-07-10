@@ -590,7 +590,7 @@ static midi_driver_t *midi_driver_find_driver(const char *ident)
          return midi_drivers[i];
    }
 
-   RARCH_ERR("[MIDI]: Unknown driver \"%s\", falling back to \"null\" driver.\n", ident);
+   RARCH_ERR("[MIDI] Unknown driver \"%s\", falling back to \"null\" driver.\n", ident);
 
    return &midi_null;
 }
@@ -652,7 +652,7 @@ bool midi_driver_set_all_sounds_off(void)
       result = false;
 
    if (!result)
-      RARCH_ERR("[MIDI]: All sounds off failed.\n");
+      RARCH_ERR("[MIDI] All sounds off failed.\n");
 
    return result;
 }
@@ -679,7 +679,7 @@ bool midi_driver_set_volume(unsigned volume)
 
    if (!midi_drv->write(rarch_midi_drv_data, &event))
    {
-      RARCH_ERR("[MIDI]: Volume change failed.\n");
+      RARCH_ERR("[MIDI] Volume change failed.\n");
       return false;
    }
 
@@ -789,7 +789,7 @@ static bool midi_driver_init(void *data)
                input = settings->arrays.midi_input;
             else
             {
-               RARCH_WARN("[MIDI]: Input device \"%s\" unavailable.\n",
+               RARCH_WARN("[MIDI] Input device \"%s\" unavailable.\n",
                      settings->arrays.midi_input);
                configuration_set_string(settings,
                      settings->arrays.midi_input, MIDI_DRIVER_OFF);
@@ -802,7 +802,7 @@ static bool midi_driver_init(void *data)
                output = settings->arrays.midi_output;
             else
             {
-               RARCH_WARN("[MIDI]: Output device \"%s\" unavailable.\n",
+               RARCH_WARN("[MIDI] Output device \"%s\" unavailable.\n",
                      settings->arrays.midi_output);
                configuration_set_string(settings,
                      settings->arrays.midi_output, MIDI_DRIVER_OFF);
@@ -822,11 +822,11 @@ static bool midi_driver_init(void *data)
             else
             {
                if (input)
-                  RARCH_LOG("[MIDI]: Input device: \"%s\".\n", input);
+                  RARCH_LOG("[MIDI] Input device: \"%s\".\n", input);
 
                if (output)
                {
-                  RARCH_LOG("[MIDI]: Output device: \"%s\".\n", output);
+                  RARCH_LOG("[MIDI] Output device: \"%s\".\n", output);
                   midi_driver_set_volume(settings->uints.midi_volume);
                }
             }
@@ -837,7 +837,7 @@ static bool midi_driver_init(void *data)
    if (!ret)
    {
       midi_driver_free();
-      RARCH_ERR("[MIDI]: Initialization failed.\n");
+      RARCH_ERR("[MIDI] Initialization failed.\n");
       return false;
    }
    return true;
@@ -848,7 +848,7 @@ bool midi_driver_set_input(const char *input)
    if (!rarch_midi_drv_data)
    {
 #ifdef DEBUG
-      RARCH_ERR("[MIDI]: midi_driver_set_input called on uninitialized driver.\n");
+      RARCH_ERR("[MIDI] midi_driver_set_input called on uninitialized driver.\n");
 #endif
       return false;
    }
@@ -859,16 +859,16 @@ bool midi_driver_set_input(const char *input)
    if (!midi_drv->set_input(rarch_midi_drv_data, input))
    {
       if (input)
-         RARCH_ERR("[MIDI]: Failed to change input device to \"%s\".\n", input);
+         RARCH_ERR("[MIDI] Failed to change input device to \"%s\".\n", input);
       else
-         RARCH_ERR("[MIDI]: Failed to disable input.\n");
+         RARCH_ERR("[MIDI] Failed to disable input.\n");
       return false;
    }
 
    if (input)
-      RARCH_LOG("[MIDI]: Input device changed to \"%s\".\n", input);
+      RARCH_LOG("[MIDI] Input device changed to \"%s\".\n", input);
    else
-      RARCH_LOG("[MIDI]: Input disabled.\n");
+      RARCH_LOG("[MIDI] Input disabled.\n");
 
    rarch_midi_drv_input_enabled = input != NULL;
 
@@ -880,7 +880,7 @@ bool midi_driver_set_output(void *settings_data, const char *output)
    if (!rarch_midi_drv_data)
    {
 #ifdef DEBUG
-      RARCH_ERR("[MIDI]: midi_driver_set_output called on uninitialized driver.\n");
+      RARCH_ERR("[MIDI] midi_driver_set_output called on uninitialized driver.\n");
 #endif
       return false;
    }
@@ -891,9 +891,9 @@ bool midi_driver_set_output(void *settings_data, const char *output)
    if (!midi_drv->set_output(rarch_midi_drv_data, output))
    {
       if (output)
-         RARCH_ERR("[MIDI]: Failed to change output device to \"%s\".\n", output);
+         RARCH_ERR("[MIDI] Failed to change output device to \"%s\".\n", output);
       else
-         RARCH_ERR("[MIDI]: Failed to disable output.\n");
+         RARCH_ERR("[MIDI] Failed to disable output.\n");
       return false;
    }
 
@@ -902,14 +902,14 @@ bool midi_driver_set_output(void *settings_data, const char *output)
       settings_t *settings = (settings_t*)settings_data;
       unsigned midi_volume = settings->uints.midi_volume;
       rarch_midi_drv_output_enabled = true;
-      RARCH_LOG("[MIDI]: Output device changed to \"%s\".\n", output);
+      RARCH_LOG("[MIDI] Output device changed to \"%s\".\n", output);
 
       midi_driver_set_volume(midi_volume);
    }
    else
    {
       rarch_midi_drv_output_enabled = false;
-      RARCH_LOG("[MIDI]: Output disabled.\n");
+      RARCH_LOG("[MIDI] Output disabled.\n");
    }
 
    return true;
@@ -933,11 +933,11 @@ bool midi_driver_read(uint8_t *byte)
    {
 #ifdef DEBUG
       if (!rarch_midi_drv_data)
-         RARCH_ERR("[MIDI]: midi_driver_read called on uninitialized driver.\n");
+         RARCH_ERR("[MIDI] midi_driver_read called on uninitialized driver.\n");
       else if (!rarch_midi_drv_input_enabled)
-         RARCH_ERR("[MIDI]: midi_driver_read called when input is disabled.\n");
+         RARCH_ERR("[MIDI] midi_driver_read called when input is disabled.\n");
       else
-         RARCH_ERR("[MIDI]: midi_driver_read called with null pointer.\n");
+         RARCH_ERR("[MIDI] midi_driver_read called with null pointer.\n");
 #endif
       return false;
    }
@@ -955,19 +955,19 @@ bool midi_driver_read(uint8_t *byte)
 
 #ifdef DEBUG
       if (rarch_midi_drv_input_event.data_size == 1)
-         RARCH_LOG("[MIDI]: In [0x%02X].\n",
+         RARCH_LOG("[MIDI] In [0x%02X].\n",
                rarch_midi_drv_input_event.data[0]);
       else if (rarch_midi_drv_input_event.data_size == 2)
-         RARCH_LOG("[MIDI]: In [0x%02X, 0x%02X].\n",
+         RARCH_LOG("[MIDI] In [0x%02X, 0x%02X].\n",
                rarch_midi_drv_input_event.data[0],
                rarch_midi_drv_input_event.data[1]);
       else if (rarch_midi_drv_input_event.data_size == 3)
-         RARCH_LOG("[MIDI]: In [0x%02X, 0x%02X, 0x%02X].\n",
+         RARCH_LOG("[MIDI] In [0x%02X, 0x%02X, 0x%02X].\n",
                rarch_midi_drv_input_event.data[0],
                rarch_midi_drv_input_event.data[1],
                rarch_midi_drv_input_event.data[2]);
       else
-         RARCH_LOG("[MIDI]: In [0x%02X, ...], size %u.\n",
+         RARCH_LOG("[MIDI] In [0x%02X, ...], size %u.\n",
                rarch_midi_drv_input_event.data[0],
                rarch_midi_drv_input_event.data_size);
 #endif
@@ -986,9 +986,9 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time)
    {
 #ifdef DEBUG
       if (!rarch_midi_drv_data)
-         RARCH_ERR("[MIDI]: midi_driver_write called on uninitialized driver.\n");
+         RARCH_ERR("[MIDI] midi_driver_write called on uninitialized driver.\n");
       else
-         RARCH_ERR("[MIDI]: midi_driver_write called when output is disabled.\n");
+         RARCH_ERR("[MIDI] midi_driver_write called when output is disabled.\n");
 #endif
       return false;
    }
@@ -1010,22 +1010,22 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time)
             switch (rarch_midi_drv_output_event.data_size)
             {
                case 1:
-                  RARCH_LOG("[MIDI]: Out [0x%02X].\n",
+                  RARCH_LOG("[MIDI] Out [0x%02X].\n",
                         rarch_midi_drv_output_event.data[0]);
                   break;
                case 2:
-                  RARCH_LOG("[MIDI]: Out [0x%02X, 0x%02X].\n",
+                  RARCH_LOG("[MIDI] Out [0x%02X, 0x%02X].\n",
                         rarch_midi_drv_output_event.data[0],
                         rarch_midi_drv_output_event.data[1]);
                   break;
                case 3:
-                  RARCH_LOG("[MIDI]: Out [0x%02X, 0x%02X, 0x%02X].\n",
+                  RARCH_LOG("[MIDI] Out [0x%02X, 0x%02X, 0x%02X].\n",
                         rarch_midi_drv_output_event.data[0],
                         rarch_midi_drv_output_event.data[1],
                         rarch_midi_drv_output_event.data[2]);
                   break;
                default:
-                  RARCH_LOG("[MIDI]: Out [0x%02X, ...], size %u.\n",
+                  RARCH_LOG("[MIDI] Out [0x%02X, ...], size %u.\n",
                         rarch_midi_drv_output_event.data[0],
                         rarch_midi_drv_output_event.data_size);
                   break;
@@ -1055,7 +1055,7 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time)
    else
    {
 #ifdef DEBUG
-      RARCH_ERR("[MIDI]: Output event dropped.\n");
+      RARCH_ERR("[MIDI] Output event dropped.\n");
 #endif
       return false;
    }
@@ -1069,22 +1069,22 @@ bool midi_driver_write(uint8_t byte, uint32_t delta_time)
       switch (rarch_midi_drv_output_event.data_size)
       {
          case 1:
-            RARCH_LOG("[MIDI]: Out [0x%02X].\n",
+            RARCH_LOG("[MIDI] Out [0x%02X].\n",
                   rarch_midi_drv_output_event.data[0]);
             break;
          case 2:
-            RARCH_LOG("[MIDI]: Out [0x%02X, 0x%02X].\n",
+            RARCH_LOG("[MIDI] Out [0x%02X, 0x%02X].\n",
                   rarch_midi_drv_output_event.data[0],
                   rarch_midi_drv_output_event.data[1]);
             break;
          case 3:
-            RARCH_LOG("[MIDI]: Out [0x%02X, 0x%02X, 0x%02X].\n",
+            RARCH_LOG("[MIDI] Out [0x%02X, 0x%02X, 0x%02X].\n",
                   rarch_midi_drv_output_event.data[0],
                   rarch_midi_drv_output_event.data[1],
                   rarch_midi_drv_output_event.data[2]);
             break;
          default:
-            RARCH_LOG("[MIDI]: Out [0x%02X, ...], size %u.\n",
+            RARCH_LOG("[MIDI] Out [0x%02X, ...], size %u.\n",
                   rarch_midi_drv_output_event.data[0],
                   rarch_midi_drv_output_event.data_size);
             break;
@@ -1127,7 +1127,7 @@ size_t midi_driver_get_event_size(uint8_t status)
    if (status < 0x80)
    {
 #ifdef DEBUG
-      RARCH_ERR("[MIDI]: midi_driver_get_event_size called with invalid status.\n");
+      RARCH_ERR("[MIDI] midi_driver_get_event_size called with invalid status.\n");
 #endif
       return 0;
    }
@@ -1373,7 +1373,7 @@ static bool video_driver_monitor_adjust_system_rates(
        * just don't readjust at all. */
       if (timing_skew <= audio_max_timing_skew)
          return true;
-      RARCH_LOG("[Video]: Timings deviate too much. Will not adjust."
+      RARCH_LOG("[Video] Timings deviate too much. Will not adjust."
             " (Target = %.2f Hz, Game = %.2f Hz)\n",
             target_video_sync_rate,
             (float)input_fps);
@@ -1417,7 +1417,7 @@ static void driver_adjust_system_rates(
                   shader_subframes,
                   audio_max_timing_skew);
 
-      RARCH_LOG("[Audio]: Set audio input rate to: %.2f Hz.\n",
+      RARCH_LOG("[Audio] Set audio input rate to: %.2f Hz.\n",
             audio_st->input);
    }
 
@@ -1444,7 +1444,7 @@ static void driver_adjust_system_rates(
          /* We won't be able to do VSync reliably
             when game FPS > monitor FPS. */
          runloop_st->flags |= RUNLOOP_FLAG_FORCE_NONBLOCK;
-         RARCH_LOG("[Video]: Game FPS > Monitor FPS. Cannot rely on VSync.\n");
+         RARCH_LOG("[Video] Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 
          if (VIDEO_DRIVER_GET_PTR_INTERNAL(video_st))
          {
@@ -3438,7 +3438,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_RESET:
          {
             const char *_msg = msg_hash_to_str(MSG_RESET);
-            RARCH_LOG("[Core]: %s.\n", _msg);
+            RARCH_LOG("[Core] %s.\n", _msg);
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -3490,7 +3490,7 @@ bool command_event(enum event_command cmd, void *data)
                msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE);
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_ERR("%s.\n", _msg);
+            RARCH_ERR("[Replay] %s.\n", _msg);
          }
          return res;
 #else
@@ -3522,7 +3522,7 @@ bool command_event(enum event_command cmd, void *data)
              const char *_msg = msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_ERR("%s.\n", _msg);
+            RARCH_ERR("[Replay] %s.\n", _msg);
          }
          return res;
 #else
@@ -4043,7 +4043,7 @@ bool command_event(enum event_command cmd, void *data)
                break;
             if (!audio_driver_dsp_filter_init(path_audio_dsp_plugin))
             {
-               RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n",
+               RARCH_ERR("[DSP] Failed to initialize DSP filter \"%s\".\n",
                      path_audio_dsp_plugin);
             }
          }
@@ -4127,7 +4127,7 @@ bool command_event(enum event_command cmd, void *data)
              * all content history playlists */
             if (!string_is_empty(path_content_history))
             {
-               RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
+               RARCH_LOG("[Playlist] %s: \"%s\".\n", _msg,
                      path_content_history);
                playlist_config_set_path(&playlist_config, path_content_history);
                g_defaults.content_history = playlist_init(&playlist_config);
@@ -4138,7 +4138,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_IMAGEVIEWER
             if (!string_is_empty(path_content_image_history))
             {
-               RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
+               RARCH_LOG("[Playlist] %s: \"%s\".\n", _msg,
                      path_content_image_history);
                playlist_config_set_path(&playlist_config, path_content_image_history);
                g_defaults.image_history = playlist_init(&playlist_config);
@@ -4149,7 +4149,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (!string_is_empty(path_content_music_history))
             {
-               RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
+               RARCH_LOG("[Playlist] %s: \"%s\".\n", _msg,
                      path_content_music_history);
                playlist_config_set_path(&playlist_config, path_content_music_history);
                g_defaults.music_history = playlist_init(&playlist_config);
@@ -4160,7 +4160,7 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             if (!string_is_empty(path_content_video_history))
             {
-               RARCH_LOG("[Playlist]: %s: \"%s\".\n", _msg,
+               RARCH_LOG("[Playlist] %s: \"%s\".\n", _msg,
                      path_content_video_history);
                playlist_config_set_path(&playlist_config, path_content_video_history);
                g_defaults.video_history = playlist_init(&playlist_config);
@@ -4880,7 +4880,7 @@ bool command_event(enum event_command cmd, void *data)
             if (!netplay_port)
                netplay_port = settings->uints.netplay_port;
 
-            RARCH_LOG("[Netplay]: Connecting to %s|%d (direct)\n",
+            RARCH_LOG("[Netplay] Connecting to %s|%d (direct).\n",
                netplay_server, netplay_port);
 
             if (!init_netplay(netplay_server, netplay_port, netplay_session))
@@ -4917,7 +4917,7 @@ bool command_event(enum event_command cmd, void *data)
             if (!netplay_port)
                netplay_port = settings->uints.netplay_port;
 
-            RARCH_LOG("[Netplay]: Connecting to %s|%d (deferred)\n",
+            RARCH_LOG("[Netplay] Connecting to %s|%d (deferred).\n",
                netplay_server, netplay_port);
 
             if (!init_netplay_deferred(netplay_server, netplay_port, netplay_session))
@@ -5264,7 +5264,7 @@ bool command_event(enum event_command cmd, void *data)
             if (!ret)
                return false;
 
-            RARCH_LOG("[Input]: %s => %s\n",
+            RARCH_DBG("[Input] %s => %s\n",
                   msg_hash_to_str(MSG_GRAB_MOUSE_STATE),
                   grab_mouse_state ? "ON" : "OFF");
 
@@ -5396,7 +5396,7 @@ bool command_event(enum event_command cmd, void *data)
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                }
 
-               RARCH_LOG("[Input]: %s => %s\n",
+               RARCH_DBG("[Input] %s => %s\n",
                      "Game Focus",
                      input_st->game_focus_state.enabled ? "ON" : "OFF");
             }
@@ -5841,7 +5841,7 @@ void main_exit(void *args)
 
    if (runloop_st->perfcnt_enable)
    {
-      RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");
+      RARCH_LOG("[PERF] Performance counters (RetroArch):\n");
       runloop_log_counters(p_rarch->perf_counters_rarch, p_rarch->perf_ptr_rarch);
    }
 
@@ -5934,7 +5934,7 @@ int rarch_main(int argc, char *argv[], void *data)
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    if (FAILED(CoInitialize(NULL)))
    {
-      RARCH_ERR("FATAL: Failed to initialize the COM interface\n");
+      RARCH_ERR("FATAL: Failed to initialize the COM interface.\n");
       return 1;
    }
 #endif
@@ -7570,7 +7570,7 @@ static bool retroarch_parse_input_and_config(
                   if (endptr == optarg || *endptr != '\0' ||
                       entry_state_slot < 0 || entry_state_slot > 999)
                   {
-                     RARCH_WARN("[State]: --entryslot argument \"%s\" is not a valid "
+                     RARCH_WARN("[State] --entryslot argument \"%s\" is not a valid "
                         "entry state slot index. Ignoring.\n", optarg);
                   }
                   else
@@ -7667,7 +7667,7 @@ static bool retroarch_parse_input_and_config(
    else if (runloop_st->entry_state_slot > -1)
    {
       runloop_st->entry_state_slot = -1;
-      RARCH_WARN("Trying to load entry state without content. Ignoring.\n");
+      RARCH_WARN("[State] Trying to load entry state without content. Ignoring.\n");
    }
    #ifdef HAVE_BSV_MOVIE
    if (runloop_st->entry_state_slot > -1)
@@ -7676,7 +7676,7 @@ static bool retroarch_parse_input_and_config(
      if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
      {
         runloop_st->entry_state_slot = -1;
-        RARCH_WARN("Trying to load entry state while replay playback is active. Ignoring entry state.\n");
+        RARCH_WARN("[State] Trying to load entry state while replay playback is active. Ignoring entry state.\n");
      }
    }
    #endif
@@ -8764,7 +8764,7 @@ void retroarch_favorites_init(void)
    if (!playlist_config.capacity || string_is_empty(path_content_favorites))
       return;
 
-   RARCH_LOG("[Playlist]: %s: \"%s\".\n",
+   RARCH_LOG("[Playlist] %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_FAVORITES_FILE),
          path_content_favorites);
    playlist_config_set_path(&playlist_config, path_content_favorites);
@@ -8805,7 +8805,7 @@ bool accessibility_speak_priority(
       frontend_ctx_driver_t *frontend =
          frontend_state_get_ptr()->current_frontend_ctx;
 
-      RARCH_LOG("Spoke: %s\n", speak_text);
+      RARCH_DBG("[Accessibility] Spoke: \"%s\".\n", speak_text);
 
       if (frontend && frontend->accessibility_speak)
          return frontend->accessibility_speak(accessibility_narrator_speech_speed, speak_text,

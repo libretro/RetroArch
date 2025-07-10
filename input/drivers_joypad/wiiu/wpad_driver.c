@@ -180,7 +180,7 @@ static void wpad_log_coords(int16_t x, int16_t y)
    int16_t x_digit = bitwise_abs(x);
    int16_t y_digit = bitwise_abs(y);
 
-   RARCH_LOG("[wpad]: calibrated point: %s%04x, %s%04x\n",
+   RARCH_DBG("[wpad] calibrated point: %s%04x, %s%04x\n",
          x_negative ? "-" : "",
          x_digit,
          y_negative ? "-" : "",

@@ -132,7 +132,7 @@ static int build_format(struct spa_pod_builder *b, const struct spa_pod **params
 
    params[0] = spa_pod_builder_pop(b, &frame[0]);
 
-   RARCH_LOG("[Camera] [PipeWire]: Supported raw formats:\n");
+   RARCH_LOG("[Camera] [PipeWire] Supported raw formats:\n");
    spa_debug_format(2, NULL, params[0]);
 
    return 1;
@@ -152,7 +152,7 @@ static bool preprocess_image(pipewire_camera_t *camera)
    }
    if (b == NULL)
    {
-      RARCH_DBG("[Camera] [PipeWire]: Out of buffers\n");
+      RARCH_DBG("[Camera] [PipeWire] Out of buffers.\n");
       return false;
    }
 
@@ -161,12 +161,12 @@ static bool preprocess_image(pipewire_camera_t *camera)
    if ((h = spa_buffer_find_meta_data(buf, SPA_META_Header, sizeof(*h))))
    {
       if (h->flags & SPA_META_HEADER_FLAG_CORRUPTED) {
-         RARCH_LOG("[Camera] [PipeWire] Dropping corruped frame.\n");
+         RARCH_LOG("[Camera] [PipeWire] Dropping corrupted frame.\n");
          pw_stream_queue_buffer(camera->stream, b);
          return false;
       }
       uint64_t now = pw_stream_get_nsec(camera->stream);
-      RARCH_DBG("[Camera] [PipeWire]: now:%"PRIu64" pts:%"PRIu64" diff:%"PRIi64"\n",
+      RARCH_DBG("[Camera] [PipeWire] now:%"PRIu64" pts:%"PRIu64" diff:%"PRIi64".\n",
                 now, h->pts, now - h->pts);
    }
 
@@ -185,7 +185,7 @@ static void stream_state_changed_cb(void *data, enum pw_stream_state old,
 {
    pipewire_camera_t *camera = (pipewire_camera_t*)data;
 
-   RARCH_DBG("[Camera] [PipeWire]: Stream state changed %s -> %s\n",
+   RARCH_DBG("[Camera] [PipeWire] Stream state changed %s -> %s.\n",
              pw_stream_state_as_string(old),
              pw_stream_state_as_string(state));
 
@@ -220,19 +220,19 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
    {
       struct spa_latency_info info;
       if (spa_latency_parse(param, &info) >= 0)
-         RARCH_DBG("[Camera] [PipeWire]: Got latency: %"PRIu64"\n", (info.min_ns + info.max_ns) / 2);
+         RARCH_DBG("[Camera] [PipeWire] Got latency: %"PRIu64".\n", (info.min_ns + info.max_ns) / 2);
       return;
    }
    /* NULL means to clear the format */
    if (param == NULL || id != SPA_PARAM_Format)
       return;
 
-   RARCH_DBG("[Camera] [PipeWire]: Got format:\n");
+   RARCH_DBG("[Camera] [PipeWire] Got format:\n");
    spa_debug_format(2, NULL, param);
 
    if (spa_format_parse(param, &camera->format.media_type, &camera->format.media_subtype) < 0)
    {
-      RARCH_DBG("[Camera] [PipeWire]: Failed to parse video format.\n");
+      RARCH_DBG("[Camera] [PipeWire] Failed to parse video format.\n");
       return;
    }
 
@@ -245,10 +245,10 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
          spa_format_video_raw_parse(param, &camera->format.info.raw);
          camera->scaler.in_fmt = id_to_scaler_format(camera->format.info.raw.format);
          camera->size = SPA_RECTANGLE(camera->format.info.raw.size.width, camera->format.info.raw.size.height);
-         RARCH_DBG("[Camera] [PipeWire]: Configured capture format = %d\n", camera->format.info.raw.format);
+         RARCH_DBG("[Camera] [PipeWire] Configured capture format = %d.\n", camera->format.info.raw.format);
          break;
       default:
-         RARCH_WARN("[Camera] [PipeWire]: Unsupported video format: %d\n", camera->format.media_subtype);
+         RARCH_WARN("[Camera] [PipeWire] Unsupported video format: %d.\n", camera->format.media_subtype);
          return;
    }
 
@@ -286,7 +286,7 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
          malloc(camera->size.width * camera->size.height * sizeof(uint32_t));
    if (!camera->buffer_output)
    {
-      RARCH_ERR("[Camera] [PipeWire]: Failed to allocate output buffer.\n");
+      RARCH_ERR("[Camera] [PipeWire] Failed to allocate output buffer.\n");
       return;
    }
 
@@ -297,7 +297,7 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
    camera->scaler.out_stride = camera->size.width * 4;
    if (!scaler_ctx_gen_filter(&camera->scaler))
    {
-      RARCH_ERR("[Camera] [PipeWire]: Failed to create scaler.\n");
+      RARCH_ERR("[Camera] [PipeWire] Failed to create scaler.\n");
       return;
    }
 
@@ -420,7 +420,7 @@ static void *pipewire_init(const char *device, uint64_t caps,
 
    if (res < 0)
    {
-      RARCH_ERR("[Camera] [PipeWire]: can't connect: %s\n", spa_strerror(res));
+      RARCH_ERR("[Camera] [PipeWire] Can't connect: %s.\n", spa_strerror(res));
       goto error;
    }
 
@@ -429,7 +429,7 @@ static void *pipewire_init(const char *device, uint64_t caps,
    return camera;
 
 error:
-   RARCH_ERR("[Camera] [PipeWire]: Failed to initialize camera\n");
+   RARCH_ERR("[Camera] [PipeWire] Failed to initialize camera.\n");
    pipewire_free(camera);
    return NULL;
 }

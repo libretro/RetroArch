@@ -455,7 +455,7 @@ static void ps2_update_offsets_if_needed(ps2_video_t *ps2)
       ps2->video_window_offset_y = video_window_offset_y;
 
       gsKit_set_display_offset(ps2->gsGlobal, ps2->video_window_offset_x * rm_mode_table[ps2->vmode].VCK, ps2->video_window_offset_y);
-      RARCH_LOG("PS2_GFX Change offset: %d, %d\n", ps2->video_window_offset_x, ps2->video_window_offset_y);
+      RARCH_LOG("[PS2_GFX] Change offset: %d, %d.\n", ps2->video_window_offset_x, ps2->video_window_offset_y);
    }
 }
 
@@ -545,7 +545,7 @@ static void rmSetMode(ps2_video_t *ps2, int force)
    gsKit_sync(ps2->gsGlobal);
    gsKit_flip(ps2->gsGlobal);
 
-   RARCH_LOG("PS2_GFX New vmode: %d, %d x %d\n", ps2->vmode, ps2->gsGlobal->Width, ps2->gsGlobal->Height);
+   RARCH_LOG("[PS2_GFX] New vmode: %d, %dx%d.\n", ps2->vmode, ps2->gsGlobal->Width, ps2->gsGlobal->Height);
 
    ps2_update_offsets_if_needed(ps2);
 }

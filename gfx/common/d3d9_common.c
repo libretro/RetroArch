@@ -372,7 +372,7 @@ bool d3d9_reset(void *data, void *d3dpp)
    if (dev && IDirect3DDevice9_Reset(dev, (D3DPRESENT_PARAMETERS*)d3dpp) == D3D_OK)
       return true;
 #ifndef _XBOX
-   RARCH_WARN("[D3D]: Attempting to recover from dead state...\n");
+   RARCH_WARN("[D3D] Attempting to recover from dead state...\n");
    /* Try to recreate the device completely. */
    switch (IDirect3DDevice9_TestCooperativeLevel(dev))
    {
@@ -391,7 +391,7 @@ bool d3d9_reset(void *data, void *d3dpp)
       default:
          err = "Unknown";
    }
-   RARCH_WARN("[D3D]: recovering from dead state: (%s).\n", err);
+   RARCH_WARN("[D3D] Recovering from dead state: (%s).\n", err);
 #endif
    return false;
 }
@@ -693,7 +693,7 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
 
 void d3d9_log_info(const struct LinkInfo *info)
 {
-   RARCH_LOG("[D3D9]: Render pass info:\n");
+   RARCH_LOG("[D3D9] Render pass info:\n");
    RARCH_LOG("\tTexture width: %u\n", info->tex_w);
    RARCH_LOG("\tTexture height: %u\n", info->tex_h);
 
@@ -767,7 +767,7 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
    if (!video_shader_load_preset_into_shader(shader_path, &d3d->shader))
       return false;
 
-   RARCH_LOG("[D3D9]: Found %u shaders.\n", d3d->shader.passes);
+   RARCH_LOG("[D3D9] Found %u shaders.\n", d3d->shader.passes);
 
    for (i = 0; i < d3d->shader.passes; i++)
    {
@@ -814,7 +814,7 @@ bool d3d9_process_shader(d3d9_video_t *d3d)
    const char *shader_path = d3d->shader_path;
    if (!string_is_empty(shader_path))
    {
-      RARCH_ERR("[D3D9]: Failed to parse shader preset.\n");
+      RARCH_ERR("[D3D9] Failed to parse shader preset.\n");
       return d3d9_init_multipass(d3d, shader_path);
    }
 
@@ -1104,7 +1104,7 @@ void d3d9_set_menu_texture_frame(void *data,
 
       if (!d3d->menu->tex)
       {
-         RARCH_ERR("[D3D9]: Failed to create menu texture.\n");
+         RARCH_ERR("[D3D9] Failed to create menu texture.\n");
          return;
       }
 
@@ -1491,7 +1491,7 @@ static bool d3d9_overlay_load(void *data,
 
       if (!overlay->tex)
       {
-         RARCH_ERR("[D3D9]: Failed to create overlay texture\n");
+         RARCH_ERR("[D3D9] Failed to create overlay texture.\n");
          return false;
       }
 

@@ -1082,7 +1082,7 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
    if (!(file = intfstream_open_file(lvwpath,
          RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
    {
-      RARCH_ERR("[explore view] Failed to write json file %s.\n", lvwpath);
+      RARCH_ERR("[Explore] Failed to write json file %s.\n", lvwpath);
       return;
    }
 

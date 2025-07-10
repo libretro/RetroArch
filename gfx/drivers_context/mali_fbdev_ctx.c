@@ -85,7 +85,7 @@ static int gfx_ctx_mali_fbdev_get_vinfo(void *data)
    {
       vinfo.yoffset = 0;
       if (ioctl(fd, FBIOPUT_VSCREENINFO, &vinfo))
-         RARCH_ERR("Error resetting yoffset to 0.\n");
+         RARCH_ERR("[Mali] Error resetting yoffset to 0.\n");
    }
 
    close(fd);
@@ -250,7 +250,7 @@ static void *gfx_ctx_mali_fbdev_init(void *video_driver)
 
    if (mali_flags & GFX_CTX_MALI_FBDEV_FLAG_GLES3)
       attribs_init[1] = EGL_OPENGL_ES3_BIT;
-   RARCH_LOG("GLES version = %d.\n", (mali_flags & GFX_CTX_MALI_FBDEV_FLAG_GLES3) ? 3 : 2);
+   RARCH_LOG("[Mali] GLES version = %d.\n", (mali_flags & GFX_CTX_MALI_FBDEV_FLAG_GLES3) ? 3 : 2);
 #endif
    if (!(mali = (mali_ctx_data_t*)calloc(1, sizeof(*mali))))
        return NULL;

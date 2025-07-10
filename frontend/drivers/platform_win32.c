@@ -261,13 +261,13 @@ static void gfx_set_dwm(void)
 
    if (!composition_enable)
    {
-      RARCH_ERR("Did not find DwmEnableComposition ...\n");
+      RARCH_ERR("Did not find DwmEnableComposition.\n");
       return;
    }
 
    ret = composition_enable(!disable_composition);
    if (FAILED(ret))
-      RARCH_ERR("Failed to set composition state ...\n");
+      RARCH_ERR("Failed to set composition state.\n");
    if (disable_composition)
       g_plat_win32_flags |= PLAT_WIN32_FLAG_DWM_COMPOSITION_DISABLED;
 }
@@ -893,7 +893,7 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
 
    if (!CreateProcess(executable_path, GetCommandLine(),
          NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
-      RARCH_ERR("Failed to restart RetroArch\n");
+      RARCH_ERR("Failed to restart RetroArch.\n");
 }
 
 static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
@@ -1137,7 +1137,7 @@ static bool is_narrator_running_windows(void)
          /* The running nvda service wasn't found, so revert
             back to the powershell method
          */
-         RARCH_ERR("Error communicating with NVDA\n");
+         RARCH_ERR("Error communicating with NVDA.\n");
          g_plat_win32_flags |=  PLAT_WIN32_FLAG_USE_POWERSHELL;
          g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
          return false;
@@ -1207,7 +1207,7 @@ static bool accessibility_speak_windows(int speed,
 
       if (!wc || res != 0)
       {
-         RARCH_ERR("Error communicating with NVDA\n");
+         RARCH_ERR("Error communicating with NVDA.\n");
          /* Fallback on powershell immediately and retry */
          g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
          g_plat_win32_flags |= PLAT_WIN32_FLAG_USE_POWERSHELL;

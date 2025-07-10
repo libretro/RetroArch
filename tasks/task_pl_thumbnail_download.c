@@ -312,10 +312,10 @@ void cb_http_task_download_pl_thumbnail(
 finish:
 
    if (!string_is_empty(err))
-      RARCH_ERR("[Thumbnail]: Download \"%s\" failed: %s\n",
+      RARCH_ERR("[Thumbnail] Download \"%s\" failed: %s\n",
             (transf ? transf->path : "unknown"), err);
    else
-      RARCH_LOG("[Thumbnail]: Download \"%s\".\n",
+      RARCH_LOG("[Thumbnail] Download \"%s\".\n",
             (transf ? transf->path : "unknown"));
 
    if (transf)

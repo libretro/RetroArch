@@ -127,13 +127,13 @@ static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
       UIImage *img = [UIImage imageNamed:iconName];
       if (!img)
       {
-         RARCH_LOG("could not load %s\n", icon);
+         RARCH_LOG("[Cocoa] Could not load %s.\n", icon);
          return 0;
       }
       NSData *png = UIImagePNGRepresentation(img);
       if (!png)
       {
-         RARCH_LOG("could not get png for %s\n", icon);
+         RARCH_LOG("[Cocoa] Could not get png for %s.\n", icon);
          return 0;
       }
 
@@ -610,12 +610,12 @@ enum
 
    if ([type unsignedIntegerValue] == AVAudioSessionInterruptionTypeBegan)
    {
-      RARCH_LOG("AudioSession Interruption Began\n");
+      RARCH_DBG("[Cocoa] AudioSession Interruption Began.\n");
       audio_driver_stop();
    }
    else if ([type unsignedIntegerValue] == AVAudioSessionInterruptionTypeEnded)
    {
-      RARCH_LOG("AudioSession Interruption Ended\n");
+      RARCH_DBG("[Cocoa] AudioSession Interruption Ended.\n");
       audio_driver_start(false);
    }
 }
@@ -823,7 +823,7 @@ enum
          return NO;
       fill_pathname_expand_special(path, [ns_path UTF8String], sizeof(path));
       fill_pathname_expand_special(core_path, [ns_core_path UTF8String], sizeof(core_path));
-      RARCH_LOG("TopShelf told us to open %s with %s\n", path, core_path);
+      RARCH_LOG("[Cocoa] TopShelf told us to open \"%s\" with \"%s\".\n", path, core_path);
       return task_push_load_content_with_new_core_from_companion_ui(core_path, path,
                                                                     NULL, NULL, NULL,
                                                                     &content_info, NULL, NULL);
@@ -893,7 +893,7 @@ enum
     for (MXMetricPayload *payload in payloads)
     {
         NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
-        RARCH_LOG("Got Metric Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
+        RARCH_LOG("[Cocoa] Got Metric Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
     }
 }
 
@@ -902,7 +902,7 @@ enum
     for (MXDiagnosticPayload *payload in payloads)
     {
         NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
-        RARCH_LOG("Got Diagnostic Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
+        RARCH_LOG("[Cocoa] Got Diagnostic Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
     }
 }
 
@@ -959,9 +959,9 @@ int main(int argc, char *argv[])
 {
 #if TARGET_OS_IOS
     if (jb_enable_ptrace_hack())
-        RARCH_LOG("Ptrace hack complete, JIT support is enabled.\n");
+        RARCH_LOG("[Cocoa] Ptrace hack complete, JIT support is enabled.\n");
     else
-        RARCH_WARN("Ptrace hack NOT available; Please use an app like Jitterbug.\n");
+        RARCH_WARN("[Cocoa] Ptrace hack NOT available; Please use an app like Jitterbug.\n");
 #endif
 #ifdef HAVE_SDL2
     SDL_SetMainReady();

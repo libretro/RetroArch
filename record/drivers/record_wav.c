@@ -129,14 +129,14 @@ static void *record_wav_new(const struct record_params *params)
       handle->f = fopen(params->filename, "wb");
       if (!handle->f)
       {
-         RARCH_ERR("[WAV]: Cannot create %s: %s\n",
+         RARCH_ERR("[WAV] Cannot create \"%s\": %s.\n",
                params->filename, strerror(errno));
          break;
       }
 
       if (!wav_write_hdr(handle, params->channels, params->samplerate))
       {
-         RARCH_ERR("[WAV]: Cannot write header to %s: %s\n",
+         RARCH_ERR("[WAV] Cannot write header to \"%s\": %s.\n",
                params->filename, strerror(errno));
          break;
       }
@@ -168,7 +168,7 @@ static bool record_wav_push_audio(void *data,
    if (frames == max)
    {
       /* cannot append more data */
-      RARCH_LOG("[WAV]: Size limit reached\n");
+      RARCH_LOG("[WAV] Size limit reached.\n");
       if (!wav_fix_hdr_and_close(handle))
          return false;
    }

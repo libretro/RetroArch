@@ -404,7 +404,7 @@ void platform_emscripten_get_canvas_size(int *width, int *height)
 
    *width  = 800;
    *height = 600;
-   RARCH_ERR("[EMSCRIPTEN]: Could not get screen dimensions!\n");
+   RARCH_ERR("[EMSCRIPTEN] Could not get screen dimensions.\n");
 }
 
 double platform_emscripten_get_dpr(void)

@@ -98,7 +98,7 @@ static bool core_backup_get_backup_dir(
    {
       if (!path_mkdir(s))
       {
-         RARCH_ERR("[core backup] Failed to create backup directory: %s.\n", s);
+         RARCH_ERR("[Core backup] Failed to create backup directory: %s.\n", s);
          return false;
       }
    }

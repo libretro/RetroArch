@@ -105,7 +105,7 @@ static void *android_gfx_ctx_init(void *video_driver)
 #endif
 
 #ifdef HAVE_EGL
-   RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
+   RARCH_LOG("[Android] EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
 
    if (!egl_init_context(&and->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
             &major, &minor, &n, attribs, NULL))
@@ -160,7 +160,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
 
    if (new_width != *width || new_height != *height)
    {
-      RARCH_LOG("[Android]: Resizing (%u x %u) -> (%u x %u).\n",
+      RARCH_LOG("[Android] Resizing (%u x %u) -> (%u x %u).\n",
               *width, *height, new_width, new_height);
 
       *width  = new_width;

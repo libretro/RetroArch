@@ -119,7 +119,7 @@ bool glslang_read_shader_file(const char *path,
    if (!filestream_read_file(path, (void**)&buf, &buf_len))
    {
       if (!is_optional)
-         RARCH_ERR("[slang]: Failed to open shader file: \"%s\".\n", path);
+         RARCH_ERR("[Slang] Failed to open shader file: \"%s\".\n", path);
       return false;
    }
 
@@ -153,7 +153,7 @@ bool glslang_read_shader_file(const char *path,
 
       if (strncmp("#version ", line, STRLEN_CONST("#version ")))
       {
-         RARCH_ERR("[slang]: First line of the shader must contain a valid "
+         RARCH_ERR("[Slang] First line of the shader must contain a valid "
                "#version string.\n");
          goto error;
       }
@@ -198,7 +198,7 @@ bool glslang_read_shader_file(const char *path,
 
          if (string_is_empty(include_file))
          {
-            RARCH_ERR("[slang]: Invalid include statement \"%s\".\n", line);
+            RARCH_ERR("[Slang] Invalid include statement \"%s\".\n", line);
             goto error;
          }
 
@@ -210,7 +210,7 @@ bool glslang_read_shader_file(const char *path,
          if (!glslang_read_shader_file(include_path, output, false, include_optional))
          {
             if (include_optional)
-               RARCH_LOG("[slang]: Optional include not found \"%s\".\n", include_path);
+               RARCH_LOG("[Slang] Optional include not found \"%s\".\n", include_path);
             else
                goto error;
          }
