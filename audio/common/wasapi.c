@@ -118,19 +118,14 @@ static const char *wave_format_name(const WAVEFORMATEXTENSIBLE *format)
 
 const char* wasapi_error(DWORD error)
 {
-   static char error_message[256];
-
+   static char s[256];
    FormatMessage(
            FORMAT_MESSAGE_IGNORE_INSERTS
          | FORMAT_MESSAGE_FROM_SYSTEM,
-         NULL,
-         error,
+         NULL, error,
          MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-         error_message,
-         sizeof(error_message) - 1,
-         NULL);
-
-   return error_message;
+         s, sizeof(s) - 1, NULL);
+   return s;
 }
 
 static const char* wasapi_data_flow_name(EDataFlow data_flow)

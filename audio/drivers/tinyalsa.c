@@ -1922,19 +1922,6 @@ static int pcm_avail_update(struct pcm *pcm)
    return pcm_mmap_avail(pcm);
 }
 
-#if 0
-/* No longer used */
-
-static int pcm_state(struct pcm *pcm)
-{
-   int err = pcm_sync_ptr(pcm, 0);
-   if (err < 0)
-      return err;
-
-   return pcm->mmap_status->state;
-}
-#endif
-
 /** Waits for frames to be available for read or write operations.
  * @param pcm A PCM handle.
  * @param timeout The maximum amount of time to wait for, in terms of milliseconds.

@@ -631,16 +631,17 @@ static bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
    if (DragQueryFileW((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
    {
       wchar_t wszFilename[4096];
-      bool okay        = false;
+      bool ret        = false;
       char *szFilename = NULL;
       wszFilename[0]   = L'\0';
 
       DragQueryFileW((HDROP)wparam, 0, wszFilename, sizeof(wszFilename));
       szFilename = utf16_to_utf8_string_alloc(wszFilename);
-      okay = win32_load_content_from_gui(szFilename);
+      ret        = win32_load_content_from_gui(szFilename);
       if (szFilename)
          free(szFilename);
-      return okay;
+      if (ret)
+         return true;
    }
    return false;
 }

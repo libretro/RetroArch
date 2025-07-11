@@ -246,7 +246,7 @@ static bool ui_browser_window_win32_core(
       ui_browser_window_state_t *state, bool save)
 {
    OPENFILENAME ofn;
-   bool            okay  = true;
+   bool            ret   = true;
    settings_t *settings  = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
    bool video_fullscreen = settings->bools.video_fullscreen;
@@ -288,9 +288,9 @@ static bool ui_browser_window_win32_core(
    }
 
    if (!save && !GetOpenFileName(&ofn))
-      okay = false;
+      ret = false;
    if (save && !GetSaveFileName(&ofn))
-      okay = false;
+      ret = false;
 
    /* Full screen: Hide mouse after the file dialog */
    if (video_fullscreen)
@@ -300,7 +300,7 @@ static bool ui_browser_window_win32_core(
          video_st->poke->show_mouse(video_st->data, false);
    }
 
-   return okay;
+   return ret;
 }
 
 static bool ui_browser_window_win32_open(ui_browser_window_state_t *state)

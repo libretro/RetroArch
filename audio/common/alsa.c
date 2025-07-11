@@ -288,6 +288,7 @@ int alsa_init_pcm(snd_pcm_t **pcm,
          snd_pcm_name(*pcm));
 
    return 0;
+
 error:
    if (params)
       snd_pcm_hw_params_free(params);

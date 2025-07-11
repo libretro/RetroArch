@@ -224,7 +224,7 @@ bool nested_list_add_item(nested_list_t *list,
    bool success               = false;
 
    if (!list || string_is_empty(address))
-      goto end;
+      return false;
 
    /* If delim is NULL or address contains a single
     * token, then we are adding an item to the top
@@ -249,10 +249,10 @@ bool nested_list_add_item(nested_list_t *list,
    }
    else
    {
+      size_t i;
       nested_list_t *current_list     = list;
       nested_list_item_t *parent_item = NULL;
       nested_list_item_t *next_item   = NULL;
-      size_t i;
 
       /* Loop over list item ids */
       for (i = 0; i < id_list.size; i++)
@@ -482,9 +482,9 @@ nested_list_t *nested_list_item_get_parent_list(nested_list_item_t *list_item)
  */
 nested_list_t *nested_list_item_get_children(nested_list_item_t *list_item)
 {
-   if (!list_item ||
-       !list_item->children ||
-       (RBUF_LEN(list_item->children->items) < 1))
+   if (   !list_item
+       || !list_item->children
+       || (RBUF_LEN(list_item->children->items) < 1))
       return NULL;
 
    return list_item->children;
@@ -504,7 +504,6 @@ const char *nested_list_item_get_id(nested_list_item_t *list_item)
 {
    if (!list_item)
       return NULL;
-
    return list_item->id;
 }
 
