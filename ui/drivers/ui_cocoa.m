@@ -52,6 +52,10 @@
 
 #include "ui_cocoa.h"
 
+#ifdef HAVE_SWIFT
+#import "RetroArch-Swift.h"
+#endif
+
 #ifdef HAVE_MIST
 #include "steam/steam.h"
 #endif
@@ -644,6 +648,12 @@ static ui_application_t ui_application_cocoa = {
 
 #ifdef HAVE_COCOA_METAL
    [self setupMainWindow];
+#endif
+
+#if HAVE_SWIFT
+   if (@available(macOS 13.0, *)) {
+      [RetroArchAppShortcuts updateAppShortcuts];
+   }
 #endif
 
 #ifdef HAVE_QT

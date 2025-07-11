@@ -100,7 +100,7 @@
 	<string>Some cores are able to provide microphone input to games.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
-		<string>ConfigurationIntent</string>
+		<string>PlayGameIntent</string>
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
@@ -109,6 +109,17 @@
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.retroarch.url</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>retroarch</string>
+			</array>
+		</dict>
 	</array>
 	<key>UIRequiresFullScreen</key>
 	<false/>

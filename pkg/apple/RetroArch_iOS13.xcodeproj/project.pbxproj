@@ -32,8 +32,11 @@
 		0753AD192C86144200874A42 /* BaseConfig.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0753AD182C86144200874A42 /* BaseConfig.xcconfig */; };
 		0753AD1A2C86144200874A42 /* BaseConfig.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0753AD182C86144200874A42 /* BaseConfig.xcconfig */; };
 		076CA50D2B695C2C00840EA5 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 076CA50C2B695C2C00840EA5 /* libz.tbd */; };
+		076EAFD92E1F70D100C727AD /* RetroArchAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 076EAFD82E1F70D100C727AD /* RetroArchAppShortcuts.swift */; };
 		077D61D42C8CCF7400E492B4 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9292D6E428F549D000E47A75 /* SwiftUI.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		07912FC22E22B3FF004AA331 /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07912FC12E22B3FF004AA331 /* AppIntents.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
+		07B9B97C2E499D34007E419E /* RetroArchAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 076EAFD82E1F70D100C727AD /* RetroArchAppShortcuts.swift */; };
 		07C5C6402CD167470030FBEC /* GCDWebDAVServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 07C5C63E2CD167470030FBEC /* GCDWebDAVServer.m */; };
 		07F7FB022A2DA8B800037C04 /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07F7FB012A2DA8B800037C04 /* filters */; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
@@ -185,7 +188,9 @@
 		0753AD182C86144200874A42 /* BaseConfig.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = BaseConfig.xcconfig; sourceTree = "<group>"; };
 		076A9EAF2C438E1D00504BDF /* RetroArchiOS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; name = RetroArchiOS.entitlements; path = iOS/RetroArchiOS.entitlements; sourceTree = SOURCE_ROOT; };
 		076CA50C2B695C2C00840EA5 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
+		076EAFD82E1F70D100C727AD /* RetroArchAppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetroArchAppShortcuts.swift; sourceTree = "<group>"; };
 		077AB2C82BFB0E28002BBE2F /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = AppStore.xcconfig; path = iOS/AppStore.xcconfig; sourceTree = "<group>"; };
+		07912FC12E22B3FF004AA331 /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
 		07C5C63D2CD167470030FBEC /* GCDWebDAVServer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GCDWebDAVServer.h; sourceTree = "<group>"; };
 		07C5C63E2CD167470030FBEC /* GCDWebDAVServer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GCDWebDAVServer.m; sourceTree = "<group>"; };
@@ -488,6 +493,7 @@
 			files = (
 				9210C2F224B3A19100E6FE7C /* MetalKit.framework in Frameworks */,
 				9210C2F324B3A19100E6FE7C /* Metal.framework in Frameworks */,
+				07912FC22E22B3FF004AA331 /* AppIntents.framework in Frameworks */,
 				92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */,
 				92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */,
 				9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */,
@@ -540,6 +546,14 @@
 				0712A7772B807AE400C9765F /* Info.plist */,
 			);
 			path = RetroArchTopShelfExtension;
+			sourceTree = "<group>";
+		};
+		07649B662E1C47220003184B /* AppIntents */ = {
+			isa = PBXGroup;
+			children = (
+				076EAFD82E1F70D100C727AD /* RetroArchAppShortcuts.swift */,
+			);
+			path = AppIntents;
 			sourceTree = "<group>";
 		};
 		07C5C63F2CD167470030FBEC /* GCDWebDAVServer */ = {
@@ -1204,6 +1218,7 @@
 				83D632D719ECFCC4009E3161 /* iOS */,
 				926C77D821FD1E6500103EDE /* tvOS */,
 				92CC05CC21FF782C00FF79F0 /* WebServer */,
+				07649B662E1C47220003184B /* AppIntents */,
 				9292D6E628F549D100E47A75 /* RetroArchWidgetExtension */,
 				0712A7732B807AE400C9765F /* RetroArchTopShelfExtension */,
 				96AFAE2816C1D4EA009DE44C /* Frameworks */,
@@ -1228,6 +1243,7 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				07912FC12E22B3FF004AA331 /* AppIntents.framework */,
 				076CA50C2B695C2C00840EA5 /* libz.tbd */,
 				0718BC5F2ABBA807001F2CBE /* Network.framework */,
 				070A88422A4E7AA9003161C0 /* OpenAL.framework */,
@@ -1600,6 +1616,7 @@
 				92DAF33F277A370600FE2A9E /* EmulatorTouchMouse.swift in Sources */,
 				92CC05B021FE3C1700FF79F0 /* GCDWebServerDataResponse.m in Sources */,
 				92CC05C221FE3C6D00FF79F0 /* WebServer.m in Sources */,
+				076EAFD92E1F70D100C727AD /* RetroArchAppShortcuts.swift in Sources */,
 				928F7B1827CC6CF000377C40 /* HelperBarViewController.swift in Sources */,
 				928F7B2027CFC95C00377C40 /* CocoaView+MouseSupport.swift in Sources */,
 				9289D22825E88A63004B5D52 /* CocoaView+KeyboardSupport.swift in Sources */,
@@ -1644,6 +1661,7 @@
 				073734A42A093A5700BF7397 /* JITSupport.m in Sources */,
 				92CC05B321FE3C1700FF79F0 /* GCDWebServerStreamedResponse.m in Sources */,
 				92CC05A321FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */,
+				07B9B97C2E499D34007E419E /* RetroArchAppShortcuts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1813,6 +1831,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(TVOS_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = RetroArchTV;
 				SDKROOT = appletvos;
+				SWIFT_OBJC_BRIDGING_HEADER = "RetroArch-Bridging-Header.h";
 				TARGETED_DEVICE_FAMILY = 3;
 			};
 			name = Debug;
@@ -1832,6 +1851,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(TVOS_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = RetroArchTV;
 				SDKROOT = appletvos;
+				SWIFT_OBJC_BRIDGING_HEADER = "RetroArch-Bridging-Header.h";
 				TARGETED_DEVICE_FAMILY = 3;
 			};
 			name = Release;

@@ -36,6 +36,15 @@
 #include "../../retroarch.h"
 #include "../../tasks/task_content.h"
 #include "../../verbosity.h"
+#include "../../core_info.h"
+
+#if HAVE_SWIFT
+#if TARGET_OS_TV
+#import "RetroArchTV-Swift.h"
+#else
+#import "RetroArch-Swift.h"
+#endif
+#endif
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_setting.h"
@@ -675,10 +684,10 @@ enum
    rarch_setting_t *appicon_setting = menu_setting_find_enum(MENU_ENUM_LABEL_APPICON_SETTINGS);
    struct string_list *icons;
    if (               appicon_setting
-		   && uico_st->drv
-		   && uico_st->drv->get_app_icons
-		   && (icons = uico_st->drv->get_app_icons())
-		   && icons->size > 1)
+           && uico_st->drv
+           && uico_st->drv->get_app_icons
+           && (icons = uico_st->drv->get_app_icons())
+           && icons->size > 1)
    {
       int i;
       size_t _len    = 0;
@@ -704,6 +713,12 @@ enum
 
 #if TARGET_OS_TV
    update_topshelf();
+#endif
+
+#if HAVE_SWIFT
+   if (@available(iOS 16.0, tvOS 16.0, *)) {
+      [RetroArchAppShortcuts updateAppShortcuts];
+   }
 #endif
 
 #if TARGET_OS_IOS
@@ -805,6 +820,9 @@ enum
 
 -(BOOL)openRetroArchURL:(NSURL *)url
 {
+   RARCH_LOG("RetroArch URL received: %s\n", [[url absoluteString] UTF8String]);
+
+   // Handle topshelf URLs: retroarch://topshelf?path=...&core_path=...
    if ([url.host isEqualToString:@"topshelf"])
    {
       NSURLComponents *comp = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
@@ -828,6 +846,26 @@ enum
                                                                     NULL, NULL, NULL,
                                                                     &content_info, NULL, NULL);
    }
+
+   // Handle simple start URL: retroarch://start
+   if ([url.host isEqualToString:@"start"])
+   {
+      RARCH_LOG("App shortcut: just starting RetroArch\n");
+      return YES; // Just bring app to foreground
+   }
+
+   // Handle game launch URL: retroarch://game/filename
+   if ([url.host isEqualToString:@"game"])
+   {
+      NSString *filename = [url.path hasPrefix:@"/"] ? [url.path substringFromIndex:1] : url.path;
+      if (filename && filename.length > 0)
+      {
+         RARCH_LOG("App shortcut: launching game '%s'\n", [filename UTF8String]);
+         return cocoa_launch_game_by_filename(filename);
+      }
+   }
+
+   RARCH_LOG("Unknown RetroArch URL format: %s\n", [[url absoluteString] UTF8String]);
    return NO;
 }
 
