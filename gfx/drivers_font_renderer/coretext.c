@@ -229,16 +229,34 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
             slot->glyph.atlas_offset_x +
             slot->glyph.atlas_offset_y * handle->atlas.width;
 
-      /* Draw 2-pixel border rectangle */
-      for (r = 2; r < slot->glyph.height - 2; r++)
+      /* Only draw rectangle if glyph is large enough and within atlas bounds */
+      if (slot->glyph.width >= 6 && slot->glyph.height >= 6)
       {
-         dst[r * handle->atlas.width + 2] = 255;                              /* Left */
-         dst[r * handle->atlas.width + slot->glyph.width - 3] = 255;         /* Right */
-      }
-      for (c = 2; c < slot->glyph.width - 2; c++)
-      {
-         dst[2 * handle->atlas.width + c] = 255;                              /* Top */
-         dst[(slot->glyph.height - 3) * handle->atlas.width + c] = 255;      /* Bottom */
+         unsigned max_r = slot->glyph.height - 2;
+         unsigned max_c = slot->glyph.width - 2;
+         int atlas_size = handle->atlas.width * handle->atlas.height;
+
+         /* Draw 2-pixel border rectangle */
+         for (r = 2; r < max_r; r++)
+         {
+            int left_pos = r * handle->atlas.width + 2;
+            int right_pos = r * handle->atlas.width + max_c - 1;
+            if (left_pos < atlas_size && right_pos < atlas_size)
+            {
+               dst[left_pos] = 255;   /* Left */
+               dst[right_pos] = 255;  /* Right */
+            }
+         }
+         for (c = 2; c < max_c; c++)
+         {
+            int top_pos = 2 * handle->atlas.width + c;
+            int bottom_pos = (max_r - 1) * handle->atlas.width + c;
+            if (top_pos < atlas_size && bottom_pos < atlas_size)
+            {
+               dst[top_pos] = 255;    /* Top */
+               dst[bottom_pos] = 255; /* Bottom */
+            }
+         }
       }
 
       /* Set basic metrics using cached ascent */
