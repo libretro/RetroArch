@@ -14486,6 +14486,10 @@ MSG_HASH(
    "Core does not support save states."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "Core does not support Disc Control."
+   )
+MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
    "Core options file created successfully."
    )

@@ -5773,7 +5773,7 @@ static enum runloop_state_enum runloop_check_state(
                   RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
 
             runloop_msg_queue_push(_msg, strlen(_msg), 1, QUIT_DELAY_USEC * target_hz / 1000000,
-                  true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
          }
       }
 

@@ -118,7 +118,9 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_POSITIVE                  = (1 << 8),
    DISPWIDG_FLAG_NEGATIVE                  = (1 << 9),
    DISPWIDG_FLAG_CATEGORY_WARNING          = (1 << 10),
-   DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 11)
+   DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 11),
+   /* Size */
+   DISPWIDG_FLAG_SMALL                     = (1 << 12)
 };
 
 /* There can only be one message animation at a time to
@@ -216,8 +218,6 @@ typedef struct dispgfx_widget
    unsigned simple_widget_height;
 
    /* Used for both generic and libretro messages */
-   unsigned generic_message_height;
-
    unsigned msg_queue_height;
    unsigned msg_queue_padding;
    unsigned msg_queue_spacing;
@@ -233,7 +233,6 @@ typedef struct dispgfx_widget
    unsigned msg_queue_regular_padding_x;
    unsigned msg_queue_regular_text_start;
    unsigned msg_queue_task_text_start_x;
-   unsigned msg_queue_task_rect_start_x;
    unsigned msg_queue_task_hourglass_x;
    unsigned divider_width_1px;
 
