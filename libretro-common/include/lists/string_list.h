@@ -184,7 +184,7 @@ void string_list_join_concat(char *s, size_t len,
       const struct string_list *list, const char *sep);
 
 /**
- * string_list_join_concat:
+ * string_list_join_concat_special:
  * @s                : buffer that @list will be joined to.
  * @len              : length of @s.
  * @list             : pointer to string list.

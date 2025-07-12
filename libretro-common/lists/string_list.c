@@ -288,19 +288,17 @@ void string_list_join_concat(char *s, size_t len,
  *
  * A string list will be joined/concatenated as a
  * string to @s, delimited by @delim.
- *
- * TODO/FIXME - eliminate the strlcat
  **/
 void string_list_join_concat_special(char *s, size_t len,
       const struct string_list *list, const char *delim)
 {
    size_t i;
-
+   size_t _len = strlen(s);
    for (i = 0; i < list->size; i++)
    {
-      size_t __len = strlcat(s, list->elems[i].data, len);
+      _len += strlcpy(s + _len, list->elems[i].data, len - _len);
       if ((i + 1) < list->size)
-         strlcpy(s + __len, delim, len - __len);
+         _len += strlcpy(s + _len, delim, len - _len);
    }
 }
 

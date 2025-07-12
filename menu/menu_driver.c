@@ -4006,21 +4006,21 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
        && s)
    {
       size_t i;
-      size_t curr_len = strlen(s);
+      size_t _len = strlen(s);
 
       /* If buffer is already 'full', nothing
        * further can be added */
-      if (curr_len >= len)
+      if (_len >= len)
          return;
 
-      s           += curr_len;
-      len         -= curr_len;
-      curr_len     = 0;
+      s           += _len;
+      len         -= _len;
+      _len         = 0;
 
       for (i = 0; i < search->size; i++)
       {
-         curr_len += strlcpy(s + curr_len, " > ", len - curr_len);
-         curr_len += strlcpy(s + curr_len, search->terms[i], len - curr_len);
+         _len += strlcpy(s + _len, " > ", len - _len);
+         _len += strlcpy(s + _len, search->terms[i], len - _len);
       }
    }
 }
