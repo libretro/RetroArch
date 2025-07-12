@@ -81,7 +81,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   "Ladda Innehåll"
+   "Läs in innehåll"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
@@ -93,7 +93,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "Ladda skiva"
+   "Läs in skiva"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
@@ -218,11 +218,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "Ladda ner Kärna"
+   "Hämta ner en kärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "Laddar ner och installerar Kärna från Online-uppdateraren."
+   "Hämtar ner och installerar kärna från online-uppdateraren."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
@@ -315,7 +315,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Ladda ner Kärna"
+   "Hämta kärnor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
@@ -339,7 +339,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "Laddar ner en komplett miniatyrsamling för valt system."
+   "Hämtar ner en komplett miniatyrsamling för valt system."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
@@ -347,23 +347,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "Laddar ner miniatyrer för poster i den valda spellistan."
+   "Hämtar ner miniatyrer för poster i den valda spellistan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   "Ladda ner Innehåll"
+   "Hämta ner innehåll"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   "Laddar ner gratis Innehåll för vald Kärna."
+   "Hämta ner gratis innehåll för vald kärna."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-   "Ladda ner Kärnsystemfiler"
+   "Hämta ner kärnsystemfiler"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-   "Laddar ner hjälpfiler som system kräver för en korrekt/optimal kärndrift."
+   "Hämta ner hjälpfiler som system kräver för en korrekt/optimal kärndrift."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
@@ -513,15 +513,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
-   "Grundläggande (Spara/Ladda)"
+   "Grundläggande (Spara/Läs in)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   "Serialiserad (Spara/Ladda, Spola tillbaka)"
+   "Serialiserad (Spara/Läs in, Spola tillbaka)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   "Deterministisk (Spara/Ladda, Spola tillbaka, Run-Ahead, Netplay)"
+   "Deterministisk (Spara/Läs in, Spola tillbaka, Run-Ahead, Netplay)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
@@ -1077,11 +1077,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   "Ladda konfiguration"
+   "Läs in konfiguration"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   "Ladda befintlig konfiguration och ersätt aktuella värden."
+   "Läs in befintlig konfiguration och ersätt aktuella värden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
@@ -1402,7 +1402,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
-   "Libretro-kärna. Välj denna fil för att RetroArch ska ladda in den här kärnan."
+   "Libretro-kärna. Välj denna fil för att RetroArch ska läsa in den här kärnan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
@@ -1426,7 +1426,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   "Skärm-visning"
+   "Skärmvisning"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
@@ -2032,7 +2032,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "Fördröj automatisk laddning av Shaders (i ms). Kan kringgå grafiska fel när programvara för skärminspelning används."
+   "Fördröj automatisk inläsning av Shaders (i ms). Kan kringgå grafiska fel när programvara för skärminspelning används."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -3187,7 +3187,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
-   "Greppa mus automatiskt"
+   "Fånga muspekaren automatiskt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
@@ -3827,11 +3827,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "Greppa musen (På/Av)"
+   "Fånga muspekaren (växla)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "Greppar eller släpper musen. När den greppas döljs systemmarkören och begränsas till RetroArch-visningsfönstret, vilket förbättrar relativ musinmatning."
+   "Fångar eller släpper musen. När den fångas döljs systemmarkören och begränsas till RetroArch-visningsfönstret, vilket förbättrar relativ musinmatning."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
@@ -3839,7 +3839,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
-   "Slår på/av läget 'Game Focus'. När innehållet har fokus inaktiveras snabbtangenter (all tangentbordsinmatning skickas till den kärna som körs) och musen greppas."
+   "Slår på/av läget ”Spelfokus”. När innehållet har fokus inaktiveras snabbtangenterna (alla tangentbordsdata skickas till den körande kärnan) och musen fångas upp."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -3872,7 +3872,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
-   "Slår på/av Förutse."
+   "Slår på/av Run-Ahead."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
@@ -4161,7 +4161,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
-   "Pistol Ladda om"
+   "Ladda om pistol"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
@@ -4208,28 +4208,28 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
-   "[Kör i förväg inte tillgängligt]"
+   "[Run-Ahead inte tillgängligt]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE,
-   "Kör i förväg"
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
+   "Den nuvarande kärnan är inte kompatibel med run-ahead på grund av bristande stöd för deterministisk sparning."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
-   "Antal bildrutor att köra före"
+   "Antal bildrutor för Run-Ahead"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-   "Antalet bildrutor som ska köras i förväg. Orsakar problem i spelet, t. ex. hackighet, om antalet fördröjda bildrutor i spelet överskrids."
+   "Antalet bildrutor som ska köras i förväg (Run-Ahead). Orsakar problem i spelet, t. ex. hackighet, om antalet fördröjda bildrutor i spelet överskrids."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
-   "Kör ytterligare kärnlogik för att minska latenstiden. Single Instance körs till en framtida bildruta och laddar sedan om det aktuella tillståndet. Second Instance behåller en kärninstans för enbart video i en framtida bildruta för att undvika problem med ljudstatus. Preemptive Frames kör tidigare bildrutor med ny indata när det behövs, för effektivitet."
+   "Kör ytterligare kärnlogik för att minska latenstiden. Enstaka instans körs till en framtida bildruta och laddar sedan om det aktuella tillståndet. Andra instans behåller en kärninstans för enbart video i en framtida bildruta för att undvika problem med ljudstatus. Preemptive Frames kör tidigare bildrutor med ny indata när det behövs, för effektivitet."
    )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
-   "Kör ytterligare kärnlogik för att minska latenstiden. Single Instance körs till en framtida frame och laddar sedan om det aktuella tillståndet. Preemptive Frames kör tidigare ramar med ny indata när det behövs, för effektivitet."
+   "Kör ytterligare kärnlogik för att minska latenstiden. Enstaka instans körs till en framtida bildruta och läser sedan om det aktuella tillståndet. Preemptive Frames kör tidigare bildrutor med ny indata när det behövs, för effektivitet."
    )
 #endif
 MSG_HASH(
@@ -4242,11 +4242,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-   "Dölj Run-Ahead Varningar"
+   "Dölj varningar för Run-Ahead"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "Dölj varningsmeddelandet som visas när du använder Run-Ahead och kärnan inte har stöd för sparad status."
+   "Dölj varningsmeddelandet som visas när du använder Run-Ahead och kärnan inte har stöd för sparade tillstånd."
    )
 
 /* Settings > Core */
@@ -4309,12 +4309,12 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Anger om funktioner för att spara kärninformation ska ignoreras, vilket gör det möjligt att experimentera med relaterade funktioner (köra framåt, spola tillbaka etc.)."
+   "Anger om funktioner för att spara kärninformation ska ignoreras, vilket gör det möjligt att experimentera med relaterade funktioner (run ahead, spola tillbaka etc.)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
-   "Ladda alltid om Kärna när Innehåll ska köras"
+   "Läs alltid om kärna när innehåll ska köras"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -4379,7 +4379,7 @@ MSG_HASH(
 
 MSG_HASH(
    MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
-   "Kärnan laddar ner för närvarande"
+   "Kärnan hämtas ner för tillfället"
 )
 #endif
 /* Settings > Configuration */
@@ -4406,7 +4406,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-   "Ladda Innehållsspecifika Kärnalternativ automatiskt"
+   "Läs in innehållsspecifika kärnalternativ automatiskt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
@@ -4422,7 +4422,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-   "Ladda Ommappningsfiler automatiskt"
+   "Läs in ommappningsfiler automatiskt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
@@ -4757,6 +4757,10 @@ MSG_HASH(
    "Ändra inställningar för Spola tillbaka."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
+   "Ändra inställningar som påverkar bildrutornas tidräknare.\nEndast aktivt när trådad video är inaktiverat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
    "Snabbspola framåt-hastighet"
    )
@@ -4950,7 +4954,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-   "Skärm-överlager"
+   "Skärmöverlagring"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
@@ -5044,7 +5048,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-   "Visa muspekaren när ett skärm-överlager används."
+   "Visa muspekaren när ett skärmöverlagring används."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
@@ -5772,7 +5776,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
-   "Ange lösenord för att inaktivera Kioskläge"
+   "Ange lösenord för att inaktivera kioskläge"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
@@ -6065,7 +6069,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "Ange lösenord för 'Inställningar'"
+   "Ange lösenord för att aktivera 'Inställningar'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -6356,7 +6360,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-   "Visa alternativet 'Skärm-överlager'."
+   "Visa alternativet 'Skärmöverlagring'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
@@ -6555,11 +6559,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "Visa 'Skärm-visning'"
+   "Visa 'Skärmvisning'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "Visa inställningar för skärm-visning."
+   "Visa inställningar för skärmvisning."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
@@ -7321,6 +7325,10 @@ MSG_HASH(
 /* Settings > Network > Updater */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
+   "URL för Buildbot-kärnor"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
    "URL till katalog för kärnuppdaterare på libretros buildbot."
    )
@@ -7604,7 +7612,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
-   "Standard Kärna"
+   "Standardkärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
@@ -8808,8 +8816,12 @@ MSG_HASH(
    "Skivavbildshantering."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
+   "Ställ in shaders för att förbättra bilden visuellt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-   "Åsidosätter"
+   "Åsidosättningar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
@@ -11283,7 +11295,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
-   "&Fil"
+   "&Arkiv"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
@@ -11447,7 +11459,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
-   "Vänligen starta om programmet för att ändringarna ska börja gälla."
+   "Starta om programmet för att ändringarna ska börja gälla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOG,
@@ -11563,7 +11575,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
-   "Vänligen ange namn för ny spellista:"
+   "Ange namn för ny spellista:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
@@ -11830,7 +11842,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
-   "Skärm-överlager"
+   "Skärmöverlagring"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
@@ -12610,6 +12622,14 @@ MSG_HASH(
    "Alla kärnor som stöds ersatta till Play-butiksversioner"
    )
 MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "Kärnor uppdaterade: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "Kärnor överhoppade: "
+   )
+MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Kärnuppdatering inaktiverad - kärnan är låst: "
    )
@@ -12808,6 +12828,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_COULD_NOT_READ_CONTENT_FILE,
    "Kunde inte läsa innehållsfilen"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_READ_MOVIE_HEADER,
+   "Kunde inte läsa filmhuvud."
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
@@ -13478,6 +13502,10 @@ MSG_HASH(
    "till"
    )
 MSG_HASH(
+   MSG_UNDID_LOAD_STATE,
+   "Ångrade inläsningstillstånd."
+   )
+MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
    "Ångrar sparad status"
    )
@@ -13643,31 +13671,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,
-   "Kör i förväg aktiverat. Latensbildrutor borttagna: %u."
+   "Run-Ahead aktiverat. Latensbildrutor borttagna: %u."
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
-   "Kör i förväg aktiverat med sekundär instans. Latensbildrutor borttagna: %u."
+   "Run-Ahead aktiverat med sekundär instans. Latensbildrutor borttagna: %u."
    )
 MSG_HASH(
    MSG_RUNAHEAD_DISABLED,
-   "Kör i förväg inaktiverat."
+   "Run-Ahead inaktiverat."
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Run-Ahead har inaktiverats för att denna Kärna saknar stöd för Spara Statusar."
+   "Run-Ahead har inaktiverats för att denna kärna saknar stöd för sparade tillstånd."
+   )
+MSG_HASH(
+   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
+   "Run-Ahead är inte tillgänglig på grund av bristande stöd i denna kärna för deterministisk sparning av tillstånd."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Misslyckades med att spara tillstånd. Kör i förväg har inaktiverats."
+   "Misslyckades med att spara tillstånd. Run-Ahead har inaktiverats."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Misslyckades med att läsa in tillstånd. Kör i förväg har inaktiverats."
+   "Misslyckades med att läsa in tillstånd. Run-Ahead har inaktiverats."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "Misslyckades med att skapa sekundär instans. Kör i förväg kommer nu endast använda en instans."
+   "Misslyckades med att skapa sekundär instans. Run-Ahead kommer nu endast använda en instans."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
