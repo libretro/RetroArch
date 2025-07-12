@@ -1550,7 +1550,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL:
-         RARCH_LOG("[Environ] RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL.\n");
+         RARCH_LOG("[Environ] SET_CORE_OPTIONS_INTL.\n");
 
          {
             /* Parse core_options_intl to create
@@ -1591,7 +1591,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2:
-         RARCH_LOG("[Environ] RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2.\n");
+         RARCH_LOG("[Environ] SET_CORE_OPTIONS_V2.\n");
 
          {
             core_option_manager_t *new_vars                = NULL;
@@ -1634,7 +1634,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL:
-         RARCH_LOG("[Environ] RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL.\n");
+         RARCH_LOG("[Environ] SET_CORE_OPTIONS_V2_INTL.\n");
 
          {
             /* Parse retro_core_options_v2_intl to create
@@ -1685,22 +1685,27 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY:
-         RARCH_DBG("[Environ] RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY.\n");
-
          {
             const struct retro_core_option_display *core_options_display =
                   (const struct retro_core_option_display *)data;
 
             if (runloop_st->core_options && core_options_display)
+            {
+               RARCH_DBG("[Environ] SET_CORE_OPTIONS_DISPLAY: %s = %s\n",
+                     core_options_display->key,
+                     core_options_display->visible ? "visible" : "hidden");
                core_option_manager_set_visible(
                      runloop_st->core_options,
                      core_options_display->key,
                      core_options_display->visible);
+            }
          }
          break;
 
       case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK:
-         RARCH_DBG("[Environ] RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK.\n");
+#ifdef DEBUG
+         RARCH_DBG("[Environ] SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK.\n");
+#endif
 
          {
             const struct retro_core_options_update_display_callback
@@ -1717,7 +1722,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION:
-         RARCH_LOG("[Environ] GET_MESSAGE_INTERFACE_VERSION.\n");
+         RARCH_DBG("[Environ] GET_MESSAGE_INTERFACE_VERSION.\n");
          /* Current API version is 1 */
          *(unsigned *)data = 1;
          break;
@@ -1923,7 +1928,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (sys_info)
          {
             sys_info->performance_level = *(const unsigned*)data;
-            RARCH_LOG("[Environ] PERFORMANCE_LEVEL: %u.\n",
+            RARCH_LOG("[Environ] SET_PERFORMANCE_LEVEL: %u.\n",
                   sys_info->performance_level);
          }
          break;
@@ -1959,13 +1964,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                else /* If content path is empty, fall back to global system dir path */
                   *(const char**)data = dir_system;
 
-               RARCH_LOG("[Environ] SYSTEM_DIRECTORY: \"%s\".\n",
+               RARCH_LOG("[Environ] GET_SYSTEM_DIRECTORY: \"%s\".\n",
                      *(const char**)data);
             }
             else
             {
                *(const char**)data = dir_system;
-               RARCH_LOG("[Environ] SYSTEM_DIRECTORY: \"%s\".\n",
+               RARCH_LOG("[Environ] GET_SYSTEM_DIRECTORY: \"%s\".\n",
                          dir_system);
             }
          }
@@ -1973,7 +1978,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
          *(const char**)data = runloop_st->savefile_dir;
-         RARCH_LOG("[Environ] SAVE_DIRECTORY: \"%s\".\n",
+         RARCH_LOG("[Environ] GET_SAVE_DIRECTORY: \"%s\".\n",
                runloop_st->savefile_dir);
          break;
 
@@ -2223,37 +2228,37 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          const char *video_driver_name = settings->arrays.video_driver;
          bool driver_switch_enable     = settings->bools.driver_switch_enable;
 
-         RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER, video driver name: %s.\n", video_driver_name);
+         RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER, video driver: \"%s\"...\n", video_driver_name);
 
          if (string_is_equal(video_driver_name, "glcore"))
          {
              *cb = RETRO_HW_CONTEXT_OPENGL_CORE;
-             RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_OPENGL_CORE.\n");
+             RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER: RETRO_HW_CONTEXT_OPENGL_CORE.\n");
          }
          else if (string_is_equal(video_driver_name, "gl"))
          {
              *cb = RETRO_HW_CONTEXT_OPENGL;
-             RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_OPENGL.\n");
+             RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER: RETRO_HW_CONTEXT_OPENGL.\n");
          }
          else if (string_is_equal(video_driver_name, "vulkan"))
          {
              *cb = RETRO_HW_CONTEXT_VULKAN;
-             RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_VULKAN.\n");
+             RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER: RETRO_HW_CONTEXT_VULKAN.\n");
          }
          else if (string_is_equal(video_driver_name, "d3d11"))
          {
              *cb = RETRO_HW_CONTEXT_D3D11;
-             RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_D3D11.\n");
+             RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER: RETRO_HW_CONTEXT_D3D11.\n");
          }
          else if (string_is_equal(video_driver_name, "d3d12"))
          {
              *cb = RETRO_HW_CONTEXT_D3D12;
-             RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_D3D12.\n");
+             RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER: RETRO_HW_CONTEXT_D3D12.\n");
          }
          else
          {
              *cb = RETRO_HW_CONTEXT_NONE;
-             RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER - Context callback set to RETRO_HW_CONTEXT_NONE.\n");
+             RARCH_LOG("[Environ] GET_PREFERRED_HW_RENDER: RETRO_HW_CONTEXT_NONE.\n");
          }
 
          if (!driver_switch_enable)
@@ -2277,7 +2282,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
          if (!cb)
          {
-            RARCH_ERR("[Environ] SET_HW_RENDER - No valid callback passed, returning...\n");
+            RARCH_ERR("[Environ] SET_HW_RENDER: No valid callback passed, returning...\n");
             return false;
          }
 
@@ -2286,7 +2291,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (!dynamic_request_hw_context(
                   cb->context_type, cb->version_minor, cb->version_major))
          {
-            RARCH_ERR("[Environ] SET_HW_RENDER - Dynamic request HW context failed.\n");
+            RARCH_ERR("[Environ] SET_HW_RENDER: Dynamic request HW context failed.\n");
             return false;
          }
 
@@ -2327,7 +2332,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          else
             memcpy(hwr, cb, sizeof(*cb));
+#ifdef DEBUG
          RARCH_DBG("[Environ] Reached end of SET_HW_RENDER.\n");
+#endif
          break;
       }
 
@@ -2417,7 +2424,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                      ? runloop_st->audio_latency : audio_latency_default;
          unsigned audio_latency_new;
 
-         RARCH_LOG("[Environ] RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY.\n");
+         RARCH_LOG("[Environ] SET_MINIMUM_AUDIO_LATENCY.\n");
 
          /* Sanitise input latency value */
          runloop_st->audio_latency    = 0;
@@ -2598,7 +2605,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          const char *dir_core_assets = settings->paths.directory_core_assets;
 
          *dir = *dir_core_assets ? dir_core_assets : NULL;
-         RARCH_LOG("[Environ] CORE_ASSETS_DIRECTORY: \"%s\".\n",
+         RARCH_LOG("[Environ] GET_CORE_ASSETS_DIRECTORY: \"%s\".\n",
                dir_core_assets);
          break;
       }
@@ -2609,7 +2616,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          const char *dir_playlist    = settings->paths.directory_playlist;
 
          *dir = *dir_playlist ? dir_playlist : NULL;
-         RARCH_LOG("[Environ] PLAYLIST_DIRECTORY: \"%s\".\n",
+         RARCH_LOG("[Environ] GET_PLAYLIST_DIRECTORY: \"%s\".\n",
                dir_playlist);
          break;
       }
@@ -2620,7 +2627,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          const char *dir_content     = settings->paths.directory_menu_content;
 
          *dir = *dir_content ? dir_content : NULL;
-         RARCH_LOG("[Environ] FILE_BROWSER_START_DIRECTORY: \"%s\".\n",
+         RARCH_LOG("[Environ] GET_FILE_BROWSER_START_DIRECTORY: \"%s\".\n",
                dir_content);
          break;
       }
@@ -2875,9 +2882,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                break;
 
             if (sizeof(void *) == 8)
-               RARCH_DBG("           ndx flags  ptr              offset   start    select   disconn  len      addrspace\n");
+               RARCH_DBG("ndx flags  ptr              offset   start    select   disconn  len      addrspace\n");
             else
-               RARCH_DBG("           ndx flags  ptr          offset   start    select   disconn  len      addrspace\n");
+               RARCH_DBG("ndx flags  ptr          offset   start    select   disconn  len      addrspace\n");
 
             for (i = 0; i < sys_info->mmaps.num_descriptors; i++)
             {
@@ -2909,7 +2916,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                flags[5] = (desc->core.flags & RETRO_MEMDESC_CONST)     ? 'C' : 'c';
                flags[6] = 0;
 
-               RARCH_DBG("           %03u %s %p %08X %08X %08X %08X %08X %s\n",
+               RARCH_DBG("%03u %s %p %08X %08X %08X %08X %08X %s\n",
                      i + 1, flags, desc->core.ptr, desc->core.offset, desc->core.start,
                      desc->core.select, desc->core.disconnect, desc->core.len,
                      desc->core.addrspace ? desc->core.addrspace : "");
@@ -3028,7 +3035,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
 #ifdef HAVE_LIBNX
-         RARCH_LOG("[Environ] SET_HW_SHARED_CONTEXT - ignored for now.\n");
+         RARCH_LOG("[Environ] SET_HW_SHARED_CONTEXT: Ignored for now.\n");
          /* TODO/FIXME - Force this off for now for Switch
           * until shared HW context can work there */
          return false;
@@ -3175,6 +3182,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       {
          struct retro_midi_interface *midi_interface =
                (struct retro_midi_interface *)data;
+
+         RARCH_LOG("[Environ] GET_MIDI_INTERFACE.\n");
 
          if (midi_interface)
          {
@@ -3373,7 +3382,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             const struct retro_system_content_info_override *overrides =
                   (const struct retro_system_content_info_override *)data;
 
-            RARCH_LOG("[Environ] RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE.\n");
+            RARCH_LOG("[Environ] SET_CONTENT_INFO_OVERRIDE.\n");
 
             /* Passing NULL always results in 'success' - this
              * allows cores to test for frontend support of
@@ -3393,7 +3402,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             const struct retro_game_info_ext **game_info_ext =
                   (const struct retro_game_info_ext **)data;
 
-            RARCH_LOG("[Environ] RETRO_ENVIRONMENT_GET_GAME_INFO_EXT.\n");
+            RARCH_LOG("[Environ] GET_GAME_INFO_EXT.\n");
 
             if (!game_info_ext)
                return false;
@@ -3417,7 +3426,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             microphone_driver_state_t *mic_st             = microphone_state_get_ptr();
             const microphone_driver_t *driver             = mic_st->driver;
 
-            RARCH_LOG("[Environ] RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE.\n");
+            RARCH_LOG("[Environ] GET_MICROPHONE_INTERFACE.\n");
 
             if (!microphone)
                return false;
@@ -3468,7 +3477,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 #else
          {
             struct retro_microphone_interface* microphone = (struct retro_microphone_interface *)data;
-            RARCH_LOG("[Environ] RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE.\n");
+            RARCH_LOG("[Environ] GET_MICROPHONE_INTERFACE.\n");
 
             if (microphone)
                microphone->interface_version = 0;
@@ -3507,10 +3516,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE:
 #ifdef HAVE_NETWORKING
-         RARCH_LOG("[Environ] RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE.\n");
+         RARCH_LOG("[Environ] SET_NETPACKET_INTERFACE.\n");
          if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_SET_CORE_PACKET_INTERFACE, data))
          {
-            RARCH_ERR("[Environ] RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE set too late.\n");
+            RARCH_ERR("[Environ] SET_NETPACKET_INTERFACE set too late.\n");
             return false;
          }
          break;
