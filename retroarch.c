@@ -5105,7 +5105,7 @@ bool command_event(enum event_command cmd, void *data)
             {
                const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
                runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             }
          }
          break;
@@ -5146,7 +5146,7 @@ bool command_event(enum event_command cmd, void *data)
             {
                const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
                runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             }
          }
          break;
@@ -5174,7 +5174,7 @@ bool command_event(enum event_command cmd, void *data)
             {
                const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
                runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             }
          }
          break;
@@ -5202,7 +5202,7 @@ bool command_event(enum event_command cmd, void *data)
             {
                const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
                runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             }
          }
          break;
@@ -5222,7 +5222,7 @@ bool command_event(enum event_command cmd, void *data)
             {
                const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
                runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             }
          }
          break;

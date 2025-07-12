@@ -370,7 +370,8 @@ bool disk_control_set_eject_state(
       if (verbosity || error)
          runloop_msg_queue_push(
                msg, _len, 1, error ? 180 : 60, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               MESSAGE_QUEUE_ICON_DEFAULT,
+               error ? MESSAGE_QUEUE_CATEGORY_ERROR : MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
 #ifdef HAVE_CHEEVOS
@@ -443,7 +444,8 @@ bool disk_control_set_index(
       /* Errors should always be displayed */
       if (verbosity || error)
          runloop_msg_queue_push(msg, _len, 1, msg_duration, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               MESSAGE_QUEUE_ICON_DEFAULT,
+               error ? MESSAGE_QUEUE_CATEGORY_ERROR : MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    /* If operation was successful, update disk
@@ -812,7 +814,7 @@ bool disk_control_verify_initial_index(
       /* Ignore 'verbosity' setting - errors should
        * always be displayed */
       runloop_msg_queue_push(_msg, _len, 0, 60, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
       /* Since a failure here typically means that the
        * original M3U content file has been altered,
@@ -854,7 +856,7 @@ bool disk_control_verify_initial_index(
        * we do not want to 'overwrite' them */
       if (verbosity)
          runloop_msg_queue_push(
-               msg, _len, 0, msg_duration, false, NULL,
+               msg, _len, 2, msg_duration, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_CHEEVOS
