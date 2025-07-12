@@ -177,8 +177,8 @@ bool string_list_append(struct string_list *list, const char *elem,
     * it) capacity will be zero. This will cause
     * a segfault. Handle this case by forcing the new
     * capacity to a fixed size of 32 */
-   if (list->size >= list->cap &&
-         !string_list_capacity(list,
+   if (      list->size >= list->cap
+         && !string_list_capacity(list,
                (list->cap > 0) ? (list->cap * 2) : 32))
       return false;
 
@@ -252,7 +252,6 @@ void string_list_set(struct string_list *list,
 void string_list_join_concat(char *s, size_t len,
       const struct string_list *list, const char *delim)
 {
-   size_t i;
    size_t _len = strlen(s);
 
    /* If @s is already 'full', nothing
@@ -262,17 +261,15 @@ void string_list_join_concat(char *s, size_t len,
     *   in which case any attempt to increment
     *   @s or decrement @len would lead to
     *   undefined behaviour */
-   if (_len >= len)
-      return;
-
-   s      += _len;
-   len    -= _len;
-
-   for (i = 0; i < list->size; i++)
+   if (_len < len)
    {
-      size_t __len = strlcat(s, list->elems[i].data, len);
-      if ((i + 1) < list->size)
-         strlcpy(s + __len, delim, len - __len);
+      size_t i;
+      for (i = 0; i < list->size; i++)
+      {
+         _len += strlcpy(s + _len, list->elems[i].data, len - _len);
+         if ((i + 1) < list->size)
+            _len += strlcpy(s + _len, delim, len - _len);
+      }
    }
 }
 

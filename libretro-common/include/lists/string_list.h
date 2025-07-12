@@ -177,8 +177,8 @@ void string_list_free(struct string_list *list);
  * NOTE: @s must be NULL-terminated.
  *
  * Hidden non-leaf function cost:
- * - Calls strlen_size()
- * - Calls strlcat x times in a loop
+ * - Calls strlen()
+ * - Calls strlcpy x times in a loop
  **/
 void string_list_join_concat(char *s, size_t len,
       const struct string_list *list, const char *sep);

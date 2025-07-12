@@ -4013,10 +4013,6 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
       if (_len >= len)
          return;
 
-      s           += _len;
-      len         -= _len;
-      _len         = 0;
-
       for (i = 0; i < search->size; i++)
       {
          _len += strlcpy(s + _len, " > ", len - _len);
