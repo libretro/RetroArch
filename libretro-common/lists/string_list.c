@@ -253,7 +253,7 @@ void string_list_join_concat(char *s, size_t len,
       const struct string_list *list, const char *delim)
 {
    size_t i;
-   size_t _len = strlen_size(s, len);
+   size_t _len = strlen(s);
 
    /* If @s is already 'full', nothing
     * further can be added
@@ -394,7 +394,7 @@ bool string_split_noalloc(struct string_list *list,
  **/
 struct string_list *string_separate(char *str, const char *delim)
 {
-   char *token              = NULL;
+   char *tok                = NULL;
    char **str_ptr           = NULL;
    struct string_list *list = NULL;
 
@@ -405,23 +405,23 @@ struct string_list *string_separate(char *str, const char *delim)
 	   return NULL;
 
    str_ptr = &str;
-   token   = string_tokenize(str_ptr, delim);
+   tok     = string_tokenize(str_ptr, delim);
 
-   while (token)
+   while (tok)
    {
       union string_list_elem_attr attr;
 
       attr.i = 0;
 
-      if (!string_list_append(list, token, attr))
+      if (!string_list_append(list, tok, attr))
       {
-         free(token);
+         free(tok);
          string_list_free(list);
          return NULL;
       }
 
-      free(token);
-      token = string_tokenize(str_ptr, delim);
+      free(tok);
+      tok = string_tokenize(str_ptr, delim);
    }
 
    return list;
@@ -431,7 +431,7 @@ bool string_separate_noalloc(
       struct string_list *list,
       char *str, const char *delim)
 {
-   char *token              = NULL;
+   char *tok                = NULL;
    char **str_ptr           = NULL;
 
    /* Sanity check */
@@ -439,24 +439,23 @@ bool string_separate_noalloc(
       return false;
 
    str_ptr = &str;
-   token   = string_tokenize(str_ptr, delim);
+   tok     = string_tokenize(str_ptr, delim);
 
-   while (token)
+   while (tok)
    {
       union string_list_elem_attr attr;
 
       attr.i = 0;
 
-      if (!string_list_append(list, token, attr))
+      if (!string_list_append(list, tok, attr))
       {
-         free(token);
+         free(tok);
          return false;
       }
 
-      free(token);
-      token = string_tokenize(str_ptr, delim);
+      free(tok);
+      tok = string_tokenize(str_ptr, delim);
    }
-
    return true;
 }
 

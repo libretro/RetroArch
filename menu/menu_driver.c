@@ -4005,8 +4005,8 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
        && (search->size > 0)
        && s)
    {
-      size_t curr_len = strlen_size(s, len);
       size_t i;
+      size_t curr_len = strlen(s);
 
       /* If buffer is already 'full', nothing
        * further can be added */
