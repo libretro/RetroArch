@@ -20,14 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/* Implementation of strlcpy()/strlcat() based on OpenBSD. */
+
+#ifndef __MACH__
 #include <stdlib.h>
 #include <ctype.h>
 
 #include <compat/strl.h>
 
-/* Implementation of strlcpy()/strlcat() based on OpenBSD. */
-
-#ifndef __MACH__
 size_t strlcpy(char *s, const char *source, size_t len)
 {
    size_t _len  = len;
