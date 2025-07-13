@@ -45,7 +45,12 @@
 #endif
 
 #if defined(__AVX__)
-#include <immintrin.h>
+#ifdef __GNUC__
+  #include <x86intrin.h>
+#else
+  #include <immintrin.h>
+  #include <ammintrin.h>
+#endif
 #endif
 
 /* Rough SNR values for upsampling:
