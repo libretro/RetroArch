@@ -13794,6 +13794,10 @@ MSG_HASH(
    "Çekirdek durum kayıtlarını desteklemiyor."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "Çekirdek disk kontrolünü desteklemiyor."
+   )
+MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
    "Çekirdek seçenekleri dosyası başarıyla oluşturuldu."
    )

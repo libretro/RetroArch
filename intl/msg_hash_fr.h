@@ -13674,6 +13674,10 @@ MSG_HASH(
    "Le cœur ne prend pas en charge les sauvegardes instantanées."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "Le cœur ne prend pas en charge le contrôle du disque."
+   )
+MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
    "Fichier d'options du cœur créé avec succès."
    )

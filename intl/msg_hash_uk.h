@@ -13626,6 +13626,14 @@ MSG_HASH(
    "Всі підтримувані ядра перемикаються на версії Play Store"
    )
 MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "Оновлено ядер: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "Пропущено ядер: "
+   )
+MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Оновлення ядра вимкнено - ядро заблоковано: "
    )
@@ -13792,6 +13800,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "Ядро не підтримує збереження станів."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "Ядро не підтримує Керування Диском."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,

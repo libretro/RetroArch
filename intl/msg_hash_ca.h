@@ -13614,6 +13614,10 @@ MSG_HASH(
    "El nucli no admet estats desats."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "El nucli no té suport per Disc Control."
+   )
+MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
    "S’ha creat correctament el fitxer d’opcions del nucli."
    )
