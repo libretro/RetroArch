@@ -551,36 +551,20 @@ static void *avfoundation_init(const char *device, uint64_t caps,
     avf->manager.width  = width;
     avf->manager.height = height;
 
-    /* Check if we're on the main thread */
-    if ([NSThread isMainThread])
+    /* Synchronously request camera authorization */
+    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+    __block BOOL granted = NO;
+    RARCH_LOG("[Camera] Requesting camera authorization synchronously.\n");
+    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL g) {
+        granted = g;
+        dispatch_semaphore_signal(sema);
+    }];
+    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    if (!granted)
     {
-        RARCH_LOG("[Camera] Initializing on main thread.\n");
-        /* Direct initialization on main thread */
-        [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
-            AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
-            if (status != AVAuthorizationStatusAuthorized)
-            {
-                RARCH_ERR("[Camera] Camera access not authorized (status: %d).\n", (int)status);
-                free(avf);
-                return;
-            }
-        }];
-    }
-    else 
-    {
-        RARCH_LOG("[Camera] Initializing on background thread.\n");
-        /* Use dispatch_sync to run authorization check on main thread */
-        __block AVAuthorizationStatus status;
-        dispatch_sync(dispatch_get_main_queue(), ^{
-            status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
-        });
-
-        if (status != AVAuthorizationStatusAuthorized)
-        {
-            RARCH_ERR("[Camera] Camera access not authorized (status: %d).\n", (int)status);
-            free(avf);
-            return NULL;
-        }
+        RARCH_ERR("[Camera] Camera access not authorized.\n");
+        free(avf);
+        return NULL;
     }
 
     /* Allocate frame buffer */
@@ -600,7 +584,6 @@ static void *avfoundation_init(const char *device, uint64_t caps,
         @autoreleasepool {
             setupSuccess = [avf->manager setupCameraSession];
             if (setupSuccess) {
-                [avf->manager.session startRunning];
                 RARCH_LOG("[Camera] Started camera session.\n");
             }
         }
@@ -611,7 +594,6 @@ static void *avfoundation_init(const char *device, uint64_t caps,
             @autoreleasepool {
                 setupSuccess = [avf->manager setupCameraSession];
                 if (setupSuccess) {
-                    [avf->manager.session startRunning];
                     RARCH_LOG("[Camera] Started camera session.\n");
                 }
             }
@@ -621,15 +603,6 @@ static void *avfoundation_init(const char *device, uint64_t caps,
     if (!setupSuccess)
     {
         RARCH_ERR("[Camera] Failed to setup camera.\n");
-        free(avf->manager.frameBuffer);
-        free(avf);
-        return NULL;
-    }
-
-    /* Add a check to verify the session is actually running */
-    if (!avf->manager.session.isRunning)
-    {
-        RARCH_ERR("[Camera] Failed to start camera session.\n");
         free(avf->manager.frameBuffer);
         free(avf);
         return NULL;
@@ -672,13 +645,10 @@ static bool avfoundation_start(void *data)
 
     RARCH_LOG("[Camera] Starting AVFoundation camera.\n");
 
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    dispatch_sync(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         [avf->manager.session startRunning];
         RARCH_LOG("[Camera] Camera session started on background thread.\n");
     });
-
-    /* Give the session a moment to start */
-    usleep(100000); /* 100ms */
 
     isRunning = avf->manager.session.isRunning;
     RARCH_LOG("[Camera] Camera session running: %s.\n", isRunning ? "YES" : "NO");
