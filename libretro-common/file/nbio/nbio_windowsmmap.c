@@ -77,22 +77,25 @@ static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
 #else
    SIZE_T len;
 #endif
+   HANDLE file;
    struct nbio_mmap_win32_t* handle  = NULL;
    void* ptr                         = NULL;
    bool is_write                     = (mode == NBIO_WRITE || mode == NBIO_UPDATE || mode == BIO_WRITE);
    DWORD access                      = (is_write ? GENERIC_READ|GENERIC_WRITE : GENERIC_READ);
 #if !defined(_WIN32) || defined(LEGACY_WIN32)
-   HANDLE file                       = CreateFile(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
+   file                              = CreateFile(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
 #else
    wchar_t *filename_wide            = utf8_to_utf16_string_alloc(filename);
+   if (!filename_wide)
+      return NULL;
 #ifdef __WINRT__
-   HANDLE file                       = CreateFile2(filename_wide, access, FILE_SHARE_ALL, dispositions[mode], NULL);
+   file                              = CreateFile2(filename_wide, access, FILE_SHARE_ALL, dispositions[mode], NULL);
 #else
-   HANDLE file                       = CreateFileW(filename_wide, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
+   file                              = CreateFileW(filename_wide, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
 #endif
 
-   if (filename_wide)
-      free(filename_wide);
+   free(filename_wide);
+   filename_wide = NULL;
 #endif
 
    if (file == INVALID_HANDLE_VALUE)
@@ -100,18 +103,48 @@ static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* GetFileSizeEx is new for Windows 2000 */
-   GetFileSizeEx(file, &len);
+   if (!GetFileSizeEx(file, &len))
+   {
+      CloseHandle(file);
+      return NULL;
+   }
    mem = CreateFileMapping(file, NULL, is_write ? PAGE_READWRITE : PAGE_READONLY, 0, 0, NULL);
+   if (!mem)
+   {
+      CloseHandle(file);
+      return NULL;
+   }
    ptr = MapViewOfFile(mem, is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len.QuadPart);
 #else
-   GetFileSize(file, &len);
+   if (!GetFileSize(file, &len))
+   {
+      CloseHandle(file);
+      return NULL;
+   }
    mem = CreateFileMapping(file, NULL, is_write ? PAGE_READWRITE : PAGE_READONLY, 0, 0, NULL);
+   if (!mem)
+   {
+      CloseHandle(file);
+      return NULL;
+   }
    ptr = MapViewOfFile(mem, is_write ? (FILE_MAP_READ|FILE_MAP_WRITE) : FILE_MAP_READ, 0, 0, len);
 #endif
-
    CloseHandle(mem);
 
+   if (!ptr)
+   {
+      CloseHandle(file);
+      return NULL;
+   }
+
    handle           = (struct nbio_mmap_win32_t*)malloc(sizeof(struct nbio_mmap_win32_t));
+
+   if (!handle)
+   {
+      UnmapViewOfFile(ptr);
+      CloseHandle(file);
+      return NULL;
+   }
 
    handle->file     = file;
    handle->is_write = is_write;
