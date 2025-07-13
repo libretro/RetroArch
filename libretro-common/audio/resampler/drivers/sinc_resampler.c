@@ -267,61 +267,53 @@ static void resampler_sinc_process_avx_kaiser(void *re_, struct resampler_data *
             re->ptr = taps;
          re->ptr--;
 
-         re->buffer_l[re->ptr + taps] =
-            re->buffer_l[re->ptr       ] = *input++;
-
-         re->buffer_r[re->ptr + taps] =
-            re->buffer_r[re->ptr       ] = *input++;
+         re->buffer_l[re->ptr + taps] = re->buffer_l[re->ptr] = *input++;
+         re->buffer_r[re->ptr + taps] = re->buffer_r[re->ptr] = *input++;
 
          re->time -= phases;
          frames--;
       }
 
+
+      while (re->time < phases)
       {
+         int i;
+         float res_r[4], res_l[4];
          const float *buffer_l    = re->buffer_l + re->ptr;
          const float *buffer_r    = re->buffer_r + re->ptr;
-         while (re->time < phases)
+         unsigned phase           = re->time >> re->subphase_bits;
+         float *phase_table       = re->phase_table + phase * taps * 2;
+         float *delta_table       = phase_table + taps;
+         __m256 delta             = _mm256_set1_ps((float)(re->time & re->subphase_mask) * re->subphase_mod);
+         __m256 sum_l             = _mm256_setzero_ps();
+         __m256 sum_r             = _mm256_setzero_ps();
+
+         for (i = 0; i < (int)taps; i += 8)
          {
-            int i;
-            unsigned phase           = re->time >> re->subphase_bits;
+            __m256 buf_l  = _mm256_load_ps(buffer_l + i);
+            __m256 buf_r  = _mm256_load_ps(buffer_r + i);
+            __m256 deltas = _mm256_load_ps(delta_table + i);
+            __m256 sinc   = _mm256_add_ps(_mm256_load_ps((const float*)phase_table + i),
+                  _mm256_mul_ps(deltas, delta));
 
-            float *phase_table       = re->phase_table + phase * taps * 2;
-            float *delta_table       = phase_table     + taps;
-            __m256 delta             = _mm256_set1_ps((float)
-                  (re->time & re->subphase_mask) * re->subphase_mod);
-            __m256 sum_l             = _mm256_setzero_ps();
-            __m256 sum_r             = _mm256_setzero_ps();
-
-            for (i = 0; i < (int)taps; i += 8)
-            {
-               __m256 buf_l  = _mm256_loadu_ps(buffer_l + i);
-               __m256 buf_r  = _mm256_loadu_ps(buffer_r + i);
-               __m256 deltas = _mm256_load_ps(delta_table + i);
-               __m256 sinc   = _mm256_add_ps(_mm256_load_ps((const float*)phase_table + i),
-                     _mm256_mul_ps(deltas, delta));
-
-               sum_l         = _mm256_add_ps(sum_l, _mm256_mul_ps(buf_l, sinc));
-               sum_r         = _mm256_add_ps(sum_r, _mm256_mul_ps(buf_r, sinc));
-            }
-
-            /* hadd on AVX is weird, and acts on low-lanes
-             * and high-lanes separately. */
-            __m256 res_l = _mm256_hadd_ps(sum_l, sum_l);
-            __m256 res_r = _mm256_hadd_ps(sum_r, sum_r);
-            res_l        = _mm256_hadd_ps(res_l, res_l);
-            res_r        = _mm256_hadd_ps(res_r, res_r);
-            res_l        = _mm256_add_ps(_mm256_permute2f128_ps(res_l, res_l, 1), res_l);
-            res_r        = _mm256_add_ps(_mm256_permute2f128_ps(res_r, res_r, 1), res_r);
-
-            /* This is optimized to mov %xmmN, [mem].
-             * There doesn't seem to be any _mm256_store_ss intrinsic. */
-            _mm_store_ss(output + 0, _mm256_extractf128_ps(res_l, 0));
-            _mm_store_ss(output + 1, _mm256_extractf128_ps(res_r, 0));
-
-            out_frames++;
-            output   += 2;
-            re->time += ratio;
+            sum_l = _mm256_fmadd_ps(buf_l, sinc, sum_l);
+            sum_r = _mm256_fmadd_ps(buf_r, sinc, sum_r);
          }
+
+         sum_l = _mm256_hadd_ps(sum_l, sum_l);
+         sum_l = _mm256_hadd_ps(sum_l, sum_l);
+         _mm256_store_ps(res_l, sum_l);
+
+         sum_r = _mm256_hadd_ps(sum_r, sum_r);
+         sum_r = _mm256_hadd_ps(sum_r, sum_r);
+         _mm256_store_ps(res_r, sum_r);
+
+         output[0] = res_l[0];
+         output[1] = res_r[0];
+
+         out_frames++;
+         output   += 2;
+         re->time += ratio;
       }
    }
 
@@ -429,72 +421,48 @@ static void resampler_sinc_process_sse_kaiser(void *re_, struct resampler_data *
             re->ptr = taps;
          re->ptr--;
 
-         re->buffer_l[re->ptr + taps] =
-            re->buffer_l[re->ptr       ] = *input++;
+         re->buffer_l[re->ptr + taps] = re->buffer_l[re->ptr] = *input++;
+         re->buffer_r[re->ptr + taps] = re->buffer_r[re->ptr] = *input++;
 
-         re->buffer_r[re->ptr + taps] =
-            re->buffer_r[re->ptr       ] = *input++;
-
-         re->time                    -= phases;
+         re->time -= phases;
          frames--;
       }
 
+
+      while (re->time < phases)
       {
-         const float *buffer_l    = re->buffer_l + re->ptr;
-         const float *buffer_r    = re->buffer_r + re->ptr;
-         while (re->time < phases)
+         int i;
+         __m128 sum;
+         const float *buffer_l = re->buffer_l + re->ptr;
+         const float *buffer_r = re->buffer_r + re->ptr;
+         unsigned phase        = re->time >> re->subphase_bits;
+         float *phase_table    = re->phase_table + phase * taps * 2;
+         float *delta_table    = phase_table + taps;
+         __m128 delta          = _mm_set1_ps((float)(re->time & re->subphase_mask) * re->subphase_mod);
+
+         __m128 sum_l          = _mm_setzero_ps();
+         __m128 sum_r          = _mm_setzero_ps();
+
+         for (i = 0; i < (int)taps; i += 4)
          {
-            int i;
-            __m128 sum;
-            unsigned phase           = re->time >> re->subphase_bits;
-            float *phase_table       = re->phase_table + phase * taps * 2;
-            float *delta_table       = phase_table + taps;
-            __m128 delta             = _mm_set1_ps((float)
-                  (re->time & re->subphase_mask) * re->subphase_mod);
+            __m128 buf_l  = _mm_loadu_ps(buffer_l + i);
+            __m128 buf_r  = _mm_loadu_ps(buffer_r + i);
+            __m128 deltas = _mm_load_ps(delta_table + i);
+            __m128 sinc   = _mm_add_ps(_mm_load_ps(phase_table + i), _mm_mul_ps(deltas, delta));
 
-            __m128 sum_l             = _mm_setzero_ps();
-            __m128 sum_r             = _mm_setzero_ps();
-
-            for (i = 0; i < (int)taps; i += 4)
-            {
-               __m128 buf_l = _mm_loadu_ps(buffer_l + i);
-               __m128 buf_r = _mm_loadu_ps(buffer_r + i);
-               __m128 deltas = _mm_load_ps(delta_table + i);
-               __m128 _sinc  = _mm_add_ps(_mm_load_ps((const float*)phase_table + i),
-                     _mm_mul_ps(deltas, delta));
-               sum_l        = _mm_add_ps(sum_l, _mm_mul_ps(buf_l, _sinc));
-               sum_r        = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, _sinc));
-            }
-
-            /* Them annoying shuffles.
-             * sum_l = { l3, l2, l1, l0 }
-             * sum_r = { r3, r2, r1, r0 }
-             */
-
-            sum = _mm_add_ps(_mm_shuffle_ps(sum_l, sum_r,
-                     _MM_SHUFFLE(1, 0, 1, 0)),
-                  _mm_shuffle_ps(sum_l, sum_r, _MM_SHUFFLE(3, 2, 3, 2)));
-
-            /* sum   = { r1, r0, l1, l0 } + { r3, r2, l3, l2 }
-             * sum   = { R1, R0, L1, L0 }
-             */
-
-            sum = _mm_add_ps(_mm_shuffle_ps(sum, sum, _MM_SHUFFLE(3, 3, 1, 1)), sum);
-
-            /* sum   = {R1, R1, L1, L1 } + { R1, R0, L1, L0 }
-             * sum   = { X,  R,  X,  L }
-             */
-
-            /* Store L */
-            _mm_store_ss(output + 0, sum);
-
-            /* movehl { X, R, X, L } == { X, R, X, R } */
-            _mm_store_ss(output + 1, _mm_movehl_ps(sum, sum));
-
-            out_frames++;
-            output   += 2;
-            re->time += ratio;
+            sum_l = _mm_add_ps(sum_l, _mm_mul_ps(buf_l, sinc));
+            sum_r = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, sinc));
          }
+
+         sum = _mm_hadd_ps(sum_l, sum_r);
+         sum = _mm_hadd_ps(sum, sum);
+
+         _mm_store_ss(output, sum);
+         _mm_store_ss(output + 1, _mm_movehl_ps(sum, sum));
+
+         out_frames++;
+         output   += 2;
+         re->time += ratio;
       }
    }
 
