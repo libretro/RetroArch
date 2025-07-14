@@ -57,6 +57,12 @@
 #include "../retroarch.h"
 #ifdef HAVE_BSV_MOVIE
 #include "../tasks/task_content.h"
+  #ifdef HAVE_ZLIB
+#include <zlib.h>
+  #endif
+  #ifdef HAVE_ZSTD
+#include <zstd.h>
+  #endif
 #endif
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
@@ -6061,6 +6067,195 @@ void bsv_movie_finish_rewind(input_driver_state_t *input_st)
    handle->did_rewind     = false;
 }
 
+bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t encoding)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   uint32_t compressed_encoded_size, encoded_size, size;
+   size_t uncompressed_size_big;
+   uint32_t uncompressed_size;
+   uint8_t *compressed_data = NULL, *encoded_data = NULL, *state = NULL;
+   retro_ctx_serialize_info_t serial_info;
+   bool ret = true;
+
+   if (intfstream_read(handle->file, &(size),
+               sizeof(uint32_t)) != sizeof(uint32_t))
+   {
+      RARCH_ERR("[Replay] Replay truncated before uncompressed unencoded size\n");
+      ret = false;
+      goto exit;
+   }
+   if (intfstream_read(handle->file, &(encoded_size),
+               sizeof(uint32_t)) != sizeof(uint32_t))
+   {
+      RARCH_ERR("[Replay] Replay truncated before uncompressed encoded size\n");
+      ret = false;
+      goto exit;
+   }
+   if (intfstream_read(handle->file, &(compressed_encoded_size),
+               sizeof(uint32_t)) != sizeof(uint32_t))
+   {
+      RARCH_ERR("[Replay] Replay truncated before compressed encoded size\n");
+      ret = false;
+      goto exit;
+   }
+   size = swap_if_big32(size);
+   encoded_size = swap_if_big32(encoded_size);
+   compressed_encoded_size = swap_if_big32(compressed_encoded_size);
+   compressed_data = malloc(compressed_encoded_size);
+   if (intfstream_read(handle->file, compressed_data, compressed_encoded_size) != (int64_t)compressed_encoded_size)
+   {
+      RARCH_ERR("[Replay] Truncated checkpoint, terminating movie\n");
+      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+      ret = false;
+      goto exit;
+   }
+   switch (compression)
+   {
+      case REPLAY_CHECKPOINT2_COMPRESSION_NONE:
+         encoded_data = compressed_data;
+         compressed_data = NULL;
+         break;
+#ifdef HAVE_ZLIB
+      case REPLAY_CHECKPOINT2_COMPRESSION_ZLIB:
+         encoded_data = calloc(encoded_size, sizeof(uint8_t));
+         uncompressed_size = encoded_size;
+         if (uncompress(encoded_data, &uncompressed_size, compressed_data, compressed_encoded_size) != Z_OK)
+         {
+            ret = false;
+            goto exit;
+         }
+         break;
+#endif
+#ifdef HAVE_ZSTD
+      case REPLAY_CHECKPOINT2_COMPRESSION_ZSTD:
+         /* TODO: figure out how to support in-place decompression to
+            avoid allocating a second buffer; would need to allocate
+            the compressed_data buffer to be decompressed size +
+            margin.  but, how could the margin be known without
+            calling the function that takes the compressed frames as
+            an input?  */
+         encoded_data = calloc(encoded_size, sizeof(uint8_t));
+         uncompressed_size_big = ZSTD_decompress(encoded_data, encoded_size, compressed_data, compressed_encoded_size);
+         if (ZSTD_isError(uncompressed_size_big))
+         {
+            ret = false;
+            goto exit;
+         }
+         uncompressed_size = uncompressed_size_big;
+         break;
+#endif
+      default:
+         RARCH_WARN("[Replay] Unrecognized compression scheme %d\n", compression);
+         ret = false;
+         goto exit;
+   }
+   switch (encoding)
+   {
+      case REPLAY_CHECKPOINT2_ENCODING_RAW:
+         size = encoded_size;
+         state = encoded_data;
+         encoded_data = NULL;
+         break;
+      default:
+         RARCH_WARN("[Replay] Unrecognized encoding scheme %d\n", encoding);
+         ret = false;
+         goto exit;
+   }
+   serial_info.data_const = state;
+   serial_info.size       = size;
+   if (!core_unserialize(&serial_info))
+   {
+      ret = false;
+      goto exit;
+   }
+ exit:
+   if (compressed_data)
+      free(compressed_data);
+   if (encoded_data)
+      free(encoded_data);
+   if (state)
+      free(state);
+   return ret;
+}
+
+bool bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t encoding, retro_ctx_serialize_info_t serial_info)
+{
+   bool ret = true;
+   uint32_t encoded_size, compressed_encoded_size, size_;
+   uint8_t *encoded_data = NULL, *compressed_encoded_data = NULL;
+   bool owns_encoded = false, owns_compressed_encoded = false;
+   switch (encoding)
+   {
+      case REPLAY_CHECKPOINT2_ENCODING_RAW:
+         encoded_size = serial_info.size;
+         encoded_data = serial_info.data;
+         break;
+      default:
+         RARCH_ERR("[Replay] Unrecognized encoding scheme %d\n", encoding);
+         ret = false;
+         goto exit;
+   }
+   switch (compression)
+   {
+      case REPLAY_CHECKPOINT2_COMPRESSION_NONE:
+         compressed_encoded_size = encoded_size;
+         compressed_encoded_data = encoded_data;
+         break;
+#ifdef HAVE_ZLIB
+      case REPLAY_CHECKPOINT2_COMPRESSION_ZLIB:
+      {
+         uLongf zlib_compressed_encoded_size = compressBound(encoded_size);
+         compressed_encoded_data = calloc(zlib_compressed_encoded_size, sizeof(uint8_t));
+         owns_compressed_encoded = true;
+         if (compress2(compressed_encoded_data, &zlib_compressed_encoded_size, encoded_data, encoded_size, 6) != Z_OK)
+         {
+            ret = false;
+            goto exit;
+         }
+         compressed_encoded_size = zlib_compressed_encoded_size;
+         break;
+      }
+#endif
+#ifdef HAVE_ZSTD
+      case REPLAY_CHECKPOINT2_COMPRESSION_ZSTD:
+      {
+         size_t compressed_encoded_size_big = ZSTD_compressBound(encoded_size);
+         compressed_encoded_data = calloc(compressed_encoded_size_big, sizeof(uint8_t));
+         owns_compressed_encoded = true;
+         compressed_encoded_size_big = ZSTD_compress(compressed_encoded_data, compressed_encoded_size_big, encoded_data, encoded_size, 9);
+         if (ZSTD_isError(compressed_encoded_size_big))
+         {
+            ret = false;
+            goto exit;
+         }
+         compressed_encoded_size = compressed_encoded_size_big;
+         break;
+      }
+#endif
+      default:
+         RARCH_WARN("[Replay] Unrecognized compression scheme %d\n", compression);
+         ret = false;
+         goto exit;
+   }
+   /* uncompressed, unencoded size */
+   size_ = swap_if_big32(serial_info.size);
+   intfstream_write(handle->file, &size_, sizeof(uint32_t));
+   /* uncompressed, encoded size */
+   size_ = swap_if_big32(encoded_size);
+   intfstream_write(handle->file, &size_, sizeof(uint32_t));
+   /* compressed, encoded size */
+   size_ = swap_if_big32(compressed_encoded_size);
+   intfstream_write(handle->file, &size_, sizeof(uint32_t));
+   /* data */
+   intfstream_write(handle->file, compressed_encoded_data, compressed_encoded_size);
+ exit:
+   if (encoded_data && owns_encoded)
+      free(encoded_data);
+   if (compressed_encoded_data && owns_compressed_encoded)
+      free(compressed_encoded_data);
+   return ret;
+}
+
 void bsv_movie_read_next_events(bsv_movie_t *handle)
 {
    input_driver_state_t *input_st = input_state_get_ptr();
@@ -6125,32 +6320,48 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
       }
       else if (next_frame_type == REPLAY_TOKEN_CHECKPOINT_FRAME)
       {
-         uint64_t size;
-         uint8_t *st;
+         size_t size;
+         uint8_t *state;
          retro_ctx_serialize_info_t serial_info;
-
-         if (intfstream_read(handle->file, &(size),
-             sizeof(uint64_t)) != sizeof(uint64_t))
+         if (intfstream_read(handle->file, &size, sizeof(uint64_t)) != sizeof(uint64_t))
          {
-            RARCH_ERR("[Replay] Replay ran out of frames.\n");
+            /* Unnatural EOF */
+            RARCH_ERR("[Replay] Replay truncated before reading size.\n");
             input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
             return;
          }
-
          size = swap_if_big64(size);
-         st   = (uint8_t*)malloc(size);
-         if (intfstream_read(handle->file, st, size) != (int64_t)size)
+         state = calloc(size, sizeof(uint8_t));
+         if (intfstream_read(handle->file, state, size) != (int64_t)size)
          {
+            /* Unnatural EOF */
             RARCH_ERR("[Replay] Replay checkpoint truncated.\n");
             input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
-            free(st);
+            free(state);
             return;
          }
-
-         serial_info.data_const = st;
+         serial_info.data_const = state;
          serial_info.size       = size;
-         core_unserialize(&serial_info);
-         free(st);
+         if (!core_unserialize(&serial_info))
+         {
+            RARCH_ERR("[Replay] Failed to load movie checkpoint, failing\n");
+            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+         }
+         free(state);
+      }
+      else if (next_frame_type == REPLAY_TOKEN_CHECKPOINT2_FRAME)
+      {
+         uint8_t compression, encoding;
+         if (intfstream_read(handle->file, &(compression), sizeof(uint8_t)) != sizeof(uint8_t) ||
+             intfstream_read(handle->file, &(encoding), sizeof(uint8_t)) != sizeof(uint8_t))
+         {
+            /* Unexpected EOF */
+            RARCH_ERR("[Replay] Replay checkpoint truncated.\n");
+            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+            return;
+         }
+         if (!bsv_movie_load_checkpoint(handle, compression, encoding))
+            RARCH_WARN("[Replay] Failed to load movie checkpoint\n");
       }
    }
 }
@@ -6202,18 +6413,31 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
             && (handle->frame_counter > 0)
             && (handle->frame_counter % (checkpoint_interval*60) == 0))
       {
+         uint8_t frame_tok   = REPLAY_TOKEN_CHECKPOINT2_FRAME;
          retro_ctx_serialize_info_t serial_info;
-         uint8_t frame_tok = REPLAY_TOKEN_CHECKPOINT_FRAME;
-         size_t _len       = core_serialize_size();
-         uint64_t size     = swap_if_big64(_len);
-         uint8_t *st       = (uint8_t*)malloc(_len);
-         serial_info.data  = st;
-         serial_info.size  = _len;
+#if defined(HAVE_ZSTD)
+         uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_ZSTD;
+#elif defined(HAVE_ZLIB)
+         uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_ZLIB;
+#else
+         uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
+#endif
+         uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_RAW;
+         size_t len          = core_serialize_size();
+         uint8_t *st         = (uint8_t*)malloc(len);
+         serial_info.data    = st;
+         serial_info.size    = len;
          core_serialize(&serial_info);
          /* "next frame is a checkpoint" */
          intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
-         intfstream_write(handle->file, &size, sizeof(uint64_t));
-         intfstream_write(handle->file, st, _len);
+         /* compression and encoding schemes */
+         intfstream_write(handle->file, (uint8_t *)(&compression), sizeof(uint8_t));
+         intfstream_write(handle->file, (uint8_t *)(&encoding), sizeof(uint8_t));
+         if (!bsv_movie_write_checkpoint(handle, compression, encoding, serial_info))
+         {
+            RARCH_ERR("[Replay] failed to write checkpoint, exiting record\n");
+            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+         }
          free(st);
       }
       else
