@@ -13278,6 +13278,14 @@ MSG_HASH(
    "Tutti i core supportati sono passati alle versioni di Play Store"
    )
 MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "Core aggiornati: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "Core saltati: "
+   )
+MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Aggiornamento core disabilitato - il core è bloccato: "
    )
