@@ -201,44 +201,46 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { 4.0f / 3.0f  , ""              }  /* full -          initialized in video_driver_init_internal */
 };
 
-#define VERTEX_SIZE 2
-#define COLOR_SIZE 4
-#define TEX_COORD_SIZE 2
-#define LUT_TEX_COORD_SIZE 2
-
 static INLINE bool realloc_checked(void **ptr, size_t len)
 {
-   void *nptr = realloc(*ptr, len);
+   void *nptr = NULL;
+   if (*ptr)
+      nptr = realloc(*ptr, len);
+   else
+      nptr = malloc(len);
    if (nptr)
-   {
       *ptr = nptr;
-      return true;
-   }
-   return false;
+   return *ptr == nptr;
 }
 
-static bool video_coord_array_resize(video_coord_array_t *ca, unsigned cap)
+static bool video_coord_array_resize(video_coord_array_t *ca,
+   unsigned cap)
 {
-   size_t total_size = (VERTEX_SIZE + COLOR_SIZE + TEX_COORD_SIZE + LUT_TEX_COORD_SIZE) * cap * sizeof(float);
-   float *new_data   = NULL;
+   size_t base_size    = sizeof(float) * cap;
 
-   if (!realloc_checked((void**)&new_data, total_size))
+   if (!realloc_checked((void**)&ca->coords.vertex,
+            2 * base_size))
+      return false;
+   if (!realloc_checked((void**)&ca->coords.color,
+            4 * base_size))
+      return false;
+   if (!realloc_checked((void**)&ca->coords.tex_coord,
+            2 * base_size))
+      return false;
+   if (!realloc_checked((void**)&ca->coords.lut_tex_coord,
+            2 * base_size))
       return false;
 
-   /* Update pointers to the new data */
-   ca->coords.vertex        = new_data;
-   ca->coords.color         = new_data + (VERTEX_SIZE * cap);
-   ca->coords.tex_coord     = new_data + (VERTEX_SIZE + COLOR_SIZE) * cap;
-   ca->coords.lut_tex_coord = new_data + (VERTEX_SIZE + COLOR_SIZE + TEX_COORD_SIZE) * cap;
+   ca->allocated = cap;
 
-   ca->allocated            = cap;
    return true;
 }
 
-bool video_coord_array_append(video_coord_array_t *ca, const video_coords_t *coords, unsigned count)
+bool video_coord_array_append(video_coord_array_t *ca,
+      const video_coords_t *coords, unsigned count)
 {
-   size_t offset, total_size;
-   count = MIN(count, coords->vertices);
+   size_t base_size, offset;
+   count          = MIN(count, coords->vertices);
 
    if (ca->coords.vertices + count >= ca->allocated)
    {
@@ -247,12 +249,22 @@ bool video_coord_array_append(video_coord_array_t *ca, const video_coords_t *coo
          return false;
    }
 
-   offset = ca->coords.vertices;
+   base_size = count * sizeof(float);
+   offset    = ca->coords.vertices;
 
-   /* Copy all data at once */
-   total_size = (VERTEX_SIZE + COLOR_SIZE + TEX_COORD_SIZE + LUT_TEX_COORD_SIZE)
-      * count * sizeof(float);
-   memcpy(ca->coords.vertex + offset * VERTEX_SIZE, coords->vertex, total_size);
+   /* XXX: I wish we used interlaced arrays so
+    * we could call memcpy only once. */
+   memcpy(ca->coords.vertex        + offset * 2,
+         coords->vertex, base_size * 2);
+
+   memcpy(ca->coords.color         + offset * 4,
+         coords->color, base_size * 4);
+
+   memcpy(ca->coords.tex_coord     + offset * 2,
+         coords->tex_coord, base_size * 2);
+
+   memcpy(ca->coords.lut_tex_coord + offset * 2,
+         coords->lut_tex_coord, base_size * 2);
 
    ca->coords.vertices += count;
 
@@ -261,14 +273,27 @@ bool video_coord_array_append(video_coord_array_t *ca, const video_coords_t *coo
 
 void video_coord_array_free(video_coord_array_t *ca)
 {
-   if (ca->coords.vertex)
-   {
-      free(ca->coords.vertex);
-      ca->coords.vertex = NULL;
-   }
+   if (!ca->allocated)
+      return;
 
-   ca->coords.vertices = 0;
-   ca->allocated       = 0;
+   if (ca->coords.vertex)
+      free(ca->coords.vertex);
+   ca->coords.vertex        = NULL;
+
+   if (ca->coords.color)
+      free(ca->coords.color);
+   ca->coords.color         = NULL;
+
+   if (ca->coords.tex_coord)
+      free(ca->coords.tex_coord);
+   ca->coords.tex_coord     = NULL;
+
+   if (ca->coords.lut_tex_coord)
+      free(ca->coords.lut_tex_coord);
+   ca->coords.lut_tex_coord = NULL;
+
+   ca->coords.vertices      = 0;
+   ca->allocated            = 0;
 }
 
 static void *video_null_init(const video_info_t *video,
