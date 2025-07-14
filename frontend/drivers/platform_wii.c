@@ -101,23 +101,27 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
    /* File must be split into two parts,
     * the path and the actual filename
     * done to be compatible with loaders. */
-   if (argpath && strrchr(argpath, '/') != NULL)
+   if (argpath)
    {
-      char *name = NULL;
+      char *last_slash = strrchr(argpath, '/');
+      if (last_slash)
+      {
+         char *name = NULL;
 
-      /* basedir. */
-      fill_pathname_parent_dir(tmp, argpath, sizeof(tmp));
-      t_len = strlen(tmp);
-      memcpy(cmdline + len, tmp, t_len);
-      len += t_len;
-      cmdline[len++] = 0;
+         /* basedir */
+         fill_pathname_parent_dir(tmp, argpath, sizeof(tmp));
+         t_len = strlen(tmp);
+         memcpy(cmdline + len, tmp, t_len);
+         len  += t_len;
+         cmdline[len++] = 0;
 
-      /* filename */
-      name = strrchr(argpath, '/') + 1;
-      t_len = strlen(name);
-      memcpy(cmdline + len, name, t_len);
-      len += t_len;
-      cmdline[len++] = 0;
+         /* filename */
+         name  = last_slash + 1;
+         t_len = strlen(name);
+         memcpy(cmdline + len, name, t_len);
+         len  += t_len;
+         cmdline[len++] = 0;
+      }
    }
 
    cmdline[len++] = 0;
