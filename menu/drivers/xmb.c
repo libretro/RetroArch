@@ -2287,7 +2287,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
 static void xmb_set_title(xmb_handle_t *xmb)
 {
-   char *scrub_char_ptr   = NULL;
+   char *pos              = NULL;
    xmb->title_name_alt[0] = '\0';
 
    if (     (xmb->categories_selection_ptr <= xmb->system_tab_end)
@@ -2324,8 +2324,11 @@ static void xmb_set_title(xmb_handle_t *xmb)
       }
    }
 
-   while ((scrub_char_ptr = strchr(xmb->title_name, '/')))
-      *scrub_char_ptr = '-';
+   for (pos = xmb->title_name; *pos != '\0'; ++pos)
+   {
+      if (*pos == '/')
+         *pos = '-';
+   }
 }
 
 static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
