@@ -776,7 +776,17 @@ bool state_manager_check_rewind(
       }
       else
       {
-         content_deserialize_state(buf, rewind_st->size);
+         input_driver_state_t *input_st = input_state_get_ptr();
+#ifdef HAVE_BSV_MOVIE
+         /* Don't end reversing during playback or recording */
+         if(BSV_MOVIE_IS_PLAYBACK_ON() || BSV_MOVIE_IS_RECORDING())
+         {
+            rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED;
+            bsv_movie_frame_rewind();
+         }
+         else
+#endif
+            content_deserialize_state(buf, rewind_st->size);
 
 #ifdef HAVE_NETWORKING
          /* Tell netplay we're done */
