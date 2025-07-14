@@ -314,6 +314,8 @@ static void gfx_animation_ticker_loop(uint64_t idx,
       size_t *offset2, size_t *width2,
       size_t *offset3, size_t *width3)
 {
+   int offset2_val;
+   /* Calculate ticker period and phase */
    int ticker_period     = (int)(str_width + spacer_width);
    int phase             = idx % ticker_period;
 
@@ -332,42 +334,30 @@ static void gfx_animation_ticker_loop(uint64_t idx,
     * all the string manipulation that has to happen afterwards...
     */
 
-   /* String 1 */
-   int offset = 0;
-   int width  = (int)(str_width - phase);
-   if (width < 0)
-      width   = 0;
-   else if ((width > (int)max_width))
-      width   = (int)max_width;
+   /* Initialize offsets and widths */
+   *offset1 = (phase < (int)str_width) ? (size_t)phase : 0;
+   *width1  = (size_t)((phase < (int)str_width) ? (str_width - phase) : 0);
 
-   if (phase < (int)str_width)
-      offset  = phase;
+   /* Clamp width1 to max_width */
+   if (*width1 > max_width)
+      *width1 = max_width;
 
-   *offset1   = offset;
-   *width1    = width;
+   /* Calculate offset2 and width2 */
+   offset2_val = (int)(phase - str_width);
+   *offset2    = (offset2_val < 0) ? 0 : (size_t)offset2_val;
 
-   /* String 2 */
-   offset     = (int)(phase - str_width);
-   if (offset < 0)
-      offset  = 0;
-   width      = (int)(max_width - *width1);
-   if (width > (int)spacer_width)
-      width   = (int)spacer_width;
-   width     -= offset;
+   *width2 = (size_t)(max_width - *width1);
+   if (*width2 > spacer_width)
+      *width2 = spacer_width;
+   *width2   -= *offset2;
 
-   *offset2   = offset;
-   *width2    = width;
+   /* Calculate width3 */
+   *width3 = (size_t)(max_width - (*width1 + *width2));
+   if (*width3 < 0)
+      *width3 = 0;
 
-   /* String 3 */
-   width      = (int)(max_width - (*width1 + *width2));
-   if (width < 0)
-      width   = 0;
-
-   /* Note: offset is always zero here so offset3 is
-    * unnecessary - but include it anyway to preserve
-    * symmetry... */
-   *offset3   = 0;
-   *width3    = width;
+   /* offset3 is always zero */
+   *offset3 = 0;
 }
 
 static unsigned get_ticker_smooth_generic_scroll_offset(
