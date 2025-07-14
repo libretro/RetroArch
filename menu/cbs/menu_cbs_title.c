@@ -43,22 +43,29 @@
    return action_get_title_generic(s, len, path, msg_hash_to_str(lbl)); \
 } \
 
-#define SANITIZE_TO_STRING(s, label, len) \
-   { \
-      char *pos = NULL; \
-      strlcpy(s, label, len); \
-      while ((pos = strchr(s, '_'))) \
-         *pos = ' '; \
+static void sanitize_to_string(char *s, const char *lbl, size_t len)
+{
+   size_t _len = strlcpy(s, lbl, len);
+   if (_len >= len)
+      s[len - 1] = '\0';
+   else
+   {
+      char *pos;
+      /* Replace underscores with spaces in a single pass */
+      for (pos = s; *pos != '\0'; ++pos)
+      {
+         if (*pos == '_')
+            *pos = ' ';
+      }
    }
+}
 
 #define DEFAULT_TITLE_MACRO(func_name, lbl) \
   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
 { \
    const char *str = msg_hash_to_str(lbl); \
    if (s && !string_is_empty(str)) \
-   { \
-      SANITIZE_TO_STRING(s, str, len); \
-   } \
+      sanitize_to_string(s, str, len); \
    return 1; \
 }
 
@@ -130,9 +137,7 @@ static int action_get_title_action_generic(
       unsigned menu_type, char *s, size_t len)
 {
    if (s && !string_is_empty(label))
-   {
-      SANITIZE_TO_STRING(s, label, len);
-   }
+      sanitize_to_string(s, label, len);
    return 1;
 }
 
@@ -158,7 +163,7 @@ static int action_get_title_icon_thumbnails(
 
    if (s && !string_is_empty(title))
    {
-      SANITIZE_TO_STRING(s, title, len);
+      sanitize_to_string(s, title, len);
       return 1;
    }
 
@@ -186,7 +191,7 @@ static int action_get_title_thumbnails(
    title = msg_hash_to_str(label_value);
    if (s && !string_is_empty(title))
    {
-      SANITIZE_TO_STRING(s, title, len);
+      sanitize_to_string(s, title, len);
       return 1;
    }
    return 0;
@@ -219,7 +224,7 @@ static int action_get_title_left_thumbnails(
 
    if (s && !string_is_empty(title))
    {
-      SANITIZE_TO_STRING(s, title, len);
+      sanitize_to_string(s, title, len);
       return 1;
    }
 
@@ -363,8 +368,8 @@ static int action_get_title_dropdown_item(
 							   const char *title = msg_hash_to_str(enum_idx);
 							   if (s && !string_is_empty(title))
 							   {
-								   SANITIZE_TO_STRING(s, title, len);
-								   return 1;
+						              sanitize_to_string(s, title, len);
+							      return 1;
 							   }
 						   }
 					   }
