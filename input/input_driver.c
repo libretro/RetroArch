@@ -2,7 +2,7 @@
  *  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2019 - Andr�s Su�rez (input mapper code)
+ *  Copyright (C) 2016-2019 - Andr s Su rez (input mapper code)
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
@@ -1236,14 +1236,12 @@ static int16_t input_overlay_lightgun_state(
          if (   ( ptr_st->ptr[0].x > -0x7fff && ptr_st->ptr[0].x != 0x7fff)
                || !input_overlay_lightgun_allow_offscreen)
             return ptr_st->ptr[0].x;
-         else
-            return -0x8000;
+         return -0x8000;
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
          if (   ( ptr_st->ptr[0].y > -0x7fff && ptr_st->ptr[0].y != 0x7fff)
                || !input_overlay_lightgun_allow_offscreen)
             return ptr_st->ptr[0].y;
-         else
-            return -0x8000;
+         return -0x8000;
       case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
          ptr_st->device_mask |= (1 << RETRO_DEVICE_LIGHTGUN);
          return ( input_overlay_lightgun_allow_offscreen
@@ -1601,11 +1599,13 @@ static int16_t input_state_device(
                }
                else /* Classic toggle mode */
                {
-                  /* Works pretty much the same as classic mode above
-                   * but with a toggle mechanic */
+                  /* Works pretty much the same as 
+                   * classic mode above but with a 
+                   * toggle mechanic */
 
-                  /* Check if it's to enable the turbo func, if we're still holding
-                   * the button from previous toggle then ignore */
+                  /* Check if it's to enable the turbo func, 
+                   * if we're still holding the button from 
+                   * previous toggle then ignore */
                   if (   (res)
                       && (input_st->turbo_btns.frame_enable[port]))
                   {
@@ -1621,8 +1621,8 @@ static int16_t input_state_device(
 
                   if (res)
                   {
+                     /* If turbo button is enabled for this key ID */
                      if (input_st->turbo_btns.enable[port] & (1 << id))
-                        /* If turbo button is enabled for this key ID */
                         res = ((input_st->turbo_btns.count % turbo_period) < turbo_duty_cycle);
                   }
                }
@@ -2118,7 +2118,8 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                      /* Light up the button if pressed */
                      if (     ol_state
                            ? !BIT256_GET(ol_state->buttons, id)
-                           : !input_state_internal(input_st, settings, port, RETRO_DEVICE_JOYPAD, 0, id))
+                           : !input_state_internal(input_st,
+                              settings, port, RETRO_DEVICE_JOYPAD, 0, id))
                      {
                         /* We need ALL of the inputs to be active,
                          * abort. */
