@@ -260,7 +260,10 @@ endif
 
 include Makefile.common
 
-CFLAGS += $(DEF_FLAGS) -Ideps -Ideps/stb
+DEF_FLAGS += $(INCLUDE_DIRS) -Ideps -Ideps/stb
+
+CFLAGS += $(DEF_FLAGS)
+CXXFLAGS += $(DEF_FLAGS) -D__STDC_CONSTANT_MACROS
 
 libretro     =
 libretro_new =
