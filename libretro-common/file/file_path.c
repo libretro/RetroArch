@@ -1005,19 +1005,17 @@ size_t fill_pathname_join_special(char *s,
       const char *slash      = strrchr(s, '/');
       const char *backslash  = strrchr(s, '\\');
       char *last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
-      if (last_slash)
+      if (!last_slash)
       {
-         /* Try to preserve slash type. */
-         if (last_slash != (s + _len - 1))
-         {
-            s[  _len] = last_slash[0];
-            s[++_len] = '\0';
-         }
+         s[  _len] = PATH_DEFAULT_SLASH_C();
+         s[++_len] = '\0';
+
       }
-      else
+      /* Try to preserve slash type. */
+      else if (last_slash != (s + _len - 1))
       {
-         s[  _len]    = PATH_DEFAULT_SLASH_C();
-         s[++_len]    = '\0';
+         s[  _len] = last_slash[0];
+         s[++_len] = '\0';
       }
    }
 
