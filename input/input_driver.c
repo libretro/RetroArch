@@ -5985,8 +5985,8 @@ void bsv_movie_frame_rewind(void)
          /* If recording, we simply reset
           * the starting point. Nice and easy. */
 
-         intfstream_seek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
-         intfstream_truncate(handle->file, 4 * sizeof(uint32_t));
+         intfstream_seek(handle->file, 6 * sizeof(uint32_t), SEEK_SET);
+         intfstream_truncate(handle->file, 6 * sizeof(uint32_t));
 
          serial_info.data = handle->state;
          serial_info.size = handle->state_size;
@@ -6878,6 +6878,9 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
 #ifdef HAVE_BSV_MOVIE
    /* Save input to BSV record, if enabled */
    if (BSV_MOVIE_IS_RECORDING())
+#ifdef HAVE_REWIND
+   if (!state_manager_frame_is_reversed())
+#endif
       bsv_movie_handle_push_input_event(
             input_st->bsv_movie_state_handle,
             port,
@@ -7701,6 +7704,9 @@ void input_keyboard_event(bool down, unsigned code,
 #ifdef HAVE_BSV_MOVIE
             /* Save input to BSV record, if recording */
             if (BSV_MOVIE_IS_RECORDING())
+#ifdef HAVE_REWIND
+               if (!state_manager_frame_is_reversed())
+#endif
                bsv_movie_handle_push_key_event(
                      input_st->bsv_movie_state_handle, down, mod,
                      code, character);
