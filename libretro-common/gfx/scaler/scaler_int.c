@@ -67,14 +67,14 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
    int h, w, y;
    const uint64_t      *input = ctx->scaled.frame;
    uint32_t           *output = (uint32_t*)output_;
+
    const int16_t *filter_vert = ctx->vert.filter;
-   int stride_div_8           = ctx->scaled.stride >> 3;
 
    for (h = 0; h < ctx->out_height; h++,
          filter_vert += ctx->vert.filter_stride, output += stride >> 2)
    {
       const uint64_t *input_base = input + ctx->vert.filter_pos[h]
-         * stride_div_8;
+         * (ctx->scaled.stride >> 3);
 
       for (w = 0; w < ctx->out_width; w++)
       {
@@ -87,16 +87,16 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
                input_base_y += (ctx->scaled.stride >> 2))
          {
             __m128i coeff = _mm_set_epi64x(filter_vert[y + 1] * 0x0001000100010001ll, filter_vert[y + 0] * 0x0001000100010001ll);
-            __m128i col   = _mm_set_epi64x(input_base_y[stride_div_8], input_base_y[0]);
+            __m128i col   = _mm_set_epi64x(input_base_y[ctx->scaled.stride >> 3], input_base_y[0]);
 
             res           = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
          }
 
-         /* Handle the last odd filter length case */
-         if (ctx->vert.filter_len % 2 != 0)
+         for (; y < ctx->vert.filter_len; y++, input_base_y += (ctx->scaled.stride >> 3))
          {
             __m128i coeff = _mm_set_epi64x(0, filter_vert[y] * 0x0001000100010001ll);
             __m128i col   = _mm_set_epi64x(0, input_base_y[0]);
+
             res           = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
          }
 
@@ -107,28 +107,39 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
 
          output[w] = _mm_cvtsi128_si32(final);
 #else
-         uint32_t res_a = 0, res_r = 0, res_g = 0, res_b = 0;
+         int16_t res_a = 0;
+         int16_t res_r = 0;
+         int16_t res_g = 0;
+         int16_t res_b = 0;
 
-         for (y = 0; y < ctx->vert.filter_len; y++, input_base_y += stride_div_8)
+         for (y = 0; y < ctx->vert.filter_len; y++,
+               input_base_y += (ctx->scaled.stride >> 3))
          {
-            uint64_t col = *input_base_y;
+            uint64_t col   = *input_base_y;
 
-            res_a += (uint16_t)((col >> 48) & 0xffff) * filter_vert[y] >> 16;
-            res_r += (uint16_t)((col >> 32) & 0xffff) * filter_vert[y] >> 16;
-            res_g += (uint16_t)((col >> 16) & 0xffff) * filter_vert[y] >> 16;
-            res_b += (uint16_t)((col >> 0) & 0xffff) * filter_vert[y] >> 16;
+            int16_t a      = (col >> 48) & 0xffff;
+            int16_t r      = (col >> 32) & 0xffff;
+            int16_t g      = (col >> 16) & 0xffff;
+            int16_t b      = (col >>  0) & 0xffff;
+
+            int16_t coeff  = filter_vert[y];
+
+            res_a         += (a * coeff) >> 16;
+            res_r         += (r * coeff) >> 16;
+            res_g         += (g * coeff) >> 16;
+            res_b         += (b * coeff) >> 16;
          }
 
-         res_a >>= (7 - 2 - 2);
-         res_r >>= (7 - 2 - 2);
-         res_g >>= (7 - 2 - 2);
-         res_b >>= (7 - 2 - 2);
+         res_a           >>= (7 - 2 - 2);
+         res_r           >>= (7 - 2 - 2);
+         res_g           >>= (7 - 2 - 2);
+         res_b           >>= (7 - 2 - 2);
 
-         output[w] =
-                  (clamp_8bit(res_a) << 24)
-                | (clamp_8bit(res_r) << 16)
-                | (clamp_8bit(res_g) << 8)
-                | (clamp_8bit(res_b) << 0);
+         output[w]         =
+            (clamp_8bit(res_a) << 24) |
+            (clamp_8bit(res_r) << 16) |
+            (clamp_8bit(res_g) << 8)  |
+            (clamp_8bit(res_b) << 0);
 #endif
       }
    }
@@ -211,10 +222,10 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
          }
 
          output[w]         = (
-                  (uint64_t)res_a << 48)
-               | ((uint64_t)res_r << 32)
-               | ((uint64_t)res_g << 16)
-               | ((uint64_t)res_b << 0);
+               (uint64_t)res_a  << 48)  |
+               ((uint64_t)res_r << 32)  |
+               ((uint64_t)res_g << 16)  |
+               ((uint64_t)res_b << 0);
 #endif
       }
    }

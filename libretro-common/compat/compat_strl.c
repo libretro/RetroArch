@@ -28,18 +28,18 @@
 
 #include <compat/strl.h>
 
-size_t strlcpy(char *s, const char *src, size_t len)
+size_t strlcpy(char *s, const char *source, size_t len)
 {
-   size_t i, _len = 0, __len;
-   while (src[_len] != '\0')
-      _len++;
-   if (len == 0)
-      return _len;
-   __len = (_len >= len) ? len - 1 : _len;
-   for (i = 0; i < __len; i++)
-      s[i] = src[i];
-   s[__len] = '\0';
-   return _len;
+   size_t _len  = len;
+   size_t __len = 0;
+   if (_len)
+      while (--_len && (*s++ = *source++)) __len++;
+   if (!_len)
+   {
+      if (len) *s = '\0';
+      while (*source++) __len++;
+   }
+   return __len;
 }
 
 size_t strlcat(char *s, const char *source, size_t len)
