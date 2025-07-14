@@ -628,7 +628,6 @@ void path_basedir_wrapper(char *s);
  * if not already there.
 
  * Hidden non-leaf function cost:
- * - can call strlcat once if it returns false
  * - calls strlen
  **/
 size_t fill_pathname_slash(char *s, size_t len);

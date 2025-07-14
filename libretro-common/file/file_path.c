@@ -372,11 +372,14 @@ size_t fill_pathname_slash(char *s, size_t len)
    const char *slash      = strrchr(s, '/');
    const char *backslash  = strrchr(s, '\\');
    char       *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   len                    = strlen(s);
    if (!last_slash)
-      return strlcat(s, PATH_DEFAULT_SLASH(), len);
-   len         = strlen(s);
+   {
+      s[  len] = PATH_DEFAULT_SLASH_C();
+      s[++len] = '\0';
+   }
    /* Try to preserve slash type. */
-   if (last_slash != (s + len - 1))
+   else if (last_slash != (s + len - 1))
    {
       s[  len] = last_slash[0];
       s[++len] = '\0';
