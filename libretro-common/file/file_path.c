@@ -353,10 +353,25 @@ size_t fill_pathname(char *s, const char *in_path,
  **/
 char *find_last_slash(const char *str)
 {
-   const char *slash     = strrchr(str, '/');
-   const char *backslash = strrchr(str, '\\');
-   char       *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
-   return last_slash;
+   const char *p;
+   const char *last_slash     = NULL;
+   const char *last_backslash = NULL;
+
+   /* Traverse the string once */
+   for (p = str; *p != '\0'; ++p)
+   {
+      if (*p == '/')
+         last_slash = p; /*   Update last forward slash */
+      else if (*p == '\\')
+         last_backslash = p; /* Update last backslash */
+   }
+
+   /* Determine which one is last */
+   if (!last_slash) /* Backslash */
+      return (char*)last_backslash;
+   if (!last_backslash) /* Forward slash */
+      return (char*)last_slash;
+   return (last_backslash > last_slash) ? (char*)last_backslash : (char*)last_slash;
 }
 
 /**
