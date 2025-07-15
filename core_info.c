@@ -1549,7 +1549,7 @@ static size_t core_info_get_file_id(const char *core_filename,
       char *s, size_t len)
 {
    size_t _len;
-   char *pos = NULL;
+   char *last_underscore = NULL;
    if (string_is_empty(core_filename))
       return 0;
    /* Core file 'id' is filename without extension
@@ -1563,19 +1563,15 @@ static size_t core_info_get_file_id(const char *core_filename,
     * Since core names include underscore, which is not allowed, but not dot,
     * which is, we change underscore to dot. Here, we need to change it back.
     */
-   for (pos = s; *pos != '\0'; pos++)
-   {
-      if (*pos == '.')
-         *pos = '-';
-   }
+   string_replace_all_chars(s, '.', '_');
 #endif
    /* > Remove suffix */
-   pos = (char*)strrchr(s, '_');
-   if (   !string_is_empty(pos)
-       && !string_is_equal(pos, "_libretro"))
+   last_underscore = (char*)strrchr(s, '_');
+   if (   !string_is_empty(last_underscore)
+       && !string_is_equal(last_underscore, "_libretro"))
    {
-      *pos = '\0';
-      _len = pos - s;
+      *last_underscore = '\0';
+      _len = last_underscore - s;
    }
    return _len;
 }

@@ -3446,7 +3446,6 @@ static size_t setting_get_string_representation_uint_menu_thumbnails(
 
 static void setting_set_string_representation_timedate_date_separator(char *s)
 {
-   char *pos;
    settings_t *settings                  = config_get_ptr();
    unsigned menu_timedate_date_separator = settings
          ? settings->uints.menu_timedate_date_separator
@@ -3455,18 +3454,10 @@ static void setting_set_string_representation_timedate_date_separator(char *s)
    switch (menu_timedate_date_separator)
    {
       case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-         for (pos = s; *pos != '\0'; pos++)
-         {
-            if (*pos == '-')
-               *pos = '/';
-         }
+         string_replace_all_chars(s, '-', '/');
          break;
       case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-         for (pos = s; *pos != '\0'; pos++)
-         {
-            if (*pos == '-')
-               *pos = '.';
-         }
+         string_replace_all_chars(s, '-', '.');
          break;
       case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
       default:

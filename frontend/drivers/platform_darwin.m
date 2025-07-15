@@ -791,18 +791,13 @@ static const char* frontend_darwin_get_cpu_model_name(void)
 
 static enum retro_language frontend_darwin_get_user_language(void)
 {
-   char *pos;
    char s[128];
    CFArrayRef langs = CFLocaleCopyPreferredLanguages();
    CFStringRef langCode = CFArrayGetValueAtIndex(langs, 0);
    CFStringGetCString(langCode, s, sizeof(s), kCFStringEncodingUTF8);
    /* iOS and OS X only support the language ID syntax consisting
     * of a language designator and optional region or script designator. */
-   for (pos = s; *pos != '\0'; pos++)
-   {
-      if (*pos == '-')
-         *pos = '_';
-   }
+   string_replace_all_chars(s, '-', '_');
    return retroarch_get_language_from_iso(s);
 }
 

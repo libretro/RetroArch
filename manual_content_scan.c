@@ -453,7 +453,6 @@ bool manual_content_scan_set_menu_core_name(
                 * struct, if required */
                if (!string_is_empty(core_info->supported_extensions))
                {
-                  char *pos;
                   strlcpy(
                         scan_settings.file_exts_core,
                         core_info->supported_extensions,
@@ -462,11 +461,7 @@ bool manual_content_scan_set_menu_core_name(
                   /* Core info extensions are delimited by
                    * vertical bars. For internal consistency,
                    * replace them with spaces */
-                  for (pos = scan_settings.file_exts_core; *pos != '\0'; pos++)
-                  {
-                     if (*pos == '|')
-                        *pos = ' ';
-                  }
+                  string_replace_all_chars(scan_settings.file_exts_core, '|', ' ');
 
                   /* Apply standard scrubbing/clean-up
                    * (should not be required, but must handle the
@@ -657,7 +652,6 @@ enum manual_content_scan_playlist_refresh_status
       scan_settings.file_exts_custom[0] = '\0';
    else
    {
-      char *pos;
       strlcpy(scan_settings.file_exts_custom, file_exts,
             sizeof(scan_settings.file_exts_custom));
 
@@ -670,11 +664,7 @@ enum manual_content_scan_playlist_refresh_status
        *   to handle the case where a user has
        *   'corrupted' it by manually tampering with
        *   the playlist file */
-      for (pos = scan_settings.file_exts_custom; *pos != '\0'; pos++)
-      {
-         if (*pos == '|')
-            *pos = ' ';
-      }
+      string_replace_all_chars(scan_settings.file_exts_custom, '|', ' ');
       manual_content_scan_scrub_file_exts(scan_settings.file_exts_custom);
    }
 
@@ -1066,14 +1056,7 @@ bool manual_content_scan_get_task_config(
     * > dir_list_new() expects vertical bar
     *   delimiters, so find and replace */
    if (!string_is_empty(task_config->file_exts))
-   {
-      char *pos;
-      for (pos = task_config->file_exts; *pos != '\0'; pos++)
-      {
-         if (*pos == ' ')
-            *pos = '|';
-      }
-   }
+      string_replace_all_chars(task_config->file_exts, ' ', '|');
 
    /* Get DAT file path */
    if (!string_is_empty(scan_settings.dat_file_path))

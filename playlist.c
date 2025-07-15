@@ -213,7 +213,6 @@ static void path_replace_base_path_and_convert_to_local_file_system(
     * replace it with new base content directory */
    if (string_starts_with_size(in_path, in_oldrefpath, in_oldrefpath_length))
    {
-      char *pos;
       size_t in_refpath_length = strlen(in_refpath);
       memcpy(s, in_refpath, in_refpath_length);
       memcpy(
@@ -224,18 +223,12 @@ static void path_replace_base_path_and_convert_to_local_file_system(
       /* If we are running under a Windows filesystem,
        * '/' characters are not allowed anywhere.
        * We replace with '\' and hope for the best... */
-      for (pos = s; *pos != '\0'; pos++)
-      {
-         if (*pos == POSIX_PATH_DELIMITER)
-            *pos = WINDOWS_PATH_DELIMITER;
-      }
+      string_replace_all_chars(s,
+            POSIX_PATH_DELIMITER, WINDOWS_PATH_DELIMITER);
 #else
       /* Under POSIX filesystem, we replace '\' characters with '/' */
-      for (pos = s; *pos != '\0'; pos++)
-      {
-         if (*pos == WINDOWS_PATH_DELIMITER)
-            *pos = POSIX_PATH_DELIMITER;
-      }
+      string_replace_all_chars(s,
+            WINDOWS_PATH_DELIMITER, POSIX_PATH_DELIMITER);
 #endif
    }
    else
@@ -2693,23 +2686,14 @@ static bool playlist_read_file(playlist_t *playlist)
           * lines from the file */
          for (i = 0; i < PLAYLIST_ENTRIES; i++)
          {
-            char *pos    = NULL;
             *line_buf[i] = '\0';
 
             if (!intfstream_gets(file, line_buf[i], sizeof(line_buf[i])))
                break;
             /* Ensure line is NULL terminated, regardless of
              * Windows or Unix line endings */
-            for (pos = line_buf[i]; *pos != '\0'; pos++)
-            {
-               if (*pos == '\r')
-                  *pos = '\0';
-            }
-            for (pos = line_buf[i]; *pos != '\0'; pos++)
-            {
-               if (*pos == '\n')
-                  *pos = '\0';
-            }
+            string_replace_all_chars(line_buf[i], '\r', '\0');
+            string_replace_all_chars(line_buf[i], '\n', '\0');
 
             lines_read++;
          }

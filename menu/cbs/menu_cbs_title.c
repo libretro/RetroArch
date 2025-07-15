@@ -149,11 +149,8 @@ static int action_get_title_remap_port(
    snprintf(s, len,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS),
          atoi(path) + 1);
-   for (pos = s; *pos != '\0'; ++pos)
-   {
-      if (*pos == '_')
-         *pos = ' ';
-   }
+   while ((pos = strchr(s, '_')))
+      *pos = ' ';
    return 1;
 }
 
