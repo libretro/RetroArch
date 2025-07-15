@@ -13571,11 +13571,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NUM_CORES_UPDATED,
-   "Обновлено ядер: "
+   "обновлено ядер: "
    )
 MSG_HASH(
    MSG_NUM_CORES_LOCKED,
-   "Пропущено ядер: "
+   "пропущено ядер: "
    )
 MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
@@ -13744,6 +13744,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "Ядро не поддерживает быстрые сохранения."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "Управление дисками не поддерживается ядром."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,

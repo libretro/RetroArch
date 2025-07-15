@@ -505,7 +505,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "Spara status-stöd"
+   "Spara tillstånd-stöd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
@@ -1238,7 +1238,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
-   "Försök att synkronisera konfigurationer, SRAM och statusar till en molnlagringsleverantör."
+   "Försök att synkronisera konfigurationer, SRAM och tillstånd till en molnlagringsleverantör."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
@@ -3667,27 +3667,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "Spara status"
+   "Spara tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
-   "Sparar status till den för närvarande valda platsen."
+   "Sparar tillståndet till den för närvarande valda platsen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "Nästa Spara status plats"
+   "Nästa Spara tillstånd-plats"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "Ökar index för att välja slot till att spara status."
+   "Ökar index för att välja slot till att spara tillstånd."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "Föregående Spara status plats"
+   "Föregående Spara tillstånd-plats"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "Minskar index för att välja slot till att spara status."
+   "Minskar index för att välja slot till att spara tillstånd."
    )
 
 MSG_HASH(
@@ -3885,11 +3885,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
-   "Visa FPS (På/Av)"
+   "Visa bildfrekvens (växla)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
-   "Slår på/av statusindikatorn 'FPS'."
+   "Slår på/av statusindikatorn 'Bilder/s'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
@@ -3913,7 +3913,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
-   "Växlar till nästa tillgängliga layout för det för närvarande aktiva skärm-överlagret."
+   "Växlar till nästa tillgängliga layout för det för närvarande aktiva skärmöverlagring."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
@@ -4305,7 +4305,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
-   "Kringgå kärninformationens funktioner för sparad status"
+   "Kringgå kärninformationens funktioner för sparade tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
@@ -4461,11 +4461,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Sortera sparad status i mappar efter kärnnamn"
+   "Sortera sparade tillstånd i mappar efter kärnnamn"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-   "Sortera sparad status i mappar med namn efter den använda kärnan."
+   "Sortera sparade tillstånd i mappar med namn efter den använda kärnan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -4477,11 +4477,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Sortera sparad status i mappar efter innehållskatalog"
+   "Sortera sparade tillstånd i mappar efter innehållskatalog"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Sortera sparad status i mappar med namn efter den katalog där innehållet finns."
+   "Sortera sparade tillstånd i mappar med namn efter den katalog där innehållet finns."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
@@ -4513,19 +4513,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Öka sparstatus-index automatiskt"
+   "Öka sparat tillstånd-index automatiskt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   "Innan en sparad status skapas, ökas sparstatus-index automatiskt. När innehåll laddas in kommer indexet att sättas till det högsta befintliga indexet."
+   "Innan ett sparat tillstånd skapas, ökas sparat tillstånd-index automatiskt. När innehåll laddas in kommer indexet att sättas till det högsta befintliga indexet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Automatiskt-ökande sparstatusar med maximalt antal att behålla"
+   "Automatiskt ökande sparade tillstånd med maximalt antal att behålla"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Begränsa antalet sparstatusar som kommer att skapas när 'Öka statusindex automatiskt' är aktiverat. Om gränsen överskrids vid sparande av en ny status kommer den befintliga statusen med lägst index att raderas. Ett värde av '0' innebär att obegränsade statusar kommer att sparas."
+   "Begränsa antalet sparade tillstånd som kommer att skapas när 'Öka tillståndsindex automatiskt' är aktiverat. Om gränsen överskrids vid sparande av ett nytt tillstånd kommer det befintliga tillståndet med lägst index att raderas. Ett värde av '0' innebär att obegränsade tillstånd kommer att sparas."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
@@ -4533,11 +4533,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Autospara status"
+   "Autospara tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Spara automatiskt när innehållet stängs. Denna sparade status läses in vid start om ”Läs in tillstånd automatiskt” är aktiverat."
+   "Spara automatiskt när innehållet stängs. Detta sparade tillstånd läses in vid start om ”Läs in tillstånd automatiskt” är aktiverat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -4545,15 +4545,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-   "Laddar automatiskt upp den sparade statusen vid spelstart."
+   "Läser automatiskt in det automatiskt sparade tillståndet vid uppstart."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Miniatyr för sparad status"
+   "Miniatyrer för sparade tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Visa miniatyrer av sparstatusar i menyn."
+   "Visa miniatyrer av sparade tillstånd i menyn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
@@ -4565,11 +4565,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Komprimera din sparstatus"
+   "Komprimera sparade tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "Lagrar dina sparade statusfiler i ett arkiverat format. Minskar dramatiskt filstorleken på bekostnad av längre spar- och laddningstider."
+   "Lagrar dina sparade tillståndsfiler i ett arkiverat format. Minskar dramatiskt filstorleken på bekostnad av längre spar- och inläsningstider."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -4589,7 +4589,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Skriv sparade statusar till Innehålls-katalog"
+   "Skriv sparade tillstånd till innehållskatalog"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4770,11 +4770,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
-   "Den maximala hastighet med vilken innehållet körs när snabbspolning används. (T.ex. 5.0 för 60 fps innehåll => 300 fps tak).\nRetroArch kommer att gå i viloläge för att säkerställa att den maximala hastigheten inte överskrids. Lita inte på att detta tak är helt korrekt."
+   "Den maximala hastighet med vilken innehållet körs när snabbspolning används. (T.ex. 5.0 för 60 bilder/s innehåll => 300 bilder/s tak).\nRetroArch kommer att gå i viloläge för att säkerställa att den maximala hastigheten inte överskrids. Lita inte på att detta tak är helt korrekt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
-   "Snabbspola framåt-bildrutshopp"
+   "Snabbspola framåt-bildrutsöverhopp"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
@@ -4848,7 +4848,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Återställ efter sparad status"
+   "Återställ efter sparat tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
@@ -5419,7 +5419,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-   "Visa bildhastighet"
+   "Visa bildfrekvens"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FPS_SHOW,
@@ -5800,7 +5800,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Återuppta innehållet efter att använt Spara status"
+   "Återuppta innehållet efter att använt Spara tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
@@ -6276,11 +6276,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Visa 'Spara status'-undermeny"
+   "Visa 'Spara tillstånd'-undermeny"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Visa sparstatusalternativ i en undermeny."
+   "Visa alternativ för sparade tillstånd i en undermeny."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
@@ -6352,11 +6352,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-   "Visa alternativet 'Börja streama'."
+   "Visa alternativet 'Börja strömma'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-   "Visa 'Skärm-överlager'"
+   "Visa 'Skärmöverlagring'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
@@ -8016,11 +8016,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-   "Sparade statusar"
+   "Sparade tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "Dina sparstatusar och inspelningar lagras i denna mapp. Om den inte är inställd hit så kommer den att försöka spara filerna i mappen där spelinnehållet är placerat."
+   "Dina sparade tillstånd och inspelningar lagras i denna mapp. Om den inte är inställd hit så kommer den att försöka spara filerna i mappen där spelinnehållet är placerat."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -8665,7 +8665,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-   "Status minnesplats"
+   "Tillståndsplats"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STATE_SLOT,
@@ -8673,11 +8673,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   "Spara status"
+   "Spara tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_STATE,
-   "Spara en status av spelet till den för närvarande valda platsen."
+   "Spara ett tillstånd av spelet till den för närvarande valda platsen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVE_STATE,
@@ -8705,15 +8705,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
-   "Ångra Spara status"
+   "Ångra Spara tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-   "Om en status blev överskriven, kommer den att återgå till den tidigare sparade statusen."
+   "Om ett tillstånd blev överskrivet kommer den att återgå till det tidigare sparade tillståndet."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_SLOT,
-   "Ändra den för närvarande valda status platsen."
+   "Ändra den för närvarande valda tillståndsplatsen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
@@ -8745,7 +8745,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
-   "Starta Inspelning"
+   "Starta inspelning"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
@@ -8761,7 +8761,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
-   "Börja streama"
+   "Börja strömma"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
@@ -8777,11 +8777,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
-   "Sparade statusar"
+   "Sparade tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_LIST,
-   "Åtkomst till sparad status-alternativ."
+   "Åtkomst till alternativ för sparade tillstånd."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
@@ -8867,7 +8867,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
-   "Spara Innehålls-inställningar"
+   "Alternativ för spara innehållskatalog"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
@@ -12743,7 +12743,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
-   "Spara status automatiskt till"
+   "Spara tillstånd automatiskt till"
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -13023,7 +13023,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
-   "Misslyckades att spara status till"
+   "Misslyckades att spara tillstånd till"
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME,
@@ -13067,7 +13067,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_UNDO_SAVE_STATE,
-   "Misslyckades att få sparad status ogjord."
+   "Misslyckades att ångra sparat tillstånd."
    )
 MSG_HASH(
    MSG_FAILED_TO_UNMUTE_AUDIO,
@@ -13083,7 +13083,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOUND_AUTO_SAVESTATE_IN,
-   "Hittade automatiskt sparad status i"
+   "Hittade automatiskt sparat tillstånd i"
    )
 MSG_HASH(
    MSG_FOUND_DISK_LABEL,
@@ -13255,7 +13255,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
-   "Ingen sparad status har ännu blivit överskriven."
+   "Inget sparat tillstånd har ännu blivit överskriven."
    )
 MSG_HASH(
    MSG_NO_STATE_HAS_BEEN_LOADED_YET,
@@ -13315,7 +13315,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
-   "Omdirigerar sparad status till"
+   "Omdirigerar sparat tillstånd till"
    )
 MSG_HASH(
    MSG_REMAP_FILE_RESET,
@@ -13335,7 +13335,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
-   "Återställde äldre sparad status."
+   "Återställde äldre sparat tillstånd."
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
@@ -13347,7 +13347,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-   "Återställer katalogen för sparad status-filer till"
+   "Återställer katalogen för sparade tillståndsfiler till"
    )
 MSG_HASH(
    MSG_REWINDING,
@@ -13371,11 +13371,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
-   "Sparade status till plats #%d."
+   "Sparade tillstånd till plats #%d."
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Sparade status till plats #-1 (Auto)."
+   "Sparade tillstånd till plats #-1 (Auto)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
@@ -13507,7 +13507,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Ångrar sparad status"
+   "Ångrar sparat tillstånd"
    )
 MSG_HASH(
    MSG_UNKNOWN,

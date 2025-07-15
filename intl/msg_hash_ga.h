@@ -13606,6 +13606,14 @@ MSG_HASH(
    "Aistríodh na croíleacáin uile a dtacaítear leo chuig leaganacha Play Store"
    )
 MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "Croíleacáin nuashonraithe: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "Croíleacáin a scipeáladh: "
+   )
+MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Nuashonrú croí díchumasaithe - tá an croí faoi ghlas: "
    )
@@ -13768,6 +13776,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "Ní thacaíonn Core le stáit sábhála."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "Ní thacaíonn Croi le Rialú Diosca."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,

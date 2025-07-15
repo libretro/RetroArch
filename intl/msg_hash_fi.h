@@ -859,6 +859,10 @@ MSG_HASH(
    "7zip-tuki"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "Zstandard-tuki"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
    "Dynaaminen kirjastotuki"
    )
