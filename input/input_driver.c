@@ -57,12 +57,12 @@
 #include "../retroarch.h"
 #ifdef HAVE_BSV_MOVIE
 #include "../tasks/task_content.h"
-  #ifdef HAVE_ZLIB
+#endif
+#if defined(HAVE_ZLIB) && defined(HAVE_BSV_MOVIE)
 #include <zlib.h>
-  #endif
-  #ifdef HAVE_ZSTD
+#endif
+#if defined(HAVE_ZSTD) && defined(HAVE_BSV_MOVIE)
 #include <zstd.h>
-  #endif
 #endif
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
@@ -6072,7 +6072,6 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
    input_driver_state_t *input_st = input_state_get_ptr();
    uint32_t compressed_encoded_size, encoded_size, size;
    size_t uncompressed_size_big;
-   uint32_t uncompressed_size;
    uint8_t *compressed_data = NULL, *encoded_data = NULL, *state = NULL;
    retro_ctx_serialize_info_t serial_info;
    bool ret = true;
@@ -6117,14 +6116,20 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
          break;
 #ifdef HAVE_ZLIB
       case REPLAY_CHECKPOINT2_COMPRESSION_ZLIB:
-         encoded_data = calloc(encoded_size, sizeof(uint8_t));
-         uncompressed_size = encoded_size;
-         if (uncompress(encoded_data, &uncompressed_size, compressed_data, compressed_encoded_size) != Z_OK)
          {
-            ret = false;
-            goto exit;
+#ifdef EMSCRIPTEN
+            uLongf uncompressed_size_zlib = encoded_size;
+#else
+            uint32_t uncompressed_size_zlib = encoded_size;
+#endif
+            encoded_data = calloc(encoded_size, sizeof(uint8_t));
+            if (uncompress(encoded_data, &uncompressed_size_zlib, compressed_data, compressed_encoded_size) != Z_OK)
+            {
+               ret = false;
+               goto exit;
+            }
+            break;
          }
-         break;
 #endif
 #ifdef HAVE_ZSTD
       case REPLAY_CHECKPOINT2_COMPRESSION_ZSTD:
@@ -6141,7 +6146,6 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
             ret = false;
             goto exit;
          }
-         uncompressed_size = uncompressed_size_big;
          break;
 #endif
       default:
