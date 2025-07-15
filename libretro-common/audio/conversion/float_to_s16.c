@@ -109,11 +109,13 @@ void convert_float_to_s16(int16_t *s, const float *in, size_t len)
       _mm_storeu_si128((__m128i *)s, packed); /* Then put the result in the output array */
    }
 
-   len              -= i;
+   len               = len - i;
    i                 = 0;
    /* If there are any stray samples at the end, we need to convert them
     * (maybe the original array didn't contain a multiple of 8 samples) */
 #elif defined(__ALTIVEC__)
+   int samples_in    = len;
+
    /* Unaligned loads/store is a bit expensive,
     * so we optimize for the good path (very likely). */
    if (((uintptr_t)s & 15) + ((uintptr_t)in & 15) == 0)
@@ -128,11 +130,20 @@ void convert_float_to_s16(int16_t *s, const float *in, size_t len)
          vec_st(vec_packs(result0, result1), 0, s);
       }
 
-      len    -= i;
+      samples_in    -= i;
    }
 
+   len               = samples_in;
    i                 = 0;
 #elif defined(_MIPS_ARCH_ALLEGREX)
+#ifdef DEBUG
+   /* Make sure the buffers are 16 byte aligned, this should be
+    * the default behaviour of malloc in the PSPSDK.
+    * Assume alignment. */
+   retro_assert(((uintptr_t)in  & 0xf) == 0);
+   retro_assert(((uintptr_t)s & 0xf) == 0);
+#endif
+
    for (i = 0; i + 8 <= len; i += 8)
    {
       __asm__ (

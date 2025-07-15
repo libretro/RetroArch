@@ -2113,71 +2113,73 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
       float device_aspect, float desired_aspect)
 {
    settings_t *settings = config_get_ptr();
-   video_driver_state_t *video_st = &video_driver_st;
-   int x = 0, y = 0;
-   float vp_bias_x = settings->floats.video_vp_bias_x;
-   float vp_bias_y = settings->floats.video_vp_bias_y;
-
+   video_driver_state_t
+      *video_st         = &video_driver_st;
+   int x                = 0;
+   int y                = 0;
+   float vp_bias_x      = settings->floats.video_vp_bias_x;
+   float vp_bias_y      = settings->floats.video_vp_bias_y;
 #if defined(RARCH_MOBILE)
    if (vp_width < vp_height)
    {
-      vp_bias_x = settings->floats.video_vp_bias_portrait_x;
-      vp_bias_y = settings->floats.video_vp_bias_portrait_y;
+      vp_bias_x         = settings->floats.video_vp_bias_portrait_x;
+      vp_bias_y         = settings->floats.video_vp_bias_portrait_y;
    }
 #endif
-
    if (!y_down)
-      vp_bias_y = 1.0f - vp_bias_y;
+      vp_bias_y         = 1.0 - vp_bias_y;
 
    if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      video_viewport_t *custom_vp = &settings->video_vp_custom;
-      int padding_x = vp_width - custom_vp->width;
-      int padding_y = vp_height - custom_vp->height;
+      video_viewport_t
+         *custom_vp     = &settings->video_vp_custom;
+      int padding_x     = 0;
+      int padding_y     = 0;
 
-      x = custom_vp->x;
-      y = custom_vp->y;
+      x                 = custom_vp->x;
+      y                 = custom_vp->y;
 
       if (!y_down)
-         y = vp->full_height - (y + custom_vp->height);
-
-      /* Adjust padding directly without checking negative */
+         y              = vp->full_height - (y + custom_vp->height);
+      padding_x        += (vp_width - custom_vp->width);
       if (padding_x < 0)
-         padding_x = -padding_x;
+         padding_x     *= 2;
+      padding_y         = vp_height - custom_vp->height;
       if (padding_y < 0)
-         padding_y = -padding_y;
-
-      vp_width  = custom_vp->width;
-      vp_height = custom_vp->height;
-
-      x += (int)(padding_x * vp_bias_x);
-      y += (int)(padding_y * vp_bias_y);
+         padding_y     *= 2;
+      vp_width          = custom_vp->width;
+      vp_height         = custom_vp->height;
+      x                += padding_x * vp_bias_x;
+      y                += padding_y * vp_bias_y;
    }
    else
    {
       float delta;
-      float aspect_diff = fabsf(device_aspect - desired_aspect);
 
-      if (aspect_diff >= 0.0001f)
+      if (fabsf(device_aspect - desired_aspect) < 0.0001f)
       {
-         if (device_aspect > desired_aspect)
-         {
-            delta     = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x        += (int)roundf(vp_width * (0.5f - delta) * vp_bias_x * 2.0f);
-            vp_width  = (unsigned)roundf(vp_width * delta * 2.0f);
-         }
-         else
-         {
-            delta     = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y        += (int)roundf(vp_height * (0.5f - delta) * vp_bias_y * 2.0f);
-            vp_height = (unsigned)roundf(vp_height * delta * 2.0f);
-         }
+         /* If the aspect ratios of screen and desired aspect
+          * ratio are sufficiently equal (floating point stuff),
+          * assume they are actually equal.
+          */
+      }
+      else if (device_aspect > desired_aspect)
+      {
+         delta      = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+         x         += (int)roundf(vp_width * ((0.5f - delta) * (vp_bias_x * 2.0f)));
+         vp_width   = (unsigned)roundf(2.0f * vp_width * delta);
+      }
+      else
+      {
+         delta      = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+         y         += (int)roundf(vp_height * ((0.5f - delta) * (vp_bias_y * 2.0f)));
+         vp_height  = (unsigned)roundf(2.0f * vp_height * delta);
       }
    }
 
-   vp->x = x;
-   vp->y = y;
-   vp->width = vp_width;
+   vp->x      = x;
+   vp->y      = y;
+   vp->width  = vp_width;
    vp->height = vp_height;
 
    /* Statistics */

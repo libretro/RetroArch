@@ -111,9 +111,11 @@ void convert_s16_to_float(float *s,
       _mm_storeu_ps(s + 4, output_r);
    }
 
-   len    -= i;
+   len     = len - i;
    i       = 0;
 #elif defined(__ALTIVEC__)
+   size_t samples_in = len;
+
    /* Unaligned loads/store is a bit expensive, so we
     * optimize for the good path (very likely). */
    if (((uintptr_t)s & 15) + ((uintptr_t)in & 15) == 0)
@@ -133,15 +135,23 @@ void convert_s16_to_float(float *s,
          vec_st(out_lo, 16, s);
       }
 
-      len -= i;
+      samples_in -= i;
    }
 
+   len     = samples_in;
    i       = 0;
 #endif
 
    gain   /= 0x8000;
 
 #if defined(_MIPS_ARCH_ALLEGREX)
+#ifdef DEBUG
+   /* Make sure the buffer is 16 byte aligned, this should be the
+    * default behaviour of malloc in the PSPSDK.
+    * Only the output buffer can be assumed to be 16-byte aligned. */
+   retro_assert(((uintptr_t)s & 0xf) == 0);
+#endif
+
    __asm__ (
          ".set    push                    \n"
          ".set    noreorder               \n"

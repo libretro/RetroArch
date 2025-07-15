@@ -353,25 +353,10 @@ size_t fill_pathname(char *s, const char *in_path,
  **/
 char *find_last_slash(const char *str)
 {
-   const char *p;
-   const char *last_slash     = NULL;
-   const char *last_backslash = NULL;
-
-   /* Traverse the string once */
-   for (p = str; *p != '\0'; ++p)
-   {
-      if (*p == '/')
-         last_slash = p; /* Update last forward slash */
-      else if (*p == '\\')
-         last_backslash = p; /* Update last backslash */
-   }
-
-   /* Determine which one is last */
-   if (!last_slash) /* Backslash */
-      return (char*)last_backslash;
-   if (!last_backslash) /* Forward slash */
-      return (char*)last_slash;
-   return (last_backslash > last_slash) ? (char*)last_backslash : (char*)last_slash;
+   const char *slash     = strrchr(str, '/');
+   const char *backslash = strrchr(str, '\\');
+   char       *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   return last_slash;
 }
 
 /**
@@ -384,15 +369,14 @@ char *find_last_slash(const char *str)
  **/
 size_t fill_pathname_slash(char *s, size_t len)
 {
-   char       *last_slash = find_last_slash(s);
-   len                    = strlen(s);
+   const char *slash      = strrchr(s, '/');
+   const char *backslash  = strrchr(s, '\\');
+   char       *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    if (!last_slash)
-   {
-      s[  len] = PATH_DEFAULT_SLASH_C();
-      s[++len] = '\0';
-   }
+      return strlcat(s, PATH_DEFAULT_SLASH(), len);
+   len         = strlen(s);
    /* Try to preserve slash type. */
-   else if (last_slash != (s + len - 1))
+   if (last_slash != (s + len - 1))
    {
       s[  len] = last_slash[0];
       s[++len] = '\0';
@@ -478,12 +462,16 @@ size_t fill_pathname_parent_dir_name(char *s, const char *in_dir, size_t len)
 {
    size_t _len           = 0;
    char *tmp             = strdup(in_dir);
-   char *last_slash      = find_last_slash(tmp);
+   const char *slash     = strrchr(tmp, '/');
+   const char *backslash = strrchr(tmp, '\\');
+   char *last_slash      = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
 
    if (last_slash && last_slash[1] == 0)
    {
       *last_slash        = '\0';
-      last_slash         = find_last_slash(tmp);
+      slash              = strrchr(tmp, '/');
+      backslash          = strrchr(tmp, '\\');
+      last_slash         = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    }
 
    /* Cut the last part of the string (the filename) after the slash,
@@ -494,7 +482,9 @@ size_t fill_pathname_parent_dir_name(char *s, const char *in_dir, size_t len)
    /* Point in_dir to the address of the last slash.
     * If in_dir is NULL, it means there was no slash in tmp,
     * so use tmp as-is. */
-   in_dir                = find_last_slash(tmp);
+   slash                 = strrchr(tmp, '/');
+   backslash             = strrchr(tmp, '\\');
+   in_dir                = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    if (!in_dir)
        in_dir            = tmp;
 
@@ -602,19 +592,23 @@ size_t fill_str_dated_filename(char *s,
  **/
 size_t path_basedir(char *s)
 {
+   const char *slash;
+   const char *backslash;
    char *last_slash = NULL;
    if (!s || s[0] == '\0' || s[1] == '\0')
       return (s && s[0] != '\0') ? 1 : 0;
-   last_slash       = find_last_slash(s);
-   if (!last_slash)
+   slash            = strrchr(s, '/');
+   backslash        = strrchr(s, '\\');
+   last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   if (last_slash)
    {
-      s[0]          = '.';
-      s[1]          = PATH_DEFAULT_SLASH_C();
-      s[2]          = '\0';
-      return 2;
+      last_slash[1] = '\0';
+      return last_slash + 1 - s;
    }
-   last_slash[1] = '\0';
-   return last_slash + 1 - s;
+   s[0]             = '.';
+   s[1]             = PATH_DEFAULT_SLASH_C();
+   s[2]             = '\0';
+   return 2;
 }
 
 /**
@@ -636,9 +630,15 @@ size_t path_parent_dir(char *s, size_t len)
    if (len && PATH_CHAR_IS_SLASH(s[len - 1]))
    {
       char *last_slash;
+      const char *slash;
+      const char *backslash;
       bool was_absolute = path_is_absolute(s);
+
       s[len - 1]        = '\0';
-      last_slash        = find_last_slash(s);
+
+      slash             = strrchr(s, '/');
+      backslash         = strrchr(s, '\\');
+      last_slash        = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
 
       if (was_absolute && !last_slash)
       {
@@ -667,7 +667,9 @@ const char *path_basename(const char *path)
    /* We cut either at the first compression-related hash,
     * or we cut at the last slash */
    const char *ptr       = NULL;
-   char *last_slash      = find_last_slash(path);
+   const char *slash     = strrchr(path, '/');
+   const char *backslash = strrchr(path, '\\');
+   char *last_slash      = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    return ((ptr = path_get_archive_delim(path)) || (ptr = last_slash))
       ? (ptr + 1) : path;
 }
@@ -685,7 +687,9 @@ const char *path_basename(const char *path)
 const char *path_basename_nocompression(const char *path)
 {
    /* We cut at the last slash */
-   char *last_slash = find_last_slash(path);
+   const char *slash     = strrchr(path, '/');
+   const char *backslash = strrchr(path, '\\');
+   char *last_slash      = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    return (last_slash) ? (last_slash + 1) : path;
 }
 
@@ -995,18 +999,22 @@ size_t fill_pathname_join_special(char *s,
 
    if (*s)
    {
-      char *last_slash       = find_last_slash(s);
-      if (!last_slash)
+      const char *slash      = strrchr(s, '/');
+      const char *backslash  = strrchr(s, '\\');
+      char *last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+      if (last_slash)
       {
-         s[  _len] = PATH_DEFAULT_SLASH_C();
-         s[++_len] = '\0';
-
+         /* Try to preserve slash type. */
+         if (last_slash != (s + _len - 1))
+         {
+            s[  _len] = last_slash[0];
+            s[++_len] = '\0';
+         }
       }
-      /* Try to preserve slash type. */
-      else if (last_slash != (s + _len - 1))
+      else
       {
-         s[  _len] = last_slash[0];
-         s[++_len] = '\0';
+         s[  _len]    = PATH_DEFAULT_SLASH_C();
+         s[++_len]    = '\0';
       }
    }
 
@@ -1319,6 +1327,8 @@ size_t fill_pathname_abbreviated_or_relative(char *s,
  **/
 void path_basedir_wrapper(char *s)
 {
+   const char *slash;
+   const char *backslash;
    char *last_slash = NULL;
    if (!s || s[0] == '\0' || s[1] == '\0')
       return;
@@ -1327,7 +1337,9 @@ void path_basedir_wrapper(char *s)
    if ((last_slash  = (char*)path_get_archive_delim(s)))
       *last_slash   = '\0';
 #endif
-   last_slash       = find_last_slash(s);
+   slash            = strrchr(s, '/');
+   backslash        = strrchr(s, '\\');
+   last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    if (last_slash)
       last_slash[1] = '\0';
    else
