@@ -6478,8 +6478,9 @@ bool replay_get_serialized_data(void* buffer)
       int32_t file_end        = (uint32_t)intfstream_tell(handle->file);
       int64_t read_amt        = 0;
       int32_t file_end_       = swap_if_big32(file_end);
+      uint8_t *buf;
       ((uint32_t *)buffer)[0] = file_end_;
-      uint8_t *buf            = ((uint8_t *)buffer) + sizeof(uint32_t);
+      buf                     = ((uint8_t *)buffer) + sizeof(uint32_t);
       intfstream_rewind(handle->file);
       read_amt                = intfstream_read(handle->file, buf, file_end);
       if (read_amt != file_end)
@@ -6514,8 +6515,9 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
    intfstream_seek(check_stream, movie->min_file_pos, SEEK_SET);
    if (movie->version == 0)
    {
+      int64_t i;
       /* no choice but to memcmp the whole stream against the other */
-      for (int64_t i = 0; ret && i < check_limit; i+=check_cap)
+      for (i = 0; ret && i < check_limit; i+=check_cap)
       {
          int64_t read_end = MIN(check_limit - i, check_cap);
          int64_t read1 = intfstream_read(movie->file, buf1, read_end);
