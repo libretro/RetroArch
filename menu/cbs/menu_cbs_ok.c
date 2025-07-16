@@ -1931,7 +1931,6 @@ static bool menu_content_find_first_core(
       menu_content_ctx_defer_info_t *def_info,
       bool load_content_with_current_core, char *s, size_t len)
 {
-   settings_t *settings             = config_get_ptr();
    const core_info_t *info          = NULL;
    size_t supported                 = 0;
    core_info_list_t *core_info      = (core_info_list_t*)def_info->data;
@@ -1963,10 +1962,12 @@ static bool menu_content_find_first_core(
             def_info->s, &info,
             &supported);
 
+#ifdef HAVE_DYNAMIC
    /* Don't suggest cores if a core is already loaded. */
    if (     !path_is_empty(RARCH_PATH_CORE)
-         && !settings->bools.core_suggest_always)
+         && !config_get_ptr()->bools.core_suggest_always)
       load_content_with_current_core = true;
+#endif
 
    /* We started the menu with 'Load Content', we are
     * going to use the current core to load this. */

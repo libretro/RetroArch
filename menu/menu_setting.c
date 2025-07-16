@@ -20353,6 +20353,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
+#ifdef HAVE_DYNAMIC
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.core_suggest_always,
@@ -20367,6 +20368,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
