@@ -18,6 +18,9 @@
  *  with RetroArch. If not, see <http://www.gnu.org/licenses/>.
  **/
 
+#include "libretro.h"
+#include "queues/message_queue.h"
+#include "streams/interface_stream.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <string/stdstring.h>
@@ -6461,7 +6464,7 @@ size_t replay_get_serialize_size(void)
 {
    input_driver_state_t *input_st = &input_driver_st;
    if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
-      return sizeof(int32_t)+intfstream_tell(input_st->bsv_movie_state_handle->file);
+      return sizeof(uint32_t)+intfstream_tell(input_st->bsv_movie_state_handle->file);
    return 0;
 }
 
@@ -6472,23 +6475,168 @@ bool replay_get_serialized_data(void* buffer)
 
    if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
    {
-      int64_t file_end        = intfstream_tell(handle->file);
+      int32_t file_end        = (uint32_t)intfstream_tell(handle->file);
       int64_t read_amt        = 0;
-      long file_end_lil       = swap_if_big32(file_end);
-      uint8_t *file_end_bytes = (uint8_t *)(&file_end_lil);
-      uint8_t *buf            = buffer;
-      buf[0]                  = file_end_bytes[0];
-      buf[1]                  = file_end_bytes[1];
-      buf[2]                  = file_end_bytes[2];
-      buf[3]                  = file_end_bytes[3];
-      buf                    += 4;
+      int32_t file_end_       = swap_if_big32(file_end);
+      ((uint32_t *)buffer)[0] = file_end_;
+      uint8_t *buf            = ((uint8_t *)buffer) + sizeof(uint32_t);
       intfstream_rewind(handle->file);
-      read_amt                = intfstream_read(handle->file, (void *)buf, file_end);
+      read_amt                = intfstream_read(handle->file, buf, file_end);
       if (read_amt != file_end)
          RARCH_ERR("[Replay] Failed to write correct number of replay bytes into state file: %d / %d.\n",
                read_amt, file_end);
    }
    return true;
+}
+
+bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_t other_len)
+{
+   int64_t check_limit = MIN(other_len, intfstream_tell(movie->file));
+   intfstream_t *check_stream = intfstream_open_memory(other_movie, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, other_len);
+   bool ret = true;
+   int64_t check_cap = MAX(128 << 10, MAX(128*sizeof(bsv_key_data_t), 512*sizeof(bsv_input_data_t)));
+   uint8_t *buf1 = calloc(check_cap,1), *buf2 = calloc(check_cap,1);
+   size_t movie_pos = intfstream_tell(movie->file);
+   uint8_t keycount1, keycount2, frametok1, frametok2;
+   uint16_t btncount1, btncount2;
+   uint64_t size1, size2;
+   intfstream_rewind(movie->file);
+   intfstream_read(movie->file, buf1, 6*sizeof(uint32_t));
+   intfstream_read(check_stream, buf2, 6*sizeof(uint32_t));
+   if (memcmp(buf1, buf2, 6*sizeof(uint32_t)) != 0)
+   {
+      RARCH_ERR("[Replay] Headers of two movies differ, not same timeline\n");
+      ret = false;
+      goto exit;
+   }
+   intfstream_seek(movie->file, movie->min_file_pos, SEEK_SET);
+   /* assumption: both headers have the same state size */
+   intfstream_seek(check_stream, movie->min_file_pos, SEEK_SET);
+   if (movie->version == 0)
+   {
+      /* no choice but to memcmp the whole stream against the other */
+      for (int64_t i = 0; ret && i < check_limit; i+=check_cap)
+      {
+         int64_t read_end = MIN(check_limit - i, check_cap);
+         int64_t read1 = intfstream_read(movie->file, buf1, read_end);
+         int64_t read2 = intfstream_read(check_stream, buf2, read_end);
+         if (read1 != read_end || read2 != read_end || memcmp(buf1, buf2, read_end) != 0)
+         {
+            RARCH_ERR("[Replay] One or the other replay checkpoint has different byte values\n");
+            ret = false;
+            goto exit;
+         }
+      }
+      goto exit;
+   }
+   while(intfstream_tell(movie->file) < check_limit && intfstream_tell(check_stream) < check_limit)
+   {
+      if (intfstream_tell(movie->file) < 0 || intfstream_tell(check_stream) < 0)
+      {
+         RARCH_ERR("[Replay] One or the other replay checkpoint has ended prematurely\n");
+         ret = false;
+         goto exit;
+      }
+      if (intfstream_read(movie->file, &keycount1, 1) < 1 ||
+            intfstream_read(check_stream, &keycount2, 1) < 1 ||
+            keycount1 != keycount2)
+      {
+         RARCH_ERR("[Replay] Replay checkpoints disagree on key count, %d vs %d\n", keycount1, keycount2);
+         ret = false;
+         goto exit;
+      }
+      if ((uint64_t)intfstream_read(movie->file, buf1, keycount1*sizeof(bsv_key_data_t)) < keycount1*sizeof(bsv_key_data_t) ||
+            (uint64_t)intfstream_read(check_stream, buf2, keycount2*sizeof(bsv_key_data_t)) < keycount2*sizeof(bsv_key_data_t) ||
+            memcmp(buf1, buf2, keycount1*sizeof(bsv_key_data_t)) != 0)
+      {
+         RARCH_ERR("[Replay] Replay checkpoints disagree on key data\n");
+         ret = false;
+         goto exit;
+      }
+      if (intfstream_read(movie->file, &btncount1, 2) < 2 ||
+            intfstream_read(check_stream, &btncount2, 2) < 2 ||
+            btncount1 != btncount2)
+      {
+         RARCH_ERR("[Replay] Replay checkpoints disagree on input count\n");
+         ret = false;
+         goto exit;
+      }
+      btncount1 = swap_if_big16(btncount1);
+      btncount2 = swap_if_big16(btncount2);
+      if ((uint64_t)intfstream_read(movie->file, buf1, btncount1*sizeof(bsv_input_data_t)) < btncount1*sizeof(bsv_input_data_t) ||
+            (uint64_t)intfstream_read(check_stream, buf2, btncount2*sizeof(bsv_input_data_t)) < btncount2*sizeof(bsv_input_data_t) ||
+            memcmp(buf1, buf2, btncount1*sizeof(bsv_input_data_t)) != 0)
+      {
+         RARCH_ERR("[Replay] Replay checkpoints disagree on input data\n");
+         ret = false;
+         goto exit;
+      }
+      if (intfstream_read(movie->file, &frametok1, 1) < 1 ||
+            intfstream_read(check_stream, &frametok2, 1) < 1 ||
+            frametok1 != frametok2)
+      {
+         RARCH_ERR("[Replay] Replay checkpoints disagree on frame token\n");
+         ret = false;
+         goto exit;
+      }
+      switch (frametok1)
+      {
+         case REPLAY_TOKEN_INVALID:
+            RARCH_ERR("[Replay] Both replays are somehow invalid\n");
+            ret = false;
+            goto exit;
+         case REPLAY_TOKEN_REGULAR_FRAME:
+            break;
+         case REPLAY_TOKEN_CHECKPOINT_FRAME:
+            if ((uint64_t)intfstream_read(movie->file, &size1, sizeof(uint64_t)) < sizeof(uint64_t) ||
+                  (uint64_t)intfstream_read(check_stream, &size2, sizeof(uint64_t)) < sizeof(uint64_t) ||
+                  size1 != size2)
+            {
+               RARCH_ERR("[Replay] Replay checkpoints disagree on size or scheme\n");
+               ret = false;
+               goto exit;
+            }
+            size1 = swap_if_big64(size1);
+            intfstream_seek(movie->file, size1, SEEK_CUR);
+            intfstream_seek(check_stream, size1, SEEK_CUR);
+            break;
+         case REPLAY_TOKEN_CHECKPOINT2_FRAME:
+         {
+            uint32_t cpsize1, cpsize2;
+            /* read cp2 header:
+               - one byte compression codec, one byte encoding scheme
+               - 4 byte uncompressed unencoded size, 4 byte uncompressed encoded size
+               - 4 byte compressed, encoded size
+               - the data will follow
+            */
+            if (intfstream_read(movie->file, buf1, 2+sizeof(uint32_t)*3) != 2+sizeof(uint32_t)*3 ||
+                  intfstream_read(check_stream, buf2, 2+sizeof(uint32_t)*3) != 2+sizeof(uint32_t)*3 ||
+                  memcmp(buf1, buf2, 2+sizeof(uint32_t)*3) != 0
+                )
+            {
+               ret = false;
+               goto exit;
+            }
+            memcpy(&cpsize1, buf1+10, sizeof(uint32_t));
+            memcpy(&cpsize2, buf2+10, sizeof(uint32_t));
+            cpsize1 = swap_if_big32(cpsize1);
+            cpsize2 = swap_if_big32(cpsize2);
+            intfstream_seek(movie->file, cpsize1, SEEK_CUR);
+            intfstream_seek(check_stream, cpsize2, SEEK_CUR);
+            break;
+         }
+         default:
+            RARCH_ERR("[Replay] Unrecognized frame token in both replays\n");
+            ret = false;
+            goto exit;
+      }
+   }
+ exit:
+   free(buf1);
+   free(buf2);
+   intfstream_close(check_stream);
+   intfstream_seek(movie->file, movie_pos, SEEK_SET);
+   return ret;
 }
 
 bool replay_set_serialized_data(void* buf)
@@ -6497,7 +6645,7 @@ bool replay_set_serialized_data(void* buf)
    input_driver_state_t *input_st = &input_driver_st;
    bool playback                  = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)  ? true : false;
    bool recording                 = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING) ? true : false;
-
+   bsv_movie_t *movie             = input_st->bsv_movie_state_handle;
    /* If there is no current replay, ignore this entirely.
       TODO/FIXME: Later, consider loading up the replay
       and allow the user to continue it?
@@ -6529,15 +6677,18 @@ bool replay_set_serialized_data(void* buf)
    else
    {
       /* TODO: should factor the next few lines away, magic numbers ahoy */
-      uint32_t *header         = (uint32_t *)(buffer + sizeof(int32_t));
+      uint32_t *header         = (uint32_t *)(buffer + sizeof(uint32_t));
       int64_t *ident_spot      = (int64_t *)(header + 4);
-      int64_t ident            = swap_if_big64(*ident_spot);
+      int64_t ident;
+      /* avoid unaligned 8-byte read */
+      memcpy(&ident, ident_spot, sizeof(int64_t));
+      ident = swap_if_big64(ident);
 
-      if (ident == input_st->bsv_movie_state_handle->identifier) /* is compatible? */
+      if (ident == movie->identifier) /* is compatible? */
       {
-         int32_t loaded_len    = swap_if_big32(((int32_t *)buffer)[0]);
-         int64_t handle_idx    = intfstream_tell(
-               input_st->bsv_movie_state_handle->file);
+         int64_t loaded_len    = (int64_t)swap_if_big32(((uint32_t *)buffer)[0]);
+         int64_t handle_idx    = intfstream_tell(movie->file);
+         bool same_timeline    = replay_check_same_timeline(movie, (uint8_t *)header, loaded_len);
          /* If the state is part of this replay, go back to that state
             and rewind/fast forward the replay.
 
@@ -6548,19 +6699,39 @@ bool replay_set_serialized_data(void* buf)
 
             This can truncate the current replay if we're in recording mode.
          */
-         if (loaded_len > handle_idx)
+         if (playback && loaded_len > handle_idx)
          {
-            /* TODO: Really, to be very careful, we should be
-               checking that the events in the loaded state are the
-               same up to handle_idx. Right? */
-            intfstream_rewind(input_st->bsv_movie_state_handle->file);
-            intfstream_write(input_st->bsv_movie_state_handle->file, buffer+sizeof(int32_t), loaded_len);
+            const char *_msg = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+            RARCH_ERR("[Replay] %s.\n", _msg);
+            return false;
+         }
+         else if (playback && !same_timeline)
+         {
+            const char *_msg = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+            RARCH_ERR("[Replay] %s.\n", _msg);
+            return false;
+         }
+         else if (recording && (loaded_len > handle_idx || !same_timeline))
+         {
+            if (!same_timeline)
+            {
+               const char *_msg = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+               RARCH_WARN("[Replay] %s.\n", _msg);
+            }
+            intfstream_rewind(movie->file);
+            intfstream_write(movie->file, buffer+sizeof(int32_t), loaded_len);
          }
          else
          {
-            intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
+            intfstream_seek(movie->file, loaded_len, SEEK_SET);
             if (recording)
-               intfstream_truncate(input_st->bsv_movie_state_handle->file, loaded_len);
+               intfstream_truncate(movie->file, loaded_len);
          }
       }
       else
