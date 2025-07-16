@@ -75,7 +75,7 @@ bool file_list_reserve(file_list_t *list, size_t nitems)
 }
 
 /* Helper function to initialize item_file structure */
-static inline void init_item_file(struct item_file *item,
+static INLINE void init_item_file(struct item_file *item,
     const char *path, const char *label, unsigned type,
     size_t directory_ptr, size_t entry_idx)
 {
