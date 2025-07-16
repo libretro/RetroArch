@@ -56,6 +56,10 @@
 #include "../command.h"
 #endif
 
+#ifdef HAVE_BSV_MOVIE
+#include "bsv/uint32s_index.h"
+#endif
+
 #if defined(ANDROID)
 #define DEFAULT_MAX_PADS 8
 #define ANDROID_KEYBOARD_PORT DEFAULT_MAX_PADS
@@ -129,8 +133,12 @@
 #define REPLAY_CHECKPOINT2_COMPRESSION_ZSTD 2
 
 /* Which encoding to use.
-   RAW: Just raw checkpoint data, possibly compressed. */
+   RAW: Just raw checkpoint data, possibly compressed.
+   STATESTREAM: Incremental, block-deduplicated encoding per
+             https://github.com/sumitshetye2/v86_savestreams
+*/
 #define REPLAY_CHECKPOINT2_ENCODING_RAW 0
+#define REPLAY_CHECKPOINT2_ENCODING_STATESTREAM 1
 
 /**
  * Takes as input analog key identifiers and converts them to corresponding
@@ -209,23 +217,23 @@ struct bsv_state
 /* These data are always little-endian. */
 struct bsv_key_data
 {
-  uint8_t down;
-  uint8_t _padding;
-  uint16_t mod;
-  uint32_t code;
-  uint32_t character;
+   uint8_t down;
+   uint8_t _padding;
+   uint16_t mod;
+   uint32_t code;
+   uint32_t character;
 };
 typedef struct bsv_key_data bsv_key_data_t;
 
 struct bsv_input_data
 {
-  uint8_t port;
-  uint8_t device;
-  uint8_t idx;
-  uint8_t _padding;
-  /* little-endian numbers */
-  uint16_t id;
-  int16_t value;
+   uint8_t port;
+   uint8_t device;
+   uint8_t idx;
+   uint8_t _padding;
+   /* little-endian numbers */
+   uint16_t id;
+   int16_t value;
 };
 typedef struct bsv_input_data bsv_input_data_t;
 
@@ -254,6 +262,10 @@ struct bsv_movie
    bool playback;
    bool first_rewind;
    bool did_rewind;
+
+   /* Block index and superblock index for incremental checkpoints */
+   uint32s_index_t *superblocks;
+   uint32s_index_t *blocks;
 };
 
 typedef struct bsv_movie bsv_movie_t;
@@ -1067,7 +1079,7 @@ void input_overlay_check_mouse_cursor(void);
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
 void bsv_movie_next_frame(input_driver_state_t *input_st);
-void bsv_movie_read_next_events(bsv_movie_t*handle);
+bool bsv_movie_read_next_events(bsv_movie_t *handle, bool skip_checkpoints);
 void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
 void bsv_movie_deinit_full(input_driver_state_t *input_st);

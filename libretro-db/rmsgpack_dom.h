@@ -79,6 +79,8 @@ struct rmsgpack_dom_pair
 	struct rmsgpack_dom_value value; /* uint64_t alignment */
 };
 
+struct dom_reader_state;
+
 void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj);
 void rmsgpack_dom_value_free(struct rmsgpack_dom_value *v);
 
@@ -90,6 +92,10 @@ struct rmsgpack_dom_value *rmsgpack_dom_value_map_value(
         const struct rmsgpack_dom_value *key);
 
 int rmsgpack_dom_read(intfstream_t *stream, struct rmsgpack_dom_value *out);
+
+struct rmsgpack_dom_reader_state *rmsgpack_dom_reader_state_new();
+int rmsgpack_dom_read_with(intfstream_t *stream, struct rmsgpack_dom_value *out, struct rmsgpack_dom_reader_state *state);
+void rmsgpack_dom_reader_state_free(struct rmsgpack_dom_reader_state *state);
 
 int rmsgpack_dom_write(intfstream_t *stream, const struct rmsgpack_dom_value *obj);
 

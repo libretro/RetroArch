@@ -604,6 +604,10 @@ INPUT
 ============================================================ */
 
 #include "../input/input_driver.c"
+#ifdef HAVE_BSV_MOVIE
+#include "../input/bsv/bsvmovie.c"
+#include "../input/bsv/uint32s_index.c"
+#endif
 #include "../input/input_keymaps.c"
 #include "../tasks/task_autodetect.c"
 #include "../input/input_autodetect_builtin.c"

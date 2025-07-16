@@ -43,30 +43,30 @@
 #include "../runloop.h"
 #include "tasks_internal.h"
 #include "../input/input_driver.h"
+#include "../input/bsv/bsvmovie.h"
 
-#define MAGIC_INDEX        0
-#define VERSION_INDEX      1
-#define CRC_INDEX          2
-#define STATE_SIZE_INDEX   3
-/* Identifier is int64_t, so takes up two slots */
-#define IDENTIFIER_INDEX   4
-#define HEADER_LEN         6
 
-#define REPLAY_FORMAT_VERSION 1
-#define REPLAY_MAGIC       0x42535632
+/* Superblock and block sizes for incremental savestates. */
+#define DEFAULT_SUPERBLOCK_SIZE 256 /* measured in blocks */
+#define DEFAULT_BLOCK_SIZE      256 /* measured in bytes  */
+
+#define SMALL_STATE_THRESHOLD (1<<20) /* states < 1MB are "small" and are tuned differently */
+#define SMALL_SUPERBLOCK_SIZE 32  /* measured in blocks */
+#define SMALL_BLOCK_SIZE      128 /* measured in bytes  */
 
 /* Forward declaration */
 bool content_load_state_in_progress(void* data);
 
 /* Private functions */
 
-static bool bsv_movie_init_playback(
-      bsv_movie_t *handle, const char *path)
+static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
 {
    int64_t *identifier_loc;
    uint32_t state_size         = 0;
-   uint32_t header[HEADER_LEN] = {0};
+   uint32_t header[REPLAY_HEADER_LEN] = {0};
    uint32_t vsn                = 0;
+   uint32_t superblock_size    = DEFAULT_SUPERBLOCK_SIZE,
+      block_size = DEFAULT_BLOCK_SIZE/4;
    intfstream_t *file          = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -80,46 +80,40 @@ static bool bsv_movie_init_playback(
    handle->file              = file;
    handle->playback          = true;
 
-   intfstream_read(handle->file, header, sizeof(uint32_t) * HEADER_LEN);
-   if (swap_if_big32(header[MAGIC_INDEX]) != REPLAY_MAGIC)
+   intfstream_read(handle->file, header, sizeof(uint32_t) * REPLAY_HEADER_LEN);
+   if (swap_if_big32(header[REPLAY_HEADER_MAGIC_INDEX]) != REPLAY_MAGIC)
    {
-      RARCH_ERR("[Replay] %s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
+      RARCH_ERR("[Replay] %s : %s : magic %d vs %d \n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE), path, swap_if_big32(header[REPLAY_HEADER_MAGIC_INDEX]), REPLAY_MAGIC);
       return false;
    }
-   vsn                = swap_if_big32(header[VERSION_INDEX]);
+   vsn                = swap_if_big32(header[REPLAY_HEADER_VERSION_INDEX]);
    if (vsn > REPLAY_FORMAT_VERSION)
    {
-      RARCH_ERR("[Replay] %s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
+      RARCH_ERR("[Replay] %s : vsn %d vs %d\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE), vsn, REPLAY_FORMAT_VERSION);
       return false;
    }
    handle->version    = vsn;
 
-   state_size         = swap_if_big32(header[STATE_SIZE_INDEX]);
-   identifier_loc     = (int64_t *)(header+IDENTIFIER_INDEX);
+   state_size         = swap_if_big32(header[REPLAY_HEADER_STATE_SIZE_INDEX]);
+   identifier_loc     = (int64_t *)(header+REPLAY_HEADER_IDENTIFIER_INDEX);
    handle->identifier = swap_if_big64(*identifier_loc);
 
-#if 0
-   RARCH_ERR("----- debug %u -----\n", header[0]);
-   RARCH_ERR("----- debug %u -----\n", header[1]);
-   RARCH_ERR("----- debug %u -----\n", header[2]);
-   RARCH_ERR("----- debug %u -----\n", header[3]);
-   RARCH_ERR("----- debug %u -----\n", header[4]);
-   RARCH_ERR("----- debug %u -----\n", header[5]);
-#endif
-
-   if (state_size)
+   handle->min_file_pos = sizeof(header) + state_size;
+   if (state_size && vsn <= 1)
    {
       size_t info_size;
       retro_ctx_serialize_info_t serial_info;
-      uint8_t *buf       = (uint8_t*)malloc(state_size);
+      uint8_t *buf           = (uint8_t*)malloc(state_size);
 
       if (!buf)
          return false;
 
-      handle->state      = buf;
-      handle->state_size = state_size;
-      if (intfstream_read(handle->file,
-               handle->state, state_size) != state_size)
+      /* The header used to be six ints long */
+      intfstream_seek(handle->file, REPLAY_HEADER_V0V1_LEN_BYTES, SEEK_SET);
+
+      handle->state          = buf;
+      handle->state_size     = state_size;
+      if (intfstream_read(handle->file, handle->state, state_size) != state_size)
       {
          RARCH_ERR("[Replay] %s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
          return false;
@@ -131,15 +125,27 @@ static bool bsv_movie_init_playback(
       serial_info.size       = state_size;
       core_unserialize(&serial_info);
       if (info_size != state_size)
-      {
          RARCH_WARN("[Replay] %s\n",
                msg_hash_to_str(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION));
-      }
+   }
+   else if (vsn >= 2)
+   {
+      retro_ctx_serialize_info_t serial_info;
+      uint8_t compression, encoding;
+      superblock_size = swap_if_big32(header[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX]);
+      block_size = swap_if_big32(header[REPLAY_HEADER_BLOCK_SIZE_INDEX]);
+      handle->superblocks = uint32s_index_new(superblock_size);
+      handle->blocks = uint32s_index_new(block_size/4);
+
+      if (intfstream_read(handle->file, &(compression), sizeof(uint8_t)) != sizeof(uint8_t) ||
+            intfstream_read(handle->file, &(encoding), sizeof(uint8_t)) != sizeof(uint8_t))
+         return false;
+      if (!bsv_movie_load_checkpoint(handle, compression, encoding, false))
+         return false;
    }
 
-   handle->min_file_pos = sizeof(header) + state_size;
    if(vsn > 0)
-      bsv_movie_read_next_events(handle);
+     bsv_movie_read_next_events(handle, false);
 
 
    return true;
@@ -153,10 +159,13 @@ static bool bsv_movie_init_record(
    time_t time_lil              = swap_if_big64(t);
    uint32_t state_size          = 0;
    uint32_t content_crc         = 0;
-   uint32_t header[HEADER_LEN] = {0};
+   uint32_t header[REPLAY_HEADER_LEN]  = {0};
    intfstream_t *file           = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   bool is_small                = false;
+   uint32_t superblock_size;
+   uint32_t block_size;
 
    if (!file)
    {
@@ -169,39 +178,61 @@ static bool bsv_movie_init_record(
 
    content_crc              = content_get_crc();
 
-   header[MAGIC_INDEX]      = swap_if_big32(REPLAY_MAGIC);
-   header[VERSION_INDEX]    = swap_if_big32(handle->version);
-   header[CRC_INDEX]        = swap_if_big32(content_crc);
+   header[REPLAY_HEADER_MAGIC_INDEX]      = swap_if_big32(REPLAY_MAGIC);
+   header[REPLAY_HEADER_VERSION_INDEX]    = swap_if_big32(handle->version);
+   header[REPLAY_HEADER_CRC_INDEX]        = swap_if_big32(content_crc);
 
    info_size                = core_serialize_size();
-
    state_size               = (unsigned)info_size;
+   is_small                 = info_size < SMALL_STATE_THRESHOLD;
+   superblock_size          = is_small ? SMALL_SUPERBLOCK_SIZE : DEFAULT_SUPERBLOCK_SIZE;
+   block_size               = is_small ? SMALL_BLOCK_SIZE : DEFAULT_BLOCK_SIZE;
+   header[REPLAY_HEADER_STATE_SIZE_INDEX]      = 0; /* Will fill this in later */
+   header[REPLAY_HEADER_FRAME_COUNT_INDEX]     = 0;
+   header[REPLAY_HEADER_BLOCK_SIZE_INDEX]      = swap_if_big32(block_size);
+   header[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX] = swap_if_big32(superblock_size);
+   handle->identifier       = (int64_t)t;
+   *((int64_t *)(header+REPLAY_HEADER_IDENTIFIER_INDEX)) = time_lil;
+   intfstream_write(handle->file, header, REPLAY_HEADER_LEN_BYTES);
 
-   header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
-   handle->identifier = (int64_t)t;
-   *((int64_t *)(header+IDENTIFIER_INDEX)) = time_lil;
-   intfstream_write(handle->file, header, HEADER_LEN * sizeof(uint32_t));
-
-   handle->min_file_pos     = sizeof(header) + state_size;
-   handle->state_size       = state_size;
+   handle->superblocks      = uint32s_index_new(superblock_size);
+   handle->blocks           = uint32s_index_new(block_size/4);
 
    if (state_size)
    {
       retro_ctx_serialize_info_t serial_info;
       uint8_t *st      = (uint8_t*)malloc(state_size);
-
+      uint32_t state_size_lil;
+#if defined(HAVE_ZSTD)
+      uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_ZSTD;
+#elif defined(HAVE_ZLIB)
+      uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_ZLIB;
+#else
+      uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
+#endif
+      uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_STATESTREAM;
       if (!st)
          return false;
 
-      handle->state    = st;
-
+      handle->state = st;
       serial_info.data = handle->state;
       serial_info.size = state_size;
 
       core_serialize(&serial_info);
-
-      intfstream_write(handle->file,
-            handle->state, state_size);
+      intfstream_write(handle->file, &compression, sizeof(uint8_t));
+      intfstream_write(handle->file, &encoding, sizeof(uint8_t));
+      state_size = 2 + bsv_movie_write_checkpoint(handle, compression, encoding, serial_info);
+      intfstream_seek(handle->file, REPLAY_HEADER_STATE_SIZE_INDEX * sizeof(uint32_t), SEEK_SET);
+      state_size_lil = swap_if_big32(state_size);
+      intfstream_write(handle->file, &state_size_lil, sizeof(uint32_t));
+      handle->min_file_pos = sizeof(header) + state_size;
+      handle->state_size = state_size;
+      intfstream_seek(handle->file, handle->min_file_pos, SEEK_SET);
+   }
+   else
+   {
+      handle->min_file_pos = sizeof(header);
+      handle->state_size   = 0;
    }
 
    return true;
@@ -214,6 +245,10 @@ void bsv_movie_free(bsv_movie_t *handle)
 
    free(handle->state);
    free(handle->frame_pos);
+
+   uint32s_index_free(handle->superblocks);
+   uint32s_index_free(handle->blocks);
+
    free(handle);
 }
 
@@ -239,7 +274,6 @@ static bsv_movie_t *bsv_movie_init_internal(const char *path, enum rarch_movie_t
       goto error;
 
    handle->frame_pos       = frame_pos;
-
    handle->frame_pos[0]    = handle->min_file_pos;
    handle->frame_mask      = (1 << 20) - 1;
 
@@ -393,12 +427,17 @@ bool movie_stop_playback(input_driver_state_t *input_st)
 /* in the future this should probably be a deferred task as well */
 bool movie_stop_record(input_driver_state_t *input_st)
 {
+   bsv_movie_t *movie = input_st->bsv_movie_state_handle;
+   uint32_t frame_count;
    const char *_msg = msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED);
-   if (!(input_st->bsv_movie_state_handle))
+   if (!movie)
       return false;
    runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("[Replay] %s\n", _msg);
+   frame_count = swap_if_big32(movie->frame_counter);
+   intfstream_seek(movie->file, REPLAY_HEADER_FRAME_COUNT_INDEX*sizeof(uint32_t), SEEK_SET);
+   intfstream_write(movie->file, &frame_count, sizeof(uint32_t));
    bsv_movie_deinit_full(input_st);
    input_st->bsv_movie_state.flags &= ~(
          BSV_FLAG_MOVIE_END
