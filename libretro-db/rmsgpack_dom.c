@@ -345,8 +345,8 @@ void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
 int rmsgpack_dom_write(intfstream_t *fd, const struct rmsgpack_dom_value *obj)
 {
    unsigned i;
-   int rv = 0;
-   int written = 0;
+   int rv   = 0;
+   int _len = 0;
 
    switch (obj->type)
    {
@@ -365,31 +365,31 @@ int rmsgpack_dom_write(intfstream_t *fd, const struct rmsgpack_dom_value *obj)
       case RDT_MAP:
          if ((rv = rmsgpack_write_map_header(fd, obj->val.map.len)) < 0)
             return rv;
-         written += rv;
+         _len += rv;
 
          for (i = 0; i < obj->val.map.len; i++)
          {
             if ((rv = rmsgpack_dom_write(fd, &obj->val.map.items[i].key)) < 0)
                return rv;
-            written += rv;
+            _len += rv;
             if ((rv = rmsgpack_dom_write(fd, &obj->val.map.items[i].value)) < 0)
                return rv;
-            written += rv;
+            _len += rv;
          }
          break;
       case RDT_ARRAY:
          if ((rv = rmsgpack_write_array_header(fd, obj->val.array.len)) < 0)
             return rv;
-         written += rv;
+         _len += rv;
 
          for (i = 0; i < obj->val.array.len; i++)
          {
             if ((rv = rmsgpack_dom_write(fd, &obj->val.array.items[i])) < 0)
                return rv;
-            written += rv;
+            _len += rv;
          }
    }
-   return written;
+   return _len;
 }
 
 static struct rmsgpack_read_callbacks dom_reader_callbacks = {
