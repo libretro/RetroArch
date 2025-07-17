@@ -291,9 +291,9 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if TARGET_IPHONE_SIMULATOR
    vprintf(fmt, ap);
 #elif __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_10_0 || __TV_OS_VERSION_MIN_REQUIRED > __TVOS_10_0
-   int sz = vsnprintf(NULL, 0, fmt, ap) + 1;
-   char buffer[sz]; /* TODO/FIXME - VLA - C89 backwards compatibility */
-   vsnprintf(buffer, sz, fmt, ap);
+   int _len = vsnprintf(NULL, 0, fmt, ap) + 1;
+   char buffer[_len]; /* TODO/FIXME - VLA - C89 backwards compatibility */
+   vsnprintf(buffer, _len, fmt, ap);
    os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
 #else
    static aslclient asl_client;
@@ -506,10 +506,10 @@ void rarch_log_file_init(
       if (last_slash)
       {
          char tmp_buf[PATH_MAX_LENGTH] = {0};
-         size_t _len                   = last_slash + 1 - override_path;
+         size_t __len                  = last_slash + 1 - override_path;
 
-         if ((_len > 1) && (_len < PATH_MAX_LENGTH))
-            strlcpy(tmp_buf, override_path, _len * sizeof(char));
+         if ((__len > 1) && (__len < PATH_MAX_LENGTH))
+            strlcpy(tmp_buf, override_path, __len * sizeof(char));
          strlcpy(log_directory, tmp_buf, sizeof(log_directory));
       }
 

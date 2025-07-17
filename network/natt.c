@@ -223,8 +223,9 @@ void natt_device_end(struct natt_discovery *discovery)
    }
 }
 
-static bool build_control_url(rxml_node_t *control_url,
-   struct natt_device *device)
+static bool natt_build_control_url(
+      rxml_node_t *control_url,
+      struct natt_device *device)
 {
    if (string_is_empty(control_url->data))
       return false;
@@ -268,10 +269,10 @@ static bool build_control_url(rxml_node_t *control_url,
    return true;
 }
 
-static bool parse_desc_node(rxml_node_t *node,
-   struct natt_device *device)
+static bool natt_parse_desc_node(rxml_node_t *node,
+      struct natt_device *device)
 {
-   rxml_node_t *child = node->children;
+   rxml_node_t *child = node ? node->children : NULL;
 
    if (child)
    {
@@ -297,7 +298,7 @@ static bool parse_desc_node(rxml_node_t *node,
             if (  strstr(service_type->data, ":WANIPConnection:")
                || strstr(service_type->data, ":WANPPPConnection:"))
             {
-               if (build_control_url(control_url, device))
+               if (natt_build_control_url(control_url, device))
                {
                   strlcpy(device->service_type, service_type->data,
                      sizeof(device->service_type));
@@ -312,7 +313,7 @@ static bool parse_desc_node(rxml_node_t *node,
       /* XML recursion */
       do
       {
-         if (parse_desc_node(child, device))
+         if (natt_parse_desc_node(child, device))
             return true;
       } while ((child = child->next));
    }
@@ -350,7 +351,7 @@ static void natt_query_device_cb(retro_task_t *task, void *task_data,
    {
       rxml_node_t *root = rxml_root_node(document);
       if (root)
-         parse_desc_node(root, device);
+         natt_parse_desc_node(root, device);
 
       rxml_free_document(document);
    }
@@ -386,7 +387,7 @@ bool natt_query_device(struct natt_device *device, bool block)
    return true;
 }
 
-static bool parse_external_address_node(rxml_node_t *node,
+static bool natt_parse_external_address_node(rxml_node_t *node,
    struct natt_device *device)
 {
    if (string_is_equal_case_insensitive(node->name, "NewExternalIPAddress"))
@@ -418,7 +419,7 @@ static bool parse_external_address_node(rxml_node_t *node,
       {
          do
          {
-            if (parse_external_address_node(child, device))
+            if (natt_parse_external_address_node(child, device))
                return true;
          } while ((child = child->next));
       }
@@ -456,7 +457,7 @@ static void natt_external_address_cb(retro_task_t *task, void *task_data,
    {
       rxml_node_t *root = rxml_root_node(document);
       if (root)
-         parse_external_address_node(root, device);
+         natt_parse_external_address_node(root, device);
 
       rxml_free_document(document);
    }
@@ -467,7 +468,7 @@ done:
    device->busy = false;
 }
 
-static bool parse_open_port_node(rxml_node_t *node,
+static bool natt_parse_open_port_node(rxml_node_t *node,
    struct natt_request *request)
 {
    if (string_is_equal_case_insensitive(node->name, "u:AddPortMappingResponse"))
@@ -501,7 +502,7 @@ static bool parse_open_port_node(rxml_node_t *node,
       {
          do
          {
-            if (parse_open_port_node(child, request))
+            if (natt_parse_open_port_node(child, request))
                return true;
          } while ((child = child->next));
       }
@@ -540,7 +541,7 @@ static void natt_open_port_cb(retro_task_t *task, void *task_data,
    {
       rxml_node_t *root = rxml_root_node(document);
       if (root)
-         parse_open_port_node(root, request);
+         natt_parse_open_port_node(root, request);
 
       rxml_free_document(document);
    }

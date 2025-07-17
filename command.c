@@ -589,8 +589,8 @@ command_t* command_uds_new(void)
    addr.sun_family = AF_UNIX;
    strcpy(&addr.sun_path[1], "retroarch/cmd");
 
-   if (bind(fd, (struct sockaddr*)&addr, addrsz) < 0 ||
-       listen(fd, MAX_USER_CONNECTIONS) < 0)
+   if (   bind(fd, (struct sockaddr*)&addr, addrsz) < 0
+       || listen(fd, MAX_USER_CONNECTIONS) < 0)
    {
       socket_close(fd);
       return NULL;
@@ -2333,8 +2333,8 @@ void command_event_reinit(const int flags)
          && video_st->current_video->set_nonblock_state)
       video_st->current_video->set_nonblock_state(
             video_st->data, false,
-            video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
-            adaptive_vsync,
+               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC)
+            && adaptive_vsync,
             runloop_get_video_swap_interval(swap_interval_config));
 #endif
 }

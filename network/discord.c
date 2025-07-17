@@ -102,7 +102,7 @@ static bool discord_download_avatar(
    static char url_encoded[PATH_MAX_LENGTH];
    static char full_path[PATH_MAX_LENGTH];
    static char buf[PATH_MAX_LENGTH];
-   file_transfer_t     *transf = NULL;
+   file_transfer_t *transf = NULL;
 
    fill_pathname_application_special(buf,
             sizeof(buf),
@@ -145,13 +145,9 @@ static void handle_discord_ready(const DiscordUser* connectedUser)
 #endif
 }
 
-static void handle_discord_disconnected(int errcode, const char* message)
-{
-}
-
-static void handle_discord_error(int errcode, const char* message)
-{
-}
+static void handle_discord_disconnected(int errcode, const char *msg) { }
+static void handle_discord_error(int errcode, const char *msg) { }
+static void handle_discord_spectate(const char *secret) { }
 
 static void handle_discord_join_cb(retro_task_t *task, void *task_data,
       void *user_data, const char *error)
@@ -220,10 +216,6 @@ static void handle_discord_join(const char *secret)
 
       task_push_http_transfer(url, true, NULL, handle_discord_join_cb, NULL);
    }
-}
-
-static void handle_discord_spectate(const char *secret)
-{
 }
 
 static void handle_discord_join_request(const DiscordUser *request)
