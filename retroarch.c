@@ -4227,7 +4227,8 @@ bool command_event(enum event_command cmd, void *data)
                   settings->paths.directory_runtime_log,
                   settings->paths.directory_playlist);
 
-            if (     runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING
+            if (     runloop_st
+                  && (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
                   && settings->bools.savestate_auto_save)
             {
                command_event_save_auto_state();

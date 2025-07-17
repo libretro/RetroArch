@@ -252,7 +252,6 @@ static bool write_file_with_random_name(char **temp_dll_path,
       const char *tmp_path, const void* data, ssize_t dataSize)
 {
    int i;
-   size_t ext_len;
    char number_buf[32];
    bool okay                = false;
    const char *prefix       = "tmp";
@@ -270,14 +269,16 @@ static bool write_file_with_random_name(char **temp_dll_path,
    else
       ext                   = (char*)calloc(1,1);
 
-   ext_len                  = strlen(ext);
-
-   if (ext_len > 0)
+   if (ext)
    {
-      strcat_alloc(&ext, ".");
-      memmove(ext + 1, ext, ext_len);
-      ext[0] = '.';
-      ext_len++;
+      size_t ext_len        = strlen(ext);
+      if (ext_len > 0)
+      {
+         strcat_alloc(&ext, ".");
+         memmove(ext + 1, ext, ext_len);
+         ext[0] = '.';
+         ext_len++;
+      }
    }
 
    /* Try up to 30 'random' filenames before giving up */

@@ -12158,12 +12158,15 @@ static void materialui_refresh_thumbnail_image(void *userdata, size_t i)
          gfx_thumbnail_reset(&node->thumbnails.secondary);
       }
 
-      /* No need to actually request thumbnails here
-       * > Just set delay timer to the current maximum
-       *   value, and thumbnails will be processed via
-       *   regular means on the next frame */
-      node->thumbnails.primary.delay_timer   = stream_delay;
-      node->thumbnails.secondary.delay_timer = stream_delay;
+      if (node)
+      {
+         /* No need to actually request thumbnails here
+          * > Just set delay timer to the current maximum
+          *   value, and thumbnails will be processed via
+          *   regular means on the next frame */
+         node->thumbnails.primary.delay_timer   = stream_delay;
+         node->thumbnails.secondary.delay_timer = stream_delay;
+      }
    }
 }
 
