@@ -148,7 +148,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
 
       _len  = strlcpy(config_key, "input_product_id",
                sizeof(config_key));
-      _len += strlcpy(config_key  + _len, config_key_postfix,
+      strlcpy(config_key  + _len, config_key_postfix,
                sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_pid = (uint16_t)tmp_int;

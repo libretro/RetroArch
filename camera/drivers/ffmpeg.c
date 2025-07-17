@@ -178,7 +178,8 @@ done:
    if (options)
    {
       const AVDictionaryEntry prev;
-      while ((e = av_dict_get(options, "", &prev, AV_DICT_IGNORE_SUFFIX))) {
+      while ((e = av_dict_get(options, "", &prev, AV_DICT_IGNORE_SUFFIX)))
+      {
          /* av_dict_iterate isn't always available, so we use av_dict_get's legacy behavior instead */
          RARCH_WARN("[FFMPEG] Unrecognized option on video input device: %s=%s.\n", e->key, e->value);
       }
@@ -196,11 +197,12 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
 {
    ffmpeg_camera_t *ffmpeg = NULL;
    AVDeviceInfoList *device_list = NULL;
-   int result = 0;
+   int result      = 0;
    int num_sources = 0;
 
+   /* If the core didn't ask for raw framebuffers... */
    if ((caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
-   { /* If the core didn't ask for raw framebuffers... */
+   {
       RARCH_ERR("[FFMPEG] Camera driver only supports raw framebuffer output.\n");
       return NULL;
    }
@@ -309,11 +311,13 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   while ((e = av_dict_get(options, "", &prev, AV_DICT_IGNORE_SUFFIX))) {
+   while ((e = av_dict_get(options, "", &prev, AV_DICT_IGNORE_SUFFIX)))
+   {
       RARCH_WARN("[FFMPEG] Unrecognized option on video input device: %s=%s.\n", e->key, e->value);
    }
 
-   result = av_find_best_stream(ffmpeg->format_context, AVMEDIA_TYPE_VIDEO, -1, -1, &ffmpeg->decoder, 0);
+   result = av_find_best_stream(ffmpeg->format_context,
+         AVMEDIA_TYPE_VIDEO, -1, -1, &ffmpeg->decoder, 0);
    if (result < 0)
    {
       RARCH_ERR("[FFMPEG] Failed to find video stream: %s.\n", av_err2str(result));
@@ -357,7 +361,8 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   while ((e = av_dict_get(options, "", &prev, AV_DICT_IGNORE_SUFFIX))) {
+   while ((e = av_dict_get(options, "", &prev, AV_DICT_IGNORE_SUFFIX)))
+   {
       RARCH_WARN("[FFMPEG] Unrecognized option on video input device: %s=%s.\n", e->key, e->value);
    }
 
@@ -573,9 +578,8 @@ static void ffmpeg_camera_poll_thread(void *data)
          ffmpeg->target_height,
          1
       );
-      if (result >= 0) {
+      if (result >= 0)
          ffmpeg->active_buffer = ffmpeg->active_buffer == ffmpeg->target_buffers[0] ? ffmpeg->target_buffers[1] : ffmpeg->target_buffers[0];
-      }
       slock_unlock(ffmpeg->target_buffer_lock);
       if (result < 0)
       {

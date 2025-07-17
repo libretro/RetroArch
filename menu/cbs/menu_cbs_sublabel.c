@@ -1812,7 +1812,7 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
    {
       _len += strlcpy(s + _len, "(", len - _len);
       _len += strlcpy(s + _len, room->subsystem_name, len - _len);
-      _len += strlcpy(s + _len, ")", len - _len);
+      strlcpy(s + _len, ")", len - _len);
    }
    return 0;
 }

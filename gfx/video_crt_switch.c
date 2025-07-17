@@ -311,8 +311,8 @@ static void switch_res_crt(
       char current_content_dir[DIR_MAX_LENGTH];
       double rr              = p_switch->ra_core_hz;
       const char *_core_name = (const char*)runloop_state_get_ptr()->system.info.library_name;
-      
-      
+
+
 
       const char* hSize = (const char*)_hSize;
       const char* hShift = (const char*)_hShift;
@@ -320,7 +320,7 @@ static void switch_res_crt(
 
       if (p_switch->rotated)
          flags |= SR_MODE_ROTATED;
-      
+
       /* Check for core and content changes in case we need
          to make any adjustments */
       if (string_is_empty(_core_name))
@@ -360,7 +360,7 @@ static void switch_res_crt(
 
             RARCH_LOG("[CRT] SR temporary mode for windows geometry adjustment (640x400).\n");
          }
-   
+
          ret = sr_add_mode(tempw, temph, rr, flags, &srm);
 
          if (!ret)
@@ -370,7 +370,7 @@ static void switch_res_crt(
             ret = sr_set_mode(srm.id);
             RARCH_LOG("[CRT] SR added temporary mode for windows geometry adjustment.\n");
          }
-           
+
       }
       #endif
 
@@ -437,7 +437,7 @@ void crt_switch_res_core(
       unsigned video_aspect_ratio_idx,
       int crt_switch_vert_adjust)
 {
-   
+
 
    if (height <= 4)
    {
@@ -451,7 +451,7 @@ void crt_switch_res_core(
       {
          native_width = 320;
          height       = 240;
-      } 
+      }
       width           = native_width;
    }
 
@@ -477,7 +477,7 @@ void crt_switch_res_core(
 #if defined(HAVE_VIDEOCORE)
          crt_rpi_switch(p_switch, width, height, hz, 0, native_width);
 #else
-         
+
          sprintf(_hSize, "%lf", 1+
             ((float)crt_switch_porch_adjust/100.0));
          sprintf(_hShift, "%d",
@@ -517,26 +517,24 @@ void crt_switch_res_core(
 
 static char* get_game_name(char* full_path)
 {
+   int i;
    int n = strlen(full_path);
    char* rom_filename = full_path + n;
    char delimiter = (char)  path_get(RARCH_PATH_BASENAME)[0];
 
-   for( int i = 0; i < n; i++)
+   for (i = 0; i < n; i++)
    {
       if (full_path[i] == '/' || full_path[i] =='\\')
       {
          delimiter = full_path[i];
-         break; 
+         break;
       }
    }
 
    while (0 < n && (full_path[--n] != delimiter ));
-   if (full_path[n] == delimiter ) {
-   rom_filename = full_path + n + 1;
-
-   }
+   if (full_path[n] == delimiter )
+      rom_filename = full_path + n + 1;
    return rom_filename;
-
 }
 
 void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
@@ -548,7 +546,7 @@ void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
 
    strlcpy(content_name, rom_filename, sizeof(current_content_name));
 
-   RARCH_LOG("[CRT] Game info \"%s\".\n", rom_filename); 
+   RARCH_LOG("[CRT] Game info \"%s\".\n", rom_filename);
 
    if (p_switch->sr2_active)
    {
