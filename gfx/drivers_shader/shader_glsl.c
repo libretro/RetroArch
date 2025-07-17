@@ -1384,13 +1384,14 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
   if (uni->core_aspect >= 0)
       glUniform1f(uni->core_aspect, video_driver_get_core_aspect());
 
-  if (uni->core_aspect_rot >= 0) {
-      /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
-      float core_aspect_rot = video_driver_get_core_aspect();
-      uint32_t rot = retroarch_get_rotation();
-      if (rot == 1 || rot == 3)
-         core_aspect_rot = 1/core_aspect_rot;
-      glUniform1f(uni->core_aspect_rot, core_aspect_rot);
+  if (uni->core_aspect_rot >= 0)
+  {
+     /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+     float core_aspect_rot = video_driver_get_core_aspect();
+     uint32_t rot = retroarch_get_rotation();
+     if (rot == 1 || rot == 3)
+        core_aspect_rot = 1/core_aspect_rot;
+     glUniform1f(uni->core_aspect_rot, core_aspect_rot);
   }
 
    /* Set lookup textures. */
