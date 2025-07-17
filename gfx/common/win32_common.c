@@ -619,7 +619,6 @@ static bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
    {
       char szFilename[1024];
       szFilename[0]    = '\0';
-
       DragQueryFile((HDROP)wparam, 0, szFilename, sizeof(szFilename));
       return win32_load_content_from_gui(szFilename);
    }
@@ -2163,7 +2162,7 @@ static void win32_localize_menu(HMENU menu)
       label_enum = menu_id_to_label_enum(menu_item_info.wID);
       if (label_enum != MSG_UNKNOWN)
       {
-         int len;
+         size_t ___len;
          size_t __len;
 #ifndef LEGACY_WIN32
          wchar_t* new_label_unicode = NULL;
@@ -2221,15 +2220,15 @@ static void win32_localize_menu(HMENU menu)
 #ifndef LEGACY_WIN32
          /* Convert string from UTF-8, then assign menu text */
          new_label_unicode         = utf8_to_utf16_string_alloc(new_label2);
-         len                       = wcslen(new_label_unicode);
-         menu_item_info.cch        = len;
+         ___len                    = wcslen(new_label_unicode);
+         menu_item_info.cch        = ___len;
          menu_item_info.dwTypeData = new_label_unicode;
          SetMenuItemInfoW(menu, index, true, &menu_item_info);
          free(new_label_unicode);
 #else
          new_label_ansi            = utf8_to_local_string_alloc(new_label2);
-         len                       = strlen(new_label_ansi);
-         menu_item_info.cch        = len;
+         ___len                    = strlen(new_label_ansi);
+         menu_item_info.cch        = ___len;
          menu_item_info.dwTypeData = new_label_ansi;
          SetMenuItemInfoA(menu, index, true, &menu_item_info);
          free(new_label_ansi);
@@ -2775,7 +2774,7 @@ bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
    return true;
 }
 
-void win32_get_video_output_size(void *data, unsigned *width, unsigned *height, char *desc, size_t desc_len)
+void win32_get_video_output_size(void *data, unsigned *width, unsigned *height, char *desc, size_t len)
 {
    DEVMODE dm;
    if (win32_get_video_output(&dm, -1, sizeof(dm)))

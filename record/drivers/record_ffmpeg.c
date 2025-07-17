@@ -817,14 +817,14 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
 static bool ffmpeg_init_muxer_pre(ffmpeg_t *handle)
 {
 #if !FFMPEG3
-   unsigned short int len;
+   size_t _len;
 #endif
    ctx                    = avformat_alloc_context();
    handle->muxer.ctx      = ctx;
 #if !FFMPEG3
-   len                    = MIN(strlen(handle->params.filename) + 1, PATH_MAX_LENGTH);
-   ctx->url               = (char*)av_malloc(len);
-   av_strlcpy(ctx->url, handle->params.filename, len);
+   _len                   = MIN(strlen(handle->params.filename) + 1, PATH_MAX_LENGTH);
+   ctx->url               = (char*)av_malloc(_len);
+   av_strlcpy(ctx->url, handle->params.filename, _len);
 #else
    av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
 #endif

@@ -184,12 +184,12 @@ int system_property_get(const char *command,
    {
       if (fgets(buffer, sizeof(buffer), pipe))
       {
-         size_t curlen = strlen(buffer);
+         size_t _len = strlen(buffer);
 
-         memcpy(curpos, buffer, curlen);
+         memcpy(curpos, buffer, _len);
 
-         curpos    += curlen;
-         length    += curlen;
+         curpos += _len;
+         length += _len;
       }
    }
 
@@ -702,7 +702,6 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
       else if (string_is_equal(key, "remaining capacity"))
       {
          char *endptr = NULL;
-
          if (endptr && *endptr == ' ')
             remaining = (int)strtol(val, &endptr, 10);
       }
