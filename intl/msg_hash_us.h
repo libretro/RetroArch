@@ -14830,6 +14830,18 @@ MSG_HASH(
    "Not compatible with replay"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "Can't load future state during playback"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Wrong timeline error during playback"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Wrong timeline; overwriting recording"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Found shader"
    )
