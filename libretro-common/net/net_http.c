@@ -544,7 +544,7 @@ void net_http_connection_set_content(
    if (conn->postdata)
       free(conn->postdata);
 
-   conn->contenttype = content_type ? strdup(content_type) : NULL;
+   conn->contenttype   = content_type ? strdup(content_type) : NULL;
    conn->contentlength = content_length;
    if (content_length)
    {
@@ -1078,8 +1078,8 @@ static bool net_http_send_request(struct http_t *state)
 
    if (request->method && (string_is_equal(request->method, "POST") || string_is_equal(request->method, "PUT")))
    {
-      size_t post_len, len;
-      char *len_str        = NULL;
+      size_t _len, len;
+      char *len_str = NULL;
 
       if (!request->postdata && !string_is_equal(request->method, "PUT"))
       {
@@ -1094,15 +1094,15 @@ static bool net_http_send_request(struct http_t *state)
 
       net_http_send_str(state, "Content-Length: ", STRLEN_CONST("Content-Length: "));
 
-      post_len = request->contentlength;
+      _len = request->contentlength;
 #ifdef _WIN32
-      len     = snprintf(NULL, 0, "%" PRIuPTR, post_len);
+      len     = snprintf(NULL, 0, "%" PRIuPTR, _len);
       len_str = (char*)malloc(len + 1);
-      snprintf(len_str, len + 1, "%" PRIuPTR, post_len);
+      snprintf(len_str, len + 1, "%" PRIuPTR, _len);
 #else
-      len     = snprintf(NULL, 0, "%llu", (long long unsigned)post_len);
+      len     = snprintf(NULL, 0, "%llu", (long long unsigned)_len);
       len_str = (char*)malloc(len + 1);
-      snprintf(len_str, len + 1, "%llu", (long long unsigned)post_len);
+      snprintf(len_str, len + 1, "%llu", (long long unsigned)_len);
 #endif
 
       len_str[len] = '\0';

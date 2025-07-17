@@ -59,8 +59,7 @@ bool slang_texture_semantic_is_array(enum slang_texture_semantic sem)
 }
 
 enum slang_texture_semantic slang_name_to_texture_semantic_array(
-      const char *name, const char **names,
-      unsigned *index)
+      const char *name, const char **names, unsigned *index)
 {
    unsigned i = 0;
    while (*names)
@@ -70,12 +69,12 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
 
       if (slang_texture_semantic_is_array(semantic))
       {
-         size_t baselen = strlen(n);
-         int        cmp = strncmp(n, name, baselen);
+         size_t _len = strlen(n);
+         int     cmp = strncmp(n, name, _len);
 
          if (cmp == 0)
          {
-            *index = (unsigned)strtoul(name + baselen, NULL, 0);
+            *index = (unsigned)strtoul(name + _len, NULL, 0);
             return semantic;
          }
       }

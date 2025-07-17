@@ -327,12 +327,12 @@ runtime_log_t *runtime_log_init(
       char *last_slash = find_last_slash(content_path);
       if (last_slash)
       {
-         size_t path_length = last_slash + 1 - content_path;
-         if (path_length < PATH_MAX_LENGTH)
+         size_t _len = last_slash + 1 - content_path;
+         if (_len < PATH_MAX_LENGTH)
          {
             memset(tmp_buf, 0, sizeof(tmp_buf));
             strlcpy(tmp_buf,
-                  content_path, path_length * sizeof(char));
+                  content_path, _len * sizeof(char));
             fill_pathname(content_name,
                   path_basename(tmp_buf), ".lrtl", sizeof(content_name));
          }
