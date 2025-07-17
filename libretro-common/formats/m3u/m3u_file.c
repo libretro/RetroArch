@@ -474,7 +474,6 @@ bool m3u_file_save(
 {
    size_t i;
    char base_dir[DIR_MAX_LENGTH];
-   char *last_slash = NULL;
    RFILE *file      = NULL;
 
    if (!m3u_file || !m3u_file->entries)
@@ -485,7 +484,7 @@ bool m3u_file_save(
       return false;
 
    /* Get M3U file base directory */
-   if ((last_slash = find_last_slash(m3u_file->path)))
+   if (find_last_slash(m3u_file->path))
       fill_pathname_basedir(base_dir, m3u_file->path, sizeof(base_dir));
    else
       base_dir[0]   = '\0';

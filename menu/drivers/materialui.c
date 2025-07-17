@@ -5100,10 +5100,6 @@ static void materialui_render_menu_entry_playlist_desktop(
    int divider_y           = entry_y + (int)node->entry_height;
    int entry_margin        = (int)mui->margin;
    int usable_width        = node->entry_width - (int)(mui->margin * 2);
-   /* Entry label is drawn at the vertical centre
-    * of the current node */
-   int label_y             = entry_y + (node->entry_height / 2.0f) +
-         mui->font_data.list.line_centre_offset;
    bool draw_text_outside  = (x_offset != 0);
    /* To prevent any ugly alignment issues, we
     * only draw a divider if its bottom edge is
@@ -5123,12 +5119,16 @@ static void materialui_render_menu_entry_playlist_desktop(
    /* Draw entry label */
    if (!string_is_empty(entry_label))
    {
-      char label_buf[NAME_MAX_LENGTH];
-
-      label_buf[0] = '\0';
-
       if (usable_width > 0)
       {
+         char label_buf[NAME_MAX_LENGTH];
+         label_buf[0] = '\0';
+
+         /* Entry label is drawn at the vertical centre
+          * of the current node */
+         int label_y = entry_y + (node->entry_height / 2.0f) +
+            mui->font_data.list.line_centre_offset;
+
          /* Apply ticker */
          if (mui->flags & MUI_FLAG_USE_SMOOTH_TICKER)
          {
@@ -5157,7 +5157,7 @@ static void materialui_render_menu_entry_playlist_desktop(
                label_y,
                video_width, video_height,
                (entry_selected || touch_feedback_active) ?
-                     mui->colors.list_text_highlighted : mui->colors.list_text,
+               mui->colors.list_text_highlighted : mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
                draw_text_outside);
       }
