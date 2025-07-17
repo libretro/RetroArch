@@ -566,10 +566,8 @@ static void task_save_handler(retro_task_t *task)
 
       task_set_error(task, strdup(msg));
       task_save_handler_finished(task, state);
-      return;
    }
-
-   if (state->written == state->size)
+   else if (state->written == state->size)
    {
       char       *msg      = NULL;
 

@@ -2129,7 +2129,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
                _len    += strlcpy(ext_shaders + _len, "slangp", sizeof(ext_shaders) - _len);
                if (ext_shaders[_len-1] != '\0')
                   _len += strlcpy(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "slang",  sizeof(ext_shaders) - _len);
+               strlcpy(ext_shaders + _len, "slang",  sizeof(ext_shaders) - _len);
             }
 
             exts = ext_shaders;
@@ -4251,11 +4251,14 @@ bool command_event(enum event_command cmd, void *data)
              * runtime variables, otherwise runahead will
              * remain disabled until the user restarts
              * RetroArch */
-            if (!(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE))
-               runahead_clear_variables(runloop_st);
+            if (runloop_st)
+            {
+               if (!(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE))
+                  runahead_clear_variables(runloop_st);
 
-            /* Deallocate preemptive frames */
-            preempt_deinit(runloop_st);
+               /* Deallocate preemptive frames */
+               preempt_deinit(runloop_st);
+            }
 #endif
 
             if (hwr)
@@ -4797,6 +4800,7 @@ bool command_event(enum event_command cmd, void *data)
          /* init netplay manually */
       case CMD_EVENT_NETPLAY_INIT:
          {
+            bool ret;
             char tmp_netplay_server[256];
             char tmp_netplay_session[256];
             char *netplay_server  = NULL;
@@ -4829,16 +4833,19 @@ bool command_event(enum event_command cmd, void *data)
             if (!netplay_port)
                netplay_port   = settings->uints.netplay_port;
 
-            if (!init_netplay(netplay_server, netplay_port, netplay_session))
+            ret = init_netplay(netplay_server, netplay_port, netplay_session);
+
+            if (netplay_session)
+               free(netplay_session);
+            netplay_session          = NULL;
+
+            if (!ret)
             {
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                if (p_rarch->connect_mitm_id)
                {
                   free(p_rarch->connect_mitm_id);
-                  if (netplay_session)
-                     free(netplay_session);
                   p_rarch->connect_mitm_id = NULL;
-                  netplay_session          = NULL;
                }
                return false;
             }
@@ -4846,9 +4853,7 @@ bool command_event(enum event_command cmd, void *data)
             if (p_rarch->connect_mitm_id)
             {
                free(p_rarch->connect_mitm_id);
-               free(netplay_session);
                p_rarch->connect_mitm_id = NULL;
-               netplay_session          = NULL;
             }
 
             /* Disable rewind & SRAM autosave if it was enabled
@@ -6566,7 +6571,7 @@ static void retroarch_print_help(const char *arg0)
          , sizeof(buf) - _len);
 #endif
 
-   _len = strlcpy(buf + _len,
+   strlcpy(buf + _len,
          "  -f, --fullscreen               "
          "Start the program in fullscreen regardless of config setting.\n"
          "      --set-shader=PATH          "

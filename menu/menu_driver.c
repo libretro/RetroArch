@@ -6314,6 +6314,8 @@ void menu_driver_toggle(
    bool input_overlay_enable          = false;
 #endif
    bool video_adaptive_vsync          = false;
+   bool video_vsync                   = false;
+   bool video_frame_delay_auto        = false;
 
    if (settings)
    {
@@ -6330,6 +6332,9 @@ void menu_driver_toggle(
       input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
       input_overlay_enable            = settings->bools.input_overlay_enable;
 #endif
+      video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
+      video_vsync                     = settings->bools.video_vsync;
+      video_frame_delay_auto          = settings->bools.video_frame_delay_auto;
    }
 
    if (on)
@@ -6368,7 +6373,7 @@ void menu_driver_toggle(
 
    if (menu_driver_alive)
    {
-      video_adaptive_vsync          = settings->bools.video_adaptive_vsync
+      video_adaptive_vsync          = video_adaptive_vsync
             && video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
 
 #ifdef WIIU
@@ -6379,7 +6384,7 @@ void menu_driver_toggle(
       menu_st->flags               |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
       /* Menu should always run with swap interval 1 if vsync is on. */
-      if (     settings->bools.video_vsync
+      if (     video_vsync
             && current_video->set_nonblock_state)
          current_video->set_nonblock_state(
                video_driver_data,

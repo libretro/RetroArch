@@ -15420,7 +15420,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      {
                         if (new_exts[_len-1] != '\0')
                            _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                        _len    += strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
+                        strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
                      }
                      break;
 

@@ -598,17 +598,20 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
             continue;
 
          rdb = &rdbs[rdb_num - 1];
-         rdb->count++;
-         entry_crc32 = (uint32_t)strtoul(
-               (entry->crc32 ? entry->crc32 : ""), NULL, 16);
-         src.source = entry;
-         if (entry_crc32)
+         if (rdb)
          {
-            RHMAP_SET(rdb->playlist_crcs, entry_crc32, src);
-         }
-         else
-         {
-            RHMAP_SET_STR(rdb->playlist_names, entry->label, src);
+            rdb->count++;
+            entry_crc32 = (uint32_t)strtoul(
+                  (entry->crc32 ? entry->crc32 : ""), NULL, 16);
+            src.source = entry;
+            if (entry_crc32)
+            {
+               RHMAP_SET(rdb->playlist_crcs, entry_crc32, src);
+            }
+            else
+            {
+               RHMAP_SET_STR(rdb->playlist_names, entry->label, src);
+            }
          }
          used_entries++;
       }
