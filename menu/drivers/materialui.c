@@ -5121,12 +5121,13 @@ static void materialui_render_menu_entry_playlist_desktop(
    {
       if (usable_width > 0)
       {
+         int label_y;
          char label_buf[NAME_MAX_LENGTH];
          label_buf[0] = '\0';
 
          /* Entry label is drawn at the vertical centre
           * of the current node */
-         int label_y = entry_y + (node->entry_height / 2.0f) +
+         label_y = entry_y + (node->entry_height / 2.0f) +
             mui->font_data.list.line_centre_offset;
 
          /* Apply ticker */
