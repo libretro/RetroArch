@@ -480,6 +480,40 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
 }
 
 /**
+ * string_list_append_n:
+ * @list             : pointer to string list
+ * @elem             : element to add to the string list
+ * @length           : read at most this many bytes from elem
+ * @attr             : attributes of new element.
+ *
+ * Appends a new element to the string list.
+ *
+ * @return true if successful, otherwise false.
+ **/
+static bool string_list_append_n(struct string_list *list,
+      const char *elem, unsigned length,
+      union string_list_elem_attr attr)
+{
+   char *data_dup = NULL;
+
+   if (list->size >= list->cap &&
+         !string_list_capacity(list, list->cap * 2))
+      return false;
+
+   if (!(data_dup = (char*)malloc(length + 1)))
+      return false;
+
+   strlcpy(data_dup, elem, length + 1);
+
+   list->elems[list->size].data = data_dup;
+   list->elems[list->size].attr = attr;
+
+   list->size++;
+   return true;
+}
+
+
+/**
  * file_archive_filename_split:
  * @str              : filename to turn into a string list
  *
