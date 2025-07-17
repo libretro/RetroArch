@@ -169,7 +169,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
    LPTSTR lp_device_path                = NULL;
    char *device_path                    = NULL;
    DWORD index                          = 0;
-   unsigned len                         = 0;
+   size_t len                           = 0;
    unsigned i                           = 0;
    char vidPidString[32]                = {0};
    char report[USB_PACKET_CTRL_LEN + 1] = {0};

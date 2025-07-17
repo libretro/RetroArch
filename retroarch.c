@@ -2158,14 +2158,14 @@ struct string_list *dir_list_new_special(const char *input_dir,
 }
 
 static struct string_list *string_list_new_special(
-      enum string_list_type type, unsigned *len)
+      enum string_list_type type, size_t *len)
 {
+   int i;
    union string_list_elem_attr attr;
-   unsigned i;
    struct string_list *s = string_list_new();
 
-   if (!s || !len)
-      goto error;
+   if (!s)
+      return NULL;
 
    attr.i = 0;
    *len   = 0;
@@ -2370,24 +2370,21 @@ static struct string_list *string_list_new_special(
 #endif
       case STRING_LIST_NONE:
       default:
-         goto error;
+         string_list_free(s);
+         s    = NULL;
+         return NULL;
    }
 
    return s;
-
-error:
-   string_list_free(s);
-   s    = NULL;
-   return NULL;
 }
 
 const char *char_list_new_special(enum string_list_type type, void *data)
 {
-   unsigned len = 0;
-   struct string_list *s = string_list_new_special(type, &len);
-   char         *opt     = (len > 0) ? (char*)calloc(len, sizeof(char)): NULL;
+   size_t _len = 0;
+   struct string_list *s = string_list_new_special(type, &_len);
+   char         *opt     = (_len > 0) ? (char*)calloc(_len, sizeof(char)): NULL;
    if (opt && s)
-      string_list_join_concat(opt, len, s, "|");
+      string_list_join_concat(opt, _len, s, "|");
    string_list_free(s);
    s = NULL;
    return opt;
@@ -4507,15 +4504,15 @@ bool command_event(enum event_command cmd, void *data)
          {
 #ifdef HAVE_MENU
             struct string_list *str_list = (struct string_list*)data;
-            struct menu_state *menu_st     = menu_state_get_ptr();
-            settings_t *settings = config_get_ptr();
+            struct menu_state *menu_st   = menu_state_get_ptr();
+            settings_t *settings         = config_get_ptr();
 
             if (str_list)
             {
                if (str_list->size >= 7)
                {
-                  playlist_config_t playlist_config;
                   playlist_t * playlist;
+                  playlist_config_t playlist_config;
 
                   struct playlist_entry entry     = {0};
                   bool playlist_sort_alphabetical = settings->bools.playlist_sort_alphabetical;

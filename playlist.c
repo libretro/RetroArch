@@ -385,11 +385,9 @@ static bool playlist_path_equal(const char *real_path,
       if (delim)
       {
          char compressed_path_b[PATH_MAX_LENGTH];
-         unsigned len = (unsigned)(1 + delim - full_path);
-
+         size_t len = (1 + delim - full_path);
          strlcpy(compressed_path_b, full_path,
                (len < PATH_MAX_LENGTH ? len : PATH_MAX_LENGTH) * sizeof(char));
-
 #ifdef _WIN32
          /* Handle case-insensitive operating systems*/
          if (string_is_equal_noncase(compressed_path_a, compressed_path_b))

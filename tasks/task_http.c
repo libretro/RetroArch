@@ -168,7 +168,6 @@ task_finished:
    {
       size_t _len = 0;
       char   *tmp = (char*)net_http_data(http->handle, &_len, false);
-      struct string_list *headers = net_http_headers(http->handle);
 
       if (!tmp)
          tmp = (char*)net_http_data(http->handle, &_len, true);
@@ -177,7 +176,6 @@ task_finished:
       {
          if (tmp)
             free(tmp);
-         string_list_free(headers);
 
          task_set_error(task,
                strldup("Task cancelled.", sizeof("Task cancelled.")));
@@ -187,8 +185,8 @@ task_finished:
          bool mute;
          data          = (http_transfer_data_t*)malloc(sizeof(*data));
          data->data    = tmp;
-         data->headers = headers;
          data->len     = _len;
+         data->headers = net_http_headers(http->handle);
          data->status  = net_http_status(http->handle);
 
          task_set_data(task, data);
