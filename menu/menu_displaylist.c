@@ -15407,38 +15407,42 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                switch (type)
                {
                   case DISPLAYLIST_SHADER_PRESET:
-                     info->type_default = FILE_TYPE_SHADER_PRESET;
-                     if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-                        _len    += strlcpy(new_exts + _len, "cgp", sizeof(new_exts) - _len);
-                     if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                      {
-                        if (new_exts[_len-1] != '\0')
-                           _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                        _len    += strlcpy(new_exts + _len, "glslp", sizeof(new_exts) - _len);
-                     }
-                     if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-                     {
-                        if (new_exts[_len-1] != '\0')
-                           _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                        strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
+                        info->type_default   = FILE_TYPE_SHADER_PRESET;
+                        if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
+                           _len    += strlcpy(new_exts + _len, "cgp", sizeof(new_exts) - _len);
+                        if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+                        {
+                           if (_len > 0)
+                              _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                           _len    += strlcpy(new_exts + _len, "glslp", sizeof(new_exts) - _len);
+                        }
+                        if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+                        {
+                           if (_len > 0)
+                              _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                           strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
+                        }
                      }
                      break;
 
                   case DISPLAYLIST_SHADER_PASS:
-                     info->type_default = FILE_TYPE_SHADER;
-                     if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-                        _len    += strlcpy(new_exts + _len, "cg", sizeof(new_exts) - _len);
-                     if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                      {
-                        if (new_exts[_len-1] != '\0')
-                           _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                        _len    += strlcpy(new_exts + _len, "glsl", sizeof(new_exts) - _len);
-                     }
-                     if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-                     {
-                        if (new_exts[_len-1] != '\0')
-                           _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                        _len    += strlcpy(new_exts + _len, "slang", sizeof(new_exts) - _len);
+                        info->type_default   = FILE_TYPE_SHADER;
+                        if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
+                           _len    += strlcpy(new_exts + _len, "cg", sizeof(new_exts) - _len);
+                        if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+                        {
+                           if (_len > 0)
+                              _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                           _len    += strlcpy(new_exts + _len, "glsl", sizeof(new_exts) - _len);
+                        }
+                        if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+                        {
+                           if (_len > 0)
+                              _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                           _len    += strlcpy(new_exts + _len, "slang", sizeof(new_exts) - _len);
+                        }
                      }
                      break;
                   default:
@@ -15459,10 +15463,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                char new_exts[128];
                gfx_ctx_flags_t flags;
-               size_t _len     = 0;
+               size_t _len          = 0;
 
-               flags.flags     = 0;
-               new_exts[0]     = '\0';
+               flags.flags          = 0;
+               new_exts[0]          = '\0';
 
                filebrowser_clear_type();
                video_context_driver_get_flags(&flags);
@@ -15473,13 +15477,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   _len    += strlcpy(new_exts + _len, "cgp", sizeof(new_exts) - _len);
                if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                {
-                  if (new_exts[_len-1] != '\0')
+                  if (_len > 0)
                      _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                   _len    += strlcpy(new_exts + _len, "glslp", sizeof(new_exts) - _len);
                }
                if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
                {
-                  if (new_exts[_len-1] != '\0')
+                  if (_len > 0)
                      _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                   _len    += strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
                }
@@ -15497,27 +15501,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                filebrowser_clear_type();
             info->type_default = FILE_TYPE_IMAGE;
             {
-               size_t _len = 0;
                char new_exts[128];
-               new_exts[0] = '\0';
+               size_t _len          = 0;
+               new_exts[0]          = '\0';
 #ifdef HAVE_RBMP
                _len    += strlcpy(new_exts + _len, "bmp", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RPNG
-               if (_len > 0 && (new_exts[_len-1] != '\0'))
+               if (_len > 0)
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "png", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RJPEG
-               if (_len > 0 && (new_exts[_len-1] != '\0'))
+               if (_len > 0)
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "jpeg", sizeof(new_exts) - _len);
-               if (_len > 0 && (new_exts[_len-1] != '\0'))
+               if (_len > 0)
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "jpg", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RTGA
-               if (_len > 0 && (new_exts[_len-1] != '\0'))
+               if (_len > 0)
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "tga", sizeof(new_exts) - _len);
 #endif

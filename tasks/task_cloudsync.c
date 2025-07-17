@@ -153,7 +153,10 @@ static file_list_t *task_cloud_sync_create_manifest(RFILE *file)
       return NULL;
 
    if (!(json = rjson_open_rfile(file)))
+   {
+      free(list);
       return NULL;
+   }
 
    rjson_parse(json, list,
                tcs_object_member_handler,

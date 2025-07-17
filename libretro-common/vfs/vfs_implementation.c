@@ -373,7 +373,8 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    }
 #endif
 
-   stream->orig_path       = strdup(path);
+   if (path)
+      stream->orig_path = strdup(path);
 
 #ifdef HAVE_MMAP
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS && mode == RETRO_VFS_FILE_ACCESS_READ)
