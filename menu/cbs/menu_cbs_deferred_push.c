@@ -434,7 +434,7 @@ static int general_push(menu_displaylist_info_t *info,
 {
    size_t _len                                = 0;
    size_t size                                = PATH_MAX_LENGTH;
-   char *newstr2                              = malloc(size);
+   char *newstr2                              = NULL;
    settings_t                  *settings      = config_get_ptr();
    menu_handle_t                  *menu       = menu_state_get_ptr()->driver_data;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined (HAVE_AUDIOMIXER)
@@ -444,8 +444,9 @@ static int general_push(menu_displaylist_info_t *info,
 #ifdef HAVE_IMAGEVIEWER
    bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
 #endif
-
-   if (!menu || !newstr2)
+   if (!menu)
+      return -1;
+   if (!(newstr2 = (char*)malloc(size)))
       return -1;
 
    if (   (id == PUSH_ARCHIVE_OPEN_DETECT_CORE)

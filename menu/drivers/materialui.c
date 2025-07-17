@@ -11305,6 +11305,7 @@ static void materialui_list_insert(void *userdata,
       node->thumbnails.primary.height        = 0;
       node->thumbnails.primary.alpha         = 0.0f;
       node->thumbnails.primary.delay_timer   = 0.0f;
+      node->thumbnails.primary.flags         = 0;
       node->thumbnails.primary.flags        &= ~GFX_THUMB_FLAG_FADE_ACTIVE;
 
       node->thumbnails.secondary.status      = GFX_THUMBNAIL_STATUS_UNKNOWN;

@@ -1114,19 +1114,24 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
    size_t i;
    char key[64];
    bool ret             = true;
-   char *tmp            = (char*)malloc(3 * PATH_MAX_LENGTH);
-   char *tmp_rel        = tmp +     PATH_MAX_LENGTH;
-   char *tmp_base       = tmp + 2 * PATH_MAX_LENGTH;
+   char *tmp            = NULL;
+   char *tmp_rel        = NULL;
+   char *tmp_base       = NULL;
    config_file_t *conf  = config_file_new_alloc();
 
    if (!conf)
       return false;
+
+   tmp = (char*)malloc(3 * PATH_MAX_LENGTH);
 
    if (!tmp)
    {
       config_file_free(conf);
       return false;
    }
+
+   tmp_rel        = tmp +     PATH_MAX_LENGTH;
+   tmp_base       = tmp + 2 * PATH_MAX_LENGTH;
 
    RARCH_DBG("[Shaders] Saving full preset to: \"%s\".\n", path);
 

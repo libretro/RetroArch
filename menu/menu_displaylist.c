@@ -7101,7 +7101,7 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       {
          _len += strlcpy(s + _len, " (", sizeof(s) - _len);
          _len += strlcpy(s + _len, room->country, sizeof(s) - _len);
-         _len += strlcpy(s + _len, ")", sizeof(s) - _len);
+         strlcpy(s + _len, ")", sizeof(s) - _len);
       }
 
       if (menu_entries_append(list, s, cnc_netplay_room,

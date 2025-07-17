@@ -5033,7 +5033,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          /* If the playlist icon doesn't exist, return default */
          if (!path_is_valid(texturepath))
-            __len = fill_pathname_join_special(
+            fill_pathname_join_special(
                   texturepath, ozone->icons_path, "default.png",
                   sizeof(texturepath));
 

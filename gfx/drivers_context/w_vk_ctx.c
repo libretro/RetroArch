@@ -96,9 +96,9 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
     */
    if (     (win32_vk.flags & VK_DATA_FLAG_FULLSCREEN)
          && (g_win32_refresh_rate)
-         && (g_win32_refresh_rate  != refresh_rate) 
+         && (g_win32_refresh_rate  != refresh_rate)
          && (fabsf(g_win32_refresh_rate - refresh_rate) > 0.1f)
-         && (g_win32_resize_width  == *width) 
+         && (g_win32_resize_width  == *width)
          && (g_win32_resize_height == *height))
    {
       g_win32_refresh_rate = settings->floats.video_refresh_rate;
@@ -234,10 +234,9 @@ static void gfx_ctx_w_vk_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   settings_t *settings     = config_get_ptr();
-
 #if _WIN32_WINNT >= 0x0501
 #ifdef HAVE_WINRAWINPUT
+   settings_t *settings     = config_get_ptr();
    const char *input_driver = settings->arrays.input_driver;
 
    /* winraw only available since XP */

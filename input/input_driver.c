@@ -862,7 +862,7 @@ static int16_t input_joypad_axis(
       const input_device_driver_t *drv,
       unsigned port, uint32_t joyaxis, float normal_mag)
 {
-   int16_t val = (joyaxis != AXIS_NONE) ? drv->axis(port, joyaxis) : 0;
+   int16_t val = ((joyaxis != AXIS_NONE) && drv) ? drv->axis(port, joyaxis) : 0;
 
    if (input_analog_deadzone)
    {
@@ -4226,8 +4226,6 @@ static bool input_keyboard_line_event(
             composition = character & 0xffffff;
          character     &= 0xffffff;
       }
-      if (_len && composition == 0)
-         word = state->buffer;
       if (character)
          input_keyboard_line_append(state, (char*)&character, strlen((char*)&character));
       word = state->buffer;

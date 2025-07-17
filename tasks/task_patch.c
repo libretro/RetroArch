@@ -689,7 +689,7 @@ static enum patch_error xdelta_apply_patch(
    } while (stream.avail_in);
 
    *targetdata = (uint8_t*)malloc(*targetlength);
-   switch (ret = xd3_decode_memory(
+   switch (xd3_decode_memory(
            patchdata, patchlen,
            sourcedata, sourcelength,
            *targetdata, targetlength, *targetlength, 0))

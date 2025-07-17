@@ -3730,7 +3730,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
       /* Build the new path with the controller name */
       _len  = strlcpy(remap_path, core_name, sizeof(remap_path));
       _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(), sizeof(remap_path) - _len);
-      _len += strlcpy(remap_path + _len, input_device_dir,     sizeof(remap_path) - _len);
+      strlcpy(remap_path + _len, input_device_dir,     sizeof(remap_path) - _len);
 
       /* Deallocate as we no longer this */
       free((char*)input_device_dir);
@@ -6442,7 +6442,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
    if ((tok = strtok_r(NULL, "|", &save)))
    {
       _len += strlcpy(new_str + _len, "|", sizeof(new_str) - _len);
-      _len += strlcpy(new_str + _len, tok, sizeof(new_str) - _len);
+      strlcpy(new_str + _len, tok, sizeof(new_str) - _len);
    }
    free(label_cpy);
    return generic_action_ok_displaylist_push(

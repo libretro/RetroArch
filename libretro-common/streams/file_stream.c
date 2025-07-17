@@ -478,7 +478,6 @@ int filestream_cmp(const char *src, const char *dst)
 {
    char buf_src[256] = {0};
    char buf_dst[256] = {0};
-   int64_t n         = 0;
    int ret           = 0;
 
    RFILE *fp_src = filestream_open(src, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -490,7 +489,7 @@ int filestream_cmp(const char *src, const char *dst)
    if (ret < 0)
       goto close;
 
-   while ((n = filestream_read(fp_src, buf_src, sizeof(buf_src))) > 0 && ret == 0)
+   while ((filestream_read(fp_src, buf_src, sizeof(buf_src))) > 0 && ret == 0)
    {
       filestream_read(fp_dst, buf_dst, sizeof(buf_dst));
       ret = memcmp(buf_src, buf_dst, sizeof(buf_src));

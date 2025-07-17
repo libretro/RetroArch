@@ -671,11 +671,11 @@ static void net_http_conn_pool_remove(struct conn_pool_entry *entry)
 /* *NOT* thread safe, caller must lock */
 static void net_http_conn_pool_remove_expired(void)
 {
-   struct conn_pool_entry *entry = conn_pool;
-   struct conn_pool_entry *prev = NULL;
-   struct timeval tv = { 0 };
-   int max = 0;
    fd_set fds;
+   struct conn_pool_entry *entry = NULL;
+   struct conn_pool_entry *prev  = NULL;
+   struct timeval tv             = { 0 };
+   int max                       = 0;
    FD_ZERO(&fds);
    entry = conn_pool;
    while (entry)

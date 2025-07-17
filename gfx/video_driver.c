@@ -4429,7 +4429,7 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
    static uint8_t overtime_count = 0; /* Frames to wait for another frame drop to increase reserve */
    static uint8_t predict_count  = 0; /* Frames to wait for another predictive delay decrease */
    int8_t frame_delay_cur        = *video_frame_delay_effective;
-   int8_t frame_delay_new        = *video_frame_delay_effective;
+   int8_t frame_delay_new        = 0;
    bool frame_time_over          = false;
    bool frame_time_near          = false;
 

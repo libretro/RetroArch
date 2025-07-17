@@ -4811,7 +4811,7 @@ bool command_event(enum event_command cmd, void *data)
                sizeof(tmp_netplay_server)))
             {
                netplay_server  = tmp_netplay_server;
-               netplay_session = tmp_netplay_session;
+               netplay_session = strdup(tmp_netplay_session);
             }
 
             if (p_rarch->connect_mitm_id)
@@ -4834,7 +4834,8 @@ bool command_event(enum event_command cmd, void *data)
                if (p_rarch->connect_mitm_id)
                {
                   free(p_rarch->connect_mitm_id);
-                  free(netplay_session);
+                  if (netplay_session)
+                     free(netplay_session);
                   p_rarch->connect_mitm_id = NULL;
                   netplay_session          = NULL;
                }

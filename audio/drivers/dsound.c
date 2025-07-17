@@ -102,9 +102,9 @@ static bool grab_region(dsound_t *ds, uint32_t write_ptr,
 #ifdef DEBUG
       RARCH_WARN("[DirectSound] %s.\n", "DSERR_BUFFERLOST");
 #endif
-      if ((res = IDirectSoundBuffer_Restore(ds->dsb)) != DS_OK)
+      if ((IDirectSoundBuffer_Restore(ds->dsb)) != DS_OK)
          return false;
-      if ((res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
+      if ((IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
                   &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0)) != DS_OK)
          return false;
       return true;
