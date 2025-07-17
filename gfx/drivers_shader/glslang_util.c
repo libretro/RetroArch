@@ -241,10 +241,9 @@ bool glslang_read_shader_file(const char *path,
          /* Parse include file */
          if (!glslang_read_shader_file(include_path, output, false, include_optional))
          {
-            if (include_optional)
-               RARCH_LOG("[Slang] Optional include not found \"%s\".\n", include_path);
-            else
+            if (!include_optional)
                goto error;
+            RARCH_LOG("[Slang] Optional include not found \"%s\".\n", include_path);
          }
 
          /* After including a file, use line directive
