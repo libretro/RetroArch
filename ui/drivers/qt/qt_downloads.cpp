@@ -76,14 +76,6 @@ void MainWindow::onThumbnailPackDownloadNetworkError(
 
    RARCH_ERR("[Qt] Network error code %d received: %s\n",
          code, errorStringData);
-
-#if 0
-   /* Deleting the reply here seems to cause a strange
-    * heap-use-after-free crash. */
-   reply->disconnect();
-   reply->abort();
-   reply->deleteLater();
-#endif
 }
 
 void MainWindow::onThumbnailPackDownloadNetworkSslErrors(
@@ -392,14 +384,6 @@ void MainWindow::onThumbnailDownloadNetworkError(QNetworkReply::NetworkError cod
 
    RARCH_ERR("[Qt] Network error code %d received: %s\n",
          code, errorStringData);
-
-#if 0
-   /* Deleting the reply here seems to cause a strange
-    * heap-use-after-free crash. */
-   reply->disconnect();
-   reply->abort();
-   reply->deleteLater();
-#endif
 }
 
 void MainWindow::onThumbnailDownloadNetworkSslErrors(
@@ -836,15 +820,7 @@ void MainWindow::onPlaylistThumbnailDownloadFinished()
 }
 
 void MainWindow::onPlaylistThumbnailDownloadProgress(qint64 bytesReceived,
-      qint64 bytesTotal)
-{
-#if 0
-   QNetworkReply *reply = m_playlistThumbnailDownloadReply.data();
-   int progress         = (bytesReceived / (float)bytesTotal) * 100.0f;
-   if (!reply)
-      return;
-#endif
-}
+      qint64 bytesTotal) { }
 
 void MainWindow::onPlaylistThumbnailDownloadReadyRead()
 {

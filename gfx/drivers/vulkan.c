@@ -84,19 +84,6 @@ static unsigned track_seq;
 
 
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
-#if 0
-void vulkan_log_textures(void)
-{
-   unsigned i;
-   for (i = 0; i < vk_count; i++)
-   {
-      RARCH_WARN("[Vulkan] Found leaked texture %llu.\n",
-            (unsigned long long)vk_images[i]);
-   }
-   vk_count = 0;
-}
-#endif
-
 static void vulkan_track_alloc(VkImage image)
 {
    vk_images[vk_count++] = image;

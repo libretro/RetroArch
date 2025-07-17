@@ -975,21 +975,6 @@ static void btpad_queue_reset(void)
    can_run         = 1;
 }
 
-#if 0
-static void btpad_queue_btstack_set_power_mode(
-      struct btpad_queue_command *cmd, uint8_t on)
-{
-   if (!cmd)
-      return;
-
-   cmd->command                   = btstack_set_power_mode_ptr;
-   cmd->btstack_set_power_mode.on = on;
-
-   btpad_increment_position(&insert_position);
-   btpad_queue_process();
-}
-#endif
-
 static void btpad_set_inquiry_state(bool on)
 {
    inquiry_off = !on;

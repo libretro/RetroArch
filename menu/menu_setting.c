@@ -9412,13 +9412,6 @@ static bool setting_append_list_input_player_options(
             general_read_handler);
       (*list)[list_info->index - 1].index         = user + 1;
       (*list)[list_info->index - 1].index_offset  = user;
-#if 0
-      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-      (*list)[list_info->index - 1].action_start  = &setting_action_start_input_device_index;
-      (*list)[list_info->index - 1].action_left   = &setting_action_left_input_device_index;
-      (*list)[list_info->index - 1].action_right  = &setting_action_right_input_device_index;
-      (*list)[list_info->index - 1].action_select = &setting_action_right_input_device_index;
-#endif
       (*list)[list_info->index - 1].get_string_representation = &get_string_representation_split_joycon;
       menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0, true, true);
 #endif
@@ -12099,7 +12092,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 
+            menu_settings_list_current_add_range(list, list_info,
                   0, cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size), 1, true, true);
             (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_hex_and_uint;
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
@@ -12192,7 +12185,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 
+            menu_settings_list_current_add_range(list, list_info,
                   0, cheat_manager_get_state_search_size(cheat_manager_state.working_cheat.memory_search_size), 1, true, true);
             (*list)[list_info->index - 1].get_string_representation = &setting_get_string_representation_hex_and_uint;
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
@@ -15694,40 +15687,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
-#if 0
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.input_descriptor_label_show,
-                  MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW,
-                  MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
-                  DEFAULT_INPUT_DESCRIPTOR_LABEL_SHOW,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_ADVANCED
-                  );
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.input_descriptor_hide_unbound,
-                  MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND,
-                  MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
-                  DEFAULT_INPUT_DESCRIPTOR_HIDE_UNBOUND,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_ADVANCED
-                  );
-#endif
-
             END_SUB_GROUP(list, list_info, parent_group);
 
             START_SUB_GROUP(
@@ -16647,9 +16606,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-#if 0
-         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-#endif
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_float_video_msg_color;
          menu_settings_list_current_add_range(list, list_info, 0, 1, 1.0f/255.0f, true, true);
@@ -20925,23 +20881,6 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,
                MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
                DEFAULT_MENU_SHOW_ONLINE_UPDATER,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-#endif
-#if 0
-/* Thumbnailpack removal */
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->bools.menu_show_legacy_thumbnail_updater,
-               MENU_ENUM_LABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-               MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-               DEFAULT_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

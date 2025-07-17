@@ -2925,13 +2925,6 @@ static void xmb_refresh_system_tabs_list(xmb_handle_t *xmb)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
 
-#if 0 /* Move Netplay to Main Menu */
-#ifdef HAVE_NETWORKING
-   if (settings->bools.menu_content_show_netplay)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
-#endif
-#endif /* 0 */
-
    if (      settings->uints.menu_content_show_add_entry == MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
          && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
@@ -3506,10 +3499,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_UPDATE_CHEATS:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS:
          return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
-#if 0
-/* Thumbnailpack removal */
-      case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
-#endif
       case MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST:
       case MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS:

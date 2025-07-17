@@ -3992,15 +3992,6 @@ static int menu_displaylist_parse_load_content_settings(
       }
 #endif
 
-#if 0
-      if (menu_entries_append(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS),
-            msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
-            MENU_ENUM_LABEL_NETPLAY_SETTINGS,
-            MENU_SETTING_ACTION, 0, 0, NULL))
-         count++;
-#endif
-
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
       {
          gfx_ctx_flags_t flags;
@@ -8161,15 +8152,6 @@ unsigned menu_displaylist_build_list(
                   msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
                   MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
                   MENU_SETTING_ACTION, 0, 0, NULL);
-
-#if 0
-         if (menu_entries_append(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST),
-                  msg_hash_to_str(MENU_ENUM_LABEL_BROWSE_URL_LIST),
-                  MENU_ENUM_LABEL_BROWSE_URL_LIST,
-                  MENU_SETTING_ACTION, 0, 0, NULL))
-            count++;
-#endif
          break;
       }
       case DISPLAYLIST_INPUT_MENU_SETTINGS_LIST:
@@ -10246,10 +10228,6 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_ONLINE_UPDATER
                {MENU_ENUM_LABEL_MENU_SHOW_ONLINE_UPDATER,                              PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,                                PARSE_ONLY_BOOL, true  },
-#if 0
-/* Thumbnailpack removal */
-               {MENU_ENUM_LABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,                    PARSE_ONLY_BOOL, true  },
-#endif
 #endif
 #ifdef HAVE_MIST
                {MENU_ENUM_LABEL_MENU_SHOW_CORE_MANAGER_STEAM,                          PARSE_ONLY_BOOL, true  },
@@ -12110,126 +12088,6 @@ static unsigned menu_displaylist_build_shader_parameter(
 }
 
 #ifdef HAVE_NETWORKING
-#if 0
-static size_t print_buf_lines(file_list_t *list, char *buf,
-      const char *label, size_t buf_size,
-      enum msg_file_type type, bool append, bool extended)
-{
-   char c;
-   size_t i;
-   size_t count     = 0;
-   char *line_start = buf;
-
-   if (!buf || !buf_size)
-      return 0;
-
-   if (extended)
-   {
-      for (i = 0; i < buf_size; i++)
-      {
-         size_t ln;
-
-         /* The end of the buffer, print the last bit */
-         if (*(buf + i) == '\0')
-            break;
-
-         if (*(buf + i) != '\n')
-            continue;
-
-         /* Found a line ending, print the line and compute new line_start */
-         c              = *(buf + i + 1); /* Save the next character  */
-         *(buf + i + 1) = '\0';           /* Replace with \0          */
-
-         /* We need to strip the newline. */
-         ln             = strlen(line_start) - 1;
-         if (line_start[ln] == '\n')
-            line_start[ln] = '\0';
-
-         {
-            char *save           = NULL;
-            char *line_start_cpy = strdup(line_start);
-            const char *con      = strtok_r(line_start_cpy, " ", &save);
-
-            if (con)
-            {
-               if ((con = strtok_r(NULL, " ", &save)))
-               {
-                  if ((con = strtok_r(NULL, " ", &save)))
-                  {
-                     /* Get third parameter */
-                     if (append)
-                     {
-                        if (menu_entries_append(list, con, "",
-                                 MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0, NULL))
-                           count++;
-                     }
-                     else
-                     {
-                        menu_entries_prepend(list, con, "",
-                              MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
-                        count++;
-                     }
-                  }
-               }
-            }
-
-            free(line_start_cpy);
-         }
-
-         /* Restore the saved character */
-         *(buf + i + 1) = c;
-         line_start     = buf + i + 1;
-      }
-   }
-   else
-   {
-      for (i = 0; i < buf_size; i++)
-      {
-         size_t ln;
-
-         /* The end of the buffer, print the last bit */
-         if (*(buf + i) == '\0')
-            break;
-
-         if (*(buf + i) != '\n')
-            continue;
-
-         /* Found a line ending, print the line and compute new line_start */
-         c              = *(buf + i + 1); /* Save the next character  */
-         *(buf + i + 1) = '\0';           /* Replace with \0          */
-
-         /* We need to strip the newline. */
-         ln             = strlen(line_start) - 1;
-         if (line_start[ln] == '\n')
-            line_start[ln] = '\0';
-
-         if (append)
-         {
-            if (menu_entries_append(list, line_start, label,
-                     MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0, NULL))
-               count++;
-         }
-         else
-         {
-            menu_entries_prepend(list, line_start, label,
-                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
-            count++;
-         }
-
-         /* Restore the saved character */
-         *(buf + i + 1) = c;
-         line_start     = buf + i + 1;
-      }
-   }
-
-   if (append && type != FILE_TYPE_DOWNLOAD_LAKKA)
-      file_list_sort_on_alt(list);
-   /* If the buffer was completely full, and didn't end
-    * with a newline, just ignore the partial last line. */
-
-   return count;
-}
-#else
 static size_t print_buf_lines(file_list_t *list, char *buf,
       const char *label, size_t buf_size,
       enum msg_file_type type, bool append)
@@ -12286,7 +12144,6 @@ static size_t print_buf_lines(file_list_t *list, char *buf,
     * with a newline, just ignore the partial last line. */
    return count;
 }
-#endif
 
 static unsigned menu_displaylist_netplay_kick(file_list_t *list)
 {
@@ -13678,28 +13535,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->flags       |= MD_FLAG_NEED_REFRESH
                                | MD_FLAG_NEED_PUSH;
             break;
-#if 0
-/* Thumbnailpack removal */
-         case DISPLAYLIST_THUMBNAILS_UPDATER:
-            menu_entries_clear(info->list);
-#ifdef HAVE_NETWORKING
-            count = (unsigned)print_buf_lines(info->list, menu->core_buf, "",
-                  menu->core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT,
-                  true);
-
-            if (count == 0)
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
-
-            info->flags       |= MD_FLAG_NEED_REFRESH
-                               | MD_FLAG_NEED_PUSH
-                               | MD_FLAG_NEED_CLEAR;
-#endif
-            break;
-#endif
          case DISPLAYLIST_PL_THUMBNAILS_UPDATER:
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
@@ -14993,18 +14828,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 
-#if 0
-/* Thumbnailpack removal */
-               if (settings->bools.menu_show_legacy_thumbnail_updater)
-               {
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST),
-                           msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST),
-                           MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-#endif
 #elif defined(HAVE_NETWORKING)
 #ifdef HAVE_UPDATE_CORES
                if (settings->bools.menu_show_core_updater)
@@ -15079,18 +14902,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 
-#if 0
-/* Thumbnailpack removal */
-               if (settings->bools.menu_show_legacy_thumbnail_updater)
-               {
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST),
-                           msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST),
-                           MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-#endif
 #ifdef HAVE_NETWORKING
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                         MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,

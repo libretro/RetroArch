@@ -488,24 +488,6 @@ static void gfx_ctx_drm_check_window(void *data, bool *quit,
 static void drm_flip_handler(int fd, unsigned frame,
       unsigned sec, unsigned usec, void *data)
 {
-#if 0
-   static unsigned first_page_flip;
-   static unsigned last_page_flip;
-
-   if (!first_page_flip)
-      first_page_flip = frame;
-
-   if (last_page_flip)
-   {
-      unsigned missed = frame - last_page_flip - 1;
-      if (missed)
-         RARCH_LOG("[KMS] Missed %u VBlank(s) (Frame: %u, DRM frame: %u).\n",
-               missed, frame - first_page_flip, frame);
-   }
-
-   last_page_flip = frame;
-#endif
-
    *(bool*)data = false;
 }
 
@@ -796,7 +778,7 @@ nextgpu:
    g_drm_fd                       = fd;
 
    video_driver_display_type_set(RARCH_DISPLAY_KMS);
-   
+
    return drm;
 
 error:

@@ -226,49 +226,11 @@ static void handle_discord_spectate(const char *secret)
 {
 }
 
-#if 0
-#ifdef HAVE_MENU
-static void handle_discord_join_response(void *ignore, const char *line)
-{
-   /* TODO/FIXME: needs in-game widgets */
-   if (strstr(line, "yes"))
-      Discord_Respond(user_id, DISCORD_REPLY_YES);
-
-   menu_input_dialog_end();
-   retroarch_menu_running_finished(false);
-}
-#endif
-#endif
-
 static void handle_discord_join_request(const DiscordUser *request)
 {
 #ifdef HAVE_MENU
-#if 0
-   char buf[PATH_MAX_LENGTH];
-   menu_input_ctx_line_t line = {0};
-#endif
    discord_state_t *discord_st = &discord_state_st;
-
    discord_download_avatar(discord_st, request->userId, request->avatar);
-
-#if 0
-   /* TODO/FIXME: Needs in-game widgets */
-   retroarch_menu_running();
-
-   snprintf(buf, sizeof(buf), "%s %s?",
-      msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
-   line.label         = buf;
-   line.label_setting = "no_setting";
-   line.cb            = handle_discord_join_response;
-
-   /* TODO/FIXME: needs in-game widgets
-    * TODO/FIXME: bespoke dialog, should show while in-game
-    * and have a hotkey to accept
-    * TODO/FIXME: show avatar of the user connecting
-    */
-   if (!menu_input_dialog_start(&line))
-      return;
-#endif
 #endif
 }
 
@@ -401,9 +363,6 @@ void discord_update(enum presence presence)
                   room->id, cpu_features_get_time_usec());
 
             discord_st->presence.joinSecret     = strdup(join_secret);
-#if 0
-            discord_st->presence.spectateSecret = "SPECSPECSPEC";
-#endif
             discord_st->presence.partyId        = strdup(discord_st->self_party_id);
             discord_st->presence.partyMax       = 2;
             discord_st->presence.partySize      = 1;

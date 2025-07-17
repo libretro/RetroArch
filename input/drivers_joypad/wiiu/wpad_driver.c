@@ -75,7 +75,7 @@ static void wpad_register(unsigned channel)
       return;
 
    /* Check if gamepad is already handled
-      Other checks not needed here - about to overwrite 
+      Other checks not needed here - about to overwrite
       joypad_state.wpad.channel_slot_map entry*/
    if (joypad_state.wpad.channel_slot_map[channel] != WPAD_INVALID_CHANNEL)
       return;
@@ -155,39 +155,6 @@ static void wpad_get_touch_coordinates(VPADTouchData *point, VPADStatus *vpad,
    wpad_apply_clamping(point, viewport, clamped);
 }
 
-#if 0
-/**
- * Get absolute value of a signed integer using bit manipulation.
- */
-static int16_t bitwise_abs(int16_t value)
-{
-   bool is_negative = value & 0x8000;
-   if (!is_negative)
-      return value;
-
-   value = value &~ 0x8000;
-   return (~value & 0x7fff)+1;
-}
-
-/**
- * printf doesn't have a concept of a signed hex digit, so we fake it.
- */
-static void wpad_log_coords(int16_t x, int16_t y)
-{
-   bool x_negative = x & 0x8000;
-   bool y_negative = y & 0x8000;
-
-   int16_t x_digit = bitwise_abs(x);
-   int16_t y_digit = bitwise_abs(y);
-
-   RARCH_DBG("[wpad] calibrated point: %s%04x, %s%04x\n",
-         x_negative ? "-" : "",
-         x_digit,
-         y_negative ? "-" : "",
-         y_digit);
-}
-#endif
-
 static void wpad_update_touch_state(int16_t state[3][2],
       uint64_t *buttons, VPADStatus *vpad, VPADChan channel)
 {
@@ -208,11 +175,6 @@ static void wpad_update_touch_state(int16_t state[3][2],
          viewport.x, viewport.x + viewport.width, -0x7fff, 0x7fff, point.x);
    state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = wpad_scale_touchpad(
          viewport.y, viewport.y + viewport.height, -0x7fff, 0x7fff, point.y);
-
-#if 0
-   wpad_log_coords(state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X],
-         state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y]);
-#endif
 
    if (!touch_clamped)
       *buttons |= VPAD_BUTTON_TOUCH;
@@ -264,7 +226,7 @@ static void *wpad_init(void *data)
 
 static bool wpad_query_pad(unsigned port)
 {
-   return port < MAX_USERS && 
+   return port < MAX_USERS &&
       (wpad_to_gamepad_channel(port) != WPAD_INVALID_CHANNEL);
 }
 
@@ -334,11 +296,11 @@ static int16_t wpad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && wpad_button(port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(wpad_axis(port_idx, joyaxis)) 
+            ((float)abs(wpad_axis(port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

@@ -134,28 +134,6 @@ typedef struct update_installed_cores_handle
    bool auto_backup;
 } update_installed_cores_handle_t;
 
-#if 0
-enum update_single_core_status
-{
-   UPDATE_SINGLE_CORE_BEGIN = 0,
-   UPDATE_SINGLE_CORE_WAIT_LIST,
-   UPDATE_SINGLE_CORE_UPDATE_CORE,
-   UPDATE_SINGLE_CORE_WAIT_DOWNLOAD,
-   UPDATE_SINGLE_CORE_END
-};
-
-typedef struct update_single_core_handle
-{
-   core_updater_list_t *core_list;
-   size_t auto_backup_history_size;
-   enum update_single_core_status status;
-   char path_core[PATH_MAX_LENGTH];
-   char path_dir_libretro[DIR_MAX_LENGTH];
-   char path_dir_core_assets[DIR_MAX_LENGTH];
-   bool auto_backup;
-} update_single_core_handle_t;
-#endif
-
 #if defined(ANDROID)
 /* Play feature delivery core install */
 enum play_feature_delivery_install_task_status
@@ -1496,118 +1474,10 @@ task_finished:
       free_update_installed_cores_handle(update_installed_handle);
 }
 
-#if 0
-static void task_update_single_core_handler(retro_task_t *task)
-{
-   update_single_core_handle_t *handle =
-      (update_single_core_handle_t*)task->state;
-
-   switch (handle->status)
-   {
-      case UPDATE_SINGLE_CORE_BEGIN:
-         {
-            if (task_push_get_core_updater_list(handle->core_list,
-                  true, false))
-               handle->status = UPDATE_SINGLE_CORE_WAIT_LIST;
-            else
-               handle->status = UPDATE_SINGLE_CORE_END;
-         }
-         break;
-      case UPDATE_SINGLE_CORE_WAIT_LIST:
-         {
-            task_finder_data_t find_data;
-
-            find_data.func     = task_core_updater_get_list_finder;
-            find_data.userdata = handle->core_list;
-            if (!task_queue_find(&find_data))
-               handle->status = UPDATE_SINGLE_CORE_UPDATE_CORE;
-         }
-         break;
-      case UPDATE_SINGLE_CORE_UPDATE_CORE:
-         {
-            uint32_t crc                           = 0;
-            const core_updater_list_entry_t *entry = NULL;
-
-            if (!core_updater_list_get_core(handle->core_list,
-                  handle->path_core, &entry))
-            {
-               handle->status = UPDATE_SINGLE_CORE_END;
-               break;
-            }
-
-            if (core_info_get_core_lock(entry->local_core_path, false))
-            {
-               handle->status = UPDATE_SINGLE_CORE_END;
-               break;
-            }
-
-            {
-               const char *local_core_path = entry->local_core_path;
-               if (
-                       !string_is_empty(local_core_path)
-                     && path_is_valid  (local_core_path)
-                  )
-                  crc = task_core_updater_get_core_crc(local_core_path);
-            }
-
-            if (!crc || crc == entry->crc)
-            {
-               handle->status = UPDATE_SINGLE_CORE_END;
-               break;
-            }
-
-            if (task_push_core_updater_download(handle->core_list,
-                  entry->remote_filename, crc, true,
-                  handle->auto_backup, handle->auto_backup_history_size,
-                  handle->path_dir_libretro, handle->path_dir_core_assets))
-               handle->status = UPDATE_SINGLE_CORE_WAIT_DOWNLOAD;
-            else
-               handle->status = UPDATE_SINGLE_CORE_END;
-         }
-         break;
-      case UPDATE_SINGLE_CORE_WAIT_DOWNLOAD:
-         {
-            task_finder_data_t find_data;
-            const core_updater_list_entry_t *entry = NULL;
-
-            if (!core_updater_list_get_core(handle->core_list,
-                  handle->path_core, &entry))
-            {
-               handle->status = UPDATE_SINGLE_CORE_END;
-               break;
-            }
-
-            find_data.func     = task_core_updater_download_finder;
-            find_data.userdata = entry->remote_filename;
-            if (!task_queue_find(&find_data))
-               handle->status = UPDATE_SINGLE_CORE_END;
-         }
-         break;
-      case UPDATE_SINGLE_CORE_END:
-      default:
-         task_set_progress(task, 100);
-         task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
-         break;
-   }
-}
-
-static void task_update_single_core_cleanup(retro_task_t *task)
-{
-   update_single_core_handle_t *handle =
-      (update_single_core_handle_t*)task->state;
-
-   core_updater_list_free(handle->core_list);
-   free(handle);
-}
-#endif
-
 static bool task_update_installed_cores_finder(retro_task_t *task, void *user_data)
 {
    if (task)
       if (     task->handler == task_update_installed_cores_handler
-#if 0
-            || task->handler == task_update_single_core_handler
-#endif
             )
          return true;
    return false;
@@ -1691,69 +1561,6 @@ error:
    if (update_installed_handle)
       free_update_installed_cores_handle(update_installed_handle);
 }
-
-#if 0
-bool task_push_update_single_core(
-      const char *path_core, bool auto_backup, size_t auto_backup_history_size,
-      const char *path_dir_libretro, const char *path_dir_core_assets)
-{
-   task_finder_data_t find_data;
-   core_updater_list_t *core_list;
-   update_single_core_handle_t *handle;
-   retro_task_t *task;
-
-   if (string_is_empty(path_core) || string_is_empty(path_dir_libretro))
-      return false;
-
-#ifdef ANDROID
-   /* Regular core updater is disabled in Play Store builds. */
-   if (play_feature_delivery_enabled())
-      return false;
-#endif
-
-   /* Only one instance of this task may run at a time. */
-   find_data.func     = task_update_installed_cores_finder;
-   find_data.userdata = NULL;
-   if (task_queue_find(&find_data))
-      return false;
-
-   core_list = core_updater_list_init();
-   handle    = (update_single_core_handle_t*)malloc(sizeof(*handle));
-   task      = task_init();
-   if (!core_list || !handle || !task)
-   {
-      core_updater_list_free(core_list);
-      free(handle);
-      free(task);
-
-      return false;
-   }
-
-   /* Configure handle */
-   handle->status                   = UPDATE_SINGLE_CORE_BEGIN;
-   handle->core_list                = core_list;
-   handle->auto_backup              = auto_backup;
-   handle->auto_backup_history_size = auto_backup_history_size;
-   strlcpy(handle->path_core, path_core, sizeof(handle->path_core));
-   strlcpy(handle->path_dir_libretro, path_dir_libretro,
-      sizeof(handle->path_dir_libretro));
-   if (!string_is_empty(path_dir_core_assets))
-      strlcpy(handle->path_dir_core_assets, path_dir_core_assets,
-         sizeof(handle->path_dir_core_assets));
-   else
-      handle->path_dir_core_assets[0] = '\0';
-
-   /* Configure task */
-   task->handler = task_update_single_core_handler;
-   task->cleanup = task_update_single_core_cleanup;
-   task->state   = handle;
-
-   /* Push task */
-   task_queue_push(task);
-
-   return true;
-}
-#endif
 
 #if defined(ANDROID)
 /**************************************/

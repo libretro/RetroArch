@@ -303,10 +303,6 @@ static void osmesa_ctx_swap_buffers(void *data)
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
    osmesa_fifo_accept(osmesa);
    osmesa_fifo_write(osmesa);
-
-#if 0
-   write(osmesa->socket, osmesa->screen, osmesa->width * osmesa->height * osmesa->pixsize);
-#endif
 }
 
 static void osmesa_ctx_input_driver(void *data,

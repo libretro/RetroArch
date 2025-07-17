@@ -114,11 +114,6 @@ static bool gfx_thumbnail_get_sub_directory(
       case 3:
          *sub_directory = "Named_Boxarts";
          return true;
-#if 0
-      case 4:
-         *sub_directory = "Named_Logos";
-         return true;
-#endif
       case 0:
       default:
          break;

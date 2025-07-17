@@ -561,24 +561,6 @@ recheckcapacity:;
    state->entries++;
 }
 
-#if 0
-static void state_manager_capacity(state_manager_t *state,
-      unsigned *entries, size_t *bytes, bool *full)
-{
-   size_t headpos   = state->head - state->data;
-   size_t tailpos   = state->tail - state->data;
-   size_t remaining = (tailpos + state->capacity -
-         sizeof(size_t) - headpos - 1) % state->capacity + 1;
-
-   if (entries)
-      *entries      = state->entries;
-   if (bytes)
-      *bytes        = state->capacity-remaining;
-   if (full)
-      *full         = remaining <= state->maxcompsize * 2;
-}
-#endif
-
 void state_manager_event_init(
       struct state_manager_rewind_state *rewind_st,
       unsigned rewind_buffer_size)

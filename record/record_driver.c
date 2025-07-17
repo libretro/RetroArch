@@ -101,40 +101,6 @@ static void find_record_driver(void)
    }
 }
 
-#if 0
-/* TODO/FIXME - not used apparently */
-/**
- * ffemu_find_backend:
- * @ident                   : Identifier of driver to find.
- *
- * Finds a recording driver with the name @ident.
- *
- * Returns: recording driver handle if successful, otherwise
- * NULL.
- **/
-static const record_driver_t *ffemu_find_backend(const char *ident)
-{
-   unsigned i;
-
-   for (i = 0; record_drivers[i]; i++)
-   {
-      if (string_is_equal(record_drivers[i]->ident, ident))
-         return record_drivers[i];
-   }
-
-   return NULL;
-}
-
-static void recording_driver_free_state(void)
-{
-   /* TODO/FIXME - this is not being called anywhere */
-   recording_state.gpu_width     = 0;
-   recording_state.gpu_height    = 0;
-   recording_state.width         = 0;
-   recording_state.height        = 0;
-}
-#endif
-
 /**
  * gfx_ctx_init_first:
  * @param backend

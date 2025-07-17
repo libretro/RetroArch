@@ -385,9 +385,9 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
             }
             /* Wild character conversions */
             if (raw_game_id[8] == 18)
-               raw_game_id[8] = 51; 
+               raw_game_id[8] = 51;
             if (raw_game_id[9] == 18)
-               raw_game_id[9] = 51; 
+               raw_game_id[9] = 51;
             raw_game_id[10] = '\0';
 
             string_remove_all_whitespace(s, raw_game_id);
@@ -1006,58 +1006,6 @@ size_t detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filena
    cue_append_multi_disc_suffix(s, filename);
    return strlcpy(s, raw_game_id, len);
 }
-
-#if 0
-/**
- * Check for an ASCII serial in the first few bits of the ISO (Wii).
- * TODO/FIXME - unused for now
- */
-static int detect_serial_ascii_game(intfstream_t *fd, char *s, size_t len)
-{
-   unsigned pos;
-   int number_of_ascii = 0;
-   bool rv             = false;
-
-   for (pos = 0; pos < 10000; pos++)
-   {
-      intfstream_seek(fd, pos, SEEK_SET);
-      if (intfstream_read(fd, s, 15) > 0)
-      {
-         unsigned i;
-         s[15]           = '\0';
-         number_of_ascii = 0;
-
-         /* When scanning WBFS files, "WBFS" is discovered as the first serial. Ignore it. */
-         if (string_is_equal(s, "WBFS"))
-            continue;
-
-         /* Loop through until we run out of ASCII characters. */
-         for (i = 0; i < 15; i++)
-         {
-            /* Is the given character ASCII? A-Z, 0-9, - */
-            if (     (s[i] == 45)
-                  || (s[i] >= 48 && s[i] <= 57)
-                  || (s[i] >= 65 && s[i] <= 90))
-               number_of_ascii++;
-            else
-               break;
-         }
-
-         /* If the length of the text is between 3 and 9 characters,
-          * it could be a serial. */
-         if (number_of_ascii > 3 && number_of_ascii < 9)
-         {
-            /* Cut the string off, and return it as a valid serial. */
-            s[number_of_ascii]       = '\0';
-            rv                       = true;
-            break;
-         }
-      }
-   }
-
-   return rv;
-}
-#endif
 
 int detect_system(intfstream_t *fd, const char **system_name, const char * filename)
 {

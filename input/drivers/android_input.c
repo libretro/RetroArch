@@ -89,7 +89,7 @@ enum {
 
 #define MAX_KEYS ((LAST_KEYCODE + 7) / 8)
 
-/* First ports are used to keep track of gamepad states. 
+/* First ports are used to keep track of gamepad states.
  * Last port is used for keyboard state */
 static uint8_t android_key_state[DEFAULT_MAX_PADS + 1][MAX_KEYS];
 
@@ -447,7 +447,7 @@ static void android_input_poll_main_cmd(void)
             bool enable_gyroscope       = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_DISABLE));
 
-            
+
             runloop_st->flags &= ~(RUNLOOP_FLAG_PAUSED
                                  | RUNLOOP_FLAG_IDLE);
             video_driver_unset_stub_frame();
@@ -542,10 +542,6 @@ static void engine_handle_dpad_getaxisvalue(struct android_app *android,
    android->analog_state[port][1] = (int16_t)(y * 32767.0f);
    android->analog_state[port][2] = (int16_t)(z * 32767.0f);
    android->analog_state[port][3] = (int16_t)(rz * 32767.0f);
-#if 0
-   android->analog_state[port][4] = (int16_t)(hatx * 32767.0f);
-   android->analog_state[port][5] = (int16_t)(haty * 32767.0f);
-#endif
    android->analog_state[port][6] = (int16_t)(ltrig * 32767.0f);
    android->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
    android->analog_state[port][8] = (int16_t)(brake * 32767.0f);
@@ -630,7 +626,7 @@ static int android_check_quick_tap(android_input_t *android)
     * and then not touched again for 200ms
     * If so then return true and deactivate quick tap timer */
    retro_time_t now = cpu_features_get_time_usec();
-   if (android->quick_tap_time && 
+   if (android->quick_tap_time &&
          (now / 1000 - android->quick_tap_time / 1000000) >= 200)
    {
       android->quick_tap_time = 0;
@@ -809,8 +805,8 @@ static INLINE void android_input_poll_event_type_motion(
          }
       }
 
-      if ((       action == AMOTION_EVENT_ACTION_MOVE 
-               || action == AMOTION_EVENT_ACTION_HOVER_MOVE) 
+      if ((       action == AMOTION_EVENT_ACTION_MOVE
+               || action == AMOTION_EVENT_ACTION_HOVER_MOVE)
             && ENABLE_TOUCH_SCREEN_MOUSE)
          android_mouse_calculate_deltas(android,event,motion_ptr,source);
 
@@ -864,7 +860,7 @@ static bool android_is_keyboard_id(int id)
 static INLINE void android_input_poll_event_type_keyboard(
       AInputEvent *event, int keycode, int *handled)
 {
-   int keydown           = (AKeyEvent_getAction(event) 
+   int keydown           = (AKeyEvent_getAction(event)
          == AKEY_EVENT_ACTION_DOWN);
    unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(keycode);
    /* Set keyboard modifier based on shift,ctrl and alt state */
@@ -1076,8 +1072,8 @@ static void handle_hotplug(android_input_t *android,
                android->pads_connected, device_name, id, pad_id1, pad_id2);
 #endif
          /* Remove the remote or virtual controller device if it is mapped */
-         if (strstr(android->pad_states[0].name, "SHIELD Remote") ||
-             strstr(android->pad_states[0].name, "SHIELD Virtual Controller"))
+         if (   strstr(android->pad_states[0].name, "SHIELD Remote")
+             || strstr(android->pad_states[0].name, "SHIELD Virtual Controller"))
          {
             pad_id1 = -1;
             pad_id2 = -1;
@@ -1237,9 +1233,9 @@ static void handle_hotplug(android_input_t *android,
    else if (
              string_starts_with_size(device_model, "AFT", STRLEN_CONST("AFT")) &&
              (
-              strstr(device_model, "AFTB") || 
+              strstr(device_model, "AFTB") ||
               strstr(device_model, "AFTT") ||
-              strstr(device_model, "AFTS") || 
+              strstr(device_model, "AFTS") ||
               strstr(device_model, "AFTM") ||
               strstr(device_model, "AFTRS")
              )
@@ -1337,7 +1333,7 @@ static void handle_hotplug(android_input_t *android,
          vendorId,
          productId);
 
-   android->pad_states[android->pads_connected].id   = 
+   android->pad_states[android->pads_connected].id   =
       g_android->id[android->pads_connected]         = id;
    android->pad_states[android->pads_connected].port = *port;
 
@@ -1372,21 +1368,21 @@ static void engine_handle_touchpad(
    for(n = 0; n < pointer_count; ++n)
    {
       int pointer_id	=   AMotionEvent_getPointerId(event, n);
-      int action     =   AMOTION_EVENT_ACTION_MASK 
+      int action     =   AMOTION_EVENT_ACTION_MASK
                        & AMotionEvent_getAction(event);
       int raw_action	=   AMotionEvent_getAction(event);
-      if (     action  == AMOTION_EVENT_ACTION_POINTER_DOWN 
+      if (     action  == AMOTION_EVENT_ACTION_POINTER_DOWN
             || action  == AMOTION_EVENT_ACTION_POINTER_UP )
       {
          int pointer_index = (AMotionEvent_getAction( event ) & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
          pointer_id        = AMotionEvent_getPointerId( event, pointer_index);
       }
 
-      if (     action  == AMOTION_EVENT_ACTION_DOWN 
+      if (     action  == AMOTION_EVENT_ACTION_DOWN
             || action  == AMOTION_EVENT_ACTION_POINTER_DOWN )
          touchstate[pointer_id].down = 1;
-      else if (action  == AMOTION_EVENT_ACTION_UP 
-            || action  == AMOTION_EVENT_ACTION_POINTER_UP 
+      else if (action  == AMOTION_EVENT_ACTION_UP
+            || action  == AMOTION_EVENT_ACTION_POINTER_UP
             || action  == AMOTION_EVENT_ACTION_CANCEL )
          touchstate[pointer_id].down = 0;
 
@@ -1396,17 +1392,17 @@ static void engine_handle_touchpad(
          int y = touchstate[pointer_id].y  = AMotionEvent_getY(event, n);
          if (x < 360)
          {
-            android->analog_state[port][0] = 
+            android->analog_state[port][0] =
                (int16_t)((x / 180.0 - 1.0f) * 32767.0f);
-            android->analog_state[port][1] = 
+            android->analog_state[port][1] =
                (int16_t)((y / 180.0 - 1.0f) * 32767.0f);
          }
          else if (x >= 606)
          {
             x -= 606;
-            android->analog_state[port][2] = 
+            android->analog_state[port][2] =
                (int16_t)((x / 180.0 - 1.0f) * 32767.0f);
-            android->analog_state[port][3] = 
+            android->analog_state[port][3] =
                (int16_t)((y / 180.0 - 1.0f) * 32767.0f);
          }
       }
@@ -1522,7 +1518,7 @@ static void android_input_poll_input_default(android_input_t *android)
                if ((source & AINPUT_SOURCE_TOUCHPAD))
                   engine_handle_touchpad(android_app, event, port);
                /* Only handle events from a touchscreen or mouse */
-               else if ((source & (AINPUT_SOURCE_TOUCHSCREEN 
+               else if ((source & (AINPUT_SOURCE_TOUCHSCREEN
                            | AINPUT_SOURCE_MOUSE_RELATIVE
                            | AINPUT_SOURCE_STYLUS | AINPUT_SOURCE_MOUSE)))
                   android_input_poll_event_type_motion(android, event,
@@ -1833,7 +1829,7 @@ static int16_t android_input_state(
                return android->pointer_count;
             case RARCH_DEVICE_ID_POINTER_BACK:
             {
-               const struct retro_keybind *keyptr = 
+               const struct retro_keybind *keyptr =
                   &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
                if (keyptr->joykey == 0)
                   return ANDROID_KEYBOARD_INPUT_PRESSED(AKEYCODE_BACK);

@@ -46,10 +46,6 @@
 /* TODO: Colors for warning, error and success */
 
 #define TEXT_COLOR_INFO 0xD8EEFFFF
-#if 0
-#define TEXT_COLOR_SUCCESS 0x22B14CFF
-#define TEXT_COLOR_ERROR 0xC23B22FF
-#endif
 #define TEXT_COLOR_FAINT 0x878787FF
 
 RETRO_BEGIN_DECLS

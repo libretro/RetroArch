@@ -327,7 +327,7 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
     * argument and reads the actual string. */
    reg_read_result = RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "LCUVer",
          reg_read_flags, &key_type, 0, &data_size);
-   
+
    if (reg_read_result == ERROR_SUCCESS)
    {
       if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "LCUVer",
@@ -337,7 +337,7 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
       if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "ProductName",
             reg_read_flags, &key_type, 0, &data_size) != ERROR_SUCCESS)
          read_success = FALSE;
-      
+
       if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "ProductName",
             reg_read_flags, &key_type, str_ProductName, &data_size) != ERROR_SUCCESS)
          read_success = FALSE;
@@ -355,7 +355,7 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          str_ProductName[ProductName_2nd_digit] = '1';
          /* Even the version in the Registry still says Windows 10 and requires
           * string manipulation. */
-         
+
           _len = strlcpy(s, str_ProductName, len);
 
          if (!string_is_empty(arch))
@@ -371,7 +371,7 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 
          *major = 10;
          *minor = 0;
-         
+
          return _len;
       }
    }
@@ -917,73 +917,6 @@ static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
-#if 0
-static const char *accessibility_win_language_id(const char* language)
-{
-   if (string_is_equal(language,"en"))
-      return "409";
-   else if (string_is_equal(language,"it"))
-      return "410";
-   else if (string_is_equal(language,"sv"))
-      return "041d";
-   else if (string_is_equal(language,"fr"))
-      return "040c";
-   else if (string_is_equal(language,"de"))
-      return "407";
-   else if (string_is_equal(language,"he"))
-      return "040d";
-   else if (string_is_equal(language,"id"))
-      return "421";
-   else if (string_is_equal(language,"es"))
-      return "040a";
-   else if (string_is_equal(language,"nl"))
-      return "413";
-   else if (string_is_equal(language,"ro"))
-      return "418";
-   else if (string_is_equal(language,"pt_pt"))
-      return "816";
-   else if (string_is_equal(language,"pt_bt") || string_is_equal(language,"pt"))
-      return "416";
-   else if (string_is_equal(language,"th"))
-      return "041e";
-   else if (string_is_equal(language,"ja"))
-      return "411";
-   else if (string_is_equal(language,"sk"))
-      return "041b";
-   else if (string_is_equal(language,"hi"))
-      return "439";
-   else if (string_is_equal(language,"ar"))
-      return "401";
-   else if (string_is_equal(language,"hu"))
-      return "040e";
-   else if (string_is_equal(language, "zh_tw") || string_is_equal(language,"zh"))
-      return "804";
-   else if (string_is_equal(language,"el"))
-      return "408";
-   else if (string_is_equal(language,"ru"))
-      return "419";
-   else if (string_is_equal(language,"nb"))
-      return "414";
-   else if (string_is_equal(language,"da"))
-      return "406";
-   else if (string_is_equal(language,"fi"))
-      return "040b";
-   else if (string_is_equal(language,"zh_hk"))
-      return "0c04";
-   else if (string_is_equal(language,"zh_cn"))
-      return "804";
-   else if (string_is_equal(language,"tr"))
-      return "041f";
-   else if (string_is_equal(language,"ko"))
-      return "412";
-   else if (string_is_equal(language,"pl"))
-      return "415";
-   else if (string_is_equal(language,"cs"))
-      return "405";
-   return "";
-}
-#endif
-
 static const char *accessibility_win_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -1166,9 +1099,6 @@ static bool accessibility_speak_windows(int speed,
    char cmd[512];
    const char *voice      = get_user_language_iso639_1(true);
    const char *language   = accessibility_win_language_code(voice);
-#if 0
-   const char *langid     = accessibility_win_language_id(voice);
-#endif
    const char *speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
    if (speed < 1)
       speed               = 1;

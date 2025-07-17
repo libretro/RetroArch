@@ -1608,12 +1608,12 @@ static int16_t input_state_device(
                }
                else /* Classic toggle mode */
                {
-                  /* Works pretty much the same as 
-                   * classic mode above but with a 
+                  /* Works pretty much the same as
+                   * classic mode above but with a
                    * toggle mechanic */
 
-                  /* Check if it's to enable the turbo func, 
-                   * if we're still holding the button from 
+                  /* Check if it's to enable the turbo func,
+                   * if we're still holding the button from
                    * previous toggle then ignore */
                   if (   (res)
                       && (input_st->turbo_btns.frame_enable[port]))
@@ -4488,10 +4488,6 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
 #endif
    if (!input_driver_st.primary_joypad)
       input_driver_st.primary_joypad    = input_joypad_init_driver(joypad_driver_name, data);
-#if 0
-   if (!input_driver_st.secondary_joypad)
-      input_driver_st.secondary_joypad  = input_joypad_init_driver("mfi", data);
-#endif
 }
 
 /**
@@ -4566,12 +4562,6 @@ void input_driver_init_joypads(void)
       input_driver_st.primary_joypad        = input_joypad_init_driver(
          settings->arrays.input_joypad_driver,
          input_driver_st.current_data);
-#if 0
-   if (!input_driver_st.secondary_joypad)
-      input_driver_st.secondary_joypad      = input_joypad_init_driver(
-            "mfi",
-            input_driver_st.current_data);
-#endif
 }
 
 bool input_key_pressed(int key, bool keyboard_pressed)
@@ -7809,11 +7799,6 @@ static const char *accessibility_lut_name(char key)
 {
    switch (key)
    {
-#if 0
-      /* TODO/FIXME - overlaps with tilde */
-      case '`':
-         return "left quote";
-#endif
       case '`':
          return "tilde";
       case '!':
