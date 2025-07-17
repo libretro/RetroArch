@@ -1651,7 +1651,7 @@ void rcheevos_change_disc(const char* new_disc_path, bool initial_disc)
 {
    if (rcheevos_locals.client)
    {
-      rc_client_begin_change_media(rcheevos_locals.client, new_disc_path,
+      rc_client_begin_identify_and_change_media(rcheevos_locals.client, new_disc_path,
          NULL, 0, rcheevos_client_change_media_callback, NULL);
    }
 }

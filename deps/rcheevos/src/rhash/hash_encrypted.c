@@ -6,6 +6,27 @@
 
 /* ===================================================== */
 
+static rc_hash_3ds_get_cia_normal_key_func _3ds_get_cia_normal_key_func = NULL;
+static rc_hash_3ds_get_ncch_normal_keys_func _3ds_get_ncch_normal_keys_func = NULL;
+
+void rc_hash_reset_iterator_encrypted(rc_hash_iterator_t* iterator)
+{
+  iterator->callbacks.encryption.get_3ds_cia_normal_key = _3ds_get_cia_normal_key_func;
+  iterator->callbacks.encryption.get_3ds_ncch_normal_keys = _3ds_get_ncch_normal_keys_func;
+}
+
+void rc_hash_init_3ds_get_cia_normal_key_func(rc_hash_3ds_get_cia_normal_key_func func)
+{
+  _3ds_get_cia_normal_key_func = func;
+}
+
+void rc_hash_init_3ds_get_ncch_normal_keys_func(rc_hash_3ds_get_ncch_normal_keys_func func)
+{
+  _3ds_get_ncch_normal_keys_func = func;
+}
+
+/* ===================================================== */
+
 static int rc_hash_nintendo_3ds_ncch(md5_state_t* md5, void* file_handle, uint8_t header[0x200],
   struct AES_ctx* cia_aes, const rc_hash_iterator_t* iterator)
 {

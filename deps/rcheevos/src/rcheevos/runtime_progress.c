@@ -560,8 +560,17 @@ static int rc_runtime_progress_read_variables(rc_runtime_progress_t* progress)
     }
   }
 
+  /* VS raises a C6385 warning here because it thinks count can exceed the size of the local_pending_variables array.
+   * When count is larger, pending_variables points to allocated memory, so the warning is wrong. */
+#if defined (_MSC_VER)
+ #pragma warning(push)
+ #pragma warning(disable:6385)
+#endif
   while (count > 0)
     rc_reset_value(pending_variables[--count].variable);
+#if defined (_MSC_VER)
+ #pragma warning(pop)
+#endif
 
   if (pending_variables != local_pending_variables)
     free(pending_variables);

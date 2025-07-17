@@ -230,7 +230,8 @@ static rc_richpresence_display_t* rc_parse_richpresence_display_internal(const c
           {"Fixed1", 6, RC_FORMAT_FIXED1},
           {"Fixed2", 6, RC_FORMAT_FIXED2},
           {"Fixed3", 6, RC_FORMAT_FIXED3},
-          {"Unsigned", 8, RC_FORMAT_UNSIGNED_VALUE}
+          {"Unsigned", 8, RC_FORMAT_UNSIGNED_VALUE},
+          {"Unformatted", 11, RC_FORMAT_UNFORMATTED}
         };
         size_t i;
 
@@ -536,6 +537,13 @@ void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script,
 
     } else if (strncmp(line, "Format:", 7) == 0) {
       line += 7;
+      if (endline - line == 11 && memcmp(line, "Unformatted", 11) == 0) {
+        /* for backwards compatibility with the comma rollout, we allow old scripts
+         * to define an Unformatted type mapped to VALUE, and new versions will ignore
+         * the definition and use the built-in macro. skip the next line (FormatType=) */
+        line = rc_parse_line(nextline, &endline, parse);
+        continue;
+      }
 
       lookup = RC_ALLOC_SCRATCH(rc_richpresence_lookup_t, parse);
       lookup->name = rc_alloc_str(parse, line, (int)(endline - line));

@@ -317,6 +317,13 @@ static int rc_json_convert_error_code(const char* server_error_code)
     case 'i':
       if (strcmp(server_error_code, "invalid_credentials") == 0)
         return RC_INVALID_CREDENTIALS;
+      if (strcmp(server_error_code, "invalid_parameter") == 0)
+        return RC_INVALID_STATE;
+      break;
+
+    case 'm':
+      if (strcmp(server_error_code, "missing_parameter") == 0)
+        return RC_INVALID_STATE;
       break;
 
     case 'n':
@@ -698,6 +705,57 @@ int rc_json_get_string(const char** out, rc_buffer_t* buffer, const rc_json_fiel
   *dst++ = '\0';
   rc_buffer_consume(buffer, (uint8_t*)(*out), (uint8_t*)dst);
   return 1;
+}
+
+int rc_json_field_string_matches(const rc_json_field_t* field, const char* text) {
+  int is_quoted = 0;
+  const char* ptr = field->value_start;
+  if (!ptr)
+    return 0;
+
+  if (*ptr == '"') {
+    is_quoted = 1;
+    ++ptr;
+  }
+
+  while (ptr < field->value_end) {
+    if (*ptr != *text) {
+      if (*ptr != '\\') {
+        if (*ptr == '"' && is_quoted && (*text == '\0')) {
+          is_quoted = 0;
+          ++ptr;
+          continue;
+        }
+
+        return 0;
+      }
+
+      ++ptr;
+      switch (*ptr) {
+        case 'n':
+          if (*text != '\n')
+            return 0;
+          break;
+        case 'r':
+          if (*text != '\r')
+            return 0;
+          break;
+        case 't':
+          if (*text != '\t')
+            return 0;
+          break;
+        default:
+          if (*text != *ptr)
+            return 0;
+          break;
+      }
+    }
+
+    ++text;
+    ++ptr;
+  }
+
+  return !is_quoted && (*text == '\0');
 }
 
 void rc_json_get_optional_string(const char** out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name, const char* default_value) {
@@ -1304,14 +1362,14 @@ int rc_api_init_fetch_image_request_hosted(rc_api_request_t* request, const rc_a
   return builder.result;
 }
 
-const char* rc_api_build_avatar_url(rc_buffer_t* buffer, uint32_t image_type, const char* username) {
+const char* rc_api_build_avatar_url(rc_buffer_t* buffer, uint32_t image_type, const char* image_name) {
   rc_api_fetch_image_request_t image_request;
   rc_api_request_t request;
   int result;
 
   memset(&image_request, 0, sizeof(image_request));
   image_request.image_type = image_type;
-  image_request.image_name = username;
+  image_request.image_name = image_name;
 
   result = rc_api_init_fetch_image_request(&request, &image_request);
   if (result == RC_OK)

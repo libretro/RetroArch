@@ -78,6 +78,7 @@ static const rc_disallowed_setting_t _rc_disallowed_fbneo_settings[] = {
 };
 
 static const rc_disallowed_setting_t _rc_disallowed_fceumm_settings[] = {
+  { "fceumm_game_genie", "!disabled" },
   { "fceumm_region", ",PAL,Dendy" },
   { NULL, NULL }
 };
@@ -751,7 +752,10 @@ void rc_libretro_hash_set_init(struct rc_libretro_hash_set_t* hash_set,
 
   file_handle = file_reader->open(m3u_path);
   if (!file_handle) {
-    rc_hash_error(NULL, "Could not open playlist");
+    rc_hash_iterator_t iterator;
+    memset(&iterator, 0, sizeof(iterator));
+    memcpy(&iterator.callbacks, &hash_set->callbacks, sizeof(hash_set->callbacks));
+    rc_hash_iterator_error(&iterator, "Could not open playlist");
     return;
   }
 

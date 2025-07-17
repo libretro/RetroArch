@@ -292,6 +292,7 @@ void rc_reset_parse_state(rc_parse_state_t* parse, void* buffer)
   parse->is_value = 0;
   parse->has_required_hits = 0;
   parse->measured_as_percent = 0;
+  parse->ignore_non_parse_errors = 0;
 
   parse->scratch.strings = NULL;
 }

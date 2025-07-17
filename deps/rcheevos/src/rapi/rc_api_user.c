@@ -1,9 +1,11 @@
 #include "rc_api_user.h"
 #include "rc_api_common.h"
 #include "rc_api_runtime.h"
+#include "rc_consoles.h"
 
 #include "../rc_version.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 /* --- Login --- */
@@ -369,5 +371,113 @@ int rc_api_process_fetch_followed_users_server_response(rc_api_fetch_followed_us
 }
 
 void rc_api_destroy_fetch_followed_users_response(rc_api_fetch_followed_users_response_t* response) {
+  rc_buffer_destroy(&response->response.buffer);
+}
+
+/* --- Fetch All Progress --- */
+
+int rc_api_init_fetch_all_user_progress_request(rc_api_request_t* request,
+                                                const rc_api_fetch_all_user_progress_request_t* api_params)
+{
+  return rc_api_init_fetch_all_user_progress_request_hosted(request, api_params, &g_host);
+}
+
+int rc_api_init_fetch_all_user_progress_request_hosted(rc_api_request_t* request,
+                                                       const rc_api_fetch_all_user_progress_request_t* api_params,
+                                                       const rc_api_host_t* host)
+{
+  rc_api_url_builder_t builder;
+
+  rc_api_url_build_dorequest_url(request, host);
+
+  if (api_params->console_id == RC_CONSOLE_UNKNOWN)
+    return RC_INVALID_STATE;
+
+  rc_url_builder_init(&builder, &request->buffer, 48);
+  if (rc_api_url_build_dorequest(&builder, "allprogress", api_params->username, api_params->api_token))
+  {
+    rc_url_builder_append_unum_param(&builder, "c", api_params->console_id);
+    request->post_data = rc_url_builder_finalize(&builder);
+    request->content_type = RC_CONTENT_TYPE_URLENCODED;
+  }
+
+  return builder.result;
+}
+
+int rc_api_process_fetch_all_user_progress_server_response(rc_api_fetch_all_user_progress_response_t* response,
+                                                           const rc_api_server_response_t* server_response)
+{
+  rc_api_all_user_progress_entry_t* entry;
+  int result;
+
+  rc_json_field_t fields[] = {
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error"),
+    RC_JSON_NEW_FIELD("Response"),
+  };
+
+  rc_json_field_t entry_fields[] = {
+    RC_JSON_NEW_FIELD("Achievements"),
+    RC_JSON_NEW_FIELD("Unlocked"),
+    RC_JSON_NEW_FIELD("UnlockedHardcore"),
+  };
+
+  memset(response, 0, sizeof(*response));
+  rc_buffer_init(&response->response.buffer);
+
+  result =
+    rc_json_parse_server_response(&response->response, server_response, fields, sizeof(fields) / sizeof(fields[0]));
+  if (result != RC_OK || !response->response.succeeded)
+    return result;
+
+  if (!fields[2].value_start) {
+    /* call rc_json_get_required_object to generate the error message */
+    rc_json_get_required_object(NULL, 0, &response->response, &fields[2], "Response");
+    return RC_MISSING_VALUE;
+  }
+
+  response->num_entries = fields[2].array_size;
+
+  if (response->num_entries > 0) {
+    rc_json_iterator_t iterator;
+    rc_json_field_t field;
+    char* end;
+
+    rc_buffer_reserve(&response->response.buffer, response->num_entries * sizeof(rc_api_all_user_progress_entry_t));
+
+    response->entries = (rc_api_all_user_progress_entry_t*)rc_buffer_alloc(
+      &response->response.buffer, response->num_entries * sizeof(rc_api_all_user_progress_entry_t));
+    if (!response->entries)
+      return RC_OUT_OF_MEMORY;
+
+    memset(&iterator, 0, sizeof(iterator));
+    iterator.json = fields[2].value_start;
+    iterator.end = fields[2].value_end;
+
+    entry = response->entries;
+    while (rc_json_get_next_object_field(&iterator, &field))
+    {
+      entry->game_id = strtol(field.name, &end, 10);
+
+      field.name = "";
+      if (!rc_json_get_required_object(entry_fields, sizeof(entry_fields) / sizeof(entry_fields[0]),
+                                       &response->response, &field, ""))
+      {
+        return RC_MISSING_VALUE;
+      }
+
+      rc_json_get_optional_unum(&entry->num_achievements, &entry_fields[0], "Achievements", 0);
+      rc_json_get_optional_unum(&entry->num_unlocked_achievements, &entry_fields[1], "Unlocked", 0);
+      rc_json_get_optional_unum(&entry->num_unlocked_achievements_hardcore, &entry_fields[2], "UnlockedHardcore", 0);
+
+      ++entry;
+    }
+  }
+
+  return RC_OK;
+}
+
+void rc_api_destroy_fetch_all_user_progress_response(rc_api_fetch_all_user_progress_response_t* response)
+{
   rc_buffer_destroy(&response->response.buffer);
 }

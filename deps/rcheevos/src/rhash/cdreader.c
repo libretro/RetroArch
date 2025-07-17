@@ -81,25 +81,24 @@ static void cdreader_determine_sector_size(rc_hash_cdrom_track_t* cdrom)
   }
 }
 
-static void* cdreader_open_bin_track(const char* path, uint32_t track, const rc_hash_filereader_t* file_reader)
+static void* cdreader_open_bin_track(const char* path, uint32_t track, const rc_hash_iterator_t* iterator)
 {
   void* file_handle;
   rc_hash_cdrom_track_t* cdrom;
 
-  if (track > 1)
-  {
-    rc_hash_verbose(NULL, "Cannot locate secondary tracks without a cue sheet");
+  if (track > 1) {
+    rc_hash_iterator_verbose(iterator, "Cannot locate secondary tracks without a cue sheet");
     return NULL;
   }
 
-  file_handle = file_reader->open(path);
+  file_handle = iterator->callbacks.filereader.open(path);
   if (!file_handle)
     return NULL;
 
   cdrom = (rc_hash_cdrom_track_t*)calloc(1, sizeof(*cdrom));
   if (!cdrom)
     return NULL;
-  cdrom->file_reader = file_reader;
+  cdrom->file_reader = &iterator->callbacks.filereader;
   cdrom->file_handle = file_handle;
 #ifndef NDEBUG
   cdrom->track_id = track;
@@ -111,8 +110,8 @@ static void* cdreader_open_bin_track(const char* path, uint32_t track, const rc_
   {
     int64_t size;
 
-    file_reader->seek(file_handle, 0, SEEK_END);
-    size = file_reader->tell(file_handle);
+    iterator->callbacks.filereader.seek(file_handle, 0, SEEK_END);
+    size = iterator->callbacks.filereader.tell(file_handle);
 
     if ((size % 2352) == 0)
     {
@@ -134,11 +133,11 @@ static void* cdreader_open_bin_track(const char* path, uint32_t track, const rc_
     }
     else
     {
-      if (file_reader->close)
-        file_reader->close(file_handle);
+      if (iterator->callbacks.filereader.close)
+        iterator->callbacks.filereader.close(file_handle);
       free(cdrom);
 
-      rc_hash_verbose(NULL, "Could not determine sector size");
+      rc_hash_iterator_verbose(iterator, "Could not determine sector size");
 
       return NULL;
     }
@@ -205,7 +204,7 @@ static int cdreader_open_bin(rc_hash_cdrom_track_t* cdrom, const char* path, con
   return (cdrom->sector_size != 0);
 }
 
-static char* cdreader_get_bin_path(const char* cue_path, const char* bin_name)
+static char* cdreader_get_bin_path(const char* cue_path, const char* bin_name, const rc_hash_iterator_t* iterator)
 {
   const char* filename = rc_path_get_filename(cue_path);
   const size_t bin_name_len = strlen(bin_name);
@@ -215,7 +214,7 @@ static char* cdreader_get_bin_path(const char* cue_path, const char* bin_name)
   char* bin_filename = (char*)malloc(needed);
   if (!bin_filename)
   {
-    rc_hash_error_formatted(NULL, "Failed to allocate %u bytes", (unsigned)needed);
+    rc_hash_iterator_error_formatted(iterator, "Failed to allocate %u bytes", (unsigned)needed);
   }
   else
   {
@@ -226,20 +225,20 @@ static char* cdreader_get_bin_path(const char* cue_path, const char* bin_name)
   return bin_filename;
 }
 
-static int64_t cdreader_get_bin_size(const char* cue_path, const char* bin_name, const rc_hash_filereader_t* file_reader)
+static int64_t cdreader_get_bin_size(const char* cue_path, const char* bin_name, const rc_hash_iterator_t* iterator)
 {
   int64_t size = 0;
-  char* bin_filename = cdreader_get_bin_path(cue_path, bin_name);
+  char* bin_filename = cdreader_get_bin_path(cue_path, bin_name, iterator);
   if (bin_filename)
   {
-    void* handle = file_reader->open(bin_filename);
+    void* handle = iterator->callbacks.filereader.open(bin_filename);
     if (handle)
     {
-      file_reader->seek(handle, 0, SEEK_END);
-      size = file_reader->tell(handle);
+      iterator->callbacks.filereader.seek(handle, 0, SEEK_END);
+      size = iterator->callbacks.filereader.tell(handle);
 
-      if (file_reader->close)
-        file_reader->close(handle);
+      if (iterator->callbacks.filereader.close)
+        iterator->callbacks.filereader.close(handle);
     }
 
     free(bin_filename);
@@ -248,7 +247,7 @@ static int64_t cdreader_get_bin_size(const char* cue_path, const char* bin_name,
   return size;
 }
 
-static void* cdreader_open_cue_track(const char* path, uint32_t track, const rc_hash_filereader_t* file_reader)
+static void* cdreader_open_cue_track(const char* path, uint32_t track, const rc_hash_iterator_t* iterator)
 {
   void* cue_handle;
   int64_t cue_offset = 0;
@@ -274,7 +273,7 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track, const rc_
     char filename[256];
   } current_track, previous_track, largest_track;
 
-  cue_handle = file_reader->open(path);
+  cue_handle = iterator->callbacks.filereader.open(path);
   if (!cue_handle)
     return NULL;
 
@@ -284,7 +283,7 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track, const rc_
 
   do
   {
-    num_read = file_reader->read(cue_handle, buffer, sizeof(buffer) - 1);
+    num_read = iterator->callbacks.filereader.read(cue_handle, buffer, sizeof(buffer) - 1);
     if (num_read == 0)
       break;
 
@@ -345,7 +344,7 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track, const rc_
             *scan = '\0';
 
             /* it's undesirable to truncate offset to 32-bits, but %lld isn't defined in c89. */
-            rc_hash_verbose_formatted(NULL, "Found %s track %d (first sector %d, sector size %d, %d pregap sectors)",
+            rc_hash_iterator_verbose_formatted(iterator, "Found %s track %d (first sector %d, sector size %d, %d pregap sectors)",
                      current_track.mode, current_track.id, current_track.first_sector, current_track.sector_size, current_track.pregap_sectors);
           }
 
@@ -406,8 +405,8 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track, const rc_
 
           if (previous_track.sector_count == 0)
           {
-            const uint32_t file_sector_count = (uint32_t)cdreader_get_bin_size(path,
-              previous_track.filename, file_reader) / previous_track.sector_size;
+            const int64_t bin_size = cdreader_get_bin_size(path, previous_track.filename, iterator);
+            const uint32_t file_sector_count = (uint32_t)bin_size / previous_track.sector_size;
             previous_track.sector_count = file_sector_count - previous_track.first_sector;
           }
 
@@ -468,19 +467,19 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track, const rc_
       break;
 
     cue_offset += (ptr - buffer);
-    file_reader->seek(cue_handle, cue_offset, SEEK_SET);
+    iterator->callbacks.filereader.seek(cue_handle, cue_offset, SEEK_SET);
 
   } while (1);
 
-  if (file_reader->close)
-    file_reader->close(cue_handle);
+  if (iterator->callbacks.filereader.close)
+    iterator->callbacks.filereader.close(cue_handle);
 
   if (track == RC_HASH_CDTRACK_LARGEST)
   {
     if (current_track.sector_size && current_track.is_data)
     {
-      const uint32_t file_sector_count = (uint32_t)cdreader_get_bin_size(path,
-        current_track.filename, file_reader) / current_track.sector_size;
+      const int64_t bin_size = cdreader_get_bin_size(path, current_track.filename, iterator);
+      const uint32_t file_sector_count = (uint32_t)bin_size / current_track.sector_size;
       current_track.sector_count = file_sector_count - current_track.first_sector;
 
       if (largest_track.sector_count > current_track.sector_count)
@@ -503,11 +502,11 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track, const rc_
     cdrom = (rc_hash_cdrom_track_t*)calloc(1, sizeof(*cdrom));
     if (!cdrom)
     {
-      rc_hash_error_formatted(NULL, "Failed to allocate %u bytes", (unsigned)sizeof(*cdrom));
+      rc_hash_iterator_error_formatted(iterator, "Failed to allocate %u bytes", (unsigned)sizeof(*cdrom));
       return NULL;
     }
 
-    cdrom->file_reader = file_reader;
+    cdrom->file_reader = &iterator->callbacks.filereader;
     cdrom->file_track_offset = current_track.file_track_offset;
     cdrom->track_pregap_sectors = current_track.pregap_sectors;
     cdrom->track_first_sector = current_track.file_first_sector + current_track.first_sector;
@@ -516,27 +515,27 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track, const rc_
 #endif
 
     /* verify existance of bin file */
-    bin_filename = cdreader_get_bin_path(path, current_track.filename);
+    bin_filename = cdreader_get_bin_path(path, current_track.filename, iterator);
     if (bin_filename)
     {
       if (cdreader_open_bin(cdrom, bin_filename, current_track.mode))
       {
         if (cdrom->track_pregap_sectors)
-          rc_hash_verbose_formatted(NULL, "Opened track %d (sector size %d, %d pregap sectors)",
+          rc_hash_iterator_verbose_formatted(iterator, "Opened track %d (sector size %d, %d pregap sectors)",
                     track, cdrom->sector_size, cdrom->track_pregap_sectors);
         else
-          rc_hash_verbose_formatted(NULL, "Opened track %d (sector size %d)", track, cdrom->sector_size);
+          rc_hash_iterator_verbose_formatted(iterator, "Opened track %d (sector size %d)", track, cdrom->sector_size);
       }
       else
       {
         if (cdrom->file_handle)
         {
           cdrom->file_reader->close(cdrom->file_handle);
-          rc_hash_error_formatted(NULL, "Could not determine sector size for %s track", current_track.mode);
+          rc_hash_iterator_error_formatted(iterator, "Could not determine sector size for %s track", current_track.mode);
         }
         else
         {
-          rc_hash_error_formatted(NULL, "Could not open %s", bin_filename);
+          rc_hash_iterator_error_formatted(iterator, "Could not open %s", bin_filename);
         }
 
         free(cdrom);
@@ -550,7 +549,7 @@ static void* cdreader_open_cue_track(const char* path, uint32_t track, const rc_
   return cdrom;
 }
 
-static void* cdreader_open_gdi_track(const char* path, uint32_t track, const rc_hash_filereader_t* file_reader)
+static void* cdreader_open_gdi_track(const char* path, uint32_t track, const rc_hash_iterator_t* iterator)
 {
   void* file_handle;
   char buffer[1024];
@@ -575,14 +574,14 @@ static void* cdreader_open_gdi_track(const char* path, uint32_t track, const rc_
   int64_t file_offset = 0;
   rc_hash_cdrom_track_t* cdrom = NULL;
 
-  file_handle = file_reader->open(path);
+  file_handle = iterator->callbacks.filereader.open(path);
   if (!file_handle)
     return NULL;
 
   file[0] = '\0';
   do
   {
-    num_read = file_reader->read(file_handle, buffer, sizeof(buffer) - 1);
+    num_read = iterator->callbacks.filereader.read(file_handle, buffer, sizeof(buffer) - 1);
     if (num_read == 0)
       break;
 
@@ -677,7 +676,7 @@ static void* cdreader_open_gdi_track(const char* path, uint32_t track, const rc_
       }
       else if (track == RC_HASH_CDTRACK_LARGEST && track_type == 4)
       {
-        track_size = cdreader_get_bin_size(path, file, file_reader);
+        track_size = cdreader_get_bin_size(path, file, iterator);
         if (track_size > largest_track_size)
         {
           largest_track_size = track_size;
@@ -693,21 +692,21 @@ static void* cdreader_open_gdi_track(const char* path, uint32_t track, const rc_
       break;
 
     file_offset += (ptr - buffer);
-    file_reader->seek(file_handle, file_offset, SEEK_SET);
+    iterator->callbacks.filereader.seek(file_handle, file_offset, SEEK_SET);
 
   } while (1);
 
-  if (file_reader->close)
-    file_reader->close(file_handle);
+  if (iterator->callbacks.filereader.close)
+    iterator->callbacks.filereader.close(file_handle);
 
   cdrom = (rc_hash_cdrom_track_t*)calloc(1, sizeof(*cdrom));
   if (!cdrom)
   {
-    rc_hash_error_formatted(NULL, "Failed to allocate %u bytes", (unsigned)sizeof(*cdrom));
+    rc_hash_iterator_error_formatted(iterator, "Failed to allocate %u bytes", (unsigned)sizeof(*cdrom));
     return NULL;
   }
 
-  cdrom->file_reader = file_reader;
+  cdrom->file_reader = &iterator->callbacks.filereader;
 
   /* if we were tracking the largest track, make it the current track.
    * otherwise, current_track will be the requested track, or last track. */
@@ -726,7 +725,7 @@ static void* cdreader_open_gdi_track(const char* path, uint32_t track, const rc_
     *ptr++ = *ptr2++;
   *ptr = '\0';
 
-  bin_path = cdreader_get_bin_path(path, file);
+  bin_path = cdreader_get_bin_path(path, file, iterator);
   if (cdreader_open_bin(cdrom, bin_path, mode))
   {
     cdrom->track_pregap_sectors = 0;
@@ -735,11 +734,11 @@ static void* cdreader_open_gdi_track(const char* path, uint32_t track, const rc_
     cdrom->track_id = current_track;
 #endif
 
-    rc_hash_verbose_formatted(NULL, "Opened track %d (sector size %d)", current_track, cdrom->sector_size);
+    rc_hash_iterator_verbose_formatted(iterator, "Opened track %d (sector size %d)", current_track, cdrom->sector_size);
   }
   else
   {
-    rc_hash_error_formatted(NULL, "Could not open %s", bin_path);
+    rc_hash_iterator_error_formatted(iterator, "Could not open %s", bin_path);
 
     free(cdrom);
     cdrom = NULL;
@@ -750,18 +749,18 @@ static void* cdreader_open_gdi_track(const char* path, uint32_t track, const rc_
   return cdrom;
 }
 
-static void* cdreader_open_track_filereader(const char* path, uint32_t track, const rc_hash_filereader_t* file_reader)
+static void* cdreader_open_track_iterator(const char* path, uint32_t track, const rc_hash_iterator_t* iterator)
 {
   /* backwards compatibility - 0 used to mean largest */
   if (track == 0)
     track = RC_HASH_CDTRACK_LARGEST;
 
   if (rc_path_compare_extension(path, "cue"))
-    return cdreader_open_cue_track(path, track, file_reader);
+    return cdreader_open_cue_track(path, track, iterator);
   if (rc_path_compare_extension(path, "gdi"))
-    return cdreader_open_gdi_track(path, track, file_reader);
+    return cdreader_open_gdi_track(path, track, iterator);
 
-  return cdreader_open_bin_track(path, track, file_reader);
+  return cdreader_open_bin_track(path, track, iterator);
 }
 
 static size_t cdreader_read_sector(void* track_handle, uint32_t sector, void* buffer, size_t requested_bytes)
@@ -828,7 +827,7 @@ void rc_hash_get_default_cdreader(struct rc_hash_cdreader* cdreader)
   cdreader->read_sector = cdreader_read_sector;
   cdreader->close_track = cdreader_close_track;
   cdreader->first_track_sector = cdreader_first_track_sector;
-  cdreader->open_track_filereader = cdreader_open_track_filereader;
+  cdreader->open_track_iterator = cdreader_open_track_iterator;
 }
 
 void rc_hash_init_default_cdreader(void)

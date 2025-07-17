@@ -47,7 +47,7 @@ static int rc_classify_condition(const rc_condition_t* cond) {
   }
 }
 
-static int32_t rc_classify_conditions(rc_condset_t* self, const char* memaddr) {
+static int32_t rc_classify_conditions(rc_condset_t* self, const char* memaddr, const rc_parse_state_t* parent_parse) {
   rc_parse_state_t parse;
   rc_memrefs_t memrefs;
   rc_condition_t condition;
@@ -57,6 +57,7 @@ static int32_t rc_classify_conditions(rc_condset_t* self, const char* memaddr) {
 
   rc_init_parse_state(&parse, NULL);
   rc_init_parse_state_memrefs(&parse, &memrefs);
+  parse.ignore_non_parse_errors = parent_parse->ignore_non_parse_errors;
 
   do {
     rc_parse_condition_internal(&condition, &memaddr, &parse);
@@ -99,6 +100,11 @@ static int32_t rc_classify_conditions(rc_condset_t* self, const char* memaddr) {
 
     chain_length = 1;
   } while (*memaddr++ == '_');
+
+  /* any combining conditions that don't actually feed into a non-combining condition
+   * need to still have space allocated for them. put them in "other" to match the
+   * logic in rc_find_next_classification */
+  self->num_other_conditions += chain_length - 1;
 
   return index;
 }
@@ -215,7 +221,7 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse) {
   }
 
   memset(&local_condset, 0, sizeof(local_condset));
-  result = rc_classify_conditions(&local_condset, *memaddr);
+  result = rc_classify_conditions(&local_condset, *memaddr, parse);
   if (result < 0) {
     parse->offset = result;
     return NULL;
@@ -260,7 +266,7 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse) {
     if (parse->offset < 0)
       return NULL;
 
-    if (condition.oper == RC_OPERATOR_NONE) {
+    if (condition.oper == RC_OPERATOR_NONE && !parse->ignore_non_parse_errors) {
       switch (condition.type) {
         case RC_CONDITION_ADD_ADDRESS:
         case RC_CONDITION_ADD_SOURCE:
@@ -285,8 +291,10 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse) {
       case RC_CONDITION_MEASURED:
         if (measured_target != 0) {
           /* multiple Measured flags cannot exist in the same group */
-          parse->offset = RC_MULTIPLE_MEASURED;
-          return NULL;
+          if (!parse->ignore_non_parse_errors) {
+            parse->offset = RC_MULTIPLE_MEASURED;
+            return NULL;
+          }
         }
         else if (parse->is_value) {
           measured_target = (uint32_t)-1;
@@ -304,15 +312,17 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse) {
         else if (condition.operand2.type == RC_OPERAND_FP) {
           measured_target = (unsigned)condition.operand2.value.dbl;
         }
-        else {
+        else if (!parse->ignore_non_parse_errors) {
           parse->offset = RC_INVALID_MEASURED_TARGET;
           return NULL;
         }
 
         if (parse->measured_target && measured_target != parse->measured_target) {
           /* multiple Measured flags in separate groups must have the same target */
-          parse->offset = RC_MULTIPLE_MEASURED;
-          return NULL;
+          if (!parse->ignore_non_parse_errors) {
+            parse->offset = RC_MULTIPLE_MEASURED;
+            return NULL;
+          }
         }
 
         parse->measured_target = measured_target;
@@ -321,7 +331,7 @@ rc_condset_t* rc_parse_condset(const char** memaddr, rc_parse_state_t* parse) {
       case RC_CONDITION_STANDARD:
       case RC_CONDITION_TRIGGER:
         /* these flags are not allowed in value expressions */
-        if (parse->is_value) {
+        if (parse->is_value && !parse->ignore_non_parse_errors) {
           parse->offset = RC_INVALID_VALUE_FLAG;
           return NULL;
         }

@@ -124,6 +124,9 @@ typedef struct rc_operand_t {
 
   /* specifies how to read the memref for some types (RC_OPERAND_*) */
   uint8_t memref_access_type;
+
+  /* if set, this operand is combining the current condition with the previous one */
+  uint8_t is_combining;
 }
 rc_operand_t;
 
@@ -377,7 +380,8 @@ enum {
   RC_FORMAT_TENS,
   RC_FORMAT_HUNDREDS,
   RC_FORMAT_THOUSANDS,
-  RC_FORMAT_UNSIGNED_VALUE
+  RC_FORMAT_UNSIGNED_VALUE,
+  RC_FORMAT_UNFORMATTED
 };
 
 RC_EXPORT int RC_CCONV rc_parse_format(const char* format_str);

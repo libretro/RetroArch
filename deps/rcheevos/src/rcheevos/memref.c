@@ -150,7 +150,7 @@ rc_modified_memref_t* rc_alloc_modified_memref(rc_parse_state_t* parse, uint8_t 
   memset(modified_memref, 0, sizeof(*modified_memref));
   modified_memref->memref.value.memref_type = RC_MEMREF_TYPE_MODIFIED_MEMREF;
   modified_memref->memref.value.size = size;
-  modified_memref->memref.value.type = (size == RC_MEMSIZE_FLOAT) ? RC_VALUE_TYPE_FLOAT : RC_VALUE_TYPE_UNSIGNED;
+  modified_memref->memref.value.type = rc_memsize_is_float(size) ? RC_VALUE_TYPE_FLOAT : RC_VALUE_TYPE_UNSIGNED;
   memcpy(&modified_memref->parent, parent, sizeof(modified_memref->parent));
   memcpy(&modified_memref->modifier, modifier, sizeof(modified_memref->modifier));
   modified_memref->modifier_type = modifier_type;

@@ -55,6 +55,7 @@ static int rc_parse_operand_variable(rc_operand_t* self, const char** memaddr, r
     }
     else {
       memcpy(self, &parse->remember, sizeof(*self));
+      self->is_combining = 0;
       self->memref_access_type = self->type;
     }
     self->type = RC_OPERAND_RECALL;
@@ -117,16 +118,11 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_
   }
 
   if (parse->indirect_parent.type != RC_OPERAND_NONE) {
-    if (parse->indirect_parent.type == RC_OPERAND_CONST) {
-      self->value.memref = rc_alloc_memref(parse, address + parse->indirect_parent.value.num, size);
-    }
-    else {
-      rc_operand_t offset;
-      rc_operand_set_const(&offset, address);
+    rc_operand_t offset;
+    rc_operand_set_const(&offset, address);
 
-      self->value.memref = (rc_memref_t*)rc_alloc_modified_memref(parse,
-        size, &parse->indirect_parent, RC_OPERATOR_INDIRECT_READ, &offset);
-    }
+    self->value.memref = (rc_memref_t*)rc_alloc_modified_memref(parse,
+      size, &parse->indirect_parent, RC_OPERATOR_INDIRECT_READ, &offset);
   }
   else {
     self->value.memref = rc_alloc_memref(parse, address, size);
@@ -146,6 +142,8 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, rc_parse_state_t*
   unsigned long value;
   int negative;
   int allow_decimal = 0;
+
+  self->is_combining = 0;
 
   switch (*aux) {
     case 'h': case 'H': /* hex constant */
@@ -309,6 +307,9 @@ void rc_operand_set_float_const(rc_operand_t* self, double value) {
 }
 
 int rc_operands_are_equal(const rc_operand_t* left, const rc_operand_t* right) {
+  if (left == right)
+    return 1;
+
   if (left->type != right->type)
     return 0;
 
@@ -318,7 +319,7 @@ int rc_operands_are_equal(const rc_operand_t* left, const rc_operand_t* right) {
     case RC_OPERAND_FP:
       return (left->value.dbl == right->value.dbl);
     case RC_OPERAND_RECALL:
-      return 1;
+      return (left->value.memref == right->value.memref);
     default:
       break;
   }
@@ -360,7 +361,7 @@ int rc_operator_is_modifying(int oper) {
   }
 }
 
-static int rc_memsize_is_float(uint8_t size) {
+int rc_memsize_is_float(uint8_t size) {
   switch (size) {
     case RC_MEMSIZE_FLOAT:
     case RC_MEMSIZE_FLOAT_BE:
@@ -378,9 +379,6 @@ static int rc_memsize_is_float(uint8_t size) {
 int rc_operand_is_float_memref(const rc_operand_t* self) {
   if (!rc_operand_is_memref(self))
     return 0;
-
-  if (self->type == RC_OPERAND_RECALL)
-    return rc_memsize_is_float(self->memref_access_type);
 
   if (self->value.memref->value.memref_type == RC_MEMREF_TYPE_MODIFIED_MEMREF) {
     const rc_modified_memref_t* memref = (const rc_modified_memref_t*)self->value.memref;
@@ -432,6 +430,9 @@ int rc_operand_is_recall(const rc_operand_t* self) {
 int rc_operand_is_float(const rc_operand_t* self) {
   if (self->type == RC_OPERAND_FP)
     return 1;
+
+  if (self->type == RC_OPERAND_RECALL)
+    return rc_memsize_is_float(self->size);
 
   return rc_operand_is_float_memref(self);
 }

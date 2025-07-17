@@ -108,27 +108,13 @@ int rc_api_process_fetch_game_data_response(rc_api_fetch_game_data_response_t* r
   return rc_api_process_fetch_game_data_server_response(response, &response_obj);
 }
 
-static int rc_parse_achievement_type(const char* type) {
-  if (strcmp(type, "missable") == 0)
-    return RC_ACHIEVEMENT_TYPE_MISSABLE;
-
-  if (strcmp(type, "win_condition") == 0)
-    return RC_ACHIEVEMENT_TYPE_WIN;
-
-  if (strcmp(type, "progression") == 0)
-    return RC_ACHIEVEMENT_TYPE_PROGRESSION;
-
-  return RC_ACHIEVEMENT_TYPE_STANDARD;
-}
-
-static int rc_api_process_fetch_game_data_achievements(rc_api_fetch_game_data_response_t* response, rc_api_achievement_definition_t* achievement, rc_json_field_t* array_field) {
+static int rc_api_process_fetch_game_data_achievements(rc_api_response_t* response, rc_api_achievement_definition_t* achievement, rc_json_field_t* array_field) {
   rc_json_iterator_t iterator;
   const char* last_author = "";
   const char* last_author_field = "";
   size_t last_author_len = 0;
   uint32_t timet;
   size_t len;
-  char type[16];
 
   rc_json_field_t achievement_fields[] = {
     RC_JSON_NEW_FIELD("ID"),
@@ -153,35 +139,35 @@ static int rc_api_process_fetch_game_data_achievements(rc_api_fetch_game_data_re
   iterator.end = array_field->value_end;
 
   while (rc_json_get_array_entry_object(achievement_fields, sizeof(achievement_fields) / sizeof(achievement_fields[0]), &iterator)) {
-    if (!rc_json_get_required_unum(&achievement->id, &response->response, &achievement_fields[0], "ID"))
+    if (!rc_json_get_required_unum(&achievement->id, response, &achievement_fields[0], "ID"))
       return RC_MISSING_VALUE;
-    if (!rc_json_get_required_string(&achievement->title, &response->response, &achievement_fields[1], "Title"))
+    if (!rc_json_get_required_string(&achievement->title, response, &achievement_fields[1], "Title"))
       return RC_MISSING_VALUE;
-    if (!rc_json_get_required_string(&achievement->description, &response->response, &achievement_fields[2], "Description"))
+    if (!rc_json_get_required_string(&achievement->description, response, &achievement_fields[2], "Description"))
       return RC_MISSING_VALUE;
-    if (!rc_json_get_required_unum(&achievement->category, &response->response, &achievement_fields[3], "Flags"))
+    if (!rc_json_get_required_unum(&achievement->category, response, &achievement_fields[3], "Flags"))
       return RC_MISSING_VALUE;
-    if (!rc_json_get_required_unum(&achievement->points, &response->response, &achievement_fields[4], "Points"))
+    if (!rc_json_get_required_unum(&achievement->points, response, &achievement_fields[4], "Points"))
       return RC_MISSING_VALUE;
-    if (!rc_json_get_required_string(&achievement->definition, &response->response, &achievement_fields[5], "MemAddr"))
+    if (!rc_json_get_required_string(&achievement->definition, response, &achievement_fields[5], "MemAddr"))
       return RC_MISSING_VALUE;
-    if (!rc_json_get_required_string(&achievement->badge_name, &response->response, &achievement_fields[7], "BadgeName"))
+    if (!rc_json_get_required_string(&achievement->badge_name, response, &achievement_fields[7], "BadgeName"))
       return RC_MISSING_VALUE;
 
-    rc_json_get_optional_string(&achievement->badge_url, &response->response, &achievement_fields[13], "BadgeURL", "");
+    rc_json_get_optional_string(&achievement->badge_url, response, &achievement_fields[13], "BadgeURL", "");
     if (!achievement->badge_url[0])
-      achievement->badge_url = rc_api_build_avatar_url(&response->response.buffer, RC_IMAGE_TYPE_ACHIEVEMENT, achievement->badge_name);
+      achievement->badge_url = rc_api_build_avatar_url(&response->buffer, RC_IMAGE_TYPE_ACHIEVEMENT, achievement->badge_name);
 
-    rc_json_get_optional_string(&achievement->badge_locked_url, &response->response, &achievement_fields[14], "BadgeLockedURL", "");
+    rc_json_get_optional_string(&achievement->badge_locked_url, response, &achievement_fields[14], "BadgeLockedURL", "");
     if (!achievement->badge_locked_url[0])
-      achievement->badge_locked_url = rc_api_build_avatar_url(&response->response.buffer, RC_IMAGE_TYPE_ACHIEVEMENT_LOCKED, achievement->badge_name);
+      achievement->badge_locked_url = rc_api_build_avatar_url(&response->buffer, RC_IMAGE_TYPE_ACHIEVEMENT_LOCKED, achievement->badge_name);
 
     len = achievement_fields[6].value_end - achievement_fields[6].value_start;
     if (len == last_author_len && memcmp(achievement_fields[6].value_start, last_author_field, len) == 0) {
       achievement->author = last_author;
     }
     else {
-      if (!rc_json_get_required_string(&achievement->author, &response->response, &achievement_fields[6], "Author"))
+      if (!rc_json_get_required_string(&achievement->author, response, &achievement_fields[6], "Author"))
         return RC_MISSING_VALUE;
 
       if (achievement->author == NULL) {
@@ -195,22 +181,23 @@ static int rc_api_process_fetch_game_data_achievements(rc_api_fetch_game_data_re
       }
     }
 
-    if (!rc_json_get_required_unum(&timet, &response->response, &achievement_fields[8], "Created"))
+    if (!rc_json_get_required_unum(&timet, response, &achievement_fields[8], "Created"))
       return RC_MISSING_VALUE;
     achievement->created = (time_t)timet;
-    if (!rc_json_get_required_unum(&timet, &response->response, &achievement_fields[9], "Modified"))
+    if (!rc_json_get_required_unum(&timet, response, &achievement_fields[9], "Modified"))
       return RC_MISSING_VALUE;
     achievement->updated = (time_t)timet;
 
-    achievement->type = RC_ACHIEVEMENT_TYPE_STANDARD;
-    if (achievement_fields[10].value_end) {
-      len = achievement_fields[10].value_end - achievement_fields[10].value_start - 2;
-      if (len < sizeof(type) - 1) {
-        memcpy(type, achievement_fields[10].value_start + 1, len);
-        type[len] = '\0';
-        achievement->type = rc_parse_achievement_type(type);
-      }
-    }
+    if (rc_json_field_string_matches(&achievement_fields[10], ""))
+      achievement->type = RC_ACHIEVEMENT_TYPE_STANDARD;
+    else if (rc_json_field_string_matches(&achievement_fields[10], "progression"))
+      achievement->type = RC_ACHIEVEMENT_TYPE_PROGRESSION;
+    else if (rc_json_field_string_matches(&achievement_fields[10], "missable"))
+      achievement->type = RC_ACHIEVEMENT_TYPE_MISSABLE;
+    else if (rc_json_field_string_matches(&achievement_fields[10], "win_condition"))
+      achievement->type = RC_ACHIEVEMENT_TYPE_WIN;
+    else
+      achievement->type = RC_ACHIEVEMENT_TYPE_STANDARD;
 
     /* legacy support : if title contains[m], change type to missable and remove[m] from title */
     if (memcmp(achievement->title, "[m]", 3) == 0) {
@@ -237,7 +224,7 @@ static int rc_api_process_fetch_game_data_achievements(rc_api_fetch_game_data_re
   return RC_OK;
 }
 
-static int rc_api_process_fetch_game_data_leaderboards(rc_api_fetch_game_data_response_t* response, rc_api_leaderboard_definition_t* leaderboard, rc_json_field_t* array_field) {
+static int rc_api_process_fetch_game_data_leaderboards(rc_api_response_t* response, rc_api_leaderboard_definition_t* leaderboard, rc_json_field_t* array_field) {
   rc_json_iterator_t iterator;
   size_t len;
   int result;
@@ -258,13 +245,13 @@ static int rc_api_process_fetch_game_data_leaderboards(rc_api_fetch_game_data_re
   iterator.end = array_field->value_end;
 
   while (rc_json_get_array_entry_object(leaderboard_fields, sizeof(leaderboard_fields) / sizeof(leaderboard_fields[0]), &iterator)) {
-    if (!rc_json_get_required_unum(&leaderboard->id, &response->response, &leaderboard_fields[0], "ID"))
+    if (!rc_json_get_required_unum(&leaderboard->id, response, &leaderboard_fields[0], "ID"))
       return RC_MISSING_VALUE;
-    if (!rc_json_get_required_string(&leaderboard->title, &response->response, &leaderboard_fields[1], "Title"))
+    if (!rc_json_get_required_string(&leaderboard->title, response, &leaderboard_fields[1], "Title"))
       return RC_MISSING_VALUE;
-    if (!rc_json_get_required_string(&leaderboard->description, &response->response, &leaderboard_fields[2], "Description"))
+    if (!rc_json_get_required_string(&leaderboard->description, response, &leaderboard_fields[2], "Description"))
       return RC_MISSING_VALUE;
-    if (!rc_json_get_required_string(&leaderboard->definition, &response->response, &leaderboard_fields[3], "Mem"))
+    if (!rc_json_get_required_string(&leaderboard->definition, response, &leaderboard_fields[3], "Mem"))
       return RC_MISSING_VALUE;
     rc_json_get_optional_bool(&result, &leaderboard_fields[5], "LowerIsBetter", 0);
     leaderboard->lower_is_better = (uint8_t)result;
@@ -284,81 +271,6 @@ static int rc_api_process_fetch_game_data_leaderboards(rc_api_fetch_game_data_re
     }
 
     ++leaderboard;
-  }
-
-  return RC_OK;
-}
-
-static int rc_api_process_fetch_game_data_subsets(rc_api_fetch_game_data_response_t* response, rc_api_subset_definition_t* subset, rc_json_field_t* subset_array_field) {
-  rc_json_iterator_t iterator;
-  rc_json_field_t array_field;
-  size_t len;
-  int result;
-
-  rc_json_field_t subset_fields[] = {
-    RC_JSON_NEW_FIELD("GameAchievementSetID"),
-    RC_JSON_NEW_FIELD("SetTitle"),
-    RC_JSON_NEW_FIELD("ImageIcon"),
-    RC_JSON_NEW_FIELD("ImageIconURL"),
-    RC_JSON_NEW_FIELD("Achievements"), /* array */
-    RC_JSON_NEW_FIELD("Leaderboards") /* array */
-  };
-
-  memset(&iterator, 0, sizeof(iterator));
-  iterator.json = subset_array_field->value_start;
-  iterator.end = subset_array_field->value_end;
-
-  while (rc_json_get_array_entry_object(subset_fields, sizeof(subset_fields) / sizeof(subset_fields[0]), &iterator)) {
-    if (!rc_json_get_required_unum(&subset->id, &response->response, &subset_fields[0], "GameAchievementSetID"))
-      return RC_MISSING_VALUE;
-    if (!rc_json_get_required_string(&subset->title, &response->response, &subset_fields[1], "SetTitle"))
-      return RC_MISSING_VALUE;
-
-    /* ImageIcon will be '/Images/0123456.png' - only return the '0123456' */
-    rc_json_extract_filename(&subset_fields[2]);
-    rc_json_get_optional_string(&subset->image_name, &response->response, &subset_fields[2], "ImageIcon", "");
-
-    if (!rc_json_get_required_string(&subset->image_url, &response->response, &subset_fields[3], "ImageIconURL"))
-      return RC_MISSING_VALUE;
-
-    /* estimate the amount of space necessary to store the achievements, and leaderboards.
-       determine how much space each takes as a string in the JSON, then subtract out the non-data (field names, punctuation)
-       and add space for the structures. */
-    len = (subset_fields[4].value_end - subset_fields[4].value_start) - /* achievements */
-      subset_fields[4].array_size * (80 - sizeof(rc_api_achievement_definition_t));
-    len += (subset_fields[5].value_end - subset_fields[5].value_start) - /* leaderboards */
-      subset_fields[5].array_size * (60 - sizeof(rc_api_leaderboard_definition_t));
-
-    rc_buffer_reserve(&response->response.buffer, len);
-    /* end estimation */
-
-    if (!rc_json_get_required_array(&subset->num_achievements, &array_field, &response->response, &subset_fields[4], "Achievements"))
-      return RC_MISSING_VALUE;
-
-    if (subset->num_achievements) {
-      subset->achievements = (rc_api_achievement_definition_t*)rc_buffer_alloc(&response->response.buffer, subset->num_achievements * sizeof(rc_api_achievement_definition_t));
-      if (!subset->achievements)
-        return RC_OUT_OF_MEMORY;
-
-      result = rc_api_process_fetch_game_data_achievements(response, subset->achievements, &array_field);
-      if (result != RC_OK)
-        return result;
-    }
-
-    if (!rc_json_get_required_array(&subset->num_leaderboards, &array_field, &response->response, &subset_fields[5], "Leaderboards"))
-      return RC_MISSING_VALUE;
-
-    if (subset->num_leaderboards) {
-      subset->leaderboards = (rc_api_leaderboard_definition_t*)rc_buffer_alloc(&response->response.buffer, subset->num_leaderboards * sizeof(rc_api_leaderboard_definition_t));
-      if (!subset->leaderboards)
-        return RC_OUT_OF_MEMORY;
-
-      result = rc_api_process_fetch_game_data_leaderboards(response, subset->leaderboards, &array_field);
-      if (result != RC_OK)
-        return result;
-    }
-
-    ++subset;
   }
 
   return RC_OK;
@@ -385,7 +297,6 @@ int rc_api_process_fetch_game_data_server_response(rc_api_fetch_game_data_respon
     RC_JSON_NEW_FIELD("RichPresencePatch"),
     RC_JSON_NEW_FIELD("Achievements"), /* array */
     RC_JSON_NEW_FIELD("Leaderboards"), /* array */
-    RC_JSON_NEW_FIELD("Sets") /* array */
   };
 
   memset(response, 0, sizeof(*response));
@@ -438,7 +349,7 @@ int rc_api_process_fetch_game_data_server_response(rc_api_fetch_game_data_respon
     if (!response->achievements)
       return RC_OUT_OF_MEMORY;
 
-    result = rc_api_process_fetch_game_data_achievements(response, response->achievements, &array_field);
+    result = rc_api_process_fetch_game_data_achievements(&response->response, response->achievements, &array_field);
     if (result != RC_OK)
       return result;
   }
@@ -451,18 +362,7 @@ int rc_api_process_fetch_game_data_server_response(rc_api_fetch_game_data_respon
     if (!response->leaderboards)
       return RC_OUT_OF_MEMORY;
 
-    result = rc_api_process_fetch_game_data_leaderboards(response, response->leaderboards, &array_field);
-    if (result != RC_OK)
-      return result;
-  }
-
-  rc_json_get_optional_array(&response->num_subsets, &array_field, &patchdata_fields[8], "Sets");
-  if (response->num_subsets) {
-    response->subsets = (rc_api_subset_definition_t*)rc_buffer_alloc(&response->response.buffer, response->num_subsets * sizeof(rc_api_subset_definition_t));
-    if (!response->subsets)
-      return RC_OUT_OF_MEMORY;
-
-    result = rc_api_process_fetch_game_data_subsets(response, response->subsets, &array_field);
+    result = rc_api_process_fetch_game_data_leaderboards(&response->response, response->leaderboards, &array_field);
     if (result != RC_OK)
       return result;
   }
@@ -471,6 +371,193 @@ int rc_api_process_fetch_game_data_server_response(rc_api_fetch_game_data_respon
 }
 
 void rc_api_destroy_fetch_game_data_response(rc_api_fetch_game_data_response_t* response) {
+  rc_buffer_destroy(&response->response.buffer);
+}
+
+/* --- Fetch Game Sets --- */
+
+int rc_api_init_fetch_game_sets_request(rc_api_request_t* request, const rc_api_fetch_game_sets_request_t* api_params) {
+  return rc_api_init_fetch_game_sets_request_hosted(request, api_params, &g_host);
+}
+
+int rc_api_init_fetch_game_sets_request_hosted(rc_api_request_t* request,
+                                               const rc_api_fetch_game_sets_request_t* api_params,
+                                               const rc_api_host_t* host) {
+  rc_api_url_builder_t builder;
+
+  rc_api_url_build_dorequest_url(request, host);
+
+  if (!api_params->game_id && (!api_params->game_hash || !api_params->game_hash[0]))
+    return RC_INVALID_STATE;
+
+  rc_url_builder_init(&builder, &request->buffer, 48);
+  if (rc_api_url_build_dorequest(&builder, "achievementsets", api_params->username, api_params->api_token)) {
+    if (api_params->game_id)
+      rc_url_builder_append_unum_param(&builder, "g", api_params->game_id);
+    else
+      rc_url_builder_append_str_param(&builder, "m", api_params->game_hash);
+
+    request->post_data = rc_url_builder_finalize(&builder);
+    request->content_type = RC_CONTENT_TYPE_URLENCODED;
+  }
+
+  return builder.result;
+}
+
+static int rc_api_process_fetch_game_sets_achievement_sets(rc_api_fetch_game_sets_response_t* response,
+                                                           rc_api_achievement_set_definition_t* subset,
+                                                           rc_json_field_t* subset_array_field) {
+  rc_json_iterator_t iterator;
+  rc_json_field_t array_field;
+  size_t len;
+  int result;
+
+  rc_json_field_t subset_fields[] = {
+    RC_JSON_NEW_FIELD("AchievementSetId"),
+    RC_JSON_NEW_FIELD("GameId"),
+    RC_JSON_NEW_FIELD("Title"),
+    RC_JSON_NEW_FIELD("Type"),
+    RC_JSON_NEW_FIELD("ImageIconUrl"),
+    RC_JSON_NEW_FIELD("Achievements"), /* array */
+    RC_JSON_NEW_FIELD("Leaderboards") /* array */
+  };
+
+  memset(&iterator, 0, sizeof(iterator));
+  iterator.json = subset_array_field->value_start;
+  iterator.end = subset_array_field->value_end;
+
+  while (rc_json_get_array_entry_object(subset_fields, sizeof(subset_fields) / sizeof(subset_fields[0]), &iterator)) {
+    if (!rc_json_get_required_unum(&subset->id, &response->response, &subset_fields[0], "AchievementSetId"))
+      return RC_MISSING_VALUE;
+    if (!rc_json_get_required_unum(&subset->game_id, &response->response, &subset_fields[1], "GameId"))
+      return RC_MISSING_VALUE;
+
+    if (!rc_json_get_required_string(&subset->title, &response->response, &subset_fields[2], "Title"))
+      return RC_MISSING_VALUE;
+    if (!subset->title || !subset->title[0])
+      subset->title = response->title;
+
+    if (rc_json_field_string_matches(&subset_fields[3], "core"))
+      subset->type = RC_ACHIEVEMENT_SET_TYPE_CORE;
+    else if (rc_json_field_string_matches(&subset_fields[3], "bonus"))
+      subset->type = RC_ACHIEVEMENT_SET_TYPE_BONUS;
+    else if (rc_json_field_string_matches(&subset_fields[3], "specialty"))
+      subset->type = RC_ACHIEVEMENT_SET_TYPE_SPECIALTY;
+    else if (rc_json_field_string_matches(&subset_fields[3], "exclusive"))
+      subset->type = RC_ACHIEVEMENT_SET_TYPE_EXCLUSIVE;
+    else
+      subset->type = RC_ACHIEVEMENT_SET_TYPE_BONUS;
+
+    if (rc_json_field_string_matches(&subset_fields[4], response->image_url)) {
+      subset->image_url = response->image_url;
+      subset->image_name = response->image_name;
+    }
+    else {
+      if (!rc_json_get_required_string(&subset->image_url, &response->response, &subset_fields[4], "ImageIconUrl"))
+        return RC_MISSING_VALUE;
+      rc_json_extract_filename(&subset_fields[4]);
+      rc_json_get_optional_string(&subset->image_name, &response->response, &subset_fields[4], "ImageIconUrl", "");
+    }
+
+    /* estimate the amount of space necessary to store the achievements, and leaderboards.
+       determine how much space each takes as a string in the JSON, then subtract out the non-data (field names, punctuation)
+       and add space for the structures. */
+    len = (subset_fields[5].value_end - subset_fields[5].value_start) - /* achievements */
+      subset_fields[5].array_size * (80 - sizeof(rc_api_achievement_definition_t));
+    len += (subset_fields[6].value_end - subset_fields[6].value_start) - /* leaderboards */
+      subset_fields[6].array_size * (60 - sizeof(rc_api_leaderboard_definition_t));
+
+    rc_buffer_reserve(&response->response.buffer, len);
+    /* end estimation */
+
+    if (!rc_json_get_required_array(&subset->num_achievements, &array_field, &response->response, &subset_fields[5], "Achievements"))
+      return RC_MISSING_VALUE;
+
+    if (subset->num_achievements) {
+      subset->achievements = (rc_api_achievement_definition_t*)rc_buffer_alloc(&response->response.buffer, subset->num_achievements * sizeof(rc_api_achievement_definition_t));
+      if (!subset->achievements)
+        return RC_OUT_OF_MEMORY;
+
+      result = rc_api_process_fetch_game_data_achievements(&response->response, subset->achievements, &array_field);
+      if (result != RC_OK)
+        return result;
+    }
+
+    if (!rc_json_get_required_array(&subset->num_leaderboards, &array_field, &response->response, &subset_fields[6], "Leaderboards"))
+      return RC_MISSING_VALUE;
+
+    if (subset->num_leaderboards) {
+      subset->leaderboards = (rc_api_leaderboard_definition_t*)rc_buffer_alloc(&response->response.buffer, subset->num_leaderboards * sizeof(rc_api_leaderboard_definition_t));
+      if (!subset->leaderboards)
+        return RC_OUT_OF_MEMORY;
+
+      result = rc_api_process_fetch_game_data_leaderboards(&response->response, subset->leaderboards, &array_field);
+      if (result != RC_OK)
+        return result;
+    }
+
+    ++subset;
+  }
+
+  return RC_OK;
+}
+
+int rc_api_process_fetch_game_sets_server_response(rc_api_fetch_game_sets_response_t* response, const rc_api_server_response_t* server_response) {
+  rc_json_field_t array_field;
+  int result;
+
+  rc_json_field_t fields[] = {
+    RC_JSON_NEW_FIELD("Success"),
+    RC_JSON_NEW_FIELD("Error"),
+    RC_JSON_NEW_FIELD("Code"),
+    RC_JSON_NEW_FIELD("GameId"),
+    RC_JSON_NEW_FIELD("Title"),
+    RC_JSON_NEW_FIELD("ConsoleId"),
+    RC_JSON_NEW_FIELD("ImageIconUrl"),
+    RC_JSON_NEW_FIELD("RichPresenceGameId"),
+    RC_JSON_NEW_FIELD("RichPresencePatch"),
+    RC_JSON_NEW_FIELD("Sets") /* array */
+  };
+
+  memset(response, 0, sizeof(*response));
+  rc_buffer_init(&response->response.buffer);
+
+  result = rc_json_parse_server_response(&response->response, server_response, fields, sizeof(fields) / sizeof(fields[0]));
+  if (result != RC_OK || !response->response.succeeded)
+    return result;
+
+  if (!rc_json_get_required_unum(&response->id, &response->response, &fields[3], "GameId"))
+    return RC_MISSING_VALUE;
+  if (!rc_json_get_required_string(&response->title, &response->response, &fields[4], "Title"))
+    return RC_MISSING_VALUE;
+  if (!rc_json_get_required_unum(&response->console_id, &response->response, &fields[5], "ConsoleId"))
+    return RC_MISSING_VALUE;
+
+  rc_json_get_required_string(&response->image_url, &response->response, &fields[6], "ImageIconUrl");
+  rc_json_extract_filename(&fields[6]);
+  rc_json_get_required_string(&response->image_name, &response->response, &fields[6], "ImageIconUrl");
+
+  rc_json_get_optional_unum(&response->session_game_id, &fields[7], "RichPresenceGameId", response->id);
+
+  rc_json_get_optional_string(&response->rich_presence_script, &response->response, &fields[8], "RichPresencePatch", "");
+  if (!response->rich_presence_script)
+    response->rich_presence_script = "";
+
+  rc_json_get_optional_array(&response->num_sets, &array_field, &fields[9], "Sets");
+  if (response->num_sets) {
+    response->sets = (rc_api_achievement_set_definition_t*)rc_buffer_alloc(&response->response.buffer, response->num_sets * sizeof(rc_api_achievement_set_definition_t));
+    if (!response->sets)
+      return RC_OUT_OF_MEMORY;
+
+    result = rc_api_process_fetch_game_sets_achievement_sets(response, response->sets, &array_field);
+    if (result != RC_OK)
+      return result;
+  }
+
+  return RC_OK;
+}
+
+void rc_api_destroy_fetch_game_sets_response(rc_api_fetch_game_sets_response_t* response) {
   rc_buffer_destroy(&response->response.buffer);
 }
 

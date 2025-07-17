@@ -227,6 +227,7 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rhash/cdreader.c"
 #include "../deps/rcheevos/src/rhash/hash.c"
 #include "../deps/rcheevos/src/rhash/hash_rom.c"
+#include "../deps/rcheevos/src/rhash/hash_disc.c"
 #include "../deps/rcheevos/src/rhash/hash_zip.c"
 #include "../deps/rcheevos/src/rhash/hash_encrypted.c"
 

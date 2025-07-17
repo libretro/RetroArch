@@ -131,7 +131,7 @@ int rc_hash_arcade(char hash[33], const rc_hash_iterator_t* iterator)
   return rc_hash_buffer(hash, (uint8_t*)filename, filename_length, iterator);
 }
 
-int rc_hash_text(char hash[33], const rc_hash_iterator_t* iterator)
+static int rc_hash_text(char hash[33], const rc_hash_iterator_t* iterator)
 {
   md5_state_t md5;
   const uint8_t* scan = iterator->buffer;
@@ -161,6 +161,24 @@ int rc_hash_text(char hash[33], const rc_hash_iterator_t* iterator)
   } while (scan < stop);
 
   return rc_hash_finalize(iterator, &md5, hash);
+}
+
+int rc_hash_arduboy(char hash[33], const rc_hash_iterator_t* iterator)
+{
+  if (iterator->path && rc_path_compare_extension(iterator->path, "arduboy")) {
+#ifndef RC_HASH_NO_ZIP
+    return rc_hash_arduboyfx(hash, iterator);
+#else
+    rc_hash_iterator_verbose(iterator, ".arduboy file processing not enabled");
+    return 0;
+#endif
+  }
+
+  if (!iterator->buffer)
+    return rc_hash_buffered_file(hash, RC_CONSOLE_ARDUBOY, iterator);
+
+  /* https://en.wikipedia.org/wiki/Intel_HEX */
+  return rc_hash_text(hash, iterator);
 }
 
 int rc_hash_lynx(char hash[33], const rc_hash_iterator_t* iterator)
@@ -370,9 +388,12 @@ int rc_hash_nintendo_ds(char hash[33], const rc_hash_iterator_t* iterator)
 
 int rc_hash_pce(char hash[33], const rc_hash_iterator_t* iterator)
 {
-  /* if the file contains a header, ignore it (expect ROM data to be multiple of 128KB) */
-  uint32_t calc_size = ((uint32_t)iterator->buffer_size / 0x20000) * 0x20000;
-  if (iterator->buffer_size - calc_size == 512) {
+  /* The PCE header doesn't bear any distinguishable marks, so we have to detect
+   * it by looking at the file size. The core looks for anything that's 512 bytes
+   * more than a multiple of 8KB, so we'll do that too.
+   * https://github.com/libretro/beetle-pce-libretro/blob/af28fb0385d00e0292c4703b3aa7e72762b564d2/mednafen/pce/huc.cpp#L196-L202
+   */
+  if (iterator->buffer_size & 512) {
     rc_hash_iterator_verbose(iterator, "Ignoring PCE header");
     return rc_hash_unheadered_iterator_buffer(hash, iterator, 512);
   }
