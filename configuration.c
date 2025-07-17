@@ -4891,9 +4891,9 @@ bool config_load_remap(const char *directory_input_remapping,
       size_t _len = strlcpy(remap_path, core_name, sizeof(remap_path));
       _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(),
             sizeof(remap_path) - _len);
-      _len += strlcpy(remap_path + _len, inp_dev_dir,
+      strlcpy(remap_path + _len, inp_dev_dir,
             sizeof(remap_path) - _len);
-      /* Deallocate as we no longer this */
+      /* Deallocate as we no longer need this */
       free((char*)inp_dev_dir);
       inp_dev_dir = NULL;
    }

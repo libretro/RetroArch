@@ -476,30 +476,36 @@ close:
 
 int filestream_cmp(const char *src, const char *dst)
 {
-   char buf_src[256] = {0};
-   char buf_dst[256] = {0};
    int ret           = 0;
-
-   RFILE *fp_src = filestream_open(src, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   RFILE *fp_dst = filestream_open(dst, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   RFILE *fp_src     = filestream_open(src, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   RFILE *fp_dst     = filestream_open(dst, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!fp_src || !fp_dst || filestream_get_size(fp_src) != filestream_get_size(fp_dst))
       ret = -1;
 
-   if (ret < 0)
-      goto close;
-
-   while ((filestream_read(fp_src, buf_src, sizeof(buf_src))) > 0 && ret == 0)
+   if (ret >= 0)
    {
-      filestream_read(fp_dst, buf_dst, sizeof(buf_dst));
-      ret = memcmp(buf_src, buf_dst, sizeof(buf_src));
+      char buf_src[256] = {0};
+      char buf_dst[256] = {0};
+      while ((filestream_read(fp_src, buf_src, sizeof(buf_src))) > 0 && ret == 0)
+      {
+         filestream_read(fp_dst, buf_dst, sizeof(buf_dst));
+         ret = memcmp(buf_src, buf_dst, sizeof(buf_src));
+      }
    }
 
-close:
    if (fp_src)
+   {
       filestream_close(fp_src);
+      fp_src = NULL;
+   }
    if (fp_dst)
+   {
       filestream_close(fp_dst);
+      fp_dst = NULL;
+   }
    return ret;
 }
 
