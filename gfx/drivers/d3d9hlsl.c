@@ -41,6 +41,9 @@
 #include <retro_inline.h>
 #include <retro_math.h>
 
+#ifndef _XBOX
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <d3d9.h>
 #include <d3dx9shader.h>
 

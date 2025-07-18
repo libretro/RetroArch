@@ -24,6 +24,7 @@
 #include <utility>
 #include <algorithm>
 #include <string.h>
+#include <math.h>
 
 #include <compat/strl.h>
 #include <formats/image.h>
