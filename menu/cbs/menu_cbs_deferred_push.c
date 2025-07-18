@@ -593,7 +593,7 @@ static int general_push(menu_displaylist_info_t *info,
       CHECK_SIZE(strlen(sysinfo.valid_extensions) + 1);
       if (_len > 0)
          newstr2[_len++] = '|';
-      _len += strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
+      strlcpy(newstr2 + _len, sysinfo.valid_extensions, size - _len);
    }
 #endif
 

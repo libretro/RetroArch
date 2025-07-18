@@ -2997,7 +2997,10 @@ static void ozone_draw_icon(
    draw.pipeline_id     = 0;
 
    if (draw.height > 0 && draw.width > 0)
-      dispctx->draw(&draw, userdata, video_width, video_height);
+   {
+      if (dispctx && dispctx->draw)
+         dispctx->draw(&draw, userdata, video_width, video_height);
+   }
 }
 
 static int ozone_wiggle(ozone_handle_t* ozone, float t)

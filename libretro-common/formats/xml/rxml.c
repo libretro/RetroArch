@@ -142,6 +142,7 @@ rxml_document_t *rxml_load_document_string(const char *str)
    doc                           = (rxml_document_t*)malloc(sizeof(*doc));
    if (!doc)
       goto error;
+   doc->root_node                = NULL;
 
    yxml_init(&x, buf->xml, BUFSIZE);
 

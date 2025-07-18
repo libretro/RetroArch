@@ -2790,14 +2790,14 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
                sizeof(sysname));
          __len   = fill_pathname_join_special(texturepath, iconpath, sysname,
                sizeof(texturepath));
-         __len  += strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
+         strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
 
          /* If the playlist icon doesn't exist return default */
          if (!path_is_valid(texturepath))
          {
             __len  = fill_pathname_join_special(texturepath, iconpath, "default",
                   sizeof(texturepath));
-            __len += strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
+            strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
          }
 
          ti.width         = 0;

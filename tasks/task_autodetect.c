@@ -141,8 +141,8 @@ static unsigned input_autoconfigure_get_config_file_affinity(
       /* Parse config file */
       _len  = strlcpy(config_key, "input_vendor_id",
                sizeof(config_key));
-      _len += strlcpy(config_key  + _len, config_key_postfix,
-               sizeof(config_key) - _len);
+      strlcpy(config_key  + _len, config_key_postfix,
+            sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_vid = (uint16_t)tmp_int;
 
@@ -178,8 +178,8 @@ static unsigned input_autoconfigure_get_config_file_affinity(
       /* Check for matching device name */
       _len  = strlcpy(config_key, "input_device",
                sizeof(config_key));
-      _len += strlcpy(config_key  + _len, config_key_postfix,
-               sizeof(config_key) - _len);
+      strlcpy(config_key  + _len, config_key_postfix,
+            sizeof(config_key) - _len);
       if (     (entry  = config_get_entry(config, config_key))
             && !string_is_empty(entry->value)
             &&  string_is_equal(entry->value,
