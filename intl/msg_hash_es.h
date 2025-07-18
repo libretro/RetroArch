@@ -14046,6 +14046,18 @@ MSG_HASH(
    "No es compatible con las repeticiones"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "No se puede cargar un guardado rápido futuro durante una reproducción"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Error de línea temporal errónea en la reproducción"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Línea temporal errónea, sobrescribiendo reproducción"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Se ha localizado un shader"
    )

@@ -13710,6 +13710,18 @@ MSG_HASH(
    "Nicht kompatibel mit Replay"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "Zukünftiger Status kann während der Wiedergabe nicht geladen werden"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Fehler in der Zeitschiene während der Wiedergabe"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Falsche Zeitschiene; Aufnahme wird überschrieben"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Shader gefunden"
    )
