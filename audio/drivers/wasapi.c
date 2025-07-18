@@ -1052,13 +1052,13 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
       return NULL;
 
    mic->exclusive         = exclusive_mode;
-   mic->device            = wasapi_init_device(device, (unsigned)eCapture);
+   mic->device            = wasapi_init_device(device, 1 /* eCapture */);
 
    /* If we requested a particular capture device, but couldn't open it... */
    if (device && !mic->device)
    {
       RARCH_WARN("[WASAPI] Failed to open requested capture device \"%s\", attempting to open default device.\n", device);
-      mic->device = wasapi_init_device(NULL, (unsigned)eCapture);
+      mic->device = wasapi_init_device(NULL, 1 /* eCapture */);
    }
 
    if (!mic->device)
@@ -1228,7 +1228,7 @@ static bool wasapi_microphone_mic_alive(const void *driver_context, const void *
 
 static struct string_list *wasapi_microphone_device_list_new(const void *driver_context)
 {
-   return mmdevice_list_new(driver_context, eCapture);
+   return mmdevice_list_new(driver_context, 1 /* eCapture */);
 }
 
 static void wasapi_microphone_device_list_free(const void *driver_context, struct string_list *devices)
@@ -1278,9 +1278,9 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (!w)
       return NULL;
 
-   w->device                 = wasapi_init_device(dev_id, eRender);
+   w->device                 = wasapi_init_device(dev_id, 0 /* eRender */);
    if (!w->device && dev_id)
-      w->device = wasapi_init_device(NULL, eRender);
+      w->device = wasapi_init_device(NULL, 0 /* eRender */);
    if (!w->device)
       goto error;
 
@@ -1677,7 +1677,7 @@ static size_t wasapi_buffer_size(void *wh)
 
 static void *wasapi_device_list_new(void *u)
 {
-   return mmdevice_list_new(u, eRender);
+   return mmdevice_list_new(u, 0 /* eRender */);
 }
 
 audio_driver_t audio_wasapi = {
