@@ -40,11 +40,7 @@
 #include "../../ui/drivers/ui_win32_resource.h"
 #include "../../ui/drivers/ui_win32.h"
 
-#if (defined(_MSC_VER) && (_MSC_VER < 1400))
-#ifdef HAVE_CLIP_WINDOW
-#undef HAVE_CLIP_WINDOW
-#endif
-#else
+#if (defined(_MSC_VER) && (_MSC_VER >= 1400)) || defined(__MINGW32__)
 #ifndef HAVE_CLIP_WINDOW
 #define HAVE_CLIP_WINDOW
 #endif

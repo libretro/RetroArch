@@ -21,9 +21,6 @@
 #include <retro_inline.h>
 #include <gfx/math/matrix_4x4.h>
 
-#ifndef _XBOX
-#define WIN32_LEAN_AND_MEAN
-#endif
 #include <d3d9.h>
 
 #include "d3d_common.h"

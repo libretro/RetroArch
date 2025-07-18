@@ -20,6 +20,8 @@
 
 #include <retro_environment.h>
 #include <retro_inline.h>
+#include <gfx/math/matrix_4x4.h>
+#include <lists/string_list.h>
 
 #if defined(__APPLE__)
 #include <OpenGL/gl.h>
@@ -66,5 +68,52 @@ enum gl1_flags
    GL1_FLAG_OVERLAY_FULLSCREEN      = (1 << 11),
    GL1_FLAG_FRAME_DUPE_LOCK         = (1 << 12)
 };
+
+typedef struct gl1
+{
+   struct video_viewport vp;
+   struct video_coords coords;
+   math_matrix_4x4 mvp, mvp_no_rot;
+
+   void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
+   struct string_list *extensions;
+   struct video_tex_info tex_info;
+   void *readback_buffer_screenshot;
+   GLuint *overlay_tex;
+   float *overlay_vertex_coord;
+   float *overlay_tex_coord;
+   float *overlay_color_coord;
+   const float *vertex_ptr;
+   const float *white_color_ptr;
+   unsigned char *menu_frame;
+   unsigned char *video_buf;
+   unsigned char *menu_video_buf;
+
+   int version_major;
+   int version_minor;
+   unsigned video_width;
+   unsigned video_height;
+   unsigned video_pitch;
+   unsigned screen_width;
+   unsigned screen_height;
+   unsigned menu_width;
+   unsigned menu_height;
+   unsigned menu_pitch;
+   unsigned video_bits;
+   unsigned menu_bits;
+   unsigned out_vp_width;
+   unsigned out_vp_height;
+   unsigned tex_index; /* For use with PREV. */
+   unsigned textures;
+   unsigned rotation;
+   unsigned overlays;
+
+   GLuint tex;
+   GLuint menu_tex;
+   GLuint texture[GFX_MAX_TEXTURES];
+
+   uint16_t flags;
+} gl1_t;
 
 #endif

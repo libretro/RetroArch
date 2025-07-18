@@ -19,12 +19,10 @@
 
 #include <boolean.h>
 
-#include <libretro.h>
-#include <libretro_d3d12.h>
-
+#include "d3d_common.h"
 #include "d3d12_defines.h"
-#include "d3dcompiler_common.h"
 #include "dxgi_common.h"
+#include "d3dcompiler_common.h"
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
