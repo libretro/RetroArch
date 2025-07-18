@@ -38,14 +38,15 @@ typedef struct alsa_stream_info
 } alsa_stream_info_t;
 
 int alsa_init_pcm(snd_pcm_t **pcm,
-   const char* device,
-   snd_pcm_stream_t stream,
-   unsigned rate,
-   unsigned latency,
-   unsigned channels,
-   alsa_stream_info_t *stream_info,
-   unsigned *new_rate,
-   int mode);
+      const char* device,
+      snd_pcm_stream_t stream,
+      unsigned rate,
+      unsigned latency,
+      unsigned channels,
+      alsa_stream_info_t *stream_info,
+      unsigned *new_rate,
+      int mode);
+
 void alsa_free_pcm(snd_pcm_t *pcm);
 void *alsa_device_list_new(void *data);
 struct string_list *alsa_device_list_type_new(const char* type);

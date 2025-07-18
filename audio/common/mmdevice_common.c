@@ -21,11 +21,12 @@
 #include "mmdevice_common.h"
 #include "mmdevice_common_inline.h"
 
-char* mmdevice_name(IMMDevice *device)
+char *mmdevice_name(void *data)
 {
    HRESULT hr;
-   IPropertyStore *prop_store = NULL;
    PROPVARIANT prop_var;
+   IMMDevice *device          = (IMMDevice*)data;
+   IPropertyStore *prop_store = NULL;
    bool prop_var_init         = false;
    char* result               = NULL;
 
@@ -54,7 +55,7 @@ done:
    return result;
 }
 
-void *mmdevice_list_new(const void *u, EDataFlow data_flow)
+void *mmdevice_list_new(const void *u, unsigned data_flow)
 {
    HRESULT hr;
    UINT i;
@@ -84,7 +85,7 @@ void *mmdevice_list_new(const void *u, EDataFlow data_flow)
       goto error;
 
    hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-         data_flow, DEVICE_STATE_ACTIVE, &collection);
+         (EDataFlow)data_flow, DEVICE_STATE_ACTIVE, &collection);
    if (FAILED(hr))
       goto error;
 

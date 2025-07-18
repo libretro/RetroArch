@@ -870,8 +870,7 @@ ifeq ($(HAVE_ALSA), 1)
 
    ifneq ($(MIYOO), 1)
       ifeq ($(HAVE_THREADS), 1)
-         OBJ += audio/drivers/alsathread.o \
-                audio/common/alsathread.o
+         OBJ += audio/drivers/alsathread.o
       endif
    endif
 

@@ -35,6 +35,4 @@ typedef struct alsa_thread_info
    volatile bool thread_dead;
 } alsa_thread_info_t;
 
-void alsa_thread_free_info_members(alsa_thread_info_t *info);
-
 #endif

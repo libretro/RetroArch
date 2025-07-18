@@ -32,6 +32,32 @@
 #include "../common/alsathread.h"
 #include "../../verbosity.h"
 
+static void alsa_thread_free_info_members(alsa_thread_info_t *info)
+{
+   if (info)
+   {
+      if (info->worker_thread)
+      {
+         slock_lock(info->cond_lock);
+         info->thread_dead = true;
+         slock_unlock(info->cond_lock);
+         sthread_join(info->worker_thread);
+      }
+      if (info->buffer)
+         fifo_free(info->buffer);
+      if (info->cond)
+         scond_free(info->cond);
+      if (info->fifo_lock)
+         slock_free(info->fifo_lock);
+      if (info->cond_lock)
+         slock_free(info->cond_lock);
+      if (info->pcm)
+         alsa_free_pcm(info->pcm);
+   }
+   /* Do NOT free() info itself; it's embedded within another struct
+    * that will be freed. */
+}
+
 #ifdef HAVE_MICROPHONE
 #include "../microphone_driver.h"
 
