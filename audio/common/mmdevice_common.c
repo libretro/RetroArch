@@ -27,31 +27,25 @@ char *mmdevice_name(void *data)
    PROPVARIANT prop_var;
    IMMDevice *device          = (IMMDevice*)data;
    IPropertyStore *prop_store = NULL;
-   bool prop_var_init         = false;
    char* result               = NULL;
 
    if (!device)
       return NULL;
 
-   hr = _IMMDevice_OpenPropertyStore(device, STGM_READ, &prop_store);
+   hr = _IMMDevice_OpenPropertyStore(device,
+         STGM_READ, &prop_store);
 
    if (FAILED(hr))
       return NULL;
 
    PropVariantInit(&prop_var);
-   prop_var_init = true;
-   hr = _IPropertyStore_GetValue(prop_store, PKEY_Device_FriendlyName, &prop_var);
-   if (FAILED(hr))
-      goto done;
+   hr = _IPropertyStore_GetValue(prop_store,
+         PKEY_Device_FriendlyName, &prop_var);
+   if (SUCCEEDED(hr))
+      result = utf16_to_utf8_string_alloc(prop_var.pwszVal);
 
-   result = utf16_to_utf8_string_alloc(prop_var.pwszVal);
-
-done:
-   if (prop_var_init)
-      PropVariantClear(&prop_var);
-
+   PropVariantClear(&prop_var);
    IFACE_RELEASE(prop_store);
-
    return result;
 }
 
