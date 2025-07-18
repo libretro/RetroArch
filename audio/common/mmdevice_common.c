@@ -79,7 +79,7 @@ void *mmdevice_list_new(const void *u, unsigned data_flow)
       goto error;
 
    hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-         (EDataFlow)data_flow, DEVICE_STATE_ACTIVE, &collection);
+         data_flow, DEVICE_STATE_ACTIVE, &collection);
    if (FAILED(hr))
       goto error;
 

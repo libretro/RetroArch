@@ -765,7 +765,8 @@ bool sthread_tls_delete(sthread_tls_t *tls)
 #ifdef USE_WIN32_THREADS
    return TlsFree(*tls) != 0;
 #else
-   return pthread_key_delete(*tls) == 0;
+   pthread_key_t key = (pthread_key_t)tls;
+   return pthread_key_delete(key) == 0;
 #endif
 }
 
@@ -774,7 +775,8 @@ void *sthread_tls_get(sthread_tls_t *tls)
 #ifdef USE_WIN32_THREADS
    return TlsGetValue(*tls);
 #else
-   return pthread_getspecific(*tls);
+   pthread_key_t key = (pthread_key_t)tls;
+   return pthread_getspecific(key);
 #endif
 }
 
@@ -783,7 +785,8 @@ bool sthread_tls_set(sthread_tls_t *tls, const void *data)
 #ifdef USE_WIN32_THREADS
    return TlsSetValue(*tls, (void*)data) != 0;
 #else
-   return pthread_setspecific(*tls, data) == 0;
+   pthread_key_t key = (pthread_key_t)tls;
+   return pthread_setspecific(key, data) == 0;
 #endif
 }
 #endif
