@@ -62,7 +62,7 @@
 #endif
 
 #if defined(HAVE_COREAUDIO) && defined(HAVE_MICROPHONE)
-#include "../audio/drivers_microphone/coreaudio_mic.m"
+#include "../audio/drivers/coreaudio_mic.m"
 #endif
 
 #ifdef HAVE_CORELOCATION

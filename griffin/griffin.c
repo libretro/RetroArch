@@ -890,9 +890,6 @@ AUDIO
 #include "../input/drivers/sdl_input.c"
 #include "../input/drivers_joypad/sdl_joypad.c"
 #include "../gfx/drivers_context/sdl_gl_ctx.c"
-#ifdef HAVE_MICROPHONE
-#include "../audio/drivers_microphone/sdl_microphone.c"
-#endif
 #endif
 
 #ifdef HAVE_DSOUND
@@ -902,10 +899,6 @@ AUDIO
 #ifdef HAVE_WASAPI
 #include "../audio/drivers/wasapi.c"
 #include "../audio/common/wasapi.c"
-
-#ifdef HAVE_MICROPHONE
-#include "../audio/drivers_microphone/wasapi.c"
-#endif
 #endif
 
 #ifdef HAVE_SL
@@ -915,10 +908,6 @@ AUDIO
 #ifdef HAVE_PIPEWIRE
 #include "../audio/drivers/pipewire.c"
 #include "../audio/common/pipewire.c"
-
-#ifdef HAVE_MICROPHONE
-#include "../audio/drivers_microphone/pipewire.c"
-#endif
 #endif
 
 #ifdef HAVE_ALSA
@@ -930,10 +919,6 @@ AUDIO
 #include "../audio/drivers/alsathread.c"
 #include "../audio/common/alsathread.c"
 
-#ifdef HAVE_MICROPHONE
-#include "../audio/drivers_microphone/alsa.c"
-#include "../audio/drivers_microphone/alsathread.c"
-#endif
 #endif
 #endif
 
