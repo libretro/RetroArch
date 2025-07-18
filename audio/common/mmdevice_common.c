@@ -21,40 +21,35 @@
 #include "mmdevice_common.h"
 #include "mmdevice_common_inline.h"
 
-char* mmdevice_name(IMMDevice *device)
+char *mmdevice_name(void *data)
 {
    HRESULT hr;
-   IPropertyStore *prop_store = NULL;
    PROPVARIANT prop_var;
-   bool prop_var_init         = false;
+   IMMDevice *device          = (IMMDevice*)data;
+   IPropertyStore *prop_store = NULL;
    char* result               = NULL;
 
    if (!device)
       return NULL;
 
-   hr = _IMMDevice_OpenPropertyStore(device, STGM_READ, &prop_store);
+   hr = _IMMDevice_OpenPropertyStore(device,
+         STGM_READ, &prop_store);
 
    if (FAILED(hr))
       return NULL;
 
    PropVariantInit(&prop_var);
-   prop_var_init = true;
-   hr = _IPropertyStore_GetValue(prop_store, PKEY_Device_FriendlyName, &prop_var);
-   if (FAILED(hr))
-      goto done;
+   hr = _IPropertyStore_GetValue(prop_store,
+         PKEY_Device_FriendlyName, &prop_var);
+   if (SUCCEEDED(hr))
+      result = utf16_to_utf8_string_alloc(prop_var.pwszVal);
 
-   result = utf16_to_utf8_string_alloc(prop_var.pwszVal);
-
-done:
-   if (prop_var_init)
-      PropVariantClear(&prop_var);
-
+   PropVariantClear(&prop_var);
    IFACE_RELEASE(prop_store);
-
    return result;
 }
 
-void *mmdevice_list_new(const void *u, EDataFlow data_flow)
+void *mmdevice_list_new(const void *u, unsigned data_flow)
 {
    HRESULT hr;
    UINT i;
@@ -84,7 +79,7 @@ void *mmdevice_list_new(const void *u, EDataFlow data_flow)
       goto error;
 
    hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-         data_flow, DEVICE_STATE_ACTIVE, &collection);
+         (EDataFlow)data_flow, DEVICE_STATE_ACTIVE, &collection);
    if (FAILED(hr))
       goto error;
 

@@ -517,7 +517,7 @@ static void *xa_list_new(void *u)
 #elif defined(__WINRT__)
    return NULL;
 #else
-   return mmdevice_list_new(u, eRender);
+   return mmdevice_list_new(u, 0 /* eRender */);
 #endif
 }
 
