@@ -25,6 +25,8 @@
 #include <string/stdstring.h>
 #include <asm-generic/errno.h>
 
+#include <retro_assert.h>
+
 #include "../audio_driver.h"
 #include "../common/alsa.h" /* For some common functions/types */
 #include "../common/alsathread.h"

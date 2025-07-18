@@ -898,7 +898,6 @@ AUDIO
 
 #ifdef HAVE_WASAPI
 #include "../audio/drivers/wasapi.c"
-#include "../audio/common/wasapi.c"
 #endif
 
 #ifdef HAVE_SL
