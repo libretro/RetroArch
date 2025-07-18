@@ -19,8 +19,8 @@
  **/
 
 #include "libretro.h"
-#include "queues/message_queue.h"
-#include "streams/interface_stream.h"
+#include <queues/message_queue.h>
+#include <streams/interface_stream.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <string/stdstring.h>
