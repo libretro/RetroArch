@@ -2518,8 +2518,8 @@ static bool video_shader_dir_init_shader_internal(
           * index if found */
          file_name = path_basename(file_path);
 
-         if ( !string_is_empty(file_name) &&
-               string_is_equal(file_name, shader_file_name))
+         if (    !string_is_empty(file_name)
+               && string_is_equal(file_name, shader_file_name))
          {
             RARCH_LOG("[Shaders] %s \"%s\".\n",
                   msg_hash_to_str(MSG_FOUND_SHADER),

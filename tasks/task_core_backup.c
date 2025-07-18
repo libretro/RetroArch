@@ -158,8 +158,8 @@ static bool task_core_backup_finder(retro_task_t *task, void *user_data)
    if (!task || !user_data)
       return false;
 
-   if ((task->handler != task_core_backup_handler) &&
-       (task->handler != task_core_restore_handler))
+   if (   (task->handler != task_core_backup_handler)
+       && (task->handler != task_core_restore_handler))
       return false;
 
    backup_handle = (core_backup_handle_t*)task->state;
@@ -447,17 +447,17 @@ static void task_core_backup_handler(retro_task_t *task)
              * by timestamp - simply loop from start to end
              * and delete automatic backups until the required
              * number have been removed */
-            while ((backup_handle->backup_index < list_size) &&
-                   (backup_handle->num_auto_backups_to_remove > 0))
+            while (   (backup_handle->backup_index < list_size)
+                   && (backup_handle->num_auto_backups_to_remove > 0))
             {
                const core_backup_list_entry_t *entry = NULL;
 
                if (core_backup_list_get_index(
                      backup_handle->backup_list,
                      backup_handle->backup_index,
-                     &entry) &&
-                     entry &&
-                     (entry->backup_mode == CORE_BACKUP_MODE_AUTO))
+                     &entry)
+                     && entry
+                     && (entry->backup_mode == CORE_BACKUP_MODE_AUTO))
                {
                   /* Delete backup file (if it exists) */
                   if (path_is_valid(entry->backup_path))
@@ -794,8 +794,8 @@ static void task_core_restore_handler(retro_task_t *task)
                const char *core_filename = path_basename(
                      backup_handle->core_path);
 
-               if (play_feature_delivery_core_installed(core_filename) &&
-                   !play_feature_delivery_delete(core_filename))
+               if (    play_feature_delivery_core_installed(core_filename)
+                   && !play_feature_delivery_delete(core_filename))
                {
                   RARCH_ERR("[Core Restore] Failed to delete existing play feature delivery core: \"%s\".\n",
                         backup_handle->core_path);

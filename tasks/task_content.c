@@ -1006,9 +1006,9 @@ static bool content_file_load(
 #ifdef HAVE_COMPRESSION
             /* If this is compressed content and need_fullpath
              * is true, extract it to a temporary file */
-            if (content_compressed &&
-                !CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(content->elems[i].attr) &&
-                !content_file_extract_from_archive(content_ctx, p_content,
+            if (    content_compressed
+                && !CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(content->elems[i].attr)
+                && !content_file_extract_from_archive(content_ctx, p_content,
                      valid_exts, &content_path, error_string))
                return false;
 #endif
@@ -1797,8 +1797,8 @@ static bool task_push_to_history_list_from_playlist_pre_load_static(
       }
    }
 
-   if (!string_is_empty(core_path) &&
-       playlist_hist)
+   if (  !string_is_empty(core_path)
+       && playlist_hist)
    {
       struct playlist_entry new_entry = {0};
 

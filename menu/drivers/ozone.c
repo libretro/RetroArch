@@ -5033,7 +5033,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          __len    = fill_pathname_join_special(texturepath,
                ozone->icons_path, sysname,
                sizeof(texturepath));
-         __len   += strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
+         strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
 
          /* If the playlist icon doesn't exist, return default */
          if (!path_is_valid(texturepath))
@@ -5088,6 +5088,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
          if (node->console_name)
             free(node->console_name);
+         node->console_name = NULL;
 
          /* Note: console_name will *always* be valid here,
           * but provide a fallback to prevent NULL pointer

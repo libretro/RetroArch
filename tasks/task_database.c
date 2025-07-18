@@ -843,8 +843,8 @@ static int database_info_list_iterate_found_match(
             entry_path_str, archive_name, '#', str_len);
 
    if (core_info_database_match_archive_member(
-         db_state->list->elems[db_state->list_index].data) &&
-       (hash = strchr(entry_path_str, '#')))
+         db_state->list->elems[db_state->list_index].data)
+       && (hash = strchr(entry_path_str, '#')))
        *hash = '\0';
 
 #if !defined(RARCH_INTERNAL)

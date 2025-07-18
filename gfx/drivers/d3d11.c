@@ -1961,8 +1961,8 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
       BOOL allow_tearing_supported = FALSE;
       if (SUCCEEDED(dxgiFactory5->lpVtbl->CheckFeatureSupport(
          dxgiFactory5, DXGI_FEATURE_PRESENT_ALLOW_TEARING,
-         &allow_tearing_supported, sizeof(allow_tearing_supported))) &&
-         allow_tearing_supported)
+         &allow_tearing_supported, sizeof(allow_tearing_supported)))
+         && allow_tearing_supported)
       {
          desc.SwapEffect            = DXGI_SWAP_EFFECT_FLIP_DISCARD;
          desc.Flags                |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;

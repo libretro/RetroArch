@@ -701,8 +701,8 @@ static void task_core_updater_download_handler(retro_task_t *task)
 
             /* Check whether existing core and remote core
              * have the same CRC */
-            download_handle->crc_match = (download_handle->local_crc != 0) &&
-                  (download_handle->local_crc == download_handle->remote_crc);
+            download_handle->crc_match = (download_handle->local_crc != 0)
+                  && (download_handle->local_crc == download_handle->remote_crc);
 
             /* If CRC matches, end task immediately */
             if (download_handle->crc_match)
@@ -1751,8 +1751,8 @@ static void task_play_feature_delivery_core_install_handler(
             task_set_title(task, strdup(task_title));
 
             /* Check whether a core backup file was created */
-            if (!string_is_empty(pfd_install_handle->backup_core_path) &&
-                path_is_valid(pfd_install_handle->backup_core_path))
+            if (  !string_is_empty(pfd_install_handle->backup_core_path)
+                && path_is_valid(pfd_install_handle->backup_core_path))
             {
                /* If install was successful, delete backup */
                if (pfd_install_handle->success)
@@ -2001,8 +2001,8 @@ static void task_play_feature_delivery_switch_cores_handler(
             if (core_updater_list_get_index(
                   pfd_switch_cores_handle->core_list,
                   pfd_switch_cores_handle->list_index,
-                  &list_entry) &&
-                path_is_valid(list_entry->local_core_path))
+                  &list_entry)
+                && path_is_valid(list_entry->local_core_path))
             {
                core_installed                           = true;
                pfd_switch_cores_handle->installed_index =

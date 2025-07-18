@@ -225,7 +225,7 @@ static void input_autoconfigure_set_config_file(
             sizeof(config_key));
    /* Read device display name */
    if (alternative > 0)
-      _len += snprintf(config_key + _len, sizeof(config_key) - _len,
+      snprintf(config_key + _len, sizeof(config_key) - _len,
                "_alt%d",alternative);
 
    if (  (entry = config_get_entry(config, config_key))
@@ -255,8 +255,8 @@ static bool input_autoconfigure_scan_config_files_external(
 
    /* Attempt to fetch file listing from driver-specific
     * autoconfig directory */
-   if (!string_is_empty(dir_driver_autoconfig) &&
-       path_is_directory(dir_driver_autoconfig))
+   if (  !string_is_empty(dir_driver_autoconfig)
+       && path_is_directory(dir_driver_autoconfig))
       config_file_list = dir_list_new_special(
             dir_driver_autoconfig, DIR_LIST_AUTOCONFIG,
             "cfg", false);
@@ -271,8 +271,8 @@ static bool input_autoconfigure_scan_config_files_external(
          config_file_list = NULL;
       }
 
-      if (!string_is_empty(dir_autoconfig) &&
-          path_is_directory(dir_autoconfig))
+      if (  !string_is_empty(dir_autoconfig)
+          && path_is_directory(dir_autoconfig))
          config_file_list = dir_list_new_special(
                dir_autoconfig, DIR_LIST_AUTOCONFIG,
                "cfg", false);
@@ -491,11 +491,11 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
          if (device_has_reserved_slot)
          {
             unsigned prev_assigned_port = settings->uints.input_joypad_index[player];
-            if ( detected_port != prev_assigned_port &&
-                 !string_is_empty(input_config_get_device_name(prev_assigned_port)) &&
-                 (( settings_value_vendor_id  == input_config_get_device_vid(prev_assigned_port) &&
-                    settings_value_product_id == input_config_get_device_pid(prev_assigned_port)) ||
-                  strcmp(input_config_get_device_name(prev_assigned_port), settings_value_device_name) == 0))
+            if (     detected_port != prev_assigned_port
+                 && !string_is_empty(input_config_get_device_name(prev_assigned_port))
+                 && (( settings_value_vendor_id  == input_config_get_device_vid(prev_assigned_port)
+                 && settings_value_product_id == input_config_get_device_pid(prev_assigned_port))
+                 || strcmp(input_config_get_device_name(prev_assigned_port), settings_value_device_name) == 0))
             {
                RARCH_DBG("[Autoconf] Same type of device already took this slot, continuing search...\n");
                device_has_reserved_slot = false;
@@ -706,8 +706,8 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
             "test"))
          fallback_device_name = "Test Gamepad";
 #endif
-      if (!string_is_empty(fallback_device_name) &&
-          !string_is_equal(autoconfig_handle->device_info.name,
+      if (   !string_is_empty(fallback_device_name)
+          && !string_is_equal(autoconfig_handle->device_info.name,
                fallback_device_name))
       {
          char *name_backup = strdup(autoconfig_handle->device_info.name);
@@ -926,12 +926,12 @@ bool input_autoconfigure_connect(
       uint16_t last_pid            = input_config_get_device_pid(port);
       bool last_autoconfigured     = input_config_get_device_autoconfigured(port);
 
-      if (!string_is_empty(last_device_name) &&
-          string_is_equal(autoconfig_handle->device_info.name,
-               last_device_name) &&
-          (autoconfig_handle->device_info.vid == last_vid) &&
-          (autoconfig_handle->device_info.pid == last_pid) &&
-          last_autoconfigured)
+      if (  !string_is_empty(last_device_name)
+          && string_is_equal(autoconfig_handle->device_info.name,
+               last_device_name)
+          && (autoconfig_handle->device_info.vid == last_vid)
+          && (autoconfig_handle->device_info.pid == last_pid)
+          && last_autoconfigured)
          autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS;
    }
 
