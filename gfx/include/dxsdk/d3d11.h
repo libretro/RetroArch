@@ -10351,7 +10351,7 @@ EXTERN_C const IID IID_ID3D11VideoContext;
             /* [annotation] */
             _In_  UINT IVSize,
             /* [annotation] */
-            void *pIV) = 0;
+            _Inout_opt_bytecount_(IVSize)  void *pIV) = 0;
 
         virtual void STDMETHODCALLTYPE DecryptionBlt(
             /* [annotation] */
@@ -10369,7 +10369,7 @@ EXTERN_C const IID IID_ID3D11VideoContext;
             /* [annotation] */
             _In_  UINT IVSize,
             /* [annotation] */
-            void *pIV) = 0;
+            _Inout_opt_bytecount_(IVSize)  void *pIV) = 0;
 
         virtual void STDMETHODCALLTYPE StartSessionKeyRefresh(
             /* [annotation] */
@@ -11004,7 +11004,7 @@ EXTERN_C const IID IID_ID3D11VideoContext;
             /* [annotation] */
             _In_  UINT IVSize,
             /* [annotation] */
-            void *pIV);
+            _Inout_opt_bytecount_(IVSize)  void *pIV);
 
         void ( STDMETHODCALLTYPE *DecryptionBlt )(
             ID3D11VideoContext * This,
@@ -11023,7 +11023,7 @@ EXTERN_C const IID IID_ID3D11VideoContext;
             /* [annotation] */
             _In_  UINT IVSize,
             /* [annotation] */
-            void *pIV);
+            _Inout_opt_bytecount_(IVSize)  void *pIV);
 
         void ( STDMETHODCALLTYPE *StartSessionKeyRefresh )(
             ID3D11VideoContext * This,
