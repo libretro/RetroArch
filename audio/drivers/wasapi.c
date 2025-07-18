@@ -154,15 +154,15 @@ static const char* wasapi_error(DWORD error)
    return s;
 }
 
-static const char* wasapi_data_flow_name(EDataFlow data_flow)
+static const char* wasapi_data_flow_name(unsigned data_flow)
 {
    switch (data_flow)
    {
-      case eCapture:
-         return "eCapture";
-      case eRender:
+      case 0:
          return "eRender";
-      case eAll:
+      case 1:
+         return "eCapture";
+      case 2:
          return "eAll";
       default:
          break;
@@ -530,7 +530,7 @@ error:
    return NULL;
 }
 
-static IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow)
+static IMMDevice *wasapi_init_device(const char *id, unsigned data_flow)
 {
    HRESULT hr;
    UINT32 dev_count, i;
@@ -1052,13 +1052,13 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
       return NULL;
 
    mic->exclusive         = exclusive_mode;
-   mic->device            = wasapi_init_device(device, eCapture);
+   mic->device            = wasapi_init_device(device, (unsigned)eCapture);
 
    /* If we requested a particular capture device, but couldn't open it... */
    if (device && !mic->device)
    {
       RARCH_WARN("[WASAPI] Failed to open requested capture device \"%s\", attempting to open default device.\n", device);
-      mic->device = wasapi_init_device(NULL, eCapture);
+      mic->device = wasapi_init_device(NULL, (unsigned)eCapture);
    }
 
    if (!mic->device)

@@ -17,9 +17,8 @@
 #ifndef _RETROARCH_ALSA
 #define _RETROARCH_ALSA
 
+#include <stdint.h>
 #include <boolean.h>
-#include <queues/fifo_queue.h>
-#include <rthreads/rthreads.h>
 
 /* Header file for common functions that are used by alsa and alsathread. */
 
