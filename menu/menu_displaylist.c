@@ -1741,7 +1741,7 @@ static unsigned menu_displaylist_parse_supported_cores(
          _len       += strlcpy(entry_alt_text + _len,
                pending_core_name,
                sizeof(entry_alt_text)         - _len);
-         _len       += strlcpy(entry_alt_text + _len, ")", sizeof(entry_alt_text) - _len);
+         strlcpy(entry_alt_text + _len, ")", sizeof(entry_alt_text) - _len);
 
          menu_entries_prepend(info->list, pending_core_path,
                msg_hash_to_str(current_core_enum_label),
@@ -6854,7 +6854,7 @@ static unsigned menu_displaylist_populate_subsystem(
                   _len       += strlcpy(s + _len,
                         subsystem->roms[content_get_subsystem_rom_id()].desc,
                         sizeof(s)         - _len);
-                  _len       += strlcpy(s + _len, "]", sizeof(s) - _len);
+                  strlcpy(s + _len, "]", sizeof(s) - _len);
                }
 #endif
 
@@ -15441,7 +15441,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         {
                            if (_len > 0)
                               _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                           _len    += strlcpy(new_exts + _len, "slang", sizeof(new_exts) - _len);
+                           strlcpy(new_exts + _len, "slang", sizeof(new_exts) - _len);
                         }
                      }
                      break;
@@ -15485,7 +15485,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {
                   if (_len > 0)
                      _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                  _len    += strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
+                  strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
                }
                if (!string_is_empty(info->exts))
                   free(info->exts);
@@ -15523,7 +15523,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_RTGA
                if (_len > 0)
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               _len    += strlcpy(new_exts + _len, "tga", sizeof(new_exts) - _len);
+               strlcpy(new_exts + _len, "tga", sizeof(new_exts) - _len);
 #endif
                if (!string_is_empty(info->exts))
                   free(info->exts);
@@ -15679,7 +15679,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      if (_len > 0)
                      {
                         _len += strlcpy(ext_names + _len, "|", sizeof(ext_names) - _len);
-                        _len += strlcpy(ext_names + _len, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names) - _len);
+                        strlcpy(ext_names + _len, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names) - _len);
                      }
                      else
                         strlcpy(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names));

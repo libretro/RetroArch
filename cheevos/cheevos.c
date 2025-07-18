@@ -946,8 +946,9 @@ void rcheevos_validate_config_settings(void)
          const char* val = core_option_manager_get_val(coreopts, i);
          if (!rc_libretro_is_setting_allowed(disallowed_settings, key, val))
          {
+            size_t _len;
             char buffer[128];
-            size_t _len = snprintf(buffer, sizeof(buffer),
+            snprintf(buffer, sizeof(buffer),
                      msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED), key, val);
             CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
             _len = snprintf(buffer, sizeof(buffer),
@@ -1270,7 +1271,7 @@ static void rcheevos_show_game_placard(void)
       {
          char badge_name[32];
          size_t __len = strlcpy(badge_name, "i", sizeof(badge_name));
-         __len       += strlcpy(badge_name + __len, game->badge_name,
+         strlcpy(badge_name + __len, game->badge_name,
                sizeof(badge_name) - __len);
          gfx_widgets_push_achievement(game->title, msg, badge_name);
       }
