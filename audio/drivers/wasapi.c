@@ -114,12 +114,9 @@ static void wasapi_microphone_close_mic(void *driver_context, void *mic_context)
    }
 
    /* If event isn't signaled log and leak */
-   if (ir != WAIT_OBJECT_0)
-      return;
-
-   CloseHandle(write_event);
+   if (ir == WAIT_OBJECT_0)
+      CloseHandle(write_event);
 }
-
 
 static void *wasapi_microphone_init(void)
 {
@@ -176,12 +173,10 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
       }
       bytes_read = frames_read * mic->frame_size;
 
-      /* If the queue has room for the packets we just got... */
+      /* If the queue has room for the packets we just got,
+       * then enqueue the bytes directly from the mic's buffer */
       if (FIFO_WRITE_AVAIL(mic->buffer) >= bytes_read && bytes_read > 0)
-      {
          fifo_write(mic->buffer, mic_input, bytes_read);
-         /* ...then enqueue the bytes directly from the mic's buffer */
-      }
       else /* Not enough space for new frames, so we can't consume this packet right now */
          frames_read = 0;
       /* If there's insufficient room in the queue, then we can't read the packet.
@@ -195,7 +190,8 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
          return -1;
       }
 
-      /* If this is a shared-mode stream and we didn't run out of room in the sample queue... */
+      /* If this is a shared-mode stream and
+       * we didn't run out of room in the sample queue... */
       if (!mic->exclusive && frames_read > 0)
       {
          hr = _IAudioCaptureClient_GetNextPacketSize(mic->capture, &next_packet_size);

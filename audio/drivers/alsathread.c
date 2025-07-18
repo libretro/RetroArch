@@ -38,7 +38,7 @@ typedef struct alsa_thread_microphone_handle
    alsa_thread_info_t info;
 } alsa_thread_microphone_handle_t;
 
-typedef struct alsa_thread
+typedef struct alsa_thread_microphone
 {
    bool nonblock;
 } alsa_thread_microphone_t;

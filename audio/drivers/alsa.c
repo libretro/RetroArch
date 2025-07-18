@@ -40,7 +40,7 @@ typedef struct alsa_microphone_handle
    alsa_stream_info_t stream_info;
 } alsa_microphone_handle_t;
 
-typedef struct alsa
+typedef struct alsa_microphone
 {
    bool nonblock;
 } alsa_microphone_t;
