@@ -279,13 +279,11 @@ void *d3d9_texture_new(void *_dev,
    if (want_mipmap)
       usage |= D3DUSAGE_AUTOGENMIPMAP;
 #endif
-   if (FAILED(IDirect3DDevice9_CreateTexture(dev,
+   return (SUCCEEDED(IDirect3DDevice9_CreateTexture(dev,
                width, height, miplevels, usage,
                (D3DFORMAT)format,
                (D3DPOOL)pool,
-               (struct IDirect3DTexture9**)&buf, NULL)))
-      return NULL;
-   return buf;
+               (struct IDirect3DTexture9**)&buf, NULL))) ? buf : NULL;
 }
 
 void *d3d9_vertex_buffer_new(void *_dev,
@@ -294,12 +292,10 @@ void *d3d9_vertex_buffer_new(void *_dev,
 {
    void              *buf = NULL;
    LPDIRECT3DDEVICE9 dev  = (LPDIRECT3DDEVICE9)_dev;
-   if (SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
+   return (SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
                dev, length, usage, fvf,
                (D3DPOOL)pool,
-               (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL)))
-      return buf;
-   return NULL;
+               (LPDIRECT3DVERTEXBUFFER9*)&buf, NULL))) ? buf : NULL;
 }
 
 void d3d9_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
@@ -331,17 +327,14 @@ static bool d3d9_create_device_internal(
 {
    LPDIRECT3D9       d3d = (LPDIRECT3D9)_d3d;
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
-   if (dev &&
+   return (dev &&
          SUCCEEDED(IDirect3D9_CreateDevice(d3d,
                cur_mon_id,
                D3DDEVTYPE_HAL,
                focus_window,
                behavior_flags,
                d3dpp,
-               (IDirect3DDevice9**)dev)))
-      return true;
-
-   return false;
+               (IDirect3DDevice9**)dev)));
 }
 
 bool d3d9_create_device(void *dev,
@@ -401,13 +394,12 @@ bool d3d9x_create_font_indirect(void *_dev,
 {
 #ifdef HAVE_D3DX
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)_dev;
-   if (SUCCEEDED(D3D9CreateFontIndirect(
+   return (SUCCEEDED(D3D9CreateFontIndirect(
                dev, (D3DXFONT_DESC*)desc,
-               (struct ID3DXFont**)font_data)))
-      return true;
-#endif
-
+               (struct ID3DXFont**)font_data)));
+#else
    return false;
+#endif
 }
 
 bool d3d9x_compile_shader(
@@ -423,8 +415,7 @@ bool d3d9x_compile_shader(
       void *ppconstanttable)
 {
 #if defined(HAVE_D3DX)
-   if (D3D9CompileShader)
-      if (D3D9CompileShader(
+   return (D3D9CompileShader && D3D9CompileShader(
                (LPCTSTR)src,
                (UINT)src_data_len,
                (const D3DXMACRO*)pdefines,
@@ -434,10 +425,10 @@ bool d3d9x_compile_shader(
                (DWORD)flags,
                (LPD3DXBUFFER*)ppshader,
                (LPD3DXBUFFER*)pperrormsgs,
-               (LPD3DXCONSTANTTABLE*)ppconstanttable) >= 0)
-         return true;
-#endif
+               (LPD3DXCONSTANTTABLE*)ppconstanttable) >= 0);
+#else
    return false;
+#endif
 }
 
 bool d3d9x_compile_shader_from_file(
@@ -500,11 +491,8 @@ void d3d9x_constant_table_set_defaults(LPDIRECT3DDEVICE9 dev,
 {
 #if defined(HAVE_D3DX)
    LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
-   if (consttbl && dev)
-   {
-      if (consttbl->lpVtbl->SetDefaults)
-         consttbl->lpVtbl->SetDefaults(consttbl, dev);
-   }
+   if (consttbl && dev && consttbl->lpVtbl->SetDefaults)
+      consttbl->lpVtbl->SetDefaults(consttbl, dev);
 #endif
 }
 
@@ -528,12 +516,12 @@ const bool d3d9x_constant_table_set_float(void *p,
    LPDIRECT3DDEVICE9    dev     = (LPDIRECT3DDEVICE9)a;
    D3DXHANDLE        handle     = (D3DXHANDLE)b;
    LPD3DXCONSTANTTABLE consttbl = (LPD3DXCONSTANTTABLE)p;
-   if (consttbl && dev && handle &&
-         consttbl->lpVtbl->SetFloat(
-            consttbl, dev, handle, val) == D3D_OK)
-      return true;
-#endif
+   return (   consttbl && dev && handle
+           && consttbl->lpVtbl->SetFloat(
+            consttbl, dev, handle, val) == D3D_OK);
+#else
    return false;
+#endif
 }
 
 #ifdef _XBOX
@@ -737,19 +725,18 @@ void d3d9_log_info(const struct LinkInfo *info)
 
 static void d3d9_init_singlepass(d3d9_video_t *d3d)
 {
-   struct video_shader_pass *pass        = NULL;
+   struct video_shader_pass *pass   = NULL;
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
-   d3d->shader.passes                    = 1;
+   d3d->shader.passes               = 1;
 
-   pass                                  = (struct video_shader_pass*)
-      &d3d->shader.pass[0];
+   pass = (struct video_shader_pass*)&d3d->shader.pass[0];
 
-   pass->fbo.flags                      |= FBO_SCALE_FLAG_VALID;
-   pass->fbo.scale_y                     = 1.0;
-   pass->fbo.type_y                      = RARCH_SCALE_VIEWPORT;
-   pass->fbo.scale_x                     = pass->fbo.scale_y;
-   pass->fbo.type_x                      = pass->fbo.type_y;
+   pass->fbo.flags                 |= FBO_SCALE_FLAG_VALID;
+   pass->fbo.scale_y                = 1.0;
+   pass->fbo.type_y                 = RARCH_SCALE_VIEWPORT;
+   pass->fbo.scale_x                = pass->fbo.scale_y;
+   pass->fbo.type_x                 = pass->fbo.type_y;
 
    if (!string_is_empty(d3d->shader_path))
       strlcpy(pass->source.path, d3d->shader_path,
@@ -759,7 +746,6 @@ static void d3d9_init_singlepass(d3d9_video_t *d3d)
 static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
 {
    unsigned i;
-   bool            use_extra_pass = false;
    struct video_shader_pass *pass = NULL;
 
    memset(&d3d->shader, 0, sizeof(d3d->shader));
@@ -780,10 +766,8 @@ static bool d3d9_init_multipass(d3d9_video_t *d3d, const char *shader_path)
       d3d->shader.pass[i].fbo.type_y  = RARCH_SCALE_INPUT;
    }
 
-   use_extra_pass       = d3d->shader.passes < GFX_MAX_SHADERS &&
-      (d3d->shader.pass[d3d->shader.passes - 1].fbo.flags & FBO_SCALE_FLAG_VALID);
-
-   if (use_extra_pass)
+   if (d3d->shader.passes < GFX_MAX_SHADERS &&
+      (d3d->shader.pass[d3d->shader.passes - 1].fbo.flags & FBO_SCALE_FLAG_VALID))
    {
       d3d->shader.passes++;
       pass              = (struct video_shader_pass*)
@@ -1268,12 +1252,12 @@ static INLINE bool d3d9_device_get_render_target_data(
       LPDIRECT3DSURFACE9 src, LPDIRECT3DSURFACE9 dst)
 {
 #ifndef _XBOX
-   if (dev &&
-         SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
-               dev, src, dst)))
-      return true;
-#endif
+   return (   dev
+           && SUCCEEDED(IDirect3DDevice9_GetRenderTargetData(
+               dev, src, dst)));
+#else
    return false;
+#endif
 }
 
 bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
@@ -1340,32 +1324,28 @@ void d3d9_calculate_rect(d3d9_video_t *d3d,
       bool force_full,
       bool allow_rotate)
 {
-   settings_t *settings  = config_get_ptr();
-   bool video_scale_integer    = settings->bools.video_scale_integer;
    struct video_viewport vp;
+   settings_t *settings     = config_get_ptr();
+   bool video_scale_integer = settings->bools.video_scale_integer;
 
    video_driver_get_size(width, height);
 
-   vp.x = 0;
-   vp.y = 0;
-   vp.width = *width;
-   vp.height = *height;
-   vp.full_width = *width;
+   vp.x           = 0;
+   vp.y           = 0;
+   vp.width       = *width;
+   vp.height      = *height;
+   vp.full_width  = *width;
    vp.full_height = *height;
 
    if (video_scale_integer && !force_full)
-   {
       video_viewport_get_scaled_integer(&vp,
             *width,
             *height,
             video_driver_get_aspect_ratio(),
             d3d->keep_aspect,
             true);
-   }
    else if (d3d->keep_aspect && !force_full)
-   {
       video_viewport_get_scaled_aspect(&vp, *width, *height, true);
-   }
    *x                          = vp.x;
    *y                          = vp.y;
    *width                      = vp.width;
@@ -1375,16 +1355,12 @@ void d3d9_calculate_rect(d3d9_video_t *d3d,
 void d3d9_set_rotation(void *data, unsigned rot)
 {
    d3d9_video_t        *d3d = (d3d9_video_t*)data;
-
-   if (!d3d)
-      return;
-
-   d3d->dev_rotation = rot;
+   if (d3d)
+      d3d->dev_rotation = rot;
 }
 
 void d3d9_blit_to_texture(
-      LPDIRECT3DTEXTURE9 tex,
-      const void *frame,
+      LPDIRECT3DTEXTURE9 tex, const void *frame,
       unsigned tex_width,  unsigned tex_height,
       unsigned width,      unsigned height,
       unsigned last_width, unsigned last_height,
