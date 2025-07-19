@@ -53,6 +53,26 @@ typedef struct
    uint8_t flags;
 } wasapi_t;
 
+#ifdef __cplusplus
+#ifndef IFACE_RELEASE
+#define IFACE_RELEASE(iface) \
+   if (iface) \
+   { \
+      iface->Release(); \
+      iface = NULL; \
+   }
+#endif
+#else
+#ifndef IFACE_RELEASE
+#define IFACE_RELEASE(iface) \
+   if (iface) \
+   { \
+      iface->lpVtbl->Release(iface);\
+      iface = NULL; \
+   }
+#endif
+#endif
+
 static const char *hresult_name(HRESULT hr)
 {
    switch (hr)

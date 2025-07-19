@@ -45,7 +45,15 @@ char *mmdevice_name(void *data)
       result = utf16_to_utf8_string_alloc(prop_var.pwszVal);
 
    PropVariantClear(&prop_var);
-   IFACE_RELEASE(prop_store);
+   if (prop_store)
+   {
+#ifdef __cplusplus
+      prop_store->Release();
+#else
+      prop_store->lpVtbl->Release(prop_store);
+#endif
+      prop_store = NULL;
+   }
    return result;
 }
 
@@ -115,11 +123,35 @@ void *mmdevice_list_new(const void *u, unsigned data_flow)
          free(dev_name_str);
       dev_name_str = NULL;
       dev_id_wstr  = NULL;
-      IFACE_RELEASE(device);
+      if (device)
+      {
+#ifdef __cplusplus
+         device->Release();
+#else
+         device->lpVtbl->Release(device);
+#endif
+         device = NULL;
+      }
    }
 
-   IFACE_RELEASE(collection);
-   IFACE_RELEASE(enumerator);
+   if (collection)
+   {
+#ifdef __cplusplus
+      collection->Release();
+#else
+      collection->lpVtbl->Release(collection);
+#endif
+      collection = NULL;
+   }
+   if (enumerator)
+   {
+#ifdef __cplusplus
+      enumerator->Release();
+#else
+      enumerator->lpVtbl->Release(enumerator);
+#endif
+      enumerator = NULL;
+   }
 
    return sl;
 
@@ -133,9 +165,33 @@ error:
    if (dev_id_wstr)
       CoTaskMemFree(dev_id_wstr);
    dev_id_wstr = NULL;
-   IFACE_RELEASE(device);
-   IFACE_RELEASE(collection);
-   IFACE_RELEASE(enumerator);
+   if (device)
+   {
+#ifdef __cplusplus
+      device->Release();
+#else
+      device->lpVtbl->Release(device);
+#endif
+      device = NULL;
+   }
+   if (collection)
+   {
+#ifdef __cplusplus
+      collection->Release();
+#else
+      collection->lpVtbl->Release(collection);
+#endif
+      collection = NULL;
+   }
+   if (enumerator)
+   {
+#ifdef __cplusplus
+      enumerator->Release();
+#else
+      enumerator->lpVtbl->Release(enumerator);
+#endif
+      enumerator = NULL;
+   }
    if (sl)
       string_list_free(sl);
 

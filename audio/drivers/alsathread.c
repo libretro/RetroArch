@@ -16,6 +16,7 @@
  */
 
 #include <stdlib.h>
+#include <boolean.h>
 
 #include <alsa/asoundlib.h>
 #include <alsa/pcm.h>
@@ -29,8 +30,19 @@
 
 #include "../audio_driver.h"
 #include "../common/alsa.h" /* For some common functions/types */
-#include "../common/alsathread.h"
 #include "../../verbosity.h"
+
+typedef struct alsa_thread_info
+{
+   snd_pcm_t *pcm;
+   fifo_buffer_t *buffer;
+   sthread_t *worker_thread;
+   slock_t *fifo_lock;
+   scond_t *cond;
+   slock_t *cond_lock;
+   alsa_stream_info_t stream_info;
+   volatile bool thread_dead;
+} alsa_thread_info_t;
 
 static void alsa_thread_free_info_members(alsa_thread_info_t *info)
 {
