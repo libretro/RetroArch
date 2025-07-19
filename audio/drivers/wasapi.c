@@ -53,26 +53,6 @@ typedef struct
    uint8_t flags;
 } wasapi_t;
 
-#ifdef __cplusplus
-#ifndef IFACE_RELEASE
-#define IFACE_RELEASE(iface) \
-   if (iface) \
-   { \
-      iface->Release(); \
-      iface = NULL; \
-   }
-#endif
-#else
-#ifndef IFACE_RELEASE
-#define IFACE_RELEASE(iface) \
-   if (iface) \
-   { \
-      iface->lpVtbl->Release(iface);\
-      iface = NULL; \
-   }
-#endif
-#endif
-
 static const char *hresult_name(HRESULT hr)
 {
    switch (hr)
@@ -406,8 +386,14 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          goto error;
       }
 
-      IFACE_RELEASE(client);
-      hr = _IMMDevice_Activate(device,
+      if (client)
+#ifdef __cplusplus
+         client->Release();
+#else
+         client->lpVtbl->Release(client);
+#endif
+      client = NULL;
+      hr     = _IMMDevice_Activate(device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
@@ -423,8 +409,14 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    }
    if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
    {
-      IFACE_RELEASE(client);
-      hr = _IMMDevice_Activate(device,
+      if (client)
+#ifdef __cplusplus
+         client->Release();
+#else
+         client->lpVtbl->Release(client);
+#endif
+      client = NULL;
+      hr     = _IMMDevice_Activate(device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
@@ -458,7 +450,13 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    return client;
 
 error:
-   IFACE_RELEASE(client);
+   if (client)
+#ifdef __cplusplus
+      client->Release();
+#else
+      client->lpVtbl->Release(client);
+#endif
+   client = NULL;
 
    return NULL;
 }
@@ -518,8 +516,14 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
    {
-      IFACE_RELEASE(client);
-      hr = _IMMDevice_Activate(device,
+      if (client)
+#ifdef __cplusplus
+         client->Release();
+#else
+         client->lpVtbl->Release(client);
+#endif
+      client = NULL;
+      hr     = _IMMDevice_Activate(device,
             IID_IAudioClient,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
@@ -545,7 +549,13 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    return client;
 
 error:
-   IFACE_RELEASE(client);
+   if (client)
+#ifdef __cplusplus
+      client->Release();
+#else
+      client->lpVtbl->Release(client);
+#endif
+   client = NULL;
 
    return NULL;
 }
@@ -643,7 +653,13 @@ static IMMDevice *wasapi_init_device(const char *id, unsigned data_flow)
          if (i == (UINT32)idx_found)
             break;
 
-         IFACE_RELEASE(device);
+         if (device)
+#ifdef __cplusplus
+            device->Release();
+#else
+            device->lpVtbl->Release(device);
+#endif
+          device = NULL;
       }
    }
    else
@@ -660,14 +676,38 @@ static IMMDevice *wasapi_init_device(const char *id, unsigned data_flow)
    if (!device)
       goto error;
 
-   IFACE_RELEASE(collection);
-   IFACE_RELEASE(enumerator);
+   if (collection)
+#ifdef __cplusplus
+      collection->Release();
+#else
+      collection->lpVtbl->Release(collection);
+#endif
+   if (enumerator)
+#ifdef __cplusplus
+      enumerator->Release();
+#else
+      enumerator->lpVtbl->Release(enumerator);
+#endif
+   collection = NULL;
+   enumerator = NULL;
 
    return device;
 
 error:
-   IFACE_RELEASE(collection);
-   IFACE_RELEASE(enumerator);
+   if (collection)
+#ifdef __cplusplus
+      collection->Release();
+#else
+      collection->lpVtbl->Release(collection);
+#endif
+   if (enumerator)
+#ifdef __cplusplus
+      enumerator->Release();
+#else
+      enumerator->lpVtbl->Release(enumerator);
+#endif
+   collection = NULL;
+   enumerator = NULL;
 
    if (id)
       RARCH_WARN("[WASAPI] Failed to initialize %s device \"%s\".\n", data_flow_name, id);
@@ -818,11 +858,32 @@ static void wasapi_microphone_close_mic(void *driver_context, void *mic_context)
 
    write_event = mic->read_event;
 
-   IFACE_RELEASE(mic->capture);
+   if (mic->capture)
+#ifdef __cplusplus
+      mic->capture->Release();
+#else
+      mic->capture->lpVtbl->Release(mic->capture);
+#endif
+   mic->capture = NULL;
    if (mic->client)
+   {
       _IAudioClient_Stop(mic->client);
-   IFACE_RELEASE(mic->client);
-   IFACE_RELEASE(mic->device);
+#ifdef __cplusplus
+      mic->client->Release();
+#else
+      mic->client->lpVtbl->Release(mic->client);
+#endif
+   }
+   if (mic->device)
+   {
+#ifdef __cplusplus
+      mic->client->Release();
+#else
+      mic->client->lpVtbl->Release(mic->client);
+#endif
+   }
+   mic->client = NULL;
+   mic->device = NULL;
    if (mic->buffer)
       fifo_free(mic->buffer);
    if (mic->device_name)
@@ -1189,9 +1250,31 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    return mic;
 
 error:
-   IFACE_RELEASE(mic->capture);
-   IFACE_RELEASE(mic->client);
-   IFACE_RELEASE(mic->device);
+   if (mic->capture)
+#ifdef __cplusplus
+      mic->capture->Release();
+#else
+      mic->capture->lpVtbl->Release(mic->capture);
+#endif
+   mic->capture = NULL;
+   if (mic->client)
+   {
+#ifdef __cplusplus
+      mic->client->Release();
+#else
+      mic->client->lpVtbl->Release(mic->client);
+#endif
+   }
+   if (mic->device)
+   {
+#ifdef __cplusplus
+      mic->client->Release();
+#else
+      mic->client->lpVtbl->Release(mic->client);
+#endif
+   }
+   mic->client = NULL;
+   mic->device = NULL;
    if (mic->read_event)
       CloseHandle(mic->read_event);
    if (mic->buffer)
@@ -1384,9 +1467,31 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    return w;
 
 error:
-   IFACE_RELEASE(w->renderer);
-   IFACE_RELEASE(w->client);
-   IFACE_RELEASE(w->device);
+   if (w->renderer)
+#ifdef __cplusplus
+      w->renderer->Release();
+#else
+      w->renderer->lpVtbl->Release(w->renderer);
+#endif
+   w->renderer = NULL;
+   if (w->client)
+   {
+#ifdef __cplusplus
+      w->client->Release();
+#else
+      w->client->lpVtbl->Release(w->client);
+#endif
+   }
+   if (w->device)
+   {
+#ifdef __cplusplus
+      w->device->Release();
+#else
+      w->device->lpVtbl->Release(w->device);
+#endif
+   }
+   w->client = NULL;
+   w->device = NULL;
    if (w->write_event)
       CloseHandle(w->write_event);
    if (w->buffer)
@@ -1638,11 +1743,32 @@ static void wasapi_free(void *wh)
    wasapi_t *w        = (wasapi_t*)wh;
    HANDLE write_event = w->write_event;
 
-   IFACE_RELEASE(w->renderer);
+   if (w->renderer)
+#ifdef __cplusplus
+      w->renderer->Release();
+#else
+      w->renderer->lpVtbl->Release(w->renderer);
+#endif
+   w->renderer = NULL;
    if (w->client)
+   {
       _IAudioClient_Stop(w->client);
-   IFACE_RELEASE(w->client);
-   IFACE_RELEASE(w->device);
+#ifdef __cplusplus
+      w->client->Release();
+#else
+      w->client->lpVtbl->Release(w->client);
+#endif
+   }
+   if (w->device)
+   {
+#ifdef __cplusplus
+      w->device->Release();
+#else
+      w->device->lpVtbl->Release(w->device);
+#endif
+   }
+   w->client = NULL;
+   w->device = NULL;
    if (w->buffer)
       fifo_free(w->buffer);
    free(w);
