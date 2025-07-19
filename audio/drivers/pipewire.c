@@ -35,6 +35,19 @@
 #include "../microphone_driver.h"
 
 #define MIC_DEFAULT_CHANNELS   1
+#endif
+
+typedef struct pipewire_audio
+{
+   pipewire_core_t *pw;
+   struct pw_stream *stream;
+   struct spa_hook stream_listener;
+   struct spa_audio_info_raw info;
+   uint32_t highwater_mark;
+   uint32_t frame_size;
+   struct spa_ringbuffer ring;
+   uint8_t buffer[RINGBUFFER_SIZE];
+} pipewire_audio_t;
 
 static size_t pipewire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
 {
@@ -95,19 +108,11 @@ static void pipewire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO
    }
 }
 
+#ifdef HAVE_MICROPHONE
+typedef struct pipewire_audio pipewire_microphone_t;
+static void stream_destroy_cb(void *data);
 
-typedef struct pipewire_microphone
-{
-   pipewire_core_t *pw;
-   struct pw_stream *stream;
-   struct spa_hook stream_listener;
-   struct spa_audio_info_raw info;
-   uint32_t frame_size;
-   struct spa_ringbuffer ring;
-   uint8_t buffer[RINGBUFFER_SIZE];
-} pipewire_microphone_t;
-
-static void stream_state_changed_cb(void *data,
+static void mic_stream_state_changed_cb(void *data,
       enum pw_stream_state old, enum pw_stream_state state, const char *error)
 {
    pipewire_microphone_t *mic = (pipewire_microphone_t*)data;
@@ -117,13 +122,6 @@ static void stream_state_changed_cb(void *data,
              pw_stream_state_as_string(state));
 
    pw_thread_loop_signal(mic->pw->thread_loop, false);
-}
-
-static void stream_destroy_cb(void *data)
-{
-   pipewire_microphone_t *mic = (pipewire_microphone_t*)data;
-   spa_hook_remove(&mic->stream_listener);
-   mic->stream = NULL;
 }
 
 static void capture_process_cb(void *data)
@@ -173,11 +171,11 @@ static void capture_process_cb(void *data)
 static const struct pw_stream_events capture_stream_events = {
       PW_VERSION_STREAM_EVENTS,
      .destroy = stream_destroy_cb,
-     .state_changed = stream_state_changed_cb,
+     .state_changed = mic_stream_state_changed_cb,
      .process = capture_process_cb
 };
 
-static void registry_event_global(void *data, uint32_t id,
+static void mic_registry_event_global(void *data, uint32_t id,
       uint32_t permissions, const char *type, uint32_t version,
       const struct spa_dict *props)
 {
@@ -206,9 +204,9 @@ static void registry_event_global(void *data, uint32_t id,
    }
 }
 
-static const struct pw_registry_events registry_events = {
+static const struct pw_registry_events mic_registry_events = {
       PW_VERSION_REGISTRY_EVENTS,
-      .global = registry_event_global,
+      .global = mic_registry_event_global,
 };
 
 static void pipewire_microphone_free(void *driver_context)
@@ -227,7 +225,7 @@ static void *pipewire_microphone_init(void)
    pipewire_core_t             *pw = NULL;
    struct spa_pod_builder        b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
 
-   if (!pipewire_core_init(&pw, "microphone_driver", &registry_events))
+   if (!pipewire_core_init(&pw, "microphone_driver", &mic_registry_events))
       goto error;
 
    pipewire_core_wait_resync(pw);
@@ -352,6 +350,7 @@ static void *pipewire_microphone_open_mic(void *driver_context,
       goto error;
 
    mic->pw = (pipewire_core_t*)driver_context;
+   mic->highwater_mark = 0;
 
    pw_thread_loop_lock(mic->pw->thread_loop);
 
@@ -486,18 +485,6 @@ microphone_driver_t microphone_pipewire = {
 #endif
 
 #define DEFAULT_CHANNELS   2
-
-typedef struct pipewire_audio
-{
-   pipewire_core_t *pw;
-   struct pw_stream *stream;
-   struct spa_hook stream_listener;
-   struct spa_audio_info_raw info;
-   uint32_t highwater_mark;
-   uint32_t frame_size;
-   struct spa_ringbuffer ring;
-   uint8_t buffer[RINGBUFFER_SIZE];
-} pipewire_audio_t;
 
 static void stream_destroy_cb(void *data)
 {
