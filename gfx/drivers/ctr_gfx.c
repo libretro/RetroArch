@@ -53,10 +53,17 @@
 #include "../../verbosity.h"
 #include "../../paths.h"
 
-#include "../common/ctr_defines.h"
 #ifndef HAVE_THREADS
 #include "../../tasks/tasks_internal.h"
 #endif
+
+#define COLOR_ABGR(r, g, b, a) (((unsigned)(a) << 24) | ((b) << 16) | ((g) << 8) | ((r) << 0))
+
+#define CTR_TOP_FRAMEBUFFER_WIDTH      400
+#define CTR_TOP_FRAMEBUFFER_HEIGHT     240
+#define CTR_BOTTOM_FRAMEBUFFER_WIDTH   320
+#define CTR_BOTTOM_FRAMEBUFFER_HEIGHT  240
+#define CTR_STATE_DATE_SIZE            11
 
 #define CTR_SET_SCALE_VECTOR(vec, vp_width, vp_height, tex_width, tex_height) \
    (vec)->x = -2.0f / (vp_width); \
@@ -91,6 +98,20 @@ typedef struct
    s16 x0, y0, x1, y1;
    s16 u0, v0, u1, v1;
 } ctr_vertex_t;
+
+#ifdef USE_CTRULIB_2
+extern u8* gfxTopLeftFramebuffers[2];
+extern u8* gfxTopRightFramebuffers[2];
+extern u8* gfxBottomFramebuffers[2];
+#endif
+
+#ifdef CONSOLE_LOG
+extern PrintConsole* ctrConsole;
+#endif
+
+extern const u8 ctr_sprite_shbin[];
+extern const u32 ctr_sprite_shbin_size;
+
 
 typedef struct ctr_video
 {

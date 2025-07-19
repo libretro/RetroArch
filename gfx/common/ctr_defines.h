@@ -16,17 +16,6 @@
 #ifndef CTR_DEFINES_H__
 #define CTR_DEFINES_H__
 
-#include <3ds.h>
-#include <retro_inline.h>
-
-#define COLOR_ABGR(r, g, b, a) (((unsigned)(a) << 24) | ((b) << 16) | ((g) << 8) | ((r) << 0))
-
-#define CTR_TOP_FRAMEBUFFER_WIDTH      400
-#define CTR_TOP_FRAMEBUFFER_HEIGHT     240
-#define CTR_BOTTOM_FRAMEBUFFER_WIDTH   320
-#define CTR_BOTTOM_FRAMEBUFFER_HEIGHT  240
-#define CTR_STATE_DATE_SIZE            11
-
 typedef enum
 {
    CTR_VIDEO_MODE_3D = 0,
@@ -35,18 +24,5 @@ typedef enum
    CTR_VIDEO_MODE_2D_800X240,
    CTR_VIDEO_MODE_LAST
 } ctr_video_mode_enum;
-
-#ifdef USE_CTRULIB_2
-extern u8* gfxTopLeftFramebuffers[2];
-extern u8* gfxTopRightFramebuffers[2];
-extern u8* gfxBottomFramebuffers[2];
-#endif
-
-#ifdef CONSOLE_LOG
-extern PrintConsole* ctrConsole;
-#endif
-
-extern const u8 ctr_sprite_shbin[];
-extern const u32 ctr_sprite_shbin_size;
 
 #endif /* CTR_DEFINES_H__ */
