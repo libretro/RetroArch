@@ -106,10 +106,7 @@
    manager->count = 0; \
 }
 
-#define VK_MAP_PERSISTENT_TEXTURE(device, texture) \
-{ \
-   vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped); \
-}
+#define VK_MAP_PERSISTENT_TEXTURE(device, texture) vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped)
 
 #define VULKAN_PASS_SET_TEXTURE(device, set, _sampler, binding, image_view, image_layout) \
 { \

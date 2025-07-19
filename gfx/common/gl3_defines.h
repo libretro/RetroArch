@@ -26,8 +26,6 @@
 #include "../../config.h"
 #endif
 
-#include <retro_inline.h>
-
 #include "../video_driver.h"
 #include "../drivers_shader/shader_gl3.h"
 
