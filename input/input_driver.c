@@ -2464,6 +2464,7 @@ static bool input_overlay_coords_inside_hitbox(const struct overlay_desc *desc,
  * input_overlay_poll:
  * @out                   : Polled output data.
  * @touch_idx             : Touch pointer index.
+ * @old_touch_idx         : Touch pointer index from previous poll, or -1.
  * @norm_x                : Normalized X coordinate.
  * @norm_y                : Normalized Y coordinate.
  * @touch_scale           : Overlay scale.
@@ -2478,12 +2479,12 @@ static bool input_overlay_coords_inside_hitbox(const struct overlay_desc *desc,
 static bool input_overlay_poll(
       input_overlay_t *ol,
       input_overlay_state_t *out,
-      int touch_idx, int16_t norm_x, int16_t norm_y, float touch_scale)
+      int touch_idx, int old_touch_idx,
+      int16_t norm_x, int16_t norm_y, float touch_scale)
 {
    size_t i, j;
    struct overlay_desc *descs = ol->active->descs;
    unsigned int highest_prio  = 0;
-   int old_touch_idx          = input_driver_st.old_touch_index_lut[touch_idx];
    bool any_hitbox_pressed    = false;
    bool use_range_mod;
 
@@ -3499,6 +3500,8 @@ static void input_poll_overlay(
    int i, j;
    input_overlay_t *ol                      = (input_overlay_t*)ol_data;
    uint16_t key_mod                         = 0;
+   uint16_t ptrdev_touch_mask               = 0;
+   uint16_t hitbox_touch_mask               = 0;
    bool button_pressed                      = false;
    input_driver_state_t *input_st           = &input_driver_st;
    void *input_data                         = input_st->current_data;
@@ -3514,6 +3517,8 @@ static void input_poll_overlay(
    bool osk_state_changed                   = false;
 
    static int old_ptr_count;
+   static int16_t old_ptrdev_touch_mask;
+   static int16_t old_hitbox_touch_mask;
 
    if (!ol_state)
       return;
@@ -3596,12 +3601,27 @@ static void input_poll_overlay(
       for (i = 0; i < ol_state->touch_count; i++)
       {
          input_overlay_state_t polled_data;
+         int old_i           = input_st->old_touch_index_lut[i];
          bool hitbox_pressed = false;
+
+         /* Keep each touch pointer dedicated to the same input type
+          * (hitbox or pointing device) from the previous poll */
+         if (old_i != -1)
+         {
+            if (BIT16_GET(old_hitbox_touch_mask, old_i))
+               BIT16_SET(hitbox_touch_mask, i);
+            else if (BIT16_GET(old_ptrdev_touch_mask, old_i))
+               BIT16_SET(ptrdev_touch_mask, i);
+         }
 
          memset(&polled_data, 0, sizeof(struct input_overlay_state));
 
-         if (ol->flags & INPUT_OVERLAY_ENABLE)
-            hitbox_pressed = input_overlay_poll(ol, &polled_data, i,
+         /* Check hitboxes only if this touch pointer
+          * is not controlling a pointing device */
+         if (   ol->flags & INPUT_OVERLAY_ENABLE
+             && !BIT16_GET(ptrdev_touch_mask, i))
+            hitbox_pressed = input_overlay_poll(
+                  ol, &polled_data, i, old_i,
                   ol_state->touch[i].x, ol_state->touch[i].y, touch_scale);
          else
             ol->flags &= ~INPUT_OVERLAY_BLOCKED;
@@ -3620,11 +3640,17 @@ static void input_poll_overlay(
             for (j = 0; j < 4; j++)
                if (polled_data.analog[j])
                   ol_state->analog[j] = polled_data.analog[j];
+
+            hitbox_touch_mask |= (1 << i);
          }
-         else if (ol_ptr_enable
-               && ptr_state->device_mask
-               && !(ol->flags & INPUT_OVERLAY_BLOCKED))
+         else if (   ol_ptr_enable
+                  && ptr_state->device_mask
+                  && !BIT16_GET(hitbox_touch_mask, i)
+                  && !(ol->flags & INPUT_OVERLAY_BLOCKED))
+         {
             input_overlay_update_pointer_coords(ptr_state, i);
+            ptrdev_touch_mask |= (1 << i);
+         }
       }
    }
 
@@ -3736,8 +3762,6 @@ static void input_poll_overlay(
    else
       input_st->flags &= ~INP_FLAG_BLOCK_POINTER_INPUT;
 
-   ptr_state->device_mask = 0;
-
    if (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_NONE)
       button_pressed = false;
 
@@ -3763,6 +3787,10 @@ static void input_poll_overlay(
          )
          current_input->keypress_vibrate();
    }
+
+   old_hitbox_touch_mask  = hitbox_touch_mask;
+   old_ptrdev_touch_mask  = ptrdev_touch_mask;
+   ptr_state->device_mask = 0;
 }
 #endif
 
