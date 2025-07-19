@@ -27,6 +27,15 @@
 #define CTR_BOTTOM_FRAMEBUFFER_HEIGHT  240
 #define CTR_STATE_DATE_SIZE            11
 
+typedef enum
+{
+   CTR_VIDEO_MODE_3D = 0,
+   CTR_VIDEO_MODE_2D,
+   CTR_VIDEO_MODE_2D_400X240,
+   CTR_VIDEO_MODE_2D_800X240,
+   CTR_VIDEO_MODE_LAST
+} ctr_video_mode_enum;
+
 #ifdef USE_CTRULIB_2
 extern u8* gfxTopLeftFramebuffers[2];
 extern u8* gfxTopRightFramebuffers[2];

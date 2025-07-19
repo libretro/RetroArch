@@ -38,13 +38,6 @@
 #define VGA_WIDTH 320
 #define VGA_HEIGHT 200
 
-typedef struct
-{
-   const font_renderer_driver_t *font_driver;
-   void *font_data;
-   vga_t *vga;
-} vga_raster_t;
-
 typedef struct vga
 {
    unsigned char *vga_menu_frame;
@@ -63,6 +56,12 @@ typedef struct vga
    bool vga_rgb32;
 } vga_t;
 
+typedef struct
+{
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
+   vga_t *vga;
+} vga_raster_t;
 
 static void *vga_font_init(void *data,
       const char *font_path, float font_size,
