@@ -27,7 +27,6 @@
 #endif
 
 #include <retro_inline.h>
-#include <glsym/glsym.h>
 
 #include "../video_driver.h"
 #include "../drivers_shader/shader_gl3.h"
