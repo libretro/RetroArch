@@ -1753,22 +1753,19 @@ endif
 
 ifeq ($(HAVE_D3D10), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d10.o \
-          gfx/common/d3d10_common.o
+   OBJ += gfx/drivers/d3d10.o
    DEFINES += -DHAVE_D3D10
 endif
 
 ifeq ($(HAVE_D3D11), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d11.o \
-          gfx/common/d3d11_common.o
+   OBJ += gfx/drivers/d3d11.o
    DEFINES += -DHAVE_D3D11
 endif
 
 ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d12.o \
-          gfx/common/d3d12_common.o
+   OBJ += gfx/drivers/d3d12.o
    DEFINES += -DHAVE_D3D12
 endif
 
