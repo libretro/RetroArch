@@ -37,16 +37,31 @@
 #include "../../driver.h"
 #include "../../verbosity.h"
 
-/*
- * FONT DRIVER
- */
-
 typedef struct
 {
    const font_renderer_driver_t *font_driver;
    void *font_data;
    vga_t *vga;
 } vga_raster_t;
+
+typedef struct vga
+{
+   unsigned char *vga_menu_frame;
+   unsigned char *vga_frame;
+
+   unsigned vga_menu_width;
+   unsigned vga_menu_height;
+   unsigned vga_menu_pitch;
+   unsigned vga_menu_bits;
+   unsigned vga_video_width;
+   unsigned vga_video_height;
+   unsigned vga_video_pitch;
+   unsigned vga_video_bits;
+
+   bool color;
+   bool vga_rgb32;
+} vga_t;
+
 
 static void *vga_font_init(void *data,
       const char *font_path, float font_size,
