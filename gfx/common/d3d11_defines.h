@@ -18,8 +18,6 @@
 
 #include <retro_inline.h>
 
-#include <lists/string_list.h>
-
 #include "dxgi_common.h"
 #ifdef CINTERFACE
 #define D3D11_NO_HELPERS
@@ -27,8 +25,6 @@
 #include <d3d11.h>
 
 #include <boolean.h>
-#include <retro_math.h>
-#include <gfx/math/matrix_4x4.h>
 #include <libretro_d3d.h>
 
 #include "../drivers_shader/slang_process.h"
@@ -126,13 +122,6 @@ typedef ID3D11Debug*                    D3D11Debug;
 typedef ID3D11SwitchToRef*              D3D11SwitchToRef;
 typedef ID3D11TracingDevice*            D3D11TracingDevice;
 typedef ID3D11InfoQueue*                D3D11InfoQueue;
-
-typedef struct d3d11_vertex_t
-{
-   float position[2];
-   float texcoord[2];
-   float color[4];
-} d3d11_vertex_t;
 
 #ifndef ALIGN
 #ifdef _MSC_VER

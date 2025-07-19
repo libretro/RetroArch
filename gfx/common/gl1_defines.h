@@ -20,8 +20,6 @@
 
 #include <retro_environment.h>
 #include <retro_inline.h>
-#include <gfx/math/matrix_4x4.h>
-#include <lists/string_list.h>
 
 #if defined(__APPLE__)
 #include <OpenGL/gl.h>

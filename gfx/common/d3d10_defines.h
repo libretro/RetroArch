@@ -23,9 +23,6 @@
 
 #include <boolean.h>
 
-#include <retro_math.h>
-#include <gfx/math/matrix_4x4.h>
-
 #include "../drivers_shader/slang_process.h"
 
 #define D3D10_MAX_GPU_COUNT 16
@@ -45,7 +42,6 @@ enum d3d10_video_flags
    D3D10_ST_FLAG_MENU_FULLSCREEN     = (1 << 10),
    D3D10_ST_FLAG_FRAME_DUPE_LOCK     = (1 << 11)
 };
-
 
 typedef const ID3D10SamplerState*       D3D10SamplerStateRef;
 

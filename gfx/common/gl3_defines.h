@@ -27,10 +27,7 @@
 #endif
 
 #include <retro_inline.h>
-#include <gfx/math/matrix_4x4.h>
-#include <gfx/scaler/scaler.h>
 #include <glsym/glsym.h>
-#include <formats/image.h>
 
 #include "../video_driver.h"
 #include "../drivers_shader/shader_gl3.h"

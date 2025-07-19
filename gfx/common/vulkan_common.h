@@ -39,10 +39,6 @@
 #include <retro_inline.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
-#include <gfx/math/matrix_4x4.h>
-#include <gfx/scaler/scaler.h>
-#include <rthreads/rthreads.h>
-#include <formats/image.h>
 
 #include <libretro.h>
 #include <libretro_vulkan.h>
@@ -328,28 +324,6 @@ enum vk_texture_flags
    VK_TEX_FLAG_MIPMAP                       = (1 << 2)
 };
 
-#ifdef VULKAN_HDR_SWAPCHAIN
-
-#ifndef VKALIGN
-#ifdef _MSC_VER
-#define VKALIGN(x) __declspec(align(x))
-#else
-#define VKALIGN(x) __attribute__((aligned(x)))
-#endif
-#endif
-
-typedef struct VKALIGN(16)
-{
-   math_matrix_4x4   mvp;
-   float             contrast;         /* 2.0f    */
-   float             paper_white_nits; /* 200.0f  */
-   float             max_nits;         /* 1000.0f */
-   float             expand_gamut;     /* 1.0f    */
-   float             inverse_tonemap;  /* 1.0f    */
-   float             hdr10;            /* 1.0f    */
-} vulkan_hdr_uniform_t;
-#endif /* VULKAN_HDR_SWAPCHAIN */
-
 typedef struct vulkan_context
 {
    slock_t *queue_lock;
@@ -424,48 +398,6 @@ struct vulkan_display_surface_info
    unsigned height;
    unsigned monitor_index;
    unsigned refresh_rate_x1000;
-};
-
-struct vk_color
-{
-   float r, g, b, a;
-};
-
-struct vk_vertex
-{
-   float x, y;
-   float tex_x, tex_y;
-   struct vk_color color;        /* float alignment */
-};
-
-struct vk_image
-{
-   VkImage image;                /* ptr alignment */
-   VkImageView view;             /* ptr alignment */
-   VkFramebuffer framebuffer;    /* ptr alignment */
-   VkDeviceMemory memory;        /* ptr alignment */
-};
-
-struct vk_texture
-{
-   VkDeviceSize memory_size;     /* uint64_t alignment */
-
-   void *mapped;
-   VkImage image;                /* ptr alignment */
-   VkImageView view;             /* ptr alignment */
-   VkBuffer buffer;              /* ptr alignment */
-   VkDeviceMemory memory;        /* ptr alignment */
-
-   size_t offset;
-   size_t stride;
-   size_t size;
-   uint32_t memory_type;
-   unsigned width, height;
-
-   VkImageLayout layout;         /* enum alignment */
-   VkFormat format;              /* enum alignment */
-   enum vk_texture_type type;
-   uint8_t flags;
 };
 
 struct vk_buffer

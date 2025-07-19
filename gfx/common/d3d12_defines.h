@@ -18,10 +18,7 @@
 #define _D3D12_DEFINES_H_
 
 #include <retro_inline.h>
-#include <retro_math.h>
 #include <retro_common_api.h>
-
-#include <gfx/math/matrix_4x4.h>
 
 #include "dxgi_common.h"
 #include <d3d12.h>

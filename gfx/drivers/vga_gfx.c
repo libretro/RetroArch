@@ -30,12 +30,13 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../common/vga_defines.h"
-
 #include "../font_driver.h"
 
 #include "../../driver.h"
 #include "../../verbosity.h"
+
+#define VGA_WIDTH 320
+#define VGA_HEIGHT 200
 
 typedef struct
 {

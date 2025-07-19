@@ -76,6 +76,13 @@ const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIFactory5 = { 0x7632e1f5,0xee65,0
 #endif
 #endif
 
+typedef struct d3d11_vertex_t
+{
+   float position[2];
+   float texcoord[2];
+   float color[4];
+} d3d11_vertex_t;
+
 typedef struct
 {
    D3D11Texture2D          handle;

@@ -103,14 +103,14 @@ typedef struct
    uint32_t *ptr;
    /* Internal stuff */
    uint32_t offset;
-} rsxBuffer;
+} rsx_buffer;
 
 typedef struct
 {
    video_viewport_t vp;
-   rsxBuffer buffers[RSX_MAX_BUFFERS];
+   rsx_buffer buffers[RSX_MAX_BUFFERS];
 #if defined(HAVE_MENU_BUFFER)
-   rsxBuffer menuBuffers[RSX_MAX_MENU_BUFFERS];
+   rsx_buffer menuBuffers[RSX_MAX_MENU_BUFFERS];
    int menuBuffer;
 #endif
    int currentBuffer, nextBuffer;

@@ -1070,7 +1070,7 @@ static bool rsx_tasks_finder(retro_task_t *task,void *userdata) { return task; }
 task_finder_data_t rsx_tasks_finder_data = {rsx_tasks_finder, NULL};
 #endif
 
-static int rsx_make_buffer(rsxBuffer * buffer, u16 width, u16 height, int id)
+static int rsx_make_buffer(rsx_buffer *buffer, u16 width, u16 height, int id)
 {
    int depth         = sizeof(u32);
    int pitch         = depth * width;
@@ -1229,7 +1229,7 @@ error:
    return NULL;
 }
 
-static void rsx_init_render_target(rsx_t *rsx, rsxBuffer * buffer, int id)
+static void rsx_init_render_target(rsx_t *rsx, rsx_buffer *buffer, int id)
 {
    u32 i;
    memset(&rsx->surface[id], 0, sizeof(gcmSurface));
@@ -1572,7 +1572,7 @@ static void rsx_fill_black(uint32_t *dst, uint32_t *dst_end, size_t sz)
 }
 
 static void rsx_blit_buffer(
-      rsxBuffer *buffer, const void *frame, unsigned width,
+      rsx_buffer *buffer, const void *frame, unsigned width,
       unsigned height, unsigned pitch, int rgb32, bool do_scaling)
 {
    int i;
@@ -2086,7 +2086,7 @@ static void rsx_get_overlay_interface(void *data,
 
 static void rsx_update_screen(rsx_t* gcm)
 {
-   rsxBuffer *buffer     = NULL;
+   rsx_buffer *buffer    = NULL;
 #if defined(HAVE_MENU_BUFFER)
    if (gcm->menu_frame_enable)
    {
