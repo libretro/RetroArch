@@ -510,6 +510,47 @@ void rcheevos_menu_populate(void* data, bool cheevos_enable,
 
 #endif /* HAVE_MENU */
 
+static void rcheevos_client_download_achievement_badge(const char* badge_name, bool locked)
+{
+   /* have to find the achievement associated to badge_name, then fetch either badge_url
+    * or badge_locked_url based on the locked parameter */
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   rc_client_achievement_list_t* list = rc_client_create_achievement_list(rcheevos_locals->client,
+      RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE_AND_UNOFFICIAL,
+      RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_PROGRESS);
+   if (list)
+   {
+      const char* url = NULL;
+      int i, j;
+      for (i = 0; i < list->num_buckets && !url; i++)
+      {
+         for (j = 0; j < list->buckets[i].num_achievements; j++)
+         {
+            const rc_client_achievement_t* achievement = list->buckets[i].achievements[j];
+            if (achievement && strcmp(achievement->badge_name, badge_name) == 0)
+            {
+               url = locked ? achievement->badge_locked_url : achievement->badge_url;
+               break;
+            }
+         }
+      }
+
+      if (url)
+      {
+         char locked_badge_name[32];
+         if (locked)
+         {
+            snprintf(locked_badge_name, sizeof(locked_badge_name), "%s_lock", badge_name);
+            badge_name = locked_badge_name;
+         }
+
+         rcheevos_client_download_badge(NULL, url, badge_name);
+      }
+
+      rc_client_destroy_achievement_list(list);
+   }
+}
+
 uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing)
 {
    size_t _len;
@@ -542,21 +583,13 @@ uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool downlo
    {
       if (download_if_missing)
       {
+         const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+
          if (badge[0] == 'i')
          {
-            /* rcheevos_client_download_game_badge expects a rc_client_game_t, not the badge name.
-             * call rc_api_init_fetch_image_request directly */
-            rc_api_fetch_image_request_t image_request;
-            rc_api_request_t request;
-            int result;
-
-            memset(&image_request, 0, sizeof(image_request));
-            image_request.image_type = RC_IMAGE_TYPE_GAME;
-            image_request.image_name = &badge[1];
-            result = rc_api_init_fetch_image_request(&request, &image_request);
-
-            if (result == RC_OK)
-               rcheevos_client_download_badge_from_url(request.url, badge);
+            const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals->client);
+            if (game && strcmp(game->badge_name, &badge[1]) == 0)
+               rcheevos_client_download_badge_from_url(game->badge_url, badge);
          }
          else
          {
