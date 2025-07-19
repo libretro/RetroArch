@@ -29,6 +29,10 @@
 #include <xgraphics.h>
 #endif
 
+#include <boolean.h>
+#include <retro_common_api.h>
+#include <retro_inline.h>
+
 #include <formats/image.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
@@ -39,7 +43,6 @@
 #include <d3d8.h>
 
 #include <defines/d3d_defines.h>
-#include "../common/d3d8_defines.h"
 #include "../common/d3d_common.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -63,6 +66,7 @@
 #include "../font_driver.h"
 
 #include "../../core.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #ifdef __WINRT__
