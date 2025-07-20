@@ -3561,15 +3561,46 @@ static void ozone_draw_sidebar(
             text_color                  = selected
                ? COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, text_alpha)
                : COLOR_TEXT_ALPHA(ozone->theme->text_sidebar_rgba, text_alpha);
+
+         if (use_smooth_ticker)
+         {
+            ticker_smooth.selected    = selected;
+            /* TODO/FIXME - undefined behavior reported by ASAN -
+             *-12.549 is outside the range of representable values
+             of type 'unsigned int'
+             * */
+            ticker_smooth.field_width = (entry_width
+                  - ozone->dimensions.sidebar_entry_icon_size
+                  - 40 * scale_factor);
+            ticker_smooth.src_str     = title;
+            ticker_smooth.dst_str     = console_title;
+            ticker_smooth.dst_str_len = sizeof(console_title);
+
+            gfx_animation_ticker_smooth(&ticker_smooth);
+         }
+         else
+         {
+            ticker.len      = (entry_width
+                  - ozone->dimensions.sidebar_entry_icon_size
+                  - 40 * scale_factor)
+                  / ozone->fonts.sidebar.glyph_width;
+            ticker.s        = console_title;
+            ticker.selected = selected;
+            ticker.str      = title;
+
+            gfx_animation_ticker(&ticker);
+         }
+
          gfx_display_draw_text(
                ozone->fonts.sidebar.font,
-               title,
-               ozone->sidebar_offset
+               console_title,
+               ticker_x_offset
+                     + ozone->sidebar_offset
                      + ozone->dimensions.sidebar_padding_horizontal
                      + ozone->dimensions.sidebar_entry_icon_padding * 2
                      + ozone->dimensions.sidebar_entry_icon_size,
                y
-                     + ozone->dimensions.sidebar_entry_height / 2.0f
+                     + ozone->dimensions.sidebar_entry_height / 2
                      + ozone->fonts.sidebar.line_centre_offset
                      + ozone->animations.scroll_y_sidebar,
                video_width,
