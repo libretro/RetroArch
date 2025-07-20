@@ -2149,6 +2149,8 @@ static core_info_list_t *core_info_list_new(const char *path,
 
 error:
    core_info_path_list_free(path_list);
+   if (core_info_list)
+      free(core_info_list);
    return NULL;
 }
 
