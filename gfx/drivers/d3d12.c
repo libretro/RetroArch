@@ -67,8 +67,8 @@
 
 #include "../common/d3d_common.h"
 #include "../common/dxgi_common.h"
-#include <d3d12.h>
-#include <libretro_d3d.h>
+#include <libretro.h>
+#include <libretro_d3d12.h>
 #include "../common/d3dcompiler_common.h"
 #ifdef HAVE_SLANG
 #include "../drivers_shader/slang_process.h"
