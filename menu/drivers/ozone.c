@@ -8250,6 +8250,8 @@ static enum menu_action ozone_parse_menu_entry_action(
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
+            playlist_path[0] = '\0';
+
             if (!ozone_manage_available(ozone, ozone->selection))
                break;
 
@@ -8269,16 +8271,19 @@ static enum menu_action ozone_parse_menu_entry_action(
                      strlcpy(playlist_path, playlist_get_conf_path(g_defaults.content_favorites), sizeof(playlist_path));
                      break;
                   case MENU_ENUM_LABEL_IMAGES_TAB:
+#ifdef HAVE_IMAGEVIEWER
                      strlcpy(playlist_path, playlist_get_conf_path(g_defaults.image_history), sizeof(playlist_path));
+#endif
                      break;
                   case MENU_ENUM_LABEL_MUSIC_TAB:
                      strlcpy(playlist_path, playlist_get_conf_path(g_defaults.music_history), sizeof(playlist_path));
                      break;
                   case MENU_ENUM_LABEL_VIDEO_TAB:
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
                      strlcpy(playlist_path, playlist_get_conf_path(g_defaults.video_history), sizeof(playlist_path));
+#endif
                      break;
                   default:
-                     playlist_path[0] = '\0';
                      break;
                }
 
