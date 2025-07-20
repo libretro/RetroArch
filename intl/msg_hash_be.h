@@ -13366,6 +13366,14 @@ MSG_HASH(
    "Усе ядры якія падтрымліваюцца зменены на версіі з Play Store"
    )
 MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "Абноўлена ядраў: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "Прапушчана ядраў: "
+   )
+MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Абнаўленне ядра адключана - ядро заблакаванае: "
    )
@@ -13532,6 +13540,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "Ядро не падтрымлівае захаванне станаў."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "Ядро не падтрымлівае кіраванне дыскамі."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
@@ -13872,6 +13884,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
    "Несумяшчальна з паўторам"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "Немажліва загрузіць будучы стан падчас прайгравання"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Памылка храналогіі падчас прайгравання"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Хібная храналогія, запіс нанава"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
