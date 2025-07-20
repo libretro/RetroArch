@@ -877,9 +877,9 @@ static void wasapi_microphone_close_mic(void *driver_context, void *mic_context)
    if (mic->device)
    {
 #ifdef __cplusplus
-      mic->client->Release();
+      mic->device->Release();
 #else
-      mic->client->lpVtbl->Release(mic->client);
+      mic->device->lpVtbl->Release(mic->device);
 #endif
    }
    mic->client = NULL;
@@ -1268,9 +1268,9 @@ error:
    if (mic->device)
    {
 #ifdef __cplusplus
-      mic->client->Release();
+      mic->device->Release();
 #else
-      mic->client->lpVtbl->Release(mic->client);
+      mic->device->lpVtbl->Release(mic->device);
 #endif
    }
    mic->client = NULL;
