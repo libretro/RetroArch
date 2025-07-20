@@ -727,12 +727,12 @@ static void net_http_conn_pool_remove_expired(void)
    *NOT* thread safe, caller must lock */
 static void net_http_conn_pool_move_to_end(struct conn_pool_entry *entry)
 {
-   struct conn_pool_entry *prev = NULL;
+   struct conn_pool_entry *prev    = NULL;
    struct conn_pool_entry *current = conn_pool;
    /* 0 items in pool */
    if (!conn_pool)
    {
-      conn_pool = entry;
+      conn_pool   = entry;
       entry->next = NULL;
       return;
    }
@@ -753,8 +753,11 @@ static void net_http_conn_pool_move_to_end(struct conn_pool_entry *entry)
       }
       current = current->next;
    }
-   prev->next = entry;
-   entry->next = NULL;
+
+   if (prev)
+      prev->next  = entry;
+   if (entry)
+      entry->next = NULL;
 }
 
 static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int port)
