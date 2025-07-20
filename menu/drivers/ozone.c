@@ -47,6 +47,7 @@
 #include "../../configuration.h"
 #include "../../content.h"
 #include "../../core_info.h"
+#include "../../defaults.h"
 #include "../../file_path_special.h"
 #include "../../runtime_file.h"
 #include "../../input/input_osk.h"
@@ -8227,37 +8228,31 @@ static enum menu_action ozone_parse_menu_entry_action(
             if (list_selection < 0)
             {
                enum msg_hash_enums value_idx = ozone_system_tabs_label[ozone->tabs[tab_selection]];
-               const char *tab_title;
 
                switch (value_idx)
                {
                   case MENU_ENUM_LABEL_HISTORY_TAB:
-                     tab_title = FILE_PATH_CONTENT_HISTORY;
+                     strlcpy(playlist_path, playlist_get_conf_path(g_defaults.content_history), sizeof(playlist_path));
                      break;
                   case MENU_ENUM_LABEL_FAVORITES_TAB:
-                     tab_title = FILE_PATH_CONTENT_FAVORITES;
+                     strlcpy(playlist_path, playlist_get_conf_path(g_defaults.content_favorites), sizeof(playlist_path));
                      break;
                   case MENU_ENUM_LABEL_IMAGES_TAB:
-                     tab_title = FILE_PATH_CONTENT_IMAGE_HISTORY;
+                     strlcpy(playlist_path, playlist_get_conf_path(g_defaults.image_history), sizeof(playlist_path));
                      break;
                   case MENU_ENUM_LABEL_MUSIC_TAB:
-                     tab_title = FILE_PATH_CONTENT_MUSIC_HISTORY;
+                     strlcpy(playlist_path, playlist_get_conf_path(g_defaults.music_history), sizeof(playlist_path));
                      break;
                   case MENU_ENUM_LABEL_VIDEO_TAB:
-                     tab_title = FILE_PATH_CONTENT_VIDEO_HISTORY;
+                     strlcpy(playlist_path, playlist_get_conf_path(g_defaults.video_history), sizeof(playlist_path));
                      break;
                   default:
-                     tab_title = "";
+                     playlist_path[0] = '\0';
                      break;
                }
 
-               if (string_is_empty(tab_title))
+               if (string_is_empty(playlist_path))
                   break;
-
-               fill_pathname_join(playlist_path,
-                     "",
-                     tab_title,
-                     sizeof(playlist_path));
             }
             else
                fill_pathname_join(playlist_path,

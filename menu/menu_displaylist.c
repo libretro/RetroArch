@@ -4381,7 +4381,7 @@ static unsigned menu_displaylist_parse_playlists(
          {
             if (settings->bools.menu_content_show_favorites)
                if (menu_entries_append(info_list,
-                        FILE_PATH_CONTENT_FAVORITES,
+                        playlist_get_conf_path(g_defaults.content_favorites),
                         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                         MENU_ENUM_LABEL_GOTO_FAVORITES,
                         MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4389,7 +4389,7 @@ static unsigned menu_displaylist_parse_playlists(
 
             if (settings->bools.menu_content_show_history)
                if (menu_entries_append(info_list,
-                        FILE_PATH_CONTENT_HISTORY,
+                        playlist_get_conf_path(g_defaults.content_history),
                         msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                         MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4399,7 +4399,7 @@ static unsigned menu_displaylist_parse_playlists(
          {
             if (settings->bools.menu_content_show_history)
                if (menu_entries_append(info_list,
-                        FILE_PATH_CONTENT_HISTORY,
+                        playlist_get_conf_path(g_defaults.content_history),
                         msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                         MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4407,7 +4407,7 @@ static unsigned menu_displaylist_parse_playlists(
 
             if (settings->bools.menu_content_show_favorites)
                if (menu_entries_append(info_list,
-                        FILE_PATH_CONTENT_FAVORITES,
+                        playlist_get_conf_path(g_defaults.content_favorites),
                         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                         MENU_ENUM_LABEL_GOTO_FAVORITES,
                         MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4415,17 +4415,19 @@ static unsigned menu_displaylist_parse_playlists(
          }
       }
 
+#ifdef HAVE_IMAGEVIEWER
       if (settings->bools.menu_content_show_images)
          if (menu_entries_append(info_list,
-                  FILE_PATH_CONTENT_IMAGE_HISTORY,
+                  playlist_get_conf_path(g_defaults.image_history),
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
                   MENU_ENUM_LABEL_GOTO_IMAGES,
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
+#endif
 
       if (settings->bools.menu_content_show_music)
          if (menu_entries_append(info_list,
-                  FILE_PATH_CONTENT_MUSIC_HISTORY,
+                  playlist_get_conf_path(g_defaults.music_history),
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
                   MENU_ENUM_LABEL_GOTO_MUSIC,
                   MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4434,7 +4436,7 @@ static unsigned menu_displaylist_parse_playlists(
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       if (settings->bools.menu_content_show_video)
          if (menu_entries_append(info_list,
-                  FILE_PATH_CONTENT_VIDEO_HISTORY,
+                  playlist_get_conf_path(g_defaults.video_history),
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
                   MENU_ENUM_LABEL_GOTO_VIDEO,
                   MENU_SETTING_ACTION, 0, 0, NULL))
@@ -15132,7 +15134,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      if (settings->bools.menu_content_show_favorites)
                         if (menu_entries_append(info->list,
-                                 FILE_PATH_CONTENT_FAVORITES,
+                                 playlist_get_conf_path(g_defaults.content_favorites),
                                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                                  MENU_ENUM_LABEL_GOTO_FAVORITES,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
@@ -15140,7 +15142,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                      if (settings->bools.menu_content_show_history)
                         if (menu_entries_append(info->list,
-                                 FILE_PATH_CONTENT_HISTORY,
+                                 playlist_get_conf_path(g_defaults.content_history),
                                  msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                                  MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
@@ -15150,7 +15152,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      if (settings->bools.menu_content_show_history)
                         if (menu_entries_append(info->list,
-                                 FILE_PATH_CONTENT_HISTORY,
+                                 playlist_get_conf_path(g_defaults.content_history),
                                  msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                                  MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
@@ -15158,7 +15160,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                      if (settings->bools.menu_content_show_favorites)
                         if (menu_entries_append(info->list,
-                                 FILE_PATH_CONTENT_FAVORITES,
+                                 playlist_get_conf_path(g_defaults.content_favorites),
                                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                                  MENU_ENUM_LABEL_GOTO_FAVORITES,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
