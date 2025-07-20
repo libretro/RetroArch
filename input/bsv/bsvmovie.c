@@ -429,7 +429,7 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
          size_t compressed_encoded_size_big = ZSTD_compressBound(encoded_size);
          compressed_encoded_data = calloc(compressed_encoded_size_big, sizeof(uint8_t));
          owns_compressed_encoded = true;
-         compressed_encoded_size_big = ZSTD_compress(compressed_encoded_data, compressed_encoded_size_big, encoded_data, encoded_size, 9);
+         compressed_encoded_size_big = ZSTD_compress(compressed_encoded_data, compressed_encoded_size_big, encoded_data, encoded_size, 3);
          if (ZSTD_isError(compressed_encoded_size_big))
          {
             ret = -1;
@@ -1154,7 +1154,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    total_encode_micros += cpu_features_get_time_usec() - start;
    total_bytes_input += state_size;
    total_bytes_written += intfstream_tell(out_stream);
-   RARCH_LOG("[STATESTREAM] Encode stats at checkpoint %d: %d blocks (%d reused); %d superblocks (%d reused); unencoded size (KB) %d, encoded size (KB) %d; net time (secs) %f\n", total_checkpoints, total_blocks, reused_blocks, total_superblocks, reused_superblocks, total_bytes_input/1024, total_bytes_written/1024, ((float)total_encode_micros) / 1000000.0);
+   RARCH_DBG("[STATESTREAM] Encode stats at checkpoint %d: %d blocks (%d reused, %d distinct); %d superblocks (%d reused, %d distinct); unencoded size (KB) %d, encoded size (KB) %d; net time (secs) %f\n", total_checkpoints, total_blocks, reused_blocks, uint32s_index_count(movie->blocks), total_superblocks, reused_superblocks, uint32s_index_count(movie->superblocks), total_bytes_input/1024, total_bytes_written/1024, ((float)total_encode_micros) / 1000000.0);
    encoded_size = intfstream_tell(out_stream);
    intfstream_close(out_stream);
    return encoded_size;
@@ -1177,7 +1177,6 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie,
    intfstream_t *read_mem = intfstream_open_memory(encoded, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, encoded_size);
    size_t i;
    total_decode_count++;
-   printf("Read cp for frame %ld\n",movie->frame_counter);
    rmsgpack_dom_read_with(read_mem, &item, reader_state);
    if(item.type != RDT_INT)
    {
@@ -1321,6 +1320,6 @@ exit:
       abort();
    }
    total_decode_micros += cpu_features_get_time_usec() - start;
-   RARCH_LOG("[STATESTREAM] Total statestream decodes %d ; net time (secs): %f\n", total_decode_count, (double)total_decode_micros / (1000000.0));
+   RARCH_DBG("[STATESTREAM] Total statestream decodes %d ; net time (secs): %f\n", total_decode_count, (double)total_decode_micros / (1000000.0));
    return ret;
 }

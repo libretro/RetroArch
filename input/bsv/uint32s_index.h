@@ -28,6 +28,7 @@ struct uint32s_index
    size_t object_size; /* measured in ints */
    struct uint32s_bucket *index; /* an rhmap of buckets for value->index lookup */
    uint32_t **objects;   /* an rbuf of the actual buffers */
+   uint32_t *counts;   /* an rbuf of the times each object was used */
    struct uint32s_frame_addition *additions; /* an rbuf of addition info */
 };
 typedef struct uint32s_index uint32s_index_t;
@@ -54,7 +55,10 @@ void uint32s_index_free(uint32s_index_t *index);
 void uint32s_index_remove_after(uint32s_index_t *index, uint64_t frame);
 /* removes all data from index */
 void uint32s_index_clear(uint32s_index_t *index);
-
+uint32_t uint32s_index_count(uint32s_index_t *index);
+#if DEBUG
+void uint32s_index_print_count_data(uint32s_index_t *index);
+#endif
 RETRO_END_DECLS
 
 #endif /* __UINT32S_INDEX__H */

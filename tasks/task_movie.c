@@ -45,10 +45,13 @@
 #include "../input/input_driver.h"
 #include "../input/bsv/bsvmovie.h"
 
+#if DEBUG
+#include "input/bsv/uint32s_index.h"
+#endif
 
 /* Superblock and block sizes for incremental savestates. */
 #define DEFAULT_SUPERBLOCK_SIZE 256 /* measured in blocks */
-#define DEFAULT_BLOCK_SIZE      256 /* measured in bytes  */
+#define DEFAULT_BLOCK_SIZE      1024 /* measured in bytes  */
 
 #define SMALL_STATE_THRESHOLD (1<<20) /* states < 1MB are "small" and are tuned differently */
 #define SMALL_SUPERBLOCK_SIZE 32  /* measured in blocks */
@@ -412,6 +415,12 @@ bool movie_stop_playback(input_driver_state_t *input_st)
    /* Checks if movie is being played back. */
    if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK))
       return false;
+#if DEBUG
+   RARCH_DBG("[Replay] superblock histogram\n");
+   uint32s_index_print_count_data(input_st->bsv_movie_state_handle->superblocks);
+   RARCH_DBG("[Replay] block histogram\n");
+   uint32s_index_print_count_data(input_st->bsv_movie_state_handle->blocks);
+#endif
    _msg = msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED);
    runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -435,6 +444,12 @@ bool movie_stop_record(input_driver_state_t *input_st)
    runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("[Replay] %s\n", _msg);
+#if DEBUG
+   RARCH_DBG("[Replay] superblock histogram\n");
+   uint32s_index_print_count_data(movie->superblocks);
+   RARCH_DBG("[Replay] block histogram\n");
+   uint32s_index_print_count_data(movie->blocks);
+#endif
    frame_count = swap_if_big32(movie->frame_counter);
    intfstream_seek(movie->file, REPLAY_HEADER_FRAME_COUNT_INDEX*sizeof(uint32_t), SEEK_SET);
    intfstream_write(movie->file, &frame_count, sizeof(uint32_t));

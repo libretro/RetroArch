@@ -4,13 +4,20 @@
 #include <array/rbuf.h>
 #include "../../verbosity.h"
 
+#define XXH_INLINE_ALL
+#include <xxHash/xxhash.h>
+
+#define HASHMAP_CAP 1048576
+
 uint32s_index_t *uint32s_index_new(size_t object_size)
 {
    uint32_t *zeros = calloc(object_size, sizeof(uint32_t));
    uint32s_index_t *index = malloc(sizeof(uint32s_index_t));
    index->object_size = object_size;
    index->index = NULL;
+   RHMAP_FIT(index->index, HASHMAP_CAP);
    index->objects = NULL;
+   index->counts = NULL;
    index->additions = NULL;
    /* transfers ownership of zero buffer */
    uint32s_index_insert_exact(index, 0, zeros, 0);
@@ -18,14 +25,7 @@ uint32s_index_t *uint32s_index_new(size_t object_size)
    return index;
 }
 
-uint32_t uint32s_hash_bytes(uint8_t *bytes, size_t len)
-{
-   uint32_t hash = (uint32_t)0x811c9dc5;
-   size_t i;
-   for(i = 0; i < len; i++)
-      hash = ((hash * (uint32_t)0x01000193) ^ (uint32_t)(bytes[i]));
-   return (hash ? hash : 1);
-}
+#define uint32s_hash_bytes(bytes, len) XXH32(bytes,len,0)
 
 bool uint32s_bucket_get(uint32s_index_t *index, struct uint32s_bucket *bucket, uint32_t *object, size_t size_bytes, uint32_t *out_idx)
 {
@@ -116,12 +116,14 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
       if(uint32s_bucket_get(index, bucket, object, size_bytes, &result.index))
       {
          result.is_new = false;
+         index->counts[result.index]++;
          return result;
       }
       idx = RBUF_LEN(index->objects);
       copy = malloc(size_bytes);
       memcpy(copy, object, size_bytes);
       RBUF_PUSH(index->objects, copy);
+      RBUF_PUSH(index->counts, 1);
       result.index = idx;
       result.is_new = true;
       uint32s_bucket_expand(bucket, idx);
@@ -133,6 +135,7 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
       copy = malloc(size_bytes);
       memcpy(copy, object, size_bytes);
       RBUF_PUSH(index->objects, copy);
+      RBUF_PUSH(index->counts, 1);
       new_bucket.len = 1;
       new_bucket.contents.idxs[0] = idx;
       new_bucket.contents.idxs[1] = 0;
@@ -180,6 +183,7 @@ bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *
       RHMAP_SET(index->index, hash, new_bucket);
    }
    RBUF_PUSH(index->objects, object);
+   RBUF_PUSH(index->counts, 0);
    if(additions_len == 0 || index->additions[additions_len-1].frame_counter < frame)
    {
       struct uint32s_frame_addition addition;
@@ -194,6 +198,7 @@ uint32_t *uint32s_index_get(uint32s_index_t *index, uint32_t which)
 {
    if(which >= RBUF_LEN(index->objects))
       return NULL;
+   index->counts[which]++;
    return index->objects[which];
 }
 
@@ -201,6 +206,7 @@ void uint32s_index_pop(uint32s_index_t *index)
 {
    uint32_t idx = RBUF_LEN(index->objects)-1;
    uint32_t *object = RBUF_POP(index->objects);
+   RBUF_RESIZE(index->counts, idx);
    size_t size_bytes = index->object_size * sizeof(uint32_t);
    uint32_t hash = uint32s_hash_bytes((uint8_t *)object, size_bytes);
    struct uint32s_bucket *bucket = RHMAP_PTR(index->index, hash);
@@ -241,6 +247,7 @@ void uint32s_index_clear(uint32s_index_t *index)
    for(i = 1; i < RBUF_LEN(index->objects); i++)
       free(index->objects[i]);
    RBUF_CLEAR(index->objects);
+   RBUF_CLEAR(index->counts);
    uint32s_index_insert_exact(index, 0, zeros, 0);
    /* wipe additions */
    RBUF_CLEAR(index->additions);
@@ -256,7 +263,40 @@ void uint32s_index_free(uint32s_index_t *index)
    for(i = 0; i < RBUF_LEN(index->objects); i++)
       free(index->objects[i]);
    RBUF_FREE(index->objects);
+   RBUF_FREE(index->counts);
    RBUF_FREE(index->additions);
    free(index);
 }
 
+uint32_t uint32s_index_count(uint32s_index_t *index)
+{
+   if (!index || !index->objects)
+      return 0;
+   return RBUF_LEN(index->objects);
+}
+
+#if DEBUG
+#define BIN_COUNT 1000
+uint32_t bins[BIN_COUNT];
+void uint32s_index_print_count_data(uint32s_index_t *index)
+{
+   uint32_t max=1;
+   uint32_t i;
+   for(i = 0; i < BIN_COUNT; i++)
+      bins[i] = 0;
+   for(i = 1; i < RBUF_LEN(index->counts); i++)
+   {
+      max = MAX(max, index->counts[i]);
+   }
+   max = max + 1;
+   for(i = 1; i < RBUF_LEN(index->counts); i++)
+      bins[(int)((((float)index->counts[i]) / (float)max)*BIN_COUNT)]++;
+   for(i = 0; i < BIN_COUNT; i++)
+   {
+      uint32_t bin_start = MAX(1,(i*(float)max/(float)BIN_COUNT));
+      uint32_t bin_end = ((i+1)*(float)max/(float)BIN_COUNT);
+      if (bins[i] == 0) continue;
+      RARCH_DBG("%d--%d: %d\n", bin_start, bin_end, bins[i]);
+   }
+}
+#endif
