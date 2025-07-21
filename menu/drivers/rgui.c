@@ -5002,8 +5002,6 @@ static void rgui_render(void *data, unsigned width, unsigned height,
    size_t i, end, fb_pitch, old_start, new_start;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    static bool display_kb         = false;
-   static const char* const
-      ticker_spacer               = RGUI_TICKER_SPACER;
    int bottom                     = 0;
    unsigned ticker_x_offset       = 0;
    size_t entries_end             = 0;
@@ -5201,14 +5199,14 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       ticker_smooth.font          = NULL;
       ticker_smooth.glyph_width   = rgui->font_width_stride;
       ticker_smooth.type_enum     = menu_ticker_type;
-      ticker_smooth.spacer        = ticker_spacer;
+      ticker_smooth.spacer        = RGUI_TICKER_SPACER;
       ticker_smooth.dst_str_width = NULL;
    }
    else
    {
       ticker.idx                  = p_anim->ticker_idx;
       ticker.type_enum            = menu_ticker_type;
-      ticker.spacer               = ticker_spacer;
+      ticker.spacer               = RGUI_TICKER_SPACER;
    }
 
    /* Note: On-screen keyboard takes precedence over
@@ -7253,8 +7251,6 @@ static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
    if (!string_is_empty(entry.sublabel))
    {
       char *tok, *save         = NULL;
-      static const char* const
-         sublabel_spacer       = RGUI_TICKER_SPACER;
       bool prev_line_empty     = true;
       char *entry_sublabel_cpy = strdup(entry.sublabel);
 
@@ -7270,7 +7266,7 @@ static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
          if (!string_is_empty(tok))
          {
             if (!prev_line_empty)
-               strlcat(rgui->menu_sublabel, sublabel_spacer, sizeof(rgui->menu_sublabel));
+               strlcat(rgui->menu_sublabel, RGUI_TICKER_SPACER, sizeof(rgui->menu_sublabel));
             strlcat(rgui->menu_sublabel, tok, sizeof(rgui->menu_sublabel));
             prev_line_empty = false;
          }

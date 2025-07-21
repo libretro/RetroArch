@@ -110,7 +110,7 @@
 
 #if defined(__APPLE__)
 /* UTF-8 support is currently broken on Apple devices... */
-#define OZONE_TICKER_SPACER           "   |   "
+#define OZONE_TICKER_SPACER           TICKER_SPACER_DEFAULT
 #else
 /* <EM SPACE><BULLET><EM SPACE>
  * UCN equivalent: "\u2003\u2022\u2003" */
@@ -651,6 +651,7 @@ struct ozone_handle
    bool show_thumbnail_bar;
    bool show_playlist_tabs;
    bool sidebar_collapsed;
+   bool font_unicode;
 
    struct
    {
@@ -3362,8 +3363,6 @@ static void ozone_draw_sidebar(
    unsigned i, sidebar_height;
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
-   static const char* const
-         ticker_spacer               = OZONE_TICKER_SPACER;
    unsigned ticker_x_offset          = 0;
    uint32_t text_alpha               = ozone->animations.sidebar_text_alpha * 255.0f;
    float scale_factor                = ozone->last_scale_factor;
@@ -3379,7 +3378,7 @@ static void ozone_draw_sidebar(
       ticker_smooth.font          = ozone->fonts.sidebar.font;
       ticker_smooth.font_scale    = 1.0f;
       ticker_smooth.type_enum     = menu_ticker_type;
-      ticker_smooth.spacer        = ticker_spacer;
+      ticker_smooth.spacer        = (ozone->font_unicode) ? OZONE_TICKER_SPACER : NULL;
       ticker_smooth.x_offset      = &ticker_x_offset;
       ticker_smooth.dst_str_width = NULL;
    }
@@ -3387,7 +3386,7 @@ static void ozone_draw_sidebar(
    {
       ticker.idx                  = p_anim->ticker_idx;
       ticker.type_enum            = menu_ticker_type;
-      ticker.spacer               = ticker_spacer;
+      ticker.spacer               = (ozone->font_unicode) ? OZONE_TICKER_SPACER : NULL;
    }
 
    horizontal_list_size           = (ozone->show_playlist_tabs)
@@ -5855,8 +5854,6 @@ border_iterate:
       unsigned ticker_x_offset     = 0;
       unsigned ticker_str_width    = 0;
       int value_x_offset           = 0;
-      static const char* const
-            ticker_spacer          = OZONE_TICKER_SPACER;
       const char *sublabel_str     = NULL;
       ozone_node_t *node           = NULL;
       const char *entry_rich_label = NULL;
@@ -5872,7 +5869,7 @@ border_iterate:
          ticker_smooth.font          = ozone->fonts.entries_label.font;
          ticker_smooth.font_scale    = 1.0f;
          ticker_smooth.type_enum     = menu_ticker_type;
-         ticker_smooth.spacer        = ticker_spacer;
+         ticker_smooth.spacer        = (ozone->font_unicode) ? OZONE_TICKER_SPACER : NULL;
          ticker_smooth.x_offset      = &ticker_x_offset;
          ticker_smooth.dst_str_width = &ticker_str_width;
       }
@@ -5880,7 +5877,7 @@ border_iterate:
       {
          ticker.idx                  = p_anim->ticker_idx;
          ticker.type_enum            = menu_ticker_type;
-         ticker.spacer               = ticker_spacer;
+         ticker.spacer               = (ozone->font_unicode) ? OZONE_TICKER_SPACER : NULL;
       }
 
       node                           = (ozone_node_t*)selection_buf->list[i].userdata;
@@ -6615,7 +6612,6 @@ static void ozone_draw_thumbnail_bar(
       char ticker_buf[NAME_MAX_LENGTH];
       gfx_animation_ctx_ticker_t ticker;
       gfx_animation_ctx_ticker_smooth_t ticker_smooth;
-      static const char* const ticker_spacer = OZONE_TICKER_SPACER;
       unsigned ticker_x_offset               = 0;
       bool scroll_content_metadata           = settings->bools.ozone_scroll_content_metadata;
       bool use_smooth_ticker                 = settings->bools.menu_ticker_smooth;
@@ -6644,7 +6640,7 @@ static void ozone_draw_thumbnail_bar(
             ticker_smooth.idx                = p_anim->ticker_pixel_idx;
             ticker_smooth.font_scale         = 1.0f;
             ticker_smooth.type_enum          = menu_ticker_type;
-            ticker_smooth.spacer             = ticker_spacer;
+            ticker_smooth.spacer             = (ozone->font_unicode) ? OZONE_TICKER_SPACER : NULL;
             ticker_smooth.x_offset           = &ticker_x_offset;
             ticker_smooth.dst_str_width      = NULL;
 
@@ -6658,7 +6654,7 @@ static void ozone_draw_thumbnail_bar(
          {
             ticker.idx                       = p_anim->ticker_idx;
             ticker.type_enum                 = menu_ticker_type;
-            ticker.spacer                    = ticker_spacer;
+            ticker.spacer                    = (ozone->font_unicode) ? OZONE_TICKER_SPACER : NULL;
 
             ticker.selected                  = true;
             ticker.len                       = (sidebar_width - (separator_padding * 2)) / ozone->fonts.footer.glyph_width;
@@ -9554,6 +9550,8 @@ static void ozone_set_layout(
    if (!string_is_empty(path_menu_font))
       strlcpy(font_path, path_menu_font, sizeof(font_path));
 
+   ozone->font_unicode = !string_is_equal(path_menu_font, FILE_PATH_UNKNOWN) ? true : false;
+
    /* Sidebar */
    font_inited = ozone_init_font(&ozone->fonts.sidebar,
          is_threaded, font_path, FONT_SIZE_SIDEBAR * scale_factor * font_scale_factor_global * font_scale_factor_sidebar);
@@ -10717,7 +10715,6 @@ static void ozone_draw_header(
       math_matrix_4x4 *mymat)
 {
    char title[NAME_MAX_LENGTH];
-   static const char* const ticker_spacer   = OZONE_TICKER_SPACER;
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    unsigned ticker_x_offset                 = 0;
@@ -10746,7 +10743,7 @@ static void ozone_draw_header(
       ticker_smooth.idx           = p_anim->ticker_pixel_idx;
       ticker_smooth.font_scale    = 1.0f;
       ticker_smooth.type_enum     = menu_ticker_type;
-      ticker_smooth.spacer        = ticker_spacer;
+      ticker_smooth.spacer        = (ozone->font_unicode) ? OZONE_TICKER_SPACER : NULL;
       ticker_smooth.x_offset      = &ticker_x_offset;
       ticker_smooth.dst_str_width = NULL;
    }
@@ -10754,7 +10751,7 @@ static void ozone_draw_header(
    {
       ticker.idx                  = p_anim->ticker_idx;
       ticker.type_enum            = menu_ticker_type;
-      ticker.spacer               = ticker_spacer;
+      ticker.spacer               = (ozone->font_unicode) ? OZONE_TICKER_SPACER : NULL;
    }
 
    /* Separator */
@@ -11637,7 +11634,6 @@ static void ozone_draw_footer(
       gfx_animation_ctx_ticker_smooth_t ticker_smooth;
       char core_title[NAME_MAX_LENGTH];
       char core_title_buf[NAME_MAX_LENGTH];
-      static const char* const ticker_spacer          = OZONE_TICKER_SPACER;
       int usable_width;
       unsigned ticker_x_offset                        = 0;
       bool use_smooth_ticker                          =
@@ -11668,7 +11664,7 @@ static void ozone_draw_footer(
             ticker_smooth.idx           = p_anim->ticker_pixel_idx;
             ticker_smooth.font_scale    = 1.0f;
             ticker_smooth.type_enum     = menu_ticker_type;
-            ticker_smooth.spacer        = ticker_spacer;
+            ticker_smooth.spacer        = (ozone->font_unicode) ? OZONE_TICKER_SPACER : NULL;
             ticker_smooth.x_offset      = &ticker_x_offset;
             ticker_smooth.dst_str_width = NULL;
 
@@ -11685,7 +11681,7 @@ static void ozone_draw_footer(
          {
             ticker.idx                  = p_anim->ticker_idx;
             ticker.type_enum            = menu_ticker_type;
-            ticker.spacer               = ticker_spacer;
+            ticker.spacer               = (ozone->font_unicode) ? OZONE_TICKER_SPACER : NULL;
 
             ticker.s                    = core_title_buf;
             ticker.len                  = usable_width / ozone->fonts.footer.glyph_width;
