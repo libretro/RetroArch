@@ -420,7 +420,7 @@ static void rcheevos_client_download_task_callback(retro_task_t* task,
    free(callback_data);
 }
 
-static bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
+bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
    const char* url, const char* badge_name)
 {
    rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();

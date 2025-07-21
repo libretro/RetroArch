@@ -529,7 +529,7 @@ static void rcheevos_client_download_achievement_badge(const char* badge_name, b
    if (list)
    {
       const char* url = NULL;
-      int i, j;
+      uint32_t i, j;
       for (i = 0; i < list->num_buckets && !url; i++)
       {
          for (j = 0; j < list->buckets[i].num_achievements; j++)
@@ -552,7 +552,7 @@ static void rcheevos_client_download_achievement_badge(const char* badge_name, b
             badge_name = locked_badge_name;
          }
 
-         rcheevos_client_download_badge(NULL, url, badge_name);
+         rcheevos_client_download_badge_from_url(url, badge_name);
       }
 
       rc_client_destroy_achievement_list(list);
