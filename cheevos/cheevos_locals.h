@@ -98,6 +98,7 @@ typedef struct rcheevos_locals_t
 #endif
 
    bool hardcore_allowed;             /* prevents enabling hardcore if illegal settings detected */
+   bool hardcore_requires_reload;     /* prevents enabling hardcore until the core is reloaded */
    bool hardcore_being_enabled;       /* allows callers to detect hardcore mode while it's being enabled */
 
    bool core_supports;                /* false if core explicitly disables achievements */

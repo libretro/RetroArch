@@ -264,6 +264,14 @@ void rcheevos_menu_populate_hardcore_pause_submenu(void* data, bool cheevos_hard
             MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,
             MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS, 0, 0, NULL);
       }
+      else if (rcheevos_locals->hardcore_requires_reload)
+      {
+         menu_entries_append(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD),
+            msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD),
+            MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+            MENU_SETTING_ACTION_CLOSE, 0, 0, NULL);
+      }
       else
       {
          menu_entries_append(info->list,

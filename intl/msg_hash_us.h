@@ -10303,6 +10303,14 @@ MSG_HASH(
    "Leave achievements hardcore mode disabled for the current session"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Resume Achievements Hardcore Mode Disabled"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "You must reload the core to resume Achievements Hardcore Mode"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Pause Achievements Hardcore Mode"
    )
