@@ -645,17 +645,10 @@ static bool content_file_list_set_info(
 /* Content file functions START */
 /********************************/
 
-#define CONTENT_FILE_ATTR_RESET(attr) (attr.i = 0)
-
-#define CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, block_extract) (attr.i |= ((block_extract) ? 1 : 0))
-#define CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, need_fullpath) (attr.i |= ((need_fullpath) ? 2 : 0))
-#define CONTENT_FILE_ATTR_SET_REQUIRED(attr, required)           (attr.i |= ((required)      ? 4 : 0))
-#define CONTENT_FILE_ATTR_SET_PERSISTENT(attr, persistent)       (attr.i |= ((persistent)    ? 8 : 0))
-
-#define CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(attr) ((attr.i & 1) != 0)
-#define CONTENT_FILE_ATTR_GET_NEED_FULLPATH(attr) ((attr.i & 2) != 0)
-#define CONTENT_FILE_ATTR_GET_REQUIRED(attr)      ((attr.i & 4) != 0)
-#define CONTENT_FILE_ATTR_GET_PERSISTENT(attr)    ((attr.i & 8) != 0)
+#define BLCK_BLOCK_EXTRACT 1
+#define BLCK_NEED_FULLPATH 2
+#define BLCK_REQUIRED      4
+#define BLCK_PERSISTENT    8
 
 /**
  * content_file_load_into_memory:
@@ -844,7 +837,7 @@ static void content_file_get_path(
     * > file_archive_compressed_read() requires
     *   a 'complete' file path:
     *   <parent_archive>#<internal_file> */
-   if (!CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(content->elems[idx].attr)
+   if (!((content->elems[idx].attr.i & BLCK_BLOCK_EXTRACT) != 0)
        && path_is_archive
        && !path_is_inside_archive)
    {
@@ -902,25 +895,25 @@ static void content_file_apply_overrides(
          path_get_extension(path), &override))
    {
       /* Get existing attributes */
-      bool block_extract = CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(content->elems[idx].attr);
-      bool required      = CONTENT_FILE_ATTR_GET_REQUIRED(content->elems[idx].attr);
-      bool persistent    = CONTENT_FILE_ATTR_GET_PERSISTENT(content->elems[idx].attr);
+      bool block_extract = ((content->elems[idx].attr.i & 1) != 0);
+      bool required      = ((content->elems[idx].attr.i & BLCK_REQUIRED)   != 0);
+      bool persistent    = ((content->elems[idx].attr.i & BLCK_PERSISTENT) != 0);
 
-      CONTENT_FILE_ATTR_RESET(content->elems[idx].attr);
+      content->elems[idx].attr.i = 0;
 
       /* Apply updates
        * > Note that 'persistent' attribute must not
        *   be set false by an override if it is already
        *   true (frontend may require persistence for
        *   other purposes, e.g. runahead) */
-      CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(content->elems[idx].attr,
-            block_extract);
-      CONTENT_FILE_ATTR_SET_NEED_FULLPATH(content->elems[idx].attr,
-            override->need_fullpath);
-      CONTENT_FILE_ATTR_SET_REQUIRED(content->elems[idx].attr,
-            required);
-      CONTENT_FILE_ATTR_SET_PERSISTENT(content->elems[idx].attr,
-            (persistent || override->persistent_data));
+      if (block_extract)
+         content->elems[idx].attr.i |= BLCK_BLOCK_EXTRACT;
+      if (override->need_fullpath)
+         content->elems[idx].attr.i |= BLCK_NEED_FULLPATH;
+      if (required)
+         content->elems[idx].attr.i |= BLCK_REQUIRED;
+      if ((persistent || override->persistent_data))
+         content->elems[idx].attr.i |= BLCK_PERSISTENT;
    }
 }
 
@@ -966,7 +959,7 @@ static bool content_file_load(
        * return an error */
       if (string_is_empty(content_path))
       {
-         if (CONTENT_FILE_ATTR_GET_REQUIRED(content->elems[i].attr))
+         if ((content->elems[i].attr.i & BLCK_REQUIRED) != 0)
          {
             *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT;
             return false;
@@ -986,7 +979,9 @@ static bool content_file_load(
 
          /* If core does not require 'fullpath', load
           * the content into memory */
-         if (!CONTENT_FILE_ATTR_GET_NEED_FULLPATH(content->elems[i].attr))
+
+         /* Doesn't need fullpath? */
+         if (!((content->elems[i].attr.i & BLCK_NEED_FULLPATH) != 0))
          {
             if (!content_file_load_into_memory(
                   content_ctx, p_content, content_path,
@@ -1007,7 +1002,7 @@ static bool content_file_load(
             /* If this is compressed content and need_fullpath
              * is true, extract it to a temporary file */
             if (    content_compressed
-                && !CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(content->elems[i].attr)
+                && !((content->elems[i].attr.i & BLCK_BLOCK_EXTRACT) != 0)
                 && !content_file_extract_from_archive(content_ctx, p_content,
                      valid_exts, &content_path, error_string))
                return false;
@@ -1114,7 +1109,7 @@ static bool content_file_load(
       if (!content_file_list_set_info(
             p_content->content_list,
             content_path, content_data, content_size,
-            CONTENT_FILE_ATTR_GET_PERSISTENT(content->elems[i].attr), i))
+            ((content->elems[i].attr.i & BLCK_PERSISTENT) != 0), i))
       {
          RARCH_LOG("[Content] Failed to process content file: \"%s\".\n", content_path);
          if (content_data)
@@ -1242,10 +1237,13 @@ static void content_file_set_attributes(
       {
          union string_list_elem_attr attr;
 
-         CONTENT_FILE_ATTR_RESET(attr);
-         CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, special->roms[i].block_extract);
-         CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, special->roms[i].need_fullpath);
-         CONTENT_FILE_ATTR_SET_REQUIRED(attr, special->roms[i].required);
+         attr.i = 0;
+         if (special->roms[i].block_extract)
+            attr.i |= BLCK_BLOCK_EXTRACT;
+         if (special->roms[i].need_fullpath)
+            attr.i |= BLCK_NEED_FULLPATH;
+         if (special->roms[i].required)
+            attr.i |= BLCK_REQUIRED;
 
          string_list_append(content, subsystem->elems[i].data, attr);
       }
@@ -1256,21 +1254,22 @@ static void content_file_set_attributes(
       const char *content_path = path_get(RARCH_PATH_CONTENT);
       uint8_t flags            = content_get_flags();
 
-      CONTENT_FILE_ATTR_RESET(attr);
-      CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, content_ctx->flags &
-CONTENT_INFO_FLAG_BLOCK_EXTRACT);
-      CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, content_ctx->flags &
-CONTENT_INFO_FLAG_NEED_FULLPATH);
-      CONTENT_FILE_ATTR_SET_REQUIRED(attr, (!(flags &
-               CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)));
+      attr.i = 0;
+      if (content_ctx->flags & CONTENT_INFO_FLAG_BLOCK_EXTRACT)
+         attr.i |= BLCK_BLOCK_EXTRACT;
+      if (content_ctx->flags & CONTENT_INFO_FLAG_NEED_FULLPATH)
+         attr.i |= BLCK_NEED_FULLPATH;
+      if (!(flags
+            & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT))
+         attr.i |= BLCK_REQUIRED;
 
-#if defined(HAVE_RUNAHEAD)
       /* If runahead is supported and we are not using
        * subsystems, content data buffer must *always*
        * be persistent, since user may toggle second
        * instance runahead at any time (and secondary
        * core initialisation requires valid data) */
-      CONTENT_FILE_ATTR_SET_PERSISTENT(attr, true);
+#if defined(HAVE_RUNAHEAD)
+      attr.i |= BLCK_PERSISTENT;
 #endif
 
       if (string_is_empty(content_path))
