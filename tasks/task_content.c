@@ -895,7 +895,7 @@ static void content_file_apply_overrides(
          path_get_extension(path), &override))
    {
       /* Get existing attributes */
-      bool block_extract = ((content->elems[idx].attr.i & 1) != 0);
+      bool block_extract = ((content->elems[idx].attr.i & BLCK_BLOCK_EXTRACT) != 0);
       bool required      = ((content->elems[idx].attr.i & BLCK_REQUIRED)   != 0);
       bool persistent    = ((content->elems[idx].attr.i & BLCK_PERSISTENT) != 0);
 
