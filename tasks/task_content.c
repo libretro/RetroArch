@@ -753,7 +753,7 @@ static bool content_file_extract_from_archive(
       content_state_t *p_content,
       const char *valid_exts,
       const char **content_path,
-      char **error_string)
+      char *s, size_t len)
 {
    const char *tmp_path_ptr = NULL;
    char tmp_path[PATH_MAX_LENGTH];
@@ -771,11 +771,9 @@ static bool content_file_extract_from_archive(
                NULL : content_ctx->directory_cache,
          tmp_path, sizeof(tmp_path)))
    {
-      char msg[PATH_MAX_LENGTH];
-      snprintf(msg, sizeof(msg), "%s: \"%s\".\n",
+      snprintf(s, len, "%s: \"%s\".\n",
             msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
             *content_path);
-      *error_string = strdup(msg);
       return false;
    }
 
@@ -917,7 +915,8 @@ static bool content_file_load(
       struct string_list *content,
       content_information_ctx_t *content_ctx,
       enum msg_hash_enums *error_enum,
-      char **error_string,
+      char *s,
+      size_t len,
       const struct retro_subsystem_info *special)
 {
    size_t i;
@@ -977,11 +976,9 @@ static bool content_file_load(
                   content_compressed, i, first_content_type,
                   &content_data)) == 0)
             {
-               char msg[PATH_MAX_LENGTH];
-               snprintf(msg, sizeof(msg), "%s \"%s\"\n",
+               snprintf(s, len, "%s \"%s\"\n",
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      content_path);
-               *error_string = strdup(msg);
                return false;
             }
          }
@@ -993,7 +990,7 @@ static bool content_file_load(
             if (    content_compressed
                 && !((content->elems[i].attr.i & BLCK_BLOCK_EXTRACT) != 0)
                 && !content_file_extract_from_archive(content_ctx, p_content,
-                     valid_exts, &content_path, error_string))
+                     valid_exts, &content_path, s, len))
                return false;
 #endif
 #ifdef __WINRT__
@@ -1057,12 +1054,10 @@ static bool content_file_load(
                    * (This disclaimer is out dated but I don't want to remove it)*/
                   if (!CopyFileFromAppW(wcontent_path, wnew_path, false))
                   {
-                     char msg[PATH_MAX_LENGTH];
                      /* TODO/FIXME - localize */
-                     snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read or write)\n",
+                     snprintf(s, len, "%s \"%s\". (during copy read or write)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                         content_path);
-                     *error_string = strdup(msg);
                      return false;
                   }
 
@@ -1145,82 +1140,77 @@ static bool content_file_load(
    return true;
 }
 
-static const struct retro_subsystem_info *content_file_init_subsystem(
-      const struct retro_subsystem_info *subsystem_data,
-      size_t subsystem_current_count,
-      enum msg_hash_enums *error_enum,
-      char **error_string,
-      bool *ret)
-{
-   struct string_list *subsystem              = path_get_subsystem_list();
-   const struct retro_subsystem_info *special = libretro_find_subsystem_info(
-            subsystem_data, (unsigned)subsystem_current_count,
-            path_get(RARCH_PATH_SUBSYSTEM));
-
-   if (!special)
-   {
-      char msg[128];
-      /* TODO/FIXME - localize */
-      snprintf(msg, sizeof(msg),
-            "Failed to find subsystem \"%s\" in libretro implementation.\n",
-            path_get(RARCH_PATH_SUBSYSTEM));
-      *error_string = strdup(msg);
-      goto error;
-   }
-
-   if (special->num_roms)
-   {
-      if (!subsystem)
-      {
-         *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT;
-         goto error;
-      }
-
-      if (special->num_roms != subsystem->size)
-      {
-         char msg[128];
-         /* TODO/FIXME - localize */
-         snprintf(msg, sizeof(msg),
-               "Libretro core requires %u content files for "
-               "subsystem \"%s\", but %u content files were provided.\n",
-               special->num_roms, special->desc,
-               (unsigned)subsystem->size);
-         *error_string = strdup(msg);
-         goto error;
-      }
-   }
-   else if (subsystem && subsystem->size)
-   {
-      char msg[128];
-      /* TODO/FIXME - localize */
-      snprintf(msg, sizeof(msg),
-            "Libretro core takes no content for subsystem \"%s\", "
-            "but %u content files were provided.\n",
-            special->desc,
-            (unsigned)subsystem->size);
-      *error_string = strdup(msg);
-      goto error;
-   }
-
-   *ret = true;
-   return special;
-
-error:
-   *ret = false;
-   return NULL;
-}
-
-static void content_file_set_attributes(
-      struct string_list *content,
-      const struct retro_subsystem_info *special,
+/**
+ * content_init_file:
+ *
+ * Initializes and loads a content file for the currently
+ * selected libretro core.
+ *
+ * Returns : true if successful, otherwise false.
+ **/
+static bool content_file_init(
       content_information_ctx_t *content_ctx,
-      char **error_string)
+      content_state_t *p_content,
+      struct string_list *content,
+      enum msg_hash_enums *error_enum,
+      char *s, size_t len)
 {
-   struct string_list *subsystem = path_get_subsystem_list();
+   bool subsystem_path_is_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
+   const struct retro_subsystem_info *subsystem_data = content_ctx->subsystem.data;
+   size_t subsystem_size                      = content_ctx->subsystem.size;
+   const struct retro_subsystem_info *special = NULL;
+
+   if (!subsystem_path_is_empty)
+   {
+      struct string_list *subsystem              = path_get_subsystem_list();
+      const struct retro_subsystem_info *special = libretro_find_subsystem_info(
+            subsystem_data, (unsigned)subsystem_size,
+            path_get(RARCH_PATH_SUBSYSTEM));
+
+      if (!special)
+      {
+         /* TODO/FIXME - localize */
+         snprintf(s, len,
+               "Failed to find subsystem \"%s\" in libretro implementation.\n",
+               path_get(RARCH_PATH_SUBSYSTEM));
+         return false;
+      }
+
+      if (special->num_roms)
+      {
+         if (!subsystem)
+         {
+            *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT;
+            return false;
+         }
+
+         if (special->num_roms != subsystem->size)
+         {
+            /* TODO/FIXME - localize */
+            snprintf(s, len,
+                  "Libretro core requires %u content files for "
+                  "subsystem \"%s\", but %u content files were provided.\n",
+                  special->num_roms, special->desc,
+                  (unsigned)subsystem->size);
+            return false;
+         }
+      }
+      else if (subsystem && subsystem->size)
+      {
+         /* TODO/FIXME - localize */
+         snprintf(s, len,
+               "Libretro core takes no content for subsystem \"%s\", "
+               "but %u content files were provided.\n",
+               special->desc,
+               (unsigned)subsystem->size);
+         return false;
+      }
+   }
 
    if (!path_is_empty(RARCH_PATH_SUBSYSTEM) && special)
    {
       size_t i;
+      struct string_list *subsystem = path_get_subsystem_list();
 
       for (i = 0; i < subsystem->size; i++)
       {
@@ -1271,42 +1261,16 @@ static void content_file_set_attributes(
       else
          string_list_append(content, content_path, attr);
    }
-}
-
-/**
- * content_init_file:
- *
- * Initializes and loads a content file for the currently
- * selected libretro core.
- *
- * Returns : true if successful, otherwise false.
- **/
-static bool content_file_init(
-      content_information_ctx_t *content_ctx,
-      content_state_t *p_content,
-      struct string_list *content,
-      enum msg_hash_enums *error_enum,
-      char **error_string)
-{
-   bool subsystem_path_is_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
-   bool ret                                   = subsystem_path_is_empty;
-   const struct retro_subsystem_info *special = subsystem_path_is_empty ?
-         NULL : content_file_init_subsystem(content_ctx->subsystem.data,
-               content_ctx->subsystem.size, error_enum, error_string, &ret);
-
-   if (!ret)
-      return false;
-
-   content_file_set_attributes(content, special, content_ctx, error_string);
 
    if (content->size > 0)
    {
       content_file_list_t *file_list = content_file_list_init(content->size);
       if (file_list)
       {
+         bool ret;
          p_content->content_list     = file_list;
          ret = content_file_load(p_content, content, content_ctx,
-               error_enum, error_string, special);
+               error_enum, s, len, special);
 
          content_file_list_free_transient_data(p_content->content_list);
          return ret;
@@ -3015,11 +2979,11 @@ void content_set_subsystem_info(void)
 bool content_init(void)
 {
    struct string_list content;
+   char error_string[256];
    content_information_ctx_t content_ctx;
    enum msg_hash_enums error_enum     = MSG_UNKNOWN;
    content_state_t *p_content         = content_state_get_ptr();
    bool ret                           = true;
-   char *error_string                 = NULL;
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    rarch_system_info_t *sys_info      = &runloop_st->system;
    settings_t *settings               = config_get_ptr();
@@ -3100,7 +3064,7 @@ bool content_init(void)
    if (string_list_initialize(&content))
    {
       if (!content_file_init(&content_ctx, p_content,
-            &content, &error_enum, &error_string))
+            &content, &error_enum, error_string, sizeof(error_string)))
       {
          content_deinit();
          ret = false;
@@ -3144,7 +3108,7 @@ bool content_init(void)
       }
    }
 
-   if (error_string)
+   if (!string_is_empty(error_string))
    {
       if (ret)
          RARCH_LOG("[Content] %s\n", error_string);
@@ -3156,7 +3120,6 @@ bool content_init(void)
        *   to propagate through to the frontend */
       runloop_msg_queue_push(error_string, strlen(error_string), 2, ret ? 1 : 180, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      free(error_string);
    }
 
    return ret;
