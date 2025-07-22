@@ -2129,9 +2129,7 @@ bool task_push_load_content_from_playlist_from_menu(
    retroarch_menu_running_finished(true);
 #endif
 
-#ifndef HAVE_DYNAMIC
 end:
-#endif
    /* Handle load content failure */
    if (!ret)
       retroarch_menu_running();
