@@ -476,7 +476,7 @@ static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
    const rc_client_achievement_t* achievement;
    const char* next_badge;
    char badge_name[32];
-   const char* url;
+   const char* url = NULL;
    bool done = false;
 
    do
