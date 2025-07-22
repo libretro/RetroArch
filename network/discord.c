@@ -164,7 +164,6 @@ static void handle_discord_join_cb(retro_task_t *task, void *task_data,
       goto done;
    if (data->status != 200)
       goto done;
-
    if (!(room_data = (char*)malloc(data->len + 1)))
       goto done;
    memcpy(room_data, data->data, data->len);

@@ -681,7 +681,7 @@ static struct buffer query_parse_table(
    buff = query_expect_char(s, len, buff, '{', error);
 
    if (*error)
-      goto clean;
+      return buff;
 
    buff = query_chomp(buff);
 
@@ -798,13 +798,12 @@ static struct buffer query_parse_method_call(
 
    invocation->func           = NULL;
 
-   buff                       = query_get_ident(s, len,
-         buff, &func_name, &_len, error);
+   buff = query_get_ident(s, len, buff, &func_name, &_len, error);
    if (*error)
-      goto clean;
+      return buff;
 
-   buff                       = query_chomp(buff);
-   buff                       = query_expect_char(s, len, buff, '(', error);
+   buff = query_chomp(buff);
+   buff = query_expect_char(s, len, buff, '(', error);
    if (*error)
       goto clean;
 

@@ -1347,24 +1347,21 @@ static bool input_remote_init_network(input_remote_t *handle,
    RARCH_LOG("[Network] Bringing up remote interface on port %hu.\n",
          (unsigned short)port);
 
-   if ((fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM, AF_INET)) < 0)
-      goto error;
-
-   handle->net_fd[user] = fd;
-
-   if (!socket_nonblock(handle->net_fd[user]))
-      goto error;
-
-   if (!socket_bind(handle->net_fd[user], res))
+   if ((fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM, AF_INET)) >= 0)
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_BIND_SOCKET));
-      goto error;
+      handle->net_fd[user] = fd;
+
+      if (socket_nonblock(handle->net_fd[user]))
+      {
+         if (socket_bind(handle->net_fd[user], res))
+         {
+            freeaddrinfo_retro(res);
+            return true;
+         }
+         RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_BIND_SOCKET));
+      }
    }
 
-   freeaddrinfo_retro(res);
-   return true;
-
-error:
    if (res)
       freeaddrinfo_retro(res);
    return false;
@@ -3442,11 +3439,14 @@ static void input_overlay_update_pointer_coords(
    /* Need multi-touch coordinates for pointer only */
    if (     ptr_st->count
          && !(ptr_st->device_mask & (1 << RETRO_DEVICE_POINTER)))
-      goto finish;
+   {
+      ptr_st->count++;
+      return;
+   }
 
    /* Need viewport pointers for pointer and lightgun */
-   if (ptr_st->device_mask &
-         ((1 << RETRO_DEVICE_LIGHTGUN) | (1 << RETRO_DEVICE_POINTER)))
+   if (     ptr_st->device_mask
+         & ((1 << RETRO_DEVICE_LIGHTGUN) | (1 << RETRO_DEVICE_POINTER)))
    {
       ptr_st->ptr[ptr_st->count].x  = current_input->input_state(
             input_data, NULL, NULL, NULL, NULL, true, 0,
@@ -3478,7 +3478,6 @@ static void input_overlay_update_pointer_coords(
             RETRO_DEVICE_ID_POINTER_Y);
    }
 
-finish:
    ptr_st->count++;
 }
 
@@ -6375,8 +6374,8 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
       else if (next_frame_type == REPLAY_TOKEN_CHECKPOINT2_FRAME)
       {
          uint8_t compression, encoding;
-         if (intfstream_read(handle->file, &(compression), sizeof(uint8_t)) != sizeof(uint8_t) ||
-             intfstream_read(handle->file, &(encoding), sizeof(uint8_t)) != sizeof(uint8_t))
+         if (   intfstream_read(handle->file, &(compression), sizeof(uint8_t)) != sizeof(uint8_t)
+             || intfstream_read(handle->file, &(encoding), sizeof(uint8_t)) != sizeof(uint8_t))
          {
             /* Unexpected EOF */
             RARCH_ERR("[Replay] Replay checkpoint truncated.\n");
@@ -6533,7 +6532,7 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
    {
       int64_t i;
       /* no choice but to memcmp the whole stream against the other */
-      for (i = 0; ret && i < check_limit; i+=check_cap)
+      for (i = 0; ret && i < check_limit; i += check_cap)
       {
          int64_t read_end = MIN(check_limit - i, check_cap);
          int64_t read1 = intfstream_read(movie->file, buf1, read_end);
@@ -6547,7 +6546,7 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
       }
       goto exit;
    }
-   while(intfstream_tell(movie->file) < check_limit && intfstream_tell(check_stream) < check_limit)
+   while (intfstream_tell(movie->file) < check_limit && intfstream_tell(check_stream) < check_limit)
    {
       if (intfstream_tell(movie->file) < 0 || intfstream_tell(check_stream) < 0)
       {
@@ -6555,25 +6554,28 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
          ret = false;
          goto exit;
       }
-      if (intfstream_read(movie->file, &keycount1, 1) < 1 ||
-            intfstream_read(check_stream, &keycount2, 1) < 1 ||
-            keycount1 != keycount2)
+      if (     intfstream_read(movie->file, &keycount1, 1) < 1
+            || intfstream_read(check_stream, &keycount2, 1) < 1
+            || keycount1 != keycount2)
       {
          RARCH_ERR("[Replay] Replay checkpoints disagree on key count, %d vs %d\n", keycount1, keycount2);
          ret = false;
          goto exit;
       }
-      if ((uint64_t)intfstream_read(movie->file, buf1, keycount1*sizeof(bsv_key_data_t)) < keycount1*sizeof(bsv_key_data_t) ||
-            (uint64_t)intfstream_read(check_stream, buf2, keycount2*sizeof(bsv_key_data_t)) < keycount2*sizeof(bsv_key_data_t) ||
-            memcmp(buf1, buf2, keycount1*sizeof(bsv_key_data_t)) != 0)
+      if (
+               (uint64_t)intfstream_read(movie->file, buf1, keycount1*sizeof(bsv_key_data_t))
+               < keycount1*sizeof(bsv_key_data_t)
+            || (uint64_t)intfstream_read(check_stream, buf2, keycount2*sizeof(bsv_key_data_t))
+            < keycount2*sizeof(bsv_key_data_t)
+            || memcmp(buf1, buf2, keycount1*sizeof(bsv_key_data_t)) != 0)
       {
          RARCH_ERR("[Replay] Replay checkpoints disagree on key data\n");
          ret = false;
          goto exit;
       }
-      if (intfstream_read(movie->file, &btncount1, 2) < 2 ||
-            intfstream_read(check_stream, &btncount2, 2) < 2 ||
-            btncount1 != btncount2)
+      if (     intfstream_read(movie->file, &btncount1, 2)  < 2
+            || intfstream_read(check_stream, &btncount2, 2) < 2
+            || btncount1 != btncount2)
       {
          RARCH_ERR("[Replay] Replay checkpoints disagree on input count\n");
          ret = false;
@@ -6581,17 +6583,19 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
       }
       btncount1 = swap_if_big16(btncount1);
       btncount2 = swap_if_big16(btncount2);
-      if ((uint64_t)intfstream_read(movie->file, buf1, btncount1*sizeof(bsv_input_data_t)) < btncount1*sizeof(bsv_input_data_t) ||
-            (uint64_t)intfstream_read(check_stream, buf2, btncount2*sizeof(bsv_input_data_t)) < btncount2*sizeof(bsv_input_data_t) ||
-            memcmp(buf1, buf2, btncount1*sizeof(bsv_input_data_t)) != 0)
+      if (   (uint64_t)intfstream_read(movie->file, buf1, btncount1*sizeof(bsv_input_data_t))
+            < btncount1*sizeof(bsv_input_data_t)
+            || (uint64_t)intfstream_read(check_stream, buf2, btncount2*sizeof(bsv_input_data_t))
+            < btncount2*sizeof(bsv_input_data_t)
+            || memcmp(buf1, buf2, btncount1*sizeof(bsv_input_data_t)) != 0)
       {
          RARCH_ERR("[Replay] Replay checkpoints disagree on input data\n");
          ret = false;
          goto exit;
       }
-      if (intfstream_read(movie->file, &frametok1, 1) < 1 ||
-            intfstream_read(check_stream, &frametok2, 1) < 1 ||
-            frametok1 != frametok2)
+      if (     intfstream_read(movie->file, &frametok1, 1)  < 1
+            || intfstream_read(check_stream, &frametok2, 1) < 1
+            || frametok1 != frametok2)
       {
          RARCH_ERR("[Replay] Replay checkpoints disagree on frame token\n");
          ret = false;
@@ -6606,9 +6610,9 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
          case REPLAY_TOKEN_REGULAR_FRAME:
             break;
          case REPLAY_TOKEN_CHECKPOINT_FRAME:
-            if ((uint64_t)intfstream_read(movie->file, &size1, sizeof(uint64_t)) < sizeof(uint64_t) ||
-                  (uint64_t)intfstream_read(check_stream, &size2, sizeof(uint64_t)) < sizeof(uint64_t) ||
-                  size1 != size2)
+            if (     (uint64_t)intfstream_read(movie->file, &size1, sizeof(uint64_t)) < sizeof(uint64_t)
+                  || (uint64_t)intfstream_read(check_stream, &size2, sizeof(uint64_t)) < sizeof(uint64_t)
+                  || size1 != size2)
             {
                RARCH_ERR("[Replay] Replay checkpoints disagree on size or scheme\n");
                ret = false;

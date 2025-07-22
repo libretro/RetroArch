@@ -373,27 +373,31 @@ struct http_connection_t *net_http_connection_new(const char *url,
       conn->contentlength  = strlen(data);
    }
 
-   if (!(conn->url = strdup(url)))
-      goto error;
-
-   if (!strncmp(url, "http://", STRLEN_CONST("http://")))
-      conn->scan = conn->url + STRLEN_CONST("http://");
-   else if (!strncmp(url, "https://", STRLEN_CONST("https://")))
+   if ((conn->url = strdup(url)))
    {
-      conn->scan = conn->url + STRLEN_CONST("https://");
-      conn->ssl  = true;
+      if (!strncmp(url, "http://", STRLEN_CONST("http://")))
+      {
+         conn->scan   = conn->url + STRLEN_CONST("http://");
+
+         if (!string_is_empty(conn->scan))
+         {
+            conn->domain = conn->scan;
+            return conn;
+         }
+      }
+      else if (!strncmp(url, "https://", STRLEN_CONST("https://")))
+      {
+         conn->scan   = conn->url + STRLEN_CONST("https://");
+         conn->ssl    = true;
+
+         if (!string_is_empty(conn->scan))
+         {
+            conn->domain = conn->scan;
+            return conn;
+         }
+      }
    }
-   else
-      goto error;
 
-   if (string_is_empty(conn->scan))
-      goto error;
-
-   conn->domain = conn->scan;
-
-   return conn;
-
-error:
    if (conn->url)
       free(conn->url);
    if (conn->method)

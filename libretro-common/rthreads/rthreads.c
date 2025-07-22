@@ -364,25 +364,28 @@ scond_t *scond_new(void)
     *
     * Note: We might could simplify this using vista+ condition variables,
     * but we wanted an XP compatible solution. */
-   if (!(cond->event      = CreateEvent(NULL, FALSE, FALSE, NULL)))
-      goto error;
+   if (!(cond->event = CreateEvent(NULL, FALSE, FALSE, NULL)))
+   {
+      free(cond);
+      return NULL;
+   }
    if (!(cond->hot_potato = CreateEvent(NULL, FALSE, FALSE, NULL)))
    {
       CloseHandle(cond->event);
-      goto error;
+      free(cond);
+      return NULL;
    }
 
    InitializeCriticalSection(&cond->cs);
 #else
    if (pthread_cond_init(&cond->cond, NULL) != 0)
-      goto error;
+   {
+      free(cond);
+      return NULL;
+   }
 #endif
 
    return cond;
-
-error:
-   free(cond);
-   return NULL;
 }
 
 void scond_free(scond_t *cond)

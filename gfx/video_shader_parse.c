@@ -2237,8 +2237,7 @@ bool video_shader_load_preset_into_shader(const char *path,
    if (!root_conf)
    {
       RARCH_WARN("[Shaders] Could not read root preset: \"%s\".\n", path);
-      ret = false;
-      goto end;
+      return false;
    }
 
    /* Check if the root preset is a valid shader chain
@@ -2345,7 +2344,6 @@ bool video_shader_load_preset_into_shader(const char *path,
 #endif
 
 end:
-
    path_linked_list_free(override_paths_list);
    config_file_free(conf);
    config_file_free(root_conf);
@@ -2842,7 +2840,7 @@ static bool video_shader_load_shader_preset_internal(
  *
  * Returns: false if there was an error or no action was performed.
  */
-static bool video_shader_load_auto_shader_preset(
+static size_t video_shader_load_auto_shader_preset(
       const char *video_shader_directory,
       const char *menu_config_directory,
       const char *core_name,
@@ -2897,7 +2895,7 @@ static bool video_shader_load_auto_shader_preset(
                   sizeof(shader_path),
                   dirs[i], core_name,
                   game_name))
-            goto success;
+            return strlcpy(s, shader_path, len);
 
          /* Folder-specific shader preset found? */
          if (video_shader_load_shader_preset_internal(
@@ -2905,7 +2903,7 @@ static bool video_shader_load_auto_shader_preset(
                   sizeof(shader_path),
                   dirs[i], core_name,
                   content_dir_name))
-            goto success;
+            return strlcpy(s, shader_path, len);
       }
 
       /* Core-specific shader preset found? */
@@ -2914,7 +2912,7 @@ static bool video_shader_load_auto_shader_preset(
                sizeof(shader_path),
                dirs[i], core_name,
                core_name))
-         goto success;
+         return strlcpy(s, shader_path, len);
 
       /* Global shader preset found? */
       if (video_shader_load_shader_preset_internal(
@@ -2922,14 +2920,10 @@ static bool video_shader_load_auto_shader_preset(
                sizeof(shader_path),
                dirs[i], NULL,
                "global"))
-         goto success;
+         return strlcpy(s, shader_path, len);
    }
-   return false;
 
-success:
-   /* Shader preset exists, load it. */
-   strlcpy(s, shader_path, len);
-   return true;
+   return 0;
 }
 
 bool video_shader_combine_preset_and_apply(

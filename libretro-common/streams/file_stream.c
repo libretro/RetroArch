@@ -547,15 +547,13 @@ int filestream_putc(RFILE *stream, int c)
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
 {
    static char buffer[8 * 1024];
-   int64_t num_chars = vsnprintf(buffer, sizeof(buffer),
+   int _len = vsnprintf(buffer, sizeof(buffer),
          format, args);
-
-   if (num_chars < 0)
+   if (_len < 0)
       return -1;
-   else if (num_chars == 0)
+   else if (_len == 0)
       return 0;
-
-   return (int)filestream_write(stream, buffer, num_chars);
+   return (int)filestream_write(stream, buffer, _len);
 }
 
 int filestream_printf(RFILE *stream, const char* format, ...)

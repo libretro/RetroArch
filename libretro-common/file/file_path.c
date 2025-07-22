@@ -805,7 +805,11 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
          tmp[t++] = '/';
 
       if (string_is_empty(s))
-         goto end;
+      {
+         tmp[t] = '\0';
+         strlcpy(s, tmp, len);
+         return s;
+      }
 
       p = s;
    }
@@ -851,10 +855,8 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
          while (p <= next)
             tmp[t++] = *p++;
       }
-   }while(next < buf_end);
+   } while(next < buf_end);
 
-
-end:
    tmp[t] = '\0';
    strlcpy(s, tmp, len);
    return s;

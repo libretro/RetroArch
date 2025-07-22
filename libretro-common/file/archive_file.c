@@ -338,7 +338,6 @@ bool file_archive_extract_file(
       char *s, size_t len)
 {
    struct archive_extract_userdata userdata;
-   bool ret                                 = true;
    struct string_list *list                 = string_split(valid_exts, "|");
 
    userdata.archive_path[0]                 = '\0';
@@ -353,37 +352,22 @@ bool file_archive_extract_file(
    userdata.transfer                        = NULL;
    userdata.dec                             = NULL;
 
-   if (!list)
+   if (     list
+         && file_archive_walk(archive_path, valid_exts,
+            file_archive_extract_cb, &userdata)
+         && userdata.found_file
+      )
    {
-      ret = false;
-      goto end;
+      if (!string_is_empty(userdata.first_extracted_file_path))
+         strlcpy(s, userdata.first_extracted_file_path, len);
+      return true;
    }
 
-   if (!file_archive_walk(archive_path, valid_exts,
-            file_archive_extract_cb, &userdata))
-   {
-      /* Parsing file archive failed. */
-      ret = false;
-      goto end;
-   }
-
-   if (!userdata.found_file)
-   {
-      /* Didn't find any file that matched valid extensions
-       * for libretro implementation. */
-      ret = false;
-      goto end;
-   }
-
-   if (!string_is_empty(userdata.first_extracted_file_path))
-      strlcpy(s, userdata.first_extracted_file_path, len);
-
-end:
    if (userdata.first_extracted_file_path)
       free(userdata.first_extracted_file_path);
    if (list)
       string_list_free(list);
-   return ret;
+   return false;
 }
 
 /* Warning: 'list' must zero initialised before
@@ -533,7 +517,10 @@ static struct string_list *file_archive_filename_split(const char *path)
    {
       /* add archive path to list first */
       if (!string_list_append_n(list, path, (unsigned)(delim - path), attr))
-         goto error;
+      {
+         string_list_free(list);
+         return NULL;
+      }
 
       /* now add the path within the archive */
       delim++;
@@ -541,18 +528,22 @@ static struct string_list *file_archive_filename_split(const char *path)
       if (*delim)
       {
          if (!string_list_append(list, delim, attr))
-            goto error;
+         {
+            string_list_free(list);
+            return NULL;
+         }
       }
    }
    else
+   {
       if (!string_list_append(list, path, attr))
-         goto error;
+      {
+         string_list_free(list);
+         return NULL;
+      }
+   }
 
    return list;
-
-error:
-   string_list_free(list);
-   return NULL;
 }
 
 /* Generic compressed file loader.
