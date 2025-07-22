@@ -73,11 +73,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
-   "Rilasciare il core caricato."
+   "Rilascia il core caricato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "Sfoglia l’implementazione di un core libretro. Il punto di partenza del browser dipende dal percorso della directory Core.Se il percorso è vuoto, il browser si avvierà nella directory radice (root).\nSe la directory Core è una cartella, il menu la utilizzerà come cartella principale.Se invece la directory Core è un percorso completo a un file, il browser si avvierà nella cartella che contiene quel file."
+   "Sfoglia per una core libretro da caricare.Il punto di partenza della navigazione dipende dal percorso della tua Directory dei core.Se il percorso è vuoto, la navigazione inizierà dalla cartella radice (root).\nSe Core Directory è una cartella, il menu userà quella come cartella principale.Se Core Directory è un percorso completo a un file, la navigazione inizierà dalla cartella che contiene quel file.."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -1254,7 +1254,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
-   "Sincronizzazione: salvataggi/ stati di salvataggio"
+   "Sincronizzazione: salvataggi/ salvataggi rapidi"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
@@ -1270,7 +1270,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
-   "Se questa opzione è abilitata, i salvataggi/stati di salvataggio verranno sincronizzati su cloud."
+   "Se questa opzione è abilitata, i salvataggi/salvataggi rapidi verranno sincronizzati su cloud."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
@@ -1414,11 +1414,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   "Limitatore di fotogrammi"
+   "Limitazione fotogrammi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   "Modifica le impostazioni per il riavvolgimento, l'avanzamento rapido e il rallentatore."
+   "Modifica le impostazioni per il riavvolgimento (rewind), l'avanzamento rapido e il rallentatore."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
@@ -2262,18 +2262,18 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
-   "Disabilita FBO in formato sRGB"
+   "Disabilitazione forzata sRGB FBO"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   "Disabilita forzatamente il supporto di sRGB FBO. Alcuni driver OpenGL Intel su Windows hanno problemi video con FBOS sRGB. Abilitando questa opzione si può aggirare."
+   "Forza la disattivazione del supporto per sRGB FBO. Alcuni driver Intel OpenGL su Windows presentano problemi video con gli sRGB FBO. Attivare questa opzione può servire da soluzione alternativa."
    )
 
 /* Settings > Video > Fullscreen Mode */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   "Utilizza la modalità a Schermo Intero"
+   "Utilizza la modalità a schermo intero"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
@@ -2798,11 +2798,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
-   "Muta audio per riavvolgimento"
+   "Silenzia audio durante il riavvolgimento"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
-   "Disattiva automaticamente l'audio quando si utilizza la velocizzazione."
+   "Silenzia automaticamente l'audio quando si utilizza la funzione riavvolgimento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -3239,7 +3239,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
-   "Cattura Automatica Del Mouse"
+   "Cattura automatica del mouse"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
@@ -3247,11 +3247,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
-   "Abilita Automaticamente la Modalità 'Gioco in primo piano'"
+   "Abilita automaticamente la modalità 'Gioco in primo piano'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   "Abilita sempre la modalità 'Gioco in primo piano' quando avvii e riprendi i contenuti. Quando impostato a 'Detect', l'opzione sarà abilitata se il core implementa le funzionalità di callback della tastiera frontend."
+   "Abilita sempre la modalità 'Gioco in primo piano' quando avvii e riprendi i contenuti. Se impostata su 'Rileva', l'opzione sarà abilitata se il core implementa la funzione di callback della tastiera lato frontend."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -3315,7 +3315,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_BIND_PRESS,
-   "Premere tastiera, mouse o gamepad"
+   "Premi tastiera, mouse o gamepad"
    )
 MSG_HASH(
    MSG_INPUT_BIND_RELEASE,
@@ -3689,11 +3689,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
-   "Riavvolgimento"
+   "Riavvolgimento (rewind)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "Riavvolge il contenuto attuale quando si tiene premuto il tasto. 'Supporto al Riavvolgimento' deve essere abilitato."
+   "Riavvolge il contenuto attuale quando si tiene premuto il tasto. 'Supporto al riavvolgimento' deve essere abilitato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -3743,31 +3743,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "Carica stato salvato dallo slot attualmente selezionato."
+   "Carica salvataggio rapido dallo slot attualmente selezionato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "Salva Stato di salvataggio"
+   "Salvataggio rapido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
-   "Salva lo stato allo slot attualmente selezionato."
+   "Salva il salvataggio rapido allo slot attualmente selezionato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "Prossimo Salva Slot Fortezza"
+   "Prossimo slot salvataggio rapido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "Passa al successivo slot di stati di salvataggio."
+   "Passa al successivo slot di salvataggio rapido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "Precedente Salva Slot Fortezza"
+   "Precedente slot salvataggio rapido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "Passa al precedente slot di stato di salvataggio."
+   "Passa al precedente slot di salvataggio rapido."
    )
 
 MSG_HASH(
@@ -3830,7 +3830,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
-   "Trucchi (Attiva / Disattiva)"
+   "Trucchi (attiva / disattiva)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
@@ -3927,19 +3927,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "Prendi il Mouse (Abilita / Disabilita)"
+   "Cattura il mouse (abilita/disabilita)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "Prendi o rilascia il mouse. Quando afferrato, il cursore di sistema è nascosto e limitato alla finestra di visualizzazione RetroArch, migliorando l'input relativo al mouse."
+   "Cattura o rilascia il mouse. Quando è catturato, il cursore di sistema viene nascosto e confinato alla finestra di RetroArch, migliorando l’input relativo del mouse."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
-   "Gioco in primo piano (Abilita / Disabilita)"
+   "Gioco in primo piano (abilita/disabilita)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
-   "Attiva o disattiva la modalità 'Focalizzazione'. Quando il contenuto è attivato, i tasti di scelta rapida sono disabilitati (l' ingresso della tastiera viene passato al nucleo corrente) e il mouse viene afferrato."
+   "Attiva/disattiva la modalità \"Gioco in primo piano\". Quando attivata, i tasti rapidi sono disabilitati (tutti gli input da tastiera passano al core in esecuzione) e il mouse viene catturato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
@@ -4316,7 +4316,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
-   "Il nucleo attuale è incompatibile con il run-ahead a causa della mancanza del salvataggio di stato deterministico."
+   "Il core attualmente in uso non è compatibile con la funzione run-ahead, a causa della mancanza di supporto deterministico per i salvataggi rapidi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
@@ -4354,7 +4354,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "Nascondi il messaggio di avviso che appare quando si usa l'Anticipazione e il core non supporta gli stati di salvataggio."
+   "Nascondi il messaggio di avviso che appare quando si usa run-ahead e il core non supporta i salvataggi rapidi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
@@ -4429,11 +4429,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
-   "Supera le informazioni del core per le informazioni del salvataggio di stato"
+   "Ignora le informazioni del core sulle funzioni di salvataggio rapido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Specifica se ignorare le informazioni di base salvare le capacità di stato, consentendo di sperimentare con le caratteristiche correlate (eseguire avanti, riavvolgimento, ecc)."
+   "Consente di ignorare le capacità di salvataggio indicate dal core, così da poter sperimentare con funzioni correlate (Come il run-ahead, il riavvolgimento, ecc)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4585,11 +4585,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Ordina gli Stati di salvataggio nelle cartelle per nome principale"
+   "Ordina i salvataggi rapidi nelle cartelle per nome principale"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-   "Ordina gli stati di salvataggio in cartelle dopo che un core viene utilizzato."
+   "Ordina i salvataggi rapidi in cartelle dopo che un core viene utilizzato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -4601,19 +4601,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Ordina gli Stati di salvataggio nelle cartelle per directory di contenuto"
+   "Ordina i salvataggi rapidi nelle cartelle per directory di contenuto"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Ordina gli stati di salvataggio nelle cartelle denominate dopo la directory in cui si trova il contenuto."
+   "Ordina i salvataggi rapidi in cartelle con il nome della directory in cui si trova il contenuto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Non sovrascrivere la SaveRAM durante il caricamento del salvataggio"
+   "Non sovrascrivere la SaveRAM durante il caricamento del salvataggio rapido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   "Blocca il salvataggio della SRAM da sovrascrittura durante il caricamento degli stati di salvataggio. Potenzialmente può portare a buggare i giochi."
+   "Blocca il salvataggio della SaveRAM dalla sovrascrittura durante il caricamento dei salvataggi rapidi. Potenzialmente può portare a molti problemi tecnici nei giochi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -4637,15 +4637,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
-   "Salvataggio automatico dello stato di gioco durante la registrazione di replay ad un intervallo regolare. Questo è disabilitato per impostazione predefinita, a meno che non sia impostato diversamente. L'intervallo è misurato in secondi. Un valore di 0 disabilita la registrazione dei punti di controllo."
+   "Salva automaticamente il salvataggio rapidondurante la registrazione del replay a intervalli regolari. Questa funzione è disattivata per impostazione predefinita, a meno che non venga modificata. L’intervallo è misurato in secondi. Un valore pari a 0 disattiva la registrazione dei checkpoint."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Passa Automaticamente Allo Slot Successivo degli stati di salvataggio"
+   "Incrementa automaticamente l’indice del salvataggio rapido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   "Prima di fare uno stato di salvataggio, l'indice dello stato di salvataggio viene automaticamente aumentato. Durante il caricamento del contenuto, l'indice sarà impostato sull'indice esistente più alto."
+   "Prima di fare un salvataggio rapido, il suo indice viene automaticamente aumentato. Durante il caricamento del contenuto, l'indice sarà impostato sull'indice esistente più alto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
@@ -4657,11 +4657,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Auto-Incremento Massimo da mantenere degli stati di salvataggio"
+   "Auto-incremento massimo da mantenere dei salvataggi rapidi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Limita il numero di stati di salvataggio che verranno creati quando 'Incremento Salva automaticamente l'indice statale' è abilitato. Se il limite viene superato durante il salvataggio di un nuovo stato, lo stato esistente con l'indice più basso verrà eliminato. Un valore di '0' significa che gli Stati illimitati saranno registrati."
+   "Limita il numero di salvataggi rapidi che verranno creati quando è attiva l’opzione \"Incrementa automaticamente l’indice del salvataggio rapido\". Se, durante il salvataggio, il limite viene superato, verrà eliminato il salvataggio con l’indice più basso. Un valore pari a 0 consente salvataggi illimitati."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
@@ -4673,11 +4673,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Stato di salvataggio automatico"
+   "Salvataggio rapido automatico"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Crea automaticamente uno stato di salvataggio quando il contenuto è chiuso. Questo stato di salvataggio viene caricato all'avvio se 'Stato di caricamento automatico' è abilitato."
+   "Crea automaticamente un salvataggio rapido quando il contenuto è chiuso. Questo salvataggio viene caricato all'avvio se 'Carica automaticamente i salvataggi' è abilitato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -4685,15 +4685,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-   "Carica automaticamente i salvataggi all'avvio."
+   "Carica automaticamente i salvataggi rapidi all'avvio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Copertine dello stato di salvataggio"
+   "Copertine salvataggio rapido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Mostra le copertine degli stati di salvataggio nel menu."
+   "Mostra le copertine dei salvataggi rapidi nel menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
@@ -4705,11 +4705,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Compressione degli Stati di salvataggio"
+   "Compressione salvataggi rapidi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "Scrivi file di salvataggio in un formato archiviato. Riduce drasticamente la grandezza del file a discapito di un aumento dei tempi di salvataggio/caricamento."
+   "Scrivi i salvataggi rapidi in un formato archiviato. Riduce drasticamente la grandezza del file a discapito di un aumento dei tempi di salvataggio/caricamento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
@@ -4729,11 +4729,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Scrivi gli stati di salvataggio nella cartella del contenuto"
+   "Salva i salvataggi rapidi nella cartella del contenuto"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Usa la directory dei contenuti come cartella di salvataggio stato."
+   "Usa la directory del contenuto come cartella per i salvataggi rapidi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
@@ -4886,11 +4886,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
-   "Riavvolgimento"
+   "Riavvolgimento (rewind)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Modificare le impostazioni di riavvolgimento."
+   "Modifica le impostazioni di riavvolgimento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
@@ -4930,30 +4930,30 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Frequenza dei fotogrammi nel menu"
+   "Limita framerate del menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Assicura che il framerate sia limitato all'interno del menu."
+   "Permette che il framerate sia limitato all'interno del menu."
    )
 
 /* Settings > Frame Throttle > Rewind */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
-   "Supporto Riavvolgimento"
+   "Supporto al riavvolgimento"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-   "Ritorna a un punto precedente nel gioco recente. Questo provoca un grave colpo alle prestazioni durante la riproduzione."
+   "Ritorna a un punto precedente nel gioco recente. Può provocare un grave colpo alle prestazioni durante il gioco."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
-   "Riavvolgimento Fotogrammi"
+   "Riavvolgimento fotogrammi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
-   "Il numero di fotogrammi da riavvolgere per passo. Valori più alti aumentano la velocità di riavvolgimento."
+   "Il numero di fotogrammi da riavvolgere per ogni passaggio. Valori più alti aumentano la velocità del riavvolgimento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
@@ -4961,7 +4961,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   "La quantità di memoria (in MB) da riservare al buffer del riavvolgimento. Aumentando questo si aumenterà la quantità di storia del riavvolgimento."
+   "La quantità di memoria (in MB) da riservare al buffer di riavvolgimento. Un valore più alto aumenta la durata della cronologia del riavvolgimento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
@@ -4992,11 +4992,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Ripristina dopo aver salvato lo stato"
+   "Ripristina dopo salvataggio rapido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
-   "Reimposta il contatore di tempo frame dopo aver salvato uno stato."
+   "Reimposta il contatore del tempo dei fotogrammi dopo un salvataggio rapido."
    )
 
 /* Settings > Recording */
@@ -5691,7 +5691,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Notifiche Trucchi"
+   "Notifiche trucchi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
@@ -5747,11 +5747,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
-   "Notifiche salvataggi di stato"
+   "Notifiche salvataggio rapido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
-   "Visualizza un messaggio sullo schermo durante il salvataggio e il caricamento degli stati di salvataggio."
+   "Visualizza un messaggio sullo schermo durante il salvataggio e il caricamento dei salvataggi rapidi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
@@ -6008,11 +6008,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Riprendi il contenuto dopo aver utilizzato i salvataggi di stato"
+   "Riprendi il contenuto dopo aver utilizzato salvataggi rapidi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "Chiudere automaticamente il menu e riprendere il contenuto dopo aver salvato o caricato uno stato. Disabilitarlo può migliorare le prestazioni di salvataggio dello stato su dispositivi molto lenti."
+   "Chiudi automaticamente il menu e riprendi il contenuto dopo aver salvato o caricato un salvataggio rapido. Disabilitare l'opzione può migliorare le prestazioni di salvataggio rapido su dispositivi molto lenti."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
@@ -6488,19 +6488,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Mostra Sottomenu 'Salvataggi di Stato'"
+   "Mostra il sottomenu 'Salvataggi rapidi'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Mostra le opzioni di salvataggio dello stato in un sottomenu."
+   "Mostra le opzioni di salvataggi rapidi in un sottomenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Mostra 'Salva/Carica Stato'"
+   "Mostra 'Salva/Carica salvataggio rapido'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Mostra le opzioni per salvare/caricare uno stato."
+   "Mostra le opzioni per salvare/caricare un salvataggio rapido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
@@ -6512,11 +6512,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Mostra 'Annulla Salva/Carica Stato'"
+   "Mostra 'Annulla salva/carica salvataggio rapido'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Mostra le opzioni per annullare lo stato di salvataggio/caricamento."
+   "Mostra le opzioni per annullare il salvataggio/caricamento di un salvataggio rapido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
@@ -6592,11 +6592,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-   "Mostra 'Riavvolgi'"
+   "Mostra 'Riavvolgimento'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "Mostra l'opzione 'Riavvolgi'."
+   "Mostra l'opzione 'Riavvolgimento'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -6767,11 +6767,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
-   "Mostra 'Limitatore di fotogrammi'"
+   "Mostra 'Limitazione fotogrammi'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
-   "Mostra le impostazioni 'Limitatore di fotogrammi'."
+   "Mostra le impostazioni 'Limitazione fotogrammi'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
@@ -6823,11 +6823,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
-   "Mostra 'Achievements'"
+   "Mostra 'Obiettivi'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
-   "Mostra le impostazioni 'Achievements'."
+   "Mostra le impostazioni 'Obiettivi'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
@@ -7058,11 +7058,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-   "Abilita Trofei"
+   "Obiettivi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-   "Guadagna trofei nei giochi classici. Per ulteriori informazioni, visita 'https://retroachievements.org'."
+   "Ottieni obiettivi nei giochi classici. Per ulteriori informazioni, visita 'https://retroachievements.org'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -7070,7 +7070,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Disabilita i trucchi, il riavvolgimento, il rallentamento e il caricamento degli stati di salvataggio. Gli obiettivi guadagnati in modalità hardcore sono contrassegnati in modo univoco in modo da poter mostrare agli altri ciò che hai ottenuto senza funzioni di assistenza emulatore. Attivando questa impostazione all'esecuzione si riavvierà la partita."
+   "Disabilita i trucchi, il riavvolgimento, la modalità rallentatore e il caricamento dei salvataggi rapidi. Gli obiettivi guadagnati in modalità hardcore sono contrassegnati in modo univoco in modo da poter mostrare agli altri ciò che hai ottenuto senza funzioni di assistenza dell'emulatore. Cambiare questa opzione riavvia il gioco."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -7082,19 +7082,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
-   "Distintivi Trofei"
+   "Emblemi obiettivi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
-   "Mostra i distintivi nella lista dei Trofei."
+   "Mostra gli emblemi nella lista degli obiettivi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-   "Testa i trofei non ufficiali"
+   "Testa gli obiettivi non ufficiali"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-   "Abilita o disabilita i trofei non ufficiali e/o funzionalità beta per scopi di test."
+   "Abilita o disabilita gli obiettivi non ufficiali e/o funzionalità beta per scopi di test."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
@@ -7102,7 +7102,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
-   "Emette un suono quando un trofeo è sbloccato."
+   "Emette un suono quando un obiettivo viene sbloccato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
@@ -7110,11 +7110,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
-   "Fai automaticamente uno screenshot quando viene ottenuto un trofeo."
+   "Scatta automaticamente uno screenshot quando viene sbloccato un obiettivo."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
-   "Inizia la sessione con tutti i trofei attivi (anche quelli precedentemente sbloccati)."
+   "Inizia la sessione con tutti gli obiettivi attivi (anche quelli precedentemente sbloccati)."
    )
 
 /* Settings > Achievements > Appearance */
@@ -7125,7 +7125,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
-   "Modificare la posizione e gli spostamenti delle notifiche di realizzazione sullo schermo."
+   "Modifica la posizione e gli offset delle notifiche a schermo degli obiettivi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR,
@@ -7133,7 +7133,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_ANCHOR,
-   "Imposta l'angolo/bordo dello schermo da cui appariranno le notifiche."
+   "Imposta l'angolo/bordo dello schermo da cui appariranno le notifiche degli obiettivi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT,
@@ -7165,7 +7165,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
-   "Imposta se le notifiche di raggiungimento devono allinearsi ad altri tipi di notifiche sullo schermo. Disabilita per impostare valori manuali di carica/posizione."
+   "Stabilisci se le notifiche degli obiettivi devono allinearsi con altri tipi di notifiche a schermo. Disattivando questa opzione, puoi impostare manualmente margini e posizione."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
@@ -7200,7 +7200,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
-   "Mostra informazioni sul gioco caricato e sullo stato di avanzamento corrente dell'utente.\n'Tutti i giochi identificati' mostreranno un riepilogo per le partite senza risultati pubblicati."
+   "Mostra informazioni sul gioco caricato e sullo stato di progresso attuale dell'utente.\n'Tutti i giochi identificati' mostreranno un riepilogo per i giochi senza obiettivi pubblicati."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
@@ -7216,7 +7216,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
-   "Mostra una notifica quando un risultato è sbloccato."
+   "Mostra una notifica quando un obiettivo viene sbloccato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
@@ -7224,7 +7224,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
-   "Mostra una notifica quando tutti gli obiettivi di una partita sono sbloccati."
+   "Mostra una notifica quando tutti gli obiettivi di un gioco sono sbloccati."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
@@ -7232,7 +7232,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "Mostra indicatori sullo schermo mentre alcuni risultati possono essere guadagnati."
+   "Mostra degli indicatori sullo schermo quando possono essere ottenuti alcuni obiettivi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
@@ -7240,7 +7240,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
-   "Mostra un indicatore sullo schermo quando si compiono progressi verso determinati risultati."
+   "Mostra un indicatore sullo schermo quando si fanno dei progressi verso determinati obiettivi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
@@ -7977,7 +7977,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "Guadagna trofei nei giochi classici. Per ulteriori informazioni, visita 'https://retroachievements.org'."
+   "Ottieni obiettivi nei giochi classici. Per ulteriori informazioni, visita 'https://retroachievements.org'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
@@ -7996,11 +7996,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
-   "Inserisci il tuo nome utente RetroAchievements account."
+   "Inserisci il nome utente del tuo account RetroAchievements."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "Inserisci la password del tuo account RetroAchievments. Lunghezza massima: 255 caratteri."
+   "Inserisci la password del tuo account RetroAchievements. Lunghezza massima: 255 caratteri."
    )
 
 /* Settings > User > Accounts > YouTube */
@@ -8272,11 +8272,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-   "Salva/Carica Stati"
+   "Salvataggi rapidi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "Gli stati di salvataggio e i replay sono memorizzati in questa directory. Se non impostata, tenteranno di salvarli nella directory in cui si trova il contenuto."
+   "I salvataggi rapidi e i replay verranno salvati in questa directory. Se non viene indicata, il sistema proverà a usare la directory del contenuto."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -8657,7 +8657,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
-   "Per Obiettivi"
+   "Per obiettivi"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
@@ -8933,15 +8933,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   "Salva Stato"
+   "Salvataggio rapido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_STATE,
-   "Salva uno stato nello slot selezionato"
+   "Esegui un salvataggio rapido nello slot selezionato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVE_STATE,
-   "Salva uno stato nello slot attualmente selezionato. Nota: gli stati di salvataggio non sono in genere portatili e potrebbero non funzionare con altre versioni di questo nucleo."
+   "Crea un salvataggio rapido nello slot attualmente selezionato. Nota: i salvataggi rapidi non sono in genere portatili e potrebbero non funzionare con altre versioni di questo core."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
@@ -8949,11 +8949,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
-   "Carica un salvataggio dallo slot attualmente selezionato"
+   "Carica un salvataggio rapido dallo slot attualmente selezionato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_STATE,
-   "Carica uno stato salvato dallo slot attualmente selezionato. Nota: potrebbe non funzionare se lo stato è stato salvato con un'altra versione del nucleo."
+   "Carica un salvataggio rapido dallo slot attualmente selezionato. Nota: potrebbe non funzionare se il salvataggio è stato salvato con un'altra versione del core."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -8965,11 +8965,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
-   "Annulla salva stato"
+   "Annulla salvataggio rapido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-   "Se un salvataggio è stato sovrascritto, si ritorna allo stato del salvataggio precedente."
+   "Se un salvataggio è stato sovrascritto, tornerà al salvataggio precedente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
@@ -9045,11 +9045,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
-   "Salva/Carica Stati"
+   "Salvataggi rapidi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_LIST,
-   "Accedi alle opzioni di salvataggio/caricamento stati."
+   "Accedi alle opzioni dei salvataggi rapidi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
@@ -9097,11 +9097,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-   "Lista Trofei"
+   "Obiettivi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_LIST,
-   "Visualizza i trofei e le impostazioni correlate."
+   "Visualizza gli obiettivi e le impostazioni correlate."
    )
 
 /* Quick Menu > Options */
@@ -9309,7 +9309,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-   "Carica un file cheat."
+   "Carica un file trucchi e sostituisci i trucchi esistenti."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
@@ -9984,55 +9984,55 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "Nessun achievements da visualizzare."
+   "Nessun obiettivo da visualizzare"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
-   "Annulla Pausa Modalità Hardcore Trofei"
+   "Annulla pausa obiettivi in modalità Hardcore"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
-   "Lascia la modalità hardcore degli obiettivi abilitata per la sessione corrente"
+   "Lascia la modalità hardcore degli obiettivi abilitata per la sessione attuale"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
-   "Annulla Riprendi Modalità Hardcore dei Trofei"
+   "Annulla ripresa degli obiettivi in modalità Hardcore"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
-   "Lascia la modalità hardcore degli obiettivi disattivata per la sessione corrente"
+   "Lascia la modalità hardcore degli obiettivi disattivata per la sessione attuale"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-   "Pausa della modalità Hardcore dei Trofei"
+   "Metti in pausa gli obiettivi in modalità Hardcore"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Metti in pausa la modalità hardcore per la sessione corrente. Questa azione abiliterà i trucchi, il riavvolgimento, il rallentamento e il caricamento degli stati di salvataggio."
+   "Mette in pausa la modalità hardcore per la sessione attuale. Questa azione permette l'uso di trucchi, il riavvolgimento, la modalità rallentatore e il caricamento dei salvataggi rapidi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
-   "Riprendi la Modalità Hardcore dei trofei"
+   "Riprendi la modalità Hardcore degli obiettivi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Riprendi il raggiungimento della modalità hardcore per la sessione corrente. Questa azione disabiliterà i trucchi, il riavvolgimento, il rallentamento e il caricamento degli stati di salvataggio e resetterà la partita corrente."
+   "Riprendi la modalità hardcore per la sessione attuale. Questa azione disabiliterà l'uso di trucchi, il riavvolgimento, la modalità rallentatore e il caricamento dei salvataggi rapidi, oltre che a resettare il gioco."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
-   "Il server RetroAchievements è irraggiungibile"
+   "Il server di RetroAchievements è irraggiungibile"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
-   "Uno o più sblocchi di risultato non lo hanno fatto al server. Gli sblocchi saranno riprovati finché lasci l'app aperta."
+   "Uno o più obiettivi sbloccati non sono stati inviati correttamente al server. Il sistema tenterà di inviarli di nuovo finché l’app resterà aperta."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
-   "Il server RetroAchievements è irraggiungibile. Riproverà fino al successo o alla chiusura dell'app."
+   "Il server di RetroAchievements è irraggiungibile. Il sistema riproverà finché non andrà a buon fine, oppure fino alla chiusura dell'app."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
-   "Tutte le richieste in sospeso sono state sincronizzate con successo con il server RetroAchievements."
+   "Tutte le richieste in sospeso sono state sincronizzate con successo con il server di RetroAchievements."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
@@ -12801,7 +12801,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
-   "Limita la velocità massima di esercizio"
+   "Limita la velocità massima di esecuzione"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_SEARCH,
@@ -12821,7 +12821,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
-   "Trofei (Hardcore)"
+   "Obiettivi (Hardcore)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
@@ -13451,7 +13451,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
-   "Salva stato automatico su"
+   "Crea salvataggio automatico in"
    )
 MSG_HASH(
    MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
@@ -13499,7 +13499,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Il Core non supporta gli salva stati."
+   "Il core non supporta i salvataggi rapidi."
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
@@ -13759,7 +13759,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
-   "Impossibile salvare lo stato"
+   "Impossibile creare salvataggio rapido"
    )
 MSG_HASH(
    MSG_FAILED_TO_SEND_NICKNAME,
@@ -13803,7 +13803,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_UNDO_SAVE_STATE,
-   "Impossibile annullare il salvataggio."
+   "Impossibile annullare salvataggio rapido."
    )
 MSG_HASH(
    MSG_FAILED_TO_UNMUTE_AUDIO,
@@ -13819,7 +13819,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOUND_AUTO_SAVESTATE_IN,
-   "Trovato salva stato automatico in"
+   "Trovato salvataggio rapido automatico in"
    )
 MSG_HASH(
    MSG_FOUND_DISK_LABEL,
@@ -13887,7 +13887,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_GAME_FOCUS_OFF,
-   "Gioco in secondo piano"
+   "Gioco in primo piano disattivato"
    )
 MSG_HASH(
    MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
@@ -14023,7 +14023,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
-   "Nessun salvataggio è stato ancora sovrascritto."
+   "Nessun salvataggio rapido è stato ancora sovrascritto."
    )
 MSG_HASH(
    MSG_NO_STATE_HAS_BEEN_LOADED_YET,
@@ -14083,7 +14083,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
-   "Reindirizzare il salva stato su"
+   "Reindirizza il salvataggio rapido in"
    )
 MSG_HASH(
    MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
@@ -14115,7 +14115,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
-   "Ripristinato un vecchio salva stato."
+   "Ripristinato un vecchio salvataggio rapido."
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
@@ -14127,7 +14127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-   "Ripristino directory del salva stato su"
+   "Ripristino directory del salvataggio rapido a"
    )
 MSG_HASH(
    MSG_REWINDING,
@@ -14139,7 +14139,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
-   "Rewind non disponibile perché questo nucleo manca il salvataggio di stato serializzato."
+   "Riavvolgimento non disponibile perché a questo core manca il supporto serializzato per i salvataggi rapidi."
    )
 MSG_HASH(
    MSG_REWIND_INIT,
@@ -14163,11 +14163,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
-   "Stato salvato nello slot #%d."
+   "Salvataggio rapido salvato nello slot #%d."
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Stato salvato nello slot #-1 (Auto)."
+   "Salvataggio rapido salvato nello slot #-1 (Automatico)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
@@ -14255,11 +14255,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
-   "Trofeo Sbloccato"
+   "Obiettivo sbloccato"
    )
 MSG_HASH(
    MSG_RARE_ACHIEVEMENT_UNLOCKED,
-   "Obiettivo Raro Sbloccato"
+   "Obiettivo raro sbloccato"
    )
 MSG_HASH(
    MSG_LEADERBOARD_STARTED,
@@ -14315,7 +14315,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNDOING_SAVE_STATE,
-   "Annullamento del salvataggio"
+   "Annullamento salvataggio rapido"
    )
 MSG_HASH(
    MSG_UNKNOWN,
@@ -14371,15 +14371,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Carica automaticamente il salvataggio da"
+   "Carica automaticamente salvataggio rapido da"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
-   "Caricamento automatico dello stato di salvataggio da \"%s\" non riuscito."
+   "Caricamento automatico del salvataggio rapido da \"%s\" non riuscito."
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
-   "Auto-caricamento salvataggio stato da \"%s\" riuscito."
+   "Auto-caricamento salvataggio rapido da \"%s\" riuscito."
    )
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT,
@@ -14515,15 +14515,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "La funzione di Run-Ahead è stata disattivata perché questo core non supporta le Istantanee."
+   "La funzione di run-ahead è stata disattivata perché questo core non supporta i salvataggi rapidi."
    )
 MSG_HASH(
    MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
-   "Run-Ahead non disponibile perché questo nucleo manca il salvataggio di stato deterministico."
+   "Run-ahead non disponibile perché a questo core manca il supporto deterministico ai salvataggi rapidi."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Impossibile salvare lo stato. Run-Ahead è stato disabilitato."
+   "Impossibile creare salvataggio rapido. Run-ahead è stato disabilitato."
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
@@ -14543,11 +14543,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "I quadri preventivi sono stati disabilitati perché questo nucleo non supporta gli stati di salvataggio."
+   "I fotogrammi anticipati sono stati disattivati perché questo core non supporta i salvataggi rapidi."
    )
 MSG_HASH(
    MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
-   "I quadri preventivi non sono disponibili perché questo nucleo manca deterministico salva il supporto statale."
+   "I fotogrammi anticipati non sono disponibili perché a questo nucleo manca il supporto deterministico ai salvataggi rapidi."
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_ALLOCATE,
@@ -14555,7 +14555,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_SAVE_STATE,
-   "Impossibile salvare lo stato. I quadri preventivi sono stati disabilitati."
+   "Impossibile creare salvataggio rapido. I fotogrammi anticipati sono stati disabilitati."
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_LOAD_STATE,
@@ -14671,27 +14671,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "È necessario mettere in pausa o disabilitare gli obiettivi Modalità Hardcore per caricare gli stati."
+   "È necessario mettere in pausa o disabilitare gli obiettivi in modalità Hardcore per caricare i salvataggi rapidi."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE,
-   "È necessario mettere in pausa o disabilitare gli obiettivi Modalità Hardcore per caricare i salvataggi di stato."
+   "È necessario mettere in pausa o disabilitare gli obiettivi in modalità Hardcore per caricare i salvataggi srm."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "È stato caricato uno stato di salvataggio. La modalità Hardcore dei trofei è stata disattivata per la sessione attuale."
+   "È stato caricato un salvataggio rapido. Gli obiettivi in modalità Hardcore sono stati disattivati per la sessione attuale."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
-   "Un trucco è stato attivato. Trofei della modalità Hardcore disabilitati per la sessione attuale."
+   "Un trucco è stato attivato. Gli obiettivi in modalità Hardcore sono stati disattivati per la sessione attuale."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
-   "Modalirà Obiettivi Hardcore cambiata dall'host."
+   "Modalità Hardcore degli obiettivi cambiata dall'host."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
-   "L'host Netplay deve essere aggiornato. La modalirà Obiettivi Hardcore disattivata per la sessione corrente."
+   "L'host del netplay deve essere aggiornato. La modalità Hardcore degli obiettivi è stata disattivata per la sessione attuale."
    )
 MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
@@ -14703,7 +14703,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Abilita la modalità Hardcore. I salvataggi e la funzione riavvolgimento sono stati disattivati."
+   "Modalità Hardcore degli obiettivi attivata. I salvataggi rapidi e la funzione riavvolgimento sono stati disattivati."
    )
 MSG_HASH(
    MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
@@ -14715,7 +14715,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
-   "%d obiettivi non ufficiali attivati"
+   "Attivati %d obiettivi non ufficiali"
 )
 MSG_HASH(
    MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
@@ -14727,7 +14727,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MSG_CHEEVOS_UNSUPPORTED_WARNING,
-   "Obiettivi non supportati rilevati. Si prega di provare un nucleo diverso o aggiornare RetroArch."
+   "Obiettivi non supportati rilevati. Prova a usare un core diverso o ad aggiornare RetroArch."
 )
 MSG_HASH(
    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
@@ -14751,7 +14751,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
-   "Hardcore in pausa. Non è possibile ottenere successi hardcore per %s utilizzando %s"
+   "Hardcore in pausa. Non è possibile ottenere obiettivi hardcore per %s utilizzando %s"
    )
 MSG_HASH(
    MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
@@ -14759,11 +14759,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_GAME_LOAD_FAILED,
-   "Impossibile caricamento gioco RetroAchievements: %s"
+   "Caricamento del gioco RetroAchievements non riuscito: %s"
    )
 MSG_HASH(
    MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
-   "Impossibile cambio media di RetroAchievements: %s"
+   "Cambio media RetroAchievements non riuscito: %s"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -15613,7 +15613,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Crea\nRecupero"
+   "Crea\npunto di\nrecupero"
    )
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
@@ -15633,7 +15633,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Visualizza il carattere del menu inferiore. Abilita per visualizzare le descrizioni dei pulsanti nella schermata inferiore. Questo esclude la data di salvataggio dello stato."
+   "Mostra carattere del menu inferiore. Attiva l’opzione per visualizzare le descrizioni dei pulsanti nella parte inferiore dello schermo.La data del salvataggio rapido non verrà mostrata."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
