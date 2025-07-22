@@ -753,7 +753,7 @@ static bool content_file_extract_from_archive(
       content_state_t *p_content,
       const char *valid_exts,
       const char **content_path,
-      char *s, size_t len)
+      char *error_string, size_t len)
 {
    const char *tmp_path_ptr = NULL;
    char tmp_path[PATH_MAX_LENGTH];
@@ -771,7 +771,7 @@ static bool content_file_extract_from_archive(
                NULL : content_ctx->directory_cache,
          tmp_path, sizeof(tmp_path)))
    {
-      snprintf(s, len, "%s: \"%s\".\n",
+      snprintf(error_string, len, "%s: \"%s\".\n",
             msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
             *content_path);
       return false;
@@ -915,8 +915,7 @@ static bool content_file_load(
       struct string_list *content,
       content_information_ctx_t *content_ctx,
       enum msg_hash_enums *error_enum,
-      char *s,
-      size_t len,
+      char *error_string, size_t len,
       const struct retro_subsystem_info *special)
 {
    size_t i;
@@ -976,7 +975,7 @@ static bool content_file_load(
                   content_compressed, i, first_content_type,
                   &content_data)) == 0)
             {
-               snprintf(s, len, "%s \"%s\"\n",
+               snprintf(error_string, len, "%s \"%s\"\n",
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      content_path);
                return false;
@@ -990,7 +989,7 @@ static bool content_file_load(
             if (    content_compressed
                 && !((content->elems[i].attr.i & BLCK_BLOCK_EXTRACT) != 0)
                 && !content_file_extract_from_archive(content_ctx, p_content,
-                     valid_exts, &content_path, s, len))
+                     valid_exts, &content_path, error_string, len))
                return false;
 #endif
 #ifdef __WINRT__
@@ -1055,7 +1054,7 @@ static bool content_file_load(
                   if (!CopyFileFromAppW(wcontent_path, wnew_path, false))
                   {
                      /* TODO/FIXME - localize */
-                     snprintf(s, len, "%s \"%s\". (during copy read or write)\n",
+                     snprintf(error_string, len, "%s \"%s\". (during copy read or write)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                         content_path);
                      return false;
@@ -1153,24 +1152,22 @@ static bool content_file_init(
       content_state_t *p_content,
       struct string_list *content,
       enum msg_hash_enums *error_enum,
-      char *s, size_t len)
+      char *error_string, size_t len)
 {
    bool subsystem_path_is_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
-   const struct retro_subsystem_info *subsystem_data = content_ctx->subsystem.data;
-   size_t subsystem_size                      = content_ctx->subsystem.size;
-   const struct retro_subsystem_info *special = NULL;
 
    if (!subsystem_path_is_empty)
    {
       struct string_list *subsystem              = path_get_subsystem_list();
+      const struct retro_subsystem_info *sysdata = content_ctx->subsystem.data;
+      size_t subsystem_size                      = content_ctx->subsystem.size;
       const struct retro_subsystem_info *special = libretro_find_subsystem_info(
-            subsystem_data, (unsigned)subsystem_size,
-            path_get(RARCH_PATH_SUBSYSTEM));
+            sysdata, (unsigned)subsystem_size, path_get(RARCH_PATH_SUBSYSTEM));
 
       if (!special)
       {
          /* TODO/FIXME - localize */
-         snprintf(s, len,
+         snprintf(error_string, len,
                "Failed to find subsystem \"%s\" in libretro implementation.\n",
                path_get(RARCH_PATH_SUBSYSTEM));
          return false;
@@ -1187,7 +1184,7 @@ static bool content_file_init(
          if (special->num_roms != subsystem->size)
          {
             /* TODO/FIXME - localize */
-            snprintf(s, len,
+            snprintf(error_string, len,
                   "Libretro core requires %u content files for "
                   "subsystem \"%s\", but %u content files were provided.\n",
                   special->num_roms, special->desc,
@@ -1198,34 +1195,52 @@ static bool content_file_init(
       else if (subsystem && subsystem->size)
       {
          /* TODO/FIXME - localize */
-         snprintf(s, len,
+         snprintf(error_string, len,
                "Libretro core takes no content for subsystem \"%s\", "
                "but %u content files were provided.\n",
                special->desc,
                (unsigned)subsystem->size);
          return false;
       }
-   }
 
-   if (!path_is_empty(RARCH_PATH_SUBSYSTEM) && special)
-   {
-      size_t i;
-      struct string_list *subsystem = path_get_subsystem_list();
-
-      for (i = 0; i < subsystem->size; i++)
+      if (special)
       {
-         union string_list_elem_attr attr;
+         size_t i;
+         struct string_list *subsystem = path_get_subsystem_list();
 
-         attr.i = 0;
-         if (special->roms[i].block_extract)
-            attr.i |= BLCK_BLOCK_EXTRACT;
-         if (special->roms[i].need_fullpath)
-            attr.i |= BLCK_NEED_FULLPATH;
-         if (special->roms[i].required)
-            attr.i |= BLCK_REQUIRED;
+         for (i = 0; i < subsystem->size; i++)
+         {
+            union string_list_elem_attr attr;
 
-         string_list_append(content, subsystem->elems[i].data, attr);
+            attr.i = 0;
+            if (special->roms[i].block_extract)
+               attr.i |= BLCK_BLOCK_EXTRACT;
+            if (special->roms[i].need_fullpath)
+               attr.i |= BLCK_NEED_FULLPATH;
+            if (special->roms[i].required)
+               attr.i |= BLCK_REQUIRED;
+
+            string_list_append(content, subsystem->elems[i].data, attr);
+         }
       }
+
+      if (content->size > 0)
+      {
+         content_file_list_t *file_list = content_file_list_init(content->size);
+         if (file_list)
+         {
+            bool ret;
+            p_content->content_list     = file_list;
+            ret = content_file_load(p_content, content, content_ctx,
+                  error_enum, error_string, len, special);
+
+            content_file_list_free_transient_data(p_content->content_list);
+            return ret;
+         }
+      }
+
+      *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT;
+      return false;
    }
    else
    {
@@ -1260,28 +1275,23 @@ static bool content_file_init(
       }
       else
          string_list_append(content, content_path, attr);
-   }
 
-   if (content->size > 0)
-   {
-      content_file_list_t *file_list = content_file_list_init(content->size);
-      if (file_list)
+      if (content->size > 0)
       {
-         bool ret;
-         p_content->content_list     = file_list;
-         ret = content_file_load(p_content, content, content_ctx,
-               error_enum, s, len, special);
+         content_file_list_t *file_list = content_file_list_init(content->size);
+         if (file_list)
+         {
+            bool ret;
+            p_content->content_list     = file_list;
+            ret = content_file_load(p_content, content, content_ctx,
+                  error_enum, error_string, len, NULL);
 
-         content_file_list_free_transient_data(p_content->content_list);
-         return ret;
+            content_file_list_free_transient_data(p_content->content_list);
+            return ret;
+         }
       }
    }
 
-   if (!special)
-   {
-      *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT;
-      return false;
-   }
    return true;
 }
 
@@ -2818,7 +2828,7 @@ bool content_set_subsystem_by_name(const char* subsystem_name)
    return false;
 }
 
-size_t content_get_subsystem_friendly_name(const char* subsystem_name, char *s, size_t len)
+size_t content_get_subsystem_friendly_name(const char* subsystem_name, char *error_string, size_t len)
 {
    unsigned i;
    runloop_state_t *runloop_st                  = runloop_state_get_ptr();
@@ -2831,7 +2841,7 @@ size_t content_get_subsystem_friendly_name(const char* subsystem_name, char *s, 
    for (i = 0; i < runloop_st->subsystem_current_count; i++, subsystem++)
    {
       if (string_is_equal(subsystem_name, subsystem->ident))
-         return strlcpy(s, subsystem->desc, len);
+         return strlcpy(error_string, subsystem->desc, len);
    }
    return 0;
 }
