@@ -2389,11 +2389,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   "Start in Fullscreen Mode"
+   "Run in Fullscreen Mode"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Start in fullscreen. Can be changed at runtime. Can be overridden by a command line switch."
+   "Run in fullscreen. Can be changed at runtime. Can be overridden by a command line switch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
