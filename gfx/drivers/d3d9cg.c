@@ -32,6 +32,7 @@
 #include <string/stdstring.h>
 #include <retro_math.h>
 
+#define WIN32_LEAN_AND_MEAN
 #include <d3d9.h>
 
 #include <string.h>

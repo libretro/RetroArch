@@ -525,7 +525,6 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t len)
          LeaveCriticalSection(&ds->crit);
 
          buf     += avail;
-         len     -= avail;
          written += avail;
       }
    }

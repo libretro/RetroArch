@@ -39,6 +39,25 @@
 #include "../../config.h"
 #endif
 
+#include <retro_environment.h>
+#include <retro_inline.h>
+
+#if defined(__APPLE__)
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#else
+#if defined(_WIN32) && !defined(_XBOX)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+#ifdef VITA
+#include <vitaGL.h>
+#else
+#include <GL/gl.h>
+#include <GL/glext.h>
+#endif
+#endif
+
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
@@ -47,12 +66,12 @@
 #endif
 
 #include "../font_driver.h"
+#include "../video_driver.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
-#include "../common/gl1_defines.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../common/win32_common.h"
@@ -64,7 +83,80 @@
 
 #ifdef VITA
 #include <defines/psp_defines.h>
+
+#define GL_RGBA8                    GL_RGBA
+#define GL_RGB8                     GL_RGB
+#define GL_BGRA_EXT                 GL_RGBA /* Currently unsupported in vitaGL */
+#define GL_CLAMP                    GL_CLAMP_TO_EDGE
 #endif
+
+#define RARCH_GL1_INTERNAL_FORMAT32 GL_RGBA8
+#define RARCH_GL1_TEXTURE_TYPE32    GL_BGRA_EXT
+#define RARCH_GL1_FORMAT32          GL_UNSIGNED_BYTE
+
+enum gl1_flags
+{
+   GL1_FLAG_FULLSCREEN              = (1 << 0),
+   GL1_FLAG_MENU_SIZE_CHANGED       = (1 << 1),
+   GL1_FLAG_RGB32                   = (1 << 2),
+   GL1_FLAG_SUPPORTS_BGRA           = (1 << 3),
+   GL1_FLAG_KEEP_ASPECT             = (1 << 4),
+   GL1_FLAG_SHOULD_RESIZE           = (1 << 5),
+   GL1_FLAG_MENU_TEXTURE_ENABLE     = (1 << 6),
+   GL1_FLAG_MENU_TEXTURE_FULLSCREEN = (1 << 7),
+   GL1_FLAG_SMOOTH                  = (1 << 8),
+   GL1_FLAG_MENU_SMOOTH             = (1 << 9),
+   GL1_FLAG_OVERLAY_ENABLE          = (1 << 10),
+   GL1_FLAG_OVERLAY_FULLSCREEN      = (1 << 11),
+   GL1_FLAG_FRAME_DUPE_LOCK         = (1 << 12)
+};
+
+typedef struct gl1
+{
+   struct video_viewport vp;
+   struct video_coords coords;
+   math_matrix_4x4 mvp, mvp_no_rot;
+
+   void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
+   struct string_list *extensions;
+   struct video_tex_info tex_info;
+   void *readback_buffer_screenshot;
+   GLuint *overlay_tex;
+   float *overlay_vertex_coord;
+   float *overlay_tex_coord;
+   float *overlay_color_coord;
+   const float *vertex_ptr;
+   const float *white_color_ptr;
+   unsigned char *menu_frame;
+   unsigned char *video_buf;
+   unsigned char *menu_video_buf;
+
+   int version_major;
+   int version_minor;
+   unsigned video_width;
+   unsigned video_height;
+   unsigned video_pitch;
+   unsigned screen_width;
+   unsigned screen_height;
+   unsigned menu_width;
+   unsigned menu_height;
+   unsigned menu_pitch;
+   unsigned video_bits;
+   unsigned menu_bits;
+   unsigned out_vp_width;
+   unsigned out_vp_height;
+   unsigned tex_index; /* For use with PREV. */
+   unsigned textures;
+   unsigned rotation;
+   unsigned overlays;
+
+   GLuint tex;
+   GLuint menu_tex;
+   GLuint texture[GFX_MAX_TEXTURES];
+
+   uint16_t flags;
+} gl1_t;
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 

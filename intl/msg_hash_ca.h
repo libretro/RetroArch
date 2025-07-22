@@ -13954,6 +13954,18 @@ MSG_HASH(
    "No és compatible amb les repiticions"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "No es pot carregar l'estat posterior durant la reproducció"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Error de línia de temps errònia durant la reproducció"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Línia de temps errònia; sobreescrivint la gravació"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "S'ha trobat el shader"
    )

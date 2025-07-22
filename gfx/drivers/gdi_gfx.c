@@ -57,6 +57,21 @@ struct bitmap_info
    } u;
 };
 
+typedef struct gdi_texture
+{
+   HBITMAP bmp;
+   HBITMAP bmp_old;
+   void *data;
+
+   int width;
+   int height;
+   int active_width;
+   int active_height;
+
+   enum texture_filter_type type;
+} gdi_texture_t;
+
+
 HDC          win32_gdi_hdc;
 static void *dinput_gdi;
 

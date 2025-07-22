@@ -13634,6 +13634,14 @@ MSG_HASH(
    "가능한 모든 코어를 Play 스토어 버전으로 교체했습니다"
    )
 MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "업데이트된 코어: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "건너뛴 코어: "
+   )
+MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "코어 업데이트 사용중지 - 코어 잠김: "
    )
@@ -13800,6 +13808,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "코어가 상태저장을 지원하지 않습니다."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "코어는 디스크 컨트롤을 지원하지 않습니다."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
@@ -14140,6 +14152,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
    "리플레이와 호환되지 않음"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "재생 중에 미래 상태를 로드할 수 없음"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "재생 중 잘못된 타임라인 오류"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "잘못된 타임라인;녹음 덮어쓰기"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,

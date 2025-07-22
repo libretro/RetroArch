@@ -384,15 +384,18 @@ char *find_last_slash(const char *str)
  **/
 size_t fill_pathname_slash(char *s, size_t len)
 {
-   char       *last_slash = find_last_slash(s);
+   char *last_slash = find_last_slash(s);
+   len              = strlen(s);
    if (!last_slash)
-      return strlcat(s, PATH_DEFAULT_SLASH(), len);
-   len         = strlen(s);
-   /* Try to preserve slash type. */
-   if (last_slash != (s + len - 1))
    {
-      s[  len] = last_slash[0];
-      s[++len] = '\0';
+      s[  len]      = PATH_DEFAULT_SLASH_C();
+      s[++len]      = '\0';
+   }
+   else if (last_slash != (s + len - 1))
+   {
+      /* Try to preserve slash type. */
+      s[  len]       = last_slash[0];
+      s[++len]       = '\0';
    }
    return len;
 }
@@ -802,7 +805,11 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
          tmp[t++] = '/';
 
       if (string_is_empty(s))
-         goto end;
+      {
+         tmp[t] = '\0';
+         strlcpy(s, tmp, len);
+         return s;
+      }
 
       p = s;
    }
@@ -848,10 +855,8 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
          while (p <= next)
             tmp[t++] = *p++;
       }
-   }while(next < buf_end);
+   } while(next < buf_end);
 
-
-end:
    tmp[t] = '\0';
    strlcpy(s, tmp, len);
    return s;
@@ -992,20 +997,17 @@ size_t fill_pathname_join_special(char *s,
 
    if (*s)
    {
-      char *last_slash       = find_last_slash(s);
-      if (last_slash)
+      char *last_slash = find_last_slash(s);
+      if (!last_slash)
+      {
+         s[  _len]     = PATH_DEFAULT_SLASH_C();
+         s[++_len]     = '\0';
+      }
+      else if (last_slash != (s + _len - 1))
       {
          /* Try to preserve slash type. */
-         if (last_slash != (s + _len - 1))
-         {
-            s[  _len] = last_slash[0];
-            s[++_len] = '\0';
-         }
-      }
-      else
-      {
-         s[  _len]    = PATH_DEFAULT_SLASH_C();
-         s[++_len]    = '\0';
+         s[  _len]     = last_slash[0];
+         s[++_len]     = '\0';
       }
    }
 
@@ -1327,14 +1329,14 @@ void path_basedir_wrapper(char *s)
       *last_slash   = '\0';
 #endif
    last_slash       = find_last_slash(s);
-   if (last_slash)
-      last_slash[1] = '\0';
-   else
+   if (!last_slash)
    {
       s[0]          = '.';
       s[1]          = PATH_DEFAULT_SLASH_C();
       s[2]          = '\0';
    }
+   else
+      last_slash[1] = '\0';
 }
 
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)

@@ -14146,6 +14146,18 @@ MSG_HASH(
    "Не сумісний з повтором"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "Не вдалося завантажити майбутній стан під час відтворення"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Помилка: під час відтворення вибрано неправильну часову шкалу"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Неправильна часова шкала; запис буде перезаписано"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Знайдено шейдер"
    )

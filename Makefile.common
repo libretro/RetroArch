@@ -860,10 +860,6 @@ ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/drivers/alsa.o \
           audio/common/alsa.o
 
-   ifeq ($(HAVE_MICROPHONE), 1)
-      OBJ += audio/drivers_microphone/alsa.o
-   endif
-
    ifneq ($(HAVE_HAKCHI), 1)
       ifneq ($(HAVE_SEGAM), 1)
          ifneq ($(DINGUX), 1)
@@ -874,12 +870,7 @@ ifeq ($(HAVE_ALSA), 1)
 
    ifneq ($(MIYOO), 1)
       ifeq ($(HAVE_THREADS), 1)
-         OBJ += audio/drivers/alsathread.o \
-                audio/common/alsathread.o
-
-         ifeq ($(HAVE_MICROPHONE), 1)
-            OBJ += audio/drivers_microphone/alsathread.o
-         endif
+         OBJ += audio/drivers/alsathread.o
       endif
    endif
 
@@ -927,10 +918,6 @@ ifeq ($(HAVE_PIPEWIRE), 1)
    OBJ += audio/drivers/pipewire.o \
           audio/common/pipewire.o
 
-   ifeq ($(HAVE_MICROPHONE), 1)
-      OBJ += audio/drivers_microphone/pipewire.o
-   endif
-
    ifeq ($(HAVE_PIPEWIRE_STABLE), 1)
       OBJ += camera/drivers/pipewire.o
    endif
@@ -958,14 +945,9 @@ endif
 
 ifeq ($(HAVE_WASAPI), 1)
 	HAVE_MMDEVAPI = 1
-   OBJ += audio/drivers/wasapi.o \
-          audio/common/wasapi.o
+   OBJ += audio/drivers/wasapi.o
    DEFINES += -DHAVE_WASAPI
    LIBS += -lole32 -lksuser
-
-   ifeq ($(HAVE_MICROPHONE), 1)
-      OBJ += audio/drivers_microphone/wasapi.o
-      endif
 endif
 
 ifeq ($(HAVE_XAUDIO), 1)
@@ -1637,14 +1619,9 @@ endif
 ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \
-			 gfx/common/sdl2_common.o
+	  gfx/common/sdl2_common.o
    DEF_FLAGS += $(SDL2_CFLAGS)
    LIBS += $(SDL2_LIBS)
-
-   ifeq ($(HAVE_MICROPHONE), 1)
-      OBJ += audio/drivers_microphone/sdl_microphone.o
-      # Microphones are not supported by SDL 1.x
-   endif
 else ifeq ($(HAVE_SDL), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl_gfx.o
@@ -1776,22 +1753,19 @@ endif
 
 ifeq ($(HAVE_D3D10), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d10.o \
-          gfx/common/d3d10_common.o
+   OBJ += gfx/drivers/d3d10.o
    DEFINES += -DHAVE_D3D10
 endif
 
 ifeq ($(HAVE_D3D11), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d11.o \
-          gfx/common/d3d11_common.o
+   OBJ += gfx/drivers/d3d11.o
    DEFINES += -DHAVE_D3D11
 endif
 
 ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d12.o \
-          gfx/common/d3d12_common.o
+   OBJ += gfx/drivers/d3d12.o
    DEFINES += -DHAVE_D3D12
 endif
 

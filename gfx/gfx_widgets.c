@@ -1127,7 +1127,7 @@ static int gfx_widgets_draw_indicator(
             y + (height / 2.0f) +
             p_dispwidget->gfx_widget_fonts.regular.line_centre_offset,
             video_width, video_height,
-            0xFFFFFFFF, TEXT_ALIGN_LEFT,
+            TEXT_COLOR_INFO, TEXT_ALIGN_LEFT,
             false);
    }
 
@@ -1144,16 +1144,18 @@ static void gfx_widgets_draw_task_msg(
       unsigned video_height)
 {
    /* Color of first progress bar in a task message */
-   static float msg_queue_task_progress_1[16] = COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f);
+   static float msg_queue_task_progress_1[16] = COLOR_HEX_TO_FLOAT(BG_COLOR_DEFAULT, 1.0f);
    /* Color of second progress bar in a task message
     * (for multiple tasks with same message) */
-   static float msg_queue_task_progress_2[16] = COLOR_HEX_TO_FLOAT(0x1D5B1D, 1.0f);
+   static float msg_queue_task_progress_2[16] = COLOR_HEX_TO_FLOAT(BG_COLOR_PROGRESS, 1.0f);
    /* Margin bar */
-   static float msg_queue_bar[16]             = COLOR_HEX_TO_FLOAT(0xCCCCCC, 1.0f);
-   /* Green icon */
-   static float msg_queue_task_positive[16]   = COLOR_HEX_TO_FLOAT(0x00C80A, 1.0f);
+   static float msg_queue_bar[16]             = COLOR_HEX_TO_FLOAT(BG_COLOR_MARGIN, 1.0f);
    /* Red icon */
-   static float msg_queue_task_negative[16]   = COLOR_HEX_TO_FLOAT(0xC60000, 1.0f);
+   static float msg_queue_task_negative[16]   = COLOR_HEX_TO_FLOAT(ICON_COLOR_RED, 1.0f);
+   /* Green icon */
+   static float msg_queue_task_positive[16]   = COLOR_HEX_TO_FLOAT(ICON_COLOR_GREEN, 1.0f);
+   /* Blue icon */
+   static float msg_queue_task_neutral[16]    = COLOR_HEX_TO_FLOAT(ICON_COLOR_BLUE, 1.0f);
 
    unsigned text_color;
    unsigned bar_width;
@@ -1188,7 +1190,7 @@ static void gfx_widgets_draw_task_msg(
    task_percentage_offset = p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * (_len + 1);
    rect_width             = p_dispwidget->msg_queue_padding * 5.0f + msg->width  + task_percentage_offset;
    bar_width              = rect_width * msg->task_progress/100.0f;
-   text_color             = COLOR_TEXT_ALPHA(0xFFFFFF00, (unsigned)(msg->alpha*255.0f));
+   text_color             = COLOR_TEXT_ALPHA(TEXT_COLOR_INFO, (unsigned)(msg->alpha*255.0f));
 
    /* Rect */
    msg_queue_current_background = msg_queue_task_progress_1;
@@ -1255,7 +1257,6 @@ static void gfx_widgets_draw_task_msg(
    }
 
    /* Icon */
-
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
    {
@@ -1268,7 +1269,7 @@ static void gfx_widgets_draw_task_msg(
       if (!(msg->flags & DISPWIDG_FLAG_TASK_FINISHED))
       {
          texture    = MENU_WIDGETS_ICON_HOURGLASS;
-         color      = msg_queue_bar;
+         color      = msg_queue_task_neutral;
          radians    = msg->hourglass_rotation;
       }
       else if (msg->flags & DISPWIDG_FLAG_POSITIVE)
@@ -1346,7 +1347,7 @@ static void gfx_widgets_draw_task_msg(
    }
 
    /* Progress text */
-   text_color = COLOR_TEXT_ALPHA(0xFFFFFF00, (unsigned)(msg->alpha/2*255.0f));
+   text_color = COLOR_TEXT_ALPHA(TEXT_COLOR_INFO, (unsigned)(msg->alpha/2*255.0f));
    gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.msg_queue,
       task_percentage,
       p_dispwidget->msg_queue_rect_start_x
@@ -1367,10 +1368,10 @@ static void gfx_widgets_draw_regular_msg(
       unsigned video_width,
       unsigned video_height)
 {
-   static float msg_queue_info_blue[16]   = COLOR_HEX_TO_FLOAT(0x0C99D6, 1.0f);
-   static float msg_queue_info_yellow[16] = COLOR_HEX_TO_FLOAT(0xD6C10C, 1.0f);
-   static float msg_queue_info_red[16]    = COLOR_HEX_TO_FLOAT(0xD6160C, 1.0f);
-   static float msg_queue_bar[16]         = COLOR_HEX_TO_FLOAT(0xCCCCCC, 1.0f);
+   static float msg_queue_info_blue[16]   = COLOR_HEX_TO_FLOAT(ICON_COLOR_BLUE, 1.0f);
+   static float msg_queue_info_yellow[16] = COLOR_HEX_TO_FLOAT(ICON_COLOR_YELLOW, 1.0f);
+   static float msg_queue_info_red[16]    = COLOR_HEX_TO_FLOAT(ICON_COLOR_RED, 1.0f);
+   static float msg_queue_bar[16]         = COLOR_HEX_TO_FLOAT(BG_COLOR_MARGIN, 1.0f);
    float* msg_queue_info;
    float text_y_base;
    unsigned rect_width;
@@ -1456,7 +1457,7 @@ static void gfx_widgets_draw_regular_msg(
          );
 
    /* Text */
-   text_color = COLOR_TEXT_ALPHA(0xFFFFFF00, (unsigned)(msg->alpha*255.0f));
+   text_color = COLOR_TEXT_ALPHA(TEXT_COLOR_INFO, (unsigned)(msg->alpha*255.0f));
 
    if (msg->flags & DISPWIDG_FLAG_SMALL)
       text_y_base = video_height
@@ -1721,7 +1722,7 @@ void gfx_widgets_frame(void *data)
             p_dispwidget->simple_widget_height / 2.0f
             + p_dispwidget->gfx_widget_fonts.regular.line_centre_offset,
             video_width, video_height,
-            0xFFFFFFFF,
+            TEXT_COLOR_INFO,
             TEXT_ALIGN_LEFT,
             true);
    }
@@ -2021,7 +2022,6 @@ bool gfx_widgets_init(
       const char *dir_assets, char *font_path)
 {
    size_t i;
-   unsigned color                              = 0x1A1A1A;
    dispgfx_widget_t *p_dispwidget              = &dispwidget_st;
    gfx_display_t *p_disp                       = (gfx_display_t*)data_disp;
    gfx_animation_t *p_anim                     = (gfx_animation_t*)data_anim;
@@ -2035,21 +2035,21 @@ bool gfx_widgets_init(
    for (i = 0; i < 16; i++)
       p_dispwidget->pure_white[i] = 1.00f;
 
-   p_dispwidget->msg_queue_bg[0]  = HEX_R(color);
-   p_dispwidget->msg_queue_bg[1]  = HEX_G(color);
-   p_dispwidget->msg_queue_bg[2]  = HEX_B(color);
+   p_dispwidget->msg_queue_bg[0]  = HEX_R(BG_COLOR_DEFAULT);
+   p_dispwidget->msg_queue_bg[1]  = HEX_G(BG_COLOR_DEFAULT);
+   p_dispwidget->msg_queue_bg[2]  = HEX_B(BG_COLOR_DEFAULT);
    p_dispwidget->msg_queue_bg[3]  = 1.0f;
-   p_dispwidget->msg_queue_bg[4]  = HEX_R(color);
-   p_dispwidget->msg_queue_bg[5]  = HEX_G(color);
-   p_dispwidget->msg_queue_bg[6]  = HEX_B(color);
+   p_dispwidget->msg_queue_bg[4]  = HEX_R(BG_COLOR_DEFAULT);
+   p_dispwidget->msg_queue_bg[5]  = HEX_G(BG_COLOR_DEFAULT);
+   p_dispwidget->msg_queue_bg[6]  = HEX_B(BG_COLOR_DEFAULT);
    p_dispwidget->msg_queue_bg[7]  = 1.0f;
-   p_dispwidget->msg_queue_bg[8]  = HEX_R(color);
-   p_dispwidget->msg_queue_bg[9]  = HEX_G(color);
-   p_dispwidget->msg_queue_bg[10] = HEX_B(color);
+   p_dispwidget->msg_queue_bg[8]  = HEX_R(BG_COLOR_DEFAULT);
+   p_dispwidget->msg_queue_bg[9]  = HEX_G(BG_COLOR_DEFAULT);
+   p_dispwidget->msg_queue_bg[10] = HEX_B(BG_COLOR_DEFAULT);
    p_dispwidget->msg_queue_bg[11] = 1.0f;
-   p_dispwidget->msg_queue_bg[12] = HEX_R(color);
-   p_dispwidget->msg_queue_bg[13] = HEX_G(color);
-   p_dispwidget->msg_queue_bg[14] = HEX_B(color);
+   p_dispwidget->msg_queue_bg[12] = HEX_R(BG_COLOR_DEFAULT);
+   p_dispwidget->msg_queue_bg[13] = HEX_G(BG_COLOR_DEFAULT);
+   p_dispwidget->msg_queue_bg[14] = HEX_B(BG_COLOR_DEFAULT);
    p_dispwidget->msg_queue_bg[15] = 1.0f;
 
    if (!(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_INITED))

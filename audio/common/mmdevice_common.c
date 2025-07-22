@@ -21,40 +21,43 @@
 #include "mmdevice_common.h"
 #include "mmdevice_common_inline.h"
 
-char* mmdevice_name(IMMDevice *device)
+char *mmdevice_name(void *data)
 {
    HRESULT hr;
-   IPropertyStore *prop_store = NULL;
    PROPVARIANT prop_var;
-   bool prop_var_init         = false;
+   IMMDevice *device          = (IMMDevice*)data;
+   IPropertyStore *prop_store = NULL;
    char* result               = NULL;
 
    if (!device)
       return NULL;
 
-   hr = _IMMDevice_OpenPropertyStore(device, STGM_READ, &prop_store);
+   hr = _IMMDevice_OpenPropertyStore(device,
+         STGM_READ, &prop_store);
 
    if (FAILED(hr))
       return NULL;
 
    PropVariantInit(&prop_var);
-   prop_var_init = true;
-   hr = _IPropertyStore_GetValue(prop_store, PKEY_Device_FriendlyName, &prop_var);
-   if (FAILED(hr))
-      goto done;
+   hr = _IPropertyStore_GetValue(prop_store,
+         PKEY_Device_FriendlyName, &prop_var);
+   if (SUCCEEDED(hr))
+      result = utf16_to_utf8_string_alloc(prop_var.pwszVal);
 
-   result = utf16_to_utf8_string_alloc(prop_var.pwszVal);
-
-done:
-   if (prop_var_init)
-      PropVariantClear(&prop_var);
-
-   IFACE_RELEASE(prop_store);
-
+   PropVariantClear(&prop_var);
+   if (prop_store)
+   {
+#ifdef __cplusplus
+      prop_store->Release();
+#else
+      prop_store->lpVtbl->Release(prop_store);
+#endif
+      prop_store = NULL;
+   }
    return result;
 }
 
-void *mmdevice_list_new(const void *u, EDataFlow data_flow)
+void *mmdevice_list_new(const void *u, unsigned data_flow)
 {
    HRESULT hr;
    UINT i;
@@ -120,11 +123,35 @@ void *mmdevice_list_new(const void *u, EDataFlow data_flow)
          free(dev_name_str);
       dev_name_str = NULL;
       dev_id_wstr  = NULL;
-      IFACE_RELEASE(device);
+      if (device)
+      {
+#ifdef __cplusplus
+         device->Release();
+#else
+         device->lpVtbl->Release(device);
+#endif
+         device = NULL;
+      }
    }
 
-   IFACE_RELEASE(collection);
-   IFACE_RELEASE(enumerator);
+   if (collection)
+   {
+#ifdef __cplusplus
+      collection->Release();
+#else
+      collection->lpVtbl->Release(collection);
+#endif
+      collection = NULL;
+   }
+   if (enumerator)
+   {
+#ifdef __cplusplus
+      enumerator->Release();
+#else
+      enumerator->lpVtbl->Release(enumerator);
+#endif
+      enumerator = NULL;
+   }
 
    return sl;
 
@@ -138,9 +165,33 @@ error:
    if (dev_id_wstr)
       CoTaskMemFree(dev_id_wstr);
    dev_id_wstr = NULL;
-   IFACE_RELEASE(device);
-   IFACE_RELEASE(collection);
-   IFACE_RELEASE(enumerator);
+   if (device)
+   {
+#ifdef __cplusplus
+      device->Release();
+#else
+      device->lpVtbl->Release(device);
+#endif
+      device = NULL;
+   }
+   if (collection)
+   {
+#ifdef __cplusplus
+      collection->Release();
+#else
+      collection->lpVtbl->Release(collection);
+#endif
+      collection = NULL;
+   }
+   if (enumerator)
+   {
+#ifdef __cplusplus
+      enumerator->Release();
+#else
+      enumerator->lpVtbl->Release(enumerator);
+#endif
+      enumerator = NULL;
+   }
    if (sl)
       string_list_free(sl);
 

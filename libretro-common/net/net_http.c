@@ -373,27 +373,31 @@ struct http_connection_t *net_http_connection_new(const char *url,
       conn->contentlength  = strlen(data);
    }
 
-   if (!(conn->url = strdup(url)))
-      goto error;
-
-   if (!strncmp(url, "http://", STRLEN_CONST("http://")))
-      conn->scan = conn->url + STRLEN_CONST("http://");
-   else if (!strncmp(url, "https://", STRLEN_CONST("https://")))
+   if ((conn->url = strdup(url)))
    {
-      conn->scan = conn->url + STRLEN_CONST("https://");
-      conn->ssl  = true;
+      if (!strncmp(url, "http://", STRLEN_CONST("http://")))
+      {
+         conn->scan   = conn->url + STRLEN_CONST("http://");
+
+         if (!string_is_empty(conn->scan))
+         {
+            conn->domain = conn->scan;
+            return conn;
+         }
+      }
+      else if (!strncmp(url, "https://", STRLEN_CONST("https://")))
+      {
+         conn->scan   = conn->url + STRLEN_CONST("https://");
+         conn->ssl    = true;
+
+         if (!string_is_empty(conn->scan))
+         {
+            conn->domain = conn->scan;
+            return conn;
+         }
+      }
    }
-   else
-      goto error;
 
-   if (string_is_empty(conn->scan))
-      goto error;
-
-   conn->domain = conn->scan;
-
-   return conn;
-
-error:
    if (conn->url)
       free(conn->url);
    if (conn->method)
@@ -727,12 +731,12 @@ static void net_http_conn_pool_remove_expired(void)
    *NOT* thread safe, caller must lock */
 static void net_http_conn_pool_move_to_end(struct conn_pool_entry *entry)
 {
-   struct conn_pool_entry *prev = NULL;
+   struct conn_pool_entry *prev    = NULL;
    struct conn_pool_entry *current = conn_pool;
    /* 0 items in pool */
    if (!conn_pool)
    {
-      conn_pool = entry;
+      conn_pool   = entry;
       entry->next = NULL;
       return;
    }
@@ -753,8 +757,11 @@ static void net_http_conn_pool_move_to_end(struct conn_pool_entry *entry)
       }
       current = current->next;
    }
-   prev->next = entry;
-   entry->next = NULL;
+
+   if (prev)
+      prev->next  = entry;
+   if (entry)
+      entry->next = NULL;
 }
 
 static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int port)

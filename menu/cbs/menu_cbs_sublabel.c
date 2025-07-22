@@ -182,12 +182,12 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
          /* Check whether runtime info is valid */
          if (entry->runtime.status == CONTENTLESS_CORE_RUNTIME_VALID)
          {
-            size_t n    = strlcat(tmp, entry->runtime.runtime_str, sizeof(tmp));
+            size_t _len = strlcat(tmp, entry->runtime.runtime_str, sizeof(tmp));
 
-            if (n < 64 - 1)
+            if (_len < 64 - 1)
             {
-               tmp[n  ] = '\n';
-               tmp[n+1] = '\0';
+               tmp[_len    ] = '\n';
+               tmp[_len + 1] = '\0';
                strlcat(tmp, entry->runtime.last_played_str, sizeof(tmp));
             }
 
@@ -1476,7 +1476,7 @@ static int action_bind_sublabel_core_info_entry(
    if (list && list->list[i].label && strstr(list->list[i].label, "(md5)"))
    {
       int pos = string_find_index_substring_string(list->list[i].label, "(md5)");
-      snprintf(s, len, "%s", list->list[i].label + pos);
+      strlcpy(s, list->list[i].label + pos, len);
    }
 
    return 0;
@@ -1586,7 +1586,7 @@ static int action_bind_sublabel_subsystem_load(
    {
       size_t _len = strlcat(buf, path_basename(content_get_subsystem_rom(j)), sizeof(buf));
       if (j != content_get_subsystem_rom_id() - 1)
-         _len += strlcpy(buf + _len, "\n", sizeof(buf) - _len);
+         strlcpy(buf + _len, "\n", sizeof(buf) - _len);
    }
 
    if (!string_is_empty(buf))
@@ -1813,7 +1813,7 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
    {
       _len += strlcpy(s + _len, "(", len - _len);
       _len += strlcpy(s + _len, room->subsystem_name, len - _len);
-      _len += strlcpy(s + _len, ")", len - _len);
+      strlcpy(s + _len, ")", len - _len);
    }
    return 0;
 }
@@ -1823,6 +1823,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       const char *label, const char *path,
       char *s, size_t len)
 {
+   size_t _len;
    char buf[NAME_MAX_LENGTH];
    netplay_client_info_t *client;
    const char         *status = NULL;
@@ -1851,7 +1852,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
 
    if (status)
    {
-      size_t _len = strlcpy(buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS),
+      _len        = strlcpy(buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS),
             sizeof(buf) - 3);
       buf[  _len] = ':';
       buf[++_len] = ' ';
@@ -1864,38 +1865,39 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
 
    if (client->devices)
    {
-      int written = snprintf(buf, sizeof(buf), "%s:",
+      _len = snprintf(buf, sizeof(buf), "%s:",
          msg_hash_to_str(MSG_NETPLAY_CLIENT_DEVICES));
 
       /* Ensure that at least one device can be written. */
-      if (written > 0 && written < (int)sizeof(buf) - (int)STRLEN_CONST(" 16\n"))
+      if (_len > 0 && _len < (int)sizeof(buf) - (int)STRLEN_CONST(" 16\n"))
       {
          uint32_t device;
-         char *buf_written = buf + written;
+         char *buf_written = buf + _len;
 
          for (device = 0; device < (sizeof(client->devices) << 3); device++)
          {
             if (client->devices & (1 << device))
             {
-               int tmp_written = snprintf(buf_written, sizeof(buf) - written,
-                  " %u,", (unsigned)(device + 1));
+               int __len = snprintf(buf_written,
+                     sizeof(buf) - _len,
+                     " %u,", (unsigned)(device + 1));
 
                /* Write nothing on error. */
-               if (tmp_written <= 0)
+               if (__len <= 0)
                {
-                  written = -1;
+                  _len = -1;
                   break;
                }
 
-               written += tmp_written;
-               if (written >= (int)sizeof(buf) - 1)
+               _len += __len;
+               if (_len >= (int)sizeof(buf) - 1)
                   break;
 
-               buf_written += tmp_written;
+               buf_written += __len;
             }
          }
 
-         if (written > 0)
+         if (_len > 0)
          {
             /* Now convert the last comma into a newline. */
             buf_written = strrchr(buf, ',');
@@ -1914,18 +1916,14 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       msg_hash_to_str(MSG_NETPLAY_CHAT_SUPPORTED),
       msg_hash_to_str((client->protocol >= 6) ?
          MENU_ENUM_LABEL_VALUE_YES : MENU_ENUM_LABEL_VALUE_NO));
-   strlcat(s, buf, len);
-
-   snprintf(buf, sizeof(buf), "%s: %lu",
+   _len  = strlcat(s, buf, len);
+   _len += snprintf(s + _len, len - _len, "%s: %lu",
       msg_hash_to_str(MSG_NETPLAY_SLOWDOWNS_CAUSED),
       (unsigned long)client->slowdowns);
-   strlcat(s, buf, len);
 
    if (client->ping >= 0)
-   {
-      snprintf(buf, sizeof(buf), "\nPing: %u ms", (unsigned)client->ping);
-      strlcat(s, buf, len);
-   }
+      snprintf(s + _len, len - _len,
+            "\nPing: %u ms", (unsigned)client->ping);
 
    return 0;
 }

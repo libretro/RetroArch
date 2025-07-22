@@ -846,8 +846,8 @@ static bool task_pl_entry_thumbnail_finder(retro_task_t *task, void *user_data)
    {
       pl_thumb_handle_t *pl_thumb = NULL;
       if ((pl_thumb = (pl_thumb_handle_t*)task->state))
-         return (entry_id->idx == pl_thumb->list_index) &&
-            string_is_equal(entry_id->playlist_path, pl_thumb->playlist_path);
+         return (entry_id->idx == pl_thumb->list_index)
+            &&   string_is_equal(entry_id->playlist_path, pl_thumb->playlist_path);
    }
    return false;
 }

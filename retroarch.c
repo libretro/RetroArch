@@ -4813,11 +4813,13 @@ bool command_event(enum event_command cmd, void *data)
                sizeof(tmp_netplay_server)))
             {
                netplay_server  = tmp_netplay_server;
-               netplay_session = strdup(tmp_netplay_session);
+               if (p_rarch->connect_mitm_id)
+                  netplay_session = strdup(p_rarch->connect_mitm_id);
+               else
+                  netplay_session = strdup(tmp_netplay_session);
             }
-
-            if (p_rarch->connect_mitm_id)
-                netplay_session = strdup(p_rarch->connect_mitm_id);
+            else if (p_rarch->connect_mitm_id)
+                netplay_session   = strdup(p_rarch->connect_mitm_id);
 
             if (p_rarch->connect_host)
             {

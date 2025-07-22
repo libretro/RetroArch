@@ -2118,6 +2118,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    "Metal argumens pufferek használata (újraindítás szükséges)"
 )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "A teljesítmény javulhat a Metal argumentum pufferek használatával. Néhány magnak szüksége lehet erre, de hibát okozhat egyes shadereknél, különösen régi hardver vagy OS verzió esetén."
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -11463,6 +11467,10 @@ MSG_HASH(
    "Betűméret"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
+   "A menü betűtípus mérete változtatható legyen-e, és ha igen, egyben vagy a menü részei szerint egyesével."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
    "Globális"
    )
@@ -11473,6 +11481,58 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
    "Betűméret szorzója"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   "A betűkészlet méretének változtatása az egész menüre vonatkozóan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Címsor betűméretének szorzója"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "A menü fejlécében található címsor betűméretének szorzója."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Bal oldalsáv betűméretének szorzója"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "A bal oldalsáv betűméretének szorzója."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Címkék betűméretének szorzója"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "A menüelemek és játéklista bejegyzések címkéinek betűmérete. A súgódobozokban megjelenő szöveg méretét is befolyásolja."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "Alcímkék betűméretének szorzója"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   "A menüelemek és játéklista bejegyzések alcímkéinek betűmérete."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
+   "Dátum-idő betűméretének szorzója"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
+   "A menü jobb felső sarkában található dátum-idő kijelzés betűmérete."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "Lábléc betűméretének szorzója"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   "A menü láblécében található szöveg betűméretének szorzója. A jobb oldali bélyegkép sáv betűméretére is hatással van."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
@@ -11521,6 +11581,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
    "A bélyegkép oszlop méretezése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_PADDING_FACTOR,
+   "Kitöltési szorzó"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_PADDING_FACTOR,
+   "A vízszintes helykitöltés szorzója."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
+   "Fejlécelválasztó"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
+   "A fejléc és lábléc elválasztójának szélessége."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
@@ -13210,6 +13286,14 @@ MSG_HASH(
    "Az összes támogatott mag átváltva a Play áruház verzióira"
    )
 MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "Magok frissítve: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "Magok kihagyva: "
+   )
+MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Magok frissítése letiltva - a mag zárolva: "
    )
@@ -13376,6 +13460,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "A mag nem támogatja a játékállás elmentését."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "A mag nem támogatja a lemezváltást."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
@@ -13716,6 +13804,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
    "Nem kompatibilis az újrajátszással"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "Visszajátszás közben nem tölthető be jövőbeli állapot"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Rossz idővonal hiba visszajátszás közben"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Rossz idővonal, a felvétel felülíródik"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,

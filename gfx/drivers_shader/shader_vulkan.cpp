@@ -28,6 +28,7 @@
 #include <compat/strl.h>
 #include <formats/image.h>
 #include <string/stdstring.h>
+#include <gfx/math/matrix_4x4.h>
 #include <retro_miscellaneous.h>
 
 #include "slang_reflection.h"

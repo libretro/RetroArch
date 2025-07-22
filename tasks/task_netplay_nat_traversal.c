@@ -140,9 +140,9 @@ done:
       struct sockaddr_in addr    = {0};
       socklen_t          addrlen = sizeof(addr);
 
-      if (!connect(dummy_fd, (struct sockaddr*)&device->addr,
-               sizeof(device->addr)) &&
-            !getsockname(dummy_fd, (struct sockaddr*)&addr, &addrlen))
+      if (     !connect(dummy_fd, (struct sockaddr*)&device->addr,
+               sizeof(device->addr))
+            && !getsockname(dummy_fd, (struct sockaddr*)&addr, &addrlen))
       {
          /* Make sure this is not "0.0.0.0". */
          if (addr.sin_addr.s_addr)

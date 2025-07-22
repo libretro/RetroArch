@@ -72,7 +72,7 @@
 /* Spacer for left scrolling ticker text */
 #if defined(__APPLE__)
 /* UTF-8 support is currently broken on Apple devices... */
-#define MUI_TICKER_SPACER "   |   "
+#define MUI_TICKER_SPACER TICKER_SPACER_DEFAULT
 #else
 /* <EM SPACE><BULLET><EM SPACE>
  * UCN equivalent: "\u2003\u2022\u2003" */
@@ -5121,12 +5121,13 @@ static void materialui_render_menu_entry_playlist_desktop(
    {
       if (usable_width > 0)
       {
+         int label_y;
          char label_buf[NAME_MAX_LENGTH];
          label_buf[0] = '\0';
 
          /* Entry label is drawn at the vertical centre
           * of the current node */
-         int label_y = entry_y + (node->entry_height / 2.0f) +
+         label_y = entry_y + (node->entry_height / 2.0f) +
             mui->font_data.list.line_centre_offset;
 
          /* Apply ticker */
@@ -8916,7 +8917,6 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    settings_t *settings                   = config_get_ptr();
    gfx_animation_t     *p_anim            = anim_get_ptr();
    materialui_handle_t *mui               = NULL;
-   static const char* const ticker_spacer = MUI_TICKER_SPACER;
    gfx_display_t *p_disp                  = disp_get_ptr();
    menu_handle_t *menu                    = (menu_handle_t*)
       calloc(1, sizeof(*menu));
@@ -8974,10 +8974,10 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    if (settings->bools.menu_ticker_smooth)
       mui->flags                         |= MUI_FLAG_USE_SMOOTH_TICKER;
    mui->ticker_smooth.font_scale          = 1.0f;
-   mui->ticker_smooth.spacer              = ticker_spacer;
+   mui->ticker_smooth.spacer              = MUI_TICKER_SPACER;
    mui->ticker_smooth.x_offset            = &mui->ticker_x_offset;
    mui->ticker_smooth.dst_str_width       = &mui->ticker_str_width;
-   mui->ticker.spacer                     = ticker_spacer;
+   mui->ticker.spacer                     = MUI_TICKER_SPACER;
 
    /* Ensure menu animation parameters are properly
     * reset */

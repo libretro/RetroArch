@@ -152,9 +152,9 @@ int rmsgpack_write_string(intfstream_t *fd, const char *s, uint32_t len)
          uint8_t tmp_i8 = (uint8_t)len;
          if (intfstream_write(fd, &tmp_i8, sizeof(uint8_t)) != -1)
          {
-            int written = sizeof(uint8_t) + sizeof(uint8_t);
+            int _len = sizeof(uint8_t) + sizeof(uint8_t);
             if (intfstream_write(fd, s, len) != -1)
-               return written + len;
+               return _len + len;
          }
       }
    }
@@ -166,9 +166,9 @@ int rmsgpack_write_string(intfstream_t *fd, const char *s, uint32_t len)
          uint16_t tmp_i16 = swap_if_little16(len);
          if (intfstream_write(fd, &tmp_i16, sizeof(uint16_t)) != -1)
          {
-            int written = sizeof(uint8_t) + sizeof(uint16_t);
+            int _len = sizeof(uint8_t) + sizeof(uint16_t);
             if (intfstream_write(fd, s, len) != -1)
-               return written + len;
+               return _len + len;
          }
       }
    }
@@ -180,9 +180,9 @@ int rmsgpack_write_string(intfstream_t *fd, const char *s, uint32_t len)
          uint32_t tmp_i32 = swap_if_little32(len);
          if (intfstream_write(fd, &tmp_i32, sizeof(uint32_t)) != -1)
          {
-            int written = sizeof(uint8_t) + sizeof(uint32_t);
+            int _len = sizeof(uint8_t) + sizeof(uint32_t);
             if (intfstream_write(fd, s, len) != -1)
-               return written + len;
+               return _len + len;
          }
       }
    }

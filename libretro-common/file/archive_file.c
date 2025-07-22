@@ -338,7 +338,6 @@ bool file_archive_extract_file(
       char *s, size_t len)
 {
    struct archive_extract_userdata userdata;
-   bool ret                                 = true;
    struct string_list *list                 = string_split(valid_exts, "|");
 
    userdata.archive_path[0]                 = '\0';
@@ -353,37 +352,22 @@ bool file_archive_extract_file(
    userdata.transfer                        = NULL;
    userdata.dec                             = NULL;
 
-   if (!list)
+   if (     list
+         && file_archive_walk(archive_path, valid_exts,
+            file_archive_extract_cb, &userdata)
+         && userdata.found_file
+      )
    {
-      ret = false;
-      goto end;
+      if (!string_is_empty(userdata.first_extracted_file_path))
+         strlcpy(s, userdata.first_extracted_file_path, len);
+      return true;
    }
 
-   if (!file_archive_walk(archive_path, valid_exts,
-            file_archive_extract_cb, &userdata))
-   {
-      /* Parsing file archive failed. */
-      ret = false;
-      goto end;
-   }
-
-   if (!userdata.found_file)
-   {
-      /* Didn't find any file that matched valid extensions
-       * for libretro implementation. */
-      ret = false;
-      goto end;
-   }
-
-   if (!string_is_empty(userdata.first_extracted_file_path))
-      strlcpy(s, userdata.first_extracted_file_path, len);
-
-end:
    if (userdata.first_extracted_file_path)
       free(userdata.first_extracted_file_path);
    if (list)
       string_list_free(list);
-   return ret;
+   return false;
 }
 
 /* Warning: 'list' must zero initialised before
@@ -480,6 +464,40 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
 }
 
 /**
+ * string_list_append_n:
+ * @list             : pointer to string list
+ * @elem             : element to add to the string list
+ * @length           : read at most this many bytes from elem
+ * @attr             : attributes of new element.
+ *
+ * Appends a new element to the string list.
+ *
+ * @return true if successful, otherwise false.
+ **/
+static bool string_list_append_n(struct string_list *list,
+      const char *elem, unsigned length,
+      union string_list_elem_attr attr)
+{
+   char *data_dup = NULL;
+
+   if (list->size >= list->cap &&
+         !string_list_capacity(list, list->cap * 2))
+      return false;
+
+   if (!(data_dup = (char*)malloc(length + 1)))
+      return false;
+
+   strlcpy(data_dup, elem, length + 1);
+
+   list->elems[list->size].data = data_dup;
+   list->elems[list->size].attr = attr;
+
+   list->size++;
+   return true;
+}
+
+
+/**
  * file_archive_filename_split:
  * @str              : filename to turn into a string list
  *
@@ -499,7 +517,10 @@ static struct string_list *file_archive_filename_split(const char *path)
    {
       /* add archive path to list first */
       if (!string_list_append_n(list, path, (unsigned)(delim - path), attr))
-         goto error;
+      {
+         string_list_free(list);
+         return NULL;
+      }
 
       /* now add the path within the archive */
       delim++;
@@ -507,18 +528,22 @@ static struct string_list *file_archive_filename_split(const char *path)
       if (*delim)
       {
          if (!string_list_append(list, delim, attr))
-            goto error;
+         {
+            string_list_free(list);
+            return NULL;
+         }
       }
    }
    else
+   {
       if (!string_list_append(list, path, attr))
-         goto error;
+      {
+         string_list_free(list);
+         return NULL;
+      }
+   }
 
    return list;
-
-error:
-   string_list_free(list);
-   return NULL;
 }
 
 /* Generic compressed file loader.

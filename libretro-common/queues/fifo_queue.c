@@ -101,7 +101,8 @@ void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t len)
    }
 
    memcpy(buffer->buffer + buffer->end, in_buf, first_write);
-   memcpy(buffer->buffer, (const uint8_t*)in_buf + first_write, rest_write);
+   if (rest_write > 0)
+      memcpy(buffer->buffer, (const uint8_t*)in_buf + first_write, rest_write);
 
    buffer->end = (buffer->end + len) % buffer->size;
 }

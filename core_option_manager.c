@@ -1262,31 +1262,35 @@ void core_option_manager_free(core_option_manager_t *opt)
 
    for (i = 0; i < opt->size; i++)
    {
-      if (opt->opts[i].desc)
-         free(opt->opts[i].desc);
-      if (opt->opts[i].desc_categorized)
-         free(opt->opts[i].desc_categorized);
-      if (opt->opts[i].info)
-         free(opt->opts[i].info);
-      if (opt->opts[i].info_categorized)
-         free(opt->opts[i].info_categorized);
-      if (opt->opts[i].key)
-         free(opt->opts[i].key);
-      if (opt->opts[i].category_key)
-         free(opt->opts[i].category_key);
+      struct core_option *option = (struct core_option*)&opt->opts[i];
+      if (option)
+      {
+         if (option->desc)
+            free(option->desc);
+         if (option->desc_categorized)
+            free(option->desc_categorized);
+         if (option->info)
+            free(option->info);
+         if (option->info_categorized)
+            free(option->info_categorized);
+         if (option->key)
+            free(option->key);
+         if (option->category_key)
+            free(option->category_key);
 
-      if (opt->opts[i].vals)
-         string_list_free(opt->opts[i].vals);
-      if (opt->opts[i].val_labels)
-         string_list_free(opt->opts[i].val_labels);
+         if (option->vals)
+            string_list_free(option->vals);
+         if (option->val_labels)
+            string_list_free(option->val_labels);
 
-      opt->opts[i].desc             = NULL;
-      opt->opts[i].desc_categorized = NULL;
-      opt->opts[i].info             = NULL;
-      opt->opts[i].info_categorized = NULL;
-      opt->opts[i].key              = NULL;
-      opt->opts[i].category_key     = NULL;
-      opt->opts[i].vals             = NULL;
+         option->desc             = NULL;
+         option->desc_categorized = NULL;
+         option->info             = NULL;
+         option->info_categorized = NULL;
+         option->key              = NULL;
+         option->category_key     = NULL;
+         option->vals             = NULL;
+      }
    }
 
    if (opt->option_map)
@@ -1318,11 +1322,11 @@ void core_option_manager_free(core_option_manager_t *opt)
  * specified option category if successful,
  * otherwise NULL.
  **/
-const char *core_option_manager_get_category_desc(core_option_manager_t *opt,
-      const char *key)
+const char *core_option_manager_get_category_desc(
+      core_option_manager_t *opt, const char *key)
 {
-   uint32_t key_hash;
    size_t i;
+   uint32_t key_hash;
 
    if (  !opt
        || string_is_empty(key))
@@ -1360,11 +1364,11 @@ const char *core_option_manager_get_category_desc(core_option_manager_t *opt,
 const char *core_option_manager_get_category_info(core_option_manager_t *opt,
       const char *key)
 {
-   uint32_t key_hash;
    size_t i;
+   uint32_t key_hash;
 
-   if (!opt ||
-       string_is_empty(key))
+   if (  !opt
+       || string_is_empty(key))
       return NULL;
 
    key_hash = core_option_manager_hash_string(key);

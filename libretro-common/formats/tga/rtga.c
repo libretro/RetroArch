@@ -337,11 +337,16 @@ static uint8_t *rtga_tga_load(rtga_context *s,
                /* read in the data raw */
                /* manually unroll, probably GCC bug 92955 */
                j = 0;
-               switch (tga_bits_per_pixel) {
-                  case 32: raw_data[j++] = rtga_get8(s); /* fallthrough */
-                  case 24: raw_data[j++] = rtga_get8(s); /* fallthrough */
-                  case 16: raw_data[j++] = rtga_get8(s); /* fallthrough */
-                  case  8: raw_data[j++] = rtga_get8(s);
+               switch (tga_bits_per_pixel)
+               {
+                  case 32:
+                     raw_data[j++] = rtga_get8(s); /* fallthrough */
+                  case 24:
+                     raw_data[j++] = rtga_get8(s); /* fallthrough */
+                  case 16:
+                     raw_data[j++] = rtga_get8(s); /* fallthrough */
+                  case  8:
+                     raw_data[j++] = rtga_get8(s);
                }
             }
 

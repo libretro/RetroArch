@@ -70,10 +70,10 @@ static gfx_widget_volume_state_t p_w_volume_st = {
    {0},
    0,
    0,
-   COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f),
-   COLOR_HEX_TO_FLOAT(0x198AC6, 1.0f),
-   COLOR_HEX_TO_FLOAT(0xF5DD19, 1.0f),
-   COLOR_HEX_TO_FLOAT(0xC23B22, 1.0f),
+   COLOR_HEX_TO_FLOAT(BG_COLOR_DEFAULT, 1.0f),
+   COLOR_HEX_TO_FLOAT(ICON_COLOR_BLUE, 1.0f),
+   COLOR_HEX_TO_FLOAT(ICON_COLOR_YELLOW, 1.0f),
+   COLOR_HEX_TO_FLOAT(ICON_COLOR_RED, 1.0f),
    0.0f,
    0.0f,
    0.0f,
@@ -110,7 +110,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
 
       uintptr_t volume_icon                = 0;
       unsigned icon_size                   = state->textures[ICON_MED] ? state->widget_height : padding;
-      unsigned text_color                  = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(state->text_alpha*255.0f));
+      unsigned text_color                  = COLOR_TEXT_ALPHA(TEXT_COLOR_INFO, (unsigned)(state->text_alpha*255.0f));
       unsigned text_color_db               = COLOR_TEXT_ALPHA(TEXT_COLOR_FAINT, (unsigned)(state->text_alpha*255.0f));
 
       unsigned bar_x                       = icon_size;

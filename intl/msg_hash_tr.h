@@ -14138,6 +14138,18 @@ MSG_HASH(
    "Tekrar oynatmayla uyumlu değil"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "Oynatma sırasında gelecekteki durum yüklenemiyor"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Oynatma sırasında yanlış zaman çizelgesi hatası"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Yanlış zaman çizelgesi; kaydın üzerine yazılması"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Gölgelendirici bulundu"
    )

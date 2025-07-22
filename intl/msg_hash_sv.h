@@ -11180,8 +11180,16 @@ MSG_HASH(
    "Primär miniatyrbild"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
+   "Huvudtyp av miniatyrbild som ska associeras med varje spellistepost. Fungerar vanligtvis som innehållsikon."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
    "Sekundär miniatyrbild"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_MATERIALUI,
+   "Hjälptyp av miniatyrbild som ska associeras med varje spellistepost. Användningen beror på det aktuella visningsläget för miniatyrbilder i spellistan."
    )
 
 /* MaterialUI: Settings Options */
@@ -11804,6 +11812,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
    "Miniatyrbild"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+   "Cachegräns för miniatyrbilder:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
@@ -12818,6 +12830,10 @@ MSG_HASH(
    "Kärnan har inget stöd för sparat tillstånd."
    )
 MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "Kärnan har inte stöd för Disc Control."
+   )
+MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
    "Kärnans alternativfil skapades."
    )
@@ -13128,6 +13144,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
    "Inte från aktuell inspelning"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "Kan inte läsa in framtida tillstånd under uppspelning"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Felaktigt tidslinjefel under uppspelning"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Felaktig tidslinje; skriver över inspelning"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -14613,6 +14641,10 @@ MSG_HASH(
    "Justera x/y-hastighetsskala för Wiimotes ljuspistol."
    )
 #endif
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+   "Justera x/y-skalan för pekskärmens koordinater för att anpassa den till OS-nivåns skärmskalning."
+   )
 #ifdef UDEV_TOUCH_SUPPORT
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,

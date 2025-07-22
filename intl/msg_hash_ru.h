@@ -14090,6 +14090,18 @@ MSG_HASH(
    "Несовместимо с повтором"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "Невозможно загрузить будущее состояние во время воспроизведения"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Ошибка хронологии при воспроизведении"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Ошибка хронологии; перезапись повтора"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Обнаружен шейдер"
    )

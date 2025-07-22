@@ -116,6 +116,7 @@ else ifeq ($(platform), ps3-cobra)
 # NGC/Wii - libogc
 else ifeq ($(libogc_platform), 1)
    EXTERNAL_LIBOGC   ?= 0
+   HAVE_OGG_OGC      ?= 0
    GX_PTHREAD_LEGACY ?= 1
    CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
@@ -181,6 +182,10 @@ else ifeq ($(libogc_platform), 1)
       ifeq ($(BIG_STACK), 1)
         LDFLAGS += -T bootstrap/gx/rvl.ld
       endif
+   endif
+
+   ifeq ($(HAVE_OGG_OGC), 1)
+      LIBS += -L$(DEVKITPRO)/portlibs/ppc/lib -lvorbisfile -lvorbis -logg
    endif
 
    ifeq ($(EXTERNAL_LIBOGC), 1)

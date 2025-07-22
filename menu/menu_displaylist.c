@@ -1741,7 +1741,7 @@ static unsigned menu_displaylist_parse_supported_cores(
          _len       += strlcpy(entry_alt_text + _len,
                pending_core_name,
                sizeof(entry_alt_text)         - _len);
-         _len       += strlcpy(entry_alt_text + _len, ")", sizeof(entry_alt_text) - _len);
+         strlcpy(entry_alt_text + _len, ")", sizeof(entry_alt_text) - _len);
 
          menu_entries_prepend(info->list, pending_core_path,
                msg_hash_to_str(current_core_enum_label),
@@ -4381,7 +4381,7 @@ static unsigned menu_displaylist_parse_playlists(
          {
             if (settings->bools.menu_content_show_favorites)
                if (menu_entries_append(info_list,
-                        FILE_PATH_CONTENT_FAVORITES,
+                        playlist_get_conf_path(g_defaults.content_favorites),
                         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                         MENU_ENUM_LABEL_GOTO_FAVORITES,
                         MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4389,7 +4389,7 @@ static unsigned menu_displaylist_parse_playlists(
 
             if (settings->bools.menu_content_show_history)
                if (menu_entries_append(info_list,
-                        FILE_PATH_CONTENT_HISTORY,
+                        playlist_get_conf_path(g_defaults.content_history),
                         msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                         MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4399,7 +4399,7 @@ static unsigned menu_displaylist_parse_playlists(
          {
             if (settings->bools.menu_content_show_history)
                if (menu_entries_append(info_list,
-                        FILE_PATH_CONTENT_HISTORY,
+                        playlist_get_conf_path(g_defaults.content_history),
                         msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                         MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4407,7 +4407,7 @@ static unsigned menu_displaylist_parse_playlists(
 
             if (settings->bools.menu_content_show_favorites)
                if (menu_entries_append(info_list,
-                        FILE_PATH_CONTENT_FAVORITES,
+                        playlist_get_conf_path(g_defaults.content_favorites),
                         msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                         MENU_ENUM_LABEL_GOTO_FAVORITES,
                         MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4415,17 +4415,19 @@ static unsigned menu_displaylist_parse_playlists(
          }
       }
 
+#ifdef HAVE_IMAGEVIEWER
       if (settings->bools.menu_content_show_images)
          if (menu_entries_append(info_list,
-                  FILE_PATH_CONTENT_IMAGE_HISTORY,
+                  playlist_get_conf_path(g_defaults.image_history),
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_IMAGES),
                   MENU_ENUM_LABEL_GOTO_IMAGES,
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
+#endif
 
       if (settings->bools.menu_content_show_music)
          if (menu_entries_append(info_list,
-                  FILE_PATH_CONTENT_MUSIC_HISTORY,
+                  playlist_get_conf_path(g_defaults.music_history),
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_MUSIC),
                   MENU_ENUM_LABEL_GOTO_MUSIC,
                   MENU_SETTING_ACTION, 0, 0, NULL))
@@ -4434,7 +4436,7 @@ static unsigned menu_displaylist_parse_playlists(
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       if (settings->bools.menu_content_show_video)
          if (menu_entries_append(info_list,
-                  FILE_PATH_CONTENT_VIDEO_HISTORY,
+                  playlist_get_conf_path(g_defaults.video_history),
                   msg_hash_to_str(MENU_ENUM_LABEL_GOTO_VIDEO),
                   MENU_ENUM_LABEL_GOTO_VIDEO,
                   MENU_SETTING_ACTION, 0, 0, NULL))
@@ -6854,7 +6856,7 @@ static unsigned menu_displaylist_populate_subsystem(
                   _len       += strlcpy(s + _len,
                         subsystem->roms[content_get_subsystem_rom_id()].desc,
                         sizeof(s)         - _len);
-                  _len       += strlcpy(s + _len, "]", sizeof(s) - _len);
+                  strlcpy(s + _len, "]", sizeof(s) - _len);
                }
 #endif
 
@@ -15132,7 +15134,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      if (settings->bools.menu_content_show_favorites)
                         if (menu_entries_append(info->list,
-                                 FILE_PATH_CONTENT_FAVORITES,
+                                 playlist_get_conf_path(g_defaults.content_favorites),
                                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                                  MENU_ENUM_LABEL_GOTO_FAVORITES,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
@@ -15140,7 +15142,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                      if (settings->bools.menu_content_show_history)
                         if (menu_entries_append(info->list,
-                                 FILE_PATH_CONTENT_HISTORY,
+                                 playlist_get_conf_path(g_defaults.content_history),
                                  msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                                  MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
@@ -15150,7 +15152,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {
                      if (settings->bools.menu_content_show_history)
                         if (menu_entries_append(info->list,
-                                 FILE_PATH_CONTENT_HISTORY,
+                                 playlist_get_conf_path(g_defaults.content_history),
                                  msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                                  MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
@@ -15158,7 +15160,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                      if (settings->bools.menu_content_show_favorites)
                         if (menu_entries_append(info->list,
-                                 FILE_PATH_CONTENT_FAVORITES,
+                                 playlist_get_conf_path(g_defaults.content_favorites),
                                  msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
                                  MENU_ENUM_LABEL_GOTO_FAVORITES,
                                  MENU_SETTING_ACTION, 0, 0, NULL))
@@ -15441,7 +15443,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         {
                            if (_len > 0)
                               _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                           _len    += strlcpy(new_exts + _len, "slang", sizeof(new_exts) - _len);
+                           strlcpy(new_exts + _len, "slang", sizeof(new_exts) - _len);
                         }
                      }
                      break;
@@ -15485,7 +15487,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                {
                   if (_len > 0)
                      _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                  _len    += strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
+                  strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
                }
                if (!string_is_empty(info->exts))
                   free(info->exts);
@@ -15523,7 +15525,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_RTGA
                if (_len > 0)
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               _len    += strlcpy(new_exts + _len, "tga", sizeof(new_exts) - _len);
+               strlcpy(new_exts + _len, "tga", sizeof(new_exts) - _len);
 #endif
                if (!string_is_empty(info->exts))
                   free(info->exts);
@@ -15679,7 +15681,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      if (_len > 0)
                      {
                         _len += strlcpy(ext_names + _len, "|", sizeof(ext_names) - _len);
-                        _len += strlcpy(ext_names + _len, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names) - _len);
+                        strlcpy(ext_names + _len, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names) - _len);
                      }
                      else
                         strlcpy(ext_names, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names));

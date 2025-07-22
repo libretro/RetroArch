@@ -14122,6 +14122,18 @@ MSG_HASH(
    "Ní comhoiriúnach le hathsheinm"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "Ní féidir an staid amach anseo a luchtú le linn athsheinm"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Earráid amlíne mícheart le linn athsheinm"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Amlíne mícheart; taifeadadh á scríobh arís"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Scáthadóir aimsithe"
    )

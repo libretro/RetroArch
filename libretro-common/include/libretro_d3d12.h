@@ -24,17 +24,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef LIBRETRO_DIRECT3D_H__
-#define LIBRETRO_DIRECT3D_H__
+#ifndef LIBRETRO_DIRECT3D12_H__
+#define LIBRETRO_DIRECT3D12_H__
 
-#include "libretro.h"
+#include <d3d12.h>
+#include <d3dcompiler.h>
 
-#ifdef HAVE_D3D11
-#include "libretro_d3d11.h"
-#endif
+#define RETRO_HW_RENDER_INTERFACE_D3D12_VERSION 1
 
-#ifdef HAVE_D3D12
-#include "libretro_d3d12.h"
-#endif
+struct retro_hw_render_interface_d3d12
+{
+  /* Must be set to RETRO_HW_RENDER_INTERFACE_D3D12. */
+  enum retro_hw_render_interface_type interface_type;
+  /* Must be set to RETRO_HW_RENDER_INTERFACE_D3D12_VERSION. */
+  unsigned interface_version;
 
-#endif /* LIBRETRO_DIRECT3D_H__ */
+  /* Opaque handle to the d3d12 backend in the frontend
+   * which must be passed along to all function pointers
+   * in this interface.
+   */
+  void* handle;
+  ID3D12Device *device;
+  ID3D12CommandQueue *queue;
+  pD3DCompile D3DCompile;
+  D3D12_RESOURCE_STATES required_state;
+  void (*set_texture)(void* handle, ID3D12Resource* texture, DXGI_FORMAT format);
+};
+
+#endif /* LIBRETRO_DIRECT3D12_H__ */

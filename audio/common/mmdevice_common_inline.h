@@ -21,12 +21,7 @@
 /* Fix for MSYS2 increasing _WIN32_WINNT to 0x0603*/
 #if defined(__MINGW32__) || defined(__MINGW64__)
 #define WIN32_LEAN_AND_MEAN
-#else
-typedef enum EDataFlow EDataFlow;
-/* MinGW defines EDataFlow differently than MSVC does;
- * this typedef smooths that over. */
 #endif
-
 
 #include <windows.h>
 #include <winerror.h>
@@ -55,11 +50,11 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 #define _IAudioClient_Start(This)	( (This)->Start() )
 #define _IAudioClient_Stop(This)	( (This)->Stop() )
 #define _IAudioClient_GetCurrentPadding(This,pNumPaddingFrames)	\
-    ( (This)->GetCurrentPadding(pNumPaddingFrames) )
+   ( (This)->GetCurrentPadding(pNumPaddingFrames) )
 #define _IAudioRenderClient_GetBuffer(This,NumFramesRequested,ppData)	\
-    ( (This)->GetBuffer(NumFramesRequested,ppData) )
+   ( (This)->GetBuffer(NumFramesRequested,ppData) )
 #define _IAudioRenderClient_ReleaseBuffer(This,NumFramesWritten,dwFlags)	\
-    ( (This)->ReleaseBuffer(NumFramesWritten,dwFlags) )
+   ( (This)->ReleaseBuffer(NumFramesWritten,dwFlags) )
 #define _IAudioClient_GetService(This,riid,ppv) ( (This)->GetService(riid,ppv) )
 #define _IAudioClient_SetEventHandle(This,eventHandle)	( (This)->SetEventHandle(eventHandle) )
 #define _IAudioClient_GetBufferSize(This,pNumBufferFrames) ( (This)->GetBufferSize(pNumBufferFrames) )
@@ -77,9 +72,9 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 #define _IPropertyStore_GetValue(This,key,pv) ( (This)->GetValue(key,pv) )
 #define _IMMDeviceCollection_GetCount(This,cProps) ( (This)->GetCount(cProps) )
 #define _IAudioCaptureClient_GetBuffer(This,ppData,pNumFramesToRead,pdwFlags,pu64DevicePosition,pu64QPCPosition)	\
-    ( (This) -> GetBuffer(ppData,pNumFramesToRead,pdwFlags,pu64DevicePosition,pu64QPCPosition) )
+   ( (This) -> GetBuffer(ppData,pNumFramesToRead,pdwFlags,pu64DevicePosition,pu64QPCPosition) )
 #define _IAudioCaptureClient_ReleaseBuffer(This,NumFramesRead)	\
-    ( (This) -> ReleaseBuffer(NumFramesRead) )
+   ( (This) -> ReleaseBuffer(NumFramesRead) )
 #define _IAudioCaptureClient_GetNextPacketSize(This,pNumFramesInNextPacket)	\
    ( (This) -> GetNextPacketSize(pNumFramesInNextPacket) )
 #else
@@ -87,11 +82,11 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 #define _IAudioClient_Start(This)	( (This)->lpVtbl -> Start(This) )
 #define _IAudioClient_Stop(This)	( (This)->lpVtbl -> Stop(This) )
 #define _IAudioClient_GetCurrentPadding(This,pNumPaddingFrames)	\
-    ( (This)->lpVtbl -> GetCurrentPadding(This,pNumPaddingFrames) )
+   ( (This)->lpVtbl -> GetCurrentPadding(This,pNumPaddingFrames) )
 #define _IAudioRenderClient_GetBuffer(This,NumFramesRequested,ppData)	\
-    ( (This)->lpVtbl -> GetBuffer(This,NumFramesRequested,ppData) )
+   ( (This)->lpVtbl -> GetBuffer(This,NumFramesRequested,ppData) )
 #define _IAudioRenderClient_ReleaseBuffer(This,NumFramesWritten,dwFlags)	\
-    ( (This)->lpVtbl -> ReleaseBuffer(This,NumFramesWritten,dwFlags) )
+   ( (This)->lpVtbl -> ReleaseBuffer(This,NumFramesWritten,dwFlags) )
 #define _IAudioClient_GetService(This,riid,ppv)	( (This)->lpVtbl -> GetService(This,&(riid),ppv) )
 #define _IAudioClient_SetEventHandle(This,eventHandle)	( (This)->lpVtbl -> SetEventHandle(This,eventHandle) )
 #define _IAudioClient_GetBufferSize(This,pNumBufferFrames) ( (This)->lpVtbl -> GetBufferSize(This,pNumBufferFrames) )
@@ -109,31 +104,11 @@ DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0
 #define _IPropertyStore_GetValue(This,key,pv) ( (This)->lpVtbl -> GetValue(This,&(key),pv) )
 #define _IMMDeviceCollection_GetCount(This,cProps) ( (This)->lpVtbl -> GetCount(This,cProps) )
 #define _IAudioCaptureClient_GetBuffer(This,ppData,pNumFramesToRead,pdwFlags,pu64DevicePosition,pu64QPCPosition)	\
-    ( (This)->lpVtbl -> GetBuffer(This,ppData,pNumFramesToRead,pdwFlags,pu64DevicePosition,pu64QPCPosition) )
+   ( (This)->lpVtbl -> GetBuffer(This,ppData,pNumFramesToRead,pdwFlags,pu64DevicePosition,pu64QPCPosition) )
 #define _IAudioCaptureClient_ReleaseBuffer(This,NumFramesRead)	\
-    ( (This)->lpVtbl -> ReleaseBuffer(This,NumFramesRead) )
+   ( (This)->lpVtbl -> ReleaseBuffer(This,NumFramesRead) )
 #define _IAudioCaptureClient_GetNextPacketSize(This,pNumFramesInNextPacket)	\
    ( (This)-> lpVtbl -> GetNextPacketSize(This,pNumFramesInNextPacket) )
-#endif
-
-#ifdef __cplusplus
-#ifndef IFACE_RELEASE
-#define IFACE_RELEASE(iface) \
-      if (iface) \
-      { \
-         iface->Release(); \
-         iface = NULL; \
-      }
-#endif
-#else
-#ifndef IFACE_RELEASE
-#define IFACE_RELEASE(iface) \
-      if (iface) \
-      { \
-         iface->lpVtbl->Release(iface);\
-         iface = NULL; \
-      }
-#endif
 #endif
 
 #endif

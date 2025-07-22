@@ -345,8 +345,8 @@ void rmsgpack_dom_value_print(struct rmsgpack_dom_value *obj)
 int rmsgpack_dom_write(intfstream_t *fd, const struct rmsgpack_dom_value *obj)
 {
    unsigned i;
-   int rv = 0;
-   int written = 0;
+   int rv   = 0;
+   int _len = 0;
 
    switch (obj->type)
    {
@@ -365,31 +365,31 @@ int rmsgpack_dom_write(intfstream_t *fd, const struct rmsgpack_dom_value *obj)
       case RDT_MAP:
          if ((rv = rmsgpack_write_map_header(fd, obj->val.map.len)) < 0)
             return rv;
-         written += rv;
+         _len += rv;
 
          for (i = 0; i < obj->val.map.len; i++)
          {
             if ((rv = rmsgpack_dom_write(fd, &obj->val.map.items[i].key)) < 0)
                return rv;
-            written += rv;
+            _len += rv;
             if ((rv = rmsgpack_dom_write(fd, &obj->val.map.items[i].value)) < 0)
                return rv;
-            written += rv;
+            _len += rv;
          }
          break;
       case RDT_ARRAY:
          if ((rv = rmsgpack_write_array_header(fd, obj->val.array.len)) < 0)
             return rv;
-         written += rv;
+         _len += rv;
 
          for (i = 0; i < obj->val.array.len; i++)
          {
             if ((rv = rmsgpack_dom_write(fd, &obj->val.array.items[i])) < 0)
                return rv;
-            written += rv;
+            _len += rv;
          }
    }
-   return written;
+   return _len;
 }
 
 static struct rmsgpack_read_callbacks dom_reader_callbacks = {
@@ -422,12 +422,6 @@ int rmsgpack_dom_read_into(intfstream_t *fd, ...)
    int rv;
    va_list ap;
    struct rmsgpack_dom_value map;
-   struct rmsgpack_dom_value key;
-   int64_t *int_value;
-   uint64_t *uint_value;
-   int *bool_value;
-   char *buff_value;
-   uint64_t min_len;
 
    va_start(ap, fd);
 
@@ -439,13 +433,20 @@ int rmsgpack_dom_read_into(intfstream_t *fd, ...)
 
    if (map.type == RDT_MAP)
    {
+      int *bool_value;
+      char *buff_value;
+      uint64_t min_len;
+      int64_t *int_value;
+      uint64_t *uint_value;
+      struct rmsgpack_dom_value key;
+
       for (;;)
       {
          struct rmsgpack_dom_value *value;
          const char *key_name = va_arg(ap, const char *);
 
          if (!key_name)
-            goto clean;
+            break;
 
          key.type             = RDT_STRING;
          key.val.string.len   = (uint32_t)strlen(key_name);
@@ -486,12 +487,13 @@ int rmsgpack_dom_read_into(intfstream_t *fd, ...)
                memcpy(buff_value, value->val.string.buff, (size_t)min_len);
                break;
             default:
-               goto clean;
+               va_end(ap);
+               rmsgpack_dom_value_free(&map);
+               return 0;
          }
       }
    }
 
-clean:
    va_end(ap);
    rmsgpack_dom_value_free(&map);
    return 0;

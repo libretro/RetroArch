@@ -758,8 +758,8 @@ bool state_manager_check_rewind(
       }
       else
       {
-         input_driver_state_t *input_st = input_state_get_ptr();
 #ifdef HAVE_BSV_MOVIE
+         input_driver_state_t *input_st = input_state_get_ptr();
          /* Don't end reversing during playback or recording */
          if(BSV_MOVIE_IS_PLAYBACK_ON() || BSV_MOVIE_IS_RECORDING())
          {

@@ -21,6 +21,9 @@
 #include <retro_inline.h>
 #include <gfx/math/matrix_4x4.h>
 
+#ifndef _XBOX
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <d3d9.h>
 
 #include "d3d_common.h"
@@ -119,23 +122,17 @@ static INLINE bool d3d9_vertex_declaration_new(
 {
    const D3DVERTEXELEMENT9   *vertex_elements = (const D3DVERTEXELEMENT9*)vertex_data;
    LPDIRECT3DVERTEXDECLARATION9 **vertex_decl = (LPDIRECT3DVERTEXDECLARATION9**)decl_data;
-
-   if (SUCCEEDED(IDirect3DDevice9_CreateVertexDeclaration(dev,
-               vertex_elements, (IDirect3DVertexDeclaration9**)vertex_decl)))
-      return true;
-
-   return false;
+   return (SUCCEEDED(IDirect3DDevice9_CreateVertexDeclaration(dev,
+               vertex_elements, (IDirect3DVertexDeclaration9**)vertex_decl)));
 }
 
 static INLINE bool d3d9_device_get_render_target(
       LPDIRECT3DDEVICE9 dev,
       unsigned idx, void **data)
 {
-   if (dev &&
+   return (dev &&
          SUCCEEDED(IDirect3DDevice9_GetRenderTarget(dev,
-               idx, (LPDIRECT3DSURFACE9*)data)))
-      return true;
-   return false;
+               idx, (LPDIRECT3DSURFACE9*)data)));
 }
 
 static INLINE bool d3d9_device_create_offscreen_plain_surface(
@@ -148,14 +145,14 @@ static INLINE bool d3d9_device_create_offscreen_plain_surface(
       void *data)
 {
 #ifndef _XBOX
-   if (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
+   return (SUCCEEDED(IDirect3DDevice9_CreateOffscreenPlainSurface(dev,
                width, height,
                (D3DFORMAT)format, (D3DPOOL)pool,
                (LPDIRECT3DSURFACE9*)surf_data,
-               (HANDLE*)data)))
-      return true;
-#endif
+               (HANDLE*)data)));
+#else
    return false;
+#endif
 }
 
 bool d3d9_create_device(void *dev,

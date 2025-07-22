@@ -1522,7 +1522,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Altere as configurações de privacidade, conta e nome de usuário."
+   "Shaders (Manter pressionado)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
@@ -1579,6 +1579,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "Entrada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Driver de entrada a ser usado. Alguns drivers de vídeo forçam um driver de entrada diferente. (Reinício necessário)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
@@ -2087,6 +2091,10 @@ MSG_HASH(
    "Aplica um filtro de vídeo processado pela CPU. Afeta muito o desempenho. Alguns filtros de vídeo podem funcionar apenas nos núcleos que usam cores com 32 ou 16 bits. Bibliotecas de filtros de vídeo, vinculadas dinamicamente, podem ser selecionadas."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
+   "Aplica filtro de vídeo via CPU. Pode ter um alto custo de desempenho. Alguns filtros funcionam apenas com núcleos que usam cores de 32 ou 16 bits. É possível selecionar bibliotecas de filtros de vídeo integradas."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    "Remover o filtro do vídeo"
    )
@@ -2434,6 +2442,22 @@ MSG_HASH(
    "Dimensionar com valores inteiros"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Escala o vídeo apenas em passos inteiros. O tamanho base depende da geometria e proporção de aspecto informadas pelo núcleo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "Eixo de Escala Inteira"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "Escala a altura, a largura ou ambas. Passos intermediários se aplicam apenas a fontes em alta resolução."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   "Escala de Dimensionamento Inteiro"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    "Arredonde para baixo ou para cima para o próximo inteiro. 'Inteligente' reduzirá a escala quando a imagem é cortada demais."
    )
@@ -2500,8 +2524,16 @@ MSG_HASH(
    "Posição X personalizada da proporção de tela"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   "Deslocamento personalizado da viewport usado para definir a posição no eixo X."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Posição Y personalizada da proporção de tela"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Deslocamento personalizado da viewport usado para definir a posição no eixo Y."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
@@ -2519,7 +2551,39 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    "Deslocamento do eixo Y do ponto de âncora da viewport"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Posição horizontal do conteúdo quando a viewport é mais larga que o conteúdo. 0.0 é à esquerda, 0.5 é o centro, 1.0 é à direita."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Posição vertical do conteúdo quando a viewport é mais alta que o conteúdo. 0.0 é no topo, 0.5 é o centro, 1.0 é na parte inferior."
+   )
 #if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Deslocamento do Âncora da Viewport no Eixo X (Orientação Retrato)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Deslocamento do Âncora da Viewport no Eixo X (Orientação Retrato)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Deslocamento do Âncora da Viewport no Eixo Y (Orientação Retrato)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Deslocamento do Âncora da Viewport no Eixo Y (Orientação Retrato)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Posição horizontal do conteúdo quando a viewport é mais larga que o conteúdo. 0.0 é totalmente à esquerda, 0.5 é centralizado, 1.0 é totalmente à direita. (Orientação Retrato)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Posição vertical do conteúdo quando a viewport é mais alta que o conteúdo. 0.0 é no topo, 0.5 é centralizado, 1.0 é na parte inferior. (Orientação Retrato)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2616,12 +2680,32 @@ MSG_HASH(
    "Vsync adaptativo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "VSync é ativado até que o desempenho caia abaixo da taxa de atualização alvo. Pode minimizar travamentos quando o desempenho fica abaixo do tempo real, além de ser mais eficiente energeticamente. Não é compatível com 'Atraso de Quadro (Frame Delay)'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    "Atraso de Quadro"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "Reduz a latência, mas com maior risco de travamentos no vídeo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
+   "Define quantos milissegundos devem ser aguardados antes de executar o núcleo após a apresentação do vídeo. Reduz a latência, mas com maior risco de travamentos.\nValores acima de 20 são tratados como porcentagem do tempo de quadro."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Atraso automático de quadro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Ajusta dinamicamente o 'Atraso de Quadro (Frame Delay)' efetivo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
+   "Tenta manter o 'Atraso de Quadro' desejado e minimizar perdas de quadro. O ponto inicial é 3/4 do tempo de quadro quando o 'Frame Delay' está em 0 (Automático)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2648,12 +2732,20 @@ MSG_HASH(
    "Define quantos quadros a CPU pode rodar à frente da GPU quando utilizado o recurso \"Sincronia rígida de GPU\"."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
+   "Define quantos quadros a CPU pode adiantar em relação à GPU ao usar 'Sincronização Rígida da GPU (GPU Hard Sync)'. Máximo é 3.\n 0: Sincroniza imediatamente com a GPU.\n 1: Sincroniza com o quadro anterior.\n 2: E assim por diante..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    "Sincronizar taxa de atualização exata ao conteúdo (G-Sync, FreeSync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    "Evita desviar do intervalo solicitado pelo núcleo. Use com monitores com uma taxa de atualização variável (G-Sync, FreeSync, HDMI 2.1 VRR)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
+   "Sincroniza com a Taxa de Quadros Exata do Conteúdo. Essa opção é equivalente a forçar velocidade x1, ainda permitindo avanço rápido. Sem desvios da taxa de atualização solicitada pelo núcleo, sem controle dinâmico da taxa de áudio."
    )
 
 /* Settings > Audio */
@@ -2733,12 +2825,28 @@ MSG_HASH(
    "Silenciar todo o áudio no Modo Silencioso."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "Áudio Mudo (Avanço Rápido)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Silenciar automaticamente o áudio ao usar o avanço rápido."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Aceleração do Áudio (Avanço Rápido)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    "Acelerar o áudio ao usar avanço rápido. Previne ruídos, mas aumenta o tom."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "Áudio Mudo (Rebobinar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "Silencia automaticamente o áudio ao usar o rebobinar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -2747,6 +2855,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    "Volume do áudio (em dB). 0dB é o volume normal, e nenhum ganho é aplicado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
+   "Volume do áudio, expresso em dB. 0 dB é o volume normal, sem ganho aplicado. O ganho pode ser controlado em tempo de execução com Aumentar Volume / Diminuir Volume."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
@@ -2824,8 +2936,24 @@ MSG_HASH(
    "Valor personalizado de dispositivo PCM para o driver ALSA."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
+   "Valor de caminho personalizado para o driver OSS (ex.: /dev/dsp)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "Valor de nome de porta personalizado para o driver JACK (ex.: system:playback1,system:playback_2)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   "Endereço IP personalizado de um servidor RSound para o driver RSound."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Latência de áudio (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   "Latência máxima de áudio em milissegundos. O driver tenta manter a latência real em 50% desse valor. Pode não ser respeitada se o driver de áudio não conseguir fornecer a latência especificada."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -2835,8 +2963,20 @@ MSG_HASH(
    "Microfone"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "Ativa entrada de áudio nos núcleos compatíveis. Não causa impacto no desempenho se o núcleo não estiver usando um microfone."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "Dispositivo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "Substitui o dispositivo de entrada padrão usado pelo driver de microfone. Isso depende do driver."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "Substitui o dispositivo de entrada padrão usado pelo driver de microfone. Isso depende do driver."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
@@ -2849,6 +2989,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
    "Taxa de entrada padrão (Hz)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "Taxa de amostragem de entrada de áudio, usada caso o núcleo não solicite um valor específico."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
@@ -2869,6 +3013,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
    "Formato WASAPI de ponto flutuante"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Utiliza entrada em ponto flutuante para o driver WASAPI, se for compatível com seu dispositivo de áudio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
@@ -2968,6 +3116,10 @@ MSG_HASH(
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_MIXER_STREAM,
+   "Fluxi do Mixer #%d: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
    "Reproduzir"
    )
@@ -3023,6 +3175,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
    "Estado: Reproduzindo"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   "Estado: Reproduzindo (Em Loop)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+   "Estado: Reproduzindo (Sequencial)"
+   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -3060,6 +3220,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    "Número máximo de usuários suportados pelo RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Comportamento de Sondagem (Reinício necessário)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3220,15 +3384,31 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "Modo turbo"
+   "Disparo Turbo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
-   "Desativado interrompe todas as operações de turbo fire."
+   "Desativado interrompe todas as operações do disparo turbo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Período do turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "O período em quadros durante o qual os botões com turbo ativado são pressionados."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DUTY_CYCLE,
+   "Ciclo de Trabalho do Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
+   "Número de quadros dentro do Período Turbo pelos quais os botões permanecem pressionados. Se esse número for igual ou maior que o Período Turbo, os botões nunca serão soltos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
+   "Meio Período"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3268,7 +3448,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Modo segurar. A sequência segurar-soltar para o botão designado estará ativo enquanto o botão Turbo estiver sendo pressionado.\n O botão Turbo pode ser assinalado em Configurações/Entrada/Controles da Porta X.\n Para simular a função autofogo de época dos computadores antigos, defina o Turbo e os botões padrão para o mesmo botão de disparos do joystick."
+   "Modo segurar. A sequência de pressionar e soltar do botão padrão selecionado permanece ativa enquanto o botão Turbo estiver pressionado.\nA atribuição do Turbo pode ser configurada em Configurações/Entrada/Porta X Controles.\nPara emular a função de auto-disparo da era dos computadores domésticos, defina o Vincular e o Botão para o mesmo botão de disparo do joystick."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
@@ -3279,8 +3459,28 @@ MSG_HASH(
    "Turbo ativando o botão RetroPad. Vazio usa o botão específico da porta."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   "Botão Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   "Botão turbo alvo no modo 'Botão Único'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
+   "Permitir Turbo para Direções do D-Pad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
+   "Se ativado, entradas direcionais digitais (também conhecidas como D-Pad ou 'hatswitch') podem usar turbo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   "Modo turbo"
+   "Disparo Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Altera as configurações do disparo turbo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3307,8 +3507,28 @@ MSG_HASH(
    "Altera as configurações e as atribuições das teclas de atalho, como ativar o menu durante o jogo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   "Vinculações do RetroPad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "Altere como o RetroPad virtual é mapeado para um dispositivo de entrada físico. Se um dispositivo de entrada for reconhecido e configurado automaticamente corretamente, provavelmente não será necessário usar este menu.\nNota: para alterações específicas de núcleo nos controles, use o submenu 'Controles' do Menu Rápido."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "O Libretro usa uma abstração de controle virtual chamada 'RetroPad' para se comunicar entre os frontends (como o RetroArch) e os núcleos, e vice-versa. Este menu determina como o RetroPad virtual é mapeado para os dispositivos de entrada físicos e quais portas de entrada virtuais esses dispositivos ocupam.\nSe um dispositivo de entrada físico for reconhecido e configurado automaticamente corretamente, os usuários provavelmente não precisarão usar este menu e, para alterações específi[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Controle da porta %u"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "Altere como o RetroPad virtual está associado ao seu dispositivo de entrada físico nesta porta virtual."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "Alterar mapeamentos de entrada específicos do core."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3420,6 +3640,10 @@ MSG_HASH(
    "Ativar tecla de atalho"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "Quando atribuído, a tecla 'Ativar Hotkey' deve ser mantida pressionada antes que quaisquer outras hotkeys sejam reconhecidas. Permite que botões do controle sejam mapeados para funções de hotkey sem afetar a entrada normal. Atribuir o modificador apenas para controle não o exigirá para hotkeys do teclado, e vice-versa, mas ambos os modificadores funcionam para ambos os dispositivos."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
    "Se esta tecla de atalho estiver vinculada ao teclado, botão do controle ou eixo do controle, todas as outras teclas de atalho serão desativadas, a menos que esta tecla de atalho também esteja sendo pressionada ao mesmo tempo.\nIsso é útil para implementações centradas no RETRO_KEYBOARD que verificam uma grande área do teclado, onde não é desejável que as teclas de atalho atrapalhem."
    )
@@ -3430,6 +3654,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    "Adiciona um atraso nos quadros antes que o comando normal seja bloqueada após pressionar e segurar a tecla atribuída como \"Tecla de atalho\". Permite que o comando normal da \"Tecla de atalho\" seja capturada quando for mapeada para outra ação (por exemplo, RetroPad \"Selecionar\")."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "Mesclar Tipo de Dispositivo da Hotkey"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "Bloqueia todas as hotkeys de ambos os tipos de dispositivos, teclado e controle, se qualquer um dos tipos tiver 'Ativar Hotkey' configurado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -3522,6 +3754,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Pausar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
+   "Alterna o conteúdo entre os estados pausado e não pausado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -3726,8 +3962,24 @@ MSG_HASH(
    "Próximo Slot de Replay"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   "Incrementa o índice do slot de replay atualmente selecionado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
    "Slot de Replay Anterior"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   "Decrementa o índice do slot de replay atualmente selecionado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
+   "Disparo Turbo (Alternar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
+   "Alterna o disparo turbo entre ligado/desligado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -3778,6 +4030,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
    "Ativa/desativa a Antecipação de Frames."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
+   "Antecipação de Frames (Alternar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
+   "Alterna a Antecipação de Frames entre ligado/desligado."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
@@ -3794,6 +4054,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
    "Liga ou desliga a exibição das estatísticas técnicas na tela."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
+   "Sobreposição do Teclado (Alternar)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   "Alterna a sobreposição do teclado entre ligado/desligado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -3845,6 +4113,10 @@ MSG_HASH(
    "Envia uma mensagem de bate-papo para a sessão atual da Netplay."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Desvanecer Chat no Netplay (Alternar)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Ativa ou desativa o desvanecimento das mensagens do bate-papo da Netplay."
    )
@@ -3856,8 +4128,16 @@ MSG_HASH(
    "Tipo de Dispositivo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
+   "Especifica o tipo de controle emulado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
    "Tipo de analógico para digital"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Usa o analógico especificado para entrada do D-Pad. Modos 'Forçados' ignoram a entrada analógica nativa do núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
@@ -3868,6 +4148,22 @@ MSG_HASH(
    "Índice de Dispositivo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   "O controle físico, conforme reconhecido pelo RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Dispositivo Reservado para Este Jogador"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Este controle será alocado para este jogador, de acordo com o modo de reserva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   "Sem Reserva"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
    "Preferido"
    )
@@ -3876,24 +4172,52 @@ MSG_HASH(
    "Reservado"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE,
+   "Tipo de Reserva de Dispositivo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   "Preferencial: se o dispositivo especificado estiver presente, será alocado para este jogador. Reservado: nenhum outro controle será alocado para este jogador."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    "Porta mapeada"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "Especifica qual porta do núcleo receberá a entrada da porta de controle do frontend %u."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
    "Definir todos os controles"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
+   "Atribui todas as direções e botões, um após o outro, na ordem em que aparecem neste menu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
    "Restaurar controles padrão"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
+   "Limpa configurações de vinculação de entrada para seus valores padrão."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
    "Salvar perfil de controle"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+   "Salva um arquivo de autoconfiguração que será aplicado automaticamente sempre que este controle for detectado novamente."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
    "Índice de mouse"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "O mouse físico, conforme reconhecido pelo RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
@@ -4037,7 +4361,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
-   "Modo Turbo"
+   "Disparo Turbo"
    )
 
 /* Settings > Latency */
@@ -4062,8 +4386,28 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "O número de quadros para a execução antecipada. Pode causar problemas de jogabilidade, como jitter, caso o número de quadros atrasados internos seja excedido."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "Executa lógica adicional do núcleo para reduzir a latência. O Modo Instância Única roda até um frame futuro, então recarrega o estado atual. O Modo Segunda Instância mantém uma instância do core só com vídeo em um frame futuro para evitar problemas de estado de áudio. O Modo Antecipação de Frames repete frames passados com nova entrada quando necessário, para eficiência."
+   )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
+   "Executa lógica adicional do core para reduzir a latência. O Modo Instância Única roda até um frame futuro, então recarrega o estado atual. O Modo Antecipação de Frames repete frames passados com nova entrada quando necessário, para eficiência."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
+   "Modo Instância Única"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
+   "Modo Segunda Instância"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   "Modo Antecipação de Frames"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "Ocultar Avisos de Antecipação de Frames"
@@ -4071,6 +4415,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
    "Oculta a mensagem de aviso que aparece ao usar a Antecipação de Frames quando o núcleo não suporta pontos de save."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
+   "Número de Antecipação de Frames"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
+   "Número de frames a serem repetidos. Pode causar problemas na jogabilidade, como tremedeira, se o número de frames de atraso interno ao jogo for ultrapassado."
    )
 
 /* Settings > Core */
@@ -4225,6 +4577,10 @@ MSG_HASH(
    "Salva as alterações no arquivo de configuração ao sair."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
+   "Salva alterações no arquivo de configuração ao sair. Útil para mudanças feitas no menu. Sobrescreve o arquivo de configuração, inclusões (#include) e comentários não são preservados."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
    "Salvar arquivos de remapeamento ao sair"
    )
@@ -4332,6 +4688,14 @@ MSG_HASH(
    "Salva automaticamente a SRAM não volátil em intervalos regulares. Isso está desativado por padrão, a menos que configurado de outra forma. O intervalo é medido em segundos. O valor 0 desativa o salvamento automático."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Intervalo de Checkpoint do Replay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   "Marca automaticamente o estado do jogo durante a gravação do replay em um intervalo regular (em segundos)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "Salva automaticamente o estado do jogo durante a gravação de replay em intervalos regulares. Isso está desativado por padrão, a menos que configurado de outra forma. O intervalo é medido em segundos. O valor 0 desativa a gravação de checkpoints."
    )
@@ -4344,12 +4708,28 @@ MSG_HASH(
    "Antes de criar um ponto de save, o índice do ponto de save é incrementado automaticamente. Ao carregar o conteúdo, o índice será definido como o maior índice existente."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Incrementar o Índice de Replay Automaticamente"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   "Antes de criar um replay, o índice de replay é incrementado automaticamente. Ao carregar um conteúdo, o índice será definido como o maior índice existente."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    "Máximo de Pontos de Save com Incremento Automático a Manter"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    "Limita o número de pontos de save que serão criados quando 'Incrementar Automaticamente o Índice do Ponto de Save' estiver ativado. Se o limite for excedido ao salvar um novo ponto de save, o ponto existente com o menor índice será excluído. Um valor de '0' significa que um número ilimitado de pontos de save será gravado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Máximo de Replays com Incremento-Automático de Replays a Manter"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Limita o número de replays que serão criados quando o 'Incrementar o Índice de Replay Automaticamente' estiver ativado. Se o limite for excedido ao gravar um novo replay, o replay existente com o menor índice será excluído. Um valor de '0' significa que replays ilimitados serão gravados."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -4402,6 +4782,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Gravar arquivos de dados da memória do jogo no diretório de conteúdo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Usar diretório do conteúdo como diretório de arquivos de save."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4471,6 +4855,10 @@ MSG_HASH(
    "Define o nível de registro de eventos para os núcleos. Se o nível do registro enviado por um núcleo for abaixo deste valor, este é ignorado."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
+   "Define o nível de log para os núcleos libretro (GET_LOG_INTERFACE). Se um nível de log emitido por um núcleo libretro for inferior ao nível de libretro_log, ele será ignorado. Logs DEBUG são sempre ignorados, a menos que o modo verbose seja ativado (--verbose).\nDEBUG = 0\nINFO  = 1\nWARN  = 2\nERROR = 3"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
    "0 (Depuração)"
    )
@@ -4514,16 +4902,32 @@ MSG_HASH(
    "Mostrar arquivos e pastas ocultas"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
+   "Mostrar arquivos e diretórios ocultos no Navegador de Arquivos."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "Filtrar extensões desconhecidas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   "Filtrar arquivos exibidos no Navegador de Arquivos por extensões suportadas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "Filtrar por núcleo atual"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+   "Filtrar arquivos exibidos no Navegador de Arquivos pelo núcleo atual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    "Lembrar do último diretório usado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
+   "Abrir o Navegador de Arquivos no último local usado ao carregar conteúdo a partir do Diretório Inicial. Obs.: O local será redefinido para o padrão ao reiniciar o RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
@@ -4569,8 +4973,16 @@ MSG_HASH(
    "Taxa máxima em que o conteúdo será executado quando utilizado o Avanço Rápido (ex: 5.0x para conteúdos em 60fps = 300 fps máx). Se definido como 0.0x, a taxa de Avanço Rápido é ilimitada (sem FPS máx)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
+   "Taxa máxima na qual o conteúdo será executado ao usar o avanço rápido. (Ex.: 5.0 para conteúdo a 60 fps => limite de 300 fps).\nO RetroArch irá pausar momentaneamente para garantir que a taxa máxima não seja excedida. Não confie nesse limite como sendo perfeitamente preciso."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
    "Avançar pulo de quadro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "Pular frames de acordo com a taxa de avanço rápido. Isso economiza energia e permite o uso de limitadores de frames de terceiros."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -4627,8 +5039,16 @@ MSG_HASH(
 /* Settings > Frame Throttle > Frame Time Counter */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "Reiniciar Após o Avanço Rápido"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
    "Reinicia o contador de tempo do quadro após o avanço rápido."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+   "Reiniciar Após Carregar o Ponto de Save"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
@@ -4887,12 +5307,24 @@ MSG_HASH(
    "Ajuste o tamanho das zonas de sobreposição. Ajuste para 100% para a simetria de 8 vias."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Zona de Recentralização do Analógico"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "A entrada do direcional analógico será relativa ao primeiro toque, se pressionado dentro desta zona."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Sobreposição"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
    "Carrega automaticamente sobreposição favorita"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Prefira carregar sobreposições com base no nome do sistema antes de retornar à predefinição padrão. Será ignorado se uma substituição for definida para a predefinição de sobreposição."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
@@ -4905,6 +5337,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
    "Predefinição da sobreposição"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+   "Selecionar uma sobreposição no Navegador de Arquivos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
@@ -5001,6 +5437,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "Compensa a sobreposição no eixo vertical ao usar uma orientação de tela no modo retrato. Os valores positivos deslocarão a sobreposição para cima e os valores negativos para baixo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   "Sobreposição de Teclado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   "Selecionar e ajustar uma sobreposição de teclado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   "Ativar o Lightgun, Mouse e Ponteiro na Sobreposição"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "Usar qualquer entrada de toque que não pressione controles da sobreposição para criar entrada de dispositivo de apontar para o núcleo."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
@@ -12802,6 +13254,18 @@ MSG_HASH(
    "Encontrada último compartimento de jogo salvo"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "Não é possível carregar o ponto de save futuro durante a reprodução"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Erro de linha do tempo durante a reprodução"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Linha do tempo incorreta; substituindo gravação"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Sombreador encontrado"
    )
@@ -14374,6 +14838,14 @@ MSG_HASH(
    )
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P2,
+   "Substituir jogador2"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P2,
+   "Substituir o jogador 02"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_AI_SHOW_DEBUG,
@@ -14384,4 +14856,12 @@ MSG_HASH(
    "Mostrar depuração"
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_GAME_AI,
+   "Mostrar 'IA do Jogo'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
+   "Mostra a opção 'IA do Jogo'."
+   )
 #endif

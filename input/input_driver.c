@@ -19,8 +19,8 @@
  **/
 
 #include "libretro.h"
-#include "queues/message_queue.h"
-#include "streams/interface_stream.h"
+#include <queues/message_queue.h>
+#include <streams/interface_stream.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <string/stdstring.h>
@@ -1347,24 +1347,21 @@ static bool input_remote_init_network(input_remote_t *handle,
    RARCH_LOG("[Network] Bringing up remote interface on port %hu.\n",
          (unsigned short)port);
 
-   if ((fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM, AF_INET)) < 0)
-      goto error;
-
-   handle->net_fd[user] = fd;
-
-   if (!socket_nonblock(handle->net_fd[user]))
-      goto error;
-
-   if (!socket_bind(handle->net_fd[user], res))
+   if ((fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM, AF_INET)) >= 0)
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_BIND_SOCKET));
-      goto error;
+      handle->net_fd[user] = fd;
+
+      if (socket_nonblock(handle->net_fd[user]))
+      {
+         if (socket_bind(handle->net_fd[user], res))
+         {
+            freeaddrinfo_retro(res);
+            return true;
+         }
+         RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_BIND_SOCKET));
+      }
    }
 
-   freeaddrinfo_retro(res);
-   return true;
-
-error:
    if (res)
       freeaddrinfo_retro(res);
    return false;
@@ -2464,6 +2461,7 @@ static bool input_overlay_coords_inside_hitbox(const struct overlay_desc *desc,
  * input_overlay_poll:
  * @out                   : Polled output data.
  * @touch_idx             : Touch pointer index.
+ * @old_touch_idx         : Touch pointer index from previous poll, or -1.
  * @norm_x                : Normalized X coordinate.
  * @norm_y                : Normalized Y coordinate.
  * @touch_scale           : Overlay scale.
@@ -2478,12 +2476,12 @@ static bool input_overlay_coords_inside_hitbox(const struct overlay_desc *desc,
 static bool input_overlay_poll(
       input_overlay_t *ol,
       input_overlay_state_t *out,
-      int touch_idx, int16_t norm_x, int16_t norm_y, float touch_scale)
+      int touch_idx, int old_touch_idx,
+      int16_t norm_x, int16_t norm_y, float touch_scale)
 {
    size_t i, j;
    struct overlay_desc *descs = ol->active->descs;
    unsigned int highest_prio  = 0;
-   int old_touch_idx          = input_driver_st.old_touch_index_lut[touch_idx];
    bool any_hitbox_pressed    = false;
    bool use_range_mod;
 
@@ -3441,11 +3439,14 @@ static void input_overlay_update_pointer_coords(
    /* Need multi-touch coordinates for pointer only */
    if (     ptr_st->count
          && !(ptr_st->device_mask & (1 << RETRO_DEVICE_POINTER)))
-      goto finish;
+   {
+      ptr_st->count++;
+      return;
+   }
 
    /* Need viewport pointers for pointer and lightgun */
-   if (ptr_st->device_mask &
-         ((1 << RETRO_DEVICE_LIGHTGUN) | (1 << RETRO_DEVICE_POINTER)))
+   if (     ptr_st->device_mask
+         & ((1 << RETRO_DEVICE_LIGHTGUN) | (1 << RETRO_DEVICE_POINTER)))
    {
       ptr_st->ptr[ptr_st->count].x  = current_input->input_state(
             input_data, NULL, NULL, NULL, NULL, true, 0,
@@ -3477,7 +3478,6 @@ static void input_overlay_update_pointer_coords(
             RETRO_DEVICE_ID_POINTER_Y);
    }
 
-finish:
    ptr_st->count++;
 }
 
@@ -3499,6 +3499,8 @@ static void input_poll_overlay(
    int i, j;
    input_overlay_t *ol                      = (input_overlay_t*)ol_data;
    uint16_t key_mod                         = 0;
+   uint16_t ptrdev_touch_mask               = 0;
+   uint16_t hitbox_touch_mask               = 0;
    bool button_pressed                      = false;
    input_driver_state_t *input_st           = &input_driver_st;
    void *input_data                         = input_st->current_data;
@@ -3514,6 +3516,8 @@ static void input_poll_overlay(
    bool osk_state_changed                   = false;
 
    static int old_ptr_count;
+   static int16_t old_ptrdev_touch_mask;
+   static int16_t old_hitbox_touch_mask;
 
    if (!ol_state)
       return;
@@ -3596,12 +3600,27 @@ static void input_poll_overlay(
       for (i = 0; i < ol_state->touch_count; i++)
       {
          input_overlay_state_t polled_data;
+         int old_i           = input_st->old_touch_index_lut[i];
          bool hitbox_pressed = false;
+
+         /* Keep each touch pointer dedicated to the same input type
+          * (hitbox or pointing device) from the previous poll */
+         if (old_i != -1)
+         {
+            if (BIT16_GET(old_hitbox_touch_mask, old_i))
+               BIT16_SET(hitbox_touch_mask, i);
+            else if (BIT16_GET(old_ptrdev_touch_mask, old_i))
+               BIT16_SET(ptrdev_touch_mask, i);
+         }
 
          memset(&polled_data, 0, sizeof(struct input_overlay_state));
 
-         if (ol->flags & INPUT_OVERLAY_ENABLE)
-            hitbox_pressed = input_overlay_poll(ol, &polled_data, i,
+         /* Check hitboxes only if this touch pointer
+          * is not controlling a pointing device */
+         if (   ol->flags & INPUT_OVERLAY_ENABLE
+             && !BIT16_GET(ptrdev_touch_mask, i))
+            hitbox_pressed = input_overlay_poll(
+                  ol, &polled_data, i, old_i,
                   ol_state->touch[i].x, ol_state->touch[i].y, touch_scale);
          else
             ol->flags &= ~INPUT_OVERLAY_BLOCKED;
@@ -3620,11 +3639,17 @@ static void input_poll_overlay(
             for (j = 0; j < 4; j++)
                if (polled_data.analog[j])
                   ol_state->analog[j] = polled_data.analog[j];
+
+            hitbox_touch_mask |= (1 << i);
          }
-         else if (ol_ptr_enable
-               && ptr_state->device_mask
-               && !(ol->flags & INPUT_OVERLAY_BLOCKED))
+         else if (   ol_ptr_enable
+                  && ptr_state->device_mask
+                  && !BIT16_GET(hitbox_touch_mask, i)
+                  && !(ol->flags & INPUT_OVERLAY_BLOCKED))
+         {
             input_overlay_update_pointer_coords(ptr_state, i);
+            ptrdev_touch_mask |= (1 << i);
+         }
       }
    }
 
@@ -3736,8 +3761,6 @@ static void input_poll_overlay(
    else
       input_st->flags &= ~INP_FLAG_BLOCK_POINTER_INPUT;
 
-   ptr_state->device_mask = 0;
-
    if (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_NONE)
       button_pressed = false;
 
@@ -3763,6 +3786,10 @@ static void input_poll_overlay(
          )
          current_input->keypress_vibrate();
    }
+
+   old_hitbox_touch_mask  = hitbox_touch_mask;
+   old_ptrdev_touch_mask  = ptrdev_touch_mask;
+   ptr_state->device_mask = 0;
 }
 #endif
 
@@ -6347,8 +6374,8 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
       else if (next_frame_type == REPLAY_TOKEN_CHECKPOINT2_FRAME)
       {
          uint8_t compression, encoding;
-         if (intfstream_read(handle->file, &(compression), sizeof(uint8_t)) != sizeof(uint8_t) ||
-             intfstream_read(handle->file, &(encoding), sizeof(uint8_t)) != sizeof(uint8_t))
+         if (   intfstream_read(handle->file, &(compression), sizeof(uint8_t)) != sizeof(uint8_t)
+             || intfstream_read(handle->file, &(encoding), sizeof(uint8_t)) != sizeof(uint8_t))
          {
             /* Unexpected EOF */
             RARCH_ERR("[Replay] Replay checkpoint truncated.\n");
@@ -6478,7 +6505,8 @@ bool replay_get_serialized_data(void* buffer)
    return true;
 }
 
-bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_t other_len)
+static bool replay_check_same_timeline(bsv_movie_t *movie,
+      uint8_t *other_movie, int64_t other_len)
 {
    int64_t check_limit = MIN(other_len, intfstream_tell(movie->file));
    intfstream_t *check_stream = intfstream_open_memory(other_movie, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, other_len);
@@ -6486,9 +6514,12 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
    int64_t check_cap = MAX(128 << 10, MAX(128*sizeof(bsv_key_data_t), 512*sizeof(bsv_input_data_t)));
    uint8_t *buf1 = calloc(check_cap,1), *buf2 = calloc(check_cap,1);
    size_t movie_pos = intfstream_tell(movie->file);
-   uint8_t keycount1, keycount2, frametok1, frametok2;
-   uint16_t btncount1, btncount2;
    uint64_t size1, size2;
+   uint16_t btncount1, btncount2;
+   uint8_t frametok1 = 0;
+   uint8_t frametok2 = 0;
+   uint8_t keycount1 = 0;
+   uint8_t keycount2 = 0;
    intfstream_rewind(movie->file);
    intfstream_read(movie->file, buf1, 6*sizeof(uint32_t));
    intfstream_read(check_stream, buf2, 6*sizeof(uint32_t));
@@ -6505,7 +6536,7 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
    {
       int64_t i;
       /* no choice but to memcmp the whole stream against the other */
-      for (i = 0; ret && i < check_limit; i+=check_cap)
+      for (i = 0; ret && i < check_limit; i += check_cap)
       {
          int64_t read_end = MIN(check_limit - i, check_cap);
          int64_t read1 = intfstream_read(movie->file, buf1, read_end);
@@ -6519,7 +6550,7 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
       }
       goto exit;
    }
-   while(intfstream_tell(movie->file) < check_limit && intfstream_tell(check_stream) < check_limit)
+   while (intfstream_tell(movie->file) < check_limit && intfstream_tell(check_stream) < check_limit)
    {
       if (intfstream_tell(movie->file) < 0 || intfstream_tell(check_stream) < 0)
       {
@@ -6527,25 +6558,28 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
          ret = false;
          goto exit;
       }
-      if (intfstream_read(movie->file, &keycount1, 1) < 1 ||
-            intfstream_read(check_stream, &keycount2, 1) < 1 ||
-            keycount1 != keycount2)
+      if (     intfstream_read(movie->file,  &keycount1, 1) < 1
+            || intfstream_read(check_stream, &keycount2, 1) < 1
+            || keycount1 != keycount2)
       {
          RARCH_ERR("[Replay] Replay checkpoints disagree on key count, %d vs %d\n", keycount1, keycount2);
          ret = false;
          goto exit;
       }
-      if ((uint64_t)intfstream_read(movie->file, buf1, keycount1*sizeof(bsv_key_data_t)) < keycount1*sizeof(bsv_key_data_t) ||
-            (uint64_t)intfstream_read(check_stream, buf2, keycount2*sizeof(bsv_key_data_t)) < keycount2*sizeof(bsv_key_data_t) ||
-            memcmp(buf1, buf2, keycount1*sizeof(bsv_key_data_t)) != 0)
+      if (
+               (uint64_t)intfstream_read(movie->file, buf1, keycount1*sizeof(bsv_key_data_t))
+               < keycount1*sizeof(bsv_key_data_t)
+            || (uint64_t)intfstream_read(check_stream, buf2, keycount2*sizeof(bsv_key_data_t))
+            < keycount2*sizeof(bsv_key_data_t)
+            || memcmp(buf1, buf2, keycount1*sizeof(bsv_key_data_t)) != 0)
       {
          RARCH_ERR("[Replay] Replay checkpoints disagree on key data\n");
          ret = false;
          goto exit;
       }
-      if (intfstream_read(movie->file, &btncount1, 2) < 2 ||
-            intfstream_read(check_stream, &btncount2, 2) < 2 ||
-            btncount1 != btncount2)
+      if (     intfstream_read(movie->file, &btncount1, 2)  < 2
+            || intfstream_read(check_stream, &btncount2, 2) < 2
+            || btncount1 != btncount2)
       {
          RARCH_ERR("[Replay] Replay checkpoints disagree on input count\n");
          ret = false;
@@ -6553,17 +6587,19 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
       }
       btncount1 = swap_if_big16(btncount1);
       btncount2 = swap_if_big16(btncount2);
-      if ((uint64_t)intfstream_read(movie->file, buf1, btncount1*sizeof(bsv_input_data_t)) < btncount1*sizeof(bsv_input_data_t) ||
-            (uint64_t)intfstream_read(check_stream, buf2, btncount2*sizeof(bsv_input_data_t)) < btncount2*sizeof(bsv_input_data_t) ||
-            memcmp(buf1, buf2, btncount1*sizeof(bsv_input_data_t)) != 0)
+      if (   (uint64_t)intfstream_read(movie->file, buf1, btncount1*sizeof(bsv_input_data_t))
+            < btncount1*sizeof(bsv_input_data_t)
+            || (uint64_t)intfstream_read(check_stream, buf2, btncount2*sizeof(bsv_input_data_t))
+            < btncount2*sizeof(bsv_input_data_t)
+            || memcmp(buf1, buf2, btncount1*sizeof(bsv_input_data_t)) != 0)
       {
          RARCH_ERR("[Replay] Replay checkpoints disagree on input data\n");
          ret = false;
          goto exit;
       }
-      if (intfstream_read(movie->file, &frametok1, 1) < 1 ||
-            intfstream_read(check_stream, &frametok2, 1) < 1 ||
-            frametok1 != frametok2)
+      if (     intfstream_read(movie->file,  &frametok1, 1) < 1
+            || intfstream_read(check_stream, &frametok2, 1) < 1
+            || frametok1 != frametok2)
       {
          RARCH_ERR("[Replay] Replay checkpoints disagree on frame token\n");
          ret = false;
@@ -6578,9 +6614,9 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
          case REPLAY_TOKEN_REGULAR_FRAME:
             break;
          case REPLAY_TOKEN_CHECKPOINT_FRAME:
-            if ((uint64_t)intfstream_read(movie->file, &size1, sizeof(uint64_t)) < sizeof(uint64_t) ||
-                  (uint64_t)intfstream_read(check_stream, &size2, sizeof(uint64_t)) < sizeof(uint64_t) ||
-                  size1 != size2)
+            if (     (uint64_t)intfstream_read(movie->file, &size1, sizeof(uint64_t)) < sizeof(uint64_t)
+                  || (uint64_t)intfstream_read(check_stream, &size2, sizeof(uint64_t)) < sizeof(uint64_t)
+                  || size1 != size2)
             {
                RARCH_ERR("[Replay] Replay checkpoints disagree on size or scheme\n");
                ret = false;

@@ -142,6 +142,7 @@ rxml_document_t *rxml_load_document_string(const char *str)
    doc                           = (rxml_document_t*)malloc(sizeof(*doc));
    if (!doc)
       goto error;
+   doc->root_node                = NULL;
 
    yxml_init(&x, buf->xml, BUFSIZE);
 
@@ -250,7 +251,11 @@ rxml_document_t *rxml_load_document_string(const char *str)
                attr = attr->next   = (struct rxml_attrib_node*)
                      calloc(1, sizeof(*attr));
             else
-               attr = node->attrib = (struct rxml_attrib_node*)calloc(1, sizeof(*attr));
+            {
+               attr = (struct rxml_attrib_node*)calloc(1, sizeof(*attr));
+               if (node && attr)
+                  node->attrib = attr;
+            }
 
             if (attr->attrib)
                free(attr->attrib);

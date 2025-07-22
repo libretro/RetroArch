@@ -450,22 +450,17 @@ static content_file_list_t *content_file_list_init(size_t len)
  * temporary (i.e. extracted) content file list.
  * Returns pointer to allocated char array. */
 static const char *content_file_list_append_temporary(
-      content_file_list_t *file_list,
-      const char *path)
+      content_file_list_t *file_list, const char *path)
 {
-   union string_list_elem_attr attr;
-
-   if (  !file_list
-       || string_is_empty(path))
-      return NULL;
-
-   attr.i = 0;
-
-   if (string_list_append(file_list->temporary_files,
-         path, attr))
-      return file_list->temporary_files->elems[
-         file_list->temporary_files->size - 1].data;
-
+   if (file_list && !string_is_empty(path))
+   {
+      union string_list_elem_attr attr;
+      attr.i = 0;
+      if (string_list_append(file_list->temporary_files,
+               path, attr))
+         return file_list->temporary_files->elems[
+            file_list->temporary_files->size - 1].data;
+   }
    return NULL;
 }
 
@@ -603,16 +598,16 @@ static bool content_file_list_set_info(
       if (!string_is_empty(dir))
       {
          /* Remove any trailing slash */
-         char *last_slash         = find_last_slash(dir);
+         char *last_slash     = find_last_slash(dir);
          if (last_slash && (last_slash[1] == '\0'))
-            *last_slash           = '\0';
+            *last_slash       = '\0';
 
          if (!string_is_empty(dir))
-            file_info->dir        = strdup(dir);
+            file_info->dir    = strdup(dir);
       }
 
       if (!string_is_empty(name))
-         file_info->name          = strdup(name);
+         file_info->name      = strdup(name);
    }
 
    /* Assign retro_game_info pointers */
@@ -645,17 +640,10 @@ static bool content_file_list_set_info(
 /* Content file functions START */
 /********************************/
 
-#define CONTENT_FILE_ATTR_RESET(attr) (attr.i = 0)
-
-#define CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, block_extract) (attr.i |= ((block_extract) ? 1 : 0))
-#define CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, need_fullpath) (attr.i |= ((need_fullpath) ? 2 : 0))
-#define CONTENT_FILE_ATTR_SET_REQUIRED(attr, required)           (attr.i |= ((required)      ? 4 : 0))
-#define CONTENT_FILE_ATTR_SET_PERSISTENT(attr, persistent)       (attr.i |= ((persistent)    ? 8 : 0))
-
-#define CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(attr) ((attr.i & 1) != 0)
-#define CONTENT_FILE_ATTR_GET_NEED_FULLPATH(attr) ((attr.i & 2) != 0)
-#define CONTENT_FILE_ATTR_GET_REQUIRED(attr)      ((attr.i & 4) != 0)
-#define CONTENT_FILE_ATTR_GET_PERSISTENT(attr)    ((attr.i & 8) != 0)
+#define BLCK_BLOCK_EXTRACT 1
+#define BLCK_NEED_FULLPATH 2
+#define BLCK_REQUIRED      4
+#define BLCK_PERSISTENT    8
 
 /**
  * content_file_load_into_memory:
@@ -667,23 +655,19 @@ static bool content_file_list_set_info(
  * (see patch_content function) if soft patching has not been
  * blocked by the user.
  *
- * Returns: true if successful, false on error.
+ * Returns: non-0 if successful, 0 on error.
  **/
-static bool content_file_load_into_memory(
+static size_t content_file_load_into_memory(
       content_information_ctx_t *content_ctx,
       content_state_t *p_content,
       const char *content_path,
       bool content_compressed,
       size_t idx,
       enum rarch_content_type first_content_type,
-      uint8_t **data,
-      size_t *data_size)
+      uint8_t **data)
 {
    uint8_t *content_data = NULL;
    int64_t content_size  = 0;
-
-   *data                 = NULL;
-   *data_size            = 0;
 
    RARCH_LOG("[Content] %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), content_path);
@@ -694,16 +678,16 @@ static bool content_file_load_into_memory(
    {
       if (!file_archive_compressed_read(content_path,
             (void**)&content_data, NULL, &content_size))
-         return false;
+         return 0;
    }
    else
 #endif
       if (!filestream_read_file(content_path,
             (void**)&content_data, &content_size))
-         return false;
+         return 0;
 
    if (content_size < 0)
-      return false;
+      return 0;
 
    /* First content file is significant: attempt to do
     * soft patching, CRC checking, etc. */
@@ -759,9 +743,8 @@ static bool content_file_load_into_memory(
    }
 
    *data      = content_data;
-   *data_size = (size_t)content_size;
 
-   return true;
+   return (size_t)content_size;
 }
 
 #ifdef HAVE_COMPRESSION
@@ -825,9 +808,6 @@ static void content_file_get_path(
    bool path_is_inside_archive;
    const char *content_path = content->elems[idx].data;
 
-   *path               = NULL;
-   *path_is_compressed = false;
-
    if (string_is_empty(content_path))
       return;
 
@@ -844,7 +824,7 @@ static void content_file_get_path(
     * > file_archive_compressed_read() requires
     *   a 'complete' file path:
     *   <parent_archive>#<internal_file> */
-   if (!CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(content->elems[idx].attr)
+   if (!((content->elems[idx].attr.i & BLCK_BLOCK_EXTRACT) != 0)
        && path_is_archive
        && !path_is_inside_archive)
    {
@@ -875,8 +855,9 @@ static void content_file_get_path(
             strlcpy(info_path + _len, archive_file, sizeof(info_path) - _len);
 
             /* Update 'content' string_list */
-            string_list_set(content, (unsigned)idx, info_path);
-            content_path = content->elems[idx].data;
+            free(content->elems[idx].data);
+            content->elems[idx].data = strdup(info_path);
+            content_path             = content->elems[idx].data;
 
             string_list_free(archive_list);
          }
@@ -901,25 +882,25 @@ static void content_file_apply_overrides(
          path_get_extension(path), &override))
    {
       /* Get existing attributes */
-      bool block_extract = CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(content->elems[idx].attr);
-      bool required      = CONTENT_FILE_ATTR_GET_REQUIRED(content->elems[idx].attr);
-      bool persistent    = CONTENT_FILE_ATTR_GET_PERSISTENT(content->elems[idx].attr);
+      bool block_extract = ((content->elems[idx].attr.i & BLCK_BLOCK_EXTRACT) != 0);
+      bool required      = ((content->elems[idx].attr.i & BLCK_REQUIRED)   != 0);
+      bool persistent    = ((content->elems[idx].attr.i & BLCK_PERSISTENT) != 0);
 
-      CONTENT_FILE_ATTR_RESET(content->elems[idx].attr);
+      content->elems[idx].attr.i = 0;
 
       /* Apply updates
        * > Note that 'persistent' attribute must not
        *   be set false by an override if it is already
        *   true (frontend may require persistence for
        *   other purposes, e.g. runahead) */
-      CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(content->elems[idx].attr,
-            block_extract);
-      CONTENT_FILE_ATTR_SET_NEED_FULLPATH(content->elems[idx].attr,
-            override->need_fullpath);
-      CONTENT_FILE_ATTR_SET_REQUIRED(content->elems[idx].attr,
-            required);
-      CONTENT_FILE_ATTR_SET_PERSISTENT(content->elems[idx].attr,
-            (persistent || override->persistent_data));
+      if (block_extract)
+         content->elems[idx].attr.i |= BLCK_BLOCK_EXTRACT;
+      if (override->need_fullpath)
+         content->elems[idx].attr.i |= BLCK_NEED_FULLPATH;
+      if (required)
+         content->elems[idx].attr.i |= BLCK_REQUIRED;
+      if (persistent || override->persistent_data)
+         content->elems[idx].attr.i |= BLCK_PERSISTENT;
    }
 }
 
@@ -965,7 +946,7 @@ static bool content_file_load(
        * return an error */
       if (string_is_empty(content_path))
       {
-         if (CONTENT_FILE_ATTR_GET_REQUIRED(content->elems[i].attr))
+         if ((content->elems[i].attr.i & BLCK_REQUIRED) != 0)
          {
             *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT;
             return false;
@@ -985,12 +966,15 @@ static bool content_file_load(
 
          /* If core does not require 'fullpath', load
           * the content into memory */
-         if (!CONTENT_FILE_ATTR_GET_NEED_FULLPATH(content->elems[i].attr))
+
+         /* Doesn't need fullpath? */
+         if (!((content->elems[i].attr.i & BLCK_NEED_FULLPATH) != 0))
          {
-            if (!content_file_load_into_memory(
+            content_data = NULL;
+            if ((content_size = content_file_load_into_memory(
                   content_ctx, p_content, content_path,
                   content_compressed, i, first_content_type,
-                  &content_data, &content_size))
+                  &content_data)) == 0)
             {
                char msg[PATH_MAX_LENGTH];
                snprintf(msg, sizeof(msg), "%s \"%s\"\n",
@@ -1005,9 +989,9 @@ static bool content_file_load(
 #ifdef HAVE_COMPRESSION
             /* If this is compressed content and need_fullpath
              * is true, extract it to a temporary file */
-            if (content_compressed &&
-                !CONTENT_FILE_ATTR_GET_BLOCK_EXTRACT(content->elems[i].attr) &&
-                !content_file_extract_from_archive(content_ctx, p_content,
+            if (    content_compressed
+                && !((content->elems[i].attr.i & BLCK_BLOCK_EXTRACT) != 0)
+                && !content_file_extract_from_archive(content_ctx, p_content,
                      valid_exts, &content_path, error_string))
                return false;
 #endif
@@ -1113,7 +1097,7 @@ static bool content_file_load(
       if (!content_file_list_set_info(
             p_content->content_list,
             content_path, content_data, content_size,
-            CONTENT_FILE_ATTR_GET_PERSISTENT(content->elems[i].attr), i))
+            ((content->elems[i].attr.i & BLCK_PERSISTENT) != 0), i))
       {
          RARCH_LOG("[Content] Failed to process content file: \"%s\".\n", content_path);
          if (content_data)
@@ -1241,10 +1225,13 @@ static void content_file_set_attributes(
       {
          union string_list_elem_attr attr;
 
-         CONTENT_FILE_ATTR_RESET(attr);
-         CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, special->roms[i].block_extract);
-         CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, special->roms[i].need_fullpath);
-         CONTENT_FILE_ATTR_SET_REQUIRED(attr, special->roms[i].required);
+         attr.i = 0;
+         if (special->roms[i].block_extract)
+            attr.i |= BLCK_BLOCK_EXTRACT;
+         if (special->roms[i].need_fullpath)
+            attr.i |= BLCK_NEED_FULLPATH;
+         if (special->roms[i].required)
+            attr.i |= BLCK_REQUIRED;
 
          string_list_append(content, subsystem->elems[i].data, attr);
       }
@@ -1255,21 +1242,22 @@ static void content_file_set_attributes(
       const char *content_path = path_get(RARCH_PATH_CONTENT);
       uint8_t flags            = content_get_flags();
 
-      CONTENT_FILE_ATTR_RESET(attr);
-      CONTENT_FILE_ATTR_SET_BLOCK_EXTRACT(attr, content_ctx->flags &
-CONTENT_INFO_FLAG_BLOCK_EXTRACT);
-      CONTENT_FILE_ATTR_SET_NEED_FULLPATH(attr, content_ctx->flags &
-CONTENT_INFO_FLAG_NEED_FULLPATH);
-      CONTENT_FILE_ATTR_SET_REQUIRED(attr, (!(flags &
-               CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)));
+      attr.i = 0;
+      if (content_ctx->flags & CONTENT_INFO_FLAG_BLOCK_EXTRACT)
+         attr.i |= BLCK_BLOCK_EXTRACT;
+      if (content_ctx->flags & CONTENT_INFO_FLAG_NEED_FULLPATH)
+         attr.i |= BLCK_NEED_FULLPATH;
+      if (!(flags
+            & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT))
+         attr.i |= BLCK_REQUIRED;
 
-#if defined(HAVE_RUNAHEAD)
       /* If runahead is supported and we are not using
        * subsystems, content data buffer must *always*
        * be persistent, since user may toggle second
        * instance runahead at any time (and secondary
        * core initialisation requires valid data) */
-      CONTENT_FILE_ATTR_SET_PERSISTENT(attr, true);
+#if defined(HAVE_RUNAHEAD)
+      attr.i |= BLCK_PERSISTENT;
 #endif
 
       if (string_is_empty(content_path))
@@ -1796,8 +1784,8 @@ static bool task_push_to_history_list_from_playlist_pre_load_static(
       }
    }
 
-   if (!string_is_empty(core_path) &&
-       playlist_hist)
+   if (  !string_is_empty(core_path)
+       && playlist_hist)
    {
       struct playlist_entry new_entry = {0};
 
@@ -2098,12 +2086,9 @@ bool task_push_load_content_from_playlist_from_menu(
       if (!string_is_empty(fullpath))
          path_set(RARCH_PATH_CONTENT, fullpath);
 
-      /* Load content */
-      if (!(ret = content_load(content_info, p_content)))
-         goto end;
-
-      /* Update content history */
-      task_push_to_history_list(p_content, true, false, false);
+      /* Load content and update content history */
+      if ((ret = content_load(content_info, p_content)))
+         task_push_to_history_list(p_content, true, false, false);
 
       goto end;
    }
@@ -2129,19 +2114,21 @@ bool task_push_load_content_from_playlist_from_menu(
    /* Load content
     * > On targets that do not support dynamic core loading,
     *   command_event_cmd_exec() will fork a new instance */
-   if (!(ret = command_event_cmd_exec(p_content,
+   if ((ret = command_event_cmd_exec(p_content,
          fullpath, &content_ctx, false)))
-      goto end;
+   {
+#ifndef HAVE_DYNAMIC
+      /* No dynamic core loading support: if we reach
+       * this point then a new instance has been
+       * forked - have to shut down this one */
+      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+      retroarch_menu_running_finished(true);
+#endif
+   }
 
 #ifndef HAVE_DYNAMIC
-   /* No dynamic core loading support: if we reach
-    * this point then a new instance has been
-    * forked - have to shut down this one */
-   retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
-   retroarch_menu_running_finished(true);
-#endif
-
 end:
+#endif
    /* Handle load content failure */
    if (!ret)
       retroarch_menu_running();
@@ -2322,14 +2309,14 @@ bool task_push_load_contentless_core_from_menu(
    if (string_is_empty(core_path))
       return false;
 
-   content_ctx.flags                         = 0;
+   content_ctx.flags                     = 0;
 
    if (check_firmware_before_loading)
-      content_ctx.flags                     |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
+      content_ctx.flags                 |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
    if (runloop_st->missing_bios)
-      content_ctx.flags                     |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
+      content_ctx.flags                 |= CONTENT_INFO_FLAG_BIOS_IS_MISSING;
    if (!string_is_empty(path_dir_system))
-      content_ctx.directory_system           = strdup(path_dir_system);
+      content_ctx.directory_system       = strdup(path_dir_system);
 
    /* Set core path */
    path_set(RARCH_PATH_CORE, core_path);
@@ -2338,7 +2325,7 @@ bool task_push_load_contentless_core_from_menu(
    path_clear(RARCH_PATH_CONTENT);
 
 #if defined(HAVE_DYNAMIC)
-   content_info.environ_get                  = menu_content_environment_get;
+   content_info.environ_get              = menu_content_environment_get;
    /* Load core */
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 
@@ -2648,17 +2635,17 @@ static bool task_load_content_internal_wrap(
       bool load_from_companion_ui)
 {
    /* Load content */
-   if (!task_load_content_internal(content_info, true, false,
+   if (task_load_content_internal(content_info, true, false,
             load_from_companion_ui))
-      goto error;
+   {
 #ifdef HAVE_MENU
-   /* Push Quick Menu onto menu stack */
-   if (type != CORE_TYPE_DUMMY)
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+      /* Push Quick Menu onto menu stack */
+      if (type != CORE_TYPE_DUMMY)
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
-   return true;
+      return true;
+   }
 
-error:
 #ifdef HAVE_MENU
    retroarch_menu_running();
 #endif
@@ -3002,11 +2989,11 @@ void content_deinit(void)
    content_file_override_free(p_content);
    content_file_list_free(p_content->content_list);
 
-   p_content->content_list    = NULL;
-   p_content->rom_crc         = 0;
-   p_content->flags          &= ~(CONTENT_ST_FLAG_PENDING_ROM_CRC
-                                | CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT
-                                | CONTENT_ST_FLAG_IS_INITED);
+   p_content->content_list = NULL;
+   p_content->rom_crc      = 0;
+   p_content->flags       &= ~(CONTENT_ST_FLAG_PENDING_ROM_CRC
+                             | CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT
+                             | CONTENT_ST_FLAG_IS_INITED);
 }
 
 /* Set environment variables before a subsystem load */

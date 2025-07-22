@@ -218,12 +218,10 @@ void *intfstream_init(intfstream_info_t *info)
 {
    intfstream_internal_t *intf = NULL;
    if (!info)
-      goto error;
+      return NULL;
 
-   intf = (intfstream_internal_t*)malloc(sizeof(*intf));
-
-   if (!intf)
-      goto error;
+   if (!(intf = (intfstream_internal_t*)malloc(sizeof(*intf))))
+      return NULL;
 
    intf->type            = info->type;
    intf->file.fp         = NULL;
@@ -246,25 +244,24 @@ void *intfstream_init(intfstream_info_t *info)
       case INTFSTREAM_MEMORY:
          intf->memory.writable = info->memory.writable;
          if (!intfstream_resize(intf, info))
-            goto error;
+         {
+            free(intf);
+            return NULL;
+         }
          break;
       case INTFSTREAM_CHD:
 #ifdef HAVE_CHD
          intf->chd.track = info->chd.track;
          break;
 #else
-         goto error;
+         free(intf);
+         return NULL;
 #endif
       case INTFSTREAM_RZIP:
          break;
    }
 
    return intf;
-
-error:
-   if (intf)
-      free(intf);
-   return NULL;
 }
 
 int64_t intfstream_seek(
@@ -699,17 +696,11 @@ intfstream_t* intfstream_open_file(const char *path,
    if (!fd)
       return NULL;
 
-   if (!intfstream_open(fd, path, mode, hints))
-      goto error;
+   if (intfstream_open(fd, path, mode, hints))
+      return fd;
 
-   return fd;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
+   intfstream_close(fd);
+   free(fd);
    return NULL;
 }
 
@@ -724,21 +715,14 @@ intfstream_t *intfstream_open_memory(void *data,
    info.memory.buf.size = size;
    info.memory.writable = false;
 
-   fd                   = (intfstream_t*)intfstream_init(&info);
-   if (!fd)
+   if (!(fd = (intfstream_t*)intfstream_init(&info)))
       return NULL;
 
-   if (!intfstream_open(fd, NULL, mode, hints))
-      goto error;
+   if (intfstream_open(fd, NULL, mode, hints))
+      return fd;
 
-   return fd;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
+   intfstream_close(fd);
+   free(fd);
    return NULL;
 }
 
@@ -753,21 +737,14 @@ intfstream_t *intfstream_open_writable_memory(void *data,
    info.memory.buf.size = size;
    info.memory.writable = true;
 
-   fd                   = (intfstream_t*)intfstream_init(&info);
-   if (!fd)
+   if (!(fd = (intfstream_t*)intfstream_init(&info)))
       return NULL;
 
-   if (!intfstream_open(fd, NULL, mode, hints))
-      goto error;
+   if (intfstream_open(fd, NULL, mode, hints))
+      return fd;
 
-   return fd;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
+   intfstream_close(fd);
+   free(fd);
    return NULL;
 }
 
@@ -780,22 +757,14 @@ intfstream_t *intfstream_open_chd_track(const char *path,
    info.type        = INTFSTREAM_CHD;
    info.chd.track   = track;
 
-   fd               = (intfstream_t*)intfstream_init(&info);
-
-   if (!fd)
+   if (!(fd = (intfstream_t*)intfstream_init(&info)))
       return NULL;
 
-   if (!intfstream_open(fd, path, mode, hints))
-      goto error;
+   if (intfstream_open(fd, path, mode, hints))
+      return fd;
 
-   return fd;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
+   intfstream_close(fd);
+   free(fd);
    return NULL;
 }
 
@@ -811,16 +780,10 @@ intfstream_t* intfstream_open_rzip_file(const char *path,
    if (!fd)
       return NULL;
 
-   if (!intfstream_open(fd, path, mode, RETRO_VFS_FILE_ACCESS_HINT_NONE))
-      goto error;
+   if (intfstream_open(fd, path, mode, RETRO_VFS_FILE_ACCESS_HINT_NONE))
+      return fd;
 
-   return fd;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
+   intfstream_close(fd);
+   free(fd);
    return NULL;
 }

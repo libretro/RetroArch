@@ -3742,12 +3742,12 @@ void video_driver_frame(const void *data, unsigned width,
          && data
          && (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
          && (data != RETRO_HW_FRAME_BUFFER_VALID)
-         && video_pixel_frame_scale(
-            video_st->scaler_ptr->scaler,
-            video_st->scaler_ptr->scaler_out,
-            data, width, height, pitch)
       )
    {
+      video_pixel_frame_scale(
+            video_st->scaler_ptr->scaler,
+            video_st->scaler_ptr->scaler_out,
+            data, width, height, pitch);
       data                = video_st->scaler_ptr->scaler_out;
       pitch               = video_st->scaler_ptr->scaler->out_stride;
    }
