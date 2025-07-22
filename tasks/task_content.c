@@ -450,22 +450,17 @@ static content_file_list_t *content_file_list_init(size_t len)
  * temporary (i.e. extracted) content file list.
  * Returns pointer to allocated char array. */
 static const char *content_file_list_append_temporary(
-      content_file_list_t *file_list,
-      const char *path)
+      content_file_list_t *file_list, const char *path)
 {
-   union string_list_elem_attr attr;
-
-   if (  !file_list
-       || string_is_empty(path))
-      return NULL;
-
-   attr.i = 0;
-
-   if (string_list_append(file_list->temporary_files,
-         path, attr))
-      return file_list->temporary_files->elems[
-         file_list->temporary_files->size - 1].data;
-
+   if (file_list && !string_is_empty(path))
+   {
+      union string_list_elem_attr attr;
+      attr.i = 0;
+      if (string_list_append(file_list->temporary_files,
+               path, attr))
+         return file_list->temporary_files->elems[
+            file_list->temporary_files->size - 1].data;
+   }
    return NULL;
 }
 
