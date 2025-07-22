@@ -174,7 +174,7 @@ static int task_database_iterate_start(retro_task_t *task,
 
    if (!string_is_empty(basename_path))
       snprintf(msg, sizeof(msg),
-         STRING_REP_USIZE "/" STRING_REP_USIZE ": %s..\n",
+         STRING_REP_USIZE "/" STRING_REP_USIZE ": %s...\n",
          db->list_ptr + 1,
          (size_t)db->list->size,
          basename_path);
@@ -523,9 +523,7 @@ static void task_database_cue_prune(database_info_handle_t *db,
          if (db->list->elems[i].data
                && string_is_equal(path, db->list->elems[i].data))
          {
-#ifdef DEBUG
-            RARCH_LOG("[Scanner] Pruning file referenced by cue: %s\n", path);
-#endif
+            RARCH_DBG("[Scanner] Pruning file referenced by CUE: %s\n", path);
             free(db->list->elems[i].data);
             db->list->elems[i].data = NULL;
          }
@@ -555,7 +553,7 @@ static void gdi_prune(database_info_handle_t *db, const char *name)
          if (db->list->elems[i].data
                && string_is_equal(path, db->list->elems[i].data))
          {
-            RARCH_LOG("[Scanner] Pruning file referenced by gdi: %s\n", path);
+            RARCH_DBG("[Scanner] Pruning file referenced by GDI: %s\n", path);
             free(db->list->elems[i].data);
             db->list->elems[i].data = NULL;
          }
