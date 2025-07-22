@@ -969,7 +969,6 @@ static bool content_file_load(
          if (!((content->elems[i].attr.i & BLCK_NEED_FULLPATH) != 0))
          {
             content_data = NULL;
-            content_size = 0;
             if ((content_size = content_file_load_into_memory(
                   content_ctx, p_content, content_path,
                   content_compressed, i, first_content_type,

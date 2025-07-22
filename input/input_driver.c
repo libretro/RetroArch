@@ -6505,7 +6505,8 @@ bool replay_get_serialized_data(void* buffer)
    return true;
 }
 
-bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_t other_len)
+static bool replay_check_same_timeline(bsv_movie_t *movie,
+      uint8_t *other_movie, int64_t other_len)
 {
    int64_t check_limit = MIN(other_len, intfstream_tell(movie->file));
    intfstream_t *check_stream = intfstream_open_memory(other_movie, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, other_len);
@@ -6513,9 +6514,12 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
    int64_t check_cap = MAX(128 << 10, MAX(128*sizeof(bsv_key_data_t), 512*sizeof(bsv_input_data_t)));
    uint8_t *buf1 = calloc(check_cap,1), *buf2 = calloc(check_cap,1);
    size_t movie_pos = intfstream_tell(movie->file);
-   uint8_t keycount1, keycount2, frametok1, frametok2;
-   uint16_t btncount1, btncount2;
    uint64_t size1, size2;
+   uint16_t btncount1, btncount2;
+   uint8_t frametok1 = 0;
+   uint8_t frametok2 = 0;
+   uint8_t keycount1 = 0;
+   uint8_t keycount2 = 0;
    intfstream_rewind(movie->file);
    intfstream_read(movie->file, buf1, 6*sizeof(uint32_t));
    intfstream_read(check_stream, buf2, 6*sizeof(uint32_t));
@@ -6554,7 +6558,7 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
          ret = false;
          goto exit;
       }
-      if (     intfstream_read(movie->file, &keycount1, 1) < 1
+      if (     intfstream_read(movie->file,  &keycount1, 1) < 1
             || intfstream_read(check_stream, &keycount2, 1) < 1
             || keycount1 != keycount2)
       {
@@ -6593,7 +6597,7 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
          ret = false;
          goto exit;
       }
-      if (     intfstream_read(movie->file, &frametok1, 1)  < 1
+      if (     intfstream_read(movie->file,  &frametok1, 1) < 1
             || intfstream_read(check_stream, &frametok2, 1) < 1
             || frametok1 != frametok2)
       {

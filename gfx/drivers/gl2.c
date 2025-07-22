@@ -1899,12 +1899,13 @@ static void gl2_renderchain_init(
    width        = gl->video_width;
    height       = gl->video_height;
 
+   scale.flags         = 0;
    scaler.scale        = &scale;
-   scaler.scale->flags = 0;
 
    gl2_shader_scale(gl, &scaler, 1);
 
-   scaler.scale = &scale_last;
+   scale_last.flags    = 0;
+   scaler.scale        = &scale_last;
 
    gl2_shader_scale(gl, &scaler, shader_info_num);
 

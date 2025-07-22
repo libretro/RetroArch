@@ -1081,7 +1081,7 @@ static int wasapi_microphone_read(void *driver_context, void *mic_context, void 
    if (mic->exclusive)
    {
       int read;
-      for (read = -1; (size_t)bytes_read < len; bytes_read += read)
+      for (; (size_t)bytes_read < len; bytes_read += read)
       {
          read = wasapi_microphone_read_buffered(mic,
                (char *)s   + bytes_read,
@@ -1094,7 +1094,7 @@ static int wasapi_microphone_read(void *driver_context, void *mic_context, void 
    else
    {
       int read;
-      for (read = -1; (size_t)bytes_read < len; bytes_read += read)
+      for (; (size_t)bytes_read < len; bytes_read += read)
       {
          read = wasapi_microphone_read_buffered(mic,
                (char *)s   + bytes_read,
@@ -1537,7 +1537,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
       else
       {
          ssize_t ir;
-         for (ir = -1; written < len; written += ir)
+         for (; written < len; written += ir)
          {
             const void *_data  = (char*)data + written;
             size_t __len       = len - written;
