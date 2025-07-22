@@ -3090,10 +3090,23 @@ bool content_init(void)
 
    if (error_enum != MSG_UNKNOWN)
    {
-      const char *_msg = msg_hash_to_str(error_enum);
-      RARCH_ERR("[Content] %s\n", _msg);
-      runloop_msg_queue_push(_msg, strlen(_msg), 2, ret ? 1 : 180, false, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      switch (error_enum)
+      {
+         case MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT:
+         case MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS:
+         case MSG_FAILED_TO_LOAD_CONTENT:
+         case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:
+            {
+               const char *_msg = msg_hash_to_str(error_enum);
+               RARCH_ERR("[Content] %s\n", _msg);
+               runloop_msg_queue_push(_msg, strlen(_msg), 2, ret ? 1 : 180, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
+            break;
+         case MSG_UNKNOWN:
+         default:
+            break;
+      }
    }
 
    if (!string_is_empty(error_string))
