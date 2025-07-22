@@ -2050,8 +2050,8 @@ bool task_push_load_content_from_playlist_from_menu(
    /* Check whether specified core is already loaded
     * > If so, content can be launched directly with
     *   the currently loaded core */
-   if (!force_core_reload &&
-       retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+   if (  !force_core_reload
+       && retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
    {
       if (!content_info->environ_get)
          content_info->environ_get = menu_content_environment_get;
@@ -2061,12 +2061,9 @@ bool task_push_load_content_from_playlist_from_menu(
       if (!string_is_empty(fullpath))
          path_set(RARCH_PATH_CONTENT, fullpath);
 
-      /* Load content */
-      if (!(ret = content_load(content_info, p_content)))
-         goto end;
-
-      /* Update content history */
-      task_push_to_history_list(p_content, true, false, false);
+      /* Load content and update content history */
+      if ((ret = content_load(content_info, p_content)))
+         task_push_to_history_list(p_content, true, false, false);
 
       goto end;
    }
@@ -2092,17 +2089,17 @@ bool task_push_load_content_from_playlist_from_menu(
    /* Load content
     * > On targets that do not support dynamic core loading,
     *   command_event_cmd_exec() will fork a new instance */
-   if (!(ret = command_event_cmd_exec(p_content,
+   if ((ret = command_event_cmd_exec(p_content,
          fullpath, &content_ctx, false)))
-      goto end;
-
+   {
 #ifndef HAVE_DYNAMIC
-   /* No dynamic core loading support: if we reach
-    * this point then a new instance has been
-    * forked - have to shut down this one */
-   retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
-   retroarch_menu_running_finished(true);
+      /* No dynamic core loading support: if we reach
+       * this point then a new instance has been
+       * forked - have to shut down this one */
+      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+      retroarch_menu_running_finished(true);
 #endif
+   }
 
 end:
    /* Handle load content failure */
