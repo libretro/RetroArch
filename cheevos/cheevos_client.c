@@ -420,7 +420,7 @@ static void rcheevos_client_download_task_callback(retro_task_t* task,
    free(callback_data);
 }
 
-static bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
+bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
    const char* url, const char* badge_name)
 {
    rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
@@ -472,11 +472,11 @@ void rcheevos_client_download_badge_from_url(const char* url, const char* badge_
 
 static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
 {
-   rc_client_achievement_bucket_t* bucket;
-   rc_client_achievement_t* achievement;
+   const rc_client_achievement_bucket_t* bucket;
+   const rc_client_achievement_t* achievement;
    const char* next_badge;
    char badge_name[32];
-   char url[256];
+   const char* url = NULL;
    bool done = false;
 
    do
@@ -515,9 +515,7 @@ static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
          if (queue->pass == 0)
          {
             /* first pass - get all unlocked badges */
-            if (rc_client_achievement_get_image_url(achievement, RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED, url, sizeof(url)) != RC_OK)
-               continue;
-
+            url = achievement->badge_url;
             next_badge = achievement->badge_name;
          }
          else if (achievement->unlock_time)
@@ -528,8 +526,7 @@ static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
          else
          {
             /* second pass - get locked badge */
-            if (rc_client_achievement_get_image_url(achievement, RC_CLIENT_ACHIEVEMENT_STATE_ACTIVE, url, sizeof(url)) != RC_OK)
-               continue;
+            url = achievement->badge_locked_url;
 
             snprintf(badge_name, sizeof(badge_name), "%s_lock", achievement->badge_name);
             next_badge = badge_name;
@@ -618,26 +615,5 @@ void rcheevos_client_download_achievement_badges(rc_client_t* client)
 
 #undef RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS
 
-void rcheevos_client_download_achievement_badge(const char* badge_name, bool locked)
-{
-   rc_api_fetch_image_request_t image_request;
-   rc_api_request_t request;
-   char locked_badge_name[32];
-
-   memset(&image_request, 0, sizeof(image_request));
-   image_request.image_type = locked ? RC_IMAGE_TYPE_ACHIEVEMENT_LOCKED : RC_IMAGE_TYPE_ACHIEVEMENT;
-   image_request.image_name = badge_name;
-
-   if (locked)
-   {
-      snprintf(locked_badge_name, sizeof(locked_badge_name), "%s_lock", badge_name);
-      badge_name = locked_badge_name;
-   }
-
-   if (rc_api_init_fetch_image_request(&request, &image_request) == RC_OK)
-      rcheevos_client_download_badge(NULL, request.url, badge_name);
-
-   rc_api_destroy_request(&request);
-}
 
 
