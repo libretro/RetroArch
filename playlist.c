@@ -1406,7 +1406,9 @@ bool playlist_push(playlist_t *playlist,
             continue;
       }
 
-      if (playlist->entries[i].entry_slot != entry->entry_slot)
+      /* Only write non-redundant entry slot numbers */
+      if (     playlist->entries[i].entry_slot != entry->entry_slot
+            && (int)entry->entry_slot > 0)
       {
          playlist->entries[i].entry_slot  = entry->entry_slot;
          entry_updated                    = true;
@@ -1962,17 +1964,6 @@ void playlist_write_file(playlist_t *playlist)
          rjsonwriter_add_string(writer, playlist->entries[i].path);
          rjsonwriter_raw(writer, ",", 1);
 
-         if (playlist->entries[i].entry_slot)
-         {
-            rjsonwriter_raw(writer, "\n", 1);
-            rjsonwriter_add_spaces(writer, 6);
-            rjsonwriter_add_string(writer, "entry_slot");
-            rjsonwriter_raw(writer, ":", 1);
-            rjsonwriter_raw(writer, " ", 1);
-            rjsonwriter_rawf(writer, "%d", (int)playlist->entries[i].entry_slot);
-            rjsonwriter_raw(writer, ",", 1);
-         }
-
          rjsonwriter_raw(writer, "\n", 1);
          rjsonwriter_add_spaces(writer, 6);
          rjsonwriter_add_string(writer, "label");
@@ -2011,6 +2002,22 @@ void playlist_write_file(playlist_t *playlist)
          rjsonwriter_raw(writer, ":", 1);
          rjsonwriter_raw(writer, " ", 1);
          rjsonwriter_add_string(writer, playlist->entries[i].db_name);
+
+         /* Conditional rows must add "," first */
+
+         /* Typecast required because playlist_entry.entry_slot is unsigned,
+          * and 0 and -1 are redundant, but runloop.entry_state_slot is int16_t
+          * and must be able to be negative, because 0 is a valid slot */
+         if ((int)playlist->entries[i].entry_slot > 0)
+         {
+            rjsonwriter_raw(writer, ",", 1);
+            rjsonwriter_raw(writer, "\n", 1);
+            rjsonwriter_add_spaces(writer, 6);
+            rjsonwriter_add_string(writer, "entry_slot");
+            rjsonwriter_raw(writer, ":", 1);
+            rjsonwriter_raw(writer, " ", 1);
+            rjsonwriter_rawf(writer, "%d", (int)playlist->entries[i].entry_slot);
+         }
 
          if (!string_is_empty(playlist->entries[i].subsystem_ident))
          {
