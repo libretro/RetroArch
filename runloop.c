@@ -5744,14 +5744,89 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 
+   /* Check reset hotkey */
+   if (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+   {
+      bool trig_reset_key, reset_press_twice;
+      static bool reset_key     = false;
+      static bool old_reset_key = false;
+      reset_key                 = BIT256_GET(current_bits, RARCH_RESET);
+      trig_reset_key            = reset_key && !old_reset_key;
+
+      old_reset_key             = reset_key;
+      reset_press_twice         = settings->bools.quit_press_twice;
+
+      /* Check double press if enabled */
+      if (     trig_reset_key
+            && reset_press_twice)
+      {
+         static retro_time_t reset_key_time   = 0;
+         retro_time_t cur_time                = current_time;
+         trig_reset_key                       = (cur_time - reset_key_time < QUIT_DELAY_USEC);
+         reset_key_time                       = cur_time;
+
+         if (!trig_reset_key)
+         {
+            const char *_msg = msg_hash_to_str(MSG_PRESS_AGAIN_TO_RESET);
+            float target_hz  = 0.0;
+
+            runloop_environment_cb(
+                  RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
+
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, QUIT_DELAY_USEC * target_hz / 1000000,
+                  true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         }
+      }
+
+      if (trig_reset_key)
+         command_event(CMD_EVENT_RESET, NULL);
+   }
+
+   /* Check close content hotkey */
+   if (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+   {
+      bool trig_close_key, close_press_twice;
+      static bool close_key     = false;
+      static bool old_close_key = false;
+      close_key                 = BIT256_GET(current_bits, RARCH_CLOSE_CONTENT_KEY);
+      trig_close_key            = close_key && !old_close_key;
+
+      old_close_key             = close_key;
+      close_press_twice         = settings->bools.quit_press_twice;
+
+      /* Check double press if enabled */
+      if (     trig_close_key
+            && close_press_twice)
+      {
+         static retro_time_t close_key_time   = 0;
+         retro_time_t cur_time                = current_time;
+         trig_close_key                       = (cur_time - close_key_time < QUIT_DELAY_USEC);
+         close_key_time                       = cur_time;
+
+         if (!trig_close_key)
+         {
+            const char *_msg = msg_hash_to_str(MSG_PRESS_AGAIN_TO_CLOSE_CONTENT);
+            float target_hz  = 0.0;
+
+            runloop_environment_cb(
+                  RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE, &target_hz);
+
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, QUIT_DELAY_USEC * target_hz / 1000000,
+                  true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         }
+      }
+
+      if (trig_close_key)
+         command_event(CMD_EVENT_CLOSE_CONTENT, NULL);
+   }
+
    /* Check quit hotkey */
    {
       bool trig_quit_key, quit_press_twice;
       static bool quit_key     = false;
       static bool old_quit_key = false;
       static bool runloop_exec = false;
-      quit_key                 = BIT256_GET(
-            current_bits, RARCH_QUIT_KEY);
+      quit_key                 = BIT256_GET(current_bits, RARCH_QUIT_KEY);
       trig_quit_key            = quit_key && !old_quit_key;
       /* Check for quit gamepad combo */
       if (    !trig_quit_key
@@ -6136,9 +6211,6 @@ static enum runloop_state_enum runloop_check_state(
 
    /* Check UI companion hotkey */
    HOTKEY_CHECK(RARCH_UI_COMPANION_TOGGLE, CMD_EVENT_UI_COMPANION_TOGGLE, true, NULL);
-
-   /* Check close content hotkey */
-   HOTKEY_CHECK(RARCH_CLOSE_CONTENT_KEY, CMD_EVENT_CLOSE_CONTENT, true, NULL);
 
    /* Check FPS hotkey */
    HOTKEY_CHECK(RARCH_FPS_TOGGLE, CMD_EVENT_FPS_TOGGLE, true, NULL);
@@ -6787,9 +6859,6 @@ static enum runloop_state_enum runloop_check_state(
    /* Check save state hotkeys */
    HOTKEY_CHECK(RARCH_SAVE_STATE_KEY, CMD_EVENT_SAVE_STATE, true, NULL);
    HOTKEY_CHECK(RARCH_LOAD_STATE_KEY, CMD_EVENT_LOAD_STATE, true, NULL);
-
-   /* Check reset hotkey */
-   HOTKEY_CHECK(RARCH_RESET, CMD_EVENT_RESET, true, NULL);
 
    /* Check VRR runloop hotkey */
    HOTKEY_CHECK(RARCH_VRR_RUNLOOP_TOGGLE, CMD_EVENT_VRR_RUNLOOP_TOGGLE, true, NULL);

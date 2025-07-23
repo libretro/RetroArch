@@ -3636,11 +3636,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Confirm Quit"
+   "Confirm Quit/Close/Reset"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Require the Quit hotkey to be pressed twice to quit RetroArch."
+   "Require the Quit/Close/Reset hotkey to be pressed twice."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -15296,6 +15296,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Press again to quit..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Press again to close content..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Press again to reset..."
    )
 MSG_HASH(
    MSG_TO,
