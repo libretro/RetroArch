@@ -14081,6 +14081,38 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.video_gpu_screenshot_include_shaders,
+                  MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT_INCLUDE_SHADERS,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT_INCLUDE_SHADERS,
+                  DEFAULT_GPU_SCREENSHOT_INCLUDE_SHADERS,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED
+            );
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.video_gpu_screenshot_include_overlay,
+                  MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT_INCLUDE_OVERLAY,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT_INCLUDE_OVERLAY,
+                  DEFAULT_GPU_SCREENSHOT_INCLUDE_OVERLAY,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED
+            );
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.video_crop_overscan,
                   MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
                   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
