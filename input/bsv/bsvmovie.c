@@ -384,21 +384,23 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
 {
    int64_t ret = -1;
    uint32_t encoded_size, compressed_encoded_size, size_;
+   uint8_t *swap;
+   size_t size_swap;
    uint8_t *encoded_data = NULL, *compressed_encoded_data = NULL;
    bool owns_encoded = false, owns_compressed_encoded = false;
    retro_ctx_serialize_info_t serial_info;
    serial_info.size = core_serialize_size();
-   if (handle->last_save_size < serial_info.size)
+   if (handle->cur_save_size < serial_info.size)
    {
-      free(handle->last_save);
-      handle->last_save = NULL;
+      free(handle->cur_save);
+      handle->cur_save = NULL;
    }
-   if (!handle->last_save)
+   if (!handle->cur_save)
    {
-      handle->last_save_size = serial_info.size;
-      handle->last_save = malloc(serial_info.size);
+      handle->cur_save_size = serial_info.size;
+      handle->cur_save = malloc(serial_info.size);
    }
-   serial_info.data = malloc(serial_info.size);
+   serial_info.data = handle->cur_save;
    core_serialize(&serial_info);
    switch (encoding)
    {
@@ -488,8 +490,12 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
    }
    ret = 3 * sizeof(uint32_t) + compressed_encoded_size;
  exit:
-   memcpy(handle->last_save, serial_info.data, serial_info.size);
-   free(serial_info.data);
+   swap = handle->last_save;
+   size_swap = handle->last_save_size;
+   handle->last_save = handle->cur_save;
+   handle->last_save_size = handle->cur_save_size;
+   handle->cur_save = swap;
+   handle->cur_save_size = size_swap;
    if (encoded_data && owns_encoded)
       free(encoded_data);
    if (compressed_encoded_data && owns_compressed_encoded)

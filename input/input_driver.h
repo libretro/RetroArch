@@ -266,8 +266,8 @@ struct bsv_movie
    uint32s_index_t *blocks;
    uint32_t *superblock_seq;
 
-   uint8_t *last_save;
-   size_t last_save_size;
+   uint8_t *last_save, *cur_save;
+   size_t last_save_size, cur_save_size;
 };
 
 typedef struct bsv_movie bsv_movie_t;

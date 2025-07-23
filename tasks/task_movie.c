@@ -220,6 +220,8 @@ void bsv_movie_free(bsv_movie_t *handle)
    free(handle->superblock_seq);
    if (handle->last_save)
       free(handle->last_save);
+   if (handle->cur_save)
+      free(handle->cur_save);
 
    free(handle);
 }
