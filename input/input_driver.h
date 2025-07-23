@@ -240,11 +240,9 @@ typedef struct bsv_input_data bsv_input_data_t;
 struct bsv_movie
 {
    intfstream_t *file;
-   uint8_t *state;
    int64_t identifier;
    uint32_t version;
    size_t min_file_pos;
-   size_t state_size;
 
    /* A ring buffer keeping track of positions
     * in the file for each frame. */
@@ -1080,6 +1078,7 @@ void input_overlay_check_mouse_cursor(void);
 void bsv_movie_frame_rewind(void);
 void bsv_movie_next_frame(input_driver_state_t *input_st);
 bool bsv_movie_read_next_events(bsv_movie_t *handle, bool skip_checkpoints);
+bool bsv_movie_reset_recording(bsv_movie_t *handle);
 void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
 void bsv_movie_deinit_full(input_driver_state_t *input_st);

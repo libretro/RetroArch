@@ -53,6 +53,42 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie,
       uint8_t *encoded, size_t encoded_size,
       uint8_t *output, size_t output_capacity);
 
+bool bsv_movie_reset_recording(bsv_movie_t *handle)
+{
+   retro_ctx_serialize_info_t serial_info;
+   size_t state_size, state_size_;
+#if defined(HAVE_ZSTD)
+   uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_ZSTD;
+#elif defined(HAVE_ZLIB)
+   uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_ZLIB;
+#else
+   uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
+#endif
+   uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_STATESTREAM;
+   /* If recording, we simply reset
+    * the starting point. Nice and easy. */
+   uint32s_index_clear(handle->superblocks);
+   uint32s_index_clear(handle->blocks);
+
+   intfstream_seek(handle->file, REPLAY_HEADER_LEN_BYTES, SEEK_SET);
+   intfstream_truncate(handle->file, REPLAY_HEADER_LEN_BYTES);
+
+   serial_info.size = core_serialize_size();
+   serial_info.data = malloc(serial_info.size);
+   core_serialize(&serial_info);
+   intfstream_write(handle->file, &compression, 1);
+   intfstream_write(handle->file, &encoding, 1);
+   handle->frame_counter = 0;
+   state_size = 2 + bsv_movie_write_checkpoint(handle, compression, encoding, serial_info);
+   handle->min_file_pos = intfstream_tell(handle->file);
+   /* Have to write initial state size header too */
+   state_size_ = swap_if_big32(state_size);
+   intfstream_seek(handle->file, 3*sizeof(uint32_t), SEEK_SET);
+   intfstream_write(handle->file, &state_size_, sizeof(uint32_t));
+   intfstream_seek(handle->file, handle->min_file_pos, SEEK_SET);
+   return true;
+}
+
 void bsv_movie_enqueue(input_driver_state_t *input_st,
       bsv_movie_t * state, enum bsv_flags flags)
 {
@@ -140,40 +176,7 @@ void bsv_movie_frame_rewind()
       }
       else
       {
-         /* TODO refactor, combine with task_movie.c bsv_movie_init_record state initialization */
-         retro_ctx_serialize_info_t serial_info;
-         size_t state_size, state_size_;
-#if defined(HAVE_ZSTD)
-         uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_ZSTD;
-#elif defined(HAVE_ZLIB)
-         uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_ZLIB;
-#else
-         uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
-#endif
-         uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_STATESTREAM;
-         /* If recording, we simply reset
-          * the starting point. Nice and easy. */
-         uint32s_index_clear(handle->superblocks);
-         uint32s_index_clear(handle->blocks);
-
-         intfstream_seek(handle->file, REPLAY_HEADER_LEN_BYTES, SEEK_SET);
-         intfstream_truncate(handle->file, REPLAY_HEADER_LEN_BYTES);
-
-         serial_info.data = handle->state;
-         serial_info.size = core_serialize_size();
-         core_serialize(&serial_info);
-         handle->state = serial_info.data;
-         intfstream_write(handle->file, &compression, 1);
-         intfstream_write(handle->file, &encoding, 1);
-         handle->frame_counter = 0;
-         state_size = 2 + bsv_movie_write_checkpoint(handle, compression, encoding, serial_info);
-         handle->min_file_pos = intfstream_tell(handle->file);
-         handle->state_size = state_size;
-         /* Have to write initial state size header too */
-         state_size_ = swap_if_big32(state_size);
-         intfstream_seek(handle->file, 3*sizeof(uint32_t), SEEK_SET);
-         intfstream_write(handle->file, &state_size_, sizeof(uint32_t));
-         intfstream_seek(handle->file, handle->min_file_pos, SEEK_SET);
+         bsv_movie_reset_recording(handle);
       }
    }
 }
@@ -366,6 +369,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
    serial_info.size       = size;
    if (!core_unserialize(&serial_info))
    {
+      abort();
       ret = false;
       goto exit;
    }
@@ -655,7 +659,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       /* Maybe record checkpoint */
       if (     (checkpoint_interval != 0)
             && (handle->frame_counter > 0)
-            && (handle->frame_counter % (checkpoint_interval*60) == 0))
+            && (handle->frame_counter % (checkpoint_interval*30) == 0))
       {
          uint8_t frame_tok   = REPLAY_TOKEN_CHECKPOINT2_FRAME;
          retro_ctx_serialize_info_t serial_info;

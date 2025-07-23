@@ -114,9 +114,7 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
       /* The header used to be six ints long */
       intfstream_seek(handle->file, REPLAY_HEADER_V0V1_LEN_BYTES, SEEK_SET);
 
-      handle->state          = buf;
-      handle->state_size     = state_size;
-      if (intfstream_read(handle->file, handle->state, state_size) != state_size)
+      if (intfstream_read(handle->file, buf, state_size) != state_size)
       {
          RARCH_ERR("[Replay] %s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
          return false;
@@ -124,9 +122,10 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
       info_size              = core_serialize_size();
       /* For cores like dosbox, the reported size is not always
          correct. So we just give a warning if they don't match up. */
-      serial_info.data_const = handle->state;
+      serial_info.data_const = buf;
       serial_info.size       = state_size;
       core_unserialize(&serial_info);
+      free(buf);
       if (info_size != state_size)
          RARCH_WARN("[Replay] %s\n",
                msg_hash_to_str(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION));
@@ -202,41 +201,9 @@ static bool bsv_movie_init_record(
    handle->blocks           = uint32s_index_new(block_size/4);
 
    if (state_size)
-   {
-      retro_ctx_serialize_info_t serial_info;
-      uint8_t *st      = (uint8_t*)malloc(state_size);
-      uint32_t state_size_lil;
-#if defined(HAVE_ZSTD)
-      uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_ZSTD;
-#elif defined(HAVE_ZLIB)
-      uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_ZLIB;
-#else
-      uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
-#endif
-      uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_STATESTREAM;
-      if (!st)
-         return false;
-
-      handle->state = st;
-      serial_info.data = handle->state;
-      serial_info.size = state_size;
-
-      core_serialize(&serial_info);
-      intfstream_write(handle->file, &compression, sizeof(uint8_t));
-      intfstream_write(handle->file, &encoding, sizeof(uint8_t));
-      state_size = 2 + bsv_movie_write_checkpoint(handle, compression, encoding, serial_info);
-      intfstream_seek(handle->file, REPLAY_HEADER_STATE_SIZE_INDEX * sizeof(uint32_t), SEEK_SET);
-      state_size_lil = swap_if_big32(state_size);
-      intfstream_write(handle->file, &state_size_lil, sizeof(uint32_t));
-      handle->min_file_pos = sizeof(header) + state_size;
-      handle->state_size = state_size;
-      intfstream_seek(handle->file, handle->min_file_pos, SEEK_SET);
-   }
-   else
-   {
-      handle->min_file_pos = sizeof(header);
-      handle->state_size   = 0;
-   }
+      return bsv_movie_reset_recording(handle);
+   
+   handle->min_file_pos = sizeof(header);
 
    return true;
 }
@@ -246,7 +213,6 @@ void bsv_movie_free(bsv_movie_t *handle)
    intfstream_close(handle->file);
    free(handle->file);
 
-   free(handle->state);
    free(handle->frame_pos);
 
    uint32s_index_free(handle->superblocks);
