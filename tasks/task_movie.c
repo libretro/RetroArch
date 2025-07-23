@@ -217,6 +217,9 @@ void bsv_movie_free(bsv_movie_t *handle)
 
    uint32s_index_free(handle->superblocks);
    uint32s_index_free(handle->blocks);
+   free(handle->superblock_seq);
+   if (handle->last_save)
+      free(handle->last_save);
 
    free(handle);
 }

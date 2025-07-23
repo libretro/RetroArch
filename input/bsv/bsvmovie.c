@@ -73,13 +73,10 @@ bool bsv_movie_reset_recording(bsv_movie_t *handle)
    intfstream_seek(handle->file, REPLAY_HEADER_LEN_BYTES, SEEK_SET);
    intfstream_truncate(handle->file, REPLAY_HEADER_LEN_BYTES);
 
-   serial_info.size = core_serialize_size();
-   serial_info.data = malloc(serial_info.size);
-   core_serialize(&serial_info);
    intfstream_write(handle->file, &compression, 1);
    intfstream_write(handle->file, &encoding, 1);
    handle->frame_counter = 0;
-   state_size = 2 + bsv_movie_write_checkpoint(handle, compression, encoding, serial_info);
+   state_size = 2 + bsv_movie_write_checkpoint(handle, compression, encoding);
    handle->min_file_pos = intfstream_tell(handle->file);
    /* Have to write initial state size header too */
    state_size_ = swap_if_big32(state_size);
@@ -383,12 +380,26 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
    return ret;
 }
 
-int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t encoding, retro_ctx_serialize_info_t serial_info)
+int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t encoding)
 {
    int64_t ret = -1;
    uint32_t encoded_size, compressed_encoded_size, size_;
    uint8_t *encoded_data = NULL, *compressed_encoded_data = NULL;
    bool owns_encoded = false, owns_compressed_encoded = false;
+   retro_ctx_serialize_info_t serial_info;
+   serial_info.size = core_serialize_size();
+   if (handle->last_save_size < serial_info.size)
+   {
+      free(handle->last_save);
+      handle->last_save = NULL;
+   }
+   if (!handle->last_save)
+   {
+      handle->last_save_size = serial_info.size;
+      handle->last_save = malloc(serial_info.size);
+   }
+   serial_info.data = malloc(serial_info.size);
+   core_serialize(&serial_info);
    switch (encoding)
    {
       case REPLAY_CHECKPOINT2_ENCODING_RAW:
@@ -477,6 +488,8 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
    }
    ret = 3 * sizeof(uint32_t) + compressed_encoded_size;
  exit:
+   memcpy(handle->last_save, serial_info.data, serial_info.size);
+   free(serial_info.data);
    if (encoded_data && owns_encoded)
       free(encoded_data);
    if (compressed_encoded_data && owns_compressed_encoded)
@@ -671,22 +684,16 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
 #endif
          uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_STATESTREAM;
-         size_t len          = core_serialize_size();
-         uint8_t *st         = (uint8_t*)malloc(len);
-         serial_info.data    = st;
-         serial_info.size    = len;
-         core_serialize(&serial_info);
          /* "next frame is a checkpoint" */
          intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
          /* compression and encoding schemes */
          intfstream_write(handle->file, (uint8_t *)(&compression), sizeof(uint8_t));
          intfstream_write(handle->file, (uint8_t *)(&encoding), sizeof(uint8_t));
-         if (bsv_movie_write_checkpoint(handle, compression, encoding, serial_info) < 0)
+         if (bsv_movie_write_checkpoint(handle, compression, encoding) < 0)
          {
             RARCH_ERR("[Replay] failed to write checkpoint, exiting record\n");
             input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
          }
-         free(st);
       }
       else
       {
@@ -1077,13 +1084,19 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    size_t superblock_size = movie->superblocks->object_size;
    size_t superblock_byte_size = superblock_size*block_byte_size;
    size_t superblock_count = state_size / superblock_byte_size + (state_size % superblock_byte_size != 0);
-   uint32_t *superblock_seq = calloc(superblock_count, sizeof(uint32_t));
    uint32_t *superblock_buf = calloc(superblock_size, sizeof(uint32_t));
    uint8_t *padded_block = NULL;
    intfstream_t *out_stream = intfstream_open_memory(output, RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE, output_capacity);
    int64_t encoded_size;
    size_t superblock, block;
    uint32_t i;
+   if (movie->last_save_size < state_size)
+   {
+      free(movie->superblock_seq);
+      movie->superblock_seq = NULL;
+   }
+   if (!movie->superblock_seq)
+      movie->superblock_seq = calloc(superblock_count, sizeof(uint32_t));
 
    printf("Output cp for frame %ld\n",movie->frame_counter);
 
@@ -1093,6 +1106,18 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    {
       uint32s_insert_result_t found_block;
       total_superblocks++;
+      if (movie->last_save && movie->last_save_size >= state_size)
+      {
+         if (memcmp(movie->last_save + (superblock*superblock_byte_size),
+                     state+(superblock*superblock_byte_size),
+                     superblock_byte_size) == 0)
+         {
+            reused_blocks += superblock_size;
+            reused_superblocks++;
+            /* This superblock is unchanged */
+            continue;
+         }
+      }
       for(block = 0; block < superblock_size; block++)
       {
          size_t block_start = superblock*superblock_byte_size+block*block_byte_size;
@@ -1143,15 +1168,14 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
       }
       else
          reused_superblocks++;
-      superblock_seq[superblock] = found_block.index;
+      movie->superblock_seq[superblock] = found_block.index;
    }
    /* write "here is the superblock seq" and superblock seq to file */
    rmsgpack_write_int(out_stream, BSV_IFRAME_SUPERBLOCK_SEQ_TOKEN);
    rmsgpack_write_array_header(out_stream, superblock_count);
    for(i = 0; i < superblock_count; i++)
-       rmsgpack_write_int(out_stream, superblock_seq[i]);
+       rmsgpack_write_int(out_stream, movie->superblock_seq[i]);
    free(superblock_buf);
-   free(superblock_seq);
    if(padded_block)
      free(padded_block);
    total_checkpoints++;

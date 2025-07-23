@@ -264,6 +264,10 @@ struct bsv_movie
    /* Block index and superblock index for incremental checkpoints */
    uint32s_index_t *superblocks;
    uint32s_index_t *blocks;
+   uint32_t *superblock_seq;
+
+   uint8_t *last_save;
+   size_t last_save_size;
 };
 
 typedef struct bsv_movie bsv_movie_t;
