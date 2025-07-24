@@ -3476,11 +3476,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Beenden bestätigen"
+   "Beenden/Schließen/Zurücksetzen bestätigen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Zum Beenden von RetroArch muss der Beenden-Hotkey zweimal gedrückt werden."
+   "Verlangt, dass der Hotkey Beenden/Schließen/Zurücksetzen zweimal gedrückt wird."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -9931,6 +9931,14 @@ MSG_HASH(
    "Den Errungenschaften-Hardcore-Modus für die aktuelle Sitzung deaktiviert lassen"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Errungenschaften-Hardcore-Modus-deaktiviert fortsetzen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Der Kern muss neu geladen werden, um den Errungenschaften-Hardcore-Modus fortzusetzen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Errungenschaften-Hardcore-Modus pausieren"
    )
@@ -14168,6 +14176,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Zum Beenden erneut drücken..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Erneut drücken, um Inhalt zu schließen ..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Zum Zurücksetzen erneut drücken ..."
    )
 MSG_HASH(
    MSG_TO,

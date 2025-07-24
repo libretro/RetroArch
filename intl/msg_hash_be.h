@@ -3494,14 +3494,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Рашэнне праблемы з адлучэннем ды паўторным падлучэннем кантролераў. Перашкаджае прызначэнню аднолькавых кантролераў для абодвух гульцоў."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Пацвярджэнне выхаду"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Патрабаваць двайное націсканне гарачай клавішы выхаду, каб выйсці з RetroArch."
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

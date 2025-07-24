@@ -72,6 +72,10 @@ MSG_HASH(
    "Wybierz, którego rdzenia użyć."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "Wyładuj Rdzeń"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "Przeglądaj podstawowe implementacje libretro. Gdy przeglądarka zaczyna się w zależności od ścieżki głównego katalogu. Jeśli puste, zacznie się w rootu.\nJeśli główny katalog jest katalogiem, menu będzie używać go jako górnego folderu. Jeśli główny katalog jest pełną ścieżką, rozpocznie się w folderze, w którym znajduje się plik."
    )
@@ -639,6 +643,10 @@ MSG_HASH(
    "JIT Dostępny"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
+   "Identyfikator Pakietu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Identyfikator Frontend"
    )
@@ -1108,6 +1116,22 @@ MSG_HASH(
    "Zapisz bieżącą konfigurację do oddzielnego pliku."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   "Zapisz Konfigurację Jako"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   "Zapisz bieżącą konfigurację jako niestandardowy plik konfiguracji."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   "Zapisz Główną Konfigurację"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   "Zapisz bieżącą konfigurację jako główną konfigurację."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Zresetuj do domyślnych"
    )
@@ -1491,6 +1515,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
    "Użytkownik"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Zmień ustawienia prywatności, kont i nazwy użytkownika."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
@@ -2560,12 +2588,16 @@ MSG_HASH(
    "Adaptacyjna VSync"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "VSync jest włączony, dopóki wydajność spadnie poniżej docelowej częstotliwości odświeżania. Może zminimalizować stuttering, kiedy wydajność spadnie poniżej czasu rzeczywistego, i być bardziej energooszczędny. Niekompatybilne z 'Opóźnieniem Klatek'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Opóźnienie ramki"
+   "Opóźnienie Klatek"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
-   "Automatyczne opóźnienie ramki"
+   "Automatyczne Opóźnienie Klatek"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -3181,14 +3213,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Obejście rozłączania systemu Android"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Potwierdź wyjście"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Wymagaj dwukrotnego naciśnięcia, aby opuścić RetroArch."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */

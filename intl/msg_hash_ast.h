@@ -1406,10 +1406,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Controles del puertu %u"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Confirmación de la salida"
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

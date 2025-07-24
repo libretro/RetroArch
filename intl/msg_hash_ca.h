@@ -3564,11 +3564,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Confirma la sortida"
+   "Confirma que vols Sortir/Tancar/Reiniciar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Requereix prémer dues vegades la tecla de Surt per a sortir de RetroArch."
+   "Requereix que la drecera de tecla per Sortir/Tancar/Reiniciar s'hagi de clicar dues vegades."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -10107,6 +10107,14 @@ MSG_HASH(
    "Deixa el mode expert d’assoliments desactivat per la sessió actual"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Reprèn el mode expert d’assoliments desactivat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Has de recarregar el nucli per reprendre el mode expert d'assoliments"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Posa en pausa el mode expert d’assoliments"
    )
@@ -14412,6 +14420,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Premeu una altra vegada per sortir..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Clica una altra vegada per tancar el contingut..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Clica una altra vegada per reiniciar..."
    )
 MSG_HASH(
    MSG_TO,

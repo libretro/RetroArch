@@ -3592,11 +3592,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Подтверждать выход"
+   "Подтверждать выход/закрытие контента/сброс"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Запрашивать двойное нажатие клавиши выхода из RetroArch."
+   "Запрашивать повторное нажатие горячей клавиши для выхода/сброса/закрытия контента."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -14552,6 +14552,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Нажмите повторно для выхода..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Нажмите повторно для закрытия контента..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Нажмите повторно для сброса..."
    )
 MSG_HASH(
    MSG_TO,

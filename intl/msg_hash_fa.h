@@ -2314,10 +2314,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "کنترل‌های درگاه %u"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "تأیید خروج"
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

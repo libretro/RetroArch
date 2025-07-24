@@ -2422,10 +2422,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "Klávesové skratky"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Potvrdiť ukončenie"
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

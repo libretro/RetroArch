@@ -2230,10 +2230,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "Ενεργοποίηση πλήκτρων εντολών"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Επιβεβαίωση Εξόδου"
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

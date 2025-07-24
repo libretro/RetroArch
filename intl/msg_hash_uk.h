@@ -3584,11 +3584,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Підтвердити вихід"
+   "Підтвердити Вихід/Закрити/Скинути"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Для виходу з RetroArch потрібно двічі натиснути комбінацію клавіш."
+   "Вимагати подвійного натискання гарячої клавіші для Вихід/Закрити/Скинути."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -14608,6 +14608,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Натисніть ще раз, щоб вийти..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Натисніть ще раз, щоб закрити вміст…"
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Натисніть ще раз, щоб скинути…"
    )
 MSG_HASH(
    MSG_TO,

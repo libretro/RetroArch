@@ -2154,10 +2154,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Android frakoblings løsning"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Bekreft avslutning"
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

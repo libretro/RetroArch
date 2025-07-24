@@ -3406,14 +3406,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Lösning för kontroller som kopplas bort och återansluts. Förhindrar 2 spelare med identiska kontroller."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Bekräfta Avsluta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Kräver att kortkommandot för att Avsluta trycks två gånger för att avsluta RetroArch."
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

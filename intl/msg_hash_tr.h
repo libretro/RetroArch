@@ -3572,11 +3572,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Çıkışı Onayla"
+   "Çıkış/Kapat/Sıfırla Onaylaması"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "RetroArch üstünden çıkmak için çık tuşuna iki kez basılması gerekir."
+   "Çıkış/Kapat/Sıfırla için kısayol tuşuna iki kez basılması gerekiyor."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -10147,6 +10147,14 @@ MSG_HASH(
    "Mevcut oturum için zorlu kip başarımını devre dışı bırakır"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Zorlu Kipte Başarımlara Devam Etmeyi Kapat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Zorlu Mod Başarımlarında devam etmek için çekirdeği yeniden çalıştırmalısınız"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Zorlu Kipte Başarıları Duraklat"
    )
@@ -14600,6 +14608,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Çıkmak için tekrar basın..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "İçeriği kapatmak için tekrar basın..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Sıfırlamak için tekrar basın..."
    )
 MSG_HASH(
    MSG_TO,

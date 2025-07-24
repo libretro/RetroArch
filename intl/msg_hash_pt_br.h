@@ -379,7 +379,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   "Atualizar trapaças"
+   "Atualizar Cheats"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
@@ -3540,11 +3540,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Confirmar saída"
+   "Confirmar Sair/Fechar/Reiniciar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Exige que a tecla do atalho 'Sair' seja pressionada duas vezes para encerrar o RetroArch."
+   "Exigir que a tecla de atalho de Sair/Fechar/Reiniciar seja pressionada duas vezes."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -3886,7 +3886,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
-   "Trapaças (alternar)"
+   "Cheats (Alternar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
@@ -5627,11 +5627,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Notificações do código de trapaça"
+   "Notificações do Códigos de Cheats"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Exibe uma mensagem na tela ao aplicar códigos da trapaça."
+   "Exibir uma mensagem na tela quando códigos de cheat forem aplicados."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
@@ -6476,7 +6476,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-   "Mostrar 'Trapaças'"
+   "Mostrar 'Cheats'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
@@ -6679,11 +6679,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
-   "Mostrar \"Conquistas\""
+   "Mostrar 'Conquistas'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
-   "Mostre as configurações das \"Conquistas\"."
+   "Exibir configurações de 'Conquistas'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
@@ -6906,7 +6906,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-   "Ganhe conquistas em jogos clássicos. Para mais informações, visite \"https://retroachievements.org\"."
+   "Ganhe conquistas em jogos clássicos. Para mais informações, visite 'https://retroachievements.org'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -6922,7 +6922,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
-   "Periodicamente envia informações de jogo para o site de RetroAchievements. Não tem efeito se o 'Modo Hardcore' estiver ativado."
+   "Envia periodicamente informações contextuais do jogo para o site RetroAchievements. Não tem efeito se o 'Modo Hardcore' estiver ativado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
@@ -6934,11 +6934,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-   "Testar conquistas não oficiais"
+   "Testar Conquistas Não Oficiais"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-   "Habilita ou desabilita conquistas não oficiais e/ou recursos beta para fins de teste."
+   "Usa conquistas não oficiais e/ou recursos em versão beta para fins de teste."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
@@ -6962,7 +6962,7 @@ MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
-   "Inicie a sessão com todas as conquistas ativas (mesmo as anteriormente desbloqueadas)."
+   "Inicia a sessão com todas as conquistas ativas (inclusive as já desbloqueadas)."
    )
 
 /* Settings > Achievements > Appearance */
@@ -7031,8 +7031,32 @@ MSG_HASH(
    "Resumo de inicialização"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
+   "Exibe informações sobre o jogo carregado e o progresso atual do usuário.\n‘Todos os Jogos Identificados’ mostrará um resumo para jogos sem conquistas publicadas."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
    "Todos os jogos identificados"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
+   "Jogos com Consquistas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
+   "Exibe uma notificação quando todas as conquistas de um jogo são desbloqueadas."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   "Exibe indicadores na tela enquanto certas conquistas podem ser obtidas."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Exibe um indicador na tela quando há progresso em certas conquistas."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   "Exibe mensagens relacionadas ao login da conta RetroAchievements."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
@@ -7681,7 +7705,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "Ganhe conquistas em jogos clássicos. Para mais informações, visite \"https://retroachievements.org\"."
+   "Ganhe conquistas em jogos clássicos. Para mais informações, visite 'https://retroachievements.org'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   "Detalhes do login da sua conta RetroAchievements. Visite retroachievements.org e registre-se gratuitamente.\nApós o cadastro, insira o nome de usuário e a senha no RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK,
@@ -8736,10 +8764,6 @@ MSG_HASH(
    "Controles"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
-   "Trapaças"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
    "Configura os códigos de trapaça."
    )
@@ -8769,11 +8793,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-   "Lista de conquistas"
+   "Conquistas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_LIST,
-   "Veja as configurações relacionadas com as conquistas."
+   "Visualize conquistas e configurações relacionadas."
    )
 
 /* Quick Menu > Options */
@@ -8904,12 +8928,16 @@ MSG_HASH(
    "Iniciar ou continuar a pesquisa de trapaças"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
+   "Escanear a memória para criar novos cheats."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
    "Carregar arquivo de trapaça (substituir)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-   "Carregar um arquivo de trapaça."
+   "Carregar um arquivo de cheats e substituir os cheats existentes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
@@ -8917,11 +8945,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
-   "Carregar um arquivo de trapaça e anexar às trapaças existentes."
+   "Carregar um arquivo de cheats e adicionar aos cheats existentes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
-   "Recarregar trapaças específicas do jogo"
+   "Recarregar Cheats Específicos do Jogo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
@@ -8929,7 +8957,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
-   "Salvar as trapaça atuais como um arquivo de trapaça."
+   "Salvar cheats atuais como um arquivo de cheats."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
@@ -8941,15 +8969,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
-   "Excluir todas as trapaças"
+   "Excluir Todos os Cheats"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
-   "Aplicar trapaças automaticamente enquanto o jogo carrega"
+   "Aplicar Cheats Automaticamente Durante o Carregamento do Jogo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
-   "Aplicar trapaças automaticamente quando o jogo carregar."
+   "Aplica cheats automaticamente ao carregar o jogo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
@@ -9512,27 +9540,35 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "Não há conquistas para mostrar"
+   "Nenhuma Conquista para Exibir"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
-   "Não pausar as conquistas no modo hardcore"
+   "Cancelar Pausa de Conquistas do Modo Hardcore"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
-   "Deixa o modo de conquista hardcore ativado para a sessão atual"
+   "Deixa as conquistas do modo hardcore ativadas para a sessão atual"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
-   "Não continuar as conquistas no modo hardcore"
+   "Cancelar Retomada de Conquistas do Modo Hardcore"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
-   "Deixa o modo de conquista hardcore desativado para a sessão atual"
+   "Deixa as Conquistas do Modo Hardcore desativadas para a sessão atual"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Retomar Conquistas do Modo Hardcore Desativado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Você deve recarregar o núcleo para retomar as Conquistas do Modo Hardcore"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-   "Pausar conquistas no modo Hardcore"
+   "Pausar Conquistas do Modo Hardcore"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
@@ -9540,7 +9576,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
-   "Continuar conquistas no modo Hardcore"
+   "Retomar Conquistas do Modo Hardcore"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
@@ -9548,7 +9584,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
-   "Servidor do RetroAchievements está indisponível"
+   "O servidor RetroAchievements está inacessível"
 )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
@@ -9556,7 +9592,11 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
-   "Servidor do RetroAchievements está indisponível. Tentará novamente até ser bem-sucedido ou o aplicativo ser fechado."
+   "O servidor RetroAchievements está inacessível. Tentarei novamente até que a conexão seja bem-sucedida ou o aplicativo seja fechado."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "Todas as solicitações pendentes foram sincronizadas com sucesso no servidor RetroAchievements."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
@@ -9584,14 +9624,14 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "Conquistas não funcionam neste núcleo"
+   "Conquistas não podem ser ativadas com este núcleo"
 )
 
 /* Quick Menu > Information */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
-   "Hash de RetroAchievements"
+   "Hash do RetroAchievements"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
@@ -12277,7 +12317,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
-   "Lista de conquistas (Hardcore)"
+   "Conquistas (Hardcore)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
@@ -12301,7 +12341,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
-   "Aumentar ou diminuir a quantidade de trapaças."
+   "Aumente ou diminua a quantidade de cheats."
    )
 
 /* Unused (Needs Confirmation) */
@@ -12498,7 +12538,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
-   "Pressione direita cinco vezes para excluir todas as trapaças."
+   "Pressione para a direita cinco vezes para excluir todos os cheats."
    )
 MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
@@ -13254,6 +13294,14 @@ MSG_HASH(
    "Encontrada último compartimento de jogo salvo"
    )
 MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   "Não é da gravação atual"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Não compatível com repetição"
+   )
+MSG_HASH(
    MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
    "Não é possível carregar o ponto de save futuro durante a reprodução"
    )
@@ -13356,6 +13404,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT,
    "Carregamento do compartimento %d."
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Ponto de save carregado do slot #-1 (Automático)."
    )
 MSG_HASH(
    MSG_LOADING,
@@ -13662,6 +13714,14 @@ MSG_HASH(
    "Pressione novamente para sair..."
    )
 MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Pressione novamente para fechar o conteúdo..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Pressione novamente para reiniciar..."
+   )
+MSG_HASH(
    MSG_TO,
    "em"
    )
@@ -13911,7 +13971,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
-   "Espaço insuficiente. O número máximo de trapaças simultâneas é 100."
+   "Espaço insuficiente. O número máximo de cheats simultâneos é 100."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_TOP_SUCCESS,
@@ -13923,7 +13983,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
-   "Todas as trapaças foram excluídas."
+   "Todos os cheats foram excluídos."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,
@@ -13954,8 +14014,12 @@ MSG_HASH(
    "Falha ao definir o último disco usado."
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: Conectado como %s."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Você deve pausar ou desativar as conquistas no modo hardcore para carregar jogos salvos."
+   "Você deve pausar ou desativar as Conquistas do Modo Hardcore para carregar estados de jogos."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE,
@@ -13967,7 +14031,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
-   "Uma trapaça foi ativada. As conquistas no Modo Hardcore estão desativadas para a sessão atual."
+   "Um cheat foi ativado. Conquistas do Modo Hardcore desativadas para a sessão atual."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "Conquistas do Modo Hardcore alteradas pelo host."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
@@ -13986,8 +14054,28 @@ MSG_HASH(
    "As Conquistas do Modo Hardcore foram ativadas. Os pontos de save e o rebobinar foram desativados."
    )
 MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "Este jogo não possui conquistas."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Todas as %d conquistas ativadas para esta sessão"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "Ativadas %d conquistas não oficiais"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "Você desbloqueou %d de %d conquistas"
+)
+MSG_HASH(
    MSG_CHEEVOS_UNSUPPORTED_COUNT,
    "%d não suportado"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   "Conquistas não suportadas detectadas. Por favor, tente outro núcleo ou atualize o RetroArch."
 )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,

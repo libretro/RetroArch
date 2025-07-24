@@ -3532,11 +3532,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Confirmer avant de quitter"
+   "Confirmer Quitter/Fermer/Réinitialiser"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Nécessite que la touche de raccourci Quitter soit pressée deux fois pour quitter RetroArch."
+   "Requiert le double appui de la touche de raccourci Quitter/Fermer/Réinitialiser."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -10063,6 +10063,14 @@ MSG_HASH(
    "Laisser le mode Hardcore des succès désactivé pour la session en cours"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Reprise du mode Hardcore des succès désactivée"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Vous devez recharger le cœur pour reprendre le mode Hardcore des succès"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Mettre en pause le mode Hardcore des succès"
    )
@@ -14472,6 +14480,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Appuyez à nouveau pour quitter..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Appuyer à nouveau pour fermer le contenu..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Appuyer à nouveau pour réinitialiser..."
    )
 MSG_HASH(
    MSG_TO,

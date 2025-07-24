@@ -3302,14 +3302,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "控制器斷開解決方法 (Android)"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "結束前再確認"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "變更「結束復古電玩」快捷鍵操作方式, 需按兩下才能結束復古電玩。"
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

@@ -2618,10 +2618,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "منفذ %u ربط"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "اضغط على الخروج مرتين"
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

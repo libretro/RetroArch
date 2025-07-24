@@ -1346,10 +1346,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "מקשי קיצור"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "אישור יציאה"
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
