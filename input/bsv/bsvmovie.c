@@ -120,7 +120,7 @@ void bsv_movie_frame_rewind()
       return;
 
    handle->did_rewind = true;
-
+   handle->cur_save_valid = false;
    if (((handle->frame_counter & handle->frame_mask) <= 1)
          && (handle->frame_pos[0] == handle->min_file_pos))
    {
@@ -289,6 +289,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
    {
       handle->cur_save_size = size;
       handle->cur_save = malloc(size);
+      handle->cur_save_valid = false;
    }
 
    if (compression == REPLAY_CHECKPOINT2_COMPRESSION_NONE && encoding == REPLAY_CHECKPOINT2_ENCODING_RAW)
@@ -385,12 +386,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
       goto exit;
    }
  exit:
-   swap = handle->last_save;
-   size_swap = handle->last_save_size;
-   handle->last_save = handle->cur_save;
    handle->last_save_size = handle->cur_save_size;
-   handle->cur_save = swap;
-   handle->cur_save_size = size_swap;
 
    if (compressed_data)
       free(compressed_data);
@@ -418,6 +414,7 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
    {
       handle->cur_save_size = serial_info.size;
       handle->cur_save = malloc(serial_info.size);
+      handle->cur_save_valid = false;
    }
    serial_info.data = handle->cur_save;
    core_serialize(&serial_info);
@@ -509,12 +506,7 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
    }
    ret = 3 * sizeof(uint32_t) + compressed_encoded_size;
  exit:
-   swap = handle->last_save;
-   size_swap = handle->last_save_size;
-   handle->last_save = handle->cur_save;
-   handle->last_save_size = handle->cur_save_size;
-   handle->cur_save = swap;
-   handle->cur_save_size = size_swap;
+   handle->cur_save_valid = true;
    if (encoded_data && owns_encoded)
       free(encoded_data);
    if (compressed_encoded_data && owns_compressed_encoded)
@@ -925,7 +917,7 @@ bool replay_set_serialized_data(void* buf)
    bsv_movie_t *handle            = input_st->bsv_movie_state_handle;
    bool playback                  = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)  ? true : false;
    bool recording                 = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING) ? true : false;
-
+   handle->cur_save_valid = false;
    /* If there is no current replay, ignore this entirely.
       TODO/FIXME: Later, consider loading up the replay
       and allow the user to continue it?
@@ -1121,8 +1113,10 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
       movie->superblock_seq = NULL;
    }
    if (!movie->superblock_seq)
+   {
+      movie->cur_save_valid = false;
       movie->superblock_seq = calloc(superblock_count, sizeof(uint32_t));
-
+   }
    printf("Output cp for frame %ld\n",movie->frame_counter);
 
    rmsgpack_write_int(out_stream, BSV_IFRAME_START_TOKEN);
@@ -1131,7 +1125,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    {
       uint32s_insert_result_t found_block;
       total_superblocks++;
-      if (movie->last_save && movie->last_save_size >= state_size)
+      if (movie->cur_save_valid && movie->last_save && movie->last_save_size >= state_size)
       {
          if (memcmp(movie->last_save + (superblock*superblock_byte_size),
                      state+(superblock*superblock_byte_size),
@@ -1203,6 +1197,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    free(superblock_buf);
    if(padded_block)
      free(padded_block);
+   movie->cur_save_valid = true;
    total_checkpoints++;
    total_encode_micros += cpu_features_get_time_usec() - start;
    total_bytes_input += state_size;
@@ -1350,14 +1345,9 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie,
                /* assert(inner_item.type == RDT_INT); */
                uint32_t superblock_idx = inner_item.val.int_;
                uint32_t *superblock;
-               /* if this superblock is the same as last time, no need to scan the blocks. just memcpy from last_state to cur_save. */
-               if (movie->last_save_size == movie->cur_save_size && movie->last_save && movie->cur_save && superblock_idx == movie->superblock_seq[i])
-               {
-                  size_t block_start = MIN(i*superblock_byte_size, state_size);
-                  size_t block_end = MIN(block_start+superblock_byte_size, state_size);
-                  memcpy(movie->cur_save+block_start, movie->last_save+block_start, block_end - block_start);
+               /* if this superblock is the same as last time, no need to scan the blocks. */
+               if (movie->cur_save_valid && movie->cur_save && superblock_idx == movie->superblock_seq[i])
                   continue;
-               }
                movie->superblock_seq[i] = superblock_idx;
                superblock = uint32s_index_get(movie->superblocks, superblock_idx);
                size_t j;

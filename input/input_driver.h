@@ -268,6 +268,8 @@ struct bsv_movie
 
    uint8_t *last_save, *cur_save;
    size_t last_save_size, cur_save_size;
+
+   bool cur_save_valid;
 };
 
 typedef struct bsv_movie bsv_movie_t;
