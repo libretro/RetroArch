@@ -29,6 +29,7 @@ struct uint32s_index
    struct uint32s_bucket *index; /* an rhmap of buckets for value->index lookup */
    uint32_t **objects;   /* an rbuf of the actual buffers */
    uint32_t *counts;   /* an rbuf of the times each object was used */
+   uint32_t *hashes;   /* an rbuf of each object's hash code */
    struct uint32s_frame_addition *additions; /* an rbuf of addition info */
 };
 typedef struct uint32s_index uint32s_index_t;
@@ -49,6 +50,8 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
 bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *object, uint64_t frame);
 /* Does not grant ownership of return value */
 uint32_t *uint32s_index_get(uint32s_index_t *index, uint32_t which);
+/* Call once the superblocks and blocks are all identified; transient blocks that have not been used this frame will be dropped. */
+void uint32s_index_commit(uint32s_index_t *index);
 void uint32s_index_free(uint32s_index_t *index);
 
 /* goes backwards from end of additions */

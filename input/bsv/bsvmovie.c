@@ -1117,8 +1117,6 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
       movie->cur_save_valid = false;
       movie->superblock_seq = calloc(superblock_count, sizeof(uint32_t));
    }
-   printf("Output cp for frame %ld\n",movie->frame_counter);
-
    rmsgpack_write_int(out_stream, BSV_IFRAME_START_TOKEN);
    rmsgpack_write_int(out_stream, movie->frame_counter);
    for(superblock = 0; superblock < superblock_count; superblock++)
@@ -1189,6 +1187,8 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
          reused_superblocks++;
       movie->superblock_seq[superblock] = found_block.index;
    }
+   uint32s_index_commit(movie->blocks);
+   uint32s_index_commit(movie->superblocks);
    /* write "here is the superblock seq" and superblock seq to file */
    rmsgpack_write_int(out_stream, BSV_IFRAME_SUPERBLOCK_SEQ_TOKEN);
    rmsgpack_write_array_header(out_stream, superblock_count);
@@ -1374,6 +1374,8 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie,
      }
    }
 exit:
+   uint32s_index_commit(movie->blocks);
+   uint32s_index_commit(movie->superblocks);
    rmsgpack_dom_reader_state_free(reader_state);
    intfstream_close(read_mem);
    if(!ret)

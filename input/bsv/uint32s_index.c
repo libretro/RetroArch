@@ -9,6 +9,7 @@
 
 #define HASHMAP_CAP 1048576
 
+
 uint32s_index_t *uint32s_index_new(size_t object_size)
 {
    uint32_t *zeros = calloc(object_size, sizeof(uint32_t));
@@ -18,11 +19,18 @@ uint32s_index_t *uint32s_index_new(size_t object_size)
    RHMAP_FIT(index->index, HASHMAP_CAP);
    index->objects = NULL;
    index->counts = NULL;
+   index->hashes = NULL;
    index->additions = NULL;
    /* transfers ownership of zero buffer */
    uint32s_index_insert_exact(index, 0, zeros, 0);
    RBUF_CLEAR(index->additions); /* scrap first addition, we never want to delete 0s during rewind */
    return index;
+}
+
+void uint32s_bucket_free(struct uint32s_bucket *bucket)
+{
+   if(bucket->len > 3)
+      free(bucket->contents.vec.idxs);
 }
 
 #define uint32s_hash_bytes(bytes, len) XXH32(bytes,len,0)
@@ -84,15 +92,14 @@ bool uint32s_bucket_remove(struct uint32s_bucket *bucket, uint32_t idx)
    {
       if(coll[i] == idx)
       {
-         if(bucket->len == 4)
-         {
-            memcpy((uint8_t *)bucket->contents.idxs, (uint8_t *)coll, 3*sizeof(uint32_t));
-            free(coll);
-         }
-         else
-            memmove((uint8_t*)(coll+i), (uint8_t*)(coll+i+1), (bucket->len-(i+1))*sizeof(uint32_t));
+         memmove((uint8_t*)(coll+i), (uint8_t*)(coll+i+1), (bucket->len-(i+1))*sizeof(uint32_t));
          bucket->len--;
-         return true;
+	 if (bucket->len == 3)
+         {
+	    memcpy(bucket->contents.idxs, coll, 3*sizeof(uint32_t));
+	    free(coll);
+	 }
+	 return true;
       }
    }
    RARCH_ERR("[STATESTREAM] didn't find index %d\n",idx);
@@ -115,18 +122,27 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
       bucket = RHMAP_PTR(index->index, hash);
       if(uint32s_bucket_get(index, bucket, object, size_bytes, &result.index))
       {
-         result.is_new = false;
-         index->counts[result.index]++;
-         return result;
+         if (index->objects[result.index] == NULL)
+         {
+            RARCH_LOG("[STATESTREAM] accessed collected index %d\n",result.index);
+	 }
+	 else
+	 {
+            result.is_new = false;
+            index->counts[result.index]++;
+            return result;
+         }
       }
       idx = RBUF_LEN(index->objects);
       copy = malloc(size_bytes);
       memcpy(copy, object, size_bytes);
       RBUF_PUSH(index->objects, copy);
       RBUF_PUSH(index->counts, 1);
+      RBUF_PUSH(index->hashes, hash);
       result.index = idx;
       result.is_new = true;
       uint32s_bucket_expand(bucket, idx);
+      RARCH_LOG("[STATESTREAM] insert index %d\n",idx);
    }
    else
    {
@@ -136,6 +152,7 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
       memcpy(copy, object, size_bytes);
       RBUF_PUSH(index->objects, copy);
       RBUF_PUSH(index->counts, 1);
+      RBUF_PUSH(index->hashes, hash);
       new_bucket.len = 1;
       new_bucket.contents.idxs[0] = idx;
       new_bucket.contents.idxs[1] = 0;
@@ -143,6 +160,7 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
       RHMAP_SET(index->index, hash, new_bucket);
       result.index = idx;
       result.is_new = true;
+      RARCH_LOG("[STATESTREAM] insert index %d\n",idx);
    }
    if(additions_len == 0 || index->additions[additions_len-1].frame_counter < frame)
    {
@@ -160,12 +178,12 @@ bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *
    uint32_t hash;
    size_t size_bytes;
    uint32_t additions_len;
-   if(idx != RBUF_LEN(index->objects))
+   if (idx != RBUF_LEN(index->objects))
       return false;
    size_bytes = index->object_size * sizeof(uint32_t);
    hash = uint32s_hash_bytes((uint8_t *)object, size_bytes);
    additions_len = RBUF_LEN(index->additions);
-   if(RHMAP_HAS(index->index, hash))
+   if (RHMAP_HAS(index->index, hash))
    {
       uint32_t _index;
       bucket = RHMAP_PTR(index->index, hash);
@@ -182,9 +200,12 @@ bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *
       new_bucket.contents.idxs[2] = 0;
       RHMAP_SET(index->index, hash, new_bucket);
    }
+   RARCH_LOG("[STATESTREAM] insert index %d\n",idx);
    RBUF_PUSH(index->objects, object);
    RBUF_PUSH(index->counts, 0);
-   if(additions_len == 0 || index->additions[additions_len-1].frame_counter < frame)
+   RBUF_PUSH(index->hashes, hash);
+   if (additions_len == 0 || 
+       index->additions[additions_len-1].frame_counter < frame)
    {
       struct uint32s_frame_addition addition;
       addition.frame_counter = frame;
@@ -194,10 +215,42 @@ bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *
    return true;
 }
 
+void uint32s_index_commit(uint32s_index_t *index)
+{
+   uint32_t i;
+   struct uint32s_frame_addition prev,cur;
+   uint32_t additions_len = RBUF_LEN(index->additions), limit;
+   if (additions_len < 2) return;
+   prev = index->additions[additions_len-2];
+   cur  = index->additions[additions_len-1];
+   limit = cur.first_index;
+   RARCH_LOG("[STATESTREAM] remove index range %d..%d\n", prev.first_index, limit);
+   for (i = prev.first_index; i < limit; i++)
+   {
+      struct uint32s_bucket *bucket;
+      if (index->counts[i] > 1) continue;
+      RARCH_LOG("[STATESTREAM] remove index %d\n", i);
+      free(index->objects[i]);
+      index->objects[i] = NULL;
+      bucket = RHMAP_PTR(index->index, index->hashes[i]);
+      uint32s_bucket_remove(bucket, i);
+      if (bucket->len == 0)
+      {
+         uint32s_bucket_free(bucket);
+	 RHMAP_DEL(index->index, index->hashes[i]);
+      }
+   }
+}
+
 uint32_t *uint32s_index_get(uint32s_index_t *index, uint32_t which)
 {
-   if(which >= RBUF_LEN(index->objects))
+   if (which >= RBUF_LEN(index->objects))
       return NULL;
+   if (!index->objects[which])
+   {
+      RARCH_LOG("[STATESTREAM] accessed garbage collected block %d\n", which);
+      return NULL;
+   }
    index->counts[which]++;
    return index->objects[which];
 }
@@ -207,10 +260,16 @@ void uint32s_index_pop(uint32s_index_t *index)
    uint32_t idx = RBUF_LEN(index->objects)-1;
    uint32_t *object = RBUF_POP(index->objects);
    RBUF_RESIZE(index->counts, idx);
+   RBUF_RESIZE(index->hashes, idx);
    size_t size_bytes = index->object_size * sizeof(uint32_t);
    uint32_t hash = uint32s_hash_bytes((uint8_t *)object, size_bytes);
    struct uint32s_bucket *bucket = RHMAP_PTR(index->index, hash);
    uint32s_bucket_remove(bucket, idx);
+   if (bucket->len == 0)
+   {
+      uint32s_bucket_free(bucket);
+      RHMAP_DEL(index->index, hash);
+   }
 }
 
 /* goes backwards from end of additions */
@@ -228,12 +287,6 @@ void uint32s_index_remove_after(uint32s_index_t *index, uint64_t frame)
    RBUF_RESIZE(index->additions, i+1);
 }
 
-void uint32s_bucket_free(struct uint32s_bucket bucket)
-{
-   if(bucket.len > 3)
-      free(bucket.contents.vec.idxs);
-}
-
 /* removes all data from index */
 void uint32s_index_clear(uint32s_index_t *index)
 {
@@ -241,13 +294,14 @@ void uint32s_index_clear(uint32s_index_t *index)
    uint32_t *zeros = index->objects[0];
    for(i = 0, cap = RHMAP_CAP(index->index); i != cap; i++)
       if(RHMAP_KEY(index->index, i))
-         uint32s_bucket_free(index->index[i]);
+         uint32s_bucket_free(&index->index[i]);
    RHMAP_CLEAR(index->index);
    /* don't dealloc all-zeros pattern */
    for(i = 1; i < RBUF_LEN(index->objects); i++)
       free(index->objects[i]);
    RBUF_CLEAR(index->objects);
    RBUF_CLEAR(index->counts);
+   RBUF_CLEAR(index->hashes);
    uint32s_index_insert_exact(index, 0, zeros, 0);
    /* wipe additions */
    RBUF_CLEAR(index->additions);
@@ -258,12 +312,13 @@ void uint32s_index_free(uint32s_index_t *index)
    size_t i, cap;
    for(i = 0, cap = RHMAP_CAP(index->index); i != cap; i++)
       if(RHMAP_KEY(index->index, i))
-         uint32s_bucket_free(index->index[i]);
+         uint32s_bucket_free(&index->index[i]);
    RHMAP_FREE(index->index);
    for(i = 0; i < RBUF_LEN(index->objects); i++)
       free(index->objects[i]);
    RBUF_FREE(index->objects);
    RBUF_FREE(index->counts);
+   RBUF_FREE(index->hashes);
    RBUF_FREE(index->additions);
    free(index);
 }
@@ -280,6 +335,7 @@ uint32_t uint32s_index_count(uint32s_index_t *index)
 uint32_t bins[BIN_COUNT];
 void uint32s_index_print_count_data(uint32s_index_t *index)
 {
+	// TODO: don't count or differently count NULL objects entries
    uint32_t max=1;
    uint32_t i;
    for(i = 0; i < BIN_COUNT; i++)
