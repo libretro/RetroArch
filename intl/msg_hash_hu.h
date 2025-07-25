@@ -2321,11 +2321,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   "Indítás teljes képernyős módban"
+   "Teljes képernyős megjelenítés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Indítás teljes képernyőn. Futás közben módosítható. Parancssori kapcsolóval felülírható."
+   "Megjelenítés teljes képernyőn. Futás közben módosítható, parancssori kapcsolóval felülírható."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
@@ -3561,6 +3561,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Kerülő megoldás a le- és visszacsatlakozó kontrollerekre. Ha két játékos ugyanolyan kontrollert használ, ez gondot okozhat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "Kilépés/bezárás/újraindítás megerősítése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+   "A Kilépés/Bezárás/Újraindítás gyorsgombok két lenyomást igényelnek."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -10111,6 +10119,14 @@ MSG_HASH(
    "Kikapcsolva hagyja a trófeák Hardcore módját a mostani játékmenetre"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "A Hardcore trófea mód visszaállításának letiltása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "A Hardcore trófea mód újraaktiválásához újra kell tölteni a magot"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "A trófeák Hardcore módjának szüneteltetése"
    )
@@ -14252,6 +14268,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Nyomja meg ismét a kilépéshez..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Nyomja meg ismét a tartalom bezárásához..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Nyomja meg ismét az újraindításhoz..."
    )
 MSG_HASH(
    MSG_TO,

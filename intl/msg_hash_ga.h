@@ -2333,11 +2333,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   "Tosaigh i Mód Lánscáileáin"
+   "Taispeántas Lánscáileáin"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Tosaigh i lánscáileán. Is féidir é seo a athrú ag am rithe. Is féidir é a shárú le lasc líne ordaithe."
+   "Taispeáin i lánscáileán. Is féidir é seo a athrú ag am rithe. Is féidir é a shárú le lasc líne ordaithe."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
@@ -3569,6 +3569,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Réiteach sealadach ar rialtóirí ag dícheangal agus ag athcheangal. Cuireann sé bac ar 2 imreoir leis na rialtóirí céanna."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "Deimhnigh Scoir/Dún/Athshocraigh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+   "Éilítear go mbrúitear an eochair the Scoir/Dún/Athshocraigh faoi dhó."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -10143,6 +10151,14 @@ MSG_HASH(
    "Fág mód croí-chrua éachtaí díchumasaithe don seisiún reatha"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Atosú Gnóthachtálacha Mód Hardcore Díchumasaithe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Ní mór duit an croí a athlódáil chun Mód Crua-Éachtaí a atosú"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Sos Éachtaí Mód croí crua"
    )
@@ -14576,6 +14592,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Brúigh arís le scor..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Brúigh arís chun an t-ábhar a dhúnadh..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Brúigh arís chun athshocrú..."
    )
 MSG_HASH(
    MSG_TO,
