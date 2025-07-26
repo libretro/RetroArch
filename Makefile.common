@@ -1895,6 +1895,7 @@ endif
 
 ifeq ($(HAVE_SPIRV_CROSS), 1)
    DEFINES += -DHAVE_SPIRV_CROSS
+ifeq ($(HAVE_BUILTINSPIRV_CROSS), 1)
    INCLUDE_DIRS += -I$(DEPS_DIR)/SPIRV-Cross
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.o
@@ -1903,6 +1904,13 @@ ifeq ($(HAVE_SPIRV_CROSS), 1)
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_msl.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_parser.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_parsed_ir.o
+else
+   CXXFLAGS += $(SPIRV_CROSS_CFLAGS)
+   LIBS += -lspirv-cross-core \
+           -lspirv-cross-glsl \
+           -lspirv-cross-reflect \
+           -lspirv-cross-msl
+endif
 endif
 
 ifeq ($(WANT_WGL), 1)
