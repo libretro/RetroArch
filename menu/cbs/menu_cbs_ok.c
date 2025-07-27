@@ -8913,6 +8913,8 @@ static int is_rdb_entry(enum msg_hash_enums enum_idx)
       case MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH:
       case MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_YEAR:
       case MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS:
+      case MENU_ENUM_LABEL_RDB_ENTRY_GENRE:
+      case MENU_ENUM_LABEL_RDB_ENTRY_REGION:
          break;
       default:
          return -1;

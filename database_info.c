@@ -430,6 +430,41 @@ int database_info_build_query_enum(char *s, size_t len,
          s[  _len]  = '}';
          s[++_len]  = '\0';
          break;
+      case DATABASE_QUERY_ENTRY_GENRE:
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'g';
+         s[++_len]  = 'e';
+         s[++_len]  = 'n';
+         s[++_len]  = 'r';
+         s[++_len]  = 'e';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
+         break;
+      case DATABASE_QUERY_ENTRY_REGION:
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'r';
+         s[++_len]  = 'e';
+         s[++_len]  = 'g';
+         s[++_len]  = 'i';
+         s[++_len]  = 'o';
+         s[++_len]  = 'n';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
+         break;
       case DATABASE_QUERY_NONE:
          s[  _len]  = '{';
          s[++_len]  = '\'';
