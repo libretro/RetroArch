@@ -518,6 +518,9 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
 bool bsv_movie_read_next_events(bsv_movie_t *handle, bool skip_checkpoints)
 {
    input_driver_state_t *input_st = input_state_get_ptr();
+   /* Skip over backref */
+   intfstream_seek(handle->file, sizeof(uint32_t), SEEK_CUR);
+   /* Start by reading key event */
    if (intfstream_read(handle->file, &(handle->key_event_count), 1) == 1)
    {
       int i;
@@ -672,6 +675,10 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
    {
       int i;
       uint16_t evt_count = swap_if_big16(handle->input_event_count);
+      size_t last_pos = handle->frame_pos[(MAX(handle->frame_counter,2)-2) & handle->frame_mask], cur_pos = intfstream_tell(handle->file);
+      uint32_t back_distance = swap_if_big32((uint32_t)(cur_pos-last_pos));
+      /* write backref */
+      intfstream_write(handle->file, &back_distance, sizeof(uint32_t));
       /* write key events, frame is over */
       intfstream_write(handle->file, &(handle->key_event_count), 1);
       for (i = 0; i < handle->key_event_count; i++)
@@ -803,6 +810,9 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
          ret = false;
          goto exit;
       }
+      /* skip past backref */
+      intfstream_seek(movie->file, 4, SEEK_CUR);
+      intfstream_seek(check_stream, 4, SEEK_CUR);
       if (intfstream_read(movie->file, &keycount1, 1) < 1 ||
             intfstream_read(check_stream, &keycount2, 1) < 1 ||
             keycount1 != keycount2)
@@ -999,6 +1009,7 @@ bool replay_set_serialized_data(void* buf)
                frame_counter--rewind won't work properly unless we do. */
             /* TODO: in the future, if same_timeline, don't clear
                indices above and only scan forward from handle_idx. */
+            /* TODO use backrefs to help here */
             bsv_movie_scan_from_start(input_st, loaded_len);
          }
          else
@@ -1009,6 +1020,7 @@ bool replay_set_serialized_data(void* buf)
             /* TODO: in the future, don't clear indices above and only
                update frame counter and remove index entries after the
                loaded movie's frame counter */
+            /* TODO use backrefs to help here */
             bsv_movie_scan_from_start(input_st, loaded_len);
             if (recording)
                intfstream_truncate(handle->file, loaded_len);
