@@ -2888,16 +2888,13 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       if (db_info_entry->genre)
       {
-         char tmp[NAME_MAX_LENGTH];
-         size_t _len = strlcpy(tmp,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE),
-               sizeof(tmp));
-         _len          += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
-         strlcpy(tmp + _len, db_info_entry->genre, sizeof(tmp) - _len);
-         menu_entries_append(info->list, tmp,
-               msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_GENRE),
-               MENU_ENUM_LABEL_RDB_ENTRY_GENRE,
-               0, 0, 0, NULL);
+
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_GENRE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_GENRE),
+                  db_info_entry->genre, info->path, info->list) == -1)
+            goto error;
       }
 
       if (db_info_entry->publisher)

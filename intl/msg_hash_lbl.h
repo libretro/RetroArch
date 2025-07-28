@@ -3109,6 +3109,14 @@ MSG_HASH(
    "deferred_cursor_manager_list_rdb_entry_max_users"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_GENRE,
+   "deferred_cursor_manager_list_rdb_entry_genre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_REGION,
+   "deferred_cursor_manager_list_rdb_entry_region"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER,
    "rdb_entry_developer"
    )

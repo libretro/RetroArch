@@ -850,6 +850,7 @@ DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_developer,MENU_ENUM_
 DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_publisher,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER)
 DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_origin,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN)
 DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_franchise,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE)
+DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_genre,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_GENRE)
 DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_edge_magazine_rating,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING)
 DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_edge_magazine_issue,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE)
 DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_releasedate_by_month,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH)
@@ -860,6 +861,7 @@ DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_pegi_rating,MENU_ENU
 DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_cero_rating,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING)
 DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_bbfc_rating,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING)
 DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_max_users,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS)
+DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_region,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_REGION)
 DEFAULT_TITLE_GENERIC_MACRO(action_get_title_list_rdb_entry_database_info,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO)
 
 static int action_get_sideload_core_list(const char *path, const char *label,
@@ -1097,6 +1099,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_title_list_rdb_entry_origin},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE,
             action_get_title_list_rdb_entry_franchise},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_GENRE, action_get_title_list_rdb_entry_genre},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING, action_get_title_list_rdb_entry_edge_magazine_rating},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE, action_get_title_list_rdb_entry_edge_magazine_issue},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH,
@@ -1113,6 +1116,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_title_list_rdb_entry_bbfc_rating},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS,
          action_get_title_list_rdb_entry_max_users},
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_REGION, action_get_title_list_rdb_entry_region},
       {MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR,
          action_get_title_autoconfig_directory},
       {MENU_ENUM_LABEL_CACHE_DIRECTORY,
@@ -1397,6 +1401,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_max_users);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_GENRE:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_genre);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_REGION:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_list_rdb_entry_region);
             break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_LIST:
          case MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET:
