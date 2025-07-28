@@ -7,11 +7,10 @@
 #define XXH_INLINE_ALL
 #include <xxHash/xxhash.h>
 
-#define HASHMAP_CAP 1048576
-#define COMMIT_INTERVAL 4
-#define COMMIT_KEEP_MINIMUM 2
+#define HASHMAP_CAP (1<<16)
+#define uint32s_hash_bytes(bytes, len) XXH32(bytes,len,0)
 
-uint32s_index_t *uint32s_index_new(size_t object_size)
+uint32s_index_t *uint32s_index_new(size_t object_size, uint8_t commit_interval, uint8_t commit_threshold)
 {
    uint32_t *zeros = calloc(object_size, sizeof(uint32_t));
    uint32s_index_t *index = malloc(sizeof(uint32s_index_t));
@@ -22,6 +21,8 @@ uint32s_index_t *uint32s_index_new(size_t object_size)
    index->counts = NULL;
    index->hashes = NULL;
    index->additions = NULL;
+   index->commit_interval = commit_interval;
+   index->commit_threshold = commit_threshold;
    /* transfers ownership of zero buffer */
    uint32s_index_insert_exact(index, 0, zeros, 0);
    RBUF_CLEAR(index->additions); /* scrap first addition, we never want to delete 0s during rewind */
@@ -34,7 +35,6 @@ void uint32s_bucket_free(struct uint32s_bucket *bucket)
       free(bucket->contents.vec.idxs);
 }
 
-#define uint32s_hash_bytes(bytes, len) XXH32(bytes,len,0)
 
 bool uint32s_bucket_get(uint32s_index_t *index, struct uint32s_bucket *bucket, uint32_t *object, size_t size_bytes, uint32_t *out_idx)
 {
@@ -103,7 +103,7 @@ bool uint32s_bucket_remove(struct uint32s_bucket *bucket, uint32_t idx)
          return true;
       }
    }
-   RARCH_ERR("[STATESTREAM] didn't find index %d\n",idx);
+   RARCH_ERR("[STATESTREAM] didn't find index %d during remove\n",idx);
    return false;
 }
 
@@ -201,7 +201,7 @@ bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *
    }
    /* RARCH_LOG("[STATESTREAM] insert index %d\n",idx); */
    RBUF_PUSH(index->objects, object);
-   RBUF_PUSH(index->counts, 0);
+   RBUF_PUSH(index->counts, 1);
    RBUF_PUSH(index->hashes, hash);
    if (additions_len == 0 ||
        index->additions[additions_len-1].frame_counter < frame)
@@ -216,18 +216,18 @@ bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *
 
 void uint32s_index_commit(uint32s_index_t *index)
 {
-   uint32_t i;
+   uint32_t i, interval=index->commit_interval,threshold=index->commit_threshold;
    struct uint32s_frame_addition prev,cur;
    uint32_t additions_len = RBUF_LEN(index->additions), limit;
-   if (additions_len < COMMIT_INTERVAL || COMMIT_INTERVAL == 0) return;
-   prev = index->additions[additions_len-COMMIT_INTERVAL];
-   cur  = index->additions[additions_len-(COMMIT_INTERVAL-1)];
+   if (additions_len < interval || interval == 0) return;
+   prev = index->additions[additions_len-interval];
+   cur  = index->additions[additions_len-(interval-1)];
    limit = cur.first_index;
    //RARCH_LOG("[STATESTREAM] remove index range %d..%d\n", prev.first_index, limit);
    for (i = prev.first_index; i < limit; i++)
    {
       struct uint32s_bucket *bucket;
-      if (index->counts[i] >= COMMIT_KEEP_MINIMUM) continue;
+      if (index->counts[i] >= threshold) continue;
      // RARCH_LOG("[STATESTREAM] remove index %d\n", i);
       free(index->objects[i]);
       index->objects[i] = NULL;
@@ -241,6 +241,13 @@ void uint32s_index_commit(uint32s_index_t *index)
    }
 }
 
+void uint32s_index_bump_count(uint32s_index_t *index, uint32_t which)
+{
+   if (which >= RBUF_LEN(index->counts))
+      return;
+   index->counts[which]++;
+}
+
 uint32_t *uint32s_index_get(uint32s_index_t *index, uint32_t which)
 {
    if (which >= RBUF_LEN(index->objects))
@@ -250,7 +257,6 @@ uint32_t *uint32s_index_get(uint32s_index_t *index, uint32_t which)
       RARCH_LOG("[STATESTREAM] accessed garbage collected block %d\n", which);
       return NULL;
    }
-   index->counts[which]++;
    return index->objects[which];
 }
 

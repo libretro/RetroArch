@@ -31,6 +31,7 @@ struct uint32s_index
    uint32_t *counts;   /* an rbuf of the times each object was used */
    uint32_t *hashes;   /* an rbuf of each object's hash code */
    struct uint32s_frame_addition *additions; /* an rbuf of addition info */
+   uint8_t commit_interval, commit_threshold;
 };
 typedef struct uint32s_index uint32s_index_t;
 
@@ -43,13 +44,15 @@ typedef struct uint32s_insert_result uint32s_insert_result_t;
 
 RETRO_BEGIN_DECLS
 
-uint32s_index_t *uint32s_index_new(size_t object_size);
+uint32s_index_t *uint32s_index_new(size_t object_size, uint8_t commit_interval, uint8_t commit_threshold);
 /* Does not take ownership of object */
 uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *object, uint64_t frame);
 /* Does take ownership, requires idx is the exact next index and object not in index */
 bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *object, uint64_t frame);
 /* Does not grant ownership of return value */
 uint32_t *uint32s_index_get(uint32s_index_t *index, uint32_t which);
+/* Just bump the count, don't try to get the results back */
+void uint32s_index_bump_count(uint32s_index_t *index, uint32_t which);
 /* Call once the superblocks and blocks are all identified; transient blocks that have not been used this frame will be dropped. */
 void uint32s_index_commit(uint32s_index_t *index);
 void uint32s_index_free(uint32s_index_t *index);

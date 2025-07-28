@@ -49,9 +49,12 @@
 #include "input/bsv/uint32s_index.h"
 #endif
 
+#define REPLAY_DEFAULT_COMMIT_INTERVAL 4
+#define REPLAY_DEFAULT_COMMIT_THRESHOLD 2
+
 /* Superblock and block sizes for incremental savestates. */
-#define DEFAULT_SUPERBLOCK_SIZE 256  /* measured in blocks */
-#define DEFAULT_BLOCK_SIZE      2048 /* measured in bytes  */
+#define DEFAULT_SUPERBLOCK_SIZE 32  /* measured in blocks */
+#define DEFAULT_BLOCK_SIZE      16384 /* measured in bytes  */
 
 #define SMALL_STATE_THRESHOLD (1<<20) /* states < 1MB are "small" and are tuned differently */
 #define SMALL_SUPERBLOCK_SIZE 16  /* measured in blocks */
@@ -134,10 +137,14 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
    {
       retro_ctx_serialize_info_t serial_info;
       uint8_t compression, encoding;
+      uint32_t commit_settings = header[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX];
       superblock_size = swap_if_big32(header[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX]);
       block_size = swap_if_big32(header[REPLAY_HEADER_BLOCK_SIZE_INDEX]);
-      handle->superblocks = uint32s_index_new(superblock_size);
-      handle->blocks = uint32s_index_new(block_size/4);
+      handle->commit_interval  = commit_settings >> 24;
+      handle->commit_threshold = (commit_settings >> 16) & 0x000000FF;
+      handle->checkpoint_compression = (commit_settings >> 8) & 0x000000FF;
+      handle->superblocks = uint32s_index_new(superblock_size,handle->commit_interval,handle->commit_threshold);
+      handle->blocks = uint32s_index_new(block_size/4,handle->commit_interval,handle->commit_threshold);
 
       if (intfstream_read(handle->file, &(compression), sizeof(uint8_t)) != sizeof(uint8_t) ||
             intfstream_read(handle->file, &(encoding), sizeof(uint8_t)) != sizeof(uint8_t))
@@ -168,6 +175,7 @@ static bool bsv_movie_init_record(
    bool is_small                = false;
    uint32_t superblock_size;
    uint32_t block_size;
+   settings_t *settings         = config_get_ptr();
 
    if (!file)
    {
@@ -177,12 +185,23 @@ static bool bsv_movie_init_record(
 
    handle->file             = file;
    handle->version          = REPLAY_FORMAT_VERSION;
+   handle->commit_interval  = REPLAY_DEFAULT_COMMIT_INTERVAL;
+   handle->commit_threshold = REPLAY_DEFAULT_COMMIT_THRESHOLD;
+   handle->checkpoint_compression = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
+   if (settings->bools.savestate_file_compression)
+#if defined(HAVE_ZSTD)
+      handle->checkpoint_compression = REPLAY_CHECKPOINT2_COMPRESSION_ZSTD;
+#elif defined(HAVE_ZLIB)
+      handle->checkpoint_compression = REPLAY_CHECKPOINT2_COMPRESSION_ZLIB;
+#else
+      {}
+#endif
 
    content_crc              = content_get_crc();
 
-   header[REPLAY_HEADER_MAGIC_INDEX]      = swap_if_big32(REPLAY_MAGIC);
-   header[REPLAY_HEADER_VERSION_INDEX]    = swap_if_big32(handle->version);
-   header[REPLAY_HEADER_CRC_INDEX]        = swap_if_big32(content_crc);
+   header[REPLAY_HEADER_MAGIC_INDEX] = swap_if_big32(REPLAY_MAGIC);
+   header[REPLAY_HEADER_VERSION_INDEX] = swap_if_big32(handle->version);
+   header[REPLAY_HEADER_CRC_INDEX] = swap_if_big32(content_crc);
 
    info_size                = core_serialize_size();
    state_size               = (unsigned)info_size;
@@ -193,12 +212,15 @@ static bool bsv_movie_init_record(
    header[REPLAY_HEADER_FRAME_COUNT_INDEX]     = 0;
    header[REPLAY_HEADER_BLOCK_SIZE_INDEX]      = swap_if_big32(block_size);
    header[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX] = swap_if_big32(superblock_size);
+   header[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX] = (((uint32_t)handle->commit_interval) << 24) |
+      ((uint32_t)handle->commit_threshold << 16) |
+      (((uint32_t)handle->checkpoint_compression) << 8);
    handle->identifier       = (int64_t)t;
    *((int64_t *)(header+REPLAY_HEADER_IDENTIFIER_INDEX)) = time_lil;
    intfstream_write(handle->file, header, REPLAY_HEADER_LEN_BYTES);
 
-   handle->superblocks      = uint32s_index_new(superblock_size);
-   handle->blocks           = uint32s_index_new(block_size/4);
+   handle->superblocks      = uint32s_index_new(superblock_size, handle->commit_interval, handle->commit_threshold);
+   handle->blocks           = uint32s_index_new(block_size/4, handle->commit_interval, handle->commit_threshold);
 
    if (state_size)
       return bsv_movie_reset_recording(handle);
