@@ -8,7 +8,8 @@
 #include <xxHash/xxhash.h>
 
 #define HASHMAP_CAP 1048576
-
+#define COMMIT_INTERVAL 4
+#define COMMIT_KEEP_MINIMUM 2
 
 uint32s_index_t *uint32s_index_new(size_t object_size)
 {
@@ -94,12 +95,12 @@ bool uint32s_bucket_remove(struct uint32s_bucket *bucket, uint32_t idx)
       {
          memmove((uint8_t*)(coll+i), (uint8_t*)(coll+i+1), (bucket->len-(i+1))*sizeof(uint32_t));
          bucket->len--;
-	 if (bucket->len == 3)
+         if (bucket->len == 3)
          {
-	    memcpy(bucket->contents.idxs, coll, 3*sizeof(uint32_t));
-	    free(coll);
-	 }
-	 return true;
+            memcpy(bucket->contents.idxs, coll, 3*sizeof(uint32_t));
+            free(coll);
+         }
+         return true;
       }
    }
    RARCH_ERR("[STATESTREAM] didn't find index %d\n",idx);
@@ -142,7 +143,7 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
       result.index = idx;
       result.is_new = true;
       uint32s_bucket_expand(bucket, idx);
-      RARCH_LOG("[STATESTREAM] insert index %d\n",idx);
+      //RARCH_LOG("[STATESTREAM] insert index %d\n",idx);
    }
    else
    {
@@ -160,7 +161,7 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
       RHMAP_SET(index->index, hash, new_bucket);
       result.index = idx;
       result.is_new = true;
-      RARCH_LOG("[STATESTREAM] insert index %d\n",idx);
+      //RARCH_LOG("[STATESTREAM] insert index %d\n",idx);
    }
    if(additions_len == 0 || index->additions[additions_len-1].frame_counter < frame)
    {
@@ -185,10 +186,8 @@ bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *
    additions_len = RBUF_LEN(index->additions);
    if (RHMAP_HAS(index->index, hash))
    {
-      uint32_t _index;
+      uint32_t idx = 0;
       bucket = RHMAP_PTR(index->index, hash);
-      if(uint32s_bucket_get(index, bucket, object, size_bytes, &_index))
-         return false;
       uint32s_bucket_expand(bucket, idx);
    }
    else
@@ -200,11 +199,11 @@ bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *
       new_bucket.contents.idxs[2] = 0;
       RHMAP_SET(index->index, hash, new_bucket);
    }
-   RARCH_LOG("[STATESTREAM] insert index %d\n",idx);
+   /* RARCH_LOG("[STATESTREAM] insert index %d\n",idx); */
    RBUF_PUSH(index->objects, object);
    RBUF_PUSH(index->counts, 0);
    RBUF_PUSH(index->hashes, hash);
-   if (additions_len == 0 || 
+   if (additions_len == 0 ||
        index->additions[additions_len-1].frame_counter < frame)
    {
       struct uint32s_frame_addition addition;
@@ -220,16 +219,16 @@ void uint32s_index_commit(uint32s_index_t *index)
    uint32_t i;
    struct uint32s_frame_addition prev,cur;
    uint32_t additions_len = RBUF_LEN(index->additions), limit;
-   if (additions_len < 2) return;
-   prev = index->additions[additions_len-2];
-   cur  = index->additions[additions_len-1];
+   if (additions_len < COMMIT_INTERVAL || COMMIT_INTERVAL == 0) return;
+   prev = index->additions[additions_len-COMMIT_INTERVAL];
+   cur  = index->additions[additions_len-(COMMIT_INTERVAL-1)];
    limit = cur.first_index;
-   RARCH_LOG("[STATESTREAM] remove index range %d..%d\n", prev.first_index, limit);
+   //RARCH_LOG("[STATESTREAM] remove index range %d..%d\n", prev.first_index, limit);
    for (i = prev.first_index; i < limit; i++)
    {
       struct uint32s_bucket *bucket;
-      if (index->counts[i] > 1) continue;
-      RARCH_LOG("[STATESTREAM] remove index %d\n", i);
+      if (index->counts[i] >= COMMIT_KEEP_MINIMUM) continue;
+     // RARCH_LOG("[STATESTREAM] remove index %d\n", i);
       free(index->objects[i]);
       index->objects[i] = NULL;
       bucket = RHMAP_PTR(index->index, index->hashes[i]);
@@ -237,7 +236,7 @@ void uint32s_index_commit(uint32s_index_t *index)
       if (bucket->len == 0)
       {
          uint32s_bucket_free(bucket);
-	 RHMAP_DEL(index->index, index->hashes[i]);
+         RHMAP_DEL(index->index, index->hashes[i]);
       }
    }
 }

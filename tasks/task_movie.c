@@ -50,11 +50,11 @@
 #endif
 
 /* Superblock and block sizes for incremental savestates. */
-#define DEFAULT_SUPERBLOCK_SIZE 256 /* measured in blocks */
-#define DEFAULT_BLOCK_SIZE      1024 /* measured in bytes  */
+#define DEFAULT_SUPERBLOCK_SIZE 256  /* measured in blocks */
+#define DEFAULT_BLOCK_SIZE      2048 /* measured in bytes  */
 
 #define SMALL_STATE_THRESHOLD (1<<20) /* states < 1MB are "small" and are tuned differently */
-#define SMALL_SUPERBLOCK_SIZE 32  /* measured in blocks */
+#define SMALL_SUPERBLOCK_SIZE 16  /* measured in blocks */
 #define SMALL_BLOCK_SIZE      128 /* measured in bytes  */
 
 /* Forward declaration */
