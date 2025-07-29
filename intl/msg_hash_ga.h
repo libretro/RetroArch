@@ -13219,6 +13219,14 @@ MSG_HASH(
    "Bunachar Sonraí - Scagaire: Rátáil Iris Edge"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_GENRE,
+   "Bunachar Sonraí - Scagaire: Seánra"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_REGION,
+   "Bunachar Sonraí - Scagaire: Réigiún"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
    "Eolas Bunachar Sonraí"
    )

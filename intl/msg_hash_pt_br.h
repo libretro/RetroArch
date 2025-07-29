@@ -1410,7 +1410,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
-   "Vídeo. Selecione para abrir este arquivo com o reprodutor de vídeo."
+   "Vídeo. Selecione para abrir este arquivo com o player de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
@@ -9234,6 +9234,10 @@ MSG_HASH(
    "Remover Opções do Diretório de Conteúdo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   "Exclui opções do núcleo que serão aplicadas a todo conteúdo carregado do mesmo diretório do arquivo atual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
    "Arquivo atual"
    )
@@ -9282,20 +9286,76 @@ MSG_HASH(
 /* Quick Menu > Controls > Manage Remap Files */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
+   "Arquivo de Remapeamento Ativo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
+   "O arquivo de remapeamento atualmente em uso."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
    "Carregar arquivo de remapeamento"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
+   "Carrega e substitui os mapeamentos de entrada atuais."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
+   "Salvar Arquivo de Remapeamento Como"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
+   "Salva os mapeamentos de entrada atuais como um novo arquivo de remapeamento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
    "Salvar arquivo de remapeamento de núcleo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CORE,
+   "Salva um arquivo de remapeamento que será aplicado para todo conteúdo carregado com este núcleo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
+   "Remover Arquivo de Remapeamento do Núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE,
+   "Exclui o arquivo de remapeamento que será aplicado para todo conteúdo carregado com este núcleo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
    "Salvar remapeamento de controle para o diretório de conteúdo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+   "Salva um arquivo de remapeamento que será aplicado para todo conteúdo carregado do mesmo diretório do arquivo atual."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "Remover Arquivo de Remapeamento do Diretório de Conteúdo do Jogo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "Exclui o arquivo de remapeamento que será aplicado para todo conteúdo carregado do mesmo diretório do arquivo atual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "Salva o arquivo de remapeamento do jogo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
+   "Salva um arquivo de remapeamento que será aplicado somente para o conteúdo atual."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
+   "Remover Arquivo de Remapeamento do Jogo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
+   "Exclui o arquivo de remapeamento que será aplicado somente para o conteúdo atual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -9722,6 +9782,10 @@ MSG_HASH(
    "Lembrar do último diretório de shader usado"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "Abre o Navegador de Arquivos no último diretório usado ao carregar predefinições e passes de shader."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
    "Carregar predefinição"
    )
@@ -9732,6 +9796,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    "Carrega um preset de shader diretamente. O menu de shaders é atualizado de acordo.\nO fator de escala exibido no menu é confiável apenas se o preset usar métodos de escala simples (ou seja, escala da fonte, mesmo fator de escala para X/Y)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   "Inserir Predefinição Antes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   "Insere a predefinição antes da predefinição atualmente carregada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   "Anexar Predefinição"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   "Anexa a predefinição à predefinição atualmente carregada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
@@ -9758,6 +9838,10 @@ MSG_HASH(
    "As alterações das configurações de shader terão efeito imediato. Use isto se você alterou a quantidade de estágios de shader, filtros, escala FBO, etc."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
+   "Após alterar configurações de shader, como quantidade de passes, filtragem, escala de FBO, use esta opção para aplicar as alterações.\nAlterar essas configurações de shader é uma operação relativamente custosa, então precisa ser feita explicitamente.\nQuando você aplica os shaders, as configurações são salvas em um arquivo temporário (retroarch.slangp/.cgp/.glslp) e carregadas. O arquivo permanece após o RetroArch ser encerrado e é salvo no Diretório de Shaders."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
    "Parâmetros de shader"
    )
@@ -9774,16 +9858,32 @@ MSG_HASH(
    "Aumenta ou diminui a quantidade de estágios do shader. Os shaders separados podem ser ligados a cada estágio e configurados sua escala e filtragem."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
+   "O RetroArch permite combinar diversos shaders com uma quantidade arbitrária de passes, usando filtros de hardware personalizados e fatores de escala.\nEsta opção especifica o número de passes de shader a serem usados. Se você definir como 0 e usar Aplicar Alterações de Shader, um shader em branco será usado."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER,
    "Shaders"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
+   "Caminho para o shader. Todos os shaders devem ser do mesmo tipo (ou seja, Cg, GLSL ou Slang). Defina o Diretório de Shaders para especificar onde o navegador começará a procurar pelos shaders."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER,
    "Filtro"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
+   "Filtro de hardware para este passe. Se \"Padrão\" for definido, o filtro será \"Linear\" ou \"Mais Próximo\" dependendo da configuração de \"Filtragem Bilinear\" nas configurações de Vídeo."
+  )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,
    "Escala"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
+   "Escala para este passe. O fator de escala se acumula, ou seja, 2x no primeiro passe e 2x no segundo passe resultará em uma escala total de 4x.\nSe houver um fator de escala para o último passe, o resultado será esticado para preencher a tela com o filtro padrão, dependendo da configuração de Filtragem Bilinear nas configurações de Vídeo.\nSe \"Padrão\" for definido, será usada uma escala de 1x ou esticada para tela cheia, dependendo se é ou não o último passe."
    )
 
 /* Quick Menu > Shaders > Save */
@@ -9908,12 +10008,24 @@ MSG_HASH(
    "Salvar arquivo de predefinição como"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
+   "Salvar a configuração atual como um novo arquivo de substituição."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "Salvar personalizações do núcleo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    "Salva um arquivo de configuração que será aplicado a todo o conteúdo carregado por este núcleo. Terá prioridade sobre a configuração principal."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Remover Substituições do Núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   "Exclui o arquivo de substituição de configuração que será aplicado para todo o conteúdo carregado com este núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -9928,12 +10040,32 @@ MSG_HASH(
    "Remover predefinição do diretório de conteúdo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   "Exclui o arquivo de substituição de configuração que será aplicado para todo o conteúdo carregado a partir do mesmo diretório do arquivo atual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "Salvar personalizações de jogo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
    "Salva um arquivo de configuração que será aplicado apenas ao conteúdo atual. Terá prioridade sobre a configuração principal."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Remover Substituições do Jogo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   "Exclui o arquivo de substituição de configuração que será aplicado apenas para o conteúdo atual."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
+   "Descarregar Substituição"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
+   "Redefinir todas as opções para os valores globais da configuração."
    )
 
 /* Quick Menu > Achievements */
@@ -10117,12 +10249,20 @@ MSG_HASH(
    "Mudar as Miniaturas"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Seleção aleatória"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Voltar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    "Diretório superior"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_PARENT_DIRECTORY,
+   "Voltar para o diretório pai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
@@ -10274,6 +10414,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
    "<Utilizar este diretório>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY,
+   "Selecione isto para definir como o diretório."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
@@ -10478,6 +10622,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
    "Tela de título"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
+   "Logo do Conteúdo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
@@ -10769,6 +10917,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "Define o tema de cores. \"Personalizado\" permite o uso dos arquivos de predefinição de temas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+   "Predefinição de Tema Personalizado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
+   "Selecione uma predefinição de tema do menu a partir do Navegador de Arquivos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
@@ -11097,6 +11253,10 @@ MSG_HASH(
    "Tipo de miniatura para exibir à esquerda."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Miniatura do Ícone"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
    "Tipo de miniatura do ícone da lista de reprodução a ser exibida."
    )
@@ -11139,6 +11299,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
    "A animação que é acionada ao abrir um submenu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
+   "Fator Alfa do Tema de Cor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -11189,12 +11353,20 @@ MSG_HASH(
    "Exibe sombras nos ícones, miniaturas e letras. Afeta ligeiramente o desempenho."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
+   "Pipeline de Shader"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
    "Seleciona um efeito de plano de fundo animado. Pode exigir mais processamento gráfico. Se o desempenho for insatisfatório, desligue este efeito ou reverta para um mais simples."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    "Cor do Tema"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
+   "Selecione um tema de cor de fundo diferente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
@@ -11227,6 +11399,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    "Deslocamento horizontal da margem do título"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   "Ativar Aba de Configurações (Requer reinício)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -11451,8 +11627,16 @@ MSG_HASH(
    "Ter a barra lateral esquerda sempre recolhida."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
+   "Encurtar Nomes da Playlist (Requer reinício)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Remove os nomes do fabricantes das listas de reprodução. Por exemplo, \"Sony - PlayStation\" se torna \"PlayStation\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   "Ordenar Playlists Após Encurtamento do Nome (Requer reinício)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -11584,6 +11768,10 @@ MSG_HASH(
    "Use ícones para simbolizar as opções ATIVADO/DESATIVADO ao invés de texto."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   "Ícones da Playlist (Requer reinício)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
    "Mostre os ícones específicos do sistema nas lista de reprodução."
    )
@@ -11614,6 +11802,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
    "Cor do Tema"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+   "Selecione um tema de cor de fundo diferente."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   "Animação de Transição"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
@@ -12365,6 +12561,10 @@ MSG_HASH(
 /* Unsorted */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
+   "Configurações do Atualizador de Núcleos"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Contas Cheevos"
    )
@@ -12859,6 +13059,14 @@ MSG_HASH(
    "Banco de dados – Filtro: Classificação da revista Edge"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_GENRE,
+   "Banco de Dados - Filtro: Gênero"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_REGION,
+   "Banco de Dados – Filtro: Região"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
    "Informações do banco de dados"
    )
@@ -13063,6 +13271,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Uma tentativa de conexão da Netplay falhou porque o par não está executando o RetroArch ou está executando uma versão antiga do RetroArch."
+   )
+MSG_HASH(
+   MSG_NETPLAY_OUT_OF_DATE,
+   "Um par do Netplay está usando uma versão antiga do RetroArch. Não é possível conectar."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
@@ -13362,6 +13574,10 @@ MSG_HASH(
    "Perfil de controle salvo com sucesso."
    )
 MSG_HASH(
+   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   "Perfil de controle salvo no diretório de Perfis de Controle como\n\"%s\""
+   )
+MSG_HASH(
    MSG_AUTOSAVE_FAILED,
    "Não foi possível inicializar o salvamento automático."
    )
@@ -13396,6 +13612,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "O CRC32 dos conteúdos difere. Não é possível utilizar jogos diferentes."
+   )
+MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "O host está executando um jogo diferente."
    )
 MSG_HASH(
    MSG_PING_TOO_HIGH,
@@ -13455,11 +13675,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_MOVIE_HEADER,
-   "Não foi possível ler o cabeçalho do filme."
+   "Não foi possível ler o cabeçalho da gravação."
    )
 MSG_HASH(
    MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
-   "Não foi possível ler o jogo salvo do filme."
+   "Não foi possível ler o estado da gravação."
    )
 MSG_HASH(
    MSG_CRC32_CHECKSUM_MISMATCH,
@@ -13607,11 +13827,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Falha em carregar o arquivo de filme"
+   "Falha ao carregar o arquivo da gravação"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Falha em carregar a sobreposição."
+   )
+MSG_HASH(
+   MSG_OSK_OVERLAY_NOT_SET,
+   "A sobreposição de teclado não está definida."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_STATE,
@@ -13691,7 +13915,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_START_MOVIE_RECORD,
-   "Falha em iniciar a gravação do filme."
+   "Falha ao iniciar a gravação."
    )
 MSG_HASH(
    MSG_FAILED_TO_START_RECORDING,
@@ -13736,6 +13960,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FOUND_LAST_STATE_SLOT,
    "Encontrada último compartimento de jogo salvo"
+   )
+MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "Último slot de replay encontrado"
    )
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
@@ -13810,6 +14038,14 @@ MSG_HASH(
    "Nome de arquivo de predefinição"
    )
 MSG_HASH(
+   MSG_INPUT_OVERRIDE_FILENAME,
+   "Nome do Arquivo de Substituição de Entrada"
+   )
+MSG_HASH(
+   MSG_INPUT_REMAP_FILENAME,
+   "Nome do Arquivo de Remapeamento de Entrada"
+   )
+MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,
    "Renomear título"
    )
@@ -13882,16 +14118,20 @@ MSG_HASH(
    "Memória"
    )
 MSG_HASH(
+   MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
+   "O arquivo da gravação de replay não é um arquivo REPLAY válido."
+   )
+MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
-   "O formato de filme parece ter uma versão de serializador diferente. Provavelmente irá falhar."
+   "O formato da gravação de replay parece ter uma versão de serializador diferente. É muito provável que falhe."
    )
 MSG_HASH(
    MSG_MOVIE_PLAYBACK_ENDED,
-   "Reprodução de filme terminou."
+   "A reprodução da gravação de replay foi encerrada."
    )
 MSG_HASH(
    MSG_MOVIE_RECORD_STOPPED,
-   "Parando a gravação de filme."
+   "Parando a gravação."
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED,
@@ -13918,8 +14158,28 @@ MSG_HASH(
    "Erro em salvar as personalizações."
    )
 MSG_HASH(
+   MSG_OVERRIDES_ERROR_REMOVING,
+   "Erro ao remover substituições."
+   )
+MSG_HASH(
    MSG_OVERRIDES_SAVED_SUCCESSFULLY,
    "Personalizações salvas com sucesso."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
+   "Substituições removidas com sucesso."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
+   "Substituições descarregadas com sucesso."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_NOT_SAVED,
+   "Nada para salvar. Substituições não salvas."
+   )
+MSG_HASH(
+   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   "Não está salvando. Substituições ativas."
    )
 MSG_HASH(
    MSG_PAUSED,
@@ -14091,11 +14351,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,
-   "Iniciando reprodução de filme."
+   "Iniciando a reprodução da gravação."
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_RECORD_TO,
-   "Iniciando a gravação de filme em"
+   "Iniciando gravação em"
    )
 MSG_HASH(
    MSG_STATE_SIZE,
@@ -14104,6 +14364,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_STATE_SLOT,
    "Compartimento de salvamento"
+   )
+MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Slot de Replay"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,
@@ -14116,6 +14380,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ACHIEVEMENT_UNLOCKED,
    "Conquista desbloqueada"
+   )
+MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Conquista Rara Desbloqueada"
    )
 MSG_HASH(
    MSG_LEADERBOARD_STARTED,
@@ -14152,6 +14420,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_NO_THUMBNAIL_AVAILABLE,
    "Nenhuma miniatura disponível"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   "Todas as possíveis tentativas de download de miniaturas já foram feitas para esta entrada da playlist."
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
@@ -14262,8 +14534,16 @@ MSG_HASH(
    "não configurado"
    )
 MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_NR,
+   "%s (%u/%u) não configurado"
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
    "não configurado, usando reserva"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   "%s (%u/%u) não configurado, usando padrão alternativo"
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
@@ -14386,6 +14666,10 @@ MSG_HASH(
    "Falha ao criar segunda instância. A Antecipação de Frames agora usará apenas uma instância."
    )
 MSG_HASH(
+   MSG_PREEMPT_ENABLED,
+   "Antecipação de Frames ativados. Frames de latência removidos: %u."
+   )
+MSG_HASH(
    MSG_PREEMPT_DISABLED,
    "Frames Preemptivos desativados."
    )
@@ -14396,6 +14680,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
    "Os Frames Preemptivos indisponíveis porque este núcleo não possui suporte determinístico a pontos de save."
+   )
+MSG_HASH(
+   MSG_PREEMPT_FAILED_TO_ALLOCATE,
+   "Falha ao alocar memória para Antecipação de Frames."
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_SAVE_STATE,
@@ -14410,8 +14698,40 @@ MSG_HASH(
    "Análise concluída"
    )
 MSG_HASH(
+   MSG_CHEAT_INIT_SUCCESS,
+   "Busca por cheats iniciada com sucesso."
+   )
+MSG_HASH(
+   MSG_CHEAT_INIT_FAIL,
+   "Falha ao iniciar a busca por cheats."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   "A busca ainda não foi inicializada/iniciada."
+   )
+MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "Número de coincidências = %u"
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "%u correspondências adicionadas."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   "Falha ao adicionar correspondências."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   "Código criado a partir da correspondência."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   "Falha ao criar o código."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "Correspondência excluída."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
