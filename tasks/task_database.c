@@ -788,7 +788,7 @@ static int database_info_list_iterate_found_match(
    entry_path_str[0]              = '\0';
 
    fill_pathname(db_playlist_base_str,
-         path_basename_nocompression(db_path), ".lpl", str_len);
+         path_basename_nocompression(db_path), ".lpl", sizeof(db_playlist_base_str));
 
    if (!string_is_empty(_db->playlist_directory))
       fill_pathname_join_special(db_playlist_path, _db->playlist_directory,
