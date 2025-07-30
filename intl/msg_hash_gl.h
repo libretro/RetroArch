@@ -2316,6 +2316,14 @@ MSG_HASH(
 /* Settings > Video > Fullscreen Mode */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   "Pantalla chea"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "Amosar en pantalla chea. Pódese trocar durante a execución. Pódese anular mediante un parámetro da liña de comandos."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "Modo de pantalla completa con xanela"
    )
@@ -3521,6 +3529,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Solución alternativa para os controladores que se desconectan e se reconectan. Impide a 2 xogadores cos controladores idénticos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "Confirmar Saír/Pechar/Restablecer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+   "Require que se prema dúas veces a tecla de atallo Saír/Pechar/Restablecer."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -10011,6 +10027,14 @@ MSG_HASH(
    "Deixa o modo hardcore de logros desactivado para a sesión actual"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Continuar logros co modo extremo desactivado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Debes recargar o núcleo para continuar o modo extremo dos logros"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
    "Pausa os logros do modo Hardcore"
    )
@@ -12987,6 +13011,14 @@ MSG_HASH(
    "Base de datos - Filtro: Clasificación da revista Edge"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_GENRE,
+   "Base de datos - Filtro: Xénero"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_REGION,
+   "Base de datos - Filtro: Rexión"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
    "Información da base de datos"
    )
@@ -13382,6 +13414,14 @@ MSG_HASH(
    "Todos os núcleos compatibles cambiaron ás versións de Play Store"
    )
 MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "Núcleos actualizados: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "Núcleos omitidos: "
+   )
+MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
    "Actualización do núcleo desactivada - o núcleo está bloqueado: "
    )
@@ -13544,6 +13584,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    "O núcleo non é compatible co gardado rápido."
+   )
+MSG_HASH(
+   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   "Núcleo non admite o control de disco."
    )
 MSG_HASH(
    MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
@@ -13884,6 +13928,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
    "Non compatible coa reprodución"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   "Non se pode cargar o estado futuro durante a reprodución"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   "Erro de liña temporal incorrecta durante a reprodución"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   "Liña temporal incorrecta; sobrescribindo gravación"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -14332,6 +14388,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Preme de novo para saír..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Preme de novo para pechar o contido..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Preme de novo para reiniciar..."
    )
 MSG_HASH(
    MSG_TO,
