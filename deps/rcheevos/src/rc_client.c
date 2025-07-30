@@ -2796,16 +2796,14 @@ rc_hash_iterator_t* rc_client_get_load_state_hash_iterator(rc_client_t* client)
 
 static void rc_client_log_hash_message_verbose(const char* message, const rc_hash_iterator_t* iterator)
 {
-  rc_client_load_state_t unused;
-  rc_client_load_state_t* load_state = (rc_client_load_state_t*)(((uint8_t*)iterator) - RC_OFFSETOF(unused, hash_iterator));
+  rc_client_load_state_t* load_state = (rc_client_load_state_t*)iterator->userdata;
   if (load_state->client->state.log_level >= RC_CLIENT_LOG_LEVEL_INFO)
     rc_client_log_message(load_state->client, message);
 }
 
 static void rc_client_log_hash_message_error(const char* message, const rc_hash_iterator_t* iterator)
 {
-  rc_client_load_state_t unused;
-  rc_client_load_state_t* load_state = (rc_client_load_state_t*)(((uint8_t*)iterator) - RC_OFFSETOF(unused, hash_iterator));
+  rc_client_load_state_t* load_state = (rc_client_load_state_t*)iterator->userdata;
   if (load_state->client->state.log_level >= RC_CLIENT_LOG_LEVEL_ERROR)
     rc_client_log_message(load_state->client, message);
 }
@@ -2875,6 +2873,7 @@ rc_client_async_handle_t* rc_client_begin_identify_and_load_game(rc_client_t* cl
   /* initialize the iterator */
   rc_hash_initialize_iterator(&load_state->hash_iterator, file_path, data, data_size);
   rc_hash_merge_callbacks(&load_state->hash_iterator, &client->callbacks.hash);
+  load_state->hash_iterator.userdata = load_state;
 
   if (!load_state->hash_iterator.callbacks.verbose_message)
     load_state->hash_iterator.callbacks.verbose_message = rc_client_log_hash_message_verbose;
