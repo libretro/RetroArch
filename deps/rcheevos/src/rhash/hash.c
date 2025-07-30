@@ -487,6 +487,7 @@ static int rc_hash_file_from_buffer(char hash[33], uint32_t console_id, const rc
   buffered_file_iterator.callbacks.filereader.seek = rc_file_seek_buffered_file;
   buffered_file_iterator.callbacks.filereader.tell = rc_file_tell_buffered_file;
   buffered_file_iterator.path = "memory stream";
+  buffered_file_iterator.userdata = iterator->userdata;
 
   rc_buffered_file.data = rc_buffered_file.read_ptr = iterator->buffer;
   rc_buffered_file.data_size = iterator->buffer_size;
@@ -650,6 +651,7 @@ int rc_hash_buffered_file(char hash[33], uint32_t console_id, const rc_hash_iter
     rc_hash_iterator_t buffer_iterator;
     memset(&buffer_iterator, 0, sizeof(buffer_iterator));
     memcpy(&buffer_iterator.callbacks, &iterator->callbacks, sizeof(iterator->callbacks));
+    buffer_iterator.userdata = iterator->userdata;
     buffer_iterator.path = iterator->path;
     buffer_iterator.buffer = buffer;
     buffer_iterator.buffer_size = (size_t)size;
@@ -773,6 +775,7 @@ static int rc_hash_generate_from_playlist(char hash[33], uint32_t console_id, co
 
   memset(&first_file_iterator, 0, sizeof(first_file_iterator));
   memcpy(&first_file_iterator.callbacks, &iterator->callbacks, sizeof(iterator->callbacks));
+  first_file_iterator.userdata = iterator->userdata;
   first_file_iterator.path = disc_path; /* rc_hash_destory_iterator will free */
 
   result = rc_hash_from_file(hash, console_id, &first_file_iterator);
