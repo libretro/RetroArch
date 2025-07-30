@@ -263,3 +263,15 @@ param.sfo
 
 # Clazy
 *.clazy.yaml
+
+# PSL1GHT
+pkg/psl1ght/pkg/
+pkg/psl1ght/*.pkg
+modern_alpha_blend_fpo.h
+modern_alpha_blend_vpo.h
+modern_opaque_fpo.h
+modern_opaque_vpo.h
+gfx/drivers/rsx_shaders/modern_alpha_blend.fpo
+gfx/drivers/rsx_shaders/modern_alpha_blend.vpo
+gfx/drivers/rsx_shaders/modern_opaque.fpo
+gfx/drivers/rsx_shaders/modern_opaque.vpo
