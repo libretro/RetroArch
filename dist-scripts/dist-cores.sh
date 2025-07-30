@@ -300,8 +300,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
    if [ $platform = "psl1ght" ] ; then
        mv -fv ../retroarch_psl1ght.self ../pkg/psl1ght/pkg/USRDIR/cores/"${name}_libretro_${platform}.SELF"
        if [ -d ../../dist/info ]; then
-           mkdir -p ../pkg/psl1ght/pkg/USRDIR/cores/info
-           cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/psl1ght/pkg/USRDIR/cores/info/"${name}_libretro.info"
+           mkdir -p ../pkg/psl1ght/pkg/USRDIR/info
+           cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/psl1ght/pkg/USRDIR/info/"${name}_libretro.info"
        fi
    elif [ $platform = "ps3" ] ; then
       if [ $PLATFORM = "ode-ps3" ] ; then
