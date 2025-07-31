@@ -1685,8 +1685,8 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
                   if (FAILED(_IAudioRenderClient_ReleaseBuffer(
                               w->renderer, frame_count, 0)))
                      return -1;
+                  written += ir;
                }
-               written += ir;
             }
          }
       }
