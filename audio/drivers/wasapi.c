@@ -1067,6 +1067,7 @@ static int wasapi_microphone_read_buffered(
 
 static int wasapi_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
 {
+   int read;
    int bytes_read = 0;
    wasapi_microphone_t     *wasapi = (wasapi_microphone_t *)driver_context;
    wasapi_microphone_handle_t *mic = (wasapi_microphone_handle_t*)mic_context;
@@ -1080,7 +1081,6 @@ static int wasapi_microphone_read(void *driver_context, void *mic_context, void 
 
    if (mic->exclusive)
    {
-      int read;
       for (; (size_t)bytes_read < len; bytes_read += read)
       {
          read = wasapi_microphone_read_buffered(mic,
@@ -1093,7 +1093,6 @@ static int wasapi_microphone_read(void *driver_context, void *mic_context, void 
    }
    else
    {
-      int read;
       for (; (size_t)bytes_read < len; bytes_read += read)
       {
          read = wasapi_microphone_read_buffered(mic,
@@ -1536,11 +1535,11 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
       }
       else
       {
-         ssize_t ir;
-         for (; written < len; written += ir)
+         size_t ir;
+         while (written < len)
          {
             const void *_data  = (char*)data + written;
-            size_t __len       = len - written;
+            size_t _len        = len - written;
             size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
             if (!write_avail)
             {
@@ -1558,8 +1557,9 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
                   write_avail = w->engine_buffer_size;
                }
             }
-            ir = (__len < write_avail) ? __len : write_avail;
+            ir = (_len < write_avail) ? _len : write_avail;
             fifo_write(w->buffer, _data, ir);
+            written += ir;
          }
       }
    }
@@ -1620,10 +1620,9 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
       }
       else if (w->buffer)
       {
-         ssize_t ir;
-         for (; written < len; written += ir)
+         while (written < len)
          {
-            const void *_data  = (char*)data + written;
+            size_t ir;
             size_t _len        = len - written;
             size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
             UINT32 padding     = 0;
@@ -1653,27 +1652,28 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
             write_avail = FIFO_WRITE_AVAIL(w->buffer);
             ir          = (_len < write_avail) ? _len : write_avail;
             if (ir)
+            {
+               const void *_data = (char*)data + written;
                fifo_write(w->buffer, _data, ir);
+               written += ir;
+            }
          }
       }
       else
       {
-         ssize_t ir;
-         for (; written < len; written += ir)
+         while (written < len)
          {
-            const void *_data  = (char*)data + written;
-            size_t _len        = len - written;
             size_t write_avail = 0;
             UINT32 padding     = 0;
             if (!(WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0))
                return -1;
             if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
                return -1;
-            if (!(write_avail = w->engine_buffer_size - padding * w->frame_size))
-               ir = 0;
-            else
+            if ((write_avail = w->engine_buffer_size - padding * w->frame_size))
             {
-               ir = (_len < write_avail) ? _len : write_avail;
+               const void *_data = (char*)data + written;
+               size_t _len       = len - written;
+               size_t ir         = (_len < write_avail) ? _len : write_avail;
                if (ir)
                {
                   BYTE *dest         = NULL;
@@ -1686,6 +1686,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
                               w->renderer, frame_count, 0)))
                      return -1;
                }
+               written += ir;
             }
          }
       }
