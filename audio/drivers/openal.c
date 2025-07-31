@@ -83,11 +83,7 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
 {
-   al_t *al;
-
-   (void)device;
-
-   al = (al_t*)calloc(1, sizeof(al_t));
+   al_t *al = (al_t*)calloc(1, sizeof(al_t));
    if (!al)
       return NULL;
 
@@ -101,7 +97,8 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
 
    alcMakeContextCurrent(al->ctx);
 
-   al->rate = rate;
+   al->rate  = rate;
+   *new_rate = rate;
 
    /* We already use one buffer for tmpbuf. */
    al->num_buffers = (latency * rate * 2 * sizeof(int16_t)) / (1000 * OPENAL_BUFSIZE) - 1;
@@ -116,9 +113,11 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
       goto error;
 
    alGenSources(1, &al->source);
+   alSourcei(al->source, AL_LOOPING, AL_FALSE);
    alGenBuffers(al->num_buffers, al->buffers);
 
    memcpy(al->res_buf, al->buffers, al->num_buffers * sizeof(ALuint));
+
    al->res_ptr = al->num_buffers;
 
    return al;
@@ -144,19 +143,20 @@ static bool al_unqueue_buffers(al_t *al)
 
 static bool al_get_buffer(al_t *al, ALuint *buffer)
 {
-   if (!al->res_ptr)
+   while (al->res_ptr == 0)
    {
-      for (;;)
-      {
-         if (al_unqueue_buffers(al))
-            break;
+      if (al_unqueue_buffers(al))
+         break;
 
-         if (al->nonblock)
-            return false;
+#ifndef EMSCRIPTEN
+      if (al->nonblock)
+#endif
+         return false;
 
-         /* Must sleep as there is no proper blocking method. */
-         retro_sleep(1);
-      }
+#ifndef _WIN32
+      /* Must sleep as there is no proper blocking method. */
+      retro_sleep(1);
+#endif
    }
 
    *buffer = al->res_buf[--al->res_ptr];
@@ -165,10 +165,10 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
 
 static size_t al_fill_internal_buf(al_t *al, const void *s, size_t len)
 {
-   size_t read_size = MIN(OPENAL_BUFSIZE - al->tmpbuf_ptr, len);
-   memcpy(al->tmpbuf + al->tmpbuf_ptr, s, read_size);
-   al->tmpbuf_ptr += read_size;
-   return read_size;
+   size_t written = MIN(OPENAL_BUFSIZE - al->tmpbuf_ptr, len);
+   memcpy(al->tmpbuf + al->tmpbuf_ptr, s, written);
+   al->tmpbuf_ptr += written;
+   return written;
 }
 
 static ssize_t al_write(void *data, const void *s, size_t len)
@@ -196,17 +196,11 @@ static ssize_t al_write(void *data, const void *s, size_t len)
       alBufferData(buffer, AL_FORMAT_STEREO16, al->tmpbuf, OPENAL_BUFSIZE, al->rate);
       al->tmpbuf_ptr = 0;
       alSourceQueueBuffers(al->source, 1, &buffer);
-      if (alGetError() != AL_NO_ERROR)
-         return -1;
 
       alGetSourcei(al->source, AL_SOURCE_STATE, &val);
       if (val != AL_PLAYING)
          alSourcePlay(al->source);
-
-      if (alGetError() != AL_NO_ERROR)
-         return -1;
    }
-
    return written;
 }
 
