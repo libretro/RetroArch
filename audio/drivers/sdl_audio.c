@@ -197,13 +197,13 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
    }
    RARCH_DBG("[SDL mic] Opened SDL audio input device with ID %u.\n",
              mic->device_id);
-   RARCH_DBG("[SDL mic] Requested a microphone frequency of %u Hz, got %u Hz.\n",
+   RARCH_DBG("[SDL mic] Requested a microphone frequency of %u Hz, received %u Hz.\n",
              desired_spec.freq, mic->device_spec.freq);
-   RARCH_DBG("[SDL mic] Requested %u channels for microphone, got %u.\n",
+   RARCH_DBG("[SDL mic] Requested %u channels for microphone, received %u.\n",
              desired_spec.channels, mic->device_spec.channels);
-   RARCH_DBG("[SDL mic] Requested a %u-sample microphone buffer, got %u samples (%u bytes).\n",
+   RARCH_DBG("[SDL mic] Requested a %u-sample microphone buffer, received %u samples (%u bytes).\n",
              frames, mic->device_spec.samples, mic->device_spec.size);
-   RARCH_DBG("[SDL mic] Got a microphone silence value of %u.\n", mic->device_spec.silence);
+   RARCH_DBG("[SDL mic] Received a microphone silence value of %u.\n", mic->device_spec.silence);
    RARCH_DBG("[SDL mic] Requested microphone audio format: %u-bit %s %s %s endian.\n",
              SDL_AUDIO_BITSIZE(desired_spec.format),
              SDL_AUDIO_ISSIGNED(desired_spec.format) ? "signed" : "unsigned",
@@ -224,7 +224,7 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
    mic->cond = scond_new();
 #endif
 
-   RARCH_LOG("[SDL audio] Requested %u ms latency for input device, got %d ms.\n",
+   RARCH_LOG("[SDL audio] Requested %u ms latency for input device, received %d ms.\n",
              latency, (int)(mic->device_spec.samples * 4 * 1000 / mic->device_spec.freq));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
@@ -522,11 +522,11 @@ static void *sdl_audio_init(const char *device,
    *new_rate                = sdl->device_spec.freq;
    RARCH_DBG("[SDL audio] Opened SDL audio out device with ID %u.\n",
              sdl->speaker_device);
-   RARCH_DBG("[SDL audio] Requested a speaker frequency of %u Hz, got %u Hz.\n",
+   RARCH_DBG("[SDL audio] Requested a speaker frequency of %u Hz, received %u Hz.\n",
              spec.freq, sdl->device_spec.freq);
-   RARCH_DBG("[SDL audio] Requested %u channels for speaker, got %u.\n",
+   RARCH_DBG("[SDL audio] Requested %u channels for speaker, received %u.\n",
              spec.channels, sdl->device_spec.channels);
-   RARCH_DBG("[SDL audio] Requested a %u-frame speaker buffer, got %u frames (%u bytes).\n",
+   RARCH_DBG("[SDL audio] Requested a %u-frame speaker buffer, received %u frames (%u bytes).\n",
              frames, sdl->device_spec.samples, sdl->device_spec.size);
    RARCH_DBG("[SDL audio] Got a speaker silence value of %u.\n", sdl->device_spec.silence);
    RARCH_DBG("[SDL audio] Requested speaker audio format: %u-bit %s %s %s endian.\n",
@@ -545,11 +545,14 @@ static void *sdl_audio_init(const char *device,
    sdl->cond                = scond_new();
 #endif
 
-   RARCH_LOG("[SDL audio] Requested %u ms latency for output device, got %d ms.\n",
+   RARCH_LOG("[SDL audio] Requested %u ms latency for output device, received %d ms.\n",
          latency, (int)(sdl->device_spec.samples * 4 * 1000 / (*new_rate)));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
-   bufsize             = sdl->device_spec.samples * 4 * sizeof(float);
+   if (SDL_AUDIO_ISFLOAT(sdl->device_spec.format))
+      bufsize          = sdl->device_spec.samples * 4 * sizeof(float);
+   else
+      bufsize          = sdl->device_spec.samples * 4 * sizeof(int16_t);
    tmp                 = calloc(1, bufsize);
    sdl->speaker_buffer = fifo_new(bufsize);
 
