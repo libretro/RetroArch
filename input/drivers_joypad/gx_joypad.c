@@ -49,12 +49,12 @@
 
 #ifdef HW_RVL
 #define MAX_MOUSEBUTTONS 6
-static const uint32_t gx_mousemask[MAX_MOUSEBUTTONS] = 
+static const uint32_t gx_mousemask[MAX_MOUSEBUTTONS] =
 {
    WPAD_BUTTON_B,
    WPAD_BUTTON_A,
    WPAD_BUTTON_1,
-   WPAD_BUTTON_2, 
+   WPAD_BUTTON_2,
    WPAD_BUTTON_PLUS,
    WPAD_BUTTON_MINUS
 };
@@ -136,18 +136,10 @@ static bool g_menu = false;
 #ifdef HW_RVL
 static bool g_quit = false;
 
-static void power_callback(void)
-{
-   g_quit = true;
-}
+static void power_callback(void) { g_quit = true; }
 #endif
 
-static void reset_cb(unsigned int a, void *b)
-{
-   (void)a;
-   (void)b;
-   g_menu = true;
-}
+static void reset_cb(unsigned int a, void *b) { g_menu = true; }
 
 #ifdef HW_RVL
 static inline void gx_mouse_info(uint32_t joybutton, unsigned port)
@@ -164,12 +156,10 @@ static inline void gx_mouse_info(uint32_t joybutton, unsigned port)
       gx_mouse[port].y = ir.y;
    }
    else
-   {
       gx_mouse[port].valid = false;
-   }
 
    /* reset button state */
-   gx_mouse[port].mouse_button = 0; 
+   gx_mouse[port].mouse_button = 0;
    for (i = 0; i < MAX_MOUSEBUTTONS; i++)
       gx_mouse[port].mouse_button |= (joybutton & gx_mousemask[i]) ? (1 << i) : 0;
 
@@ -177,10 +167,7 @@ static inline void gx_mouse_info(uint32_t joybutton, unsigned port)
    gx_mouse[port].mouse_button = gx_mouse[port].mouse_button << 2;
 }
 
-bool gxpad_mousevalid(unsigned port)
-{
-   return gx_mouse[port].valid;
-}
+bool gxpad_mousevalid(unsigned port) { return gx_mouse[port].valid; }
 
 void gx_joypad_read_mouse(unsigned port, int *irx, int *iry, uint32_t *button)
 {
@@ -237,7 +224,7 @@ static void check_port0_active(uint8_t pad_count)
       pad_type[0] = WPAD_EXP_GAMECUBE;
 #endif
       settings->uints.input_joypad_index[0] = 0;
-               
+
       input_autoconfigure_connect(
             gx_joypad_name(0),
             NULL,
@@ -336,12 +323,12 @@ static int16_t gx_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-            (uint16_t)joykey != NO_BTN && 
+            (uint16_t)joykey != NO_BTN &&
             (pad_state[port_idx] & (UINT64_C(1) << joykey))
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(gx_joypad_axis_state(port_idx, joyaxis)) 
+            ((float)abs(gx_joypad_axis_state(port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -450,7 +437,8 @@ static bool gx_joypad_query_pad(unsigned pad)
 
 static void gx_joypad_poll(void)
 {
-   unsigned i, j, port;
+   int i, j;
+   unsigned port;
    uint64_t state_p1          = 0;
    uint64_t check_menu_toggle = 0;
    uint8_t pad_count          = 0;
@@ -529,23 +517,21 @@ static void gx_joypad_poll(void)
             if (port == WPAD_CHAN_0 || port == WPAD_CHAN_1)
                gx_mouse_info(wpaddata->btns_h, port);
 
-         *state_cur |= (down & WPAD_BUTTON_A) ? (UINT64_C(1) << GX_WIIMOTE_A) : 0;
-         *state_cur |= (down & WPAD_BUTTON_B) ? (UINT64_C(1) << GX_WIIMOTE_B) : 0;
-         *state_cur |= (down & WPAD_BUTTON_1) ? (UINT64_C(1) << GX_WIIMOTE_1) : 0;
-         *state_cur |= (down & WPAD_BUTTON_2) ? (UINT64_C(1) << GX_WIIMOTE_2) : 0;
-         *state_cur |= (down & WPAD_BUTTON_PLUS) ? (UINT64_C(1) << GX_WIIMOTE_PLUS) : 0;
+         *state_cur |= (down & WPAD_BUTTON_A)     ? (UINT64_C(1) << GX_WIIMOTE_A)     : 0;
+         *state_cur |= (down & WPAD_BUTTON_B)     ? (UINT64_C(1) << GX_WIIMOTE_B)     : 0;
+         *state_cur |= (down & WPAD_BUTTON_1)     ? (UINT64_C(1) << GX_WIIMOTE_1)     : 0;
+         *state_cur |= (down & WPAD_BUTTON_2)     ? (UINT64_C(1) << GX_WIIMOTE_2)     : 0;
+         *state_cur |= (down & WPAD_BUTTON_PLUS)  ? (UINT64_C(1) << GX_WIIMOTE_PLUS)  : 0;
          *state_cur |= (down & WPAD_BUTTON_MINUS) ? (UINT64_C(1) << GX_WIIMOTE_MINUS) : 0;
-         *state_cur |= (down & WPAD_BUTTON_HOME) ? (UINT64_C(1) << GX_WIIMOTE_HOME) : 0;
-
-
+         *state_cur |= (down & WPAD_BUTTON_HOME)  ? (UINT64_C(1) << GX_WIIMOTE_HOME)  : 0;
 
          if (ptype != WPAD_EXP_NUNCHUK)
          {
             /* Rotated d-pad on Wiimote. */
-            *state_cur |= (down & WPAD_BUTTON_UP) ? (UINT64_C(1) << GX_WIIMOTE_LEFT) : 0;
-            *state_cur |= (down & WPAD_BUTTON_DOWN) ? (UINT64_C(1) << GX_WIIMOTE_RIGHT) : 0;
-            *state_cur |= (down & WPAD_BUTTON_LEFT) ? (UINT64_C(1) << GX_WIIMOTE_DOWN) : 0;
-            *state_cur |= (down & WPAD_BUTTON_RIGHT) ? (UINT64_C(1) << GX_WIIMOTE_UP) : 0;
+            *state_cur |= (down & WPAD_BUTTON_UP)    ? (UINT64_C(1) << GX_WIIMOTE_LEFT)  : 0;
+            *state_cur |= (down & WPAD_BUTTON_DOWN)  ? (UINT64_C(1) << GX_WIIMOTE_RIGHT) : 0;
+            *state_cur |= (down & WPAD_BUTTON_LEFT)  ? (UINT64_C(1) << GX_WIIMOTE_DOWN)  : 0;
+            *state_cur |= (down & WPAD_BUTTON_RIGHT) ? (UINT64_C(1) << GX_WIIMOTE_UP)    : 0;
          }
 
          if (ptype == WPAD_EXP_CLASSIC)
@@ -575,9 +561,9 @@ static void gx_joypad_poll(void)
          {
             /* Wiimote is held upright with nunchuk,
              * do not change d-pad orientation. */
-            *state_cur |= (down & WPAD_BUTTON_UP) ? (UINT64_C(1) << GX_WIIMOTE_UP) : 0;
-            *state_cur |= (down & WPAD_BUTTON_DOWN) ? (UINT64_C(1) << GX_WIIMOTE_DOWN) : 0;
-            *state_cur |= (down & WPAD_BUTTON_LEFT) ? (UINT64_C(1) << GX_WIIMOTE_LEFT) : 0;
+            *state_cur |= (down & WPAD_BUTTON_UP)    ? (UINT64_C(1) << GX_WIIMOTE_UP)    : 0;
+            *state_cur |= (down & WPAD_BUTTON_DOWN)  ? (UINT64_C(1) << GX_WIIMOTE_DOWN)  : 0;
+            *state_cur |= (down & WPAD_BUTTON_LEFT)  ? (UINT64_C(1) << GX_WIIMOTE_LEFT)  : 0;
             *state_cur |= (down & WPAD_BUTTON_RIGHT) ? (UINT64_C(1) << GX_WIIMOTE_RIGHT) : 0;
 
             *state_cur |= (down & WPAD_NUNCHUK_BUTTON_Z) ? (UINT64_C(1) << GX_NUNCHUK_Z) : 0;
@@ -593,7 +579,7 @@ static void gx_joypad_poll(void)
       if (gx_joypad_query_pad(port))
          pad_count++;
 
-      /* Always enable 1 pad in port 0 if there's only 1 controller connected. 
+      /* Always enable 1 pad in port 0 if there's only 1 controller connected.
        * This avoids being stuck in rgui input settings. */
       check_port0_active(pad_count);
 

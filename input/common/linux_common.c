@@ -241,8 +241,8 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
          }
 
          RARCH_LOG("Opened illuminance sensor at %s, polling at %u Hz.\n", sensor->path, sensor->poll_rate);
-
-         goto done;
+         retro_closedir(device);
+         return sensor;
       }
    }
 
@@ -253,10 +253,6 @@ error:
    free(sensor);
 
    return NULL;
-done:
-   retro_closedir(device);
-
-   return sensor;
 }
 
 void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
@@ -323,15 +319,18 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    if (!in_illuminance_input)
    {
       RARCH_ERR("Failed to open \"%s\".\n", sensor->path);
-      goto done;
+      return 0.0;
    }
 
+   /* Read the illuminance value from the file. If that fails... */
    if (!filestream_gets(in_illuminance_input, buffer, sizeof(buffer)))
-   { /* Read the illuminance value from the file. If that fails... */
+   {
       RARCH_ERR("Illuminance sensor read failed.\n");
-      illuminance = -1.0;
-      goto done;
+      filestream_close(in_illuminance_input);
+      return -1.0;
    }
+
+   filestream_close(in_illuminance_input);
 
    /* Clear any existing error so we'll know if strtod fails */
    errno = 0;
@@ -342,13 +341,8 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    if (err != 0)
    {
       RARCH_ERR("Failed to parse input \"%s\" into a floating-point value: %s.\n", buffer, strerror(err));
-      illuminance = -1.0;
-      goto done;
+      return -1.0;
    }
-
-done:
-   if (in_illuminance_input)
-      filestream_close(in_illuminance_input);
 
    return illuminance;
 }

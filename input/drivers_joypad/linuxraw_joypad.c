@@ -282,7 +282,7 @@ static void *linuxraw_joypad_init(void *data)
 
 static void linuxraw_joypad_destroy(void)
 {
-   unsigned i;
+   int i;
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -362,7 +362,7 @@ static int16_t linuxraw_joypad_state(
       const struct retro_keybind *binds,
       unsigned port)
 {
-   unsigned i;
+   int i;
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
    const struct linuxraw_joypad    *pad = (const struct linuxraw_joypad*)
