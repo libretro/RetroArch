@@ -106,7 +106,7 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
    {
       al->has_float   = true;
       al->format      = alGetEnumValue("AL_FORMAT_STEREO_FLOAT32");
-      _latency        = latency * rate * 2 * sizeof(int32_t);
+      _latency        = latency * rate * 2 * sizeof(float);
       RARCH_LOG("[OpenAL] Device supports float sample format\n");
    }
    else
