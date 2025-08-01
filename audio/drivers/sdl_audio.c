@@ -33,6 +33,13 @@
 #include "../../verbosity.h"
 #include "retro_assert.h"
 
+static INLINE int sdl_audio_find_num_frames(int rate, int latency)
+{
+   int frames = (rate * latency) / 1000;
+   /* SDL only likes 2^n sized buffers. */
+   return next_pow2(frames);
+}
+
 #ifdef HAVE_SDL2
 #ifdef HAVE_MICROPHONE
 #include "../microphone_driver.h"
@@ -56,13 +63,6 @@ typedef struct sdl_microphone
 {
    bool nonblock;
 } sdl_microphone_t;
-
-static INLINE int sdl_audio_find_num_frames(int rate, int latency)
-{
-   int frames = (rate * latency) / 1000;
-   /* SDL only likes 2^n sized buffers. */
-   return next_pow2(frames);
-}
 
 static void *sdl_microphone_init(void)
 {
