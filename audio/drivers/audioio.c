@@ -84,13 +84,13 @@ error:
 
 static ssize_t audioio_write(void *data, const void *s, size_t len)
 {
-   ssize_t written;
+   ssize_t _len;
    int *fd = (int*)data;
 
    if (len == 0)
       return 0;
 
-   if ((written = write(*fd, s, len)) < 0)
+   if ((_len = write(*fd, s, len)) < 0)
    {
       if (errno == EAGAIN && (fcntl(*fd, F_GETFL) & O_NONBLOCK))
          return 0;
@@ -98,7 +98,7 @@ static ssize_t audioio_write(void *data, const void *s, size_t len)
       return -1;
    }
 
-   return written;
+   return _len;
 }
 
 static bool audioio_stop(void *data)

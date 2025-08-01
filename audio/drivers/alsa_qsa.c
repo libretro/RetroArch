@@ -221,8 +221,8 @@ static int check_pcm_status(void *data, int channel_type)
 
 static ssize_t alsa_qsa_write(void *data, const void *buf, size_t len)
 {
+   ssize_t _len = 0;
    alsa_qsa_t *alsa = (alsa_qsa_t*)data;
-   ssize_t  written = 0;
 
    while (size)
    {
@@ -233,10 +233,10 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t len)
          memcpy(alsa->buffer[alsa->buffer_index] +
                alsa->buffer_ptr, buf, avail_write);
 
-         alsa->buffer_ptr      += avail_write;
-         buf                    = (void*)((uint8_t*)buf + avail_write);
-         len                   -= avail_write;
-         written               += avail_write;
+         alsa->buffer_ptr   += avail_write;
+         buf                 = (void*)((uint8_t*)buf + avail_write);
+         len                -= avail_write;
+         _len               += avail_write;
       }
 
       if (alsa->buffer_ptr >= alsa->buf_size)
@@ -262,7 +262,7 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t len)
       }
    }
 
-   return written;
+   return _len;
 }
 
 static bool alsa_qsa_stop(void *data)

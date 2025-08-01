@@ -254,9 +254,9 @@ error:
 
 static ssize_t ja_write(void *data, const void *buf_, size_t len)
 {
+   size_t _len = 0;
    jack_t      *jd = (jack_t*)data;
    const char *buf = (const char *)buf_;
-   size_t  written = 0;
 
    while (len > 0)
    {
@@ -276,7 +276,7 @@ static ssize_t ja_write(void *data, const void *buf_, size_t len)
          jack_ringbuffer_write(jd->buffer, buf, to_write);
          buf     += to_write;
          len     -= to_write;
-         written += to_write;
+         _len    += to_write;
       }
       else if (!jd->nonblock)
       {
@@ -291,7 +291,7 @@ static ssize_t ja_write(void *data, const void *buf_, size_t len)
          break;
    }
 
-   return written;
+   return _len;
 }
 
 static bool ja_stop(void *data)

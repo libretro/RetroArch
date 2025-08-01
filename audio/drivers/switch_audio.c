@@ -75,7 +75,7 @@ static size_t switch_audio_buffer_size(void *data)
 
 static ssize_t switch_audio_write(void *data, const void *s, size_t len)
 {
-   size_t to_write     = len;
+   size_t _len = len;
 	switch_audio_t *swa = (switch_audio_t*)data;
 
    if (!swa)
@@ -121,15 +121,15 @@ static ssize_t switch_audio_write(void *data, const void *s, size_t len)
       swa->current_buffer->data_size = 0;
    }
 
-	if (to_write > switch_audio_buffer_size(NULL) - swa->current_buffer->data_size)
-		to_write = switch_audio_buffer_size(NULL) - swa->current_buffer->data_size;
+	if (_len > switch_audio_buffer_size(NULL) - swa->current_buffer->data_size)
+		_len = switch_audio_buffer_size(NULL) - swa->current_buffer->data_size;
 
 #ifndef HAVE_LIBNX
-   memcpy(((uint8_t*) swa->current_buffer->sample_data) + swa->current_buffer->data_size, s, to_write);
+   memcpy(((uint8_t*) swa->current_buffer->sample_data) + swa->current_buffer->data_size, s, _len);
 #else
-   memcpy(((uint8_t*) swa->current_buffer->buffer) + swa->current_buffer->data_size, s, to_write);
+   memcpy(((uint8_t*) swa->current_buffer->buffer) + swa->current_buffer->data_size, s, _len);
 #endif
-	swa->current_buffer->data_size   += to_write;
+	swa->current_buffer->data_size   += _len;
 	swa->current_buffer->buffer_size  = switch_audio_buffer_size(NULL);
 
 	if (swa->current_buffer->data_size > (48000 * swa->latency) / 1000)
@@ -141,7 +141,7 @@ static ssize_t switch_audio_write(void *data, const void *s, size_t len)
 
 	swa->last_append = svcGetSystemTick();
 
-	return to_write;
+	return _len;
 }
 
 static bool switch_audio_stop(void *data)

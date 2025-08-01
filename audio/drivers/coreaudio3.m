@@ -260,7 +260,7 @@ static bool g_interrupted;
 }
 
 - (ssize_t)writeFloat:(const float *)data samples:(size_t)samples {
-   size_t written = 0;
+   size_t _len = 0;
    while (!g_interrupted && samples > 0)
    {
       size_t write_avail = rb_avail(&_rb);
@@ -269,7 +269,7 @@ static bool g_interrupted;
 
       rb_write_data(&_rb, data, write_avail);
       data    += write_avail;
-      written += write_avail;
+      _len    += write_avail;
       samples -= write_avail;
 
       if (_nonBlock)
@@ -279,7 +279,7 @@ static bool g_interrupted;
          dispatch_semaphore_wait(_sema, DISPATCH_TIME_FOREVER);
    }
 
-   return written;
+   return _len;
 }
 
 @end

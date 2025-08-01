@@ -180,11 +180,12 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
          ctr->pos = (ctr->playpos + (CTR_CSND_AUDIO_COUNT >> 1)) & CTR_CSND_AUDIO_COUNT_MASK;
       else
       {
-         do{
+         do
+         {
             /* todo: compute the correct sleep period */
             retro_sleep(1);
             ctr_csnd_audio_update_playpos(ctr);
-         }while (((ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 1)
+         } while  (((ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 1)
                || (((ctr->pos - ctr->playpos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 4)));
       }
    }

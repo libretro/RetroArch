@@ -233,29 +233,29 @@ static size_t libnx_audren_audio_append(
 static ssize_t libnx_audren_audio_write(void *data,
       const void *s, size_t len)
 {
+   size_t _len = 0;
    libnx_audren_t *aud = (libnx_audren_t*)data;
-   size_t written      = 0;
 
    if (!aud)
       return -1;
 
    if (aud->nonblock)
    {
-      while (written < len)
+      while (_len < len)
       {
-         written += libnx_audren_audio_append(
-               aud, s + written, len - written);
-         if (written != len)
+         _len += libnx_audren_audio_append(
+               aud, s + _len, len - _len);
+         if (_len != len)
             break;
       }
    }
    else
    {
-      while (written < len)
+      while (_len < len)
       {
-         written += libnx_audren_audio_append(
-               aud, s + written, len - written);
-         if (written != len)
+         _len += libnx_audren_audio_append(
+               aud, s + _len, len - _len);
+         if (_len != len)
          {
             mutexLock(&aud->update_lock);
             audrvUpdate(&aud->drv);
@@ -265,7 +265,7 @@ static ssize_t libnx_audren_audio_write(void *data,
       }
    }
 
-   return written;
+   return _len;
 }
 
 static bool libnx_audren_audio_stop(void *data)

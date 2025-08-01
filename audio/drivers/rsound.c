@@ -103,6 +103,7 @@ error:
 
 static ssize_t rs_write(void *data, const void *buf, size_t len)
 {
+   size_t _len;
    rsd_t *rsd = (rsd_t*)data;
 
    if (rsd->has_error)
@@ -110,21 +111,20 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
 
    if (rsd->nonblock)
    {
-      size_t avail, write_amt;
+      size_t avail;
 
       rsd_callback_lock(rsd->rd);
 
-      avail     = FIFO_WRITE_AVAIL(rsd->buffer);
-      write_amt = avail > len ? len : avail;
+      avail  = FIFO_WRITE_AVAIL(rsd->buffer);
+      _len   = avail > len ? len : avail;
 
-      fifo_write(rsd->buffer, buf, write_amt);
+      fifo_write(rsd->buffer, buf, _len);
       rsd_callback_unlock(rsd->rd);
-      return write_amt;
    }
    else
    {
-      size_t written = 0;
-      while (written < len && !rsd->has_error)
+      _len = 0;
+      while (_len < len && !rsd->has_error)
       {
          size_t avail;
          rsd_callback_lock(rsd->rd);
@@ -143,13 +143,13 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
          }
          else
          {
-            size_t write_amt = len - written > avail ? avail : len - written;
-            fifo_write(rsd->buffer, (const char*)buf + written, write_amt);
+            size_t write_amt = len - _len > avail ? avail : len - _len;
+            fifo_write(rsd->buffer, (const char*)buf + _len, write_amt);
             rsd_callback_unlock(rsd->rd);
-            written += write_amt;
+            _len += write_amt;
          }
       }
-      return written;
+      return _len;
    }
 }
 

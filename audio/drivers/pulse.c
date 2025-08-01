@@ -299,9 +299,9 @@ static bool pulse_start(void *data, bool is_shutdown)
 
 static ssize_t pulse_write(void *data, const void *s, size_t len)
 {
+   size_t _len = 0;
    pa_t           *pa = (pa_t*)data;
    const uint8_t *buf = (const uint8_t*)s;
-   size_t     written = 0;
 
    /* Workaround buggy menu code.
     * If a write happens while we're paused, we might never progress. */
@@ -322,7 +322,7 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
          pa_stream_write(pa->stream, buf, writable, NULL, 0, PA_SEEK_RELATIVE);
          buf     += writable;
          len     -= writable;
-         written += writable;
+         _len    += writable;
       }
       else if (!pa->nonblock)
          pa_threaded_mainloop_wait(pa->mainloop);
@@ -332,7 +332,7 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
 
    pa_threaded_mainloop_unlock(pa->mainloop);
 
-   return written;
+   return _len;
 }
 
 static bool pulse_stop(void *data)

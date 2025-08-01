@@ -2266,7 +2266,7 @@ tinyalsa_write(void *data, const void *buf_, size_t len)
 {
    tinyalsa_t *tinyalsa      = (tinyalsa_t*)data;
    const uint8_t *buf        = (const uint8_t*)buf_;
-   snd_pcm_sframes_t written = 0;
+   snd_pcm_sframes_t _len    = 0;
    snd_pcm_sframes_t size    = BYTES_TO_FRAMES(len, tinyalsa->frame_bits);
    size_t frames_size        = tinyalsa->has_float ? sizeof(float) : sizeof(int16_t);
 
@@ -2279,7 +2279,7 @@ tinyalsa_write(void *data, const void *buf_, size_t len)
          if (frames < 0)
             pcm_stop(tinyalsa->pcm);
 
-         written += frames;
+         _len    += frames;
          buf     += (frames << 1) * frames_size;
          size    -= frames;
       }
@@ -2296,14 +2296,13 @@ tinyalsa_write(void *data, const void *buf_, size_t len)
          if (frames < 0)
             return -1;
 
-         written += frames;
+         _len    += frames;
          buf     += (frames << 1) * frames_size;
          size    -= frames;
       }
    }
 
-   return written;
-
+   return _len;
 }
 
 static bool

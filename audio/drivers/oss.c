@@ -105,21 +105,17 @@ error:
 
 static ssize_t oss_write(void *data, const void *s, size_t len)
 {
-   ssize_t ret;
+   ssize_t _len;
    oss_audio_t *ossaudio  = (oss_audio_t*)data;
-
    if (len == 0)
       return 0;
-
-   if ((ret = write(ossaudio->fd, s, len)) < 0)
+   if ((_len = write(ossaudio->fd, s, len)) < 0)
    {
       if (errno == EAGAIN && (fcntl(ossaudio->fd, F_GETFL) & O_NONBLOCK))
          return 0;
-
       return -1;
    }
-
-   return ret;
+   return _len;
 }
 
 static bool oss_stop(void *data)

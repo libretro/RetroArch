@@ -202,7 +202,7 @@ static void ctr_dsp_thread_audio_free(void *data)
 
 static ssize_t ctr_dsp_thread_audio_write(void *data, const void *buf, size_t len)
 {
-   size_t avail, written;
+   size_t avail, _len;
    ctr_dsp_thread_audio_t * ctr = (ctr_dsp_thread_audio_t*)data;
 
    if (!ctr || !ctr->running)
@@ -212,18 +212,18 @@ static ssize_t ctr_dsp_thread_audio_write(void *data, const void *buf, size_t le
    {
       slock_lock(ctr->fifo_lock);
       avail = FIFO_WRITE_AVAIL(ctr->fifo);
-      written = MIN(avail, len);
-      if (written > 0)
+      _len  = MIN(avail, len);
+      if (_len > 0)
       {
-         fifo_write(ctr->fifo, buf, written);
+         fifo_write(ctr->fifo, buf, _len);
          scond_signal(ctr->fifo_avail);
       }
       slock_unlock(ctr->fifo_lock);
    }
    else
    {
-      written = 0;
-      while (written < len && ctr->running)
+      _len = 0;
+      while (_len < len && ctr->running)
       {
          slock_lock(ctr->fifo_lock);
          avail = FIFO_WRITE_AVAIL(ctr->fifo);
@@ -242,16 +242,16 @@ static ssize_t ctr_dsp_thread_audio_write(void *data, const void *buf, size_t le
          }
          else
          {
-            size_t write_amt = MIN(len - written, avail);
-            fifo_write(ctr->fifo, (const char*)buf + written, write_amt);
+            size_t write_amt = MIN(len - _len, avail);
+            fifo_write(ctr->fifo, (const char*)buf + _len, write_amt);
             scond_signal(ctr->fifo_avail);
             slock_unlock(ctr->fifo_lock);
-            written += write_amt;
+            _len += write_amt;
          }
       }
    }
 
-   return written;
+   return _len;
 }
 
 static bool ctr_dsp_thread_audio_stop(void *data)

@@ -316,7 +316,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
 {
    coreaudio_t *dev   = (coreaudio_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
-   size_t written     = 0;
+   size_t _len        = 0;
 
    while (!dev->is_paused && len > 0)
    {
@@ -330,7 +330,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
 
       fifo_write(dev->buffer, buf, write_avail);
       buf     += write_avail;
-      written += write_avail;
+      _len    += write_avail;
       len     -= write_avail;
 
       if (dev->nonblock)
@@ -353,7 +353,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
       slock_unlock(dev->lock);
    }
 
-   return written;
+   return _len;
 }
 
 static void coreaudio_set_nonblock_state(void *data, bool state)

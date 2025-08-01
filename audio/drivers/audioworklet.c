@@ -291,14 +291,14 @@ static void *audioworklet_init(const char *device, unsigned rate,
 
 static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
 {
+   size_t avail;
+   size_t max_write;
+   size_t to_write_frames;
+   size_t to_write_bytes;
+   size_t _len = 0;
    audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;
    const float *samples = (const float*)s;
    size_t num_frames = ss / 2 / sizeof(float);
-   size_t written = 0;
-   size_t to_write_frames;
-   size_t to_write_bytes;
-   size_t avail;
-   size_t max_write;
 
    /* too early! might happen with external blocking */
    if (!audioworklet->driver_running)
@@ -336,12 +336,12 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
       if (to_write_frames)
       {
          to_write_bytes = to_write_frames * 2 * sizeof(float);
-         avail -= to_write_bytes;
+         avail      -= to_write_bytes;
          fifo_write(audioworklet->buffer, samples, to_write_bytes);
          emscripten_atomic_store_u32(&audioworklet->write_avail_bytes, (uint32_t)avail);
          num_frames -= to_write_frames;
-         samples += (to_write_frames * 2);
-         written += to_write_frames;
+         samples    += (to_write_frames * 2);
+         _len       += to_write_frames;
       }
 
       emscripten_lock_release(&audioworklet->buffer_lock);
@@ -373,7 +373,7 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
       audioworklet_resume_ctx(audioworklet);
    }
 
-   return written;
+   return _len;
 }
 
 #ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK

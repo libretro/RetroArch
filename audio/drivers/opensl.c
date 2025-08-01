@@ -234,8 +234,8 @@ static bool sl_start(void *data, bool is_shutdown)
 
 static ssize_t sl_write(void *data, const void *s, size_t len)
 {
+   size_t _len = 0;
    sl_t           *sl = (sl_t*)data;
-   size_t     written = 0;
    const uint8_t *buf = (const uint8_t*)s;
 
    while (len)
@@ -263,7 +263,7 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
          sl->buffer_ptr += avail_write;
          buf            += avail_write;
          len            -= avail_write;
-         written        += avail_write;
+         _len           += avail_write;
       }
 
       if (sl->buffer_ptr >= sl->buf_size)
@@ -281,7 +281,7 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
       }
    }
 
-   return written;
+   return _len;
 }
 
 static size_t sl_write_avail(void *data)

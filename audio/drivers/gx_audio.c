@@ -128,14 +128,14 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t len)
 
       /* FIXME: Nonblocking audio should break out of loop
        * when it has nothing to write. */
-      while ((wa->dma_write == wa->dma_next ||
-               wa->dma_write == wa->dma_busy) && !wa->nonblock);
+      while ((    wa->dma_write == wa->dma_next
+               || wa->dma_write == wa->dma_busy) && !wa->nonblock);
 
       copy_swapped(wa->data[wa->dma_write] + wa->write_ptr, buf, to_write);
 
       wa->write_ptr += to_write;
-      frames -= to_write;
-      buf += to_write;
+      frames        -= to_write;
+      buf           += to_write;
 
       if (wa->write_ptr >= CHUNK_FRAMES)
       {

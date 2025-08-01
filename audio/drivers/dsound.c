@@ -503,7 +503,7 @@ static void dsound_set_nonblock_state(void *data, bool state)
 
 static ssize_t dsound_write(void *data, const void *buf_, size_t len)
 {
-   size_t     written = 0;
+   size_t _len = 0;
    dsound_t       *ds = (dsound_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
 
@@ -524,8 +524,8 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t len)
          fifo_write(ds->buffer, buf, avail);
          LeaveCriticalSection(&ds->crit);
 
-         buf     += avail;
-         written += avail;
+         buf  += avail;
+         _len += avail;
       }
    }
    else
@@ -542,20 +542,19 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t len)
          fifo_write(ds->buffer, buf, avail);
          LeaveCriticalSection(&ds->crit);
 
-         buf     += avail;
-         len     -= avail;
-         written += avail;
+         buf  += avail;
+         len  -= avail;
+         _len += avail;
 
          if (!ds->thread_alive)
             break;
 
-         if (avail == 0)
-            if (!(WaitForSingleObject(ds->event, 50) == WAIT_OBJECT_0))
-               return -1;
+         if (avail == 0 && !(WaitForSingleObject(ds->event, 50) == WAIT_OBJECT_0))
+            return -1;
       }
    }
 
-   return written;
+   return _len;
 }
 
 static size_t dsound_write_avail(void *data)

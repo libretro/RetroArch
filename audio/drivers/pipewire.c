@@ -733,6 +733,7 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t len)
          break;
    }
 
+#if 0
    if (filled < 0)
       RARCH_ERR("[Pipewire] %p: underrun write:%u filled:%d\n", audio, idx, filled);
    else
@@ -743,10 +744,11 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t len)
          audio, idx, filled, len, RINGBUFFER_SIZE);
       }
    }
+#endif
 
    spa_ringbuffer_write_data(&audio->ring,
-                             audio->buffer, RINGBUFFER_SIZE,
-                             idx & RINGBUFFER_MASK, buf_, len);
+         audio->buffer, RINGBUFFER_SIZE,
+         idx & RINGBUFFER_MASK, buf_, len);
    idx += len;
    spa_ringbuffer_write_update(&audio->ring, idx);
 
@@ -777,28 +779,24 @@ static bool pipewire_stop(void *data)
 
 static bool pipewire_start(void *data, bool is_shutdown)
 {
-   enum pw_stream_state st;
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
-   const char       *error = NULL;
-   bool                res = false;
 
-   if (!audio || !audio->pw)
-      return false;
-
-   st = pw_stream_get_state(audio->stream, &error);
-   switch (st)
+   if (audio && audio->pw)
    {
-      case PW_STREAM_STATE_STREAMING:
-         res = true;
-         break;
-      case PW_STREAM_STATE_PAUSED:
-         res = pipewire_stream_set_active(audio->pw->thread_loop, audio->stream, true);
-         break;
-      default:
-         break;
+      const char *error = NULL;
+      enum pw_stream_state st = pw_stream_get_state(audio->stream, &error);
+      switch (st)
+      {
+         case PW_STREAM_STATE_STREAMING:
+            return true;
+         case PW_STREAM_STATE_PAUSED:
+            return pipewire_stream_set_active(audio->pw->thread_loop, audio->stream, true);
+         default:
+            break;
+      }
    }
 
-   return res;
+   return false;
 }
 
 static bool pipewire_alive(void *data)
@@ -867,11 +865,11 @@ static size_t pipewire_write_avail(void *data)
    retro_assert(audio->stream);
 
    if (pw_stream_get_state(audio->stream, &error) != PW_STREAM_STATE_STREAMING)
-      return  0;  /* wait for stream to become ready */
+      return 0;  /* wait for stream to become ready */
 
    pw_thread_loop_lock(audio->pw->thread_loop);
    written = spa_ringbuffer_get_write_index(&audio->ring, &idx);
-   length = audio->highwater_mark - written;
+   length  = audio->highwater_mark - written;
    pw_thread_loop_unlock(audio->pw->thread_loop);
 
    return length;

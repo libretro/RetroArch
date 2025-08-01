@@ -573,7 +573,7 @@ error:
 
 static ssize_t alsa_thread_write(void *data, const void *s, size_t len)
 {
-   ssize_t written = 0;
+   ssize_t _len = 0;
    alsa_thread_t *alsa = (alsa_thread_t*)data;
 
    if (alsa->info.thread_dead)
@@ -584,15 +584,15 @@ static ssize_t alsa_thread_write(void *data, const void *s, size_t len)
       size_t avail;
 
       slock_lock(alsa->info.fifo_lock);
-      avail           = FIFO_WRITE_AVAIL(alsa->info.buffer);
-      written         = MIN(avail, len);
+      avail = FIFO_WRITE_AVAIL(alsa->info.buffer);
+      _len  = MIN(avail, len);
 
-      fifo_write(alsa->info.buffer, s, written);
+      fifo_write(alsa->info.buffer, s, _len);
       slock_unlock(alsa->info.fifo_lock);
    }
    else
    {
-      while (written < (ssize_t)len && !alsa->info.thread_dead)
+      while (_len < (ssize_t)len && !alsa->info.thread_dead)
       {
          size_t avail;
          slock_lock(alsa->info.fifo_lock);
@@ -608,15 +608,15 @@ static ssize_t alsa_thread_write(void *data, const void *s, size_t len)
          }
          else
          {
-            size_t write_amt = MIN(len - written, avail);
+            size_t write_amt = MIN(len - _len, avail);
             fifo_write(alsa->info.buffer,
-                  (const char*)s + written, write_amt);
+                  (const char*)s + _len, write_amt);
             slock_unlock(alsa->info.fifo_lock);
-            written += write_amt;
+            _len += write_amt;
          }
       }
    }
-   return written;
+   return _len;
 }
 
 static bool alsa_thread_alive(void *data)

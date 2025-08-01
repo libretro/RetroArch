@@ -1535,9 +1535,9 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
       }
       else
       {
-         size_t ir;
          while (_len < len)
          {
+            size_t ir;
             const void *_data  = (char*)data + _len;
             size_t __len       = len - _len;
             size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
