@@ -47,7 +47,6 @@ typedef struct al
    ALCcontext *ctx;
    size_t res_ptr;
    ALsizei num_buffers;
-   size_t tmpbuf_ptr;
    int rate;
    ALenum format;
    bool nonblock;
@@ -112,8 +111,7 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
       _latency        = latency * rate * 2 * sizeof(int16_t);
    }
 
-   /* We already use one buffer for tmpbuf. */
-   al->num_buffers = _latency / (1000 * OPENAL_BUFSIZE) - 1;
+   al->num_buffers = _latency / (1000 * OPENAL_BUFSIZE);
    if (al->num_buffers < 2)
       al->num_buffers = 2;
 
@@ -177,7 +175,6 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
 
 static ssize_t al_write(void *data, const void *s, size_t len)
 {
-   static uint8_t tmpbuf[OPENAL_BUFSIZE];
    al_t           *al = (al_t*)data;
    const uint8_t *buf = (const uint8_t*)s;
    size_t        _len = 0;
@@ -186,26 +183,17 @@ static ssize_t al_write(void *data, const void *s, size_t len)
    {
       ALint val;
       ALuint buffer;
-      size_t avail = OPENAL_BUFSIZE - al->tmpbuf_ptr;
-      size_t rc    = MIN(avail, len);
-      if (rc > 0)
-      {
-         memcpy(tmpbuf + al->tmpbuf_ptr, buf, rc);
-         al->tmpbuf_ptr += rc;
-         _len           += rc;
-         buf            += rc;
-         len            -= rc;
-      }
-
-      if (al->tmpbuf_ptr != OPENAL_BUFSIZE)
-         break;
+      size_t rc    = MIN(OPENAL_BUFSIZE, len);
 
       if (!al_get_buffer(al, &buffer))
          break;
 
-      alBufferData(buffer, al->format, tmpbuf, OPENAL_BUFSIZE, al->rate);
-      al->tmpbuf_ptr = 0;
+      alBufferData(buffer, al->format, buf, rc, al->rate);
       alSourceQueueBuffers(al->source, 1, &buffer);
+
+      _len           += rc;
+      buf            += rc;
+      len            -= rc;
 
       alGetSourcei(al->source, AL_SOURCE_STATE, &val);
       if (val != AL_PLAYING)
@@ -247,13 +235,13 @@ static size_t al_write_avail(void *data)
 {
    al_t *al = (al_t*)data;
    al_unqueue_buffers(al);
-   return al->res_ptr * OPENAL_BUFSIZE + (OPENAL_BUFSIZE - al->tmpbuf_ptr);
+   return al->res_ptr * OPENAL_BUFSIZE;
 }
 
 static size_t al_buffer_size(void *data)
 {
    al_t *al = (al_t*)data;
-   return (al->num_buffers + 1) * OPENAL_BUFSIZE; /* Also got tmpbuf. */
+   return (al->num_buffers) * OPENAL_BUFSIZE;
 }
 
 static bool al_use_float(void *data)
