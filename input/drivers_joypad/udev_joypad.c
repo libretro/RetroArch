@@ -116,8 +116,7 @@ static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int va
 
 static int udev_find_vacant_pad(void)
 {
-   unsigned i;
-
+   int i;
    for (i = 0; i < MAX_USERS; i++)
       if (udev_pads[i].fd < 0)
          return i;
@@ -316,9 +315,9 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 
 static void udev_check_device(struct udev_device *dev, const char *path)
 {
+   int i;
    int ret;
    int pad, fd;
-   unsigned i;
    struct stat st;
 
    if (stat(path, &st) < 0)
@@ -366,7 +365,7 @@ static void udev_free_pad(unsigned pad)
 
 static void udev_joypad_remove_device(const char *path)
 {
-   unsigned i;
+   int i;
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -382,7 +381,7 @@ static void udev_joypad_remove_device(const char *path)
 
 static void udev_joypad_destroy(void)
 {
-   unsigned i;
+   int i;
 
    for (i = 0; i < MAX_USERS; i++)
       udev_free_pad(i);
@@ -586,7 +585,7 @@ static void udev_joypad_poll(void)
 
 static void *udev_joypad_init(void *data)
 {
-   unsigned i;
+   int i;
    unsigned sorted_count = 0;
    struct udev_list_entry *devs     = NULL;
    struct udev_list_entry *item     = NULL;
@@ -745,7 +744,7 @@ static int16_t udev_joypad_state(
 
    if (port_idx < MAX_USERS)
    {
-      unsigned i;
+      int i;
       const struct udev_joypad *pad     = (const struct udev_joypad*)
          &udev_pads[port_idx];
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)

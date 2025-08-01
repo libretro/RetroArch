@@ -254,7 +254,7 @@ static void sdl_pad_disconnect(unsigned id)
 
 static void sdl_joypad_destroy(void)
 {
-   unsigned i;
+   int i;
    for (i = 0; i < MAX_USERS; i++)
       sdl_pad_disconnect(i);
 
@@ -263,7 +263,8 @@ static void sdl_joypad_destroy(void)
 
 static void *sdl_joypad_init(void *data)
 {
-   unsigned i, num_sticks;
+   size_t i;
+   unsigned num_sticks;
 #ifdef HAVE_SDL2
    uint32_t subsystem           = SDL_INIT_GAMECONTROLLER;
 #else
@@ -418,7 +419,7 @@ static int16_t sdl_joypad_state(
       const struct retro_keybind *binds,
       unsigned port)
 {
-   unsigned i;
+   int i;
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
    sdl_joypad_t *pad                    = (sdl_joypad_t*)&sdl_pads[port_idx];

@@ -29,14 +29,12 @@
 
 static VPADChan wpad_to_gamepad_channel(unsigned pad)
 {
-   unsigned i;
-
+   int i;
    for (i = 0; i < WIIU_GAMEPAD_CHANNELS; i++)
    {
       if (joypad_state.wpad.channel_slot_map[i] == pad)
          return i;
    }
-
    return WPAD_INVALID_CHANNEL;
 }
 
@@ -284,9 +282,9 @@ static int16_t wpad_state(
       const struct retro_keybind *binds,
       unsigned port)
 {
-   unsigned i;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
+   int i;
+   int16_t ret       = 0;
+   uint16_t port_idx = joypad_info->joy_idx;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {

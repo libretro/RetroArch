@@ -183,9 +183,11 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
         mfi_axes[slot][5]         = gp.rightTrigger.value * 32767.0f;
 
     }
+#if 0
     else if (controller.microGamepad)
     {
     }
+#endif
 
     /* GCGamepad is deprecated */
 #pragma clang diagnostic push
@@ -215,10 +217,12 @@ static void apple_gamecontroller_joypad_poll(void)
     for (GCController *controller in [GCController controllers])
     {
        /* If we have not assigned a slot to this controller yet, ignore it. */
-       if (  controller &&
-             (controller.playerIndex >= 0) && (controller.playerIndex < MAX_USERS) &&
-             !mfi_controller_is_siri_remote(controller))
-          apple_gamecontroller_joypad_poll_internal(controller, (uint32_t)controller.playerIndex);
+       if (      controller
+             && (controller.playerIndex >= 0)
+             && (controller.playerIndex < MAX_USERS)
+             && !mfi_controller_is_siri_remote(controller))
+          apple_gamecontroller_joypad_poll_internal(controller,
+                (uint32_t)controller.playerIndex);
     }
 }
 
@@ -267,7 +271,8 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
               mfi_buttons[slot]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
               mfi_buttons[slot]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L);
               mfi_buttons[slot]       |=  (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
-              dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+              dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
+                    dispatch_get_main_queue(), ^{
                     mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
                     });
               return;
@@ -278,7 +283,8 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
               mfi_buttons[slot]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L2);
               mfi_buttons[slot]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
               mfi_buttons[slot]       |=  (1 << RETRO_DEVICE_ID_JOYPAD_L3);
-              dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+              dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
+                    dispatch_get_main_queue(), ^{
                     mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L3);
                     });
               return;
@@ -289,7 +295,8 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
               mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_R2);
               mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
               mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_R3);
-              dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+              dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
+                    dispatch_get_main_queue(), ^{
                     mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_R3);
                     });
               return;
@@ -297,7 +304,8 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
 
            mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
 
-           dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+           dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
+                 dispatch_get_main_queue(), ^{
                  mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
                  });
         };
@@ -473,8 +481,7 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
         else
         {
             /* Find a new slot for this controller that's unused */
-            unsigned i;
-
+            int i;
             for (i = 0; i < MAX_MFI_CONTROLLERS; ++i)
             {
                 if (mfi_controllers[i])
@@ -683,7 +690,7 @@ static int16_t apple_gamecontroller_joypad_state(
       const struct retro_keybind *binds,
       unsigned port)
 {
-   unsigned i;
+   int i;
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
 
@@ -724,9 +731,9 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
         if (enable_device_vibration && pad == 0)
         {
             NSError *error;
-            id<CHHapticPatternPlayer> player = (type == RETRO_RUMBLE_STRONG ?
-                                                apple_gamecontroller_device_haptics_strong_player() :
-                                                apple_gamecontroller_device_haptics_weak_player());
+            id<CHHapticPatternPlayer> player = (type == RETRO_RUMBLE_STRONG
+                  ? apple_gamecontroller_device_haptics_strong_player()
+						: apple_gamecontroller_device_haptics_weak_player());
             if (player)
             {
                 if (strength == 0)
@@ -735,9 +742,8 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
                 {
                     float str = (float)strength / 65535.0f;
                     CHHapticDynamicParameter *param = [[CHHapticDynamicParameter alloc]
-                                                       initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
-                                                       value:str
-                                                       relativeTime:0];
+                       initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
+                                     value:str relativeTime:0];
                     [player sendParameters:[NSArray arrayWithObject:param] atTime:0 error:&error];
                     if (!error)
                         [player startAtTime:0 error:&error];
@@ -762,9 +768,11 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
                    [player stopAtTime:0 error:&error];
                 else
                 {
+                   CHHapticDynamicParameter *param = NULL;
                    float str = (float)strength / 65535.0f;
-                   if (type == RETRO_RUMBLE_WEAK) str *= MFI_WEAK_RUMBLE;
-                   CHHapticDynamicParameter *param = [[CHHapticDynamicParameter alloc]
+                   if (type == RETRO_RUMBLE_WEAK)
+                      str *= MFI_WEAK_RUMBLE;
+                   param = [[CHHapticDynamicParameter alloc]
                       initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
                                     value:str
                              relativeTime:0];

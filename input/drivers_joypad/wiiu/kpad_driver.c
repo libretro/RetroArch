@@ -31,12 +31,10 @@ static void kpad_deregister(unsigned channel);
 
 static int to_wiimote_channel(unsigned pad)
 {
-   unsigned i;
-
+   int i;
    for (i = 0; i < WIIU_WIIMOTE_CHANNELS; i++)
       if (joypad_state.kpad.channel_slot_map[i] == pad)
          return i;
-
    return -1;
 }
 
@@ -120,9 +118,9 @@ static int16_t kpad_state(
       const struct retro_keybind *binds,
       unsigned port)
 {
-   unsigned i;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
+   int i;
+   int16_t ret       = 0;
+   uint16_t port_idx = joypad_info->joy_idx;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -132,11 +130,11 @@ static int16_t kpad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && kpad_button(port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(kpad_axis(port_idx, joyaxis)) 
+            ((float)abs(kpad_axis(port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
