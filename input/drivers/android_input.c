@@ -147,8 +147,11 @@ typedef struct android_input
    int64_t quick_tap_time;
    state_device_t pad_states[MAX_USERS];        /* int alignment */
    int mouse_x, mouse_y;
+   int16_t mouse_x_viewport_screen, mouse_y_viewport_screen;
+   int16_t mouse_x_viewport, mouse_y_viewport;
    int mouse_x_delta, mouse_y_delta;
    int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
+   bool mouse_activated;
    unsigned pads_connected;
    unsigned pointer_count;
    sensor_t accelerometer_state;                /* float alignment */
@@ -588,6 +591,7 @@ static void *android_input_init(const char *joypad_driver)
    if (!android)
       return NULL;
 
+   android->mouse_activated = false;
    android->pads_connected = 0;
    android->quick_tap_time = 0;
 
@@ -652,6 +656,12 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    float y_min   = 0;
    float y_max   = (float)video_height;
 
+   struct video_viewport vp = {0};
+   int16_t res_x            = 0;
+   int16_t res_y            = 0;
+   int16_t res_screen_x     = 0;
+   int16_t res_screen_y     = 0;
+
    /* AINPUT_SOURCE_MOUSE_RELATIVE is available on Oreo (SDK 26) and newer,
     * it passes the relative coordinates in the regular X and Y parts.
     * NOTE: AINPUT_SOURCE_* defines have multiple bits set so do full check */
@@ -699,6 +709,11 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    if (!x) x = android->mouse_x + android->mouse_x_delta;
    if (!y) y = android->mouse_y + android->mouse_y_delta;
 
+   video_driver_translate_coord_viewport_confined_wrap(&vp,
+            (int) x, (int) y,
+            &android->mouse_x_viewport, &android->mouse_y_viewport,
+            &android->mouse_x_viewport_screen, &android->mouse_y_viewport_screen);
+
    /* x and y are used for the screen mouse, so we want
     * to avoid values outside of the viewport resolution */
    if (x < x_min) x = x_min;
@@ -728,6 +743,11 @@ static INLINE void android_input_poll_event_type_motion(
    if (    (source & AINPUT_SOURCE_MOUSE) == AINPUT_SOURCE_MOUSE
         || (source & AINPUT_SOURCE_MOUSE_RELATIVE) == AINPUT_SOURCE_MOUSE_RELATIVE)
    {
+      if (!android->mouse_activated)
+      {
+         RARCH_LOG("[android input]: Mouse activated\n");
+         android->mouse_activated = true;
+      }
       /* getButtonState requires API level 14 */
       if (p_AMotionEvent_getButtonState)
       {
@@ -1740,7 +1760,7 @@ static int16_t android_input_state(
                   return android->mouse_m;
                case RETRO_DEVICE_ID_MOUSE_X:
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                     return android->mouse_x;
+                     return android->mouse_x_viewport_screen;
 
                   val = android->mouse_x_delta;
                   android->mouse_x_delta = 0;
@@ -1748,7 +1768,7 @@ static int16_t android_input_state(
                   return val;
                case RETRO_DEVICE_ID_MOUSE_Y:
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                     return android->mouse_y;
+                     return android->mouse_y_viewport_screen;
 
                   val = android->mouse_y_delta;
                   android->mouse_y_delta = 0;
@@ -1771,10 +1791,17 @@ static int16_t android_input_state(
             int val = 0;
             switch (id)
             {
+               /* Favor mouse for lightgun control. */
                case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-                  return android->pointer[idx].x;
+                  if (android->mouse_activated)
+                     return android->mouse_x_viewport_screen;
+                  else
+                     return android->pointer[idx].x;
                case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-                  return android->pointer[idx].y;
+                  if (android->mouse_activated)
+                     return android->mouse_y_viewport_screen;
+                  else
+                     return android->pointer[idx].y;
                /* Deprecated relative lightgun. */
                case RETRO_DEVICE_ID_LIGHTGUN_X:
                   val                    = android->mouse_x_delta;
