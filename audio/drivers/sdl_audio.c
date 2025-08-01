@@ -57,7 +57,7 @@ typedef struct sdl_microphone
    bool nonblock;
 } sdl_microphone_t;
 
-static INLINE int sdl_microphone_find_num_frames(int rate, int latency)
+static INLINE int sdl_audio_find_num_frames(int rate, int latency)
 {
    int frames = (rate * latency) / 1000;
    /* SDL only likes 2^n sized buffers. */
@@ -173,7 +173,7 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
     * carry approximately half of the latency.
     *
     * SDL double buffers audio and we do as well. */
-   frames                = sdl_microphone_find_num_frames(rate, latency / 4);
+   frames                = sdl_audio_find_num_frames(rate, latency / 4);
 
    desired_spec.freq     = rate;
    desired_spec.format   = AUDIO_F32SYS;
@@ -204,12 +204,6 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
    RARCH_DBG("[SDL mic] Requested a %u-sample microphone buffer, got %u samples (%u bytes).\n",
              frames, mic->device_spec.samples, mic->device_spec.size);
    RARCH_DBG("[SDL mic] Got a microphone silence value of %u.\n", mic->device_spec.silence);
-   RARCH_DBG("[SDL mic] Requested microphone audio format: %u-bit %s %s %s endian.\n",
-             SDL_AUDIO_BITSIZE(desired_spec.format),
-             SDL_AUDIO_ISSIGNED(desired_spec.format) ? "signed" : "unsigned",
-             SDL_AUDIO_ISFLOAT(desired_spec.format) ? "floating-point" : "integer",
-             SDL_AUDIO_ISBIGENDIAN(desired_spec.format) ? "big" : "little");
-
    RARCH_DBG("[SDL mic] Received microphone audio format: %u-bit %s %s %s endian.\n",
              SDL_AUDIO_BITSIZE(desired_spec.format),
              SDL_AUDIO_ISSIGNED(desired_spec.format) ? "signed" : "unsigned",
@@ -322,15 +316,14 @@ static int sdl_microphone_read(void *driver_context, void *mic_context, void *s,
    if (sdl->nonblock)
    {
       size_t avail, read_amt;
-
       SDL_LockAudioDevice(mic->device_id); /* Stop the SDL mic thread */
-      avail = FIFO_READ_AVAIL(mic->sample_buffer);
+      avail    = FIFO_READ_AVAIL(mic->sample_buffer);
       read_amt = avail > len ? len : avail;
+      /* If the incoming queue isn't empty, then
+       * read as much data as will fit in buf
+       * */
       if (read_amt > 0)
-      {  /* If the incoming queue isn't empty... */
          fifo_read(mic->sample_buffer, s, read_amt);
-         /* ...then read as much data as will fit in buf */
-      }
       SDL_UnlockAudioDevice(mic->device_id); /* Let the mic thread run again */
       ret = (int)read_amt;
    }
@@ -462,13 +455,6 @@ static void sdl_audio_playback_cb(void *data, Uint8 *stream, int len)
    memset(stream + _len, 0, len - _len);
 }
 
-static INLINE int sdl_audio_find_num_frames(int rate, int latency)
-{
-   int frames = (rate * latency) / 1000;
-   /* SDL only likes 2^n sized buffers. */
-   return next_pow2(frames);
-}
-
 static void *sdl_audio_init(const char *device,
       unsigned rate, unsigned latency,
       unsigned block_frames, unsigned *new_rate)
@@ -537,12 +523,6 @@ static void *sdl_audio_init(const char *device,
    RARCH_DBG("[SDL audio] Requested a %u-frame speaker buffer, got %u frames (%u bytes).\n",
              frames, out.samples, out.size);
    RARCH_DBG("[SDL audio] Got a speaker silence value of %u.\n", out.silence);
-   RARCH_DBG("[SDL audio] Requested speaker audio format: %u-bit %s %s %s endian.\n",
-             SDL_AUDIO_BITSIZE(spec.format),
-             SDL_AUDIO_ISSIGNED(spec.format) ? "signed" : "unsigned",
-             SDL_AUDIO_ISFLOAT(spec.format) ? "floating-point" : "integer",
-             SDL_AUDIO_ISBIGENDIAN(spec.format) ? "big" : "little");
-
    RARCH_DBG("[SDL audio] Received speaker audio format: %u-bit %s %s %s endian.\n",
              SDL_AUDIO_BITSIZE(spec.format),
              SDL_AUDIO_ISSIGNED(spec.format) ? "signed" : "unsigned",
@@ -581,7 +561,7 @@ error:
 
 static ssize_t sdl_audio_write(void *data, const void *s, size_t len)
 {
-   ssize_t ret      = 0;
+   size_t _len      = 0;
    sdl_audio_t *sdl = (sdl_audio_t*)data;
 
    /* If we shouldn't wait for space in a full outgoing sample queue... */
@@ -593,13 +573,12 @@ static ssize_t sdl_audio_write(void *data, const void *s, size_t len)
       write_amt = (avail > len) ? len : avail; /* Enqueue as much data as we can */
       fifo_write(sdl->speaker_buffer, s, write_amt);
       SDL_UnlockAudioDevice(sdl->speaker_device); /* Let the speaker thread run again */
-      ret       = write_amt; /* If the queue was full...well, too bad. */
+      _len      = write_amt; /* If the queue was full...well, too bad. */
    }
    else
    {
-      size_t written = 0;
       /* Until we've written all the sample data we have available... */
-      while (written < len)
+      while (_len < len)
       {
          size_t avail;
 
@@ -624,17 +603,16 @@ static ssize_t sdl_audio_write(void *data, const void *s, size_t len)
          }
          else
          {
-            size_t write_amt = len - written > avail ? avail : len - written;
-            fifo_write(sdl->speaker_buffer, (const char*)s + written, write_amt);
+            size_t write_amt = len - _len > avail ? avail : len - _len;
+            fifo_write(sdl->speaker_buffer, (const char*)s + _len, write_amt);
             /* Enqueue as many samples as we have available without overflowing the queue */
             SDL_UnlockAudioDevice(sdl->speaker_device); /* Let the SDL speaker thread run again */
-            written += write_amt;
+            _len += write_amt;
          }
       }
-      ret = written;
    }
 
-   return ret;
+   return _len;
 }
 
 static bool sdl_audio_stop(void *data)
