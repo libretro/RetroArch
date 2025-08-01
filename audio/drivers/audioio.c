@@ -189,11 +189,8 @@ static size_t audioio_write_avail(void *data)
    return audioio_buffer_size(data);
 }
 
-static bool audioio_use_float(void *data)
-{
-   (void)data;
-   return false;
-}
+/* TODO/FIXME - implement */
+static bool audioio_use_float(void *data) { return false; }
 
 audio_driver_t audio_audioio = {
    audioio_init,
