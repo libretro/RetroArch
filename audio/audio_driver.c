@@ -483,9 +483,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       dsp_data.output_frames         = 0;
 
       /* Initialize the DSP input/output.
-       * Our DSP implementations generally operate directly on the 
+       * Our DSP implementations generally operate directly on the
        * input buffer, so the output/output_frames attributes here are zero;
-       * the DSP filter will set them to useful values, most likely to be 
+       * the DSP filter will set them to useful values, most likely to be
        * the same as the inputs. */
 
       retro_dsp_filter_process(audio_st->dsp, &dsp_data);
@@ -565,7 +565,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          audio_st->avg_flush_delta = audio_st->avg_flush_delta * (n - 1) / n +
             (flush_time - audio_st->last_flush_time) / n;
 
-         /* How much does the avg_flush_delta deviate 
+         /* How much does the avg_flush_delta deviate
           * from the delta at 1.0x speed? */
          src_data.ratio *=
             MAX(AUDIO_MIN_RATIO,
@@ -598,7 +598,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 #endif
 
    /* Now we write our processed audio output to the driver.
-    * It may not be played immediately, depending on 
+    * It may not be played immediately, depending on
     * the driver implementation. */
    {
       const void *output_data = audio_st->output_samples_buf;
@@ -693,7 +693,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       audio_driver_st.flags     &= ~AUDIO_FLAG_ACTIVE;
       return false;
    }
-   
+
    audio_driver_st.flags     |= AUDIO_FLAG_ACTIVE;
 
    if (!(audio_driver_find_driver(settings->arrays.audio_driver,
@@ -929,7 +929,7 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    {
       size_t frames_to_write =
             (frames_remaining > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
-                  ? (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1) 
+                  ? (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)
                   : frames_remaining;
 
       if (recording_push_audio)
@@ -1996,7 +1996,7 @@ bool microphone_driver_start(void)
 
    /* If there's an opened microphone that the core turned on... */
    if (microphone->flags & MICROPHONE_FLAG_ACTIVE)
-   { 
+   {
       /* If this microphone was requested before the driver was ready...*/
       if (microphone->flags & MICROPHONE_FLAG_PENDING)
       {
@@ -2035,7 +2035,7 @@ bool microphone_driver_stop(void)
    microphone_driver_state_t *mic_st = &mic_driver_st;
    retro_microphone_t    *microphone = &mic_st->microphone;
 
-   /* If there's an opened microphone that the core 
+   /* If there's an opened microphone that the core
     * turned on and received... */
    if (      (microphone->flags & MICROPHONE_FLAG_ACTIVE)
          &&  (microphone->flags & MICROPHONE_FLAG_ENABLED)

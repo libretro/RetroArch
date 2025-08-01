@@ -180,10 +180,15 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
 
 static size_t al_fill_internal_buf(al_t *al, const void *s, size_t len)
 {
-   size_t written = MIN(OPENAL_BUFSIZE - al->tmpbuf_ptr, len);
-   memcpy(al->tmpbuf + al->tmpbuf_ptr, s, written);
-   al->tmpbuf_ptr += written;
-   return written;
+   size_t avail   = OPENAL_BUFSIZE - al->tmpbuf_ptr;
+   size_t written = MIN(avail, len);
+   if (written > 0)
+   {
+      memcpy(al->tmpbuf + al->tmpbuf_ptr, s, written);
+      al->tmpbuf_ptr += written;
+      return written;
+   }
+   return 0;
 }
 
 static ssize_t al_write(void *data, const void *s, size_t len)
@@ -230,9 +235,7 @@ static bool al_stop(void *data)
 static bool al_alive(void *data)
 {
    al_t *al = (al_t*)data;
-   if (!al)
-      return false;
-   return !al->is_paused;
+   return al && !al->is_paused;
 }
 
 static void al_set_nonblock_state(void *data, bool state)
