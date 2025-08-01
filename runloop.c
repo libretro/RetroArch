@@ -4282,43 +4282,64 @@ static bool event_init_content(
 
    runloop_path_init_savefile(runloop_st);
 
-   if (!event_load_save_files(runloop_st->flags &
-            RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED))
-      RARCH_LOG("[SRAM] %s\n",
-            msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
+   if (!event_load_save_files(runloop_st->flags & RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED))
+      RARCH_LOG("[SRAM] %s\n", msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
-/*
-   Since the operations are asynchronous we can't
-   guarantee users will not use auto_load_state to cheat on
-   achievements so we forbid auto_load_state from happening
-   if cheevos_enable and cheevos_hardcode_mode_enable
-   are true.
-*/
+   /* Set entry slot from playlist entry if available */
+   {
+      playlist_t *playlist = playlist_get_cached();
+
+      if (playlist)
+      {
+         struct menu_state *menu_st         = menu_state_get_ptr();
+         const struct playlist_entry *entry = NULL;
+
+         if (menu_st->driver_data)
+            playlist_get_index(playlist, menu_st->driver_data->rpl_entry_selection_ptr, &entry);
+
+         if (entry)
+            runloop_st->entry_state_slot = entry->entry_slot;
+      }
+
+      /* Set current active state slot */
+      if (runloop_st->entry_state_slot > -1)
+         configuration_set_int(settings, settings->ints.state_slot, runloop_st->entry_state_slot);
+   }
+
+   /*
+    * Since the operations are asynchronous we can't
+    * guarantee users will not use auto_load_state to cheat on
+    * achievements so we forbid auto_load_state from happening
+    * if cheevos_enable and cheevos_hardcode_mode_enable
+    * are true.
+    */
 #ifdef HAVE_CHEEVOS
    if (     !cheevos_enable
          || !cheevos_hardcore_mode_enable)
 #endif
    {
 #ifdef HAVE_BSV_MOVIE
-     /* ignore entry state if we're doing bsv playback (we do want it
-        for bsv recording though) */
-     if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK))
+      /* Ignore entry state if we're doing bsv playback (we do want it
+         for bsv recording though) */
+      if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK))
 #endif
       {
-         if (      runloop_st->entry_state_slot > -1
+         if (     runloop_st->entry_state_slot > -1
                && !command_event_load_entry_state(settings))
          {
-           /* loading the state failed, reset entry slot */
+            /* Loading the state failed, reset entry slot */
             runloop_st->entry_state_slot = -1;
          }
       }
+
 #ifdef HAVE_BSV_MOVIE
-     /* ignore autoload state if we're doing bsv playback or recording */
-     if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_START_RECORDING | BSV_FLAG_MOVIE_START_PLAYBACK)))
+      /* Ignore autoload state if we're doing bsv playback or recording */
+      if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_START_RECORDING | BSV_FLAG_MOVIE_START_PLAYBACK)))
 #endif
       {
-        if (runloop_st->entry_state_slot < 0 && settings->bools.savestate_auto_load)
-          command_event_load_auto_state();
+         if (     runloop_st->entry_state_slot < 0
+               && settings->bools.savestate_auto_load)
+            command_event_load_auto_state();
       }
    }
 
@@ -4326,25 +4347,25 @@ static bool event_init_content(
    movie_stop(input_st);
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_RECORDING)
    {
-     configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
+      configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 #ifndef HAVE_THREADS
-     /* Hack: the regular scheduler doesn't do the right thing here at
-        least in emscripten builds.  I would expect that the check in
-        task_movie.c:343 should defer recording until the movie task
-        is done, but maybe that task isn't enqueued again yet when the
-        movie-record task is checked?  Or the finder call in
-        content_load_state_in_progress is not correct?  Either way,
-        the load happens after the recording starts rather than the
-        right way around.
-     */
-     task_queue_wait(NULL,NULL);
+      /* Hack: the regular scheduler doesn't do the right thing here at
+         least in emscripten builds.  I would expect that the check in
+         task_movie.c:343 should defer recording until the movie task
+         is done, but maybe that task isn't enqueued again yet when the
+         movie-record task is checked?  Or the finder call in
+         content_load_state_in_progress is not correct?  Either way,
+         the load happens after the recording starts rather than the
+         right way around.
+      */
+      task_queue_wait(NULL, NULL);
 #endif
-     movie_start_record(input_st, input_st->bsv_movie_state.movie_start_path);
+      movie_start_record(input_st, input_st->bsv_movie_state.movie_start_path);
    }
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
    {
-     configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
-     movie_start_playback(input_st, input_st->bsv_movie_state.movie_start_path);
+      configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
+      movie_start_playback(input_st, input_st->bsv_movie_state.movie_start_path);
    }
 #endif
 

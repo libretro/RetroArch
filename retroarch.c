@@ -7203,6 +7203,9 @@ static bool retroarch_parse_input_and_config(
    runloop_st->current_core.flags &= ~(RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS
                                      | RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS);
 
+   /* Reset entry slot */
+   runloop_st->entry_state_slot = -1;
+
    /* Load the config file now that we know what it is */
 #ifdef HAVE_CONFIGFILE
    if (!(p_rarch->flags & RARCH_FLAGS_BLOCK_CONFIG_READ))
@@ -7773,7 +7776,6 @@ bool retroarch_main_init(int argc, char *argv[])
    input_st->osk_idx             = OSK_LOWERCASE_LATIN;
    video_st->flags              |= VIDEO_FLAG_ACTIVE;
    audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
-   runloop_st->entry_state_slot  = -1;
 
    if (setjmp(global->error_sjlj_context) > 0)
    {
@@ -8104,8 +8106,6 @@ bool retroarch_main_init(int argc, char *argv[])
 #ifdef HAVE_GAME_AI
    game_ai_init();
 #endif
-
-
 
    return true;
 

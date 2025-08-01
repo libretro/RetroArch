@@ -2008,7 +2008,8 @@ void playlist_write_file(playlist_t *playlist)
          /* Typecast required because playlist_entry.entry_slot is unsigned,
           * and 0 and -1 are redundant, but runloop.entry_state_slot is int16_t
           * and must be able to be negative, because 0 is a valid slot */
-         if ((int)playlist->entries[i].entry_slot > 0)
+         if (     (int)playlist->entries[i].entry_slot > 0
+               && !strstr(playlist->config.path, FILE_PATH_BUILTIN))
          {
             rjsonwriter_raw(writer, ",", 1);
             rjsonwriter_raw(writer, "\n", 1);
