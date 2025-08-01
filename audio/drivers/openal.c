@@ -53,6 +53,7 @@ typedef struct al
    uint8_t tmpbuf[OPENAL_BUFSIZE];
    bool nonblock;
    bool is_paused;
+   bool has_float;
 } al_t;
 
 static void al_free(void *data)
@@ -83,6 +84,7 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
 {
+   size_t _latency;
    al_t *al = (al_t*)calloc(1, sizeof(al_t));
    if (!al)
       return NULL;
@@ -100,12 +102,25 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
    al->rate  = rate;
    *new_rate = rate;
 
+   if (alIsExtensionPresent("AL_EXT_FLOAT32"))
+   {
+      al->has_float   = true;
+      al->format      = alGetEnumValue("AL_FORMAT_STEREO_FLOAT32");
+      _latency        = latency * rate * 2 * sizeof(int32_t);
+      RARCH_LOG("[OpenAL] Device supports float sample format\n");
+   }
+   else
+   {
+      al->format      = AL_FORMAT_STEREO16;
+      _latency        = latency * rate * 2 * sizeof(int16_t);
+   }
+
    /* We already use one buffer for tmpbuf. */
-   al->num_buffers = (latency * rate * 2 * sizeof(int16_t)) / (1000 * OPENAL_BUFSIZE) - 1;
+   al->num_buffers = _latency / (1000 * OPENAL_BUFSIZE) - 1;
    if (al->num_buffers < 2)
       al->num_buffers = 2;
 
-   RARCH_LOG("[OpenAL] Using %u buffers of %u bytes.\n", (unsigned)al->num_buffers, OPENAL_BUFSIZE);
+   RARCH_LOG("[OpenAL] Using %u buffers of %u bytes (%s format).\n", (unsigned)al->num_buffers, OPENAL_BUFSIZE, al->has_float ? "float" : "integer");
 
    al->buffers = (ALuint*)calloc(al->num_buffers, sizeof(ALuint));
    al->res_buf = (ALuint*)calloc(al->num_buffers, sizeof(ALuint));
@@ -193,7 +208,7 @@ static ssize_t al_write(void *data, const void *s, size_t len)
       if (!al_get_buffer(al, &buffer))
          break;
 
-      alBufferData(buffer, AL_FORMAT_STEREO16, al->tmpbuf, OPENAL_BUFSIZE, al->rate);
+      alBufferData(buffer, al->format, al->tmpbuf, OPENAL_BUFSIZE, al->rate);
       al->tmpbuf_ptr = 0;
       alSourceQueueBuffers(al->source, 1, &buffer);
 
@@ -248,7 +263,11 @@ static size_t al_buffer_size(void *data)
    return (al->num_buffers + 1) * OPENAL_BUFSIZE; /* Also got tmpbuf. */
 }
 
-static bool al_use_float(void *data) { return false; }
+static bool al_use_float(void *data)
+{
+   al_t *al = (al_t*)data;
+   return (al->has_float) ? true : false;
+}
 
 audio_driver_t audio_openal = {
    al_init,
