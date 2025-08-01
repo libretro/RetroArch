@@ -176,7 +176,11 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
    frames                = sdl_audio_find_num_frames(rate, latency / 4);
 
    desired_spec.freq     = rate;
+#ifdef HAVE_SDL2
    desired_spec.format   = AUDIO_F32SYS;
+#else
+   desired_spec.format   = AUDIO_S16SYS;
+#endif
    desired_spec.channels = 1; /* Microphones only usually provide input in mono */
    desired_spec.samples  = frames;
    desired_spec.userdata = mic;
@@ -497,7 +501,11 @@ static void *sdl_audio_init(const char *device,
 
    /* First, let's initialize the output device. */
    spec.freq     = rate;
+#ifdef HAVE_SDL2
    spec.format   = AUDIO_F32SYS;
+#else
+   spec.format   = AUDIO_S16SYS;
+#endif
    spec.channels = 2;
    spec.samples  = frames; /* This is in audio frames, not samples ... :( */
    spec.callback = sdl_audio_playback_cb;
@@ -549,10 +557,7 @@ static void *sdl_audio_init(const char *device,
          latency, (int)(sdl->device_spec.samples * 4 * 1000 / (*new_rate)));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
-   if (SDL_AUDIO_ISFLOAT(sdl->device_spec.format))
-      bufsize          = sdl->device_spec.samples * 4 * sizeof(float);
-   else
-      bufsize          = sdl->device_spec.samples * 4 * sizeof(int16_t);
+   bufsize             = sdl->device_spec.samples * 4 * (SDL_AUDIO_BITSIZE(sdl->device_spec.format) / 8);
    tmp                 = calloc(1, bufsize);
    sdl->speaker_buffer = fifo_new(bufsize);
 
