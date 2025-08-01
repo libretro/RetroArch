@@ -52,7 +52,6 @@ typedef struct al
    ALenum format;
    bool nonblock;
    bool is_paused;
-   bool has_float;
 } al_t;
 
 static void al_free(void *data)
@@ -103,7 +102,6 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
 
    if (alIsExtensionPresent("AL_EXT_FLOAT32"))
    {
-      al->has_float   = true;
       al->format      = alGetEnumValue("AL_FORMAT_STEREO_FLOAT32");
       _latency        = latency * rate * 2 * sizeof(float);
       RARCH_LOG("[OpenAL] Device supports float sample format\n");
@@ -119,7 +117,7 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
    if (al->num_buffers < 2)
       al->num_buffers = 2;
 
-   RARCH_LOG("[OpenAL] Using %u buffers of %u bytes (%s format).\n", (unsigned)al->num_buffers, OPENAL_BUFSIZE, al->has_float ? "float" : "integer");
+   RARCH_LOG("[OpenAL] Using %u buffers of %u bytes (%s format).\n", (unsigned)al->num_buffers, OPENAL_BUFSIZE, (al->format == AL_FORMAT_STEREO16) ? "integer" : "float");
 
    al->buffers = (ALuint*)calloc(al->num_buffers, sizeof(ALuint));
    al->res_buf = (ALuint*)calloc(al->num_buffers, sizeof(ALuint));
@@ -265,7 +263,9 @@ static size_t al_buffer_size(void *data)
 static bool al_use_float(void *data)
 {
    al_t *al = (al_t*)data;
-   return (al->has_float) ? true : false;
+   if (al->format == AL_FORMAT_STEREO16)
+      return false;
+   return true;
 }
 
 audio_driver_t audio_openal = {
