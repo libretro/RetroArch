@@ -50,7 +50,6 @@ typedef struct al
    size_t tmpbuf_ptr;
    int rate;
    ALenum format;
-   uint8_t tmpbuf[OPENAL_BUFSIZE];
    bool nonblock;
    bool is_paused;
 } al_t;
@@ -176,34 +175,27 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
    return true;
 }
 
-static size_t al_fill_internal_buf(al_t *al, const void *s, size_t len)
-{
-   size_t avail   = OPENAL_BUFSIZE - al->tmpbuf_ptr;
-   size_t written = MIN(avail, len);
-   if (written > 0)
-   {
-      memcpy(al->tmpbuf + al->tmpbuf_ptr, s, written);
-      al->tmpbuf_ptr += written;
-      return written;
-   }
-   return 0;
-}
-
 static ssize_t al_write(void *data, const void *s, size_t len)
 {
+   static uint8_t tmpbuf[OPENAL_BUFSIZE];
    al_t           *al = (al_t*)data;
    const uint8_t *buf = (const uint8_t*)s;
-   size_t     written = 0;
+   size_t        _len = 0;
 
    while (len)
    {
       ALint val;
       ALuint buffer;
-      size_t rc = al_fill_internal_buf(al, buf, len);
-
-      written += rc;
-      buf     += rc;
-      len     -= rc;
+      size_t avail = OPENAL_BUFSIZE - al->tmpbuf_ptr;
+      size_t rc    = MIN(avail, len);
+      if (rc > 0)
+      {
+         memcpy(tmpbuf + al->tmpbuf_ptr, buf, rc);
+         al->tmpbuf_ptr += rc;
+         _len           += rc;
+         buf            += rc;
+         len            -= rc;
+      }
 
       if (al->tmpbuf_ptr != OPENAL_BUFSIZE)
          break;
@@ -211,7 +203,7 @@ static ssize_t al_write(void *data, const void *s, size_t len)
       if (!al_get_buffer(al, &buffer))
          break;
 
-      alBufferData(buffer, al->format, al->tmpbuf, OPENAL_BUFSIZE, al->rate);
+      alBufferData(buffer, al->format, tmpbuf, OPENAL_BUFSIZE, al->rate);
       al->tmpbuf_ptr = 0;
       alSourceQueueBuffers(al->source, 1, &buffer);
 
@@ -219,7 +211,7 @@ static ssize_t al_write(void *data, const void *s, size_t len)
       if (val != AL_PLAYING)
          alSourcePlay(al->source);
    }
-   return written;
+   return _len;
 }
 
 static bool al_stop(void *data)
