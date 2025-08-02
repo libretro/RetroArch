@@ -121,7 +121,8 @@ static int stub_read_bin(
         void * s,
         uint32_t len,
         void * data
-){
+)
+{
 	stub_state_pre_print(data);
 	printf("b'%s'", (char*)s);
 	stub_state_post_print(data);

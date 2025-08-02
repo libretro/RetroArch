@@ -226,7 +226,6 @@ static void *alsa_microphone_open_mic(void *driver_context,
    if (!alsa) /* If we weren't given a valid ALSA context... */
       return NULL;
 
-
    /* If the microphone context couldn't be allocated... */
    if (!(mic = calloc(1, sizeof(alsa_microphone_handle_t))))
       return NULL;
@@ -326,10 +325,9 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
 
    RARCH_LOG("[ALSA] Using ALSA version %s.\n", snd_asoundlib_version());
 
-   if (alsa_init_pcm(&alsa->pcm, device, SND_PCM_STREAM_PLAYBACK, rate, latency, 2, &alsa->stream_info, new_rate, SND_PCM_NONBLOCK) < 0)
-   {
+   if (alsa_init_pcm(&alsa->pcm, device, SND_PCM_STREAM_PLAYBACK, rate,
+            latency, 2, &alsa->stream_info, new_rate, SND_PCM_NONBLOCK) < 0)
       goto error;
-   }
 
    return alsa;
 

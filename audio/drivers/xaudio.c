@@ -116,7 +116,7 @@ struct xaudio2
 };
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
-static void WINAPI voice_on_buffer_end(IXAudio2VoiceCallback *handle_, void *data)
+static void WINAPI xa_voice_on_buffer_end(IXAudio2VoiceCallback *handle_, void *data)
 {
    xaudio2_t *handle = (xaudio2_t*)handle_;
    (void)data;
@@ -124,19 +124,19 @@ static void WINAPI voice_on_buffer_end(IXAudio2VoiceCallback *handle_, void *dat
    SetEvent(handle->hEvent);
 }
 
-static void WINAPI dummy_voidp(IXAudio2VoiceCallback *handle, void *data) { (void)handle; (void)data; }
-static void WINAPI dummy_nil(IXAudio2VoiceCallback *handle) { (void)handle; }
-static void WINAPI dummy_uint32(IXAudio2VoiceCallback *handle, UINT32 dummy) { (void)handle; (void)dummy; }
-static void WINAPI dummy_voidp_hresult(IXAudio2VoiceCallback *handle, void *data, HRESULT dummy) { (void)handle; (void)data; (void)dummy; }
+static void WINAPI xa_dummy_voidp(IXAudio2VoiceCallback *handle, void *data) { (void)handle; (void)data; }
+static void WINAPI xa_dummy_nil(IXAudio2VoiceCallback *handle) { (void)handle; }
+static void WINAPI xa_dummy_uint32(IXAudio2VoiceCallback *handle, UINT32 dummy) { (void)handle; (void)dummy; }
+static void WINAPI xa_dummy_voidp_hresult(IXAudio2VoiceCallback *handle, void *data, HRESULT dummy) { (void)handle; (void)data; (void)dummy; }
 
-const struct IXAudio2VoiceCallbackVtbl voice_vtable = {
-   dummy_uint32,
-   dummy_nil,
-   dummy_nil,
-   dummy_voidp,
-   voice_on_buffer_end,
-   dummy_voidp,
-   dummy_voidp_hresult,
+const struct IXAudio2VoiceCallbackVtbl xa_voice_vtable = {
+   xa_dummy_uint32,
+   xa_dummy_nil,
+   xa_dummy_nil,
+   xa_dummy_voidp,
+   xa_voice_on_buffer_end,
+   xa_dummy_voidp,
+   xa_dummy_voidp_hresult,
 };
 #endif
 
@@ -221,7 +221,7 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
    list = (struct string_list*)xa_list_new(NULL);
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
-   handle->lpVtbl = &voice_vtable;
+   handle->lpVtbl = &xa_voice_vtable;
 #endif
 
    if (FAILED(XAudio2Create(&handle->pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))

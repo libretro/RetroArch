@@ -78,7 +78,7 @@ static void coreaudio_free(void *data)
    free(dev);
 }
 
-static OSStatus audio_write_cb(void *userdata,
+static OSStatus coreaudio_audio_write_cb(void *userdata,
       AudioUnitRenderActionFlags *action_flags,
       const AudioTimeStamp *time_stamp, UInt32 bus_number,
       UInt32 number_frames, AudioBufferList *io_data)
@@ -120,7 +120,7 @@ static OSStatus audio_write_cb(void *userdata,
 }
 
 #if !TARGET_OS_IPHONE
-static void choose_output_device(coreaudio_t *dev, const char* device)
+static void coreaudio_choose_output_device(coreaudio_t *dev, const char* device)
 {
    int i;
    UInt32 deviceCount;
@@ -232,7 +232,7 @@ static void *coreaudio_init(const char *device,
 
 #if !TARGET_OS_IPHONE
    if (device)
-      choose_output_device(dev, device);
+      coreaudio_choose_output_device(dev, device);
 #endif
 
    dev->dev_alive                = true;
@@ -281,7 +281,7 @@ static void *coreaudio_init(const char *device,
 #endif
 
    /* Set callbacks and finish up. */
-   cb.inputProc       = audio_write_cb;
+   cb.inputProc       = coreaudio_audio_write_cb;
    cb.inputProcRefCon = dev;
 
    if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_SetRenderCallback,

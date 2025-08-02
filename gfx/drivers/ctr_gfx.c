@@ -2991,11 +2991,12 @@ static void ctr_overlay_full_screen(void *data, bool enable)
    ctr->overlay_full_screen = enable;
 }
 
-static void ctr_overlay_set_alpha(void *data, unsigned image, float mod){ }
+/* TODO/FIXME - implement? */
+static void ctr_overlay_set_alpha(void *data, unsigned image, float mod) { }
 
 static void ctr_render_overlay(ctr_video_t *ctr)
 {
-   unsigned int i;
+   size_t i;
 
    for (i = 0; i < ctr->overlays; i++)
    {

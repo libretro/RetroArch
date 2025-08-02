@@ -465,7 +465,8 @@ static void drm_plane_setup(struct drm_surface *surface)
    {
       plane = drmModeGetPlane(drm.fd, plane_resources->planes[i]);
 
-      if (!(plane->possible_crtcs & (1 << crtc_index))){
+      if (!(plane->possible_crtcs & (1 << crtc_index)))
+      {
          RARCH_LOG("[DRM] Plane with ID %d can't be used with current CRTC.\n",
                plane->plane_id);
          continue;

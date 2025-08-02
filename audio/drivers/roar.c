@@ -126,16 +126,9 @@ static void ra_free(void *data)
    free(data);
 }
 
-static bool ra_use_float(void *data)
-{
-   return false;
-}
-
-static size_t ra_write_avail(void *data)
-{
-   (void)data;
-   return 0;
-}
+/* TODO/FIXME - implement? */
+static bool ra_use_float(void *data) { return false; }
+static size_t ra_write_avail(void *data) { return 0; }
 
 audio_driver_t audio_roar = {
    ra_init,

@@ -88,15 +88,15 @@ static void *alsa_qsa_init(const char *device,
    memset(&params, 0, sizeof(params));
 
    params.channel = SND_PCM_CHANNEL_PLAYBACK;
-   params.mode = SND_PCM_MODE_BLOCK;
+   params.mode    = SND_PCM_MODE_BLOCK;
 
    params.format.interleave = 1;
-   params.format.format = SND_PCM_SFMT_S16_LE;
-   params.format.rate = DEFAULT_RATE;
-   params.format.voices = 2;
+   params.format.format     = SND_PCM_SFMT_S16_LE;
+   params.format.rate       = DEFAULT_RATE;
+   params.format.voices     = 2;
 
    params.start_mode = SND_PCM_START_FULL;
-   params.stop_mode = SND_PCM_STOP_STOP;
+   params.stop_mode  = SND_PCM_STOP_STOP;
 
    params.buf.block.frag_size = pi.max_fragment_size;
    params.buf.block.frags_min = 2;

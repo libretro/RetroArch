@@ -26,8 +26,6 @@
 #include <string/stdstring.h>
 #include <asm-generic/errno.h>
 
-#include <retro_assert.h>
-
 #include "../audio_driver.h"
 #include "../common/alsa.h" /* For some common functions/types */
 #include "../../verbosity.h"
@@ -115,8 +113,6 @@ static void alsa_microphone_worker_thread(void *mic_context)
    alsa_thread_microphone_handle_t *mic = (alsa_thread_microphone_handle_t*)mic_context;
    uint8_t                         *buf = NULL;
    uintptr_t                  thread_id = sthread_get_current_thread_id();
-
-   retro_assert(mic != NULL);
 
    if (!(buf = (uint8_t *)calloc(1, mic->info.stream_info.period_size)))
    {
@@ -542,15 +538,14 @@ static void *alsa_thread_init(const char *device,
 
    RARCH_LOG("[ALSA] Using ALSA version %s.\n", snd_asoundlib_version());
 
-   if (alsa_init_pcm(&alsa->info.pcm, device, SND_PCM_STREAM_PLAYBACK, rate, latency, 2, &alsa->info.stream_info, new_rate, 0) < 0)
-   {
+   if (alsa_init_pcm(&alsa->info.pcm, device, SND_PCM_STREAM_PLAYBACK, rate,
+            latency, 2, &alsa->info.stream_info, new_rate, 0) < 0)
       goto error;
-   }
 
    alsa->info.fifo_lock = slock_new();
    alsa->info.cond_lock = slock_new();
-   alsa->info.cond = scond_new();
-   alsa->info.buffer = fifo_new(alsa->info.stream_info.buffer_size);
+   alsa->info.cond      = scond_new();
+   alsa->info.buffer    = fifo_new(alsa->info.stream_info.buffer_size);
    if (!alsa->info.fifo_lock || !alsa->info.cond_lock || !alsa->info.cond || !alsa->info.buffer)
       goto error;
 
@@ -653,15 +648,14 @@ static bool alsa_thread_start(void *data, bool is_shutdown)
 
 static size_t alsa_thread_write_avail(void *data)
 {
+   size_t _len;
    alsa_thread_t *alsa = (alsa_thread_t*)data;
-   size_t val;
-
    if (alsa->info.thread_dead)
       return 0;
    slock_lock(alsa->info.fifo_lock);
-   val = FIFO_WRITE_AVAIL(alsa->info.buffer);
+   _len = FIFO_WRITE_AVAIL(alsa->info.buffer);
    slock_unlock(alsa->info.fifo_lock);
-   return val;
+   return _len;
 }
 
 static size_t alsa_thread_buffer_size(void *data)

@@ -2202,10 +2202,12 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          const char *ps_src     = d3d12->shader_preset->pass[i].source.string.fragment;
          size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
          strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
-         if (!d3d_compile(vs_src, 0, _path, "main", "vs_5_0", &vs_code)){ }
+         /* TODO/FIXME - add error handling? */
+         d3d_compile(vs_src, 0, _path, "main", "vs_5_0", &vs_code);
 
          strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
-         if (!d3d_compile(ps_src, 0, _path, "main", "ps_5_0", &ps_code)){ }
+         /* TODO/FIXME - add error handling? */
+         d3d_compile(ps_src, 0, _path, "main", "ps_5_0", &ps_code);
 
          desc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
          if (i == d3d12->shader_preset->passes - 1)

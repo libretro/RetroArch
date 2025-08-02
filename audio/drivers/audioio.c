@@ -33,8 +33,7 @@
 #define DEFAULT_DEV "/dev/audio"
 
 static void *audioio_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
-      unsigned *new_out_rate)
+      unsigned block_frames, unsigned *new_out_rate)
 {
    struct audio_info info;
    const char *audiodev = device ? device : DEFAULT_DEV;
@@ -189,7 +188,7 @@ static size_t audioio_write_avail(void *data)
    return audioio_buffer_size(data);
 }
 
-/* TODO/FIXME - implement */
+/* TODO/FIXME - implement? */
 static bool audioio_use_float(void *data) { return false; }
 
 audio_driver_t audio_audioio = {

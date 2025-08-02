@@ -53,6 +53,8 @@
 #pragma comment(lib, "dxguid")
 #endif
 
+#define CHUNK_SIZE 256
+
 typedef struct dsound
 {
    LPDIRECTSOUND ds;
@@ -75,17 +77,6 @@ typedef struct dsound
    volatile bool thread_alive;
 } dsound_t;
 
-/* Forward declarations */
-static void *dsound_list_new(void *u);
-
-static INLINE unsigned write_avail(unsigned read_ptr,
-      unsigned write_ptr, unsigned buffer_size)
-{
-   return (read_ptr + buffer_size - write_ptr) % buffer_size;
-}
-
-#define CHUNK_SIZE 256
-
 struct audio_lock
 {
    void *chunk1;
@@ -94,7 +85,16 @@ struct audio_lock
    DWORD size2;
 };
 
-static bool grab_region(dsound_t *ds, uint32_t write_ptr,
+/* Forward declarations */
+static void *dsound_list_new(void *u);
+
+static INLINE unsigned _dsound_write_avail(unsigned read_ptr,
+      unsigned write_ptr, unsigned buffer_size)
+{
+   return (read_ptr + buffer_size - write_ptr) % buffer_size;
+}
+
+static bool dsound_grab_region(dsound_t *ds, uint32_t write_ptr,
       struct audio_lock *region, HRESULT res)
 {
    if (res == DSERR_BUFFERLOST)
@@ -152,7 +152,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       DWORD read_ptr, avail, fifo_avail;
 
       IDirectSoundBuffer_GetCurrentPosition(ds->dsb, &read_ptr, NULL);
-      avail = write_avail(read_ptr, write_ptr, ds->buffer_size);
+      avail = _dsound_write_avail(read_ptr, write_ptr, ds->buffer_size);
 
       EnterCriticalSection(&ds->crit);
       fifo_avail = FIFO_READ_AVAIL(ds->buffer);
@@ -174,7 +174,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       if ((res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
                   &region.chunk1, &region.size1, &region.chunk2, &region.size2, 0)) != DS_OK)
       {
-         if (!grab_region(ds, write_ptr, &region, res))
+         if (!dsound_grab_region(ds, write_ptr, &region, res))
          {
             ds->thread_alive = false;
             SetEvent(ds->event);
@@ -569,6 +569,7 @@ static size_t dsound_write_avail(void *data)
 }
 
 static size_t dsound_buffer_size(void *data) { return 4 * 1024; }
+/* TODO/FIXME - implement? */
 static bool dsound_use_float(void *data) { return false; }
 
 static void *dsound_list_new(void *u)

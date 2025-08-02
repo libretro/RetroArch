@@ -48,7 +48,7 @@ static ssize_t rsound_audio_cb(void *data, size_t bytes, void *userdata)
    return write_size;
 }
 
-static void err_cb(void *userdata)
+static void rsound_err_cb(void *userdata)
 {
    rsd_t *rsd = (rsd_t*)userdata;
    rsd->has_error = true;
@@ -85,7 +85,7 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
 
    rsd_set_param(rd, RSD_FORMAT, &format);
 
-   rsd_set_callback(rd, rsound_audio_cb, err_cb, 256, rsd);
+   rsd_set_callback(rd, rsound_audio_cb, rsound_err_cb, 256, rsd);
 
    if (rsd_start(rd) < 0)
    {
@@ -213,17 +213,9 @@ static size_t rs_write_avail(void *data)
    return val;
 }
 
-static size_t rs_buffer_size(void *data)
-{
-   (void)data;
-   return 1024 * 4;
-}
-
-static bool rs_use_float(void *data)
-{
-   (void)data;
-   return false;
-}
+/* TODO/FIXME - implement? */
+static size_t rs_buffer_size(void *data) { return 1024 * 4; }
+static bool rs_use_float(void *data) { return false; }
 
 audio_driver_t audio_rsound = {
    rs_init,

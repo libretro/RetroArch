@@ -72,7 +72,7 @@ static void pulse_free(void *data)
    free(pa);
 }
 
-static void stream_success_cb(pa_stream *s, int success, void *data)
+static void pulse_stream_success_cb(pa_stream *s, int success, void *data)
 {
    pa_t *pa = (pa_t*)data;
    (void)s;
@@ -80,7 +80,7 @@ static void stream_success_cb(pa_stream *s, int success, void *data)
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
-static void context_state_cb(pa_context *c, void *data)
+static void pulse_context_state_cb(pa_context *c, void *data)
 {
    pa_t *pa = (pa_t*)data;
 
@@ -121,7 +121,7 @@ static void pa_sinklist_cb(pa_context *c, const pa_sink_info *l, int eol, void *
    string_list_append(pa->devicelist, l->name, attr);
 }
 
-static void stream_state_cb(pa_stream *s, void *data)
+static void pulse_stream_state_cb(pa_stream *s, void *data)
 {
    pa_t *pa = (pa_t*)data;
 
@@ -142,19 +142,19 @@ static void stream_state_cb(pa_stream *s, void *data)
    }
 }
 
-static void stream_request_cb(pa_stream *s, size_t len, void *data)
+static void pulse_stream_request_cb(pa_stream *s, size_t len, void *data)
 {
    pa_t *pa = (pa_t*)data;
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
-static void stream_latency_update_cb(pa_stream *s, void *data)
+static void pulse_stream_latency_update_cb(pa_stream *s, void *data)
 {
    pa_t *pa = (pa_t*)data;
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
-static void underrun_update_cb(pa_stream *s, void *data)
+static void pulse_underrun_update_cb(pa_stream *s, void *data)
 {
 #if 0
    pa_t *pa = (pa_t*)data;
@@ -167,7 +167,7 @@ static void underrun_update_cb(pa_stream *s, void *data)
 #endif
 }
 
-static void buffer_attr_cb(pa_stream *s, void *data)
+static void pulse_buffer_attr_cb(pa_stream *s, void *data)
 {
    pa_t *pa = (pa_t*)data;
    const pa_buffer_attr *server_attr = pa_stream_get_buffer_attr(s);
@@ -180,19 +180,18 @@ static void buffer_attr_cb(pa_stream *s, void *data)
 }
 
 static void *pulse_init(const char *device, unsigned rate,
-      unsigned latency,
-      unsigned block_frames,
+      unsigned latency, unsigned block_frames,
       unsigned *new_rate)
 {
-   pa_sample_spec               spec;
+   pa_sample_spec spec;
    pa_buffer_attr        buffer_attr = {0};
    const pa_buffer_attr *server_attr = NULL;
    pa_t                          *pa = (pa_t*)calloc(1, sizeof(*pa));
 
-   memset(&spec, 0, sizeof(spec));
-
    if (!pa)
-      goto error;
+      return NULL;
+
+   memset(&spec, 0, sizeof(spec));
 
    pa->devicelist = string_list_new();
 
@@ -204,7 +203,7 @@ static void *pulse_init(const char *device, unsigned rate,
    if (!pa->context)
       goto error;
 
-   pa_context_set_state_callback(pa->context, context_state_cb, pa);
+   pa_context_set_state_callback(pa->context, pulse_context_state_cb, pa);
 
    /* Code is not prepared to use multiple PulseAudio servers, device is used as sink. */
    if (pa_context_connect(pa->context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
@@ -232,11 +231,12 @@ static void *pulse_init(const char *device, unsigned rate,
    if (!pa->stream)
       goto unlock_error;
 
-   pa_stream_set_state_callback(pa->stream, stream_state_cb, pa);
-   pa_stream_set_write_callback(pa->stream, stream_request_cb, pa);
-   pa_stream_set_latency_update_callback(pa->stream, stream_latency_update_cb, pa);
-   pa_stream_set_underflow_callback(pa->stream, underrun_update_cb, pa);
-   pa_stream_set_buffer_attr_callback(pa->stream, buffer_attr_cb, pa);
+   pa_stream_set_state_callback(pa->stream, pulse_stream_state_cb, pa);
+   pa_stream_set_write_callback(pa->stream, pulse_stream_request_cb, pa);
+   pa_stream_set_latency_update_callback(pa->stream,
+         pulse_stream_latency_update_cb, pa);
+   pa_stream_set_underflow_callback(pa->stream, pulse_underrun_update_cb, pa);
+   pa_stream_set_buffer_attr_callback(pa->stream, pulse_buffer_attr_cb, pa);
 
    buffer_attr.maxlength = -1;
    buffer_attr.tlength   = pa_usec_to_bytes(latency * PA_USEC_PER_MSEC, &spec);
@@ -288,14 +288,13 @@ static bool pulse_start(void *data, bool is_shutdown)
 
    pa->success = true; /* In case of spurious wakeup. Not critical. */
    pa_threaded_mainloop_lock(pa->mainloop);
-   pa_stream_cork(pa->stream, false, stream_success_cb, pa);
+   pa_stream_cork(pa->stream, false, pulse_stream_success_cb, pa);
    pa_threaded_mainloop_wait(pa->mainloop);
    ret = pa->success;
    pa_threaded_mainloop_unlock(pa->mainloop);
    pa->is_paused = false;
    return ret;
 }
-
 
 static ssize_t pulse_write(void *data, const void *s, size_t len)
 {
@@ -305,9 +304,8 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
 
    /* Workaround buggy menu code.
     * If a write happens while we're paused, we might never progress. */
-   if (pa->is_paused)
-      if (!pulse_start(pa, false))
-         return -1;
+   if (pa->is_paused && !pulse_start(pa, false))
+      return -1;
 
    if (!pa->is_ready)
       return 0;
@@ -347,7 +345,7 @@ static bool pulse_stop(void *data)
 
    pa->success = true; /* In case of spurious wakeup. Not critical. */
    pa_threaded_mainloop_lock(pa->mainloop);
-   pa_stream_cork(pa->stream, true, stream_success_cb, pa);
+   pa_stream_cork(pa->stream, true, pulse_stream_success_cb, pa);
    pa_threaded_mainloop_wait(pa->mainloop);
    ret = pa->success;
    pa_threaded_mainloop_unlock(pa->mainloop);

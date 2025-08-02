@@ -29,7 +29,6 @@
 #define BUFFER_COUNT 3
 #endif
 
-
 #define SAMPLE_RATE 48000
 #define NUM_CHANNELS 2
 

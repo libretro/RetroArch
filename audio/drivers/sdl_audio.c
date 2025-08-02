@@ -31,7 +31,6 @@
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
-#include "retro_assert.h"
 
 static INLINE int sdl_audio_find_num_frames(int rate, int latency)
 {

@@ -46,7 +46,7 @@ typedef struct jack
    bool is_paused;
 } jack_t;
 
-static size_t read_deinterleaved(float *dst[2], jack_nframes_t dst_offset,
+static size_t ja_read_deinterleaved(float *dst[2], jack_nframes_t dst_offset,
       jack_ringbuffer_data_t buf, jack_nframes_t nframes)
 {
    int i;
@@ -66,7 +66,7 @@ static size_t read_deinterleaved(float *dst[2], jack_nframes_t dst_offset,
    return nframes;
 }
 
-static int process_cb(jack_nframes_t nframes, void *data)
+static int ja_process_cb(jack_nframes_t nframes, void *data)
 {
    int i;
    jack_nframes_t read = 0;
@@ -88,7 +88,7 @@ static int process_cb(jack_nframes_t nframes, void *data)
    jack_ringbuffer_get_read_vector(jd->buffer, buf);
 
    for (i = 0; i < 2; i++)
-      read += read_deinterleaved(dst, read, buf[i], nframes - read);
+      read += ja_read_deinterleaved(dst, read, buf[i], nframes - read);
 
    jack_ringbuffer_read_advance(jd->buffer, read * sizeof(float) * 2);
 
@@ -102,7 +102,7 @@ static int process_cb(jack_nframes_t nframes, void *data)
    return 0;
 }
 
-static void shutdown_cb(void *data)
+static void ja_shutdown_cb(void *data)
 {
    jack_t *jd = (jack_t*)data;
 
@@ -115,7 +115,7 @@ static void shutdown_cb(void *data)
 #endif
 }
 
-static int parse_ports(char **dest_ports, const char **jports)
+static int ja_parse_ports(char **dest_ports, const char **jports)
 {
    int i;
    char           *save   = NULL;
@@ -137,7 +137,7 @@ static int parse_ports(char **dest_ports, const char **jports)
    return 2;
 }
 
-static size_t find_buffersize(jack_t *jd, int latency, unsigned out_rate)
+static size_t ja_find_buffersize(jack_t *jd, int latency, unsigned out_rate)
 {
    jack_latency_range_t range;
    int i, buffer_frames, min_buffer_frames;
@@ -190,8 +190,8 @@ static void *ja_init(const char *device,
 
    *new_rate = jack_get_sample_rate(jd->client);
 
-   jack_set_process_callback(jd->client, process_cb, jd);
-   jack_on_shutdown(jd->client, shutdown_cb, jd);
+   jack_set_process_callback(jd->client, ja_process_cb, jd);
+   jack_on_shutdown(jd->client, ja_shutdown_cb, jd);
 
    jd->ports[0] = jack_port_register(jd->client, "left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
    jd->ports[1] = jack_port_register(jd->client, "right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
@@ -208,7 +208,7 @@ static void *ja_init(const char *device,
       goto error;
    }
 
-   bufsize         = find_buffersize(jd, latency, *new_rate);
+   bufsize         = ja_find_buffersize(jd, latency, *new_rate);
    jd->buffer_size = bufsize;
 
    RARCH_LOG("[JACK] Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
@@ -220,7 +220,7 @@ static void *ja_init(const char *device,
       goto error;
    }
 
-   parsed = parse_ports(dest_ports, jports);
+   parsed = ja_parse_ports(dest_ports, jports);
 
    if (jack_activate(jd->client) < 0)
    {
