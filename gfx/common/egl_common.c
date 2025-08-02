@@ -636,8 +636,6 @@ bool egl_init_context(egl_ctx_data_t *egl,
       return false;
 
 #ifdef HAVE_DYLIB
-   egl_destroy_gl_dll();
-
    for (; *attrib_ptr != EGL_NONE; ++attrib_ptr)
    {
       if (*attrib_ptr == EGL_OPENGL_ES3_BIT_KHR)
