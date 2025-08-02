@@ -655,6 +655,9 @@ static void runloop_update_runtime_log(
    /* Update 'last played' entry */
    runtime_log_set_last_played_now(runtime_log);
 
+   /* Update state slot */
+   runtime_log->state_slot = config_get_ptr()->ints.state_slot;
+
    /* Save runtime log file */
    runtime_log_save(runtime_log);
 
@@ -4282,43 +4285,64 @@ static bool event_init_content(
 
    runloop_path_init_savefile(runloop_st);
 
-   if (!event_load_save_files(runloop_st->flags &
-            RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED))
-      RARCH_LOG("[SRAM] %s\n",
-            msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
+   if (!event_load_save_files(runloop_st->flags & RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED))
+      RARCH_LOG("[SRAM] %s\n", msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
-/*
-   Since the operations are asynchronous we can't
-   guarantee users will not use auto_load_state to cheat on
-   achievements so we forbid auto_load_state from happening
-   if cheevos_enable and cheevos_hardcode_mode_enable
-   are true.
-*/
+   /* Set entry slot from playlist entry if available */
+   {
+      playlist_t *playlist = playlist_get_cached();
+
+      if (playlist)
+      {
+         struct menu_state *menu_st         = menu_state_get_ptr();
+         const struct playlist_entry *entry = NULL;
+
+         if (menu_st->driver_data)
+            playlist_get_index(playlist, menu_st->driver_data->rpl_entry_selection_ptr, &entry);
+
+         if (entry)
+            runloop_st->entry_state_slot = entry->entry_slot;
+      }
+
+      /* Set current active state slot */
+      if (runloop_st->entry_state_slot > -1)
+         configuration_set_int(settings, settings->ints.state_slot, runloop_st->entry_state_slot);
+   }
+
+   /*
+    * Since the operations are asynchronous we can't
+    * guarantee users will not use auto_load_state to cheat on
+    * achievements so we forbid auto_load_state from happening
+    * if cheevos_enable and cheevos_hardcode_mode_enable
+    * are true.
+    */
 #ifdef HAVE_CHEEVOS
    if (     !cheevos_enable
          || !cheevos_hardcore_mode_enable)
 #endif
    {
 #ifdef HAVE_BSV_MOVIE
-     /* ignore entry state if we're doing bsv playback (we do want it
-        for bsv recording though) */
-     if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK))
+      /* Ignore entry state if we're doing bsv playback (we do want it
+         for bsv recording though) */
+      if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK))
 #endif
       {
-         if (      runloop_st->entry_state_slot > -1
+         if (     runloop_st->entry_state_slot > -1
                && !command_event_load_entry_state(settings))
          {
-           /* loading the state failed, reset entry slot */
+            /* Loading the state failed, reset entry slot */
             runloop_st->entry_state_slot = -1;
          }
       }
+
 #ifdef HAVE_BSV_MOVIE
-     /* ignore autoload state if we're doing bsv playback or recording */
-     if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_START_RECORDING | BSV_FLAG_MOVIE_START_PLAYBACK)))
+      /* Ignore autoload state if we're doing bsv playback or recording */
+      if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_START_RECORDING | BSV_FLAG_MOVIE_START_PLAYBACK)))
 #endif
       {
-        if (runloop_st->entry_state_slot < 0 && settings->bools.savestate_auto_load)
-          command_event_load_auto_state();
+         if (     runloop_st->entry_state_slot < 0
+               && settings->bools.savestate_auto_load)
+            command_event_load_auto_state();
       }
    }
 
@@ -4326,25 +4350,25 @@ static bool event_init_content(
    movie_stop(input_st);
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_RECORDING)
    {
-     configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
+      configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
 #ifndef HAVE_THREADS
-     /* Hack: the regular scheduler doesn't do the right thing here at
-        least in emscripten builds.  I would expect that the check in
-        task_movie.c:343 should defer recording until the movie task
-        is done, but maybe that task isn't enqueued again yet when the
-        movie-record task is checked?  Or the finder call in
-        content_load_state_in_progress is not correct?  Either way,
-        the load happens after the recording starts rather than the
-        right way around.
-     */
-     task_queue_wait(NULL,NULL);
+      /* Hack: the regular scheduler doesn't do the right thing here at
+         least in emscripten builds.  I would expect that the check in
+         task_movie.c:343 should defer recording until the movie task
+         is done, but maybe that task isn't enqueued again yet when the
+         movie-record task is checked?  Or the finder call in
+         content_load_state_in_progress is not correct?  Either way,
+         the load happens after the recording starts rather than the
+         right way around.
+      */
+      task_queue_wait(NULL, NULL);
 #endif
-     movie_start_record(input_st, input_st->bsv_movie_state.movie_start_path);
+      movie_start_record(input_st, input_st->bsv_movie_state.movie_start_path);
    }
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
    {
-     configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
-     movie_start_playback(input_st, input_st->bsv_movie_state.movie_start_path);
+      configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
+      movie_start_playback(input_st, input_st->bsv_movie_state.movie_start_path);
    }
 #endif
 
@@ -4355,6 +4379,7 @@ static bool event_init_content(
 
 static void runloop_runtime_log_init(runloop_state_t *runloop_st)
 {
+   settings_t *settings                = config_get_ptr();
    const char *content_path            = path_get(RARCH_PATH_CONTENT);
    const char *core_path               = path_get(RARCH_PATH_CORE);
 
@@ -4386,6 +4411,19 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
       strlcpy(runloop_st->runtime_core_path,
             core_path,
             sizeof(runloop_st->runtime_core_path));
+
+   if (     !settings->bools.content_runtime_log
+         && !settings->bools.content_runtime_log_aggregate)
+      return;
+
+   if (     !string_is_empty(content_path)
+         && !string_is_empty(core_path))
+      runtime_log_init(
+            runloop_st->runtime_content_path,
+            runloop_st->runtime_core_path,
+            settings->paths.directory_runtime_log,
+            settings->paths.directory_playlist,
+            true);
 }
 
 void runloop_set_frame_limit(
@@ -4634,16 +4672,9 @@ bool runloop_event_init_core(
    float fastforward_ratio         = 0.0f;
    rarch_system_info_t *sys_info   = &runloop_st->system;
 
-#ifdef HAVE_NETWORKING
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-   {
-      /* We need this in order for core_info_current_supports_netplay
-         to work correctly at init_netplay,
-         called later at event_init_content. */
-      command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-      command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
-   }
-#endif
+   /* Init core info files */
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 
    /* Load symbols */
    if (!runloop_init_libretro_symbols(runloop_st,
@@ -4771,7 +4802,12 @@ bool runloop_event_init_core(
    runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
    runloop_st->frame_limit_last_time    = cpu_features_get_time_usec();
 
+   /* Init runtime log and read current state slot */
    runloop_runtime_log_init(runloop_st);
+
+   if (runloop_st->entry_state_slot > -1)
+      configuration_set_int(settings, settings->ints.state_slot, runloop_st->entry_state_slot);
+
    return true;
 }
 

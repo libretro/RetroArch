@@ -1388,7 +1388,6 @@ void command_event_init_cheats(
 bool command_event_load_entry_state(settings_t *settings)
 {
    char entry_state_path[PATH_MAX_LENGTH] = "";
-   int entry_path_stats;
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    bool ret                        = false;
 
@@ -1417,10 +1416,7 @@ bool command_event_load_entry_state(settings_t *settings)
          return false;
    }
 
-   entry_path_stats = path_stat(entry_state_path);
-
-   if ((entry_path_stats & RETRO_VFS_STAT_IS_VALID) == 0
-         || (entry_path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+   if (!path_is_valid(entry_state_path))
       return false;
 
    ret = content_load_state(entry_state_path, false, true);
@@ -1430,32 +1426,30 @@ bool command_event_load_entry_state(settings_t *settings)
          entry_state_path);
    RARCH_LOG("[State] %s \"%s\" %s.\n",
          msg_hash_to_str(MSG_LOADING_ENTRY_STATE_FROM),
-         entry_state_path, ret ? "succeeded" : "failed"
-         );
-
-   if (ret)
-      configuration_set_int(settings, settings->ints.state_slot, runloop_st->entry_state_slot);
+         entry_state_path,
+         ret ? "succeeded" : "failed");
 
    return ret;
 }
 
-void command_event_load_auto_state(void)
+bool command_event_load_auto_state(void)
 {
    size_t _len;
    char savestate_name_auto[PATH_MAX_LENGTH];
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    const char *name_savestate      = runloop_st->name.savestate;
+   bool ret                        = false;
 
    if (!core_info_current_supports_savestate())
-      return;
+      return false;
 
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
-      return;
+      return false;
 #endif
 #ifdef HAVE_NETWORKING
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-      return;
+      return false;
 #endif
 
    _len = strlcpy(savestate_name_auto, name_savestate,
@@ -1464,20 +1458,19 @@ void command_event_load_auto_state(void)
          sizeof(savestate_name_auto) - _len);
 
    if (!path_is_valid(savestate_name_auto))
-      return;
+      return false;
+
+   ret = content_load_state(savestate_name_auto, false, true);
 
    RARCH_LOG("[State] %s \"%s\".\n",
          msg_hash_to_str(MSG_FOUND_AUTO_SAVESTATE_IN),
          savestate_name_auto);
+   RARCH_LOG("[State] %s \"%s\" %s.\n",
+         msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
+         savestate_name_auto,
+         ret ? "succeeded" : "failed");
 
-   if ((content_load_state(savestate_name_auto, false, true)))
-      RARCH_LOG("[State] %s \"%s\" %s.\n",
-            msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-            savestate_name_auto, "succeeded");
-   else
-      RARCH_LOG("[State] %s \"%s\" %s.\n",
-            msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
-            savestate_name_auto, "failed");
+   return ret;
 }
 
 /**

@@ -2762,8 +2762,6 @@ static int action_ok_playlist_entry_collection(const char *path,
       playlist_resolve_path(PLAYLIST_LOAD, false, content_path, sizeof(content_path));
    }
 
-   runloop_st->entry_state_slot = entry->entry_slot;
-
    /* Cache entry label */
    if (!string_is_empty(entry->label))
       strlcpy(content_label, entry->label, sizeof(content_label));
