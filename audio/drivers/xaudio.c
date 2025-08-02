@@ -343,6 +343,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency,
 
 static ssize_t xa_write(void *data, const void *s, size_t len)
 {
+   size_t _len           = 0;
    unsigned bytes        = len;
    xa_t *xa              = (xa_t*)data;
    xaudio2_t *handle     = xa->xa;
@@ -362,13 +363,16 @@ static ssize_t xa_write(void *data, const void *s, size_t len)
    {
       unsigned need   = MIN(bytes, handle->bufsize - handle->bufptr);
 
-      memcpy(handle->buf + handle->write_buffer *
-            handle->bufsize + handle->bufptr,
-            buffer, need);
-
-      handle->bufptr += need;
-      buffer         += need;
-      bytes          -= need;
+      if (need > 0)
+      {
+         memcpy(handle->buf + handle->write_buffer *
+               handle->bufsize + handle->bufptr,
+               buffer, need);
+         handle->bufptr += need;
+         buffer         += need;
+         _len           += need;
+         bytes          -= need;
+      }
 
       if (handle->bufptr == handle->bufsize)
       {
@@ -402,7 +406,7 @@ static ssize_t xa_write(void *data, const void *s, size_t len)
       }
    }
 
-   return len;
+   return _len;
 }
 
 static bool xa_stop(void *data)
