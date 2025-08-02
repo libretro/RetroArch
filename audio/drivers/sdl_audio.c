@@ -523,7 +523,8 @@ static void *sdl_audio_init(const char *device,
 #endif
    {
       RARCH_ERR("[SDL audio] Failed to open SDL audio output device: %s.\n", SDL_GetError());
-      goto error;
+      free(sdl);
+      return NULL;
    }
 
    *new_rate                = sdl->device_spec.freq;
@@ -571,10 +572,6 @@ static void *sdl_audio_init(const char *device,
    SDL_PauseAudioDevice(sdl->speaker_device, false);
 
    return sdl;
-
-error:
-   free(sdl);
-   return NULL;
 }
 
 static ssize_t sdl_audio_write(void *data, const void *s, size_t len)

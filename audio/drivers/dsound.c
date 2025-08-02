@@ -69,6 +69,7 @@ typedef struct dsound
 #else
    HANDLE thread;
 #endif
+   size_t fifo_bufsize;
    unsigned buffer_size;
 
    bool nonblock;
@@ -389,7 +390,6 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    LPGUID selected_device = NULL;
    WAVEFORMATEX wf        = {0};
    DSBUFFERDESC bufdesc   = {0};
-   int32_t idx_found      = -1;
    dsound_t *ds           = (dsound_t*)calloc(1, sizeof(*ds));
 
    if (!ds)
@@ -404,6 +404,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
        /* Search for device name first */
       if (list && list->elems)
       {
+         int32_t idx_found = -1;
          if (list->elems)
          {
             size_t i;
@@ -477,7 +478,8 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    if (!ds->event)
       goto error;
 
-   ds->buffer = fifo_new(4 * 1024);
+   ds->fifo_bufsize = 4 * 1024;
+   ds->buffer = fifo_new(ds->fifo_bufsize);
    if (!ds->buffer)
       goto error;
 
@@ -489,13 +491,9 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
 
    dsound_clear_buffer(ds);
 
-   if (IDirectSoundBuffer_Play(ds->dsb, 0, 0, DSBPLAY_LOOPING) != DS_OK)
-      goto error;
-
-   if (!dsound_start_thread(ds))
-      goto error;
-
-   return ds;
+   if (IDirectSoundBuffer_Play(ds->dsb, 0, 0, DSBPLAY_LOOPING) == DS_OK)
+      if (dsound_start_thread(ds))
+         return ds;
 
 error:
    RARCH_ERR("[DirectSound] Error occurred in init.\n");
@@ -605,7 +603,12 @@ static size_t dsound_write_avail(void *data)
    return avail;
 }
 
-static size_t dsound_buffer_size(void *data) { return 4 * 1024; }
+static size_t dsound_buffer_size(void *data)
+{
+   dsound_t *ds = (dsound_t*)data;
+   return ds->fifo_bufsize;
+}
+
 /* TODO/FIXME - implement? */
 static bool dsound_use_float(void *data) { return false; }
 

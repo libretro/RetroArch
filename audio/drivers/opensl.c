@@ -296,6 +296,7 @@ static size_t sl_buffer_size(void *data)
    return sl->buf_size * sl->buf_count;
 }
 
+/* TODO/FIXME - implement */
 static bool sl_use_float(void *data) { return false; }
 
 audio_driver_t audio_opensl = {
