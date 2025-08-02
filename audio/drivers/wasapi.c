@@ -1543,7 +1543,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
             size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
             if (!write_avail)
             {
-               if (!WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
+               if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0)
                {
                   BYTE *dest = NULL;
                   UINT32 frame_count = w->engine_buffer_size / w->frame_size;
