@@ -5341,7 +5341,7 @@ static unsigned menu_displaylist_parse_content_information(
       {
          if (runtime_log_has_runtime(runtime_log))
          {
-            /* Play time */
+            /* Runtime */
             tmp[0] = '\0';
             runtime_log_get_runtime_str(runtime_log, tmp, sizeof(tmp));
 
@@ -5362,6 +5362,19 @@ static unsigned menu_displaylist_parse_content_information(
                if (menu_entries_append(info_list, tmp,
                      msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_LAST_PLAYED),
                      MENU_ENUM_LABEL_CONTENT_INFO_LAST_PLAYED,
+                     0, 0, 0, NULL))
+                  count++;
+
+            /* Play Count */
+            tmp[0] = '\0';
+            snprintf(tmp, sizeof(tmp), "%s %u",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT),
+                  runtime_log->play_count);
+
+            if (!string_is_empty(tmp))
+               if (menu_entries_append(info_list, tmp,
+                     msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PLAY_COUNT),
+                     MENU_ENUM_LABEL_CONTENT_INFO_PLAY_COUNT,
                      0, 0, 0, NULL))
                   count++;
          }

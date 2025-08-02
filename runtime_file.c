@@ -55,6 +55,7 @@ typedef struct
    char **current_entry_val;
    char *runtime_string;
    char *last_played_string;
+   char *play_count;
    char *state_slot;
 } RtlJSONContext;
 
@@ -72,6 +73,8 @@ static bool RtlJSONObjectMemberHandler(void *ctx, const char *s, size_t len)
          p_ctx->current_entry_val = &p_ctx->runtime_string;
       else if (string_is_equal(s, "last_played"))
          p_ctx->current_entry_val = &p_ctx->last_played_string;
+      else if (string_is_equal(s, "play_count"))
+         p_ctx->current_entry_val = &p_ctx->play_count;
       else if (string_is_equal(s, "state_slot"))
          p_ctx->current_entry_val = &p_ctx->state_slot;
       /* Ignore unknown members */
@@ -115,6 +118,8 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    unsigned last_played_hour   = 0;
    unsigned last_played_minute = 0;
    unsigned last_played_second = 0;
+
+   unsigned play_count         = 0;
 
    unsigned state_slot         = 0;
 
@@ -198,6 +203,18 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
       }
    }
 
+   /* Play count */
+   if (!string_is_empty(context.play_count))
+   {
+      if (sscanf(context.play_count,
+               "%u",
+               &play_count) != 1)
+      {
+         RARCH_ERR("[Runtime] Invalid \"play count\" entry detected: \"%s\".\n", runtime_log->path);
+         goto end;
+      }
+   }
+
    /* State slot */
    if (!string_is_empty(context.state_slot))
    {
@@ -229,6 +246,8 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    runtime_log->last_played.minute = last_played_minute;
    runtime_log->last_played.second = last_played_second;
 
+   runtime_log->play_count         = play_count;
+
    runtime_log->state_slot         = state_slot;
 
 end:
@@ -237,6 +256,8 @@ end:
       free(context.runtime_string);
    if (context.last_played_string)
       free(context.last_played_string);
+   if (context.play_count)
+      free(context.play_count);
    if (context.state_slot)
       free(context.state_slot);
 
@@ -402,6 +423,8 @@ runtime_log_t *runtime_log_init(
    runtime_log->last_played.minute = 0;
    runtime_log->last_played.second = 0;
 
+   runtime_log->play_count         = 0;
+
    runtime_log->state_slot         = 0;
 
    runtime_log->path[0]            = '\0';
@@ -503,6 +526,8 @@ void runtime_log_reset(runtime_log_t *runtime_log)
    runtime_log->last_played.hour   = 0;
    runtime_log->last_played.minute = 0;
    runtime_log->last_played.second = 0;
+
+   runtime_log->play_count         = 0;
 
    runtime_log->state_slot         = 0;
 }
@@ -1146,6 +1171,20 @@ void runtime_log_save(runtime_log_t *runtime_log)
 
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "last_played");
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
+   rjsonwriter_add_string(writer, value_string);
+   rjsonwriter_raw(writer, ",", 1);
+   rjsonwriter_raw(writer, "\n", 1);
+
+   /* > Play count */
+   value_string[0] = '\0';
+   snprintf(value_string, sizeof(value_string),
+         "%u",
+         runtime_log->play_count);
+
+   rjsonwriter_add_spaces(writer, 2);
+   rjsonwriter_add_string(writer, "play_count");
    rjsonwriter_raw(writer, ":", 1);
    rjsonwriter_raw(writer, " ", 1);
    rjsonwriter_add_string(writer, value_string);
