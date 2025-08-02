@@ -621,7 +621,6 @@ bool egl_init_context(egl_ctx_data_t *egl,
    if (dpy == EGL_NO_DISPLAY)
    {
       RARCH_ERR("[EGL] Couldn't get EGL display.\n");
-      egl_destroy_gl_dll();
       return false;
    }
 
