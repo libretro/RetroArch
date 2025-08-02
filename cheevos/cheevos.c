@@ -1157,32 +1157,24 @@ static void rc_hash_handle_chd_close_track(void* track_handle)
 
 #endif
 
-static void rc_hash_reset_cdreader_hooks(void);
-
 static void* rc_hash_handle_cd_open_track(
-      const char* path, uint32_t track)
+      const char* path, uint32_t track, const rc_hash_iterator_t* iterator)
 {
-   struct rc_hash_filereader filereader;
-   struct rc_hash_cdreader cdreader;
-
-   memset(&filereader, 0, sizeof(filereader));
-   filereader.open = rc_hash_handle_file_open;
-   filereader.seek = rc_hash_handle_file_seek;
-   filereader.tell = rc_hash_handle_file_tell;
-   filereader.read = rc_hash_handle_file_read;
-   filereader.close = rc_hash_handle_file_close;
-   rc_hash_init_custom_filereader(&filereader);
+   rc_hash_callbacks_t* callbacks = (rc_hash_callbacks_t*)&iterator->callbacks;
+   callbacks->filereader.open = rc_hash_handle_file_open;
+   callbacks->filereader.seek = rc_hash_handle_file_seek;
+   callbacks->filereader.tell = rc_hash_handle_file_tell;
+   callbacks->filereader.read = rc_hash_handle_file_read;
+   callbacks->filereader.close = rc_hash_handle_file_close;
 
    if (string_is_equal_noncase(path_get_extension(path), "chd"))
    {
 #ifdef HAVE_CHD
       /* special handlers for CHD file */
-      memset(&cdreader, 0, sizeof(cdreader));
-      cdreader.open_track = rc_hash_handle_cd_open_track;
-      cdreader.read_sector = rc_hash_handle_chd_read_sector;
-      cdreader.close_track = rc_hash_handle_chd_close_track;
-      cdreader.first_track_sector = rc_hash_handle_chd_first_track_sector;
-      rc_hash_init_custom_cdreader(&cdreader);
+      callbacks->cdreader.open_track_iterator = rc_hash_handle_cd_open_track;
+      callbacks->cdreader.read_sector = rc_hash_handle_chd_read_sector;
+      callbacks->cdreader.close_track = rc_hash_handle_chd_close_track;
+      callbacks->cdreader.first_track_sector = rc_hash_handle_chd_first_track_sector;
 
       return rc_hash_handle_chd_open_track(path, track);
 #else
@@ -1193,9 +1185,9 @@ static void* rc_hash_handle_cd_open_track(
    else
    {
       /* not a CHD file, use the default handlers */
+      struct rc_hash_cdreader cdreader;
       rc_hash_get_default_cdreader(&cdreader);
-      rc_hash_reset_cdreader_hooks();
-      return cdreader.open_track(path, track);
+      return cdreader.open_track_iterator(path, track, iterator);
    }
 }
 
@@ -1203,7 +1195,7 @@ static void rc_hash_reset_cdreader_hooks(void)
 {
    struct rc_hash_cdreader cdreader;
    rc_hash_get_default_cdreader(&cdreader);
-   cdreader.open_track = rc_hash_handle_cd_open_track;
+   cdreader.open_track_iterator = rc_hash_handle_cd_open_track;
    rc_hash_init_custom_cdreader(&cdreader);
 }
 
