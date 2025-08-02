@@ -32,6 +32,10 @@
 
 #include "../audio_driver.h"
 
+#define CHUNK_FRAMES 64
+#define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))
+#define BLOCKS 16
+
 typedef struct
 {
    size_t write_ptr;
