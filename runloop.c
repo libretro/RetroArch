@@ -655,6 +655,9 @@ static void runloop_update_runtime_log(
    /* Update 'last played' entry */
    runtime_log_set_last_played_now(runtime_log);
 
+   /* Update play count */
+   runtime_log->play_count++;
+
    /* Update state slot */
    runtime_log->state_slot = config_get_ptr()->ints.state_slot;
 

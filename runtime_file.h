@@ -57,6 +57,7 @@ typedef struct
 {
    rtl_runtime_t runtime;           /* unsigned alignment */
    rtl_last_played_t last_played;   /* unsigned alignment */
+   unsigned play_count;
    unsigned state_slot;
    char path[PATH_MAX_LENGTH];
 } runtime_log_t;
