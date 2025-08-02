@@ -448,7 +448,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       goto error;
 #endif
 
-   dsound_set_format(&wf, true, 2, rate);
+   dsound_set_format(&wf, false, 2, rate);
    RARCH_DBG("[DirectSound] Requesting %u-bit %u-channel client with %s samples at %uHz %ums.\n",
          wf.wBitsPerSample,
          wf.nChannels,
