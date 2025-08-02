@@ -313,7 +313,7 @@ void egl_destroy_gl_dll(void)
       dylib_close(g_egl_gl_dll);
       g_egl_gl_dll = NULL;
    }
-   gl_egl_gl_dll_version = 0;
+   g_egl_gl_dll_version = 0;
 #endif
 }
 
