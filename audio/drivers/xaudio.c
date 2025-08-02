@@ -143,22 +143,22 @@ const struct IXAudio2VoiceCallbackVtbl xa_voice_vtable = {
 static void xaudio2_set_format(WAVEFORMATEX *wf,
       bool float_fmt, unsigned channels, unsigned rate)
 {
-   WORD wBitsPerSample     = float_fmt ? 32 : 16;
-   WORD nBlockAlign        = (channels * wBitsPerSample) / 8;
-   DWORD nAvgBytesPerSec   = rate * nBlockAlign;
+   WORD wBitsPerSample   = float_fmt ? 32 : 16;
+   WORD nBlockAlign      = (channels * wBitsPerSample) / 8;
+   DWORD nAvgBytesPerSec = rate * nBlockAlign;
 
    if (float_fmt)
-      wf->wFormatTag   = WAVE_FORMAT_IEEE_FLOAT;
+      wf->wFormatTag     = WAVE_FORMAT_IEEE_FLOAT;
    else
-      wf->wFormatTag   = WAVE_FORMAT_PCM;
+      wf->wFormatTag     = WAVE_FORMAT_PCM;
 
-   wf->nChannels       = channels;
-   wf->nSamplesPerSec  = rate;
-   wf->nAvgBytesPerSec = nAvgBytesPerSec;
-   wf->nBlockAlign     = nBlockAlign;
-   wf->wBitsPerSample  = wBitsPerSample;
+   wf->nChannels         = channels;
+   wf->nSamplesPerSec    = rate;
+   wf->nAvgBytesPerSec   = nAvgBytesPerSec;
+   wf->nBlockAlign       = nBlockAlign;
+   wf->wBitsPerSample    = wBitsPerSample;
 
-   wf->cbSize          = 0;
+   wf->cbSize            = 0;
 }
 
 static void xaudio2_free(xaudio2_t *handle)
