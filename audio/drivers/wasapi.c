@@ -602,7 +602,7 @@ static IMMDevice *wasapi_init_device(const char *id, unsigned data_flow)
       if (list->elems)
       {
          /* If any devices were found... */
-         unsigned d;
+         size_t d;
          for (d = 0; d < list->size; d++)
          {
             if (string_is_equal(id, list->elems[d].data))
