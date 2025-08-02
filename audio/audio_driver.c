@@ -686,7 +686,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.output_samples_conv_buf_length = outsamples_max * sizeof(int16_t);
    audio_driver_st.chunk_block_size               = AUDIO_CHUNK_SIZE_BLOCKING;
    audio_driver_st.chunk_nonblock_size            = AUDIO_CHUNK_SIZE_NONBLOCKING;
-   audio_driver_st.chunk_size                     = audio_driver_st.chunk_block_size;
+   audio_driver_st.chunk_size                     = AUDIO_CHUNK_SIZE_BLOCKING;
 
    if (!audio_enable)
    {
