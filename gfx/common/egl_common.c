@@ -33,15 +33,23 @@
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 
+#ifndef EGL_OPENGL_ES3_BIT_KHR
+#define EGL_OPENGL_ES3_BIT_KHR 0x0040
+#endif
+
 /* TODO/FIXME - globals */
 bool g_egl_inited    = false;
 
 unsigned g_egl_major = 0;
 unsigned g_egl_minor = 0;
 
-#if defined(HAVE_DYLIB) && defined(HAVE_DYNAMIC_EGL)
+#ifdef HAVE_DYLIB
 #include <dynamic/dylib.h>
 
+static dylib_t g_egl_gl_dll;
+#endif
+
+#if defined(HAVE_DYLIB) && defined(HAVE_DYNAMIC_EGL)
 typedef EGLBoolean(* PFN_EGL_QUERY_SURFACE)(
       EGLDisplay dpy,
       EGLSurface surface,
@@ -245,7 +253,24 @@ void egl_report_error(void)
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
 {
-   return _egl_get_proc_address(symbol);
+   gfx_ctx_proc_t proc = _egl_get_proc_address(symbol);
+   if (proc)
+      return proc;
+
+#ifdef HAVE_DYLIB
+   /* EGL versions older than 1.5 cannot get OpenGL functions that are required
+    * to be implemented (i.e. functions that are not extensions), so we may also
+    * need to check the OpenGL library directly for the symbol if EGL failed to
+    * find it. */
+   if (g_egl_gl_dll)
+   {
+      proc = (gfx_ctx_proc_t)dylib_proc(g_egl_gl_dll, symbol);
+      if (proc)
+         return proc;
+   }
+#endif
+
+   return NULL;
 }
 
 void egl_terminate(EGLDisplay dpy)
@@ -295,6 +320,14 @@ void egl_destroy(egl_ctx_data_t *egl)
          _egl_destroy_surface(egl->dpy, egl->surf);
       egl_terminate(egl->dpy);
    }
+
+#ifdef HAVE_DYLIB
+   if (g_egl_gl_dll)
+   {
+      dylib_close(g_egl_gl_dll);
+      g_egl_gl_dll = NULL;
+   }
+#endif
 
    /* Be as careful as possible in deinit.
     * If we screw up, any TTY will not restore.
@@ -560,7 +593,39 @@ bool egl_init_context(egl_ctx_data_t *egl,
       EGLint *count, const EGLint *attrib_ptr,
       egl_accept_config_cb_t cb)
 {
-   EGLDisplay dpy     = get_egl_display(platform, display_data);
+   EGLDisplay dpy;
+
+#ifdef HAVE_DYLIB
+   const EGLint *ptr = attrib_ptr;
+   bool gles3_attrib_found = false;
+   bool gles2_attrib_found = false;
+   bool gl_attrib_found = false;
+
+   if (g_egl_gl_dll)
+   {
+      dylib_close(g_egl_gl_dll);
+      g_egl_gl_dll = NULL;
+   }
+
+   for (; *ptr != EGL_NONE; ++ptr)
+   {
+      if (*ptr == EGL_OPENGL_ES3_BIT_KHR)
+         gles3_attrib_found = true;
+      else if (*ptr == EGL_OPENGL_ES2_BIT)
+         gles2_attrib_found = true;
+      else if (*ptr == EGL_OPENGL_BIT)
+         gl_attrib_found = true;
+   }
+
+   if (gles3_attrib_found)
+      g_egl_gl_dll = dylib_load("libGLESv3.so");
+   else if (gles2_attrib_found)
+      g_egl_gl_dll = dylib_load("libGLESv2.so");
+   else if (gl_attrib_found)
+      g_egl_gl_dll = dylib_load("libGL.so");
+#endif
+
+   dpy = get_egl_display(platform, display_data);
 
    if (dpy == EGL_NO_DISPLAY)
    {
