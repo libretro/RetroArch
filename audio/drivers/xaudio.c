@@ -199,8 +199,23 @@ static void xaudio2_free(xaudio2_t *handle)
 #endif
 }
 
+static const char *xaudio2_wave_format_name(WAVEFORMATEX *format)
+{
+   switch (format->wFormatTag)
+   {
+      case WAVE_FORMAT_PCM:
+         return "WAVE_FORMAT_PCM";
+      case WAVE_FORMAT_IEEE_FLOAT:
+         return "WAVE_FORMAT_IEEE_FLOAT";
+      default:
+         break;
+   }
+
+   return "<unknown>";
+}
+
 static xaudio2_t *xaudio2_new(unsigned rate, unsigned channels,
-      size_t len, const char *dev_id)
+      unsigned latency, size_t len, const char *dev_id)
 {
    int32_t idx_found        = -1;
    WAVEFORMATEX wf          = {0};
@@ -294,6 +309,12 @@ static xaudio2_t *xaudio2_new(unsigned rate, unsigned channels,
 #endif
 
    xaudio2_set_format(&wf, true, channels, rate);
+   RARCH_DBG("[XAudio2] Requesting %u-bit %u-channel client with %s samples at %uHz %ums.\n",
+         wf.wBitsPerSample,
+         wf.nChannels,
+         xaudio2_wave_format_name(&wf),
+         wf.nSamplesPerSec,
+         latency);
 
    if (FAILED(IXAudio2_CreateSourceVoice(handle->pXAudio2,
                &handle->pSourceVoice, &wf,
@@ -340,7 +361,7 @@ static void *xa_init(const char *dev_id, unsigned rate, unsigned latency,
    bufsize     = latency * rate / 1000;
    xa->bufsize = bufsize * 2 * sizeof(float);
 
-   if (!(xa->xa = xaudio2_new(rate, 2, xa->bufsize, dev_id)))
+   if (!(xa->xa = xaudio2_new(rate, 2, latency, xa->bufsize, dev_id)))
    {
       RARCH_ERR("[XAudio2] Failed to init driver.\n");
       free(xa);

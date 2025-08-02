@@ -120,21 +120,21 @@ static const char *hresult_name(HRESULT hr)
    return "<unknown>";
 }
 
-static const char *wave_subtype_name(const GUID *guid)
+static const char *wasapi_wave_subtype_name(const GUID *guid)
 {
    if (!memcmp(guid, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, sizeof(GUID)))
       return "KSDATAFORMAT_SUBTYPE_IEEE_FLOAT";
    return "<unknown sub-format>";
 }
 
-static const char *wave_format_name(const WAVEFORMATEXTENSIBLE *format)
+static const char *wasapi_wave_format_name(const WAVEFORMATEXTENSIBLE *format)
 {
    switch (format->Format.wFormatTag)
    {
       case WAVE_FORMAT_PCM:
          return "WAVE_FORMAT_PCM";
       case WAVE_FORMAT_EXTENSIBLE:
-         return wave_subtype_name(&format->SubFormat);
+         return wasapi_wave_subtype_name(&format->SubFormat);
       default:
          break;
    }
@@ -267,7 +267,7 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
       case S_FALSE:
          /* The requested format is unsupported, but Windows has suggested a similar one. */
          RARCH_DBG("[WASAPI] Windows suggests a format of (%s, %u-channel, %uHz).\n",
-               wave_format_name(suggested_format),
+               wasapi_wave_format_name(suggested_format),
                suggested_format->Format.nChannels,
                suggested_format->Format.nSamplesPerSec);
 
@@ -306,7 +306,7 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
                   *format = possible_format;
                   result  = true;
                   RARCH_DBG("[WASAPI] RetroArch suggests a format of (%s, %u-channel, %uHz).\n",
-                        wave_format_name(format),
+                        wasapi_wave_format_name(format),
                         format->Format.nChannels,
                         format->Format.nSamplesPerSec);
                   goto done;
@@ -361,7 +361,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    RARCH_DBG("[WASAPI] Requesting exclusive %u-bit %u-channel client with %s samples at %uHz %ums.\n",
          wf.Format.wBitsPerSample,
          wf.Format.nChannels,
-         wave_format_name(&wf),
+         wasapi_wave_format_name(&wf),
          wf.Format.nSamplesPerSec,
          latency);
 
@@ -500,7 +500,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    RARCH_DBG("[WASAPI] Requesting shared %u-bit %u-channel client with %s samples at %uHz %ums.\n",
          wf.Format.wBitsPerSample,
          wf.Format.nChannels,
-         wave_format_name(&wf),
+         wasapi_wave_format_name(&wf),
          wf.Format.nSamplesPerSec,
          latency);
 
