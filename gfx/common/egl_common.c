@@ -611,7 +611,6 @@ bool egl_init_context(egl_ctx_data_t *egl,
       egl_accept_config_cb_t cb)
 {
 #ifdef HAVE_DYLIB
-   const EGLint *ptr = attrib_ptr;
    bool gles3_attrib_found = false;
    bool gles2_attrib_found = false;
    bool gl_attrib_found = false;
@@ -640,13 +639,13 @@ bool egl_init_context(egl_ctx_data_t *egl,
 #ifdef HAVE_DYLIB
    egl_destroy_gl_dll();
 
-   for (; *ptr != EGL_NONE; ++ptr)
+   for (; *attrib_ptr != EGL_NONE; ++attrib_ptr)
    {
-      if (*ptr == EGL_OPENGL_ES3_BIT_KHR)
+      if (*attrib_ptr == EGL_OPENGL_ES3_BIT_KHR)
          gles3_attrib_found = true;
-      else if (*ptr == EGL_OPENGL_ES2_BIT)
+      else if (*attrib_ptr == EGL_OPENGL_ES2_BIT)
          gles2_attrib_found = true;
-      else if (*ptr == EGL_OPENGL_BIT)
+      else if (*attrib_ptr == EGL_OPENGL_BIT)
          gl_attrib_found = true;
    }
 
