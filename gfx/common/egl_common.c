@@ -46,7 +46,8 @@ unsigned g_egl_minor = 0;
 #ifdef HAVE_DYLIB
 #include <dynamic/dylib.h>
 
-static dylib_t g_egl_gl_dll;
+static dylib_t g_egl_gl_dll = NULL;
+static EGLint g_egl_gl_dll_version = 0;
 #endif
 
 #if defined(HAVE_DYLIB) && defined(HAVE_DYNAMIC_EGL)
@@ -262,6 +263,16 @@ gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
     * to be implemented (i.e. functions that are not extensions), so we may also
     * need to check the OpenGL library directly for the symbol if EGL failed to
     * find it. */
+   if (g_egl_gl_dll_version)
+   {
+      if (g_egl_gl_dll_version == EGL_OPENGL_ES3_BIT_KHR)
+         g_egl_gl_dll = dylib_load("libGLESv3.so");
+      else if (g_egl_gl_dll_version == EGL_OPENGL_ES2_BIT)
+         g_egl_gl_dll = dylib_load("libGLESv2.so");
+      else if (g_egl_gl_dll_version == EGL_OPENGL_BIT)
+         g_egl_gl_dll = dylib_load("libGL.so");
+      g_egl_gl_dll_version = 0;
+   }
    if (g_egl_gl_dll)
    {
       proc = (gfx_ctx_proc_t)dylib_proc(g_egl_gl_dll, symbol);
@@ -302,6 +313,7 @@ void egl_destroy_gl_dll(void)
       dylib_close(g_egl_gl_dll);
       g_egl_gl_dll = NULL;
    }
+   gl_egl_gl_dll_version = 0;
 #endif
 }
 
@@ -472,7 +484,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 
          RARCH_LOG("[EGL] Found EGL client version >= 1.5, trying eglGetPlatformDisplay.\n");
          ptr_eglGetPlatformDisplay = (pfn_eglGetPlatformDisplay)
-            egl_get_proc_address("eglGetPlatformDisplay");
+            _egl_get_proc_address("eglGetPlatformDisplay");
 
          if (ptr_eglGetPlatformDisplay)
          {
@@ -490,7 +502,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 
          RARCH_LOG("[EGL] Found EGL_EXT_platform_base, trying eglGetPlatformDisplayEXT.\n");
          ptr_eglGetPlatformDisplayEXT = (PFNEGLGETPLATFORMDISPLAYEXTPROC)
-            egl_get_proc_address("eglGetPlatformDisplayEXT");
+            _egl_get_proc_address("eglGetPlatformDisplayEXT");
 
          if (ptr_eglGetPlatformDisplayEXT)
          {
@@ -598,14 +610,34 @@ bool egl_init_context(egl_ctx_data_t *egl,
       EGLint *count, const EGLint *attrib_ptr,
       egl_accept_config_cb_t cb)
 {
-   EGLDisplay dpy;
-
 #ifdef HAVE_DYLIB
    const EGLint *ptr = attrib_ptr;
    bool gles3_attrib_found = false;
    bool gles2_attrib_found = false;
    bool gl_attrib_found = false;
+#endif
 
+   EGLDisplay dpy = get_egl_display(platform, display_data);
+
+   if (dpy == EGL_NO_DISPLAY)
+   {
+      RARCH_ERR("[EGL] Couldn't get EGL display.\n");
+      egl_destroy_gl_dll();
+      return false;
+   }
+
+   egl->dpy = dpy;
+
+   if (!egl_initialize(egl->dpy, major, minor))
+      return false;
+
+   RARCH_LOG("[EGL] EGL version: %d.%d.\n", *major, *minor);
+
+   if (!egl_init_context_common(egl, count, attrib_ptr, cb,
+         display_data))
+      return false;
+
+#ifdef HAVE_DYLIB
    egl_destroy_gl_dll();
 
    for (; *ptr != EGL_NONE; ++ptr)
@@ -619,40 +651,14 @@ bool egl_init_context(egl_ctx_data_t *egl,
    }
 
    if (gles3_attrib_found)
-      g_egl_gl_dll = dylib_load("libGLESv3.so");
+      g_egl_gl_dll_version = EGL_OPENGL_ES3_BIT_KHR;
    else if (gles2_attrib_found)
-      g_egl_gl_dll = dylib_load("libGLESv2.so");
+      g_egl_gl_dll_version = EGL_OPENGL_ES2_BIT;
    else if (gl_attrib_found)
-      g_egl_gl_dll = dylib_load("libGL.so");
+      g_egl_gl_dll_version = EGL_OPENGL_BIT;
 #endif
 
-   dpy = get_egl_display(platform, display_data);
-
-   if (dpy == EGL_NO_DISPLAY)
-   {
-      RARCH_ERR("[EGL] Couldn't get EGL display.\n");
-      egl_destroy_gl_dll();
-      return false;
-   }
-
-   egl->dpy = dpy;
-
-   if (!egl_initialize(egl->dpy, major, minor))
-   {
-      egl_destroy_gl_dll();
-      return false;
-   }
-
-   RARCH_LOG("[EGL] EGL version: %d.%d.\n", *major, *minor);
-
-   if (egl_init_context_common(egl, count, attrib_ptr, cb,
-         display_data))
-      return true;
-   else
-   {
-      egl_destroy_gl_dll();
-      return false;
-   }
+   return true;
 }
 
 bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
