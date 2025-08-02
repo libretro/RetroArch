@@ -294,6 +294,17 @@ bool egl_bind_api(EGLenum egl_api)
    return _egl_bind_api(egl_api);
 }
 
+void egl_destroy_gl_dll(void)
+{
+#ifdef HAVE_DYLIB
+   if (g_egl_gl_dll)
+   {
+      dylib_close(g_egl_gl_dll);
+      g_egl_gl_dll = NULL;
+   }
+#endif
+}
+
 void egl_destroy(egl_ctx_data_t *egl)
 {
    if (egl->dpy)
@@ -321,13 +332,7 @@ void egl_destroy(egl_ctx_data_t *egl)
       egl_terminate(egl->dpy);
    }
 
-#ifdef HAVE_DYLIB
-   if (g_egl_gl_dll)
-   {
-      dylib_close(g_egl_gl_dll);
-      g_egl_gl_dll = NULL;
-   }
-#endif
+   egl_destroy_gl_dll();
 
    /* Be as careful as possible in deinit.
     * If we screw up, any TTY will not restore.
@@ -601,11 +606,7 @@ bool egl_init_context(egl_ctx_data_t *egl,
    bool gles2_attrib_found = false;
    bool gl_attrib_found = false;
 
-   if (g_egl_gl_dll)
-   {
-      dylib_close(g_egl_gl_dll);
-      g_egl_gl_dll = NULL;
-   }
+   egl_destroy_gl_dll();
 
    for (; *ptr != EGL_NONE; ++ptr)
    {
@@ -630,13 +631,7 @@ bool egl_init_context(egl_ctx_data_t *egl,
    if (dpy == EGL_NO_DISPLAY)
    {
       RARCH_ERR("[EGL] Couldn't get EGL display.\n");
-#ifdef HAVE_DYLIB
-      if (g_egl_gl_dll)
-      {
-         dylib_close(g_egl_gl_dll);
-         g_egl_gl_dll = NULL;
-      }
-#endif
+      egl_destroy_gl_dll();
       return false;
    }
 
@@ -644,13 +639,7 @@ bool egl_init_context(egl_ctx_data_t *egl,
 
    if (!egl_initialize(egl->dpy, major, minor))
    {
-#ifdef HAVE_DYLIB
-      if (g_egl_gl_dll)
-      {
-         dylib_close(g_egl_gl_dll);
-         g_egl_gl_dll = NULL;
-      }
-#endif
+      egl_destroy_gl_dll();
       return false;
    }
 
@@ -661,13 +650,7 @@ bool egl_init_context(egl_ctx_data_t *egl,
       return true;
    else
    {
-#ifdef HAVE_DYLIB
-      if (g_egl_gl_dll)
-      {
-         dylib_close(g_egl_gl_dll);
-         g_egl_gl_dll = NULL;
-      }
-#endif
+      egl_destroy_gl_dll();
       return false;
    }
 }
