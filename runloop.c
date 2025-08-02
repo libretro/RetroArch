@@ -655,6 +655,9 @@ static void runloop_update_runtime_log(
    /* Update 'last played' entry */
    runtime_log_set_last_played_now(runtime_log);
 
+   /* Update state slot */
+   runtime_log->state_slot = config_get_ptr()->ints.state_slot;
+
    /* Save runtime log file */
    runtime_log_save(runtime_log);
 
@@ -4376,6 +4379,7 @@ static bool event_init_content(
 
 static void runloop_runtime_log_init(runloop_state_t *runloop_st)
 {
+   settings_t *settings                = config_get_ptr();
    const char *content_path            = path_get(RARCH_PATH_CONTENT);
    const char *core_path               = path_get(RARCH_PATH_CORE);
 
@@ -4407,6 +4411,19 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
       strlcpy(runloop_st->runtime_core_path,
             core_path,
             sizeof(runloop_st->runtime_core_path));
+
+   if (     !settings->bools.content_runtime_log
+         && !settings->bools.content_runtime_log_aggregate)
+      return;
+
+   if (     !string_is_empty(content_path)
+         && !string_is_empty(core_path))
+      runtime_log_init(
+            runloop_st->runtime_content_path,
+            runloop_st->runtime_core_path,
+            settings->paths.directory_runtime_log,
+            settings->paths.directory_playlist,
+            true);
 }
 
 void runloop_set_frame_limit(
@@ -4655,16 +4672,9 @@ bool runloop_event_init_core(
    float fastforward_ratio         = 0.0f;
    rarch_system_info_t *sys_info   = &runloop_st->system;
 
-#ifdef HAVE_NETWORKING
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-   {
-      /* We need this in order for core_info_current_supports_netplay
-         to work correctly at init_netplay,
-         called later at event_init_content. */
-      command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-      command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
-   }
-#endif
+   /* Init core info files */
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 
    /* Load symbols */
    if (!runloop_init_libretro_symbols(runloop_st,
@@ -4792,7 +4802,12 @@ bool runloop_event_init_core(
    runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
    runloop_st->frame_limit_last_time    = cpu_features_get_time_usec();
 
+   /* Init runtime log and read current state slot */
    runloop_runtime_log_init(runloop_st);
+
+   if (runloop_st->entry_state_slot > -1)
+      configuration_set_int(settings, settings->ints.state_slot, runloop_st->entry_state_slot);
+
    return true;
 }
 
