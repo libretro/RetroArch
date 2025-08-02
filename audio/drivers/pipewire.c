@@ -20,7 +20,6 @@
 #include <pipewire/pipewire.h>
 
 #include <boolean.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 
@@ -49,37 +48,34 @@ typedef struct pipewire_audio
    uint8_t buffer[RINGBUFFER_SIZE];
 } pipewire_audio_t;
 
-static size_t pipewire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
+static size_t pwire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
 {
-   uint32_t sample_size = 1;
    switch (fmt)
    {
       case SPA_AUDIO_FORMAT_S8:
       case SPA_AUDIO_FORMAT_U8:
-         sample_size = 1;
          break;
       case SPA_AUDIO_FORMAT_S16_BE:
       case SPA_AUDIO_FORMAT_S16_LE:
       case SPA_AUDIO_FORMAT_U16_BE:
       case SPA_AUDIO_FORMAT_U16_LE:
-         sample_size = 2;
-         break;
+         return 2 * nchannels;
       case SPA_AUDIO_FORMAT_S32_BE:
       case SPA_AUDIO_FORMAT_S32_LE:
       case SPA_AUDIO_FORMAT_U32_BE:
       case SPA_AUDIO_FORMAT_U32_LE:
       case SPA_AUDIO_FORMAT_F32_BE:
       case SPA_AUDIO_FORMAT_F32_LE:
-         sample_size = 4;
+         return 4 * nchannels;
          break;
       default:
          RARCH_ERR("[PipeWire] Bad spa_audio_format %d.\n", fmt);
          break;
    }
-   return sample_size * nchannels;
+   return nchannels;
 }
 
-static void pipewire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
+static void pwire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
 {
    memcpy(position, (uint32_t[SPA_AUDIO_MAX_CHANNELS]) { SPA_AUDIO_CHANNEL_UNKNOWN, },
          sizeof(uint32_t) * SPA_AUDIO_MAX_CHANNELS);
@@ -110,9 +106,9 @@ static void pipewire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO
 
 #ifdef HAVE_MICROPHONE
 typedef struct pipewire_audio pipewire_microphone_t;
-static void stream_destroy_cb(void *data);
+static void pwire_stream_destroy_cb(void *data);
 
-static void mic_stream_state_changed_cb(void *data,
+static void pwire_mic_stream_state_changed_cb(void *data,
       enum pw_stream_state old, enum pw_stream_state state, const char *error)
 {
    pipewire_microphone_t *mic = (pipewire_microphone_t*)data;
@@ -124,7 +120,7 @@ static void mic_stream_state_changed_cb(void *data,
    pw_thread_loop_signal(mic->pw->thread_loop, false);
 }
 
-static void capture_process_cb(void *data)
+static void pwire_capture_process_cb(void *data)
 {
    void *p;
    int32_t filled;
@@ -132,9 +128,6 @@ static void capture_process_cb(void *data)
    struct spa_buffer *buf;
    uint32_t idx, offs, n_bytes;
    pipewire_microphone_t *mic = (pipewire_microphone_t*)data;
-
-   retro_assert(mic);
-   retro_assert(mic->stream);
 
    if (!(b = pw_stream_dequeue_buffer(mic->stream)))
    {
@@ -170,12 +163,12 @@ static void capture_process_cb(void *data)
 
 static const struct pw_stream_events capture_stream_events = {
       PW_VERSION_STREAM_EVENTS,
-     .destroy = stream_destroy_cb,
-     .state_changed = mic_stream_state_changed_cb,
-     .process = capture_process_cb
+     .destroy       = pwire_stream_destroy_cb,
+     .state_changed = pwire_mic_stream_state_changed_cb,
+     .process       = pwire_capture_process_cb
 };
 
-static void mic_registry_event_global(void *data, uint32_t id,
+static void pwire_mic_registry_event_global(void *data, uint32_t id,
       uint32_t permissions, const char *type, uint32_t version,
       const struct spa_dict *props)
 {
@@ -204,17 +197,17 @@ static void mic_registry_event_global(void *data, uint32_t id,
    }
 }
 
-static const struct pw_registry_events mic_registry_events = {
+static const struct pw_registry_events pwire_mic_registry_events = {
       PW_VERSION_REGISTRY_EVENTS,
-      .global = mic_registry_event_global,
+      .global = pwire_mic_registry_event_global,
 };
 
-static void pipewire_microphone_free(void *driver_context)
+static void pwire_microphone_free(void *driver_context)
 {
    pipewire_core_deinit((pipewire_core_t*)driver_context);
 }
 
-static void *pipewire_microphone_init(void)
+static void *pwire_microphone_init(void)
 {
    int res;
    uint8_t buffer[1024];
@@ -225,7 +218,7 @@ static void *pipewire_microphone_init(void)
    pipewire_core_t             *pw = NULL;
    struct spa_pod_builder        b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
 
-   if (!pipewire_core_init(&pw, "microphone_driver", &mic_registry_events))
+   if (!pipewire_core_init(&pw, "microphone_driver", &pwire_mic_registry_events))
       goto error;
 
    pipewire_core_wait_resync(pw);
@@ -235,11 +228,11 @@ static void *pipewire_microphone_init(void)
 
 error:
    RARCH_ERR("[Microphone] [PipeWire] Failed to initialize microphone.\n");
-   pipewire_microphone_free(pw);
+   pwire_microphone_free(pw);
    return NULL;
 }
 
-static void pipewire_microphone_close_mic(void *driver_context, void *mic_context)
+static void pwire_microphone_close_mic(void *driver_context, void *mic_context)
 {
    pipewire_core_t        *pw = (pipewire_core_t*)driver_context;
    pipewire_microphone_t *mic = (pipewire_microphone_t*)mic_context;
@@ -254,7 +247,7 @@ static void pipewire_microphone_close_mic(void *driver_context, void *mic_contex
    }
 }
 
-static int pipewire_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
+static int pwire_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
 {
    uint32_t idx;
    int32_t readable;
@@ -301,7 +294,7 @@ static int pipewire_microphone_read(void *driver_context, void *mic_context, voi
    return len;
 }
 
-static bool pipewire_microphone_mic_alive(const void *driver_context, const void *mic_context)
+static bool pwire_microphone_mic_alive(const void *driver_context, const void *mic_context)
 {
    const char          *error = NULL;
    pipewire_microphone_t *mic = (pipewire_microphone_t*)mic_context;
@@ -310,14 +303,14 @@ static bool pipewire_microphone_mic_alive(const void *driver_context, const void
    return pw_stream_get_state(mic->stream, &error) == PW_STREAM_STATE_STREAMING;
 }
 
-static void pipewire_microphone_set_nonblock_state(void *driver_context, bool nonblock)
+static void pwire_microphone_set_nonblock_state(void *driver_context, bool nonblock)
 {
    pipewire_core_t *pw = (pipewire_core_t*)driver_context;
    if (pw)
       pw->nonblock = nonblock;
 }
 
-static struct string_list *pipewire_microphone_device_list_new(const void *driver_context)
+static struct string_list *pwire_microphone_device_list_new(const void *driver_context)
 {
    pipewire_core_t *pw = (pipewire_core_t*)driver_context;
 
@@ -327,13 +320,13 @@ static struct string_list *pipewire_microphone_device_list_new(const void *drive
    return NULL;
 }
 
-static void pipewire_microphone_device_list_free(const void *driver_context, struct string_list *devices)
+static void pwire_microphone_device_list_free(const void *driver_context, struct string_list *devices)
 {
    if (devices)
       string_list_free(devices);
 }
 
-static void *pipewire_microphone_open_mic(void *driver_context,
+static void *pwire_microphone_open_mic(void *driver_context,
    const char *device, unsigned rate, unsigned latency,
    unsigned *new_rate)
 {
@@ -356,9 +349,9 @@ static void *pipewire_microphone_open_mic(void *driver_context,
 
    mic->info.format   = is_little_endian() ? SPA_AUDIO_FORMAT_F32_LE : SPA_AUDIO_FORMAT_F32_BE;
    mic->info.channels = MIC_DEFAULT_CHANNELS;
-   pipewire_set_position(MIC_DEFAULT_CHANNELS, mic->info.position);
+   pwire_set_position(MIC_DEFAULT_CHANNELS, mic->info.position);
    mic->info.rate     = rate;
-   mic->frame_size    = pipewire_calc_frame_size(mic->info.format, MIC_DEFAULT_CHANNELS);
+   mic->frame_size    = pwire_calc_frame_size(mic->info.format, MIC_DEFAULT_CHANNELS);
 
    props = pw_properties_new(PW_KEY_MEDIA_TYPE,          PW_RARCH_MEDIA_TYPE_AUDIO,
                              PW_KEY_MEDIA_CATEGORY,      PW_RARCH_MEDIA_CATEGORY_RECORD,
@@ -409,38 +402,34 @@ unlock_error:
    pw_thread_loop_unlock(mic->pw->thread_loop);
 error:
    RARCH_ERR("[Microphone] [PipeWire] Failed to initialize microphone.\n");
-   pipewire_microphone_close_mic(mic->pw, mic);
+   pwire_microphone_close_mic(mic->pw, mic);
    return NULL;
 }
 
-static bool pipewire_microphone_start_mic(void *driver_context, void *mic_context)
+static bool pwire_microphone_start_mic(void *driver_context, void *mic_context)
 {
-   enum pw_stream_state st;
    pipewire_core_t        *pw = (pipewire_core_t*)driver_context;
    pipewire_microphone_t *mic = (pipewire_microphone_t*)mic_context;
-   const char          *error = NULL;
-   bool                   res = false;
 
-   if (!pw || !mic)
-      return false;
-
-   st = pw_stream_get_state(mic->stream, &error);
-   switch (st)
+   if (pw && mic)
    {
-      case PW_STREAM_STATE_STREAMING:
-         res = true;
-         break;
-      case PW_STREAM_STATE_PAUSED:
-         res = pipewire_stream_set_active(pw->thread_loop, mic->stream, true);
-         break;
-      default:
-         break;
+      const char *error = NULL;
+      enum pw_stream_state st = pw_stream_get_state(mic->stream, &error);
+      switch (st)
+      {
+         case PW_STREAM_STATE_STREAMING:
+            return true;
+         case PW_STREAM_STATE_PAUSED:
+            return pipewire_stream_set_active(pw->thread_loop, mic->stream, true);
+         default:
+            break;
+      }
    }
 
-   return res;
+   return false;
 }
 
-static bool pipewire_microphone_stop_mic(void *driver_context, void *mic_context)
+static bool pwire_microphone_stop_mic(void *driver_context, void *mic_context)
 {
    pipewire_core_t       *pw = (pipewire_core_t*)driver_context;
    pipewire_microphone_t *mic = (pipewire_microphone_t*)mic_context;
@@ -462,48 +451,45 @@ static bool pipewire_microphone_stop_mic(void *driver_context, void *mic_context
    return res;
 }
 
-static bool pipewire_microphone_mic_use_float(const void *a, const void *b)
+static bool pwire_microphone_mic_use_float(const void *a, const void *b)
 {
    return true;
 }
 
 microphone_driver_t microphone_pipewire = {
-      pipewire_microphone_init,
-      pipewire_microphone_free,
-      pipewire_microphone_read,
-      pipewire_microphone_set_nonblock_state,
+      pwire_microphone_init,
+      pwire_microphone_free,
+      pwire_microphone_read,
+      pwire_microphone_set_nonblock_state,
       "pipewire",
-      pipewire_microphone_device_list_new,
-      pipewire_microphone_device_list_free,
-      pipewire_microphone_open_mic,
-      pipewire_microphone_close_mic,
-      pipewire_microphone_mic_alive,
-      pipewire_microphone_start_mic,
-      pipewire_microphone_stop_mic,
-      pipewire_microphone_mic_use_float
+      pwire_microphone_device_list_new,
+      pwire_microphone_device_list_free,
+      pwire_microphone_open_mic,
+      pwire_microphone_close_mic,
+      pwire_microphone_mic_alive,
+      pwire_microphone_start_mic,
+      pwire_microphone_stop_mic,
+      pwire_microphone_mic_use_float
 };
 #endif
 
 #define DEFAULT_CHANNELS   2
 
-static void stream_destroy_cb(void *data)
+static void pwire_stream_destroy_cb(void *data)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
    spa_hook_remove(&audio->stream_listener);
    audio->stream = NULL;
 }
 
-static void playback_process_cb(void *data)
+static void pwire_playback_process_cb(void *data)
 {
-   pipewire_audio_t *audio = (pipewire_audio_t*)data;
    void *p;
+   int32_t avail;
    struct pw_buffer *b;
    struct spa_buffer *buf;
    uint32_t req, idx, n_bytes;
-   int32_t avail;
-
-   retro_assert(audio);
-   retro_assert(audio->stream);
+   pipewire_audio_t *audio = (pipewire_audio_t*)data;
 
    if ((b = pw_stream_dequeue_buffer(audio->stream)) == NULL)
    {
@@ -531,8 +517,8 @@ static void playback_process_cb(void *data)
          n_bytes = avail;
 
       spa_ringbuffer_read_data(&audio->ring,
-                               audio->buffer, RINGBUFFER_SIZE,
-                               idx & RINGBUFFER_MASK, p, n_bytes);
+            audio->buffer, RINGBUFFER_SIZE,
+            idx & RINGBUFFER_MASK, p, n_bytes);
 
       idx += n_bytes;
       spa_ringbuffer_read_update(&audio->ring, idx);
@@ -546,9 +532,9 @@ static void playback_process_cb(void *data)
    pw_thread_loop_signal(audio->pw->thread_loop, false);
 }
 
-static void pipewire_free(void *data);
+static void pwire_free(void *data);
 
-static void stream_state_changed_cb(void *data,
+static void pwire_stream_state_changed_cb(void *data,
       enum pw_stream_state old, enum pw_stream_state state, const char *error)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
@@ -560,16 +546,16 @@ static void stream_state_changed_cb(void *data,
    pw_thread_loop_signal(audio->pw->thread_loop, false);
 }
 
-static const struct pw_stream_events playback_stream_events = {
+static const struct pw_stream_events pwire_playback_stream_events = {
       PW_VERSION_STREAM_EVENTS,
-      .destroy = stream_destroy_cb,
-      .process = playback_process_cb,
-      .state_changed = stream_state_changed_cb,
+      .destroy       = pwire_stream_destroy_cb,
+      .process       = pwire_playback_process_cb,
+      .state_changed = pwire_stream_state_changed_cb,
 };
 
-static void registry_event_global(void *data, uint32_t id,
-                uint32_t permissions, const char *type, uint32_t version,
-                const struct spa_dict *props)
+static void pwire_registry_event_global(void *data, uint32_t id,
+      uint32_t permissions, const char *type, uint32_t version,
+      const struct spa_dict *props)
 {
    union string_list_elem_attr attr;
    const struct spa_dict_item *item;
@@ -593,12 +579,12 @@ static void registry_event_global(void *data, uint32_t id,
    }
 }
 
-static const struct pw_registry_events registry_events = {
+static const struct pw_registry_events pwire_registry_events = {
       PW_VERSION_REGISTRY_EVENTS,
-      .global = registry_event_global,
+      .global = pwire_registry_event_global,
 };
 
-static void *pipewire_init(const char *device, unsigned rate,
+static void *pwire_init(const char *device, unsigned rate,
       unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
@@ -613,19 +599,19 @@ static void *pipewire_init(const char *device, unsigned rate,
    struct spa_pod_builder        b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
 
    if (!audio)
-      goto error;
+      return NULL;
 
-   if (!pipewire_core_init(&audio->pw, "audio_driver", &registry_events))
+   if (!pipewire_core_init(&audio->pw, "audio_driver", &pwire_registry_events))
       goto error;
 
    /* unlock, run the loop and wait, this will trigger the callbacks */
    pipewire_core_wait_resync(audio->pw);
 
-   audio->info.format = is_little_endian() ? SPA_AUDIO_FORMAT_F32_LE : SPA_AUDIO_FORMAT_F32_BE;
+   audio->info.format   = is_little_endian() ? SPA_AUDIO_FORMAT_F32_LE : SPA_AUDIO_FORMAT_F32_BE;
    audio->info.channels = DEFAULT_CHANNELS;
-   pipewire_set_position(DEFAULT_CHANNELS, audio->info.position);
-   audio->info.rate = rate;
-   audio->frame_size = pipewire_calc_frame_size(audio->info.format, DEFAULT_CHANNELS);
+   pwire_set_position(DEFAULT_CHANNELS, audio->info.position);
+   audio->info.rate     = rate;
+   audio->frame_size    = pwire_calc_frame_size(audio->info.format, DEFAULT_CHANNELS);
 
    props = pw_properties_new(PW_KEY_MEDIA_TYPE,          PW_RARCH_MEDIA_TYPE_AUDIO,
                              PW_KEY_MEDIA_CATEGORY,      PW_RARCH_MEDIA_CATEGORY_PLAYBACK,
@@ -650,7 +636,8 @@ static void *pipewire_init(const char *device, unsigned rate,
    if (!audio->stream)
       goto unlock_error;
 
-   pw_stream_add_listener(audio->stream, &audio->stream_listener, &playback_stream_events, audio);
+   pw_stream_add_listener(audio->stream, &audio->stream_listener,
+         &pwire_playback_stream_events, audio);
 
    params[0] = spa_format_audio_raw_build(&b, SPA_PARAM_EnumFormat, &audio->info);
 
@@ -659,15 +646,15 @@ static void *pipewire_init(const char *device, unsigned rate,
    res = pw_stream_connect(audio->stream,
                            PW_DIRECTION_OUTPUT,
                            PW_ID_ANY,
-                           PW_STREAM_FLAG_AUTOCONNECT |
-                           PW_STREAM_FLAG_MAP_BUFFERS |
-                           PW_STREAM_FLAG_RT_PROCESS,
+                             PW_STREAM_FLAG_AUTOCONNECT
+                           | PW_STREAM_FLAG_MAP_BUFFERS
+                           | PW_STREAM_FLAG_RT_PROCESS,
                            params, 1);
    if (res < 0)
       goto unlock_error;
 
    audio->highwater_mark = MIN(RINGBUFFER_SIZE,
-                               latency * (uint64_t)rate / 1000 * audio->frame_size);
+         latency * (uint64_t)rate / 1000 * audio->frame_size);
 
    pw_thread_loop_wait(audio->pw->thread_loop);
    pw_thread_loop_unlock(audio->pw->thread_loop);
@@ -680,11 +667,11 @@ unlock_error:
    pw_thread_loop_unlock(audio->pw->thread_loop);
 error:
    RARCH_ERR("[PipeWire] Failed to initialize audio.\n");
-   pipewire_free(audio);
+   pwire_free(audio);
    return NULL;
 }
 
-static ssize_t pipewire_write(void *data, const void *buf_, size_t len)
+static ssize_t pwire_write(void *data, const void *buf_, size_t len)
 {
    int32_t   filled, avail;
    uint32_t            idx;
@@ -705,7 +692,7 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t len)
    for (;;)
    {
       filled = spa_ringbuffer_get_write_index(&audio->ring, &idx);
-      avail = audio->highwater_mark - filled;
+      avail  = audio->highwater_mark - filled;
 
 #if 0  /* Useful for tracing */
       RARCH_DBG("[PipeWire] Ringbuffer utilization: filled %d, avail %d, index %d, size %d.\n",
@@ -756,7 +743,7 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t len)
    return len;
 }
 
-static bool pipewire_stop(void *data)
+static bool pwire_stop(void *data)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
    const char       *error = NULL;
@@ -777,7 +764,7 @@ static bool pipewire_stop(void *data)
    return res;
 }
 
-static bool pipewire_start(void *data, bool is_shutdown)
+static bool pwire_start(void *data, bool is_shutdown)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
 
@@ -799,7 +786,7 @@ static bool pipewire_start(void *data, bool is_shutdown)
    return false;
 }
 
-static bool pipewire_alive(void *data)
+static bool pwire_alive(void *data)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
    const char       *error = NULL;
@@ -810,14 +797,14 @@ static bool pipewire_alive(void *data)
    return pw_stream_get_state(audio->stream, &error) == PW_STREAM_STATE_STREAMING;
 }
 
-static void pipewire_set_nonblock_state(void *data, bool state)
+static void pwire_set_nonblock_state(void *data, bool state)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
    if (audio && audio->pw)
       audio->pw->nonblock = state;
 }
 
-static void pipewire_free(void *data)
+static void pwire_free(void *data)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
 
@@ -835,9 +822,9 @@ static void pipewire_free(void *data)
    free(audio);
 }
 
-static bool pipewire_use_float(void *data) { return true; }
+static bool pwire_use_float(void *data) { return true; }
 
-static void *pipewire_device_list_new(void *data)
+static void *pwire_device_list_new(void *data)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
 
@@ -847,7 +834,7 @@ static void *pipewire_device_list_new(void *data)
    return NULL;
 }
 
-static void pipewire_device_list_free(void *data, void *array_list_data)
+static void pwire_device_list_free(void *data, void *array_list_data)
 {
    struct string_list *s = (struct string_list*)array_list_data;
 
@@ -855,14 +842,11 @@ static void pipewire_device_list_free(void *data, void *array_list_data)
       string_list_free(s);
 }
 
-static size_t pipewire_write_avail(void *data)
+static size_t pwire_write_avail(void *data)
 {
    uint32_t idx, written, length;
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
    const char       *error = NULL;
-
-   retro_assert(audio->pw);
-   retro_assert(audio->stream);
 
    if (pw_stream_get_state(audio->stream, &error) != PW_STREAM_STATE_STREAMING)
       return 0;  /* wait for stream to become ready */
@@ -875,24 +859,24 @@ static size_t pipewire_write_avail(void *data)
    return length;
 }
 
-static size_t pipewire_buffer_size(void *data)
+static size_t pwire_buffer_size(void *data)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
    return audio->highwater_mark;
 }
 
 audio_driver_t audio_pipewire = {
-      pipewire_init,
-      pipewire_write,
-      pipewire_stop,
-      pipewire_start,
-      pipewire_alive,
-      pipewire_set_nonblock_state,
-      pipewire_free,
-      pipewire_use_float,
+      pwire_init,
+      pwire_write,
+      pwire_stop,
+      pwire_start,
+      pwire_alive,
+      pwire_set_nonblock_state,
+      pwire_free,
+      pwire_use_float,
       "pipewire",
-      pipewire_device_list_new,
-      pipewire_device_list_free,
-      pipewire_write_avail,
-      pipewire_buffer_size,
+      pwire_device_list_new,
+      pwire_device_list_free,
+      pwire_write_avail,
+      pwire_buffer_size,
 };
