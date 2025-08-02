@@ -630,18 +630,46 @@ bool egl_init_context(egl_ctx_data_t *egl,
    if (dpy == EGL_NO_DISPLAY)
    {
       RARCH_ERR("[EGL] Couldn't get EGL display.\n");
+#ifdef HAVE_DYLIB
+      if (g_egl_gl_dll)
+      {
+         dylib_close(g_egl_gl_dll);
+         g_egl_gl_dll = NULL;
+      }
+#endif
       return false;
    }
 
    egl->dpy = dpy;
 
    if (!egl_initialize(egl->dpy, major, minor))
+   {
+#ifdef HAVE_DYLIB
+      if (g_egl_gl_dll)
+      {
+         dylib_close(g_egl_gl_dll);
+         g_egl_gl_dll = NULL;
+      }
+#endif
       return false;
+   }
 
    RARCH_LOG("[EGL] EGL version: %d.%d.\n", *major, *minor);
 
-   return egl_init_context_common(egl, count, attrib_ptr, cb,
-         display_data);
+   if (egl_init_context_common(egl, count, attrib_ptr, cb,
+         display_data))
+      return true;
+   else
+   {
+#ifdef HAVE_DYLIB
+      if (g_egl_gl_dll)
+      {
+         dylib_close(g_egl_gl_dll);
+         g_egl_gl_dll = NULL;
+      }
+#endif
+      return false;
+   }
 }
 
 bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
