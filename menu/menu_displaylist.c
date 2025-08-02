@@ -8026,12 +8026,26 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_SCREENSHOTS
             {
                video_driver_state_t *video_st    = video_state_get_ptr();
-               if (     video_st->current_video->read_viewport
-                     && video_st->current_video->viewport_info)
+               if (video_st->current_video->read_viewport
+                  && video_st->current_video->viewport_info)
+               {
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
-                           PARSE_ONLY_BOOL, false) == 0)
+                     MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,
+                     PARSE_ONLY_BOOL, false) == 0)
                      count++;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT_INCLUDE_SHADERS,
+                     PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+#endif
+#ifdef HAVE_OVERLAY
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT_INCLUDE_OVERLAY,
+                     PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+#endif
+               }
             }
 #endif
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
