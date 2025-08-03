@@ -107,10 +107,11 @@ struct xaudio2
    IXAudio2 *pXAudio2;
    IXAudio2MasteringVoice *pMasterVoice;
    IXAudio2SourceVoice *pSourceVoice;
+   WAVEFORMATEX wf;
    HANDLE hEvent;
 
    unsigned long volatile buffers;
-   unsigned bufsize;
+   size_t bufsize;
    unsigned bufptr;
    unsigned write_buffer;
 };
@@ -214,11 +215,11 @@ static const char *xaudio2_wave_format_name(WAVEFORMATEX *format)
    return "<unknown>";
 }
 
-static xaudio2_t *xaudio2_new(unsigned rate, unsigned channels,
+static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
       unsigned latency, size_t len, const char *dev_id)
 {
    int32_t idx_found        = -1;
-   WAVEFORMATEX wf          = {0};
+   WAVEFORMATEX desired_wf  = {0};
    struct string_list *list = NULL;
    xaudio2_t *handle        = NULL;
 
@@ -249,6 +250,15 @@ static xaudio2_t *xaudio2_new(unsigned rate, unsigned channels,
 
    if (FAILED(XAudio2Create(&handle->pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
       goto error;
+
+   xaudio2_set_format(&desired_wf, true, channels, *rate);
+   RARCH_DBG("[XAudio2] Requesting %u-bit %u-channel client with %s samples at %uHz %ums.\n",
+         desired_wf.wBitsPerSample,
+         desired_wf.nChannels,
+         xaudio2_wave_format_name(&desired_wf),
+         desired_wf.nSamplesPerSec,
+         latency);
+   *rate = desired_wf.nSamplesPerSec;
 
    if (dev_id)
    {
@@ -293,7 +303,7 @@ static xaudio2_t *xaudio2_new(unsigned rate, unsigned channels,
          temp = utf8_to_utf16_string_alloc((const char*)list->elems[idx_found].userdata);
 
       if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2,
-                  &handle->pMasterVoice, channels, rate, 0,
+                  &handle->pMasterVoice, channels, *rate, 0,
                   (LPCWSTR)(uintptr_t)temp, NULL, AudioCategory_GameEffects)))
       {
          free(temp);
@@ -304,20 +314,12 @@ static xaudio2_t *xaudio2_new(unsigned rate, unsigned channels,
    }
 #else
    if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2,
-               &handle->pMasterVoice, channels, rate, 0, idx_found, NULL)))
+               &handle->pMasterVoice, channels, *rate, 0, idx_found, NULL)))
       goto error;
 #endif
 
-   xaudio2_set_format(&wf, true, channels, rate);
-   RARCH_DBG("[XAudio2] Requesting %u-bit %u-channel client with %s samples at %uHz %ums.\n",
-         wf.wBitsPerSample,
-         wf.nChannels,
-         xaudio2_wave_format_name(&wf),
-         wf.nSamplesPerSec,
-         latency);
-
    if (FAILED(IXAudio2_CreateSourceVoice(handle->pXAudio2,
-               &handle->pSourceVoice, &wf,
+               &handle->pSourceVoice, &desired_wf,
                XAUDIO2_VOICE_NOSRC, XAUDIO2_DEFAULT_FREQ_RATIO,
                (IXAudio2VoiceCallback*)handle, 0, 0)))
       goto error;
@@ -326,6 +328,7 @@ static xaudio2_t *xaudio2_new(unsigned rate, unsigned channels,
    if (!handle->hEvent)
       goto error;
 
+   handle->wf      = desired_wf;
    handle->bufsize = len / MAX_BUFFERS;
    handle->buf     = (uint8_t*)calloc(1, handle->bufsize * MAX_BUFFERS);
    if (!handle->buf)
@@ -361,12 +364,14 @@ static void *xa_init(const char *dev_id, unsigned rate, unsigned latency,
    bufsize     = latency * rate / 1000;
    xa->bufsize = bufsize * 2 * sizeof(float);
 
-   if (!(xa->xa = xaudio2_new(rate, 2, latency, xa->bufsize, dev_id)))
+   if (!(xa->xa = xaudio2_new(&rate, 2, latency, xa->bufsize, dev_id)))
    {
       RARCH_ERR("[XAudio2] Failed to init driver.\n");
       free(xa);
       return NULL;
    }
+
+   *new_rate = rate;
 
    RARCH_LOG("[XAudio2] Requesting %u ms latency, using %d ms latency.\n",
          latency, (int)bufsize * 1000 / rate);
