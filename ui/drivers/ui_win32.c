@@ -127,7 +127,7 @@ static void ui_window_win32_set_title(void *data, char *buf)
 
 void ui_window_win32_set_droppable(void *data, bool droppable)
 {
-   /* Minimum supported client: Windows XP, 
+   /* Minimum supported client: Windows XP,
     * minimum supported server: Windows 2000 Server */
    ui_window_win32_t *window = (ui_window_win32_t*)data;
    if (DragAcceptFiles_func)
@@ -264,8 +264,8 @@ static bool ui_browser_window_win32_core(
    ofn.nMaxFileTitle     = 0;
    ofn.lpstrInitialDir   = state->startdir;
    ofn.lpstrTitle        = state->title;
-   ofn.Flags             =   OFN_FILEMUSTEXIST 
-                           | OFN_HIDEREADONLY 
+   ofn.Flags             =   OFN_FILEMUSTEXIST
+                           | OFN_HIDEREADONLY
                            | OFN_NOCHANGEDIR;
    ofn.nFileOffset       = 0;
    ofn.nFileExtension    = 0;
@@ -319,7 +319,7 @@ static ui_browser_window_t ui_browser_window_win32 = {
    "win32"
 };
 
-static void ui_companion_win32_deinit(void *data) { } 
+static void ui_companion_win32_deinit(void *data) { }
 static void *ui_companion_win32_init(void) { return (void*)-1; }
 static void ui_companion_win32_toggle(void *data, bool force) { }
 static void ui_companion_win32_event_command(
