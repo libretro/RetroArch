@@ -936,7 +936,7 @@ AUDIO
 #include "../audio/drivers/coreaudio.c"
 #endif
 
-#if defined(HAVE_WASAPI) || ((_WIN32_WINNT >= 0x0602) && !defined(__WINRT__))
+#if defined(HAVE_WASAPI) || ((_WIN32_WINNT >= 0x0600) && !defined(__WINRT__))
 #include "../audio/common/mmdevice_common.c"
 #endif
 
