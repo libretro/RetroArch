@@ -404,8 +404,10 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], application_data, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #elif defined(OSX) && defined(HAVE_APPLE_STORE)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Contents/Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#else
+#elif defined(IOS) && defined(HAVE_FRAMEWORKS)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+#else
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], application_data, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], application_data, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
