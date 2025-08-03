@@ -108,6 +108,45 @@ const char *mmdevice_hresult_name(int hr)
    return "<unknown>";
 }
 
+size_t mmdevice_samplerate(void *data)
+{
+   HRESULT hr;
+   PWAVEFORMATEX devfmt_props;
+   PROPVARIANT prop_var;
+   IMMDevice *device          = (IMMDevice*)data;
+   IPropertyStore *prop_store = NULL;
+   DWORD result               = 0;
+
+   if (!device)
+      return 0;
+
+   hr = _IMMDevice_OpenPropertyStore(device,
+         STGM_READ, &prop_store);
+
+   if (FAILED(hr))
+      return 0;
+
+   PropVariantInit(&prop_var);
+   hr = _IPropertyStore_GetValue(prop_store,
+         PKEY_AudioEngine_DeviceFormat, &prop_var);
+   if (SUCCEEDED(hr))
+   {
+      devfmt_props = (PWAVEFORMATEX)prop_var.blob.pBlobData;
+      result       = devfmt_props->nSamplesPerSec;
+   }
+
+   PropVariantClear(&prop_var);
+   if (prop_store)
+   {
+#ifdef __cplusplus
+      prop_store->Release();
+#else
+      prop_store->lpVtbl->Release(prop_store);
+#endif
+      prop_store = NULL;
+   }
+   return (size_t)result;
+}
 
 char *mmdevice_name(void *data)
 {

@@ -38,7 +38,13 @@
 
 #include "xaudio.h"
 
-#if (_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600 /*_WIN32_WINNT_VISTA */)
+#ifndef HAVE_MMDEVICE
+#define HAVE_MMDEVICE
+#endif
+#endif
+
+#ifdef HAVE_MMDEVICE
 #include "../common/mmdevice_common.h"
 #endif
 
@@ -265,29 +271,27 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
       /* Search for device name first */
       if (list && list->elems)
       {
-         if (list->elems)
+         /* If any devices were found... */
+         size_t i;
+         for (i = 0; i < list->size; i++)
          {
-            /* If any devices were found... */
-            size_t i;
-            for (i = 0; i < list->size; i++)
+            if (string_is_equal(dev_id, list->elems[i].data))
             {
-               if (string_is_equal(dev_id, list->elems[i].data))
-               {
-                  RARCH_DBG("[XAudio2] Found device #%d: \"%s\".\n", i, list->elems[i].data);
-                  idx_found       = i;
-                  break;
-               }
+               RARCH_DBG("[XAudio2] Found device #%d: \"%s\".\n", i,
+                     list->elems[i].data);
+               idx_found       = i;
+               break;
             }
+         }
 
-            /* Index was not found yet based on name string,
-             * just assume id is a one-character number index. */
-            if (idx_found == -1)
+         /* Index was not found yet based on name string,
+          * just assume id is a one-character number index. */
+         if (idx_found == -1)
+         {
+            if (isdigit(dev_id[0]))
             {
-               if (isdigit(dev_id[0]))
-               {
-                  idx_found = strtoul(dev_id, NULL, 0);
-                  RARCH_LOG("[XAudio2] Fallback, device index is a single number index instead: %d.\n", idx_found);
-               }
+               idx_found = strtoul(dev_id, NULL, 0);
+               RARCH_LOG("[XAudio2] Fallback, device index is a single number index instead: %d.\n", idx_found);
             }
          }
       }
@@ -521,7 +525,7 @@ static void xa_device_list_free(void *u, void *slp)
 
 static void *xa_list_new(void *u)
 {
-#if defined(_XBOX) || !(_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
+#if defined(_XBOX) || !defined(HAVE_MMDEVICE)
    unsigned i;
    union string_list_elem_attr attr;
    uint32_t dev_count              = 0;

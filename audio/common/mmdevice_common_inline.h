@@ -18,7 +18,7 @@
 
 #include <stdlib.h>
 
-/* Fix for MSYS2 increasing _WIN32_WINNT to 0x0603*/
+/* Fix for MSYS2 increasing _WIN32_WINNT to 0x0603 */
 #if defined(__MINGW32__) || defined(__MINGW64__)
 #define WIN32_LEAN_AND_MEAN
 #endif

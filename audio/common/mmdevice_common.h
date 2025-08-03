@@ -30,7 +30,13 @@ void *mmdevice_list_new(const void *u, unsigned data_flow);
  */
 char* mmdevice_name(void *data);
 
+/**
+ * Gets the samplerate of the provided IMMDevice.
+ */
+size_t mmdevice_samplerate(void *data);
+
 const char *mmdevice_hresult_name(int hr);
+
 
 void *mmdevice_init_device(const char *id, unsigned data_flow);
 
