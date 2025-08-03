@@ -53,73 +53,6 @@ typedef struct
    uint8_t flags;
 } wasapi_t;
 
-static const char *hresult_name(HRESULT hr)
-{
-   switch (hr)
-   {
-      /* Standard error codes */
-      case E_INVALIDARG:
-         return "E_INVALIDARG";
-      case E_NOINTERFACE:
-         return "E_NOINTERFACE";
-      case E_OUTOFMEMORY:
-         return "E_OUTOFMEMORY";
-      case E_POINTER:
-         return "E_POINTER";
-      /* Standard success codes */
-      case S_FALSE:
-         return "S_FALSE";
-      case S_OK:
-         return "S_OK";
-      /* AUDCLNT error codes */
-      case AUDCLNT_E_ALREADY_INITIALIZED:
-         return "AUDCLNT_E_ALREADY_INITIALIZED";
-      case AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL:
-         return "AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL";
-      case AUDCLNT_E_BUFFER_ERROR:
-         return "AUDCLNT_E_BUFFER_ERROR";
-      case AUDCLNT_E_BUFFER_OPERATION_PENDING:
-         return "AUDCLNT_E_BUFFER_OPERATION_PENDING";
-      case AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED:
-         return "AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED";
-      case AUDCLNT_E_BUFFER_SIZE_ERROR:
-         return "AUDCLNT_E_BUFFER_SIZE_ERROR";
-      case AUDCLNT_E_CPUUSAGE_EXCEEDED:
-         return "AUDCLNT_E_CPUUSAGE_EXCEEDED";
-      case AUDCLNT_E_DEVICE_IN_USE:
-         return "AUDCLNT_E_DEVICE_IN_USE";
-      case AUDCLNT_E_DEVICE_INVALIDATED:
-         return "AUDCLNT_E_DEVICE_INVALIDATED";
-      case AUDCLNT_E_ENDPOINT_CREATE_FAILED:
-         return "AUDCLNT_E_ENDPOINT_CREATE_FAILED";
-      case AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED:
-         return "AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED";
-      case AUDCLNT_E_INVALID_DEVICE_PERIOD:
-         return "AUDCLNT_E_INVALID_DEVICE_PERIOD";
-      case AUDCLNT_E_INVALID_SIZE:
-         return "AUDCLNT_E_INVALID_SIZE";
-      case AUDCLNT_E_NOT_INITIALIZED:
-         return "AUDCLNT_E_NOT_INITIALIZED";
-      case AUDCLNT_E_OUT_OF_ORDER:
-         return "AUDCLNT_E_OUT_OF_ORDER";
-      case AUDCLNT_E_SERVICE_NOT_RUNNING:
-         return "AUDCLNT_E_SERVICE_NOT_RUNNING";
-      case AUDCLNT_E_UNSUPPORTED_FORMAT:
-         return "AUDCLNT_E_UNSUPPORTED_FORMAT";
-      case AUDCLNT_E_WRONG_ENDPOINT_TYPE:
-         return "AUDCLNT_E_WRONG_ENDPOINT_TYPE";
-      /* AUDCLNT success codes */
-      case AUDCLNT_S_BUFFER_EMPTY:
-         return "AUDCLNT_S_BUFFER_EMPTY";
-      /* Something else; probably from an API that we started using
-       * after mic support was implemented */
-      default:
-         break;
-   }
-
-   return "<unknown>";
-}
-
 static const char *wasapi_wave_subtype_name(const GUID *guid)
 {
    if (!memcmp(guid, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, sizeof(GUID)))
@@ -152,23 +85,6 @@ static const char* wasapi_error(DWORD error)
          MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
          s, sizeof(s) - 1, NULL);
    return s;
-}
-
-static const char* wasapi_data_flow_name(unsigned data_flow)
-{
-   switch (data_flow)
-   {
-      case 0:
-         return "eRender";
-      case 1:
-         return "eCapture";
-      case 2:
-         return "eAll";
-      default:
-         break;
-   }
-
-   return "<unknown>";
 }
 
 static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
@@ -251,7 +167,7 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
 {
    /* Try the requested sample format first, then try the other one. */
    WAVEFORMATEXTENSIBLE *suggested_format  = NULL;
-   bool result                             = false;
+   /* IAudioClient::IsFormatSupported allocates a format object. */
    HRESULT hr                              = _IAudioClient_IsFormatSupported(
          client, mode,
          (const WAVEFORMATEX *)format,
@@ -262,8 +178,8 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
    {
       case S_OK:
          /* The requested format is okay without any changes. */
-         result = true;
-         break;
+         CoTaskMemFree(suggested_format);
+         return true;
       case S_FALSE:
          /* The requested format is unsupported, but Windows has suggested a similar one. */
          RARCH_DBG("[WASAPI] Windows suggests a format of (%s, %u-channel, %uHz).\n",
@@ -274,12 +190,10 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
          if (wasapi_is_format_suitable(suggested_format))
          {
             *format = *suggested_format;
-            result  = true;
+            CoTaskMemFree(suggested_format);
+            return true;
          }
-         else
-         {
-            RARCH_ERR("[WASAPI] Windows suggested a format, but RetroArch can't use it.\n");
-         }
+         RARCH_ERR("[WASAPI] Windows suggested a format, but RetroArch can't use it.\n");
          break;
       case AUDCLNT_E_UNSUPPORTED_FORMAT:
       {
@@ -304,12 +218,12 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
                if (SUCCEEDED(format_check_hr))
                {
                   *format = possible_format;
-                  result  = true;
                   RARCH_DBG("[WASAPI] RetroArch suggests a format of (%s, %u-channel, %uHz).\n",
                         wasapi_wave_format_name(format),
                         format->Format.nChannels,
                         format->Format.nSamplesPerSec);
-                  goto done;
+                  CoTaskMemFree(suggested_format);
+                  return true;
                }
             }
          }
@@ -318,15 +232,14 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
       }
       default:
          /* Something else went wrong. */
-         RARCH_ERR("[WASAPI] Failed to select client format: %s.\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI] Failed to select client format: %s.\n",
+               mmdevice_hresult_name(hr));
          break;
    }
-done:
-   /* IAudioClient::IsFormatSupported allocates a format object. */
+
    if (suggested_format)
       CoTaskMemFree(suggested_format);
-
-   return result;
+   return false;
 }
 
 static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
@@ -341,14 +254,16 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
+            mmdevice_hresult_name(hr));
       return NULL;
    }
 
    hr = _IAudioClient_GetDevicePeriod(client, NULL, &minimum_period);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to get minimum device period of exclusive client: %s.\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI] Failed to get minimum device period of exclusive client: %s.\n",
+            mmdevice_hresult_name(hr));
       goto error;
    }
 
@@ -378,11 +293,13 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
    {
       UINT32 buffer_length = 0;
-      RARCH_WARN("[WASAPI] Unaligned buffer size: %s.\n", hresult_name(hr));
+      RARCH_WARN("[WASAPI] Unaligned buffer size: %s.\n",
+            mmdevice_hresult_name(hr));
       hr = _IAudioClient_GetBufferSize(client, &buffer_length);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] Failed to get buffer size of client: %s.\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI] Failed to get buffer size of client: %s.\n",
+               mmdevice_hresult_name(hr));
          goto error;
       }
 
@@ -398,7 +315,8 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
+               mmdevice_hresult_name(hr));
          return NULL;
       }
 
@@ -421,7 +339,8 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
+               mmdevice_hresult_name(hr));
          return NULL;
       }
 
@@ -440,7 +359,8 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
 
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] IAudioClient::Initialize failed: %s.\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI] IAudioClient::Initialize failed: %s.\n",
+            mmdevice_hresult_name(hr));
       goto error;
    }
 
@@ -475,14 +395,16 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
+            mmdevice_hresult_name(hr));
       return NULL;
    }
 
    hr = _IAudioClient_GetDevicePeriod(client, &default_period, NULL);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to get default device period of shared client: %s.\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI] Failed to get default device period of shared client: %s.\n",
+            mmdevice_hresult_name(hr));
       goto error;
    }
 
@@ -528,7 +450,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
             CLSCTX_ALL, NULL, (void**)&client);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n", hresult_name(hr));
+         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
+               mmdevice_hresult_name(hr));
          return NULL;
       }
 
@@ -539,7 +462,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] IAudioClient::Initialize failed: %s.\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI] IAudioClient::Initialize failed: %s.\n",
+            mmdevice_hresult_name(hr));
       goto error;
    }
 
@@ -560,162 +484,6 @@ error:
    return NULL;
 }
 
-static IMMDevice *wasapi_init_device(const char *id, unsigned data_flow)
-{
-   HRESULT hr;
-   UINT32 dev_count, i;
-   IMMDeviceEnumerator *enumerator = NULL;
-   IMMDevice *device               = NULL;
-   IMMDeviceCollection *collection = NULL;
-   const char *data_flow_name      = wasapi_data_flow_name(data_flow);
-
-   if (id)
-      RARCH_DBG("[WASAPI] Initializing %s device \"%s\"...\n", data_flow_name, id);
-   else
-      RARCH_DBG("[WASAPI] Initializing default %s device...\n", data_flow_name);
-
-#ifdef __cplusplus
-   hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
-         IID_IMMDeviceEnumerator, (void **)&enumerator);
-#else
-   hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
-         &IID_IMMDeviceEnumerator, (void **)&enumerator);
-#endif
-   if (FAILED(hr))
-   {
-      RARCH_ERR("[WASAPI] Failed to create device enumerator: %s.\n", hresult_name(hr));
-      goto error;
-   }
-
-   if (id)
-   {
-      /* If a specific device was requested... */
-      int32_t idx_found        = -1;
-      struct string_list *list = (struct string_list*)mmdevice_list_new(NULL, data_flow);
-
-      if (!list)
-      {
-         RARCH_ERR("[WASAPI] Failed to allocate %s device list.\n", data_flow_name);
-         goto error;
-      }
-
-      if (list->elems)
-      {
-         /* If any devices were found... */
-         size_t d;
-         for (d = 0; d < list->size; d++)
-         {
-            if (string_is_equal(id, list->elems[d].data))
-            {
-               RARCH_DBG("[WASAPI] Found device #%d: \"%s\".\n", d, list->elems[d].data);
-               idx_found = d;
-               break;
-            }
-         }
-
-         /* Index was not found yet based on name string,
-          * just assume id is a one-character number index. */
-         if (idx_found == -1 && isdigit(id[0]))
-         {
-            idx_found = strtoul(id, NULL, 0);
-            RARCH_LOG("[WASAPI] Fallback, %s device index is a single number index instead: %u.\n", data_flow_name, idx_found);
-         }
-      }
-      string_list_free(list);
-
-      if (idx_found == -1)
-         idx_found = 0;
-
-      hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-            data_flow, DEVICE_STATE_ACTIVE, &collection);
-      if (FAILED(hr))
-      {
-         RARCH_ERR("[WASAPI] Failed to enumerate audio endpoints: %s.\n", hresult_name(hr));
-         goto error;
-      }
-
-      hr = _IMMDeviceCollection_GetCount(collection, &dev_count);
-      if (FAILED(hr))
-      {
-         RARCH_ERR("[WASAPI] Failed to count IMMDevices: %s.\n", hresult_name(hr));
-         goto error;
-      }
-
-      for (i = 0; i < dev_count; ++i)
-      {
-         hr = _IMMDeviceCollection_Item(collection, i, &device);
-         if (FAILED(hr))
-         {
-            RARCH_ERR("[WASAPI] Failed to get IMMDevice #%d: %s.\n", i, hresult_name(hr));
-            goto error;
-         }
-
-         if (i == (UINT32)idx_found)
-            break;
-
-         if (device)
-#ifdef __cplusplus
-            device->Release();
-#else
-            device->lpVtbl->Release(device);
-#endif
-          device = NULL;
-      }
-   }
-   else
-   {
-      hr = _IMMDeviceEnumerator_GetDefaultAudioEndpoint(
-            enumerator, data_flow, eConsole, &device);
-      if (FAILED(hr))
-      {
-         RARCH_ERR("[WASAPI] Failed to get default audio endpoint: %s.\n", hresult_name(hr));
-         goto error;
-      }
-   }
-
-   if (!device)
-      goto error;
-
-   if (collection)
-#ifdef __cplusplus
-      collection->Release();
-#else
-      collection->lpVtbl->Release(collection);
-#endif
-   if (enumerator)
-#ifdef __cplusplus
-      enumerator->Release();
-#else
-      enumerator->lpVtbl->Release(enumerator);
-#endif
-   collection = NULL;
-   enumerator = NULL;
-
-   return device;
-
-error:
-   if (collection)
-#ifdef __cplusplus
-      collection->Release();
-#else
-      collection->lpVtbl->Release(collection);
-#endif
-   if (enumerator)
-#ifdef __cplusplus
-      enumerator->Release();
-#else
-      enumerator->lpVtbl->Release(enumerator);
-#endif
-   collection = NULL;
-   enumerator = NULL;
-
-   if (id)
-      RARCH_WARN("[WASAPI] Failed to initialize %s device \"%s\".\n", data_flow_name, id);
-   else
-      RARCH_ERR("[WASAPI] Failed to initialize default %s device.\n", data_flow_name);
-
-   return NULL;
-}
 
 static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels)
@@ -763,7 +531,8 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       RARCH_DBG("[WASAPI] Minimum device period is %.1fms.\n", (float)device_period_min * 100 / 1e6);
    }
    else
-      RARCH_WARN("[WASAPI] IAudioClient::GetDevicePeriod failed: %s.\n", hresult_name(hr));
+      RARCH_WARN("[WASAPI] IAudioClient::GetDevicePeriod failed: %s.\n",
+            mmdevice_hresult_name(hr));
 
    if (!*exclusive)
    {
@@ -771,7 +540,8 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       if (SUCCEEDED(hr))
          RARCH_DBG("[WASAPI] Shared stream latency is %.1fms.\n", (float)stream_latency * 100 / 1e6);
       else
-         RARCH_WARN("[WASAPI] IAudioClient::GetStreamLatency failed: %s.\n", hresult_name(hr));
+         RARCH_WARN("[WASAPI] IAudioClient::GetStreamLatency failed: %s.\n",
+               mmdevice_hresult_name(hr));
    }
 
    hr = _IAudioClient_GetBufferSize(client, &buffer_length);
@@ -783,7 +553,8 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
             buffer_length, num_samples, num_bytes, (float)buffer_length * 1000.0 / *rate);
    }
    else
-      RARCH_WARN("[WASAPI] IAudioClient::GetBufferSize failed: %s.\n", hresult_name(hr));
+      RARCH_WARN("[WASAPI] IAudioClient::GetBufferSize failed: %s.\n",
+            mmdevice_hresult_name(hr));
 
    if (*exclusive)
       latency_res = (float)buffer_length * 1000.0 / (*rate);
@@ -893,7 +664,8 @@ static void wasapi_microphone_close_mic(void *driver_context, void *mic_context)
    ir = WaitForSingleObject(write_event, 20);
    if (ir == WAIT_FAILED)
    {
-      RARCH_ERR("[WASAPI mic] WaitForSingleObject failed: %s.\n", wasapi_error(GetLastError()));
+      RARCH_ERR("[WASAPI mic] WaitForSingleObject failed: %s.\n",
+            wasapi_error(GetLastError()));
    }
 
    /* If event isn't signaled log and leak */
@@ -951,7 +723,7 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
       if (FAILED(hr))
       {
          RARCH_ERR("[WASAPI] Failed to get capture device \"%s\"'s buffer: %s.\n",
-            mic->device_name, hresult_name(hr));
+            mic->device_name, mmdevice_hresult_name(hr));
          return -1;
       }
       bytes_read = frames_read * mic->frame_size;
@@ -969,7 +741,7 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
       if (FAILED(hr))
       {
          RARCH_ERR("[WASAPI] Failed to release capture device \"%s\"'s buffer after consuming %u frames: %s.\n",
-            mic->device_name, frames_read, hresult_name(hr));
+            mic->device_name, frames_read, mmdevice_hresult_name(hr));
          return -1;
       }
 
@@ -982,7 +754,7 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
          if (FAILED(hr))
          {
             RARCH_ERR("[WASAPI] Failed to get capture device \"%s\"'s next packet size: %s.\n",
-                      mic->device_name, hresult_name(hr));
+                      mic->device_name, mmdevice_hresult_name(hr));
             return -1;
          }
       }
@@ -1013,10 +785,12 @@ static bool wasapi_microphone_wait_for_capture_event(wasapi_microphone_handle_t 
          return true;
       case WAIT_TIMEOUT:
          /* Time out; there's nothing here for us. */
-         RARCH_ERR("[WASAPI] Failed to wait for capture device \"%s\" event: Timeout after %ums.\n", mic->device_name, timeout);
+         RARCH_ERR("[WASAPI] Failed to wait for capture device \"%s\" event: Timeout after %ums.\n",
+               mic->device_name, timeout);
          break;
       default:
-         RARCH_ERR("[WASAPI] Failed to wait for capture device \"%s\" event: %s.\n", mic->device_name, wasapi_error(GetLastError()));
+         RARCH_ERR("[WASAPI] Failed to wait for capture device \"%s\" event: %s.\n",
+               mic->device_name, wasapi_error(GetLastError()));
          break;
    }
    return false;
@@ -1132,13 +906,14 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
       return NULL;
 
    mic->exclusive         = exclusive_mode;
-   mic->device            = wasapi_init_device(device, 1 /* eCapture */);
+   mic->device            = (IMMDevice*)mmdevice_init_device(device, 1 /* eCapture */);
 
    /* If we requested a particular capture device, but couldn't open it... */
    if (device && !mic->device)
    {
-      RARCH_WARN("[WASAPI] Failed to open requested capture device \"%s\", attempting to open default device.\n", device);
-      mic->device = wasapi_init_device(NULL, 1 /* eCapture */);
+      RARCH_WARN("[WASAPI] Failed to open requested capture device \"%s\", attempting to open default device.\n",
+            device);
+      mic->device = (IMMDevice*)mmdevice_init_device(NULL, 1 /* eCapture */);
    }
 
    if (!mic->device)
@@ -1165,7 +940,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    if (FAILED(hr))
    {
       RARCH_ERR("[WASAPI] Failed to get buffer size of IAudioClient for capture device \"%s\": %s.\n",
-          mic->device_name, hresult_name(hr));
+          mic->device_name, mmdevice_hresult_name(hr));
       goto error;
    }
 
@@ -1204,7 +979,8 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
          goto error;
 
       RARCH_LOG("[WASAPI] Intermediate shared-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
-                sh_buffer_length, (double)sh_buffer_length * 1000.0 / rate, sh_buffer_length * mic->frame_size);
+                sh_buffer_length, (double)sh_buffer_length * 1000.0 / rate,
+                sh_buffer_length * mic->frame_size);
    }
 
    if (!(mic->read_event = CreateEventA(NULL, FALSE, FALSE, NULL)))
@@ -1216,7 +992,8 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    hr = _IAudioClient_SetEventHandle(mic->client, mic->read_event);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to set capture device's event handle: %s.\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI] Failed to set capture device's event handle: %s.\n",
+            mmdevice_hresult_name(hr));
       goto error;
    }
 
@@ -1224,7 +1001,8 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
          IID_IAudioCaptureClient, (void**)&mic->capture);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to get capture device's IAudioCaptureClient service: %s.\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI] Failed to get capture device's IAudioCaptureClient service: %s.\n",
+            mmdevice_hresult_name(hr));
       goto error;
    }
 
@@ -1232,14 +1010,16 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    hr = _IAudioCaptureClient_GetBuffer(mic->capture, &dest, &frame_count, &flags, NULL, NULL);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to get capture client buffer: %s.\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI] Failed to get capture client buffer: %s.\n",
+            mmdevice_hresult_name(hr));
       goto error;
    }
 
    hr = _IAudioCaptureClient_ReleaseBuffer(mic->capture, 0);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to release capture client buffer: %s.\n", hresult_name(hr));
+      RARCH_ERR("[WASAPI] Failed to release capture client buffer: %s.\n",
+            mmdevice_hresult_name(hr));
       goto error;
    }
 
@@ -1298,7 +1078,7 @@ static bool wasapi_microphone_start_mic(void *driver_context, void *mic_context)
    else
    {
       RARCH_ERR("[WASAPI mic] Failed to start capture device \"%s\"'s IAudioClient: %s.\n",
-         mic->device_name, hresult_name(hr));
+         mic->device_name, mmdevice_hresult_name(hr));
       mic->running = false;
    }
    return mic->running;
@@ -1306,15 +1086,15 @@ static bool wasapi_microphone_start_mic(void *driver_context, void *mic_context)
 
 static bool wasapi_microphone_stop_mic(void *driver_context, void *mic_context)
 {
-   wasapi_microphone_handle_t *mic = (wasapi_microphone_handle_t*)mic_context;
    HRESULT hr;
+   wasapi_microphone_handle_t *mic = (wasapi_microphone_handle_t*)mic_context;
    if (!mic)
       return false;
    hr = _IAudioClient_Stop(mic->client);
    if (FAILED(hr))
    {
       RARCH_ERR("[WASAPI mic] Failed to stop capture device \"%s\"'s IAudioClient: %s.\n",
-         mic->device_name, hresult_name(hr));
+         mic->device_name, mmdevice_hresult_name(hr));
       return false;
    }
    RARCH_LOG("[WASAPI mic] Stopped capture device \"%s\".\n", mic->device_name);
@@ -1380,9 +1160,9 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (!w)
       return NULL;
 
-   w->device                 = wasapi_init_device(dev_id, 0 /* eRender */);
+   w->device                 = (IMMDevice*)mmdevice_init_device(dev_id, 0 /* eRender */);
    if (!w->device && dev_id)
-      w->device = wasapi_init_device(NULL, 0 /* eRender */);
+      w->device = (IMMDevice*)mmdevice_init_device(NULL, 0 /* eRender */);
    if (!w->device)
       goto error;
 

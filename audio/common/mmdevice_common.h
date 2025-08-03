@@ -30,6 +30,10 @@ void *mmdevice_list_new(const void *u, unsigned data_flow);
  */
 char* mmdevice_name(void *data);
 
+const char *mmdevice_hresult_name(int hr);
+
+void *mmdevice_init_device(const char *id, unsigned data_flow);
+
 RETRO_END_DECLS
 
 #endif
