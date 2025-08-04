@@ -35,6 +35,11 @@ char* mmdevice_name(void *data);
  */
 size_t mmdevice_samplerate(void *data);
 
+/**
+ * Gets the handle of the IMMDevice.
+ */
+void *mmdevice_handle(int id, unsigned data_flow);
+
 const char *mmdevice_hresult_name(int hr);
 
 

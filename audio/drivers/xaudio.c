@@ -14,8 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if !defined(_XBOX) && (_MSC_VER == 1310)
+#if !defined(_XBOX) && (_MSC_VER == 1310) || defined(_MSC_VER) && (_WIN32_WINNT <= _WIN32_WINNT_WIN2K)
 #ifndef _WIN32_DCOM
+/* needed for CoInitializeEx */
 #define _WIN32_DCOM
 #endif
 #endif
@@ -31,11 +32,6 @@
 #include <encodings/utf.h>
 #include <lists/string_list.h>
 
-#if defined(_MSC_VER) && (_WIN32_WINNT <= _WIN32_WINNT_WIN2K)
-/* needed for CoInitializeEx */
-#define _WIN32_DCOM
-#endif
-
 #include "xaudio.h"
 
 #if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600 /*_WIN32_WINNT_VISTA */)
@@ -46,6 +42,7 @@
 
 #ifdef HAVE_MMDEVICE
 #include "../common/mmdevice_common.h"
+#include "../common/mmdevice_common_inline.h"
 #endif
 
 #include "../audio_driver.h"
@@ -221,6 +218,27 @@ static const char *xaudio2_wave_format_name(WAVEFORMATEX *format)
    return "<unknown>";
 }
 
+static size_t xa_device_get_samplerate(int id)
+{
+#ifdef HAVE_MMDEVICE
+   IMMDevice *device = (IMMDevice*)mmdevice_handle(id, 0 /* eRender */);
+   if (device)
+   {
+      size_t _len = mmdevice_samplerate(device);
+#ifdef __cplusplus
+      device->Release();
+#else
+      device->lpVtbl->Release(device);
+#endif
+      return _len;
+   }
+#else
+   /* TODO/FIXME - implement */
+   (void)0;
+#endif
+   return 0;
+}
+
 static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
       unsigned latency, size_t len, const char *dev_id)
 {
@@ -277,22 +295,27 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
          {
             if (string_is_equal(dev_id, list->elems[i].data))
             {
+               size_t new_rate = 0;
                RARCH_DBG("[XAudio2] Found device #%d: \"%s\".\n", i,
                      list->elems[i].data);
-               idx_found       = i;
+               idx_found = i;
+               new_rate  = xa_device_get_samplerate(i);
+               if (new_rate > 0)
+               {
+                  xaudio2_set_format(&desired_wf, true, channels, new_rate);
+                  *rate = desired_wf.nSamplesPerSec;
+               }
                break;
             }
          }
 
          /* Index was not found yet based on name string,
           * just assume id is a one-character number index. */
-         if (idx_found == -1)
+         if (idx_found == -1 && isdigit(dev_id[0]))
          {
-            if (isdigit(dev_id[0]))
-            {
-               idx_found = strtoul(dev_id, NULL, 0);
-               RARCH_LOG("[XAudio2] Fallback, device index is a single number index instead: %d.\n", idx_found);
-            }
+            idx_found = strtoul(dev_id, NULL, 0);
+            RARCH_LOG("[XAudio2] Fallback, device index is a single number index instead: %d.\n",
+                  idx_found);
          }
       }
    }

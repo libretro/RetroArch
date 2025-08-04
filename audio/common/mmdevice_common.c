@@ -184,6 +184,58 @@ char *mmdevice_name(void *data)
    return result;
 }
 
+void *mmdevice_handle(int id, unsigned data_flow)
+{
+   HRESULT hr;
+   IMMDeviceEnumerator *enumerator = NULL;
+   IMMDevice *device               = NULL;
+   IMMDeviceCollection *collection = NULL;
+   const char *data_flow_name      = mmdevice_data_flow_name(data_flow);
+#ifdef __cplusplus
+   hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+         IID_IMMDeviceEnumerator, (void **)&enumerator);
+#else
+   hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+         &IID_IMMDeviceEnumerator, (void **)&enumerator);
+#endif
+   if (FAILED(hr))
+      return NULL;
+   hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
+         data_flow, DEVICE_STATE_ACTIVE, &collection);
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[MMDevice] Failed to enumerate audio endpoints: %s.\n", mmdevice_hresult_name(hr));
+      goto error;
+   }
+
+   hr = _IMMDeviceCollection_Item(collection, id, &device);
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[MMDevice] Failed to get IMMDevice #%d: %s.\n", id, mmdevice_hresult_name(hr));
+      goto error;
+   }
+
+   return device;
+
+error:
+   if (collection)
+#ifdef __cplusplus
+      collection->Release();
+#else
+      collection->lpVtbl->Release(collection);
+#endif
+   if (enumerator)
+#ifdef __cplusplus
+      enumerator->Release();
+#else
+      enumerator->lpVtbl->Release(enumerator);
+#endif
+   collection = NULL;
+   enumerator = NULL;
+
+   return NULL;
+}
+
 void *mmdevice_init_device(const char *id, unsigned data_flow)
 {
    HRESULT hr;
@@ -225,13 +277,14 @@ void *mmdevice_init_device(const char *id, unsigned data_flow)
 
       if (list->elems)
       {
-         /* If any devices were found... */
          size_t d;
+         /* If any devices were found... */
          for (d = 0; d < list->size; d++)
          {
             if (string_is_equal(id, list->elems[d].data))
             {
-               RARCH_DBG("[MMDevice] Found device #%d: \"%s\".\n", d, list->elems[d].data);
+               RARCH_DBG("[MMDevice] Found device #%d: \"%s\".\n", d,
+                     list->elems[d].data);
                idx_found = d;
                break;
             }
@@ -242,7 +295,8 @@ void *mmdevice_init_device(const char *id, unsigned data_flow)
          if (idx_found == -1 && isdigit(id[0]))
          {
             idx_found = strtoul(id, NULL, 0);
-            RARCH_LOG("[MMDevice] Fallback, %s device index is a single number index instead: %u.\n", data_flow_name, idx_found);
+            RARCH_LOG("[MMDevice] Fallback, %s device index is a single number index instead: %u.\n",
+                  data_flow_name, idx_found);
          }
       }
       string_list_free(list);
