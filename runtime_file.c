@@ -227,7 +227,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
       }
    }
 
-   if (state_slot > 0)
+   if (state_slot > 0 && state_slot < 1000)
    {
       runloop_state_t *runloop_st  = runloop_state_get_ptr();
       runloop_st->entry_state_slot = state_slot;

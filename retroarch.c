@@ -3603,6 +3603,11 @@ bool command_event(enum event_command cmd, void *data)
              * ends and writes it to a file */
             ram_state_to_file();
 
+            /* Save auto state */
+            if (settings->bools.savestate_auto_save &&
+                runloop_st->current_core_type != CORE_TYPE_DUMMY)
+               command_event_save_auto_state();
+
             /* Save last selected disk index, if required */
             if (sys_info)
                disk_control_save_image_index(&sys_info->disk_control);
@@ -3612,9 +3617,6 @@ bool command_event(enum event_command cmd, void *data)
                   settings->bools.content_runtime_log_aggregate,
                   settings->paths.directory_runtime_log,
                   settings->paths.directory_playlist);
-            if (settings->bools.savestate_auto_save &&
-                runloop_st->current_core_type != CORE_TYPE_DUMMY)
-               command_event_save_auto_state();
 
             if (     (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
                   || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
@@ -4208,6 +4210,15 @@ bool command_event(enum event_command cmd, void *data)
              * ends and writes it to a file */
             ram_state_to_file();
 
+            /* Save auto state */
+            if (     runloop_st
+                  && (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+                  && settings->bools.savestate_auto_save)
+            {
+               command_event_save_auto_state();
+               content_wait_for_save_state_task();
+            }
+
             /* Save last selected disk index, if required */
             if (sys_info)
                disk_control_save_image_index(&sys_info->disk_control);
@@ -4217,14 +4228,6 @@ bool command_event(enum event_command cmd, void *data)
                   settings->bools.content_runtime_log_aggregate,
                   settings->paths.directory_runtime_log,
                   settings->paths.directory_playlist);
-
-            if (     runloop_st
-                  && (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
-                  && settings->bools.savestate_auto_save)
-            {
-               command_event_save_auto_state();
-               content_wait_for_save_state_task();
-            }
 
             content_reset_savestate_backups();
             hwr = VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);

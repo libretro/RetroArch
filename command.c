@@ -1336,8 +1336,7 @@ size_t command_event_save_auto_state(void)
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *name_savestate  = runloop_st->name.savestate;
    char savestate_name_auto[PATH_MAX_LENGTH];
-   if (runloop_st->entry_state_slot > -1)
-      return 0;
+
    if (!core_info_current_supports_savestate())
       return 0;
    if (string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))))

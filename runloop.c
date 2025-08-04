@@ -4287,6 +4287,7 @@ static bool event_init_content(
 
    /* Set entry slot from playlist entry if available */
    {
+#ifdef HAVE_MENU
       playlist_t *playlist = playlist_get_cached();
 
       if (playlist)
@@ -4294,12 +4295,13 @@ static bool event_init_content(
          struct menu_state *menu_st         = menu_state_get_ptr();
          const struct playlist_entry *entry = NULL;
 
-         if (menu_st->driver_data)
+         if (menu_st && menu_st->driver_data)
             playlist_get_index(playlist, menu_st->driver_data->rpl_entry_selection_ptr, &entry);
 
          if (entry && entry->entry_slot > 0)
             runloop_st->entry_state_slot = entry->entry_slot;
       }
+#endif
 
       /* Set current active state slot */
       if (runloop_st->entry_state_slot > -1)
