@@ -6087,11 +6087,13 @@ void bsv_movie_finish_rewind(input_driver_state_t *input_st)
 
 bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t encoding)
 {
+#ifdef HAVE_ZSTD
+   size_t uncompressed_size_big;
+#endif
+   retro_ctx_serialize_info_t serial_info;
    input_driver_state_t *input_st = input_state_get_ptr();
    uint32_t compressed_encoded_size, encoded_size, size;
-   size_t uncompressed_size_big;
    uint8_t *compressed_data = NULL, *encoded_data = NULL, *state = NULL;
-   retro_ctx_serialize_info_t serial_info;
    bool ret = true;
 
    if (intfstream_read(handle->file, &(size),
