@@ -207,22 +207,23 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    {
       strncpy(raw_game_id, &disc_data[pos], 12);
       raw_game_id[12] = '\0';
-      if (     memcmp(raw_game_id, "S", STRLEN_CONST("S")  == 0)
-            || memcmp(raw_game_id, "E", STRLEN_CONST("E")) == 0)
+      if (     memcmp(raw_game_id, "S", STRLEN_CONST("S"))  == 0
+            || memcmp(raw_game_id, "E", STRLEN_CONST("E"))  == 0
+         )
       {
-         if (  memcmp(raw_game_id, "SCUS_", STRLEN_CONST("SCUS_") == 0)
-            || memcmp(raw_game_id, "SLUS_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SLES_", STRLEN_CONST("SLES_") == 0)
-            || memcmp(raw_game_id, "SCED_", STRLEN_CONST("SCED_") == 0)
-            || memcmp(raw_game_id, "SLPS_", STRLEN_CONST("SLPS_") == 0)
-            || memcmp(raw_game_id, "SLPM_", STRLEN_CONST("SLPM_") == 0)
-            || memcmp(raw_game_id, "SCPS_", STRLEN_CONST("SCPS_") == 0)
-            || memcmp(raw_game_id, "SLED_", STRLEN_CONST("SLED_") == 0)
-            || memcmp(raw_game_id, "SIPS_", STRLEN_CONST("SIPS_") == 0)
-            || memcmp(raw_game_id, "ESPM_", STRLEN_CONST("ESPM_") == 0)
-            || memcmp(raw_game_id, "SCES_", STRLEN_CONST("SCES_") == 0)
-            || memcmp(raw_game_id, "SLKA_", STRLEN_CONST("SLKA_") == 0)
-            || memcmp(raw_game_id, "SCAJ_", STRLEN_CONST("SCAJ_") == 0)
+         if (  memcmp(raw_game_id, "SCUS_", STRLEN_CONST("SCUS_")) == 0
+            || memcmp(raw_game_id, "SLUS_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SLES_", STRLEN_CONST("SLES_")) == 0
+            || memcmp(raw_game_id, "SCED_", STRLEN_CONST("SCED_")) == 0
+            || memcmp(raw_game_id, "SLPS_", STRLEN_CONST("SLPS_")) == 0
+            || memcmp(raw_game_id, "SLPM_", STRLEN_CONST("SLPM_")) == 0
+            || memcmp(raw_game_id, "SCPS_", STRLEN_CONST("SCPS_")) == 0
+            || memcmp(raw_game_id, "SLED_", STRLEN_CONST("SLED_")) == 0
+            || memcmp(raw_game_id, "SIPS_", STRLEN_CONST("SIPS_")) == 0
+            || memcmp(raw_game_id, "ESPM_", STRLEN_CONST("ESPM_")) == 0
+            || memcmp(raw_game_id, "SCES_", STRLEN_CONST("SCES_")) == 0
+            || memcmp(raw_game_id, "SLKA_", STRLEN_CONST("SLKA_")) == 0
+            || memcmp(raw_game_id, "SCAJ_", STRLEN_CONST("SCAJ_")) == 0
             )
          {
             raw_game_id[4] = '-';
@@ -308,65 +309,65 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    {
       strncpy(raw_game_id, &disc_data[pos], 12);
       raw_game_id[12] = '\0';
-      if (     memcmp(raw_game_id, "S", STRLEN_CONST("S") == 0)
-            || memcmp(raw_game_id, "P", STRLEN_CONST("P") == 0)
-            || memcmp(raw_game_id, "T", STRLEN_CONST("T") == 0)
-            || memcmp(raw_game_id, "C", STRLEN_CONST("C") == 0)
-            || memcmp(raw_game_id, "H", STRLEN_CONST("H") == 0)
-            || memcmp(raw_game_id, "A", STRLEN_CONST("A") == 0)
-            || memcmp(raw_game_id, "V", STRLEN_CONST("A") == 0)
-            || memcmp(raw_game_id, "L", STRLEN_CONST("A") == 0)
-            || memcmp(raw_game_id, "M", STRLEN_CONST("A") == 0)
-            || memcmp(raw_game_id, "N", STRLEN_CONST("A") == 0)
-            || memcmp(raw_game_id, "U", STRLEN_CONST("A") == 0)
-            || memcmp(raw_game_id, "W", STRLEN_CONST("A") == 0)
-            || memcmp(raw_game_id, "G", STRLEN_CONST("A") == 0)
-            || memcmp(raw_game_id, "K", STRLEN_CONST("A") == 0)
-            || memcmp(raw_game_id, "R", STRLEN_CONST("A") == 0)
+      if (     memcmp(raw_game_id, "S", STRLEN_CONST("S")) == 0
+            || memcmp(raw_game_id, "P", STRLEN_CONST("P")) == 0
+            || memcmp(raw_game_id, "T", STRLEN_CONST("T")) == 0
+            || memcmp(raw_game_id, "C", STRLEN_CONST("C")) == 0
+            || memcmp(raw_game_id, "H", STRLEN_CONST("H")) == 0
+            || memcmp(raw_game_id, "A", STRLEN_CONST("A")) == 0
+            || memcmp(raw_game_id, "V", STRLEN_CONST("A")) == 0
+            || memcmp(raw_game_id, "L", STRLEN_CONST("A")) == 0
+            || memcmp(raw_game_id, "M", STRLEN_CONST("A")) == 0
+            || memcmp(raw_game_id, "N", STRLEN_CONST("A")) == 0
+            || memcmp(raw_game_id, "U", STRLEN_CONST("A")) == 0
+            || memcmp(raw_game_id, "W", STRLEN_CONST("A")) == 0
+            || memcmp(raw_game_id, "G", STRLEN_CONST("A")) == 0
+            || memcmp(raw_game_id, "K", STRLEN_CONST("A")) == 0
+            || memcmp(raw_game_id, "R", STRLEN_CONST("A")) == 0
          )
       {
-         if (  memcmp(raw_game_id, "SLPM_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SLES_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SCES_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SLUS_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SLPS_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SCED_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SCUS_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SCPS_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SCAJ_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SLKA_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SCKA_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SLAJ_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "TCPS_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "KOEI_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "PBPX_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "PCPX_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "PAPX_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SCCS_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "ALCH_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "TCES_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "CPCS_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SLED_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "TLES_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "GUST_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "CF00_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SCPN_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SCPM_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "PSXC_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SLPN_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "ULKS_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "LDTL_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "PKP2_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "WLFD_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "CZP2_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "HAKU_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "SRPM_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "MTP2_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "NMP2_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "ARZE_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "VUGJ_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "ARP2_", STRLEN_CONST("SLUS_") == 0)
-            || memcmp(raw_game_id, "ROSE_", STRLEN_CONST("SLUS_") == 0)
+         if (  memcmp(raw_game_id, "SLPM_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SLES_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SCES_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SLUS_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SLPS_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SCED_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SCUS_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SCPS_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SCAJ_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SLKA_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SCKA_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SLAJ_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "TCPS_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "KOEI_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "PBPX_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "PCPX_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "PAPX_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SCCS_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "ALCH_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "TCES_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "CPCS_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SLED_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "TLES_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "GUST_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "CF00_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SCPN_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SCPM_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "PSXC_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SLPN_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "ULKS_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "LDTL_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "PKP2_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "WLFD_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "CZP2_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "HAKU_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "SRPM_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "MTP2_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "NMP2_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "ARZE_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "VUGJ_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "ARP2_", STRLEN_CONST("SLUS_")) == 0
+            || memcmp(raw_game_id, "ROSE_", STRLEN_CONST("SLUS_")) == 0
             )
          {
             raw_game_id[4] = '-';
@@ -437,8 +438,9 @@ int detect_psp_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    {
       strncpy(s, &disc_data[pos], 10);
       s[10] = '\0';
-      if (     memcmp(s, "U", STRLEN_CONST("U")  == 0)
-            || memcmp(s, "N", STRLEN_CONST("N")) == 0)
+      if (     memcmp(s, "U", STRLEN_CONST("U")) == 0
+            || memcmp(s, "N", STRLEN_CONST("N")) == 0
+         )
       {
          if (
             (   memcmp(s, "ULES-", STRLEN_CONST("ULES-")) == 0)
@@ -497,8 +499,9 @@ size_t detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filenam
    if (intfstream_read(fd, raw_game_id, 4) <= 0)
       return 0;
 
-   if (     memcmp(raw_game_id, "RVZ", STRLEN_CONST("RVZ")  == 0)
-         || memcmp(raw_game_id, "WIA", STRLEN_CONST("WIA")) == 0)
+   if (     memcmp(raw_game_id, "RVZ", STRLEN_CONST("RVZ")) == 0
+         || memcmp(raw_game_id, "WIA", STRLEN_CONST("WIA")) == 0
+      )
    {
       if (intfstream_seek(fd, 0x0058, SEEK_SET) < 0)
          return 0;
@@ -983,8 +986,9 @@ size_t detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filena
          return 0;
    }
 
-   if (     memcmp(raw_game_id, "RVZ", STRLEN_CONST("RVZ")  == 0)
-         || memcmp(raw_game_id, "WIA", STRLEN_CONST("WIA")) == 0)
+   if (     memcmp(raw_game_id, "RVZ", STRLEN_CONST("RVZ")) == 0
+         || memcmp(raw_game_id, "WIA", STRLEN_CONST("WIA")) == 0
+      )
    {
       if (intfstream_seek(fd, 0x0058, SEEK_SET) < 0)
          return 0;
