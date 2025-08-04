@@ -4665,6 +4665,9 @@ bool menu_driver_init(bool video_is_threaded)
    settings_t             *settings  = config_get_ptr();
    struct menu_state       *menu_st  = &menu_driver_state;
 
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+
    if (     menu_st->driver_data
          || menu_driver_init_internal(
             menu_st, p_disp, settings,
