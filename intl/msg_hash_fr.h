@@ -7776,6 +7776,10 @@ MSG_HASH(
    "Joué pour la dernière fois :"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
+   "Nombre de fois joué :"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
    "seconde"
    )
