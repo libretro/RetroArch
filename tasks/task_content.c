@@ -1164,7 +1164,8 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
             path_get(RARCH_PATH_SUBSYSTEM));
       *error_string = strdup(msg);
-      goto error;
+      *ret = false;
+      return NULL;
    }
 
    if (special->num_roms)
@@ -1172,7 +1173,8 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
       if (!subsystem)
       {
          *error_enum = MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT;
-         goto error;
+         *ret = false;
+         return NULL;
       }
 
       if (special->num_roms != subsystem->size)
@@ -1185,7 +1187,8 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
                special->num_roms, special->desc,
                (unsigned)subsystem->size);
          *error_string = strdup(msg);
-         goto error;
+         *ret = false;
+         return NULL;
       }
    }
    else if (subsystem && subsystem->size)
@@ -1198,15 +1201,12 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
             special->desc,
             (unsigned)subsystem->size);
       *error_string = strdup(msg);
-      goto error;
+      *ret = false;
+      return NULL;
    }
 
    *ret = true;
    return special;
-
-error:
-   *ret = false;
-   return NULL;
 }
 
 static void content_file_set_attributes(

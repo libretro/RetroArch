@@ -216,25 +216,23 @@ static void cb_http_task_core_updater_get_list(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
-   http_transfer_data_t *data              = (http_transfer_data_t*)task_data;
    file_transfer_t *transf                 = (file_transfer_t*)user_data;
-   core_updater_list_handle_t *list_handle = NULL;
+   http_transfer_data_t *data              = (http_transfer_data_t*)task_data;
    bool success                            = data && string_is_empty(err);
 
-   if (!transf)
-      goto finish;
+   if (transf)
+   {
+      core_updater_list_handle_t *list_handle = NULL;
+      if ((list_handle = (core_updater_list_handle_t*)transf->user_data))
+      {
+         task_set_data(task, NULL); /* going to pass ownership to list_handle */
 
-   if (!(list_handle = (core_updater_list_handle_t*)transf->user_data))
-      goto finish;
+         list_handle->http_data          = data;
+         list_handle->http_task_complete = true;
+         list_handle->http_task_success  = success;
+      }
+   }
 
-   task_set_data(task, NULL); /* going to pass ownership to list_handle */
-
-   list_handle->http_data          = data;
-   list_handle->http_task_complete = true;
-   list_handle->http_task_success  = success;
-
-
-finish:
    /* Log any error messages */
    if (!success)
       RARCH_ERR("[Core Updater] Download of core list \"%s\" failed: %s.\n",
@@ -1037,9 +1035,9 @@ void *task_push_core_updater_download(
          core_list, filename, &list_entry))
       goto error;
 
-   if (string_is_empty(list_entry->remote_core_path) ||
-       string_is_empty(list_entry->local_core_path) ||
-       string_is_empty(list_entry->display_name))
+   if (   string_is_empty(list_entry->remote_core_path)
+       || string_is_empty(list_entry->local_core_path)
+       || string_is_empty(list_entry->display_name))
       goto error;
 
    /* Check whether core is locked

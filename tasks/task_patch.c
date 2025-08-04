@@ -699,11 +699,11 @@ static enum patch_error xdelta_apply_patch(
       case ENOSPC:
          error_patch = PATCH_TARGET_ALLOC_FAILED;
          free(*targetdata);
-         goto cleanup_stream;
+         break;
       default:
          error_patch = PATCH_UNKNOWN;
          free(*targetdata);
-         goto cleanup_stream;
+         break;
    }
 
 cleanup_stream:

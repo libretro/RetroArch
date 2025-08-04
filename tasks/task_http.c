@@ -249,15 +249,13 @@ static void *task_push_http_transfer_generic(
       return NULL;
 
    method = net_http_connection_method(conn);
-   if (!string_is_equal(method, "GET"))
-   {
-      /* POST requests usually mutate the server, so assume multiple calls are
-       * intended, even if they're duplicated. Additionally, they may differ
-       * only by the POST data, and task_http_finder doesn't look at that, so
-       * unique requests could be misclassified as duplicates.
-       */
-   }
-   else
+
+   /* POST requests usually mutate the server, so assume multiple calls are
+    * intended, even if they're duplicated. Additionally, they may differ
+    * only by the POST data, and task_http_finder doesn't look at that, so
+    * unique requests could be misclassified as duplicates.
+    */
+   if (string_is_equal(method, "GET"))
    {
       task_finder_data_t find_data;
       find_data.func     = task_http_finder;

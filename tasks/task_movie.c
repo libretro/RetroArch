@@ -424,21 +424,20 @@ bool movie_start_playback(input_driver_state_t *input_st, char *path)
   moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));
   bool file_exists              = filestream_exists(path);
 
-  if (!task || !state || !file_exists)
-    goto error;
+  if (task && state && file_exists)
+  {
+     *state                        = input_st->bsv_movie_state;
+     strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
+     task->type                    = TASK_TYPE_NONE;
+     task->state                   = state;
+     task->handler                 = task_moviectl_playback_handler;
+     task->callback                = moviectl_start_playback_cb;
+     task->title                   = strdup(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
 
-  *state                        = input_st->bsv_movie_state;
-  strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
-  task->type                    = TASK_TYPE_NONE;
-  task->state                   = state;
-  task->handler                 = task_moviectl_playback_handler;
-  task->callback                = moviectl_start_playback_cb;
-  task->title                   = strdup(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
+     if (task_queue_push(task))
+        return true;
+  }
 
-  if (task_queue_push(task))
-     return true;
-
-error:
    if (state)
       free(state);
    if (task)
@@ -449,34 +448,31 @@ error:
 
 bool movie_start_record(input_driver_state_t *input_st, char*path)
 {
-   size_t _len;
-   char msg[128];
    const char *_msg              = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    retro_task_t       *task      = task_init();
    moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));
 
-   if (!task || !state)
-      goto error;
+   if (task && state)
+   {
+      size_t _len;
+      char msg[128];
+      *state                     = input_st->bsv_movie_state;
+      strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
 
-   *state                        = input_st->bsv_movie_state;
-   strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
+      _len                       = strlcpy(msg, _msg, sizeof(msg));
+      snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
 
-   _len                          = strlcpy(msg, _msg, sizeof(msg));
-   snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
+      task->type                 = TASK_TYPE_NONE;
+      task->state                = state;
+      task->handler              = task_moviectl_record_handler;
+      task->callback             = moviectl_start_record_cb;
 
-   task->type                    = TASK_TYPE_NONE;
-   task->state                   = state;
-   task->handler                 = task_moviectl_record_handler;
-   task->callback                = moviectl_start_record_cb;
+      task->title                = strdup(msg);
 
-   task->title                   = strdup(msg);
+      if (task_queue_push(task))
+         return true;
+   }
 
-   if (!task_queue_push(task))
-      goto error;
-
-   return true;
-
-error:
    if (state)
       free(state);
    if (task)

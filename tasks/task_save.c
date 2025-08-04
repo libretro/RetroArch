@@ -609,47 +609,45 @@ static void task_save_handler(retro_task_t *task)
  **/
 static bool task_push_undo_save_state(const char *path, void *data, size_t len)
 {
-   settings_t     *settings;
    retro_task_t       *task      = task_init();
-   video_driver_state_t *video_st= video_state_get_ptr();
    save_task_state_t *state      = (save_task_state_t*)
       calloc(1, sizeof(*state));
 
-   if (!task || !state)
-      goto error;
+   if (task && state)
+   {
+      settings_t *settings  = config_get_ptr();
+      video_driver_state_t *video_st = video_state_get_ptr();
 
-   settings                      = config_get_ptr();
-
-   strlcpy(state->path, path, sizeof(state->path));
-   state->data                   = data;
-   state->size                   = len;
-   state->flags                 |= SAVE_TASK_FLAG_UNDO_SAVE;
-   state->state_slot             = settings->ints.state_slot;
-   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
-      state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
+      strlcpy(state->path, path, sizeof(state->path));
+      state->data           = data;
+      state->size           = len;
+      state->flags         |= SAVE_TASK_FLAG_UNDO_SAVE;
+      state->state_slot     = settings->ints.state_slot;
+      if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
+         state->flags      |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
-   if (settings->bools.savestate_file_compression)
-      state->flags              |= SAVE_TASK_FLAG_COMPRESS_FILES;
+      if (settings->bools.savestate_file_compression)
+         state->flags      |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
-   if (!settings->bools.notification_show_save_state)
-      state->flags              |= SAVE_TASK_FLAG_MUTE;
+      if (!settings->bools.notification_show_save_state)
+         state->flags      |= SAVE_TASK_FLAG_MUTE;
 
-   task->type                    = TASK_TYPE_BLOCKING;
-   task->state                   = state;
-   task->handler                 = task_save_handler;
-   task->callback                = undo_save_state_cb;
-   task->title                   = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
+      task->type            = TASK_TYPE_BLOCKING;
+      task->state           = state;
+      task->handler         = task_save_handler;
+      task->callback        = undo_save_state_cb;
+      task->title           = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
 
-   if (state->flags & SAVE_TASK_FLAG_MUTE)
-      task->flags               |=  RETRO_TASK_FLG_MUTE;
-   else
-      task->flags               &= ~RETRO_TASK_FLG_MUTE;
+      if (state->flags & SAVE_TASK_FLAG_MUTE)
+         task->flags       |=  RETRO_TASK_FLG_MUTE;
+      else
+         task->flags       &= ~RETRO_TASK_FLG_MUTE;
 
-   task_queue_push(task);
+      task_queue_push(task);
 
-   return true;
+      return true;
+   }
 
-error:
    if (data)
       free(data);
    if (state)
@@ -810,7 +808,7 @@ static void task_load_handler(retro_task_t *task)
          task_set_title(task, strdup(msg));
       }
 
-      goto end;
+      task_load_handler_finished(task, state);
    }
 
    return;
