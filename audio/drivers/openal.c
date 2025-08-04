@@ -32,6 +32,7 @@
 
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
+#include <lists/string_list.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -252,6 +253,42 @@ static bool al_use_float(void *data)
    return true;
 }
 
+static void *al_list_new(void *u)
+{
+   union string_list_elem_attr attr;
+   const char *audio_out_device_list;
+   struct string_list *sl = string_list_new();
+
+   if (!sl)
+      return NULL;
+
+   attr.i = 0;
+
+   if (alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT"))
+      audio_out_device_list = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+   else
+      audio_out_device_list = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+
+   if (audio_out_device_list)
+   {
+      while (*audio_out_device_list)
+      {
+         string_list_append(sl, audio_out_device_list, attr);
+         audio_out_device_list += strlen(audio_out_device_list) + 1;
+      }
+   }
+
+   return sl;
+}
+
+static void al_device_list_free(void *u, void *slp)
+{
+   struct string_list *sl = (struct string_list*)slp;
+
+   if (sl)
+      string_list_free(sl);
+}
+
 audio_driver_t audio_openal = {
    al_init,
    al_write,
@@ -262,8 +299,8 @@ audio_driver_t audio_openal = {
    al_free,
    al_use_float,
    "openal",
-   NULL,
-   NULL,
+   al_list_new,
+   al_device_list_free,
    al_write_avail,
    al_buffer_size,
 };

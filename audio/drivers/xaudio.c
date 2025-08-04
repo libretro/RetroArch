@@ -73,9 +73,6 @@ typedef struct
    uint8_t flags;
 } xa_t;
 
-/* Forward declarations */
-static void *xa_list_new(void *u);
-
 #if defined(__cplusplus) && !defined(CINTERFACE)
 struct xaudio2 : public IXAudio2VoiceCallback
 #else
@@ -238,6 +235,51 @@ static size_t xa_device_get_samplerate(int id)
    return mmdevice_get_samplerate(id);
 #endif
 }
+
+static void *xa_list_new(void *u)
+{
+#if defined(_XBOX) || !defined(HAVE_MMDEVICE)
+   unsigned i;
+   union string_list_elem_attr attr;
+   uint32_t dev_count              = 0;
+   IXAudio2 *ixa2                  = NULL;
+   struct string_list *sl          = string_list_new();
+
+   if (!sl)
+      return NULL;
+
+   attr.i = 0;
+
+   if (FAILED(XAudio2Create(&ixa2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
+      return NULL;
+
+   IXAudio2_GetDeviceCount(ixa2, &dev_count);
+
+   for (i = 0; i < dev_count; i++)
+   {
+      XAUDIO2_DEVICE_DETAILS dev_detail;
+      if (IXAudio2_GetDeviceDetails(ixa2, i, &dev_detail) == S_OK)
+      {
+         char *str = utf16_to_utf8_string_alloc(dev_detail.DisplayName);
+
+         if (str)
+         {
+            string_list_append(sl, str, attr);
+            free(str);
+         }
+      }
+   }
+
+   IXAudio2_Release(ixa2);
+
+   return sl;
+#elif defined(__WINRT__)
+   return NULL;
+#else
+   return mmdevice_list_new(u, 0 /* eRender */);
+#endif
+}
+
 
 static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
       unsigned latency, size_t len, const char *dev_id)
@@ -544,50 +586,6 @@ static void xa_device_list_free(void *u, void *slp)
 
    if (sl)
       string_list_free(sl);
-}
-
-static void *xa_list_new(void *u)
-{
-#if defined(_XBOX) || !defined(HAVE_MMDEVICE)
-   unsigned i;
-   union string_list_elem_attr attr;
-   uint32_t dev_count              = 0;
-   IXAudio2 *ixa2                  = NULL;
-   struct string_list *sl          = string_list_new();
-
-   if (!sl)
-      return NULL;
-
-   attr.i = 0;
-
-   if (FAILED(XAudio2Create(&ixa2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
-      return NULL;
-
-   IXAudio2_GetDeviceCount(ixa2, &dev_count);
-
-   for (i = 0; i < dev_count; i++)
-   {
-      XAUDIO2_DEVICE_DETAILS dev_detail;
-      if (IXAudio2_GetDeviceDetails(ixa2, i, &dev_detail) == S_OK)
-      {
-         char *str = utf16_to_utf8_string_alloc(dev_detail.DisplayName);
-
-         if (str)
-         {
-            string_list_append(sl, str, attr);
-            free(str);
-         }
-      }
-   }
-
-   IXAudio2_Release(ixa2);
-
-   return sl;
-#elif defined(__WINRT__)
-   return NULL;
-#else
-   return mmdevice_list_new(u, 0 /* eRender */);
-#endif
 }
 
 audio_driver_t audio_xa = {
