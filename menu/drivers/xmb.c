@@ -1208,6 +1208,9 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
 static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
 {
    char path[PATH_MAX_LENGTH];
+
+   path[0] = '\0';
+
    xmb_path_dynamic_wallpaper(xmb, path, sizeof(path));
 
    if (!string_is_equal(path, xmb->bg_file_path) || reset)
