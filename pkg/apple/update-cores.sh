@@ -161,6 +161,7 @@ appstore_cores=(
     freechaf
     freeintv
     fuse
+    gam4980
     gambatte
     gearboy
     gearcoleco
