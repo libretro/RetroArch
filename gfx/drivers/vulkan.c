@@ -4317,7 +4317,7 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 
       if (
                (memcmp(quad->mvp,
-                  &vk->tracker.mvp, sizeof(*quad->mvp) == 0))
+                  &vk->tracker.mvp, sizeof(*quad->mvp)) == 0)
             || quad->texture->view != vk->tracker.view
             || quad->sampler != vk->tracker.sampler)
       {
