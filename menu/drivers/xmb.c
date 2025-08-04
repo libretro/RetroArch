@@ -1180,9 +1180,9 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
    if (    (xmb->categories_selection_ptr == XMB_SYSTEM_TAB_MAIN && depth > 3)
         || (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1))
    {
-      if (string_is_empty(xmb->bg_file_path))
-         return;
-      strlcpy(s, xmb->bg_file_path, len);
+      if (!string_is_empty(xmb->bg_file_path))
+         strlcpy(s, xmb->bg_file_path, len);
+      return;
    }
 
    /* Dynamic wallpaper takes precedence as reset background,
