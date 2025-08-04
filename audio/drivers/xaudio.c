@@ -220,23 +220,23 @@ static const char *xaudio2_wave_format_name(WAVEFORMATEX *format)
 
 static size_t xa_device_get_samplerate(int id)
 {
-#ifdef HAVE_MMDEVICE
-   IMMDevice *device = (IMMDevice*)mmdevice_handle(id, 0 /* eRender */);
-   if (device)
+#if defined(_XBOX) || !defined(HAVE_MMDEVICE)
+   size_t _len    = 0;
+   XAUDIO2_DEVICE_DETAILS dev_detail;
+   IXAudio2 *ixa2 = NULL;
+   if (SUCCEEDED(XAudio2Create(&ixa2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
    {
-      size_t _len = mmdevice_samplerate(device);
-#ifdef __cplusplus
-      device->Release();
-#else
-      device->lpVtbl->Release(device);
-#endif
-      return _len;
+      if (IXAudio2_GetDeviceDetails(ixa2, id, &dev_detail) == S_OK)
+         _len = dev_detail.OutputFormat.Format.nSamplesPerSec;
+      IXAudio2_Release(ixa2);
    }
-#else
-   /* TODO/FIXME - implement */
-   (void)0;
-#endif
+   return _len;
+#elif defined(__WINRT__)
+   /* TODO/FIXME - implement? */
    return 0;
+#else
+   return mmdevice_get_samplerate(id);
+#endif
 }
 
 static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,

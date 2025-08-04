@@ -236,6 +236,22 @@ error:
    return NULL;
 }
 
+size_t mmdevice_get_samplerate(int id)
+{
+   IMMDevice *device = (IMMDevice*)mmdevice_handle(id, 0 /* eRender */);
+   if (device)
+   {
+      size_t _len = mmdevice_samplerate(device);
+#ifdef __cplusplus
+      device->Release();
+#else
+      device->lpVtbl->Release(device);
+#endif
+      return _len;
+   }
+   return 0;
+}
+
 void *mmdevice_init_device(const char *id, unsigned data_flow)
 {
    HRESULT hr;

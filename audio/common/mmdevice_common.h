@@ -40,6 +40,8 @@ size_t mmdevice_samplerate(void *data);
  */
 void *mmdevice_handle(int id, unsigned data_flow);
 
+size_t mmdevice_get_samplerate(int id);
+
 const char *mmdevice_hresult_name(int hr);
 
 
