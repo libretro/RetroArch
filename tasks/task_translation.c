@@ -1021,120 +1021,121 @@ bool run_translation_service(settings_t *settings, bool paused)
    rjsonwriter_raw(jsonwriter, " ", 1);
    rjsonwriter_raw(jsonwriter, "}", 1);
 
-   if (!(json_buffer = rjsonwriter_get_memory_buffer(jsonwriter, NULL)))
-      goto finish; /* ran out of memory */
-
-#ifdef DEBUG
-   if (access_st->ai_service_auto != 2)
-      RARCH_LOG("[Translation] Request size: %d\n", bmp64_len);
-#endif
+   if ((json_buffer = rjsonwriter_get_memory_buffer(jsonwriter, NULL)))
    {
-      char new_ai_service_url[PATH_MAX_LENGTH];
-      char separator                  = '?';
-      unsigned ai_service_source_lang = settings->uints.ai_service_source_lang;
-      unsigned ai_service_target_lang = settings->uints.ai_service_target_lang;
-      const char *ai_service_url      = settings->arrays.ai_service_url;
-      size_t _len                     = strlcpy(new_ai_service_url,
-            ai_service_url, sizeof(new_ai_service_url));
-
-      /* if query already exists in url, then use &'s instead */
-      if (strrchr(new_ai_service_url, '?'))
-          separator = '&';
-
-      /* source lang */
-      if (ai_service_source_lang != TRANSLATION_LANG_DONT_CARE)
-      {
-         const char *lang_source = ai_service_get_str(
-               (enum translation_lang)ai_service_source_lang);
-
-         if (!string_is_empty(lang_source))
-         {
-            new_ai_service_url[  _len] = separator;
-            new_ai_service_url[++_len] = '\0';
-            _len += strlcpy(new_ai_service_url + _len,
-                  "source_lang=",
-                  sizeof(new_ai_service_url)   - _len);
-            _len += strlcpy(new_ai_service_url + _len,
-                  lang_source,
-                  sizeof(new_ai_service_url)   - _len);
-            separator                  = '&';
-         }
-      }
-
-      /* target lang */
-      if (ai_service_target_lang != TRANSLATION_LANG_DONT_CARE)
-      {
-         const char *lang_target = ai_service_get_str(
-               (enum translation_lang)ai_service_target_lang);
-
-         if (!string_is_empty(lang_target))
-         {
-            new_ai_service_url[  _len] = separator;
-            new_ai_service_url[++_len] = '\0';
-            _len += strlcpy(new_ai_service_url + _len,
-                  "target_lang=",
-                  sizeof(new_ai_service_url)   - _len);
-            _len += strlcpy(new_ai_service_url + _len,
-                  lang_target,
-                  sizeof(new_ai_service_url)   - _len);
-            separator                  = '&';
-         }
-      }
-
-      /* mode */
-      {
-         unsigned ai_service_mode   = settings->uints.ai_service_mode;
-         /*"image" is included for backwards compatibility with
-          * vgtranslate < 1.04 */
-
-         new_ai_service_url[  _len] = separator;
-         new_ai_service_url[++_len] = '\0';
-         _len += strlcpy(new_ai_service_url          + _len,
-               "output=",
-               sizeof(new_ai_service_url)            - _len);
-
-         switch (ai_service_mode)
-         {
-            case 2:
-               strlcpy(new_ai_service_url       + _len,
-                     "text",
-                     sizeof(new_ai_service_url) - _len);
-               break;
-            case 1:
-            case 3:
-               _len += strlcpy(new_ai_service_url    + _len,
-                     "sound,wav",
-                     sizeof(new_ai_service_url)      - _len);
-               if (ai_service_mode == 1)
-                  break;
-               /* fall-through intentional for ai_service_mode == 3 */
-            case 0:
-               _len += strlcpy(new_ai_service_url    + _len,
-                     "image,png",
-                     sizeof(new_ai_service_url)      - _len);
-#ifdef HAVE_GFX_WIDGETS
-               if (     video_st->poke
-                     && video_st->poke->load_texture
-                     && video_st->poke->unload_texture)
-                  strlcpy(new_ai_service_url       + _len,
-                        ",png-a",
-                        sizeof(new_ai_service_url) - _len);
-#endif
-               break;
-            default:
-               break;
-         }
-
-      }
 #ifdef DEBUG
       if (access_st->ai_service_auto != 2)
-         RARCH_LOG("[Translation] SENDING... %s\n", new_ai_service_url);
+         RARCH_LOG("[Translation] Request size: %d\n", bmp64_len);
 #endif
-      task_push_http_post_transfer(new_ai_service_url,
-            json_buffer, true, NULL, handle_translation_cb, NULL);
+      {
+         char new_ai_service_url[PATH_MAX_LENGTH];
+         char separator                  = '?';
+         unsigned ai_service_source_lang = settings->uints.ai_service_source_lang;
+         unsigned ai_service_target_lang = settings->uints.ai_service_target_lang;
+         const char *ai_service_url      = settings->arrays.ai_service_url;
+         size_t _len                     = strlcpy(new_ai_service_url,
+               ai_service_url, sizeof(new_ai_service_url));
+
+         /* if query already exists in url, then use &'s instead */
+         if (strrchr(new_ai_service_url, '?'))
+            separator = '&';
+
+         /* source lang */
+         if (ai_service_source_lang != TRANSLATION_LANG_DONT_CARE)
+         {
+            const char *lang_source = ai_service_get_str(
+                  (enum translation_lang)ai_service_source_lang);
+
+            if (!string_is_empty(lang_source))
+            {
+               new_ai_service_url[  _len] = separator;
+               new_ai_service_url[++_len] = '\0';
+               _len += strlcpy(new_ai_service_url + _len,
+                     "source_lang=",
+                     sizeof(new_ai_service_url)   - _len);
+               _len += strlcpy(new_ai_service_url + _len,
+                     lang_source,
+                     sizeof(new_ai_service_url)   - _len);
+               separator                  = '&';
+            }
+         }
+
+         /* target lang */
+         if (ai_service_target_lang != TRANSLATION_LANG_DONT_CARE)
+         {
+            const char *lang_target = ai_service_get_str(
+                  (enum translation_lang)ai_service_target_lang);
+
+            if (!string_is_empty(lang_target))
+            {
+               new_ai_service_url[  _len] = separator;
+               new_ai_service_url[++_len] = '\0';
+               _len += strlcpy(new_ai_service_url + _len,
+                     "target_lang=",
+                     sizeof(new_ai_service_url)   - _len);
+               _len += strlcpy(new_ai_service_url + _len,
+                     lang_target,
+                     sizeof(new_ai_service_url)   - _len);
+               separator                  = '&';
+            }
+         }
+
+         /* mode */
+         {
+            unsigned ai_service_mode   = settings->uints.ai_service_mode;
+            /*"image" is included for backwards compatibility with
+             * vgtranslate < 1.04 */
+
+            new_ai_service_url[  _len] = separator;
+            new_ai_service_url[++_len] = '\0';
+            _len += strlcpy(new_ai_service_url          + _len,
+                  "output=",
+                  sizeof(new_ai_service_url)            - _len);
+
+            switch (ai_service_mode)
+            {
+               case 2:
+                  strlcpy(new_ai_service_url       + _len,
+                        "text",
+                        sizeof(new_ai_service_url) - _len);
+                  break;
+               case 1:
+               case 3:
+                  _len += strlcpy(new_ai_service_url    + _len,
+                        "sound,wav",
+                        sizeof(new_ai_service_url)      - _len);
+                  if (ai_service_mode == 1)
+                     break;
+                  /* fall-through intentional for ai_service_mode == 3 */
+               case 0:
+                  _len += strlcpy(new_ai_service_url    + _len,
+                        "image,png",
+                        sizeof(new_ai_service_url)      - _len);
+#ifdef HAVE_GFX_WIDGETS
+                  if (     video_st->poke
+                        && video_st->poke->load_texture
+                        && video_st->poke->unload_texture)
+                     strlcpy(new_ai_service_url       + _len,
+                           ",png-a",
+                           sizeof(new_ai_service_url) - _len);
+#endif
+                  break;
+               default:
+                  break;
+            }
+
+         }
+#ifdef DEBUG
+         if (access_st->ai_service_auto != 2)
+            RARCH_LOG("[Translation] SENDING... %s\n", new_ai_service_url);
+#endif
+         task_push_http_post_transfer(new_ai_service_url,
+               json_buffer, true, NULL, handle_translation_cb, NULL);
+      }
+
+      error = false;
    }
 
-   error = false;
 finish:
    if (bit24_image_prev)
       free(bit24_image_prev);
