@@ -498,19 +498,21 @@ int rmsgpack_read(intfstream_t *fd,
    }
    else if (type < MPF_NIL)
    {
-      ssize_t read_len = 0;
-      tmp_len          = type - MPF_FIXSTR;
+      ssize_t _len = 0;
+      tmp_len      = type - MPF_FIXSTR;
       if (!(buff = (char *)malloc((size_t)(tmp_len + 1) * sizeof(char))))
          return -1;
-      if ((read_len = intfstream_read(fd, buff, (ssize_t)tmp_len)) == -1)
+      if ((_len = intfstream_read(fd, buff, (ssize_t)tmp_len)) == -1)
       {
          free(buff);
          return -1;
       }
-      buff[read_len] = '\0';
+      buff[_len] = '\0';
       if (callbacks->read_string)
-         return callbacks->read_string(buff, (uint32_t)read_len, data);
-      goto end;
+         return callbacks->read_string(buff, (uint32_t)_len, data);
+      if (buff)
+         free(buff);
+      return 0;
    }
    else if (type > MPF_MAP32)
    {
@@ -539,7 +541,6 @@ int rmsgpack_read(intfstream_t *fd,
          if ((rv = rmsgpack_read_buff(fd, (size_t)(1 << (type - _MPF_BIN8)),
                      &buff, &tmp_len)) < 0)
             return rv;
-
          if (callbacks->read_bin)
             return callbacks->read_bin(buff, (uint32_t)tmp_len, data);
          break;
@@ -551,7 +552,6 @@ int rmsgpack_read(intfstream_t *fd,
          tmp_uint = 0;
          if (rmsgpack_read_uint(fd, &tmp_uint, (size_t)tmp_len) == -1)
             return -1;
-
          if (callbacks->read_uint)
             return callbacks->read_uint(tmp_uint, data);
          break;
@@ -563,7 +563,6 @@ int rmsgpack_read(intfstream_t *fd,
          tmp_int = 0;
          if (rmsgpack_read_int(fd, &tmp_int, (size_t)tmp_len) == -1)
             return -1;
-
          if (callbacks->read_int)
             return callbacks->read_int(tmp_int, data);
          break;
@@ -572,7 +571,6 @@ int rmsgpack_read(intfstream_t *fd,
       case _MPF_STR32:
          if ((rv = rmsgpack_read_buff(fd, (size_t)(1 << (type - _MPF_STR8)), &buff, &tmp_len)) < 0)
             return rv;
-
          if (callbacks->read_string)
             return callbacks->read_string(buff, (uint32_t)tmp_len, data);
          break;
@@ -588,7 +586,6 @@ int rmsgpack_read(intfstream_t *fd,
          return -1;
    }
 
-end:
    if (buff)
       free(buff);
    return 0;
