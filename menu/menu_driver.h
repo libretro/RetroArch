@@ -511,7 +511,7 @@ struct menu_state
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
 #ifdef HAVE_RUNAHEAD
-   enum menu_runahead_mode runahead_mode;
+   unsigned int runahead_mode;
 #endif
 
    /* int16_t alignment */

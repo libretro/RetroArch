@@ -2317,7 +2317,7 @@ static void gl2_renderchain_copy_frame(
          {
             /* Slow path - conv_buffer is preallocated
              * just in case we hit this path. */
-            int h;
+            size_t h;
             const unsigned line_bytes = width * gl->base_size;
             uint8_t *dst              = (uint8_t*)gl->conv_buffer;
             const uint8_t *src        = (const uint8_t*)frame;
