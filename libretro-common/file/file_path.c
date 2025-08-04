@@ -1142,7 +1142,7 @@ size_t fill_pathname_abbreviate_special(char *s,
 
          if (!PATH_CHAR_IS_SLASH(*in_path))
          {
-            strcpy_literal(s, PATH_DEFAULT_SLASH());
+            strcpy(s, PATH_DEFAULT_SLASH());
             s++;
             len--;
          }

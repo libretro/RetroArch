@@ -209,20 +209,20 @@ static int intfstream_get_serial(intfstream_t *fd, char *s, size_t len, const ch
       size_t system_len = strlen(system_name);
       if (string_starts_with_size(system_name, "Sony", STRLEN_CONST("Sony")))
       {
-         if (STRLEN_CONST("Sony - PlayStation Portable") == system_len &&
-             string_is_equal_fast(system_name, "Sony - PlayStation Portable", system_len))
+         if (   STRLEN_CONST("Sony - PlayStation Portable") == system_len
+             && memcmp(system_name, "Sony - PlayStation Portable", system_len) == 0)
          {
             if (detect_psp_game(fd, s, len, filename) != 0)
                return 1;
          }
-         else if (STRLEN_CONST("Sony - PlayStation") == system_len &&
-                  string_is_equal_fast(system_name, "Sony - PlayStation", system_len))
+         else if (   STRLEN_CONST("Sony - PlayStation") == system_len
+                  && memcmp(system_name, "Sony - PlayStation", system_len) == 0)
          {
             if (detect_ps1_game(fd, s, len, filename) != 0)
                return 1;
          }
-         else if (STRLEN_CONST("Sony - PlayStation 2") == system_len &&
-                  string_is_equal_fast(system_name, "Sony - PlayStation 2", system_len))
+         else if (   STRLEN_CONST("Sony - PlayStation 2") == system_len
+                  && memcmp(system_name, "Sony - PlayStation 2", system_len) == 0)
          {
             if (detect_ps2_game(fd, s, len, filename) != 0)
                return 1;
@@ -230,14 +230,14 @@ static int intfstream_get_serial(intfstream_t *fd, char *s, size_t len, const ch
       }
       else if (string_starts_with_size(system_name, "Nintendo", STRLEN_CONST("Nintendo")))
       {
-         if (STRLEN_CONST("Nintendo - GameCube") == system_len &&
-             string_is_equal_fast(system_name, "Nintendo - GameCube", system_len))
+         if (   STRLEN_CONST("Nintendo - GameCube") == system_len
+             && memcmp(system_name, "Nintendo - GameCube", system_len) == 0)
          {
             if (detect_gc_game(fd, s, len, filename) != 0)
                return 1;
          }
-         else if (STRLEN_CONST("Nintendo - Wii") == system_len &&
-                  string_is_equal_fast(system_name, "Nintendo - Wii", system_len))
+         else if (   STRLEN_CONST("Nintendo - Wii") == system_len
+                  && memcmp(system_name, "Nintendo - Wii", system_len) == 0)
          {
             if (detect_wii_game(fd, s, len, filename) != 0)
                return 1;
@@ -245,20 +245,20 @@ static int intfstream_get_serial(intfstream_t *fd, char *s, size_t len, const ch
       }
       else if (string_starts_with_size(system_name, "Sega", STRLEN_CONST("Sega")))
       {
-         if (STRLEN_CONST("Sega - Mega-CD - Sega CD") == system_len &&
-             string_is_equal_fast(system_name, "Sega - Mega-CD - Sega CD", system_len))
+         if (   STRLEN_CONST("Sega - Mega-CD - Sega CD") == system_len
+             && memcmp(system_name, "Sega - Mega-CD - Sega CD", system_len) == 0)
          {
             if (detect_scd_game(fd, s, len, filename) != 0)
                return 1;
          }
-         else if (STRLEN_CONST("Sega - Saturn") == system_len &&
-                  string_is_equal_fast(system_name, "Sega - Saturn", system_len))
+         else if (   STRLEN_CONST("Sega - Saturn") == system_len
+                  && memcmp(system_name, "Sega - Saturn", system_len) == 0)
          {
             if (detect_sat_game(fd, s, len, filename) != 0)
                return 1;
          }
-         else if (STRLEN_CONST("Sega - Dreamcast") == system_len &&
-                  string_is_equal_fast(system_name, "Sega - Dreamcast", system_len))
+         else if (   STRLEN_CONST("Sega - Dreamcast") == system_len
+                  && memcmp(system_name, "Sega - Dreamcast", system_len) == 0)
          {
             if (detect_dc_game(fd, s, len, filename) != 0)
                return 1;

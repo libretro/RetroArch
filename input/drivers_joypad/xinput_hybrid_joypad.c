@@ -144,8 +144,8 @@ static bool guid_is_xinput_device(const GUID* product_guid)
 
    for (i = 0; i < ARRAY_SIZE(common_xinput_guids); ++i)
    {
-      if (string_is_equal_fast(product_guid,
-               &common_xinput_guids[i], sizeof(GUID)))
+      if (memcmp(product_guid,
+               &common_xinput_guids[i], sizeof(GUID)) == 0)
          return true;
    }
 

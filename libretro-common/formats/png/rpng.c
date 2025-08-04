@@ -1205,8 +1205,7 @@ bool rpng_start(rpng_t *rpng)
    if (rpng->buff_end - rpng->buff_data < 8)
       return false;
 
-   if (string_is_not_equal_fast(
-            rpng->buff_data, png_magic, sizeof(png_magic)))
+   if (memcmp(rpng->buff_data, png_magic, sizeof(png_magic)) != 0)
       return false;
 
    rpng->buff_data += 8;

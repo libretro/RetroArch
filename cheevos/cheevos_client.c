@@ -161,7 +161,7 @@ static void rcheevos_filter_url_param(char* url, char* param)
       if (start[param_len] == '=' && memcmp(start, param, param_len) == 0)
       {
          if (next)
-            strcpy_literal(start, next + 1);
+            strcpy(start, next + 1);
          else if (start > url)
             start[-1] = '\0';
          else

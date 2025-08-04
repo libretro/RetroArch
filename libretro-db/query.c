@@ -274,7 +274,7 @@ static void query_raise_unknown_function(
          );
    if (len < ((ssize_t)_len - __len - 3))
       strncpy(s + __len, name, len);
-   strcpy_literal(s + __len + len, "'");
+   strcpy(s + __len + len, "'");
    *error = s;
 }
 

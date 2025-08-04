@@ -604,7 +604,7 @@ static bool d3d9_cg_renderchain_init_shader_fvf(
 
    for (count = 0; count < MAXD3DDECLLENGTH; count++)
    {
-      if (string_is_equal_fast(&decl_end, &decl[count], sizeof(decl_end)))
+      if (memcmp(&decl_end, &decl[count], sizeof(decl_end)) == 0)
          break;
    }
 

@@ -149,7 +149,7 @@ void runahead_set_load_content_info(void *data,
 static void strcat_alloc(char **dst, const char *s)
 {
    size_t _len;
-   char *src          = *dst;
+   char *src    = *dst;
 
    if (!src)
    {
@@ -157,27 +157,27 @@ static void strcat_alloc(char **dst, const char *s)
       {
          size_t __len = strlen(s);
          if (__len != 0)
-            src       = strldup(s, __len + 1);
+            src = strldup(s, __len + 1);
          else
-            src       = NULL;
+            src = NULL;
       }
       else
-         src          = (char*)calloc(1,1);
+         src    = (char*)calloc(1,1);
 
-      *dst            = src;
+      *dst      = src;
       return;
    }
 
    if (!s)
       return;
 
-   _len               = strlen(src);
+   _len = strlen(src);
 
    if (!(src = (char*)realloc(src, _len + strlen(s) + 1)))
       return;
 
-   *dst               = src;
-   strcpy_literal(src + _len, s);
+   *dst = src;
+   strcpy(src + _len, s);
 }
 
 void runahead_secondary_core_destroy(void *data)
