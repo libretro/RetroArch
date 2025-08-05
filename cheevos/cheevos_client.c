@@ -310,9 +310,11 @@ void rcheevos_client_http_load_response(const rc_api_request_t* request,
 void rcheevos_client_server_call(const rc_api_request_t* request,
    rc_client_server_callback_t callback, void* callback_data, rc_client_t* client)
 {
-   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-   rc_client_http_task_data_t* taskdata = malloc(sizeof(rc_client_http_task_data_t));
-   taskdata->callback = callback;
+   rcheevos_locals_t *rcheevos_locals   = (rcheevos_locals_t*)get_rcheevos_locals();
+   rc_client_http_task_data_t *taskdata = (rc_client_http_task_data_t*)
+      malloc(sizeof(rc_client_http_task_data_t));
+
+   taskdata->callback      = callback;
    taskdata->callback_data = callback_data;
 
    if (request->post_data)
@@ -423,11 +425,11 @@ static void rcheevos_client_download_task_callback(retro_task_t* task,
 bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
    const char* url, const char* badge_name)
 {
-   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-   rc_client_download_task_data_t* taskdata;
-   char badge_fullpath[512] = "";
    char* badge_fullname;
    size_t badge_fullname_size;
+   rc_client_download_task_data_t* taskdata;
+   char badge_fullpath[512] = "";
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
 
    /* make sure the directory exists */
    fill_pathname_application_special(badge_fullpath, sizeof(badge_fullpath),
@@ -440,7 +442,7 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
    }
 
    fill_pathname_slash(badge_fullpath, sizeof(badge_fullpath));
-   badge_fullname = badge_fullpath + strlen(badge_fullpath);
+   badge_fullname      = badge_fullpath + strlen(badge_fullpath);
    badge_fullname_size = sizeof(badge_fullpath) - (badge_fullname - badge_fullpath);
    snprintf(badge_fullname, badge_fullname_size, "%s" FILE_PATH_PNG_EXTENSION, badge_name);
 
@@ -472,12 +474,12 @@ void rcheevos_client_download_badge_from_url(const char* url, const char* badge_
 
 static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
 {
-   const rc_client_achievement_bucket_t* bucket;
-   const rc_client_achievement_t* achievement;
-   const char* next_badge;
    char badge_name[32];
-   const char* url = NULL;
-   bool done = false;
+   const char* next_badge;
+   const rc_client_achievement_bucket_t *bucket;
+   const rc_client_achievement_t *achievement;
+   const char *url = NULL;
+   bool done       = false;
 
    do
    {
@@ -514,20 +516,18 @@ static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
 
          if (queue->pass == 0)
          {
-            /* first pass - get all unlocked badges */
-            url = achievement->badge_url;
+            /* First pass - get all unlocked badges */
+            url        = achievement->badge_url;
             next_badge = achievement->badge_name;
          }
+         /* Second pass - don't need locked badge for
+          * achievement player has already unlocked */
          else if (achievement->unlock_time)
-         {
-            /* second pass - don't need locked badge for achievement player has already unlocked */
             continue;
-         }
          else
          {
-            /* second pass - get locked badge */
+            /* Second pass - get locked badge */
             url = achievement->badge_locked_url;
-
             snprintf(badge_name, sizeof(badge_name), "%s_lock", achievement->badge_name);
             next_badge = badge_name;
          }
@@ -545,11 +545,11 @@ static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
       slock_unlock(queue->lock);
 #endif
 
+      /* If the badge already exists (download_badge returns false), continue
+       * looping to the next item. otherwise, a download was queued, so break
+       * out of the loop. */
       if (next_badge)
       {
-         /* if the badge already exists (download_badge returns false), continue
-          * looping to the next item. otherwise, a download was queued, so break
-          * out of the loop. */
          if (rcheevos_client_download_badge(queue, url, next_badge))
             break;
       }
@@ -594,7 +594,7 @@ void rcheevos_client_download_game_badge(const rc_client_game_t* game)
 
 void rcheevos_client_download_achievement_badges(rc_client_t* client)
 {
-   uint32_t i;
+   size_t i;
    rc_client_download_queue_t *queue = (rc_client_download_queue_t*)
       calloc(1, sizeof(*queue));
 

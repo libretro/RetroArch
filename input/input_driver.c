@@ -3258,7 +3258,7 @@ static void input_overlay_poll_mouse(settings_t *settings,
    static bool pending_click;
 
    input_overlay_get_mouse_scale(settings,
-         &mouse_st->scale_x, &mouse_st->scale_y,
+         (float*)&mouse_st->scale_x, &mouse_st->scale_y,
          &swipe_thres_x, &swipe_thres_y);
 
    /* Check for pointer count changes */
@@ -3691,7 +3691,7 @@ static void input_poll_overlay(
             if ((orig_bits & (1 << j)) != (new_bits & (1 << j)))
             {
                unsigned rk = i * 32 + j;
-               uint32_t c  = input_keymaps_translate_rk_to_ascii(rk, key_mod);
+               uint32_t c  = input_keymaps_translate_rk_to_ascii((enum retro_key)rk, (enum retro_mod)key_mod);
                input_keyboard_event(new_bits & (1 << j),
                      rk, c, key_mod, RETRO_DEVICE_POINTER);
             }
@@ -6093,8 +6093,10 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
    retro_ctx_serialize_info_t serial_info;
    input_driver_state_t *input_st = input_state_get_ptr();
    uint32_t compressed_encoded_size, encoded_size, size;
-   uint8_t *compressed_data = NULL, *encoded_data = NULL, *state = NULL;
-   bool ret = true;
+   uint8_t *compressed_data = NULL;
+   uint8_t *encoded_data    = NULL;
+   uint8_t *state           = NULL;
+   bool ret                 = true;
 
    if (intfstream_read(handle->file, &(size),
                sizeof(uint32_t)) != sizeof(uint32_t))
@@ -6117,10 +6119,10 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
       ret = false;
       goto exit;
    }
-   size = swap_if_big32(size);
-   encoded_size = swap_if_big32(encoded_size);
+   size                    = swap_if_big32(size);
+   encoded_size            = swap_if_big32(encoded_size);
    compressed_encoded_size = swap_if_big32(compressed_encoded_size);
-   compressed_data = malloc(compressed_encoded_size);
+   compressed_data         = (uint8_t*)malloc(compressed_encoded_size);
    if (intfstream_read(handle->file, compressed_data, compressed_encoded_size) != (int64_t)compressed_encoded_size)
    {
       RARCH_ERR("[Replay] Truncated checkpoint, terminating movie\n");
@@ -6131,7 +6133,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
    switch (compression)
    {
       case REPLAY_CHECKPOINT2_COMPRESSION_NONE:
-         encoded_data = compressed_data;
+         encoded_data    = compressed_data;
          compressed_data = NULL;
          break;
 #ifdef HAVE_ZLIB
@@ -6142,7 +6144,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
 #else
             uint32_t uncompressed_size_zlib = encoded_size;
 #endif
-            encoded_data = calloc(encoded_size, sizeof(uint8_t));
+            encoded_data = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
             if (uncompress(encoded_data, &uncompressed_size_zlib, compressed_data, compressed_encoded_size) != Z_OK)
             {
                ret = false;
@@ -6159,7 +6161,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
             margin.  but, how could the margin be known without
             calling the function that takes the compressed frames as
             an input?  */
-         encoded_data = calloc(encoded_size, sizeof(uint8_t));
+         encoded_data = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
          uncompressed_size_big = ZSTD_decompress(encoded_data, encoded_size, compressed_data, compressed_encoded_size);
          if (ZSTD_isError(uncompressed_size_big))
          {
@@ -6176,8 +6178,8 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
    switch (encoding)
    {
       case REPLAY_CHECKPOINT2_ENCODING_RAW:
-         size = encoded_size;
-         state = encoded_data;
+         size         = encoded_size;
+         state        = encoded_data;
          encoded_data = NULL;
          break;
       default:
@@ -6206,13 +6208,15 @@ bool bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_
 {
    bool ret = true;
    uint32_t encoded_size, compressed_encoded_size, size_;
-   uint8_t *encoded_data = NULL, *compressed_encoded_data = NULL;
-   bool owns_encoded = false, owns_compressed_encoded = false;
+   uint8_t *encoded_data            = NULL;
+   uint8_t *compressed_encoded_data = NULL;
+   bool owns_encoded                = false;
+   bool owns_compressed_encoded     = false;
    switch (encoding)
    {
       case REPLAY_CHECKPOINT2_ENCODING_RAW:
          encoded_size = serial_info.size;
-         encoded_data = serial_info.data;
+         encoded_data = (uint8_t*)serial_info.data;
          break;
       default:
          RARCH_ERR("[Replay] Unrecognized encoding scheme %d\n", encoding);
@@ -6223,13 +6227,13 @@ bool bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_
    {
       case REPLAY_CHECKPOINT2_COMPRESSION_NONE:
          compressed_encoded_size = encoded_size;
-         compressed_encoded_data = encoded_data;
+         compressed_encoded_data = (uint8_t*)encoded_data;
          break;
 #ifdef HAVE_ZLIB
       case REPLAY_CHECKPOINT2_COMPRESSION_ZLIB:
       {
          uLongf zlib_compressed_encoded_size = compressBound(encoded_size);
-         compressed_encoded_data = calloc(zlib_compressed_encoded_size, sizeof(uint8_t));
+         compressed_encoded_data = (uint8_t*)calloc(zlib_compressed_encoded_size, sizeof(uint8_t));
          owns_compressed_encoded = true;
          if (compress2(compressed_encoded_data, &zlib_compressed_encoded_size, encoded_data, encoded_size, 6) != Z_OK)
          {
@@ -6244,7 +6248,7 @@ bool bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_
       case REPLAY_CHECKPOINT2_COMPRESSION_ZSTD:
       {
          size_t compressed_encoded_size_big = ZSTD_compressBound(encoded_size);
-         compressed_encoded_data = calloc(compressed_encoded_size_big, sizeof(uint8_t));
+         compressed_encoded_data = (uint8_t*)calloc(compressed_encoded_size_big, sizeof(uint8_t));
          owns_compressed_encoded = true;
          compressed_encoded_size_big = ZSTD_compress(compressed_encoded_data, compressed_encoded_size_big, encoded_data, encoded_size, 9);
          if (ZSTD_isError(compressed_encoded_size_big))
@@ -6355,7 +6359,7 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
             return;
          }
          _len  = swap_if_big64(_len);
-         state = calloc(_len, sizeof(uint8_t));
+         state = (uint8_t*)calloc(_len, sizeof(uint8_t));
          if (intfstream_read(handle->file, state, _len) != (int64_t)_len)
          {
             /* Unnatural EOF */
@@ -6673,7 +6677,7 @@ static bool replay_check_same_timeline(bsv_movie_t *movie,
 
 bool replay_set_serialized_data(void* buf)
 {
-   uint8_t *buffer                = buf;
+   uint8_t *buffer                = (uint8_t*)buf;
    input_driver_state_t *input_st = &input_driver_st;
    bool playback                  = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)  ? true : false;
    bool recording                 = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING) ? true : false;

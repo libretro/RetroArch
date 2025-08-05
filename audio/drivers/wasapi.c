@@ -1110,7 +1110,7 @@ static bool wasapi_microphone_mic_alive(const void *driver_context, const void *
 
 static struct string_list *wasapi_microphone_device_list_new(const void *driver_context)
 {
-   return mmdevice_list_new(driver_context, 1 /* eCapture */);
+   return (struct string_list*)mmdevice_list_new(driver_context, 1 /* eCapture */);
 }
 
 static void wasapi_microphone_device_list_free(const void *driver_context, struct string_list *devices)

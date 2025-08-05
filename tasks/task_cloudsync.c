@@ -417,7 +417,7 @@ static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync
    /* The paths iterated here are not portable, because they are still used for iterating later on */
    for (i = 0; i < dirlist->size; i++)
       task_cloud_sync_manifest_append_dir(sync_state->current_manifest,
-            dirlist->elems[i].userdata, dirlist->elems[i].data);
+            (const char*)dirlist->elems[i].userdata, dirlist->elems[i].data);
 
    file_list_sort_on_alt(sync_state->current_manifest);
    sync_state->phase = CLOUD_SYNC_PHASE_DIFF;
@@ -489,12 +489,12 @@ static INLINE int task_cloud_sync_key_cmp(struct item_file *left, struct item_fi
 
 static char *task_cloud_sync_md5_rfile(RFILE *file)
 {
-   MD5_CTX       md5;
-   int           rv;
-   char         *hash = malloc(33);
+   int rv;
+   MD5_CTX md5;
    unsigned char buf[4096];
    unsigned char digest[16];
    libretro_vfs_implementation_file *hfile = filestream_get_vfs_handle(file);
+   char *hash = (char*)malloc(33);
 
    if (!hash)
       return NULL;
@@ -504,12 +504,14 @@ static char *task_cloud_sync_md5_rfile(RFILE *file)
    if (hfile && hfile->mapped)
       MD5_Update(&md5, hfile->mapped, hfile->size);
    else
+   {
       do
       {
          rv = (int)filestream_read(file, buf, sizeof(buf));
          if (rv > 0)
             MD5_Update(&md5, buf, rv);
       } while (rv > 0);
+   }
    MD5_Final(digest, &md5);
 
    snprintf(hash, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
@@ -631,7 +633,9 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    {
       if (!string_starts_with(key, dirlist->elems[i].data))
          continue;
-      fill_pathname_join_special(filename, dirlist->elems[i].userdata, path, sizeof(filename));
+      fill_pathname_join_special(filename,
+            (const char*)dirlist->elems[i].userdata,
+            path, sizeof(filename));
       pathname_conform_slashes_to_os(filename);
       break;
    }
@@ -639,7 +643,8 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    {
       /* how did this end up here? we don't know where to put it... */
       RARCH_WARN(CSPFX "Don't know where to put %s!\n", key);
-      task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
+      task_cloud_sync_add_to_updated_manifest(sync_state,
+            key, CS_FILE_HASH(server_file), true);
       return;
    }
 
@@ -652,7 +657,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
 
    fill_pathname_basedir(directory, filename, sizeof(directory));
    path_mkdir(directory);
-   fetch_state = malloc(sizeof(task_cloud_sync_fetch_state_t));
+   fetch_state = (task_cloud_sync_fetch_state_t*)malloc(sizeof(task_cloud_sync_fetch_state_t));
    if (!fetch_state)
    {
       RARCH_WARN(CSPFX "Wanted to fetch %s but failed to malloc.\n", key);

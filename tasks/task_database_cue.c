@@ -188,13 +188,13 @@ int detect_ps1_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
    int pos;
    char raw_game_id[50];
-   char *disc_data = malloc(DISC_DATA_SIZE_PS1);
+   char *disc_data = (char*)malloc(DISC_DATA_SIZE_PS1);
 
    if (!disc_data)
       return false;
 
    /* Load data into buffer and use pointers */
-   if (intfstream_seek(fd, 0, SEEK_SET) < 0
+   if (  intfstream_seek(fd, 0, SEEK_SET) < 0
       || intfstream_read(fd, disc_data, DISC_DATA_SIZE_PS1) <= 0)
    {
       free(disc_data);
@@ -295,7 +295,7 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    if (intfstream_seek(fd, 0, SEEK_SET) < 0)
       return false;
 
-   disc_data = malloc(DISC_DATA_SIZE_PS2);
+   disc_data = (char*)malloc(DISC_DATA_SIZE_PS2);
 
    if (intfstream_read(fd, disc_data, DISC_DATA_SIZE_PS2) <= 0)
    {
@@ -419,7 +419,7 @@ int detect_psp_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
    #define DISC_DATA_SIZE_PSP 300000
    int pos;
-   char *disc_data = malloc(DISC_DATA_SIZE_PSP);
+   char *disc_data = (char*)malloc(DISC_DATA_SIZE_PSP);
 
    if (!disc_data)
       return false;

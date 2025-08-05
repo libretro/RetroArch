@@ -139,7 +139,7 @@ static int d3d9x_win32_font_get_message_width(void* data, const char* msg,
    font                 = (ID3DXFont*)d3dfonts->font;
 
    font->lpVtbl->DrawText(font, NULL,
-         (void*)msg, msg_len ? (INT)msg_len : -1, &box, DT_CALCRECT, 0);
+         (LPCTSTR)msg, msg_len ? (INT)msg_len : -1, &box, DT_CALCRECT, 0);
 
    return box.right - box.left;
 }
@@ -240,12 +240,12 @@ static void d3d9x_win32_font_render_msg(
       unsigned drop_b = b * drop_mod;
 
       font->lpVtbl->DrawText(font, NULL,
-            (void*)msg, -1, p_rect_shifted, format,
+            (LPCTSTR)msg, -1, p_rect_shifted, format,
             D3DCOLOR_ARGB(drop_a , drop_r, drop_g, drop_b));
    }
 
    font->lpVtbl->DrawText(font, NULL,
-         (void*)msg, -1, p_rect, format,
+         (LPCTSTR)msg, -1, p_rect, format,
          D3DCOLOR_ARGB(a, r, g, b));
 }
 

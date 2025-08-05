@@ -7662,7 +7662,7 @@ static bool netplay_process_savestate1(retro_ctx_serialize_info_t* serial_info)
 #ifdef HAVE_CHEEVOS
    const settings_t* settings = config_get_ptr();
 #endif
-   const uint8_t* input       = serial_info->data_const;
+   const uint8_t* input       = (const uint8_t*)serial_info->data_const;
    const uint8_t* stop        = input + serial_info->size;
    bool seen_core             = false;
 

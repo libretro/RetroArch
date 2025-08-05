@@ -423,8 +423,9 @@ GENERIC_DEFERRED_CURSOR_MANAGER(deferred_push_cursor_manager_list_deferred_query
       size_t dsize = (desired_size); \
       if (_len + dsize < size) \
          break; \
-      reallocated = realloc(newstr2, size += dsize * 2); \
-      if (!reallocated) { \
+      reallocated = (char*)realloc(newstr2, size += dsize * 2); \
+      if (!reallocated) \
+      { \
          free(newstr2); \
          return -1; \
       } \

@@ -2132,28 +2132,31 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
                      for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
                      {
+                        enum msg_hash_enums _enum;
                         unsigned bind_index     = input_config_bind_order[retro_id];
                         const char *description = sys_info->input_desc_btn[mapped_port][bind_index];
 
                         if (!description)
                            continue;
 
+                        _enum = (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B + bind_index);
                         RARCH_DBG("      \"%s\" => \"%s\"\n",
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B + bind_index),
-                              description);
+                              msg_hash_to_str(_enum), description);
                      }
 
                      for (retro_id = RARCH_FIRST_CUSTOM_BIND; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
                      {
+                        enum msg_hash_enums _enum;
                         unsigned bind_index     = input_config_bind_order[retro_id];
                         const char *description = sys_info->input_desc_btn[mapped_port][bind_index];
 
                         if (!description)
                            continue;
 
+                        _enum = (enum msg_hash_enums)(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS
+                              + bind_index - RARCH_FIRST_CUSTOM_BIND);
                         RARCH_DBG("      \"%s\" => \"%s\"\n",
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS + bind_index - RARCH_FIRST_CUSTOM_BIND),
-                              description);
+                              msg_hash_to_str(_enum), description);
                      }
                   }
                }
@@ -3107,7 +3110,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
       {
-         enum retro_av_enable_flags result = (enum retro_av_enable_flags)0;
+         int result = 0;
          video_driver_state_t *video_st    = video_state_get_ptr();
          audio_driver_state_t *audio_st    = audio_state_get_ptr();
 
@@ -3139,7 +3142,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (data)
          {
             enum retro_av_enable_flags* result_p = (enum retro_av_enable_flags*)data;
-            *result_p = result;
+            *result_p = (enum retro_av_enable_flags)result;
          }
          break;
       }
@@ -4111,7 +4114,7 @@ void runloop_event_deinit_core(void)
    if (settings->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
 
-   driver_uninit(DRIVERS_CMD_ALL, 0);
+   driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
 
 #ifdef HAVE_CONFIGFILE
    if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
@@ -4578,8 +4581,8 @@ static void core_input_state_poll_maybe(void)
    const enum poll_type_override_t
       core_poll_type_override  = runloop_st->core_poll_type_override;
    enum poll_type new_poll_type      = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
-      ? (core_poll_type_override - 1)
-      : runloop_st->current_core.poll_type;
+      ? (enum poll_type)(core_poll_type_override - 1)
+      : (enum poll_type)(runloop_st->current_core.poll_type);
    if (new_poll_type == POLL_TYPE_NORMAL)
       input_driver_poll();
 }
@@ -4591,8 +4594,8 @@ static retro_input_state_t core_input_state_poll_return_cb(void)
    const enum poll_type_override_t
       core_poll_type_override  = runloop_st->core_poll_type_override;
    enum poll_type new_poll_type      = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
-      ? (core_poll_type_override - 1)
-      : runloop_st->current_core.poll_type;
+      ? (enum poll_type)(core_poll_type_override - 1)
+      : (enum poll_type)(runloop_st->current_core.poll_type);
    if (new_poll_type == POLL_TYPE_LATE)
       return core_input_state_poll_late;
    return input_driver_state_wrapper;
@@ -4632,7 +4635,7 @@ static bool runloop_event_load_core(runloop_state_t *runloop_st,
       unsigned poll_type_behavior)
 {
    video_driver_state_t *video_st     = video_state_get_ptr();
-   runloop_st->current_core.poll_type = poll_type_behavior;
+   runloop_st->current_core.poll_type = (enum poll_type)poll_type_behavior;
 
    if (!core_verify_api_version(runloop_st))
       return false;
@@ -7715,7 +7718,7 @@ bool core_reset_cheat(void)
 bool core_set_poll_type(unsigned type)
 {
    runloop_state_t *runloop_st        = &runloop_state;
-   runloop_st->current_core.poll_type = type;
+   runloop_st->current_core.poll_type = (enum poll_type)type;
    return true;
 }
 
@@ -7909,9 +7912,9 @@ void core_run(void)
       current_core             = &runloop_st->current_core;
    const enum poll_type_override_t
       core_poll_type_override  = runloop_st->core_poll_type_override;
-   enum poll_type new_poll_type      = (core_poll_type_override != POLL_TYPE_OVERRIDE_DONTCARE)
-      ? (core_poll_type_override - 1)
-      : current_core->poll_type;
+   enum poll_type new_poll_type= (core_poll_type_override != POLL_TYPE_OVERRIDE_DONTCARE)
+      ? (enum poll_type)(core_poll_type_override - 1)
+      : (enum poll_type)(current_core->poll_type);
    bool early_polling          = new_poll_type == POLL_TYPE_EARLY;
    bool late_polling           = new_poll_type == POLL_TYPE_LATE;
 #ifdef HAVE_NETWORKING

@@ -1502,7 +1502,7 @@ static void rcheevos_client_load_game_callback(int result,
    /* Have to "schedule" this. Game image should not be
     * loaded into memory on background thread */
    if (!task_is_on_main_thread())
-      rcheevos_locals.queued_command = CMD_CHEEVOS_FINALIZE_LOAD;
+      rcheevos_locals.queued_command = (enum event_command)CMD_CHEEVOS_FINALIZE_LOAD;
    else
 #endif
       rcheevos_finalize_game_load_on_ui_thread();

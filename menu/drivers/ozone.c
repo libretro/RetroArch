@@ -6039,7 +6039,8 @@ border_iterate:
             {
                ozone_node_t *sidebar_node = (ozone_node_t*)
                      (ozone->horizontal_list.size)
-                        ? file_list_get_userdata_at_offset(&ozone->horizontal_list, selection_buf->list[i].entry_idx)
+                        ? (ozone_node_t*)file_list_get_userdata_at_offset(
+                              &ozone->horizontal_list, selection_buf->list[i].entry_idx)
                         : NULL;
 
                if (sidebar_node && sidebar_node->icon)

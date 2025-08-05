@@ -29,10 +29,10 @@
 
 #include <string.h>
 #include <malloc.h>
-#include <math.h>
 
 #include <retro_inline.h>
 #include <boolean.h>
+#include <retro_math.h>
 
 #include <string/stdstring.h>
 #include <gfx/scaler/pixconv.h>

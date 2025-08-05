@@ -80,6 +80,31 @@ static slock_t *conn_pool_lock = NULL;
 #define UNLOCK_POOL()
 #endif
 
+typedef struct response
+{
+   char *data;
+   struct string_list *headers;
+   size_t pos;
+   size_t len;
+   size_t buflen;
+   int status;
+   enum response_part part;
+   enum bodytype bodytype;
+} response_t;
+
+typedef struct request
+{
+   char *domain;
+   char *path;
+   char *method;
+   char *contenttype;
+   void *postdata;
+   char *useragent;
+   char *headers;
+   size_t contentlength;
+   int port;
+} request_t;
+
 struct http_t
 {
    bool err;
@@ -88,30 +113,8 @@ struct http_t
    bool ssl;
    bool request_sent;
 
-   struct request
-   {
-      char *domain;
-      char *path;
-      char *method;
-      char *contenttype;
-      void *postdata;
-      char *useragent;
-      char *headers;
-      size_t contentlength;
-      int port;
-   } request;
-
-   struct response
-   {
-      char *data;
-      struct string_list *headers;
-      size_t pos;
-      size_t len;
-      size_t buflen;
-      int status;
-      enum response_part part;
-      enum bodytype bodytype;
-   } response;
+   request_t request;
+   response_t response;
 };
 
 struct http_connection_t
@@ -1043,7 +1046,7 @@ static void net_http_send_str(
 
 static bool net_http_send_request(struct http_t *state)
 {
-   struct request *request = &state->request;
+   struct request *request = (struct request*)&state->request;
 
    /* This is a bit lazy, but it works. */
    if (request->method)
@@ -1130,7 +1133,8 @@ static bool net_http_send_request(struct http_t *state)
    net_http_send_str(state, "\r\n", STRLEN_CONST("\r\n"));
 
    if (request->postdata && request->contentlength)
-      net_http_send_str(state, request->postdata, request->contentlength);
+      net_http_send_str(state, (const char*)request->postdata,
+            request->contentlength);
 
    state->request_sent = true;
    return state->err;
@@ -1153,7 +1157,7 @@ int net_http_fd(struct http_t *state)
 
 static ssize_t net_http_receive_header(struct http_t *state, ssize_t newlen)
 {
-   struct response *response = &state->response;
+   struct response *response = (struct response*)&state->response;
 
    response->pos       += newlen;
 
@@ -1244,7 +1248,7 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t newlen)
 
 static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
 {
-   struct response *response = &state->response;
+   struct response *response = (struct response*)&state->response;
 
    if (newlen < 0 || state->err)
    {
@@ -1377,20 +1381,20 @@ static bool net_http_redirect(struct http_t *state, const char *location)
       }
       else
       {
-         char *path = malloc(PATH_MAX_LENGTH);
+         char *path = (char*)malloc(PATH_MAX_LENGTH);
          fill_pathname_resolve_relative(path, state->request.path, location, PATH_MAX_LENGTH);
          free(state->request.path);
          state->request.path = path;
       }
    }
-   state->request_sent = false;
-   state->response.part = P_HEADER_TOP;
-   state->response.status = -1;
-   state->response.buflen = 16 * 1024;
-   state->response.data = realloc(state->response.data, state->response.buflen);
-   state->response.pos = 0;
-   state->response.len = 0;
-   state->response.bodytype = T_FULL;
+   state->request_sent       = false;
+   state->response.part      = P_HEADER_TOP;
+   state->response.status    = -1;
+   state->response.buflen    = 16 * 1024;
+   state->response.data      = (char*)realloc(state->response.data, state->response.buflen);
+   state->response.pos       = 0;
+   state->response.len       = 0;
+   state->response.bodytype  = T_FULL;
    /* after this, assume location is invalid */
    string_list_deinitialize(state->response.headers);
    string_list_initialize(state->response.headers);
@@ -1436,7 +1440,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    if (!state->request_sent)
       return net_http_send_request(state);
 
-   response = &state->response;
+   response = (struct response*)&state->response;
 
 #ifdef HAVE_SSL
    if (state->ssl && state->conn->ssl_ctx)

@@ -120,7 +120,7 @@ static bool wav_fix_hdr_and_close(record_wav_t *handle)
 
 static void *record_wav_new(const struct record_params *params)
 {
-   record_wav_t *handle = calloc(1, sizeof(*handle));
+   record_wav_t *handle = (record_wav_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
 

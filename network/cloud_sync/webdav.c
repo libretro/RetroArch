@@ -123,9 +123,9 @@ static void webdav_cleanup_digest(void)
 
 static char *webdav_create_ha1_hash(char *user, char *realm, char *pass)
 {
-   char           *hash      = malloc(33);
-   MD5_CTX         md5;
-   unsigned char   digest[16];
+   MD5_CTX md5;
+   unsigned char digest[16];
+   char *hash = (char*)malloc(33);
 
    MD5_Init(&md5);
    MD5_Update(&md5, user, strlen(user));
@@ -171,7 +171,7 @@ static bool webdav_create_digest_auth(char *digest)
       {
          ptr += STRLEN_CONST("realm=\"");
          _len = strchr(ptr, '"') + 1 - ptr;
-         webdav_st->realm = malloc(_len);
+         webdav_st->realm = (char*)malloc(_len);
          strlcpy(webdav_st->realm, ptr, _len);
          ptr += _len;
 
@@ -207,7 +207,7 @@ static bool webdav_create_digest_auth(char *digest)
       {
          ptr += STRLEN_CONST("nonce=\"");
          _len = strchr(ptr, '"') + 1 - ptr;
-         webdav_st->nonce = malloc(_len);
+         webdav_st->nonce = (char*)malloc(_len);
          strlcpy(webdav_st->nonce, ptr, _len);
          ptr += _len;
       }
@@ -217,7 +217,7 @@ static bool webdav_create_digest_auth(char *digest)
          if (strchr(ptr, ','))
          {
             _len = strchr(ptr, ',') + 1 - ptr;
-            webdav_st->algo = malloc(_len);
+            webdav_st->algo = (char*)malloc(_len);
             strlcpy(webdav_st->algo, ptr, _len);
             ptr += _len;
          }
@@ -231,7 +231,7 @@ static bool webdav_create_digest_auth(char *digest)
       {
          ptr += STRLEN_CONST("opaque=\"");
          _len = strchr(ptr, '"') + 1 - ptr;
-         webdav_st->opaque = malloc(_len);
+         webdav_st->opaque = (char*)malloc(_len);
          strlcpy(webdav_st->opaque, ptr, _len);
          ptr += _len;
       }
@@ -279,7 +279,7 @@ static char *webdav_create_ha1(void)
    if (!string_is_equal(webdav_st->algo, "MD5-sess"))
       return strdup(webdav_st->ha1hash);
 
-   hash = malloc(33);
+   hash = (char*)malloc(33);
 
    MD5_Init(&md5);
    MD5_Update(&md5, webdav_st->ha1hash, 32);
@@ -302,7 +302,7 @@ static char *webdav_create_ha2(const char *method, const char *path)
    MD5_CTX         md5;
    unsigned char   digest[16];
    /* no attempt at supporting auth-int, everything else uses this */
-   char           *hash      = malloc(33);
+   char           *hash      = (char*)malloc(33);
 
    MD5_Init(&md5);
    MD5_Update(&md5, method, strlen(method));
@@ -325,7 +325,7 @@ static char *webdav_create_digest_response(const char *method, const char *path)
    webdav_state_t *webdav_st = webdav_state_get_ptr();
    char           *ha1       = webdav_create_ha1();
    char           *ha2       = webdav_create_ha2(method, path);
-   char           *hash      = malloc(33);
+   char           *hash      = (char*)malloc(33);
 
    MD5_Init(&md5);
    MD5_Update(&md5, ha1, 32);

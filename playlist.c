@@ -1094,12 +1094,10 @@ void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx,
 enum playlist_thumbnail_name_flags playlist_get_curr_thumbnail_name_flag(playlist_t *playlist, size_t idx)
 {
    struct playlist_entry *entry = NULL;
-
    if (!playlist || idx >= RBUF_LEN(playlist->entries))
       return    PLAYLIST_THUMBNAIL_FLAG_NONE;
-
    entry = &playlist->entries[idx];
-   return entry->thumbnail_flags;
+   return (enum playlist_thumbnail_name_flags)entry->thumbnail_flags;
 }
 
 
@@ -1109,7 +1107,7 @@ enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlis
 
    if (!playlist || idx >= RBUF_LEN(playlist->entries))
       return    PLAYLIST_THUMBNAIL_FLAG_NONE;
-   entry = &playlist->entries[idx];
+   entry = (struct playlist_entry*)&playlist->entries[idx];
 
    if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
             return PLAYLIST_THUMBNAIL_FLAG_NONE;
