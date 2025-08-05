@@ -318,10 +318,9 @@ static uint32_t orbis_ctx_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
    }
-   else
-   {
-      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
-   }
+#ifdef HAVE_GLSL
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
 
    return flags;
 }

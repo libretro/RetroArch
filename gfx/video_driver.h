@@ -65,7 +65,11 @@
 
 #if defined(_XBOX360)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
-#elif defined(HAVE_OPENGLES2) || defined(HAVE_GLSL)
+#elif defined(HAVE_OPENGLES2)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#elif defined(HAVE_SLANG)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_SLANG
+#elif defined(HAVE_GLSL)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
 #elif defined(HAVE_CG)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
@@ -275,11 +279,12 @@ typedef struct shader_backend
 
 typedef struct video_shader_ctx_params
 {
-   void *data;
    const void *info;
    const void *prev_info;
    const void *feedback_info;
    const void *fbo_info;
+   unsigned vp_width;
+   unsigned vp_height;
    unsigned width;
    unsigned height;
    unsigned tex_width;

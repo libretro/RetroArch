@@ -199,13 +199,13 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
          {
-            unsigned 
+            unsigned
 		  version = xegl->egl.major * 1000 + xegl->egl.minor;
             bool core     = version >= 3001;
 #ifdef GL_DEBUG
             bool debug    = true;
 #else
-            struct retro_hw_render_callback 
+            struct retro_hw_render_callback
 		    *hwr  = video_driver_get_hw_context();
             bool debug    = hwr->debug_context;
 #endif
@@ -304,10 +304,10 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    swa.colormap                      = g_x11_cmap = XCreateColormap(
 		   g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
 		   vi->visual, AllocNone);
-   swa.event_mask                    = StructureNotifyMask 
+   swa.event_mask                    = StructureNotifyMask
 	                             | KeyPressMask
-                                     | ButtonPressMask 
-				     | ButtonReleaseMask 
+                                     | ButtonPressMask
+				     | ButtonReleaseMask
 				     | KeyReleaseMask
                                      | EnterWindowMask
 				     | LeaveWindowMask;
@@ -572,10 +572,9 @@ static uint32_t gfx_ctx_xegl_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
    }
-   else
-   {
-      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
-   }
+#ifdef HAVE_GLSL
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
 
    return flags;
 }
