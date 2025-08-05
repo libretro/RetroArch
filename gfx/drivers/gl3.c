@@ -1626,6 +1626,18 @@ static void gl3_destroy_resources(gl3_t *gl)
       gl->chain.num_fbo_passes = 0;
    }
 
+   if (gl->chain.fbo_feedback)
+   {
+      glDeleteFramebuffers(1, &gl->chain.fbo_feedback);
+      gl->chain.fbo_feedback = 0;
+   }
+
+   if (gl->chain.fbo_feedback_texture)
+   {
+      glDeleteTextures(1, &gl->chain.fbo_feedback_texture);
+      gl->chain.fbo_feedback_texture = 0;
+   }
+
    glBindVertexArray(0);
    if (gl->vao != 0)
       glDeleteVertexArrays(1, &gl->vao);
@@ -3268,6 +3280,12 @@ static bool gl3_set_shader(void *data,
       glDeleteFramebuffers(gl->chain.num_fbo_passes, gl->chain.fbo);
       glDeleteTextures(gl->chain.num_fbo_passes, gl->chain.fbo_texture);
    }
+
+   if (gl->chain.fbo_feedback)
+      glDeleteFramebuffers(1, &gl->chain.fbo_feedback);
+
+   if (gl->chain.fbo_feedback_texture)
+      glDeleteTextures(1, &gl->chain.fbo_feedback_texture);
 
    if (!gl3_init_filter_chain_with_path(gl, path))
       return false;
