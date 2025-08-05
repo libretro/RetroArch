@@ -602,18 +602,20 @@ static void core_info_cache_list_free(
    if (!core_info_cache_list)
       return;
 
-   for (i = 0; i < core_info_cache_list->length; i++)
+   if (core_info_cache_list->items)
    {
-      core_info_t* info = (core_info_t*)&core_info_cache_list->items[i];
-      core_info_free(info);
+      for (i = 0; i < core_info_cache_list->length; i++)
+      {
+         core_info_t* info = (core_info_t*)&core_info_cache_list->items[i];
+         core_info_free(info);
+      }
+      free(core_info_cache_list->items);
    }
-
-   free(core_info_cache_list->items);
+   core_info_cache_list->items = NULL;
 
    if (core_info_cache_list->version)
       free(core_info_cache_list->version);
-
-   free(core_info_cache_list);
+   core_info_cache_list->version = NULL;
 }
 
 static core_info_t *core_info_cache_find(
@@ -692,14 +694,19 @@ static core_info_cache_list_t *core_info_cache_list_new(void)
    if (!core_info_cache_list)
       return NULL;
 
-   core_info_cache_list->length = 0;
-   core_info_cache_list->items  = (core_info_t *)
+   core_info_cache_list->items    = (core_info_t *)
       calloc(CORE_INFO_CACHE_DEFAULT_CAPACITY,
             sizeof(core_info_t));
+   core_info_cache_list->length   = 0;
+   core_info_cache_list->capacity = 0;
+   core_info_cache_list->version  = NULL;
+   core_info_cache_list->refresh  = false;
 
    if (!core_info_cache_list->items)
    {
       core_info_cache_list_free(core_info_cache_list);
+      free(core_info_cache_list);
+      core_info_cache_list = NULL;
       return NULL;
    }
 
@@ -1965,20 +1972,26 @@ static void core_info_free(core_info_t* info)
 
 static void core_info_list_free(core_info_list_t *core_info_list)
 {
-   size_t i;
-
    if (!core_info_list)
       return;
 
-   for (i = 0; i < core_info_list->count; i++)
+   if (core_info_list->list)
    {
-      core_info_t *info = (core_info_t*)&core_info_list->list[i];
-      core_info_free(info);
+      size_t i;
+      for (i = 0; i < core_info_list->count; i++)
+      {
+         core_info_t *info = (core_info_t*)&core_info_list->list[i];
+         core_info_free(info);
+      }
    }
 
-   free(core_info_list->all_ext);
-   free(core_info_list->list);
-   free(core_info_list);
+   if (core_info_list->all_ext)
+      free(core_info_list->all_ext);
+   core_info_list->all_ext = NULL;
+
+   if (core_info_list->list)
+      free(core_info_list->list);
+   core_info_list->list = NULL;
 }
 
 static core_info_list_t *core_info_list_new(const char *path,
@@ -1996,10 +2009,13 @@ static core_info_list_t *core_info_list_new(const char *path,
    core_path_list_t *path_list                  = core_info_path_list_new(
          path, exts, dir_show_hidden_files);
    if (!path_list)
-      goto error;
+      return NULL;
 
    if (!(core_info_list = (core_info_list_t*)malloc(sizeof(*core_info_list))))
-      goto error;
+   {
+      core_info_path_list_free(path_list);
+      return NULL;
+   }
 
    core_info_list->list       = NULL;
    core_info_list->count      = 0;
@@ -2010,7 +2026,11 @@ static core_info_list_t *core_info_list_new(const char *path,
          sizeof(*core_info))))
    {
       core_info_list_free(core_info_list);
-      goto error;
+      core_info_path_list_free(path_list);
+      free(core_info_list);
+      core_info_list = NULL;
+      path_list      = NULL;
+      return NULL;
    }
 
    core_info_list->list  = core_info;
@@ -2018,10 +2038,14 @@ static core_info_list_t *core_info_list_new(const char *path,
 
 #ifdef HAVE_CORE_INFO_CACHE
    /* Read core info cache, if enabled */
-   if (enable_cache)
+   if (enable_cache && !(core_info_cache_list = core_info_cache_read(info_dir)))
    {
-      if (!(core_info_cache_list = core_info_cache_read(info_dir)))
-         goto error;
+      core_info_list_free(core_info_list);
+      core_info_path_list_free(path_list);
+      free(core_info_list);
+      core_info_list = NULL;
+      path_list      = NULL;
+      return NULL;
    }
 #endif
 
@@ -2142,16 +2166,12 @@ static core_info_list_t *core_info_list_new(const char *path,
                core_info_cache_list, info_dir);
 
       core_info_cache_list_free(core_info_cache_list);
+      free(core_info_cache_list);
+      core_info_cache_list = NULL;
    }
 
    core_info_path_list_free(path_list);
    return core_info_list;
-
-error:
-   core_info_path_list_free(path_list);
-   if (core_info_list)
-      free(core_info_list);
-   return NULL;
 }
 
 /* Shallow-copies internal state.
