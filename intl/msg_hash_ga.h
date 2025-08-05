@@ -7824,6 +7824,10 @@ MSG_HASH(
    "Seinnte ar deireadh:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
+   "Comhaireamh Imirt:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
    "soicind"
    )

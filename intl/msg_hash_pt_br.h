@@ -14782,6 +14782,26 @@ MSG_HASH(
    "Falha ao definir o último disco usado."
    )
 MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Falha ao conectar ao cliente."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Falha ao conectar ao host."
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Host de netplay cheio."
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Você foi banido deste host."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Falha ao receber o cabeçalho do host."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOGGED_IN_AS_USER,
    "RetroAchievements: Conectado como %s."
    )
@@ -14846,8 +14866,24 @@ MSG_HASH(
    "Conquistas não suportadas detectadas. Por favor, tente outro núcleo ou atualize o RetroArch."
 )
 MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Assistindo %s"
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
    "Hardcore pausado. Não é permitido definir manualmente o atraso de quadro de vídeo."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "Modo Hardcore pausado. Intervalo de troca de vsync acima de 1 não é permitido."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   "Modo Hardcore pausado. Inserção de frame preto não é permitido."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   "Modo Hardcore pausado. Configuração não permitida: %s=%s"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
@@ -14882,6 +14918,18 @@ MSG_HASH(
    "Muito alta"
    )
 MSG_HASH(
+   MSG_MISSING_ASSETS,
+   "Aviso: Recursos ausentes, use o Atualizador Online se disponível."
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Aviso: Fontes ausentes para o idioma selecionado, use o Atualizador Online se disponível."
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Aviso: Idioma não compatível - usando Inglês."
+   )
+MSG_HASH(
    MSG_DUMPING_DISC,
    "Criando cópia do disco..."
    )
@@ -14914,8 +14962,20 @@ MSG_HASH(
    "Erro ao remover a predefinição do shader."
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "O arquivo DAT de arcade selecionado é inválido."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   "O arquivo DAT de arcade selecionado é muito grande (memória livre insuficiente)."
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "Falha ao carregar o arquivo DAT do arcade (o formato é inválido?)"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "Configuração de verificação manual inválida."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
@@ -15018,6 +15078,14 @@ MSG_HASH(
    "Houve uma falha ao fazer o desbloqueio do núcleo: "
    )
 MSG_HASH(
+   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+   "Falha ao remover núcleo da lista de 'Núcleos sem Conteúdo': "
+   )
+MSG_HASH(
+   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
+   "Falha ao adicionar núcleo à lista de 'Núcleos sem Conteúdo': "
+   )
+MSG_HASH(
    MSG_CORE_DELETE_DISABLED,
    "A exclusão do núcleo foi desativada - o núcleo está bloqueado: "
    )
@@ -15052,6 +15120,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
    "Sincronização da taxa de atualização exata ao conteúdo desativada."
+   )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "Taxa de atualização de vídeo alterada para %s Hz."
    )
 
 /* Lakka */
@@ -15142,6 +15214,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
    "Abre as configurações de permissões de acesso a arquivos do Windows"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "Abra as configurações de permissão do Windows para ativar a capacidade broadFileSystemAccess."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
@@ -15308,6 +15384,10 @@ MSG_HASH(
    "Pode melhorar o desempenho, reduzir a latência e corrigir problemas de ruído no áudio. É necessário ter instalado https://github.com/FeralInteractive/gamemode."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
+   "Ativar o GameMode do Linux pode melhorar a latência, corrigir problemas de estalos no áudio e maximizar o desempenho geral ao configurar automaticamente sua CPU e GPU para o melhor desempenho possível.\nO software GameMode precisa estar instalado para que isso funcione. Consulte https://github.com/FeralInteractive/gamemode para saber como instalar o GameMode."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Utilizar modo PAL60"
    )
@@ -15326,6 +15406,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
    "Preferir toque frontal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
+   "Usar toque frontal em vez de toque traseiro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
@@ -15460,8 +15544,28 @@ MSG_HASH(
    )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+   "Opções do Nintendo Switch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
+   "Gerenciar opções específicas do Nintendo Switch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
    "Overclock da CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
+   "Ativar frequências de Overclock da CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+   "Suporte a CEC"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
+   "Ativar a sincronização CEC com a TV ao conectar à dock"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
@@ -15530,6 +15634,46 @@ MSG_HASH(
    "Ajuste a escala x/y das coordenadas da tela tátil para acomodar o dimensionamento da tela de nível do SO."
    )
 #ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   "VMouse por Toque como Ponteiro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "Ativar para repassar eventos de toque da tela sensível ao toque."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   "VMouse por Toque como Mouse"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Ativa a emulação de mouse virtual usando eventos de toque."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "VMouse por Toque em Modo Touchpad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Ativa junto com o Mouse para usar a tela sensível ao toque como touchpad."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "VMouse por Toque em Modo Trackball"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Ativa junto com o Mouse para utilizar a tela sensível ao toque como um trackball, adicionando inércia ao ponteiro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Gestos de Toque para o VMouse"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Ativa gestos na tela sensível ao toque, incluindo toques, arrastar com toque e deslizar com o dedo."
+   )
 #endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
@@ -15683,16 +15827,40 @@ MSG_HASH(
    "Toque do mouse está desabilitado"
    )
 MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "o microfone sdl2 requer um driver de áudio sdl2"
+   )
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "Acessibilidade do RetroArch ativada. Carregar Núcleo no Menu Principal."
+   )
+MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "parado."
    )
 #ifdef HAVE_GAME_AI
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION,
+   "Substituição do Jogador por IA"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
+   "Permite que uma IA jogue no seu lugar"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS,
    "IA do jogo"
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P1,
+   "Substituir jogador2"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
+   "Substituir jogador 01"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P2,
