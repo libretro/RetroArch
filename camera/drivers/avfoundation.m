@@ -17,18 +17,19 @@
 #include <Foundation/Foundation.h>
 #include <AVFoundation/AVFoundation.h>
 #include <libretro.h>
-#include "../camera/camera_driver.h"
-#include "../verbosity.h"
-/// For image scaling and color space DSP
+/* For image scaling and color space DSP */
 #import <Accelerate/Accelerate.h>
 #if TARGET_OS_IOS
-/// For camera rotation detection
+/* For camera rotation detection */
 #import <UIKit/UIKit.h>
 #endif
 
-// TODO: Add an API to retroarch to allow selection of camera
+#include "../camera_driver.h"
+#include "../../verbosity.h"
+
+/* TODO: Add an API to retroarch to allow selection of camera */
 #ifndef CAMERA_PREFER_FRONTFACING
-#define CAMERA_PREFER_FRONTFACING 1  /// Default to front camera
+#define CAMERA_PREFER_FRONTFACING 1  /* Default to front camera */
 #endif
 
 #ifndef CAMERA_MIRROR_FRONT_CAMERA
