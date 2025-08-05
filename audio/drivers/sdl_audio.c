@@ -25,6 +25,7 @@
 #include <queues/fifo_queue.h>
 #include <retro_inline.h>
 #include <retro_math.h>
+#include <lists/string_list.h>
 
 #include "SDL.h"
 #include "SDL_audio.h"
