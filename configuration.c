@@ -2770,7 +2770,7 @@ static void video_driver_default_settings(global_t *global)
          new_path, \
          playlist_tag, \
          sizeof(tmp_str)); \
-   if (path_is_valid(playlist_path)) \
+   if (path_is_valid(playlist_path) && !path_is_valid(new_file)) \
    { \
       if (!filestream_copy(playlist_path, new_file)) \
          RARCH_LOG("[Config] Copied file \"%s\" to \"%s\".\n", playlist_path, new_file); \
