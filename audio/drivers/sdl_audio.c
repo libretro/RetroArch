@@ -465,6 +465,31 @@ static void sdl_audio_playback_cb(void *data, Uint8 *stream, int len)
    memset(stream + _len, 0, len - _len);
 }
 
+static void *sdl_audio_list_new(void *u)
+{
+#ifdef HAVE_SDL2
+   int i, num = 0;
+   union string_list_elem_attr attr;
+   struct string_list *sl = string_list_new();
+
+   if (!sl)
+      return NULL;
+
+   attr.i = 0;
+   num    = SDL_GetNumAudioDevices(false);
+
+   for (i = 0; i < num; i++)
+      string_list_append(sl, SDL_GetAudioDeviceName(i, false), attr);
+
+   return sl;
+#else
+   /* TODO/FIXME - Any possible SDL1 implementation here, or
+    * do we have to piggyback off OS-specific audio device
+    * enumeration here? */
+   return NULL;
+#endif
+}
+
 static void *sdl_audio_init(const char *device,
       unsigned rate, unsigned latency,
       unsigned block_frames, unsigned *new_rate)
@@ -694,6 +719,14 @@ static bool sdl_audio_use_float(void *data)
 /* TODO/FIXME - implement */
 static size_t sdl_audio_write_avail(void *data) { return 0; }
 
+static void sdl_audio_list_free(void *u, void *slp)
+{
+   struct string_list *sl = (struct string_list*)slp;
+
+   if (sl)
+      string_list_free(sl);
+}
+
 audio_driver_t audio_sdl = {
    sdl_audio_init,
    sdl_audio_write,
@@ -708,8 +741,8 @@ audio_driver_t audio_sdl = {
 #else
    "sdl",
 #endif
-   NULL,
-   NULL,
+   sdl_audio_list_new,
+   sdl_audio_list_free,
    sdl_audio_write_avail,
    NULL
 };
