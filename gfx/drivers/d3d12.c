@@ -1015,18 +1015,21 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 
          sprite->params.rotation   = draw->rotation;
 
-         sprite->colors[3]         = DXGI_COLOR_RGBA(
-               0xFF * draw->coords->color[0],  0xFF * draw->coords->color[1],
-               0xFF * draw->coords->color[2],  0xFF * draw->coords->color[3]);
-         sprite->colors[2]         = DXGI_COLOR_RGBA(
-               0xFF * draw->coords->color[4],  0xFF * draw->coords->color[5],
-               0xFF * draw->coords->color[6],  0xFF * draw->coords->color[7]);
-         sprite->colors[1]         = DXGI_COLOR_RGBA(
-               0xFF * draw->coords->color[8],  0xFF * draw->coords->color[9],
-               0xFF * draw->coords->color[10], 0xFF * draw->coords->color[11]);
-         sprite->colors[0]         = DXGI_COLOR_RGBA(
-               0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
-               0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
+         if (draw->coords && draw->coords->color)
+         {
+            sprite->colors[3]      = DXGI_COLOR_RGBA(
+                  0xFF * draw->coords->color[0],  0xFF * draw->coords->color[1],
+                  0xFF * draw->coords->color[2],  0xFF * draw->coords->color[3]);
+            sprite->colors[2]      = DXGI_COLOR_RGBA(
+                  0xFF * draw->coords->color[4],  0xFF * draw->coords->color[5],
+                  0xFF * draw->coords->color[6],  0xFF * draw->coords->color[7]);
+            sprite->colors[1]      = DXGI_COLOR_RGBA(
+                  0xFF * draw->coords->color[8],  0xFF * draw->coords->color[9],
+                  0xFF * draw->coords->color[10], 0xFF * draw->coords->color[11]);
+            sprite->colors[0]      = DXGI_COLOR_RGBA(
+                  0xFF * draw->coords->color[12], 0xFF * draw->coords->color[13],
+                  0xFF * draw->coords->color[14], 0xFF * draw->coords->color[15]);
+         }
       }
       else
       {
@@ -3025,14 +3028,15 @@ static void d3d12_init_descriptor_heap(D3D12Device device, d3d12_descriptor_heap
 static bool d3d12_create_root_signature(
       D3D12Device device, D3D12_ROOT_SIGNATURE_DESC* desc, D3D12RootSignature* out)
 {
-   D3DBlob signature, error;
-   D3D12SerializeRootSignature(desc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
-
-   if (error)
+   D3DBlob signature, error = NULL;
+   if (FAILED(D3D12SerializeRootSignature(desc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error)))
    {
-      RARCH_ERR(
-            "[D3D12] CreateRootSignature failed: \"%s\".\n", (const char*)error->lpVtbl->GetBufferPointer(error));
-      Release(error);
+      if (error)
+      {
+         RARCH_ERR(
+               "[D3D12] CreateRootSignature failed: \"%s\".\n", (const char*)error->lpVtbl->GetBufferPointer(error));
+         Release(error);
+      }
       return false;
    }
 
@@ -3530,6 +3534,9 @@ static void d3d12_init_history(d3d12_video_t* d3d12, unsigned width, unsigned he
 static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsigned height)
 {
    size_t i;
+
+   if (!d3d12->shader_preset)
+      return;
 
    for (i = 0; i < d3d12->shader_preset->passes; i++)
    {

@@ -360,32 +360,35 @@ bool d3d9_create_device(void *dev,
 
 bool d3d9_reset(void *data, void *d3dpp)
 {
-   const char       *err = NULL;
    LPDIRECT3DDEVICE9 dev = (LPDIRECT3DDEVICE9)data;
-   if (dev && IDirect3DDevice9_Reset(dev, (D3DPRESENT_PARAMETERS*)d3dpp) == D3D_OK)
-      return true;
-#ifndef _XBOX
-   RARCH_WARN("[D3D] Attempting to recover from dead state...\n");
-   /* Try to recreate the device completely. */
-   switch (IDirect3DDevice9_TestCooperativeLevel(dev))
+   if (dev)
    {
-      case D3DERR_DEVICELOST:
-         err = "DEVICELOST";
-         break;
+      const char *err = NULL;
+      if (IDirect3DDevice9_Reset(dev, (D3DPRESENT_PARAMETERS*)d3dpp) == D3D_OK)
+         return true;
+#ifndef _XBOX
+      RARCH_WARN("[D3D] Attempting to recover from dead state...\n");
+      /* Try to recreate the device completely. */
+      switch (IDirect3DDevice9_TestCooperativeLevel(dev))
+      {
+         case D3DERR_DEVICELOST:
+            err = "DEVICELOST";
+            break;
 
-      case D3DERR_DEVICENOTRESET:
-         err = "DEVICENOTRESET";
-         break;
+         case D3DERR_DEVICENOTRESET:
+            err = "DEVICENOTRESET";
+            break;
 
-      case D3DERR_DRIVERINTERNALERROR:
-         err = "DRIVERINTERNALERROR";
-         break;
+         case D3DERR_DRIVERINTERNALERROR:
+            err = "DRIVERINTERNALERROR";
+            break;
 
-      default:
-         err = "Unknown";
-   }
-   RARCH_WARN("[D3D] Recovering from dead state: (%s).\n", err);
+         default:
+            err = "Unknown";
+      }
+      RARCH_WARN("[D3D] Recovering from dead state: (%s).\n", err);
 #endif
+   }
    return false;
 }
 

@@ -5213,8 +5213,7 @@ static void materialui_render_menu_entry_savestate_list(
          (int)(mui->margin * 2) - (int)(mui->landscape_optimization.entry_margin * 2);
    /* Entry label is drawn at the vertical centre
     * of the current node */
-   int label_y              = entry_y + (node->entry_height / 2.0f) +
-         mui->font_data.list.line_centre_offset;
+   int label_y              = 0;
    int value_icon_y         = 0;
    uintptr_t icon_texture   = 0;
    bool draw_text_outside   = (x_offset != 0);

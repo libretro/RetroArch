@@ -190,7 +190,6 @@ void *mmdevice_handle(int id, unsigned data_flow)
    IMMDeviceEnumerator *enumerator = NULL;
    IMMDevice *device               = NULL;
    IMMDeviceCollection *collection = NULL;
-   const char *data_flow_name      = mmdevice_data_flow_name(data_flow);
 #ifdef __cplusplus
    hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
          IID_IMMDeviceEnumerator, (void **)&enumerator);

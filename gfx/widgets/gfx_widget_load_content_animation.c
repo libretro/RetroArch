@@ -529,7 +529,6 @@ static void gfx_widget_load_content_animation_calculate(
    int text_width;
 
    unsigned last_video_width            = p_dispwidget->last_video_width;
-   unsigned last_video_height           = p_dispwidget->last_video_height;
    unsigned widget_padding              = p_dispwidget->simple_widget_padding;
 
    gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
@@ -630,11 +629,6 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
    if (state->status == GFX_WIDGET_LOAD_CONTENT_BEGIN)
    {
       dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
-      unsigned last_video_width            = p_dispwidget->last_video_width;
-      unsigned widget_padding              = p_dispwidget->simple_widget_padding;
-      gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
-      gfx_widget_font_data_t *font_bold    = &p_dispwidget->gfx_widget_fonts.bold;
-
       uintptr_t alpha_tag                  = (uintptr_t)&state->alpha;
 
       gfx_animation_ctx_entry_t animation_entry;

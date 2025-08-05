@@ -102,6 +102,10 @@ struct string_list *string_list_new(void)
    if (!list)
       return NULL;
 
+   list->cap                = 0;
+   list->size               = 0;
+   list->elems              = NULL;
+
    if (!(elems = (struct string_list_elem*)
       calloc(32, sizeof(*elems))))
    {
@@ -110,7 +114,6 @@ struct string_list *string_list_new(void)
    }
 
    list->elems              = elems;
-   list->size               = 0;
    list->cap                = 32;
 
    return list;
