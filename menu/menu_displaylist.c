@@ -1069,7 +1069,7 @@ end:
          /* Reset core options */
          if (menu_entries_append(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET),
-               core_info->core_name,
+               core_info ? core_info->core_name : NULL,
                MENU_ENUM_LABEL_CORE_OPTIONS_RESET,
                MENU_SETTING_ACTION_CORE_OPTIONS_RESET, 0, 0, NULL))
             count++;
@@ -13144,6 +13144,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   free(info->label);
                   info->label  = NULL;
                }
+
                if (!string_is_empty(info->path_b))
                {
                   free(info->path_b);

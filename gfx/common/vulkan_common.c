@@ -550,6 +550,7 @@ static VkDevice vulkan_context_create_device_wrapper(
          ARRAY_SIZE(vulkan_optional_device_extensions))))
    {
       RARCH_ERR("[Vulkan] Could not find required device extensions.\n");
+      free((void*)device_extensions);
       return VK_NULL_HANDLE;
    }
 
@@ -558,10 +559,8 @@ static VkDevice vulkan_context_create_device_wrapper(
    {
       RARCH_ERR("[Vulkan] Failed to create device (%d).\n", res);
       device = VK_NULL_HANDLE;
-      goto end;
    }
 
-end:
    free((void*)device_extensions);
    return device;
 }

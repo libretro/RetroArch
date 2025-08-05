@@ -257,9 +257,12 @@ rxml_document_t *rxml_load_document_string(const char *str)
                   node->attrib = attr;
             }
 
-            if (attr->attrib)
-               free(attr->attrib);
-            attr->attrib = strdup(x.attr);
+            if (attr)
+            {
+               if (attr->attrib)
+                  free(attr->attrib);
+               attr->attrib = strdup(x.attr);
+            }
 
             valptr       = buf->val;
             break;
