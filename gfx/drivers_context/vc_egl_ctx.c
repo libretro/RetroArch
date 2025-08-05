@@ -236,6 +236,10 @@ static void gfx_ctx_vc_destroy(void *data)
       egl_terminate(vc->egl.dpy);
    }
 
+#ifdef HAVE_EGL
+   egl_destroy_gl_dll();
+#endif
+
    vc->egl.ctx      = NULL;
    vc->egl.hw_ctx   = NULL;
    vc->eglimage_ctx = NULL;

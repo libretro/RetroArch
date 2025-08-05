@@ -33,15 +33,24 @@
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 
+#ifndef EGL_OPENGL_ES3_BIT_KHR
+#define EGL_OPENGL_ES3_BIT_KHR 0x0040
+#endif
+
 /* TODO/FIXME - globals */
 bool g_egl_inited    = false;
 
 unsigned g_egl_major = 0;
 unsigned g_egl_minor = 0;
 
-#if defined(HAVE_DYLIB) && defined(HAVE_DYNAMIC_EGL)
+#ifdef HAVE_DYLIB
 #include <dynamic/dylib.h>
 
+static dylib_t g_egl_gl_dll = NULL;
+static EGLint g_egl_gl_dll_version = 0;
+#endif
+
+#if defined(HAVE_DYLIB) && defined(HAVE_DYNAMIC_EGL)
 typedef EGLBoolean(* PFN_EGL_QUERY_SURFACE)(
       EGLDisplay dpy,
       EGLSurface surface,
@@ -245,7 +254,34 @@ void egl_report_error(void)
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
 {
-   return _egl_get_proc_address(symbol);
+   gfx_ctx_proc_t proc = _egl_get_proc_address(symbol);
+   if (proc)
+      return proc;
+
+#ifdef HAVE_DYLIB
+   /* EGL versions older than 1.5 cannot get OpenGL functions that are required
+    * to be implemented (i.e. functions that are not extensions), so we may also
+    * need to check the OpenGL library directly for the symbol if EGL failed to
+    * find it. */
+   if (g_egl_gl_dll_version)
+   {
+      if (g_egl_gl_dll_version == EGL_OPENGL_ES3_BIT_KHR)
+         g_egl_gl_dll = dylib_load("libGLESv3.so");
+      else if (g_egl_gl_dll_version == EGL_OPENGL_ES2_BIT)
+         g_egl_gl_dll = dylib_load("libGLESv2.so");
+      else if (g_egl_gl_dll_version == EGL_OPENGL_BIT)
+         g_egl_gl_dll = dylib_load("libGL.so");
+      g_egl_gl_dll_version = 0;
+   }
+   if (g_egl_gl_dll)
+   {
+      proc = (gfx_ctx_proc_t)dylib_proc(g_egl_gl_dll, symbol);
+      if (proc)
+         return proc;
+   }
+#endif
+
+   return NULL;
 }
 
 void egl_terminate(EGLDisplay dpy)
@@ -267,6 +303,18 @@ bool egl_initialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
 bool egl_bind_api(EGLenum egl_api)
 {
    return _egl_bind_api(egl_api);
+}
+
+void egl_destroy_gl_dll(void)
+{
+#ifdef HAVE_DYLIB
+   if (g_egl_gl_dll)
+   {
+      dylib_close(g_egl_gl_dll);
+      g_egl_gl_dll = NULL;
+   }
+   g_egl_gl_dll_version = 0;
+#endif
 }
 
 void egl_destroy(egl_ctx_data_t *egl)
@@ -295,6 +343,8 @@ void egl_destroy(egl_ctx_data_t *egl)
          _egl_destroy_surface(egl->dpy, egl->surf);
       egl_terminate(egl->dpy);
    }
+
+   egl_destroy_gl_dll();
 
    /* Be as careful as possible in deinit.
     * If we screw up, any TTY will not restore.
@@ -434,7 +484,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 
          RARCH_LOG("[EGL] Found EGL client version >= 1.5, trying eglGetPlatformDisplay.\n");
          ptr_eglGetPlatformDisplay = (pfn_eglGetPlatformDisplay)
-            egl_get_proc_address("eglGetPlatformDisplay");
+            _egl_get_proc_address("eglGetPlatformDisplay");
 
          if (ptr_eglGetPlatformDisplay)
          {
@@ -452,7 +502,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 
          RARCH_LOG("[EGL] Found EGL_EXT_platform_base, trying eglGetPlatformDisplayEXT.\n");
          ptr_eglGetPlatformDisplayEXT = (PFNEGLGETPLATFORMDISPLAYEXTPROC)
-            egl_get_proc_address("eglGetPlatformDisplayEXT");
+            _egl_get_proc_address("eglGetPlatformDisplayEXT");
 
          if (ptr_eglGetPlatformDisplayEXT)
          {
@@ -560,7 +610,13 @@ bool egl_init_context(egl_ctx_data_t *egl,
       EGLint *count, const EGLint *attrib_ptr,
       egl_accept_config_cb_t cb)
 {
-   EGLDisplay dpy     = get_egl_display(platform, display_data);
+#ifdef HAVE_DYLIB
+   bool gles3_attrib_found = false;
+   bool gles2_attrib_found = false;
+   bool gl_attrib_found = false;
+#endif
+
+   EGLDisplay dpy = get_egl_display(platform, display_data);
 
    if (dpy == EGL_NO_DISPLAY)
    {
@@ -575,8 +631,30 @@ bool egl_init_context(egl_ctx_data_t *egl,
 
    RARCH_LOG("[EGL] EGL version: %d.%d.\n", *major, *minor);
 
-   return egl_init_context_common(egl, count, attrib_ptr, cb,
-         display_data);
+   if (!egl_init_context_common(egl, count, attrib_ptr, cb,
+         display_data))
+      return false;
+
+#ifdef HAVE_DYLIB
+   for (; *attrib_ptr != EGL_NONE; ++attrib_ptr)
+   {
+      if (*attrib_ptr == EGL_OPENGL_ES3_BIT_KHR)
+         gles3_attrib_found = true;
+      else if (*attrib_ptr == EGL_OPENGL_ES2_BIT)
+         gles2_attrib_found = true;
+      else if (*attrib_ptr == EGL_OPENGL_BIT)
+         gl_attrib_found = true;
+   }
+
+   if (gles3_attrib_found)
+      g_egl_gl_dll_version = EGL_OPENGL_ES3_BIT_KHR;
+   else if (gles2_attrib_found)
+      g_egl_gl_dll_version = EGL_OPENGL_ES2_BIT;
+   else if (gl_attrib_found)
+      g_egl_gl_dll_version = EGL_OPENGL_BIT;
+#endif
+
+   return true;
 }
 
 bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
