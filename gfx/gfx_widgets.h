@@ -378,6 +378,9 @@ void gfx_widgets_iterate(
 void gfx_widget_screenshot_taken(void *data,
       const char *shotname, const char *filename);
 
+void gfx_widget_state_slot_show(void *data,
+      const char *shotname, const char *filename);
+
 /* AI Service functions */
 #ifdef HAVE_TRANSLATE
 bool gfx_widgets_ai_service_overlay_load(
