@@ -65,9 +65,9 @@
  * user agent construction  *
  ****************************/
 
-static int append_no_spaces(char* buffer, char* stop, const char* text)
+static int append_no_spaces(char *s, char* stop, const char* text)
 {
-   char* ptr = buffer;
+   char *ptr = s;
 
    while (ptr < stop && *text)
    {
@@ -81,11 +81,11 @@ static int append_no_spaces(char* buffer, char* stop, const char* text)
    }
 
    *ptr = '\0';
-   return (int)(ptr - buffer);
+   return (int)(ptr - s);
 }
 
 void rcheevos_get_user_agent(rcheevos_locals_t *locals,
-      char *buffer, size_t len)
+      char *s, size_t len)
 {
    char* ptr;
    struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
@@ -110,13 +110,13 @@ void rcheevos_get_user_agent(rcheevos_locals_t *locals,
    }
 
    /* append the non-changing portion */
-   ptr = buffer + strlcpy(buffer, locals->user_agent_prefix, len);
+   ptr = s + strlcpy(s, locals->user_agent_prefix, len);
 
    /* if a core is loaded, append its information */
    if (sysinfo && !string_is_empty(sysinfo->library_name))
    {
-      char* stop = buffer + len - 1;
-      const char* path = path_get(RARCH_PATH_CORE);
+      char *stop = s + len - 1;
+      const char *path = path_get(RARCH_PATH_CORE);
       *ptr++ = ' ';
 
       if (!string_is_empty(path))

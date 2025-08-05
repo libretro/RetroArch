@@ -165,7 +165,7 @@ static void frontend_android_get_version_sdk(int32_t *sdk);
 static void frontend_android_get_name(char *s, size_t len);
 
 bool (*engine_lookup_name)(char *buf,
-      int *vendorId, int *productId, size_t size, int id);
+      int *vendorId, int *productId, size_t len, int id);
 void (*engine_handle_dpad)(struct android_app *, AInputEvent*, int, int);
 
 static void android_input_poll_input_gingerbread(android_input_t *android);
@@ -206,8 +206,8 @@ static void android_keyboard_free(void)
     kbd_num = 0;
 }
 
-static bool android_input_lookup_name_prekitkat(char *buf,
-      int *vendorId, int *productId, size_t size, int id)
+static bool android_input_lookup_name_prekitkat(char *s,
+      int *vendorId, int *productId, size_t len, int id)
 {
    jobject name      = NULL;
    jmethodID getName = NULL;
@@ -241,18 +241,17 @@ static bool android_input_lookup_name_prekitkat(char *buf,
    if (!name)
       return false;
 
-   buf[0] = '\0';
-
-   str = (*env)->GetStringUTFChars(env, name, 0);
+   s[0] = '\0';
+   str  = (*env)->GetStringUTFChars(env, name, 0);
    if (str)
-      strlcpy(buf, str, size);
+      strlcpy(s, str, len);
    (*env)->ReleaseStringUTFChars(env, name, str);
 
    return true;
 }
 
-static bool android_input_lookup_name(char *buf,
-      int *vendorId, int *productId, size_t size, int id)
+static bool android_input_lookup_name(char *s,
+      int *vendorId, int *productId, size_t len, int id)
 {
    jmethodID getVendorId  = NULL;
    jmethodID getProductId = NULL;
@@ -288,11 +287,11 @@ static bool android_input_lookup_name(char *buf,
    if (!name)
       return false;
 
-   buf[0] = '\0';
+   s[0] = '\0';
 
    str = (*env)->GetStringUTFChars(env, name, 0);
    if (str)
-      strlcpy(buf, str, size);
+      strlcpy(s, str, len);
    (*env)->ReleaseStringUTFChars(env, name, str);
 
    GET_METHOD_ID(env, getVendorId, class, "getVendorId", "()I");

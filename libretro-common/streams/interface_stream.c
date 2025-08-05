@@ -434,7 +434,7 @@ int64_t intfstream_get_ptr(intfstream_internal_t* intf)
 }
 
 char *intfstream_gets(intfstream_internal_t *intf,
-      char *buffer, uint64_t len)
+      char *s, uint64_t len)
 {
    if (!intf)
       return NULL;
@@ -443,19 +443,19 @@ char *intfstream_gets(intfstream_internal_t *intf,
    {
       case INTFSTREAM_FILE:
          return filestream_gets(intf->file.fp,
-               buffer, (size_t)len);
+               s, (size_t)len);
       case INTFSTREAM_MEMORY:
          return memstream_gets(intf->memory.fp,
-               buffer, (size_t)len);
+               s, (size_t)len);
       case INTFSTREAM_CHD:
 #ifdef HAVE_CHD
-         return chdstream_gets(intf->chd.fp, buffer, len);
+         return chdstream_gets(intf->chd.fp, s, len);
 #else
          break;
 #endif
       case INTFSTREAM_RZIP:
 #if defined(HAVE_ZLIB)
-         return rzipstream_gets(intf->rzip.fp, buffer, (size_t)len);
+         return rzipstream_gets(intf->rzip.fp, s, (size_t)len);
 #else
          break;
 #endif

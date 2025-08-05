@@ -56,8 +56,8 @@ struct cache_vbo
 {
    GLuint vbo_primary;
    GLuint vbo_secondary;
-   size_t size_primary;
-   size_t size_secondary;
+   size_t len_primary;
+   size_t len_secondary;
    GLfloat *buffer_primary;
    GLfloat *buffer_secondary;
 };
@@ -1559,7 +1559,7 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    if (size)
       gl_glsl_set_attribs(glsl, glsl->vbo[glsl->active_idx].vbo_secondary,
             &glsl->vbo[glsl->active_idx].buffer_secondary,
-            &glsl->vbo[glsl->active_idx].size_secondary,
+            &glsl->vbo[glsl->active_idx].len_secondary,
             buffer, size, attribs, attribs_size);
 
    glActiveTexture(GL_TEXTURE0);
@@ -1691,7 +1691,7 @@ static bool gl_glsl_set_coords(void *shader_data,
       gl_glsl_set_attribs(glsl,
             glsl->vbo[glsl->active_idx].vbo_primary,
             &glsl->vbo[glsl->active_idx].buffer_primary,
-            &glsl->vbo[glsl->active_idx].size_primary,
+            &glsl->vbo[glsl->active_idx].len_primary,
             buffer, size,
             attribs, attribs_size);
 

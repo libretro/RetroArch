@@ -386,19 +386,15 @@ int chdstream_getc(chdstream_t *stream)
    return c;
 }
 
-char *chdstream_gets(chdstream_t *stream, char *buffer, size_t len)
+char *chdstream_gets(chdstream_t *stream, char *s, size_t len)
 {
    int c;
-
-   size_t offset = 0;
-
-   while (offset < len && (c = chdstream_getc(stream)) != EOF)
-      buffer[offset++] = c;
-
-   if (offset < len)
-      buffer[offset]   = '\0';
-
-   return buffer;
+   size_t _len = 0;
+   while (_len < len && (c = chdstream_getc(stream)) != EOF)
+      s[_len++] = c;
+   if (_len < len)
+      s[_len]   = '\0';
+   return s;
 }
 
 uint64_t chdstream_tell(chdstream_t *stream)

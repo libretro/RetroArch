@@ -1128,21 +1128,21 @@ static void pcm_hw_munmap_status(struct pcm *pcm)
 /* Unused for now */
 
 static int pcm_areas_copy(struct pcm *pcm, unsigned int pcm_offset,
-                          char *buf, unsigned int src_offset,
-                          unsigned int frames)
+      char *s, unsigned int src_offset,
+      unsigned int frames)
 {
-    int size_bytes = pcm_frames_to_bytes(pcm, frames);
+    int size_bytes       = pcm_frames_to_bytes(pcm, frames);
     int pcm_offset_bytes = pcm_frames_to_bytes(pcm, pcm_offset);
     int src_offset_bytes = pcm_frames_to_bytes(pcm, src_offset);
 
     /* interleaved only atm */
     if (pcm->flags & PCM_IN)
-        memcpy(buf + src_offset_bytes,
+        memcpy(s + src_offset_bytes,
                (char*)pcm->mmap_buffer + pcm_offset_bytes,
                size_bytes);
     else
         memcpy((char*)pcm->mmap_buffer + pcm_offset_bytes,
-               buf + src_offset_bytes,
+               s + src_offset_bytes,
                size_bytes);
     return 0;
 }

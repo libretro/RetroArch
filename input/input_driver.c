@@ -6344,19 +6344,19 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
       }
       else if (next_frame_type == REPLAY_TOKEN_CHECKPOINT_FRAME)
       {
-         size_t size;
+         size_t _len;
          uint8_t *state;
          retro_ctx_serialize_info_t serial_info;
-         if (intfstream_read(handle->file, &size, sizeof(uint64_t)) != sizeof(uint64_t))
+         if (intfstream_read(handle->file, &_len, sizeof(uint64_t)) != sizeof(uint64_t))
          {
             /* Unnatural EOF */
             RARCH_ERR("[Replay] Replay truncated before reading size.\n");
             input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
             return;
          }
-         size = swap_if_big64(size);
-         state = calloc(size, sizeof(uint8_t));
-         if (intfstream_read(handle->file, state, size) != (int64_t)size)
+         _len  = swap_if_big64(_len);
+         state = calloc(_len, sizeof(uint8_t));
+         if (intfstream_read(handle->file, state, _len) != (int64_t)_len)
          {
             /* Unnatural EOF */
             RARCH_ERR("[Replay] Replay checkpoint truncated.\n");
@@ -6365,7 +6365,7 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
             return;
          }
          serial_info.data_const = state;
-         serial_info.size       = size;
+         serial_info.size       = _len;
          if (!core_unserialize(&serial_info))
          {
             RARCH_ERR("[Replay] Failed to load movie checkpoint, failing\n");
@@ -6447,10 +6447,10 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          uint8_t compression = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
 #endif
          uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_RAW;
-         size_t len          = core_serialize_size();
-         uint8_t *st         = (uint8_t*)malloc(len);
+         size_t _len         = core_serialize_size();
+         uint8_t *st         = (uint8_t*)malloc(_len);
          serial_info.data    = st;
-         serial_info.size    = len;
+         serial_info.size    = _len;
          core_serialize(&serial_info);
          /* "next frame is a checkpoint" */
          intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
@@ -6510,27 +6510,31 @@ bool replay_get_serialized_data(void* buffer)
 static bool replay_check_same_timeline(bsv_movie_t *movie,
       uint8_t *other_movie, int64_t other_len)
 {
-   int64_t check_limit = MIN(other_len, intfstream_tell(movie->file));
-   intfstream_t *check_stream = intfstream_open_memory(other_movie, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, other_len);
-   bool ret = true;
-   int64_t check_cap = MAX(128 << 10, MAX(128*sizeof(bsv_key_data_t), 512*sizeof(bsv_input_data_t)));
-   uint8_t *buf1 = calloc(check_cap,1), *buf2 = calloc(check_cap,1);
-   size_t movie_pos = intfstream_tell(movie->file);
    uint64_t size1, size2;
    uint16_t btncount1, btncount2;
-   uint8_t frametok1 = 0;
-   uint8_t frametok2 = 0;
-   uint8_t keycount1 = 0;
-   uint8_t keycount2 = 0;
+   int64_t check_limit = MIN(other_len, intfstream_tell(movie->file));
+   intfstream_t *check_stream = intfstream_open_memory(other_movie, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, other_len);
+   bool ret            = true;
+   int64_t check_cap   = MAX(128 << 10, MAX(128*sizeof(bsv_key_data_t), 512*sizeof(bsv_input_data_t)));
+   uint8_t *buf1       = (uint8_t*)calloc(check_cap,1);
+   uint8_t *buf2       = (uint8_t*)calloc(check_cap,1);
+   size_t movie_pos    = intfstream_tell(movie->file);
+   uint8_t frametok1   = 0;
+   uint8_t frametok2   = 0;
+   uint8_t keycount1   = 0;
+   uint8_t keycount2   = 0;
+
    intfstream_rewind(movie->file);
    intfstream_read(movie->file, buf1, 6*sizeof(uint32_t));
    intfstream_read(check_stream, buf2, 6*sizeof(uint32_t));
+
    if (memcmp(buf1, buf2, 6*sizeof(uint32_t)) != 0)
    {
       RARCH_ERR("[Replay] Headers of two movies differ, not same timeline\n");
       ret = false;
       goto exit;
    }
+
    intfstream_seek(movie->file, movie->min_file_pos, SEEK_SET);
    /* assumption: both headers have the same state size */
    intfstream_seek(check_stream, movie->min_file_pos, SEEK_SET);
@@ -6714,9 +6718,9 @@ bool replay_set_serialized_data(void* buf)
 
       if (ident == movie->identifier) /* is compatible? */
       {
-         int64_t loaded_len    = (int64_t)swap_if_big32(((uint32_t *)buffer)[0]);
-         int64_t handle_idx    = intfstream_tell(movie->file);
-         bool same_timeline    = replay_check_same_timeline(movie, (uint8_t *)header, loaded_len);
+         int64_t _len       = (int64_t)swap_if_big32(((uint32_t *)buffer)[0]);
+         int64_t handle_idx = intfstream_tell(movie->file);
+         bool same_timeline = replay_check_same_timeline(movie, (uint8_t *)header, _len);
          /* If the state is part of this replay, go back to that state
             and rewind/fast forward the replay.
 
@@ -6727,7 +6731,7 @@ bool replay_set_serialized_data(void* buf)
 
             This can truncate the current replay if we're in recording mode.
          */
-         if (playback && loaded_len > handle_idx)
+         if (playback && _len > handle_idx)
          {
             const char *_msg = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE);
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
@@ -6743,7 +6747,7 @@ bool replay_set_serialized_data(void* buf)
             RARCH_ERR("[Replay] %s.\n", _msg);
             return false;
          }
-         else if (recording && (loaded_len > handle_idx || !same_timeline))
+         else if (recording && (_len > handle_idx || !same_timeline))
          {
             if (!same_timeline)
             {
@@ -6753,13 +6757,13 @@ bool replay_set_serialized_data(void* buf)
                RARCH_WARN("[Replay] %s.\n", _msg);
             }
             intfstream_rewind(movie->file);
-            intfstream_write(movie->file, buffer+sizeof(int32_t), loaded_len);
+            intfstream_write(movie->file, buffer+sizeof(int32_t), _len);
          }
          else
          {
-            intfstream_seek(movie->file, loaded_len, SEEK_SET);
+            intfstream_seek(movie->file, _len, SEEK_SET);
             if (recording)
-               intfstream_truncate(movie->file, loaded_len);
+               intfstream_truncate(movie->file, _len);
          }
       }
       else
