@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_common_api.h>
+
 #include "shader_gl3.h"
 #include "glslang_util.h"
 #include "glslang_util_cxx.h"
@@ -58,7 +60,7 @@ static void gl3_build_default_matrix(float *data)
    data[15] =  1.0f;
 }
 
-extern "C" {
+RETRO_BEGIN_DECLS
 
    void gl3_framebuffer_copy(
          GLuint fb_id,
@@ -131,7 +133,8 @@ extern "C" {
          return GL_NEAREST_MIPMAP_LINEAR;
       return GL_NEAREST_MIPMAP_NEAREST;
    }
-}
+
+RETRO_END_DECLS
 
 GLuint gl3_cross_compile_program(
       const uint32_t *vertex, size_t vertex_size,
