@@ -227,7 +227,8 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
       }
    }
 
-   if (state_slot > 0 && state_slot < 1000)
+   if (     state_slot > 0
+         && state_slot < 1000)
    {
       runloop_state_t *runloop_st  = runloop_state_get_ptr();
       runloop_st->entry_state_slot = state_slot;
@@ -442,9 +443,9 @@ runtime_log_t *runtime_log_init(
 static retro_time_t runtime_log_convert_hms2usec(unsigned hours,
       unsigned minutes, unsigned seconds)
 {
-   return ( (retro_time_t)hours   * 60 * 60 * 1000000) +
-           ((retro_time_t)minutes * 60      * 1000000) +
-           ((retro_time_t)seconds           * 1000000);
+   return (   (retro_time_t)hours   * 60 * 60 * 1000000)
+           + ((retro_time_t)minutes * 60      * 1000000)
+           + ((retro_time_t)seconds           * 1000000);
 }
 
 /* Setters */

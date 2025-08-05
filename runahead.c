@@ -408,10 +408,10 @@ static bool runloop_environment_secondary_core_hook(
 
 void runahead_clear_controller_port_map(void *data)
 {
-   int port;
+   int i;
    runloop_state_t *runloop_st = (runloop_state_t*)data;
-   for (port = 0; port < MAX_USERS; port++)
-      runloop_st->port_map[port] = -1;
+   for (i = 0; i < MAX_USERS; i++)
+      runloop_st->port_map[i] = -1;
 }
 
 static bool secondary_core_create(runloop_state_t *runloop_st,
@@ -533,9 +533,8 @@ bool secondary_core_ensure_exists(void *data, settings_t *settings)
    const char *path_directory_libretro = settings->paths.directory_libretro;
    unsigned input_max_users            = settings->uints.input_max_users;
    if (!runloop_st->secondary_lib_handle)
-      if (!secondary_core_create(runloop_st, path_directory_libretro,
-               input_max_users))
-         return false;
+      return secondary_core_create(runloop_st, path_directory_libretro,
+               input_max_users);
    return true;
 }
 #endif
@@ -1046,18 +1045,14 @@ static bool runahead_create(runloop_state_t *runloop_st)
 
 static bool runahead_save_state(runloop_state_t *runloop_st)
 {
-   retro_ctx_serialize_info_t *serialize_info;
-
-   if (!runloop_st->runahead_save_state_list)
-      return false;
-
-   serialize_info                  =
-      (retro_ctx_serialize_info_t*)runloop_st->runahead_save_state_list->data[0];
-
-   if (core_serialize_special(serialize_info))
-      return true;
-
-   runahead_error(runloop_st);
+   if (runloop_st->runahead_save_state_list)
+   {
+      retro_ctx_serialize_info_t *serialize_info =
+         (retro_ctx_serialize_info_t*)runloop_st->runahead_save_state_list->data[0];
+      if (core_serialize_special(serialize_info))
+         return true;
+      runahead_error(runloop_st);
+   }
    return false;
 }
 
@@ -1090,7 +1085,6 @@ static bool runahead_load_state_secondary(runloop_state_t *runloop_st, settings_
    {
       runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
       runahead_error(runloop_st);
-
       return false;
    }
 
@@ -1365,7 +1359,7 @@ static const char* preempt_allocate(runloop_state_t *runloop_st,
 {
    uint8_t i;
    size_t info_size;
-   preempt_t *preempt          = (preempt_t*)calloc(1, sizeof(preempt_t));
+   preempt_t *preempt = (preempt_t*)calloc(1, sizeof(preempt_t));
 
    if (!(runloop_st->preempt_data = preempt))
       return msg_hash_to_str(MSG_PREEMPT_FAILED_TO_ALLOCATE);
@@ -1560,8 +1554,7 @@ static INLINE bool preempt_ptr_input_dirty(preempt_t *preempt,
 static INLINE void preempt_input_poll(preempt_t *preempt,
       runloop_state_t *runloop_st, unsigned max_users)
 {
-   unsigned p;
-   int16_t joypad_state;
+   size_t p;
    retro_input_state_t state_cb = input_driver_state_wrapper;
 
    input_driver_poll();
@@ -1570,7 +1563,7 @@ static INLINE void preempt_input_poll(preempt_t *preempt,
    for (p = 0; p < max_users; p++)
    {
       /* Check full digital joypad */
-      joypad_state = (int16_t)(state_cb(p, RETRO_DEVICE_JOYPAD,
+      int16_t joypad_state = (int16_t)(state_cb(p, RETRO_DEVICE_JOYPAD,
             0, RETRO_DEVICE_ID_JOYPAD_MASK));
       if (joypad_state != preempt->joypad_state[p])
       {
@@ -1665,6 +1658,7 @@ void preempt_run(preempt_t *preempt, void *data)
       _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
       goto error;
    }
+
    preempt->start_ptr = PREEMPT_NEXT_PTR(preempt->start_ptr);
    runloop_st->flags &= ~(RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE
          | RUNLOOP_FLAG_INPUT_IS_DIRTY);
