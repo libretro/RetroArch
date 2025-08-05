@@ -785,14 +785,14 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
             BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
-         else if (string_is_equal(video_driver_get_ident(), "glcore"))
-         {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
-         }
          else
          {
+            if (string_is_equal(video_driver_get_ident(), "glcore"))
+            {
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+               BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+            }
 #ifdef HAVE_CG
             if (!(wgl_flags & WGL_FLAG_CORE_HW_CTX_ENABLE))
                BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);

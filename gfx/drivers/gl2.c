@@ -1385,7 +1385,8 @@ static void gl2_renderchain_render(
             rect->img_width, rect->img_height, true, false,
             video_scale_integer);
 
-      params.data          = gl;
+      params.vp_width      = gl->out_vp_width;
+      params.vp_height     = gl->out_vp_height;
       params.width         = prev_rect->img_width;
       params.height        = prev_rect->img_height;
       params.tex_width     = prev_rect->width;
@@ -1450,7 +1451,8 @@ static void gl2_renderchain_render(
    glClear(GL_COLOR_BUFFER_BIT);
    gl2_set_viewport(gl, width, height, false, true, video_scale_integer);
 
-   params.data          = gl;
+   params.vp_width      = gl->out_vp_width;
+   params.vp_height     = gl->out_vp_height;
    params.width         = prev_rect->img_width;
    params.height        = prev_rect->img_height;
    params.tex_width     = prev_rect->width;
@@ -3560,7 +3562,8 @@ static bool gl2_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   params.data             = gl;
+   params.vp_width         = gl->out_vp_width;
+   params.vp_height        = gl->out_vp_height;
    params.width            = frame_width;
    params.height           = frame_height;
    params.tex_width        = gl->tex_w;

@@ -223,7 +223,7 @@ static bool gfx_ctx_go2_drm_set_video_mode(void *data,
    frontend_driver_install_signal_handler();
 
 #ifdef HAVE_MENU
-   if (      config_get_ptr()->bools.video_ctx_scaling 
+   if (      config_get_ptr()->bools.video_ctx_scaling
          && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
    {
        drm->fb_width    = av_info->geometry.base_width;
@@ -278,13 +278,13 @@ static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height)
 {
    unsigned w, h;
-   gfx_ctx_go2_drm_data_t 
+   gfx_ctx_go2_drm_data_t
       *drm              = (gfx_ctx_go2_drm_data_t*)data;
 #ifdef HAVE_MENU
    settings_t *settings = config_get_ptr();
    bool use_ctx_scaling = settings->bools.video_ctx_scaling;
 
-   if (      use_ctx_scaling 
+   if (      use_ctx_scaling
          && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
    {
       video_driver_state_t *video_st       = video_state_get_ptr();
@@ -314,10 +314,10 @@ static bool gfx_ctx_go2_drm_suppress_screensaver(void *data, bool enable) { retu
 static void gfx_ctx_go2_drm_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
-   go2_surface_t* 
+   go2_surface_t*
       surf   = NULL;
 #endif
-   gfx_ctx_go2_drm_data_t 
+   gfx_ctx_go2_drm_data_t
       *drm   = (gfx_ctx_go2_drm_data_t*)data;
 
    int out_w = drm->native_width;
@@ -367,8 +367,9 @@ static uint32_t gfx_ctx_go2_drm_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
    }
-   else
-      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#ifdef HAVE_GLSL
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
 
    return flags;
 }
