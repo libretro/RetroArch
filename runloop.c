@@ -6772,63 +6772,68 @@ static enum runloop_state_enum runloop_check_state(
 
    /* Check save state slot hotkeys */
    {
-      static bool old_should_slot_increase = false;
-      static bool old_should_slot_decrease = false;
-      bool should_slot_increase            = BIT256_GET(
-            current_bits, RARCH_STATE_SLOT_PLUS);
-      bool should_slot_decrease            = BIT256_GET(
-            current_bits, RARCH_STATE_SLOT_MINUS);
-      bool check1                          = true;
-      bool check2                          = should_slot_increase && !old_should_slot_increase;
-      int addition                         = 1;
-      int state_slot                       = settings->ints.state_slot;
+      int state_slot                = settings->ints.state_slot;
+      static bool old_slot_increase = false;
+      static bool old_slot_decrease = false;
+      bool slot_increase            = BIT256_GET(current_bits, RARCH_STATE_SLOT_PLUS);
+      bool slot_decrease            = BIT256_GET(current_bits, RARCH_STATE_SLOT_MINUS);
+      bool check                    = false;
 
-      if (!check2)
+      if (slot_increase && !old_slot_increase)
       {
-         check2                            = should_slot_decrease && !old_should_slot_decrease;
-         check1                            = state_slot > -1;
-         addition                          = -1;
-
-         /* Wrap-around to 999 */
-         if (check2 && !check1 && state_slot + addition < -1)
-         {
-            state_slot = 1000;
-            check1     = true;
-         }
+         check = true;
+         state_slot++;
+         /* Wrap-around to 0 */
+         if (state_slot > 999)
+            state_slot = 0;
       }
-      /* Wrap-around to -1 (Auto) */
-      else if (state_slot + addition > 999)
-         state_slot = -2;
+      else if (slot_decrease && !old_slot_decrease)
+      {
+         check = true;
+         state_slot--;
+         /* Wrap to 0 */
+         if (state_slot < 0)
+            state_slot = 0;
+      }
 
-      if (check2)
+      if (check)
       {
          size_t _len;
          char msg[128];
-         int cur_state_slot                = state_slot + addition;
 
-         if (check1)
-            configuration_set_int(settings, settings->ints.state_slot,
-                  cur_state_slot);
+         configuration_set_int(settings, settings->ints.state_slot, state_slot);
          _len  = strlcpy(msg, msg_hash_to_str(MSG_STATE_SLOT), sizeof(msg));
-         _len += snprintf(msg + _len, sizeof(msg) - _len,
-                  ": %d", settings->ints.state_slot);
-
-         if (cur_state_slot < 0)
-            _len += strlcpy(msg + _len, " (Auto)", sizeof(msg) - _len);
+         _len += snprintf(msg + _len, sizeof(msg) - _len, ": %d", state_slot);
 
 #ifdef HAVE_GFX_WIDGETS
+#ifdef HAVE_SCREENSHOTS
+         if (dispwidget_get_ptr()->active && settings->bools.savestate_thumbnail_enable)
+         {
+            char path[PATH_MAX_LENGTH * 2];
+            size_t _len;
+
+            _len = strlcpy(path, runloop_st->name.savestate, sizeof(path));
+
+            if (state_slot > 0)
+               _len += snprintf(path + _len, sizeof(path) - _len, "%d", state_slot);
+
+            strlcpy(path + _len, FILE_PATH_PNG_EXTENSION, sizeof(path) - _len);
+
+            snprintf(msg, sizeof(msg), "%d", state_slot);
+            gfx_widget_state_slot_show(dispwidget_get_ptr(), msg, path);
+         }
+         else
+#endif
          if (dispwidget_get_ptr()->active)
             gfx_widget_set_generic_message(msg, 1000);
          else
 #endif
             runloop_msg_queue_push(msg, _len, 2, 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-         RARCH_LOG("[State] %s\n", msg);
       }
 
-      old_should_slot_increase = should_slot_increase;
-      old_should_slot_decrease = should_slot_decrease;
+      old_slot_increase = slot_increase;
+      old_slot_decrease = slot_decrease;
    }
    /* Check replay slot hotkeys */
    {
