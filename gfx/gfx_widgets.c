@@ -205,9 +205,6 @@ void gfx_widgets_msg_queue_push(
          msg_widget->hourglass_timer            = 0.0f;
          msg_widget->flags                      = 0;
 
-         if (prio > 1)
-            msg_widget->flags                  |= DISPWIDG_FLAG_SMALL;
-
          if (!(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS))
          {
             msg_widget->flags                  |=  DISPWIDG_FLAG_UNFOLDED;
@@ -219,6 +216,9 @@ void gfx_widgets_msg_queue_push(
             msg_widget->flags                  |=  DISPWIDG_FLAG_CATEGORY_WARNING;
          else if (category == MESSAGE_QUEUE_CATEGORY_ERROR)
             msg_widget->flags                  |=  DISPWIDG_FLAG_CATEGORY_ERROR;
+
+         if (prio > 1 && category != MESSAGE_QUEUE_CATEGORY_ERROR)
+            msg_widget->flags                  |= DISPWIDG_FLAG_SMALL;
 
          if (task)
          {

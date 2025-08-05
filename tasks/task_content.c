@@ -3133,7 +3133,7 @@ bool content_init(void)
                const char *_msg = msg_hash_to_str(error_enum);
                RARCH_ERR("[Content] %s\n", _msg);
                runloop_msg_queue_push(_msg, strlen(_msg), 2, ret ? 1 : 180, false, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
             }
             break;
          case MSG_UNKNOWN:
@@ -3153,7 +3153,7 @@ bool content_init(void)
        * > This allows any core-generated error messages
        *   to propagate through to the frontend */
       runloop_msg_queue_push(error_string, strlen(error_string), 2, ret ? 1 : 180, false, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       free(error_string);
    }
 

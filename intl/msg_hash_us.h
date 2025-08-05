@@ -14695,15 +14695,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
-   "Failed to load"
+   "Failed to load."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
-   "Failed to load content"
+   "Failed to load content."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Failed to load movie file"
+   "Failed to load movie file."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
