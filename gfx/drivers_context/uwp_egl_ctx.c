@@ -20,7 +20,7 @@
 
 /* necessary for mingw32 multimon defines: */
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
+#define _WIN32_WINNT 0x0500 /* _WIN32_WINNT_WIN2K */
 #endif
 
 #include <tchar.h>
@@ -168,7 +168,7 @@ static void *gfx_ctx_uwp_init(void *video_driver)
 static void gfx_ctx_uwp_destroy(void *data)
 {
    gfx_ctx_uwp_data_t *wgl = (gfx_ctx_uwp_data_t*)data;
-   
+
    if (!wgl)
       return;
 

@@ -131,7 +131,7 @@ void vulkan_filter_chain_set_current_shader_subframe(vulkan_filter_chain_t *chai
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
 void vulkan_filter_chain_set_simulate_scanline(vulkan_filter_chain_t *chain,
       bool simulate_scanline);
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 
 void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *chain,
       int32_t direction);

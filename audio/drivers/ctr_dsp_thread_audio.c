@@ -45,7 +45,7 @@ typedef struct
    uint32_t pos;
 } ctr_dsp_thread_audio_t;
 
-// PCM16 stereo
+/* PCM16 stereo */
 #define DSP_BYTES_TO_SAMPLES(bytes) (bytes / (2 * sizeof(uint16_t)))
 #define DSP_SAMPLES_TO_BYTES(samples) (samples * 2 * sizeof(uint16_t))
 

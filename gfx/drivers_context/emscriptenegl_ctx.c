@@ -80,8 +80,9 @@ static bool gfx_ctx_emscripten_get_metrics(void *data,
 {
    switch (type)
    {
-      // there is no way to get the actual DPI in emscripten, so return a standard value instead.
-      // this is needed for menu touch/pointer swipe scrolling to work.
+      /* There is no way to get the actual DPI in emscripten,
+       * so return a standard value instead. This is needed
+       * for menu touch/pointer swipe scrolling to work. */
       case DISPLAY_METRIC_DPI:
          *value = 150.0f;
          break;

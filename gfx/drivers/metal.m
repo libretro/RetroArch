@@ -245,10 +245,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
                                                 length:(NSUInteger)(_stride * _atlas->height)
                                                options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
 
-         // Even though newBufferWithBytes will copy the initial contents
-         // from our atlas, it doesn't seem to invalidate the buffer when
-         // doing so, causing corrupted text rendering if we hit this code
-         // path. To work around it we manually invalidate the buffer.
+         /* Even though newBufferWithBytes will copy the initial contents
+          * from our atlas, it doesn't seem to invalidate the buffer when
+          * doing so, causing corrupted text rendering if we hit this code
+          * path. To work around it we manually invalidate the buffer. */
 #if !defined(HAVE_COCOATOUCH)
          [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
 #endif

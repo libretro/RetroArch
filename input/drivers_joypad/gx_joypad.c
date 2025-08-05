@@ -229,7 +229,7 @@ static void check_port0_active(uint8_t pad_count)
             gx_joypad_name(0),
             NULL,
             gx_joypad.ident,
-            0, // port
+            0, /* port */
             0,
             0
             );
