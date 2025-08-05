@@ -160,7 +160,7 @@ bool content_undo_load_state(void)
    size_t temp_data_size;
    bool ret                  = false;
    unsigned num_blocks       = 0;
-   void* temp_data           = NULL;
+   void *temp_data           = NULL;
    struct sram_block *blocks = NULL;
    struct string_list *savefile_list = (struct string_list*)savefile_ptr_get();
 

@@ -758,7 +758,7 @@ static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
 
    /* TODO: would be better to read file as it's being written to wire, this is very inefficient */
    len = filestream_get_size(webdav_cb_st->rfile);
-   buf = malloc((size_t)(len + 1));
+   buf = (char*)malloc((size_t)(len + 1));
    filestream_read(webdav_cb_st->rfile, buf, len);
 
    fill_pathname_join_special(url, webdav_st->url, webdav_cb_st->path, sizeof(url));
