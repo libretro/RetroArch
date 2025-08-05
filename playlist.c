@@ -2554,10 +2554,10 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
             else if (string_is_equal(pValue, "sort_mode"))
                pCtx->current_meta_sort_mode_val = &pCtx->playlist->sort_mode;
             break;
-	  case 't':
+         case 't':
             if (string_is_equal(pValue, "thumbnail_match_mode"))
                pCtx->current_meta_thumbnail_match_mode_val     = &pCtx->playlist->thumbnail_match_mode;
-	    break;
+            break;
       }
    }
 

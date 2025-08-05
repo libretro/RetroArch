@@ -92,8 +92,6 @@ struct gfx_widget_load_content_animation_state
    float margin_shadow_right_color[16];
    float icon_color[16];
 
-   size_t system_name_len;
-
    enum gfx_widget_load_content_animation_status status;
 
    char content_name[512];
@@ -149,8 +147,6 @@ static gfx_widget_load_content_animation_state_t p_w_load_content_animation_st =
    COLOR_HEX_TO_FLOAT(0x000000, 0.0f), /* margin_shadow_left_color */
    COLOR_HEX_TO_FLOAT(0x000000, 0.0f), /* margin_shadow_right_color */
    COLOR_HEX_TO_FLOAT(0xE0E0E0, 1.0f), /* icon_color */
-
-   0,                                  /* system_name_len */
 
    GFX_WIDGET_LOAD_CONTENT_IDLE,       /* status */
 
@@ -396,16 +392,19 @@ bool gfx_widget_start_load_content_animation(void)
 
          if (!string_is_empty(playlist_path))
          {
+            size_t system_name_len;
             char new_system_name[512];
+
             fill_pathname(new_system_name, playlist_path, "", sizeof(new_system_name));
-            state->system_name_len = fill_pathname_base(
+            system_name_len = fill_pathname_base(
                   state->system_name, new_system_name,
                   sizeof(state->system_name));
+
             /* Exclude history and favourites playlists */
             if (   string_ends_with_size(state->system_name, "_history",
-                     state->system_name_len, STRLEN_CONST("_history"))
+                     system_name_len, STRLEN_CONST("_history"))
                 || string_ends_with_size(state->system_name, "_favorites",
-                     state->system_name_len, STRLEN_CONST("_favorites")))
+                     system_name_len, STRLEN_CONST("_favorites")))
                state->system_name[0] = '\0';
 
             /* Check whether a valid system name was found */
@@ -424,8 +423,9 @@ bool gfx_widget_start_load_content_animation(void)
       fill_pathname(state->content_name, path_basename(content_path),
             "", sizeof(state->content_name));
 
-   /* Check whether system name has been set */
-   if (!has_system)
+   /* Check whether system name has been set or if the name
+    * is a copy of info file database with multiple entries */
+   if (!has_system || strstr(state->system_name, "|"))
    {
       /* Use core display name, if available */
       if (!string_is_empty(core_info->display_name))
@@ -501,6 +501,16 @@ bool gfx_widget_start_load_content_animation(void)
       state->has_icon = path_is_valid(icon_path);
    }
 
+   /* Truncate long system names */
+   if (strlen(state->system_name) > 54)
+   {
+      size_t len = 50;
+      state->system_name[++len] = '.';
+      state->system_name[++len] = '.';
+      state->system_name[++len] = '.';
+      state->system_name[++len] = '\0';
+   }
+
    /* All parameters are initialised
     * > Signal that animation should begin */
    state->status = GFX_WIDGET_LOAD_CONTENT_BEGIN;
@@ -509,6 +519,49 @@ bool gfx_widget_start_load_content_animation(void)
 }
 
 /* Widget layout() */
+
+static void gfx_widget_load_content_animation_calculate(
+      dispgfx_widget_t *p_dispwidget,
+      gfx_widget_load_content_animation_state_t *state)
+{
+   int content_name_width;
+   int system_name_width;
+   int text_width;
+
+   unsigned last_video_width            = p_dispwidget->last_video_width;
+   unsigned last_video_height           = p_dispwidget->last_video_height;
+   unsigned widget_padding              = p_dispwidget->simple_widget_padding;
+
+   gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
+   gfx_widget_font_data_t *font_bold    = &p_dispwidget->gfx_widget_fonts.bold;
+
+   /* Get overall text width */
+   content_name_width = font_driver_get_message_width(
+         font_bold->font, state->content_name,
+         strlen(state->content_name), 1.0f);
+   system_name_width = font_driver_get_message_width(
+         font_regular->font, state->system_name,
+         strlen(state->system_name), 1.0f);
+
+   state->content_name_width = (content_name_width > 0) ?
+         (unsigned)content_name_width : 0;
+   state->system_name_width  = (system_name_width > 0) ?
+         (unsigned)system_name_width : 0;
+
+   text_width = (state->content_name_width > state->system_name_width)
+         ? (int)state->content_name_width
+         : (int)state->system_name_width;
+
+   /* Now we have the text width, can determine
+    * final icon/text x draw positions */
+   state->icon_x_end = ((int)last_video_width - text_width -
+         (int)state->icon_size - (3 * (int)widget_padding)) >> 1;
+   if (state->icon_x_end < (int)widget_padding)
+      state->icon_x_end = widget_padding;
+
+   state->text_x_end = state->icon_x_end +
+         (float)(state->icon_size + widget_padding);
+}
 
 static void gfx_widget_load_content_animation_layout(
       void *data,
@@ -562,40 +615,7 @@ static void gfx_widget_load_content_animation_layout(
 
    /* Recalculate end positions if layout changes after start */
    if (state->status > GFX_WIDGET_LOAD_CONTENT_BEGIN)
-   {
-      int content_name_width;
-      int system_name_width;
-      int text_width;
-
-      /* Get overall text width */
-      content_name_width = font_driver_get_message_width(
-            font_bold->font, state->content_name,
-            strlen(state->content_name), 1.0f);
-      system_name_width = font_driver_get_message_width(
-            font_regular->font, state->system_name,
-            state->system_name_len, 1.0f);
-
-      state->content_name_width = (content_name_width > 0) ?
-            (unsigned)content_name_width : 0;
-      state->system_name_width  = (system_name_width > 0) ?
-            (unsigned)system_name_width : 0;
-
-      text_width = (state->content_name_width > state->system_name_width)
-            ? (int)state->content_name_width
-            : (int)state->system_name_width;
-
-      /* Now we have the text width, can determine
-       * final icon/text x draw positions */
-      state->icon_x_end = ((int)last_video_width - text_width -
-            (int)state->icon_size - (3 * (int)widget_padding)) >> 1;
-      if (state->icon_x_end < (int)widget_padding)
-         state->icon_x_end = widget_padding;
-
-      state->text_x_end = state->icon_x_end +
-            (float)(state->icon_size + widget_padding);
-
-   }
-
+      gfx_widget_load_content_animation_calculate(p_dispwidget, state);
 }
 
 /* Widget iterate() */
@@ -617,40 +637,13 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
 
       uintptr_t alpha_tag                  = (uintptr_t)&state->alpha;
 
-      int content_name_width;
-      int system_name_width;
-      int text_width;
       gfx_animation_ctx_entry_t animation_entry;
 
       /* Load icon texture */
       gfx_widget_load_content_animation_load_icon();
 
-      /* Get overall text width */
-      content_name_width = font_driver_get_message_width(
-            font_bold->font, state->content_name,
-            strlen(state->content_name), 1.0f);
-      system_name_width = font_driver_get_message_width(
-            font_regular->font, state->system_name,
-            state->system_name_len, 1.0f);
-
-      state->content_name_width = (content_name_width > 0) ?
-            (unsigned)content_name_width : 0;
-      state->system_name_width  = (system_name_width > 0) ?
-            (unsigned)system_name_width : 0;
-
-      text_width = (state->content_name_width > state->system_name_width)
-         ? (int)state->content_name_width
-         : (int)state->system_name_width;
-
-      /* Now we have the text width, can determine
-       * final icon/text x draw positions */
-      state->icon_x_end = ((int)last_video_width - text_width -
-            (int)state->icon_size - (3 * (int)widget_padding)) >> 1;
-      if (state->icon_x_end < (int)widget_padding)
-         state->icon_x_end = widget_padding;
-
-      state->text_x_end = state->icon_x_end +
-            (float)(state->icon_size + widget_padding);
+      /* Calculate positions */
+      gfx_widget_load_content_animation_calculate(p_dispwidget, state);
 
       /* Trigger fade in animation */
       state->alpha                 = 0.0f;
