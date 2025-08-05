@@ -3028,25 +3028,26 @@ static void d3d12_init_descriptor_heap(D3D12Device device, d3d12_descriptor_heap
 static bool d3d12_create_root_signature(
       D3D12Device device, D3D12_ROOT_SIGNATURE_DESC* desc, D3D12RootSignature* out)
 {
-   D3DBlob signature, error = NULL;
-   if (FAILED(D3D12SerializeRootSignature(desc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error)))
+   D3DBlob sig = NULL;
+   D3DBlob err = NULL;
+   if (FAILED(D3D12SerializeRootSignature(desc, D3D_ROOT_SIGNATURE_VERSION_1, &sig, &err)))
    {
-      if (error)
+      if (err)
       {
          RARCH_ERR(
-               "[D3D12] CreateRootSignature failed: \"%s\".\n", (const char*)error->lpVtbl->GetBufferPointer(error));
-         Release(error);
+               "[D3D12] CreateRootSignature failed: \"%s\".\n", (const char*)err->lpVtbl->GetBufferPointer(err));
+         Release(err);
       }
       return false;
    }
 
    device->lpVtbl->CreateRootSignature(
          device, 0,
-         signature->lpVtbl->GetBufferPointer(signature),
-         signature->lpVtbl->GetBufferSize(signature),
+         sig->lpVtbl->GetBufferPointer(sig),
+         sig->lpVtbl->GetBufferSize(sig),
          uuidof(ID3D12RootSignature),
          (void**)out);
-   Release(signature);
+   Release(sig);
 
    return true;
 }

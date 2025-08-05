@@ -132,8 +132,6 @@ void gfx_widget_state_slot_show(
       void *data,
       const char *shotname, const char *filename)
 {
-   settings_t *settings                 = config_get_ptr();
-   dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
 
    state->state_slot = true;
