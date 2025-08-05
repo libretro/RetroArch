@@ -239,11 +239,11 @@ static bool netplay_json_start_array(void* ctx)
    return true;
 }
 
-static void netplay_rooms_error(void *context,
-      int line, int col, const char* error)
+static void netplay_rooms_err(void *context,
+      int line, int col, const char* err)
 {
    RARCH_ERR("[Netplay] Error: Invalid JSON at line %d, column %d - %s.\n",
-         line, col, error);
+         line, col, err);
 }
 
 void netplay_rooms_free(void)
@@ -294,7 +294,7 @@ int netplay_rooms_parse(const char *buf, size_t len)
          NULL /* end_array_handler */,
          netplay_json_boolean,
          NULL /* null handler */,
-         netplay_rooms_error);
+         netplay_rooms_err);
 
    return 0;
 }

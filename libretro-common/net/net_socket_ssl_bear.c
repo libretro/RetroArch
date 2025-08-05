@@ -252,7 +252,7 @@ int ssl_socket_connect(void *state_data,
 }
 
 ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
-      bool *error, void *data_, size_t len)
+      bool *err, void *data_, size_t len)
 {
    size_t __len;
    uint8_t *bear_data;
@@ -260,7 +260,7 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
    socket_set_block(state->fd, false);
    if (!process_inner(state, false))
    {
-      *error = true;
+      *err = true;
       return -1;
    }
    bear_data = br_ssl_engine_recvapp_buf(&state->sc.eng, &__len);

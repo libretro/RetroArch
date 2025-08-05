@@ -6377,7 +6377,7 @@ static int menu_displaylist_parse_playlist_generic(
 
 #ifdef HAVE_BLUETOOTH
 static void bluetooth_scan_callback(retro_task_t *task,
-      void *task_data, void *user_data, const char *error)
+      void *task_data, void *user_data, const char *err)
 {
    unsigned i;
    struct string_list *device_list   = NULL;
@@ -6419,7 +6419,7 @@ static void bluetooth_scan_callback(retro_task_t *task,
 #if defined(HAVE_NETWORKING) && defined(HAVE_WIFI)
 static void wifi_scan_callback(retro_task_t *task,
       void *task_data,
-      void *user_data, const char *error)
+      void *user_data, const char *err)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE

@@ -753,7 +753,7 @@ static int rpng_load_image_argb_process_inflate_init(
       rpng_t *rpng, uint32_t **data)
 {
    bool zstatus;
-   enum trans_stream_error terror;
+   enum trans_stream_error err;
    uint32_t rd, wn;
    struct rpng_process *process = (struct rpng_process*)rpng->process;
    bool to_continue        = (process->avail_in > 0
@@ -762,16 +762,16 @@ static int rpng_load_image_argb_process_inflate_init(
    if (!to_continue)
       goto end;
 
-   zstatus = process->stream_backend->trans(process->stream, false, &rd, &wn, &terror);
+   zstatus = process->stream_backend->trans(process->stream, false, &rd, &wn, &err);
 
-   if (!zstatus && terror != TRANS_STREAM_ERROR_BUFFER_FULL)
+   if (!zstatus && err != TRANS_STREAM_ERROR_BUFFER_FULL)
       goto error;
 
    process->avail_in -= rd;
    process->avail_out -= wn;
    process->total_out += wn;
 
-   if (terror)
+   if (err)
       return 0;
 
 end:

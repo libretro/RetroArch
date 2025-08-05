@@ -5551,7 +5551,7 @@ static enum runloop_state_enum runloop_check_state(
       audio_driver_state_t *audio_st,
       video_driver_state_t *video_st,
       uico_driver_state_t   *uico_st,
-      bool error_on_init,
+      bool err_on_init,
       settings_t *settings,
       retro_time_t current_time,
       bool netplay_allow_pause,
@@ -6141,7 +6141,7 @@ static enum runloop_state_enum runloop_check_state(
       else if (!menu_driver_iterate(menu_st, p_disp, anim_get_ptr(),
                settings, action, current_time))
       {
-         if (error_on_init)
+         if (err_on_init)
          {
             content_ctx_info_t content_info = {0};
             task_push_start_dummy_core(&content_info);

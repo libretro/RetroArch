@@ -943,12 +943,12 @@ bool task_is_on_main_thread(void)
 #endif
 }
 
-void task_set_error(retro_task_t *task, char *error)
+void task_set_error(retro_task_t *task, char *err)
 {
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
-   task->error = error;
+   task->error = err;
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
 #endif

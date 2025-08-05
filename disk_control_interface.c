@@ -333,7 +333,7 @@ bool disk_control_set_eject_state(
       disk_control_interface_t *disk_control,
       bool eject, bool verbosity)
 {
-   bool error = false;
+   bool err = false;
    char msg[128];
    size_t _len;
 
@@ -350,8 +350,8 @@ bool disk_control_set_eject_state(
               sizeof(msg));
    else
    {
-      error = true;
-      _len  = strlcpy(
+      err  = true;
+      _len = strlcpy(
             msg,
             eject
             ? msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_EJECT)
@@ -361,21 +361,21 @@ bool disk_control_set_eject_state(
 
    if (_len > 0)
    {
-      if (error)
+      if (err)
          RARCH_ERR("[Disc] %s\n", msg);
       else
          RARCH_LOG("[Disc] %s\n", msg);
 
       /* Errors should always be displayed */
-      if (verbosity || error)
+      if (verbosity || err)
          runloop_msg_queue_push(
-               msg, _len, 1, error ? 180 : 60, true, NULL,
+               msg, _len, 1, err ? 180 : 60, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT,
-               error ? MESSAGE_QUEUE_CATEGORY_ERROR : MESSAGE_QUEUE_CATEGORY_INFO);
+               err ? MESSAGE_QUEUE_CATEGORY_ERROR : MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
 #ifdef HAVE_CHEEVOS
-   if (!error && !eject)
+   if (!err && !eject)
    {
       if (disk_control->cb.get_image_index && disk_control->cb.get_image_path)
       {
@@ -388,7 +388,7 @@ bool disk_control_set_eject_state(
    }
 #endif
 
-   return !error;
+   return !err;
 }
 
 /**
@@ -403,7 +403,7 @@ bool disk_control_set_index(
       unsigned index, bool verbosity)
 {
    size_t _len;
-   bool error            = false;
+   bool err              = false;
    unsigned num_images   = 0;
    unsigned msg_duration = 0;
    char msg[128];
@@ -426,31 +426,31 @@ bool disk_control_set_index(
    num_images = disk_control->cb.get_num_images();
 
    /* Perform 'set index' action */
-   error = !disk_control->cb.set_image_index(index);
+   err = !disk_control->cb.set_image_index(index);
 
    /* Get log/notification message */
    _len = disk_control_get_index_set_msg(
-         disk_control, num_images, index, !error,
+         disk_control, num_images, index, !err,
          &msg_duration, msg, sizeof(msg));
 
    /* Output log/notification message */
    if (_len > 0)
    {
-      if (error)
+      if (err)
          RARCH_ERR("[Disc] %s\n", msg);
       else
          RARCH_LOG("[Disc] %s\n", msg);
 
       /* Errors should always be displayed */
-      if (verbosity || error)
+      if (verbosity || err)
          runloop_msg_queue_push(msg, _len, 1, msg_duration, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT,
-               error ? MESSAGE_QUEUE_CATEGORY_ERROR : MESSAGE_QUEUE_CATEGORY_INFO);
+               err ? MESSAGE_QUEUE_CATEGORY_ERROR : MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    /* If operation was successful, update disk
     * index record (if enabled) */
-   if (!error && disk_control->record_enabled)
+   if (!err && disk_control->record_enabled)
    {
       if (   disk_control->cb.get_image_index
           && disk_control->cb.get_image_path)
@@ -471,7 +471,7 @@ bool disk_control_set_index(
       }
    }
 
-   return !error;
+   return !err;
 }
 
 /**

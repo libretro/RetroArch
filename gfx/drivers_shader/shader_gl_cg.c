@@ -217,12 +217,9 @@ static void gl_cg_set_uniform_parameter(
 }
 
 #ifdef RARCH_CG_DEBUG
-static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
+static void cg_err_handler(CGcontext ctx, CGerror err, void *data)
 {
-   (void)ctx;
-   (void)data;
-
-   switch (error)
+   switch (err)
    {
       case CG_INVALID_PARAM_HANDLE_ERROR:
          RARCH_ERR("[Cg] Invalid param handle.\n");
@@ -236,7 +233,7 @@ static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
          break;
    }
 
-   RARCH_ERR("[Cg] Error: \"%s\".\n", cgGetErrorString(error));
+   RARCH_ERR("[Cg] Error: \"%s\".\n", cgGetErrorString(err));
 }
 #endif
 
@@ -639,15 +636,14 @@ static bool gl_cg_load_stock(void *data)
    program_info.is_file  = false;
 
    if (!gl_cg_compile_program(data, 0, &cg->prg[0], &program_info))
-      goto error;
+   {
+      RARCH_ERR("[Cg] Failed to compile passthrough shader, is something wrong with your environment?\n");
+      return false;
+   }
 
    gl_cg_set_program_base_attrib(data, 0);
 
    return true;
-
-error:
-   RARCH_ERR("[Cg] Failed to compile passthrough shader, is something wrong with your environment?\n");
-   return false;
 }
 
 static bool gl_cg_load_plain(void *data, const char *path)
@@ -977,15 +973,15 @@ static void *gl_cg_init(void *data, const char *path)
 
 #ifdef RARCH_CG_DEBUG
    cgGLSetDebugMode(CG_TRUE);
-   cgSetErrorHandler(cg_error_handler, NULL);
+   cgSetErrorHandler(cg_err_handler, NULL);
 #endif
 
    cg->cgFProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
    cg->cgVProf = cgGLGetLatestProfile(CG_GL_VERTEX);
 
    if (
-         cg->cgFProf == CG_PROFILE_UNKNOWN ||
-         cg->cgVProf == CG_PROFILE_UNKNOWN)
+            cg->cgFProf == CG_PROFILE_UNKNOWN
+         || cg->cgVProf == CG_PROFILE_UNKNOWN)
    {
       RARCH_ERR("[Cg] Invalid profile type.\n");
       goto error;

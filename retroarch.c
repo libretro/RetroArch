@@ -8514,15 +8514,15 @@ size_t retroarch_get_capabilities(enum rarch_capabilities type,
    return _len;
 }
 
-void retroarch_fail(int error_code, const char *error)
+void retroarch_fail(int err_code, const char *err)
 {
    global_t *global                = global_get_ptr();
    /* We cannot longjmp unless we're in retroarch_main_init().
     * If not, something went very wrong, and we should
     * just exit right away. */
-   strlcpy(global->error_string, error,
+   strlcpy(global->error_string, err,
          sizeof(global->error_string));
-   longjmp(global->error_sjlj_context, error_code);
+   longjmp(global->error_sjlj_context, err_code);
 }
 
 /* Called on close content, checks if we need to also exit retroarch */

@@ -46,7 +46,7 @@
 struct RFILE
 {
    struct retro_vfs_file_handle *hfile;
-   bool error_flag;
+   bool err_flag;
 };
 
 static retro_vfs_get_path_t filestream_get_path_cb = NULL;
@@ -133,7 +133,7 @@ int64_t filestream_get_size(RFILE *stream)
             (libretro_vfs_implementation_file*)stream->hfile);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
 
    return output;
 }
@@ -149,7 +149,7 @@ int64_t filestream_truncate(RFILE *stream, int64_t length)
             (libretro_vfs_implementation_file*)stream->hfile, length);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
 
    return output;
 }
@@ -175,8 +175,8 @@ RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
       return NULL;
    }
 
-   output->error_flag = false;
-   output->hfile      = fp;
+   output->err_flag = false;
+   output->hfile    = fp;
    return output;
 }
 
@@ -356,7 +356,7 @@ int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
             offset, seek_position);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
 
    return output;
 }
@@ -377,7 +377,7 @@ int64_t filestream_tell(RFILE *stream)
             (libretro_vfs_implementation_file*)stream->hfile);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
 
    return output;
 }
@@ -387,7 +387,7 @@ void filestream_rewind(RFILE *stream)
    if (!stream)
       return;
    filestream_seek(stream, 0L, RETRO_VFS_SEEK_POSITION_START);
-   stream->error_flag = false;
+   stream->err_flag = false;
 }
 
 int64_t filestream_read(RFILE *stream, void *s, int64_t len)
@@ -401,7 +401,7 @@ int64_t filestream_read(RFILE *stream, void *s, int64_t len)
             (libretro_vfs_implementation_file*)stream->hfile, s, len);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
 
    return output;
 }
@@ -417,7 +417,7 @@ int filestream_flush(RFILE *stream)
             (libretro_vfs_implementation_file*)stream->hfile);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
 
    return output;
 }
@@ -529,7 +529,7 @@ int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
             (libretro_vfs_implementation_file*)stream->hfile, s, len);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
 
    return output;
 }
@@ -568,7 +568,7 @@ int filestream_printf(RFILE *stream, const char* format, ...)
 
 int filestream_error(RFILE *stream)
 {
-   return (stream && stream->error_flag);
+   return (stream && stream->err_flag);
 }
 
 int filestream_close(RFILE *stream)

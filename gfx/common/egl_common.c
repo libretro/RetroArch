@@ -188,9 +188,9 @@ bool egl_init_dll(void)
 
 void egl_report_error(void)
 {
-   EGLint    error = _egl_get_error();
+   EGLint      err = _egl_get_error();
    const char *str = NULL;
-   switch (error)
+   switch (err)
    {
       case EGL_SUCCESS:
          str = "EGL_SUCCESS";
@@ -249,7 +249,7 @@ void egl_report_error(void)
          break;
    }
 
-   RARCH_ERR("[EGL] #0x%x, %s.\n", (unsigned)error, str);
+   RARCH_ERR("[EGL] #0x%x, %s.\n", (unsigned)err, str);
 }
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol)

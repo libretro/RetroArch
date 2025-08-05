@@ -189,24 +189,25 @@ static void wpad_check_panic_button(uint32_t held_buttons)
 static void wpad_poll(void)
 {
    VPADStatus vpad;
-   VPADReadError error;
    VPADChan channel;
+   VPADReadError err;
 
    for (channel = VPAD_CHAN_0; channel < WIIU_GAMEPAD_CHANNELS; channel++)
    {
-      VPADRead(channel, &vpad, 1, &error);
+      VPADRead(channel, &vpad, 1, &err);
 
       /* Gamepad is connected! */
-      if (error == VPAD_READ_SUCCESS || error == VPAD_READ_NO_SAMPLES)
+      if (err == VPAD_READ_SUCCESS || err == VPAD_READ_NO_SAMPLES)
          wpad_register(channel);
-      else if (error == VPAD_READ_INVALID_CONTROLLER)
+      else if (err == VPAD_READ_INVALID_CONTROLLER)
          wpad_deregister(channel);
 
-      if (error == VPAD_READ_SUCCESS)
+      if (err == VPAD_READ_SUCCESS)
       {
          wpad_update_button_state(&joypad_state.wpad.pads[channel].button_state, vpad.hold);
          wpad_update_analog_state(joypad_state.wpad.pads[channel].analog_state, &vpad);
-         wpad_update_touch_state(joypad_state.wpad.pads[channel].analog_state, &joypad_state.wpad.pads[channel].button_state, &vpad, channel);
+         wpad_update_touch_state(joypad_state.wpad.pads[channel].analog_state,
+               &joypad_state.wpad.pads[channel].button_state, &vpad, channel);
          wpad_check_panic_button(vpad.hold);
       }
    }

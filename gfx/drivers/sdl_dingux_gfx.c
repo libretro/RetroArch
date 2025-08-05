@@ -271,9 +271,9 @@ static void sdl_dingux_blit_text32(
    }
 }
 
-static void sdl_dingux_blit_video_mode_error_msg(sdl_dingux_video_t *vid)
+static void sdl_dingux_blit_video_mode_err_msg(sdl_dingux_video_t *vid)
 {
-   const char *error_msg = msg_hash_to_str(MSG_UNSUPPORTED_VIDEO_MODE);
+   const char *err_msg = msg_hash_to_str(MSG_UNSUPPORTED_VIDEO_MODE);
    char display_mode[64];
 
    display_mode[0] = '\0';
@@ -292,7 +292,7 @@ static void sdl_dingux_blit_video_mode_error_msg(sdl_dingux_video_t *vid)
    {
       sdl_dingux_blit_text32(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE,
-            error_msg);
+            err_msg);
 
       sdl_dingux_blit_text32(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE + FONT_HEIGHT_STRIDE,
@@ -302,7 +302,7 @@ static void sdl_dingux_blit_video_mode_error_msg(sdl_dingux_video_t *vid)
    {
       sdl_dingux_blit_text16(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE,
-            error_msg);
+            err_msg);
 
       sdl_dingux_blit_text16(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE + FONT_HEIGHT_STRIDE,
@@ -822,7 +822,7 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
       /* If current display mode is invalid,
        * just display an error message */
       else
-         sdl_dingux_blit_video_mode_error_msg(vid);
+         sdl_dingux_blit_video_mode_err_msg(vid);
 
       vid->was_in_menu = false;
    }

@@ -217,17 +217,16 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api)
 #endif
 
    if (!D3D9Create)
-      goto error;
+   {
+      d3d9_deinitialize_symbols();
+      return false;
+   }
 
 #ifdef HAVE_DYNAMIC_D3D
    d3d9_dylib_initialized = true;
 #endif
 
    return true;
-
-error:
-   d3d9_deinitialize_symbols();
-   return false;
 }
 
 void d3d9_deinitialize_symbols(void)
@@ -414,7 +413,7 @@ bool d3d9x_compile_shader(
       const char *pprofile,
       unsigned flags,
       void *ppshader,
-      void *pperrormsgs,
+      void *pp_err_msgs,
       void *ppconstanttable)
 {
 #if defined(HAVE_D3DX)
@@ -427,7 +426,7 @@ bool d3d9x_compile_shader(
                (LPCSTR)pprofile,
                (DWORD)flags,
                (LPD3DXBUFFER*)ppshader,
-               (LPD3DXBUFFER*)pperrormsgs,
+               (LPD3DXBUFFER*)pp_err_msgs,
                (LPD3DXCONSTANTTABLE*)ppconstanttable) >= 0);
 #else
    return false;
@@ -442,7 +441,7 @@ bool d3d9x_compile_shader_from_file(
       const char *pprofile,
       unsigned flags,
       void *ppshader,
-      void *pperrormsgs,
+      void *pp_err_msgs,
       void *ppconstanttable)
 {
 #if defined(HAVE_D3DX)
@@ -455,7 +454,7 @@ bool d3d9x_compile_shader_from_file(
                (LPCSTR)pprofile,
                (DWORD)flags,
                (LPD3DXBUFFER*)ppshader,
-               (LPD3DXBUFFER*)pperrormsgs,
+               (LPD3DXBUFFER*)pp_err_msgs,
                (LPD3DXCONSTANTTABLE*)ppconstanttable) >= 0)
          return true;
 #endif

@@ -280,13 +280,12 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->frames_per_hunk = hd->hunkbytes / hd->unitbytes;
    stream->track_frame     = meta.frame_offset;
    stream->track_start     = (size_t)pregap * stream->frame_size;
-   stream->track_end       = stream->track_start + 
+   stream->track_end       = stream->track_start +
                              (size_t)meta.frames * stream->frame_size;
 
    return stream;
 
 error:
-
    chdstream_close(stream);
 
    if (chd)
@@ -359,7 +358,7 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
          uint32_t chd_frame   = (uint32_t)(stream->track_frame +
             (stream->offset - stream->track_start) / stream->frame_size);
          uint32_t hunk        = chd_frame / stream->frames_per_hunk;
-         uint32_t hunk_offset = (chd_frame % stream->frames_per_hunk) 
+         uint32_t hunk_offset = (chd_frame % stream->frames_per_hunk)
             * hd->unitbytes;
 
          if (!chdstream_load_hunk(stream, hunk))

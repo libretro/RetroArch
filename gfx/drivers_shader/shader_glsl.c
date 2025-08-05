@@ -1016,7 +1016,7 @@ static void *gl_glsl_init(void *data, const char *path)
    struct shader_program_info shader_prog_info;
    bool shader_support        = false;
 #ifdef GLSL_DEBUG
-   char *error_string         = NULL;
+   char *err_string           = NULL;
 #endif
    const char *stock_vertex   = NULL;
    const char *stock_fragment = NULL;
@@ -1177,10 +1177,10 @@ static void *gl_glsl_init(void *data, const char *path)
       gl_glsl_find_uniforms(glsl, i, glsl->prg[i].id, &glsl->uniforms[i]);
 
 #ifdef GLSL_DEBUG
-   if (!gl_check_error(&error_string))
+   if (!gl_check_error(&err_string))
    {
-      RARCH_ERR("%s\n", error_string);
-      free(error_string);
+      RARCH_ERR("%s\n", err_string);
+      free(err_string);
       RARCH_WARN("[GLSL] Detected GL error in GLSL.\n");
    }
 #endif

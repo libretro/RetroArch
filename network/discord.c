@@ -146,11 +146,11 @@ static void handle_discord_ready(const DiscordUser* connectedUser)
 }
 
 static void handle_discord_disconnected(int errcode, const char *msg) { }
-static void handle_discord_error(int errcode, const char *msg) { }
+static void handle_discord_err(int errcode, const char *msg) { }
 static void handle_discord_spectate(const char *secret) { }
 
 static void handle_discord_join_cb(retro_task_t *task, void *task_data,
-      void *user_data, const char *error)
+      void *user_data, const char *err)
 {
    char hostname[512];
    struct netplay_room *room;
@@ -158,7 +158,7 @@ static void handle_discord_join_cb(retro_task_t *task, void *task_data,
    http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
    discord_state_t *discord_st = &discord_state_st;
 
-   if (error)
+   if (err)
       goto done;
    if (!data || !data->data || !data->len)
       goto done;
@@ -420,7 +420,7 @@ void discord_init(const char *discord_app_id, char *args)
 
    handlers.ready              = handle_discord_ready;
    handlers.disconnected       = handle_discord_disconnected;
-   handlers.errored            = handle_discord_error;
+   handlers.errored            = handle_discord_err;
    handlers.joinGame           = handle_discord_join;
    handlers.spectateGame       = handle_discord_spectate;
    handlers.joinRequest        = handle_discord_join_request;

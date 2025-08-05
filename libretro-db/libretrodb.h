@@ -98,7 +98,7 @@ int libretrodb_cursor_reset(libretrodb_cursor_t *cursor);
 void libretrodb_cursor_close(libretrodb_cursor_t *cursor);
 
 void *libretrodb_query_compile(libretrodb_t *db, const char *query,
-        size_t buff_len, const char **error);
+        size_t buff_len, const char **err);
 
 void libretrodb_query_free(void *q);
 

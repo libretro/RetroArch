@@ -191,7 +191,7 @@ int ssl_socket_connect(void *state_data,
 }
 
 ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
-      bool *error, void *data_, size_t len)
+      bool *err, void *data_, size_t len)
 {
    ssize_t         ret;
    struct ssl_state *state = (struct ssl_state*)state_data;
@@ -208,14 +208,14 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
    if (ret == 0)
    {
       /* Socket closed */
-      *error = true;
+      *err = true;
       return -1;
    }
 
    if (isagain((int)ret) || ret == MBEDTLS_ERR_SSL_WANT_READ)
       return 0;
 
-   *error = true;
+   *err = true;
    return -1;
 }
 

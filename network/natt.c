@@ -322,7 +322,7 @@ static bool natt_parse_desc_node(rxml_node_t *node,
 }
 
 static void natt_query_device_cb(retro_task_t *task, void *task_data,
-   void *user_data, const char *error)
+   void *user_data, const char *err)
 {
    char *xml                  = NULL;
    rxml_document_t *document  = NULL;
@@ -332,7 +332,7 @@ static void natt_query_device_cb(retro_task_t *task, void *task_data,
    *device->control           = '\0';
    *device->service_type      = '\0';
 
-   if (error)
+   if (err)
       goto done;
    if (!data || !data->data || !data->len)
       goto done;
@@ -429,7 +429,7 @@ static bool natt_parse_external_address_node(rxml_node_t *node,
 }
 
 static void natt_external_address_cb(retro_task_t *task, void *task_data,
-   void *user_data, const char *error)
+   void *user_data, const char *err)
 {
    char *xml                  = NULL;
    rxml_document_t *document  = NULL;
@@ -438,7 +438,7 @@ static void natt_external_address_cb(retro_task_t *task, void *task_data,
 
    memset(&device->ext_addr, 0, sizeof(device->ext_addr));
 
-   if (error)
+   if (err)
       goto done;
    if (!data || !data->data || !data->len)
       goto done;
@@ -512,7 +512,7 @@ static bool natt_parse_open_port_node(rxml_node_t *node,
 }
 
 static void natt_open_port_cb(retro_task_t *task, void *task_data,
-   void *user_data, const char *error)
+   void *user_data, const char *err)
 {
    char *xml                    = NULL;
    rxml_document_t *document    = NULL;
@@ -522,7 +522,7 @@ static void natt_open_port_cb(retro_task_t *task, void *task_data,
 
    request->success             = false;
 
-   if (error)
+   if (err)
       goto done;
    if (!data || !data->data || !data->len)
       goto done;
@@ -553,7 +553,7 @@ done:
 }
 
 static void natt_close_port_cb(retro_task_t *task, void *task_data,
-   void *user_data, const char *error)
+   void *user_data, const char *err)
 {
    http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
    struct natt_request *request = (struct natt_request*)user_data;
@@ -561,7 +561,7 @@ static void natt_close_port_cb(retro_task_t *task, void *task_data,
 
    request->success             = false;
 
-   if (error)
+   if (err)
       goto done;
    if (!data || !data->data || !data->len)
       goto done;

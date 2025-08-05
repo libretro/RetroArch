@@ -1008,7 +1008,7 @@ static void runahead_add_hooks(runloop_state_t *runloop_st)
 
 /* Runahead Code */
 
-static void runahead_error(runloop_state_t *runloop_st)
+static void runahead_err(runloop_state_t *runloop_st)
 {
    runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_AVAILABLE;
    mylist_destroy(&runloop_st->runahead_save_state_list);
@@ -1032,7 +1032,7 @@ static bool runahead_create(runloop_state_t *runloop_st)
    if (      (runloop_st->runahead_save_state_size == 0)
          || !(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN))
    {
-      runahead_error(runloop_st);
+      runahead_err(runloop_st);
       return false;
    }
 
@@ -1051,7 +1051,7 @@ static bool runahead_save_state(runloop_state_t *runloop_st)
          (retro_ctx_serialize_info_t*)runloop_st->runahead_save_state_list->data[0];
       if (core_serialize_special(serialize_info))
          return true;
-      runahead_error(runloop_st);
+      runahead_err(runloop_st);
    }
    return false;
 }
@@ -1069,7 +1069,7 @@ static bool runahead_load_state(runloop_state_t *runloop_st)
       runloop_st->flags                      &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
 
    if (!ret)
-      runahead_error(runloop_st);
+      runahead_err(runloop_st);
 
    return ret;
 }
@@ -1084,7 +1084,7 @@ static bool runahead_load_state_secondary(runloop_state_t *runloop_st, settings_
             serialize_info->data_const, serialize_info->size))
    {
       runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
-      runahead_error(runloop_st);
+      runahead_err(runloop_st);
       return false;
    }
 
@@ -1145,7 +1145,7 @@ void runahead_run(void *data,
        * support level */
       if (!core_info_current_supports_runahead())
       {
-         runahead_error(runloop_st);
+         runahead_err(runloop_st);
          /* If core is incompatible with runahead,
           * log a warning but do not spam OSD messages.
           * Runahead menu entries are hidden when using

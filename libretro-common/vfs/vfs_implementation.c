@@ -977,11 +977,11 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 }
 
 #if defined(VITA)
-#define path_mkdir_error(ret) (((ret) == SCE_ERROR_ERRNO_EEXIST))
+#define path_mkdir_err(ret) (((ret) == SCE_ERROR_ERRNO_EEXIST))
 #elif defined(PSP) || defined(PS2) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
-#define path_mkdir_error(ret) ((ret) == -1)
+#define path_mkdir_err(ret) ((ret) == -1)
 #else
-#define path_mkdir_error(ret) ((ret) < 0 && errno == EEXIST)
+#define path_mkdir_err(ret) ((ret) < 0 && errno == EEXIST)
 #endif
 
 int retro_vfs_mkdir_impl(const char *dir)
@@ -1031,7 +1031,7 @@ int retro_vfs_mkdir_impl(const char *dir)
    int ret = mkdir(dir, 0750);
 #endif
 
-   if (path_mkdir_error(ret))
+   if (path_mkdir_err(ret))
       return -2;
    return ret < 0 ? -1 : 0;
 }
@@ -1065,7 +1065,7 @@ struct libretro_vfs_implementation_dir
 #endif
 };
 
-static bool dirent_check_error(libretro_vfs_implementation_dir *rdir)
+static bool dirent_check_err(libretro_vfs_implementation_dir *rdir)
 {
 #if defined(_WIN32)
    return (rdir->directory == INVALID_HANDLE_VALUE);
@@ -1144,7 +1144,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
    (void)include_hidden;
 #endif
 
-   if (rdir->directory && !dirent_check_error(rdir))
+   if (rdir->directory && !dirent_check_err(rdir))
       return rdir;
 
    retro_vfs_closedir_impl(rdir);

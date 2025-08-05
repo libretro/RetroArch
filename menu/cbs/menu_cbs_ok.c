@@ -6663,7 +6663,7 @@ static int action_ok_open_picker(const char *path,
 #ifdef HAVE_WIFI
 static void wifi_menu_refresh_callback(retro_task_t *task,
       void *task_data,
-      void *user_data, const char *error)
+      void *user_data, const char *err)
 {
    struct menu_state *menu_st       = menu_state_get_ptr();
 
@@ -6713,7 +6713,7 @@ static int action_ok_netplay_connect_room(const char *path, const char *label,
 }
 
 static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data,
-      void *user_data, const char *error)
+      void *user_data, const char *err)
 {
    char *room_data              = NULL;
    const char *path             = NULL;
@@ -6735,9 +6735,9 @@ static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data,
          && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
       return;
 
-   if (error)
+   if (err)
    {
-      RARCH_ERR("[Netplay] %s: %s.\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), error);
+      RARCH_ERR("[Netplay] %s: %s.\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
       goto done;
    }
    if (!data || !data->data || !data->len || data->status != 200)

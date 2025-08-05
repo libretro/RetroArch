@@ -26,13 +26,13 @@ static wiiu_adapter_list adapters;
 /* Forward declarations */
 static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event);
 
-static void wiiu_hid_report_hid_error(const char *msg, wiiu_adapter_t *adapter, int32_t error)
+static void wiiu_hid_report_hid_error(const char *msg, wiiu_adapter_t *adapter, int32_t err)
 {
-   int16_t hid_error_code = error & 0xffff;
-   int16_t error_category = (error >> 16) & 0xffff;
-   const char *device     = string_is_empty(adapter->device_name) ? "unknown" : adapter->device_name;
+   int16_t hid_err_code = err & 0xffff;
+   int16_t err_category = (err >> 16) & 0xffff;
+   const char *device   = string_is_empty(adapter->device_name) ? "unknown" : adapter->device_name;
 
-   switch (hid_error_code)
+   switch (hid_err_code)
    {
       case -100:
          RARCH_ERR("[HID] Invalid RM command (%s).\n", device);
@@ -70,9 +70,9 @@ static void wiiu_hid_report_hid_error(const char *msg, wiiu_adapter_t *adapter, 
       default:
 #if 0
          RARCH_ERR("[HID] Unknown error (%d:%d: %s).\n",
-            error_category, hid_error_code, device);
+            err_category, hid_err_code, device);
 #else
-         (void)error_category;
+         (void)err_category;
          break;
 #endif
    }
@@ -340,7 +340,7 @@ static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list)
    }
 }
 
-static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
+static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t err,
               uint8_t *buffer, uint32_t buffer_size, void *userdata)
 {
    wiiu_adapter_t *adapter = (wiiu_adapter_t *)userdata;
@@ -350,14 +350,14 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
       return;
    }
 
-   if (error < 0)
-      wiiu_hid_report_hid_error("async read failed", adapter, error);
+   if (err < 0)
+      wiiu_hid_report_hid_error("async read failed", adapter, err);
 
    if (adapter->state == ADAPTER_STATE_READING)
    {
       adapter->state = ADAPTER_STATE_READY;
 
-      if (error == 0)
+      if (err == 0)
          adapter->pad_driver->packet_handler(adapter->pad_driver_data, buffer, buffer_size);
    }
 }

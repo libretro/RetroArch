@@ -181,7 +181,7 @@ bool d3d9x_compile_shader(
       const char *pprofile,
       unsigned flags,
       void *ppshader,
-      void *pperrormsgs,
+      void *pp_err_msgs,
       void *ppconstanttable);
 
 bool d3d9x_compile_shader_from_file(
@@ -192,7 +192,7 @@ bool d3d9x_compile_shader_from_file(
       const char *pprofile,
       unsigned flags,
       void *ppshader,
-      void *pperrormsgs,
+      void *pp_err_msgs,
       void *ppconstanttable);
 
 void d3d9x_constant_table_set_float_array(LPDIRECT3DDEVICE9 dev,

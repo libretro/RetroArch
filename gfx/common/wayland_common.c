@@ -748,7 +748,7 @@ bool gfx_ctx_wl_init_common(
    if (!wl->input.dpy)
    {
       RARCH_ERR("[Wayland] Failed to connect to Wayland server.\n");
-      goto error;
+      return false;
    }
 
    frontend_driver_install_signal_handler();
@@ -760,19 +760,19 @@ bool gfx_ctx_wl_init_common(
    if (!wl->compositor)
    {
       RARCH_ERR("[Wayland] Failed to create compositor.\n");
-      goto error;
+      return false;
    }
 
    if (!wl->shm)
    {
       RARCH_ERR("[Wayland] Failed to create shm.\n");
-      goto error;
+      return false;
    }
 
    if (!wl->xdg_shell)
    {
       RARCH_ERR("[Wayland] Failed to create shell.\n");
-      goto error;
+      return false;
    }
 
    if (!wl->idle_inhibit_manager)
@@ -856,7 +856,7 @@ bool gfx_ctx_wl_init_common(
       if (!wl->libdecor_frame)
       {
          RARCH_ERR("[Wayland] Failed to create libdecor frame.\n");
-         goto error;
+         return false;
       }
 
       if (wl->xdg_toplevel_icon_manager)
@@ -878,7 +878,7 @@ bool gfx_ctx_wl_init_common(
          if (wl->libdecor_dispatch(wl->libdecor_context, 0) < 0)
          {
             RARCH_ERR("[Wayland] libdecor failed to dispatch.\n");
-            goto error;
+            return false;
          }
       }
    }
@@ -964,9 +964,6 @@ bool gfx_ctx_wl_init_common(
    flush_wayland_fd(&wl->input);
 
    return true;
-
-error:
-   return false;
 }
 
 bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
@@ -1157,10 +1154,10 @@ static void xdg_surface_handle_configure(void *data,
 #endif
 
 #ifdef HAVE_LIBDECOR_H
-static void libdecor_handle_error(struct libdecor *context,
-      enum libdecor_error error, const char *message)
+static void libdecor_handle_err(struct libdecor *context,
+      enum libdecor_error err, const char *message)
 {
-   RARCH_ERR("[Wayland] libdecor Caught error (%d): %s.\n", error, message);
+   RARCH_ERR("[Wayland] libdecor Caught error (%d): %s.\n", err, message);
 }
 #endif
 
@@ -1170,6 +1167,6 @@ const struct wl_buffer_listener shm_buffer_listener = {
 
 #ifdef HAVE_LIBDECOR_H
 const struct libdecor_interface libdecor_interface = {
-   .error = libdecor_handle_error,
+   .error = libdecor_handle_err,
 };
 #endif

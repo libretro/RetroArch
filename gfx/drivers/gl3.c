@@ -2777,7 +2777,7 @@ static void *gl3_init(const video_info_t *video,
    const char *vendor                   = NULL;
    const char *renderer                 = NULL;
    const char *version                  = NULL;
-   char *error_string                   = NULL;
+   char *err_string                     = NULL;
    gl3_t *gl                            = (gl3_t*)calloc(1, sizeof(gl3_t));
    const gfx_ctx_driver_t *ctx_driver   = gl3_get_context(gl);
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
@@ -2957,10 +2957,10 @@ static void *gl3_init(const video_info_t *video,
    else
       gl->flags &= ~GL3_FLAG_PBO_READBACK_ENABLE;
 
-   if (!gl_check_error(&error_string))
+   if (!gl_check_error(&err_string))
    {
-      RARCH_ERR("[GLCore] %s\n", error_string);
-      free(error_string);
+      RARCH_ERR("[GLCore] %s\n", err_string);
+      free(err_string);
       goto error;
    }
 
