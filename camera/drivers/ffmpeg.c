@@ -15,20 +15,31 @@
 */
 
 #include <libretro.h>
+
+#include <memalign.h>
+#include <retro_common_api.h>
+#include <retro_assert.h>
+#include <rthreads/rthreads.h>
+#include <lists/string_list.h>
+#include <string/stdstring.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <libavdevice/avdevice.h>
-
-#include "../camera_driver.h"
-#include "lists/string_list.h"
-#include "verbosity.h"
-
-#include <configuration.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
-#include <memalign.h>
-#include <retro_assert.h>
-#include <rthreads/rthreads.h>
-#include <string/stdstring.h>
+
+#ifdef __cplusplus
+}
+#endif
+
+#include "../camera_driver.h"
+
+#include "../../configuration.h"
+#include "../../verbosity.h"
 
 #ifdef ANDROID
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "android_camera"

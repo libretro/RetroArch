@@ -664,16 +664,16 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          av_dict_set(&params->audio_opts, "audio_global_quality", "50", 0);
 
          /* TO-DO: detect if hwaccel is available and use it instead of the preset above
-         strlcpy(params->vcodec, "h264_nvenc", sizeof(params->vcodec));
-         strlcpy(params->acodec, "aac", sizeof(params->acodec));
+            strlcpy(params->vcodec, "h264_nvenc", sizeof(params->vcodec));
+            strlcpy(params->acodec, "aac", sizeof(params->acodec));
 
-         av_dict_set(&params->video_opts, "preset", "llhp", 0);
-         av_dict_set(&params->video_opts, "tune", "zerolatency", 0);
-         av_dict_set(&params->video_opts, "zerolatency", "1", 0);
-         av_dict_set(&params->video_opts, "-rc-lookahead", "0", 0);
-         av_dict_set(&params->video_opts, "x264-params", "threads=0:intra-refresh=1:b-frames=0", 0);
-         av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
-         */
+            av_dict_set(&params->video_opts, "preset", "llhp", 0);
+            av_dict_set(&params->video_opts, "tune", "zerolatency", 0);
+            av_dict_set(&params->video_opts, "zerolatency", "1", 0);
+            av_dict_set(&params->video_opts, "-rc-lookahead", "0", 0);
+            av_dict_set(&params->video_opts, "x264-params", "threads=0:intra-refresh=1:b-frames=0", 0);
+            av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
+            */
 
          break;
       default:
@@ -719,9 +719,9 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
             video_stream_scale_factor : 1;
       else
          params->scale_factor = 1;
-      if (  streaming_mode == STREAMING_MODE_YOUTUBE ||
-            streaming_mode == STREAMING_MODE_TWITCH ||
-            streaming_mode == STREAMING_MODE_FACEBOOK)
+      if (     streaming_mode == STREAMING_MODE_YOUTUBE
+            || streaming_mode == STREAMING_MODE_TWITCH
+            || streaming_mode == STREAMING_MODE_FACEBOOK)
          strlcpy(params->format, "flv", sizeof(params->format));
       else
          strlcpy(params->format, "mpegts", sizeof(params->format));
@@ -835,7 +835,7 @@ static bool ffmpeg_init_muxer_pre(ffmpeg_t *handle)
 #if !FFMPEG3
       ctx->oformat = av_guess_format(NULL, ctx->url, NULL);
 #else
-      ctx->oformat = av_guess_format(NULL, ctx->filename, NULL);
+   ctx->oformat = av_guess_format(NULL, ctx->filename, NULL);
 #endif
 
    if (!ctx->oformat)
@@ -857,8 +857,8 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
          handle->video.encoder);
 
    avcodec_parameters_from_context(stream->codecpar, handle->video.codec);
-   stream->time_base = handle->video.codec->time_base;
-   handle->muxer.vstream = stream;
+   stream->time_base                          = handle->video.codec->time_base;
+   handle->muxer.vstream                      = stream;
    handle->muxer.vstream->sample_aspect_ratio =
       handle->video.codec->sample_aspect_ratio;
 
@@ -867,7 +867,7 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
       stream = avformat_new_stream(handle->muxer.ctx,
             handle->audio.encoder);
       avcodec_parameters_from_context(stream->codecpar, handle->audio.codec);
-      stream->time_base = handle->audio.codec->time_base;
+      stream->time_base     = handle->audio.codec->time_base;
       handle->muxer.astream = stream;
    }
 
@@ -890,7 +890,7 @@ static bool init_thread(ffmpeg_t *handle)
          handle->params.channels * MAX_FRAMES / 60); /* Some arbitrary max size. */
    handle->attr_fifo  = fifo_new(sizeof(struct record_video_data) * MAX_FRAMES);
    handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
-            handle->video.pix_size * MAX_FRAMES);
+         handle->video.pix_size * MAX_FRAMES);
 
    handle->alive     = true;
    handle->can_sleep = true;
@@ -1042,8 +1042,8 @@ static void *ffmpeg_new(const struct record_params *params)
    if (!ffmpeg_init_video(handle))
       goto error;
 
-   if (handle->config.audio_enable &&
-         !ffmpeg_init_audio(handle,
+   if (  handle->config.audio_enable
+         && !ffmpeg_init_audio(handle,
             params->audio_resampler))
       goto error;
 
@@ -1181,12 +1181,10 @@ static bool ffmpeg_push_audio(void *data,
 
 static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
 {
-   AVPacket *pkt;
    int ret;
-
-   pkt = handle->pkt;
-   pkt->data = handle->video.outbuf;
-   pkt->size = (int)handle->video.outbuf_size;
+   AVPacket *pkt = handle->pkt;
+   pkt->data     = handle->video.outbuf;
+   pkt->size     = (int)handle->video.outbuf_size;
 
    ret = avcodec_send_frame(handle->video.codec, frame);
    if (ret < 0)
@@ -1215,12 +1213,12 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
       }
 
       pkt->pts = av_rescale_q(pkt->pts,
-         handle->video.codec->time_base,
-         handle->muxer.vstream->time_base);
+            handle->video.codec->time_base,
+            handle->muxer.vstream->time_base);
 
       pkt->dts = av_rescale_q(pkt->dts,
-         handle->video.codec->time_base,
-         handle->muxer.vstream->time_base);
+            handle->video.codec->time_base,
+            handle->muxer.vstream->time_base);
 
       pkt->stream_index = handle->muxer.vstream->index;
 
@@ -1340,17 +1338,15 @@ static void planarize_audio(ffmpeg_t *handle)
 
 static bool encode_audio(ffmpeg_t *handle, bool dry)
 {
-   AVFrame *frame;
-   AVPacket *pkt;
-   int samples_size;
    int ret;
+   AVFrame *frame;
+   int samples_size;
+   AVPacket *pkt = handle->pkt;
 
-   pkt = handle->pkt;
+   pkt->data     = handle->audio.outbuf;
+   pkt->size     = (int)handle->audio.outbuf_size;
 
-   pkt->data = handle->audio.outbuf;
-   pkt->size = (int)handle->audio.outbuf_size;
-
-   frame    = av_frame_alloc();
+   frame         = av_frame_alloc();
 
    if (!frame)
       return false;
@@ -1416,12 +1412,12 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
       }
 
       pkt->pts = av_rescale_q(pkt->pts,
-         handle->audio.codec->time_base,
-         handle->muxer.astream->time_base);
+            handle->audio.codec->time_base,
+            handle->muxer.astream->time_base);
 
       pkt->dts = av_rescale_q(pkt->dts,
-         handle->audio.codec->time_base,
-         handle->muxer.astream->time_base);
+            handle->audio.codec->time_base,
+            handle->muxer.astream->time_base);
 
       pkt->stream_index = handle->muxer.astream->index;
 
@@ -1573,12 +1569,6 @@ static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
    }
 
    encode_audio(handle, true);
-   }
-
-static void ffmpeg_flush_video(ffmpeg_t *handle)
-{
-   encode_video(handle, NULL);
-
 }
 
 static void ffmpeg_flush_buffers(ffmpeg_t *handle)
@@ -1634,7 +1624,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
       ffmpeg_flush_audio(handle, audio_buf, audio_buf_size);
 
    /* Flush out last video. */
-   ffmpeg_flush_video(handle);
+   encode_video(handle, NULL);
 
    av_free(video_buf);
    av_free(audio_buf);
