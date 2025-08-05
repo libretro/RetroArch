@@ -33,6 +33,7 @@
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
 #include <lists/string_list.h>
+#include <string/stdstring.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -78,16 +79,93 @@ static void al_free(void *data)
    free(al);
 }
 
+static void *al_list_new(void *u)
+{
+   union string_list_elem_attr attr;
+   const char *audio_out_device_list;
+   struct string_list *sl = string_list_new();
+
+   if (!sl)
+      return NULL;
+
+   attr.i = 0;
+
+   if (alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT"))
+      audio_out_device_list = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+   else
+      audio_out_device_list = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+
+   if (audio_out_device_list)
+   {
+      while (*audio_out_device_list)
+      {
+         string_list_append(sl, audio_out_device_list, attr);
+         audio_out_device_list += strlen(audio_out_device_list) + 1;
+      }
+   }
+
+   return sl;
+}
+
+
 static void *al_init(const char *device, unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
 {
    size_t _latency;
-   al_t *al = (al_t*)calloc(1, sizeof(al_t));
+   char *dev_id = NULL;
+   al_t *al     = (al_t*)calloc(1, sizeof(al_t));
    if (!al)
       return NULL;
 
-   al->handle = alcOpenDevice(NULL);
+   if (device)
+   {
+      struct string_list *list = (struct string_list*)al_list_new(NULL);
+
+       /* Search for device name first */
+      if (list && list->elems)
+      {
+         int32_t idx_found = -1;
+         if (list->elems)
+         {
+            size_t i;
+            for (i = 0; i < list->size; i++)
+            {
+               if (string_is_equal(device, list->elems[i].data))
+               {
+                  RARCH_DBG("[DirectSound] Found device #%d: \"%s\".\n", i, list->elems[i].data);
+                  idx_found = i;
+                  dev_id    = strdup(list->elems[i].data);
+                  break;
+               }
+            }
+            /* Index was not found yet based on name string,
+             * just assume id is a one-character number index. */
+
+            if (idx_found == -1 && isdigit(device[0]))
+            {
+               idx_found = strtoul(device, NULL, 0);
+               RARCH_LOG("[DirectSound] Fallback, device index is a single number index instead: %d.\n", idx_found);
+
+               if (idx_found != -1)
+               {
+                  if (idx_found < (int32_t)list->size)
+                  {
+                     RARCH_LOG("[DirectSound] Corresponding name: %s.\n", list->elems[idx_found].data);
+                     dev_id    = strdup(list->elems[idx_found].data);
+                  }
+               }
+            }
+         }
+      }
+
+      string_list_free(list);
+   }
+
+   al->handle = alcOpenDevice(dev_id);
+   if (dev_id)
+      free(dev_id);
+   dev_id = NULL;
    if (!al->handle)
       goto error;
 
@@ -251,34 +329,6 @@ static bool al_use_float(void *data)
    if (al->format == AL_FORMAT_STEREO16)
       return false;
    return true;
-}
-
-static void *al_list_new(void *u)
-{
-   union string_list_elem_attr attr;
-   const char *audio_out_device_list;
-   struct string_list *sl = string_list_new();
-
-   if (!sl)
-      return NULL;
-
-   attr.i = 0;
-
-   if (alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT"))
-      audio_out_device_list = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
-   else
-      audio_out_device_list = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
-
-   if (audio_out_device_list)
-   {
-      while (*audio_out_device_list)
-      {
-         string_list_append(sl, audio_out_device_list, attr);
-         audio_out_device_list += strlen(audio_out_device_list) + 1;
-      }
-   }
-
-   return sl;
 }
 
 static void al_device_list_free(void *u, void *slp)
