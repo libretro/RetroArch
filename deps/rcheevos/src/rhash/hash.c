@@ -1296,7 +1296,7 @@ static void rc_hash_initialize_iterator_from_path(rc_hash_iterator_t* iterator, 
   }
 
   /* find the handler for the extension */
-  handler = bsearch(&search, handlers, num_handlers, sizeof(*handler), rc_hash_iterator_find_handler);
+  handler = (const rc_hash_iterator_ext_handler_entry_t*)bsearch(&search, handlers, num_handlers, sizeof(*handler), rc_hash_iterator_find_handler);
   if (handler) {
     handler->handler(iterator, handler->data);
   } else {

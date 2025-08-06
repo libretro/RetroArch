@@ -36,7 +36,7 @@ rc_runtime_t* rc_runtime_alloc(void) {
   rc_runtime_event_handler_t unused = &rc_runtime_natvis_helper;
   (void)unused;
 
-  self = malloc(sizeof(rc_runtime_t));
+  self = (rc_runtime_t*)malloc(sizeof(rc_runtime_t));
 
   if (self) {
     rc_runtime_init(self);
@@ -797,7 +797,7 @@ void rc_runtime_invalidate_address(rc_runtime_t* self, uint32_t address) {
   } while (memref_list);
 }
 
-void rc_runtime_validate_addresses(rc_runtime_t* self, rc_runtime_event_handler_t event_handler, 
+void rc_runtime_validate_addresses(rc_runtime_t* self, rc_runtime_event_handler_t event_handler,
     rc_runtime_validate_address_t validate_handler) {
   int num_invalid = 0;
   rc_memref_list_t* memref_list = &self->memrefs->memrefs;
