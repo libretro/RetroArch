@@ -2125,6 +2125,11 @@ static core_info_list_t *core_info_list_new(const char *path,
          config_file_free(conf);
       }
 
+      /* Start with 'full' savestate support when info is missing */
+      if (!conf)
+         info->savestate_support_level =
+               CORE_INFO_SAVESTATE_DETERMINISTIC;
+
       /* Get fallback display name, if required */
       if (!info->display_name)
          info->display_name = strdup(core_filename);
