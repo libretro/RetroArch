@@ -841,7 +841,7 @@ config_file_t *config_file_new_from_path_to_string(const char *path)
 {
    if (path_is_valid(path))
    {
-	   uint8_t *ret_buf                 = NULL;
+      uint8_t *ret_buf                 = NULL;
       int64_t length                   = 0;
       if (filestream_read_file(path, (void**)&ret_buf, &length))
       {
