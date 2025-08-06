@@ -366,6 +366,7 @@ static void gfx_widget_screenshot_iterate(
    /* Load screenshot and start its animation */
    if (state->filename[0] != '\0')
    {
+      video_driver_state_t *video_st = video_state_get_ptr();
       gfx_timer_ctx_entry_t timer;
 
       video_driver_texture_unload(&state->texture);
@@ -397,17 +398,12 @@ static void gfx_widget_screenshot_iterate(
       state->thumbnail_height = state->texture_height * state->scale_factor;
 
       /* Set image aspect ratio according to core geometry */
-      if (state->state_slot)
+      if (video_st && video_st->av_info.geometry.aspect_ratio > 0)
       {
-         video_driver_state_t *video_st = video_state_get_ptr();
+         float thumbnail_aspect = (float)state->texture_width / (float)state->texture_height;
+         float core_aspect      = video_st->av_info.geometry.aspect_ratio;
 
-         if (video_st && video_st->av_info.geometry.aspect_ratio > 0)
-         {
-            float thumbnail_aspect = (float)state->texture_width / (float)state->texture_height;
-            float core_aspect      = video_st->av_info.geometry.aspect_ratio;
-
-            state->thumbnail_width = state->thumbnail_width / (thumbnail_aspect / core_aspect);
-         }
+         state->thumbnail_width = state->thumbnail_width / (thumbnail_aspect / core_aspect);
       }
 
       state->shotname_length  = (width - state->thumbnail_width - padding*2) / font_regular->glyph_width;
