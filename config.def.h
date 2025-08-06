@@ -590,7 +590,7 @@
  * controller is connected in port 1 */
 #define DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED false
 
-#define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR true
+#define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR false
 
 #define DEFAULT_DISPLAY_KEYBOARD_OVERLAY false
 
