@@ -150,7 +150,7 @@ struct retro_microphone
     *
     * @see microphone_state_flags
     */
-   enum microphone_state_flags flags;
+   int flags;
 
    /**
     * Samples that will be sent to the core.
@@ -525,7 +525,7 @@ typedef struct microphone_driver_state
     */
    retro_microphone_t microphone;
 
-   enum microphone_driver_state_flags flags;
+   int flags;
 
    enum resampler_quality resampler_quality;
 
