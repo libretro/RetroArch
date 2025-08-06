@@ -3824,7 +3824,6 @@ static int menu_displaylist_parse_load_content_settings(
          }
          else
          {
-            recording_state_t *recording_st = recording_state_get_ptr();
             if (recording_st->streaming_enable)
             {
                if (menu_entries_append(list,
