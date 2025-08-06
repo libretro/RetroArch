@@ -30,6 +30,10 @@
 
 #include "disk_control_interface.h"
 
+#ifdef HAVE_GFX_WIDGETS
+#include "gfx/gfx_widgets.h"
+#endif
+
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
 #endif
@@ -369,7 +373,7 @@ bool disk_control_set_eject_state(
       /* Errors should always be displayed */
       if (verbosity || err)
          runloop_msg_queue_push(
-               msg, _len, 1, err ? 180 : 60, true, NULL,
+               msg, _len, 2, err ? 180 : 60, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT,
                err ? MESSAGE_QUEUE_CATEGORY_ERROR : MESSAGE_QUEUE_CATEGORY_INFO);
    }
@@ -442,10 +446,16 @@ bool disk_control_set_index(
          RARCH_LOG("[Disc] %s\n", msg);
 
       /* Errors should always be displayed */
-      if (verbosity || err)
-         runloop_msg_queue_push(msg, _len, 1, msg_duration, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT,
-               err ? MESSAGE_QUEUE_CATEGORY_ERROR : MESSAGE_QUEUE_CATEGORY_INFO);
+      if (verbosity)
+#ifdef HAVE_GFX_WIDGETS
+         gfx_widget_set_generic_message(msg, msg_duration * 10);
+#else
+         runloop_msg_queue_push(msg, _len, 2, msg_duration, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#endif
+      else if (err)
+         runloop_msg_queue_push(msg, _len, 2, msg_duration, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    }
 
    /* If operation was successful, update disk
@@ -661,8 +671,8 @@ error:
    msg[++_len] = '\0';
    _len += strlcpy(msg + _len, image_filename, sizeof(msg) - _len);
 
-   runloop_msg_queue_push(msg, _len, 0, 180, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 2, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
 
    return false;
 }
