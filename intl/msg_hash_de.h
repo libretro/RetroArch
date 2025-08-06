@@ -13575,15 +13575,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
-   "Laden fehlgeschlagen"
+   "Laden fehlgeschlagen."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
-   "Laden des Inhalts fehlgeschlagen"
+   "Laden des Inhalts fehlgeschlagen."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Laden der Filmdatei fehlgeschlagen"
+   "Laden der Filmdatei fehlgeschlagen."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,

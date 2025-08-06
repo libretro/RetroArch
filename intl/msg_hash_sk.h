@@ -6378,14 +6378,6 @@ MSG_HASH(
    "Extrahujem"
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Načítanie zlyhalo"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "Obsah sa nepodarilo načítať"
-   )
-MSG_HASH(
    MSG_FILE_NOT_FOUND,
    "Súbor nenájdený"
    )

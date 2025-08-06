@@ -12418,18 +12418,6 @@ MSG_HASH(
    "Nimimerkin saaminen asiakkaalta epäonnistui."
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Lataaminen epäonnistui"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "Sisällön lataaminen epäonnistui"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Elokuvatiedoston lataaminen epäonnistui"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Päällyksen lataaminen epäonnistui."
    )

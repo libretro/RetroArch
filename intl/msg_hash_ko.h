@@ -14014,18 +14014,6 @@ MSG_HASH(
    "클라이언트에서 별칭 얻어오기 실패."
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "불러오기 실패"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "콘텐츠 불러오기 실패"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "동영상 파일 불러오기 실패"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "오버레이 불러오기 실패."
    )

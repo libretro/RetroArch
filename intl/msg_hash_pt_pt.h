@@ -5398,18 +5398,6 @@ MSG_HASH(
    "Falha ao obter a alcunha do cliente."
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Falha ao carregar"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "Falha ao carregar o conteúdo"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Falha ao carregar o ficheiro de vídeo"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Falha ao carregar a sobreposição."
    )

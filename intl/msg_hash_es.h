@@ -13911,11 +13911,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
-   "Error al cargar"
+   "Error al cargar."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
-   "Error al cargar contenido"
+   "Error al cargar contenido."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,

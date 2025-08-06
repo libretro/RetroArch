@@ -13366,18 +13366,6 @@ MSG_HASH(
    "無法從用戶端取得暱稱。"
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "無法載入"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "無法載入檔案"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "無法載入操作重播"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "無法載入覆蓋元件。"
    )

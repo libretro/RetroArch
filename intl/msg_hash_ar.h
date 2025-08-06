@@ -8514,18 +8514,6 @@ MSG_HASH(
    "فشل في الحصول على الاسم المستعار من العميل."
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "فشل التحميل"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "فشل تحميل المحتوى"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "فشل تحميل ملف الفيلم"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "فشل في تحميل التراكب."
    )

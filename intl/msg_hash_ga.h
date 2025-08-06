@@ -13986,18 +13986,6 @@ MSG_HASH(
    "Theip ar an leasainm a fháil ón gcliant."
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Theip ar an luchtú"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "Theip ar an ábhar a lódáil"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Theip ar an gcomhad scannáin a luchtú"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Theip ar an forleagan a lódáil."
    )

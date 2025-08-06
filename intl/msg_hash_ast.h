@@ -4010,10 +4010,6 @@ MSG_HASH(
    "Hebo un error al estrayer el conteníu del ficheru comprimíu"
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Hebo un error al cargar"
-   )
-MSG_HASH(
    MSG_FAILED_TO_UNMUTE_AUDIO,
    "Hebo un error al activar l'audiu."
    )

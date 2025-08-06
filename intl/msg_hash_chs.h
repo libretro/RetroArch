@@ -13322,18 +13322,6 @@ MSG_HASH(
    "从客户端获取昵称失败。"
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "无法加载"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "加载游戏失败"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "载入视频文件失败"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "加载遮罩失败："
    )

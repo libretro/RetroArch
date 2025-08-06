@@ -13254,18 +13254,6 @@ MSG_HASH(
    "クライアントのニックネームの取得に失敗しました。"
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "ロードに失敗しました"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "コンテンツのロードに失敗しました"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "動画ファイルのロードに失敗しました"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "オーバーレイのロードに失敗しました。"
    )

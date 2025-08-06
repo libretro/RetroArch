@@ -13819,15 +13819,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
-   "No s’ha pogut carregar"
+   "Error en carregar."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
-   "No s’ha pogut carregar el contingut"
+   "Error en carregar contingut."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "No s’ha pogut carregar el fitxer de pel·lícula"
+   "Error en carregar el fitxer de vídeo."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,

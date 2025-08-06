@@ -14006,18 +14006,6 @@ MSG_HASH(
    "Не вдалося отримати псевдонім від клієнта."
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Не вдалося завантажити"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "Не вдалося завантажити вміст"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Не вдалося завантажити відеофайл"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Не вдалося завантажити накладку."
    )

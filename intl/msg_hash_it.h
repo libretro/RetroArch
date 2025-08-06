@@ -13711,15 +13711,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
-   "Caricamento fallito"
+   "Impossibile caricare."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
-   "Impossibile caricare il contenuto"
+   "Impossibile caricare il contenuto."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Impossibile caricare il file del filmato"
+   "Impossibile caricare il file film."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,

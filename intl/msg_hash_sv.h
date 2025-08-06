@@ -12994,18 +12994,6 @@ MSG_HASH(
    "Misslyckades med att få smeknamn från klient."
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Misslyckades att läsa in"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "Misslyckades att läsa in innehåll"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Misslyckades med att läsa filmfilen"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Misslyckades med att läsa in överlägg."
    )

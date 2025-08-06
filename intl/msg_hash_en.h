@@ -2026,10 +2026,6 @@ MSG_HASH(
    "Failed saving configuration to"
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Failed to load film file"
-   )
-MSG_HASH(
    MSG_FAILED_TO_START_MOVIE_RECORD,
    "Failed to start film record."
    )

@@ -14003,15 +14003,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
-   "Yükleme başarısız"
+   "Yükleme başarısız."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
-   "İçerik yükleme başarısız"
+   "İçerik yükleme başarısız."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Film dosyası yüklenemedi"
+   "Film dosyası yüklenemedi."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,

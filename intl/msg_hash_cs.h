@@ -13530,18 +13530,6 @@ MSG_HASH(
    "Nepodařilo se získat přezdívku od klienta."
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Nepodařilo se načíst"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "Nepodařilo se načíst obsah"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Nahrání souboru filmu se nezdařilo"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Nepodařilo se načíst překrytí."
    )

@@ -13774,18 +13774,6 @@ MSG_HASH(
    "Produciuse un erro ao obter o apelido do cliente."
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Erro ao cargar"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "Produciuse un erro ao cargar o contido"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Produciuse un erro ao cargar o ficheiro de película"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Produciuse un erro ao cargar a superposición."
    )

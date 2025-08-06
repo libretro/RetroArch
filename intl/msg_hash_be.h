@@ -13714,18 +13714,6 @@ MSG_HASH(
    "Не ўдалося атрымаць ад кліента мянушку."
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Не атрымалася загрузіць"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "Не атрымалася загрузіць змесціва"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Не атрымалася загрузіць файл запісу"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Не атрымалася загрузіць накладку."
    )

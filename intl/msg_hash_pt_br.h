@@ -3886,7 +3886,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
-   "Cheats (Alternar)"
+   "Trapaças (Alternar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
@@ -5755,11 +5755,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Notificações do Códigos de Cheats"
+   "Notificações do Códigos de Trapaças"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Exibir uma mensagem na tela quando códigos de cheat forem aplicados."
+   "Exibe uma mensagem na tela quando códigos de trapaça são aplicados."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
@@ -6684,7 +6684,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-   "Mostrar 'Cheats'"
+   "Mostrar 'Trapaças'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
@@ -7134,7 +7134,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Desativa cheats, retroceder, câmera lenta e carregamento de pontos de save. Conquistas obtidas no modo hardcore são marcadas de forma única para que você possa mostrar aos outros o que alcançou sem recursos auxiliares do emulador. Alterar essa configuração em tempo de execução reiniciará o jogo."
+   "Desativa trapaças, retroceder, câmera lenta e carregamento de pontos de save. Conquistas obtidas no modo hardcore são marcadas de forma única para que você possa mostrar aos outros o que alcançou sem recursos auxiliares do emulador. Alterar essa configuração em tempo de execução reiniciará o jogo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -9160,6 +9160,10 @@ MSG_HASH(
    "Altere os controles do conteúdo."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
+   "Trapaças"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
    "Configura os códigos de trapaça."
    )
@@ -9393,7 +9397,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
-   "Escanear a memória para criar novos cheats."
+   "Escanear a memória para criar novas trapaças."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
@@ -9401,7 +9405,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-   "Carregar um arquivo de cheats e substituir os cheats existentes."
+   "Carrega um arquivo de trapaça e substitui as trapaças existentes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
@@ -9409,11 +9413,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
-   "Carregar um arquivo de cheats e adicionar aos cheats existentes."
+   "Carrega um arquivo de trapaça e anexa nas trapaças existentes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
-   "Recarregar Cheats Específicos do Jogo"
+   "Recarregar Trapaças Específicas do Jogo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
@@ -9421,7 +9425,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
-   "Salvar cheats atuais como um arquivo de cheats."
+   "Salvar as trapaças atuais como um arquivo de trapaça."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
@@ -9433,15 +9437,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
-   "Excluir Todos os Cheats"
+   "Excluir Todas as Trapaças"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
-   "Aplicar Cheats Automaticamente Durante o Carregamento do Jogo"
+   "Aplicar Trapaças Automaticamente Durante o Carregamento do Jogo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
-   "Aplica cheats automaticamente ao carregar o jogo."
+   "Aplica trapaças automaticamente ao carregar o jogo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
@@ -10108,7 +10112,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Pausa o modo hardcore de conquistas para a sessão atual. Esta ação ativará cheats, retroceder, câmera lenta e carregamento de pontos de save."
+   "Pausar conquistas do modo hardcore para a sessão atual. Essa ação ativará trapaças, rebobinar, câmera lenta e o carregamento de pontos de save."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
@@ -10116,7 +10120,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Inicia conquistas no modo hardcore para a sessão atual. Esta ação permitirá trapaças, rebobinar, câmera lenta e carregar estados de salvamento."
+   "Iniciar conquistas do modo hardcore para a sessão atual. Esta ação permitirá trapaças, rebobinar, câmera lenta e carregar pontos de save."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
@@ -12977,7 +12981,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
-   "Aumente ou diminua a quantidade de cheats."
+   "Aumentar ou diminuir a quantidade de trapaças."
    )
 
 /* Unused (Needs Confirmation) */
@@ -13186,7 +13190,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
-   "Pressione para a direita cinco vezes para excluir todos os cheats."
+   "Pressione para a direita cinco vezes para excluir todos as trapaças."
    )
 MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
@@ -13823,15 +13827,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD,
-   "Falha em carregar"
+   "Falha aí carregar."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
-   "Houve um erro ao carregar o conteúdo"
+   "Falha ao carregar o conteúdo."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Falha ao carregar o arquivo da gravação"
+   "Falha ao carregar o arquivo da gravação."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
@@ -14703,11 +14707,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "Busca por cheats iniciada com sucesso."
+   "Busca por trapaças iniciada com sucesso."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
-   "Falha ao iniciar a busca por cheats."
+   "Falha ao iniciar a busca por trapaças."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_NOT_INITIALIZED,
@@ -14739,7 +14743,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
-   "Espaço insuficiente. O número máximo de cheats simultâneos é 100."
+   "Espaço insuficiente. O número máximo de trapaças simultâneas é 100."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_TOP_SUCCESS,
@@ -14751,7 +14755,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
-   "Todos os cheats foram excluídos."
+   "Todas as trapaças foram excluídas."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_BEFORE_SUCCESS,

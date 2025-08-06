@@ -13658,18 +13658,6 @@ MSG_HASH(
    "Becenév fogadása a klienstől sikertelen."
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Nem sikerült betölteni"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "Nem sikerült betölteni a tartalmat"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Nem sikerült betölteni a bemenet-újrajátszás fájlt"
-   )
-MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Képernyőrátét betöltése sikertelen."
    )
