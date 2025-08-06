@@ -5192,8 +5192,7 @@ const char *input_config_get_prefix(unsigned user, bool meta)
  */
 static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
 {
-   unsigned i = 0;
-
+   size_t i = 0;
    for (i = 0; input_config_bind_map_get_valid(i); i++)
    {
       char key[64];
@@ -5236,7 +5235,7 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
       unsigned user, unsigned bind_id,
       const struct retro_keybind *override_bind)
 {
-   unsigned i = bind_id;
+   size_t i = bind_id;
 
    if (input_config_bind_map_get_valid(i))
    {
@@ -6613,7 +6612,7 @@ uint8_t input_config_bind_map_get_retro_key(unsigned bind_index)
 
 void input_config_reset_autoconfig_binds(unsigned port)
 {
-   unsigned i;
+   size_t i;
 
    if (port >= MAX_USERS)
       return;
@@ -6639,7 +6638,7 @@ void input_config_reset_autoconfig_binds(unsigned port)
 
 void input_config_set_autoconfig_binds(unsigned port, void *data)
 {
-   unsigned i;
+   size_t i;
    config_file_t *config       = (config_file_t*)data;
    struct retro_keybind *binds = NULL;
 
@@ -6737,8 +6736,8 @@ void input_config_parse_joy_axis(
       void *conf_data, const char *prefix,
       const char *axis, void *bind_data)
 {
-   char       tmp[64];
-   char       key[64];
+   char tmp[64];
+   char key[64];
    config_file_t *conf                     = (config_file_t*)conf_data;
    struct retro_keybind *bind              = (struct retro_keybind*)bind_data;
    struct config_entry_list *tmp_a         = NULL;
@@ -6833,8 +6832,7 @@ void input_config_parse_joy_button(
 
    tmp[0]                                  = '\0';
 
-   fill_pathname_join_delim(key, s,
-         "btn", '_', sizeof(key));
+   fill_pathname_join_delim(key, s, "btn", '_', sizeof(key));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {

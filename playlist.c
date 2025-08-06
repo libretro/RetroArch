@@ -2578,7 +2578,6 @@ static size_t playlist_get_old_format_metadata_value(
 
 static bool playlist_read_file(playlist_t *playlist)
 {
-   unsigned i;
    int test_char;
    bool res             = true;
 #if defined(HAVE_ZLIB)
@@ -2673,6 +2672,7 @@ static bool playlist_read_file(playlist_t *playlist)
    }
    else
    {
+      size_t i;
       size_t _len = RBUF_LEN(playlist->entries);
       char line_buf[PLAYLIST_ENTRIES][PATH_MAX_LENGTH] = {{0}};
 
@@ -2914,7 +2914,7 @@ bool playlist_init_cached(const playlist_config_t *config)
  **/
 playlist_t *playlist_init(const playlist_config_t *config)
 {
-   playlist_t           *playlist   = (playlist_t*)malloc(sizeof(*playlist));
+   playlist_t *playlist = (playlist_t*)malloc(sizeof(*playlist));
    if (!playlist)
       return NULL;
 
@@ -3116,7 +3116,6 @@ static int playlist_qsort_func(const struct playlist_entry *a,
    ret = strcasecmp(a_str, b_str);
 
 end:
-
    a_str = NULL;
    b_str = NULL;
 

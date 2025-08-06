@@ -576,8 +576,7 @@ midi_driver_t *midi_drivers[]   = {
 
 static midi_driver_t *midi_driver_find_driver(const char *ident)
 {
-   unsigned i;
-
+   size_t i;
    for (i = 0; i < ARRAY_SIZE(midi_drivers); ++i)
    {
       if (string_is_equal(midi_drivers[i]->ident, ident))
@@ -1230,7 +1229,7 @@ static size_t find_driver_nonempty(
 
 int driver_find_index(const char *label, const char *drv)
 {
-   unsigned i;
+   size_t i;
    char str[NAME_MAX_LENGTH];
 
    str[0] = '\0';
@@ -1257,16 +1256,13 @@ int driver_find_index(const char *label, const char *drv)
  **/
 static void driver_find_last(const char *label, char *s, size_t len)
 {
-   unsigned i;
-
+   size_t i;
    for (i = 0;
          find_driver_nonempty(label, i, s, len) > 0; i++) { }
-
    if (i)
       i = i - 1;
    else
       i = 0;
-
    find_driver_nonempty(label, i, s, len);
 }
 
@@ -5228,8 +5224,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_RUMBLE_STOP:
          {
-            unsigned i;
-
+            size_t i;
             for (i = 0; i < MAX_USERS; i++)
             {
                unsigned joy_idx = settings->uints.input_joypad_index[i];
@@ -5722,12 +5717,12 @@ void retroarch_override_setting_unset(
 
 static void retroarch_override_setting_free_state(void)
 {
-   unsigned i;
+   size_t i;
    for (i = 0; i < RARCH_OVERRIDE_SETTING_LAST; i++)
    {
       if (i == RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE)
       {
-         unsigned j;
+         size_t j;
          for (j = 0; j < MAX_USERS; j++)
             retroarch_override_setting_unset(
                   RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &j);
@@ -6174,7 +6169,7 @@ const struct retro_subsystem_info *libretro_find_subsystem_info(
       const struct retro_subsystem_info *info, unsigned num_info,
       const char *ident)
 {
-   unsigned i;
+   size_t i;
    for (i = 0; i < num_info; i++)
    {
       if (     string_is_equal(info[i].ident, ident)
@@ -6203,16 +6198,12 @@ const struct retro_controller_description *
 libretro_find_controller_description(
       const struct retro_controller_info *info, unsigned id)
 {
-   unsigned i;
-
+   size_t i;
    for (i = 0; i < info->num_types; i++)
    {
-      if (info->types[i].id != id)
-         continue;
-
-      return &info->types[i];
+      if (info->types[i].id == id)
+         return &info->types[i];
    }
-
    return NULL;
 }
 
@@ -8667,7 +8658,7 @@ bool retroarch_main_quit(void)
 
 enum retro_language retroarch_get_language_from_iso(const char *iso639)
 {
-   unsigned i;
+   size_t i;
    enum retro_language lang = RETRO_LANGUAGE_ENGLISH;
 
    struct lang_pair

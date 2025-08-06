@@ -504,7 +504,7 @@ char *bin_to_hex_alloc(const uint8_t *data, size_t len)
 static int database_cursor_iterate(libretrodb_cursor_t *cur,
       database_info_t *db_info)
 {
-   unsigned i;
+   size_t i;
    struct rmsgpack_dom_value item;
    const char* str                = NULL;
 

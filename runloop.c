@@ -2747,7 +2747,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO:
       {
-         unsigned i;
+         size_t i;
          const struct retro_subsystem_info *info =
                (const struct retro_subsystem_info*)data;
          unsigned log_level   = settings->uints.libretro_log_level;
@@ -2801,7 +2801,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO:
       {
-         unsigned i, j;
+         size_t i, j;
          const struct retro_controller_info *info
                                  = (const struct retro_controller_info*)data;
          unsigned log_level      = settings->uints.libretro_log_level;
@@ -2846,7 +2846,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       {
          if (sys_info)
          {
-            unsigned i;
+            size_t i;
             const struct retro_memory_map *mmaps   =
                   (const struct retro_memory_map*)data;
             rarch_memory_descriptor_t *descriptors = NULL;
@@ -4133,7 +4133,7 @@ void runloop_event_deinit_core(void)
 
 static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
 {
-   unsigned i, j;
+   size_t i, j;
    const struct retro_subsystem_info *info = NULL;
    rarch_system_info_t           *sys_info = &runloop_st->system;
    bool subsystem_path_empty               = path_is_empty(RARCH_PATH_SUBSYSTEM);
@@ -8288,7 +8288,7 @@ void runloop_path_deinit_subsystem(void)
 
 void runloop_path_set_special(char **argv, unsigned num_content)
 {
-   unsigned i;
+   size_t i;
    char str[PATH_MAX_LENGTH];
    union string_list_elem_attr attr;
    bool is_dir                         = false;

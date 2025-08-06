@@ -1396,7 +1396,7 @@ static void content_load_init_wrap(
 static bool content_load(content_ctx_info_t *info,
       content_state_t *p_content)
 {
-   unsigned i;
+   size_t i;
    bool success                      = false;
    int rarch_argc                    = 0;
    char *rarch_argv[MAX_ARGS]        = {NULL};
@@ -2777,7 +2777,7 @@ uint8_t content_get_flags(void)
 /* Clears the pending subsystem rom buffer*/
 void content_clear_subsystem(void)
 {
-   unsigned i;
+   size_t i;
    content_state_t  *p_content          = content_state_get_ptr();
 
    p_content->pending_subsystem_rom_id  = 0;
@@ -2828,7 +2828,7 @@ void content_set_subsystem(unsigned idx)
 /* Sets the subsystem by name */
 bool content_set_subsystem_by_name(const char* subsystem_name)
 {
-   unsigned i;
+   size_t i;
    runloop_state_t         *runloop_st = runloop_state_get_ptr();
    rarch_system_info_t       *sys_info = &runloop_st->system;
    /* Core not loaded completely, use the data we peeked on load core */
@@ -2853,7 +2853,7 @@ bool content_set_subsystem_by_name(const char* subsystem_name)
 
 size_t content_get_subsystem_friendly_name(const char* subsystem_name, char *s, size_t len)
 {
-   unsigned i;
+   size_t i;
    runloop_state_t *runloop_st                  = runloop_state_get_ptr();
    rarch_system_info_t                *sys_info = &runloop_st->system;
    /* Core not loaded completely, use the data we peeked on load core */
@@ -2918,7 +2918,7 @@ void content_unset_does_not_need_content(void)
  */
 static uint32_t file_crc32(uint32_t crc, const char *path)
 {
-   unsigned i;
+   size_t i;
    RFILE *file        = NULL;
    unsigned char *buf = NULL;
    if (!path)

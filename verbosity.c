@@ -333,7 +333,8 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 
 void RARCH_LOG_BUFFER(uint8_t *data, size_t len)
 {
-   unsigned i, offset;
+   size_t i;
+   size_t offset;
    int padding     = len % 16;
    uint8_t buf[16] = {0};
 

@@ -765,7 +765,7 @@ static void runahead_input_state_set_last(
       unsigned port, unsigned device,
       unsigned index, unsigned id, int16_t value)
 {
-   unsigned i;
+   size_t i;
    input_list_element *element = NULL;
 
    if (!runloop_st->input_state_list)
