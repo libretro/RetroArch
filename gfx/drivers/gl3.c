@@ -123,6 +123,9 @@ typedef struct gl3
       const float *vertex_ptr;
       bool active;
       bool mipmap_active;
+      bool fp_fbo_supported;
+      bool srgb_fbo_supported;
+      bool force_srgb_disable;
    } chain;
 
 #ifdef HAVE_SLANG
@@ -2342,6 +2345,8 @@ static void gl3_create_fbo_texture(gl3_t *gl,
    GLint mag_filter;
    GLint min_filter;
    bool smooth;
+   bool fp_fbo = false;
+   bool srgb_fbo = false;
 
    if (!gl->chain.shader->filter_type(gl->chain.shader_data, pass + 2, &smooth))
       smooth = gl->video_info.smooth;
@@ -2352,11 +2357,40 @@ static void gl3_create_fbo_texture(gl3_t *gl,
       : mag_filter;
 
    glBindTexture(GL_TEXTURE_2D, texture);
+
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gl->chain.fbo_rect[pass].width, gl->chain.fbo_rect[pass].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+   fp_fbo = gl->chain.fbo_scale[pass].flags & FBO_SCALE_FLAG_FP_FBO;
+   if (fp_fbo && !gl->chain.fp_fbo_supported)
+   {
+      RARCH_ERR("[GLCore] Floating-point FBO was requested, but is not supported. Falling back to UNORM. Result may band/clip/etc.!\n");
+      fp_fbo = false;
+   }
+   if (fp_fbo)
+   {
+      RARCH_LOG("[GLCore] FBO pass #%d is floating-point.\n", pass);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, gl->chain.fbo_rect[pass].width, gl->chain.fbo_rect[pass].height, 0, GL_RGBA, GL_FLOAT, NULL);
+   }
+   else
+   {
+      srgb_fbo = gl->chain.fbo_scale[pass].flags & FBO_SCALE_FLAG_SRGB_FBO;
+      if (srgb_fbo && !gl->chain.srgb_fbo_supported)
+      {
+         RARCH_ERR("[GLCore] sRGB FBO was requested, but is not supported. Falling back to UNORM. Result may band/clip/etc.!\n");
+         srgb_fbo = false;
+      }
+      if (srgb_fbo && !gl->chain.force_srgb_disable)
+      {
+         RARCH_LOG("[GLCore] FBO pass #%d is sRGB.\n", pass);
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, gl->chain.fbo_rect[pass].width, gl->chain.fbo_rect[pass].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+      }
+      else
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gl->chain.fbo_rect[pass].width, gl->chain.fbo_rect[pass].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+   }
+
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -2367,6 +2401,9 @@ static bool gl3_create_fbo_targets(gl3_t *gl)
 
    gl->chain.active               = true;
    gl->chain.mipmap_active        = gl->chain.shader->mipmap_input(gl->chain.shader_data, 1);
+   gl->chain.fp_fbo_supported     = gl_check_capability(GL_CAPS_FP_FBO);
+   gl->chain.srgb_fbo_supported   = gl_check_capability(GL_CAPS_SRGB_FBO);
+   gl->chain.force_srgb_disable   = config_get_ptr()->bools.video_force_srgb_disable;
    gl->chain.fbo_feedback         = 0;
    gl->chain.fbo_feedback_pass    = 0;
    gl->chain.fbo_feedback_texture = 0;
@@ -3540,7 +3577,11 @@ static void gl3_renderchain_start_render(
     * We will "flip" it in place on last pass. */
    gl->chain.coords.vertex = fbo_vertexes;
 
-   glEnable(GL_FRAMEBUFFER_SRGB);
+#ifndef HAVE_OPENGLES
+   if (gl->chain.srgb_fbo_supported)
+      glEnable(GL_FRAMEBUFFER_SRGB);
+#endif
+
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -3630,7 +3671,10 @@ static void gl3_renderchain_render(
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
 
-   glDisable(GL_FRAMEBUFFER_SRGB);
+#ifndef HAVE_OPENGLES
+   if (gl->chain.srgb_fbo_supported)
+      glDisable(GL_FRAMEBUFFER_SRGB);
+#endif
 
    /* Render our last FBO texture directly to screen. */
    prev_rect = &gl->chain.fbo_rect[gl->chain.num_fbo_passes - 1];
@@ -3806,7 +3850,7 @@ static bool gl3_frame(void *data, const void *frame,
 
       /* No point regenerating mipmaps
        * if there are no new frames. */
-      if (gl->chain.mipmap_active)
+      if (gl->chain.active && gl->chain.mipmap_active)
       {
          glBindTexture(GL_TEXTURE_2D, texture.image);
          glGenerateMipmap(GL_TEXTURE_2D);
