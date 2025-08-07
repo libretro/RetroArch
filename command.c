@@ -294,42 +294,42 @@ static void stdin_command_free(command_t *handle)
 
 static void command_stdin_poll(command_t *handle)
 {
-   ptrdiff_t msg_len;
-   char        *last_newline = NULL;
    command_stdin_t *stdincmd = (command_stdin_t*)handle->userptr;
    ssize_t               ret = read_stdin(
          stdincmd->stdin_buf + stdincmd->stdin_buf_ptr,
          CMD_BUF_SIZE - stdincmd->stdin_buf_ptr - 1);
 
-   if (ret == 0)
-      return;
-
-   stdincmd->stdin_buf_ptr                      += ret;
-   stdincmd->stdin_buf[stdincmd->stdin_buf_ptr]  = '\0';
-
-   last_newline = strrchr(stdincmd->stdin_buf, '\n');
-
-   if (!last_newline)
+   if (ret != 0)
    {
-      /* We're receiving bogus data in pipe
-       * (no terminating newline), flush out the buffer. */
-      if (stdincmd->stdin_buf_ptr + 1 >= CMD_BUF_SIZE)
+      char *last_newline = NULL;
+      stdincmd->stdin_buf_ptr                      += ret;
+      stdincmd->stdin_buf[stdincmd->stdin_buf_ptr]  = '\0';
+
+      last_newline = strrchr(stdincmd->stdin_buf, '\n');
+
+      if (!last_newline)
       {
-         stdincmd->stdin_buf_ptr = 0;
-         stdincmd->stdin_buf[0]  = '\0';
+         /* We're receiving bogus data in pipe
+          * (no terminating newline), flush out the buffer. */
+         if (stdincmd->stdin_buf_ptr + 1 >= CMD_BUF_SIZE)
+         {
+            stdincmd->stdin_buf_ptr = 0;
+            stdincmd->stdin_buf[0]  = '\0';
+         }
       }
+      else
+      {
+         ptrdiff_t msg_len;
+         *last_newline++ = '\0';
+         msg_len         = last_newline - stdincmd->stdin_buf;
 
-      return;
+         command_parse_msg(handle, stdincmd->stdin_buf);
+
+         memmove(stdincmd->stdin_buf, last_newline,
+               stdincmd->stdin_buf_ptr - msg_len);
+         stdincmd->stdin_buf_ptr -= msg_len;
+      }
    }
-
-   *last_newline++ = '\0';
-   msg_len         = last_newline - stdincmd->stdin_buf;
-
-   command_parse_msg(handle, stdincmd->stdin_buf);
-
-   memmove(stdincmd->stdin_buf, last_newline,
-         stdincmd->stdin_buf_ptr - msg_len);
-   stdincmd->stdin_buf_ptr -= msg_len;
 }
 
 command_t* command_stdin_new(void)
@@ -386,9 +386,8 @@ static void command_emscripten_poll(command_t *handle)
 {
    command_emscripten_t *emscriptencmd = (command_emscripten_t*)handle->userptr;
    ptrdiff_t msg_len = platform_emscripten_command_read((char **)(&emscriptencmd->command_buf), CMD_BUF_SIZE);
-   if (msg_len == 0)
-      return;
-   command_parse_msg(handle, emscriptencmd->command_buf);
+   if (msg_len != 0)
+      command_parse_msg(handle, emscriptencmd->command_buf);
 }
 
 command_t* command_emscripten_new(void)
@@ -419,9 +418,9 @@ bool command_get_config_param(command_t *cmd, const char* arg)
 {
    size_t _len;
    char reply[8192];
-   #ifdef HAVE_BSV_MOVIE
+#ifdef HAVE_BSV_MOVIE
    char value_dynamic[256];
-   #endif
+#endif
    const char *value              = "unsupported";
    settings_t *settings           = config_get_ptr();
    bool       video_fullscreen    = settings->bools.video_fullscreen;
@@ -590,13 +589,8 @@ command_t* command_uds_new(void)
    strcpy(&addr.sun_path[1], "retroarch/cmd");
 
    if (   bind(fd, (struct sockaddr*)&addr, addrsz) < 0
-       || listen(fd, MAX_USER_CONNECTIONS) < 0)
-   {
-      socket_close(fd);
-      return NULL;
-   }
-
-   if (!socket_nonblock(fd))
+       || listen(fd, MAX_USER_CONNECTIONS) < 0
+       || !socket_nonblock(fd))
    {
       socket_close(fd);
       return NULL;
@@ -624,8 +618,7 @@ command_t* command_uds_new(void)
 #ifdef HAVE_NETWORK_CMD
 static bool command_verify(const char *cmd)
 {
-   unsigned i;
-
+   size_t i;
    if (command_get_arg(cmd, NULL, NULL))
       return true;
 
@@ -842,38 +835,37 @@ bool command_load_savefiles(command_t *cmd, const char* arg)
 #if defined(HAVE_CHEEVOS)
 bool command_read_ram(command_t *cmd, const char *arg)
 {
-   unsigned i;
-   char *reply                  = NULL;
-   const uint8_t  *data         = NULL;
-   char *reply_at               = NULL;
-   unsigned int nbytes          = 0;
-   unsigned int alloc_size      = 0;
-   unsigned int addr            = -1;
-   size_t _len                  = 0;
+   unsigned int nbytes        = 0;
+   unsigned int addr          = -1;
 
-   if (sscanf(arg, "%x %u", &addr, &nbytes) != 2)
-      return true;
-   /* We allocate more than needed, saving 20 bytes is not really relevant */
-   alloc_size              = 40 + nbytes * 3;
-   reply                   = (char*)malloc(alloc_size);
-   reply[0]                = '\0';
-   reply_at                = reply + snprintf(
-         reply, alloc_size - 1, "READ_CORE_RAM" " %x", addr);
+   if (sscanf(arg, "%x %u", &addr, &nbytes) == 2)
+   {
+      size_t _len             = 0;
+      char *reply_at          = NULL;
+      const uint8_t *data     = NULL;
+      /* We allocate more than needed, saving 20 bytes is not really relevant */
+      unsigned int alloc_size = 40 + nbytes * 3;
+      char *reply             = (char*)malloc(alloc_size);
+      reply[0]                = '\0';
+      reply_at                = reply + snprintf(
+            reply, alloc_size - 1, "READ_CORE_RAM" " %x", addr);
 
-   if ((data = rcheevos_patch_address(addr)))
-   {
-      for (i = 0; i < nbytes; i++)
-         snprintf(reply_at + 3 * i, 4, " %.2X", data[i]);
-      reply_at[3 * nbytes] = '\n';
-      _len                 = reply_at + 3 * nbytes + 1 - reply;
+      if ((data = rcheevos_patch_address(addr)))
+      {
+         size_t i;
+         for (i = 0; i < nbytes; i++)
+            snprintf(reply_at + 3 * i, 4, " %.2X", data[i]);
+         reply_at[3 * nbytes] = '\n';
+         _len = reply_at + 3 * nbytes + 1 - reply;
+      }
+      else
+      {
+         strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
+         _len = reply_at + STRLEN_CONST(" -1\n") - reply;
+      }
+      cmd->replier(cmd, reply, _len);
+      free(reply);
    }
-   else
-   {
-      strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
-      _len                  = reply_at + STRLEN_CONST(" -1\n") - reply;
-   }
-   cmd->replier(cmd, reply, _len);
-   free(reply);
    return true;
 }
 
@@ -1080,7 +1072,8 @@ bool command_write_memory(command_t *cmd, const char *arg)
    const rarch_system_info_t
       *sys_info                 = &runloop_st->system;
    char *reply_at               = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
-   uint8_t *data                = command_memory_get_pointer(sys_info, address, &max_bytes, 1, reply_at, sizeof(reply) - strlen(reply) - 1);
+   uint8_t *data                = command_memory_get_pointer(sys_info, address, &max_bytes, 1,
+         reply_at, sizeof(reply) - strlen(reply) - 1);
 
    if (data)
    {
@@ -1123,15 +1116,10 @@ void command_event_set_volume(
    configuration_set_float(settings, settings->floats.audio_volume, new_volume);
    _len             = strlcpy(msg, msg_hash_to_str(MSG_AUDIO_VOLUME),
          sizeof(msg));
-   msg[_len  ]      = ':';
-   msg[++_len]      = ' ';
-   msg[++_len]      = '\0';
+   _len            += strlcpy(msg + _len, ": ", sizeof(msg) - _len);
    _len            += snprintf(msg + _len, sizeof(msg) - _len, "%.1f",
          new_volume);
-   msg[_len  ]      = ' ';
-   msg[++_len]      = 'd';
-   msg[++_len]      = 'B';
-   msg[++_len]      = '\0';
+   _len            += strlcpy(msg + _len, " dB", sizeof(msg) - _len);
 
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
@@ -1166,15 +1154,10 @@ void command_event_set_mixer_volume(
    configuration_set_float(settings, settings->floats.audio_mixer_volume, new_volume);
    _len             = strlcpy(msg, msg_hash_to_str(MSG_AUDIO_VOLUME),
          sizeof(msg));
-   msg[_len  ]      = ':';
-   msg[++_len]      = ' ';
-   msg[++_len]      = '\0';
+   _len            += strlcpy(msg + _len, ": ", sizeof(msg) - _len);
    _len            += snprintf(msg + _len, sizeof(msg) - _len, "%.1f",
          new_volume);
-   msg[_len  ]      = ' ';
-   msg[++_len]      = 'd';
-   msg[++_len]      = 'B';
-   msg[++_len]      = '\0';
+   _len            += strlcpy(msg + _len, " dB", sizeof(msg) - _len);
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -1191,7 +1174,7 @@ void command_event_init_controllers(rarch_system_info_t *sys_info,
 
    for (port = 0; port < num_core_ports; port++)
    {
-      unsigned i;
+      size_t i;
       retro_ctx_controller_info_t pad;
       unsigned device                                 = RETRO_DEVICE_NONE;
       const struct retro_controller_description *desc = NULL;
@@ -1314,8 +1297,8 @@ static size_t command_event_undo_load_state(char *s, size_t len)
 bool command_event_resize_windowed_scale(settings_t *settings,
       unsigned window_scale)
 {
-   unsigned              idx = 0;
-   bool     video_fullscreen = settings->bools.video_fullscreen;
+   unsigned idx = 0;
+   bool video_fullscreen = settings->bools.video_fullscreen;
 
    if (window_scale == 0)
       return false;
@@ -1702,20 +1685,20 @@ void command_event_set_savestate_auto_index(settings_t *settings)
 {
    unsigned max_idx          = 0;
    bool savestate_auto_index = settings->bools.savestate_auto_index;
-   if (!savestate_auto_index)
+   if (savestate_auto_index)
    {
+      command_scan_states(
+            settings->bools.show_hidden_files,
+            settings->uints.savestate_max_keep,
+            settings->ints.state_slot, &max_idx, NULL);
+      configuration_set_int(settings, settings->ints.state_slot, max_idx);
+      RARCH_LOG("[State] %s: #%d.\n",
+            msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
+            max_idx);
+   }
+   else
       /* Reset savestate index to 0 when loading content. */
       configuration_set_int(settings, settings->ints.state_slot, 0);
-      return;
-   }
-   command_scan_states(
-         settings->bools.show_hidden_files,
-         settings->uints.savestate_max_keep,
-         settings->ints.state_slot, &max_idx, NULL);
-   configuration_set_int(settings, settings->ints.state_slot, max_idx);
-   RARCH_LOG("[State] %s: #%d.\n",
-         msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
-         max_idx);
 }
 
 /**
@@ -2154,8 +2137,6 @@ bool command_event_main_state(unsigned cmd)
            then and now (not yet implemented); if the state is not part of
            the replay, do nothing and log a warning.
    */
-
-
    if (savestates_enabled)
    {
       switch (cmd)
