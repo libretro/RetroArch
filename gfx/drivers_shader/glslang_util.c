@@ -59,8 +59,7 @@ bool slang_texture_semantic_is_array(enum slang_texture_semantic sem)
 }
 
 enum slang_texture_semantic slang_name_to_texture_semantic_array(
-      const char *name, const char **names,
-      unsigned *index)
+      const char *name, const char **names, unsigned *index)
 {
    unsigned i = 0;
    while (*names)
@@ -70,12 +69,12 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
 
       if (slang_texture_semantic_is_array(semantic))
       {
-         size_t baselen = strlen(n);
-         int        cmp = strncmp(n, name, baselen);
+         size_t _len = strlen(n);
+         int     cmp = strncmp(n, name, _len);
 
          if (cmp == 0)
          {
-            *index = (unsigned)strtoul(name + baselen, NULL, 0);
+            *index = (unsigned)strtoul(name + _len, NULL, 0);
             return semantic;
          }
       }
@@ -90,6 +89,39 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
    }
    return SLANG_INVALID_TEXTURE_SEMANTIC;
 }
+
+static bool string_separate_noalloc(
+      struct string_list *list,
+      char *str, const char *delim)
+{
+   char *tok                = NULL;
+   char **str_ptr           = NULL;
+
+   /* Sanity check */
+   if (!str || string_is_empty(delim) || !list)
+      return false;
+
+   str_ptr = &str;
+   tok     = string_tokenize(str_ptr, delim);
+
+   while (tok)
+   {
+      union string_list_elem_attr attr;
+
+      attr.i = 0;
+
+      if (!string_list_append(list, tok, attr))
+      {
+         free(tok);
+         return false;
+      }
+
+      free(tok);
+      tok = string_tokenize(str_ptr, delim);
+   }
+   return true;
+}
+
 
 bool glslang_read_shader_file(const char *path,
       struct string_list *output, bool root_file, bool is_optional)
@@ -119,7 +151,7 @@ bool glslang_read_shader_file(const char *path,
    if (!filestream_read_file(path, (void**)&buf, &buf_len))
    {
       if (!is_optional)
-         RARCH_ERR("[slang]: Failed to open shader file: \"%s\".\n", path);
+         RARCH_ERR("[Slang] Failed to open shader file: \"%s\".\n", path);
       return false;
    }
 
@@ -153,7 +185,7 @@ bool glslang_read_shader_file(const char *path,
 
       if (strncmp("#version ", line, STRLEN_CONST("#version ")))
       {
-         RARCH_ERR("[slang]: First line of the shader must contain a valid "
+         RARCH_ERR("[Slang] First line of the shader must contain a valid "
                "#version string.\n");
          goto error;
       }
@@ -198,7 +230,7 @@ bool glslang_read_shader_file(const char *path,
 
          if (string_is_empty(include_file))
          {
-            RARCH_ERR("[slang]: Invalid include statement \"%s\".\n", line);
+            RARCH_ERR("[Slang] Invalid include statement \"%s\".\n", line);
             goto error;
          }
 
@@ -209,10 +241,9 @@ bool glslang_read_shader_file(const char *path,
          /* Parse include file */
          if (!glslang_read_shader_file(include_path, output, false, include_optional))
          {
-            if (include_optional)
-               RARCH_LOG("[slang]: Optional include not found \"%s\".\n", include_path);
-            else
+            if (!include_optional)
                goto error;
+            RARCH_LOG("[Slang] Optional include not found \"%s\".\n", include_path);
          }
 
          /* After including a file, use line directive

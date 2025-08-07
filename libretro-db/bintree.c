@@ -50,12 +50,13 @@ int bintree_insert(bintree_t *t, struct bintree_node *root, void *value)
 {
    int cmp_res = 0;
 
-   if (!root || (root->value == NIL_NODE))
+   if (!root)
+      return 0;
+   if (root->value == NIL_NODE)
    {
       root->left  = bintree_new_nil_node(root);
       root->right = bintree_new_nil_node(root);
       root->value = value;
-
       return 0;
    }
 

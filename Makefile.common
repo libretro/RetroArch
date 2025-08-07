@@ -860,10 +860,6 @@ ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/drivers/alsa.o \
           audio/common/alsa.o
 
-   ifeq ($(HAVE_MICROPHONE), 1)
-      OBJ += audio/drivers_microphone/alsa.o
-   endif
-
    ifneq ($(HAVE_HAKCHI), 1)
       ifneq ($(HAVE_SEGAM), 1)
          ifneq ($(DINGUX), 1)
@@ -874,12 +870,7 @@ ifeq ($(HAVE_ALSA), 1)
 
    ifneq ($(MIYOO), 1)
       ifeq ($(HAVE_THREADS), 1)
-         OBJ += audio/drivers/alsathread.o \
-                audio/common/alsathread.o
-
-         ifeq ($(HAVE_MICROPHONE), 1)
-            OBJ += audio/drivers_microphone/alsathread.o
-         endif
+         OBJ += audio/drivers/alsathread.o
       endif
    endif
 
@@ -927,10 +918,6 @@ ifeq ($(HAVE_PIPEWIRE), 1)
    OBJ += audio/drivers/pipewire.o \
           audio/common/pipewire.o
 
-   ifeq ($(HAVE_MICROPHONE), 1)
-      OBJ += audio/drivers_microphone/pipewire.o
-   endif
-
    ifeq ($(HAVE_PIPEWIRE_STABLE), 1)
       OBJ += camera/drivers/pipewire.o
    endif
@@ -958,14 +945,9 @@ endif
 
 ifeq ($(HAVE_WASAPI), 1)
 	HAVE_MMDEVAPI = 1
-   OBJ += audio/drivers/wasapi.o \
-          audio/common/wasapi.o
+   OBJ += audio/drivers/wasapi.o
    DEFINES += -DHAVE_WASAPI
    LIBS += -lole32 -lksuser
-
-   ifeq ($(HAVE_MICROPHONE), 1)
-      OBJ += audio/drivers_microphone/wasapi.o
-      endif
 endif
 
 ifeq ($(HAVE_XAUDIO), 1)
@@ -1637,14 +1619,9 @@ endif
 ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \
-			 gfx/common/sdl2_common.o
+	  gfx/common/sdl2_common.o
    DEF_FLAGS += $(SDL2_CFLAGS)
    LIBS += $(SDL2_LIBS)
-
-   ifeq ($(HAVE_MICROPHONE), 1)
-      OBJ += audio/drivers_microphone/sdl_microphone.o
-      # Microphones are not supported by SDL 1.x
-   endif
 else ifeq ($(HAVE_SDL), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl_gfx.o
@@ -1710,11 +1687,15 @@ ifeq ($(HAVE_VULKAN), 1)
 endif
 
 ifeq ($(HAVE_OPENGL_CORE), 1)
-   OBJ += gfx/drivers/gl3.o \
-	  gfx/drivers_shader/shader_gl3.o
+   OBJ += gfx/drivers/gl3.o
 
    DEFINES += -DHAVE_OPENGL_CORE
-   NEED_CXX_LINKER  = 1
+
+   ifeq ($(HAVE_SLANG), 1)
+      OBJ += gfx/drivers_shader/shader_gl3.o
+
+      NEED_CXX_LINKER = 1
+   endif
 endif
 
 ifeq ($(HAVE_OMAP), 1)
@@ -1776,22 +1757,19 @@ endif
 
 ifeq ($(HAVE_D3D10), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d10.o \
-          gfx/common/d3d10_common.o
+   OBJ += gfx/drivers/d3d10.o
    DEFINES += -DHAVE_D3D10
 endif
 
 ifeq ($(HAVE_D3D11), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d11.o \
-          gfx/common/d3d11_common.o
+   OBJ += gfx/drivers/d3d11.o
    DEFINES += -DHAVE_D3D11
 endif
 
 ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d12.o \
-          gfx/common/d3d12_common.o
+   OBJ += gfx/drivers/d3d12.o
    DEFINES += -DHAVE_D3D12
 endif
 
@@ -1971,6 +1949,34 @@ ifeq ($(HAVE_7ZIP),1)
            $(7ZOBJ)
 endif
 
+ifeq ($(HAVE_ZSTD),1)
+   INCLUDE_DIRS += -I$(DEPS_DIR)/zstd/lib
+   DEFINES += -DHAVE_ZSTD -DZSTD_DISABLE_ASM
+   ZSOBJ = $(DEPS_DIR)/zstd/lib/common/entropy_common.o \
+           $(DEPS_DIR)/zstd/lib/common/error_private.o \
+           $(DEPS_DIR)/zstd/lib/common/fse_decompress.o \
+           $(DEPS_DIR)/zstd/lib/common/zstd_common.o \
+           $(DEPS_DIR)/zstd/lib/common/xxhash.o \
+           $(DEPS_DIR)/zstd/lib/compress/fse_compress.o \
+           $(DEPS_DIR)/zstd/lib/compress/hist.o \
+           $(DEPS_DIR)/zstd/lib/compress/huf_compress.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_compress.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_compress_literals.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_compress_sequences.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_compress_superblock.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_double_fast.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_fast.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_lazy.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_ldm.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_opt.o \
+           $(DEPS_DIR)/zstd/lib/decompress/huf_decompress.o \
+           $(DEPS_DIR)/zstd/lib/decompress/zstd_ddict.o \
+           $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress.o \
+           $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress_block.o
+
+   OBJ +=  $(ZSOBJ)
+endif
+
 ifeq ($(HAVE_IBXM), 1)
    DEFINES += -DHAVE_IBXM
    OBJ += $(DEPS_DIR)/ibxm/ibxm.o
@@ -2123,6 +2129,13 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
          DEFINES += -Dcdlz_codec_init=retroarch_internal_cdlz_codec_init
          DEFINES += -Dcdlz_codec_free=retroarch_internal_cdlz_codec_free
          DEFINES += -Dcdlz_codec_decompress=retroarch_internal_cdlz_codec_decompress
+
+         DEFINES += -Dzstd_codec_init=retroarch_internal_zstd_codec_init
+         DEFINES += -Dzstd_codec_free=retroarch_internal_zstd_codec_free
+         DEFINES += -Dzstd_codec_decompress=retroarch_internal_zstd_codec_decompress
+         DEFINES += -Dcdzs_codec_init=retroarch_internal_cdzs_codec_init
+         DEFINES += -Dcdzs_codec_free=retroarch_internal_cdzs_codec_free
+         DEFINES += -Dcdzs_codec_decompress=retroarch_internal_cdzs_codec_decompress
       endif
       OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
                  $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
@@ -2138,6 +2151,10 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
 
       ifeq ($(HAVE_7ZIP), 1)
          OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
+      endif
+
+      ifeq ($(HAVE_ZSTD), 1)
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zstd.o
       endif
    endif
 endif
@@ -2372,6 +2389,10 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rhash/aes.o \
              deps/rcheevos/src/rhash/cdreader.o \
              deps/rcheevos/src/rhash/hash.o \
+             deps/rcheevos/src/rhash/hash_disc.o \
+             deps/rcheevos/src/rhash/hash_encrypted.o \
+             deps/rcheevos/src/rhash/hash_rom.o \
+             deps/rcheevos/src/rhash/hash_zip.o \
              deps/rcheevos/src/rapi/rc_api_common.o \
              deps/rcheevos/src/rapi/rc_api_info.o \
              deps/rcheevos/src/rapi/rc_api_runtime.o \

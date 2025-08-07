@@ -180,11 +180,12 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
          ctr->pos = (ctr->playpos + (CTR_CSND_AUDIO_COUNT >> 1)) & CTR_CSND_AUDIO_COUNT_MASK;
       else
       {
-         do{
+         do
+         {
             /* todo: compute the correct sleep period */
             retro_sleep(1);
             ctr_csnd_audio_update_playpos(ctr);
-         }while (((ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 1)
+         } while  (((ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 1)
                || (((ctr->pos - ctr->playpos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 4)));
       }
    }
@@ -239,20 +240,19 @@ static bool ctr_csnd_audio_start(void *data, bool is_shutdown)
 
    /* Prevents restarting audio when the menu
     * is toggled off on shutdown */
-   if (is_shutdown)
-      return true;
-
+   if (!is_shutdown)
+   {
 #if 0
-   CSND_SetPlayState(0x8, 1);
-   CSND_SetPlayState(0x9, 1);
+      CSND_SetPlayState(0x8, 1);
+      CSND_SetPlayState(0x9, 1);
 #endif
 
-   CSND_SetVol(0x8, 0x00008000, 0);
-   CSND_SetVol(0x9, 0x80000000, 0);
+      CSND_SetVol(0x8, 0x00008000, 0);
+      CSND_SetVol(0x9, 0x80000000, 0);
 
-   csndExecCmds(false);
-
-   ctr->playing = true;
+      csndExecCmds(false);
+      ctr->playing = true;
+   }
 
    return true;
 }
@@ -276,7 +276,6 @@ static size_t ctr_csnd_audio_write_avail(void *data)
 
 static size_t ctr_csnd_audio_buffer_size(void *data)
 {
-   (void)data;
    return CTR_CSND_AUDIO_COUNT;
 }
 

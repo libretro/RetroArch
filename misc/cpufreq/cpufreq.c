@@ -110,7 +110,7 @@ cpu_scaling_driver_t **get_cpu_scaling_drivers(bool can_update)
          cpu_scaling_driver_t *drv;
          struct string_list *tmplst;
          char fpath[PATH_MAX_LENGTH];
-         const char *fname = strrchr(policy_dir->elems[i].data, '/');
+         char *fname = strrchr(policy_dir->elems[i].data, '/');
 
          if (!fname)
             continue;

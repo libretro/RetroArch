@@ -89,12 +89,12 @@ static void task_cloud_sync_begin_handler(void *user_data, const char *path, boo
 
    if (success)
    {
-      RARCH_LOG(CSPFX "begin succeeded\n");
+      RARCH_LOG(CSPFX "Begin succeeded.\n");
       sync_state->phase = CLOUD_SYNC_PHASE_FETCH_SERVER_MANIFEST;
    }
    else
    {
-      RARCH_WARN(CSPFX "begin failed\n");
+      RARCH_WARN(CSPFX "Begin failed.\n");
       task_set_title(task, strdup("Cloud Sync failed"));
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    }
@@ -153,7 +153,10 @@ static file_list_t *task_cloud_sync_create_manifest(RFILE *file)
       return NULL;
 
    if (!(json = rjson_open_rfile(file)))
+   {
+      free(list);
       return NULL;
+   }
 
    rjson_parse(json, list,
                tcs_object_member_handler,
@@ -170,7 +173,7 @@ static file_list_t *task_cloud_sync_create_manifest(RFILE *file)
 
    file_list_sort_on_alt(list);
 
-   RARCH_LOG(CSPFX "created manifest with %u files\n", list->size);
+   RARCH_LOG(CSPFX "Created manifest with %u files.\n", list->size);
 
    return list;
 }
@@ -193,7 +196,7 @@ static void task_cloud_sync_manifest_handler(void *user_data, const char *path,
 
    if (!success)
    {
-      RARCH_WARN(CSPFX "server manifest fetch failed\n");
+      RARCH_WARN(CSPFX "Server manifest fetch failed.\n");
       sync_state->failures = true;
       sync_state->phase    = CLOUD_SYNC_PHASE_END;
       slock_lock(tcs_running_lock);
@@ -202,7 +205,7 @@ static void task_cloud_sync_manifest_handler(void *user_data, const char *path,
       return;
    }
 
-   RARCH_LOG(CSPFX "server manifest fetch succeeded\n");
+   RARCH_LOG(CSPFX "Server manifest fetch succeeded.\n");
    /* it is valid for there not to be a server manifest */
    if (file)
    {
@@ -224,7 +227,7 @@ static void task_cloud_sync_fetch_server_manifest(task_cloud_sync_state_t *sync_
    sync_state->waiting = 1;
    if (!cloud_sync_read(MANIFEST_FILENAME_SERVER, manifest_path, task_cloud_sync_manifest_handler, sync_state))
    {
-      RARCH_WARN(CSPFX "could not read server manifest\n");
+      RARCH_WARN(CSPFX "Could not read server manifest.\n");
       sync_state->waiting = 0;
       sync_state->phase = CLOUD_SYNC_PHASE_END;
    }
@@ -243,7 +246,7 @@ static void task_cloud_sync_read_local_manifest(task_cloud_sync_state_t *sync_st
             RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
       if (rfile)
       {
-         RARCH_WARN(CSPFX "opened local manifest\n");
+         RARCH_WARN(CSPFX "Opened local manifest.\n");
          sync_state->local_manifest = task_cloud_sync_create_manifest(rfile);
          filestream_close(rfile);
       }
@@ -414,11 +417,11 @@ static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync
    /* The paths iterated here are not portable, because they are still used for iterating later on */
    for (i = 0; i < dirlist->size; i++)
       task_cloud_sync_manifest_append_dir(sync_state->current_manifest,
-            dirlist->elems[i].userdata, dirlist->elems[i].data);
+            (const char*)dirlist->elems[i].userdata, dirlist->elems[i].data);
 
    file_list_sort_on_alt(sync_state->current_manifest);
    sync_state->phase = CLOUD_SYNC_PHASE_DIFF;
-   RARCH_LOG(CSPFX "created in-memory manifest of current disk state with %d files\n", sync_state->current_manifest->size);
+   RARCH_LOG(CSPFX "Created in-memory manifest of current disk state with %d files.\n", sync_state->current_manifest->size);
 }
 
 /**
@@ -486,24 +489,29 @@ static INLINE int task_cloud_sync_key_cmp(struct item_file *left, struct item_fi
 
 static char *task_cloud_sync_md5_rfile(RFILE *file)
 {
-   MD5_CTX       md5;
-   int           rv;
-   char         *hash = malloc(33);
+   int rv;
+   MD5_CTX md5;
    unsigned char buf[4096];
    unsigned char digest[16];
+   libretro_vfs_implementation_file *hfile = filestream_get_vfs_handle(file);
+   char *hash = (char*)malloc(33);
 
    if (!hash)
       return NULL;
 
    MD5_Init(&md5);
 
-   do
+   if (hfile && hfile->mapped)
+      MD5_Update(&md5, hfile->mapped, hfile->size);
+   else
    {
-      rv = (int)filestream_read(file, buf, sizeof(buf));
-      if (rv > 0)
-         MD5_Update(&md5, buf, rv);
-   } while (rv > 0);
-
+      do
+      {
+         rv = (int)filestream_read(file, buf, sizeof(buf));
+         if (rv > 0)
+            MD5_Update(&md5, buf, rv);
+      } while (rv > 0);
+   }
    MD5_Final(digest, &md5);
 
    snprintf(hash, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
@@ -564,7 +572,7 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
    {
       hash = task_cloud_sync_md5_rfile(file);
       filestream_close(file);
-      RARCH_LOG(CSPFX "successfully fetched %s\n", path);
+      RARCH_LOG(CSPFX "Successfully fetched \"%s\".\n", path);
       task_cloud_sync_add_to_updated_manifest(sync_state, path, hash, false);
       task_cloud_sync_add_to_updated_manifest(sync_state, path, hash, true);
       /* if the file fetched from the server does not match its own hash, the manifest needs to be updated */
@@ -576,9 +584,9 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
    {
       /* on failure, don't add it to local manifest, that will cause a fetch again next time */
       if (!success)
-         RARCH_WARN(CSPFX "failed to fetch %s\n", path);
+         RARCH_WARN(CSPFX "Failed to fetch \"%s\".\n", path);
       else
-         RARCH_WARN(CSPFX "failed to write file from server: %s\n", path);
+         RARCH_WARN(CSPFX "Failed to write file from server: \"%s\".\n", path);
       task_cloud_sync_add_to_updated_manifest(sync_state, path, CS_FILE_HASH(server_file), true);
       sync_state->failures = true;
    }
@@ -614,26 +622,29 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    if (task_cloud_sync_should_ignore_file(key))
    {
       /* don't fetch a file we're supposed to ignore, even if the server has it */
-      RARCH_LOG(CSPFX "ignoring %s\n", key);
+      RARCH_LOG(CSPFX "Ignoring %s.\n", key);
       task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
       return;
    }
-   RARCH_LOG(CSPFX "fetching %s\n", key);
+   RARCH_LOG(CSPFX "Fetching %s.\n", key);
 
    filename[0] = '\0';
    for (i = 0; i < dirlist->size; i++)
    {
       if (!string_starts_with(key, dirlist->elems[i].data))
          continue;
-      fill_pathname_join_special(filename, dirlist->elems[i].userdata, path, sizeof(filename));
+      fill_pathname_join_special(filename,
+            (const char*)dirlist->elems[i].userdata,
+            path, sizeof(filename));
       pathname_conform_slashes_to_os(filename);
       break;
    }
    if (string_is_empty(filename))
    {
       /* how did this end up here? we don't know where to put it... */
-      RARCH_WARN(CSPFX "don't know where to put %s!\n", key);
-      task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
+      RARCH_WARN(CSPFX "Don't know where to put %s!\n", key);
+      task_cloud_sync_add_to_updated_manifest(sync_state,
+            key, CS_FILE_HASH(server_file), true);
       return;
    }
 
@@ -646,10 +657,10 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
 
    fill_pathname_basedir(directory, filename, sizeof(directory));
    path_mkdir(directory);
-   fetch_state = malloc(sizeof(task_cloud_sync_fetch_state_t));
+   fetch_state = (task_cloud_sync_fetch_state_t*)malloc(sizeof(task_cloud_sync_fetch_state_t));
    if (!fetch_state)
    {
-      RARCH_WARN(CSPFX "wanted to fetch %s but failed to malloc\n", key);
+      RARCH_WARN(CSPFX "Wanted to fetch %s but failed to malloc.\n", key);
       task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
       sync_state->failures = true;
       return;
@@ -660,7 +671,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
       sync_state->waiting++;
    else
    {
-      RARCH_WARN(CSPFX "wanted to fetch %s but failed\n", key);
+      RARCH_WARN(CSPFX "Wanted to fetch %s but failed.\n", key);
       task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
       sync_state->failures = true;
       free(fetch_state);
@@ -678,7 +689,7 @@ static void task_cloud_sync_resolve_conflict(task_cloud_sync_state_t *sync_state
     * If we ignore it then we need to keep it out of the new local manifest
     */
    struct item_file *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
-   RARCH_WARN(CSPFX "conflicting change of %s\n", CS_FILE_KEY(server_file));
+   RARCH_WARN(CSPFX "Conflicting change of %s.\n", CS_FILE_KEY(server_file));
    task_cloud_sync_add_to_updated_manifest(sync_state, CS_FILE_KEY(server_file), CS_FILE_HASH(server_file), true);
    /* no need to mark need_manifest_uploaded, nothing changed */
    sync_state->conflicts = true;
@@ -705,7 +716,7 @@ static void task_cloud_sync_upload_cb(void *user_data, const char *path, bool su
          task_cloud_sync_add_to_updated_manifest(sync_state, path, CS_FILE_HASH(current_file), false);
          sync_state->need_manifest_uploaded = true;
       }
-      RARCH_LOG(CSPFX "uploading %s succeeded\n", path);
+      RARCH_LOG(CSPFX "Uploading \"%s\" succeeded.\n", path);
       sync_state->uploads++;
    }
    else
@@ -716,7 +727,7 @@ static void task_cloud_sync_upload_cb(void *user_data, const char *path, bool su
          struct item_file *local_file = &sync_state->local_manifest->list[idx];
          task_cloud_sync_add_to_updated_manifest(sync_state, path, CS_FILE_HASH(local_file), false);
       }
-      RARCH_WARN(CSPFX "uploading %s failed\n", path);
+      RARCH_WARN(CSPFX "Uploading \"%s\" failed.\n", path);
       sync_state->failures = true;
    }
 
@@ -743,16 +754,16 @@ static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_st
 
    if (task_cloud_sync_should_ignore_file(path))
    {
-      RARCH_LOG(CSPFX "ignoring %s, not uploading\n", path);
+      RARCH_LOG(CSPFX "Ignoring \"%s\", not uploading.\n", path);
       return;
    }
 
    file = filestream_open(filename,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
    if (!file)
       return;
 
-   RARCH_LOG(CSPFX "uploading %s\n", path);
+   RARCH_LOG(CSPFX "Uploading \"%s\".\n", path);
 
    item->userdata = task_cloud_sync_md5_rfile(file);
 
@@ -770,7 +781,7 @@ static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_st
       filestream_close(file);
       sync_state->waiting--;
       sync_state->failures = true;
-      RARCH_WARN(CSPFX "uploading %s failed\n", path);
+      RARCH_WARN(CSPFX "Uploading \"%s\" failed.\n", path);
    }
 }
 
@@ -779,7 +790,7 @@ static void task_cloud_sync_delete_current_file(task_cloud_sync_state_t *sync_st
    struct item_file *item      = &sync_state->current_manifest->list[sync_state->current_idx];
    bool cloud_sync_destructive = config_get_ptr()->bools.cloud_sync_destructive;
 
-   RARCH_WARN(CSPFX "server has deleted %s, so shall we\n", CS_FILE_KEY(item));
+   RARCH_WARN(CSPFX "Server has deleted \"%s\", so shall we.\n", CS_FILE_KEY(item));
 
    if (cloud_sync_destructive)
       filestream_delete(item->path);
@@ -798,12 +809,12 @@ static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_s
 
    if (task_cloud_sync_should_ignore_file(CS_FILE_KEY(server_file)))
    {
-      RARCH_LOG(CSPFX "ignoring %s (despite possible conflict)\n", CS_FILE_KEY(server_file));
+      RARCH_LOG(CSPFX "Ignoring \"%s\" (despite possible conflict).\n", CS_FILE_KEY(server_file));
       return;
    }
 
    file = filestream_open(filename,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
    if (!file)
       return;
 
@@ -857,7 +868,7 @@ static void task_cloud_sync_delete_cb(void *user_data, const char *path, bool su
          struct item_file *local_file = &sync_state->local_manifest->list[idx];
          task_cloud_sync_add_to_updated_manifest(sync_state, path, CS_FILE_HASH(local_file), false);
       }
-      RARCH_WARN(CSPFX "deleting %s failed\n", path);
+      RARCH_WARN(CSPFX "Deleting \"%s\" failed.\n", path);
       sync_state->failures = true;
       slock_lock(tcs_running_lock);
       sync_state->waiting--;
@@ -865,7 +876,7 @@ static void task_cloud_sync_delete_cb(void *user_data, const char *path, bool su
       return;
    }
 
-   RARCH_LOG(CSPFX "deleting %s succeeded\n", path);
+   RARCH_LOG(CSPFX "Deleting \"%s\" succeeded.\n", path);
    /* need to update server manifest. we don't set the hash as that indicates a
     * deleted file. need to update the local manifest to indicate we sync'd that
     * it is deleted */
@@ -884,11 +895,11 @@ static void task_cloud_sync_delete_server_file(task_cloud_sync_state_t *sync_sta
 
    if (task_cloud_sync_should_ignore_file(key))
    {
-      RARCH_LOG(CSPFX "ignoring %s, instead of removing from server\n", key);
+      RARCH_LOG(CSPFX "Ignoring \"%s\", instead of removing from server.\n", key);
       return;
    }
 
-   RARCH_LOG(CSPFX "deleting %s\n", key);
+   RARCH_LOG(CSPFX "Deleting \"%s\".\n", key);
 
    sync_state->waiting++;
    if (!cloud_sync_free(key, task_cloud_sync_delete_cb, sync_state))
@@ -976,7 +987,7 @@ static void task_cloud_sync_diff_next(task_cloud_sync_state_t *sync_state)
 
    if (!server_file && !local_file && !current_file)
    {
-      RARCH_LOG(CSPFX "finished processing manifests\n");
+      RARCH_LOG(CSPFX "Finished processing manifests.\n");
       sync_state->phase = CLOUD_SYNC_PHASE_UPDATE_MANIFESTS;
       return;
    }
@@ -1082,7 +1093,7 @@ static void task_cloud_sync_diff_next(task_cloud_sync_state_t *sync_state)
       {
          /* this is odd, it exists in the last sync manifest but not on the
           * server and not on disk? wtf? */
-         RARCH_WARN(CSPFX "%s only exists in previous manifest? odd\n", CS_FILE_KEY(local_file));
+         RARCH_WARN(CSPFX "%s only exists in previous manifest?\n", CS_FILE_KEY(local_file));
          sync_state->local_idx++;
       }
    }
@@ -1098,7 +1109,7 @@ static void task_cloud_sync_update_manifest_cb(void *user_data, const char *path
    if (!sync_state)
       return;
 
-   RARCH_LOG(CSPFX "uploading updated manifest succeeded\n");
+   RARCH_LOG(CSPFX "Uploading updated manifest succeeded.\n");
    sync_state->phase = CLOUD_SYNC_PHASE_END;
    slock_lock(tcs_running_lock);
    sync_state->waiting = 0;
@@ -1155,7 +1166,7 @@ static RFILE *task_cloud_sync_write_updated_manifest(file_list_t *manifest, char
    rjsonwriter_raw(writer, "\n]\n", 3);
    rjsonwriter_free(writer);
 
-   RARCH_LOG(CSPFX "wrote %s\n", path);
+   RARCH_LOG(CSPFX "Wrote \"%s\".\n", path);
 
    return file;
 }
@@ -1172,14 +1183,14 @@ static void task_cloud_sync_update_manifests(task_cloud_sync_state_t *sync_state
 
    if (sync_state->need_manifest_uploaded)
    {
-      RARCH_LOG(CSPFX "uploading updated manifest to server\n");
+      RARCH_LOG(CSPFX "Uploading updated manifest to server...\n");
       task_cloud_sync_manifest_filename(manifest_path, sizeof(manifest_path), true);
       file = task_cloud_sync_write_updated_manifest(sync_state->updated_server_manifest, manifest_path);
       filestream_seek(file, 0, SEEK_SET);
       sync_state->waiting = 1;
       if (!cloud_sync_update(MANIFEST_FILENAME_SERVER, file, task_cloud_sync_update_manifest_cb, sync_state))
       {
-         RARCH_LOG(CSPFX "uploading updated manifest failed\n");
+         RARCH_ERR(CSPFX "Uploading updated manifest failed.\n");
          filestream_close(file);
          sync_state->waiting = 0;
          sync_state->failures = true;
@@ -1216,7 +1227,7 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
    }
 
 
-   RARCH_LOG(CSPFX "finished after %lld.%06lld seconds, %d files uploaded, %d files downloaded\n",
+   RARCH_LOG(CSPFX "Finished after %lld.%06lld seconds, %d files uploaded, %d files downloaded.\n",
          (end_time - sync_state->start_time) / 1000 / 1000,
          (end_time - sync_state->start_time) % (1000 * 1000),
          sync_state->uploads, sync_state->downloads);
@@ -1253,7 +1264,7 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
          sync_state->waiting = 1;
          if (!cloud_sync_begin(task_cloud_sync_begin_handler, task))
          {
-            RARCH_WARN(CSPFX "could not begin\n");
+            RARCH_WARN(CSPFX "Could not begin.\n");
             task_set_title(task, strdup("Cloud Sync failed"));
             goto task_finished;
          }
@@ -1278,7 +1289,7 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
          sync_state->waiting = 1;
          if (!cloud_sync_end(task_cloud_sync_end_handler, task))
          {
-            RARCH_WARN(CSPFX "could not end?!\n");
+            RARCH_WARN(CSPFX "Could not end?!\n");
             goto task_finished;
          }
          break;
@@ -1339,7 +1350,7 @@ void task_push_cloud_sync(void)
    find_data.func = task_cloud_sync_task_finder;
    if (task_queue_find(&find_data))
    {
-      RARCH_LOG(CSPFX "already in progress\n");
+      RARCH_LOG(CSPFX "Already in progress.\n");
       return;
    }
 

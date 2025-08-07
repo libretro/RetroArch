@@ -264,14 +264,6 @@ MSG_HASH(
 /* Settings > Video > Fullscreen Mode */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   "Start in Full-screen Mode"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Start in full-screen. Can be changed at runtime. Can be overridden by a command line switch."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "Windowed Full-screen Mode"
    )
@@ -358,10 +350,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    "Adaptive V-Sync"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "V-Sync is enabled until performance falls below the target refresh rate. Can minimize stuttering when performance falls below real time, and be more energy efficient."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
@@ -2038,10 +2026,6 @@ MSG_HASH(
    "Failed saving configuration to"
    )
 MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Failed to load film file"
-   )
-MSG_HASH(
    MSG_FAILED_TO_START_MOVIE_RECORD,
    "Failed to start film record."
    )
@@ -2088,10 +2072,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_INIT_FAILED,
    "Failed to initialise rewind buffer. Rewinding will be disabled."
-   )
-MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Saved new configuration to"
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_PLAYBACK,

@@ -225,6 +225,8 @@ int64_t retro_vfs_file_seek_internal(
       libretro_vfs_implementation_file *stream,
       int64_t offset, int whence)
 {
+   int64_t val;
+
    if (!stream)
       return -1;
 
@@ -252,6 +254,7 @@ int64_t retro_vfs_file_seek_internal(
       /* fseek() returns error on under/overflow but
        * allows cursor > EOF for
        read-only file descriptors. */
+      /* The file position must never be negative. */
       switch (whence)
       {
          case SEEK_SET:
@@ -262,15 +265,18 @@ int64_t retro_vfs_file_seek_internal(
             break;
 
          case SEEK_CUR:
-            if (  (offset < 0 && stream->mappos + offset > stream->mappos) ||
-                  (offset > 0 && stream->mappos + offset < stream->mappos))
-               return -1;
+            if (stream->mappos + offset < 0)
+              return -1;
 
             stream->mappos += offset;
             break;
 
          case SEEK_END:
-            if (stream->mapsize + offset < stream->mapsize)
+            /* RETRO_VFS_SEEK_POSITION_END states offset should be negative.
+             * However, this is impractical because we would be forcing the
+             * end of file to always be off by one.
+             */
+            if (offset > 0 || stream->mapsize + offset < 0)
                return -1;
 
             stream->mappos = stream->mapsize + offset;
@@ -280,10 +286,10 @@ int64_t retro_vfs_file_seek_internal(
    }
 #endif
 
-   if (lseek(stream->fd, (off_t)offset, whence) < 0)
+   if ((val = lseek(stream->fd, (off_t)offset, whence)) < 0)
       return -1;
 
-   return 0;
+   return val;
 }
 
 /**
@@ -367,7 +373,8 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    }
 #endif
 
-   stream->orig_path       = strdup(path);
+   if (path)
+      stream->orig_path = strdup(path);
 
 #ifdef HAVE_MMAP
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS && mode == RETRO_VFS_FILE_ACCESS_READ)
@@ -637,6 +644,8 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, i
 
 int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 {
+   int64_t val;
+
    if (!stream)
       return -1;
 
@@ -662,10 +671,10 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
          RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
       return stream->mappos;
 #endif
-   if (lseek(stream->fd, 0, SEEK_CUR) < 0)
+   if ((val = lseek(stream->fd, 0, SEEK_CUR)) < 0)
       return -1;
 
-   return 0;
+   return val;
 }
 
 int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream,
@@ -968,11 +977,11 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 }
 
 #if defined(VITA)
-#define path_mkdir_error(ret) (((ret) == SCE_ERROR_ERRNO_EEXIST))
+#define path_mkdir_err(ret) (((ret) == SCE_ERROR_ERRNO_EEXIST))
 #elif defined(PSP) || defined(PS2) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
-#define path_mkdir_error(ret) ((ret) == -1)
+#define path_mkdir_err(ret) ((ret) == -1)
 #else
-#define path_mkdir_error(ret) ((ret) < 0 && errno == EEXIST)
+#define path_mkdir_err(ret) ((ret) < 0 && errno == EEXIST)
 #endif
 
 int retro_vfs_mkdir_impl(const char *dir)
@@ -1022,7 +1031,7 @@ int retro_vfs_mkdir_impl(const char *dir)
    int ret = mkdir(dir, 0750);
 #endif
 
-   if (path_mkdir_error(ret))
+   if (path_mkdir_err(ret))
       return -2;
    return ret < 0 ? -1 : 0;
 }
@@ -1056,7 +1065,7 @@ struct libretro_vfs_implementation_dir
 #endif
 };
 
-static bool dirent_check_error(libretro_vfs_implementation_dir *rdir)
+static bool dirent_check_err(libretro_vfs_implementation_dir *rdir)
 {
 #if defined(_WIN32)
    return (rdir->directory == INVALID_HANDLE_VALUE);
@@ -1135,7 +1144,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
    (void)include_hidden;
 #endif
 
-   if (rdir->directory && !dirent_check_error(rdir))
+   if (rdir->directory && !dirent_check_err(rdir))
       return rdir;
 
    retro_vfs_closedir_impl(rdir);

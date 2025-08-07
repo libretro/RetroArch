@@ -168,6 +168,8 @@ enum event_command
    /* Configuration saving. */
    CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG,
    CMD_EVENT_MENU_SAVE_CONFIG,
+   CMD_EVENT_MENU_SAVE_AS_CONFIG,
+   CMD_EVENT_MENU_SAVE_MAIN_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -378,7 +380,7 @@ void command_event_init_controllers(rarch_system_info_t *info,
 
 bool command_event_load_entry_state(settings_t *settings);
 
-void command_event_load_auto_state(void);
+bool command_event_load_auto_state(void);
 
 void command_event_set_savestate_auto_index(
       settings_t *settings);

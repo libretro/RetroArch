@@ -161,10 +161,10 @@ END_TEST
 
 START_TEST (test_string_comparison)
 {
-   ck_assert(string_is_not_equal_fast("foo", "bar", 3));
-   ck_assert(string_is_equal_fast("foo2", "foo2", 4));
-   ck_assert(!string_is_equal_fast("foo1", "foo2", 4));
-   ck_assert(string_is_equal_fast("foo1", "foo2", 3));
+   ck_assert(memcmp("foo", "bar", 3)   != 0);
+   ck_assert(memcmp("foo2", "foo2", 4) == 0);
+   ck_assert(memcmp("foo1", "foo2", 4) != 0);
+   ck_assert(memcmp("foo1", "foo2", 3) == 0);
 }
 END_TEST
 

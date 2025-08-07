@@ -715,7 +715,7 @@ static int action_start_core_lock(
          _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
       /* Generate log + notification */
-      RARCH_ERR("%s\n", msg);
+      RARCH_ERR("[Core] %s\n", msg);
 
       runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -773,7 +773,7 @@ static int action_start_core_set_standalone_exempt(
             _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
          /* Generate log + notification */
-         RARCH_ERR("%s\n", msg);
+         RARCH_ERR("[Core] %s\n", msg);
 
          runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

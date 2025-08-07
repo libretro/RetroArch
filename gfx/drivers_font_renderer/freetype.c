@@ -285,11 +285,6 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       if ((err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
             (FT_Long)font_data_size, (FT_Long)0, &handle->face)))
          goto error;
-      /* TODO/FIXME - not sure if this needs to be freed, going to assume
-       * no and that this is some memory block from the OS */
-#if 0
-      handle->file_data = font_data;
-#endif
    }
    else
 #elif defined(HAVE_FONTCONFIG_SUPPORT)

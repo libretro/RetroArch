@@ -43,7 +43,7 @@ static int action_info_default(unsigned type, const char *label)
 #endif
 
    if (settings->bools.menu_disable_info_button)
-      goto error;
+      return 0;
 
    menu_displaylist_info_init(&info);
 

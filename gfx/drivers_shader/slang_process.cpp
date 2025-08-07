@@ -128,7 +128,7 @@ static bool slang_process_reflection(
    if (!slang_reflect(*vs_compiler, *ps_compiler,
             vs_resources, ps_resources, &sl_reflection))
    {
-      RARCH_ERR("[slang]: Failed to reflect SPIR-V."
+      RARCH_ERR("[Slang] Failed to reflect SPIR-V."
             " Resource usage is inconsistent with "
                 "expectations.\n");
       return false;
@@ -361,7 +361,7 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
                meta.parameters[i].maximum != itr->maximum ||
                meta.parameters[i].step    != itr->step)
          {
-            RARCH_ERR("[slang]: Duplicate parameters"
+            RARCH_ERR("[Slang] Duplicate parameters"
                   " found for \"%s\", but arguments do not match.\n",
                   itr->id);
             mismatch_dup = true;
@@ -395,22 +395,21 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
 bool slang_preprocess_parse_parameters(const char *shader_path,
       struct video_shader *shader)
 {
-   glslang_meta meta;
    struct string_list lines = {0};
 
-   if (!string_list_initialize(&lines))
-      goto error;
+   if (string_list_initialize(&lines))
+   {
+      if (glslang_read_shader_file(shader_path, &lines, true, false))
+      {
+         glslang_meta meta = glslang_meta{};
+         if (glslang_parse_meta(&lines, &meta))
+         {
+            string_list_deinitialize(&lines);
+            return slang_preprocess_parse_parameters(meta, shader);
+         }
+      }
+   }
 
-   if (!glslang_read_shader_file(shader_path, &lines, true, false))
-      goto error;
-   meta = glslang_meta{};
-   if (!glslang_parse_meta(&lines, &meta))
-      goto error;
-
-   string_list_deinitialize(&lines);
-   return slang_preprocess_parse_parameters(meta, shader);
-
-error:
    string_list_deinitialize(&lines);
    return false;
 }
@@ -607,7 +606,7 @@ bool slang_process(
    }
    catch (const std::exception& e)
    {
-      RARCH_ERR("[slang]: SPIRV-Cross threw exception: %s.\n", e.what());
+      RARCH_ERR("[Slang] SPIRV-Cross threw exception: %s.\n", e.what());
       goto error;
    }
 

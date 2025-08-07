@@ -30,16 +30,31 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../common/vga_defines.h"
-
 #include "../font_driver.h"
 
 #include "../../driver.h"
 #include "../../verbosity.h"
 
-/*
- * FONT DRIVER
- */
+#define VGA_WIDTH 320
+#define VGA_HEIGHT 200
+
+typedef struct vga
+{
+   unsigned char *vga_menu_frame;
+   unsigned char *vga_frame;
+
+   unsigned vga_menu_width;
+   unsigned vga_menu_height;
+   unsigned vga_menu_pitch;
+   unsigned vga_menu_bits;
+   unsigned vga_video_width;
+   unsigned vga_video_height;
+   unsigned vga_video_pitch;
+   unsigned vga_video_bits;
+
+   bool color;
+   bool vga_rgb32;
+} vga_t;
 
 typedef struct
 {

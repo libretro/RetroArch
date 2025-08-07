@@ -169,7 +169,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
    LPTSTR lp_device_path                = NULL;
    char *device_path                    = NULL;
    DWORD index                          = 0;
-   unsigned len                         = 0;
+   size_t len                           = 0;
    unsigned i                           = 0;
    char vidPidString[32]                = {0};
    char report[USB_PACKET_CTRL_LEN + 1] = {0};
@@ -192,7 +192,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
 
    if (hDeviceInfo == INVALID_HANDLE_VALUE)
    {
-      RARCH_ERR("[Autoconf]: Error in SetupDiGetClassDevs: %d.\n",
+      RARCH_ERR("[Autoconf] Error in SetupDiGetClassDevs: %d.\n",
             GetLastError());
       goto done;
    }
@@ -238,7 +238,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
          /* Check for some other error */
          if (!bResult)
          {
-            RARCH_ERR("[Autoconf]: Error in SetupDiEnumDeviceInterfaces: %d.\n", GetLastError());
+            RARCH_ERR("[Autoconf] Error in SetupDiEnumDeviceInterfaces: %d.\n", GetLastError());
             goto done;
          }
 
@@ -267,13 +267,13 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
 
                if (!pInterfaceDetailData)
                {
-                  RARCH_ERR("[Autoconf]: Error allocating memory for the device detail buffer.\n");
+                  RARCH_ERR("[Autoconf] Error allocating memory for the device detail buffer.\n");
                   goto done;
                }
             }
             else
             {
-               RARCH_ERR("[Autoconf]: Other error: %d.\n", GetLastError());
+               RARCH_ERR("[Autoconf] Other error: %d.\n", GetLastError());
                goto done;
             }
          }
@@ -320,7 +320,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
 
    if (!lp_device_path)
    {
-      RARCH_ERR("[Autoconf]: No devicepath. Error %d.", GetLastError());
+      RARCH_ERR("[Autoconf] No devicepath. Error %d.", GetLastError());
       goto done;
    }
 
@@ -356,7 +356,7 @@ found:
       {
          /* TODO/FIXME - localize */
          const char *_msg = "Bliss-Box already in use. Please make sure other programs are not using it.";
-         RARCH_ERR("[Autoconf]: Can't open device for reading and writing: %d.", GetLastError());
+         RARCH_ERR("[Autoconf] Can't open device for reading and writing: %d.", GetLastError());
          runloop_msg_queue_push(_msg, strlen(_msg), 2, 300, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          goto done;
@@ -373,7 +373,7 @@ done:
    pInterfaceDetailData = NULL;
 
    if (!bResult)
-      RARCH_ERR("[Autoconf]: Could not destroy device info list.\n");
+      RARCH_ERR("[Autoconf] Could not destroy device info list.\n");
 
    /* Device is not connected */
    if (!hDeviceHandle || hDeviceHandle == INVALID_HANDLE_VALUE)
@@ -396,7 +396,7 @@ done:
          return pad;
    }
 
-   RARCH_LOG("[Autoconf]: Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
+   RARCH_LOG("[Autoconf] Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
 #endif
 
    return NULL;
@@ -411,7 +411,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
 
    if (ret < 0)
    {
-      RARCH_ERR("[Autoconf]: Could not initialize libusb.\n");
+      RARCH_ERR("[Autoconf] Could not initialize libusb.\n");
       return NULL;
    }
 
@@ -419,7 +419,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
 
    if (!autoconfig_libusb_handle)
    {
-      RARCH_ERR("[Autoconf]: Could not find or open libusb device %d:%d.\n", vid, pid);
+      RARCH_ERR("[Autoconf] Could not find or open libusb device %d:%d.\n", vid, pid);
       goto error;
    }
 
@@ -431,7 +431,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
 
    if (ret < 0)
    {
-      RARCH_ERR("[Autoconf]: Error during libusb_set_configuration.\n");
+      RARCH_ERR("[Autoconf] Error during libusb_set_configuration.\n");
       goto error;
    }
 
@@ -439,14 +439,14 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
 
    if (ret < 0)
    {
-      RARCH_ERR("[Autoconf]: Error during libusb_claim_interface.\n");
+      RARCH_ERR("[Autoconf] Error during libusb_claim_interface.\n");
       goto error;
    }
 
    ret = libusb_control_transfer(autoconfig_libusb_handle, USB_CTRL_IN, USB_HID_GET_REPORT, BLISSBOX_USB_FEATURE_REPORT_ID, 0, answer, USB_PACKET_CTRL_LEN, USB_TIMEOUT);
 
    if (ret < 0)
-      RARCH_ERR("[Autoconf]: Error during libusb_control_transfer.\n");
+      RARCH_ERR("[Autoconf] Error during libusb_control_transfer.\n");
 
    libusb_release_interface(autoconfig_libusb_handle, 0);
 
@@ -468,7 +468,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
          return pad;
    }
 
-   RARCH_LOG("[Autoconf]: Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
+   RARCH_LOG("[Autoconf] Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
 
    return NULL;
 
@@ -500,15 +500,15 @@ void input_autoconfigure_blissbox_override_handler(int vid, int pid,
       char *s, size_t len)
 {
    if (pid == BLISSBOX_UPDATE_MODE_PID)
-      RARCH_LOG("[Autoconf]: Bliss-Box in update mode detected. Ignoring.\n");
+      RARCH_LOG("[Autoconf] Bliss-Box in update mode detected. Ignoring.\n");
    else if (pid == BLISSBOX_OLD_PID)
-      RARCH_LOG("[Autoconf]: Bliss-Box 1.0 firmware detected. Please update to 2.0 or later.\n");
+      RARCH_LOG("[Autoconf] Bliss-Box 1.0 firmware detected. Please update to 2.0 or later.\n");
    else if (pid >= BLISSBOX_PID && pid <= BLISSBOX_PID + BLISSBOX_MAX_PAD_INDEX)
    {
       const blissbox_pad_type_t *pad;
       int index      = pid - BLISSBOX_PID;
 
-      RARCH_LOG("[Autoconf]: Bliss-Box detected. Getting pad type...\n");
+      RARCH_LOG("[Autoconf] Bliss-Box detected. Getting pad type...\n");
 
       if (blissbox_pads[index])
          pad = blissbox_pads[index];
@@ -517,7 +517,7 @@ void input_autoconfigure_blissbox_override_handler(int vid, int pid,
 
       if (pad && !string_is_empty(pad->name))
       {
-         RARCH_LOG("[Autoconf]: Found Bliss-Box pad type: %s (%d) in port#%d\n", pad->name, pad->index, index);
+         RARCH_LOG("[Autoconf] Found Bliss-Box pad type: %s (%d) in port#%d.\n", pad->name, pad->index, index);
 
          /* override name given to autoconfig so it knows what kind of pad this is */
          if (len > 0)

@@ -322,7 +322,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    _clearState = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
-      RARCH_ERR("[Metal]: error creating clear pipeline state %s\n", err.localizedDescription.UTF8String);
+      RARCH_ERR("[Metal] Error creating clear pipeline state %s.\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
@@ -352,7 +352,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    _states[VIDEO_SHADER_STOCK_BLEND][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
-      RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
@@ -361,7 +361,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    _states[VIDEO_SHADER_STOCK_BLEND][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
-      RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
@@ -384,7 +384,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    _states[VIDEO_SHADER_MENU_3][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
-      RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
@@ -405,7 +405,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    _states[VIDEO_SHADER_MENU_4][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
-      RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
@@ -415,7 +415,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    _states[VIDEO_SHADER_MENU_5][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
-      RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
@@ -425,7 +425,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    _states[VIDEO_SHADER_MENU_6][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
-      RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
@@ -436,7 +436,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    _states[VIDEO_SHADER_MENU][0]   = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
-      RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
@@ -447,7 +447,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    _states[VIDEO_SHADER_MENU][1]   = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
-      RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
@@ -458,7 +458,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    _states[VIDEO_SHADER_MENU_2][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
-      RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
@@ -469,7 +469,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
    _states[VIDEO_SHADER_MENU_2][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
-      RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
+      RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
@@ -485,7 +485,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
       error:&err];
    if (err)
    {
-      RARCH_LOG("[Metal]: unable to create 'convert_bgra4444_to_bgra8888' conversion filter: %s\n",
+      RARCH_LOG("[Metal] Unable to create \"convert_bgra4444_to_bgra8888\" conversion filter: %s.\n",
                 err.localizedDescription.UTF8String);
       return NO;
    }
@@ -496,7 +496,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
       error:&err];
    if (err)
    {
-      RARCH_LOG("[Metal]: unable to create 'convert_rgb565_to_bgra8888' conversion filter: %s\n",
+      RARCH_LOG("[Metal] Unable to create \"convert_rgb565_to_bgra8888\" conversion filter: %s.\n",
                 err.localizedDescription.UTF8String);
       return NO;
    }
@@ -622,7 +622,7 @@ matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bott
 
    if (_backBuffer.pixelFormat != MTLPixelFormatBGRA8Unorm)
    {
-      RARCH_WARN("[Metal]: unexpected pixel format %d\n", _backBuffer.pixelFormat);
+      RARCH_WARN("[Metal] Unexpected pixel format %d.\n", _backBuffer.pixelFormat);
       return NO;
    }
 

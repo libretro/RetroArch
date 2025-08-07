@@ -41,9 +41,9 @@ typedef struct
 
 
 #ifdef __PSL1GHT__
-static void event_loop(void *data)
+static void ps3_event_loop(void *data)
 #else
-static void event_loop(uint64_t data)
+static void ps3_event_loop(uint64_t data)
 #endif
 {
    float out_tmp[AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS]
@@ -131,7 +131,7 @@ static void *ps3_audio_init(const char *device,
 
    audioPortStart(data->audio_port);
    data->started = true;
-   sysThreadCreate(&data->thread, event_loop,
+   sysThreadCreate(&data->thread, ps3_event_loop,
 #ifdef __PSL1GHT__
    data,
 #else

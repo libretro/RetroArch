@@ -430,6 +430,41 @@ int database_info_build_query_enum(char *s, size_t len,
          s[  _len]  = '}';
          s[++_len]  = '\0';
          break;
+      case DATABASE_QUERY_ENTRY_GENRE:
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'g';
+         s[++_len]  = 'e';
+         s[++_len]  = 'n';
+         s[++_len]  = 'r';
+         s[++_len]  = 'e';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
+         break;
+      case DATABASE_QUERY_ENTRY_REGION:
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'r';
+         s[++_len]  = 'e';
+         s[++_len]  = 'g';
+         s[++_len]  = 'i';
+         s[++_len]  = 'o';
+         s[++_len]  = 'n';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
+         break;
       case DATABASE_QUERY_NONE:
          s[  _len]  = '{';
          s[++_len]  = '\'';
@@ -469,7 +504,7 @@ char *bin_to_hex_alloc(const uint8_t *data, size_t len)
 static int database_cursor_iterate(libretrodb_cursor_t *cur,
       database_info_t *db_info)
 {
-   unsigned i;
+   size_t i;
    struct rmsgpack_dom_value item;
    const char* str                = NULL;
 
@@ -717,7 +752,7 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
 static int database_cursor_open(libretrodb_t *db,
       libretrodb_cursor_t *cur, const char *path, const char *query)
 {
-   const char *error     = NULL;
+   const char *err       = NULL;
    libretrodb_query_t *q = NULL;
 
    if ((libretrodb_open(path, db, false)) != 0)
@@ -725,32 +760,27 @@ static int database_cursor_open(libretrodb_t *db,
 
    if (query)
       q = (libretrodb_query_t*)libretrodb_query_compile(db, query,
-      strlen(query), &error);
+      strlen(query), &err);
 
-   if (error)
-      goto error;
-   if ((libretrodb_cursor_open(db, cur, q)) != 0)
-      goto error;
+   if (err || (libretrodb_cursor_open(db, cur, q)) != 0)
+   {
+      if (q)
+         libretrodb_query_free(q);
+      libretrodb_close(db);
+      return -1;
+   }
 
    if (q)
       libretrodb_query_free(q);
 
    return 0;
-
-error:
-   if (q)
-      libretrodb_query_free(q);
-   libretrodb_close(db);
-
-   return -1;
 }
 
 static bool type_is_prioritized(const char *path)
 {
    const char *ext = path_get_extension(path);
-   if (string_is_equal_noncase(ext, "cue"))
-      return true;
-   if (string_is_equal_noncase(ext, "gdi"))
+   if (     string_is_equal_noncase(ext, "cue")
+         || string_is_equal_noncase(ext, "gdi"))
       return true;
    return false;
 }
@@ -948,7 +978,7 @@ database_info_list_t *database_info_list_new(
             db_info.enhancement_hw       = NULL;
             db_info.elspa_rating         = NULL;
             db_info.esrb_rating          = NULL;
-            db_info.bbfc_rating          = NULL; 
+            db_info.bbfc_rating          = NULL;
             db_info.sha1                 = NULL;
             db_info.md5                  = NULL;
 
@@ -1076,7 +1106,7 @@ void database_info_list_free(database_info_list_t *database_info_list)
       info->enhancement_hw       = NULL;
       info->elspa_rating         = NULL;
       info->esrb_rating          = NULL;
-      info->bbfc_rating          = NULL; 
+      info->bbfc_rating          = NULL;
       info->sha1                 = NULL;
       info->md5                  = NULL;
    }

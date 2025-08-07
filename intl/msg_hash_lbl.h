@@ -512,17 +512,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
    "cb_menu_wallpaper"
    )
-#if 0
-/* Thumbnailpack removal */
-MSG_HASH(
-   MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD,
-   "cb_thumbnails_updater_download"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST,
-   "cb_thumbnails_updater_list"
-   )
-#endif
 MSG_HASH(
    MENU_ENUM_LABEL_CB_UPDATE_ASSETS,
    "cb_update_assets"
@@ -1447,13 +1436,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST,
    "deferred_cloud_sync_settings_list"
    )
-#if 0
-/* Thumbnailpack removal */
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST,
-   "deferred_thumbnails_updater_list"
-   )
-#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST,
    "deferred_pl_thumbnails_updater_list"
@@ -2175,7 +2157,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "input_remap_sort_by_controller_enable"
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SETTINGS,
    "input_settings"
@@ -2365,6 +2347,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,
    "rgui_menu_theme_preset"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OZONE_FONT,
+   "ozone_font"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME,
@@ -3123,6 +3109,14 @@ MSG_HASH(
    "deferred_cursor_manager_list_rdb_entry_max_users"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_GENRE,
+   "deferred_cursor_manager_list_rdb_entry_genre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_REGION,
+   "deferred_cursor_manager_list_rdb_entry_region"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER,
    "rdb_entry_developer"
    )
@@ -3635,6 +3629,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
    "save_new_config"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SAVE_AS_CONFIG,
+   "save_as_config"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SAVE_MAIN_CONFIG,
+   "save_main_config"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SAVE_STATE,
@@ -4563,6 +4565,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_NOTCH_WRITE_OVER,
    "video_notch_write_over"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "video_use_metal_arg_buffers"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,

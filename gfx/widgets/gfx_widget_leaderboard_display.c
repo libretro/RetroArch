@@ -50,7 +50,7 @@ struct progress_tracker_info
    retro_time_t show_until;
 };
 
-#define CHEEVO_LBOARD_FIRST_FIXED_CHAR 0x2D /* -./0123456789: */
+#define CHEEVO_LBOARD_FIRST_FIXED_CHAR 0x2C /* ,-./0123456789: */
 #define CHEEVO_LBOARD_LAST_FIXED_CHAR 0x3A
 
 /* TODO: rename; this file handles all achievement tracker information, not just leaderboards */

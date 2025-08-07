@@ -112,7 +112,7 @@ static bool oga_create_display(oga_video_t* vid)
    vid->fd = open("/dev/dri/card0", O_RDWR);
    if (vid->fd < 0)
    {
-      RARCH_ERR("open /dev/dri/card0 failed.\n");
+      RARCH_ERR("Open /dev/dri/card0 failed.\n");
       return false;
    }
 
@@ -175,7 +175,7 @@ static bool oga_create_display(oga_video_t* vid)
 
    if (!encoder)
    {
-      RARCH_ERR("could not find encoder!\n");
+      RARCH_ERR("Could not find encoder.\n");
       goto err_03;
    }
 
@@ -207,7 +207,7 @@ static oga_surface_t* oga_create_surface(int display_fd,
       calloc(1, sizeof(oga_surface_t));
    if (!surface)
    {
-      RARCH_ERR("Error allocating surface\n");
+      RARCH_ERR("Error allocating surface.\n");
       return NULL;
    }
 
@@ -238,7 +238,7 @@ static oga_surface_t* oga_create_surface(int display_fd,
    surface->map = mmap(NULL, args.size, PROT_READ | PROT_WRITE, MAP_SHARED, surface->prime_fd, 0);
    if (surface->map == MAP_FAILED)
    {
-      RARCH_LOG("mmap failed.\n");
+      RARCH_ERR("mmap failed.\n");
       return NULL;
    }
 
@@ -274,7 +274,7 @@ static oga_framebuf_t* oga_create_framebuf(oga_surface_t* surface)
 
    if (!framebuf)
    {
-      RARCH_ERR("Error allocating framebuf\n");
+      RARCH_ERR("Error allocating framebuf.\n");
       return NULL;
    }
 
@@ -367,13 +367,13 @@ static void *oga_init(const video_info_t *video,
    vid = (oga_video_t*)calloc(1, sizeof(*vid));
    if (!vid)
    {
-      RARCH_ERR("Error allocating vid\n");
+      RARCH_ERR("Error allocating vid.\n");
       return NULL;
    }
 
    if (!oga_create_display(vid))
    {
-      RARCH_ERR("Error initializing drm\n");
+      RARCH_ERR("Error initializing drm.\n");
       return NULL;
    }
 

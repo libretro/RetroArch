@@ -96,6 +96,7 @@ static rcheevos_locals_t rcheevos_locals =
    0,    /* menuitem_count */
 #endif
    true, /* hardcore_allowed */
+   false,/* hardcore_requires_reload */
    false,/* hardcore_being_enabled */
    true  /* core_supports */
 };
@@ -946,12 +947,14 @@ void rcheevos_validate_config_settings(void)
          const char* val = core_option_manager_get_val(coreopts, i);
          if (!rc_libretro_is_setting_allowed(disallowed_settings, key, val))
          {
+            size_t _len;
             char buffer[128];
-            size_t _len = snprintf(buffer, sizeof(buffer),
+            snprintf(buffer, sizeof(buffer),
                      msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED), key, val);
             CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
             _len = snprintf(buffer, sizeof(buffer),
                      msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED), key, val);
+            rcheevos_locals.hardcore_requires_reload = true;
             rcheevos_pause_hardcore();
 
             runloop_msg_queue_push(buffer, _len, 0, 4 * 60, false, NULL,
@@ -1154,32 +1157,24 @@ static void rc_hash_handle_chd_close_track(void* track_handle)
 
 #endif
 
-static void rc_hash_reset_cdreader_hooks(void);
-
 static void* rc_hash_handle_cd_open_track(
-      const char* path, uint32_t track)
+      const char* path, uint32_t track, const rc_hash_iterator_t* iterator)
 {
-   struct rc_hash_filereader filereader;
-   struct rc_hash_cdreader cdreader;
-
-   memset(&filereader, 0, sizeof(filereader));
-   filereader.open = rc_hash_handle_file_open;
-   filereader.seek = rc_hash_handle_file_seek;
-   filereader.tell = rc_hash_handle_file_tell;
-   filereader.read = rc_hash_handle_file_read;
-   filereader.close = rc_hash_handle_file_close;
-   rc_hash_init_custom_filereader(&filereader);
+   rc_hash_callbacks_t* callbacks = (rc_hash_callbacks_t*)&iterator->callbacks;
+   callbacks->filereader.open = rc_hash_handle_file_open;
+   callbacks->filereader.seek = rc_hash_handle_file_seek;
+   callbacks->filereader.tell = rc_hash_handle_file_tell;
+   callbacks->filereader.read = rc_hash_handle_file_read;
+   callbacks->filereader.close = rc_hash_handle_file_close;
 
    if (string_is_equal_noncase(path_get_extension(path), "chd"))
    {
 #ifdef HAVE_CHD
       /* special handlers for CHD file */
-      memset(&cdreader, 0, sizeof(cdreader));
-      cdreader.open_track = rc_hash_handle_cd_open_track;
-      cdreader.read_sector = rc_hash_handle_chd_read_sector;
-      cdreader.close_track = rc_hash_handle_chd_close_track;
-      cdreader.first_track_sector = rc_hash_handle_chd_first_track_sector;
-      rc_hash_init_custom_cdreader(&cdreader);
+      callbacks->cdreader.open_track_iterator = rc_hash_handle_cd_open_track;
+      callbacks->cdreader.read_sector = rc_hash_handle_chd_read_sector;
+      callbacks->cdreader.close_track = rc_hash_handle_chd_close_track;
+      callbacks->cdreader.first_track_sector = rc_hash_handle_chd_first_track_sector;
 
       return rc_hash_handle_chd_open_track(path, track);
 #else
@@ -1190,9 +1185,9 @@ static void* rc_hash_handle_cd_open_track(
    else
    {
       /* not a CHD file, use the default handlers */
+      struct rc_hash_cdreader cdreader;
       rc_hash_get_default_cdreader(&cdreader);
-      rc_hash_reset_cdreader_hooks();
-      return cdreader.open_track(path, track);
+      return cdreader.open_track_iterator(path, track, iterator);
    }
 }
 
@@ -1200,7 +1195,7 @@ static void rc_hash_reset_cdreader_hooks(void)
 {
    struct rc_hash_cdreader cdreader;
    rc_hash_get_default_cdreader(&cdreader);
-   cdreader.open_track = rc_hash_handle_cd_open_track;
+   cdreader.open_track_iterator = rc_hash_handle_cd_open_track;
    rc_hash_init_custom_cdreader(&cdreader);
 }
 
@@ -1270,7 +1265,7 @@ static void rcheevos_show_game_placard(void)
       {
          char badge_name[32];
          size_t __len = strlcpy(badge_name, "i", sizeof(badge_name));
-         __len       += strlcpy(badge_name + __len, game->badge_name,
+         strlcpy(badge_name + __len, game->badge_name,
                sizeof(badge_name) - __len);
          gfx_widgets_push_achievement(game->title, msg, badge_name);
       }
@@ -1507,7 +1502,7 @@ static void rcheevos_client_load_game_callback(int result,
    /* Have to "schedule" this. Game image should not be
     * loaded into memory on background thread */
    if (!task_is_on_main_thread())
-      rcheevos_locals.queued_command = CMD_CHEEVOS_FINALIZE_LOAD;
+      rcheevos_locals.queued_command = (enum event_command)CMD_CHEEVOS_FINALIZE_LOAD;
    else
 #endif
       rcheevos_finalize_game_load_on_ui_thread();
@@ -1586,6 +1581,7 @@ bool rcheevos_load(const void *data)
    rc_client_set_spectator_mode_enabled(rcheevos_locals.client, !rcheevos_is_player_active());
    rc_client_set_read_memory_function(rcheevos_locals.client, rcheevos_client_read_memory_uninitialized);
 
+   rcheevos_locals.hardcore_requires_reload = false;
    rcheevos_validate_config_settings();
 
    CHEEVOS_LOG(RCHEEVOS_TAG "Load started, hardcore %sactive\n", rcheevos_hardcore_active() ? "" : "not ");
@@ -1651,7 +1647,7 @@ void rcheevos_change_disc(const char* new_disc_path, bool initial_disc)
 {
    if (rcheevos_locals.client)
    {
-      rc_client_begin_change_media(rcheevos_locals.client, new_disc_path,
+      rc_client_begin_identify_and_change_media(rcheevos_locals.client, new_disc_path,
          NULL, 0, rcheevos_client_change_media_callback, NULL);
    }
 }

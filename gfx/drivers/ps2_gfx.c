@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 #include <malloc.h>
 
@@ -27,12 +28,12 @@
 #include <encodings/utf.h>
 #include <libretro_gskit_ps2.h>
 
+#include "../video_defines.h"
 #include "../../driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #include "../gfx_display.h"
-#include "../common/ps2_defines.h"
 
 /* Generic tint color */
 #define GS_TEXT GS_SETREG_RGBA(0x80, 0x80, 0x80, 0x80)
@@ -70,6 +71,45 @@ typedef struct
    const font_renderer_driver_t* font_driver;
    void* font_data;
 } ps2_font_t;
+
+typedef struct ps2_video
+{
+   /* I need to create this additional field
+    * to be used in the font driver*/
+   bool clearVRAM_font;
+   bool menuVisible;
+   bool vsync;
+   int vsync_callback_id;
+   bool force_aspect;
+
+   int8_t vmode;
+   int video_window_offset_x;
+   int video_window_offset_y;
+
+   int PSM;
+   int tex_filter;
+   int menu_filter;
+
+   video_viewport_t vp;
+
+   /* Palette in the cores */
+   struct retro_hw_render_interface_gskit_ps2 iface;
+
+   GSGLOBAL *gsGlobal;
+   GSTEXTURE *menuTexture;
+   GSTEXTURE *coreTexture;
+
+   /* Last scaling state, for detecting changes */
+   int iTextureWidth;
+   int iTextureHeight;
+   float fDAR;
+   bool bScaleInteger;
+   struct retro_hw_ps2_insets padding;
+
+   /* Current scaling calculation result */
+   int iDisplayWidth;
+   int iDisplayHeight;
+} ps2_video_t;
 
 static struct rm_mode rm_mode_table[NUM_RM_VMODES] = {
     /* SDTV modes */
@@ -252,7 +292,7 @@ static void ps2_font_render_line(
       width  = glyph->width;
       height = glyph->height;
 
-      /* The -0.5 is needed to achieve pixel perfect. 
+      /* The -0.5 is needed to achieve pixel perfect.
        * More info here (PS2 GSKit uses same logic as Direct3D9)
        * https://docs.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-coordinates
       */
@@ -455,7 +495,7 @@ static void ps2_update_offsets_if_needed(ps2_video_t *ps2)
       ps2->video_window_offset_y = video_window_offset_y;
 
       gsKit_set_display_offset(ps2->gsGlobal, ps2->video_window_offset_x * rm_mode_table[ps2->vmode].VCK, ps2->video_window_offset_y);
-      RARCH_LOG("PS2_GFX Change offset: %d, %d\n", ps2->video_window_offset_x, ps2->video_window_offset_y);
+      RARCH_LOG("[PS2_GFX] Change offset: %d, %d.\n", ps2->video_window_offset_x, ps2->video_window_offset_y);
    }
 }
 
@@ -545,7 +585,7 @@ static void rmSetMode(ps2_video_t *ps2, int force)
    gsKit_sync(ps2->gsGlobal);
    gsKit_flip(ps2->gsGlobal);
 
-   RARCH_LOG("PS2_GFX New vmode: %d, %d x %d\n", ps2->vmode, ps2->gsGlobal->Width, ps2->gsGlobal->Height);
+   RARCH_LOG("[PS2_GFX] New vmode: %d, %dx%d.\n", ps2->vmode, ps2->gsGlobal->Width, ps2->gsGlobal->Height);
 
    ps2_update_offsets_if_needed(ps2);
 }

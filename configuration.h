@@ -24,6 +24,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
+#include <file/config_file.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -115,6 +116,7 @@ typedef struct settings
       int crt_switch_center_adjust;
       int crt_switch_porch_adjust;
       int crt_switch_vertical_adjust;
+      int video_max_frame_latency;
 #ifdef HAVE_VULKAN
       int vulkan_gpu_index;
 #endif
@@ -247,7 +249,6 @@ typedef struct settings
       unsigned video_scale_integer_axis;
       unsigned video_scale_integer_scaling;
       unsigned video_max_swapchain_images;
-      unsigned video_max_frame_latency;
       unsigned video_swap_interval;
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;
@@ -305,6 +306,8 @@ typedef struct settings
       unsigned menu_materialui_thumbnail_view_landscape;
       unsigned menu_materialui_landscape_layout_optimization;
       unsigned menu_ozone_color_theme;
+      unsigned menu_ozone_header_separator;
+      unsigned menu_ozone_font_scale;
       unsigned menu_font_color_red;
       unsigned menu_font_color_green;
       unsigned menu_font_color_blue;
@@ -417,7 +420,15 @@ typedef struct settings
       float menu_ticker_speed;
       float menu_rgui_particle_effect_speed;
       float menu_screensaver_animation_speed;
+      float ozone_padding_factor;
       float ozone_thumbnail_scale_factor;
+      float ozone_font_scale_factor_global;
+      float ozone_font_scale_factor_title;
+      float ozone_font_scale_factor_sidebar;
+      float ozone_font_scale_factor_label;
+      float ozone_font_scale_factor_sublabel;
+      float ozone_font_scale_factor_time;
+      float ozone_font_scale_factor_footer;
 
       float cheevos_appearance_padding_h;
       float cheevos_appearance_padding_v;
@@ -576,6 +587,7 @@ typedef struct settings
       char bundle_assets_src[PATH_MAX_LENGTH];
       char bundle_assets_dst[PATH_MAX_LENGTH];
       char path_menu_xmb_font[PATH_MAX_LENGTH];
+      char path_menu_ozone_font[PATH_MAX_LENGTH];
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
@@ -648,6 +660,7 @@ typedef struct settings
       bool video_notch_write_over_enable;
       bool video_hdr_enable;
       bool video_hdr_expand_gamut;
+      bool video_use_metal_arg_buffers;
 
       /* Accessibility */
       bool accessibility_enable;
@@ -1313,6 +1326,8 @@ int8_t config_save_overrides(enum override_type type,
  * another one. Will load a dummy core to flush state
  * properly. */
 bool config_replace(bool config_save_on_exit, char *path);
+
+config_file_t *open_default_config_file(void);
 #endif
 
 bool config_overlay_enable_default(void);

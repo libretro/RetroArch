@@ -221,28 +221,28 @@ static void ffmpeg_audio_resolve_format(struct ff_audio_info *audio,
       audio->codec->sample_fmt = AV_SAMPLE_FMT_FLTP;
       audio->use_float         = true;
       audio->is_planar         = true;
-      RARCH_LOG("[FFmpeg]: Using sample format FLTP.\n");
+      RARCH_LOG("[FFmpeg] Using sample format FLTP.\n");
    }
    else if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_FLT, codec->sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_FLT;
       audio->use_float         = true;
       audio->is_planar         = false;
-      RARCH_LOG("[FFmpeg]: Using sample format FLT.\n");
+      RARCH_LOG("[FFmpeg] Using sample format FLT.\n");
    }
    else if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_S16P, codec->sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_S16P;
       audio->use_float         = false;
       audio->is_planar         = true;
-      RARCH_LOG("[FFmpeg]: Using sample format S16P.\n");
+      RARCH_LOG("[FFmpeg] Using sample format S16P.\n");
    }
    else if (ffmpeg_codec_has_sample_format(AV_SAMPLE_FMT_S16, codec->sample_fmts))
    {
       audio->codec->sample_fmt = AV_SAMPLE_FMT_S16;
       audio->use_float         = false;
       audio->is_planar         = false;
-      RARCH_LOG("[FFmpeg]: Using sample format S16.\n");
+      RARCH_LOG("[FFmpeg] Using sample format S16.\n");
    }
    audio->sample_size = audio->use_float ? sizeof(float) : sizeof(int16_t);
 }
@@ -281,7 +281,7 @@ static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
       }
 
       params->sample_rate = best_rate;
-      RARCH_LOG("[FFmpeg]: Using output sampling rate: %d.\n", best_rate);
+      RARCH_LOG("[FFmpeg] Using output sampling rate: %d.\n", best_rate);
    }
 }
 
@@ -294,7 +294,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
          *params->acodec ? params->acodec : "flac");
    if (!codec)
    {
-      RARCH_ERR("[FFmpeg]: Cannot find acodec %s.\n",
+      RARCH_ERR("[FFmpeg] Cannot find acodec %s.\n",
             *params->acodec ? params->acodec : "flac");
       return false;
    }
@@ -402,7 +402,7 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 
    if (!codec)
    {
-      RARCH_ERR("[FFmpeg]: Cannot find vcodec %s.\n",
+      RARCH_ERR("[FFmpeg] Cannot find vcodec %s.\n",
             *params->vcodec ? params->vcodec : "libx264rgb");
       return false;
    }
@@ -664,16 +664,16 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          av_dict_set(&params->audio_opts, "audio_global_quality", "50", 0);
 
          /* TO-DO: detect if hwaccel is available and use it instead of the preset above
-         strlcpy(params->vcodec, "h264_nvenc", sizeof(params->vcodec));
-         strlcpy(params->acodec, "aac", sizeof(params->acodec));
+            strlcpy(params->vcodec, "h264_nvenc", sizeof(params->vcodec));
+            strlcpy(params->acodec, "aac", sizeof(params->acodec));
 
-         av_dict_set(&params->video_opts, "preset", "llhp", 0);
-         av_dict_set(&params->video_opts, "tune", "zerolatency", 0);
-         av_dict_set(&params->video_opts, "zerolatency", "1", 0);
-         av_dict_set(&params->video_opts, "-rc-lookahead", "0", 0);
-         av_dict_set(&params->video_opts, "x264-params", "threads=0:intra-refresh=1:b-frames=0", 0);
-         av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
-         */
+            av_dict_set(&params->video_opts, "preset", "llhp", 0);
+            av_dict_set(&params->video_opts, "tune", "zerolatency", 0);
+            av_dict_set(&params->video_opts, "zerolatency", "1", 0);
+            av_dict_set(&params->video_opts, "-rc-lookahead", "0", 0);
+            av_dict_set(&params->video_opts, "x264-params", "threads=0:intra-refresh=1:b-frames=0", 0);
+            av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
+            */
 
          break;
       default:
@@ -719,9 +719,9 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
             video_stream_scale_factor : 1;
       else
          params->scale_factor = 1;
-      if (  streaming_mode == STREAMING_MODE_YOUTUBE ||
-            streaming_mode == STREAMING_MODE_TWITCH ||
-            streaming_mode == STREAMING_MODE_FACEBOOK)
+      if (     streaming_mode == STREAMING_MODE_YOUTUBE
+            || streaming_mode == STREAMING_MODE_TWITCH
+            || streaming_mode == STREAMING_MODE_FACEBOOK)
          strlcpy(params->format, "flv", sizeof(params->format));
       else
          strlcpy(params->format, "mpegts", sizeof(params->format));
@@ -817,16 +817,16 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
 static bool ffmpeg_init_muxer_pre(ffmpeg_t *handle)
 {
 #if !FFMPEG3
-   unsigned short int len;
+   size_t _len;
 #endif
    ctx                    = avformat_alloc_context();
    handle->muxer.ctx      = ctx;
 #if !FFMPEG3
-   len                    = MIN(strlen(handle->params.filename) + 1, PATH_MAX_LENGTH);
-   ctx->url               = (char*)av_malloc(len);
-   av_strlcpy(ctx->url, handle->params.filename, len);
+   _len                   = MIN(strlen(handle->params.filename) + 1, PATH_MAX_LENGTH);
+   ctx->url               = (char*)av_malloc(_len);
+   strlcpy(ctx->url, handle->params.filename, _len);
 #else
-   av_strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
+   strlcpy(ctx->filename, handle->params.filename, sizeof(ctx->filename));
 #endif
 
    if (*handle->config.format)
@@ -835,7 +835,7 @@ static bool ffmpeg_init_muxer_pre(ffmpeg_t *handle)
 #if !FFMPEG3
       ctx->oformat = av_guess_format(NULL, ctx->url, NULL);
 #else
-      ctx->oformat = av_guess_format(NULL, ctx->filename, NULL);
+   ctx->oformat = av_guess_format(NULL, ctx->filename, NULL);
 #endif
 
    if (!ctx->oformat)
@@ -857,8 +857,8 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
          handle->video.encoder);
 
    avcodec_parameters_from_context(stream->codecpar, handle->video.codec);
-   stream->time_base = handle->video.codec->time_base;
-   handle->muxer.vstream = stream;
+   stream->time_base                          = handle->video.codec->time_base;
+   handle->muxer.vstream                      = stream;
    handle->muxer.vstream->sample_aspect_ratio =
       handle->video.codec->sample_aspect_ratio;
 
@@ -867,7 +867,7 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
       stream = avformat_new_stream(handle->muxer.ctx,
             handle->audio.encoder);
       avcodec_parameters_from_context(stream->codecpar, handle->audio.codec);
-      stream->time_base = handle->audio.codec->time_base;
+      stream->time_base     = handle->audio.codec->time_base;
       handle->muxer.astream = stream;
    }
 
@@ -890,7 +890,7 @@ static bool init_thread(ffmpeg_t *handle)
          handle->params.channels * MAX_FRAMES / 60); /* Some arbitrary max size. */
    handle->attr_fifo  = fifo_new(sizeof(struct record_video_data) * MAX_FRAMES);
    handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
-            handle->video.pix_size * MAX_FRAMES);
+         handle->video.pix_size * MAX_FRAMES);
 
    handle->alive     = true;
    handle->can_sleep = true;
@@ -1042,8 +1042,8 @@ static void *ffmpeg_new(const struct record_params *params)
    if (!ffmpeg_init_video(handle))
       goto error;
 
-   if (handle->config.audio_enable &&
-         !ffmpeg_init_audio(handle,
+   if (  handle->config.audio_enable
+         && !ffmpeg_init_audio(handle,
             params->audio_resampler))
       goto error;
 
@@ -1181,21 +1181,17 @@ static bool ffmpeg_push_audio(void *data,
 
 static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
 {
-   AVPacket *pkt;
    int ret;
-
-   pkt = handle->pkt;
-   pkt->data = handle->video.outbuf;
-   pkt->size = (int)handle->video.outbuf_size;
+   AVPacket *pkt = handle->pkt;
+   pkt->data     = handle->video.outbuf;
+   pkt->size     = (int)handle->video.outbuf_size;
 
    ret = avcodec_send_frame(handle->video.codec, frame);
    if (ret < 0)
    {
-#ifdef __cplusplus
-      RARCH_ERR("[FFmpeg]: Cannot send video frame. Error code: %d.\n", ret);
-#else
-      RARCH_ERR("[FFmpeg]: Cannot send video frame. Error code: %s.\n", av_err2str(ret));
-#endif
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+      RARCH_ERR("[FFmpeg] Cannot send video frame. Error code: %s.\n", msg);
       return false;
    }
 
@@ -1206,32 +1202,28 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
          break;
       else if (ret < 0)
       {
-#ifdef __cplusplus
-         RARCH_ERR("[FFmpeg]: Cannot receive video packet. Error code: %d.\n", ret);
-#else
-         RARCH_ERR("[FFmpeg]: Cannot receive video packet. Error code: %s.\n", av_err2str(ret));
-#endif
+         char msg[AV_ERROR_MAX_STRING_SIZE];
+         av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+         RARCH_ERR("[FFmpeg] Cannot receive video packet. Error code: %s.\n", msg);
          return false;
       }
 
       pkt->pts = av_rescale_q(pkt->pts,
-         handle->video.codec->time_base,
-         handle->muxer.vstream->time_base);
+            handle->video.codec->time_base,
+            handle->muxer.vstream->time_base);
 
       pkt->dts = av_rescale_q(pkt->dts,
-         handle->video.codec->time_base,
-         handle->muxer.vstream->time_base);
+            handle->video.codec->time_base,
+            handle->muxer.vstream->time_base);
 
       pkt->stream_index = handle->muxer.vstream->index;
 
       ret = av_interleaved_write_frame(handle->muxer.ctx, pkt);
       if (ret < 0)
       {
-#ifdef __cplusplus
-         RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %d.\n", ret);
-#else
-         RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %s.\n", av_err2str(ret));
-#endif
+         char msg[AV_ERROR_MAX_STRING_SIZE];
+         av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+         RARCH_ERR("[FFmpeg] Cannot write video packet to output file. Error code: %s.\n", msg);
          return false;
       }
 
@@ -1340,17 +1332,15 @@ static void planarize_audio(ffmpeg_t *handle)
 
 static bool encode_audio(ffmpeg_t *handle, bool dry)
 {
-   AVFrame *frame;
-   AVPacket *pkt;
-   int samples_size;
    int ret;
+   AVFrame *frame;
+   int samples_size;
+   AVPacket *pkt = handle->pkt;
 
-   pkt = handle->pkt;
+   pkt->data     = handle->audio.outbuf;
+   pkt->size     = (int)handle->audio.outbuf_size;
 
-   pkt->data = handle->audio.outbuf;
-   pkt->size = (int)handle->audio.outbuf_size;
-
-   frame    = av_frame_alloc();
+   frame         = av_frame_alloc();
 
    if (!frame)
       return false;
@@ -1390,12 +1380,11 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
    ret = avcodec_send_frame(handle->audio.codec, dry ? NULL : frame);
    if (ret < 0)
    {
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+
       av_frame_free(&frame);
-#ifdef __cplusplus
-      RARCH_ERR("[FFmpeg]: Cannot send audio frame. Return code: %d.\n", ret);
-#else
-      RARCH_ERR("[FFmpeg]: Cannot send audio frame. Return code: %s.\n", av_err2str(ret));
-#endif
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+      RARCH_ERR("[FFmpeg] Cannot send audio frame. Return code: %s.\n", msg);
       return false;
    }
 
@@ -1406,34 +1395,33 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
          break;
       else if (ret < 0)
       {
+         char msg[AV_ERROR_MAX_STRING_SIZE];
+
          av_frame_free(&frame);
-#ifdef __cplusplus
-         RARCH_ERR("[FFmpeg]: Cannot receive audio packet. Return code: %d.\n", ret);
-#else
-         RARCH_ERR("[FFmpeg]: Cannot receive audio packet. Return code: %s.\n", av_err2str(ret));
-#endif
+
+         av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+         RARCH_ERR("[FFmpeg] Cannot receive audio packet. Return code: %s.\n", msg);
          return false;
       }
 
       pkt->pts = av_rescale_q(pkt->pts,
-         handle->audio.codec->time_base,
-         handle->muxer.astream->time_base);
+            handle->audio.codec->time_base,
+            handle->muxer.astream->time_base);
 
       pkt->dts = av_rescale_q(pkt->dts,
-         handle->audio.codec->time_base,
-         handle->muxer.astream->time_base);
+            handle->audio.codec->time_base,
+            handle->muxer.astream->time_base);
 
       pkt->stream_index = handle->muxer.astream->index;
 
       ret = av_interleaved_write_frame(handle->muxer.ctx, pkt);
       if (ret < 0)
       {
+         char msg[AV_ERROR_MAX_STRING_SIZE];
+
          av_frame_free(&frame);
-#ifdef __cplusplus
-         RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %d.\n", ret);
-#else
-         RARCH_ERR("[FFmpeg]: Cannot write video packet to output file. Error code: %s.\n", av_err2str(ret));
-#endif
+         av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+         RARCH_ERR("[FFmpeg] Cannot write video packet to output file. Error code: %s.\n", msg);
          return false;
       }
 
@@ -1573,12 +1561,6 @@ static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
    }
 
    encode_audio(handle, true);
-   }
-
-static void ffmpeg_flush_video(ffmpeg_t *handle)
-{
-   encode_video(handle, NULL);
-
 }
 
 static void ffmpeg_flush_buffers(ffmpeg_t *handle)
@@ -1634,7 +1616,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
       ffmpeg_flush_audio(handle, audio_buf, audio_buf_size);
 
    /* Flush out last video. */
-   ffmpeg_flush_video(handle);
+   encode_video(handle, NULL);
 
    av_free(video_buf);
    av_free(audio_buf);

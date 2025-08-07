@@ -148,7 +148,6 @@ wiiu/wut/elf2rpl/elf2rpl
 /pkg/android/phoenix/bin/
 /pkg/android/phoenix/gen/
 /pkg/android/phoenix/local.properties
-/pkg/android/phoenix/gradle.properties
 /pkg/android/phoenix/.gradle
 /pkg/android/phoenix/.externalNativeBuild
 /pkg/android/phoenix/build
@@ -264,3 +263,18 @@ param.sfo
 
 # Clazy
 *.clazy.yaml
+
+# PSL1GHT
+*.SELF
+EBOOT.BIN
+pkg/psl1ght/*.pkg
+modern_alpha_blend_fpo.h
+modern_alpha_blend_vpo.h
+modern_opaque_fpo.h
+modern_opaque_vpo.h
+gfx/drivers/rsx_shaders/modern_alpha_blend.fpo
+gfx/drivers/rsx_shaders/modern_alpha_blend.vpo
+gfx/drivers/rsx_shaders/modern_opaque.fpo
+gfx/drivers/rsx_shaders/modern_opaque.vpo
+pkg/psl1ght/pkg/USRDIR/shaders_cg/
+!pkg/psl1ght/pkg/USRDIR/system/

@@ -158,8 +158,8 @@ static bool task_core_backup_finder(retro_task_t *task, void *user_data)
    if (!task || !user_data)
       return false;
 
-   if ((task->handler != task_core_backup_handler) &&
-       (task->handler != task_core_restore_handler))
+   if (   (task->handler != task_core_backup_handler)
+       && (task->handler != task_core_restore_handler))
       return false;
 
    backup_handle = (core_backup_handle_t*)task->state;
@@ -212,7 +212,7 @@ static void task_core_backup_handler(retro_task_t *task)
 
          if (!backup_handle->core_file)
          {
-            RARCH_ERR("[core backup] Failed to open core file: %s\n",
+            RARCH_ERR("[Core Backup] Failed to open core file: \"%s\".\n",
                   backup_handle->core_path);
             backup_handle->status = CORE_BACKUP_END;
             break;
@@ -223,7 +223,7 @@ static void task_core_backup_handler(retro_task_t *task)
 
          if (backup_handle->core_file_size <= 0)
          {
-            RARCH_ERR("[core backup] Core file is empty/invalid: %s\n",
+            RARCH_ERR("[Core Backup] Core file is empty/invalid: \"%s\".\n",
                   backup_handle->core_path);
             backup_handle->status = CORE_BACKUP_END;
             break;
@@ -239,7 +239,7 @@ static void task_core_backup_handler(retro_task_t *task)
             if (!intfstream_get_crc(backup_handle->core_file,
                      &backup_handle->core_crc))
             {
-               RARCH_ERR("[core backup] Failed to determine CRC of core file: %s\n",
+               RARCH_ERR("[Core Backup] Failed to determine CRC of core file: \"%s\".\n",
                      backup_handle->core_path);
                backup_handle->status = CORE_BACKUP_END;
                break;
@@ -258,7 +258,7 @@ static void task_core_backup_handler(retro_task_t *task)
                      backup_handle->backup_mode,
                      &entry))
             {
-               RARCH_LOG("[core backup] Current version of core is already backed up: %s\n",
+               RARCH_LOG("[Core Backup] Current version of core is already backed up: \"%s\".\n",
                      entry->backup_path);
 
                backup_handle->crc_match = true;
@@ -287,7 +287,7 @@ static void task_core_backup_handler(retro_task_t *task)
                   backup_handle->dir_core_assets,
                   backup_path, sizeof(backup_path)))
             {
-               RARCH_ERR("[core backup] Failed to generate backup path for core file: %s\n",
+               RARCH_ERR("[Core Backup] Failed to generate backup path for core file: \"%s\".\n",
                      backup_handle->core_path);
                backup_handle->status = CORE_BACKUP_END;
                break;
@@ -306,7 +306,7 @@ static void task_core_backup_handler(retro_task_t *task)
 #endif
             if (!backup_handle->backup_file)
             {
-               RARCH_ERR("[core backup] Failed to open core backup file: %s\n",
+               RARCH_ERR("[Core Backup] Failed to open core backup file: \"%s\".\n",
                      backup_handle->backup_path);
                backup_handle->status = CORE_BACKUP_END;
                break;
@@ -335,7 +335,7 @@ static void task_core_backup_handler(retro_task_t *task)
 
             if (data_read < 0)
             {
-               RARCH_ERR("[core backup] Failed to read from core file: %s\n",
+               RARCH_ERR("[Core Backup] Failed to read from core file: \"%s\".\n",
                      backup_handle->core_path);
                backup_handle->status = CORE_BACKUP_END;
                break;
@@ -373,7 +373,7 @@ static void task_core_backup_handler(retro_task_t *task)
 
             if (data_written != data_read)
             {
-               RARCH_ERR("[core backup] Failed to write to core backup file: %s\n",
+               RARCH_ERR("[Core Backup] Failed to write to core backup file: \"%s\".\n",
                      backup_handle->backup_path);
                backup_handle->status = CORE_BACKUP_END;
                break;
@@ -447,17 +447,17 @@ static void task_core_backup_handler(retro_task_t *task)
              * by timestamp - simply loop from start to end
              * and delete automatic backups until the required
              * number have been removed */
-            while ((backup_handle->backup_index < list_size) &&
-                   (backup_handle->num_auto_backups_to_remove > 0))
+            while (   (backup_handle->backup_index < list_size)
+                   && (backup_handle->num_auto_backups_to_remove > 0))
             {
                const core_backup_list_entry_t *entry = NULL;
 
                if (core_backup_list_get_index(
                      backup_handle->backup_list,
                      backup_handle->backup_index,
-                     &entry) &&
-                     entry &&
-                     (entry->backup_mode == CORE_BACKUP_MODE_AUTO))
+                     &entry)
+                     && entry
+                     && (entry->backup_mode == CORE_BACKUP_MODE_AUTO))
                {
                   /* Delete backup file (if it exists) */
                   if (path_is_valid(entry->backup_path))
@@ -695,7 +695,7 @@ static void task_core_restore_handler(retro_task_t *task)
 
             if (!backup_handle->core_file)
             {
-               RARCH_ERR("[core restore] Failed to open core file: %s\n",
+               RARCH_ERR("[Core Restore] Failed to open core file: \"%s\".\n",
                      backup_handle->core_path);
                backup_handle->status = CORE_RESTORE_END;
                break;
@@ -705,7 +705,7 @@ static void task_core_restore_handler(retro_task_t *task)
             if (!intfstream_get_crc(backup_handle->core_file,
                      &backup_handle->core_crc))
             {
-               RARCH_ERR("[core restore] Failed to determine CRC of core file: %s\n",
+               RARCH_ERR("[Core Restore] Failed to determine CRC of core file: \"%s\".\n",
                      backup_handle->core_path);
                backup_handle->status = CORE_RESTORE_END;
                break;
@@ -725,7 +725,7 @@ static void task_core_restore_handler(retro_task_t *task)
          if (!core_backup_get_backup_crc(
                   backup_handle->backup_path, &backup_handle->backup_crc))
          {
-            RARCH_ERR("[core restore] Failed to determine CRC of core backup file: %s\n",
+            RARCH_ERR("[Core Restore] Failed to determine CRC of core backup file: \"%s\".\n",
                   backup_handle->backup_path);
             backup_handle->status = CORE_RESTORE_END;
             break;
@@ -738,7 +738,7 @@ static void task_core_restore_handler(retro_task_t *task)
          /* Check whether current core matches backup CRC */
          if (backup_handle->core_crc == backup_handle->backup_crc)
          {
-            RARCH_LOG("[core restore] Selected backup core file is already installed: %s\n",
+            RARCH_LOG("[Core Restore] Selected backup core file is already installed: \"%s\".\n",
                   backup_handle->backup_path);
 
             backup_handle->crc_match = true;
@@ -766,7 +766,7 @@ static void task_core_restore_handler(retro_task_t *task)
 #endif
             if (!backup_handle->backup_file)
             {
-               RARCH_ERR("[core restore] Failed to open core backup file: %s\n",
+               RARCH_ERR("[Core Restore] Failed to open core backup file: \"%s\".\n",
                      backup_handle->backup_path);
                backup_handle->status = CORE_RESTORE_END;
                break;
@@ -777,7 +777,7 @@ static void task_core_restore_handler(retro_task_t *task)
 
             if (backup_handle->backup_file_size <= 0)
             {
-               RARCH_ERR("[core restore] Core backup file is empty/invalid: %s\n",
+               RARCH_ERR("[Core Restore] Core backup file is empty/invalid: \"%s\".\n",
                      backup_handle->backup_path);
                backup_handle->status = CORE_RESTORE_END;
                break;
@@ -794,10 +794,10 @@ static void task_core_restore_handler(retro_task_t *task)
                const char *core_filename = path_basename(
                      backup_handle->core_path);
 
-               if (play_feature_delivery_core_installed(core_filename) &&
-                   !play_feature_delivery_delete(core_filename))
+               if (    play_feature_delivery_core_installed(core_filename)
+                   && !play_feature_delivery_delete(core_filename))
                {
-                  RARCH_ERR("[core restore] Failed to delete existing play feature delivery core: %s\n",
+                  RARCH_ERR("[Core Restore] Failed to delete existing play feature delivery core: \"%s\".\n",
                         backup_handle->core_path);
                   backup_handle->status = CORE_RESTORE_END;
                   break;
@@ -811,7 +811,7 @@ static void task_core_restore_handler(retro_task_t *task)
 
             if (!backup_handle->core_file)
             {
-               RARCH_ERR("[core restore] Failed to open core file: %s\n",
+               RARCH_ERR("[Core Restore] Failed to open core file: \"%s\".\n",
                      backup_handle->core_path);
                backup_handle->status = CORE_RESTORE_END;
                break;
@@ -844,7 +844,7 @@ static void task_core_restore_handler(retro_task_t *task)
 
             if (data_read < 0)
             {
-               RARCH_ERR("[core restore] Failed to read from core backup file: %s\n",
+               RARCH_ERR("[Core Restore] Failed to read from core backup file: \"%s\".\n",
                      backup_handle->backup_path);
                backup_handle->status = CORE_RESTORE_END;
                break;
@@ -876,7 +876,7 @@ static void task_core_restore_handler(retro_task_t *task)
 
             if (data_written != data_read)
             {
-               RARCH_ERR("[core restore] Failed to write to core file: %s\n",
+               RARCH_ERR("[Core Restore] Failed to write to core file: \"%s\".\n",
                      backup_handle->core_path);
                backup_handle->status = CORE_RESTORE_END;
                break;
@@ -965,7 +965,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    {
       if (!path_mkdir(dir_libretro))
       {
-         RARCH_ERR("[core restore] Failed to create core directory: %s\n", dir_libretro);
+         RARCH_ERR("[Core Restore] Failed to create core directory: \"%s\".\n", dir_libretro);
          goto error;
       }
    }
@@ -987,7 +987,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
                sizeof(msg) - _len);
 
       /* TODO/FIXME - localize */
-      RARCH_ERR("[core restore] Invalid core file selected: %s\n", backup_path);
+      RARCH_ERR("[Core Restore] Invalid core file selected: \"%s\".\n", backup_path);
       runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       goto error;
@@ -1021,7 +1021,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
             sizeof(msg) - _len);
 
       /* TODO/FIXME - localize */
-      RARCH_ERR("[core restore] Restoration disabled - core is locked: %s\n", core_path);
+      RARCH_ERR("[Core Restore] Restoration disabled - core is locked: \"%s\".\n", core_path);
       runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       goto error;

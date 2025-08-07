@@ -1478,6 +1478,7 @@ static bool rgui_fonts_init(rgui_t *rgui)
       case RETRO_LANGUAGE_CATALAN:
       case RETRO_LANGUAGE_GALICIAN:
       case RETRO_LANGUAGE_NORWEGIAN:
+      case RETRO_LANGUAGE_IRISH:
          /* We have at least partial support for
           * these languages, but extended ASCII
           * is required */
@@ -5001,8 +5002,6 @@ static void rgui_render(void *data, unsigned width, unsigned height,
    size_t i, end, fb_pitch, old_start, new_start;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    static bool display_kb         = false;
-   static const char* const
-      ticker_spacer               = RGUI_TICKER_SPACER;
    int bottom                     = 0;
    unsigned ticker_x_offset       = 0;
    size_t entries_end             = 0;
@@ -5200,14 +5199,14 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       ticker_smooth.font          = NULL;
       ticker_smooth.glyph_width   = rgui->font_width_stride;
       ticker_smooth.type_enum     = menu_ticker_type;
-      ticker_smooth.spacer        = ticker_spacer;
+      ticker_smooth.spacer        = RGUI_TICKER_SPACER;
       ticker_smooth.dst_str_width = NULL;
    }
    else
    {
       ticker.idx                  = p_anim->ticker_idx;
       ticker.type_enum            = menu_ticker_type;
-      ticker.spacer               = ticker_spacer;
+      ticker.spacer               = RGUI_TICKER_SPACER;
    }
 
    /* Note: On-screen keyboard takes precedence over
@@ -5298,16 +5297,12 @@ static void rgui_render(void *data, unsigned width, unsigned height,
    {
       /* Render usual text */
       unsigned title_x;
-      size_t title_len;
       size_t title_max_len;
       char title_buf[NAME_MAX_LENGTH];
       size_t selection               = menu_st->selection_ptr;
-      unsigned title_y               = rgui->term_layout.start_y - rgui->font_height_stride;
+      unsigned title_y               = rgui->term_layout.start_y - rgui->font_height_stride - 1;
+      unsigned sublabel_y            = (rgui->term_layout.height * rgui->font_height_stride) + rgui->term_layout.start_y + 4;
       unsigned term_end_x            = rgui->term_layout.start_x + (rgui->term_layout.width * rgui->font_width_stride);
-      unsigned timedate_x            = term_end_x - (5 * rgui->font_width_stride);
-      unsigned core_name_len         = menu_timedate_enable
-            ? ((timedate_x - rgui->term_layout.start_x) / rgui->font_width_stride) - 3
-            : rgui->term_layout.width - 1;
       bool show_mini_thumbnails      = rgui_inline_thumbnails
             && rgui->playlist_index >= 0
             && (   (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
@@ -5321,6 +5316,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       unsigned thumbnail_panel_width = 0;
       unsigned term_mid_point        = 0;
       size_t powerstate_len          = 0;
+      size_t timedate_len            = 0;
 
       /* Cache mini thumbnail related parameters, if required */
       if (show_mini_thumbnails)
@@ -5402,26 +5398,60 @@ static void rgui_render(void *data, unsigned width, unsigned height,
                percent_str[powerstate_len - 1] = '\0';
 
                powerstate_x = (unsigned)(term_end_x -
-                     (RGUI_SYMBOL_WIDTH_STRIDE + (powerstate_len * rgui->font_width_stride)));
+                     (powerstate_len * rgui->font_width_stride));
 
                /* Draw symbol */
-               rgui_blit_symbol(rgui, fb_width, powerstate_x, title_y, powerstate_symbol,
-                     powerstate_color, rgui->colors.shadow_color);
+               rgui_blit_symbol(rgui,
+                     fb_width,
+                     powerstate_x,
+                     title_y,
+                     powerstate_symbol,
+                     powerstate_color,
+                     rgui->colors.shadow_color);
 
                /* Print text */
-               rgui_blit_line(rgui, fb_width,
-                     powerstate_x + RGUI_SYMBOL_WIDTH_STRIDE + rgui->font_width_stride, title_y,
-                     percent_str, powerstate_color, rgui->colors.shadow_color);
-
-               /* Final length of battery indicator is 'powerstate_len' + a
-                * spacer of 3 characters */
-               powerstate_len += 3;
+               rgui_blit_line(rgui,
+                     fb_width,
+                     powerstate_x + rgui->font_width_stride,
+                     title_y,
+                     percent_str,
+                     powerstate_color,
+                     rgui->colors.shadow_color);
             }
          }
       }
 
+      /* Print clock (if required) */
+      if (menu_timedate_enable)
+      {
+         char timedate[20];
+         gfx_display_ctx_datetime_t datetime;
+         datetime.time_mode      = settings->uints.menu_timedate_style;
+         datetime.date_separator = settings->uints.menu_timedate_date_separator;
+
+         menu_display_timedate(&datetime, timedate, sizeof(timedate));
+         timedate_len = utf8len(timedate);
+
+         /* Add battery spacer */
+         if (powerstate_len)
+            powerstate_len++;
+
+         rgui_blit_line(rgui,
+               fb_width,
+               term_end_x
+                     - (powerstate_len * rgui->font_width_stride)
+                     - (timedate_len * rgui->font_width_stride),
+               title_y,
+               timedate,
+               rgui->colors.hover_color,
+               rgui->colors.shadow_color);
+      }
+
       /* Print title */
-      title_max_len = rgui->term_layout.width - 5 - (powerstate_len > 5 ? powerstate_len : 5);
+      title_max_len = rgui->term_layout.width - powerstate_len - timedate_len;
+      if (powerstate_len || timedate_len)
+         title_max_len--;
+
       title_buf[0] = '\0';
 
       if (use_smooth_ticker)
@@ -5434,10 +5464,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          ticker_smooth.x_offset    = &ticker_x_offset;
 
          /* If title is scrolling, then title_len == title_max_len */
-         if (gfx_animation_ticker_smooth(&ticker_smooth))
-            title_len              = title_max_len;
-         else
-            title_len              = utf8len(title_buf);
+         gfx_animation_ticker_smooth(&ticker_smooth);
       }
       else
       {
@@ -5447,23 +5474,11 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          ticker.selected = true;
 
          gfx_animation_ticker(&ticker);
-
-         title_len = utf8len(title_buf);
       }
 
       string_to_upper(title_buf);
 
-      title_x = (unsigned)(ticker_x_offset
-               +  rgui->term_layout.start_x
-               + (rgui->term_layout.width - title_len)
-               *  rgui->font_width_stride / 2);
-
-      /* Title is always centred, unless it is long enough
-       * to infringe upon the battery indicator, in which case
-       * we shift it to the left */
-      if (powerstate_len > 5)
-         if (title_len > title_max_len - (powerstate_len - 5))
-            title_x -= (powerstate_len - 5) * rgui->font_width_stride / 2;
+      title_x = (unsigned)(ticker_x_offset + rgui->term_layout.start_x);
 
       rgui_blit_line(rgui, fb_width, title_x, title_y,
             title_buf, rgui->colors.title_color, rgui->colors.shadow_color);
@@ -5749,7 +5764,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          if (use_smooth_ticker)
          {
             ticker_smooth.selected    = true;
-            ticker_smooth.field_width = core_name_len * rgui->font_width_stride;
+            ticker_smooth.field_width = rgui->term_layout.width * rgui->font_width_stride;
             ticker_smooth.src_str     = rgui->menu_sublabel;
             ticker_smooth.dst_str     = sublabel_buf;
             ticker_smooth.dst_str_len = sizeof(sublabel_buf);
@@ -5760,7 +5775,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          else
          {
             ticker.s                  = sublabel_buf;
-            ticker.len                = core_name_len;
+            ticker.len                = rgui->term_layout.width;
             ticker.str                = rgui->menu_sublabel;
             ticker.selected           = true;
 
@@ -5769,8 +5784,8 @@ static void rgui_render(void *data, unsigned width, unsigned height,
 
          rgui_blit_line(rgui,
                fb_width,
-               ticker_x_offset + rgui->term_layout.start_x + rgui->font_width_stride,
-               (rgui->term_layout.height * rgui->font_height_stride) + rgui->term_layout.start_y + 2,
+               ticker_x_offset + rgui->term_layout.start_x,
+               sublabel_y,
                sublabel_buf,
                rgui->colors.hover_color,
                rgui->colors.shadow_color);
@@ -5786,7 +5801,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          if (use_smooth_ticker)
          {
             ticker_smooth.selected    = true;
-            ticker_smooth.field_width = core_name_len * rgui->font_width_stride;
+            ticker_smooth.field_width = rgui->term_layout.width * rgui->font_width_stride;
             ticker_smooth.src_str     = core_title;
             ticker_smooth.dst_str     = core_title_buf;
             ticker_smooth.dst_str_len = sizeof(core_title_buf);
@@ -5797,7 +5812,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          else
          {
             ticker.s                  = core_title_buf;
-            ticker.len                = core_name_len;
+            ticker.len                = rgui->term_layout.width;
             ticker.str                = core_title;
             ticker.selected           = true;
 
@@ -5806,28 +5821,9 @@ static void rgui_render(void *data, unsigned width, unsigned height,
 
          rgui_blit_line(rgui,
                fb_width,
-               ticker_x_offset + rgui->term_layout.start_x + rgui->font_width_stride,
-               (rgui->term_layout.height * rgui->font_height_stride) + rgui->term_layout.start_y + 2,
+               ticker_x_offset + rgui->term_layout.start_x,
+               sublabel_y,
                core_title_buf,
-               rgui->colors.hover_color,
-               rgui->colors.shadow_color);
-      }
-
-      /* Print clock (if required) */
-      if (menu_timedate_enable)
-      {
-         char timedate[16];
-         gfx_display_ctx_datetime_t datetime;
-         datetime.time_mode      = MENU_TIMEDATE_STYLE_HM;
-         datetime.date_separator = MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN;
-
-         menu_display_timedate(&datetime, timedate, sizeof(timedate));
-
-         rgui_blit_line(rgui,
-               fb_width,
-               timedate_x,
-               (rgui->term_layout.height * rgui->font_height_stride) + rgui->term_layout.start_y + 2,
-               timedate,
                rgui->colors.hover_color,
                rgui->colors.shadow_color);
       }
@@ -7252,8 +7248,6 @@ static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
    if (!string_is_empty(entry.sublabel))
    {
       char *tok, *save         = NULL;
-      static const char* const
-         sublabel_spacer       = RGUI_TICKER_SPACER;
       bool prev_line_empty     = true;
       char *entry_sublabel_cpy = strdup(entry.sublabel);
 
@@ -7269,7 +7263,7 @@ static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
          if (!string_is_empty(tok))
          {
             if (!prev_line_empty)
-               strlcat(rgui->menu_sublabel, sublabel_spacer, sizeof(rgui->menu_sublabel));
+               strlcat(rgui->menu_sublabel, RGUI_TICKER_SPACER, sizeof(rgui->menu_sublabel));
             strlcat(rgui->menu_sublabel, tok, sizeof(rgui->menu_sublabel));
             prev_line_empty = false;
          }

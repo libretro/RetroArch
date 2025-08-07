@@ -323,6 +323,19 @@ typedef struct input_overlay_state
    int touch_count;
 } input_overlay_state_t;
 
+typedef struct input_overlay_mouse_state
+{
+   float scale_x;
+   float scale_y;
+
+   int16_t prev_screen_x;
+   int16_t prev_screen_y;
+
+   /* Bits 0-2 used for LMB, RMB, MMB */
+   uint8_t click;
+   uint8_t hold;
+} input_overlay_mouse_state_t;
+
 /* Non-hitbox input state for pointer, mouse, and lightgun */
 typedef struct input_overlay_pointer_state
 {
@@ -344,18 +357,7 @@ typedef struct input_overlay_pointer_state
       unsigned multitouch_id;
    } lightgun;
 
-   struct input_overlay_mouse_state
-   {
-      float scale_x;
-      float scale_y;
-
-      int16_t prev_screen_x;
-      int16_t prev_screen_y;
-
-      /* Bits 0-2 used for LMB, RMB, MMB */
-      uint8_t click;
-      uint8_t hold;
-   } mouse;
+   input_overlay_mouse_state_t mouse;
 
    /* Mask of requested devices
     * to avoid unnecessary polling */

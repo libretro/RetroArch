@@ -14,10 +14,11 @@ endif
 WEBOS_FREETYPE_CONFIG ?= $(STAGING_DIR)/usr/bin/freetype-config
 
 WEBOS_INC_DIR         ?= $(STAGING_DIR)/usr/include
-WEBOS_LIB_DIR         ?= $(STAGING_DIR)/usr/lib
+WEBOS_USR_LIB_DIR     ?= $(STAGING_DIR)/usr/lib
+WEBOS_LIB_DIR         ?= $(STAGING_DIR)/lib
 
 ADD_SDL2_LIB          ?= 0
-SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.8-webos.3/SDL2-2.30.8-webos-abi.tar.gz
+SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.12-webos.1/SDL2-2.30.12-webos-abi.tar.gz
 
 #########################
 #########################
@@ -119,6 +120,7 @@ HAVE_MATERIALUI = 0
 HAVE_XMB = 1
 HAVE_OZONE = 1
 HAVE_ZLIB = 1
+HAVE_ZSTD = 1
 HAVE_CONFIGFILE = 1
 HAVE_PATCH = 1
 HAVE_CHEATS = 1
@@ -144,7 +146,7 @@ CXXFLAGS := $(ARCHFLAGS) -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_
 ASFLAGS := $(ARCHFLAGS)
 LDFLAGS := -Wl,-rpath=\$$ORIGIN/lib,--gc-sections
 INCLUDE_DIRS = -I$(WEBOS_INC_DIR)
-LIBRARY_DIRS = -L$(WEBOS_LIB_DIR)
+LIBRARY_DIRS = -L$(WEBOS_USR_LIB_DIR)
 DEFINES := -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64 -UHAVE_STATIC_DUMMY
 DEFINES += -DHAVE_C99=1 -DHAVE_CXX=1 -D_GNU_SOURCE
 DEFINES += -DHAVE_GETOPT_LONG=1 -DHAVE_STRCASESTR=1 -DHAVE_DYNAMIC=1
@@ -284,11 +286,14 @@ ipk: $(TARGET) sdl2
 	mkdir -p webos/dist/lib
 	echo "$$APPINFO" > webos/dist/appinfo.json
 	cp -t webos/dist -vf $(TARGET) webos/icon160.png
-	cp -t webos/dist/lib -vf $(WEBOS_LIB_DIR)/libstdc++.so.6
+	cp -t webos/dist/lib -vf $(WEBOS_USR_LIB_DIR)/libstdc++.so.6
+	cp -t webos/dist/lib -vf $(WEBOS_LIB_DIR)/libatomic.so.1
 ifeq ($(ADD_SDL2_LIB), 1)
 	cp -t webos/dist/lib -vf SDL/lib/libSDL2-2.0.so.0
 endif
+ifneq ($(DEBUG), 1)
 	$(STRIP) webos/dist/$(TARGET)
+endif
 	cd webos && ares-package dist
 
 install: ipk

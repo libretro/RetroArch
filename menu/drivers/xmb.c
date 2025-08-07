@@ -1167,53 +1167,51 @@ static void xmb_render_messagebox_internal(
    string_list_deinitialize(&list);
 }
 
-static char *xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
+static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
 {
    settings_t *settings               = config_get_ptr();
    bool menu_dynamic_wallpaper_enable = settings->bools.menu_dynamic_wallpaper_enable;
    unsigned xmb_color_theme           = settings->uints.menu_xmb_color_theme;
    const char *path_menu_wallpaper    = settings->paths.path_menu_wallpaper;
    const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
-   char path[PATH_MAX_LENGTH];
    unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-
-   path[0]                            = '\0';
 
    /* Do not update wallpaper in "Main Menu" playlists and inside playlist items */
    if (    (xmb->categories_selection_ptr == XMB_SYSTEM_TAB_MAIN && depth > 3)
         || (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1))
    {
-      if (string_is_empty(xmb->bg_file_path))
-         return NULL;
-      return strdup(xmb->bg_file_path);
+      if (!string_is_empty(xmb->bg_file_path))
+         strlcpy(s, xmb->bg_file_path, len);
+      return;
    }
 
    /* Dynamic wallpaper takes precedence as reset background,
     * then comes 'menu_wallpaper', and then iconset 'bg.png' */
    if (menu_dynamic_wallpaper_enable)
    {
-      size_t _len = fill_pathname_join_special(
-               path,
+      size_t _len = fill_pathname_join_special(s,
                dir_dynamic_wallpapers,
                xmb->title_name,
-               sizeof(path));
-      strlcpy(path + _len, ".png", sizeof(path) - _len);
+               len);
+      strlcpy(s + _len, ".png", len - _len);
    }
 
-   if (!string_is_empty(path) && path_is_valid(path))
+   if (!string_is_empty(s) && path_is_valid(s))
       ;/* no-op */
    else if (!string_is_empty(path_menu_wallpaper))
-      strlcpy(path, path_menu_wallpaper, sizeof(path));
+      strlcpy(s, path_menu_wallpaper, len);
    else if (xmb_color_theme == XMB_THEME_WALLPAPER)
-      fill_pathname_application_special(path, sizeof(path),
+      fill_pathname_application_special(s, len,
             APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
-
-   return strdup(path);
 }
 
 static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
 {
-   const char *path = xmb_path_dynamic_wallpaper(xmb);
+   char path[PATH_MAX_LENGTH];
+
+   path[0] = '\0';
+
+   xmb_path_dynamic_wallpaper(xmb, path, sizeof(path));
 
    if (!string_is_equal(path, xmb->bg_file_path) || reset)
    {
@@ -2795,14 +2793,14 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
                sizeof(sysname));
          __len   = fill_pathname_join_special(texturepath, iconpath, sysname,
                sizeof(texturepath));
-         __len  += strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
+         strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
 
          /* If the playlist icon doesn't exist return default */
          if (!path_is_valid(texturepath))
          {
             __len  = fill_pathname_join_special(texturepath, iconpath, "default",
                   sizeof(texturepath));
-            __len += strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
+            strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
          }
 
          ti.width         = 0;
@@ -2924,13 +2922,6 @@ static void xmb_refresh_system_tabs_list(xmb_handle_t *xmb)
    if (settings->bools.menu_content_show_video)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
-
-#if 0 /* Move Netplay to Main Menu */
-#ifdef HAVE_NETWORKING
-   if (settings->bools.menu_content_show_netplay)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
-#endif
-#endif /* 0 */
 
    if (      settings->uints.menu_content_show_add_entry == MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
          && !settings->bools.kiosk_mode_enable)
@@ -3506,10 +3497,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_UPDATE_CHEATS:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS:
          return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
-#if 0
-/* Thumbnailpack removal */
-      case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
-#endif
       case MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST:
       case MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS:
@@ -3660,6 +3647,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG:
       case MENU_ENUM_LABEL_SAVE_NEW_CONFIG:
+      case MENU_ENUM_LABEL_SAVE_AS_CONFIG:
+      case MENU_ENUM_LABEL_SAVE_MAIN_CONFIG:
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
       case MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
@@ -5241,7 +5230,7 @@ static int xmb_draw_item(
       {
          xmb_node_t *sidebar_node = (xmb_node_t*)
                (xmb->horizontal_list.size)
-                  ? file_list_get_userdata_at_offset(&xmb->horizontal_list, list->list[i].entry_idx)
+                  ? (xmb_node_t*)file_list_get_userdata_at_offset(&xmb->horizontal_list, list->list[i].entry_idx)
                   : NULL;
 
          if (sidebar_node && sidebar_node->icon)
@@ -5339,7 +5328,7 @@ static int xmb_draw_item(
 
          /* More active zoom */
          if (i == current)
-            gfx_icon_width = gfx_icon_height = (xmb->icon_size * 2.0f);
+            gfx_icon_height = (xmb->icon_size * 2.0f);
 
          /* More width room for non-squares */
          gfx_icon_width = (gfx_icon_height * 1.5f);
@@ -7758,6 +7747,25 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    xmb->raster_block.carr.coords.vertices  = 0;
    xmb->raster_block2.carr.coords.vertices = 0;
+
+   /* Blank dummy core output */
+   if (!libretro_running)
+   {
+      gfx_display_set_alpha(xmb_coord_black, 1.0f);
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            0,
+            0,
+            video_width,
+            video_height,
+            video_width,
+            video_height,
+            xmb_coord_black,
+            NULL);
+   }
 
    gfx_display_set_alpha(xmb_coord_black, MIN((float)alpha_factor / 100, xmb->alpha));
    gfx_display_set_alpha(xmb_coord_white, xmb->alpha);

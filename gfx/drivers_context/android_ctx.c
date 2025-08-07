@@ -77,7 +77,7 @@ static void *android_gfx_ctx_init(void *video_driver)
 #ifdef HAVE_OPENGLES
    EGLint n, major, minor;
    EGLint format;
-#if 0
+#ifdef DEBUG
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
    bool debug                           = hwr->debug_context;
 #endif
@@ -105,7 +105,7 @@ static void *android_gfx_ctx_init(void *video_driver)
 #endif
 
 #ifdef HAVE_EGL
-   RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
+   RARCH_LOG("[Android] EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
 
    if (!egl_init_context(&and->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
             &major, &minor, &n, attribs, NULL))
@@ -160,7 +160,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
 
    if (new_width != *width || new_height != *height)
    {
-      RARCH_LOG("[Android]: Resizing (%u x %u) -> (%u x %u).\n",
+      RARCH_LOG("[Android] Resizing (%u x %u) -> (%u x %u).\n",
               *width, *height, new_width, new_height);
 
       *width  = new_width;
@@ -182,7 +182,7 @@ static bool android_gfx_ctx_set_video_mode(void *data,
 #if defined(HAVE_EGL)
    EGLint     context_attributes[] = {
       EGL_CONTEXT_CLIENT_VERSION, g_es3 ? 3 : 2,
-#if 0
+#ifdef DEBUG
       EGL_CONTEXT_FLAGS_KHR, debug ? EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR : 0,
 #endif
       EGL_NONE

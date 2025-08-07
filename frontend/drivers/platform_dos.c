@@ -50,54 +50,54 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
    char *slash;
-	char base_path[PATH_MAX];
+   char base_path[PATH_MAX];
 
-	retro_main_log_file_init("retrodos.txt", false);
+   retro_main_log_file_init("retrodos.txt", false);
 
-	strlcpy(base_path, argv[0], sizeof(base_path));
-	if ((slash = strrchr(base_path, '/')))
-	  *slash = '\0';
-	slash = strrchr(base_path, '/');
-	if (slash && strcasecmp(slash, "/cores"))
-	  *slash = '\0';
+   strlcpy(base_path, argv[0], sizeof(base_path));
+   if ((slash = strrchr(base_path, '/')))
+      *slash = '\0';
+   slash = strrchr(base_path, '/');
+   if (slash && strcasecmp(slash, "/cores"))
+      *slash = '\0';
 
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
-			   "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
-			   "coreinfo", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
-			   "autoconf", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,
+         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
+         "coreinfo", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
+         "autoconf", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
 
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], base_path,
-			   "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], base_path,
+         "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
 
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], base_path,
-			   "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
-			   g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
-			   "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], base_path,
-			   "playlist", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG], base_path,
-			   "recrdcfg", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], base_path,
-			   "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
-			   "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
-			   "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], base_path,
-			   "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
-			   "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], base_path,
-			   "download", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], base_path,
-			   "scrnshot", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], base_path,
-			   "thumbs", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], base_path,
-			   "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], base_path,
+         "config", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+         g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
+         "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], base_path,
+         "playlist", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG], base_path,
+         "recrdcfg", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], base_path,
+         "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
+         "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
+         "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], base_path,
+         "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
+         "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], base_path,
+         "download", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], base_path,
+         "scrnshot", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], base_path,
+         "thumbs", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], base_path,
+         "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
 #ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");

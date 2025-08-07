@@ -241,7 +241,7 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_BREAK,         "Break"},
    {RETROK_MENU,          "Menu"},
    {RETROK_POWER,         "Power"},
-   {RETROK_EURO,          {-30, -126, -84, 0}}, /* "�" */
+   {RETROK_EURO,          {-30, -126, -84, 0}}, /* " " */
    {RETROK_UNDO,          "Undo"},
    {RETROK_OEM_102,       "OEM-102"},
 
@@ -2507,8 +2507,6 @@ static void menu_cbs_init(
    menu_lbl_len = strlen(menu_lbl);
 
 #ifdef DEBUG_LOG
-   RARCH_LOG("\n");
-
    if (cbs && cbs->enum_idx != MSG_UNKNOWN)
       RARCH_LOG("\t\t\tenum_idx %d [%s]\n", cbs->enum_idx, msg_hash_to_str(cbs->enum_idx));
 #endif
@@ -2950,9 +2948,9 @@ static bool menu_shader_manager_save_preset_internal(
    {
       preset_path = fullname;
       if ((ret    = video_shader_write_preset(preset_path, shader, save_reference)))
-         RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
+         RARCH_LOG("[Shaders] Saved shader preset to \"%s\".\n", preset_path);
       else
-         RARCH_ERR("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
+         RARCH_ERR("[Shaders] Failed writing shader preset to \"%s\".\n", preset_path);
    }
    else
    {
@@ -2971,7 +2969,7 @@ static bool menu_shader_manager_save_preset_internal(
 
          if (!path_is_directory(basedir) && !(ret = path_mkdir(basedir)))
          {
-            RARCH_WARN("[Shaders]: Failed to create preset directory \"%s\".\n", basedir);
+            RARCH_WARN("[Shaders] Failed to create preset directory \"%s\".\n", basedir);
             continue;
          }
 
@@ -2980,15 +2978,15 @@ static bool menu_shader_manager_save_preset_internal(
          if ((ret = video_shader_write_preset(preset_path,
                shader, save_reference)))
          {
-            RARCH_LOG("[Shaders]: Saved shader preset to \"%s\".\n", preset_path);
+            RARCH_LOG("[Shaders] Saved shader preset to \"%s\".\n", preset_path);
             break;
          }
          else
-            RARCH_WARN("[Shaders]: Failed writing shader preset to \"%s\".\n", preset_path);
+            RARCH_WARN("[Shaders] Failed writing shader preset to \"%s\".\n", preset_path);
       }
 
       if (!ret)
-         RARCH_ERR("[Shaders]: Failed to write shader preset. Make sure shader directory "
+         RARCH_ERR("[Shaders] Failed to write shader preset. Make sure shader directory "
                "and/or config directory are writable.\n");
    }
 
@@ -3173,10 +3171,10 @@ static bool menu_shader_manager_operate_auto_preset(
                      if (!filestream_delete(preset_path))
                      {
                         m++;
-                        RARCH_LOG("[Shaders]: Deleted shader preset from \"%s\".\n", preset_path);
+                        RARCH_LOG("[Shaders] Deleted shader preset from \"%s\".\n", preset_path);
                      }
                      else
-                        RARCH_WARN("[Shaders]: Failed to remove shader preset at \"%s\".\n", preset_path);
+                        RARCH_WARN("[Shaders] Failed to remove shader preset at \"%s\".\n", preset_path);
                   }
                }
             }
@@ -3707,7 +3705,7 @@ static void bundle_decompressed(retro_task_t *task,
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
 
    if (err)
-      RARCH_ERR("%s", err);
+      RARCH_ERR("[Bundle] %s", err);
 
    if (dec)
    {
@@ -4007,21 +4005,18 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
        && (search->size > 0)
        && s)
    {
-      size_t current_len = strlen_size(s, len);
       size_t i;
+      size_t _len = strlen(s);
 
       /* If buffer is already 'full', nothing
        * further can be added */
-      if (current_len >= len)
+      if (_len >= len)
          return;
-
-      s   += current_len;
-      len -= current_len;
 
       for (i = 0; i < search->size; i++)
       {
-         strlcat(s, " > ", len);
-         strlcat(s, search->terms[i], len);
+         _len += strlcpy(s + _len, " > ", len - _len);
+         _len += strlcpy(s + _len, search->terms[i], len - _len);
       }
    }
 }
@@ -4725,7 +4720,7 @@ const menu_ctx_driver_t *menu_driver_find_driver(
             RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
          }
       }
-      RARCH_WARN("Going to default to first %s..\n", prefix);
+      RARCH_WARN("Going to default to first %s...\n", prefix);
    }
 
    return (const menu_ctx_driver_t*)menu_ctx_drivers[0];
@@ -5178,6 +5173,43 @@ bool menu_input_dialog_get_display_kb(void)
    return ((menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY) > 0);
 }
 
+/* Menu action buttons that need to be processed on key up
+ * when toggle combos are active */
+static unsigned input_combo_type_onkeyup_lut[INPUT_COMBO_LAST] =
+{
+   /* INPUT_COMBO_NONE */               0,
+   /* INPUT_COMBO_DOWN_Y_L_R */         (1 << RETRO_DEVICE_ID_JOYPAD_Y) | (1 << RETRO_DEVICE_ID_JOYPAD_L) | (1 << RETRO_DEVICE_ID_JOYPAD_R),
+   /* INPUT_COMBO_L3_R3 */              (1 << RETRO_DEVICE_ID_JOYPAD_L3) | (1 << RETRO_DEVICE_ID_JOYPAD_R3),
+   /* INPUT_COMBO_L1_R1_START_SELECT */ (1 << RETRO_DEVICE_ID_JOYPAD_L) | (1 << RETRO_DEVICE_ID_JOYPAD_R) | (1 << RETRO_DEVICE_ID_JOYPAD_START) | (1 << RETRO_DEVICE_ID_JOYPAD_SELECT),
+   /* INPUT_COMBO_START_SELECT */       (1 << RETRO_DEVICE_ID_JOYPAD_START) | (1 << RETRO_DEVICE_ID_JOYPAD_SELECT),
+   /* INPUT_COMBO_L3_R */               (1 << RETRO_DEVICE_ID_JOYPAD_L3) | (1 << RETRO_DEVICE_ID_JOYPAD_R),
+   /* INPUT_COMBO_L_R */                (1 << RETRO_DEVICE_ID_JOYPAD_L) | (1 << RETRO_DEVICE_ID_JOYPAD_R),
+   /* INPUT_COMBO_HOLD_START */         (1 << RETRO_DEVICE_ID_JOYPAD_START),
+   /* INPUT_COMBO_HOLD_SELECT */        (1 << RETRO_DEVICE_ID_JOYPAD_SELECT),
+   /* INPUT_COMBO_DOWN_SELECT */        (1 << RETRO_DEVICE_ID_JOYPAD_SELECT),
+   /* INPUT_COMBO_L2_R2 */              (1 << RETRO_DEVICE_ID_JOYPAD_L2) | (1 << RETRO_DEVICE_ID_JOYPAD_R2)
+};
+
+#define MENU_ACTION_RET(id, action) \
+{ \
+   if (onkeyup & (1 << id)) \
+   { \
+      if (BIT256_GET_PTR(p_input, id)) \
+         keydown[id] = true; \
+      else if (keydown[id]) \
+      { \
+         keydown[id] = false; \
+         ret = action; \
+      } \
+   } \
+   else \
+   { \
+      if (BIT256_GET_PTR(p_trigger_input, id)) \
+         ret = action; \
+   } \
+} \
+
+
 unsigned menu_event(
       settings_t *settings,
       input_bits_t *p_input,
@@ -5536,7 +5568,9 @@ unsigned menu_event(
    else
    {
       static uint8_t switch_old = 0;
-      static bool down[MENU_ACTION_TOGGLE] = {false};
+      static bool keydown[RARCH_FIRST_CUSTOM_BIND] = {false};
+      unsigned onkeyup          =
+            input_combo_type_onkeyup_lut[settings->uints.input_menu_toggle_gamepad_combo];
       uint8_t switch_current    = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
                                 | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
       uint8_t switch_trigger    = switch_current & ~switch_old;
@@ -5576,65 +5610,20 @@ unsigned menu_event(
             switch_trigger      = 1;
       }
 
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
-      {
-         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_UP))
-            ret = MENU_ACTION_UP;
-      }
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
-      {
-         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
-            ret = MENU_ACTION_DOWN;
-      }
+      if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP)
+            && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+         ret = MENU_ACTION_UP;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN)
+            && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+         ret = MENU_ACTION_DOWN;
       if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
-            && switch_trigger)
-      {
-         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
-            ret = MENU_ACTION_LEFT;
-      }
+            && switch_trigger
+            && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+         ret = MENU_ACTION_LEFT;
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT)
-            && switch_trigger)
-      {
-         if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
-            ret = MENU_ACTION_RIGHT;
-      }
-
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
-      {
-         menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_START_LETTER : MENU_SCROLL_PAGE;
-         ret = MENU_ACTION_SCROLL_UP;
-      }
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
-      {
-         menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_START_LETTER : MENU_SCROLL_PAGE;
-         ret = MENU_ACTION_SCROLL_DOWN;
-      }
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L2))
-      {
-         menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_PAGE : MENU_SCROLL_START_LETTER;
-         ret = MENU_ACTION_SCROLL_UP;
-      }
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R2))
-      {
-         menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_PAGE : MENU_SCROLL_START_LETTER;
-         ret = MENU_ACTION_SCROLL_DOWN;
-      }
-
-      if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
-         down[MENU_ACTION_SCROLL_HOME] = true;
-      else if (down[MENU_ACTION_SCROLL_HOME])
-      {
-         down[MENU_ACTION_SCROLL_HOME] = false;
-         ret = MENU_ACTION_SCROLL_HOME;
-      }
-
-      if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
-         down[MENU_ACTION_SCROLL_END] = true;
-      else if (down[MENU_ACTION_SCROLL_END])
-      {
-         down[MENU_ACTION_SCROLL_END] = false;
-         ret = MENU_ACTION_SCROLL_END;
-      }
+            && switch_trigger
+            && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+         ret = MENU_ACTION_RIGHT;
 
       if (BIT256_GET_PTR(p_trigger_input, RARCH_ANALOG_RIGHT_Y_MINUS))
          ret = MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY;
@@ -5645,19 +5634,35 @@ unsigned menu_event(
       else if (BIT256_GET_PTR(p_trigger_input, RARCH_ANALOG_RIGHT_X_PLUS))
          ret = MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY;
 
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
+         menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_START_LETTER : MENU_SCROLL_PAGE;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
+         menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_START_LETTER : MENU_SCROLL_PAGE;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L2))
+         menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_PAGE : MENU_SCROLL_START_LETTER;
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R2))
+         menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_PAGE : MENU_SCROLL_START_LETTER;
+
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_L, MENU_ACTION_SCROLL_UP);
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_R, MENU_ACTION_SCROLL_DOWN);
+
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_L2, MENU_ACTION_SCROLL_UP);
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_R2, MENU_ACTION_SCROLL_DOWN);
+
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_L3, MENU_ACTION_SCROLL_HOME);
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_R3, MENU_ACTION_SCROLL_END);
+
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_X, MENU_ACTION_SEARCH);
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_Y, MENU_ACTION_SCAN);
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_START, MENU_ACTION_START);
+      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_SELECT, MENU_ACTION_INFO);
+
       if (ok_trigger)
          ret = MENU_ACTION_OK;
       else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
          ret = MENU_ACTION_CANCEL;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
-         ret = MENU_ACTION_SEARCH;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
-         ret = MENU_ACTION_SCAN;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
-         ret = MENU_ACTION_START;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-         ret = MENU_ACTION_INFO;
-      else if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
+
+      if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
          ret = MENU_ACTION_TOGGLE;
 
       if (ret != MENU_ACTION_NOOP)
@@ -6309,6 +6314,8 @@ void menu_driver_toggle(
    bool input_overlay_enable          = false;
 #endif
    bool video_adaptive_vsync          = false;
+   bool video_vsync                   = false;
+   bool video_frame_delay_auto        = false;
 
    if (settings)
    {
@@ -6325,6 +6332,9 @@ void menu_driver_toggle(
       input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
       input_overlay_enable            = settings->bools.input_overlay_enable;
 #endif
+      video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
+      video_vsync                     = settings->bools.video_vsync;
+      video_frame_delay_auto          = settings->bools.video_frame_delay_auto;
    }
 
    if (on)
@@ -6363,7 +6373,7 @@ void menu_driver_toggle(
 
    if (menu_driver_alive)
    {
-      video_adaptive_vsync          = settings->bools.video_adaptive_vsync
+      video_adaptive_vsync          = video_adaptive_vsync
             && video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
 
 #ifdef WIIU
@@ -6374,7 +6384,7 @@ void menu_driver_toggle(
       menu_st->flags               |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
       /* Menu should always run with swap interval 1 if vsync is on. */
-      if (     settings->bools.video_vsync
+      if (     video_vsync
             && current_video->set_nonblock_state)
          current_video->set_nonblock_state(
                video_driver_data,
@@ -6432,7 +6442,7 @@ void menu_driver_toggle(
    }
 
    /* Ignore frame delay target temporarily */
-   if (settings->bools.video_frame_delay_auto)
+   if (video_frame_delay_auto)
       video_state_get_ptr()->frame_delay_pause = true;
 }
 
@@ -6924,9 +6934,6 @@ bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
          || !(video_shader_load_preset_into_shader(preset_path, menu_shader)))
       goto end;
 
-   /* TODO/FIXME - localize */
-   RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
-
    ret = true;
 
 end:
@@ -6973,10 +6980,7 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
             type, shader, preset_path, dir_video_shader, prepend, true))
       goto clear;
 
-   /* TODO/FIXME - localize */
-   RARCH_LOG("[Shaders]: Menu shader set to: \"%s\".\n", preset_path);
-
-   ret             = true;
+   ret = true;
 
    menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);

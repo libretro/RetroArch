@@ -168,7 +168,6 @@ task_finished:
    {
       size_t _len = 0;
       char   *tmp = (char*)net_http_data(http->handle, &_len, false);
-      struct string_list *headers = net_http_headers(http->handle);
 
       if (!tmp)
          tmp = (char*)net_http_data(http->handle, &_len, true);
@@ -177,7 +176,6 @@ task_finished:
       {
          if (tmp)
             free(tmp);
-         string_list_free(headers);
 
          task_set_error(task,
                strldup("Task cancelled.", sizeof("Task cancelled.")));
@@ -187,8 +185,8 @@ task_finished:
          bool mute;
          data          = (http_transfer_data_t*)malloc(sizeof(*data));
          data->data    = tmp;
-         data->headers = headers;
          data->len     = _len;
+         data->headers = net_http_headers(http->handle);
          data->status  = net_http_status(http->handle);
 
          task_set_data(task, data);
@@ -251,15 +249,13 @@ static void *task_push_http_transfer_generic(
       return NULL;
 
    method = net_http_connection_method(conn);
-   if (!string_is_equal(method, "GET"))
-   {
-      /* POST requests usually mutate the server, so assume multiple calls are
-       * intended, even if they're duplicated. Additionally, they may differ
-       * only by the POST data, and task_http_finder doesn't look at that, so
-       * unique requests could be misclassified as duplicates.
-       */
-   }
-   else
+
+   /* POST requests usually mutate the server, so assume multiple calls are
+    * intended, even if they're duplicated. Additionally, they may differ
+    * only by the POST data, and task_http_finder doesn't look at that, so
+    * unique requests could be misclassified as duplicates.
+    */
+   if (string_is_equal(method, "GET"))
    {
       task_finder_data_t find_data;
       find_data.func     = task_http_finder;

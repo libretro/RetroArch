@@ -87,7 +87,7 @@ static void *ps4_joypad_init(void *data)
 
    if (result == 0)
    {
-      unsigned i;
+      int i;
       for (i = 0; i < SCE_USER_SERVICE_MAX_LOGIN_USERS; i++)
       {
          SceUserServiceUserId user_id = user_id_list.userId[i];
@@ -200,12 +200,12 @@ static int16_t ps4_joypad_state(
       const struct retro_keybind *binds,
       unsigned port)
 {
-   unsigned i;
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
 
    if (port_idx < PS4_MAX_ORBISPADS)
    {
+      int i;
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
       {
          /* Auto-binds are per joypad, not per user. */
@@ -324,7 +324,7 @@ static void ps4_joypad_destroy(void)
    SceUserServiceLoginUserIdList user_id_list;
    if (sceUserServiceGetLoginUserIdList(&user_id_list) == 0)
    {
-      unsigned i;
+      int i;
       for (i = 0; i < SCE_USER_SERVICE_MAX_LOGIN_USERS; i++)
       {
          user_id = user_id_list.userId[i];

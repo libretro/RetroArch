@@ -34,6 +34,7 @@
 
 /* Required for 3DS display mode setting */
 #if defined(_3DS)
+#include <3ds.h>
 #include "gfx/common/ctr_defines.h"
 #endif
 
@@ -489,6 +490,10 @@
 /* Choose if the screen will be able to write around the notch or not */
 #define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
 
+#ifdef __APPLE__
+#define DEFAULT_USE_METAL_ARG_BUFFERS (!!__builtin_available(macOS 12, iOS 13, tvOS 12, *))
+#endif
+
 /* Enable use of shaders. */
 #ifdef RARCH_CONSOLE
 #define DEFAULT_SHADER_ENABLE true
@@ -585,7 +590,7 @@
  * controller is connected in port 1 */
 #define DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED false
 
-#define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR true
+#define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR false
 
 #define DEFAULT_DISPLAY_KEYBOARD_OVERLAY false
 
@@ -662,9 +667,19 @@
 #ifdef HAVE_OZONE
 /* Ozone colour theme: 1 == Basic Black */
 #define DEFAULT_OZONE_COLOR_THEME 1
+#define DEFAULT_OZONE_PADDING_FACTOR 1.0f
+#define DEFAULT_OZONE_HEADER_SEPARATOR 1
 #define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
 #define DEFAULT_OZONE_SCROLL_CONTENT_METADATA false
 #define DEFAULT_OZONE_THUMBNAIL_SCALE_FACTOR 1.0f
+#define DEFAULT_OZONE_FONT_SCALE 0
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_GLOBAL 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_TITLE 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_SIDEBAR 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_LABEL 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_SUBLABEL 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_TIME 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_FOOTER 1.0f
 #endif
 
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
@@ -950,11 +965,7 @@
 #define DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY 80
 #define DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY 50
 
-#if defined(ANDROID) || defined(_WIN32) || defined(HAVE_STEAM) || TARGET_OS_TV
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
-#else
-#define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS false
-#endif
 #define DEFAULT_MENU_SWAP_SCROLL_BUTTONS false
 
 #if defined(WIIU)

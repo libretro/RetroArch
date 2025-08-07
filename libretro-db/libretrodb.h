@@ -45,7 +45,7 @@ typedef struct libretrodb_index libretrodb_index_t;
 
 typedef int (*libretrodb_value_provider)(void *ctx, struct rmsgpack_dom_value *out);
 
-int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider, void *ctx);
+int libretrodb_create(intfstream_t *fd, libretrodb_value_provider value_provider, void *ctx);
 
 void libretrodb_close(libretrodb_t *db);
 
@@ -98,7 +98,7 @@ int libretrodb_cursor_reset(libretrodb_cursor_t *cursor);
 void libretrodb_cursor_close(libretrodb_cursor_t *cursor);
 
 void *libretrodb_query_compile(libretrodb_t *db, const char *query,
-        size_t buff_len, const char **error);
+        size_t buff_len, const char **err);
 
 void libretrodb_query_free(void *q);
 

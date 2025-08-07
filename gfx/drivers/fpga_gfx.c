@@ -75,7 +75,7 @@ static unsigned int get_memory_size(void)
 
    if (!size_fp)
    {
-      RARCH_ERR("unable to open the uio size file\n");
+      RARCH_ERR("Unable to open the uio size file.\n");
       exit(1);
    }
 
@@ -99,7 +99,7 @@ static void do_mmap_op(RegOp *regOp)
 
       if (regOp->ptr == MAP_FAILED)
       {
-         RARCH_ERR("could not mmap() memory\n");
+         RARCH_ERR("Could not mmap() memory.\n");
          exit(1);
       }
    }
@@ -108,7 +108,7 @@ static void do_mmap_op(RegOp *regOp)
    {
       if (munmap(regOp->ptr, get_memory_size()) == -1)
       {
-         RARCH_ERR("could not munmap() memory\n");
+         RARCH_ERR("Could not munmap() memory.\n");
          exit(1);
       }
 

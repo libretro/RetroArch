@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-#include <streams/file_stream.h>
+#include <streams/interface_stream.h>
 
 struct rmsgpack_read_callbacks
 {
@@ -39,22 +39,22 @@ struct rmsgpack_read_callbacks
    int (*read_array_start)(uint32_t, void *);
 };
 
-int rmsgpack_write_array_header(RFILE *fd, uint32_t size);
+int rmsgpack_write_array_header(intfstream_t *stream, uint32_t size);
 
-int rmsgpack_write_map_header(RFILE *fd, uint32_t size);
+int rmsgpack_write_map_header(intfstream_t *stream, uint32_t size);
 
-int rmsgpack_write_string(RFILE *fd, const char *s, uint32_t len);
+int rmsgpack_write_string(intfstream_t *stream, const char *s, uint32_t len);
 
-int rmsgpack_write_bin(RFILE *fd, const void *s, uint32_t len);
+int rmsgpack_write_bin(intfstream_t *stream, const void *s, uint32_t len);
 
-int rmsgpack_write_nil(RFILE *fd);
+int rmsgpack_write_nil(intfstream_t *stream);
 
-int rmsgpack_write_bool(RFILE *fd, int value);
+int rmsgpack_write_bool(intfstream_t *stream, int value);
 
-int rmsgpack_write_int(RFILE *fd, int64_t value);
+int rmsgpack_write_int(intfstream_t *stream, int64_t value);
 
-int rmsgpack_write_uint(RFILE *fd, uint64_t value );
+int rmsgpack_write_uint(intfstream_t *stream, uint64_t value );
 
-int rmsgpack_read(RFILE *fd, struct rmsgpack_read_callbacks *callbacks, void *data);
+int rmsgpack_read(intfstream_t *stream, struct rmsgpack_read_callbacks *callbacks, void *data);
 
 #endif

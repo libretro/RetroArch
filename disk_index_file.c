@@ -128,7 +128,7 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
    if (!file)
    {
       RARCH_ERR(
-            "[disk index file] Failed to open disk index record file: %s\n",
+            "[Disk index file] Failed to open disk index record file: \"%s\".\n",
             file_path);
       return false;
    }
@@ -136,7 +136,7 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
    /* Initialise JSON parser */
    if (!(parser = rjson_open_rfile(file)))
    {
-      RARCH_ERR("[disk index file] Failed to create JSON parser.\n");
+      RARCH_ERR("[Disk index file] Failed to create JSON parser.\n");
       goto end;
    }
 
@@ -155,15 +155,15 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
       if (rjson_get_source_context_len(parser))
       {
          RARCH_ERR(
-               "[disk index file] Error parsing chunk of disk index file: %s\n---snip---\n%.*s\n---snip---\n",
+               "[Disk index file] Error parsing chunk of disk index file: %s\n---snip---\n%.*s\n---snip---\n",
                file_path,
                rjson_get_source_context_len(parser),
                rjson_get_source_context_buf(parser));
       }
       RARCH_WARN(
-            "[disk index file] Error parsing disk index file: %s\n",
+            "[Disk index file] Error parsing disk index file: \"%s\".\n",
             file_path);
-      RARCH_ERR("[disk index file] Error: Invalid JSON at line %d, column %d - %s.\n",
+      RARCH_ERR("[Disk index file] Error: Invalid JSON at line %d, column %d - %s.\n",
             (int)rjson_get_source_line(parser),
             (int)rjson_get_source_column(parser),
             (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
@@ -235,7 +235,7 @@ bool disk_index_file_init(
          && !path_mkdir(disk_index_file_dir))
    {
       RARCH_ERR(
-            "[disk index file] failed to create directory for disk index file: %s\n",
+            "[Disk index file] Failed to create directory for disk index file: \"%s\".\n",
             disk_index_file_dir);
       goto error;
    }
@@ -338,7 +338,7 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
       return false;
 
    RARCH_LOG(
-         "[disk index file] Saving disk index file: %s\n",
+         "[Disk index file] Saving disk index file: \"%s\".\n",
          file_path);
 
    /* Attempt to open disk index file */
@@ -348,7 +348,7 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
          RETRO_VFS_FILE_ACCESS_HINT_NONE)))
    {
       RARCH_ERR(
-            "[disk index file] Failed to open disk index file: %s\n",
+            "[Disk index file] Failed to open disk index file: \"%s\".\n",
             file_path);
       return false;
    }
@@ -356,7 +356,7 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
    /* Initialise JSON writer */
    if (!(writer = rjsonwriter_open_rfile(file)))
    {
-      RARCH_ERR("[disk index file] Failed to create JSON writer.\n");
+      RARCH_ERR("[Disk index file] Failed to create JSON writer.\n");
       goto end;
    }
 
@@ -397,7 +397,7 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
    /* Free JSON writer */
    if (!rjsonwriter_free(writer))
    {
-      RARCH_ERR("[disk index file] Error writing disk index file: %s\n", file_path);
+      RARCH_ERR("[Disk index file] Error writing disk index file: \"%s\".\n", file_path);
    }
 
    /* Changes have been written - record

@@ -439,6 +439,22 @@ enum ozone_color_theme
    OZONE_COLOR_THEME_LAST
 };
 
+enum ozone_header_separator
+{
+   OZONE_HEADER_SEPARATOR_NONE = 0,
+   OZONE_HEADER_SEPARATOR_NORMAL,
+   OZONE_HEADER_SEPARATOR_MAXIMUM,
+   OZONE_HEADER_SEPARATOR_LAST
+};
+
+enum ozone_font_scale
+{
+   OZONE_FONT_SCALE_NONE = 0,
+   OZONE_FONT_SCALE_GLOBAL,
+   OZONE_FONT_SCALE_SEPARATE,
+   OZONE_FONT_SCALE_LAST
+};
+
 enum menu_action
 {
    MENU_ACTION_NOOP = 0,

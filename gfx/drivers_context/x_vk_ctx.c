@@ -187,14 +187,14 @@ static bool gfx_ctx_x_vk_set_resize(void *data,
    if (x->is_fullscreen)
    {
       XMapRaised(g_x11_dpy, g_x11_win);
-      RARCH_LOG("[X/Vulkan]: Resized fullscreen resolution to %dx%d.\n", width, height);
+      RARCH_LOG("[Vulkan] Resized fullscreen resolution to %dx%d.\n", width, height);
    }
 
    /* FIXME/TODO - threading error here */
 
    if (!vulkan_create_swapchain(&x->vk, width, height, x->interval))
    {
-      RARCH_ERR("[X/Vulkan]: Failed to update swapchain.\n");
+      RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       x->vk.swapchain              = VK_NULL_HANDLE;
       return false;
    }
@@ -305,11 +305,11 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
 
          if (wm_name)
          {
-            RARCH_LOG("[X/Vulkan]: Window manager is %s.\n", wm_name);
+            RARCH_LOG("[Vulkan] Window manager is %s.\n", wm_name);
 
             if (strcasestr(wm_name, "xfwm"))
             {
-               RARCH_LOG("[X/Vulkan]: Using override-redirect workaround.\n");
+               RARCH_LOG("[Vulkan] Using override-redirect workaround.\n");
                swa.override_redirect = True;
             }
             free(wm_name);
@@ -318,7 +318,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
             swa.override_redirect = True;
       }
       else
-         RARCH_ERR("[X/Vulkan]: Entering true fullscreen failed. Will attempt windowed mode.\n");
+         RARCH_ERR("[Vulkan] Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 #endif
 
@@ -333,9 +333,9 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
 
       if (xinerama_get_coord(g_x11_dpy, g_x11_screen,
                &x_off, &y_off, &new_width, &new_height))
-         RARCH_LOG("[X/Vulkan]: Using Xinerama on screen #%u.\n", g_x11_screen);
+         RARCH_LOG("[Vulkan] Using Xinerama on screen #%u.\n", g_x11_screen);
       else
-         RARCH_LOG("[X/Vulkan]: Xinerama is not active on screen.\n");
+         RARCH_LOG("[Vulkan] Xinerama is not active on screen.\n");
 
       if (fullscreen)
       {
@@ -345,7 +345,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
    }
 #endif
 
-   RARCH_LOG("[X/Vulkan]: X = %d, Y = %d, W = %u, H = %u.\n",
+   RARCH_DBG("[Vulkan] X = %d, Y = %d, W = %u, H = %u.\n",
          x_off, y_off, width, height);
 
    g_x11_win = XCreateWindow(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
@@ -362,7 +362,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
       uint32_t                value = 1;
       Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
 
-      RARCH_LOG("[X/Vulkan]: Requesting compositor bypass.\n");
+      RARCH_LOG("[Vulkan] Requesting compositor bypass.\n");
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
    }
 
@@ -395,7 +395,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
 #ifdef HAVE_XF86VM
    if (true_full)
    {
-      RARCH_LOG("[X/Vulkan]: Using true fullscreen.\n");
+      RARCH_LOG("[Vulkan] Using true fullscreen.\n");
       XMapRaised(g_x11_dpy, g_x11_win);
       x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
    }
@@ -407,7 +407,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
        * Attempt using windowed fullscreen. */
 
       XMapRaised(g_x11_dpy, g_x11_win);
-      RARCH_LOG("[X/Vulkan]: Using windowed fullscreen.\n");
+      RARCH_LOG("[Vulkan] Using windowed fullscreen.\n");
 
       /* We have to move the window to the screen we want
        * to go fullscreen on first.

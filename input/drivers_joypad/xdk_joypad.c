@@ -203,7 +203,7 @@ static int16_t xdk_joypad_state(
 
    if (port_idx < DEFAULT_MAX_PADS)
    {
-      unsigned i;
+      int i;
       XINPUT_GAMEPAD *pad = &(g_xinput_states[port_idx].xstate.Gamepad);
       uint16_t btn_word   = pad->wButtons;
 
@@ -215,12 +215,12 @@ static int16_t xdk_joypad_state(
          const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
             ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
          if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
                && xdk_joypad_button_state(
                   pad, btn_word, port_idx, (uint16_t)joykey))
             ret |= ( 1 << i);
          else if (joyaxis != AXIS_NONE &&
-               ((float)abs(xdk_joypad_axis_state(pad, port_idx, joyaxis)) 
+               ((float)abs(xdk_joypad_axis_state(pad, port_idx, joyaxis))
                 / 0x8000) > joypad_info->axis_threshold)
             ret |= (1 << i);
       }
@@ -302,8 +302,7 @@ static bool xdk_joypad_query_pad(unsigned pad)
 
 static void xdk_joypad_destroy(void)
 {
-   unsigned i;
-
+   int i;
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
       memset(&g_xinput_states[i], 0, sizeof(xinput_joypad_state));

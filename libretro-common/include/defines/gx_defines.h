@@ -82,10 +82,6 @@
    src += tmp_pitch; \
 }
 
-#define CHUNK_FRAMES 64
-#define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))
-#define BLOCKS 16
-
 #define AIInit AUDIO_Init
 #define AIInitDMA AUDIO_InitDMA
 #define AIStartDMA AUDIO_StartDMA

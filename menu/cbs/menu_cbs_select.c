@@ -49,44 +49,47 @@ static int action_select_default(
          file_list_get_actiondata_at_offset(selection_buf, idx)))
          return -1;
 
-   if (cbs->setting)
+   if (cbs)
    {
-      switch (cbs->setting->type)
+      if (cbs->setting)
       {
-         case ST_BOOL:
-         case ST_INT:
-         case ST_UINT:
-         case ST_SIZE:
-         case ST_FLOAT:
-         case ST_STRING_OPTIONS:
-            if (cbs->action_ok)
-               action     = MENU_ACTION_OK;
-            else
-               action     = MENU_ACTION_RIGHT;
-            break;
-         case ST_PATH:
-         case ST_DIR:
-         case ST_ACTION:
-         case ST_STRING:
-         case ST_BIND:
-            action        = MENU_ACTION_OK;
-            break;
-         default:
-            break;
+         switch (cbs->setting->type)
+         {
+            case ST_BOOL:
+            case ST_INT:
+            case ST_UINT:
+            case ST_SIZE:
+            case ST_FLOAT:
+            case ST_STRING_OPTIONS:
+               if (cbs->action_ok)
+                  action     = MENU_ACTION_OK;
+               else
+                  action     = MENU_ACTION_RIGHT;
+               break;
+            case ST_PATH:
+            case ST_DIR:
+            case ST_ACTION:
+            case ST_STRING:
+            case ST_BIND:
+               action        = MENU_ACTION_OK;
+               break;
+            default:
+               break;
+         }
       }
-   }
 
-   if (action == MENU_ACTION_NOOP)
-   {
-       if (cbs->action_ok)
-           action     = MENU_ACTION_OK;
-       else
-       {
-           if (cbs->action_start)
+      if (action == MENU_ACTION_NOOP)
+      {
+         if (cbs->action_ok)
+            action     = MENU_ACTION_OK;
+         else
+         {
+            if (cbs->action_start)
                action = MENU_ACTION_START;
-           if (cbs->action_right)
+            if (cbs->action_right)
                action = MENU_ACTION_RIGHT;
-       }
+         }
+      }
    }
 
    if (action != MENU_ACTION_NOOP)

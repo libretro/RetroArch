@@ -63,9 +63,9 @@
 
 #if defined(HAVE_COREAUDIO) && defined(HAVE_MICROPHONE)
 #if defined(OSX)
-#include "../audio/drivers_microphone/coreaudio_mic_macos.m"
+#include "../audio/drivers/coreaudio_mic_macos.m"
 #else
-#include "../audio/drivers_microphone/coreaudio_mic_ios.m"
+#include "../audio/drivers/coreaudio_mic_ios.m"
 #endif
 #endif
 

@@ -68,7 +68,7 @@ typedef struct psp_audio
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
 /* Return port used */
-static int configureAudio(unsigned rate)
+static int psp_configure_audio(unsigned rate)
 {
 #if defined(VITA)
    return sceAudioOutOpenPort(
@@ -83,7 +83,7 @@ static int configureAudio(unsigned rate)
 #endif
 }
 
-static void audioMainLoop(void *data)
+static void psp_audio_mainloop(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
 
@@ -115,7 +115,9 @@ static void audioMainLoop(void *data)
         cond ? (psp->zeroBuffer)
               : (psp->buffer + read_pos_2));
 #else
-      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, cond ? (psp->zeroBuffer)
+      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX,
+              cond
+            ? (psp->zeroBuffer)
             : (psp->buffer + read_pos));
 #endif
    }
@@ -134,7 +136,7 @@ static void *psp_audio_init(const char *device,
    if (!psp)
       return NULL;
 
-   if ((port = configureAudio(rate)) < 0)
+   if ((port = psp_configure_audio(rate)) < 0)
    {
       free(psp);
       return NULL;
@@ -160,7 +162,7 @@ static void *psp_audio_init(const char *device,
 
    psp->nonblock      = false;
    psp->running       = true;
-   psp->worker_thread = sthread_create(audioMainLoop, psp);
+   psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
 
    return psp;
 }
@@ -204,9 +206,9 @@ static void psp_audio_free(void *data)
 
 static ssize_t psp_audio_write(void *data, const void *s, size_t len)
 {
-   psp_audio_t* psp     = (psp_audio_t*)data;
-   uint16_t write_pos   = psp->write_pos;
-   uint16_t sampleCount = len / sizeof(uint32_t);
+   psp_audio_t* psp      = (psp_audio_t*)data;
+   uint16_t write_pos    = psp->write_pos;
+   uint16_t sample_count = len / sizeof(uint32_t);
 
    if (!psp->running)
       return -1;
@@ -225,18 +227,18 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
    slock_unlock(psp->cond_lock);
 
    slock_lock(psp->fifo_lock);
-   if ((write_pos + sampleCount) > AUDIO_BUFFER_SIZE)
+   if ((write_pos + sample_count) > AUDIO_BUFFER_SIZE)
    {
       memcpy(psp->buffer + write_pos, s,
             (AUDIO_BUFFER_SIZE - write_pos) * sizeof(uint32_t));
       memcpy(psp->buffer, (uint32_t*)s +
             (AUDIO_BUFFER_SIZE - write_pos),
-            (write_pos + sampleCount - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
+            (write_pos + sample_count - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
    }
    else
       memcpy(psp->buffer + write_pos, s, len);
 
-   write_pos      += sampleCount;
+   write_pos      += sample_count;
    write_pos      &= AUDIO_BUFFER_SIZE_MASK;
    psp->write_pos  = write_pos;
 
@@ -259,14 +261,15 @@ static bool psp_audio_stop(void *data)
 #if defined(ORBIS)
    return false;
 #else
-   if (psp){
+   if (psp)
+   {
       psp->running = false;
 
-      if (!psp->worker_thread)
-      return true;
-
-      sthread_join(psp->worker_thread);
-      psp->worker_thread = NULL;
+      if (psp->worker_thread)
+      {
+         sthread_join(psp->worker_thread);
+         psp->worker_thread = NULL;
+      }
    }
    return true;
 #endif
@@ -281,7 +284,7 @@ static bool psp_audio_start(void *data, bool is_shutdown)
       if (!psp->worker_thread)
       {
          psp->running       = true;
-         psp->worker_thread = sthread_create(audioMainLoop, psp);
+         psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
       }
    }
 
@@ -295,28 +298,24 @@ static void psp_audio_set_nonblock_state(void *data, bool toggle)
       psp->nonblock = toggle;
 }
 
-static bool psp_audio_use_float(void *data)
-{
-   return false;
-}
-
 static size_t psp_write_avail(void *data)
 {
-   size_t val;
+   size_t _len;
    psp_audio_t* psp = (psp_audio_t*)data;
 
    if (!psp||!psp->running)
       return 0;
    slock_lock(psp->fifo_lock);
-   val = AUDIO_BUFFER_SIZE - ((uint16_t)
+   _len = AUDIO_BUFFER_SIZE - ((uint16_t)
          (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
    slock_unlock(psp->fifo_lock);
-   return val;
+   return _len;
 }
 
+/* TODO/FIXME - implement? */
+static bool psp_audio_use_float(void *data) { return false; }
 static size_t psp_buffer_size(void *data)
 {
-   /* TODO/FIXME - implement? */
    return AUDIO_BUFFER_SIZE /** sizeof(uint32_t)*/;
 }
 

@@ -76,7 +76,7 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
    rwebaudio_data_t *rwebaudio;
    if (rwebaudio_static_data)
    {
-      RARCH_ERR("[RWebAudio] Tried to start already running driver!\n");
+      RARCH_ERR("[RWebAudio] Tried to start already running driver.\n");
       return NULL;
    }
 
@@ -85,11 +85,11 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
       return NULL;
    if (!RWebAudioInit(latency))
    {
-      RARCH_ERR("[RWebAudio] Failed to initialize driver!\n");
+      RARCH_ERR("[RWebAudio] Failed to initialize driver.\n");
       return NULL;
    }
-   rwebaudio_static_data = rwebaudio;
-   *new_rate = RWebAudioSampleRate();
+   rwebaudio_static_data    = rwebaudio;
+   *new_rate                = RWebAudioSampleRate();
    rwebaudio->tmpbuf_frames = RWEBAUDIO_BUFFER_SIZE_MS * *new_rate / 1000;
    rwebaudio->tmpbuf_left   = memalign(sizeof(float), rwebaudio->tmpbuf_frames * sizeof(float));
    rwebaudio->tmpbuf_right  = memalign(sizeof(float), rwebaudio->tmpbuf_frames * sizeof(float));
@@ -100,10 +100,10 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
 
 static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
 {
+   size_t _len = 0;
    rwebaudio_data_t *rwebaudio = (rwebaudio_data_t*)data;
    const float *samples = (const float*)s;
-   size_t num_frames = len / 2 / sizeof(float);
-   size_t written = 0;
+   size_t num_frames    = len / 2 / sizeof(float);
    if (!rwebaudio)
       return -1;
 
@@ -114,38 +114,41 @@ static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
       num_frames--;
       if (++rwebaudio->tmpbuf_offset == rwebaudio->tmpbuf_frames)
       {
-         size_t queued = RWebAudioQueueBuffer(rwebaudio->tmpbuf_frames, rwebaudio->tmpbuf_left, rwebaudio->tmpbuf_right);
+         size_t queued            = RWebAudioQueueBuffer(
+               rwebaudio->tmpbuf_frames,
+               rwebaudio->tmpbuf_left,
+               rwebaudio->tmpbuf_right);
          rwebaudio->tmpbuf_offset = 0;
          /* fast-forward or context is suspended */
          if (queued < rwebaudio->tmpbuf_frames)
             break;
-         written += queued;
+         _len += queued;
       }
    }
 
-   if (rwebaudio->nonblock)
-      return written;
-
+   if (!rwebaudio->nonblock)
+   {
 #ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
 #ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK
-   if (RWebAudioWriteAvailFrames() == 0)
-   {
-      rwebaudio->block_requested = true;
-      platform_emscripten_enter_fake_block(1);
-   }
+      if (RWebAudioWriteAvailFrames() == 0)
+      {
+         rwebaudio->block_requested = true;
+         platform_emscripten_enter_fake_block(1);
+      }
 #endif
-   /* async external block doesn't need to do anything else */
+      /* async external block doesn't need to do anything else */
 #else
-   while (RWebAudioWriteAvailFrames() == 0)
-   {
+      while (RWebAudioWriteAvailFrames() == 0)
+      {
 #ifdef EMSCRIPTEN_FULL_ASYNCIFY
-      retro_sleep(1);
+         retro_sleep(1);
 #endif
-      RWebAudioResumeCtx();
+         RWebAudioResumeCtx();
+      }
+#endif
    }
-#endif
 
-   return written;
+   return _len;
 }
 
 #ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
@@ -227,13 +230,12 @@ static void rwebaudio_set_nonblock_state(void *data, bool state)
 static size_t rwebaudio_write_avail(void *data)
 {
    rwebaudio_data_t *rwebaudio = (rwebaudio_data_t*)data;
-   size_t avail_frames;
-   if (!rwebaudio)
-      return 0;
-
-   avail_frames = RWebAudioWriteAvailFrames();
-   if (avail_frames > rwebaudio->tmpbuf_offset)
-      return (avail_frames - rwebaudio->tmpbuf_offset) * 2 * sizeof(float);
+   if (rwebaudio)
+   {
+      size_t avail_frames = RWebAudioWriteAvailFrames();
+      if (avail_frames > rwebaudio->tmpbuf_offset)
+         return (avail_frames - rwebaudio->tmpbuf_offset) * 2 * sizeof(float);
+   }
    return 0;
 }
 

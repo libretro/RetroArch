@@ -96,7 +96,8 @@ bool cloud_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    return false;
 }
 
-bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
+bool cloud_sync_end(cloud_sync_complete_handler_t cb,
+      void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (driver && driver->cloud_sync_end)
@@ -104,7 +105,8 @@ bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
    return false;
 }
 
-bool cloud_sync_read(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data)
+bool cloud_sync_read(const char *path, const char *file,
+      cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (driver && driver->cloud_sync_read)
@@ -113,7 +115,7 @@ bool cloud_sync_read(const char *path, const char *file, cloud_sync_complete_han
 }
 
 bool cloud_sync_update(const char *path, RFILE *file,
-                       cloud_sync_complete_handler_t cb, void *user_data)
+      cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (driver && driver->cloud_sync_update)
@@ -121,7 +123,8 @@ bool cloud_sync_update(const char *path, RFILE *file,
    return false;
 }
 
-bool cloud_sync_free(const char *path, cloud_sync_complete_handler_t cb, void *user_data)
+bool cloud_sync_free(const char *path,
+      cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (driver && driver->cloud_sync_free)
