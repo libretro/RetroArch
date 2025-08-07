@@ -214,9 +214,10 @@ end:
 
 static int alsa_thread_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
 {
+   snd_pcm_state_t state;
+   size_t _len = 0;
    alsa_thread_microphone_t       *alsa = (alsa_thread_microphone_t*)driver_context;
    alsa_thread_microphone_handle_t *mic = (alsa_thread_microphone_handle_t*)mic_context;
-   snd_pcm_state_t state;
 
    if (!alsa || !mic || !s) /* If any of the parameters were invalid... */
       return -1;
@@ -245,28 +246,23 @@ static int alsa_thread_microphone_read(void *driver_context, void *mic_context, 
    if (alsa->nonblock)
    {
       size_t avail;
-      size_t write_amt;
 
       /* "Hey, I'm gonna borrow the queue." */
       slock_lock(mic->info.fifo_lock);
 
       avail           = FIFO_READ_AVAIL(mic->info.buffer);
-      write_amt       = MIN(avail, len);
+      _len            = MIN(avail, len);
 
       /* "It's okay if you don't have any new samples, I'll just check in on you later." */
-      fifo_read(mic->info.buffer, s, write_amt);
+      fifo_read(mic->info.buffer, s, _len);
 
       /* "Here, take this queue back." */
       slock_unlock(mic->info.fifo_lock);
-
-      return (int)write_amt;
    }
    else
    {
-      size_t read = 0;
-
       /* Until we've read all requested samples (or we're told to stop)... */
-      while (read < len && !mic->info.thread_dead)
+      while (_len < len && !mic->info.thread_dead)
       {
          size_t avail;
 
@@ -294,21 +290,20 @@ static int alsa_thread_microphone_read(void *driver_context, void *mic_context, 
          }
          else
          {
-            size_t read_amt = MIN(len - read, avail);
+            size_t read_amt = MIN(len - _len, avail);
 
             /* "I'll just go ahead and consume all these samples..."
              * (As many as will fit in s, or as many as are available.) */
-            fifo_read(mic->info.buffer,s + read, read_amt);
+            fifo_read(mic->info.buffer,s + _len, read_amt);
 
             /* "I'm done, you can take the queue back now." */
             slock_unlock(mic->info.fifo_lock);
-            read += read_amt;
+            _len += read_amt;
          }
-
          /* "I'll be right back..." */
       }
-      return (int)read;
    }
+   return _len;
 }
 
 static bool alsa_thread_microphone_mic_alive(const void *driver_context, const void *mic_context);
@@ -475,8 +470,9 @@ static void alsa_worker_thread(void *data)
 
       frames = snd_pcm_writei(alsa->info.pcm, buf, alsa->info.stream_info.period_frames);
 
-      if (frames == -EPIPE || frames == -EINTR ||
-            frames == -ESTRPIPE)
+      if (     frames == -EPIPE
+            || frames == -EINTR
+            || frames == -ESTRPIPE)
       {
          if (snd_pcm_recover(alsa->info.pcm, frames, false) < 0)
          {
@@ -625,7 +621,6 @@ static bool alsa_thread_alive(void *data)
 static bool alsa_thread_stop(void *data)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
-
    if (alsa)
       alsa->is_paused = true;
    return true;

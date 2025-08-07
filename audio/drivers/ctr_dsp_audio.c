@@ -171,11 +171,11 @@ static bool ctr_dsp_audio_start(void *data, bool is_shutdown)
 
    /* Prevents restarting audio when the menu
     * is toggled off on shutdown */
-   if (is_shutdown)
-      return true;
-
-   ndspSetMasterVol(1.0);
-   ctr->playing = true;
+   if (!is_shutdown)
+   {
+      ndspSetMasterVol(1.0);
+      ctr->playing = true;
+   }
 
    return true;
 }
@@ -198,7 +198,6 @@ static size_t ctr_dsp_audio_write_avail(void *data)
 
 static size_t ctr_dsp_audio_buffer_size(void *data)
 {
-   (void)data;
    return CTR_DSP_AUDIO_COUNT;
 }
 

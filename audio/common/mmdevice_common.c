@@ -24,7 +24,7 @@
 
 #include "../../verbosity.h"
 
-static const char* mmdevice_data_flow_name(unsigned data_flow)
+static const char *mmdevice_data_flow_name(unsigned data_flow)
 {
    switch (data_flow)
    {

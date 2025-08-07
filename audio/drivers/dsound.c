@@ -149,31 +149,30 @@ static bool dsound_grab_region(dsound_t *ds, uint32_t write_ptr,
 #ifdef DEBUG
       RARCH_WARN("[DirectSound] %s.\n", "DSERR_BUFFERLOST");
 #endif
-      if ((IDirectSoundBuffer_Restore(ds->dsb)) != DS_OK)
-         return false;
-      if ((IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
-                  &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0)) != DS_OK)
-         return false;
-      return true;
+      if ((IDirectSoundBuffer_Restore(ds->dsb)) == DS_OK)
+         if ((IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
+                     &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0)) == DS_OK)
+            return true;
    }
-
 #ifdef DEBUG
-   switch (res)
+   else
    {
-      case DSERR_INVALIDCALL:
-         RARCH_WARN("[DirectSound] %s.\n", "DSERR_INVALIDCALL");
-         break;
-      case DSERR_INVALIDPARAM:
-         RARCH_WARN("[DirectSound] %s.\n", "DSERR_INVALIDPARAM");
-         break;
-      case DSERR_PRIOLEVELNEEDED:
-         RARCH_WARN("[DirectSound] %s.\n", "DSERR_PRIOLEVELNEEDED");
-         break;
-      default:
-         break;
+      switch (res)
+      {
+         case DSERR_INVALIDCALL:
+            RARCH_WARN("[DirectSound] %s.\n", "DSERR_INVALIDCALL");
+            break;
+         case DSERR_INVALIDPARAM:
+            RARCH_WARN("[DirectSound] %s.\n", "DSERR_INVALIDPARAM");
+            break;
+         case DSERR_PRIOLEVELNEEDED:
+            RARCH_WARN("[DirectSound] %s.\n", "DSERR_PRIOLEVELNEEDED");
+            break;
+         default:
+            break;
+      }
    }
 #endif
-
    return false;
 }
 

@@ -102,18 +102,11 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
    if (FIFO_READ_AVAIL(dev->buffer) < write_avail)
    {
       *action_flags = kAudioUnitRenderAction_OutputIsSilence;
-
       /* Seems to be needed. */
       memset(outbuf, 0, write_avail);
-
-      slock_unlock(dev->lock);
-
-      /* Technically possible to deadlock without. */
-      scond_signal(dev->cond);
-      return noErr;
    }
-
-   fifo_read(dev->buffer, outbuf, write_avail);
+   else
+      fifo_read(dev->buffer, outbuf, write_avail);
    slock_unlock(dev->lock);
    scond_signal(dev->cond);
    return noErr;
@@ -123,10 +116,10 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
 static void coreaudio_choose_output_device(coreaudio_t *dev, const char* device)
 {
    int i;
-   UInt32 deviceCount;
+   UInt32 device_count;
    AudioObjectPropertyAddress propaddr;
-   AudioDeviceID *devices              = NULL;
-   UInt32 size                         = 0;
+   AudioDeviceID *devices = NULL;
+   UInt32 size = 0;
 
    propaddr.mSelector = kAudioHardwarePropertyDevices;
 #if HAS_MACOSX_10_12
@@ -140,36 +133,35 @@ static void coreaudio_choose_output_device(coreaudio_t *dev, const char* device)
             &propaddr, 0, 0, &size) != noErr)
       return;
 
-   deviceCount = size / sizeof(AudioDeviceID);
-   devices     = (AudioDeviceID*)malloc(size);
+   device_count = size / sizeof(AudioDeviceID);
+   devices      = (AudioDeviceID*)malloc(size);
 
-   if (!devices || AudioObjectGetPropertyData(kAudioObjectSystemObject,
-            &propaddr, 0, 0, &size, devices) != noErr)
-      goto done;
-
+   if (devices && AudioObjectGetPropertyData(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size, devices) == noErr)
+   {
 #if HAS_MACOSX_10_12
 #else
-   propaddr.mScope    = kAudioDevicePropertyScopeOutput;
+      propaddr.mScope    = kAudioDevicePropertyScopeOutput;
 #endif
-   propaddr.mSelector = kAudioDevicePropertyDeviceName;
+      propaddr.mSelector = kAudioDevicePropertyDeviceName;
 
-   for (i = 0; i < (int)deviceCount; i ++)
-   {
-      char device_name[1024];
-      device_name[0] = 0;
-      size           = 1024;
-
-      if (AudioObjectGetPropertyData(devices[i],
-               &propaddr, 0, 0, &size, device_name) == noErr
-            && string_is_equal(device_name, device))
+      for (i = 0; i < (int)device_count; i ++)
       {
-         AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice,
-               kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));
-         goto done;
+         char device_name[1024];
+         device_name[0] = 0;
+         size           = 1024;
+
+         if (AudioObjectGetPropertyData(devices[i],
+                  &propaddr, 0, 0, &size, device_name) == noErr
+               && string_is_equal(device_name, device))
+         {
+            AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice,
+                  kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));
+            break;
+         }
       }
    }
 
-done:
    free(devices);
 }
 #endif
@@ -245,9 +237,11 @@ static void *coreaudio_init(const char *device,
    stream_desc.mBytesPerFrame    = 2 * sizeof(float);
    stream_desc.mFramesPerPacket  = 1;
    stream_desc.mFormatID         = kAudioFormatLinearPCM;
-   stream_desc.mFormatFlags      = kAudioFormatFlagIsFloat |
-      kAudioFormatFlagIsPacked | (is_little_endian() ?
-            0 : kAudioFormatFlagIsBigEndian);
+   stream_desc.mFormatFlags      = kAudioFormatFlagIsFloat
+                                 | kAudioFormatFlagIsPacked;
+
+   if (!is_little_endian())
+      stream_desc.mFormatFlags  |= kAudioFormatFlagIsBigEndian;
 
    if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
          kAudioUnitScope_Input, 0, &stream_desc, sizeof(stream_desc)) != noErr)
@@ -374,19 +368,25 @@ static bool coreaudio_alive(void *data)
 static bool coreaudio_stop(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
-   if (!dev)
-      return false;
-   dev->is_paused = (AudioOutputUnitStop(dev->dev) == noErr) ? true : false;
-   return dev->is_paused ? true : false;
+   if (dev)
+   {
+      dev->is_paused = (AudioOutputUnitStop(dev->dev) == noErr) ? true : false;
+      if (dev->is_paused)
+         return true;
+   }
+   return false;
 }
 
 static bool coreaudio_start(void *data, bool is_shutdown)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
-   if (!dev)
-      return false;
-   dev->is_paused = (AudioOutputUnitStart(dev->dev) == noErr) ? false : true;
-   return dev->is_paused ? false : true;
+   if (dev)
+   {
+      dev->is_paused = (AudioOutputUnitStart(dev->dev) == noErr) ? false : true;
+      if (dev->is_paused)
+         return true;
+   }
+   return false;
 }
 
 static bool coreaudio_use_float(void *data) { return true; }

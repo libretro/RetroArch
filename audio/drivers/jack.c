@@ -68,34 +68,28 @@ static size_t ja_read_deinterleaved(float *dst[2], jack_nframes_t dst_offset,
 
 static int ja_process_cb(jack_nframes_t nframes, void *data)
 {
-   int i;
-   jack_nframes_t read = 0;
    jack_t *jd = (jack_t*)data;
-   jack_ringbuffer_data_t buf[2];
-   float *dst[2];
 
-   if (nframes <= 0)
+   if (nframes > 0)
    {
-#ifdef HAVE_THREADS
-      scond_signal(jd->cond);
-#endif
-      return 0;
-   }
-
-   for (i = 0; i < 2; i++)
-      dst[i] = (float *)jack_port_get_buffer(jd->ports[i], nframes);
-
-   jack_ringbuffer_get_read_vector(jd->buffer, buf);
-
-   for (i = 0; i < 2; i++)
-      read += ja_read_deinterleaved(dst, read, buf[i], nframes - read);
-
-   jack_ringbuffer_read_advance(jd->buffer, read * sizeof(float) * 2);
-
-   for (; read < nframes; read++)
+      int i;
+      float *dst[2];
+      jack_ringbuffer_data_t buf[2];
+      jack_nframes_t read = 0;
       for (i = 0; i < 2; i++)
-         dst[i][read] = 0.0f;
+         dst[i] = (float *)jack_port_get_buffer(jd->ports[i], nframes);
 
+      jack_ringbuffer_get_read_vector(jd->buffer, buf);
+
+      for (i = 0; i < 2; i++)
+         read += ja_read_deinterleaved(dst, read, buf[i], nframes - read);
+
+      jack_ringbuffer_read_advance(jd->buffer, read * sizeof(float) * 2);
+
+      for (; read < nframes; read++)
+         for (i = 0; i < 2; i++)
+            dst[i][read] = 0.0f;
+   }
 #ifdef HAVE_THREADS
    scond_signal(jd->cond);
 #endif

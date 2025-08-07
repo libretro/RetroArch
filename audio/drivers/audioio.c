@@ -36,8 +36,8 @@ static void *audioio_init(const char *device, unsigned rate, unsigned latency,
       unsigned block_frames, unsigned *new_out_rate)
 {
    struct audio_info info;
-   const char *audiodev = device ? device : DEFAULT_DEV;
-   int              *fd = (int*)calloc(1, sizeof(int));
+   const char *audiodev  = device ? device : DEFAULT_DEV;
+   int              *fd  = (int*)calloc(1, sizeof(int));
 
    if (!fd)
       return NULL;
@@ -45,17 +45,17 @@ static void *audioio_init(const char *device, unsigned rate, unsigned latency,
    AUDIO_INITINFO(&info);
 
 #ifdef AUMODE_PLAY_ALL
-   info.mode = AUMODE_PLAY_ALL;
+   info.mode             = AUMODE_PLAY_ALL;
 #elif defined(AUMODE_PLAY)
-   info.mode = AUMODE_PLAY;
+   info.mode             = AUMODE_PLAY;
 #endif
    info.play.sample_rate = rate;
-   info.play.channels = 2;
-   info.play.precision = 16;
+   info.play.channels    = 2;
+   info.play.precision   = 16;
 #ifdef AUDIO_ENCODING_SLINEAR
-   info.play.encoding = AUDIO_ENCODING_SLINEAR;
+   info.play.encoding    = AUDIO_ENCODING_SLINEAR;
 #else
-   info.play.encoding = AUDIO_ENCODING_LINEAR;
+   info.play.encoding    = AUDIO_ENCODING_LINEAR;
 #endif
 
    if ((*fd = open(audiodev, O_WRONLY)) < 0)

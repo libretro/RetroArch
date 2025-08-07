@@ -88,8 +88,8 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
       RARCH_ERR("[RWebAudio] Failed to initialize driver.\n");
       return NULL;
    }
-   rwebaudio_static_data = rwebaudio;
-   *new_rate = RWebAudioSampleRate();
+   rwebaudio_static_data    = rwebaudio;
+   *new_rate                = RWebAudioSampleRate();
    rwebaudio->tmpbuf_frames = RWEBAUDIO_BUFFER_SIZE_MS * *new_rate / 1000;
    rwebaudio->tmpbuf_left   = memalign(sizeof(float), rwebaudio->tmpbuf_frames * sizeof(float));
    rwebaudio->tmpbuf_right  = memalign(sizeof(float), rwebaudio->tmpbuf_frames * sizeof(float));
@@ -230,13 +230,12 @@ static void rwebaudio_set_nonblock_state(void *data, bool state)
 static size_t rwebaudio_write_avail(void *data)
 {
    rwebaudio_data_t *rwebaudio = (rwebaudio_data_t*)data;
-   size_t avail_frames;
-   if (!rwebaudio)
-      return 0;
-
-   avail_frames = RWebAudioWriteAvailFrames();
-   if (avail_frames > rwebaudio->tmpbuf_offset)
-      return (avail_frames - rwebaudio->tmpbuf_offset) * 2 * sizeof(float);
+   if (rwebaudio)
+   {
+      size_t avail_frames = RWebAudioWriteAvailFrames();
+      if (avail_frames > rwebaudio->tmpbuf_offset)
+         return (avail_frames - rwebaudio->tmpbuf_offset) * 2 * sizeof(float);
+   }
    return 0;
 }
 

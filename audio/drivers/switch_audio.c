@@ -180,13 +180,14 @@ static bool switch_audio_start(void *data, bool is_shutdown)
 static bool switch_audio_alive(void *data)
 {
    switch_audio_t *swa = (switch_audio_t*) data;
-   if (!swa)
-      return false;
-   return !swa->is_paused;
+   return (swa && !swa->is_paused);
 }
 
 static void switch_audio_free(void *data)
 {
+#ifdef HAVE_LIBNX
+   int i;
+#endif
    switch_audio_t *swa = (switch_audio_t*) data;
 
    if (!swa)
@@ -197,8 +198,6 @@ static void switch_audio_free(void *data)
       audoutStopAudioOut();
 
    audoutExit();
-
-   int i;
    for (i = 0; i < BUFFER_COUNT; i++)
       free(swa->buffers[i].buffer);
 #else
@@ -208,10 +207,8 @@ static void switch_audio_free(void *data)
    free(swa);
 }
 
-static bool switch_audio_use_float(void *data)
-{
-   return false; /* force INT16 */
-}
+/* TODO/FIXME - implement float too? */
+static bool switch_audio_use_float(void *data) { return false; /* force INT16 */ }
 
 static size_t switch_audio_write_avail(void *data)
 {
