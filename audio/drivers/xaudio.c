@@ -552,7 +552,12 @@ static bool xa_start(void *data, bool is_shutdown)
    return true;
 }
 
-static bool xa_use_float(void *data) { return true; }
+static bool xa_use_float(void *data)
+{
+   xa_t *xa              = (xa_t*)data;
+   xaudio2_t *handle     = xa->xa;
+   return (handle && handle->wf.wBitsPerSample == 32);
+}
 
 static void xa_free(void *data)
 {
