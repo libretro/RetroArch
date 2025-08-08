@@ -317,7 +317,7 @@ static int filebrowser_parse(
       default:
          /* if a core has / in its list of supported extensions, the core
             supports loading of directories on the host file system */
-         if (exts && strchr(exts, '/'))
+         if (exts && memchr(exts, '/', strlen(exts) + 1))
             menu_entries_prepend(info_list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
                   msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
