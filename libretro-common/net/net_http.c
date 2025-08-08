@@ -328,15 +328,16 @@ void net_http_urlencode_full(char *s, const char *source, size_t len)
    size_t tmp_len;
    char url_domain[256];
    char url_path[PATH_MAX_LENGTH];
-   char *tmp                         = NULL;
-   int count                         = 0;
+   int count      = 0;
+   char *tmp      = url_path;
 
    strlcpy(url_path, source, sizeof(url_path));
-   tmp            = url_path;
 
    while (count < 3 && tmp[0] != '\0')
    {
       tmp = strchr(tmp, '/');
+      if (!tmp)
+         break;
       count++;
       tmp++;
    }
