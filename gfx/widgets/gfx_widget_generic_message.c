@@ -74,7 +74,7 @@ static gfx_widget_generic_message_state_t p_w_generic_message_st = {
    0,                                  /* bg_height */
    0,                                  /* frame_width */
    0,                                  /* text_padding */
-   0xFFFFFFFF,                         /* text_color */
+   TEXT_COLOR_INFO,                    /* text_color */
 
    0,                                  /* message_duration */
 
@@ -89,8 +89,8 @@ static gfx_widget_generic_message_state_t p_w_generic_message_st = {
 
    0.0f,                               /* alpha */
 
-   COLOR_HEX_TO_FLOAT(0x3A3A3A, 1.0f), /* bg_color */
-   COLOR_HEX_TO_FLOAT(0x7A7A7A, 1.0f), /* frame_color */
+   COLOR_HEX_TO_FLOAT(BG_COLOR_DEFAULT, 1.0f), /* bg_color */
+   COLOR_HEX_TO_FLOAT(BG_COLOR_DEFAULT, 0.0f), /* frame_color */
   
    0,                                  /* message_len */
 

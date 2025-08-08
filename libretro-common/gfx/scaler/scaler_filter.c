@@ -84,12 +84,7 @@ static bool validate_filter(struct scaler_ctx *ctx)
    for (i = 0; i < ctx->out_width; i++)
    {
       if (ctx->horiz.filter_pos[i] > max_w_pos || ctx->horiz.filter_pos[i] < 0)
-      {
-#ifndef NDEBUG
-         fprintf(stderr, "Out X = %d => In X = %d\n", i, ctx->horiz.filter_pos[i]);
-#endif
          return false;
-      }
    }
 
    max_h_pos = ctx->in_height - ctx->vert.filter_len;
@@ -97,12 +92,7 @@ static bool validate_filter(struct scaler_ctx *ctx)
    for (i = 0; i < ctx->out_height; i++)
    {
       if (ctx->vert.filter_pos[i] > max_h_pos || ctx->vert.filter_pos[i] < 0)
-      {
-#ifndef NDEBUG
-         fprintf(stderr, "Out Y = %d => In Y = %d\n", i, ctx->vert.filter_pos[i]);
-#endif
          return false;
-      }
    }
 
    return true;
@@ -198,15 +188,14 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
    if (!ctx->horiz.filter || !ctx->vert.filter)
       return false;
 
-   x_step = (1 << 16) * ctx->in_width / ctx->out_width;
+   x_step = (1 << 16) * ctx->in_width  / ctx->out_width;
    y_step = (1 << 16) * ctx->in_height / ctx->out_height;
+   x_pos  = (1 << 15) * ctx->in_width  / ctx->out_width  - (1 << 15);
+   y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15);
 
    switch (ctx->scaler_type)
    {
       case SCALER_TYPE_POINT:
-         x_pos  = (1 << 15) * ctx->in_width / ctx->out_width   - (1 << 15);
-         y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15);
-
          gen_filter_point_sub(&ctx->horiz, ctx->out_width,  x_pos, x_step);
          gen_filter_point_sub(&ctx->vert,  ctx->out_height, y_pos, y_step);
 
@@ -214,9 +203,6 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
          break;
 
       case SCALER_TYPE_BILINEAR:
-         x_pos  = (1 << 15) * ctx->in_width / ctx->out_width   - (1 << 15);
-         y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15);
-
          gen_filter_bilinear_sub(&ctx->horiz, ctx->out_width,  x_pos, x_step);
          gen_filter_bilinear_sub(&ctx->vert,  ctx->out_height, y_pos, y_step);
          break;
@@ -224,9 +210,8 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
       case SCALER_TYPE_SINC:
          /* Need to expand the filter when downsampling
           * to get a proper low-pass effect. */
-
-         x_pos  = (1 << 15) * ctx->in_width  / ctx->out_width  - (1 << 15) - (sinc_size << 15);
-         y_pos  = (1 << 15) * ctx->in_height / ctx->out_height - (1 << 15) - (sinc_size << 15);
+         x_pos  -= (sinc_size << 15);
+         y_pos  -= (sinc_size << 15);
 
          gen_filter_sinc_sub(&ctx->horiz, ctx->out_width, x_pos, x_step,
                ctx->in_width  > ctx->out_width  ? (double)ctx->out_width  / ctx->in_width  : 1.0);
@@ -238,8 +223,8 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
          break;
    }
 
-   /* Makes sure that we never sample outside our rectangle. */
-   fixup_filter_sub(&ctx->horiz, ctx->out_width, ctx->in_width);
+   /* Makes sure that we never sample outside our rectangle */
+   fixup_filter_sub(&ctx->horiz, ctx->out_width,  ctx->in_width);
    fixup_filter_sub(&ctx->vert,  ctx->out_height, ctx->in_height);
 
    return validate_filter(ctx);

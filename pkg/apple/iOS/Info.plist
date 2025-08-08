@@ -81,8 +81,6 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>Some cores are able to provide camera input to games.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>RetroArch uses direct Bluetooth communication for some types of controllers</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
@@ -92,6 +90,8 @@
 		<string>_altserver._tcp</string>
 		<string>_ra_netplay._tcp</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Some cores are able to provide camera input to games.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>RetroArch uses the local network to find local Netplay participants.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
@@ -111,7 +111,7 @@
 		<string>arm64</string>
 	</array>
 	<key>UIRequiresFullScreen</key>
-	<true/>
+	<false/>
 	<key>UIStatusBarHidden</key>
 	<false/>
 	<key>UISupportedInterfaceOrientations</key>

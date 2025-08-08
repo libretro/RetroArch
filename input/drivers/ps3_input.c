@@ -148,8 +148,6 @@ static void ps3_end_camera(ps3_input_t *ps3)
 
 static int ps3_setup_camera(ps3_input_t *ps3)
 {
-   int error = 0;
-
    cameraGetType(0, &ps3->type);
    if (ps3->type == CAM_TYPE_PLAYSTATION_EYE)
    {
@@ -163,24 +161,20 @@ static int ps3_setup_camera(ps3_input_t *ps3)
       {
          case CAMERA_ERRO_DOUBLE_OPEN:
             cameraClose(0);
-            error                = 1;
-            break;
-         case CAMERA_ERRO_NO_DEVICE_FOUND:
-            error                = 1;
-            break;
+            return 1;
          case 0:
             ps3->camread.buffer  = ps3->camInf.buffer;
             ps3->camread.version = 0x0100;
             ps3->cam_buf         = (u8 *)(u64)ps3->camread.buffer;
             break;
+         case CAMERA_ERRO_NO_DEVICE_FOUND:
          default:
-            error                = 1;
-            break;
+            return 1;
       }
    }
    else
-      error = 1;
-   return error;
+      return 1;
+   return 0;
 }
 
 #if 0

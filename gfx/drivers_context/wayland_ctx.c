@@ -509,17 +509,17 @@ static void wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t t
    wl_callback_destroy(cb);
 }
 
-static const struct wl_callback_listener wl_surface_frame_listener = { 
+static const struct wl_callback_listener wl_surface_frame_listener = {
    .done = wl_surface_frame_done,
 };
 
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
+   struct wl_callback *cb        = NULL;
    gfx_ctx_wayland_data_t *wl    = (gfx_ctx_wayland_data_t*)data;
    settings_t *settings          = config_get_ptr();
    unsigned max_swapchain_images = settings->uints.video_max_swapchain_images;
-   struct wl_callback *cb        = NULL;
 
    if (wl->present_clock)
    {
@@ -592,14 +592,14 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
    if (wl->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
-   if (string_is_equal(video_ident, "glcore"))
+   if (string_is_equal(video_ident, "glcore") || string_is_equal(video_ident, "gl"))
    {
+      if (string_is_equal(video_ident, "glcore"))
+      {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
-   }
-   else if (string_is_equal(video_ident, "gl"))
-   {
+      }
 #ifdef HAVE_GLSL
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif

@@ -404,8 +404,10 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], application_data, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #elif defined(OSX) && defined(HAVE_APPLE_STORE)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Contents/Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#else
+#elif defined(IOS) && defined(HAVE_FRAMEWORKS)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+#else
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], application_data, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], application_data, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
@@ -769,21 +771,10 @@ static uint64_t frontend_darwin_get_total_mem(void)
 static uint64_t frontend_darwin_get_free_mem(void)
 {
 #if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
-    vm_size_t page_size;
-    vm_statistics64_data_t vm_stats;
-    mach_port_t mach_port        = mach_host_self();
-    mach_msg_type_number_t count = sizeof(vm_stats) / sizeof(natural_t);
-
-    if (   KERN_SUCCESS == host_page_size(mach_port, &page_size)
-        && KERN_SUCCESS == host_statistics64(mach_port, HOST_VM_INFO,
-           (host_info64_t)&vm_stats, &count))
-    {
-        long long used_memory = (
-              (int64_t)vm_stats.active_count   +
-              (int64_t)vm_stats.inactive_count +
-              (int64_t)vm_stats.wire_count)    * (int64_t)page_size;
-        return used_memory;
-    }
+   task_vm_info_data_t vm_info;
+   mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+   if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vm_info, &count) == KERN_SUCCESS)
+        return frontend_darwin_get_total_mem() - vm_info.phys_footprint;
 #elif defined(IOS)
     task_vm_info_data_t vm_info;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;

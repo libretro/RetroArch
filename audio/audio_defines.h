@@ -21,23 +21,11 @@
 
 RETRO_BEGIN_DECLS
 
-#define AUDIO_CHUNK_SIZE_BLOCKING      512
-
-/* So we don't get complete line-noise when fast-forwarding audio. */
-#define AUDIO_CHUNK_SIZE_NONBLOCKING   2048
-
-#define AUDIO_MAX_RATIO                16
-#define AUDIO_MIN_RATIO                0.0625
-
 #define AUDIO_MIXER_MAX_STREAMS        16
 
 #define AUDIO_MIXER_MAX_SYSTEM_STREAMS (AUDIO_MIXER_MAX_STREAMS + 8)
 
-/* Fastforward timing calculations running average samples. Helps with a
-consistent pitch when fast-forwarding. */
-#define AUDIO_FF_EXP_AVG_SAMPLES       16
-
-/* do not define more than (MAX_SYSTEM_STREAMS - MAX_STREAMS) */
+/* Do not define more than (MAX_SYSTEM_STREAMS - MAX_STREAMS) */
 enum audio_mixer_system_slot
 {
    AUDIO_MIXER_SYSTEM_SLOT_OK = AUDIO_MIXER_MAX_STREAMS,

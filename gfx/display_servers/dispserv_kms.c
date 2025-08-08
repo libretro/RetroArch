@@ -66,7 +66,7 @@ static bool kms_display_server_set_resolution(void *data,
       curr_width       = g_drm_mode->hdisplay;
       curr_height      = g_drm_mode->vdisplay;
    }
-   RARCH_DBG("[DRM]: Display server set resolution - incoming: %d x %d, %f Hz\n",width, height, hz);
+   RARCH_DBG("[DRM] Display server set resolution - incoming: %d x %d, %f Hz.\n",width, height, hz);
 
    if (width == 0)
       width = curr_width;
@@ -78,7 +78,7 @@ static bool kms_display_server_set_resolution(void *data,
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);
 
-   RARCH_DBG("[DRM]: Display server set resolution - actual: %d x %d, %f Hz\n",width, height, hz);
+   RARCH_DBG("[DRM] Display server set resolution - actual: %d x %d, %f Hz.\n",width, height, hz);
 
    retval = video_driver_set_video_mode(width, height, true);
 

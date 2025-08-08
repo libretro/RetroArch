@@ -58,6 +58,7 @@ LIBS               := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END)
 libogc_platform    := 1
 
 EXTERNAL_LIBOGC   ?= 0
+HAVE_OGG_OGC      ?= 0
 GX_PTHREAD_LEGACY ?= 1
 CC                 = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 CXX                = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
@@ -100,6 +101,10 @@ LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
 
 ifeq ($(BIG_STACK), 1)
    LDFLAGS += -T bootstrap/gx/ogc.ld
+endif
+
+ifeq ($(HAVE_OGG_OGC), 1)
+   LIBS += -L$(DEVKITPRO)/portlibs/ppc/lib -lvorbisfile -lvorbis -logg
 endif
 
 ifeq ($(EXTERNAL_LIBOGC), 1)

@@ -173,8 +173,24 @@ end
 
 private_lane :ra_upload_to_testflight do |options|
   if options[:upload].nil? or options[:upload]
-    info = last_git_commit
-    short_hash = info[:abbreviated_commit_hash]
+    short_hash = nil
+    version_file = File.expand_path("../../../.git_version.h", Dir.pwd)
+    if File.exist?(version_file)
+      content = File.read(version_file)
+      match  = content.match(/#define\s+GIT_VERSION\s+([0-9a-fA-F]+)/)
+      if match
+        short_hash = match[1]
+        UI.message "Using commit from .git_version.h: #{short_hash}"
+      else
+        UI.message ".git_version.h found but no GIT_VERSION; falling back to git"
+      end
+    end
+    if short_hash.nil?
+      info       = last_git_commit
+      short_hash = info[:abbreviated_commit_hash]
+      UI.message "Using git commit from repo: #{short_hash}"
+    end
+
     upload_to_testflight(
       distribute_external: (options[:public].nil? || options[:public]),
       groups: options[:public].nil? || options[:public] ? ['Invaders', 'Patreons'] : [],

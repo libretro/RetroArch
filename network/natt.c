@@ -223,8 +223,9 @@ void natt_device_end(struct natt_discovery *discovery)
    }
 }
 
-static bool build_control_url(rxml_node_t *control_url,
-   struct natt_device *device)
+static bool natt_build_control_url(
+      rxml_node_t *control_url,
+      struct natt_device *device)
 {
    if (string_is_empty(control_url->data))
       return false;
@@ -268,58 +269,60 @@ static bool build_control_url(rxml_node_t *control_url,
    return true;
 }
 
-static bool parse_desc_node(rxml_node_t *node,
-   struct natt_device *device)
+static bool natt_parse_desc_node(rxml_node_t *node,
+      struct natt_device *device)
 {
-   rxml_node_t *child = node->children;
+   rxml_node_t *child = node ? node->children : NULL;
 
-   if (!child)
-      return false;
-
-   /* We only care for services. */
-   if (string_is_equal_case_insensitive(node->name, "service"))
+   if (child)
    {
-      rxml_node_t *service_type = NULL;
-      rxml_node_t *control_url  = NULL;
+      /* We only care for services. */
+      if (string_is_equal_case_insensitive(node->name, "service"))
+      {
+         rxml_node_t *service_type = NULL;
+         rxml_node_t *control_url  = NULL;
 
+         do
+         {
+            if (string_is_equal_case_insensitive(child->name, "serviceType"))
+               service_type = child;
+            else if (string_is_equal_case_insensitive(child->name, "controlURL"))
+               control_url  = child;
+            if (service_type && control_url)
+               break;
+         } while ((child = child->next));
+
+         if (service_type && control_url)
+         {
+            /* These two are the only IGD service types we can work with. */
+            if (  strstr(service_type->data, ":WANIPConnection:")
+               || strstr(service_type->data, ":WANPPPConnection:"))
+            {
+               if (natt_build_control_url(control_url, device))
+               {
+                  strlcpy(device->service_type, service_type->data,
+                     sizeof(device->service_type));
+                  return true;
+               }
+            }
+          }
+      }
+   }
+   else
+   {
+      /* XML recursion */
       do
       {
-        if (string_is_equal_case_insensitive(child->name, "serviceType"))
-           service_type = child;
-        else if (string_is_equal_case_insensitive(child->name, "controlURL"))
-           control_url  = child;
-        if (service_type && control_url)
-           break;
+         if (natt_parse_desc_node(child, device))
+            return true;
       } while ((child = child->next));
-
-      if (!service_type || !control_url)
-         return false;
-
-      /* These two are the only IGD service types we can work with. */
-      if (!strstr(service_type->data, ":WANIPConnection:") &&
-            !strstr(service_type->data, ":WANPPPConnection:"))
-         return false;
-      if (!build_control_url(control_url, device))
-         return false;
-
-      strlcpy(device->service_type, service_type->data,
-         sizeof(device->service_type));
-
-      return true;
    }
-
-   /* XML recursion */
-   do
-   {
-      if (parse_desc_node(child, device))
-         return true;
-   } while ((child = child->next));
 
    return false;
 }
 
 static void natt_query_device_cb(retro_task_t *task, void *task_data,
-   void *user_data, const char *error)
+   void *user_data, const char *err)
 {
    char *xml                  = NULL;
    rxml_document_t *document  = NULL;
@@ -329,7 +332,7 @@ static void natt_query_device_cb(retro_task_t *task, void *task_data,
    *device->control           = '\0';
    *device->service_type      = '\0';
 
-   if (error)
+   if (err)
       goto done;
    if (!data || !data->data || !data->len)
       goto done;
@@ -348,7 +351,7 @@ static void natt_query_device_cb(retro_task_t *task, void *task_data,
    {
       rxml_node_t *root = rxml_root_node(document);
       if (root)
-         parse_desc_node(root, device);
+         natt_parse_desc_node(root, device);
 
       rxml_free_document(document);
    }
@@ -384,7 +387,7 @@ bool natt_query_device(struct natt_device *device, bool block)
    return true;
 }
 
-static bool parse_external_address_node(rxml_node_t *node,
+static bool natt_parse_external_address_node(rxml_node_t *node,
    struct natt_device *device)
 {
    if (string_is_equal_case_insensitive(node->name, "NewExternalIPAddress"))
@@ -416,7 +419,7 @@ static bool parse_external_address_node(rxml_node_t *node,
       {
          do
          {
-            if (parse_external_address_node(child, device))
+            if (natt_parse_external_address_node(child, device))
                return true;
          } while ((child = child->next));
       }
@@ -426,7 +429,7 @@ static bool parse_external_address_node(rxml_node_t *node,
 }
 
 static void natt_external_address_cb(retro_task_t *task, void *task_data,
-   void *user_data, const char *error)
+   void *user_data, const char *err)
 {
    char *xml                  = NULL;
    rxml_document_t *document  = NULL;
@@ -435,7 +438,7 @@ static void natt_external_address_cb(retro_task_t *task, void *task_data,
 
    memset(&device->ext_addr, 0, sizeof(device->ext_addr));
 
-   if (error)
+   if (err)
       goto done;
    if (!data || !data->data || !data->len)
       goto done;
@@ -454,7 +457,7 @@ static void natt_external_address_cb(retro_task_t *task, void *task_data,
    {
       rxml_node_t *root = rxml_root_node(document);
       if (root)
-         parse_external_address_node(root, device);
+         natt_parse_external_address_node(root, device);
 
       rxml_free_document(document);
    }
@@ -465,7 +468,7 @@ done:
    device->busy = false;
 }
 
-static bool parse_open_port_node(rxml_node_t *node,
+static bool natt_parse_open_port_node(rxml_node_t *node,
    struct natt_request *request)
 {
    if (string_is_equal_case_insensitive(node->name, "u:AddPortMappingResponse"))
@@ -499,7 +502,7 @@ static bool parse_open_port_node(rxml_node_t *node,
       {
          do
          {
-            if (parse_open_port_node(child, request))
+            if (natt_parse_open_port_node(child, request))
                return true;
          } while ((child = child->next));
       }
@@ -509,7 +512,7 @@ static bool parse_open_port_node(rxml_node_t *node,
 }
 
 static void natt_open_port_cb(retro_task_t *task, void *task_data,
-   void *user_data, const char *error)
+   void *user_data, const char *err)
 {
    char *xml                    = NULL;
    rxml_document_t *document    = NULL;
@@ -519,7 +522,7 @@ static void natt_open_port_cb(retro_task_t *task, void *task_data,
 
    request->success             = false;
 
-   if (error)
+   if (err)
       goto done;
    if (!data || !data->data || !data->len)
       goto done;
@@ -538,7 +541,7 @@ static void natt_open_port_cb(retro_task_t *task, void *task_data,
    {
       rxml_node_t *root = rxml_root_node(document);
       if (root)
-         parse_open_port_node(root, request);
+         natt_parse_open_port_node(root, request);
 
       rxml_free_document(document);
    }
@@ -550,7 +553,7 @@ done:
 }
 
 static void natt_close_port_cb(retro_task_t *task, void *task_data,
-   void *user_data, const char *error)
+   void *user_data, const char *err)
 {
    http_transfer_data_t *data   = (http_transfer_data_t*)task_data;
    struct natt_request *request = (struct natt_request*)user_data;
@@ -558,7 +561,7 @@ static void natt_close_port_cb(retro_task_t *task, void *task_data,
 
    request->success             = false;
 
-   if (error)
+   if (err)
       goto done;
    if (!data || !data->data || !data->len)
       goto done;

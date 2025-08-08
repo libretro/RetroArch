@@ -34,7 +34,7 @@ struct pipe_trans_stream
 
 static void *pipe_stream_new(void)
 {
-   struct pipe_trans_stream *stream = 
+   struct pipe_trans_stream *stream =
       (struct pipe_trans_stream*)malloc(sizeof(*stream));
    if (!stream)
       return NULL;
@@ -58,7 +58,7 @@ static void pipe_set_in(void *data, const uint8_t *in, uint32_t in_size)
 
    if (!p)
       return;
-         
+
    p->in                       = in;
    p->in_size                  = in_size;
 }
@@ -66,7 +66,7 @@ static void pipe_set_in(void *data, const uint8_t *in, uint32_t in_size)
 static void pipe_set_out(void *data, uint8_t *out, uint32_t out_size)
 {
    struct pipe_trans_stream *p = (struct pipe_trans_stream *) data;
-   
+
    if (!p)
       return;
 
@@ -74,10 +74,8 @@ static void pipe_set_out(void *data, uint8_t *out, uint32_t out_size)
    p->out_size                 = out_size;
 }
 
-static bool pipe_trans(
-   void *data, bool flush,
-   uint32_t *rd, uint32_t *wn,
-   enum trans_stream_error *error)
+static bool pipe_trans(void *data, bool flush,
+   uint32_t *rd, uint32_t *wn, enum trans_stream_error *err)
 {
    struct pipe_trans_stream *p = (struct pipe_trans_stream *) data;
 
@@ -87,7 +85,7 @@ static bool pipe_trans(
       *rd     = *wn = p->out_size;
       p->in  += p->out_size;
       p->out += p->out_size;
-      *error  = TRANS_STREAM_ERROR_BUFFER_FULL;
+      *err    = TRANS_STREAM_ERROR_BUFFER_FULL;
       return false;
    }
 
@@ -95,7 +93,7 @@ static bool pipe_trans(
    *rd     = *wn = p->in_size;
    p->in  += p->in_size;
    p->out += p->in_size;
-   *error  = TRANS_STREAM_ERROR_NONE;
+   *err    = TRANS_STREAM_ERROR_NONE;
    return true;
 }
 

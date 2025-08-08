@@ -144,19 +144,19 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
 
    if (!config_get_array(filt->conf, key, name, sizeof(name)))
    {
-      RARCH_ERR("Could not find 'filter' array in config.\n");
+      RARCH_ERR("[SoftFilter] Could not find \"filter\" array in config.\n");
       return false;
    }
 
    if (filt->num_plugs == 0)
    {
-      RARCH_ERR("No filter plugs found. Exiting...\n");
+      RARCH_ERR("[SoftFilter] No filter plugs found. Exiting...\n");
       return false;
    }
 
    if (!(filt->impl = softfilter_find_implementation(filt, name)))
    {
-      RARCH_ERR("Could not find implementation.\n");
+      RARCH_ERR("[SoftFilter] Could not find implementation.\n");
       return false;
    }
 
@@ -183,7 +183,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
 
    if (!(input_fmt & input_fmts))
    {
-      RARCH_ERR("Softfilter does not support input format.\n");
+      RARCH_ERR("[SoftFilter] Unsupported input format.\n");
       return false;
    }
 
@@ -197,7 +197,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       filt->out_pix_fmt = RETRO_PIXEL_FORMAT_RGB565;
    else
    {
-      RARCH_ERR("Did not find suitable output format for softfilter.\n");
+      RARCH_ERR("[SoftFilter] Did not find suitable output format.\n");
       return false;
    }
 
@@ -211,25 +211,25 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
          &userdata);
    if (!filt->impl_data)
    {
-      RARCH_ERR("Failed to create softfilter state.\n");
+      RARCH_ERR("[SoftFilter] Failed to create softfilter state.\n");
       return false;
    }
 
    threads = filt->impl->query_num_threads(filt->impl_data);
    if (!threads)
    {
-      RARCH_ERR("Invalid number of threads.\n");
+      RARCH_ERR("[SoftFilter] Invalid number of threads.\n");
       return false;
    }
 
    filt->threads = threads;
-   RARCH_LOG("Using %u threads for softfilter.\n", threads);
+   RARCH_LOG("[SoftFilter] Using %u threads for softfilter.\n", threads);
 
    filt->packets = (struct softfilter_work_packet*)
       calloc(threads, sizeof(*filt->packets));
    if (!filt->packets)
    {
-      RARCH_ERR("Failed to allocate softfilter packets.\n");
+      RARCH_ERR("[SoftFilter] Failed to allocate softfilter packets.\n");
       return false;
    }
 
@@ -392,7 +392,7 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
          return false;
       }
 
-      RARCH_LOG("[SoftFilter]: Found plug: %s (%s).\n",
+      RARCH_LOG("[SoftFilter] Found plug: %s (%s).\n",
             impl->ident, impl->short_ident);
 
       filt->plugs                       = new_plugs;
@@ -432,7 +432,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 
    if (!(filt->conf = config_file_new_from_path_to_string(filter_config)))
    {
-      RARCH_ERR("[SoftFilter]: Did not find config: %s\n", filter_config);
+      RARCH_ERR("[SoftFilter] Did not find config: \"%s\".\n", filter_config);
       goto error;
    }
 
@@ -444,13 +444,13 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 
    if (!(plugs = dir_list_new(basedir, ext_name, false, false, false, false)))
    {
-      RARCH_ERR("[SoftFilter]: Could not build up string list...\n");
+      RARCH_ERR("[SoftFilter] Could not build up string list...\n");
       goto error;
    }
 #endif
    if (!append_softfilter_plugs(filt, plugs))
    {
-      RARCH_ERR("[SoftFilter]: Failed to append softfilter plugins...\n");
+      RARCH_ERR("[SoftFilter] Failed to append softfilter plugins...\n");
       goto error;
    }
 
@@ -461,7 +461,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
    if (!create_softfilter_graph(filt, in_pixel_format,
             max_width, max_height, cpu_features, threads))
    {
-      RARCH_ERR("[SoftFilter]: Failed to create softfilter graph...\n");
+      RARCH_ERR("[SoftFilter] Failed to create softfilter graph...\n");
       goto error;
    }
 
@@ -563,9 +563,6 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
       /* Fire off workers */
       for (i = 0; i < filt->threads; i++)
       {
-#if 0
-         RARCH_LOG("Firing off filter thread %u ...\n", i);
-#endif
          filt->thread_data[i].packet = &filt->packets[i];
          slock_lock(filt->thread_data[i].lock);
          filt->thread_data[i].done = false;
@@ -576,9 +573,6 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
       /* Wait for workers */
       for (i = 0; i < filt->threads; i++)
       {
-#if 0
-         RARCH_LOG("Waiting for filter thread %u ...\n", i);
-#endif
          slock_lock(filt->thread_data[i].lock);
          while (!filt->thread_data[i].done)
             scond_wait(filt->thread_data[i].cond, filt->thread_data[i].lock);

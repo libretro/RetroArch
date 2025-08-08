@@ -143,7 +143,7 @@ static int16_t ps3_joypad_state(
 
    if (port_idx < DEFAULT_MAX_PADS)
    {
-      unsigned i;
+      int i;
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
       {
          /* Auto-binds are per joypad, not per user. */
@@ -152,12 +152,12 @@ static int16_t ps3_joypad_state(
          const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
             ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
          if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
                && pad_state[port_idx] & (UINT64_C(1) << (uint16_t)joykey)
             )
             ret |= ( 1 << i);
          else if (joyaxis != AXIS_NONE &&
-               ((float)abs(ps3_joypad_axis_state(port_idx, joyaxis)) 
+               ((float)abs(ps3_joypad_axis_state(port_idx, joyaxis))
                 / 0x8000) > joypad_info->axis_threshold)
             ret |= (1 << i);
       }

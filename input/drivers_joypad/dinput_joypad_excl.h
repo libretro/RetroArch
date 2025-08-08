@@ -27,10 +27,10 @@
 
 static void dinput_joypad_poll(void)
 {
-   unsigned i;
+   int i;
    for (i = 0; i < MAX_USERS; i++)
    {
-      unsigned j;
+      int j;
       HRESULT ret;
       struct dinput_joypad_data *pad  = &g_pads[i];
       if (!pad || !pad->joypad)
@@ -108,9 +108,9 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
       return DIENUM_CONTINUE;
 
-   g_pads[g_joypad_cnt].joy_name          = 
+   g_pads[g_joypad_cnt].joy_name          =
       strdup((const char*)inst->tszProductName);
-   g_pads[g_joypad_cnt].joy_friendly_name = 
+   g_pads[g_joypad_cnt].joy_friendly_name =
       strdup((const char*)inst->tszInstanceName);
 
    /* there may be more useful info in the GUID,
@@ -158,7 +158,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 
 static void *dinput_joypad_init(void *data)
 {
-   unsigned i;
+   int i;
 
    if (!dinput_init_context())
       return NULL;

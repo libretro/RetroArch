@@ -966,7 +966,7 @@ static int pcm_set_config(struct pcm *pcm, const struct pcm_config *config)
     {
         if (!(pcm->flags & PCM_MMAP))
         {
-            RARCH_ERR("[TINYALSA]: noirq only currently supported with mmap().");
+            RARCH_ERR("[TINYALSA] noirq only currently supported with mmap().");
             return -EINVAL;
         }
 
@@ -983,7 +983,7 @@ static int pcm_set_config(struct pcm *pcm, const struct pcm_config *config)
 
     if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_HW_PARAMS, &params))
     {
-        RARCH_ERR("[TINYALSA]: cannot set HW params.");
+        RARCH_ERR("[TINYALSA] Cannot set HW params.");
         return -errno;
     }
 
@@ -998,7 +998,7 @@ static int pcm_set_config(struct pcm *pcm, const struct pcm_config *config)
                                 PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, pcm->fd, 0);
         if (pcm->mmap_buffer == MAP_FAILED)
         {
-            RARCH_ERR("[TINYALSA]: failed to mmap buffer %d bytes\n",
+            RARCH_ERR("[TINYALSA] Failed to mmap buffer %d bytes.\n",
                  pcm_frames_to_bytes(pcm, pcm->buffer_size));
             return -errno;
         }
@@ -1042,7 +1042,7 @@ static int pcm_set_config(struct pcm *pcm, const struct pcm_config *config)
 
     if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_SW_PARAMS, &sparams))
     {
-        RARCH_ERR("[TINYALSA]: Cannot set HW params.\n");
+        RARCH_ERR("[TINYALSA] Cannot set HW params.\n");
         return -errno;
     }
 
@@ -1128,21 +1128,21 @@ static void pcm_hw_munmap_status(struct pcm *pcm)
 /* Unused for now */
 
 static int pcm_areas_copy(struct pcm *pcm, unsigned int pcm_offset,
-                          char *buf, unsigned int src_offset,
-                          unsigned int frames)
+      char *s, unsigned int src_offset,
+      unsigned int frames)
 {
-    int size_bytes = pcm_frames_to_bytes(pcm, frames);
+    int size_bytes       = pcm_frames_to_bytes(pcm, frames);
     int pcm_offset_bytes = pcm_frames_to_bytes(pcm, pcm_offset);
     int src_offset_bytes = pcm_frames_to_bytes(pcm, src_offset);
 
     /* interleaved only atm */
     if (pcm->flags & PCM_IN)
-        memcpy(buf + src_offset_bytes,
+        memcpy(s + src_offset_bytes,
                (char*)pcm->mmap_buffer + pcm_offset_bytes,
                size_bytes);
     else
         memcpy((char*)pcm->mmap_buffer + pcm_offset_bytes,
-               buf + src_offset_bytes,
+               s + src_offset_bytes,
                size_bytes);
     return 0;
 }
@@ -1307,7 +1307,7 @@ static int pcm_prepare(struct pcm *pcm)
 
    if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_PREPARE) < 0)
    {
-      RARCH_ERR("[TINYALSA]: Cannot prepare channel.\n");
+      RARCH_ERR("[TINYALSA] Cannot prepare channel.\n");
       return -1;
    }
 
@@ -1352,7 +1352,7 @@ restart:
          return prepare_error;
       if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_WRITEI_FRAMES, &x))
       {
-         RARCH_ERR("[TINYALSA]: Cannot write initial data.\n");
+         RARCH_ERR("[TINYALSA] Cannot write initial data.\n");
          return -1;
       }
       pcm->running = 1;
@@ -1375,7 +1375,7 @@ restart:
       }
 #if 0
       /* This tends to spam a lot */
-      RARCH_ERR("[TINYALSA]: Cannot write stream data.\n");
+      RARCH_ERR("[TINYALSA] Cannot write stream data.\n");
 #endif
       return -1;
    }
@@ -1403,7 +1403,7 @@ static int pcm_start(struct pcm *pcm)
 
    if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_START) < 0)
    {
-      RARCH_ERR("[TINYALSA]: Cannot start channel.\n");
+      RARCH_ERR("[TINYALSA] Cannot start channel.\n");
       return -1;
    }
 
@@ -1453,7 +1453,7 @@ static int pcm_readi(struct pcm *pcm, void *data, unsigned int frame_count)
             pcm->underruns++;
             continue;
          }
-         RARCH_ERR("[TINYALSA]: Cannot read stream data.\n");
+         RARCH_ERR("[TINYALSA] Cannot read stream data.\n");
          return -1;
       }
       return x.result;
@@ -1522,7 +1522,7 @@ static struct pcm_params *pcm_params_get(unsigned int card, unsigned int device,
    fd = open(fn, O_RDWR|O_NONBLOCK);
    if (fd < 0)
    {
-      RARCH_ERR("[TINYALSA] Cannot open device '%s'\n", fn);
+      RARCH_ERR("[TINYALSA] Cannot open device \"%s\".\n", fn);
       goto err_open;
    }
 
@@ -1535,7 +1535,7 @@ static struct pcm_params *pcm_params_get(unsigned int card, unsigned int device,
    param_init(params);
    if (ioctl(fd, SNDRV_PCM_IOCTL_HW_REFINE, params))
    {
-      RARCH_ERR("[TINYALSA] SNDRV_PCM_IOCTL_HW_REFINE error (%d)\n", errno);
+      RARCH_ERR("[TINYALSA] SNDRV_PCM_IOCTL_HW_REFINE error (%d).\n", errno);
       goto err_hw_refine;
    }
 
@@ -1705,7 +1705,7 @@ static int pcm_stop(struct pcm *pcm)
 {
    if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_DROP) < 0)
    {
-      RARCH_ERR("[TINYALSA]: Cannot stop channel.\n");
+      RARCH_ERR("[TINYALSA] Cannot stop channel.\n");
       return -1;
    }
 
@@ -1797,13 +1797,13 @@ static struct pcm *pcm_open(unsigned int card, unsigned int device,
    pcm->fd    = open(fn, O_RDWR|O_NONBLOCK);
    if (pcm->fd < 0)
    {
-      RARCH_ERR("[TINYALSA]: cannot open device '%s'\n", fn);
+      RARCH_ERR("[TINYALSA] Cannot open device \"%s\".\n", fn);
       return pcm;
    }
 
    if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_INFO, &info))
    {
-      RARCH_ERR("[TINYALSA]: cannot get info.\n");
+      RARCH_ERR("[TINYALSA] Cannot get info.\n");
       goto fail_close;
    }
    pcm->subdevice = info.subdevice;
@@ -1814,7 +1814,7 @@ static struct pcm *pcm_open(unsigned int card, unsigned int device,
    rc = pcm_hw_mmap_status(pcm);
    if (rc < 0)
    {
-      RARCH_ERR("[TINYALSA]: mmap status failed.\n");
+      RARCH_ERR("[TINYALSA] mmap status failed.\n");
       goto fail;
    }
 
@@ -1825,7 +1825,7 @@ static struct pcm *pcm_open(unsigned int card, unsigned int device,
       rc      = ioctl(pcm->fd, SNDRV_PCM_IOCTL_TTSTAMP, &arg);
       if (rc < 0)
       {
-         RARCH_ERR("[TINYALSA]: Cannot set timestamp type.\n");
+         RARCH_ERR("[TINYALSA] Cannot set timestamp type.\n");
          goto fail;
       }
    }
@@ -1892,7 +1892,7 @@ static int pcm_link(struct pcm *pcm1, struct pcm *pcm2)
    int err = ioctl(pcm1->fd, SNDRV_PCM_IOCTL_LINK, pcm2->fd);
    if (err == -1)
    {
-      RARCH_ERR("[TINYALSA]: Cannot link PCM.\n");
+      RARCH_ERR("[TINYALSA] Cannot link PCM.\n");
       return -1;
    }
    return 0;
@@ -1909,7 +1909,7 @@ static int pcm_unlink(struct pcm *pcm)
    int err = ioctl(pcm->fd, SNDRV_PCM_IOCTL_UNLINK);
    if (err == -1)
    {
-      RARCH_ERR("[TINYALSA]: Cannot unlink PCM.\n");
+      RARCH_ERR("[TINYALSA] Cannot unlink PCM.\n");
       return -1;
    }
    return 0;
@@ -1921,19 +1921,6 @@ static int pcm_avail_update(struct pcm *pcm)
    pcm_sync_ptr(pcm, 0);
    return pcm_mmap_avail(pcm);
 }
-
-#if 0
-/* No longer used */
-
-static int pcm_state(struct pcm *pcm)
-{
-   int err = pcm_sync_ptr(pcm, 0);
-   if (err < 0)
-      return err;
-
-   return pcm->mmap_status->state;
-}
-#endif
 
 /** Waits for frames to be available for read or write operations.
  * @param pcm A PCM handle.
@@ -2016,7 +2003,7 @@ static int pcm_mmap_transfer(struct pcm *pcm, const void *buffer, unsigned int b
       avail = pcm_avail_update(pcm);
       if (avail < 0)
       {
-         RARCH_ERR("[TINYALSA] Cannot determine available mmap frames");
+         RARCH_ERR("[TINYALSA] Cannot determine available mmap frames.");
          return err;
       }
 
@@ -2026,7 +2013,7 @@ static int pcm_mmap_transfer(struct pcm *pcm, const void *buffer, unsigned int b
       {
          if (pcm_start(pcm) < 0)
          {
-            RARCH_ERR("[TINYALSA] Start error: hw 0x%x app 0x%x avail 0x%x\n",
+            RARCH_ERR("[TINYALSA] Start error: hw 0x%x app 0x%x avail 0x%x.\n",
                   (unsigned int)pcm->mmap_status->hw_ptr,
                   (unsigned int)pcm->mmap_control->appl_ptr,
                   avail);
@@ -2049,7 +2036,7 @@ static int pcm_mmap_transfer(struct pcm *pcm, const void *buffer, unsigned int b
          {
             pcm->prepared = 0;
             pcm->running = 0;
-            RARCH_ERR("[TINYALSA] Wait error: hw 0x%x app 0x%x avail 0x%x\n",
+            RARCH_ERR("[TINYALSA] Wait error: hw 0x%x app 0x%x avail 0x%x.\n",
                   (unsigned int)pcm->mmap_status->hw_ptr,
                   (unsigned int)pcm->mmap_control->appl_ptr,
                   avail);
@@ -2070,7 +2057,7 @@ static int pcm_mmap_transfer(struct pcm *pcm, const void *buffer, unsigned int b
       frames = pcm_mmap_transfer_areas(pcm, (void *)buffer, offset, frames);
       if (frames < 0)
       {
-         RARCH_ERR("[TINYALSA] Write error: hw 0x%x app 0x%x avail 0x%x\n",
+         RARCH_ERR("[TINYALSA] Write error: hw 0x%x app 0x%x avail 0x%x.\n",
                (unsigned int)pcm->mmap_status->hw_ptr,
                (unsigned int)pcm->mmap_control->appl_ptr,
                avail);
@@ -2129,7 +2116,7 @@ static int pcm_mmap_transfer_areas(struct pcm *pcm, char *buf,
       commit = pcm_mmap_commit(pcm, pcm_offset, frames);
       if (commit < 0)
       {
-         RARCH_ERR("[TINYALSA}: failed to commit %d frames.\n", frames);
+         RARCH_ERR("[TINYALSA] Failed to commit %d frames.\n", frames);
          return commit;
       }
 
@@ -2179,12 +2166,12 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
    if (devicestr)
       sscanf(devicestr, "%u,%u", &card, &device);
 
-   RARCH_LOG("[TINYALSA]: Using card: %u, device: %u.\n", card, device);
+   RARCH_LOG("[TINYALSA] Using card: %u, device: %u.\n", card, device);
 
    tinyalsa->params = pcm_params_get(card, device, PCM_OUT);
    if (!tinyalsa->params)
    {
-      RARCH_ERR("[TINYALSA]: params: Cannot open audio device.\n");
+      RARCH_ERR("[TINYALSA] Params: Cannot open audio device.\n");
       goto error;
    }
 
@@ -2196,9 +2183,9 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
 
    if (!(rate >= min_rate && rate <= max_rate))
    {
-      RARCH_WARN("[TINYALSA]: Sample rate cannot be larger than %uHz "\
+      RARCH_WARN("[TINYALSA] Sample rate cannot be larger than %uHz "\
                  "or smaller than %uHz.\n", max_rate, min_rate);
-      RARCH_WARN("[TINYALSA]: Trying to set a valid sample rate.\n");
+      RARCH_WARN("[TINYALSA] Trying to set a valid sample rate.\n");
 
       if (rate > max_rate)
          rate = max_rate;
@@ -2223,12 +2210,12 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
 
    if (!tinyalsa->pcm)
    {
-      RARCH_ERR("[TINYALSA]: Failed to allocate memory for pcm.\n");
+      RARCH_ERR("[TINYALSA] Failed to allocate memory for pcm.\n");
       goto error;
    }
    else if (!pcm_is_ready(tinyalsa->pcm))
    {
-      RARCH_ERR("[TINYALSA]: Cannot open audio device.\n");
+      RARCH_ERR("[TINYALSA] Cannot open audio device.\n");
       goto error;
    }
 
@@ -2241,7 +2228,7 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
 
    if (latency < (unsigned int)initial_latency)
    {
-      RARCH_WARN("[TINYALSA]: Cannot have a latency less than %ums. "\
+      RARCH_WARN("[TINYALSA] Cannot have a latency less than %ums. "\
                  "Defaulting to 64ms.\n", (unsigned int)initial_latency);
       latency = 64;
    }
@@ -2251,19 +2238,19 @@ static void * tinyalsa_init(const char *devicestr, unsigned rate,
 
    tinyalsa->has_float   = false;
 
-   RARCH_LOG("[TINYALSA]: Can pause: %s.\n", tinyalsa->can_pause ? "yes" : "no");
-   RARCH_LOG("[TINYALSA]: Audio rate: %uHz.\n", config.rate);
-   RARCH_LOG("[TINYALSA]: Buffer size: %u frames.\n", buffer_size);
-   RARCH_LOG("[TINYALSA]: Buffer size: %u bytes.\n", (unsigned int)tinyalsa->buffer_size);
-   RARCH_LOG("[TINYALSA]: Frame  size: %u bytes.\n", tinyalsa->frame_bits / 8);
-   RARCH_LOG("[TINYALSA]: Latency: %ums.\n", buffer_size * 1000 / (rate * 4));
+   RARCH_LOG("[TINYALSA] Can pause: %s.\n", tinyalsa->can_pause ? "yes" : "no");
+   RARCH_LOG("[TINYALSA] Audio rate: %uHz.\n", config.rate);
+   RARCH_LOG("[TINYALSA] Buffer size: %u frames.\n", buffer_size);
+   RARCH_LOG("[TINYALSA] Buffer size: %u bytes.\n", (unsigned int)tinyalsa->buffer_size);
+   RARCH_LOG("[TINYALSA] Frame  size: %u bytes.\n", tinyalsa->frame_bits / 8);
+   RARCH_LOG("[TINYALSA] Latency: %ums.\n", buffer_size * 1000 / (rate * 4));
 
    pcm_params_free(tinyalsa->params);
 
    return tinyalsa;
 
 error:
-   RARCH_ERR("[TINYALSA]: Failed to initialize tinyalsa driver.\n");
+   RARCH_ERR("[TINYALSA] Failed to initialize tinyalsa driver.\n");
 
    if (tinyalsa->params)
       pcm_params_free(tinyalsa->params);
@@ -2279,7 +2266,7 @@ tinyalsa_write(void *data, const void *buf_, size_t len)
 {
    tinyalsa_t *tinyalsa      = (tinyalsa_t*)data;
    const uint8_t *buf        = (const uint8_t*)buf_;
-   snd_pcm_sframes_t written = 0;
+   snd_pcm_sframes_t _len    = 0;
    snd_pcm_sframes_t size    = BYTES_TO_FRAMES(len, tinyalsa->frame_bits);
    size_t frames_size        = tinyalsa->has_float ? sizeof(float) : sizeof(int16_t);
 
@@ -2292,7 +2279,7 @@ tinyalsa_write(void *data, const void *buf_, size_t len)
          if (frames < 0)
             pcm_stop(tinyalsa->pcm);
 
-         written += frames;
+         _len    += frames;
          buf     += (frames << 1) * frames_size;
          size    -= frames;
       }
@@ -2309,14 +2296,13 @@ tinyalsa_write(void *data, const void *buf_, size_t len)
          if (frames < 0)
             return -1;
 
-         written += frames;
+         _len    += frames;
          buf     += (frames << 1) * frames_size;
          size    -= frames;
       }
    }
 
-   return written;
-
+   return _len;
 }
 
 static bool
@@ -2358,7 +2344,7 @@ tinyalsa_start(void *data, bool is_shutdown)
 
 		if (ret < 0)
       {
-			RARCH_ERR("[TINYALSA]: Failed to unpause.\n");
+			RARCH_ERR("[TINYALSA] Failed to unpause.\n");
 			return false;
 		}
 
@@ -2425,6 +2411,6 @@ audio_driver_t audio_tinyalsa = {
 	"tinyalsa",                  /* "AUDIO"                 */
 	NULL,                        /* AUDIO_device_list_new   */ /*TODO*/
 	NULL,                        /* AUDIO_device_list_free  */ /*TODO*/
-   tinyalsa_write_avail,        /* AUDIO_write_avail       */ /*TODO*/
+	tinyalsa_write_avail,        /* AUDIO_write_avail       */ /*TODO*/
 	tinyalsa_buffer_size,        /* AUDIO_buffer_size       */ /*TODO*/
 };

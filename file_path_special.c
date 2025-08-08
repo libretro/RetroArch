@@ -16,11 +16,9 @@
 
 /* Assume W-functions do not work below Win2K and Xbox platforms */
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
-
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
 #endif
-
 #endif
 
 #ifdef _WIN32

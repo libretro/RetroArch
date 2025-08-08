@@ -5,9 +5,6 @@
 # /* - version.dtd */
 # /* - pkg/snap/snapcraft.yaml (including the github url) */
 
-#if 0
-RARCH_VERSION="1.21.0"
-#endif
 #ifndef PACKAGE_VERSION
 #define PACKAGE_VERSION "1.21.0"
 #endif

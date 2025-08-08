@@ -548,7 +548,7 @@ static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_h
       free(adapter);
       adapter = NULL;
    }
-   RARCH_LOG("Device removed from port %d\n", slot);
+   RARCH_LOG("[IOHID] Device removed from port %d.\n", slot);
 }
 
 static int32_t iohidmanager_hid_device_get_int_property(
@@ -606,7 +606,7 @@ static void iohidmanager_hid_device_add_autodetect(unsigned idx,
          dev_pid
          );
 
-   RARCH_LOG("Port %d: %s.\n", idx, device_name);
+   RARCH_LOG("[IOHID] Port %d: %s.\n", idx, device_name);
 }
 
 

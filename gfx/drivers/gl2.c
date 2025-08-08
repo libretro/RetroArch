@@ -501,7 +501,7 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
    if (gfx_display_gl2_discard_draw_rectangle(gl, draw, video_width,
             video_height))
    {
-      /*RARCH_WARN("[Menu]: discarded draw rect: %.4i %.4i %.4i %.4i\n",
+      /*RARCH_WARN("discarded draw rect: %.4i %.4i %.4i %.4i\n",
         (int)draw->x, (int)draw->y, (int)draw->width, (int)draw->height);*/
       return;
    }
@@ -1236,7 +1236,7 @@ static bool gl2_recreate_fbo(
          == RARCH_GL_FRAMEBUFFER_COMPLETE)
       return true;
 
-   RARCH_WARN("[GL]: Failed to reinitialize FBO texture.\n");
+   RARCH_WARN("[GL] Failed to reinitialize FBO texture.\n");
    return false;
 }
 
@@ -1317,10 +1317,6 @@ static void gl2_set_viewport(gl2_t *gl,
       gl->out_vp_width  = vp_width;
       gl->out_vp_height = vp_height;
    }
-
-#if 0
-   RARCH_LOG("Setting viewport @ %ux%u\n", vp_width, vp_height);
-#endif
 }
 
 static void gl2_renderchain_render(
@@ -1389,7 +1385,8 @@ static void gl2_renderchain_render(
             rect->img_width, rect->img_height, true, false,
             video_scale_integer);
 
-      params.data          = gl;
+      params.vp_width      = gl->out_vp_width;
+      params.vp_height     = gl->out_vp_height;
       params.width         = prev_rect->img_width;
       params.height        = prev_rect->img_height;
       params.tex_width     = prev_rect->width;
@@ -1454,7 +1451,8 @@ static void gl2_renderchain_render(
    glClear(GL_COLOR_BUFFER_BIT);
    gl2_set_viewport(gl, width, height, false, true, video_scale_integer);
 
-   params.data          = gl;
+   params.vp_width      = gl->out_vp_width;
+   params.vp_height     = gl->out_vp_height;
    params.width         = prev_rect->img_width;
    params.height        = prev_rect->img_height;
    params.tex_width     = prev_rect->width;
@@ -1565,7 +1563,7 @@ error:
    gl2_delete_fb(chain->fbo_pass, chain->fbo);
    if (gl->fbo_feedback)
       gl2_delete_fb(1, &gl->fbo_feedback);
-   RARCH_ERR("[GL]: Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
+   RARCH_ERR("[GL] Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
    return false;
 }
 
@@ -1644,13 +1642,13 @@ static void gl2_create_fbo_texture(gl2_t *gl,
    if (fp_fbo)
    {
       if (!(chain->flags & GL2_CHAIN_FLAG_HAS_FP_FBO))
-         RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM. Result may band/clip/etc.!\n");
+         RARCH_ERR("[GL] Floating-point FBO was requested, but is not supported. Falling back to UNORM. Result may band/clip/etc.!\n");
    }
 
    if (     fp_fbo
          && (chain->flags & GL2_CHAIN_FLAG_HAS_FP_FBO))
    {
-      RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
+      RARCH_LOG("[GL] FBO pass #%d is floating-point.\n", i);
       gl2_load_texture_image(GL_TEXTURE_2D, 0,
 #ifdef HAVE_OPENGLES2
          GL_RGBA,
@@ -1667,7 +1665,7 @@ static void gl2_create_fbo_texture(gl2_t *gl,
       if (!fp_fbo && srgb_fbo)
       {
          if (!(chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO))
-               RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
+               RARCH_ERR("[GL] sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
       }
 
       if (force_srgb_disable)
@@ -1676,7 +1674,7 @@ static void gl2_create_fbo_texture(gl2_t *gl,
       if (      srgb_fbo
             && (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO))
       {
-         RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
+         RARCH_LOG("[GL] FBO pass #%d is sRGB.\n", i);
          gl2_load_texture_image(GL_TEXTURE_2D, 0,
 #ifdef HAVE_OPENGLES2
             GL_SRGB_ALPHA_EXT,
@@ -1842,7 +1840,7 @@ static void gl2_renderchain_recompute_pass_sizes(
       }
 
       if (size_modified)
-         RARCH_WARN("[GL]: FBO textures exceeded maximum size of GPU (%dx%d). Resizing to fit.\n", max_size, max_size);
+         RARCH_WARN("[GL] FBO textures exceeded maximum size of GPU (%dx%d). Resizing to fit.\n", max_size, max_size);
 
       last_width      = fbo_rect->img_width;
       last_height     = fbo_rect->img_height;
@@ -1903,11 +1901,13 @@ static void gl2_renderchain_init(
    width        = gl->video_width;
    height       = gl->video_height;
 
-   scaler.scale = &scale;
+   scale.flags         = 0;
+   scaler.scale        = &scale;
 
    gl2_shader_scale(gl, &scaler, 1);
 
-   scaler.scale = &scale_last;
+   scale_last.flags    = 0;
+   scaler.scale        = &scale_last;
 
    gl2_shader_scale(gl, &scaler, shader_info_num);
 
@@ -1918,7 +1918,7 @@ static void gl2_renderchain_init(
 
    if (!(gl->flags & GL2_FLAG_HAVE_FBO))
    {
-      RARCH_ERR("[GL]: Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
+      RARCH_ERR("[GL] Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
    }
 
@@ -1959,7 +1959,7 @@ static void gl2_renderchain_init(
    {
       gl->fbo_rect[i].width  = next_pow2(gl->fbo_rect[i].img_width);
       gl->fbo_rect[i].height = next_pow2(gl->fbo_rect[i].img_height);
-      RARCH_LOG("[GL]: Creating FBO %d @ %ux%u.\n", i,
+      RARCH_LOG("[GL] Creating FBO %d @ %ux%u.\n", i,
             gl->fbo_rect[i].width, gl->fbo_rect[i].height);
    }
 
@@ -1967,14 +1967,14 @@ static void gl2_renderchain_init(
    {
       if (gl->fbo_feedback_pass < (unsigned)chain->fbo_pass)
       {
-         RARCH_LOG("[GL]: Creating feedback FBO %d @ %ux%u.\n", i,
+         RARCH_LOG("[GL] Creating feedback FBO %d @ %ux%u.\n", i,
                gl->fbo_rect[gl->fbo_feedback_pass].width,
                gl->fbo_rect[gl->fbo_feedback_pass].height);
          gl->flags |=  GL2_FLAG_FBO_FEEDBACK_ENABLE;
       }
       else
       {
-         RARCH_WARN("[GL]: Tried to create feedback FBO of pass #%u, but there are only %d FBO passes. Will use input texture as feedback texture.\n",
+         RARCH_WARN("[GL] Tried to create feedback FBO of pass #%u, but there are only %d FBO passes. Will use input texture as feedback texture.\n",
                gl->fbo_feedback_pass, chain->fbo_pass);
          gl->flags &= ~GL2_FLAG_FBO_FEEDBACK_ENABLE;
       }
@@ -1987,7 +1987,7 @@ static void gl2_renderchain_init(
    if (!gl || !gl2_create_fbo_targets(gl, chain))
    {
       glDeleteTextures(chain->fbo_pass, chain->fbo_texture);
-      RARCH_ERR("[GL]: Failed to create FBO targets. Will continue without FBO.\n");
+      RARCH_ERR("[GL] Failed to create FBO targets. Will continue without FBO.\n");
       return;
    }
 
@@ -2012,16 +2012,16 @@ static bool gl2_renderchain_init_hw_render(
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
-   RARCH_LOG("[GL]: Initializing HW render (%ux%u).\n", width, height);
+   RARCH_LOG("[GL] Initializing HW render (%ux%u).\n", width, height);
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
    glGetIntegerv(RARCH_GL_MAX_RENDERBUFFER_SIZE, &max_renderbuffer_size);
-   RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %d px.\n",
+   RARCH_LOG("[GL] Max texture size: %d px, renderbuffer size: %d px.\n",
          max_fbo_size, max_renderbuffer_size);
 
    if (!(gl->flags & GL2_FLAG_HAVE_FBO))
       return false;
 
-   RARCH_LOG("[GL]: Supports FBO (render-to-texture).\n");
+   RARCH_LOG("[GL] Supports FBO (render-to-texture).\n");
 
    glBindTexture(GL_TEXTURE_2D, 0);
    gl2_gen_fb(gl->textures, gl->hw_render_fbo);
@@ -2083,7 +2083,7 @@ static bool gl2_renderchain_init_hw_render(
       status = gl2_check_fb_status(RARCH_GL_FRAMEBUFFER);
       if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
       {
-         RARCH_ERR("[GL]: Failed to create HW render FBO #%u, error: 0x%04x.\n",
+         RARCH_ERR("[GL] Failed to create HW render FBO #%u, error: 0x%04x.\n",
                i, status);
          return false;
       }
@@ -2172,7 +2172,7 @@ static bool gl2_renderchain_read_viewport(
 
       if (!ptr)
       {
-         RARCH_ERR("[GL]: Failed to map pixel unpack buffer.\n");
+         RARCH_ERR("[GL] Failed to map pixel unpack buffer.\n");
          goto error;
       }
 
@@ -2275,7 +2275,7 @@ static void gl2_renderchain_copy_frame(
 
       if (img == EGL_NO_IMAGE_KHR)
       {
-         RARCH_ERR("[GL]: Failed to create EGL image.\n");
+         RARCH_ERR("[GL] Failed to create EGL image.\n");
          return;
       }
 
@@ -2319,7 +2319,7 @@ static void gl2_renderchain_copy_frame(
          {
             /* Slow path - conv_buffer is preallocated
              * just in case we hit this path. */
-            int h;
+            size_t h;
             const unsigned line_bytes = width * gl->base_size;
             uint8_t *dst              = (uint8_t*)gl->conv_buffer;
             const uint8_t *src        = (const uint8_t*)frame;
@@ -2594,12 +2594,12 @@ static bool gl2_add_lut(
 
    if (!image_texture_load(&img, lut_path))
    {
-      RARCH_ERR("[GL]: Failed to load texture image from: \"%s\".\n",
+      RARCH_ERR("[GL] Failed to load texture image from: \"%s\".\n",
             lut_path);
       return false;
    }
 
-   RARCH_LOG("[GL]: Loaded texture image from: \"%s\" ...\n",
+   RARCH_LOG("[GL] Loaded texture image from: \"%s\".\n",
          lut_path);
 
    if (lut_filter == RARCH_FILTER_NEAREST)
@@ -2682,7 +2682,7 @@ static void gl2_overlay_vertex_geom(void *data,
 
    if (image > gl->overlays)
    {
-      RARCH_ERR("[GL]: Invalid overlay id: %u\n", image);
+      RARCH_ERR("[GL] Invalid overlay id: %u\n", image);
       return;
    }
 
@@ -2838,22 +2838,22 @@ static const shader_backend_t *gl_shader_driver_set_backend(
 {
    enum rarch_shader_type fallback = gl2_get_fallback_shader_type(type);
    if (fallback != type)
-      RARCH_ERR("[Shader driver]: Shader backend %d not supported, falling back to %d.\n", type, fallback);
+      RARCH_ERR("[GL] Shader backend %d not supported, falling back to %d.\n", type, fallback);
 
    switch (fallback)
    {
 #ifdef HAVE_CG
       case RARCH_SHADER_CG:
-         RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
+         RARCH_LOG("[GL] Using Cg shader backend.\n");
          return &gl_cg_backend;
 #endif
 #ifdef HAVE_GLSL
       case RARCH_SHADER_GLSL:
-         RARCH_LOG("[Shader driver]: Using GLSL shader backend.\n");
+         RARCH_LOG("[GL] Using GLSL shader backend.\n");
          return &gl_glsl_backend;
 #endif
       default:
-         RARCH_LOG("[Shader driver]: No supported shader backend.\n");
+         RARCH_LOG("[GL] No supported shader backend.\n");
          return NULL;
    }
 }
@@ -2879,7 +2879,7 @@ static bool gl_shader_driver_init(video_shader_ctx_init_t *init)
    if (string_is_equal(settings->arrays.menu_driver, "xmb")
          && init->shader->init_menu_shaders)
    {
-      RARCH_LOG("Setting up menu pipeline shaders for XMB ...\n");
+      RARCH_LOG("[GL] Setting up menu pipeline shaders for XMB...\n");
       init->shader->init_menu_shaders(tmp);
    }
 
@@ -2902,14 +2902,14 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
 
    if (type == RARCH_SHADER_NONE)
    {
-      RARCH_ERR("[GL]: Couldn't find any supported shader backend! Continuing without shaders.\n");
+      RARCH_ERR("[GL] Couldn't find any supported shader backend! Continuing without shaders.\n");
       return true;
    }
 
    if (type != parse_type)
    {
       if (!string_is_empty(shader_path))
-         RARCH_WARN("[GL]: Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
+         RARCH_WARN("[GL] Shader preset %s is using unsupported shader type %s, falling back to stock %s.\n",
             shader_path, video_shader_type_to_str(parse_type), video_shader_type_to_str(type));
 
       shader_path = NULL;
@@ -2935,7 +2935,7 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
       return true;
    }
 
-   RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
+   RARCH_ERR("[GL] Failed to initialize shader, falling back to stock.\n");
 
    init_data.shader                  = NULL;
    init_data.shader_data             = NULL;
@@ -3072,7 +3072,7 @@ static void gl2_init_textures(gl2_t *gl)
       }
       else
       {
-         RARCH_WARN("[GL]: 32-bit FBO not supported. Falling back to 16-bit.\n");
+         RARCH_WARN("[GL] 32-bit FBO not supported. Falling back to 16-bit.\n");
          internal_fmt = GL_RGB;
          texture_type = GL_RGB;
          texture_fmt  = GL_UNSIGNED_SHORT_5_6_5;
@@ -3479,7 +3479,7 @@ static bool gl2_frame(void *data, const void *frame,
                      }
                   }
 
-                  RARCH_LOG("[GL]: Recreating FBO texture #%d: %ux%u.\n",
+                  RARCH_LOG("[GL] Recreating FBO texture #%d: %ux%u.\n",
                         i, fbo_rect->width, fbo_rect->height);
                }
             }
@@ -3562,7 +3562,8 @@ static bool gl2_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   params.data             = gl;
+   params.vp_width         = gl->out_vp_width;
+   params.vp_height        = gl->out_vp_height;
    params.width            = frame_width;
    params.height           = frame_height;
    params.tex_width        = gl->tex_w;
@@ -3880,7 +3881,7 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
 
       gl->flags                 |=  GL2_FLAG_HAVE_SYNC;
       if (video_hard_sync)
-         RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
+         RARCH_LOG("[GL] Using ARB_sync to reduce latency.\n");
    }
    else
       gl->flags                 &= ~GL2_FLAG_HAVE_SYNC;
@@ -3895,14 +3896,14 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
    if (!gl_check_capability(GL_CAPS_BGRA8888))
    {
       video_driver_set_rgba();
-      RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
-                 "[GL]: 32-bit path will require conversion.\n");
+      RARCH_WARN("[GL] GLES implementation does not have BGRA8888 extension.\n"
+                 "[GL] 32-bit path will require conversion.\n");
    }
 #endif
 
 #ifdef GL_DEBUG
    /* Useful for debugging, but kinda obnoxious otherwise. */
-   RARCH_LOG("[GL]: Supported extensions:\n");
+   RARCH_LOG("[GL] Supported extensions:\n");
 
    if (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE)
    {
@@ -3965,7 +3966,7 @@ static INLINE void gl2_set_texture_fmts(gl2_t *gl, bool rgb32)
 #ifndef HAVE_OPENGLES
    else if (gl->flags & GL2_FLAG_HAVE_ES2_COMPAT)
    {
-      RARCH_LOG("[GL]: Using GL_RGB565 for texture uploads.\n");
+      RARCH_LOG("[GL] Using GL_RGB565 for texture uploads.\n");
       gl->internal_fmt    = RARCH_GL_INTERNAL_FORMAT16_565;
       gl->texture_type    = RARCH_GL_TEXTURE_TYPE16_565;
       gl->texture_fmt     = RARCH_GL_FORMAT16_565;
@@ -4004,7 +4005,7 @@ static bool gl2_init_pbo_readback(gl2_t *gl)
       if (!scaler_ctx_gen_filter(scaler))
       {
          gl->flags             &= ~GL2_FLAG_PBO_READBACK_ENABLE;
-         RARCH_ERR("[GL]: Failed to initialize pixel conversion for PBO.\n");
+         RARCH_ERR("[GL] Failed to initialize pixel conversion for PBO.\n");
          glDeleteBuffers(4, gl->pbo_readback);
          return false;
       }
@@ -4160,13 +4161,13 @@ static void DEBUG_CALLBACK_TYPE gl2_debug_cb(GLenum source, GLenum type,
    switch (severity)
    {
       case GL_DEBUG_SEVERITY_HIGH:
-         RARCH_ERR("[GL debug (High, %s, %s)]: %s\n", src, typestr, message);
+         RARCH_ERR("[GL debug (High, %s, %s)] %s\n", src, typestr, message);
          break;
       case GL_DEBUG_SEVERITY_MEDIUM:
-         RARCH_WARN("[GL debug (Medium, %s, %s)]: %s\n", src, typestr, message);
+         RARCH_WARN("[GL debug (Medium, %s, %s)] %s\n", src, typestr, message);
          break;
       case GL_DEBUG_SEVERITY_LOW:
-         RARCH_LOG("[GL debug (Low, %s, %s)]: %s\n", src, typestr, message);
+         RARCH_LOG("[GL debug (Low, %s, %s)] %s\n", src, typestr, message);
          break;
    }
 }
@@ -4186,7 +4187,7 @@ static void gl2_begin_debug(gl2_t *gl)
 #endif
    }
    else
-      RARCH_ERR("[GL]: Neither GL_KHR_debug nor GL_ARB_debug_output are implemented. Cannot start GL debugging.\n");
+      RARCH_ERR("[GL] Neither GL_KHR_debug nor GL_ARB_debug_output are implemented. Cannot start GL debugging.\n");
 }
 #endif
 
@@ -4237,7 +4238,7 @@ static void *gl2_init(const video_info_t *video,
    gl->ctx_driver                       = ctx_driver;
    gl->video_info                       = *video;
 
-   RARCH_LOG("[GL]: Found GL context: \"%s\".\n", ctx_driver->ident);
+   RARCH_LOG("[GL] Found GL context: \"%s\".\n", ctx_driver->ident);
 
    if (gl->ctx_driver->get_video_size)
       gl->ctx_driver->get_video_size(gl->ctx_data,
@@ -4245,7 +4246,7 @@ static void *gl2_init(const video_info_t *video,
 
    if (!video->fullscreen && !gl->ctx_driver->has_windowed)
    {
-      RARCH_DBG("[GL]: Config requires windowed mode, but context driver does not support it. "
+      RARCH_DBG("[GL] Config requires windowed mode, but context driver does not support it. "
                 "Forcing fullscreen for this session.\n");
       force_fullscreen = true;
    }
@@ -4258,7 +4259,7 @@ static void *gl2_init(const video_info_t *video,
    full_y      = mode_height;
    interval    = 0;
 
-   RARCH_LOG("[GL]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GL] Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
    if (video->vsync)
       interval = video->swap_interval;
@@ -4311,8 +4312,8 @@ static void *gl2_init(const video_info_t *video,
    renderer = (const char*)glGetString(GL_RENDERER);
    version  = (const char*)glGetString(GL_VERSION);
 
-   RARCH_LOG("[GL]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
-   RARCH_LOG("[GL]: Version: %s.\n", version);
+   RARCH_LOG("[GL] Vendor: %s, Renderer: %s.\n", vendor, renderer);
+   RARCH_LOG("[GL] Version: %s.\n", version);
 
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
@@ -4375,17 +4376,17 @@ static void *gl2_init(const video_info_t *video,
          video_context_driver_set_flags(&flags);
       }
 
-      RARCH_LOG("[GL]: Using Core GL context, setting up VAO...\n");
+      RARCH_LOG("[GL] Using Core GL context, setting up VAO...\n");
       if (!gl_check_capability(GL_CAPS_VAO))
       {
-         RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
+         RARCH_ERR("[GL] Failed to initialize VAOs.\n");
          goto error;
       }
    }
 
    if (!renderchain_gl2_init_first(&gl->renderchain_data))
    {
-      RARCH_ERR("[GL]: Renderchain could not be initialized.\n");
+      RARCH_ERR("[GL] Renderchain could not be initialized.\n");
       goto error;
    }
 
@@ -4447,7 +4448,7 @@ static void *gl2_init(const video_info_t *video,
    gl->video_width       = temp_width;
    gl->video_height      = temp_height;
 
-   RARCH_LOG("[GL]: Using resolution %ux%u.\n", temp_width, temp_height);
+   RARCH_LOG("[GL] Using resolution %ux%u.\n", temp_width, temp_height);
 
    gl->vertex_ptr        = hwr->bottom_left_origin
       ? vertexes : vertexes_flipped;
@@ -4481,15 +4482,15 @@ static void *gl2_init(const video_info_t *video,
 
    if (!gl->shader)
    {
-      RARCH_ERR("[GL:]: Shader driver initialization failed.\n");
+      RARCH_ERR("[GL] Shader driver initialization failed.\n");
       goto error;
    }
 
-   RARCH_LOG("[GL]: Default shader backend found: %s.\n", gl->shader->ident);
+   RARCH_LOG("[GL] Default shader backend found: %s.\n", gl->shader->ident);
 
    if (!gl2_shader_init(gl, ctx_driver, hwr))
    {
-      RARCH_ERR("[GL]: Shader initialization failed.\n");
+      RARCH_ERR("[GL] Shader initialization failed.\n");
       goto error;
    }
 
@@ -4501,8 +4502,8 @@ static void *gl2_init(const video_info_t *video,
 
    shader_info_num = gl->shader->num_shaders(gl->shader_data);
 
-   RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
-   RARCH_LOG("[GL]: Loaded %u program(s).\n",
+   RARCH_LOG("[GL] Using %u textures.\n", gl->textures);
+   RARCH_LOG("[GL] Loaded %u program(s).\n",
          shader_info_num);
 
    gl->tex_w = gl->tex_h = (RARCH_SCALE_BASE * video->input_scale);
@@ -4573,7 +4574,7 @@ static void *gl2_init(const video_info_t *video,
       if (     (gl->flags & GL2_FLAG_HW_RENDER_USE)
             && !gl2_renderchain_init_hw_render(gl, (gl2_renderchain_data_t*)gl->renderchain_data, gl->tex_w, gl->tex_h))
       {
-         RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
+         RARCH_ERR("[GL] Hardware rendering context initialization failed.\n");
          goto error;
       }
    }
@@ -4603,7 +4604,7 @@ static void *gl2_init(const video_info_t *video,
       gl->flags |=  GL2_FLAG_PBO_READBACK_ENABLE;
       if (gl2_init_pbo_readback(gl))
       {
-         RARCH_LOG("[GL]: Async PBO readback enabled.\n");
+         RARCH_LOG("[GL] Async PBO readback enabled.\n");
       }
    }
    else
@@ -4611,7 +4612,7 @@ static void *gl2_init(const video_info_t *video,
 
    if (!gl_check_error(&error_string))
    {
-      RARCH_ERR("[GL]: %s\n", error_string);
+      RARCH_ERR("[GL] %s\n", error_string);
       free(error_string);
       goto error;
    }
@@ -4748,7 +4749,7 @@ static bool gl2_set_shader(void *data,
 
    if (fallback == RARCH_SHADER_NONE)
    {
-      RARCH_ERR("[GL]: No supported shader backend found!\n");
+      RARCH_ERR("[GL] No supported shader backend found.\n");
       goto error;
    }
 
@@ -4757,7 +4758,7 @@ static bool gl2_set_shader(void *data,
 
    if (type != fallback)
    {
-      RARCH_ERR("[GL]: %s shader not supported, falling back to stock %s\n",
+      RARCH_ERR("[GL] %s shader not supported, falling back to stock %s.\n",
             video_shader_type_to_str(type), video_shader_type_to_str(fallback));
       path = NULL;
    }
@@ -4786,7 +4787,7 @@ static bool gl2_set_shader(void *data,
       gl->shader       = init_data.shader;
       gl->shader_data  = init_data.shader_data;
 
-      RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
+      RARCH_WARN("[GL] Failed to set multipass shader. Falling back to stock.\n");
 
       goto error;
    }
@@ -4814,7 +4815,7 @@ static bool gl2_set_shader(void *data,
 #endif
       gl->textures  = textures;
       gl->tex_index = 0;
-      RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
+      RARCH_LOG("[GL] Using %u textures.\n", gl->textures);
       gl2_init_textures(gl);
       gl2_init_textures_data(gl);
 

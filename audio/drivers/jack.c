@@ -46,7 +46,7 @@ typedef struct jack
    bool is_paused;
 } jack_t;
 
-static size_t read_deinterleaved(float *dst[2], jack_nframes_t dst_offset,
+static size_t ja_read_deinterleaved(float *dst[2], jack_nframes_t dst_offset,
       jack_ringbuffer_data_t buf, jack_nframes_t nframes)
 {
    int i;
@@ -66,43 +66,37 @@ static size_t read_deinterleaved(float *dst[2], jack_nframes_t dst_offset,
    return nframes;
 }
 
-static int process_cb(jack_nframes_t nframes, void *data)
+static int ja_process_cb(jack_nframes_t nframes, void *data)
 {
-   int i;
-   jack_nframes_t read = 0;
    jack_t *jd = (jack_t*)data;
-   jack_ringbuffer_data_t buf[2];
-   float *dst[2];
 
-   if (nframes <= 0)
+   if (nframes > 0)
    {
-#ifdef HAVE_THREADS
-      scond_signal(jd->cond);
-#endif
-      return 0;
-   }
-
-   for (i = 0; i < 2; i++)
-      dst[i] = (float *)jack_port_get_buffer(jd->ports[i], nframes);
-
-   jack_ringbuffer_get_read_vector(jd->buffer, buf);
-
-   for (i = 0; i < 2; i++)
-      read += read_deinterleaved(dst, read, buf[i], nframes - read);
-
-   jack_ringbuffer_read_advance(jd->buffer, read * sizeof(float) * 2);
-
-   for (; read < nframes; read++)
+      int i;
+      float *dst[2];
+      jack_ringbuffer_data_t buf[2];
+      jack_nframes_t read = 0;
       for (i = 0; i < 2; i++)
-         dst[i][read] = 0.0f;
+         dst[i] = (float *)jack_port_get_buffer(jd->ports[i], nframes);
 
+      jack_ringbuffer_get_read_vector(jd->buffer, buf);
+
+      for (i = 0; i < 2; i++)
+         read += ja_read_deinterleaved(dst, read, buf[i], nframes - read);
+
+      jack_ringbuffer_read_advance(jd->buffer, read * sizeof(float) * 2);
+
+      for (; read < nframes; read++)
+         for (i = 0; i < 2; i++)
+            dst[i][read] = 0.0f;
+   }
 #ifdef HAVE_THREADS
    scond_signal(jd->cond);
 #endif
    return 0;
 }
 
-static void shutdown_cb(void *data)
+static void ja_shutdown_cb(void *data)
 {
    jack_t *jd = (jack_t*)data;
 
@@ -115,7 +109,7 @@ static void shutdown_cb(void *data)
 #endif
 }
 
-static int parse_ports(char **dest_ports, const char **jports)
+static int ja_parse_ports(char **dest_ports, const char **jports)
 {
    int i;
    char           *save   = NULL;
@@ -137,7 +131,7 @@ static int parse_ports(char **dest_ports, const char **jports)
    return 2;
 }
 
-static size_t find_buffersize(jack_t *jd, int latency, unsigned out_rate)
+static size_t ja_find_buffersize(jack_t *jd, int latency, unsigned out_rate)
 {
    jack_latency_range_t range;
    int i, buffer_frames, min_buffer_frames;
@@ -151,12 +145,12 @@ static size_t find_buffersize(jack_t *jd, int latency, unsigned out_rate)
          jack_latency = range.max;
    }
 
-   RARCH_LOG("[JACK]: Jack latency is %d frames.\n", jack_latency);
+   RARCH_LOG("[JACK] Jack latency is %d frames.\n", jack_latency);
 
    buffer_frames     = frames - jack_latency;
    min_buffer_frames = jack_get_buffer_size(jd->client) * 2;
 
-   RARCH_LOG("[JACK]: Minimum buffer size is %d frames.\n", min_buffer_frames);
+   RARCH_LOG("[JACK] Minimum buffer size is %d frames.\n", min_buffer_frames);
 
    if (buffer_frames < min_buffer_frames)
       buffer_frames = min_buffer_frames;
@@ -190,41 +184,41 @@ static void *ja_init(const char *device,
 
    *new_rate = jack_get_sample_rate(jd->client);
 
-   jack_set_process_callback(jd->client, process_cb, jd);
-   jack_on_shutdown(jd->client, shutdown_cb, jd);
+   jack_set_process_callback(jd->client, ja_process_cb, jd);
+   jack_on_shutdown(jd->client, ja_shutdown_cb, jd);
 
    jd->ports[0] = jack_port_register(jd->client, "left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
    jd->ports[1] = jack_port_register(jd->client, "right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
    if (!jd->ports[0] || !jd->ports[1])
    {
-      RARCH_ERR("[JACK]: Failed to register ports.\n");
+      RARCH_ERR("[JACK] Failed to register ports.\n");
       goto error;
    }
 
    jports = jack_get_ports(jd->client, NULL, NULL, JackPortIsPhysical | JackPortIsInput);
    if (!jports)
    {
-      RARCH_ERR("[JACK]: Failed to get ports.\n");
+      RARCH_ERR("[JACK] Failed to get ports.\n");
       goto error;
    }
 
-   bufsize         = find_buffersize(jd, latency, *new_rate);
+   bufsize         = ja_find_buffersize(jd, latency, *new_rate);
    jd->buffer_size = bufsize;
 
-   RARCH_LOG("[JACK]: Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
+   RARCH_LOG("[JACK] Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
 
    jd->buffer = jack_ringbuffer_create(bufsize);
    if (!jd->buffer)
    {
-      RARCH_ERR("[JACK]: Failed to create buffers.\n");
+      RARCH_ERR("[JACK] Failed to create buffers.\n");
       goto error;
    }
 
-   parsed = parse_ports(dest_ports, jports);
+   parsed = ja_parse_ports(dest_ports, jports);
 
    if (jack_activate(jd->client) < 0)
    {
-      RARCH_ERR("[JACK]: Failed to activate Jack...\n");
+      RARCH_ERR("[JACK] Failed to activate Jack.\n");
       goto error;
    }
 
@@ -232,7 +226,7 @@ static void *ja_init(const char *device,
    {
       if (jack_connect(jd->client, jack_port_name(jd->ports[i]), dest_ports[i]))
       {
-         RARCH_ERR("[JACK]: Failed to connect to Jack port.\n");
+         RARCH_ERR("[JACK] Failed to connect to Jack port.\n");
          goto error;
       }
    }
@@ -254,9 +248,9 @@ error:
 
 static ssize_t ja_write(void *data, const void *buf_, size_t len)
 {
+   size_t _len = 0;
    jack_t      *jd = (jack_t*)data;
    const char *buf = (const char *)buf_;
-   size_t  written = 0;
 
    while (len > 0)
    {
@@ -276,7 +270,7 @@ static ssize_t ja_write(void *data, const void *buf_, size_t len)
          jack_ringbuffer_write(jd->buffer, buf, to_write);
          buf     += to_write;
          len     -= to_write;
-         written += to_write;
+         _len    += to_write;
       }
       else if (!jd->nonblock)
       {
@@ -291,7 +285,7 @@ static ssize_t ja_write(void *data, const void *buf_, size_t len)
          break;
    }
 
-   return written;
+   return _len;
 }
 
 static bool ja_stop(void *data)

@@ -33,7 +33,7 @@
 
 #undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \
-   fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__); \
+   fprintf(stderr, "[RPNG] Error in line %d.\n", __LINE__); \
    ret = false; \
    goto end; \
 } while (0)
@@ -402,25 +402,21 @@ bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
 uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
       unsigned width, unsigned height, signed pitch, uint64_t* bytes)
 {
-   bool ret                    = false;
-   uint8_t* buf                = NULL;
-   uint8_t* output             = NULL;
-   int buf_length              = 0;
-   intfstream_t* intf_s        = NULL;
-
-   buf_length = (int)(width*height*3*DEFLATE_PADDING)+PNG_ROUGH_HEADER;
-   buf        = (uint8_t*)malloc(buf_length*sizeof(uint8_t));
+   bool ret             = false;
+   uint8_t *output      = NULL;
+   intfstream_t *intf_s = NULL;
+   size_t _len          = (width * height * 3 * DEFLATE_PADDING) + PNG_ROUGH_HEADER;
+   uint8_t *buf         = (uint8_t*)malloc(_len * sizeof(uint8_t));
    if (!buf)
       GOTO_END_ERROR();
 
    intf_s = intfstream_open_writable_memory(buf,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE,
-         buf_length);
+         _len);
 
-   ret = rpng_save_image_stream((const uint8_t*)data,
+   ret    = rpng_save_image_stream((const uint8_t*)data,
             intf_s, width, height, pitch, 3);
-
    *bytes = intfstream_get_ptr(intf_s);
    intfstream_rewind(intf_s);
    output = (uint8_t*)malloc((size_t)((*bytes)*sizeof(uint8_t)));

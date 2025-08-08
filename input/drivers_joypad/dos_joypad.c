@@ -184,13 +184,13 @@ static int16_t dos_joypad_state(
       const struct retro_keybind *binds,
       unsigned port)
 {
-   unsigned i;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
-   uint16_t *buf                        = dos_keyboard_state_get(port_idx);
+   int16_t ret       = 0;
+   uint16_t port_idx = joypad_info->joy_idx;
 
    if (port_idx < DEFAULT_MAX_PADS)
    {
+      int i;
+      uint16_t *buf = dos_keyboard_state_get(port_idx);
 	   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
 	   {
 		   /* Auto-binds are per joypad, not per user. */
@@ -208,7 +208,7 @@ static int16_t dos_joypad_state(
 
 static void dos_joypad_poll(void)
 {
-   uint32_t i;
+   int i;
 
    for (i = 0; i <= DEFAULT_MAX_PADS; i++)
    {
@@ -220,7 +220,6 @@ static void dos_joypad_poll(void)
          if (cur_state[key] != normal_keys[key])
          {
             unsigned code = input_keymaps_translate_keysym_to_rk(key);
-
             input_keyboard_event(normal_keys[key], code, code, 0, RETRO_DEVICE_KEYBOARD);
          }
       }

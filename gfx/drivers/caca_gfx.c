@@ -30,11 +30,33 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../common/caca_defines.h"
 #include "../font_driver.h"
 
 #include "../../driver.h"
 #include "../../verbosity.h"
+
+struct caca_canvas;
+struct caca_dither;
+struct caca_display;
+
+typedef struct caca_canvas caca_canvas_t;
+typedef struct caca_dither caca_dither_t;
+typedef struct caca_display caca_display_t;
+
+typedef struct caca
+{
+   caca_canvas_t *cv;
+   caca_dither_t *dither;
+   caca_display_t *display;
+   unsigned char *menu_frame;
+   unsigned menu_width;
+   unsigned menu_height;
+   unsigned menu_pitch;
+   unsigned video_width;
+   unsigned video_height;
+   unsigned video_pitch;
+   bool rgb32;
+} caca_t;
 
 typedef struct
 {

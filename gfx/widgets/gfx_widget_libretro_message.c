@@ -69,7 +69,7 @@ static gfx_widget_libretro_message_state_t p_w_libretro_message_st = {
    0,                                  /* bg_width */
    0,                                  /* bg_height */
    0,                                  /* text_padding */
-   0xE0E0E0FF,                         /* text_color */
+   TEXT_COLOR_INFO,                    /* text_color */
    0,                                  /* frame_width */
 
    0,                                  /* message_duration */
@@ -84,7 +84,7 @@ static gfx_widget_libretro_message_state_t p_w_libretro_message_st = {
    0.0f,                               /* text_y_end */
    0.0f,                               /* alpha */
 
-   COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f), /* frame_color */
+   COLOR_HEX_TO_FLOAT(BG_COLOR_DEFAULT, 1.0f), /* frame_color */
 
    0,                                  /* message_len */
 

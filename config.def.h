@@ -34,6 +34,7 @@
 
 /* Required for 3DS display mode setting */
 #if defined(_3DS)
+#include <3ds.h>
 #include "gfx/common/ctr_defines.h"
 #endif
 
@@ -167,6 +168,8 @@
 #define DEFAULT_CRT_SWITCH_CENTER_ADJUST 0
 
 #define DEFAULT_CRT_SWITCH_PORCH_ADJUST 0
+
+#define DEFAULT_CRT_SWITCH_VERTICAL_ADJUST 0
 
 #define DEFAULT_CRT_SWITCH_HIRES_MENU true
 
@@ -487,6 +490,10 @@
 /* Choose if the screen will be able to write around the notch or not */
 #define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
 
+#ifdef __APPLE__
+#define DEFAULT_USE_METAL_ARG_BUFFERS (!!__builtin_available(macOS 12, iOS 13, tvOS 12, *))
+#endif
+
 /* Enable use of shaders. */
 #ifdef RARCH_CONSOLE
 #define DEFAULT_SHADER_ENABLE true
@@ -570,6 +577,7 @@
 #define DEFAULT_REMAP_SAVE_ON_EXIT true
 
 #define DEFAULT_SHOW_HIDDEN_FILES false
+#define DEFAULT_CORE_SUGGEST_ALWAYS false
 
 /* Initialise file browser with the last used start directory */
 #define DEFAULT_USE_LAST_START_DIRECTORY false
@@ -582,7 +590,7 @@
  * controller is connected in port 1 */
 #define DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED false
 
-#define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR true
+#define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR false
 
 #define DEFAULT_DISPLAY_KEYBOARD_OVERLAY false
 
@@ -659,9 +667,19 @@
 #ifdef HAVE_OZONE
 /* Ozone colour theme: 1 == Basic Black */
 #define DEFAULT_OZONE_COLOR_THEME 1
+#define DEFAULT_OZONE_PADDING_FACTOR 1.0f
+#define DEFAULT_OZONE_HEADER_SEPARATOR 1
 #define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
 #define DEFAULT_OZONE_SCROLL_CONTENT_METADATA false
 #define DEFAULT_OZONE_THUMBNAIL_SCALE_FACTOR 1.0f
+#define DEFAULT_OZONE_FONT_SCALE 0
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_GLOBAL 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_TITLE 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_SIDEBAR 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_LABEL 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_SUBLABEL 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_TIME 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_FOOTER 1.0f
 #endif
 
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
@@ -794,6 +812,7 @@
 #define DEFAULT_CONTENT_SHOW_SETTINGS true
 #define DEFAULT_CONTENT_SHOW_HISTORY true
 #define DEFAULT_CONTENT_SHOW_FAVORITES true
+#define DEFAULT_CONTENT_SHOW_FAVORITES_FIRST false
 #ifdef HAVE_IMAGEVIEWER
 #define DEFAULT_CONTENT_SHOW_IMAGES true
 #endif
@@ -809,7 +828,7 @@
 #endif
 #endif
 
-#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB
+#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
 
 #define DEFAULT_CONTENT_SHOW_PLAYLISTS true
 #define DEFAULT_CONTENT_SHOW_PLAYLIST_TABS true
@@ -946,11 +965,7 @@
 #define DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY 80
 #define DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY 50
 
-#if defined(ANDROID) || defined(_WIN32) || defined(HAVE_STEAM) || TARGET_OS_TV
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
-#else
-#define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS false
-#endif
 #define DEFAULT_MENU_SWAP_SCROLL_BUTTONS false
 
 #if defined(WIIU)
@@ -1175,7 +1190,7 @@
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && !defined(HAVE_AUDIOWORKLET))
+#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && defined(HAVE_AL))
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #define DEFAULT_IN_LATENCY 128
@@ -1399,7 +1414,12 @@
 #define DEFAULT_SAVESTATE_AUTO_SAVE false
 #define DEFAULT_SAVESTATE_AUTO_LOAD false
 
+/* Take screenshots for save states */
+#if defined(__x86_64__)
+#define DEFAULT_SAVESTATE_THUMBNAIL_ENABLE true
+#else
 #define DEFAULT_SAVESTATE_THUMBNAIL_ENABLE false
+#endif
 
 /* When creating save (srm) files, compress
  * written data */
@@ -1681,7 +1701,7 @@
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__) || defined(__PS3__)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWER
-#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX) || defined(EMSCRIPTEN)
+#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWEST
 #else
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_NORMAL

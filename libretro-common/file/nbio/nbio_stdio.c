@@ -113,12 +113,15 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
    if (!f)
       return NULL;
 
-   handle                = (struct nbio_stdio_t*)malloc(sizeof(struct nbio_stdio_t));
+   handle = (struct nbio_stdio_t*)malloc(sizeof(struct nbio_stdio_t));
 
    if (!handle)
-      goto error;
+   {
+      fclose(f);
+      return NULL;
+   }
 
-   handle->f             = f;
+   handle->f = f;
 
    switch (mode)
    {
@@ -143,7 +146,11 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
 #endif
 
    if (len && !buf)
-      goto error;
+   {
+      free(handle);
+      fclose(f);
+      return NULL;
+   }
 
    handle->data          = buf;
    handle->len           = len;
@@ -151,12 +158,6 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
    handle->op            = -2;
 
    return handle;
-
-error:
-   if (handle)
-      free(handle);
-   fclose(f);
-   return NULL;
 }
 
 static void nbio_stdio_begin_read(void *data)

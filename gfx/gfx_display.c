@@ -1218,7 +1218,7 @@ bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       if (     (type != GFX_VIDEO_DRIVER_GENERIC)
             && (!string_is_equal(video_driver, ident)))
          continue;
-      RARCH_LOG("[Display]: Found display driver: \"%s\".\n", ident);
+      RARCH_LOG("[Display] Found display driver: \"%s\".\n", ident);
       p_disp->dispctx = dispctx;
       return true;
    }

@@ -472,7 +472,7 @@ static bool menu_screensaver_update_state(
       /* Warn if font file is missing */
       if (!path_is_valid(font_file))
       {
-         RARCH_WARN("[Menu Screensaver] Font asset missing: %s\n", font_file);
+         RARCH_WARN("[Screensaver] Font asset missing: %s.\n", font_file);
          screensaver->unicode_enabled = false;
       }
 #else
@@ -496,7 +496,7 @@ static bool menu_screensaver_update_state(
        * further attempts to create fonts */
       else
       {
-         RARCH_WARN("[Menu Screensaver] Failed to initialise font - animation disabled\n");
+         RARCH_WARN("[Screensaver] Failed to initialise font - animation disabled.\n");
          screensaver->font_enabled = false;
          return false;
       }

@@ -30,16 +30,18 @@ var LibraryRWebCam = {
    RWebCamInit: function(caps, width, height, debug) {
       var glTex = Number(caps) & (1 << RWC.RETRO_CAMERA_BUFFER_OPENGL_TEXTURE);
       var rawFb = Number(caps) & (1 << RWC.RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER);
-      var c = RWebCamInitBrowser(width, height, glTex, rawFb, debug, ENVIRONMENT_IS_PTHREAD);
+      var proxied = typeof ENVIRONMENT_IS_PTHREAD != "undefined" && ENVIRONMENT_IS_PTHREAD;
+      var c = RWebCamInitBrowser(width, height, glTex, rawFb, debug, proxied);
       if (!c) return 0;
 
       if (debug) console.log("RWebCamInit", c);
 
-      if (ENVIRONMENT_IS_PTHREAD) {
+      if (proxied) {
          RWC.contexts[c] = {};
          RWC.contexts[c].debug = debug;
          RWC.contexts[c].glTex = glTex;
          RWC.contexts[c].rawFb = rawFb;
+         RWC.contexts[c].proxied = true;
       }
 
       /* for getting/storing texture id in GL mode */
@@ -56,8 +58,8 @@ var LibraryRWebCam = {
    RWebCamFree: function(c) {
       if (RWC.contexts[c].debug) console.log("RWebCamFree", c);
       if (RWC.contexts[c].running) _RWebCamStop(c); /* need more checks in RA */
+      if (RWC.contexts[c].proxied) RWC.contexts[c] = null;
       RWebCamFreeBrowser(c);
-      if (ENVIRONMENT_IS_PTHREAD) RWC.contexts[c] = null;
    },
 
    $RWebCamStartBrowser__proxy: "sync",
@@ -211,13 +213,13 @@ var LibraryRWebCam = {
 
    RWebCamPoll__deps: ["$RWebCamReady", "glBindTexture", "glGetIntegerv", "malloc", "free", "$RWebCamStoreDimensions", "$RWebCamCheckDimensions", "$RWebCamStoreImageData"],
    RWebCamPoll: function(c, frame_raw_cb, frame_gl_cb) {
-      if (RWC.contexts[c].debug) console.log("RWebCamPoll", c, ENVIRONMENT_IS_PTHREAD, RWC.contexts[c].rawBuffer, RWC.contexts[c].running);
+      if (RWC.contexts[c].debug) console.log("RWebCamPoll", c, RWC.contexts[c].proxied, RWC.contexts[c].rawBuffer, RWC.contexts[c].running);
       if (!RWC.contexts[c].running) return 0; /* need more checks in RA */
       var ret = 0;
 
-      if ((RWC.contexts[c].rawFb && frame_raw_cb !== 0) || ENVIRONMENT_IS_PTHREAD) {
+      if ((RWC.contexts[c].rawFb && frame_raw_cb !== 0) || RWC.contexts[c].proxied) {
          if (!RWC.contexts[c].rawBuffer) {
-            if (ENVIRONMENT_IS_PTHREAD) {
+            if (RWC.contexts[c].proxied) {
                /* pull dimensions into this thread */
                var dimensions = _malloc(8);
                var res = RWebCamStoreDimensions(c, dimensions); /* also checks ready(c) */
@@ -241,7 +243,7 @@ var LibraryRWebCam = {
 
       if (RWC.contexts[c].glTexId !== 0 && frame_gl_cb !== 0) {
          var imageSrcGL;
-         if (ENVIRONMENT_IS_PTHREAD) {
+         if (RWC.contexts[c].proxied) {
             imageSrcGL = HEAPU8.subarray(RWC.contexts[c].rawBuffer + 1, RWC.contexts[c].rawBuffer + RWC.contexts[c].length + 1);
          } else {
             if (!RWebCamReady(c)) return 0;
@@ -252,13 +254,13 @@ var LibraryRWebCam = {
          var prev = {{{ makeGetValue('RWC.tmp', 0, 'i32') }}};
          _glBindTexture(0x0DE1 /* GL_TEXTURE_2D */, RWC.contexts[c].glTexId);
          if (RWC.contexts[c].glFirstFrame) {
-            if (ENVIRONMENT_IS_PTHREAD)
+            if (RWC.contexts[c].proxied)
                Module.ctx.texImage2D(Module.ctx.TEXTURE_2D, 0, Module.ctx.RGBA, RWC.contexts[c].width, RWC.contexts[c].height, 0, Module.ctx.RGBA, Module.ctx.UNSIGNED_BYTE, imageSrcGL);
             else
                Module.ctx.texImage2D(Module.ctx.TEXTURE_2D, 0, Module.ctx.RGB, Module.ctx.RGB, Module.ctx.UNSIGNED_BYTE, imageSrcGL);
             RWC.contexts[c].glFirstFrame = false;
          } else {
-            if (ENVIRONMENT_IS_PTHREAD)
+            if (RWC.contexts[c].proxied)
                Module.ctx.texSubImage2D(Module.ctx.TEXTURE_2D, 0, 0, 0, RWC.contexts[c].width, RWC.contexts[c].height, Module.ctx.RGBA, Module.ctx.UNSIGNED_BYTE, imageSrcGL);
             else
                Module.ctx.texSubImage2D(Module.ctx.TEXTURE_2D, 0, 0, 0, Module.ctx.RGB, Module.ctx.UNSIGNED_BYTE, imageSrcGL);

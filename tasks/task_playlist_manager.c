@@ -661,11 +661,29 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
             playlist_write_file(pl_manager->playlist);
             /* Update progress display */
             task_free_title(task);
+
             _len = strlcpy(task_title,
                   msg_hash_to_str(MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED),
                   sizeof(task_title));
-            strlcpy(task_title + _len, pl_manager->playlist_name,
-                  sizeof(task_title) - _len);
+
+            if (string_starts_with(FILE_PATH_CONTENT_FAVORITES, pl_manager->playlist_name))
+               strlcpy(task_title + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB),
+                     sizeof(task_title) - _len);
+            else if (string_starts_with(FILE_PATH_CONTENT_HISTORY, pl_manager->playlist_name))
+               strlcpy(task_title + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB),
+                     sizeof(task_title) - _len);
+            else if (string_starts_with(FILE_PATH_CONTENT_IMAGE_HISTORY, pl_manager->playlist_name))
+               strlcpy(task_title + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB),
+                     sizeof(task_title) - _len);
+            else if (string_starts_with(FILE_PATH_CONTENT_MUSIC_HISTORY, pl_manager->playlist_name))
+               strlcpy(task_title + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB),
+                     sizeof(task_title) - _len);
+            else if (string_starts_with(FILE_PATH_CONTENT_VIDEO_HISTORY, pl_manager->playlist_name))
+               strlcpy(task_title + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB),
+                     sizeof(task_title) - _len);
+            else
+               strlcpy(task_title + _len, pl_manager->playlist_name,
+                     sizeof(task_title) - _len);
 
             task_set_title(task, strdup(task_title));
          }

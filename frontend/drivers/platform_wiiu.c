@@ -266,7 +266,7 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
 
    if (HBL_loadToMemory(path, (u32)arg - (u32)param) < 0)
    {
-      RARCH_ERR("Failed to load core\n");
+      RARCH_ERR("Failed to load core.\n");
    }
    else
    {

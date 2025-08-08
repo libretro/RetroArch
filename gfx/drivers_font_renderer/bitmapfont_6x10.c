@@ -94,6 +94,7 @@ bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language)
 	   case RETRO_LANGUAGE_SWEDISH:
 	   case RETRO_LANGUAGE_CZECH:
 	   case RETRO_LANGUAGE_HUNGARIAN:
+	   case RETRO_LANGUAGE_IRISH:
 #if 0
 	   /* These languages are not yet added */
 	   case RETRO_LANGUAGE_ROMANIAN:

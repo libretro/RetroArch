@@ -463,6 +463,12 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT), len);
              break;
+          case MENU_ENUM_LABEL_SAVE_STATE:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SAVE_STATE), len);
+             break;
+          case MENU_ENUM_LABEL_LOAD_STATE:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LOAD_STATE), len);
+             break;
 #ifdef HAVE_LAKKA
           case MENU_ENUM_LABEL_TIMEZONE:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_TIMEZONE), len);

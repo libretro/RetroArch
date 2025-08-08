@@ -62,7 +62,7 @@ static void *xshm_init(const video_info_t *video,
 
    if (!XShmQueryExtension(g_x11_dpy))
    {
-      RARCH_LOG("[X11]: XShm extension not found.\n");
+      RARCH_LOG("[X11] XShm extension not found.\n");
       xshm->use_shm        = false;
    }
 

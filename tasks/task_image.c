@@ -344,14 +344,15 @@ bool task_image_load_handler(retro_task_t *task)
          /* Upscale image, if required */
          if (image->upscale_threshold > 0)
          {
-            if (((image->ti.width > 0) && (image->ti.height > 0)) &&
-                ((image->ti.width  < image->upscale_threshold) ||
-                 (image->ti.height < image->upscale_threshold)))
+            if (   ((image->ti.width  > 0)
+                &&  (image->ti.height > 0))
+                && ((image->ti.width  < image->upscale_threshold)
+                ||  (image->ti.height < image->upscale_threshold)))
             {
-               unsigned min_size                  = (image->ti.width < image->ti.height) ?
-                                                      image->ti.width : image->ti.height;
-               float scale_factor                 = (float)image->upscale_threshold /
-                                                      (float)min_size;
+               unsigned min_size                  = (image->ti.width < image->ti.height)
+                                                    ? image->ti.width : image->ti.height;
+               float scale_factor                 = (float)image->upscale_threshold
+                                                    / (float)min_size;
                unsigned scale_factor_int          = (unsigned)scale_factor;
                struct texture_image img_resampled = {
                   NULL,

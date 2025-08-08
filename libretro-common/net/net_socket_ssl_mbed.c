@@ -82,10 +82,10 @@ static void ssl_debug(void *ctx, int level,
 }
 
 #ifdef _3DS
-int ctr_entropy_func(void *data, unsigned char *buffer, size_t size)
+int ctr_entropy_func(void *data, unsigned char *s, size_t len)
 {
    (void)data;
-   PS_GenerateRandomBytes(buffer, size);
+   PS_GenerateRandomBytes(s, len);
    return 0;
 }
 #endif
@@ -191,31 +191,29 @@ int ssl_socket_connect(void *state_data,
 }
 
 ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
-      bool *error, void *data_, size_t len)
+      bool *err, void *data_, size_t len)
 {
-   ssize_t         ret;
+   ssize_t ret;
    struct ssl_state *state = (struct ssl_state*)state_data;
    const uint8_t     *data = (const uint8_t*)data_;
    /* mbedtls_ssl_read wants non-const data but it only reads it, so this cast is safe */
 
    mbedtls_net_set_nonblock(&state->net_ctx);
 
-   ret = mbedtls_ssl_read(&state->ctx, (unsigned char*)data, len);
-
-   if (ret > 0)
+   if ((ret = mbedtls_ssl_read(&state->ctx, (unsigned char*)data, len)) > 0)
       return ret;
 
    if (ret == 0)
    {
       /* Socket closed */
-      *error = true;
+      *err = true;
       return -1;
    }
 
    if (isagain((int)ret) || ret == MBEDTLS_ERR_SSL_WANT_READ)
       return 0;
 
-   *error = true;
+   *err = true;
    return -1;
 }
 

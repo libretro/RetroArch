@@ -23,20 +23,6 @@
 #include <retro_environment.h>
 #include <boolean.h>
 
-typedef struct gdi_texture
-{
-   HBITMAP bmp;
-   HBITMAP bmp_old;
-   void *data;
-
-   int width;
-   int height;
-   int active_width;
-   int active_height;
-
-   enum texture_filter_type type;
-} gdi_texture_t;
-
 typedef struct gdi
 {
 #ifndef __WINRT__

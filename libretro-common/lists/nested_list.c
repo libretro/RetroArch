@@ -224,7 +224,7 @@ bool nested_list_add_item(nested_list_t *list,
    bool success               = false;
 
    if (!list || string_is_empty(address))
-      goto end;
+      return false;
 
    /* If delim is NULL or address contains a single
     * token, then we are adding an item to the top
@@ -249,10 +249,10 @@ bool nested_list_add_item(nested_list_t *list,
    }
    else
    {
+      size_t i;
       nested_list_t *current_list     = list;
       nested_list_item_t *parent_item = NULL;
       nested_list_item_t *next_item   = NULL;
-      size_t i;
 
       /* Loop over list item ids */
       for (i = 0; i < id_list.size; i++)
@@ -482,9 +482,9 @@ nested_list_t *nested_list_item_get_parent_list(nested_list_item_t *list_item)
  */
 nested_list_t *nested_list_item_get_children(nested_list_item_t *list_item)
 {
-   if (!list_item ||
-       !list_item->children ||
-       (RBUF_LEN(list_item->children->items) < 1))
+   if (   !list_item
+       || !list_item->children
+       || (RBUF_LEN(list_item->children->items) < 1))
       return NULL;
 
    return list_item->children;
@@ -504,7 +504,6 @@ const char *nested_list_item_get_id(nested_list_item_t *list_item)
 {
    if (!list_item)
       return NULL;
-
    return list_item->id;
 }
 
@@ -515,7 +514,7 @@ const char *nested_list_item_get_id(nested_list_item_t *list_item)
  * @delim     : delimiter to use when concatenating
  *              individual item ids into a an @address
  *              string
- * @address   : a delimited list of item identifiers,
+ * @s         : a delimited list of item identifiers,
  *              corresponding to item 'levels'
  * @len       : length of supplied @address char array
 
@@ -528,69 +527,66 @@ const char *nested_list_item_get_id(nested_list_item_t *list_item)
  * Returns: true if successful, otherwise false.
  */
 bool nested_list_item_get_address(nested_list_item_t *list_item,
-      const char *delim, char *address, size_t len)
+      const char *delim, char *s, size_t len)
 {
-   nested_list_item_t *current_item = list_item;
-   struct string_list id_list       = {0};
-   bool success                     = false;
-   union string_list_elem_attr attr;
-   size_t i;
-
    if (  !list_item
        || string_is_empty(delim)
-       || !address
+       || !s
        || (len < 1))
-      goto end;
+      return false;
 
-   address[0] = '\0';
-   attr.i     = 0;
+   s[0] = '\0';
 
-   /* If this is an item of the top level
-    * list, just copy the item id directly */
-   if (!list_item->parent_item)
-   {
-      strlcpy(address, list_item->id, len);
-      success = true;
-      goto end;
-   }
-
-   /* ...otherwise we have to combine the ids
+   /* We have to combine the IDs
     * of the item and all of its 'ancestors' */
-   string_list_initialize(&id_list);
-
-   /* Fetch all ids */
-   do
+   if (list_item->parent_item)
    {
-      const char *id = current_item->id;
-      if (    string_is_empty(id)
-          || !string_list_append(&id_list, id, attr))
-         goto end;
+      size_t i;
+      union string_list_elem_attr attr;
+      struct string_list id_list       = {0};
+      nested_list_item_t *current_item = list_item;
 
-      current_item = current_item->parent_item;
+      string_list_initialize(&id_list);
+      attr.i     = 0;
+
+      /* Fetch all ids */
+      do
+      {
+         const char *id = current_item->id;
+         if (    string_is_empty(id)
+             || !string_list_append(&id_list, id, attr))
+         {
+            string_list_deinitialize(&id_list);
+            return false;
+         }
+
+         current_item = current_item->parent_item;
+      } while (current_item);
+
+      /* Build address string */
+      for (i = id_list.size; i > 0; i--)
+      {
+         size_t _len;
+         const char *id = id_list.elems[i - 1].data;
+
+         if (string_is_empty(id))
+         {
+            string_list_deinitialize(&id_list);
+            return false;
+         }
+
+         _len = strlcat(s, id, len);
+         if (i > 1)
+            strlcpy(s + _len, delim, len - _len);
+      }
+      string_list_deinitialize(&id_list);
    }
-   while (current_item);
+   /* If this is an item of the top level
+    * list, just copy the item ID directly */
+   else
+      strlcpy(s, list_item->id, len);
 
-   if (id_list.size < 1)
-      goto end;
-
-   /* Build address string */
-   for (i = id_list.size; i > 0; i--)
-   {
-      size_t _len;
-      const char *id = id_list.elems[i - 1].data;
-
-      if (string_is_empty(id))
-         goto end;
-
-      _len = strlcat(address, id, len);
-      if (i > 1)
-         strlcpy(address + _len, delim, len - _len);
-   }
-
-   success = true;
-end:
-   string_list_deinitialize(&id_list);
-   return success;
+   return true;
 }
 
 /**

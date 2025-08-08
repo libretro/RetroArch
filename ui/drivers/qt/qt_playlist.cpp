@@ -1517,8 +1517,8 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
       const char *defaultCorePath = playlist_get_default_core_path(playlist);
 
       /* Get default core path */
-      if (!string_is_empty(defaultCorePath) &&
-          !string_is_equal(defaultCorePath, "DETECT"))
+      if (   !string_is_empty(defaultCorePath)
+          && !string_is_equal(defaultCorePath, "DETECT"))
          corePath = QString::fromUtf8(defaultCorePath);
 
       /* Free playlist, if required */

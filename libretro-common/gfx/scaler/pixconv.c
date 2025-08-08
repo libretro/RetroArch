@@ -50,8 +50,8 @@ void conv_rgb565_0rgb1555(void *output_, const void *input_,
       int out_stride, int in_stride)
 {
    int h;
-   const uint16_t *input = (const uint16_t*)input_;
-   uint16_t *output = (uint16_t*)output_;
+   const uint16_t *input   = (const uint16_t*)input_;
+   uint16_t *output        = (uint16_t*)output_;
 
 #if defined(__SSE2__)
    int max_width           = width - 7;
@@ -777,9 +777,9 @@ void conv_bgr24_rgb565(void *output_, const void *input_,
          uint16_t b = *inp++;
          uint16_t g = *inp++;
          uint16_t r = *inp++;
-    
+
          output[w] = ((r & 0x00F8) << 8) | ((g&0x00FC) << 3) | ((b&0x00F8) >> 3);
-      }  
+      }
    }
 }
 

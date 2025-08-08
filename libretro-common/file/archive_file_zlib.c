@@ -99,12 +99,12 @@ static bool zlib_stream_decompress_data_to_file_init(
       void *context, file_archive_file_handle_t *handle,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size)
 {
-   zip_context_t *zip_context = (zip_context_t *)context;
-   struct file_archive_transfer *state = zip_context->state;
-   uint8_t local_header_buf[4];
+   int64_t offsetData;
    uint8_t *local_header;
    uint32_t offsetNL, offsetEL;
-   int64_t offsetData;
+   uint8_t local_header_buf[4];
+   zip_context_t *zip_context = (zip_context_t *)context;
+   struct file_archive_transfer *state = zip_context->state;
 
    /* free previous data and stream if left unfinished */
    zip_context_free_stream(zip_context, false);
@@ -118,7 +118,10 @@ static bool zlib_stream_decompress_data_to_file_init(
    {
       filestream_seek(state->archive_file, (int64_t)(size_t)cdata + 26, RETRO_VFS_SEEK_POSITION_START);
       if (filestream_read(state->archive_file, local_header_buf, 4) != 4)
-         goto error;
+      {
+         zip_context_free_stream(zip_context, false);
+         return false;
+      }
       local_header = local_header_buf;
    }
 
@@ -156,34 +159,31 @@ static bool zlib_stream_decompress_data_to_file_init(
       {
          free(zip_context->zstream);
          zip_context->zstream = NULL;
-         goto error;
+         zip_context_free_stream(zip_context, false);
+         return false;
       }
    }
 
    return true;
-
-error:
-   zip_context_free_stream(zip_context, false);
-   return false;
 }
 
 static int zlib_stream_decompress_data_to_file_iterate(
       void *context, file_archive_file_handle_t *handle)
 {
+   int64_t rd;
    zip_context_t *zip_context = (zip_context_t *)context;
    struct file_archive_transfer *state = zip_context->state;
-   int64_t rd;
 
    if (zip_context->cmode == ZIP_MODE_STORED)
    {
-      #ifdef HAVE_MMAP
+#ifdef HAVE_MMAP
       /* Simply copy the data to the output buffer */
       if (zip_context->state->archive_mmap_data)
          memcpy(zip_context->decompressed_data,
-                zip_context->state->archive_mmap_data + (size_t)zip_context->fdoffset,
-                zip_context->usize);
+               zip_context->state->archive_mmap_data + (size_t)zip_context->fdoffset,
+               zip_context->usize);
       else
-      #endif
+#endif
       {
          /* Read the entire file to memory */
          filestream_seek(state->archive_file, zip_context->fdoffset, RETRO_VFS_SEEK_POSITION_START);
@@ -204,7 +204,7 @@ static int zlib_stream_decompress_data_to_file_iterate(
       if (!zip_context->zstream)
          return 1;
 
-      #ifdef HAVE_MMAP
+#ifdef HAVE_MMAP
       if (state->archive_mmap_data)
       {
          /* Decompress from the mapped file */
@@ -212,7 +212,7 @@ static int zlib_stream_decompress_data_to_file_iterate(
          rd   = to_read;
       }
       else
-      #endif
+#endif
       {
          /* Read some compressed data from file to the temp buffer */
          filestream_seek(state->archive_file,

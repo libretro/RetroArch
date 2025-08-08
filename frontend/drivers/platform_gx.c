@@ -463,12 +463,16 @@ static void frontend_gx_process_args(int *argc, char *argv[])
    /* A big hack: sometimes Salamander doesn't save the new core
     * it loads on first boot, so we make sure
     * active core path is set here. */
-   if (path_is_empty(RARCH_PATH_CORE) && *argc >= 1 && strrchr(argv[0], '/'))
+   if (path_is_empty(RARCH_PATH_CORE) && *argc >= 1)
    {
-      char path[PATH_MAX_LENGTH] = {0};
-      strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
-      if (path_is_valid(path))
-         path_set(RARCH_PATH_CORE, path);
+      char *last_slash = strrchr(argv[0], '/');
+      if (last_slash)
+      {
+         char path[PATH_MAX_LENGTH];
+         strlcpy(path, last_slash + 1, sizeof(path));
+         if (path_is_valid(path))
+            path_set(RARCH_PATH_CORE, path);
+      }
    }
 #endif
 }

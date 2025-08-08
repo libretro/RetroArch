@@ -184,4 +184,18 @@ void platform_emscripten_set_wake_lock(bool state);
  */
 void platform_emscripten_set_canvas_size(int width, int height);
 
+/**
+ * Get the browser that the program is running in.
+ *
+ * @return enum platform_emscripten_browser
+ */
+enum platform_emscripten_browser platform_emscripten_get_browser(void);
+
+/**
+ * Get the OS that the program is running in.
+ *
+ * @return enum platform_emscripten_os
+ */
+enum platform_emscripten_os platform_emscripten_get_os(void);
+
 #endif

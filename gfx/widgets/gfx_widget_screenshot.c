@@ -28,6 +28,7 @@ struct gfx_widget_screenshot_state
    uintptr_t texture;
    gfx_animation_t *p_anim;
 
+   unsigned video_height;
    unsigned texture_width;
    unsigned texture_height;
 
@@ -45,6 +46,7 @@ struct gfx_widget_screenshot_state
    char shotname[256];
    char filename[256];
    bool loaded;
+   bool state_slot;
 };
 
 typedef struct gfx_widget_screenshot_state gfx_widget_screenshot_state_t;
@@ -52,6 +54,7 @@ typedef struct gfx_widget_screenshot_state gfx_widget_screenshot_state_t;
 static gfx_widget_screenshot_state_t p_w_screenshot_st = {
    0,             /* texture */
    NULL,          /* p_anim */
+   0,             /* video_height */
    0,             /* texture_width */
    0,             /* texture_height */
    0,             /* height */
@@ -63,10 +66,10 @@ static gfx_widget_screenshot_state_t p_w_screenshot_st = {
    0.0f,          /* y */
    0.0f,          /* alpha */
    0.0f,          /* timer */
-
    {0},           /* shotname */
    {0},           /* filename */
-   false          /* loaded */
+   false,         /* loaded */
+   false          /* state_slot */
 };
 
 static void gfx_widget_screenshot_fadeout(void *userdata)
@@ -108,7 +111,7 @@ static void gfx_widgets_play_screenshot_flash(void *data)
    entry.easing_enum    = EASING_IN_QUAD;
    entry.subject        = &state->alpha;
    entry.tag            = p_dispwidget->gfx_widgets_generic_tag;
-   entry.target_value   = 1.0f;
+   entry.target_value   = 0.5f;
    entry.userdata       = p_dispwidget;
 
    switch (settings->uints.notification_show_screenshot_flash)
@@ -125,6 +128,18 @@ static void gfx_widgets_play_screenshot_flash(void *data)
    gfx_animation_push(&entry);
 }
 
+void gfx_widget_state_slot_show(
+      void *data,
+      const char *shotname, const char *filename)
+{
+   gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
+
+   state->state_slot = true;
+
+   strlcpy(state->filename, filename, sizeof(state->filename));
+   strlcpy(state->shotname, shotname, sizeof(state->shotname));
+}
+
 void gfx_widget_screenshot_taken(
       void *data,
       const char *shotname, const char *filename)
@@ -132,6 +147,8 @@ void gfx_widget_screenshot_taken(
    settings_t *settings                 = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
+
+   state->state_slot = false;
 
    if (settings->uints.notification_show_screenshot_flash != NOTIFICATION_SHOW_SCREENSHOT_FLASH_OFF)
       gfx_widgets_play_screenshot_flash(p_dispwidget);
@@ -165,6 +182,9 @@ static void gfx_widget_screenshot_end(void *userdata)
    entry.tag            = p_dispwidget->gfx_widgets_generic_tag;
    entry.target_value   = -((float)state->height);
    entry.userdata       = NULL;
+
+   if (state->state_slot)
+      entry.target_value = (float)state->video_height;
 
    switch (settings->uints.notification_show_screenshot_duration)
    {
@@ -235,25 +255,57 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
             NULL
             );
 
-      gfx_display_set_alpha(pure_white, 1.0f);
-      gfx_widgets_draw_icon(
-            userdata,
-            p_disp,
-            video_width,
-            video_height,
-            state->thumbnail_width,
-            state->thumbnail_height,
-            state->texture,
-            0,
-            state->y,
-            0.0f, /* rad */
-            1.0f, /* cos(rad)   = cos(0)  = 1.0f */
-            0.0f, /* sine(rad)  = sine(0) = 0.0f */
-            pure_white
-            );
+      gfx_display_set_alpha(pure_white, 0.5f);
+
+      state->video_height = video_height;
+
+      if (state->texture)
+      {
+         gfx_widgets_draw_icon(
+               userdata,
+               p_disp,
+               video_width,
+               video_height,
+               state->thumbnail_width,
+               state->thumbnail_height,
+               state->texture,
+               0,
+               state->y,
+               0.0f, /* rad */
+               1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+               0.0f, /* sine(rad)  = sine(0) = 0.0f */
+               pure_white
+               );
+      }
+      else
+      {
+         float background_color[16]        = {
+               0.0f, 0.0f, 0.0f, 1.0f,
+               0.0f, 0.0f, 0.0f, 1.0f,
+               0.0f, 0.0f, 0.0f, 1.0f,
+               0.0f, 0.0f, 0.0f, 1.0f,
+         };
+
+         /* Darken background */
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               0,
+               state->y,
+               state->thumbnail_width,
+               state->thumbnail_height,
+               video_width,
+               video_height,
+               background_color,
+               NULL);
+      }
 
       gfx_widgets_draw_text(font_regular,
-            msg_hash_to_str(MSG_SCREENSHOT_SAVED),
+            (state->state_slot)
+                  ? msg_hash_to_str(MSG_STATE_SLOT)
+                  : msg_hash_to_str(MSG_SCREENSHOT_SAVED),
             state->thumbnail_width + padding,
             padding + font_regular->line_ascender + state->y,
             video_width, video_height,
@@ -314,11 +366,13 @@ static void gfx_widget_screenshot_iterate(
    /* Load screenshot and start its animation */
    if (state->filename[0] != '\0')
    {
+      video_driver_state_t *video_st = video_state_get_ptr();
       gfx_timer_ctx_entry_t timer;
 
       video_driver_texture_unload(&state->texture);
 
       state->texture = 0;
+      state->y       = 0.0f;
 
       gfx_display_reset_textures_list(state->filename,
             "", &state->texture, TEXTURE_FILTER_MIPMAP_LINEAR,
@@ -328,18 +382,34 @@ static void gfx_widget_screenshot_iterate(
       state->width  = width;
 
       state->scale_factor = gfx_widgets_get_thumbnail_scale_factor(
-         width, state->height,
-         state->texture_width, state->texture_height
+            width, state->height,
+            state->texture_width, state->texture_height
       );
+
+      /* State slot is double size and at the bottom */
+      if (state->state_slot)
+      {
+         state->height       *= 2;
+         state->scale_factor *= 2;
+         state->y             = height - state->height;
+      }
 
       state->thumbnail_width  = state->texture_width * state->scale_factor;
       state->thumbnail_height = state->texture_height * state->scale_factor;
 
+      /* Set image aspect ratio according to core geometry */
+      if (video_st && video_st->av_info.geometry.aspect_ratio > 0)
+      {
+         float thumbnail_aspect = (float)state->texture_width / (float)state->texture_height;
+         float core_aspect      = video_st->av_info.geometry.aspect_ratio;
+
+         state->thumbnail_width = state->thumbnail_width / (thumbnail_aspect / core_aspect);
+      }
+
       state->shotname_length  = (width - state->thumbnail_width - padding*2) / font_regular->glyph_width;
 
-      state->y = 0.0f;
-
-      timer.cb       = gfx_widget_screenshot_end;
+      timer.cb                = gfx_widget_screenshot_end;
+      timer.userdata          = p_dispwidget;
 
       switch (settings->uints.notification_show_screenshot_duration)
       {
@@ -357,8 +427,6 @@ static void gfx_widget_screenshot_iterate(
             timer.duration = 6000;
             break;
       }
-
-      timer.userdata = p_dispwidget;
 
       gfx_animation_timer_start(&state->timer, &timer);
 

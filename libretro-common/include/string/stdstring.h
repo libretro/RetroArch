@@ -37,12 +37,7 @@ RETRO_BEGIN_DECLS
 
 #define STRLEN_CONST(x)                   ((sizeof((x))-1))
 
-#define strcpy_literal(a, b)              strcpy(a, b)
-
 #define string_is_not_equal(a, b)         !string_is_equal((a), (b))
-
-#define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
-#define string_is_equal_fast(a, b, size)     (memcmp(a, b, size) == 0)
 
 #define TOLOWER(c)   ((c) |  (lr_char_props[(unsigned char)(c)] & 0x20))
 #define TOUPPER(c)   ((c) & ~(lr_char_props[(unsigned char)(c)] & 0x20))
@@ -83,16 +78,16 @@ static INLINE bool string_starts_with(const char *str, const char *prefix)
    return (str && prefix) ? !strncmp(prefix, str, strlen(prefix)) : false;
 }
 
-static INLINE bool string_ends_with_size(const char *str, const char *suffix,
-      size_t str_len, size_t suffix_len)
+static INLINE bool string_ends_with_size(const char *s, const char *suffix,
+      size_t len, size_t suffix_len)
 {
-   return (str_len < suffix_len) ? false :
-         !memcmp(suffix, str + (str_len - suffix_len), suffix_len);
+   return (len < suffix_len) ? false :
+         !memcmp(suffix, s + (len - suffix_len), suffix_len);
 }
 
-static INLINE bool string_ends_with(const char *str, const char *suffix)
+static INLINE bool string_ends_with(const char *s, const char *suffix)
 {
-   return str && suffix && string_ends_with_size(str, suffix, strlen(str), strlen(suffix));
+   return s && suffix && string_ends_with_size(s, suffix, strlen(s), strlen(suffix));
 }
 
 /**

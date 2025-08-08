@@ -560,7 +560,7 @@ error:
    if (t)
       free(t);
 
-   RARCH_ERR("[audio mixer load] Failed to open '%s'.\n",
+   RARCH_ERR("[Audio mixer] Failed to open \"%s\".\n",
          fullpath);
 
    return false;
@@ -687,7 +687,7 @@ error:
    if (t)
       free(t);
 
-   RARCH_ERR("[audio mixer load] Failed to open '%s'.\n",
+   RARCH_ERR("[Audio mixer] Failed to open \"%s\".\n",
          fullpath);
 
    return false;

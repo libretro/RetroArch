@@ -45,14 +45,14 @@ static size_t current_vdn_size;
 
 static uint8_t* blobdup(const void * src, size_t len)
 {
-   uint8_t * ret = malloc(len);
+   uint8_t *ret = (uint8_t*)malloc(len);
    memcpy(ret, src, len);
    return ret;
 }
 static void vdn_append(void* dest_ctx, const void * src, size_t len)
 {
-   current_vdn = realloc(current_vdn, current_vdn_size + len);
-   memcpy(current_vdn+current_vdn_size, src, len);
+   current_vdn = (uint8_t*)realloc(current_vdn, current_vdn_size + len);
+   memcpy(current_vdn + current_vdn_size, src, len);
    current_vdn_size += len;
 }
 
@@ -252,7 +252,7 @@ int ssl_socket_connect(void *state_data,
 }
 
 ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
-      bool *error, void *data_, size_t len)
+      bool *err, void *data_, size_t len)
 {
    size_t __len;
    uint8_t *bear_data;
@@ -260,7 +260,7 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
    socket_set_block(state->fd, false);
    if (!process_inner(state, false))
    {
-      *error = true;
+      *err = true;
       return -1;
    }
    bear_data = br_ssl_engine_recvapp_buf(&state->sc.eng, &__len);

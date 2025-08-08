@@ -176,19 +176,18 @@ static int ax_audio_limit(int in)
 
 static bool ax_audio_start(void* data, bool is_shutdown)
 {
-   ax_audio_t* ax = (ax_audio_t*)data;
-
    /* Prevents restarting audio when the menu
     * is toggled off on shutdown */
-   if (is_shutdown)
-      return true;
-
-   /* Set back to playing on enough buffered data */
-   if (ax->written > AX_AUDIO_SAMPLE_LOAD)
+   if (!is_shutdown)
    {
-      AXSetMultiVoiceCurrentOffset(ax->mvoice,
-            ax_audio_limit(ax->pos - ax->written));
-      AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_PLAYING);
+      ax_audio_t* ax = (ax_audio_t*)data;
+      /* Set back to playing on enough buffered data */
+      if (ax->written > AX_AUDIO_SAMPLE_LOAD)
+      {
+         AXSetMultiVoiceCurrentOffset(ax->mvoice,
+               ax_audio_limit(ax->pos - ax->written));
+         AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_PLAYING);
+      }
    }
 
    return true;
@@ -196,10 +195,9 @@ static bool ax_audio_start(void* data, bool is_shutdown)
 
 static ssize_t ax_audio_write(void* data, const void* buf, size_t len)
 {
-   uint32_t i;
    size_t count_avail  = 0;
-   ax_audio_t* ax      = (ax_audio_t*)data;
-   const uint16_t* src = buf;
+   ax_audio_t *ax      = (ax_audio_t*)data;
+   const uint16_t *src = buf;
    size_t count        = len >> 2;
 
    if (!len || (len & 0x3))
@@ -236,10 +234,11 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t len)
    /* make sure we have input size */
    if (count > 0)
    {
+      size_t i;
       /* write in new data */
       size_t start_pos    = ax->pos;
       int flush_p2_needed = 0;
-      int flush_p2       = 0;
+      int flush_p2        = 0;
 
       for (i = 0; i < (count << 1); i += 2)
       {
@@ -251,7 +250,7 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t len)
          if (ax->pos == 0)
          {
             flush_p2_needed = 1;
-            flush_p2       = ((count << 1) - i);
+            flush_p2        = ((count << 1) - i);
             DCStoreRangeNoSync(ax->buffer_l + start_pos,
                   (AX_AUDIO_COUNT - start_pos) << 1);
             DCStoreRangeNoSync(ax->buffer_r + start_pos, (AX_AUDIO_COUNT - start_pos) << 1);

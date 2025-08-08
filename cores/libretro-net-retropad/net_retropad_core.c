@@ -353,7 +353,7 @@ static bool input_test_file_read(const char* file_path)
    if (!file)
    {
       NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-            "[Remote RetroPad]: Failed to open test input file: \"%s\".\n",
+            "[Remote RetroPad] Failed to open test input file: \"%s\".\n",
             file_path);
       return false;
    }
@@ -362,7 +362,7 @@ static bool input_test_file_read(const char* file_path)
    if (!(parser = rjson_open_rfile(file)))
    {
       NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-            "[Remote RetroPad]: Failed to create JSON parser.\n");
+            "[Remote RetroPad] Failed to create JSON parser.\n");
       goto end;
    }
 
@@ -381,16 +381,16 @@ static bool input_test_file_read(const char* file_path)
       if (rjson_get_source_context_len(parser))
       {
          NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-               "[Remote RetroPad]: Error parsing chunk of test input file: %s\n---snip---\n%.*s\n---snip---\n",
+               "[Remote RetroPad] Error parsing chunk of test input file: %s\n---snip---\n%.*s\n---snip---\n",
                file_path,
                rjson_get_source_context_len(parser),
                rjson_get_source_context_buf(parser));
       }
       NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
-            "[Remote RetroPad]: Error parsing test input file: %s\n",
+            "[Remote RetroPad] Error parsing test input file: %s\n",
             file_path);
       NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-            "[Remote RetroPad]: Error: Invalid JSON at line %d, column %d - %s.\n",
+            "[Remote RetroPad] Error: Invalid JSON at line %d, column %d - %s.\n",
             (int)rjson_get_source_line(parser),
             (int)rjson_get_source_column(parser),
             (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
@@ -410,12 +410,12 @@ end:
 
    if (last_test_step >= MAX_TEST_STEPS)
    {
-      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,"[Remote RetroPad]: too long test input json, maximum size: %d\n",MAX_TEST_STEPS);
+      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,"[Remote RetroPad] Too long test input json, maximum size: %d\n",MAX_TEST_STEPS);
    }
    for (current_test_step = 0; current_test_step < last_test_step; current_test_step++)
    {
       NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,
-         "[Remote RetroPad]: test step %02d read from file: button %x, message %s\n",
+         "[Remote RetroPad] Test step %02d read from file: button %x, message %s\n",
          current_test_step,
          input_test_steps[current_test_step].expected_button,
          input_test_steps[current_test_step].message);
@@ -433,7 +433,7 @@ static void sensors_init(void)
    struct retro_sensor_interface sensor_interface = {0};
 	if (NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE, &sensor_interface)) {
 
-      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,"[Remote RetroPad]: Sensor interface supported, enabling.\n");
+      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,"[Remote RetroPad] Sensor interface supported, enabling.\n");
 
 		NETRETROPAD_CORE_PREFIX(sensor_get_input_cb) = sensor_interface.get_sensor_input;
 		NETRETROPAD_CORE_PREFIX(sensor_set_state_cb) = sensor_interface.set_sensor_state;
@@ -443,17 +443,17 @@ static void sensors_init(void)
 
 			if (NETRETROPAD_CORE_PREFIX(sensor_set_state_cb)(0, RETRO_SENSOR_ACCELEROMETER_ENABLE, EVENT_RATE)) {
 				tilt_sensor_enabled = true;
-            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,"[Remote RetroPad]: Tilt sensor enabled.\n");
+            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,"[Remote RetroPad] Tilt sensor enabled.\n");
 			}
 
 			if (NETRETROPAD_CORE_PREFIX(sensor_set_state_cb)(0, RETRO_SENSOR_GYROSCOPE_ENABLE, EVENT_RATE)) {
 				gyro_sensor_enabled = true;
-            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,"[Remote RetroPad]: Gyro sensor enabled.\n");
+            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,"[Remote RetroPad] Gyro sensor enabled.\n");
 			}
 
 			if (NETRETROPAD_CORE_PREFIX(sensor_set_state_cb)(0, RETRO_SENSOR_ILLUMINANCE_ENABLE, EVENT_RATE)) {
 				lux_sensor_enabled = true;
-            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,"[Remote RetroPad]: Lux sensor enabled.\n");
+            NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,"[Remote RetroPad] Lux sensor enabled.\n");
 			}
 		}
 	}
@@ -1149,7 +1149,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
       if (!dump_state_blocked)
       {
          NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
-               "[Remote RetroPad]: Validated state: %08x combo: %08x\n",
+               "[Remote RetroPad] Validated state: %08x combo: %08x\n",
                input_state_validated, combo_state_validated);
          dump_state_blocked = true;
       }
@@ -1172,7 +1172,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
             NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
             next_teststep_frame = current_frame +  ONE_TEST_STEP_FRAMES - INITIAL_FRAMES;
             NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
-               "[Remote RetroPad]: Proceeding to test step %d at frame %d, next: %d\n",
+               "[Remote RetroPad] Proceeding to test step %d at frame %d, next: %d\n",
                current_test_step,current_frame,next_teststep_frame+INITIAL_FRAMES);
             while(
                      (input_test_steps[current_test_step].expected_button <  KEYBOARD_OFFSET && current_screen != NETRETROPAD_SCREEN_PAD)
@@ -1195,10 +1195,10 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
             NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
 
             NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
-               "[Remote RetroPad]: Test sequence finished at frame %d, result: %d/%d inputs detected\n",
+               "[Remote RetroPad] Test sequence finished at frame %d, result: %d/%d inputs detected\n",
                current_frame, pass_count, last_test_step);
             NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
-               "[Remote RetroPad]: Validated state: %08x combo: %08x\n",
+               "[Remote RetroPad] Validated state: %08x combo: %08x\n",
                input_state_validated, combo_state_validated);
          }
       }
@@ -1221,7 +1221,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
          if (test_success)
          {
             NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
-               "[Remote RetroPad]: Test step %d successful at frame %d\n",
+               "[Remote RetroPad] Test step %d successful at frame %d\n",
                current_test_step, current_frame);
             input_test_steps[current_test_step].detected = true;
             next_teststep_frame = current_frame - INITIAL_FRAMES;

@@ -230,14 +230,14 @@ static void *gfx_ctx_ps3_init(void *video_driver)
 
       if (params.width == 720 && params.height == 576)
       {
-         RARCH_LOG("[PSGL Context]: 720x576 resolution detected, setting MODE_VIDEO_PAL_ENABLE.\n");
+         RARCH_LOG("[PSGL Context] 720x576 resolution detected, setting MODE_VIDEO_PAL_ENABLE.\n");
          global->console.screen.pal_enable = true;
       }
    }
 
    if (global->console.screen.pal60_enable)
    {
-      RARCH_LOG("[PSGL Context]: Setting temporal PAL60 mode.\n");
+      RARCH_LOG("[PSGL Context] Setting temporal PAL60 mode.\n");
       params.enable             |= PSGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE;
       params.enable             |= PSGL_DEVICE_PARAMETERS_RESC_RATIO_MODE;
       params.rescPalTemporalMode = RESC_PAL_TEMPORAL_MODE_60_INTERPOLATE;

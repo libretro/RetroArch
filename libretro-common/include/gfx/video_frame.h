@@ -197,7 +197,7 @@ static INLINE void video_frame_convert_rgba_to_bgr(
    }
 }
 
-static INLINE bool video_pixel_frame_scale(
+static INLINE void video_pixel_frame_scale(
       struct scaler_ctx *scaler,
       void *output, const void *data,
       unsigned width, unsigned height,
@@ -209,10 +209,7 @@ static INLINE bool video_pixel_frame_scale(
    scaler->out_height    = height;
    scaler->in_stride     = (int)pitch;
    scaler->out_stride    = width * sizeof(uint16_t);
-
    scaler_ctx_scale_direct(scaler, output, data);
-
-   return true;
 }
 
 RETRO_END_DECLS

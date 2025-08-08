@@ -246,8 +246,8 @@ int main(Platform::Array<Platform::String^>^)
          AnalyticsInfo::VersionInfo->DeviceFamily->Data(),
          sizeof(uwp_device_family));
 
-   RARCH_LOG("Data dir: %ls\n", data_dir->Data());
-   RARCH_LOG("Install dir: %ls\n", install_dir->Data());
+   RARCH_LOG("[UWP] Data dir: %ls\n", data_dir->Data());
+   RARCH_LOG("[UWP] Install dir: %ls\n", install_dir->Data());
 
    auto direct3DApplicationSource = ref new Direct3DApplicationSource();
    CoreApplication::Run(direct3DApplicationSource);
@@ -350,7 +350,7 @@ void App::Run()
    bool x = false;
    if (!m_initialized)
    {
-      RARCH_WARN("Initialization failed, so not running\n");
+      RARCH_WARN("[UWP] Initialization failed, so not running.\n");
       return;
    }
 
@@ -431,7 +431,7 @@ void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^
 
    if ((ret = rarch_main(argc, argv.data(), NULL)) != 0)
    {
-      RARCH_ERR("Init failed\n");
+      RARCH_ERR("[UWP] Init failed.\n");
       CoreApplication::Exit();
       return;
    }
@@ -514,13 +514,13 @@ void App::OnSuspending(Platform::Object^ sender, SuspendingEventArgs^ args)
          {
          if (config_save_file(config_path))
          {
-         RARCH_LOG("[config] %s \"%s\".\n",
+         RARCH_LOG("[UWP] %s \"%s\".\n",
                msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
                config_path);
          }
          else
          {
-            RARCH_ERR("[config] %s \"%s\".\n",
+            RARCH_ERR("[UWP] %s \"%s\".\n",
                   msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
                   config_path);
          }

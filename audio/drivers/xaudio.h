@@ -14,7 +14,7 @@
  */
 
 #if (_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
-/* XAudio 2.7 it part of the old DirectX SDKs. XAudio 2.8+ is part of the
+/* XAudio 2.7 is part of the old DirectX SDKs. XAudio 2.8+ is part of the
  * Windows OS itself (starting from Windows 8). Since UWP lets you access
  * only libraries that are built-in to the OS, the headers had to be
  * upgraded to the newer version to get audio support working. */

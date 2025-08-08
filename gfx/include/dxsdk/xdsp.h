@@ -60,7 +60,7 @@ namespace XDSP {
 
     // Parallel multiplication of four complex numbers, assuming
     // real and imaginary values are stored in separate vectors.
-    __forceinline void vmulComplex (__out XVECTORREF rResult, __out XVECTORREF iResult, __in XVECTORREFC r1, __in XVECTORREFC i1, __in XVECTORREFC r2, __in XVECTORREFC i2)
+    __forceinline void vmulComplex (__out XVECTORREF rResult, __out XVECTORREF iResult, XVECTORREFC r1, XVECTORREFC i1, XVECTORREFC r2, XVECTORREFC i2)
     {
         // (r1, i1) * (r2, i2) = (r1r2 - i1i2, r1i2 + r2i1)
         XVECTOR vi1i2 = _mm_mul_ps(i1, i2);
@@ -70,7 +70,7 @@ namespace XDSP {
         rResult = _mm_sub_ps(vr1r2, vi1i2); // real:      (r1*r2 - i1*i2)
         iResult = _mm_add_ps(vr1i2, vr2i1); // imaginary: (r1*i2 + r2*i1)
     }
-    __forceinline void vmulComplex (__inout XVECTORREF r1, __inout XVECTORREF i1, __in XVECTORREFC r2, __in XVECTORREFC i2)
+    __forceinline void vmulComplex (XVECTORREF r1, XVECTORREF i1, XVECTORREFC r2, XVECTORREFC i2)
     {
         // (r1, i1) * (r2, i2) = (r1r2 - i1i2, r1i2 + r2i1)
         XVECTOR vi1i2 = _mm_mul_ps(i1, i2);
@@ -109,7 +109,7 @@ namespace XDSP {
     // Result = | 0  1  0 -j | * | (rTempY,iTempY) | = | (rTempY + iTempW, iTempY - rTempW) |
     //          | 1  0 -1  0 |   | (rTempZ,iTempZ) |   | (rTempX - rTempZ, iTempX - iTempZ) |
     //          | 0  1  0  j |   | (rTempW,iTempW) |   | (rTempY - iTempW, iTempY + rTempW) |
-    __forceinline void ButterflyDIT4_1 (__inout XVECTORREF r1, __inout XVECTORREF i1)
+    __forceinline void ButterflyDIT4_1 (XVECTORREF r1, XVECTORREF i1)
     {
         // sign constants for radix-4 butterflies
         const static XVECTOR vDFT4SignBits1 = { 0.0f, -0.0f,  0.0f, -0.0f };
@@ -151,16 +151,16 @@ namespace XDSP {
     // Result = | 0  1  0 -j | * | (rTemp1,iTemp1) | = | (rTemp1 + iTemp3, iTemp1 - rTemp3) |
     //          | 1  0 -1  0 |   | (rTemp2,iTemp2) |   | (rTemp0 - rTemp2, iTemp0 - iTemp2) |
     //          | 0  1  0  j |   | (rTemp3,iTemp3) |   | (rTemp1 - iTemp3, iTemp1 + rTemp3) |
-    __forceinline void ButterflyDIT4_4 (__inout XVECTORREF r0,
-                                        __inout XVECTORREF r1,
-                                        __inout XVECTORREF r2,
-                                        __inout XVECTORREF r3,
-                                        __inout XVECTORREF i0,
-                                        __inout XVECTORREF i1,
-                                        __inout XVECTORREF i2,
-                                        __inout XVECTORREF i3,
-                                        __in_ecount(uStride*4) const XVECTOR* __restrict pUnityTableReal,
-                                        __in_ecount(uStride*4) const XVECTOR* __restrict pUnityTableImaginary,
+    __forceinline void ButterflyDIT4_4 (XVECTORREF r0,
+                                        XVECTORREF r1,
+                                        XVECTORREF r2,
+                                        XVECTORREF r3,
+                                        XVECTORREF i0,
+                                        XVECTORREF i1,
+                                        XVECTORREF i2,
+                                        XVECTORREF i3,
+                                        const XVECTOR* __restrict pUnityTableReal,
+                                        const XVECTOR* __restrict pUnityTableImaginary,
                                         const UINT32 uStride, const BOOL fLast)
     {
         DSPASSERT(pUnityTableReal != NULL);
@@ -214,7 +214,7 @@ namespace XDSP {
       // RETURN VALUE:
       //  void
       ////
-    __forceinline void FFT4 (__inout_ecount(uCount) XVECTOR* __restrict pReal, __inout_ecount(uCount) XVECTOR* __restrict pImaginary, const UINT32 uCount=1)
+    __forceinline void FFT4 (XVECTOR* __restrict pReal, XVECTOR* __restrict pImaginary, const UINT32 uCount=1)
     {
         DSPASSERT(pReal != NULL);
         DSPASSERT(pImaginary != NULL);
@@ -239,7 +239,7 @@ namespace XDSP {
       // RETURN VALUE:
       //  void
       ////
-    __forceinline void FFT8 (__inout_ecount(uCount*2) XVECTOR* __restrict pReal, __inout_ecount(uCount*2) XVECTOR* __restrict pImaginary, const UINT32 uCount=1)
+    __forceinline void FFT8 (XVECTOR* __restrict pReal, XVECTOR* __restrict pImaginary, const UINT32 uCount=1)
     {
         DSPASSERT(pReal != NULL);
         DSPASSERT(pImaginary != NULL);
@@ -286,7 +286,7 @@ namespace XDSP {
       // RETURN VALUE:
       //  void
       ////
-    __forceinline void FFT16 (__inout_ecount(uCount*4) XVECTOR* __restrict pReal, __inout_ecount(uCount*4) XVECTOR* __restrict pImaginary, const UINT32 uCount=1)
+    __forceinline void FFT16 (XVECTOR* __restrict pReal, XVECTOR* __restrict pImaginary, const UINT32 uCount=1)
     {
         DSPASSERT(pReal != NULL);
         DSPASSERT(pImaginary != NULL);
@@ -329,7 +329,7 @@ namespace XDSP {
       // RETURN VALUE:
       //  void
       ////
-    inline void FFT (__inout_ecount((uLength*uCount)/4) XVECTOR* __restrict pReal, __inout_ecount((uLength*uCount)/4) XVECTOR* __restrict pImaginary, __in_ecount(uLength*uCount) const XVECTOR* __restrict pUnityTable, const UINT32 uLength, const UINT32 uCount=1)
+    inline void FFT (XVECTOR* __restrict pReal, XVECTOR* __restrict pImaginary, const XVECTOR* __restrict pUnityTable, const UINT32 uLength, const UINT32 uCount=1)
     {
         DSPASSERT(pReal != NULL);
         DSPASSERT(pImaginary != NULL);
@@ -397,7 +397,7 @@ namespace XDSP {
   // RETURN VALUE:
   //  void
   ////
-inline void FFTInitializeUnityTable (__out_ecount(uLength) XVECTOR* __restrict pUnityTable, UINT32 uLength)
+inline void FFTInitializeUnityTable (XVECTOR* __restrict pUnityTable, UINT32 uLength)
 {
     DSPASSERT(pUnityTable != NULL);
     DSPASSERT(uLength > 16);
@@ -438,7 +438,7 @@ inline void FFTInitializeUnityTable (__out_ecount(uLength) XVECTOR* __restrict p
   // RETURN VALUE:
   //  void
   ////
-inline void FFTUnswizzle (__out_ecount((1<<uLog2Length)/4) XVECTOR* __restrict pOutput, __in_ecount((1<<uLog2Length)/4) const XVECTOR* __restrict pInput, const UINT32 uLog2Length)
+inline void FFTUnswizzle (XVECTOR* __restrict pOutput, const XVECTOR* __restrict pInput, const UINT32 uLog2Length)
 {
     DSPASSERT(pOutput != NULL);
     DSPASSERT(pInput != NULL);
@@ -487,7 +487,7 @@ inline void FFTUnswizzle (__out_ecount((1<<uLog2Length)/4) XVECTOR* __restrict p
   // RETURN VALUE:
   //  void
   ////
-inline void FFTPolar (__out_ecount(uLength/4) XVECTOR* __restrict pOutput, __in_ecount(uLength/4) const XVECTOR* __restrict pInputReal, __in_ecount(uLength/4) const XVECTOR* __restrict pInputImaginary, const UINT32 uLength)
+inline void FFTPolar (XVECTOR* __restrict pOutput, const XVECTOR* __restrict pInputReal, const XVECTOR* __restrict pInputImaginary, const UINT32 uLength)
 {
     DSPASSERT(pOutput != NULL);
     DSPASSERT(pInputReal != NULL);
@@ -529,7 +529,7 @@ inline void FFTPolar (__out_ecount(uLength/4) XVECTOR* __restrict pOutput, __in_
   // RETURN VALUE:
   //  void
   ////
-inline void Deinterleave (__out_ecount((uChannelCount*uFrameCount)/4) XVECTOR* __restrict pOutput, __in_ecount((uChannelCount*uFrameCount)/4) const XVECTOR* __restrict pInput, const UINT32 uChannelCount, const UINT32 uFrameCount)
+inline void Deinterleave (XVECTOR* __restrict pOutput, const XVECTOR* __restrict pInput, const UINT32 uChannelCount, const UINT32 uFrameCount)
 {
     DSPASSERT(pOutput != NULL);
     DSPASSERT(pInput != NULL);
@@ -563,7 +563,7 @@ inline void Deinterleave (__out_ecount((uChannelCount*uFrameCount)/4) XVECTOR* _
   // RETURN VALUE:
   //  void
   ////
-inline void Interleave (__out_ecount((uChannelCount*uFrameCount)/4) XVECTOR* __restrict pOutput, __in_ecount((uChannelCount*uFrameCount)/4) const XVECTOR* __restrict pInput, const UINT32 uChannelCount, const UINT32 uFrameCount)
+inline void Interleave (XVECTOR* __restrict pOutput, const XVECTOR* __restrict pInput, const UINT32 uChannelCount, const UINT32 uFrameCount)
 {
     DSPASSERT(pOutput != NULL);
     DSPASSERT(pInput != NULL);
@@ -597,7 +597,7 @@ inline void Interleave (__out_ecount((uChannelCount*uFrameCount)/4) XVECTOR* __r
   // RETURN VALUE:
   //  void
   ////
-inline void FFTInterleaved (__inout_ecount((1<<uLog2Length*uChannelCount)/4) XVECTOR* __restrict pReal, __out_ecount((1<<uLog2Length*uChannelCount)/4) XVECTOR* __restrict pImaginary, __in_ecount(1<<uLog2Length) const XVECTOR* __restrict pUnityTable, const UINT32 uChannelCount, const UINT32 uLog2Length)
+inline void FFTInterleaved (XVECTOR* __restrict pReal, XVECTOR* __restrict pImaginary, const XVECTOR* __restrict pUnityTable, const UINT32 uChannelCount, const UINT32 uLog2Length)
 {
     DSPASSERT(pReal != NULL);
     DSPASSERT(pImaginary != NULL);
@@ -660,7 +660,7 @@ inline void FFTInterleaved (__inout_ecount((1<<uLog2Length*uChannelCount)/4) XVE
   // RETURN VALUE:
   //  void
   ////
-inline void IFFTDeinterleaved (__inout_ecount((1<<uLog2Length*uChannelCount)/4) XVECTOR* __restrict pReal, __out_ecount((1<<uLog2Length*uChannelCount)/4) XVECTOR* __restrict pImaginary, __in_ecount(1<<uLog2Length) const XVECTOR* __restrict pUnityTable, const UINT32 uChannelCount, const UINT32 uLog2Length)
+inline void IFFTDeinterleaved (XVECTOR* __restrict pReal, XVECTOR* __restrict pImaginary, const XVECTOR* __restrict pUnityTable, const UINT32 uChannelCount, const UINT32 uLog2Length)
 {
     DSPASSERT(pReal != NULL);
     DSPASSERT(pImaginary != NULL);

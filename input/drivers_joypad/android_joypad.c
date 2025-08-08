@@ -101,7 +101,7 @@ static int16_t android_joypad_state(
       const struct retro_keybind *binds,
       unsigned port)
 {
-   unsigned i;
+   int i;
    int16_t ret                          = 0;
    struct android_app *android_app      = (struct android_app*)g_android;
    uint8_t *buf                         = android_keyboard_state_get(port);
@@ -117,7 +117,7 @@ static int16_t android_joypad_state(
          ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-      if ((uint16_t)joykey != NO_BTN 
+      if ((uint16_t)joykey != NO_BTN
             && android_joypad_button_state(
                android_app,
                buf,
@@ -125,7 +125,7 @@ static int16_t android_joypad_state(
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
             ((float)abs(android_joypad_axis_state(
-                  android_app, port_idx, joyaxis)) 
+                  android_app, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -142,7 +142,7 @@ static bool android_joypad_query_pad(unsigned pad)
 
 static void android_joypad_destroy(void)
 {
-   unsigned i, j;
+   int i, j;
    struct android_app *android_app = (struct android_app*)g_android;
 
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
@@ -168,8 +168,7 @@ static void android_input_set_rumble_internal(
       uint16_t *last_strength_weak,
       uint16_t *last_strength,
       int8_t   id,
-      enum retro_rumble_effect effect
-      )
+      enum retro_rumble_effect effect)
 {
    JNIEnv *env           = (JNIEnv*)jni_thread_getenv();
    uint16_t new_strength = 0;
@@ -190,7 +189,7 @@ static void android_input_set_rumble_internal(
 
    if (new_strength != *last_strength)
    {
-      /* trying to send this value as a JNI param without 
+      /* trying to send this value as a JNI param without
        * storing it first was causing 0 to be seen on the other side ?? */
       int strength_final   = (255.0f / 65535.0f) * (float)new_strength;
 
@@ -229,7 +228,6 @@ static bool android_joypad_rumble(unsigned port,
             type);
    }
    else
-   {
       android_input_set_rumble_internal(
             strength,
             &android_app->rumble_last_strength_strong[port],
@@ -237,7 +235,6 @@ static bool android_joypad_rumble(unsigned port,
             &android_app->rumble_last_strength[port],
             android_app->id[port],
             type);
-   }
 
    return true;
 }

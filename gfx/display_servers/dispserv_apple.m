@@ -150,7 +150,12 @@ static void *apple_display_server_get_resolution_list(
       [rates addObjectsFromArray:@[@(24), @(30), @(40), @(48), @(60), @(120)]];
    else
 #endif
-      [rates addObject:@(mainScreen.maximumFramesPerSecond)];
+   {
+      if (@available(iOS 10.3, tvOS 10.2, *))
+         [rates addObject:@(mainScreen.maximumFramesPerSecond)];
+      else
+         [rates addObject:@(60)];
+   }
 #endif
 
    NSArray *sorted = [[rates allObjects] sortedArrayUsingSelector:@selector(compare:)];

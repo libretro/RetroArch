@@ -669,9 +669,9 @@ static void sdl_rs90_blit_text32(
    }
 }
 
-static void sdl_rs90_blit_video_mode_error_msg(sdl_rs90_video_t *vid)
+static void sdl_rs90_blit_video_mode_err_msg(sdl_rs90_video_t *vid)
 {
-   const char *error_msg = msg_hash_to_str(MSG_UNSUPPORTED_VIDEO_MODE);
+   const char *err_msg = msg_hash_to_str(MSG_UNSUPPORTED_VIDEO_MODE);
    char display_mode[64];
 
    display_mode[0] = '\0';
@@ -690,7 +690,7 @@ static void sdl_rs90_blit_video_mode_error_msg(sdl_rs90_video_t *vid)
    {
       sdl_rs90_blit_text32(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE,
-            error_msg);
+            err_msg);
 
       sdl_rs90_blit_text32(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE + FONT_HEIGHT_STRIDE,
@@ -700,7 +700,7 @@ static void sdl_rs90_blit_video_mode_error_msg(sdl_rs90_video_t *vid)
    {
       sdl_rs90_blit_text16(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE,
-            error_msg);
+            err_msg);
 
       sdl_rs90_blit_text16(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE + FONT_HEIGHT_STRIDE,
@@ -848,7 +848,7 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
 
    if (hw_refresh_rate == 0.0f)
    {
-      RARCH_ERR("[SDL1]: Failed to set video refresh rate\n");
+      RARCH_ERR("[SDL1] Failed to set video refresh rate.\n");
       goto error;
    }
 
@@ -875,7 +875,7 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
 
    if (!vid->screen)
    {
-      RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL1] Failed to init SDL surface: %s.\n", SDL_GetError());
       goto error;
    }
 
@@ -909,7 +909,7 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
        vid->osd_font->glyph_max <
             (SDL_RS90_NUM_FONT_GLYPHS - 1))
    {
-      RARCH_ERR("[SDL1]: Failed to init OSD font\n");
+      RARCH_ERR("[SDL1] Failed to init OSD font.\n");
       goto error;
    }
 
@@ -1009,7 +1009,7 @@ static void sdl_rs90_set_output(
    /* Check whether selected display mode is valid */
    if (unlikely(!vid->screen))
    {
-      RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL1] Failed to init SDL surface: %s.\n", SDL_GetError());
       vid->mode_valid = false;
    }
    else
@@ -1137,7 +1137,7 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
       /* If current display mode is invalid,
        * just display an error message */
       else
-         sdl_rs90_blit_video_mode_error_msg(vid);
+         sdl_rs90_blit_video_mode_err_msg(vid);
 
       vid->was_in_menu = false;
    }

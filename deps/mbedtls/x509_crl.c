@@ -300,8 +300,8 @@ int mbedtls_x509_crl_parse_der( mbedtls_x509_crl *chain,
      *      signatureAlgorithm   AlgorithmIdentifier,
      *      signatureValue       BIT STRING  }
      */
-    if( ( ret = mbedtls_asn1_get_tag( &p, end, &len,
-            MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE ) ) != 0 )
+    if( ( mbedtls_asn1_get_tag(&p, end, &len,
+            MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE)) != 0 )
     {
         mbedtls_x509_crl_free( crl );
         return( MBEDTLS_ERR_X509_INVALID_FORMAT );
@@ -342,17 +342,17 @@ int mbedtls_x509_crl_parse_der( mbedtls_x509_crl *chain,
         return( ret );
     }
 
-    crl->version++;
-
-    if( crl->version > 2 )
+    if( crl->version < 0 || crl->version > 1 )
     {
         mbedtls_x509_crl_free( crl );
         return( MBEDTLS_ERR_X509_UNKNOWN_VERSION );
     }
 
-    if( ( ret = mbedtls_x509_get_sig_alg( &crl->sig_oid, &sig_params1,
+    crl->version++;
+
+    if( ( mbedtls_x509_get_sig_alg(&crl->sig_oid, &sig_params1,
                                   &crl->sig_md, &crl->sig_pk,
-                                  &crl->sig_opts ) ) != 0 )
+                                  &crl->sig_opts)) != 0 )
     {
         mbedtls_x509_crl_free( crl );
         return( MBEDTLS_ERR_X509_UNKNOWN_SIG_ALG );

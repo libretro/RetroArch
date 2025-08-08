@@ -72,7 +72,7 @@ static void cheat_manager_pause_cheevos(void)
    rcheevos_pause_hardcore();
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", msg);
+   RARCH_LOG("[Cheats] %s\n", msg);
 }
 #endif
 
@@ -108,7 +108,7 @@ void cheat_manager_apply_cheats(bool notification_show_cheats_applied)
       size_t _len = strlcpy(msg, msg_hash_to_str(MSG_APPLYING_CHEAT), sizeof(msg));
       runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s\n", msg);
+      RARCH_LOG("[Cheats] %s\n", msg);
    }
 
 #ifdef HAVE_CHEEVOS
@@ -615,7 +615,7 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
          );
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", msg);
+   RARCH_LOG("[Cheats] %s\n", msg);
 }
 
 void cheat_manager_toggle_index(bool apply_cheats_after_toggle,
@@ -730,7 +730,7 @@ void cheat_manager_load_game_specific_cheats(const char *path_cheat_database)
             false))
    {
       if (cheat_manager_load(cheat_file, true))
-         RARCH_LOG("[Cheats]: Load game-specific cheatfile: %s\n", cheat_file);
+         RARCH_LOG("[Cheats] Load game-specific cheatfile: \"%s\".\n", cheat_file);
    }
 }
 
@@ -744,7 +744,7 @@ void cheat_manager_save_game_specific_cheats(const char *path_cheat_database)
             true))
    {
       if (cheat_manager_save(cheat_file, NULL, true))
-         RARCH_LOG("[Cheats]: Save game-specific cheatfile: %s\n", cheat_file);
+         RARCH_LOG("[Cheats] Save game-specific cheatfile: \"%s\".\n", cheat_file);
    }
 }
 

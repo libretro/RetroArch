@@ -52,10 +52,6 @@ typedef struct pipewire_core
    bool nonblock;
 } pipewire_core_t;
 
-size_t pipewire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels);
-
-void pipewire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS]);
-
 bool pipewire_core_init(pipewire_core_t **pw, const char *loop_name, const struct pw_registry_events *events);
 
 void pipewire_core_deinit(pipewire_core_t *pw);

@@ -37,7 +37,6 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
-#include "../common/sixel_defines.h"
 
 #ifndef _WIN32
 #define HAVE_SYS_IOCTL_H
@@ -61,9 +60,16 @@
 #error "Old version of libsixel detected, please upgrade to at least 1.6.0."
 #endif
 
-/*
- * FONT DRIVER
- */
+#define SIXEL_COLORS 256
+
+typedef struct sixel
+{
+   SIXELSTATUS sixel_status;
+   unsigned video_width;
+   unsigned video_height;
+   unsigned screen_width;
+   unsigned screen_height;
+} sixel_t;
 
 typedef struct
 {

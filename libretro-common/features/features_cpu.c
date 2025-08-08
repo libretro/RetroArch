@@ -758,20 +758,6 @@ uint64_t cpu_features_get(void)
 #endif
 #endif
    }
-
-#if 0
-    check_arm_cpu_feature("swp");
-    check_arm_cpu_feature("half");
-    check_arm_cpu_feature("thumb");
-    check_arm_cpu_feature("fastmult");
-    check_arm_cpu_feature("vfp");
-    check_arm_cpu_feature("edsp");
-    check_arm_cpu_feature("thumbee");
-    check_arm_cpu_feature("tls");
-    check_arm_cpu_feature("idiva");
-    check_arm_cpu_feature("idivt");
-#endif
-
 #elif defined(__ARM_NEON__)
    cpu |= RETRO_SIMD_NEON;
 #if defined(__arm__)

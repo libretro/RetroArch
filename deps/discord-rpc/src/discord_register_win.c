@@ -114,7 +114,6 @@ static void Discord_RegisterW(
    if (FAILED(result))
       fprintf(stderr, "Error writing description\n");
 
-   len = (DWORD)lstrlenW(protocolDescription) + 1;
    result = RegSetKeyValueW(key, NULL, L"URL Protocol", REG_SZ, &urlProtocol, sizeof(wchar_t));
    if (FAILED(result))
       fprintf(stderr, "Error writing description\n");
@@ -142,7 +141,7 @@ void Discord_Register(const char* applicationId, const char* command)
 
    if (command && command[0])
    {
-      const int commandBufferLen = 
+      const int commandBufferLen =
          sizeof(openCommand) / sizeof(*openCommand);
       MultiByteToWideChar(CP_UTF8, 0, command, -1,
             openCommand, commandBufferLen);

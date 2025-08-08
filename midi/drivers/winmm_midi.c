@@ -62,7 +62,7 @@ static bool winmm_midi_queue_read(winmm_midi_queue_t *q, midi_event_t *ev)
    if (ev->data_size < q->events[q->rd_idx].data_size)
    {
 #ifdef DEBUG
-      RARCH_ERR("[MIDI]: Input queue read failed (event data too small).\n");
+      RARCH_ERR("[MIDI] Input queue read failed (event data too small).\n");
 #endif
       return false;
    }
@@ -98,7 +98,7 @@ static bool winmm_midi_queue_write(winmm_midi_queue_t *q, const midi_event_t *ev
    if (wr_avail < 1)
    {
 #ifdef DEBUG
-      RARCH_ERR("[MIDI]: Input queue overflow.\n");
+      RARCH_ERR("[MIDI] Input queue overflow.\n");
 #endif
       return false;
    }
@@ -107,7 +107,7 @@ static bool winmm_midi_queue_write(winmm_midi_queue_t *q, const midi_event_t *ev
    if (ev->data_size > 4)
    {
 #ifdef DEBUG
-      RARCH_ERR("[MIDI]: Input queue write failed (event too big).\n");
+      RARCH_ERR("[MIDI] Input queue write failed (event too big).\n");
 #endif
       return false;
    }
@@ -164,14 +164,14 @@ static void CALLBACK winmm_midi_input_callback(HMIDIIN dev, UINT msg,
       if (!winmm_midi_queue_write(queue, &event))
       {
 #ifdef DEBUG
-         RARCH_ERR("[MIDI]: Input event dropped.\n");
+         RARCH_ERR("[MIDI] Input event dropped.\n");
 #endif
       }
    }
    else if (msg == MIM_LONGDATA)
    {
 #ifdef DEBUG
-      RARCH_WARN("[MIDI]: SysEx input not implemented, event dropped.\n");
+      RARCH_WARN("[MIDI] SysEx input not implemented, event dropped.\n");
 #endif
    }
 }
@@ -194,12 +194,12 @@ static HMIDIIN winmm_midi_open_input_device(const char *dev_name,
             mmr = midiInOpen(&dev, (UINT)i, (DWORD_PTR)winmm_midi_input_callback,
                   (DWORD_PTR)queue, CALLBACK_FUNCTION);
             if (mmr != MMSYSERR_NOERROR)
-               RARCH_ERR("[MIDI]: midiInOpen failed with error %d.\n", mmr);
+               RARCH_ERR("[MIDI] midiInOpen failed with error %d.\n", mmr);
             break;
          }
       }
       else
-         RARCH_WARN("[MIDI]: midiInGetDevCapsA failed with error %d.\n", mmr);
+         RARCH_WARN("[MIDI] midiInGetDevCapsA failed with error %d.\n", mmr);
    }
 
    return dev;
@@ -221,12 +221,12 @@ static HMIDISTRM winmm_midi_open_output_device(const char *dev_name)
          {
             mmr = midiStreamOpen(&dev, &i, 1, 0, 0, CALLBACK_NULL);
             if (mmr != MMSYSERR_NOERROR)
-               RARCH_ERR("[MIDI]: midiStreamOpen failed with error %d.\n", mmr);
+               RARCH_ERR("[MIDI] midiStreamOpen failed with error %d.\n", mmr);
             break;
          }
       }
       else
-         RARCH_WARN("[MIDI]: midiOutGetDevCapsA failed with error %d.\n", mmr);
+         RARCH_WARN("[MIDI] midiOutGetDevCapsA failed with error %d.\n", mmr);
    }
 
    return dev;
@@ -243,7 +243,7 @@ static bool winmm_midi_init_clock(HMIDISTRM out_dev, double *tick_dur)
          MIDIPROP_GET | MIDIPROP_TEMPO);
    if (mmr != MMSYSERR_NOERROR)
    {
-      RARCH_ERR("[MIDI]: Current tempo unavailable (error %d).\n", mmr);
+      RARCH_ERR("[MIDI] Current tempo unavailable (error %d).\n", mmr);
       return false;
    }
 
@@ -256,15 +256,14 @@ static bool winmm_midi_init_clock(HMIDISTRM out_dev, double *tick_dur)
          MIDIPROP_SET | MIDIPROP_TIMEDIV);
    if (mmr != MMSYSERR_NOERROR)
    {
-      RARCH_ERR("[MIDI]: Time division change failed (error %d).\n", mmr);
+      RARCH_ERR("[MIDI] Time division change failed (error %d).\n", mmr);
       return false;
    }
 
    *tick_dur = (double)tempo.dwTempo / (double)division.dwTimeDiv;
 #ifdef DEBUG
-   RARCH_LOG("[MIDI]: Tick duration %f us.\n", *tick_dur);
+   RARCH_DBG("[MIDI] Tick duration %f us.\n", *tick_dur);
 #endif
-
    return true;
 }
 
@@ -285,7 +284,7 @@ static bool winmm_midi_init_output_buffers(HMIDISTRM dev,
       mmr = midiOutPrepareHeader((HMIDIOUT)dev, &bufs[i].header, sizeof(MIDIHDR));
       if (mmr != MMSYSERR_NOERROR)
       {
-         RARCH_ERR("[MIDI]: midiOutPrepareHeader failed with error %d.\n", mmr);
+         RARCH_ERR("[MIDI] midiOutPrepareHeader failed with error %d.\n", mmr);
 
          while (--i <= 0)
             midiOutUnprepareHeader((HMIDIOUT)dev, &bufs[i].header, sizeof(MIDIHDR));
@@ -306,7 +305,7 @@ static void winmm_midi_free_output_buffers(HMIDISTRM dev, winmm_midi_buffer_t *b
       MMRESULT mmr = midiOutUnprepareHeader(
             (HMIDIOUT)dev, &bufs[i].header, sizeof(MIDIHDR));
       if (mmr != MMSYSERR_NOERROR)
-         RARCH_ERR("[MIDI]: midiOutUnprepareHeader failed with error %d.\n", mmr);
+         RARCH_ERR("[MIDI] midiOutUnprepareHeader failed with error %d.\n", mmr);
    }
 }
 
@@ -372,13 +371,13 @@ static bool winmm_midi_get_avail_inputs(struct string_list *inputs)
       MMRESULT mmr = midiInGetDevCapsA((UINT)i, &caps, sizeof(caps));
       if (mmr != MMSYSERR_NOERROR)
       {
-         RARCH_ERR("[MIDI]: midiInGetDevCapsA failed with error %d.\n", mmr);
+         RARCH_ERR("[MIDI] midiInGetDevCapsA failed with error %d.\n", mmr);
          return false;
       }
 
       if (!string_list_append(inputs, caps.szPname, attr))
       {
-         RARCH_ERR("[MIDI]: string_list_append failed.\n");
+         RARCH_ERR("[MIDI] string_list_append failed.\n");
          return false;
       }
    }
@@ -398,13 +397,13 @@ static bool winmm_midi_get_avail_outputs(struct string_list *outputs)
       MMRESULT mmr = midiOutGetDevCapsA((UINT)i, &caps, sizeof(caps));
       if (mmr != MMSYSERR_NOERROR)
       {
-         RARCH_ERR("[MIDI]: midiOutGetDevCapsA failed with error %d.\n", mmr);
+         RARCH_ERR("[MIDI] midiOutGetDevCapsA failed with error %d.\n", mmr);
          return false;
       }
 
       if (!string_list_append(outputs, caps.szPname, attr))
       {
-         RARCH_ERR("[MIDI]: string_list_append failed.\n");
+         RARCH_ERR("[MIDI] string_list_append failed.\n");
          return false;
       }
    }
@@ -420,7 +419,7 @@ static void *winmm_midi_init(const char *input, const char *output)
 
    if (!d)
    {
-      RARCH_ERR("[MIDI]: Out of memory.\n");
+      RARCH_ERR("[MIDI] Out of memory.\n");
       return NULL;
    }
 
@@ -434,7 +433,7 @@ static void *winmm_midi_init(const char *input, const char *output)
          mmr = midiInStart(d->in_dev);
          if (mmr != MMSYSERR_NOERROR)
          {
-            RARCH_ERR("[MIDI]: midiInStart failed with error %d.\n", mmr);
+            RARCH_ERR("[MIDI] midiInStart failed with error %d.\n", mmr);
             err = true;
          }
       }
@@ -454,7 +453,7 @@ static void *winmm_midi_init(const char *input, const char *output)
          mmr = midiStreamRestart(d->out_dev);
          if (mmr != MMSYSERR_NOERROR)
          {
-            RARCH_ERR("[MIDI]: midiStreamRestart failed with error %d.\n", mmr);
+            RARCH_ERR("[MIDI] midiStreamRestart failed with error %d.\n", mmr);
             err = true;
          }
       }
@@ -515,7 +514,7 @@ static bool winmm_midi_set_input(void *p, const char *input)
       MMRESULT mmr = midiInStart(d->in_dev);
       if (mmr != MMSYSERR_NOERROR)
       {
-         RARCH_ERR("[MIDI]: midiInStart failed with error %d.\n", mmr);
+         RARCH_ERR("[MIDI] midiInStart failed with error %d.\n", mmr);
          return false;
       }
    }
@@ -554,7 +553,7 @@ static bool winmm_midi_set_output(void *p, const char *output)
       mmr = midiStreamRestart(d->out_dev);
       if (mmr != MMSYSERR_NOERROR)
       {
-         RARCH_ERR("[MIDI]: midiStreamRestart failed with error %d.\n", mmr);
+         RARCH_ERR("[MIDI] midiStreamRestart failed with error %d.\n", mmr);
          return false;
       }
    }
@@ -606,7 +605,7 @@ static bool winmm_midi_flush(void *p)
       if (mmr != MMSYSERR_NOERROR)
       {
 #ifdef DEBUG
-         RARCH_ERR("[MIDI]: midiStreamOut failed with error %d.\n", mmr);
+         RARCH_ERR("[MIDI] midiStreamOut failed with error %d.\n", mmr);
 #endif
          /* Core sent MIDI message not understood by the MIDI driver
           * Make this buffer available to be used again */

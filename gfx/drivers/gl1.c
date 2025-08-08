@@ -39,6 +39,25 @@
 #include "../../config.h"
 #endif
 
+#include <retro_environment.h>
+#include <retro_inline.h>
+
+#if defined(__APPLE__)
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+#else
+#if defined(_WIN32) && !defined(_XBOX)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+#ifdef VITA
+#include <vitaGL.h>
+#else
+#include <GL/gl.h>
+#include <GL/glext.h>
+#endif
+#endif
+
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
@@ -47,12 +66,12 @@
 #endif
 
 #include "../font_driver.h"
+#include "../video_driver.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
-#include "../common/gl1_defines.h"
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../common/win32_common.h"
@@ -64,7 +83,80 @@
 
 #ifdef VITA
 #include <defines/psp_defines.h>
+
+#define GL_RGBA8                    GL_RGBA
+#define GL_RGB8                     GL_RGB
+#define GL_BGRA_EXT                 GL_RGBA /* Currently unsupported in vitaGL */
+#define GL_CLAMP                    GL_CLAMP_TO_EDGE
 #endif
+
+#define RARCH_GL1_INTERNAL_FORMAT32 GL_RGBA8
+#define RARCH_GL1_TEXTURE_TYPE32    GL_BGRA_EXT
+#define RARCH_GL1_FORMAT32          GL_UNSIGNED_BYTE
+
+enum gl1_flags
+{
+   GL1_FLAG_FULLSCREEN              = (1 << 0),
+   GL1_FLAG_MENU_SIZE_CHANGED       = (1 << 1),
+   GL1_FLAG_RGB32                   = (1 << 2),
+   GL1_FLAG_SUPPORTS_BGRA           = (1 << 3),
+   GL1_FLAG_KEEP_ASPECT             = (1 << 4),
+   GL1_FLAG_SHOULD_RESIZE           = (1 << 5),
+   GL1_FLAG_MENU_TEXTURE_ENABLE     = (1 << 6),
+   GL1_FLAG_MENU_TEXTURE_FULLSCREEN = (1 << 7),
+   GL1_FLAG_SMOOTH                  = (1 << 8),
+   GL1_FLAG_MENU_SMOOTH             = (1 << 9),
+   GL1_FLAG_OVERLAY_ENABLE          = (1 << 10),
+   GL1_FLAG_OVERLAY_FULLSCREEN      = (1 << 11),
+   GL1_FLAG_FRAME_DUPE_LOCK         = (1 << 12)
+};
+
+typedef struct gl1
+{
+   struct video_viewport vp;
+   struct video_coords coords;
+   math_matrix_4x4 mvp, mvp_no_rot;
+
+   void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
+   struct string_list *extensions;
+   struct video_tex_info tex_info;
+   void *readback_buffer_screenshot;
+   GLuint *overlay_tex;
+   float *overlay_vertex_coord;
+   float *overlay_tex_coord;
+   float *overlay_color_coord;
+   const float *vertex_ptr;
+   const float *white_color_ptr;
+   unsigned char *menu_frame;
+   unsigned char *video_buf;
+   unsigned char *menu_video_buf;
+
+   int version_major;
+   int version_minor;
+   unsigned video_width;
+   unsigned video_height;
+   unsigned video_pitch;
+   unsigned screen_width;
+   unsigned screen_height;
+   unsigned menu_width;
+   unsigned menu_height;
+   unsigned menu_pitch;
+   unsigned video_bits;
+   unsigned menu_bits;
+   unsigned out_vp_width;
+   unsigned out_vp_height;
+   unsigned tex_index; /* For use with PREV. */
+   unsigned textures;
+   unsigned rotation;
+   unsigned overlays;
+
+   GLuint tex;
+   GLuint menu_tex;
+   GLuint texture[GFX_MAX_TEXTURES];
+
+   uint16_t flags;
+} gl1_t;
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
@@ -911,7 +1003,7 @@ static void gl1_overlay_vertex_geom(void *data,
 
    if (image > gl->overlays)
    {
-      RARCH_ERR("[GL]: Invalid overlay id: %u\n", image);
+      RARCH_ERR("[GL1] Invalid overlay id: %u.\n", image);
       return;
    }
 
@@ -1015,7 +1107,7 @@ static void *gl1_init(const video_info_t *video,
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
-   RARCH_LOG("[GL1]: Found GL1 context: \"%s\".\n", ctx_driver->ident);
+   RARCH_LOG("[GL1] Found GL1 context: \"%s\".\n", ctx_driver->ident);
 
    if (gl1->ctx_driver->get_video_size)
       gl1->ctx_driver->get_video_size(gl1->ctx_data,
@@ -1048,7 +1140,7 @@ static void *gl1_init(const video_info_t *video,
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
 
-   RARCH_LOG("[GL1]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GL1] Detecting screen resolution: %ux%u.\n", full_x, full_y);
    win_width       = video->width;
    win_height      = video->height;
 
@@ -1097,7 +1189,7 @@ static void *gl1_init(const video_info_t *video,
 
    video_driver_get_size(&temp_width, &temp_height);
 
-   RARCH_LOG("[GL1]: Using resolution %ux%u.\n", temp_width, temp_height);
+   RARCH_LOG("[GL1] Using resolution %ux%u.\n", temp_width, temp_height);
 
    vendor   = (const char*)glGetString(GL_VENDOR);
    renderer = (const char*)glGetString(GL_RENDERER);
@@ -1110,9 +1202,9 @@ static void *gl1_init(const video_info_t *video,
    if (!string_is_empty(extensions))
       gl1->extensions = string_split(extensions, " ");
 
-   RARCH_LOG("[GL1]: Vendor: %s, Renderer: %s.\n", vendor, renderer);
-   RARCH_LOG("[GL1]: Version: %s.\n", version);
-   RARCH_LOG("[GL1]: Extensions: %s\n", extensions);
+   RARCH_LOG("[GL1] Vendor: %s, Renderer: %s.\n", vendor, renderer);
+   RARCH_LOG("[GL1] Version: %s.\n", version);
+   RARCH_LOG("[GL1] Extensions: %s.\n", extensions);
 
    if (!string_is_empty(version))
       video_driver_set_gpu_api_version_string(version);
@@ -1211,9 +1303,6 @@ static void gl1_set_viewport(gl1_t *gl1,
       bool force_full, bool allow_rotate)
 {
    settings_t *settings     = config_get_ptr();
-   unsigned height          = gl1->video_height;
-   int x                    = 0;
-   int y                    = 0;
    float device_aspect      = (float)vp_width / vp_height;
 
    if (gl1->ctx_driver->translate_aspect)
@@ -2125,7 +2214,6 @@ static uintptr_t gl1_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      gl1_t                   *gl1 = (gl1_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl1;
 
       return video_thread_texture_handle(data, func);

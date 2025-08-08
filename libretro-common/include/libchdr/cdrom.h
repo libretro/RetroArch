@@ -14,14 +14,14 @@
 #define __CDROM_H__
 
 #include <stdint.h>
+#include <libchdr/chdconfig.h>
 
 /***************************************************************************
     CONSTANTS
 ***************************************************************************/
 
 /* tracks are padded to a multiple of this many frames */
-#define CD_TRACK_PADDING        (4)
-
+#define CD_TRACK_PADDING   	(4)
 #define CD_MAX_TRACKS           (99)    /* AFAIK the theoretical limit */
 #define CD_MAX_SECTOR_DATA      (2352)
 #define CD_MAX_SUBCODE_DATA     (96)
@@ -65,5 +65,46 @@ int ecc_verify(const uint8_t *sector);
 void ecc_generate(uint8_t *sector);
 void ecc_clear(uint8_t *sector);
 #endif
+
+
+
+/***************************************************************************
+    INLINE FUNCTIONS
+***************************************************************************/
+
+static INLINE uint32_t msf_to_lba(uint32_t msf)
+{
+	return ( ((msf&0x00ff0000)>>16) * 60 * 75) + (((msf&0x0000ff00)>>8) * 75) + ((msf&0x000000ff)>>0);
+}
+
+static INLINE uint32_t lba_to_msf(uint32_t lba)
+{
+	uint8_t m, s, f;
+
+	m = lba / (60 * 75);
+	lba -= m * (60 * 75);
+	s = lba / 75;
+	f = lba % 75;
+
+	return ((m / 10) << 20) | ((m % 10) << 16) |
+			((s / 10) << 12) | ((s % 10) <<  8) |
+			((f / 10) <<  4) | ((f % 10) <<  0);
+}
+
+/**
+ * segacd needs it like this.. investigate
+ * Angelo also says PCE tracks often start playing at the
+ * wrong address.. related?
+ **/
+static INLINE uint32_t lba_to_msf_alt(int lba)
+{
+	uint32_t ret = 0;
+
+	ret |= ((lba / (60 * 75))&0xff)<<16;
+	ret |= (((lba / 75) % 60)&0xff)<<8;
+	ret |= ((lba % 75)&0xff)<<0;
+
+	return ret;
+}
 
 #endif  /* __CDROM_H__ */

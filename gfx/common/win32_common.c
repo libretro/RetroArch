@@ -31,6 +31,7 @@
 #include <windows.h>
 #endif /* !defined(_XBOX) */
 #include <math.h>
+#include <wchar.h>
 
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
@@ -69,11 +70,9 @@
 
 /* Assume W-functions do not work below Win2K and Xbox platforms */
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
-
 #ifndef LEGACY_WIN32
 #define LEGACY_WIN32
 #endif
-
 #endif
 
 /* For some reason this is missing from mingw winuser.h */
@@ -619,7 +618,6 @@ static bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
    {
       char szFilename[1024];
       szFilename[0]    = '\0';
-
       DragQueryFile((HDROP)wparam, 0, szFilename, sizeof(szFilename));
       return win32_load_content_from_gui(szFilename);
    }
@@ -631,16 +629,17 @@ static bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
    if (DragQueryFileW((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
    {
       wchar_t wszFilename[4096];
-      bool okay        = false;
+      bool ret        = false;
       char *szFilename = NULL;
       wszFilename[0]   = L'\0';
 
       DragQueryFileW((HDROP)wparam, 0, wszFilename, sizeof(wszFilename));
       szFilename = utf16_to_utf8_string_alloc(wszFilename);
-      okay = win32_load_content_from_gui(szFilename);
+      ret        = win32_load_content_from_gui(szFilename);
       if (szFilename)
          free(szFilename);
-      return okay;
+      if (ret)
+         return true;
    }
    return false;
 }
@@ -723,7 +722,6 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             char win32_file[PATH_MAX_LENGTH] = {0};
             settings_t *settings    = config_get_ptr();
             char    *title_cp       = NULL;
-            size_t converted        = 0;
             const char *extensions  = "Libretro core (.dll)\0*.dll\0All Files\0*.*\0\0";
             const char *title       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST);
             const char *initial_dir = settings->paths.directory_libretro;
@@ -762,7 +760,6 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             char win32_file[PATH_MAX_LENGTH] = {0};
             char *title_cp          = NULL;
             wchar_t *title_wide     = NULL;
-            size_t converted        = 0;
             const char *extensions  = "All Files (*.*)\0*.*\0\0";
             const char *title       = msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
@@ -1088,10 +1085,7 @@ static LRESULT CALLBACK wnd_proc_common(
          }
          break;
       case WM_COMMAND:
-         {
-            settings_t *settings     = config_get_ptr();
-            win32_menu_loop(main_window.hwnd, wparam);
-         }
+         win32_menu_loop(main_window.hwnd, wparam);
          break;
    }
    return 0;
@@ -1190,16 +1184,18 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
          break;
-#ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
+#ifdef HAVE_CLIP_WINDOW
          if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
+#endif
          break;
       case WM_KILLFOCUS:
+#ifdef HAVE_CLIP_WINDOW
          if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
-         break;
 #endif
+         break;
       case WM_DISPLAYCHANGE:  /* Fix size after display mode switch when using SR */
          {
             HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
@@ -1463,16 +1459,34 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
          break;
-#ifdef HAVE_CLIP_WINDOW
       case WM_SETFOCUS:
+#ifdef HAVE_CLIP_WINDOW
          if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(true);
+#endif
+#if !defined(_XBOX)
+         {
+            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+#endif
          break;
       case WM_KILLFOCUS:
+#ifdef HAVE_CLIP_WINDOW
          if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
             win32_clip_window(false);
-         break;
 #endif
+#if !defined(_XBOX)
+         {
+            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+#endif
+         break;
       case WM_DISPLAYCHANGE:  /* Fix size after display mode switch when using SR */
          {
             HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
@@ -1856,7 +1870,7 @@ bool win32_window_create(void *data, unsigned style,
       main_window.hwnd, &notification_filter, DEVICE_NOTIFY_WINDOW_HANDLE);
 
    if (!notification_handler)
-      RARCH_ERR("Error registering for notifications\n");
+      RARCH_ERR("[Win32] Error registering for notifications.\n");
 #endif
 
    video_driver_display_type_set(RARCH_DISPLAY_WIN32);
@@ -2147,7 +2161,7 @@ static void win32_localize_menu(HMENU menu)
       label_enum = menu_id_to_label_enum(menu_item_info.wID);
       if (label_enum != MSG_UNKNOWN)
       {
-         int len;
+         size_t ___len;
          size_t __len;
 #ifndef LEGACY_WIN32
          wchar_t* new_label_unicode = NULL;
@@ -2205,15 +2219,15 @@ static void win32_localize_menu(HMENU menu)
 #ifndef LEGACY_WIN32
          /* Convert string from UTF-8, then assign menu text */
          new_label_unicode         = utf8_to_utf16_string_alloc(new_label2);
-         len                       = wcslen(new_label_unicode);
-         menu_item_info.cch        = len;
+         ___len                    = wcslen(new_label_unicode);
+         menu_item_info.cch        = ___len;
          menu_item_info.dwTypeData = new_label_unicode;
          SetMenuItemInfoW(menu, index, true, &menu_item_info);
          free(new_label_unicode);
 #else
          new_label_ansi            = utf8_to_local_string_alloc(new_label2);
-         len                       = strlen(new_label_ansi);
-         menu_item_info.cch        = len;
+         ___len                    = strlen(new_label_ansi);
+         menu_item_info.cch        = ___len;
          menu_item_info.dwTypeData = new_label_ansi;
          SetMenuItemInfoA(menu, index, true, &menu_item_info);
          free(new_label_ansi);
@@ -2421,7 +2435,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
          if (win32_monitor_set_fullscreen(*width, *height,
                (int)refresh_rate, false, current_mon->szDevice))
          {
-            RARCH_LOG("[Video]: Fullscreen set to %ux%u @ %uHz on device %s.\n",
+            RARCH_LOG("[Video] Fullscreen set to %ux%u @ %uHz on device %s.\n",
                   *width, *height, (int)refresh_rate, current_mon->szDevice);
          }
 
@@ -2570,7 +2584,7 @@ bool win32_set_video_mode(void *data,
    {
       if (res == -1)
       {
-         RARCH_ERR("GetMessage error code %d\n", GetLastError());
+         RARCH_ERR("[Win32] GetMessage error code %d.\n", GetLastError());
          break;
       }
 
@@ -2759,7 +2773,7 @@ bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
    return true;
 }
 
-void win32_get_video_output_size(void *data, unsigned *width, unsigned *height, char *desc, size_t desc_len)
+void win32_get_video_output_size(void *data, unsigned *width, unsigned *height, char *desc, size_t len)
 {
    DEVMODE dm;
    if (win32_get_video_output(&dm, -1, sizeof(dm)))

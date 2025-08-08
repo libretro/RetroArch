@@ -2,6 +2,6 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "self:/Users/yoshi/Code/personal/RetroArch-yoshi/pkg/apple/RetroArch_iOS13.xcodeproj">
+      location = "self:">
    </FileRef>
 </Workspace>

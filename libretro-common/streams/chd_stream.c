@@ -31,7 +31,8 @@
 #include <libchdr/chd.h>
 #include <string/stdstring.h>
 
-#define SECTOR_SIZE 2352
+#define SECTOR_RAW_SIZE 2352
+#define SECTOR_SIZE 2048
 #define SUBCODE_SIZE 96
 #define TRACK_PAD 4
 
@@ -125,6 +126,16 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
              md->subtype, &md->frames, &md->pad, &md->pregap, md->pgtype,
              md->pgsub, &md->postgap);
       md->extra = padding_frames(md->frames);
+      return true;
+   }
+
+   err = chd_get_metadata(chd, DVD_METADATA_TAG, idx, meta,
+         sizeof(meta), &meta_size, NULL, NULL);
+
+   if (err == CHDERR_NONE)
+   {
+      md->track = 1;
+      strlcpy(md->type, "DVD", sizeof(md->type));
       return true;
    }
 
@@ -243,13 +254,20 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->hunkmem         = hunkmem;
 
    if (string_is_equal(meta.type, "MODE1_RAW"))
-      stream->frame_size   = SECTOR_SIZE;
+      stream->frame_size   = SECTOR_RAW_SIZE;
    else if (string_is_equal(meta.type, "MODE2_RAW"))
+      stream->frame_size   = SECTOR_RAW_SIZE;
+   else if (string_is_equal(meta.type, "MODE1"))
       stream->frame_size   = SECTOR_SIZE;
    else if (string_is_equal(meta.type, "AUDIO"))
    {
-      stream->frame_size   = SECTOR_SIZE;
+      stream->frame_size   = SECTOR_RAW_SIZE;
       stream->swab         = true;
+   }
+   else if (string_is_equal(meta.type, "DVD"))
+   {
+      stream->frame_size   = hd->unitbytes;
+      meta.frames          = hd->totalhunks;
    }
    else
       stream->frame_size   = hd->unitbytes;
@@ -262,13 +280,12 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    stream->frames_per_hunk = hd->hunkbytes / hd->unitbytes;
    stream->track_frame     = meta.frame_offset;
    stream->track_start     = (size_t)pregap * stream->frame_size;
-   stream->track_end       = stream->track_start + 
+   stream->track_end       = stream->track_start +
                              (size_t)meta.frames * stream->frame_size;
 
    return stream;
 
 error:
-
    chdstream_close(stream);
 
    if (chd)
@@ -341,7 +358,7 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
          uint32_t chd_frame   = (uint32_t)(stream->track_frame +
             (stream->offset - stream->track_start) / stream->frame_size);
          uint32_t hunk        = chd_frame / stream->frames_per_hunk;
-         uint32_t hunk_offset = (chd_frame % stream->frames_per_hunk) 
+         uint32_t hunk_offset = (chd_frame % stream->frames_per_hunk)
             * hd->unitbytes;
 
          if (!chdstream_load_hunk(stream, hunk))
@@ -369,19 +386,15 @@ int chdstream_getc(chdstream_t *stream)
    return c;
 }
 
-char *chdstream_gets(chdstream_t *stream, char *buffer, size_t len)
+char *chdstream_gets(chdstream_t *stream, char *s, size_t len)
 {
    int c;
-
-   size_t offset = 0;
-
-   while (offset < len && (c = chdstream_getc(stream)) != EOF)
-      buffer[offset++] = c;
-
-   if (offset < len)
-      buffer[offset]   = '\0';
-
-   return buffer;
+   size_t _len = 0;
+   while (_len < len && (c = chdstream_getc(stream)) != EOF)
+      s[_len++] = c;
+   if (_len < len)
+      s[_len]   = '\0';
+   return s;
 }
 
 uint64_t chdstream_tell(chdstream_t *stream)

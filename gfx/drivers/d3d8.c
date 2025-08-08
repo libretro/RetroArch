@@ -29,6 +29,10 @@
 #include <xgraphics.h>
 #endif
 
+#include <boolean.h>
+#include <retro_common_api.h>
+#include <retro_inline.h>
+
 #include <formats/image.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
@@ -39,7 +43,6 @@
 #include <d3d8.h>
 
 #include <defines/d3d_defines.h>
-#include "../common/d3d8_defines.h"
 #include "../common/d3d_common.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -63,6 +66,7 @@
 #include "../font_driver.h"
 
 #include "../../core.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #ifdef __WINRT__
@@ -78,6 +82,50 @@
 #define D3D8_XRGB8888_FORMAT D3DFMT_X8R8G8B8
 #define D3D8_ARGB8888_FORMAT D3DFMT_A8R8G8B8
 #endif
+
+typedef struct d3d8_video
+{
+   overlay_t *menu;
+   void *renderchain_data;
+
+   struct video_viewport vp;
+   struct video_shader shader;
+   video_info_t video_info;
+#ifdef HAVE_WINDOW
+   WNDCLASSEX windowClass;
+#endif
+   LPDIRECT3DDEVICE8 dev;
+   D3DVIEWPORT8 out_vp;
+
+   char *shader_path;
+
+   struct
+   {
+      void *buffer;
+      void *decl;
+      int size;
+      int offset;
+   }menu_display;
+
+   overlay_t *overlays;
+   size_t overlays_size;
+   unsigned cur_mon_id;
+   unsigned dev_rotation;
+   math_matrix_4x4 mvp; /* float alignment */
+   math_matrix_4x4 mvp_rotate; /* float alignment */
+   math_matrix_4x4 mvp_transposed; /* float alignment */
+
+   bool keep_aspect;
+   bool should_resize;
+   bool quitting;
+   bool needs_restore;
+   bool overlays_enabled;
+   /* TODO - refactor this away properly. */
+   bool resolution_hd_enable;
+
+   /* Only used for Xbox */
+   bool widescreen_mode;
+} d3d8_video_t;
 
 typedef struct d3d8_renderchain
 {
@@ -205,7 +253,7 @@ bool d3d8_reset(void *data, void *d3dpp)
          D3D_OK)
       return true;
 #ifndef _XBOX
-   RARCH_WARN("[D3D]: Attempting to recover from dead state...\n");
+   RARCH_WARN("[D3D8] Attempting to recover from dead state...\n");
    /* Try to recreate the device completely. */
    switch (IDirect3DDevice8_TestCooperativeLevel(dev))
    {
@@ -224,7 +272,7 @@ bool d3d8_reset(void *data, void *d3dpp)
       default:
          err = "Unknown";
    }
-   RARCH_WARN("[D3D]: recovering from dead state: (%s).\n", err);
+   RARCH_WARN("[D3D8] Recovering from dead state: (%s).\n", err);
 #endif
    return false;
 }
@@ -1259,7 +1307,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
          g_pD3D8 = NULL;
 
          if ((ret = d3d8_init_base(d3d, info)))
-            RARCH_LOG("[D3D8]: Recovered from dead state.\n");
+            RARCH_LOG("[D3D8] Recovered from dead state.\n");
       }
 
 #ifdef HAVE_MENU
@@ -1327,7 +1375,7 @@ static bool d3d8_restore(void *data)
 
    if (!d3d8_initialize(d3d, &d3d->video_info))
    {
-      RARCH_ERR("[D3D8]: Restore error.\n");
+      RARCH_ERR("[D3D8] Restore error.\n");
       return false;
    }
 
@@ -1591,7 +1639,7 @@ static void *d3d8_init(const video_info_t *info,
 
    if (!d3d8_init_internal(d3d, info, input, input_data))
    {
-      RARCH_ERR("[D3D8]: Failed to init D3D.\n");
+      RARCH_ERR("[D3D8] Failed to init D3D.\n");
       free(d3d);
       return NULL;
    }
@@ -1837,7 +1885,7 @@ static bool d3d8_frame(void *data, const void *frame,
 
       if (!d3d8_restore(d3d))
       {
-         RARCH_ERR("[D3D8]: Failed to restore.\n");
+         RARCH_ERR("[D3D8] Failed to restore.\n");
          return false;
       }
    }

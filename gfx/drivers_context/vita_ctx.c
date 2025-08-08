@@ -212,7 +212,7 @@ static void *vita_init(void *video_driver)
                           &major, &minor, &n, attribs, NULL))
     {
        egl_report_error();
-       printf("[VITA]: EGL error: %d.\n", eglGetError());
+       printf("[VITA] EGL error: %d.\n", eglGetError());
        goto error;
     }
 #endif

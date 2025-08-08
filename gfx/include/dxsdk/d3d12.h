@@ -9847,10 +9847,9 @@ HRESULT WINAPI D3D12GetDebugInterface( _In_ REFIID riid, _COM_Outptr_opt_ void**
 //
 // --------------------------------------------------------------------------------------------------------------------------------
 HRESULT WINAPI D3D12EnableExperimentalFeatures(
-    UINT                                    NumFeatures,
-    __in_ecount(NumFeatures) const IID*     pIIDs,
-    __in_ecount_opt(NumFeatures) void*      pConfigurationStructs,
-    __in_ecount_opt(NumFeatures) UINT*      pConfigurationStructSizes);
+    UINT NumFeatures, const IID* pIIDs,
+    void *pConfigurationStructs,
+    UINT *pConfigurationStructSizes);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // Experimental Feature: D3D12ExperimentalShaderModels

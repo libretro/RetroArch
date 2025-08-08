@@ -622,7 +622,7 @@ static void frontend_switch_init(void *data)
    if (R_SUCCEEDED(rc))
        psmInitialized = true;
    else
-       RARCH_WARN("Error initializing psm\n");
+       RARCH_WARN("Error initializing psm.\n");
 #endif /* HAVE_LIBNX (splash) */
 }
 

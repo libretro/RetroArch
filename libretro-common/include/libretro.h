@@ -484,6 +484,7 @@ enum retro_language
    RETRO_LANGUAGE_BELARUSIAN          = 32,
    RETRO_LANGUAGE_GALICIAN            = 33,
    RETRO_LANGUAGE_NORWEGIAN           = 34,
+   RETRO_LANGUAGE_IRISH               = 35,
    RETRO_LANGUAGE_LAST,
 
    /** Defined to ensure that <tt>sizeof(retro_language) == sizeof(int)</tt>. Do not use. */

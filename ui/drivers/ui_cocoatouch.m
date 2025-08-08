@@ -62,7 +62,6 @@ id<ApplePlatform> apple_platform;
 #else
 static id apple_platform;
 #endif
-static CFRunLoopObserverRef iterate_observer;
 
 static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd) { }
@@ -128,13 +127,13 @@ static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
       UIImage *img = [UIImage imageNamed:iconName];
       if (!img)
       {
-         RARCH_LOG("could not load %s\n", icon);
+         RARCH_LOG("[Cocoa] Could not load %s.\n", icon);
          return 0;
       }
       NSData *png = UIImagePNGRepresentation(img);
       if (!png)
       {
-         RARCH_LOG("could not get png for %s\n", icon);
+         RARCH_LOG("[Cocoa] Could not get png for %s.\n", icon);
          return 0;
       }
 
@@ -146,49 +145,6 @@ static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
    }
 
    return [textures[iconName] unsignedLongValue];
-}
-
-static void rarch_draw_observer(CFRunLoopObserverRef observer,
-    CFRunLoopActivity activity, void *info)
-{
-   uint32_t runloop_flags;
-   int          ret   = runloop_iterate();
-
-   if (ret == -1)
-   {
-      ui_companion_cocoatouch_event_command(
-            NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
-      main_exit(NULL);
-      exit(0);
-      return;
-   }
-
-   task_queue_check();
-
-   runloop_flags = runloop_get_flags();
-   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
-      CFRunLoopWakeUp(CFRunLoopGetMain());
-}
-
-void rarch_start_draw_observer(void)
-{
-   if (iterate_observer && CFRunLoopObserverIsValid(iterate_observer))
-       return;
-
-   if (iterate_observer != NULL)
-      CFRelease(iterate_observer);
-   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
-                                              true, 0, rarch_draw_observer, 0);
-   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
-}
-
-void rarch_stop_draw_observer(void)
-{
-    if (!iterate_observer || !CFRunLoopObserverIsValid(iterate_observer))
-        return;
-    CFRunLoopObserverInvalidate(iterate_observer);
-    CFRelease(iterate_observer);
-    iterate_observer = NULL;
 }
 
 void get_ios_version(int *major, int *minor)
@@ -654,12 +610,12 @@ enum
 
    if ([type unsignedIntegerValue] == AVAudioSessionInterruptionTypeBegan)
    {
-      RARCH_LOG("AudioSession Interruption Began\n");
+      RARCH_DBG("[Cocoa] AudioSession Interruption Began.\n");
       audio_driver_stop();
    }
    else if ([type unsignedIntegerValue] == AVAudioSessionInterruptionTypeEnded)
    {
-      RARCH_LOG("AudioSession Interruption Ended\n");
+      RARCH_DBG("[Cocoa] AudioSession Interruption Ended.\n");
       audio_driver_start(false);
    }
 }
@@ -867,7 +823,7 @@ enum
          return NO;
       fill_pathname_expand_special(path, [ns_path UTF8String], sizeof(path));
       fill_pathname_expand_special(core_path, [ns_core_path UTF8String], sizeof(core_path));
-      RARCH_LOG("TopShelf told us to open %s with %s\n", path, core_path);
+      RARCH_LOG("[Cocoa] TopShelf told us to open \"%s\" with \"%s\".\n", path, core_path);
       return task_push_load_content_with_new_core_from_companion_ui(core_path, path,
                                                                     NULL, NULL, NULL,
                                                                     &content_info, NULL, NULL);
@@ -937,7 +893,7 @@ enum
     for (MXMetricPayload *payload in payloads)
     {
         NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
-        RARCH_LOG("Got Metric Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
+        RARCH_LOG("[Cocoa] Got Metric Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
     }
 }
 
@@ -946,7 +902,7 @@ enum
     for (MXDiagnosticPayload *payload in payloads)
     {
         NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
-        RARCH_LOG("Got Diagnostic Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
+        RARCH_LOG("[Cocoa] Got Diagnostic Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
     }
 }
 
@@ -1003,9 +959,9 @@ int main(int argc, char *argv[])
 {
 #if TARGET_OS_IOS
     if (jb_enable_ptrace_hack())
-        RARCH_LOG("Ptrace hack complete, JIT support is enabled.\n");
+        RARCH_LOG("[Cocoa] Ptrace hack complete, JIT support is enabled.\n");
     else
-        RARCH_WARN("Ptrace hack NOT available; Please use an app like Jitterbug.\n");
+        RARCH_WARN("[Cocoa] Ptrace hack NOT available; Please use an app like Jitterbug.\n");
 #endif
 #ifdef HAVE_SDL2
     SDL_SetMainReady();

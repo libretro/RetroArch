@@ -252,10 +252,10 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       /* couldnt launch new core, but context
          is corrupt so we have to quit */
       {
-         char error[PATH_MAX + 32];
-         size_t _len = strlcpy(error, "Can't launch core: ", sizeof(error));
-         strlcpy(error + _len, path, sizeof(error) - _len);
-         error_and_quit(error);
+         char err[PATH_MAX + 32];
+         size_t _len = strlcpy(err, "Can't launch core: ", sizeof(err));
+         strlcpy(err + _len, path, sizeof(err) - _len);
+         error_and_quit(err);
       }
    }
 }

@@ -147,18 +147,18 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
    unsigned real_latency;
    int32_t thread_priority;
 
-   RARCH_LOG("[Audio]: Using libnx_audren_thread driver\n");
+   RARCH_LOG("[Audren] Using libnx_audren_thread driver.\n");
 
    aud = (libnx_audren_thread_t*)calloc(1, sizeof(libnx_audren_thread_t));
 
    if (!aud)
    {
-      RARCH_ERR("[Audio]: struct alloc failed\n");
+      RARCH_ERR("[Audren] struct alloc failed.\n");
       goto fail;
    }
 
    real_latency     = MAX(latency, 5);
-   RARCH_LOG("[Audio]: real_latency is %u\n", real_latency);
+   RARCH_LOG("[Audren] real_latency is %u.\n", real_latency);
 
    aud->running     = true;
    aud->paused      = false;
@@ -172,21 +172,21 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
 
    if (!aud->mempool)
    {
-      RARCH_ERR("[Audio]: mempool alloc failed\n");
+      RARCH_ERR("[Audren] mempool alloc failed.\n");
       goto fail;
    }
 
    rc = audrenInitialize(&audio_renderer_config);
    if (R_FAILED(rc))
    {
-      RARCH_ERR("[Audio]: audrenInitialize: %x\n", rc);
+      RARCH_ERR("[Audren] audrenInitialize: %x.\n", rc);
       goto fail;
    }
 
    rc = audrvCreate(&aud->drv, &audio_renderer_config, num_channels);
    if (R_FAILED(rc))
    {
-      RARCH_ERR("[Audio]: audrvCreate: %x\n", rc);
+      RARCH_ERR("[Audren] audrvCreate: %x.\n", rc);
       goto fail_init;
    }
 
@@ -207,7 +207,7 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
    rc = audrenStartAudioRenderer();
    if (R_FAILED(rc))
    {
-      RARCH_ERR("[Audio]: audrenStartAudioRenderer: %x\n", rc);
+      RARCH_ERR("[Audren] audrenStartAudioRenderer: %x.\n", rc);
    }
 
    audrvVoiceInit(&aud->drv, 0, num_channels, PcmFormat_Int16, sample_rate);
@@ -223,7 +223,7 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
    aud->fifo = fifo_new(aud->buffer_size);
    if (!aud->fifo)
    {
-      RARCH_ERR("[Audio]: fifo alloc failed\n");
+      RARCH_ERR("[Audren] fifo alloc failed.\n");
       goto fail_drv;
    }
 
@@ -237,14 +237,14 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
          thread_priority - 1, thread_preferred_cpu);
    if (R_FAILED(rc))
    {
-      RARCH_ERR("[Audio]: threadCreate: %x\n", rc);
+      RARCH_ERR("[Audren] threadCreate: %x.\n", rc);
       goto fail_drv;
    }
 
    rc = threadStart(&aud->thread);
    if (R_FAILED(rc))
    {
-      RARCH_ERR("[Audio]: threadStart: %x\n", rc);
+      RARCH_ERR("[Audren] threadStart: %x.\n", rc);
       threadClose(&aud->thread);
       goto fail_drv;
    }
@@ -284,8 +284,8 @@ static size_t libnx_audren_thread_audio_buffer_size(void *data)
 static ssize_t libnx_audren_thread_audio_write(void *data,
       const void *s, size_t len)
 {
+   size_t available, _len;
    libnx_audren_thread_t *aud = (libnx_audren_thread_t*)data;
-   size_t available, written, written_tmp;
 
    if (!aud || !aud->running)
       return -1;
@@ -297,24 +297,24 @@ static ssize_t libnx_audren_thread_audio_write(void *data,
    {
       mutexLock(&aud->fifo_lock);
       available = FIFO_WRITE_AVAIL(aud->fifo);
-      written = MIN(available, len);
-      if (written > 0)
-         fifo_write(aud->fifo, s, written);
+      _len      = MIN(available, len);
+      if (_len > 0)
+         fifo_write(aud->fifo, s, _len);
       mutexUnlock(&aud->fifo_lock);
    }
    else
    {
-      written = 0;
-      while (written < len && aud->running)
+      _len = 0;
+      while (_len < len && aud->running)
       {
          mutexLock(&aud->fifo_lock);
          available = FIFO_WRITE_AVAIL(aud->fifo);
          if (available)
          {
-            written_tmp = MIN(len - written, available);
-            fifo_write(aud->fifo, (const char*)s + written, written_tmp);
+            size_t written_tmp = MIN(len - _len, available);
+            fifo_write(aud->fifo, (const char*)s + _len, written_tmp);
             mutexUnlock(&aud->fifo_lock);
-            written += written_tmp;
+            _len += written_tmp;
          }
          else
          {
@@ -326,7 +326,7 @@ static ssize_t libnx_audren_thread_audio_write(void *data,
       }
    }
 
-   return written;
+   return _len;
 }
 
 static bool libnx_audren_thread_audio_stop(void *data)

@@ -33,12 +33,11 @@
 #define DEFAULT_DEV "/dev/audio"
 
 static void *audioio_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
-      unsigned *new_out_rate)
+      unsigned block_frames, unsigned *new_out_rate)
 {
    struct audio_info info;
-   const char *audiodev = device ? device : DEFAULT_DEV;
-   int              *fd = (int*)calloc(1, sizeof(int));
+   const char *audiodev  = device ? device : DEFAULT_DEV;
+   int              *fd  = (int*)calloc(1, sizeof(int));
 
    if (!fd)
       return NULL;
@@ -46,17 +45,17 @@ static void *audioio_init(const char *device, unsigned rate, unsigned latency,
    AUDIO_INITINFO(&info);
 
 #ifdef AUMODE_PLAY_ALL
-   info.mode = AUMODE_PLAY_ALL;
+   info.mode             = AUMODE_PLAY_ALL;
 #elif defined(AUMODE_PLAY)
-   info.mode = AUMODE_PLAY;
+   info.mode             = AUMODE_PLAY;
 #endif
    info.play.sample_rate = rate;
-   info.play.channels = 2;
-   info.play.precision = 16;
+   info.play.channels    = 2;
+   info.play.precision   = 16;
 #ifdef AUDIO_ENCODING_SLINEAR
-   info.play.encoding = AUDIO_ENCODING_SLINEAR;
+   info.play.encoding    = AUDIO_ENCODING_SLINEAR;
 #else
-   info.play.encoding = AUDIO_ENCODING_LINEAR;
+   info.play.encoding    = AUDIO_ENCODING_LINEAR;
 #endif
 
    if ((*fd = open(audiodev, O_WRONLY)) < 0)
@@ -84,13 +83,13 @@ error:
 
 static ssize_t audioio_write(void *data, const void *s, size_t len)
 {
-   ssize_t written;
+   ssize_t _len;
    int *fd = (int*)data;
 
    if (len == 0)
       return 0;
 
-   if ((written = write(*fd, s, len)) < 0)
+   if ((_len = write(*fd, s, len)) < 0)
    {
       if (errno == EAGAIN && (fcntl(*fd, F_GETFL) & O_NONBLOCK))
          return 0;
@@ -98,7 +97,7 @@ static ssize_t audioio_write(void *data, const void *s, size_t len)
       return -1;
    }
 
-   return written;
+   return _len;
 }
 
 static bool audioio_stop(void *data)
@@ -158,7 +157,7 @@ static void audioio_set_nonblock_state(void *data, bool state)
    else
       rc = fcntl(*fd, F_SETFL, fcntl(*fd, F_GETFL) & (~O_NONBLOCK));
    if (rc != 0)
-      RARCH_WARN("Could not set nonblocking on audio file descriptor. Will not be able to fast-forward.\n");
+      RARCH_WARN("[AudioIO] Could not set nonblocking on audio file descriptor. Will not be able to fast-forward.\n");
 }
 
 static void audioio_free(void *data)
@@ -189,11 +188,8 @@ static size_t audioio_write_avail(void *data)
    return audioio_buffer_size(data);
 }
 
-static bool audioio_use_float(void *data)
-{
-   (void)data;
-   return false;
-}
+/* TODO/FIXME - implement? */
+static bool audioio_use_float(void *data) { return false; }
 
 audio_driver_t audio_audioio = {
    audioio_init,

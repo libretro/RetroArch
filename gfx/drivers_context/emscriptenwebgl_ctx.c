@@ -13,7 +13,7 @@
  *
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
- */ 
+ */
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -74,8 +74,9 @@ static bool gfx_ctx_emscripten_webgl_get_metrics(void *data,
 {
    switch (type)
    {
-      // there is no way to get the actual DPI in emscripten, so return a standard value instead.
-      // this is needed for menu touch/pointer swipe scrolling to work.
+      /* There is no way to get the actual DPI in emscripten, so
+       * return a standard value instead. This is needed for
+       * menu touch/pointer swipe scrolling to work. */
       case DISPLAY_METRIC_DPI:
          *value = 150.0f;
          break;
@@ -130,14 +131,14 @@ static void *gfx_ctx_emscripten_webgl_init(void *video_driver)
    emscripten->ctx = emscripten_webgl_create_context("#canvas", &attrs);
    if (!emscripten->ctx)
    {
-      RARCH_ERR("[EMSCRIPTEN/WebGL]: Failed to initialize webgl\n");
+      RARCH_ERR("[EMSCRIPTEN/WebGL] Failed to initialize webgl.\n");
       goto error;
    }
    emscripten_webgl_get_drawing_buffer_size(emscripten->ctx, &width, &height);
    emscripten_webgl_make_context_current(emscripten->ctx);
    emscripten->fb_width = (unsigned)width;
    emscripten->fb_height = (unsigned)height;
-   RARCH_LOG("[EMSCRIPTEN/WebGL]: Dimensions: %ux%u\n", emscripten->fb_width, emscripten->fb_height);
+   RARCH_LOG("[EMSCRIPTEN/WebGL] Dimensions: %ux%u.\n", emscripten->fb_width, emscripten->fb_height);
 
    return emscripten;
 

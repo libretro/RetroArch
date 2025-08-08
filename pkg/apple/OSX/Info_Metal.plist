@@ -66,6 +66,8 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2024 RetroArch. All rights reserved.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Local Netplay requires local network</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Some cores can use location.</string>
 	<key>NSMainNibFile</key>

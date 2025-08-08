@@ -109,7 +109,7 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
 
             if (!meta->name.empty())
             {
-               RARCH_ERR("[slang]: Trying to declare multiple names for file.\n");
+               RARCH_ERR("[Slang] Trying to declare multiple names for file.\n");
                return false;
             }
 
@@ -166,7 +166,7 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
                         || (parameter->step    != step)
                      )
                   {
-                     RARCH_ERR("[slang]: Duplicate parameters found for \"%s\", but arguments do not match.\n", id);
+                     RARCH_ERR("[Slang] Duplicate parameters found for \"%s\", but arguments do not match.\n", id);
                      return false;
                   }
                }
@@ -175,7 +175,7 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
             }
             else
             {
-               RARCH_ERR("[slang]: Invalid #pragma parameter line: \"%s\".\n",
+               RARCH_ERR("[Slang] Invalid #pragma parameter line: \"%s\".\n",
                      line);
                return false;
             }
@@ -188,7 +188,7 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
 
             if (meta->rt_format != SLANG_FORMAT_UNKNOWN)
             {
-               RARCH_ERR("[slang]: Trying to declare format multiple times for file.\n");
+               RARCH_ERR("[Slang] Trying to declare format multiple times for file.\n");
                return false;
             }
 
@@ -200,7 +200,7 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
 
             if (meta->rt_format == SLANG_FORMAT_UNKNOWN)
             {
-               RARCH_ERR("[slang]: Failed to find format \"%s\".\n", str);
+               RARCH_ERR("[Slang] Failed to find format \"%s\".\n", str);
                return false;
             }
          }
@@ -218,7 +218,7 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
    if (!string_list_initialize(&lines))
       return false;
 
-   RARCH_LOG("[slang]: Compiling shader: \"%s\".\n", shader_path);
+   RARCH_LOG("[Slang] Compiling shader: \"%s\".\n", shader_path);
 
    if (!glslang_read_shader_file(shader_path, &lines, true, false))
       goto error;
@@ -229,14 +229,14 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
    if (!glslang::compile_spirv(build_stage_source(&lines, "vertex"),
             glslang::StageVertex, &output->vertex))
    {
-      RARCH_ERR("[slang]: Failed to compile vertex shader stage.\n");
+      RARCH_ERR("[Slang] Failed to compile vertex shader stage.\n");
       goto error;
    }
 
    if (!glslang::compile_spirv(build_stage_source(&lines, "fragment"),
             glslang::StageFragment, &output->fragment))
    {
-      RARCH_ERR("[slang]: Failed to compile fragment shader stage.\n");
+      RARCH_ERR("[Slang] Failed to compile fragment shader stage.\n");
       goto error;
    }
 

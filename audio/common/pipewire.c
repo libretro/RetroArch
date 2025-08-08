@@ -27,7 +27,7 @@ static void core_error_cb(void *data, uint32_t id, int seq, int res, const char 
 {
    pipewire_core_t *pw = (pipewire_core_t*)data;
 
-   RARCH_ERR("[PipeWire]: error id:%u seq:%d res:%d (%s): %s\n",
+   RARCH_ERR("[PipeWire] Error id:%u seq:%d res:%d (%s): %s.\n",
              id, seq, res, spa_strerror(res), message);
 
    pw_thread_loop_stop(pw->thread_loop);
@@ -50,65 +50,6 @@ static const struct pw_core_events core_events = {
       .done = core_done_cb,
       .error = core_error_cb,
 };
-
-size_t pipewire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
-{
-   uint32_t sample_size = 1;
-   switch (fmt)
-   {
-      case SPA_AUDIO_FORMAT_S8:
-      case SPA_AUDIO_FORMAT_U8:
-         sample_size = 1;
-         break;
-      case SPA_AUDIO_FORMAT_S16_BE:
-      case SPA_AUDIO_FORMAT_S16_LE:
-      case SPA_AUDIO_FORMAT_U16_BE:
-      case SPA_AUDIO_FORMAT_U16_LE:
-         sample_size = 2;
-         break;
-      case SPA_AUDIO_FORMAT_S32_BE:
-      case SPA_AUDIO_FORMAT_S32_LE:
-      case SPA_AUDIO_FORMAT_U32_BE:
-      case SPA_AUDIO_FORMAT_U32_LE:
-      case SPA_AUDIO_FORMAT_F32_BE:
-      case SPA_AUDIO_FORMAT_F32_LE:
-         sample_size = 4;
-         break;
-      default:
-         RARCH_ERR("[PipeWire]: Bad spa_audio_format %d\n", fmt);
-         break;
-   }
-   return sample_size * nchannels;
-}
-
-void pipewire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
-{
-   memcpy(position, (uint32_t[SPA_AUDIO_MAX_CHANNELS]) { SPA_AUDIO_CHANNEL_UNKNOWN, },
-         sizeof(uint32_t) * SPA_AUDIO_MAX_CHANNELS);
-
-   switch (channels)
-   {
-      case 8:
-         position[6] = SPA_AUDIO_CHANNEL_SL;
-         position[7] = SPA_AUDIO_CHANNEL_SR;
-         /* fallthrough */
-      case 6:
-         position[2] = SPA_AUDIO_CHANNEL_FC;
-         position[3] = SPA_AUDIO_CHANNEL_LFE;
-         position[4] = SPA_AUDIO_CHANNEL_RL;
-         position[5] = SPA_AUDIO_CHANNEL_RR;
-         /* fallthrough */
-      case 2:
-         position[0] = SPA_AUDIO_CHANNEL_FL;
-         position[1] = SPA_AUDIO_CHANNEL_FR;
-         break;
-      case 1:
-         position[0] = SPA_AUDIO_CHANNEL_MONO;
-         break;
-      default:
-         RARCH_ERR("[PipeWire]: Internal error: unsupported channel count %d\n", channels);
-   }
-}
 
 void pipewire_core_wait_resync(pipewire_core_t *pw)
 {

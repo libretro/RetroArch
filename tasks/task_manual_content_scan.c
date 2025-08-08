@@ -312,8 +312,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP),
                      sizeof(task_title));
 
-               if (!string_is_empty(entry->path) &&
-                   (entry_file = path_basename(entry->path)))
+               if (   !string_is_empty(entry->path)
+                   && (entry_file = path_basename(entry->path)))
                   strlcpy(task_title       + _len,
                         entry_file,
                         sizeof(task_title) - _len);
@@ -328,9 +328,9 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   delete_entry = true;
                /* If file exists, check whether it has a
                 * permitted file extension */
-               else if (manual_scan->file_exts_list &&
-                        (entry_file_ext = path_get_extension(entry->path)) &&
-                        !string_list_find_elem_prefix(
+               else if (    manual_scan->file_exts_list
+                        && (entry_file_ext = path_get_extension(entry->path))
+                        && !string_list_find_elem_prefix(
                               manual_scan->file_exts_list,
                               ".", entry_file_ext))
                   delete_entry = true;

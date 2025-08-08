@@ -160,18 +160,18 @@ bool content_undo_load_state(void)
    size_t temp_data_size;
    bool ret                  = false;
    unsigned num_blocks       = 0;
-   void* temp_data           = NULL;
+   void *temp_data           = NULL;
    struct sram_block *blocks = NULL;
    struct string_list *savefile_list = (struct string_list*)savefile_ptr_get();
 
    if (!core_info_current_supports_savestate())
    {
-      RARCH_LOG("[State]: %s\n",
+      RARCH_LOG("[State] %s\n",
             msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
       return false;
    }
 
-   RARCH_LOG("[State]: %s \"%s\", %u %s.\n",
+   RARCH_LOG("[State] %s \"%s\", %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),
          undo_load_buf.path,
          (unsigned)undo_load_buf.size,
@@ -185,7 +185,7 @@ bool content_undo_load_state(void)
          && savefile_list->size
          && config_get_ptr()->bools.block_sram_overwrite)
    {
-      RARCH_LOG("[SRAM]: %s.\n",
+      RARCH_LOG("[SRAM] %s.\n",
             msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
 
       if ((blocks = (struct sram_block*)
@@ -269,7 +269,7 @@ bool content_undo_load_state(void)
 
    if (!ret)
    {
-      RARCH_ERR("[State]: %s \"%s\".\n",
+      RARCH_ERR("[State] %s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
          undo_load_buf.path);
       return false;
@@ -461,7 +461,7 @@ bool content_serialize_state_rewind(void* buffer, size_t buffer_size)
       if (_len != last_reported_len)
       {
          last_reported_len = _len;
-         RARCH_WARN("Rewind state size exceeds frame size (%zu > %zu).\n", _len, buffer_size);
+         RARCH_WARN("[Rewind] State size exceeds frame size (%zu > %zu).\n", _len, buffer_size);
       }
 #endif
       return false;
@@ -550,7 +550,7 @@ static void task_save_handler(retro_task_t *task)
       {
          const char *failed_undo_str = msg_hash_to_str(
                MSG_FAILED_TO_UNDO_SAVE_STATE);
-         RARCH_ERR("[State]: %s \"%s\".\n", failed_undo_str,
+         RARCH_ERR("[State] %s \"%s\".\n", failed_undo_str,
                undo_save_buf.path);
          snprintf(msg, sizeof(msg), "%s \"RAM\".", failed_undo_str);
       }
@@ -566,10 +566,8 @@ static void task_save_handler(retro_task_t *task)
 
       task_set_error(task, strdup(msg));
       task_save_handler_finished(task, state);
-      return;
    }
-
-   if (state->written == state->size)
+   else if (state->written == state->size)
    {
       char       *msg      = NULL;
 
@@ -611,47 +609,45 @@ static void task_save_handler(retro_task_t *task)
  **/
 static bool task_push_undo_save_state(const char *path, void *data, size_t len)
 {
-   settings_t     *settings;
    retro_task_t       *task      = task_init();
-   video_driver_state_t *video_st= video_state_get_ptr();
    save_task_state_t *state      = (save_task_state_t*)
       calloc(1, sizeof(*state));
 
-   if (!task || !state)
-      goto error;
+   if (task && state)
+   {
+      settings_t *settings  = config_get_ptr();
+      video_driver_state_t *video_st = video_state_get_ptr();
 
-   settings                      = config_get_ptr();
-
-   strlcpy(state->path, path, sizeof(state->path));
-   state->data                   = data;
-   state->size                   = len;
-   state->flags                 |= SAVE_TASK_FLAG_UNDO_SAVE;
-   state->state_slot             = settings->ints.state_slot;
-   if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
-      state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
+      strlcpy(state->path, path, sizeof(state->path));
+      state->data           = data;
+      state->size           = len;
+      state->flags         |= SAVE_TASK_FLAG_UNDO_SAVE;
+      state->state_slot     = settings->ints.state_slot;
+      if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
+         state->flags      |= SAVE_TASK_FLAG_HAS_VALID_FB;
 #if defined(HAVE_ZLIB)
-   if (settings->bools.savestate_file_compression)
-      state->flags              |= SAVE_TASK_FLAG_COMPRESS_FILES;
+      if (settings->bools.savestate_file_compression)
+         state->flags      |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
-   if (!settings->bools.notification_show_save_state)
-      state->flags              |= SAVE_TASK_FLAG_MUTE;
+      if (!settings->bools.notification_show_save_state)
+         state->flags      |= SAVE_TASK_FLAG_MUTE;
 
-   task->type                    = TASK_TYPE_BLOCKING;
-   task->state                   = state;
-   task->handler                 = task_save_handler;
-   task->callback                = undo_save_state_cb;
-   task->title                   = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
+      task->type            = TASK_TYPE_BLOCKING;
+      task->state           = state;
+      task->handler         = task_save_handler;
+      task->callback        = undo_save_state_cb;
+      task->title           = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
 
-   if (state->flags & SAVE_TASK_FLAG_MUTE)
-      task->flags               |=  RETRO_TASK_FLG_MUTE;
-   else
-      task->flags               &= ~RETRO_TASK_FLG_MUTE;
+      if (state->flags & SAVE_TASK_FLAG_MUTE)
+         task->flags       |=  RETRO_TASK_FLG_MUTE;
+      else
+         task->flags       &= ~RETRO_TASK_FLG_MUTE;
 
-   task_queue_push(task);
+      task_queue_push(task);
 
-   return true;
+      return true;
+   }
 
-error:
    if (data)
       free(data);
    if (state)
@@ -675,7 +671,7 @@ bool content_undo_save_state(void)
             undo_save_buf.path,
             undo_save_buf.data,
             undo_save_buf.size);
-   RARCH_LOG("[State]: %s\n",
+   RARCH_LOG("[State] %s\n",
          msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
    return false;
 }
@@ -812,7 +808,7 @@ static void task_load_handler(retro_task_t *task)
          task_set_title(task, strdup(msg));
       }
 
-      goto end;
+      task_load_handler_finished(task, state);
    }
 
    return;
@@ -913,7 +909,7 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
 
    if (!seen_core)
    {
-      RARCH_LOG("[State] no core\n");
+      RARCH_LOG("[State] No core.\n");
       return false;
    }
 
@@ -1001,7 +997,7 @@ static void content_load_state_cb(retro_task_t *task,
       goto error;
 #endif
 
-   RARCH_LOG("[State]: %s \"%s\", %u %s.\n",
+   RARCH_LOG("[State] %s \"%s\", %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),
          load_data->path,
          (unsigned)_len,
@@ -1039,7 +1035,7 @@ static void content_load_state_cb(retro_task_t *task,
          && config_get_ptr()->bools.block_sram_overwrite
       )
    {
-      RARCH_LOG("[SRAM]: %s.\n",
+      RARCH_LOG("[SRAM] %s.\n",
             msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
 
       if ((blocks = (struct sram_block*)
@@ -1117,7 +1113,7 @@ static void content_load_state_cb(retro_task_t *task,
    return;
 
 error:
-   RARCH_ERR("[State]: %s \"%s\".\n",
+   RARCH_ERR("[State] %s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
          load_data->path);
    if (buf)
@@ -1341,7 +1337,7 @@ bool content_auto_save_state(const char *path)
 
    if (!core_info_current_supports_savestate())
    {
-      RARCH_LOG("[State]: %s\n",
+      RARCH_LOG("[State] %s\n",
             msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
       return false;
    }
@@ -1410,7 +1406,7 @@ bool content_save_state(const char *path, bool save_to_disk)
 
    if (!core_info_current_supports_savestate())
    {
-      RARCH_LOG("[State]: %s\n",
+      RARCH_LOG("[State] %s\n",
             msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
       return false;
    }
@@ -1423,13 +1419,13 @@ bool content_save_state(const char *path, bool save_to_disk)
    {
       if (!(data = content_get_serialized_data(&_len)))
       {
-         RARCH_ERR("[State]: %s \"%s\".\n",
+         RARCH_ERR("[State] %s \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
                path);
          return false;
       }
 
-      RARCH_LOG("[State]: %s \"%s\", %u %s.\n",
+      RARCH_LOG("[State] %s \"%s\", %u %s.\n",
             msg_hash_to_str(MSG_SAVING_STATE),
             path,
             (unsigned)_len,
@@ -1443,7 +1439,7 @@ bool content_save_state(const char *path, bool save_to_disk)
          /* Before overwriting the savestate file, load it into a buffer
          to allow undo_save_state() to work */
          /* TODO/FIXME - Use msg_hash_to_str here */
-         RARCH_LOG("[State]: %s ...\n",
+         RARCH_LOG("[State] %s...\n",
                msg_hash_to_str(MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER));
          task_push_load_and_save_state(path, data, _len, true, false);
       }
@@ -1456,7 +1452,7 @@ bool content_save_state(const char *path, bool save_to_disk)
       {
          if (!(data = content_get_serialized_data(&_len)))
          {
-            RARCH_ERR("[State]: %s \"%s\".\n",
+            RARCH_ERR("[State] %s \"%s\".\n",
                   msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
                   path);
             return false;
@@ -1560,7 +1556,7 @@ bool content_load_state(const char *path,
 
    if (!core_info_current_supports_savestate())
    {
-      RARCH_LOG("[State]: %s\n",
+      RARCH_LOG("[State] %s\n",
             msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
       goto error;
    }
@@ -1618,7 +1614,7 @@ bool content_rename_state(const char *origin, const char *dest)
    if (!filestream_rename(origin, dest))
       return true;
 
-   RARCH_ERR("[State]: Error renaming file \"%s\".\n", origin);
+   RARCH_ERR("[State] Error renaming file \"%s\".\n", origin);
    return false;
 }
 
@@ -1683,7 +1679,7 @@ bool content_load_state_from_ram(void)
 
    if (!core_info_current_supports_savestate())
    {
-      RARCH_LOG("[State]: %s\n",
+      RARCH_LOG("[State] %s\n",
             msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
       return false;
    }
@@ -1691,7 +1687,7 @@ bool content_load_state_from_ram(void)
    if (!ram_buf.state_buf.data)
       return false;
 
-   RARCH_LOG("[State]: %s, %u %s.\n",
+   RARCH_LOG("[State] %s, %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),
          (unsigned)ram_buf.state_buf.size,
          msg_hash_to_str(MSG_BYTES));
@@ -1713,7 +1709,7 @@ bool content_load_state_from_ram(void)
 
    if (!ret)
    {
-      RARCH_ERR("[State]: %s.\n",
+      RARCH_ERR("[State] %s.\n",
          msg_hash_to_str(MSG_FAILED_TO_LOAD_SRAM));
       return false;
    }
@@ -1734,7 +1730,7 @@ bool content_save_state_to_ram(void)
 
    if (!core_info_current_supports_savestate())
    {
-      RARCH_LOG("[State]: %s\n",
+      RARCH_LOG("[State] %s\n",
             msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
       return false;
    }
@@ -1748,12 +1744,12 @@ bool content_save_state_to_ram(void)
    {
       if (!(data = content_get_serialized_data(&_len)))
       {
-         RARCH_ERR("[State]: %s.\n",
+         RARCH_ERR("[State] %s.\n",
                msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
          return false;
       }
 
-      RARCH_LOG("[State]: %s, %u %s.\n",
+      RARCH_LOG("[State] %s, %u %s.\n",
             msg_hash_to_str(MSG_SAVING_STATE),
             (unsigned)_len,
             msg_hash_to_str(MSG_BYTES));
@@ -1763,7 +1759,7 @@ bool content_save_state_to_ram(void)
    {
       if (!(data = content_get_serialized_data(&_len)))
       {
-         RARCH_ERR("[State]: %s.\n",
+         RARCH_ERR("[State] %s.\n",
                msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
          return false;
       }

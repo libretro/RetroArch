@@ -274,11 +274,10 @@ $(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
 	vita-pack-vpk -s param.sfo -b $< $@
 
 clean:
-ifneq ($(V),1)
-	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk 
-	rm -rf  deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
-	rm -f $(OBJ:.o=.depend)
-endif
+	@$(if $(Q), echo $@,)
+	$(Q)rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk 
+	$(Q)rm -rf  deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
+	$(Q)rm -f $(OBJ:.o=.depend)
 
 # Useful for developers
 vpksend: $(TARGET).vpk

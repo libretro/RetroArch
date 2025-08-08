@@ -26,8 +26,8 @@
 typedef struct _zlib_allocator zlib_allocator;
 struct _zlib_allocator
 {
-	UINT32 *				allocptr[MAX_ZLIB_ALLOCS];
-	UINT32 *				allocptr2[MAX_ZLIB_ALLOCS];
+	uint32_t *				allocptr[MAX_ZLIB_ALLOCS];
+	uint32_t *				allocptr2[MAX_ZLIB_ALLOCS];
 };
 
 typedef struct _zlib_codec_data zlib_codec_data;
@@ -47,6 +47,11 @@ struct _cdzl_codec_data {
 #endif
 	uint8_t*			buffer;
 };
+
+extern chd_error zlib_codec_init(void *codec, uint32_t hunkbytes);
+extern void zlib_codec_free(void *codec);
+extern chd_error zlib_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen);
+extern void zlib_allocator_free(voidpf opaque);
 
 /* zlib compression codec */
 chd_error zlib_codec_init(void *codec, uint32_t hunkbytes);

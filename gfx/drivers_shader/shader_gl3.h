@@ -147,7 +147,7 @@ void gl3_filter_chain_set_current_shader_subframe(
 void gl3_filter_chain_set_simulate_scanline(
       gl3_filter_chain_t *chain,
       bool simulate_scanline);
-#endif // GL3_ROLLING_SCANLINE_SIMULATION
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
 void gl3_filter_chain_set_pass_name(
       gl3_filter_chain_t *chain,

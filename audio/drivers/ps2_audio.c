@@ -33,9 +33,16 @@ typedef struct ps2_audio
    bool running;
 } ps2_audio_t;
 
-static void audioConfigure(ps2_audio_t *ps2, unsigned rate)
+static void *ps2_audio_init(const char *device,
+      unsigned rate, unsigned latency,
+      unsigned block_frames,
+      unsigned *new_rate)
 {
    struct audsrv_fmt_t format;
+   ps2_audio_t *ps2 = (ps2_audio_t*)calloc(1, sizeof(ps2_audio_t));
+
+   if (!ps2)
+      return NULL;
 
    format.bits     = AUDIO_BITS;
    format.freq     = rate;
@@ -43,19 +50,6 @@ static void audioConfigure(ps2_audio_t *ps2, unsigned rate)
 
    audsrv_set_format(&format);
    audsrv_set_volume(MAX_VOLUME);
-}
-
-static void *ps2_audio_init(const char *device,
-      unsigned rate, unsigned latency,
-      unsigned block_frames,
-      unsigned *new_rate)
-{
-   ps2_audio_t *ps2 = (ps2_audio_t*)calloc(1, sizeof(ps2_audio_t));
-
-   if (!ps2)
-      return NULL;
-
-   audioConfigure(ps2, rate);
 
    return ps2;
 }
@@ -81,38 +75,29 @@ static ssize_t ps2_audio_write(void *data, const void *s, size_t len)
 
 static bool ps2_audio_alive(void *data)
 {
-   bool       alive = false;
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
-
    if (ps2)
-      alive = ps2->running;
-
-   return alive;
+      return ps2->running;
+   return false;
 }
 
 static bool ps2_audio_stop(void *data)
 {
-   bool        stop = true;
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
-
    if (ps2)
    {
       audsrv_stop_audio();
       ps2->running = false;
    }
-
-   return stop;
+   return true;
 }
 
 static bool ps2_audio_start(void *data, bool is_shutdown)
 {
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
-   bool       start = true;
-
    if (ps2)
       ps2->running = true;
-
-   return start;
+   return true;
 }
 
 static void ps2_audio_set_nonblock_state(void *data, bool toggle)
@@ -121,11 +106,6 @@ static void ps2_audio_set_nonblock_state(void *data, bool toggle)
 
    if (ps2)
       ps2->nonblock = toggle;
-}
-
-static bool ps2_audio_use_float(void *data)
-{
-   return false;
 }
 
 static size_t ps2_audio_write_avail(void *data)
@@ -138,10 +118,8 @@ static size_t ps2_audio_write_avail(void *data)
    return 0;
 }
 
-static size_t ps2_audio_buffer_size(void *data)
-{
-   return AUDIO_BUFFER;
-}
+static bool ps2_audio_use_float(void *data) { return false; }
+static size_t ps2_audio_buffer_size(void *data) { return AUDIO_BUFFER; }
 
 audio_driver_t audio_ps2 = {
    ps2_audio_init,

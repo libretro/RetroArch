@@ -106,9 +106,31 @@
 #define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 #define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
+/*
+  INVALID: should never arise.
+  REGULAR: just key and button inputs, nothing else
+  CHECKPOINT: an 8-byte size and serialized raw state follow the actions.
+  CHECKPOINT2: a state follows the actions, but it is encoded and/or
+               compressed in some way. The next two bytes are the compression
+               type and the encoding type, followed by the 4-byte uncompressed,
+               unencoded size; the 4-byte uncompressed, encoded size; the 4-byte
+               compressed, encoeded, size; and the compressed, encoded data.
+               If either the encoding or the compression codec are not supported,
+               the checkpoint will be skipped.
+ */
 #define REPLAY_TOKEN_INVALID          '\0'
-#define REPLAY_TOKEN_REGULAR_FRAME    'f'
-#define REPLAY_TOKEN_CHECKPOINT_FRAME 'c'
+#define REPLAY_TOKEN_REGULAR_FRAME     'f'
+#define REPLAY_TOKEN_CHECKPOINT_FRAME  'c'
+#define REPLAY_TOKEN_CHECKPOINT2_FRAME 'C'
+
+/* Which compression codec to use. */
+#define REPLAY_CHECKPOINT2_COMPRESSION_NONE 0
+#define REPLAY_CHECKPOINT2_COMPRESSION_ZLIB 1
+#define REPLAY_CHECKPOINT2_COMPRESSION_ZSTD 2
+
+/* Which encoding to use.
+   RAW: Just raw checkpoint data, possibly compressed. */
+#define REPLAY_CHECKPOINT2_ENCODING_RAW 0
 
 /**
  * Takes as input analog key identifiers and converts them to corresponding

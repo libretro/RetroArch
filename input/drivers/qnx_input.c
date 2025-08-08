@@ -442,12 +442,6 @@ static void qnx_process_touch_event(
                break;
             }
          }
-#if 0
-         RARCH_LOG("New Touch: x:%d, y:%d, id:%d\n", pos[0], pos[1], contact_id);
-         RARCH_LOG("Map: %d %d %d %d %d %d\n", qnx->touch_map[0], qnx->touch_map[1],
-               qnx->touch_map[2], qnx->touch_map[3], qnx->touch_map[4],
-               qnx->touch_map[5]);
-#endif
          break;
 
       case SCREEN_EVENT_MTOUCH_RELEASE:
@@ -471,12 +465,6 @@ static void qnx_process_touch_event(
                break;
             }
          }
-#if 0
-         RARCH_LOG("Release: x:%d, y:%d, id:%d\n", pos[0], pos[1], contact_id);
-         RARCH_LOG("Map: %d %d %d %d %d %d\n", qnx->touch_map[0], qnx->touch_map[1],
-               qnx->touch_map[2], qnx->touch_map[3], qnx->touch_map[4],
-               qnx->touch_map[5]);
-#endif
          break;
 
       case SCREEN_EVENT_MTOUCH_MOVE:
@@ -494,33 +482,10 @@ static void qnx_process_touch_event(
                vp.full_width               = 0;
                vp.full_height              = 0;
 
-#if 0
-               gl_t *gl = (gl_t*)video_driver_get_ptr();
-
-               /*During a move, we can go ~30 pixel into the
-                * bezel which gives negative numbers or
-                * numbers larger than the screen resolution.
-                *
-                * Normalize. */
-               if (pos[0] < 0)
-                  pos[0] = 0;
-               if (pos[0] > gl->full_x)
-                  pos[0] = gl->full_x;
-
-               if (pos[1] < 0)
-                  pos[1] = 0;
-               if (pos[1] > gl->full_y)
-                  pos[1] = gl->full_y;
-#endif
-
                video_driver_translate_coord_viewport_wrap(&vp,
                      pos[0], pos[1],
                      &qnx->pointer[i].x, &qnx->pointer[i].y,
                      &qnx->pointer[i].full_x, &qnx->pointer[i].full_y);
-#if 0
-               RARCH_LOG("Move: x:%d, y:%d, id:%d\n", pos[0], pos[1],
-                     contact_id);
-#endif
                break;
             }
          }
@@ -590,7 +555,7 @@ static void qnx_handle_screen_event(qnx_input_t *qnx, bps_event_t *event)
                {
                   if (device == qnx->devices[i].handle)
                   {
-                     RARCH_LOG("Device %s: Disconnected.\n",
+                     RARCH_DBG("Device %s: Disconnected.\n",
                            qnx->devices[i].id);
                      qnx_init_controller(qnx, &qnx->devices[i]);
                      break;

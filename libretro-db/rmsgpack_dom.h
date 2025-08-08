@@ -26,7 +26,7 @@
 #include <stdint.h>
 
 #include <retro_common_api.h>
-#include <streams/file_stream.h>
+#include <streams/interface_stream.h>
 
 RETRO_BEGIN_DECLS
 
@@ -89,11 +89,11 @@ struct rmsgpack_dom_value *rmsgpack_dom_value_map_value(
         const struct rmsgpack_dom_value *map,
         const struct rmsgpack_dom_value *key);
 
-int rmsgpack_dom_read(RFILE *fd, struct rmsgpack_dom_value *out);
+int rmsgpack_dom_read(intfstream_t *stream, struct rmsgpack_dom_value *out);
 
-int rmsgpack_dom_write(RFILE *fd, const struct rmsgpack_dom_value *obj);
+int rmsgpack_dom_write(intfstream_t *stream, const struct rmsgpack_dom_value *obj);
 
-int rmsgpack_dom_read_into(RFILE *fd, ...);
+int rmsgpack_dom_read_into(intfstream_t *stream, ...);
 
 RETRO_END_DECLS
 
