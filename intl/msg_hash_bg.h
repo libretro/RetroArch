@@ -1037,7 +1037,6 @@ MSG_HASH(
 
 
 
-
 /* Settings > Input > Port # Controls */
 
 MSG_HASH(
@@ -1419,6 +1418,10 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT,
+   "Шрифт"
+   )
 
 
 

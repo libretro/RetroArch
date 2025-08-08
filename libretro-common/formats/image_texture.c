@@ -199,21 +199,26 @@ static bool image_texture_load_internal(
       unsigned g_shift, unsigned b_shift)
 {
    int ret;
-   bool success = false;
    void *img    = image_transfer_new(type);
 
    if (!img)
-      goto end;
+      return false;
 
    image_transfer_set_buffer_ptr(img, type, (uint8_t*)ptr, len);
 
    if (!image_transfer_start(img, type))
-      goto end;
+   {
+      image_transfer_free(img, type);
+      return false;
+   }
 
    while (image_transfer_iterate(img, type));
 
    if (!image_transfer_is_valid(img, type))
-      goto end;
+   {
+      image_transfer_free(img, type);
+      return false;
+   }
 
    do
    {
@@ -223,7 +228,10 @@ static bool image_texture_load_internal(
    } while (ret == IMAGE_PROCESS_NEXT);
 
    if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
-      goto end;
+   {
+      image_transfer_free(img, type);
+      return false;
+   }
 
    image_texture_color_convert(r_shift, g_shift, b_shift,
          a_shift, out_img);
@@ -232,17 +240,13 @@ static bool image_texture_load_internal(
    if (!image_texture_internal_gx_convert_texture32(out_img))
    {
       image_texture_free(out_img);
-      goto end;
+      image_transfer_free(img, type);
+      return false;
    }
 #endif
 
-   success = true;
-
-end:
-   if (img)
-      image_transfer_free(img, type);
-
-   return success;
+   image_transfer_free(img, type);
+   return true;
 }
 
 void image_texture_free(struct texture_image *img)
@@ -269,9 +273,7 @@ bool image_texture_load_buffer(struct texture_image *out_img,
       if (image_texture_load_internal(
          type, buffer, buffer_len, out_img,
          a_shift, r_shift, g_shift, b_shift))
-      {
          return true;
-      }
    }
 
    out_img->supports_rgba = false;
@@ -285,49 +287,44 @@ bool image_texture_load_buffer(struct texture_image *out_img,
 bool image_texture_load(struct texture_image *out_img,
       const char *path)
 {
-   unsigned r_shift, g_shift, b_shift, a_shift;
-   size_t file_len             = 0;
-   struct nbio_t      *handle  = NULL;
-   void                   *ptr = NULL;
    enum image_type_enum type  = image_texture_get_type(path);
-
-   image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
-         &a_shift, out_img);
 
    if (type != IMAGE_TYPE_NONE)
    {
-      handle = (struct nbio_t*)nbio_open(path, NBIO_READ);
-      if (!handle)
-         goto error;
-      nbio_begin_read(handle);
+      struct nbio_t *handle = (struct nbio_t*)
+         nbio_open(path, NBIO_READ);
+      if (handle)
+      {
+         void *ptr       = NULL;
+         size_t file_len = 0;
 
-      while (!nbio_iterate(handle));
+         nbio_begin_read(handle);
 
-      ptr = nbio_get_ptr(handle, &file_len);
+         while (!nbio_iterate(handle));
 
-      if (!ptr)
-         goto error;
+         if ((ptr = nbio_get_ptr(handle, &file_len)))
+         {
+            unsigned r_shift, g_shift, b_shift, a_shift;
+            image_texture_set_color_shifts(&r_shift,
+                  &g_shift, &b_shift, &a_shift, out_img);
 
-      if (image_texture_load_internal(
-               type,
-               ptr, file_len, out_img,
-               a_shift, r_shift, g_shift, b_shift))
-         goto success;
+            if (image_texture_load_internal(
+                     type,
+                     ptr, file_len, out_img,
+                     a_shift, r_shift, g_shift, b_shift))
+            {
+               nbio_free(handle);
+               return true;
+            }
+         }
+         nbio_free(handle);
+      }
    }
 
-error:
    out_img->supports_rgba = false;
    out_img->pixels        = NULL;
    out_img->width         = 0;
    out_img->height        = 0;
-   if (handle)
-      nbio_free(handle);
 
    return false;
-
-success:
-   if (handle)
-      nbio_free(handle);
-
-   return true;
 }

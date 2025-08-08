@@ -127,7 +127,7 @@ static void ui_window_win32_set_title(void *data, char *buf)
 
 void ui_window_win32_set_droppable(void *data, bool droppable)
 {
-   /* Minimum supported client: Windows XP, 
+   /* Minimum supported client: Windows XP,
     * minimum supported server: Windows 2000 Server */
    ui_window_win32_t *window = (ui_window_win32_t*)data;
    if (DragAcceptFiles_func)
@@ -246,7 +246,7 @@ static bool ui_browser_window_win32_core(
       ui_browser_window_state_t *state, bool save)
 {
    OPENFILENAME ofn;
-   bool            okay  = true;
+   bool            ret   = true;
    settings_t *settings  = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
    bool video_fullscreen = settings->bools.video_fullscreen;
@@ -264,8 +264,8 @@ static bool ui_browser_window_win32_core(
    ofn.nMaxFileTitle     = 0;
    ofn.lpstrInitialDir   = state->startdir;
    ofn.lpstrTitle        = state->title;
-   ofn.Flags             =   OFN_FILEMUSTEXIST 
-                           | OFN_HIDEREADONLY 
+   ofn.Flags             =   OFN_FILEMUSTEXIST
+                           | OFN_HIDEREADONLY
                            | OFN_NOCHANGEDIR;
    ofn.nFileOffset       = 0;
    ofn.nFileExtension    = 0;
@@ -288,9 +288,9 @@ static bool ui_browser_window_win32_core(
    }
 
    if (!save && !GetOpenFileName(&ofn))
-      okay = false;
+      ret = false;
    if (save && !GetSaveFileName(&ofn))
-      okay = false;
+      ret = false;
 
    /* Full screen: Hide mouse after the file dialog */
    if (video_fullscreen)
@@ -300,7 +300,7 @@ static bool ui_browser_window_win32_core(
          video_st->poke->show_mouse(video_st->data, false);
    }
 
-   return okay;
+   return ret;
 }
 
 static bool ui_browser_window_win32_open(ui_browser_window_state_t *state)
@@ -319,7 +319,7 @@ static ui_browser_window_t ui_browser_window_win32 = {
    "win32"
 };
 
-static void ui_companion_win32_deinit(void *data) { } 
+static void ui_companion_win32_deinit(void *data) { }
 static void *ui_companion_win32_init(void) { return (void*)-1; }
 static void ui_companion_win32_toggle(void *data, bool force) { }
 static void ui_companion_win32_event_command(

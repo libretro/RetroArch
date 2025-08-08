@@ -38,19 +38,24 @@
 #define MSG_QUEUE_PENDING_MAX          32
 #define MSG_QUEUE_ONSCREEN_MAX         4
 
-#define MSG_QUEUE_ANIMATION_DURATION      330
-#define TASK_FINISHED_DURATION            3000
-#define HOURGLASS_INTERVAL                5000
-#define HOURGLASS_DURATION                1000
+#define MSG_QUEUE_ANIMATION_DURATION   330
+#define TASK_FINISHED_DURATION         3000
+#define HOURGLASS_INTERVAL             5000
+#define HOURGLASS_DURATION             1000
 
-/* TODO: Colors for warning, error and success */
+#define TEXT_COLOR_INFO   0xEEEEEEFF
+#define TEXT_COLOR_FAINT  0x888888FF
 
-#define TEXT_COLOR_INFO 0xD8EEFFFF
-#if 0
-#define TEXT_COLOR_SUCCESS 0x22B14CFF
-#define TEXT_COLOR_ERROR 0xC23B22FF
-#endif
-#define TEXT_COLOR_FAINT 0x878787FF
+#define BG_COLOR_BLACK    0x000000
+#define BG_COLOR_WHITE    0xFFFFFF
+#define BG_COLOR_DEFAULT  0x161616
+#define BG_COLOR_PROGRESS 0x323232
+#define BG_COLOR_MARGIN   0xCCCCCC
+
+#define ICON_COLOR_RED    0xD6160C
+#define ICON_COLOR_GREEN  0x00C80A
+#define ICON_COLOR_BLUE   0x0C99D6
+#define ICON_COLOR_YELLOW 0xD6C10C
 
 RETRO_BEGIN_DECLS
 
@@ -118,7 +123,9 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_POSITIVE                  = (1 << 8),
    DISPWIDG_FLAG_NEGATIVE                  = (1 << 9),
    DISPWIDG_FLAG_CATEGORY_WARNING          = (1 << 10),
-   DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 11)
+   DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 11),
+   /* Size */
+   DISPWIDG_FLAG_SMALL                     = (1 << 12)
 };
 
 /* There can only be one message animation at a time to
@@ -216,8 +223,6 @@ typedef struct dispgfx_widget
    unsigned simple_widget_height;
 
    /* Used for both generic and libretro messages */
-   unsigned generic_message_height;
-
    unsigned msg_queue_height;
    unsigned msg_queue_padding;
    unsigned msg_queue_spacing;
@@ -233,7 +238,6 @@ typedef struct dispgfx_widget
    unsigned msg_queue_regular_padding_x;
    unsigned msg_queue_regular_text_start;
    unsigned msg_queue_task_text_start_x;
-   unsigned msg_queue_task_rect_start_x;
    unsigned msg_queue_task_hourglass_x;
    unsigned divider_width_1px;
 
@@ -372,6 +376,9 @@ void gfx_widgets_iterate(
       bool is_threaded);
 
 void gfx_widget_screenshot_taken(void *data,
+      const char *shotname, const char *filename);
+
+void gfx_widget_state_slot_show(void *data,
       const char *shotname, const char *filename);
 
 /* AI Service functions */

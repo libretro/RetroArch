@@ -239,7 +239,7 @@ enum menu_settings_type
    MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE,
    MENU_SETTINGS_INPUT_INPUT_REMAP_PORT,
    MENU_SETTINGS_INPUT_BEGIN,
-   MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END + 6,
+   MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END + 7,
    MENU_SETTINGS_INPUT_DESC_BEGIN,
    MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + ((RARCH_FIRST_CUSTOM_BIND + 8) * MAX_USERS),
    MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
@@ -511,7 +511,7 @@ struct menu_state
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
 #ifdef HAVE_RUNAHEAD
-   enum menu_runahead_mode runahead_mode;
+   unsigned int runahead_mode;
 #endif
 
    /* int16_t alignment */

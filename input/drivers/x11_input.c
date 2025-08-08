@@ -101,16 +101,16 @@ static void *x_input_init(const char *joypad_driver)
    {
       x11->mouse_dev_list[i] = -1;
       dev = &(x11->di[i]);
-      RARCH_DBG("[X11]: Device detected, %d \"%s\" attached to %d\n", i, dev->name, dev->attachment);
+      RARCH_DBG("[X11] Device detected, %d \"%s\" attached to %d.\n", i, dev->name, dev->attachment);
       if (dev->use == XIMasterPointer)
       {
-         RARCH_LOG("[X11]: Master pointer, %d \"%s\"\n",dev->deviceid,dev->name);
+         RARCH_LOG("[X11] Master pointer, %d \"%s\".\n", dev->deviceid, dev->name);
          input_config_set_mouse_display_name(j, dev->name);
          x11->mouse_dev_list[j++] = dev->deviceid;
       }
    }
 #else
-   RARCH_DBG("[X11]: XInput2 support not compiled in, using only 1 mouse.\n");
+   RARCH_DBG("[X11] XInput2 support not compiled in, using only 1 mouse.\n");
 #endif
    return x11;
 }

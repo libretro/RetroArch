@@ -121,7 +121,7 @@ static void android_gfx_ctx_vk_check_window(void *data, bool *quit,
 
    if (new_width != *width || new_height != *height)
    {
-      RARCH_LOG("[Android]: Resizing (%u x %u) -> (%u x %u).\n",
+      RARCH_LOG("[Vulkan] Resizing (%ux%u) -> (%ux%u).\n",
               *width, *height, new_width, new_height);
 
       *width  = new_width;
@@ -138,10 +138,10 @@ static bool android_gfx_ctx_vk_set_resize(void *data,
 
    and->width                         = android_app->content_rect.width;
    and->height                        = android_app->content_rect.height;
-   RARCH_LOG("[Android]: Native window size: %u x %u.\n", and->width, and->height);
+   RARCH_LOG("[Vulkan] Native window size: %ux%u.\n", and->width, and->height);
    if (!vulkan_create_swapchain(&and->vk, and->width, and->height, and->swap_interval))
    {
-      RARCH_ERR("[Android]: Failed to update swapchain.\n");
+      RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       return false;
    }
 
@@ -165,10 +165,10 @@ static bool android_gfx_ctx_vk_set_video_mode(void *data,
             NULL, android_app->window,
             and->width, and->height, and->swap_interval))
    {
-      RARCH_ERR("[Android]: Failed to create surface.\n");
+      RARCH_ERR("[Vulkan] Failed to create surface.\n");
       return false;
    }
-   RARCH_LOG("[Android]: Native window size: %u x %u.\n",
+   RARCH_LOG("[Vulkan] Native window size: %ux%u.\n",
          and->width, and->height);
    return true;
 }
@@ -220,7 +220,7 @@ static void android_gfx_ctx_vk_set_swap_interval(void *data, int swap_interval)
 
    if (and->swap_interval != swap_interval)
    {
-      RARCH_LOG("[Vulkan]: Setting swap interval: %u.\n", swap_interval);
+      RARCH_LOG("[Vulkan] Setting swap interval: %u.\n", swap_interval);
       and->swap_interval       = swap_interval;
       if (and->vk.swapchain)
          and->vk.flags        |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;

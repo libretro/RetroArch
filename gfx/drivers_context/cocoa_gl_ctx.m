@@ -101,14 +101,14 @@ static uint32_t cocoa_gl_gfx_ctx_get_flags(void *data)
          break;
       case GFX_CTX_OPENGL_API:
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
-         else if (string_is_equal(video_driver_get_ident(), "glcore"))
-         {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
-         }
          else
          {
+            if (string_is_equal(video_driver_get_ident(), "glcore"))
+            {
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+               BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+            }
 #ifdef HAVE_GLSL
             BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
@@ -226,10 +226,10 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
 static void cocoa_gl_gfx_ctx_get_video_size(void *data,
       unsigned* width, unsigned* height)
 {
-   float screenscale               = cocoa_screen_get_native_scale();
    CGRect size                     = glk_view.bounds;
-   *width                          = CGRectGetWidth(size)  * screenscale;
-   *height                         = CGRectGetHeight(size) * screenscale;
+   float viewScale                 = [glk_view contentScaleFactor];
+   *width                          = CGRectGetWidth(size)  * viewScale;
+   *height                         = CGRectGetHeight(size) * viewScale;
 }
 #endif
 
@@ -242,7 +242,10 @@ static float cocoa_gl_gfx_ctx_get_refresh_rate(void *data)
     CFRelease(currentMode);
     return currentRate;
 #else
-    return [UIScreen mainScreen].maximumFramesPerSecond;
+    if (@available(iOS 10.3, tvOS 10.2, *))
+       return [UIScreen mainScreen].maximumFramesPerSecond;
+    else
+       return 60;
 #endif
 }
 
@@ -324,7 +327,7 @@ static void cocoa_gl_gfx_ctx_swap_buffers(void *data)
       return;
    if (glk_view)
       [glk_view display];
-   cocoa_ctx->fast_forward_skips = 
+   cocoa_ctx->fast_forward_skips =
       (cocoa_ctx->flags & COCOA_CTX_FLAG_IS_SYNCING) ? 0 : 3;
 #endif
 }
@@ -350,12 +353,12 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
 #endif
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-   static bool 
+   static bool
       has_went_fullscreen      = false;
    cocoa_ctx->width            = width;
    cocoa_ctx->height           = height;
 
-   /* NOTE: setWantsBestResolutionOpenGLSurface only 
+   /* NOTE: setWantsBestResolutionOpenGLSurface only
     * available on MacOS X 10.7 and up.
     * Deprecated as of MacOS X 10.14. */
 #if MAC_OS_X_VERSION_10_7
@@ -506,7 +509,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 
    glk_view.context = g_ctx;
 
-   /* TODO: Maybe iOS users should be able to 
+   /* TODO: Maybe iOS users should be able to
     * show/hide the status bar here? */
    return true;
 }
@@ -522,12 +525,12 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
 #ifndef OSX
    cocoa_ctx->flags |= COCOA_CTX_FLAG_IS_SYNCING;
 #endif
-    
+
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_COCOA_METAL)
-         /* The Metal build supports both the OpenGL 
+         /* The Metal build supports both the OpenGL
           * and Metal video drivers */
          [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
 #endif
@@ -536,7 +539,7 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
       default:
          break;
    }
-    
+
    return cocoa_ctx;
 }
 #endif
@@ -580,7 +583,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_has_focus,
    cocoa_gl_gfx_ctx_suppress_screensaver,
 #if defined(HAVE_COCOATOUCH)
-   false,
+   true,
 #else
    true,
 #endif

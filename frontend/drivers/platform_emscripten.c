@@ -404,7 +404,7 @@ void platform_emscripten_get_canvas_size(int *width, int *height)
 
    *width  = 800;
    *height = 600;
-   RARCH_ERR("[EMSCRIPTEN]: Could not get screen dimensions!\n");
+   RARCH_ERR("[EMSCRIPTEN] Could not get screen dimensions.\n");
 }
 
 double platform_emscripten_get_dpr(void)
@@ -530,6 +530,16 @@ void platform_emscripten_set_canvas_size(int width, int height)
       return;
 
    PlatformEmscriptenSetCanvasSize(width, height);
+}
+
+enum platform_emscripten_browser platform_emscripten_get_browser(void)
+{
+   return emscripten_platform_data->browser;
+}
+
+enum platform_emscripten_os platform_emscripten_get_os(void)
+{
+   return emscripten_platform_data->os;
 }
 
 /* frontend driver impl */

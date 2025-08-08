@@ -530,7 +530,7 @@ static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
 
    if ((fd = create_shm_file(size)) < 0)
    {
-      RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed\n",
+      RARCH_ERR("[Wayland] [SHM] Creating a buffer file for %d B failed.\n",
          size);
       return NULL;
    }
@@ -538,7 +538,7 @@ static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
    data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
    if (data == MAP_FAILED)
    {
-      RARCH_ERR("[Wayland] [SHM]: mmap failed\n");
+      RARCH_ERR("[Wayland] [SHM] mmap failed.\n");
       close(fd);
       return NULL;
    }
@@ -610,7 +610,7 @@ static bool wl_create_toplevel_icon(gfx_ctx_wayland_data_t *wl, struct xdg_tople
    }
    else
    {
-      RARCH_ERR("[Wayland] Failed to create toplevel icon buffer\n");
+      RARCH_ERR("[Wayland] Failed to create toplevel icon buffer.\n");
       return false;
    }
 
@@ -747,8 +747,8 @@ bool gfx_ctx_wl_init_common(
 
    if (!wl->input.dpy)
    {
-      RARCH_ERR("[Wayland]: Failed to connect to Wayland server.\n");
-      goto error;
+      RARCH_ERR("[Wayland] Failed to connect to Wayland server.\n");
+      return false;
    }
 
    frontend_driver_install_signal_handler();
@@ -759,25 +759,25 @@ bool gfx_ctx_wl_init_common(
 
    if (!wl->compositor)
    {
-      RARCH_ERR("[Wayland]: Failed to create compositor.\n");
-      goto error;
+      RARCH_ERR("[Wayland] Failed to create compositor.\n");
+      return false;
    }
 
    if (!wl->shm)
    {
-      RARCH_ERR("[Wayland]: Failed to create shm.\n");
-      goto error;
+      RARCH_ERR("[Wayland] Failed to create shm.\n");
+      return false;
    }
 
    if (!wl->xdg_shell)
    {
-      RARCH_ERR("[Wayland]: Failed to create shell.\n");
-      goto error;
+      RARCH_ERR("[Wayland] Failed to create shell.\n");
+      return false;
    }
 
    if (!wl->idle_inhibit_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", zwp_idle_inhibit_manager_v1_interface.name);
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", zwp_idle_inhibit_manager_v1_interface.name);
 #ifdef HAVE_DBUS
       dbus_ensure_connection();
 #endif
@@ -785,47 +785,47 @@ bool gfx_ctx_wl_init_common(
 
    if (!wl->deco_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", zxdg_decoration_manager_v1_interface.name);
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", zxdg_decoration_manager_v1_interface.name);
    }
 
    if (!wl->viewporter)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_viewporter_interface.name);
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", wp_viewporter_interface.name);
    }
 
    if (!wl->fractional_scale_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_fractional_scale_manager_v1_interface.name);
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", wp_fractional_scale_manager_v1_interface.name);
    }
 
    if (!wl->cursor_shape_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_cursor_shape_manager_v1_interface.name);
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", wp_cursor_shape_manager_v1_interface.name);
    }
 
    if (!wl->content_type_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_content_type_manager_v1_interface.name);
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", wp_content_type_manager_v1_interface.name);
    }
 
    if (!wl->pointer_constraints)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", zwp_pointer_constraints_v1_interface.name);
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", zwp_pointer_constraints_v1_interface.name);
    }
 
    if (!wl->relative_pointer_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", zwp_relative_pointer_manager_v1_interface.name);
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", zwp_relative_pointer_manager_v1_interface.name);
    }
 
    if (!wl->single_pixel_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_single_pixel_buffer_manager_v1_interface.name);
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", wp_single_pixel_buffer_manager_v1_interface.name);
    }
 
    if (!wl->xdg_toplevel_icon_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", xdg_toplevel_icon_manager_v1_interface.name);
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", xdg_toplevel_icon_manager_v1_interface.name);
    }
 
    wl->surface = wl_compositor_create_surface(wl->compositor);
@@ -855,8 +855,8 @@ bool gfx_ctx_wl_init_common(
       wl->libdecor_frame = wl->libdecor_decorate(wl->libdecor_context, wl->surface, &toplevel_listener->libdecor_frame_interface, wl);
       if (!wl->libdecor_frame)
       {
-         RARCH_ERR("[Wayland]: Failed to create libdecor frame\n");
-         goto error;
+         RARCH_ERR("[Wayland] Failed to create libdecor frame.\n");
+         return false;
       }
 
       if (wl->xdg_toplevel_icon_manager)
@@ -877,8 +877,8 @@ bool gfx_ctx_wl_init_common(
       {
          if (wl->libdecor_dispatch(wl->libdecor_context, 0) < 0)
          {
-            RARCH_ERR("[Wayland]: libdecor failed to dispatch\n");
-            goto error;
+            RARCH_ERR("[Wayland] libdecor failed to dispatch.\n");
+            return false;
          }
       }
    }
@@ -918,7 +918,7 @@ bool gfx_ctx_wl_init_common(
    if (video_monitor_index == 0 && wl_list_length (&wl->all_outputs) > 1)
    {
       if (!wl_draw_splash_screen(wl))
-         RARCH_ERR("[Wayland]: Failed to draw splash screen\n");
+         RARCH_ERR("[Wayland] Failed to draw splash screen.\n");
 
       /* Make sure splash screen is on screen and sized */
 #ifdef HAVE_LIBDECOR_H
@@ -927,7 +927,7 @@ bool gfx_ctx_wl_init_common(
          wl->configured = true;
          while (wl->configured)
             if (wl->libdecor_dispatch(wl->libdecor_context, 0) < 0)
-               RARCH_ERR("[Wayland]: libdecor failed to dispatch\n");
+               RARCH_ERR("[Wayland] libdecor failed to dispatch.\n");
       }
       else
 #endif
@@ -964,9 +964,6 @@ bool gfx_ctx_wl_init_common(
    flush_wayland_fd(&wl->input);
 
    return true;
-
-error:
-   return false;
 }
 
 bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
@@ -1025,7 +1022,7 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
       {
          oi     = wl->current_output;
          output = oi->output;
-         RARCH_LOG("[Wayland]: Auto fullscreen on display \"%s\" \"%s\"\n", oi->make, oi->model);
+         RARCH_LOG("[Wayland] Auto fullscreen on display \"%s\" \"%s\".\n", oi->make, oi->model);
       }
       else
       {
@@ -1035,14 +1032,14 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
             {
                oi     = od->output;
                output = oi->output;
-               RARCH_LOG("[Wayland]: Fullscreen on display %i \"%s\" \"%s\"\n", output_i, oi->make, oi->model);
+               RARCH_LOG("[Wayland] Fullscreen on display %i \"%s\" \"%s\".\n", output_i, oi->make, oi->model);
                break;
             }
          };
       }
 
       if (!output)
-         RARCH_LOG("[Wayland] Failed to specify monitor for fullscreen, letting compositor decide\n");
+         RARCH_LOG("[Wayland] Failed to specify monitor for fullscreen, letting compositor decide.\n");
 
 #ifdef HAVE_LIBDECOR_H
       if (wl->libdecor)
@@ -1083,13 +1080,13 @@ bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
    {
       if (state)
       {
-         RARCH_LOG("[Wayland]: Enabling idle inhibitor\n");
+         RARCH_LOG("[Wayland] Enabling idle inhibitor.\n");
          struct zwp_idle_inhibit_manager_v1 *mgr = wl->idle_inhibit_manager;
          wl->idle_inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(mgr, wl->surface);
       }
       else
       {
-         RARCH_LOG("[Wayland]: Disabling the idle inhibitor\n");
+         RARCH_LOG("[Wayland] Disabling the idle inhibitor.\n");
          zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
          wl->idle_inhibitor = NULL;
       }
@@ -1157,10 +1154,10 @@ static void xdg_surface_handle_configure(void *data,
 #endif
 
 #ifdef HAVE_LIBDECOR_H
-static void libdecor_handle_error(struct libdecor *context,
-      enum libdecor_error error, const char *message)
+static void libdecor_handle_err(struct libdecor *context,
+      enum libdecor_error err, const char *message)
 {
-   RARCH_ERR("[Wayland]: libdecor Caught error (%d): %s\n", error, message);
+   RARCH_ERR("[Wayland] libdecor Caught error (%d): %s.\n", err, message);
 }
 #endif
 
@@ -1170,6 +1167,6 @@ const struct wl_buffer_listener shm_buffer_listener = {
 
 #ifdef HAVE_LIBDECOR_H
 const struct libdecor_interface libdecor_interface = {
-   .error = libdecor_handle_error,
+   .error = libdecor_handle_err,
 };
 #endif

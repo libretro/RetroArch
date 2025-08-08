@@ -19,17 +19,33 @@
 #include <stdlib.h>
 
 #include <retro_common_api.h>
-#include "mmdevice_common_inline.h"
 
 RETRO_BEGIN_DECLS
 
-void *mmdevice_list_new(const void *u, EDataFlow data_flow);
+void *mmdevice_list_new(const void *u, unsigned data_flow);
 
 /**
  * Gets the friendly name of the provided IMMDevice.
  * The string must be freed with free().
  */
-char* mmdevice_name(IMMDevice *device);
+char* mmdevice_name(void *data);
+
+/**
+ * Gets the samplerate of the provided IMMDevice.
+ */
+size_t mmdevice_samplerate(void *data);
+
+/**
+ * Gets the handle of the IMMDevice.
+ */
+void *mmdevice_handle(int id, unsigned data_flow);
+
+size_t mmdevice_get_samplerate(int id);
+
+const char *mmdevice_hresult_name(int hr);
+
+
+void *mmdevice_init_device(const char *id, unsigned data_flow);
 
 RETRO_END_DECLS
 

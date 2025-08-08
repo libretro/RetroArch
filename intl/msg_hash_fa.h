@@ -540,10 +540,6 @@ MSG_HASH(
    "قفل کردن هستهٔ نصب‌شده"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "از ایجاد تغییر در هستهٔ نصب‌شدهٔ فعلی جلوگیری کنید. ممکن است برای جلوگیری از به‌روزرسانی‌های ناخواسته در زمانی که محتوا به نسخهٔ خاصی از هسته نیاز داشته باشد مفید باشد (مثلاً ROM های آرکید)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "از گزینگان «هسته‌های بدون محتوا» حذف کن"
    )
@@ -1429,10 +1425,6 @@ MSG_HASH(
    "ورودی"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "درایور ورودی برای استفاده. بعضی از درایورهای ویدیویی، یک درایور ورودی متفاوت را اجبار می‌کنند."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
    "راه‌انداز ورودی. راه‌انداز ورودی ممکن است راه‌انداز دیگری را اجبار کند."
    )
@@ -1726,10 +1718,6 @@ MSG_HASH(
    "فراتفکیک‌پذیری CRT"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "مرکز کردن محور X"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "استفاده از فهرست با وضوح بالا"
    )
@@ -1831,14 +1819,6 @@ MSG_HASH(
 
 /* Settings > Video > Fullscreen Mode */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   "شروع در حالت تمام‌صفحه"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "شروع در حالت تمام‌صفحه. این مورد را در زمان اجرا نیز می‌توانید تغییر دهید. همچنین توسط خط فرمان قابل بازنویسی است."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "حالت پنجره‌ای تمام‌صفحه"
@@ -2326,10 +2306,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "کنترل‌های درگاه %u"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "تأیید خروج"
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -2439,7 +2415,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "خدمت هوش مصنوعی"
    )
-
 
 
 /* Settings > Input > Port # Controls */
@@ -3507,6 +3482,14 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "مقیاس قلم"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
+   "هیچکدام"
+   )
 
 
 

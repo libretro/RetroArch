@@ -125,7 +125,7 @@ static int16_t ctr_joypad_state(
       const struct retro_keybind *binds,
       unsigned port)
 {
-   unsigned i;
+   int i;
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
 
@@ -139,12 +139,12 @@ static int16_t ctr_joypad_state(
          ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-      
-      if ((uint16_t)joykey != NO_BTN && 
+
+      if ((uint16_t)joykey != NO_BTN &&
             (pad_state & (1 << (uint16_t)joykey)))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(ctr_joypad_axis_state(port_idx, joyaxis)) 
+            ((float)abs(ctr_joypad_axis_state(port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -154,7 +154,7 @@ static int16_t ctr_joypad_state(
 
 static int16_t ctr_joypad_fix_range(int16_t val)
 {
-   val = (val > 127)? 127: (val < -127)? -127: val;
+   val = (val > 127) ? 127 : (val < -127) ? -127 : val;
    return val * 256;
 }
 
@@ -199,9 +199,7 @@ static bool ctr_joypad_query_pad(unsigned pad)
    return pad < MAX_USERS && pad_state;
 }
 
-static void ctr_joypad_destroy(void)
-{
-}
+static void ctr_joypad_destroy(void) { }
 
 input_device_driver_t ctr_joypad = {
    ctr_joypad_init,

@@ -370,6 +370,26 @@ int filestream_delete(const char *path);
 int filestream_rename(const char *old_path, const char *new_path);
 
 /**
+ * Copies a file to a new location.
+ *
+ * @param src_path Path to the file to rename.
+ * @param dst_path The target name and location of the file.
+ * @return 0 if the file was copied successfully,
+ * or -1 if there was an error.
+ */
+int filestream_copy(const char *src_path, const char *dst_path);
+
+/**
+ * Compares and verifies files.
+ *
+ * @param src_path Path to the file.
+ * @param dst_path Path to the other file.
+ * @return 0 if the files are equal,
+ * or -1 if there was an error.
+ */
+int filestream_cmp(const char *src_path, const char *dst_path);
+
+/**
  * Get the path that was used to open a file.
  *
  * @param stream The file to get the path of.

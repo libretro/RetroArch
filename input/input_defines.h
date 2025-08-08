@@ -191,9 +191,6 @@ enum
 
    RARCH_BIND_LIST_END,
 
-   /* Deprecated */
-   RARCH_SEND_DEBUG_INFO,
-
    RARCH_BIND_LIST_END_NULL
 };
 

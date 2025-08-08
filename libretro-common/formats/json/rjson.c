@@ -1011,7 +1011,7 @@ double rjson_get_double(rjson_t *json)
          snprintf(test, sizeof(test), "%.1f", 0.0f);
          json->decimal_sep = test[1];
       }
-      if (json->decimal_sep != '.' && (p = strchr(str, '.')) != NULL)
+      if (json->decimal_sep != '.' && (p = memchr(str, '.', strlen(str) + 1)) != NULL)
       {
          double res;
          *p  = json->decimal_sep;

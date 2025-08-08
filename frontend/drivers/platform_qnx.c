@@ -152,9 +152,9 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
             "cp -r %s/. %s", assets_path, data_path);
 
       if (system(copy_command) == -1)
-         RARCH_ERR("Asset copy failed: Shell could not be run.\n" );
+         RARCH_ERR("Asset copy failed: Shell could not be run.\n");
       else
-         RARCH_LOG( "Asset copy successful.\n");
+         RARCH_LOG("Asset copy successful.\n");
    }
 
    /* set GLUI as default menu */

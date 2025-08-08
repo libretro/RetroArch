@@ -519,7 +519,7 @@ static size_t menu_action_setting_disp_set_label_core_manager_steam_entry(
 
          if (MIST_IS_ERROR(result))
          {
-            RARCH_ERR("[Steam]: Failed to get dlc install status (%d-%d)\n",
+            RARCH_ERR("[Steam] Failed to get DLC install status (%d-%d).\n",
                   MIST_UNPACK_RESULT(result));
             return 0;
          }
@@ -798,9 +798,9 @@ static size_t menu_action_setting_disp_set_label_input_desc(
          if (remap_idx < RARCH_FIRST_CUSTOM_BIND)
             return _len;
          else if (remap_idx % 2 == 0)
-            return strlcpy(s + _len, " +", len - _len);
+            return strlcpy(s + _len, "+", len - _len);
          else
-            return strlcpy(s + _len, " -", len - _len);
+            return strlcpy(s + _len, "-", len - _len);
       }
    }
    /* If descriptor was not found, set this instead */
@@ -2123,7 +2123,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
             char *s2, size_t len2);
    } info_range_list_t;
 
-   info_range_list_t info_list[] = {
+   static const info_range_list_t info_list[] = {
 #ifdef HAVE_AUDIOMIXER
       {
          MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN,

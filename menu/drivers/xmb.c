@@ -1,3 +1,4 @@
+
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Jean-André Santoni
@@ -120,6 +121,9 @@ enum
    XMB_TEXTURE_SETTINGS,
    XMB_TEXTURE_HISTORY,
    XMB_TEXTURE_FAVORITES,
+#ifdef HAVE_IMAGEVIEWER
+   XMB_TEXTURE_IMAGES,
+#endif
    XMB_TEXTURE_MUSICS,
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
    XMB_TEXTURE_MOVIES,
@@ -130,9 +134,6 @@ enum
    XMB_TEXTURE_ROOM,
    XMB_TEXTURE_ROOM_LAN,
    XMB_TEXTURE_ROOM_RELAY,
-#endif
-#ifdef HAVE_IMAGEVIEWER
-   XMB_TEXTURE_IMAGES,
 #endif
    XMB_TEXTURE_SETTING,
    XMB_TEXTURE_SUBSETTING,
@@ -163,8 +164,8 @@ enum
    XMB_TEXTURE_ZIP,
    XMB_TEXTURE_FAVORITE,
    XMB_TEXTURE_ADD_FAVORITE,
-   XMB_TEXTURE_MUSIC,
    XMB_TEXTURE_IMAGE,
+   XMB_TEXTURE_MUSIC,
    XMB_TEXTURE_MOVIE,
    XMB_TEXTURE_CORE,
    XMB_TEXTURE_RDB,
@@ -1166,53 +1167,51 @@ static void xmb_render_messagebox_internal(
    string_list_deinitialize(&list);
 }
 
-static char *xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
+static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
 {
    settings_t *settings               = config_get_ptr();
    bool menu_dynamic_wallpaper_enable = settings->bools.menu_dynamic_wallpaper_enable;
    unsigned xmb_color_theme           = settings->uints.menu_xmb_color_theme;
    const char *path_menu_wallpaper    = settings->paths.path_menu_wallpaper;
    const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
-   char path[PATH_MAX_LENGTH];
    unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-
-   path[0]                            = '\0';
 
    /* Do not update wallpaper in "Main Menu" playlists and inside playlist items */
    if (    (xmb->categories_selection_ptr == XMB_SYSTEM_TAB_MAIN && depth > 3)
         || (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1))
    {
-      if (string_is_empty(xmb->bg_file_path))
-         return NULL;
-      return strdup(xmb->bg_file_path);
+      if (!string_is_empty(xmb->bg_file_path))
+         strlcpy(s, xmb->bg_file_path, len);
+      return;
    }
 
    /* Dynamic wallpaper takes precedence as reset background,
     * then comes 'menu_wallpaper', and then iconset 'bg.png' */
    if (menu_dynamic_wallpaper_enable)
    {
-      size_t _len = fill_pathname_join_special(
-               path,
+      size_t _len = fill_pathname_join_special(s,
                dir_dynamic_wallpapers,
                xmb->title_name,
-               sizeof(path));
-      strlcpy(path + _len, ".png", sizeof(path) - _len);
+               len);
+      strlcpy(s + _len, ".png", len - _len);
    }
 
-   if (!string_is_empty(path) && path_is_valid(path))
+   if (!string_is_empty(s) && path_is_valid(s))
       ;/* no-op */
    else if (!string_is_empty(path_menu_wallpaper))
-      strlcpy(path, path_menu_wallpaper, sizeof(path));
+      strlcpy(s, path_menu_wallpaper, len);
    else if (xmb_color_theme == XMB_THEME_WALLPAPER)
-      fill_pathname_application_special(path, sizeof(path),
+      fill_pathname_application_special(s, len,
             APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
-
-   return strdup(path);
 }
 
 static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
 {
-   const char *path = xmb_path_dynamic_wallpaper(xmb);
+   char path[PATH_MAX_LENGTH];
+
+   path[0] = '\0';
+
+   xmb_path_dynamic_wallpaper(xmb, path, sizeof(path));
 
    if (!string_is_equal(path, xmb->bg_file_path) || reset)
    {
@@ -2794,14 +2793,14 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
                sizeof(sysname));
          __len   = fill_pathname_join_special(texturepath, iconpath, sysname,
                sizeof(texturepath));
-         __len  += strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
+         strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
 
          /* If the playlist icon doesn't exist return default */
          if (!path_is_valid(texturepath))
          {
             __len  = fill_pathname_join_special(texturepath, iconpath, "default",
                   sizeof(texturepath));
-            __len += strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
+            strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
          }
 
          ti.width         = 0;
@@ -2885,6 +2884,61 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
    xmb_context_reset_horizontal_list(xmb);
 }
 
+static void xmb_refresh_system_tabs_list(xmb_handle_t *xmb)
+{
+   settings_t *settings = config_get_ptr();
+
+   xmb->system_tab_end                = 0;
+   xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
+
+   if (      settings->bools.menu_content_show_settings
+         && !settings->bools.kiosk_mode_enable)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
+
+   if (settings->bools.menu_content_show_favorites_first)
+   {
+      if (settings->bools.menu_content_show_favorites)
+         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
+      if (settings->bools.menu_content_show_history)
+         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
+   }
+   else
+   {
+      if (settings->bools.menu_content_show_history)
+         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
+      if (settings->bools.menu_content_show_favorites)
+         xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
+   }
+
+#ifdef HAVE_IMAGEVIEWER
+   if (settings->bools.menu_content_show_images)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
+#endif
+
+   if (settings->bools.menu_content_show_music)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
+
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+   if (settings->bools.menu_content_show_video)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
+#endif
+
+   if (      settings->uints.menu_content_show_add_entry == MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
+         && !settings->bools.kiosk_mode_enable)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
+
+#if defined(HAVE_DYNAMIC)
+   if (     settings->uints.menu_content_show_contentless_cores
+         != MENU_CONTENTLESS_CORES_DISPLAY_NONE)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_CONTENTLESS_CORES;
+#endif
+
+#if defined(HAVE_LIBRETRODB)
+   if (settings->bools.menu_content_show_explore)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_EXPLORE;
+#endif
+}
+
 static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
 {
    xmb_handle_t *xmb     = (xmb_handle_t*)userdata;
@@ -2901,6 +2955,7 @@ static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
          xmb->show_mouse = false;
          break;
       case MENU_ENVIRON_RESET_HORIZONTAL_LIST:
+         xmb_refresh_system_tabs_list(xmb);
          xmb_refresh_horizontal_list(xmb);
          break;
       case MENU_ENVIRON_ENABLE_SCREENSAVER:
@@ -3362,6 +3417,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS:
          return xmb->textures.list[XMB_TEXTURE_FOLDER];
       case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
+         if (xmb->depth > 1)
+            return xmb->textures.list[XMB_TEXTURE_ADD];
          return xmb->textures.list[XMB_TEXTURE_MENU_ADD];
       case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:
       case MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB:
@@ -3378,12 +3435,12 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_GOTO_IMAGES:
          return xmb->textures.list[XMB_TEXTURE_IMAGES];
 #endif
+      case MENU_ENUM_LABEL_GOTO_MUSIC:
+         return xmb->textures.list[XMB_TEXTURE_MUSICS];
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case MENU_ENUM_LABEL_GOTO_VIDEO:
          return xmb->textures.list[XMB_TEXTURE_MOVIES];
 #endif
-      case MENU_ENUM_LABEL_GOTO_MUSIC:
-         return xmb->textures.list[XMB_TEXTURE_MUSICS];
       case MENU_ENUM_LABEL_GOTO_EXPLORE:
          if (!string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE)))
             return xmb->textures.list[XMB_TEXTURE_CURSOR];
@@ -3440,10 +3497,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_UPDATE_CHEATS:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS:
          return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
-#if 0
-/* Thumbnailpack removal */
-      case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
-#endif
       case MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST:
       case MENU_ENUM_LABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS:
@@ -3594,6 +3647,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING:
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG:
       case MENU_ENUM_LABEL_SAVE_NEW_CONFIG:
+      case MENU_ENUM_LABEL_SAVE_AS_CONFIG:
+      case MENU_ENUM_LABEL_SAVE_MAIN_CONFIG:
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
       case MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
@@ -3800,21 +3855,21 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                   }
                   else
                   {
-                     if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
-                        return xmb->textures.list[XMB_TEXTURE_MUSIC];
-                     else if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
+                     if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
                         return xmb->textures.list[XMB_TEXTURE_IMAGE];
+                     else if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
+                        return xmb->textures.list[XMB_TEXTURE_MUSIC];
                      else if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
                         return xmb->textures.list[XMB_TEXTURE_MOVIE];
                   }
                }
                break;
-            case XMB_SYSTEM_TAB_MUSIC:
-               return xmb->textures.list[XMB_TEXTURE_MUSIC];
 #ifdef HAVE_IMAGEVIEWER
             case XMB_SYSTEM_TAB_IMAGES:
                return xmb->textures.list[XMB_TEXTURE_IMAGE];
 #endif
+            case XMB_SYSTEM_TAB_MUSIC:
+               return xmb->textures.list[XMB_TEXTURE_MUSIC];
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             case XMB_SYSTEM_TAB_VIDEO:
                return xmb->textures.list[XMB_TEXTURE_MOVIE];
@@ -3832,11 +3887,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
       case FILE_TYPE_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_ZIP];
-      case FILE_TYPE_MUSIC:
-         return xmb->textures.list[XMB_TEXTURE_MUSIC];
       case FILE_TYPE_IMAGE:
       case FILE_TYPE_IMAGEVIEWER:
          return xmb->textures.list[XMB_TEXTURE_IMAGE];
+      case FILE_TYPE_MUSIC:
+         return xmb->textures.list[XMB_TEXTURE_MUSIC];
       case FILE_TYPE_MOVIE:
          return xmb->textures.list[XMB_TEXTURE_MOVIE];
       case FILE_TYPE_CORE:
@@ -3942,11 +3997,11 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       if (badge_texture)
          return badge_texture;
 
-      /* No state means its a header - show the info icon */
+      /* No state means it's a header, show info icon */
       if (!rcheevos_menu_get_state(index, buffer, sizeof(buffer)))
          return xmb->textures.list[XMB_TEXTURE_INFO];
-      /* Placeholder badge image was not found,
-         show generic menu icon */
+
+      /* Placeholder badge image was not found, show generic menu icon */
       return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENTS];
    }
 #endif
@@ -3954,16 +4009,15 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
    if (     type >= MENU_SETTINGS_INPUT_BEGIN
          && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
    {
+      /* This part is only utilized by Input User # Binds */
       unsigned input_id;
       if (type < MENU_SETTINGS_INPUT_DESC_BEGIN)
-         /* Input User # Binds only */
       {
          input_id = MENU_SETTINGS_INPUT_BEGIN;
          if (type == input_id)
             return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
 #ifdef HAVE_LIBNX
-         /* Account for the additional split JoyCon
-            option in Input # Binds */
+         /* Account for the additional split JoyCon option in Input Port # Binds */
          input_id++;
 #endif
          if (type >= input_id + 1 && type <= input_id + 3)
@@ -3976,7 +4030,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             return xmb->textures.list[XMB_TEXTURE_RELOAD];
          if (type == input_id + 7)
             return xmb->textures.list[XMB_TEXTURE_SAVING];
-         if ((type > (input_id + 31)) && (type < (input_id + 43)))
+         if (type >= input_id + 32 && type <= input_id + 42)
             return xmb->textures.list[XMB_TEXTURE_INPUT_LGUN];
          if (type == input_id + 43)
             return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
@@ -3985,8 +4039,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       }
       else
       {
-         /* Quickmenu controls repeats the same icons
-            for all users */
+         /* Quickmenu controls repeats the same icons for all users */
          if (type < MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
             input_id = MENU_SETTINGS_INPUT_DESC_BEGIN;
          else
@@ -3999,9 +4052,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          {
             unsigned index = 0;
             int input_num  = type - input_id;
-            for ( index = 0;
-                  index < ARRAY_SIZE(input_config_bind_order);
-                  index++)
+            for (index = 0; index < ARRAY_SIZE(input_config_bind_order); index++)
             {
                if (input_num == (int)input_config_bind_order[index])
                {
@@ -4012,55 +4063,54 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          }
       }
 
-      /* This is utilized for both Input # Binds
-         and Quickmenu controls */
+      /* This is used for both Input Port Binds and Quickmenu controls */
       if (type == input_id)
          return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_U];
-      else if (type == (input_id + 1))
+      if (type == (input_id + 1))
          return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_D];
-      else if (type == (input_id + 2))
+      if (type == (input_id + 2))
          return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_L];
-      else if (type == (input_id + 3))
+      if (type == (input_id + 3))
          return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_R];
-      else if (type == (input_id + 4))
+      if (type == (input_id + 4))
          return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D];
-      else if (type == (input_id + 5))
+      if (type == (input_id + 5))
          return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R];
-      else if (type == (input_id + 6))
+      if (type == (input_id + 6))
          return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_L];
-      else if (type == (input_id + 7))
+      if (type == (input_id + 7))
          return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_U];
-      else if (type == (input_id + 8))
+      if (type == (input_id + 8))
          return xmb->textures.list[XMB_TEXTURE_INPUT_SELECT];
-      else if (type == (input_id + 9))
+      if (type == (input_id + 9))
          return xmb->textures.list[XMB_TEXTURE_INPUT_START];
-      else if (type == (input_id + 10))
+      if (type == (input_id + 10))
          return xmb->textures.list[XMB_TEXTURE_INPUT_LB];
-      else if (type == (input_id + 11))
+      if (type == (input_id + 11))
          return xmb->textures.list[XMB_TEXTURE_INPUT_RB];
-      else if (type == (input_id + 12))
+      if (type == (input_id + 12))
          return xmb->textures.list[XMB_TEXTURE_INPUT_LT];
-      else if (type == (input_id + 13))
+      if (type == (input_id + 13))
          return xmb->textures.list[XMB_TEXTURE_INPUT_RT];
-      else if (type == (input_id + 14))
+      if (type == (input_id + 14))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_P];
-      else if (type == (input_id + 15))
+      if (type == (input_id + 15))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_P];
-      else if (type == (input_id + 16))
+      if (type == (input_id + 16))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_U];
-      else if (type == (input_id + 17))
+      if (type == (input_id + 17))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_D];
-      else if (type == (input_id + 18))
+      if (type == (input_id + 18))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_L];
-      else if (type == (input_id + 19))
+      if (type == (input_id + 19))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_R];
-      else if (type == (input_id + 20))
+      if (type == (input_id + 20))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_U];
-      else if (type == (input_id + 21))
+      if (type == (input_id + 21))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_D];
-      else if (type == (input_id + 22))
+      if (type == (input_id + 22))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_L];
-      else if (type == (input_id + 23))
+      if (type == (input_id + 23))
          return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_R];
    }
    if (     type >= MENU_SETTINGS_REMAPPING_PORT_BEGIN
@@ -5145,6 +5195,16 @@ static int xmb_draw_item(
             texture = xmb->textures.list[XMB_TEXTURE_HISTORY];
          else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
             texture = xmb->textures.list[XMB_TEXTURE_FAVORITES];
+#ifdef HAVE_IMAGEVIEWER
+         else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
+            texture = xmb->textures.list[XMB_TEXTURE_IMAGES];
+#endif
+         else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
+            texture = xmb->textures.list[XMB_TEXTURE_MUSICS];
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+         else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
+            texture = xmb->textures.list[XMB_TEXTURE_MOVIES];
+#endif
          else if (i < xmb->horizontal_list.size)
          {
             xmb_node_t *sidebar_node = NULL;
@@ -5170,7 +5230,7 @@ static int xmb_draw_item(
       {
          xmb_node_t *sidebar_node = (xmb_node_t*)
                (xmb->horizontal_list.size)
-                  ? file_list_get_userdata_at_offset(&xmb->horizontal_list, list->list[i].entry_idx)
+                  ? (xmb_node_t*)file_list_get_userdata_at_offset(&xmb->horizontal_list, list->list[i].entry_idx)
                   : NULL;
 
          if (sidebar_node && sidebar_node->icon)
@@ -5268,7 +5328,7 @@ static int xmb_draw_item(
 
          /* More active zoom */
          if (i == current)
-            gfx_icon_width = gfx_icon_height = (xmb->icon_size * 2.0f);
+            gfx_icon_height = (xmb->icon_size * 2.0f);
 
          /* More width room for non-squares */
          gfx_icon_width = (gfx_icon_height * 1.5f);
@@ -6114,15 +6174,15 @@ static const char *xmb_texture_path(unsigned id)
          return "favorites.png";
       case XMB_TEXTURE_ADD_FAVORITE:
          return "add-favorite.png";
+#ifdef HAVE_IMAGEVIEWER
+      case XMB_TEXTURE_IMAGES:
+         return "images.png";
+#endif
       case XMB_TEXTURE_MUSICS:
          return "musics.png";
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case XMB_TEXTURE_MOVIES:
          return "movies.png";
-#endif
-#ifdef HAVE_IMAGEVIEWER
-      case XMB_TEXTURE_IMAGES:
-         return "images.png";
 #endif
       case XMB_TEXTURE_SETTING:
          return "setting.png";
@@ -6194,12 +6254,12 @@ static const char *xmb_texture_path(unsigned id)
          return "folder.png";
       case XMB_TEXTURE_ZIP:
          return "zip.png";
-      case XMB_TEXTURE_MUSIC:
-         return "music.png";
       case XMB_TEXTURE_FAVORITE:
          return "favorites-content.png";
       case XMB_TEXTURE_IMAGE:
          return "image.png";
+      case XMB_TEXTURE_MUSIC:
+         return "music.png";
       case XMB_TEXTURE_MOVIE:
          return "movie.png";
       case XMB_TEXTURE_CORE:
@@ -6453,6 +6513,12 @@ static bool xmb_context_reset_textures(
    xmb->favorites_tab_node.alpha  = xmb->categories_active_alpha;
    xmb->favorites_tab_node.zoom   = xmb->categories_active_zoom;
 
+#ifdef HAVE_IMAGEVIEWER
+   xmb->images_tab_node.icon      = xmb->textures.list[XMB_TEXTURE_IMAGES];
+   xmb->images_tab_node.alpha     = xmb->categories_active_alpha;
+   xmb->images_tab_node.zoom      = xmb->categories_active_zoom;
+#endif
+
    xmb->music_tab_node.icon       = xmb->textures.list[XMB_TEXTURE_MUSICS];
    xmb->music_tab_node.alpha      = xmb->categories_active_alpha;
    xmb->music_tab_node.zoom       = xmb->categories_active_zoom;
@@ -6461,12 +6527,6 @@ static bool xmb_context_reset_textures(
    xmb->video_tab_node.icon       = xmb->textures.list[XMB_TEXTURE_MOVIES];
    xmb->video_tab_node.alpha      = xmb->categories_active_alpha;
    xmb->video_tab_node.zoom       = xmb->categories_active_zoom;
-#endif
-
-#ifdef HAVE_IMAGEVIEWER
-   xmb->images_tab_node.icon      = xmb->textures.list[XMB_TEXTURE_IMAGES];
-   xmb->images_tab_node.alpha     = xmb->categories_active_alpha;
-   xmb->images_tab_node.zoom      = xmb->categories_active_zoom;
 #endif
 
    xmb->add_tab_node.icon         = xmb->textures.list[XMB_TEXTURE_ADD];
@@ -7688,6 +7748,25 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    xmb->raster_block.carr.coords.vertices  = 0;
    xmb->raster_block2.carr.coords.vertices = 0;
 
+   /* Blank dummy core output */
+   if (!libretro_running)
+   {
+      gfx_display_set_alpha(xmb_coord_black, 1.0f);
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            0,
+            0,
+            video_width,
+            video_height,
+            video_width,
+            video_height,
+            xmb_coord_black,
+            NULL);
+   }
+
    gfx_display_set_alpha(xmb_coord_black, MIN((float)alpha_factor / 100, xmb->alpha));
    gfx_display_set_alpha(xmb_coord_white, xmb->alpha);
 
@@ -8648,48 +8727,10 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->old_depth                     = 1;
    xmb->alpha                         = 1.0f;
 
-   xmb->system_tab_end                = 0;
-   xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
+   xmb_refresh_system_tabs_list(xmb);
 
    for (i = 0; i < XMB_TAB_MAX_LENGTH; i++)
       xmb->tab_selection[i]           = 0;
-
-   if (      settings->bools.menu_content_show_settings
-         && !settings->bools.kiosk_mode_enable)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
-   if (settings->bools.menu_content_show_history)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
-   if (settings->bools.menu_content_show_favorites)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
-#ifdef HAVE_IMAGEVIEWER
-   if (settings->bools.menu_content_show_images)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
-#endif
-   if (settings->bools.menu_content_show_music)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-   if (settings->bools.menu_content_show_video)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
-#endif
-#if 0 /* Move Netplay and Import Content to Main Menu */
-#ifdef HAVE_NETWORKING
-   if (settings->bools.menu_content_show_netplay)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
-#endif
-   if (      settings->bools.menu_content_show_add
-         && !settings->bools.kiosk_mode_enable)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
-#endif /* 0 */
-#if defined(HAVE_DYNAMIC)
-   if (     settings->uints.menu_content_show_contentless_cores
-         != MENU_CONTENTLESS_CORES_DISPLAY_NONE)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_CONTENTLESS_CORES;
-#endif
-
-#if defined(HAVE_LIBRETRODB)
-   if (settings->bools.menu_content_show_explore)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_EXPLORE;
-#endif
 
    menu_st->flags         &= ~MENU_ST_FLAG_PREVENT_POPULATE;
 

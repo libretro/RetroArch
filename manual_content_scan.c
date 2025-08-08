@@ -519,15 +519,10 @@ enum manual_content_scan_playlist_refresh_status
          system_name_type       = MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR;
    enum manual_content_scan_core_type
          core_type              = MANUAL_CONTENT_SCAN_CORE_DETECT;
-   enum manual_content_scan_playlist_refresh_status
-         playlist_status        = MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK;
    char system_name[NAME_MAX_LENGTH];
 
    if (!playlist_scan_refresh_enabled(playlist))
-   {
-      playlist_status = MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_MISSING_CONFIG;
-      goto end;
-   }
+      return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_MISSING_CONFIG;
 
    /* Read scan parameters from playlist */
    playlist_path      = playlist_get_conf_path(playlist);
@@ -543,31 +538,22 @@ enum manual_content_scan_playlist_refresh_status
 
    /* Determine system name (playlist basename
     * without extension) */
+   /* Cannot happen, but would constitute a
+    * 'system name' error */
    if (string_is_empty(playlist_path))
-   {
-      /* Cannot happen, but would constitute a
-       * 'system name' error */
-      playlist_status = MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME;
-      goto end;
-   }
+      return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME;
 
    fill_pathname(system_name, path_basename(playlist_path),
          "", sizeof(system_name));
 
+   /* Cannot happen, but would constitute a
+    * 'system name' error */
    if (string_is_empty(system_name))
-   {
-      /* Cannot happen, but would constitute a
-       * 'system name' error */
-      playlist_status = MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME;
-      goto end;
-   }
+      return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME;
 
    /* Set content directory */
    if (!manual_content_scan_set_menu_content_dir(content_dir))
-   {
-      playlist_status = MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CONTENT_DIR;
-      goto end;
-   }
+      return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CONTENT_DIR;
 
    /* Set system name */
 #ifdef HAVE_LIBRETRODB
@@ -630,10 +616,7 @@ enum manual_content_scan_playlist_refresh_status
 
    if (!manual_content_scan_set_menu_system_name(
          system_name_type, system_name))
-   {
-      playlist_status = MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME;
-      goto end;
-   }
+      return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME;
 
    /* Set core path/name */
    if (   !string_is_empty(core_name)
@@ -642,10 +625,7 @@ enum manual_content_scan_playlist_refresh_status
 
    if (!manual_content_scan_set_menu_core_name(
          core_type, core_name))
-   {
-      playlist_status = MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CORE;
-      goto end;
-   }
+      return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CORE;
 
    /* Set custom file extensions */
    if (string_is_empty(file_exts))
@@ -679,11 +659,9 @@ enum manual_content_scan_playlist_refresh_status
       switch (manual_content_scan_validate_dat_file_path())
       {
          case MANUAL_CONTENT_SCAN_DAT_FILE_INVALID:
-            playlist_status = MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_DAT_FILE;
-            goto end;
+            return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_DAT_FILE;
          case MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE:
-            playlist_status = MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_DAT_FILE_TOO_LARGE;
-            goto end;
+            return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_DAT_FILE_TOO_LARGE;
          default:
             /* No action required */
             break;
@@ -700,8 +678,7 @@ enum manual_content_scan_playlist_refresh_status
     *   existing file */
    scan_settings.validate_entries   = true;
 
-end:
-   return playlist_status;
+   return MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK;
 }
 
 /* Menu getters */
@@ -1096,9 +1073,9 @@ struct string_list *manual_content_scan_get_content_list(
 
    /* Sanity check */
    if (!task_config)
-      goto error;
+      return NULL;
    if (string_is_empty(task_config->content_dir))
-      goto error;
+      return NULL;
 
    /* Check whether files should be filtered by
     * extension */
@@ -1187,7 +1164,7 @@ static bool manual_content_scan_get_playlist_content_path(
       /* Get archive file contents */
       if (!(archive_list = file_archive_get_file_list(
             content_path, filter_exts ? task_config->file_exts : NULL)))
-         goto error;
+         return false;
 
       if (archive_list->size < 1)
          goto error;

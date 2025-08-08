@@ -552,10 +552,6 @@ MSG_HASH(
    "鎖定核心"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "防止修改目前使用的核心, 遊戲僅限此核心版本才可執行時, 可用於避免不必要的更新。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "在「應用核心」選項中不顯示"
    )
@@ -1509,10 +1505,6 @@ MSG_HASH(
    "輸入"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "設定鍵盤、滑鼠和光線槍等輸入裝置使用的驅動程式, 此選項會依據顯示驅動程式強制變更。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "udev 驅動程式讀取支援鍵盤的 evdev 事件，還支援鍵盤回呼、滑鼠和觸控板。\n大多數發行版預設情況下, /dev/input裝置節點僅限root權限使用（mode 600），可以設定一個裝置管理員（udev）規則，用於非root權限時使用。"
    )
@@ -2046,20 +2038,8 @@ MSG_HASH(
    "僅限映像管螢幕使用, 設定解析度。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "水平置中"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "僅限映像管螢幕使用, 設定畫面水平位置。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "畫面大小"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "僅限映像管螢幕使用, 設定畫面顯示大小。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -2219,14 +2199,6 @@ MSG_HASH(
 
 /* Settings > Video > Fullscreen Mode */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   "開啟全螢幕模式"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "開啟時使用全螢幕模式, 可隨時關閉切換為視窗模式。"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "視窗全螢幕模式"
@@ -2566,10 +2538,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    "智能垂直同步"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "當檢測到效能低於設定的更新率時, 垂直同步將自動禁用, 用於防止效能下降時造成的延遲。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -3326,14 +3294,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "控制器斷開解決方法 (Android)"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "結束前再確認"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "變更「結束復古電玩」快捷鍵操作方式, 需按兩下才能結束復古電玩。"
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -3869,15 +3829,6 @@ MSG_HASH(
    "連線遊戲時淡化對話訊息的開關。"
    )
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
-   "傳送除錯資訊"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
-   "將有關您的裝置和設定相關的診斷信息, 發送到我們的服務器進行分析。"
-   )
-
 /* Settings > Input > Port # Controls */
 
 MSG_HASH(
@@ -4067,6 +4018,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "光線槍 十字鍵 右"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "連發設定"
    )
 
 /* Settings > Latency */
@@ -5913,10 +5868,6 @@ MSG_HASH(
    "顯示「設定」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "顯示「設定」選項, 關閉此選項請先設定密碼, 避免錯誤發生。 (Ozone和XMB主題需要重新啟動)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "輸入顯示設定選項的密碼"
    )
@@ -5929,64 +5880,28 @@ MSG_HASH(
    "顯示「我的最愛」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "顯示「我的最愛」列表。 (Ozone和XMB主題需要重新啟動)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "顯示「圖片」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "顯示「圖片」列表。 (Ozone和XMB主題需要重新啟動)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "顯示「音樂」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "顯示「音樂」列表。 (Ozone和XMB主題需要重新啟動)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "顯示「影片」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "顯示「影片」列表。 (Ozone和XMB主題需要重新啟動)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "顯示「連線對戰」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "顯示「連線對戰」選項。 (Ozone和XMB主題需要重新啟動)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "顯示「歷史」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "顯示「歷史」列表。 (Ozone和XMB主題需要重新啟動)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
-   "顯示「匯入遊戲」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "顯示「匯入遊戲」選項。 (Ozone和XMB主題需要重新啟動)"
-   )
-MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    "顯示「匯入遊戲」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "在主選單或列表選單中顯示「匯入遊戲」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -6005,16 +5920,8 @@ MSG_HASH(
    "顯示「搜尋」"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "顯示「搜尋」選項。 (Ozone和XMB主題需要重新啟動)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "顯示「應用核心」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "設定「應用核心」顯示類型。 (Ozone和XMB主題需要重新啟動)\n設定<自訂>時可透過「設定/核心/管理核心」選項, 設定核心是否顯示於「應用核心」選項中。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -11256,6 +11163,18 @@ MSG_HASH(
 /* Ozone: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT,
+   "選單字型"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT,
+   "設定選單使用的字型。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "字體大小"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "隱藏左欄名稱"
    )
@@ -11302,6 +11221,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
    "設定預覽縮圖的欄位大小。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
+   "無"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NORMAL,
+   "正常"
    )
 
 MSG_HASH(
@@ -12429,10 +12356,6 @@ MSG_HASH(
 /* Unused (Only Exist in Translation Files) */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
-   "自動寬高比"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
    "(區域網路) 暱稱: %s"
    )
@@ -12443,10 +12366,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
    "系統背景音樂"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
-   "自訂比例"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
@@ -12467,14 +12386,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
    "選擇要查看的搜尋結果。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
-   "強制寬高比"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-   "從列表中選擇"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
@@ -12551,14 +12462,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
    "什麼是核心?"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
-   "傳送除錯資訊"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
-   "將有關您的裝置與設定相關的診斷信息, 傳送到我們的服務器進行分析。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
@@ -12842,30 +12745,6 @@ MSG_HASH(
    "按[右鍵]五次刪除全部金手指。"
    )
 MSG_HASH(
-   MSG_FAILED_TO_SAVE_DEBUG_INFO,
-   "無法儲存除錯資訊。"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SEND_DEBUG_INFO,
-   "無法將除錯資訊傳送到服務器。"
-   )
-MSG_HASH(
-   MSG_SENDING_DEBUG_INFO,
-   "傳送除錯資訊中..."
-   )
-MSG_HASH(
-   MSG_SENT_DEBUG_INFO,
-   "已成功將除錯資訊傳送到服務器, 您的ID號碼是「%u」。"
-   )
-MSG_HASH(
-   MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
-   "再按兩次, 將診斷訊息提交給RetroArch團隊。"
-   )
-MSG_HASH(
-   MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
-   "再按一次, 將診斷訊息提交給RetroArch團隊。"
-   )
-MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
    "混音器音訊通道音量"
    )
@@ -13137,14 +13016,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_ALL_CORES_SWITCHED_PFD,
    "全部支援的核心已更新為Google Play商店版本。"
-   )
-MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "已更新核心: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "已跳過核心: "
    )
 MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
@@ -13493,18 +13364,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    "無法從用戶端取得暱稱。"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "無法載入"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "無法載入檔案"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "無法載入操作重播"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
@@ -13949,10 +13808,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "倒帶緩衝區已用盡。"
-   )
-MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "已儲存設定檔到"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,

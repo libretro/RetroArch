@@ -32,6 +32,10 @@
 
 #include "../audio_driver.h"
 
+#define CHUNK_FRAMES 64
+#define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))
+#define BLOCKS 16
+
 typedef struct
 {
    size_t write_ptr;
@@ -46,7 +50,7 @@ typedef struct
 static volatile gx_audio_t *gx_audio_data = NULL;
 static volatile bool stop_audio           = false;
 
-static void dma_callback(void)
+static void gx_audio_dma_callback(void)
 {
    gx_audio_t *wa = (gx_audio_t*)gx_audio_data;
 
@@ -69,7 +73,7 @@ static void *gx_audio_init(const char *device,
       unsigned block_frames,
       unsigned *new_rate)
 {
-   gx_audio_t *wa       = (gx_audio_t*)memalign(32, sizeof(*wa));
+   gx_audio_t *wa = (gx_audio_t*)memalign(32, sizeof(*wa));
    if (!wa)
       return NULL;
 
@@ -78,7 +82,7 @@ static void *gx_audio_init(const char *device,
    memset(wa, 0, sizeof(*wa));
 
    AIInit(NULL);
-   AIRegisterDMACallback(dma_callback);
+   AIRegisterDMACallback(gx_audio_dma_callback);
 
    /* Ranges 0-32000 (default low) and 40000-47999
       (in settings going down from 48000) -> set to 32000 hz */
@@ -103,7 +107,8 @@ static void *gx_audio_init(const char *device,
 }
 
 /* Wii uses silly R, L, R, L interleaving. */
-static INLINE void copy_swapped(uint32_t * restrict dst,
+static INLINE void gx_audio_copy_swapped(
+      uint32_t *restrict dst,
       const uint32_t * restrict src, size_t len)
 {
    do
@@ -128,14 +133,15 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t len)
 
       /* FIXME: Nonblocking audio should break out of loop
        * when it has nothing to write. */
-      while ((wa->dma_write == wa->dma_next ||
-               wa->dma_write == wa->dma_busy) && !wa->nonblock);
+      while ((    wa->dma_write == wa->dma_next
+               || wa->dma_write == wa->dma_busy) && !wa->nonblock);
 
-      copy_swapped(wa->data[wa->dma_write] + wa->write_ptr, buf, to_write);
+      gx_audio_copy_swapped(wa->data[wa->dma_write] + wa->write_ptr,
+            buf, to_write);
 
       wa->write_ptr += to_write;
-      frames -= to_write;
-      buf += to_write;
+      frames        -= to_write;
+      buf           += to_write;
 
       if (wa->write_ptr >= CHUNK_FRAMES)
       {

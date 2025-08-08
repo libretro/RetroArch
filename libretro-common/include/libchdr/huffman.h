@@ -13,7 +13,8 @@
 #ifndef __HUFFMAN_H__
 #define __HUFFMAN_H__
 
-#include "bitstream.h"
+#include <libchdr/bitstream.h>
+
 
 /***************************************************************************
  *  CONSTANTS

@@ -44,9 +44,6 @@ static void frontend_xenon_init(void *data)
    usb_init();
    usb_do_poll();
    xenon_ata_init();
-#if 0
-   dvd_init();
-#endif
 }
 
 static void frontend_xenon_shutdown(bool unused)

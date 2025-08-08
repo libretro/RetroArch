@@ -17,18 +17,19 @@
 #include <Foundation/Foundation.h>
 #include <AVFoundation/AVFoundation.h>
 #include <libretro.h>
-#include "../camera/camera_driver.h"
-#include "../verbosity.h"
-/// For image scaling and color space DSP
+/* For image scaling and color space DSP */
 #import <Accelerate/Accelerate.h>
 #if TARGET_OS_IOS
-/// For camera rotation detection
+/* For camera rotation detection */
 #import <UIKit/UIKit.h>
 #endif
 
-// TODO: Add an API to retroarch to allow selection of camera
+#include "../camera_driver.h"
+#include "../../verbosity.h"
+
+/* TODO: Add an API to retroarch to allow selection of camera */
 #ifndef CAMERA_PREFER_FRONTFACING
-#define CAMERA_PREFER_FRONTFACING 1  /// Default to front camera
+#define CAMERA_PREFER_FRONTFACING 1  /* Default to front camera */
 #endif
 
 #ifndef CAMERA_MIRROR_FRONT_CAMERA
@@ -58,42 +59,42 @@
 }
 
 - (void)requestCameraAuthorizationWithCompletion:(void (^)(BOOL granted))completion {
-    RARCH_LOG("[Camera]: Checking camera authorization status\n");
+    RARCH_LOG("[Camera] Checking camera authorization status...\n");
 
     AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
 
     switch (status) {
         case AVAuthorizationStatusAuthorized: {
-            RARCH_LOG("[Camera]: Camera access already authorized\n");
+            RARCH_LOG("[Camera] Camera access already authorized.\n");
             completion(YES);
             break;
         }
 
         case AVAuthorizationStatusNotDetermined: {
 
-            RARCH_LOG("[Camera]: Requesting camera authorization...\n");
+            RARCH_LOG("[Camera] Requesting camera authorization...\n");
             [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo
                                      completionHandler:^(BOOL granted) {
-                RARCH_LOG("[Camera]: Authorization %s\n", granted ? "granted" : "denied");
+                RARCH_LOG("[Camera] Authorization %s.\n", granted ? "granted" : "denied");
                 completion(granted);
             }];
             break;
         }
 
         case AVAuthorizationStatusDenied: {
-            RARCH_ERR("[Camera]: Camera access denied by user\n");
+            RARCH_ERR("[Camera] Camera access denied by user.\n");
             completion(NO);
             break;
         }
 
         case AVAuthorizationStatusRestricted: {
-            RARCH_ERR("[Camera]: Camera access restricted (parental controls?)\n");
+            RARCH_ERR("[Camera] Camera access restricted (parental controls?).\n");
             completion(NO);
             break;
         }
 
         default: {
-            RARCH_ERR("[Camera]: Unknown authorization status\n");
+            RARCH_ERR("[Camera] Unknown authorization status.\n");
             completion(NO);
             break;
         }
@@ -109,7 +110,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
         CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
         if (!imageBuffer) {
-            RARCH_ERR("[Camera]: Failed to get image buffer\n");
+            RARCH_ERR("[Camera] Failed to get image buffer.\n");
             return;
         }
 
@@ -120,12 +121,12 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         OSType pixelFormat = CVPixelBufferGetPixelFormatType(imageBuffer);
 
 #ifdef DEBUG
-        RARCH_LOG("[Camera]: Processing frame %zux%zu format: %u\n", sourceWidth, sourceHeight, (unsigned int)pixelFormat);
+        RARCH_LOG("[Camera] Processing frame %zux%zu format: %u.\n", sourceWidth, sourceHeight, (unsigned int)pixelFormat);
 #endif
         // Create intermediate buffer for full-size converted image
         uint32_t *intermediateBuffer = (uint32_t*)malloc(sourceWidth * sourceHeight * 4);
         if (!intermediateBuffer) {
-            RARCH_ERR("[Camera]: Failed to allocate intermediate buffer\n");
+            RARCH_ERR("[Camera] Failed to allocate intermediate buffer.\n");
             CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
             return;
         }
@@ -199,14 +200,14 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
             }
 
             default:
-                RARCH_ERR("[Camera]: Unsupported pixel format: %u\n", (unsigned int)pixelFormat);
+                RARCH_ERR("[Camera] Unsupported pixel format: %u.\n", (unsigned int)pixelFormat);
                 free(intermediateBuffer);
                 CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
                 return;
         }
 
         if (err != kvImageNoError) {
-            RARCH_ERR("[Camera]: Error converting color format: %ld\n", err);
+            RARCH_ERR("[Camera] Error converting color format: %ld.\n", err);
             free(intermediateBuffer);
             CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
             return;
@@ -231,7 +232,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
                 // TODO: Add an API to retroarch to allow for mirroring of front camera
                 shouldMirror = true; // Mirror front camera
                 #endif
-                RARCH_LOG("[Camera]: Using 270-degree rotation with mirroring for front camera in portrait mode\n");
+                RARCH_LOG("[Camera] Using 270-degree rotation with mirroring for front camera in portrait mode.\n");
             }
         }
 #endif
@@ -240,7 +241,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         vImage_Buffer rotatedBuffer = {};
         rotatedBuffer.data = malloc(sourceWidth * sourceHeight * 4);
         if (!rotatedBuffer.data) {
-            RARCH_ERR("[Camera]: Failed to allocate rotation buffer\n");
+            RARCH_ERR("[Camera] Failed to allocate rotation buffer.\n");
             free(intermediateBuffer);
             CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
             return;
@@ -265,7 +266,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
                                      kvImageNoFlags);
 
         if (err != kvImageNoError) {
-            RARCH_ERR("[Camera]: Error rotating image: %ld\n", err);
+            RARCH_ERR("[Camera] Error rotating image: %ld.\n", err);
             free(rotatedBuffer.data);
             free(intermediateBuffer);
             CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
@@ -277,7 +278,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
             vImage_Buffer mirroredBuffer = {};
             mirroredBuffer.data = malloc(rotatedBuffer.height * rotatedBuffer.rowBytes);
             if (!mirroredBuffer.data) {
-                RARCH_ERR("[Camera]: Failed to allocate mirror buffer\n");
+                RARCH_ERR("[Camera] Failed to allocate mirror buffer.\n");
                 free(rotatedBuffer.data);
                 free(intermediateBuffer);
                 CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
@@ -295,7 +296,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
                 free(rotatedBuffer.data);
                 rotatedBuffer = mirroredBuffer;
             } else {
-                RARCH_ERR("[Camera]: Error mirroring image: %ld\n", err);
+                RARCH_ERR("[Camera] Error mirroring image: %ld.\n", err);
                 free(mirroredBuffer.data);
             }
         }
@@ -317,12 +318,12 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
             scaledHeight = (size_t)(self.width / sourceAspect);
         }
 
-        RARCH_LOG("[Camera]: Aspect fill scaling from %zux%zu to %zux%zu\n",
+        RARCH_LOG("[Camera] Aspect fill scaling from %zux%zu to %zux%zu.\n",
                   rotatedBuffer.width, rotatedBuffer.height, scaledWidth, scaledHeight);
 
         scaledBuffer.data = malloc(scaledWidth * scaledHeight * 4);
         if (!scaledBuffer.data) {
-            RARCH_ERR("[Camera]: Failed to allocate scaled buffer\n");
+            RARCH_ERR("[Camera] Failed to allocate scaled buffer.\n");
             free(rotatedBuffer.data);
             free(intermediateBuffer);
             CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
@@ -337,7 +338,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         err = vImageScale_ARGB8888(&rotatedBuffer, &scaledBuffer, NULL, kvImageHighQualityResampling);
 
         if (err != kvImageNoError) {
-            RARCH_ERR("[Camera]: Error scaling image: %ld\n", err);
+            RARCH_ERR("[Camera] Error scaling image: %ld.\n", err);
             free(scaledBuffer.data);
             free(rotatedBuffer.data);
             free(intermediateBuffer);
@@ -368,7 +369,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 }
 
 - (AVCaptureDevice *)selectCameraDevice {
-    RARCH_LOG("[Camera]: Selecting camera device\n");
+    RARCH_LOG("[Camera] Selecting camera device...\n");
 
     NSArray<AVCaptureDevice *> *devices;
 
@@ -414,13 +415,13 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 #endif
 
     if (devices.count == 0) {
-        RARCH_ERR("[Camera]: No camera devices found\n");
+        RARCH_ERR("[Camera] No camera devices found.\n");
         return nil;
     }
 
     // Log available devices
     for (AVCaptureDevice *device in devices) {
-        RARCH_LOG("[Camera]: Found device: %s - Position: %d\n",
+        RARCH_LOG("[Camera] Found device: %s - Position: %d.\n",
                   [device.localizedName UTF8String],
                   (int)device.position);
     }
@@ -428,7 +429,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 #if TARGET_OS_OSX
     // macOS: Just use the first available camera if only one exists
     if (devices.count == 1) {
-        RARCH_LOG("[Camera]: Using only available camera: %s\n",
+        RARCH_LOG("[Camera] Using only available camera: %s.\n",
                   [devices.firstObject.localizedName UTF8String]);
         return devices.firstObject;
     }
@@ -438,7 +439,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         BOOL isFrontFacing = [device.localizedName containsString:@"FaceTime"] ||
                             [device.localizedName containsString:@"Front"];
         if (CAMERA_PREFER_FRONTFACING == isFrontFacing) {
-            RARCH_LOG("[Camera]: Selected macOS camera: %s\n",
+            RARCH_LOG("[Camera] Selected macOS camera: %s.\n",
                       [device.localizedName UTF8String]);
             return device;
         }
@@ -451,7 +452,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     // Try to find preferred camera
     for (AVCaptureDevice *device in devices) {
         if (device.position == preferredPosition) {
-            RARCH_LOG("[Camera]: Selected iOS camera position: %d\n",
+            RARCH_LOG("[Camera] Selected iOS camera position: %d.\n",
                       (int)preferredPosition);
             return device;
         }
@@ -459,7 +460,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 #endif
 
     // Fallback to first available camera
-    RARCH_LOG("[Camera]: Using fallback camera: %s\n",
+    RARCH_LOG("[Camera] Using fallback camera: %s.\n",
               [devices.firstObject.localizedName UTF8String]);
     return devices.firstObject;
 }
@@ -471,7 +472,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     // Get camera device
     AVCaptureDevice *device = [self selectCameraDevice];
     if (!device) {
-        RARCH_ERR("[Camera]: No camera device found\n");
+        RARCH_ERR("[Camera] No camera device found.\n");
         return false;
     }
 
@@ -479,14 +480,14 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     NSError *error = nil;
     self.input = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
     if (error) {
-        RARCH_ERR("[Camera]: Failed to create device input: %s\n",
+        RARCH_ERR("[Camera] Failed to create device input: %s.\n",
                   [error.localizedDescription UTF8String]);
         return false;
     }
 
     if ([self.session canAddInput:self.input]) {
         [self.session addInput:self.input];
-        RARCH_LOG("[Camera]: Added camera input to session\n");
+        RARCH_LOG("[Camera] Added camera input to session.\n");
     }
 
     // Create and configure video output
@@ -498,7 +499,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
     if ([self.session canAddOutput:self.output]) {
         [self.session addOutput:self.output];
-        RARCH_LOG("[Camera]: Added video output to session\n");
+        RARCH_LOG("[Camera] Added video output to session.\n");
     }
 
     return true;
@@ -537,94 +538,78 @@ static void generateColorBars(uint32_t *buffer, size_t width, size_t height) {
 static void *avfoundation_init(const char *device, uint64_t caps,
                              unsigned width, unsigned height)
 {
-    RARCH_LOG("[Camera]: Initializing AVFoundation camera %ux%u\n", width, height);
-
     avfoundation_t *avf = (avfoundation_t*)calloc(1, sizeof(avfoundation_t));
-    if (!avf) {
-        RARCH_ERR("[Camera]: Failed to allocate avfoundation_t\n");
+    RARCH_LOG("[Camera] Initializing AVFoundation camera %ux%u.\n", width, height);
+    if (!avf)
+    {
+        RARCH_ERR("[Camera] Failed to allocate avfoundation_t.\n");
         return NULL;
     }
 
-    avf->manager = [AVCameraManager sharedInstance];
-    avf->width = width;
-    avf->height = height;
-    avf->manager.width = width;
+    avf->manager        = [AVCameraManager sharedInstance];
+    avf->width          = width;
+    avf->height         = height;
+    avf->manager.width  = width;
     avf->manager.height = height;
 
-    // Check if we're on the main thread
-    if ([NSThread isMainThread]) {
-        RARCH_LOG("[Camera]: Initializing on main thread\n");
-        // Direct initialization on main thread
-        [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
-            AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
-            if (status != AVAuthorizationStatusAuthorized) {
-                RARCH_ERR("[Camera]: Camera access not authorized (status: %d)\n", (int)status);
-                free(avf);
-                return;
-            }
-        }];
-    } else {
-        RARCH_LOG("[Camera]: Initializing on background thread\n");
-        // Use dispatch_sync to run authorization check on main thread
-        __block AVAuthorizationStatus status;
-        dispatch_sync(dispatch_get_main_queue(), ^{
-            status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
-        });
-
-        if (status != AVAuthorizationStatusAuthorized) {
-            RARCH_ERR("[Camera]: Camera access not authorized (status: %d)\n", (int)status);
-            free(avf);
-            return NULL;
-        }
-    }
-
-    // Allocate frame buffer
-    avf->manager.frameBuffer = (uint32_t*)calloc(width * height, sizeof(uint32_t));
-    if (!avf->manager.frameBuffer) {
-        RARCH_ERR("[Camera]: Failed to allocate frame buffer\n");
+    /* Synchronously request camera authorization */
+    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+    __block BOOL granted = NO;
+    RARCH_LOG("[Camera] Requesting camera authorization synchronously.\n");
+    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL g) {
+        granted = g;
+        dispatch_semaphore_signal(sema);
+    }];
+    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    if (!granted)
+    {
+        RARCH_ERR("[Camera] Camera access not authorized.\n");
         free(avf);
         return NULL;
     }
 
-    // Initialize capture session on main thread
+    /* Allocate frame buffer */
+    avf->manager.frameBuffer = (uint32_t*)calloc(width * height, sizeof(uint32_t));
+    if (!avf->manager.frameBuffer)
+    {
+        RARCH_ERR("[Camera] Failed to allocate frame buffer.\n");
+        free(avf);
+        return NULL;
+    }
+
+    /* Initialize capture session on main thread */
     __block bool setupSuccess = false;
 
-    if ([NSThread isMainThread]) {
+    if ([NSThread isMainThread])
+    {
         @autoreleasepool {
             setupSuccess = [avf->manager setupCameraSession];
             if (setupSuccess) {
-                [avf->manager.session startRunning];
-                RARCH_LOG("[Camera]: Started camera session\n");
+                RARCH_LOG("[Camera] Started camera session.\n");
             }
         }
-    } else {
+    }
+    else
+    {
         dispatch_sync(dispatch_get_main_queue(), ^{
             @autoreleasepool {
                 setupSuccess = [avf->manager setupCameraSession];
                 if (setupSuccess) {
-                    [avf->manager.session startRunning];
-                    RARCH_LOG("[Camera]: Started camera session\n");
+                    RARCH_LOG("[Camera] Started camera session.\n");
                 }
             }
         });
     }
 
-    if (!setupSuccess) {
-        RARCH_ERR("[Camera]: Failed to setup camera\n");
+    if (!setupSuccess)
+    {
+        RARCH_ERR("[Camera] Failed to setup camera.\n");
         free(avf->manager.frameBuffer);
         free(avf);
         return NULL;
     }
 
-    // Add a check to verify the session is actually running
-    if (!avf->manager.session.isRunning) {
-        RARCH_ERR("[Camera]: Failed to start camera session\n");
-        free(avf->manager.frameBuffer);
-        free(avf);
-        return NULL;
-    }
-
-    RARCH_LOG("[Camera]: AVFoundation camera initialized and started successfully\n");
+    RARCH_LOG("[Camera] AVFoundation camera initialized and started successfully.\n");
     return avf;
 }
 
@@ -634,41 +619,40 @@ static void avfoundation_free(void *data)
     if (!avf)
         return;
 
-    RARCH_LOG("[Camera]: Freeing AVFoundation camera\n");
+    RARCH_LOG("[Camera] Freeing AVFoundation camera.\n");
 
-    if (avf->manager.session) {
+    if (avf->manager.session)
         [avf->manager.session stopRunning];
-    }
 
-    if (avf->manager.frameBuffer) {
+    if (avf->manager.frameBuffer)
+    {
         free(avf->manager.frameBuffer);
         avf->manager.frameBuffer = NULL;
     }
 
     free(avf);
-    RARCH_LOG("[Camera]: AVFoundation camera freed\n");
+    RARCH_LOG("[Camera] AVFoundation camera freed.\n");
 }
 
 static bool avfoundation_start(void *data)
 {
+    bool isRunning;
     avfoundation_t *avf = (avfoundation_t*)data;
-    if (!avf || !avf->manager.session) {
-        RARCH_ERR("[Camera]: Cannot start - invalid data\n");
+    if (!avf || !avf->manager.session)
+    {
+        RARCH_ERR("[Camera] Cannot start - invalid data.\n");
         return false;
     }
 
-    RARCH_LOG("[Camera]: Starting AVFoundation camera\n");
+    RARCH_LOG("[Camera] Starting AVFoundation camera.\n");
 
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    dispatch_sync(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         [avf->manager.session startRunning];
-        RARCH_LOG("[Camera]: Camera session started on background thread\n");
+        RARCH_LOG("[Camera] Camera session started on background thread.\n");
     });
 
-    // Give the session a moment to start
-    usleep(100000); // 100ms
-
-    bool isRunning = avf->manager.session.isRunning;
-    RARCH_LOG("[Camera]: Camera session running: %s\n", isRunning ? "YES" : "NO");
+    isRunning = avf->manager.session.isRunning;
+    RARCH_LOG("[Camera] Camera session running: %s.\n", isRunning ? "YES" : "NO");
     return isRunning;
 }
 
@@ -678,11 +662,11 @@ static void avfoundation_stop(void *data)
     if (!avf || !avf->manager.session)
         return;
 
-    RARCH_LOG("[Camera]: Stopping AVFoundation camera\n");
+    RARCH_LOG("[Camera] Stopping AVFoundation camera...\n");
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         [avf->manager.session stopRunning];
-        RARCH_LOG("[Camera]: Camera session stopped on background thread\n");
+        RARCH_LOG("[Camera] Camera session stopped on background thread.\n");
     });
 }
 
@@ -691,15 +675,18 @@ static bool avfoundation_poll(void *data,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
     avfoundation_t *avf = (avfoundation_t*)data;
-    if (!avf || !frame_raw_cb) {
-        RARCH_ERR("[Camera]: Cannot poll - invalid data or callback\n");
+    if (!avf || !frame_raw_cb)
+    {
+        RARCH_ERR("[Camera] Cannot poll - invalid data or callback.\n");
         return false;
     }
 
-    if (!avf->manager.session.isRunning) {
-        RARCH_LOG("[Camera]: Camera not running, generating color bars\n");
+    if (!avf->manager.session.isRunning)
+    {
+        RARCH_LOG("[Camera] Camera not running, generating color bars...\n");
         uint32_t *tempBuffer = (uint32_t*)calloc(avf->width * avf->height, sizeof(uint32_t));
-        if (tempBuffer) {
+        if (tempBuffer)
+        {
             generateColorBars(tempBuffer, avf->width, avf->height);
             frame_raw_cb(tempBuffer, avf->width, avf->height, avf->width * 4);
             free(tempBuffer);
@@ -709,7 +696,7 @@ static bool avfoundation_poll(void *data,
     }
 
 #ifdef DEBUG
-    RARCH_LOG("[Camera]: Delivering camera frame\n");
+    RARCH_LOG("[Camera] Delivering camera frame.\n");
 #endif
     frame_raw_cb(avf->manager.frameBuffer, avf->width, avf->height, avf->width * 4);
     return true;

@@ -57,6 +57,21 @@ struct bitmap_info
    } u;
 };
 
+typedef struct gdi_texture
+{
+   HBITMAP bmp;
+   HBITMAP bmp_old;
+   void *data;
+
+   int width;
+   int height;
+   int active_width;
+   int active_height;
+
+   enum texture_filter_type type;
+} gdi_texture_t;
+
+
 HDC          win32_gdi_hdc;
 static void *dinput_gdi;
 
@@ -489,7 +504,6 @@ static void *gdi_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
-   void *ctx_data                       = NULL;
    unsigned mode_width = 0, mode_height = 0;
    unsigned win_width  = 0, win_height  = 0;
    unsigned temp_width = 0, temp_height = 0;
@@ -525,7 +539,7 @@ static void *gdi_init(const video_info_t *video,
    mode_width  = 0;
    mode_height = 0;
 
-   RARCH_LOG("[GDI]: Detecting screen resolution: %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[GDI] Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
    win_width   = video->width;
    win_height  = video->height;
@@ -560,7 +574,7 @@ static void *gdi_init(const video_info_t *video,
 
    video_driver_get_size(&temp_width, &temp_height);
 
-   RARCH_LOG("[GDI]: Using resolution %ux%u\n", temp_width, temp_height);
+   RARCH_LOG("[GDI] Using resolution %ux%u.\n", temp_width, temp_height);
 
    gfx_ctx_gdi_input_driver(input, input_data);
 
@@ -571,7 +585,7 @@ static void *gdi_init(const video_info_t *video,
             video->is_threaded,
             FONT_DRIVER_RENDER_GDI);
 
-   RARCH_LOG("[GDI]: Init complete.\n");
+   RARCH_LOG("[GDI] Init complete.\n");
 
    return gdi;
 
@@ -901,7 +915,6 @@ static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
 static uintptr_t gdi_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
-   void *tmpdata               = NULL;
    gdi_texture_t *texture      = NULL;
    struct texture_image *image = (struct texture_image*)data;
 

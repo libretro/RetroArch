@@ -91,22 +91,6 @@ struct string_list *string_split(const char *str, const char *delim);
 bool string_split_noalloc(struct string_list *list,
       const char *str, const char *delim);
 
-/**
- * string_separate:
- * @str              : string to turn into a string list
- * @delim            : delimiter character to use for separating the string.
- *
- * Creates a new string list based on string @str, delimited by @delim.
- * Includes empty strings - i.e. two adjacent delimiters will resolve
- * to a string list element of "".
- *
- * @return New string list if successful, otherwise NULL.
- **/
-struct string_list *string_separate(char *str, const char *delim);
-
-bool string_separate_noalloc(struct string_list *list,
-      char *str, const char *delim);
-
 bool string_list_deinitialize(struct string_list *list);
 
 bool string_list_initialize(struct string_list *list);
@@ -138,25 +122,6 @@ bool string_list_append(struct string_list *list, const char *elem,
       union string_list_elem_attr attr);
 
 /**
- * string_list_append_n:
- * @list             : pointer to string list
- * @elem             : element to add to the string list
- * @length           : read at most this many bytes from elem
- * @attr             : attributes of new element.
- *
- * Appends a new element to the string list.
- *
- * Hidden non-leaf function cost:
- * - Calls string_list_capacity()
- * - Calls malloc
- * - Calls strlcpy
- *
- * @return true if successful, otherwise false.
- **/
-bool string_list_append_n(struct string_list *list, const char *elem,
-      unsigned length, union string_list_elem_attr attr);
-
-/**
  * string_list_free
  * @list             : pointer to string list object
  *
@@ -177,14 +142,14 @@ void string_list_free(struct string_list *list);
  * NOTE: @s must be NULL-terminated.
  *
  * Hidden non-leaf function cost:
- * - Calls strlen_size()
- * - Calls strlcat x times in a loop
+ * - Calls strlen()
+ * - Calls strlcpy x times in a loop
  **/
 void string_list_join_concat(char *s, size_t len,
       const struct string_list *list, const char *sep);
 
 /**
- * string_list_join_concat:
+ * string_list_join_concat_special:
  * @s                : buffer that @list will be joined to.
  * @len              : length of @s.
  * @list             : pointer to string list.
@@ -200,19 +165,15 @@ void string_list_join_concat_special(char *s, size_t len,
       const struct string_list *list, const char *delim);
 
 /**
- * string_list_set:
+ * string_list_capacity:
  * @list             : pointer to string list
- * @idx              : index of element in string list
- * @str              : value for the element.
+ * @cap              : new capacity for string list.
  *
- * Set value of element inside string list.
+ * Change maximum capacity of string list's size.
  *
- * Hidden non-leaf function cost:
- * - Calls free
- * - Calls strdup
+ * @return true if successful, otherwise false.
  **/
-void string_list_set(struct string_list *list, unsigned idx,
-      const char *str);
+bool string_list_capacity(struct string_list *list, size_t cap);
 
 struct string_list *string_list_clone(const struct string_list *src);
 

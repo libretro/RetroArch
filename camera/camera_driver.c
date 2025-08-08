@@ -55,7 +55,7 @@ const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
    &camera_v4l2,
 #endif
-#ifdef HAVE_PIPEWIRE_STABLE
+#if defined(HAVE_PIPEWIRE) && defined(HAVE_PIPEWIRE_STABLE)
    &camera_pipewire,
 #endif
 #ifdef EMSCRIPTEN

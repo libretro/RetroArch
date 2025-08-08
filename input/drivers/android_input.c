@@ -89,7 +89,7 @@ enum {
 
 #define MAX_KEYS ((LAST_KEYCODE + 7) / 8)
 
-/* First ports are used to keep track of gamepad states. 
+/* First ports are used to keep track of gamepad states.
  * Last port is used for keyboard state */
 static uint8_t android_key_state[DEFAULT_MAX_PADS + 1][MAX_KEYS];
 
@@ -147,8 +147,11 @@ typedef struct android_input
    int64_t quick_tap_time;
    state_device_t pad_states[MAX_USERS];        /* int alignment */
    int mouse_x, mouse_y;
+   int16_t mouse_x_viewport_screen, mouse_y_viewport_screen;
+   int16_t mouse_x_viewport, mouse_y_viewport;
    int mouse_x_delta, mouse_y_delta;
    int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
+   bool mouse_activated;
    unsigned pads_connected;
    unsigned pointer_count;
    sensor_t accelerometer_state;                /* float alignment */
@@ -162,7 +165,7 @@ static void frontend_android_get_version_sdk(int32_t *sdk);
 static void frontend_android_get_name(char *s, size_t len);
 
 bool (*engine_lookup_name)(char *buf,
-      int *vendorId, int *productId, size_t size, int id);
+      int *vendorId, int *productId, size_t len, int id);
 void (*engine_handle_dpad)(struct android_app *, AInputEvent*, int, int);
 
 static void android_input_poll_input_gingerbread(android_input_t *android);
@@ -203,8 +206,8 @@ static void android_keyboard_free(void)
     kbd_num = 0;
 }
 
-static bool android_input_lookup_name_prekitkat(char *buf,
-      int *vendorId, int *productId, size_t size, int id)
+static bool android_input_lookup_name_prekitkat(char *s,
+      int *vendorId, int *productId, size_t len, int id)
 {
    jobject name      = NULL;
    jmethodID getName = NULL;
@@ -238,18 +241,17 @@ static bool android_input_lookup_name_prekitkat(char *buf,
    if (!name)
       return false;
 
-   buf[0] = '\0';
-
-   str = (*env)->GetStringUTFChars(env, name, 0);
+   s[0] = '\0';
+   str  = (*env)->GetStringUTFChars(env, name, 0);
    if (str)
-      strlcpy(buf, str, size);
+      strlcpy(s, str, len);
    (*env)->ReleaseStringUTFChars(env, name, str);
 
    return true;
 }
 
-static bool android_input_lookup_name(char *buf,
-      int *vendorId, int *productId, size_t size, int id)
+static bool android_input_lookup_name(char *s,
+      int *vendorId, int *productId, size_t len, int id)
 {
    jmethodID getVendorId  = NULL;
    jmethodID getProductId = NULL;
@@ -285,11 +287,11 @@ static bool android_input_lookup_name(char *buf,
    if (!name)
       return false;
 
-   buf[0] = '\0';
+   s[0] = '\0';
 
    str = (*env)->GetStringUTFChars(env, name, 0);
    if (str)
-      strlcpy(buf, str, size);
+      strlcpy(s, str, len);
    (*env)->ReleaseStringUTFChars(env, name, str);
 
    GET_METHOD_ID(env, getVendorId, class, "getVendorId", "()I");
@@ -447,7 +449,7 @@ static void android_input_poll_main_cmd(void)
             bool enable_gyroscope       = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_DISABLE));
 
-            
+
             runloop_st->flags &= ~(RUNLOOP_FLAG_PAUSED
                                  | RUNLOOP_FLAG_IDLE);
             video_driver_unset_stub_frame();
@@ -542,10 +544,6 @@ static void engine_handle_dpad_getaxisvalue(struct android_app *android,
    android->analog_state[port][1] = (int16_t)(y * 32767.0f);
    android->analog_state[port][2] = (int16_t)(z * 32767.0f);
    android->analog_state[port][3] = (int16_t)(rz * 32767.0f);
-#if 0
-   android->analog_state[port][4] = (int16_t)(hatx * 32767.0f);
-   android->analog_state[port][5] = (int16_t)(haty * 32767.0f);
-#endif
    android->analog_state[port][6] = (int16_t)(ltrig * 32767.0f);
    android->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
    android->analog_state[port][8] = (int16_t)(brake * 32767.0f);
@@ -592,6 +590,7 @@ static void *android_input_init(const char *joypad_driver)
    if (!android)
       return NULL;
 
+   android->mouse_activated = false;
    android->pads_connected = 0;
    android->quick_tap_time = 0;
 
@@ -613,7 +612,7 @@ static void *android_input_init(const char *joypad_driver)
 
    if (!android_input_init_handle())
    {
-      RARCH_WARN("Unable to open libandroid.so\n");
+      RARCH_WARN("[Android] Unable to open libandroid.so\n");
    }
 
    frontend_android_get_name(android->device_model,
@@ -630,7 +629,7 @@ static int android_check_quick_tap(android_input_t *android)
     * and then not touched again for 200ms
     * If so then return true and deactivate quick tap timer */
    retro_time_t now = cpu_features_get_time_usec();
-   if (android->quick_tap_time && 
+   if (android->quick_tap_time &&
          (now / 1000 - android->quick_tap_time / 1000000) >= 200)
    {
       android->quick_tap_time = 0;
@@ -655,6 +654,12 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    float y_delta = 0;
    float y_min   = 0;
    float y_max   = (float)video_height;
+
+   struct video_viewport vp = {0};
+   int16_t res_x            = 0;
+   int16_t res_y            = 0;
+   int16_t res_screen_x     = 0;
+   int16_t res_screen_y     = 0;
 
    /* AINPUT_SOURCE_MOUSE_RELATIVE is available on Oreo (SDK 26) and newer,
     * it passes the relative coordinates in the regular X and Y parts.
@@ -703,6 +708,11 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    if (!x) x = android->mouse_x + android->mouse_x_delta;
    if (!y) y = android->mouse_y + android->mouse_y_delta;
 
+   video_driver_translate_coord_viewport_confined_wrap(&vp,
+            (int) x, (int) y,
+            &android->mouse_x_viewport, &android->mouse_y_viewport,
+            &android->mouse_x_viewport_screen, &android->mouse_y_viewport_screen);
+
    /* x and y are used for the screen mouse, so we want
     * to avoid values outside of the viewport resolution */
    if (x < x_min) x = x_min;
@@ -732,6 +742,11 @@ static INLINE void android_input_poll_event_type_motion(
    if (    (source & AINPUT_SOURCE_MOUSE) == AINPUT_SOURCE_MOUSE
         || (source & AINPUT_SOURCE_MOUSE_RELATIVE) == AINPUT_SOURCE_MOUSE_RELATIVE)
    {
+      if (!android->mouse_activated)
+      {
+         RARCH_LOG("[android input]: Mouse activated\n");
+         android->mouse_activated = true;
+      }
       /* getButtonState requires API level 14 */
       if (p_AMotionEvent_getButtonState)
       {
@@ -809,8 +824,8 @@ static INLINE void android_input_poll_event_type_motion(
          }
       }
 
-      if ((       action == AMOTION_EVENT_ACTION_MOVE 
-               || action == AMOTION_EVENT_ACTION_HOVER_MOVE) 
+      if ((       action == AMOTION_EVENT_ACTION_MOVE
+               || action == AMOTION_EVENT_ACTION_HOVER_MOVE)
             && ENABLE_TOUCH_SCREEN_MOUSE)
          android_mouse_calculate_deltas(android,event,motion_ptr,source);
 
@@ -864,7 +879,7 @@ static bool android_is_keyboard_id(int id)
 static INLINE void android_input_poll_event_type_keyboard(
       AInputEvent *event, int keycode, int *handled)
 {
-   int keydown           = (AKeyEvent_getAction(event) 
+   int keydown           = (AKeyEvent_getAction(event)
          == AKEY_EVENT_ACTION_DOWN);
    unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(keycode);
    /* Set keyboard modifier based on shift,ctrl and alt state */
@@ -1069,15 +1084,15 @@ static void handle_hotplug(android_input_t *android,
       strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.0")))
    {
       /* only use the hack if the device is one of the built-in devices */
-      RARCH_LOG("Special Device Detected: %s\n", device_model);
+      RARCH_LOG("[Android] Special device detected: %s.\n", device_model);
       {
 #if 0
-         RARCH_LOG("- Pads Mapped: %d\n- Device Name: %s\n- IDS: %d, %d, %d",
+         RARCH_LOG("[Android] - Pads Mapped: %d\n- Device Name: %s\n- IDS: %d, %d, %d",
                android->pads_connected, device_name, id, pad_id1, pad_id2);
 #endif
          /* Remove the remote or virtual controller device if it is mapped */
-         if (strstr(android->pad_states[0].name,"SHIELD Remote") ||
-            strstr(android->pad_states[0].name,"SHIELD Virtual Controller"))
+         if (   strstr(android->pad_states[0].name, "SHIELD Remote")
+             || strstr(android->pad_states[0].name, "SHIELD Virtual Controller"))
          {
             pad_id1 = -1;
             pad_id2 = -1;
@@ -1113,7 +1128,7 @@ static void handle_hotplug(android_input_t *android,
       strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.02")))
    {
       /* only use the hack if the device is one of the built-in devices */
-      RARCH_LOG("Special Device Detected: %s\n", device_model);
+      RARCH_LOG("[Android] Special device detected: %s.\n", device_model);
       {
          if ( pad_id1 < 0 )
             pad_id1 = id;
@@ -1131,7 +1146,7 @@ static void handle_hotplug(android_input_t *android,
       strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")))
    {
       /* only use the hack if the device is one of the built-in devices */
-      RARCH_LOG("Special Device Detected: %s\n", device_model);
+      RARCH_LOG("[Android] Special device detected: %s.\n", device_model);
       {
          if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03")
              && android->pads_connected==0)
@@ -1162,7 +1177,7 @@ static void handle_hotplug(android_input_t *android,
       strstr(device_name,"Playstation3") || strstr(device_name,"XBOX")))
    {
       /* only use the hack if the device is one of the built-in devices */
-      RARCH_LOG("Special Device Detected: %s\n", device_model);
+      RARCH_LOG("[Android] Special device detected: %s.\n", device_model);
       {
          if ( pad_id1 < 0 )
             pad_id1 = id;
@@ -1195,7 +1210,7 @@ static void handle_hotplug(android_input_t *android,
          )
    {
       /* only use the hack if the device is one of the built-in devices */
-      RARCH_LOG("Special Device Detected: %s\n", device_model);
+      RARCH_LOG("[Android] Special device detected: %s.\n", device_model);
       {
          if ( pad_id1 < 0 )
             pad_id1 = id;
@@ -1218,7 +1233,7 @@ static void handle_hotplug(android_input_t *android,
       strstr(device_name, "joy_key") || strstr(device_name, "joystick")))
    {
       /* only use the hack if the device is one of the built-in devices */
-      RARCH_LOG("ARCHOS GAMEPAD Detected: %s\n", device_model);
+      RARCH_LOG("[Android] ARCHOS GAMEPAD Detected: %s.\n", device_model);
       {
          if ( pad_id1 < 0 )
             pad_id1 = id;
@@ -1237,15 +1252,15 @@ static void handle_hotplug(android_input_t *android,
    else if (
              string_starts_with_size(device_model, "AFT", STRLEN_CONST("AFT")) &&
              (
-              strstr(device_model, "AFTB") || 
+              strstr(device_model, "AFTB") ||
               strstr(device_model, "AFTT") ||
-              strstr(device_model, "AFTS") || 
+              strstr(device_model, "AFTS") ||
               strstr(device_model, "AFTM") ||
               strstr(device_model, "AFTRS")
              )
          )
    {
-      RARCH_LOG("Special Device Detected: %s\n", device_model);
+      RARCH_LOG("[Android] Special device detected: %s\n", device_model);
       {
          /* always map remote to port #0 */
          if (strstr(device_name, "Amazon Fire TV Remote"))
@@ -1337,7 +1352,7 @@ static void handle_hotplug(android_input_t *android,
          vendorId,
          productId);
 
-   android->pad_states[android->pads_connected].id   = 
+   android->pad_states[android->pads_connected].id   =
       g_android->id[android->pads_connected]         = id;
    android->pad_states[android->pads_connected].port = *port;
 
@@ -1372,21 +1387,21 @@ static void engine_handle_touchpad(
    for(n = 0; n < pointer_count; ++n)
    {
       int pointer_id	=   AMotionEvent_getPointerId(event, n);
-      int action     =   AMOTION_EVENT_ACTION_MASK 
+      int action     =   AMOTION_EVENT_ACTION_MASK
                        & AMotionEvent_getAction(event);
       int raw_action	=   AMotionEvent_getAction(event);
-      if (     action  == AMOTION_EVENT_ACTION_POINTER_DOWN 
+      if (     action  == AMOTION_EVENT_ACTION_POINTER_DOWN
             || action  == AMOTION_EVENT_ACTION_POINTER_UP )
       {
          int pointer_index = (AMotionEvent_getAction( event ) & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
          pointer_id        = AMotionEvent_getPointerId( event, pointer_index);
       }
 
-      if (     action  == AMOTION_EVENT_ACTION_DOWN 
+      if (     action  == AMOTION_EVENT_ACTION_DOWN
             || action  == AMOTION_EVENT_ACTION_POINTER_DOWN )
          touchstate[pointer_id].down = 1;
-      else if (action  == AMOTION_EVENT_ACTION_UP 
-            || action  == AMOTION_EVENT_ACTION_POINTER_UP 
+      else if (action  == AMOTION_EVENT_ACTION_UP
+            || action  == AMOTION_EVENT_ACTION_POINTER_UP
             || action  == AMOTION_EVENT_ACTION_CANCEL )
          touchstate[pointer_id].down = 0;
 
@@ -1396,17 +1411,17 @@ static void engine_handle_touchpad(
          int y = touchstate[pointer_id].y  = AMotionEvent_getY(event, n);
          if (x < 360)
          {
-            android->analog_state[port][0] = 
+            android->analog_state[port][0] =
                (int16_t)((x / 180.0 - 1.0f) * 32767.0f);
-            android->analog_state[port][1] = 
+            android->analog_state[port][1] =
                (int16_t)((y / 180.0 - 1.0f) * 32767.0f);
          }
          else if (x >= 606)
          {
             x -= 606;
-            android->analog_state[port][2] = 
+            android->analog_state[port][2] =
                (int16_t)((x / 180.0 - 1.0f) * 32767.0f);
-            android->analog_state[port][3] = 
+            android->analog_state[port][3] =
                (int16_t)((y / 180.0 - 1.0f) * 32767.0f);
          }
       }
@@ -1522,7 +1537,7 @@ static void android_input_poll_input_default(android_input_t *android)
                if ((source & AINPUT_SOURCE_TOUCHPAD))
                   engine_handle_touchpad(android_app, event, port);
                /* Only handle events from a touchscreen or mouse */
-               else if ((source & (AINPUT_SOURCE_TOUCHSCREEN 
+               else if ((source & (AINPUT_SOURCE_TOUCHSCREEN
                            | AINPUT_SOURCE_MOUSE_RELATIVE
                            | AINPUT_SOURCE_STYLUS | AINPUT_SOURCE_MOUSE)))
                   android_input_poll_event_type_motion(android, event,
@@ -1744,7 +1759,7 @@ static int16_t android_input_state(
                   return android->mouse_m;
                case RETRO_DEVICE_ID_MOUSE_X:
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                     return android->mouse_x;
+                     return android->mouse_x_viewport_screen;
 
                   val = android->mouse_x_delta;
                   android->mouse_x_delta = 0;
@@ -1752,7 +1767,7 @@ static int16_t android_input_state(
                   return val;
                case RETRO_DEVICE_ID_MOUSE_Y:
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                     return android->mouse_y;
+                     return android->mouse_y_viewport_screen;
 
                   val = android->mouse_y_delta;
                   android->mouse_y_delta = 0;
@@ -1775,10 +1790,17 @@ static int16_t android_input_state(
             int val = 0;
             switch (id)
             {
+               /* Favor mouse for lightgun control. */
                case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-                  return android->pointer[idx].x;
+                  if (android->mouse_activated)
+                     return android->mouse_x_viewport_screen;
+                  else
+                     return android->pointer[idx].x;
                case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-                  return android->pointer[idx].y;
+                  if (android->mouse_activated)
+                     return android->mouse_y_viewport_screen;
+                  else
+                     return android->pointer[idx].y;
                /* Deprecated relative lightgun. */
                case RETRO_DEVICE_ID_LIGHTGUN_X:
                   val                    = android->mouse_x_delta;
@@ -1833,7 +1855,7 @@ static int16_t android_input_state(
                return android->pointer_count;
             case RARCH_DEVICE_ID_POINTER_BACK:
             {
-               const struct retro_keybind *keyptr = 
+               const struct retro_keybind *keyptr =
                   &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
                if (keyptr->joykey == 0)
                   return ANDROID_KEYBOARD_INPUT_PRESSED(AKEYCODE_BACK);

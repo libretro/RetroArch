@@ -454,7 +454,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create keydown callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create keydown callback: %d.\n", r);
    }
 
    r = emscripten_set_keyup_callback("#canvas", rwebinput, false,
@@ -462,7 +462,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create keyup callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create keyup callback: %d.\n", r);
    }
 
    r = emscripten_set_keypress_callback("#canvas", rwebinput, false,
@@ -470,7 +470,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create keypress callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create keypress callback: %d.\n", r);
    }
 
    r = emscripten_set_mousedown_callback("#canvas", rwebinput, false,
@@ -478,7 +478,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create mousedown callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create mousedown callback: %d.\n", r);
    }
 
    r = emscripten_set_mouseup_callback("#canvas", rwebinput, false,
@@ -486,7 +486,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create mouseup callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create mouseup callback: %d.\n", r);
    }
 
    r = emscripten_set_mousemove_callback("#canvas", rwebinput, false,
@@ -494,7 +494,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create mousemove callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create mousemove callback: %d.\n", r);
    }
 
    r = emscripten_set_wheel_callback("#canvas", rwebinput, false,
@@ -502,7 +502,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create wheel callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create wheel callback: %d.\n", r);
    }
 
    r = emscripten_set_touchstart_callback("#canvas", rwebinput, false,
@@ -510,7 +510,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create touchstart callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create touchstart callback: %d.\n", r);
    }
 
    r = emscripten_set_touchend_callback("#canvas", rwebinput, false,
@@ -518,7 +518,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create touchend callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create touchend callback: %d.\n", r);
    }
 
    r = emscripten_set_touchmove_callback("#canvas", rwebinput, false,
@@ -526,7 +526,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create touchmove callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create touchmove callback: %d.\n", r);
    }
 
    r = emscripten_set_touchcancel_callback("#canvas", rwebinput, false,
@@ -534,7 +534,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create touchcancel callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create touchcancel callback: %d.\n", r);
    }
 
    r = emscripten_set_pointerlockchange_callback(
@@ -543,7 +543,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create pointerlockchange callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create pointerlockchange callback: %d.\n", r);
    }
 
    return rwebinput;
@@ -813,7 +813,7 @@ static bool rwebinput_set_sensor_state(void *data, unsigned port,
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
       {
          RARCH_ERR(
-            "[EMSCRIPTEN/INPUT] failed to create devicemotion callback: %d\n", r);
+            "[EMSCRIPTEN/INPUT] Failed to create devicemotion callback: %d.\n", r);
          return false;
       }
    }
@@ -823,7 +823,7 @@ static bool rwebinput_set_sensor_state(void *data, unsigned port,
       if (r != EMSCRIPTEN_RESULT_SUCCESS)
       {
          RARCH_ERR(
-            "[EMSCRIPTEN/INPUT] failed to remove devicemotion callback: %d\n", r);
+            "[EMSCRIPTEN/INPUT] Failed to remove devicemotion callback: %d.\n", r);
          return false;
       }
    }

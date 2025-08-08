@@ -27,7 +27,7 @@ HAVE_GLSL = 1
 HAVE_SCREENSHOTS = 1
 HAVE_REWIND = 1
 HAVE_AUDIOMIXER = 1
-HAVE_CC_RESAMPLER = 1
+HAVE_CC_RESAMPLER ?= 1
 HAVE_EGL ?= 0
 HAVE_OPENGLES = 1
 HAVE_RJPEG = 0
@@ -54,8 +54,6 @@ HAVE_BSV_MOVIE = 1
 HAVE_CHD ?= 0
 HAVE_NETPLAYDISCOVERY ?= 0
 
-HAVE_AL ?= 1
-
 # enables pthreads, requires special headers on the web server:
 # see https://web.dev/articles/coop-coep
 HAVE_THREADS ?= 0
@@ -63,18 +61,14 @@ HAVE_THREADS ?= 0
 # requires HAVE_THREADS
 HAVE_AUDIOWORKLET ?= 0
 
-# WARNING -- READ BEFORE ENABLING
-# The rwebaudio driver is known to have several audio bugs, such as
-#  minor crackling, or the entire page freezing/crashing.
-#  It works perfectly on chrome, but even firefox has really bad audio quality.
-#  I should also note, the driver on iOS is completely broken (crashes the page).
-#  You have been warned.
-HAVE_RWEBAUDIO ?= 0
+# doesn't work on PROXY_TO_PTHREAD
+HAVE_RWEBAUDIO ?= 1
 
-# whether the browser thread is allowed to block to wait for audio to play,
-# may lead to the issues mentioned above.
-# currently this variable is only used by audioworklet;
-# rwebaudio will always busywait and openal will never busywait.
+# requires ASYNC or PROXY_TO_PTHREAD
+HAVE_AL ?= 0
+
+# whether the browser thread is allowed to block to wait for audio to play, not CPU usage-friendly!
+# currently this variable is only used by rwebaudio and audioworklet; openal will never busywait.
 ALLOW_AUDIO_BUSYWAIT ?= 0
 
 # minimal asyncify; better performance than full asyncify,
@@ -196,6 +190,9 @@ endif
 ifeq ($(HAVE_RWEBAUDIO), 1)
    LDFLAGS += --js-library emscripten/library_rwebaudio.js
    DEFINES += -DHAVE_RWEBAUDIO
+   ifeq ($(PROXY_TO_PTHREAD), 1)
+      $(error ERROR: RWEBAUDIO is incompatible with PROXY_TO_PTHREAD)
+   endif
 endif
 
 ifeq ($(HAVE_AUDIOWORKLET), 1)
@@ -205,18 +202,24 @@ ifeq ($(HAVE_AUDIOWORKLET), 1)
    ifeq ($(HAVE_THREADS), 0)
       $(error ERROR: AUDIOWORKLET requires HAVE_THREADS)
    endif
-   ifeq ($(PROXY_TO_PTHREAD), 1)
-   else ifeq ($(ASYNC), 1)
+endif
+
+ifeq ($(HAVE_AL), 1)
+   LDFLAGS += -lopenal
+   DEFINES += -DHAVE_AL
+endif
+
+ifeq ($(PROXY_TO_PTHREAD), 1)
+else ifeq ($(ASYNC), 1)
+else
+   DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
+   ifeq ($(MIN_ASYNC), 1)
+      DEFINES += -DEMSCRIPTEN_AUDIO_ASYNC_BLOCK
    else
-      DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
-      ifeq ($(MIN_ASYNC), 1)
-         DEFINES += -DEMSCRIPTEN_AUDIO_ASYNC_BLOCK
-      else
-         DEFINES += -DEMSCRIPTEN_AUDIO_FAKE_BLOCK
-      endif
-      ifneq ($(ALLOW_AUDIO_BUSYWAIT), 1)
-         DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
-      endif
+      DEFINES += -DEMSCRIPTEN_AUDIO_FAKE_BLOCK
+   endif
+   ifneq ($(ALLOW_AUDIO_BUSYWAIT), 1)
+      DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
    endif
 endif
 
@@ -227,15 +230,10 @@ endif
 # explanation of some of these defines:
 # EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK: audio blocking occurs in the main loop instead of in the audio driver functions.
 # EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK: along with above, enables external blocking in the write function.
-# ALLOW_AUDIO_BUSYWAIT: write function will busywait. init function may still use an external block.
+# EMSCRIPTEN_AUDIO_BUSYWAIT: write function will busywait. init function may still use an external block.
 # EMSCRIPTEN_AUDIO_ASYNC_BLOCK: external block uses emscripten_sleep (requires MIN_ASYNC).
 # EMSCRIPTEN_AUDIO_FAKE_BLOCK: external block uses main loop timing (doesn't require asyncify).
 # when building with either PROXY_TO_PTHREAD or ASYNC (full asyncify), none of the above are required.
-
-ifeq ($(HAVE_AL), 1)
-   LDFLAGS += -lopenal
-   DEFINES += -DHAVE_AL
-endif
 
 ifeq ($(HAVE_THREADS), 1)
    LDFLAGS += -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD_POOL_SIZE)
@@ -262,7 +260,10 @@ endif
 
 include Makefile.common
 
-CFLAGS += $(DEF_FLAGS) -Ideps -Ideps/stb
+DEF_FLAGS += $(INCLUDE_DIRS) -Ideps -Ideps/stb
+
+CFLAGS += $(DEF_FLAGS)
+CXXFLAGS += $(DEF_FLAGS) -D__STDC_CONSTANT_MACROS
 
 libretro     =
 libretro_new =

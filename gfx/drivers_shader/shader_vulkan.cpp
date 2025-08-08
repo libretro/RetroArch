@@ -28,6 +28,7 @@
 #include <compat/strl.h>
 #include <formats/image.h>
 #include <string/stdstring.h>
+#include <gfx/math/matrix_4x4.h>
 #include <retro_miscellaneous.h>
 
 #include "slang_reflection.h"
@@ -795,7 +796,7 @@ static bool vulkan_filter_chain_load_luts(
          vulkan_filter_chain_load_lut(cmd, info, chain, &shader->lut[i]);
       if (!image)
       {
-         RARCH_ERR("[Vulkan]: Failed to load LUT \"%s\".\n", shader->lut[i].path);
+         RARCH_ERR("[Vulkan] Failed to load LUT \"%s\".\n", shader->lut[i].path);
          vkEndCommandBuffer(cmd);
          if (cmd != VK_NULL_HANDLE)
             vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
@@ -1132,7 +1133,7 @@ bool vulkan_filter_chain::init_history()
    if (required_images < 2)
    {
 #ifdef VULKAN_DEBUG
-      RARCH_LOG("[Vulkan filter chain]: Not using frame history.\n");
+      RARCH_LOG("[Vulkan] Not using frame history.\n");
 #endif
       return true;
    }
@@ -1148,7 +1149,7 @@ bool vulkan_filter_chain::init_history()
                max_input_size, original_format, 1));
 
 #ifdef VULKAN_DEBUG
-   RARCH_LOG("[Vulkan filter chain]: Using history of %u frames.\n", unsigned(required_images));
+   RARCH_LOG("[Vulkan] Using history of %u frames.\n", unsigned(required_images));
 #endif
 
    /* On first frame, we need to clear the textures to
@@ -1188,14 +1189,14 @@ bool vulkan_filter_chain::init_feedback()
       {
          if (!passes[i]->init_feedback())
             return false;
-         RARCH_LOG("[Vulkan filter chain]: Using framebuffer feedback for pass #%u.\n", i);
+         RARCH_LOG("[Vulkan] Using framebuffer feedback for pass #%u.\n", i);
       }
    }
 
    if (!use_feedbacks)
    {
 #ifdef VULKAN_DEBUG
-      RARCH_LOG("[Vulkan filter chain]: Not using framebuffer feedback.\n");
+      RARCH_LOG("[Vulkan] Not using framebuffer feedback.\n");
 #endif
       return true;
    }
@@ -1357,7 +1358,7 @@ bool vulkan_filter_chain::init()
    {
 #ifdef VULKAN_DEBUG
       const char *name = passes[i]->get_name().c_str();
-      RARCH_LOG("[slang]: Building pass #%u (%s)\n", i,
+      RARCH_LOG("[Vulkan] Building pass #%u (%s)\n", i,
             string_is_empty(name) ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
             name);
@@ -1789,7 +1790,7 @@ bool Pass::init_pipeline_layout()
          push_range.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
 #ifdef VULKAN_DEBUG
-      RARCH_LOG("[Vulkan]: Push Constant Block: %u bytes.\n", (unsigned int)reflection.push_constant_size);
+      RARCH_LOG("[Vulkan] Push Constant Block: %u bytes.\n", (unsigned int)reflection.push_constant_size);
 #endif
 
       layout_info.pushConstantRangeCount = 1;
@@ -2663,7 +2664,7 @@ Framebuffer::Framebuffer(
    memory_properties(mem_props),
    device(device)
 {
-   RARCH_LOG("[Vulkan filter chain]: Creating framebuffer %ux%u (max %u level(s)).\n",
+   RARCH_LOG("[Vulkan] Creating framebuffer %ux%u (max %u level(s)).\n",
          max_size.width, max_size.height, max_levels);
    vulkan_initialize_render_pass(device, format, &render_pass);
    init(nullptr);
@@ -2773,7 +2774,7 @@ void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFor
    if (format != VK_FORMAT_UNDEFINED)
 	  this->format = format;
 
-   RARCH_LOG("[Vulkan filter chain]: Updating framebuffer size %ux%u (format: %u).\n",
+   RARCH_LOG("[Vulkan] Updating framebuffer size %ux%u (format: %u).\n",
          size.width, size.height, (unsigned)this->format);
 
    {
@@ -2913,7 +2914,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
       if (!glslang_compile_shader(pass->source.path, &output))
       {
-         RARCH_ERR("[Vulkan]: Failed to compile shader: \"%s\".\n",
+         RARCH_ERR("[Vulkan] Failed to compile shader: \"%s\".\n",
                pass->source.path);
          goto error;
       }
@@ -2922,7 +2923,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       {
          if (shader->num_parameters >= GFX_MAX_PARAMETERS)
          {
-            RARCH_ERR("[Vulkan]: Exceeded maximum number of parameters (%u).\n", GFX_MAX_PARAMETERS);
+            RARCH_ERR("[Vulkan] Exceeded maximum number of parameters (%u).\n", GFX_MAX_PARAMETERS);
             goto error;
          }
 
@@ -2942,7 +2943,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
                 meta_param.maximum != itr->maximum ||
                 meta_param.step    != itr->step)
             {
-               RARCH_ERR("[Vulkan]: Duplicate parameters found for \"%s\", but arguments do not match.\n",
+               RARCH_ERR("[Vulkan] Duplicate parameters found for \"%s\", but arguments do not match.\n",
                      itr->id);
                goto error;
             }
@@ -3033,7 +3034,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
             if (explicit_format && pass_format != pass_info.rt_format)
             {
-               RARCH_WARN("[slang]: Using explicit format for last pass in chain,"
+               RARCH_WARN("[Vulkan] Using explicit format for last pass in chain,"
                      " but it is not rendered to framebuffer, using swapchain format instead.\n");
             }
          }
@@ -3041,7 +3042,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          {
             pass_info.rt_format    = glslang_format_to_vk(
                   output.meta.rt_format);
-            RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
+            RARCH_LOG("[Vulkan] Using render target format %s for pass output #%u.\n",
                   glslang_format_to_string(output.meta.rt_format), i);
          }
       }
@@ -3056,7 +3057,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
          pass_info.rt_format      = glslang_format_to_vk(output.meta.rt_format);
 
-         RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
+         RARCH_LOG("[Vulkan] Using render target format %s for pass output #%u.\n",
                glslang_format_to_string(output.meta.rt_format), i);
 
          switch (pass->fbo.type_x)

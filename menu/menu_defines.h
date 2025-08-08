@@ -166,9 +166,7 @@ enum menu_timedate_date_separator_type
    MENU_TIMEDATE_DATE_SEPARATOR_LAST
 };
 
-/* Specifies location of the 'Scan Content' menu
- * entry when using menu drivers without a
- * dedicated 'Import Content' (horizontal) tab */
+/* Specifies location of the 'Import Content' menu */
 enum menu_add_content_entry_display_type
 {
    MENU_ADD_CONTENT_ENTRY_DISPLAY_HIDDEN = 0,
@@ -439,6 +437,22 @@ enum ozone_color_theme
    OZONE_COLOR_THEME_PURPLE_RAIN,
    OZONE_COLOR_THEME_SELENIUM,
    OZONE_COLOR_THEME_LAST
+};
+
+enum ozone_header_separator
+{
+   OZONE_HEADER_SEPARATOR_NONE = 0,
+   OZONE_HEADER_SEPARATOR_NORMAL,
+   OZONE_HEADER_SEPARATOR_MAXIMUM,
+   OZONE_HEADER_SEPARATOR_LAST
+};
+
+enum ozone_font_scale
+{
+   OZONE_FONT_SCALE_NONE = 0,
+   OZONE_FONT_SCALE_GLOBAL,
+   OZONE_FONT_SCALE_SEPARATE,
+   OZONE_FONT_SCALE_LAST
 };
 
 enum menu_action

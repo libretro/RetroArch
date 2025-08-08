@@ -253,7 +253,7 @@ bool autosave_init(bool compress_files, unsigned autosave_interval)
             autosave_interval,
             compress_files)))
       {
-         RARCH_WARN("%s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));
+         RARCH_WARN("[SRAM] %s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));
          continue;
       }
 
@@ -373,7 +373,7 @@ static bool content_load_ram_file(unsigned slot)
    {
       if (rc > (ssize_t)mem_info.size)
       {
-         RARCH_WARN("[SRAM]: SRAM is larger than implementation expects, "
+         RARCH_WARN("[SRAM] SRAM is larger than implementation expects, "
                "doing partial load (truncating %u %s %s %u).\n",
                (unsigned)rc,
                msg_hash_to_str(MSG_BYTES),
@@ -401,18 +401,20 @@ static bool content_load_ram_file(unsigned slot)
 static bool dump_to_file_desperate(const void *data,
       size_t len, unsigned type)
 {
+   size_t _len;
    char path[PATH_MAX_LENGTH + 256 + 32];
-   path            [0]    = '\0';
+   path[0] = '\0';
+   _len    = fill_pathname_application_data(path,
+            sizeof(path));
 
-   if (fill_pathname_application_data(path,
-            sizeof(path)))
+   if (_len)
    {
-      size_t _len;
       time_t time_;
       struct tm tm_;
+
       time(&time_);
       rtime_localtime(&time_, &tm_);
-      _len  = strlcat(path, "/RetroArch-recovery-", sizeof(path));
+      _len += strlcpy(path  + _len, "/RetroArch-recovery-", sizeof(path) - _len);
       _len += snprintf(path + _len, sizeof(path) - _len, "%u", type);
       strftime(path + _len, sizeof(path) - _len,
             "%Y-%m-%d-%H-%M-%S", &tm_);
@@ -428,7 +430,7 @@ static bool dump_to_file_desperate(const void *data,
        *   compression overheads */
       if (filestream_write_file(path, data, len))
       {
-         RARCH_WARN("[SRAM]: Succeeded in saving RAM data to \"%s\".\n", path);
+         RARCH_WARN("[SRAM] Succeeded in saving RAM data to \"%s\".\n", path);
          return true;
       }
    }
@@ -452,7 +454,7 @@ static bool content_save_ram_file(unsigned slot, bool compress)
    if (!content_get_memory(&mem_info, &ram, slot))
       return false;
 
-   RARCH_LOG("[SRAM]: %s #%u %s \"%s\".\n",
+   RARCH_LOG("[SRAM] %s #%u %s \"%s\".\n",
          msg_hash_to_str(MSG_SAVING_RAM_TYPE),
          ram.type,
          msg_hash_to_str(MSG_TO),
@@ -473,23 +475,23 @@ static bool content_save_ram_file(unsigned slot, bool compress)
          goto fail;
    }
 
-   RARCH_LOG("[SRAM]: %s \"%s\".\n",
+   RARCH_LOG("[SRAM] %s \"%s\".\n",
          msg_hash_to_str(MSG_SAVED_SUCCESSFULLY_TO),
          ram.path);
 
    return true;
 
 fail:
-   RARCH_ERR("[SRAM]: %s.\n",
+   RARCH_ERR("[SRAM] %s.\n",
          msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
-   RARCH_WARN("[SRAM]: Attempting to recover ...\n");
+   RARCH_WARN("[SRAM] Attempting to recover...\n");
 
    /* In case the file could not be written to,
     * the fallback function 'dump_to_file_desperate'
     * will be called. */
    if (!dump_to_file_desperate(
             mem_info.data, mem_info.size, ram.type))
-      RARCH_WARN("[SRAM]: Failed ... Cannot recover save file.\n");
+      RARCH_WARN("[SRAM] Failed. Cannot recover save file.\n");
    return false;
 }
 

@@ -444,10 +444,6 @@ MSG_HASH(
    "Cloi Craidd wedi'i osod"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Atal addasu'r craidd sydd wedi'i osod ar hyn o bryd. Gellir ei ddefnyddio i osgoi diweddariadau diangen pan fydd angen fersiwn graidd benodol ar y cynnwys (e.e. setiau Arcade ROM)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
    "Dileu Craidd"
    )
@@ -1105,7 +1101,6 @@ MSG_HASH(
    )
 
 
-
 /* Settings > Input > Port # Controls */
 
 
@@ -1519,6 +1514,10 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
+   "Dim"
+   )
 
 
 

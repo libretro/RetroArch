@@ -566,11 +566,6 @@ enum retro_language psp_get_retro_lang_from_langid(int langid)
       return RETRO_LANGUAGE_PORTUGUESE_BRAZIL;
    case SCE_SYSTEM_PARAM_LANG_TURKISH:
       return RETRO_LANGUAGE_TURKISH;
-#if 0
-   /* TODO/FIXME - this doesn't seem to actually exist */
-   case SCE_SYSTEM_PARAM_LANG_SLOVAK:
-      return RETRO_LANGUAGE_SLOVAK;
-#endif
    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US:
    case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB:
    default:

@@ -102,7 +102,7 @@ static bool discord_download_avatar(
    static char url_encoded[PATH_MAX_LENGTH];
    static char full_path[PATH_MAX_LENGTH];
    static char buf[PATH_MAX_LENGTH];
-   file_transfer_t     *transf = NULL;
+   file_transfer_t *transf = NULL;
 
    fill_pathname_application_special(buf,
             sizeof(buf),
@@ -145,16 +145,12 @@ static void handle_discord_ready(const DiscordUser* connectedUser)
 #endif
 }
 
-static void handle_discord_disconnected(int errcode, const char* message)
-{
-}
-
-static void handle_discord_error(int errcode, const char* message)
-{
-}
+static void handle_discord_disconnected(int errcode, const char *msg) { }
+static void handle_discord_err(int errcode, const char *msg) { }
+static void handle_discord_spectate(const char *secret) { }
 
 static void handle_discord_join_cb(retro_task_t *task, void *task_data,
-      void *user_data, const char *error)
+      void *user_data, const char *err)
 {
    char hostname[512];
    struct netplay_room *room;
@@ -162,13 +158,12 @@ static void handle_discord_join_cb(retro_task_t *task, void *task_data,
    http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
    discord_state_t *discord_st = &discord_state_st;
 
-   if (error)
+   if (err)
       goto done;
    if (!data || !data->data || !data->len)
       goto done;
    if (data->status != 200)
       goto done;
-
    if (!(room_data = (char*)malloc(data->len + 1)))
       goto done;
    memcpy(room_data, data->data, data->len);
@@ -222,53 +217,11 @@ static void handle_discord_join(const char *secret)
    }
 }
 
-static void handle_discord_spectate(const char *secret)
-{
-}
-
-#if 0
-#ifdef HAVE_MENU
-static void handle_discord_join_response(void *ignore, const char *line)
-{
-   /* TODO/FIXME: needs in-game widgets */
-   if (strstr(line, "yes"))
-      Discord_Respond(user_id, DISCORD_REPLY_YES);
-
-   menu_input_dialog_end();
-   retroarch_menu_running_finished(false);
-}
-#endif
-#endif
-
 static void handle_discord_join_request(const DiscordUser *request)
 {
 #ifdef HAVE_MENU
-#if 0
-   char buf[PATH_MAX_LENGTH];
-   menu_input_ctx_line_t line = {0};
-#endif
    discord_state_t *discord_st = &discord_state_st;
-
    discord_download_avatar(discord_st, request->userId, request->avatar);
-
-#if 0
-   /* TODO/FIXME: Needs in-game widgets */
-   retroarch_menu_running();
-
-   snprintf(buf, sizeof(buf), "%s %s?",
-      msg_hash_to_str(MSG_DISCORD_CONNECTION_REQUEST), request->username);
-   line.label         = buf;
-   line.label_setting = "no_setting";
-   line.cb            = handle_discord_join_response;
-
-   /* TODO/FIXME: needs in-game widgets
-    * TODO/FIXME: bespoke dialog, should show while in-game
-    * and have a hotkey to accept
-    * TODO/FIXME: show avatar of the user connecting
-    */
-   if (!menu_input_dialog_start(&line))
-      return;
-#endif
 #endif
 }
 
@@ -401,9 +354,6 @@ void discord_update(enum presence presence)
                   room->id, cpu_features_get_time_usec());
 
             discord_st->presence.joinSecret     = strdup(join_secret);
-#if 0
-            discord_st->presence.spectateSecret = "SPECSPECSPEC";
-#endif
             discord_st->presence.partyId        = strdup(discord_st->self_party_id);
             discord_st->presence.partyMax       = 2;
             discord_st->presence.partySize      = 1;
@@ -470,7 +420,7 @@ void discord_init(const char *discord_app_id, char *args)
 
    handlers.ready              = handle_discord_ready;
    handlers.disconnected       = handle_discord_disconnected;
-   handlers.errored            = handle_discord_error;
+   handlers.errored            = handle_discord_err;
    handlers.joinGame           = handle_discord_join;
    handlers.spectateGame       = handle_discord_spectate;
    handlers.joinRequest        = handle_discord_join_request;

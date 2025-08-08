@@ -94,9 +94,9 @@ static void osmesa_fifo_open(gfx_ctx_osmesa_data_t *osmesa)
       return;
    }
 
-   RARCH_ERR("[osmesa] Frame size is %ix%ix%i\n",
+   RARCH_ERR("[OSMesa] Frame size is %ix%ix%i.\n",
          osmesa->width, osmesa->height, osmesa->pixsize);
-   RARCH_ERR("[osmesa] Please connect to unix:%s\n",
+   RARCH_ERR("[OSMesa] Please connect to unix:%s.\n",
          OSMESA_FIFO_PATH);
 }
 
@@ -115,7 +115,7 @@ static void osmesa_fifo_accept(gfx_ctx_osmesa_data_t *osmesa)
    else if (res > 0)
    {
       osmesa->client = accept(osmesa->socket, NULL, NULL);
-      RARCH_LOG("[osmesa] Client %i connected.\n", osmesa->client);
+      RARCH_LOG("[OSMesa] Client %i connected.\n", osmesa->client);
    }
 }
 
@@ -133,7 +133,7 @@ static void osmesa_fifo_write(gfx_ctx_osmesa_data_t *osmesa)
 
       if (res < 0)
       {
-         RARCH_LOG("[osmesa] Lost connection to %i: %s\n", osmesa->client, strerror(errno));
+         RARCH_LOG("[OSMesa] Lost connection to %i: %s.\n", osmesa->client, strerror(errno));
          close(osmesa->client);
          osmesa->client = -1;
          break;
@@ -173,7 +173,7 @@ static void *osmesa_ctx_init(void *video_driver)
    if (!osmesa->ctx)
    {
 #if defined(HAVE_OSMESA_CREATE_CONTEXT_ATTRIBS) || defined(HAVE_OSMESA_CREATE_CONTEXT_EXT)
-      RARCH_WARN("[osmesa]: Falling back to standard context creation.\n");
+      RARCH_WARN("[OSMesa] Falling back to standard context creation.\n");
 #endif
       osmesa->ctx = OSMesaCreateContext(OSMESA_DEFAULT_FORMAT, NULL);
    }
@@ -303,10 +303,6 @@ static void osmesa_ctx_swap_buffers(void *data)
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
    osmesa_fifo_accept(osmesa);
    osmesa_fifo_write(osmesa);
-
-#if 0
-   write(osmesa->socket, osmesa->screen, osmesa->width * osmesa->height * osmesa->pixsize);
-#endif
 }
 
 static void osmesa_ctx_input_driver(void *data,

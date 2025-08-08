@@ -95,7 +95,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
       return true;
    }
 
-   RARCH_ERR("[Wayland/Vulkan]: Failed to update swapchain.\n");
+   RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
    return false;
 }
 

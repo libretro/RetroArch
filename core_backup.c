@@ -98,7 +98,7 @@ static bool core_backup_get_backup_dir(
    {
       if (!path_mkdir(s))
       {
-         RARCH_ERR("[core backup] Failed to create backup directory: %s.\n", s);
+         RARCH_ERR("[Core backup] Failed to create backup directory: %s.\n", s);
          return false;
       }
    }
@@ -173,67 +173,62 @@ enum core_backup_type core_backup_get_backup_type(const char *backup_path)
 {
    char core_ext[16];
    const char *backup_ext            = NULL;
-   struct string_list *metadata_list = NULL;
 
    if (string_is_empty(backup_path) || !path_is_valid(backup_path))
-      goto error;
+      return CORE_BACKUP_TYPE_INVALID;
 
    /* Get backup file extension */
    backup_ext = path_get_extension(backup_path);
 
-   if (string_is_empty(backup_ext))
-      goto error;
-
-   /* Get platform-specific dynamic library extension */
-   if (!frontend_driver_get_core_extension(core_ext, sizeof(core_ext)))
-      goto error;
-
-   /* Check if this is an archived backup */
-   if (string_is_equal_noncase(backup_ext,
-         FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT))
+   if (!string_is_empty(backup_ext))
    {
-      const char *backup_filename = NULL;
-      const char *src_ext         = NULL;
+      /* Get platform-specific dynamic library extension */
+      if (frontend_driver_get_core_extension(core_ext, sizeof(core_ext)))
+      {
+         /* Check if this is an archived backup */
+         if (string_is_equal_noncase(backup_ext,
+                  FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT))
+         {
+            bool ret = false;
+            struct string_list *metadata_list = NULL;
+            const char *backup_filename = NULL;
+            const char *src_ext         = NULL;
 
-      /* Split the backup filename into its various
-       * metadata components */
-      backup_filename = path_basename(backup_path);
+            /* Split the backup filename into its various
+             * metadata components */
+            backup_filename = path_basename(backup_path);
 
-      if (string_is_empty(backup_filename))
-         goto error;
+            if (string_is_empty(backup_filename))
+               return CORE_BACKUP_TYPE_INVALID;
 
-      metadata_list = string_split(backup_filename, ".");
+            metadata_list = string_split(backup_filename, ".");
 
-      if (!metadata_list || (metadata_list->size != 6))
-         goto error;
+            if (!metadata_list)
+               return CORE_BACKUP_TYPE_INVALID;
 
-      /* Get extension of source core file */
-      src_ext = metadata_list->elems[1].data;
+            if (metadata_list->size != 6)
+            {
+               string_list_free(metadata_list);
+               metadata_list = NULL;
+               return CORE_BACKUP_TYPE_INVALID;
+            }
 
-      if (string_is_empty(src_ext))
-         goto error;
-
-      /* Check whether extension is valid */
-      if (!string_is_equal_noncase(src_ext, core_ext))
-         goto error;
-
-      string_list_free(metadata_list);
-      metadata_list = NULL;
-
-      return CORE_BACKUP_TYPE_ARCHIVE;
+            /* Get extension of source core file */
+            src_ext = metadata_list->elems[1].data;
+            ret     = string_is_empty(src_ext)
+               || !string_is_equal_noncase(src_ext, core_ext);
+            string_list_free(metadata_list);
+            metadata_list = NULL;
+            /* Check whether extension is valid */
+            if (ret)
+               return CORE_BACKUP_TYPE_INVALID;
+            return CORE_BACKUP_TYPE_ARCHIVE;
+         }
+         /* Check if this is a plain dynamic library file */
+         if (string_is_equal_noncase(backup_ext, core_ext))
+            return CORE_BACKUP_TYPE_LIB;
+      }
    }
-
-   /* Check if this is a plain dynamic library file */
-   if (string_is_equal_noncase(backup_ext, core_ext))
-      return CORE_BACKUP_TYPE_LIB;
-
-error:
-   if (metadata_list)
-   {
-      string_list_free(metadata_list);
-      metadata_list = NULL;
-   }
-
    return CORE_BACKUP_TYPE_INVALID;
 }
 
@@ -242,7 +237,6 @@ error:
 bool core_backup_get_backup_crc(char *s, uint32_t *crc)
 {
    enum core_backup_type backup_type;
-   struct string_list *metadata_list = NULL;
 
    if (string_is_empty(s) || !crc)
       return false;
@@ -254,32 +248,39 @@ bool core_backup_get_backup_crc(char *s, uint32_t *crc)
    {
       case CORE_BACKUP_TYPE_ARCHIVE:
          {
+            uint32_t val;
+            struct string_list *metadata_list = NULL;
+            bool ret                    = false;
             const char *crc_str         = NULL;
             /* Split the backup filename into its various
              * metadata components */
             const char *backup_filename = path_basename(s);
 
             if (string_is_empty(backup_filename))
-               goto error;
+               return false;
 
             metadata_list = string_split(backup_filename, ".");
 
-            if (!metadata_list || (metadata_list->size != 6))
-               goto error;
+            if (!metadata_list)
+               return false;
+            if (metadata_list->size != 6)
+            {
+               string_list_free(metadata_list);
+               metadata_list = NULL;
+               return false;
+            }
 
             /* Get crc string */
             crc_str = metadata_list->elems[3].data;
-
-            if (string_is_empty(crc_str))
-               goto error;
-
+            ret     = string_is_empty(crc_str);
             /* Convert to an integer */
-            if ((*crc = (uint32_t)string_hex_to_unsigned(crc_str)) == 0)
-               goto error;
+            val     = (uint32_t)string_hex_to_unsigned(crc_str);
 
             string_list_free(metadata_list);
             metadata_list = NULL;
 
+            if (ret || ((*crc = val) == 0))
+               return false;
          }
          return true;
       case CORE_BACKUP_TYPE_LIB:
@@ -313,13 +314,6 @@ bool core_backup_get_backup_crc(char *s, uint32_t *crc)
       default:
          /* Backup is invalid */
          break;
-   }
-
-error:
-   if (metadata_list)
-   {
-      string_list_free(metadata_list);
-      metadata_list = NULL;
    }
 
    return false;
@@ -421,11 +415,14 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
    backup_filename = strdup(path_basename(backup_path));
 
    if (string_is_empty(backup_filename))
-      goto error;
+      return false;
 
    /* Ensure base backup filename matches core */
    if (!string_starts_with(backup_filename, core_filename))
-      goto error;
+   {
+      free(backup_filename);
+      return false;
+   }
 
    /* Remove backup file extension */
    path_remove_extension(backup_filename);
@@ -440,7 +437,10 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
        &entry->date.year, &entry->date.month, &entry->date.day,
        &entry->date.hour, &entry->date.minute, &entry->date.second,
        &crc, &backup_mode) != 8)
-      goto error;
+   {
+      free(backup_filename);
+      return false;
+   }
 
    entry->crc         = (uint32_t)crc;
    entry->backup_mode = (enum core_backup_mode)backup_mode;
@@ -452,12 +452,6 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
    free(backup_filename);
 
    return true;
-
-error:
-   if (backup_filename)
-      free(backup_filename);
-
-   return false;
 }
 
 /* Creates a new core backup list containing entries
@@ -480,22 +474,22 @@ core_backup_list_t *core_backup_list_init(
 
    /* Get core filename and parent directory */
    if (string_is_empty(core_path))
-      goto error;
+      return NULL;
 
    core_filename = path_basename(core_path);
 
    if (string_is_empty(core_filename))
-      goto error;
+      return NULL;
 
    fill_pathname_parent_dir(core_dir, core_path, sizeof(core_dir));
 
    if (string_is_empty(core_dir))
-      goto error;
+      return NULL;
 
    /* Get backup directory */
    if (!core_backup_get_backup_dir(core_dir, dir_core_assets, core_filename,
          backup_dir, sizeof(backup_dir)))
-      goto error;
+      return NULL;
 
    /* Get backup file list */
    dir_list = dir_list_new(
@@ -509,22 +503,17 @@ core_backup_list_t *core_backup_list_init(
 
    /* Sanity check */
    if (!dir_list)
-      goto error;
+      return NULL;
 
    if (dir_list->size < 1)
-      goto error;
+   {
+      string_list_free(dir_list);
+      return NULL;
+   }
 
    /* Ensure list is sorted in alphabetical order
     * > This corresponds to 'timestamp' order */
    dir_list_sort(dir_list, true);
-
-   /* Create core backup list */
-   if (!(backup_list = (core_backup_list_t*)malloc(sizeof(*backup_list))))
-      goto error;
-
-   backup_list->entries  = NULL;
-   backup_list->capacity = 0;
-   backup_list->size     = 0;
 
    /* Create entries array
     * (Note: Set this to the full size of the directory
@@ -532,7 +521,21 @@ core_backup_list_t *core_backup_list_init(
     * many inefficiencies later)   */
    if (!(entries = (core_backup_list_entry_t*)
       calloc(dir_list->size, sizeof(*entries))))
-      goto error;
+   {
+      string_list_free(dir_list);
+      return NULL;
+   }
+
+   /* Create core backup list */
+   if (!(backup_list = (core_backup_list_t*)malloc(sizeof(*backup_list))))
+   {
+      string_list_free(dir_list);
+      return NULL;
+   }
+
+   backup_list->entries  = NULL;
+   backup_list->capacity = 0;
+   backup_list->size     = 0;
 
    backup_list->entries  = entries;
    backup_list->capacity = dir_list->size;
@@ -544,20 +547,12 @@ core_backup_list_t *core_backup_list_init(
       core_backup_add_entry(backup_list, core_filename, backup_path);
    }
 
-   if (backup_list->size == 0)
-      goto error;
-
    string_list_free(dir_list);
 
-   return backup_list;
+   if (backup_list->size != 0)
+      return backup_list;
 
-error:
-   if (dir_list)
-      string_list_free(dir_list);
-
-   if (backup_list)
-      core_backup_list_free(backup_list);
-
+   core_backup_list_free(backup_list);
    return NULL;
 }
 

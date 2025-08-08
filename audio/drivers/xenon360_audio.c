@@ -51,7 +51,7 @@ static void *xenon360_audio_init(const char *device,
    return calloc(1, sizeof(xenon_audio_t));
 }
 
-static INLINE uint32_t bswap_32(uint32_t val)
+static INLINE uint32_t xenon360_bswap_32(uint32_t val)
 {
    return (val >> 24) | (val << 24) |
       ((val >> 8) & 0xff00) | ((val << 8) & 0xff0000);
@@ -59,19 +59,19 @@ static INLINE uint32_t bswap_32(uint32_t val)
 
 static ssize_t xenon360_audio_write(void *data, const void *s, size_t len)
 {
-   size_t written = 0, i;
+   size_t _len = 0, i;
    const uint32_t *in_buf = s;
    xenon_audio_t *xa      = data;
 
    for (i = 0; i < (len >> 2); i++)
-      xa->buffer[i] = bswap_32(in_buf[i]);
+      xa->buffer[i] = xenon360_bswap_32(in_buf[i]);
 
    if (xa->nonblock)
    {
       if (xenon_sound_get_unplayed() < MAX_BUFFER)
       {
          xenon_sound_submit(xa->buffer, len);
-         written = len;
+         _len = len;
       }
    }
    else
@@ -84,10 +84,9 @@ static ssize_t xenon360_audio_write(void *data, const void *s, size_t len)
       }
 
       xenon_sound_submit(xa->buffer, len);
-      written = len;
+      _len = len;
    }
-
-   return written;
+   return _len;
 }
 
 static bool xenon360_audio_stop(void *data)
@@ -125,17 +124,9 @@ static void xenon360_audio_free(void *data)
       free(data);
 }
 
-static bool xenon360_use_float(void *data)
-{
-   (void)data;
-   return false;
-}
-
-static size_t xenon360_write_avail(void *data)
-{
-   (void)data;
-   return 0;
-}
+/* TODO/FIXME - implement? */
+static bool xenon360_use_float(void *data) { return false; }
+static size_t xenon360_write_avail(void *data) { return 0; }
 
 audio_driver_t audio_xenon360 = {
    xenon360_audio_init,

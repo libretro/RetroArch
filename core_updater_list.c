@@ -236,29 +236,28 @@ bool core_updater_list_get_filename(
       const char *remote_filename,
       const core_updater_list_entry_t **entry)
 {
-   size_t num_entries;
-   size_t i;
 
-   if (!core_list || !entry || string_is_empty(remote_filename))
-      return false;
-
-   num_entries = RBUF_LEN(core_list->entries);
-
-   if (num_entries < 1)
-      return false;
-
-   /* Search for specified filename */
-   for (i = 0; i < num_entries; i++)
+   if (core_list && entry && !string_is_empty(remote_filename))
    {
-      core_updater_list_entry_t *current_entry = &core_list->entries[i];
+      size_t num_entries = RBUF_LEN(core_list->entries);
 
-      if (string_is_empty(current_entry->remote_filename))
-         continue;
-
-      if (string_is_equal(remote_filename, current_entry->remote_filename))
+      if (num_entries >= 1)
       {
-         *entry = current_entry;
-         return true;
+         size_t i;
+         /* Search for specified filename */
+         for (i = 0; i < num_entries; i++)
+         {
+            core_updater_list_entry_t *current_entry = &core_list->entries[i];
+
+            if (string_is_empty(current_entry->remote_filename))
+               continue;
+
+            if (string_is_equal(remote_filename, current_entry->remote_filename))
+            {
+               *entry = current_entry;
+               return true;
+            }
+         }
       }
    }
 

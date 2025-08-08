@@ -130,10 +130,11 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
 static void cocoa_vk_gfx_ctx_get_video_size(void *data,
       unsigned* width, unsigned* height)
 {
-    float screenscale               = cocoa_screen_get_native_scale();
-    CGRect size                     = [apple_platform.renderView bounds];
-    *width                          = CGRectGetWidth(size)  * screenscale;
-    *height                         = CGRectGetHeight(size) * screenscale;
+    UIView *renderView              = apple_platform.renderView;
+    CGRect size                     = [renderView bounds];
+    float viewScale                 = [renderView contentScaleFactor];
+    *width                          = CGRectGetWidth(size)  * viewScale;
+    *height                         = CGRectGetHeight(size) * viewScale;
 }
 #endif
 
@@ -241,7 +242,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
    cocoa_ctx->width               = width;
    cocoa_ctx->height              = height;
 
-   RARCH_LOG("[macOS]: Native window size: %u x %u.\n",
+   RARCH_LOG("[Vulkan] Native window size: %ux%u.\n",
          cocoa_ctx->width, cocoa_ctx->height);
 
    if (!vulkan_surface_create(
@@ -253,7 +254,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
             cocoa_ctx->height,
             cocoa_ctx->swap_interval))
    {
-      RARCH_ERR("[macOS]: Failed to create surface.\n");
+      RARCH_ERR("[Vulkan] Failed to create surface.\n");
       return false;
    }
 
@@ -302,7 +303,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
                               cocoa_ctx->height,
                               cocoa_ctx->swap_interval))
    {
-      RARCH_ERR("[iOS Vulkan]: Failed to create surface.\n");
+      RARCH_ERR("[Vulkan] Failed to create surface.\n");
       return false;
    }
 
@@ -341,7 +342,7 @@ static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
    if (!vulkan_create_swapchain(&cocoa_ctx->vk,
             width, height, cocoa_ctx->swap_interval))
    {
-      RARCH_ERR("[macOS/Vulkan]: Failed to update swapchain.\n");
+      RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       return false;
    }
 
@@ -385,7 +386,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_has_focus,
    cocoa_vk_gfx_ctx_suppress_screensaver,
 #if defined(HAVE_COCOATOUCH)
-   false,
+   true,
 #else
    true,
 #endif

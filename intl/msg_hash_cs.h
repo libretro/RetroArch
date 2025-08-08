@@ -552,10 +552,6 @@ MSG_HASH(
    "Zamknout nainstalované jádro"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Zabránit úpravě aktuálně nainstalovaného jádra. Lze použít k zamezení nechtěných aktualizací, pokud obsah vyžaduje určitou verzi jádra (např. sady Arcade ROM)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "Vyloučit z menu 'Jádra bez obsahu'"
    )
@@ -1541,10 +1537,6 @@ MSG_HASH(
    "Vstup"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Vstupní ovladač k použití. Některé video ovladače vynutí jiný vstupní ovladač."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
    "Ovladač udev čte události evdev pro podporu klávesnice. Podporuje také zpětné volání klávesnice, myši a touchpady.\nVe většině distribucí jsou uzly /dev/input ve výchozím nastavení určeny pouze pro uživatele root (režim 600). Můžete nastavit pravidlo udev, které je zpřístupní i uživatelům bez rootu."
    )
@@ -2086,20 +2078,8 @@ MSG_HASH(
    "Přepínejte mezi nativním a ultraširokým super rozlišením."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "Centrování osy-X"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "Pokud není obraz na displeji správně vycentrován, projděte tyto možnosti."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "Úprava skenování obrazu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "Projděte těmito možnostmi a upravte nastavení verandy pro změnu velikosti obrázku."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -2255,14 +2235,6 @@ MSG_HASH(
 
 /* Settings > Video > Fullscreen Mode */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   "Spustit v režimu celé obrazovky"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Spuštění na celou obrazovku. Lze změnit za běhu. Lze přepsat přepínačem příkazového řádku."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "Režim celé obrazovky s oknem"
@@ -2606,10 +2578,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    "Adaptivní VSync"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "Funkce VSync je povolena, dokud výkon neklesne pod cílovou obnovovací frekvenci. Může minimalizovat zadrhávání při poklesu výkonu pod reálný čas a být energeticky úspornější."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -3466,14 +3434,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Řešení pro odpojování a opětovné připojování ovladačů. Impeduje 2 hráče se stejnými ovladači."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Potrvdit ukončení"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Ukončit RetroArch dvojím stisknutím Hotkey."
-   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -4025,15 +3985,6 @@ MSG_HASH(
    "Přepínání mezi blednoucími a statickými zprávami chatu při hraní po síti."
    )
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
-   "Odeslání infa o ladění"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SEND_DEBUG_INFO,
-   "Odešle diagnostické informace o vašem zařízení a konfiguraci aplikace RetroArch na naše servery k analýze."
-   )
-
 /* Settings > Input > Port # Controls */
 
 MSG_HASH(
@@ -4271,6 +4222,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "Zbraň D-Pad Vpravo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "Turbo střelba"
    )
 
 /* Settings > Latency */
@@ -6241,10 +6196,6 @@ MSG_HASH(
    "Zobrazit 'Nastavení'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "Zobrazte menu \"Nastavení\". (U zařízení Ozone/XMB je nutný restart)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
    "Nastavení hesla pro povolení 'Nastavení'"
    )
@@ -6257,64 +6208,28 @@ MSG_HASH(
    "Zobrazit 'Oblíbené'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Zobrazení menu \"Oblíbené\". (V systému Ozone/XMB je nutný restart)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "Zobrazit 'Obrázky'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "Zobrazit menu „Obrázky“. (V systému Ozone/XMB je nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "Zobrazit 'Hudbu'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "Zobrazení menu „Hudba“. (V systému Ozone/XMB je nutný restart)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "Zobrazit 'Videa'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "Zobrazit menu „Videa“. (V systému Ozone/XMB je nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "Zobrazit 'Netplay'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Zobrazení menu „Netplay“. (V zařízení Ozone/XMB je nutný restart)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Zobrazení 'Historie'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Zobrazení menu nedávné historie. (V systému Ozone/XMB je nutný restart)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
-   "Zobrazit 'Importovat obsah'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "Zobrazení menu „Importovat obsah“. (V systému Ozone/XMB je nutný restart)"
-   )
-MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
    "Zobrazit 'Importovat obsah'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Zobrazení položky 'Importovat obsah' v hlavní nabídce nebo v podnabídce seznamů skladeb."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
@@ -6337,24 +6252,12 @@ MSG_HASH(
    "Zobrazit karty Playlistu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
-   "Zobrazení karet seznamu skladeb. Nemá vliv na rozhraní RGUI. Navigační panel musí být povolen v rozhraní GLUI. (V systému Ozone/XMB je nutný restart)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "Zobrazit 'Prozkoumat'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "Zobrazit možnost průzkumníka obsahu. (V systému Ozone/XMB je nutný restart)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "Zobrazit 'Jádra bez obsahu'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Zadejte typ jádra (pokud existuje), které se má zobrazit v nabídce „Bezobsažná jádra“. Pokud je nastavena hodnota „Vlastní“, lze viditelnost jednotlivých jader přepínat prostřednictvím nabídky „Spravovat jádra“. (V systému Ozone/XMB je nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -11452,6 +11355,18 @@ MSG_HASH(
 /* Ozone: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT,
+   "Písmo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT,
+   "Vyberte jiné hlavní písmo, které má být použito v nabídce."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   "Měřítko písma"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
    "Sbalení bočního panelu"
    )
@@ -11498,6 +11413,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
    "Měřítko velikosti panelu miniatur."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
+   "Žádné"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NORMAL,
+   "Normální"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_MAXIMUM,
+   "Maximální"
    )
 
 MSG_HASH(
@@ -12597,10 +12524,6 @@ MSG_HASH(
 /* Unused (Only Exist in Translation Files) */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO,
-   "Automatický poměr stran"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
    "Přezdívka (LAN): %s"
    )
@@ -12611,10 +12534,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
    "Systém BGM"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
-   "Vlastní poměr"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
@@ -12635,14 +12554,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
    "Vyberte shody k zobrazení."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
-   "Vynutit poměr stran"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
-   "Vybrat z playlistu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
@@ -12715,14 +12626,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
    "Co je jádro?"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
-   "Odeslat informace o ladění"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_HELP_SEND_DEBUG_INFO,
-   "Odešle diagnostické informace o vašem zařízení a konfiguraci RetroArch na naše servery k analýze."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
@@ -13006,30 +12909,6 @@ MSG_HASH(
    "Pětkrát stiskněte pravé tlačítko a smažte všechny cheaty."
    )
 MSG_HASH(
-   MSG_FAILED_TO_SAVE_DEBUG_INFO,
-   "Nepodařilo se uložit informace o ladění."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SEND_DEBUG_INFO,
-   "Nepodařilo se odeslat ladící informace na server."
-   )
-MSG_HASH(
-   MSG_SENDING_DEBUG_INFO,
-   "Odesílání informací o ladění..."
-   )
-MSG_HASH(
-   MSG_SENT_DEBUG_INFO,
-   "Informace o ladění byly úspěšně odeslány na server. Číslo Vašeho ID je %u."
-   )
-MSG_HASH(
-   MSG_PRESS_TWO_MORE_TIMES_TO_SEND_DEBUG_INFO,
-   "Pro odeslání diagnostických informací týmu RetroArch stiskněte ještě dvakrát."
-   )
-MSG_HASH(
-   MSG_PRESS_ONE_MORE_TIME_TO_SEND_DEBUG_INFO,
-   "Pro odeslání diagnostických informací týmu RetroArch stiskněte ještě jednou."
-   )
-MSG_HASH(
    MSG_AUDIO_MIXER_VOLUME,
    "Globální hlasitost směšovače zvuku"
    )
@@ -13301,14 +13180,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_ALL_CORES_SWITCHED_PFD,
    "Všechna podporovaná jádra přešla na verze pro Obchod Play"
-   )
-MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "jádra aktualizována: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "přeskočena jádra: "
    )
 MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,
@@ -13657,18 +13528,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    "Nepodařilo se získat přezdívku od klienta."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Nepodařilo se načíst"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "Nepodařilo se načíst obsah"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Nahrání souboru filmu se nezdařilo"
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
@@ -14109,10 +13968,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "Dosažen konec vyrovnávací paměti pro převíjení."
-   )
-MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Nová konfigurace byla uložena do"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,

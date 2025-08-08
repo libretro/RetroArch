@@ -1484,7 +1484,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    ret = ioctl(dev->fd, EVIOCGABS(ABS_MT_SLOT), &abs_info);
    if (ret < 0)
    {
-      RARCH_WARN("[udev] Failed to get touchscreen limits\n");
+      RARCH_WARN("[udev] Failed to get touchscreen limits.\n");
 
       touch->info_slots.enabled = false;
    }
@@ -1495,7 +1495,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    if (abs_info.maximum == 0)
    {
       /* TODO - Test for single-touch devices. */
-      RARCH_WARN("[udev] Single-touch devices are currently untested!\n");
+      RARCH_WARN("[udev] Single-touch devices are currently untested.\n");
 
       xreq = EVIOCGABS(ABS_X);
       yreq = EVIOCGABS(ABS_Y);
@@ -1567,7 +1567,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    touch->request_data      = calloc(1, touch->request_data_size);
    if (!touch->request_data)
    {
-      RARCH_ERR("[udev] Failed to allocate request_data for touch state tracking!\n");
+      RARCH_ERR("[udev] Failed to allocate request_data for touch state tracking.\n");
       udev_destroy_touch_dev(dev);
       return;
    }
@@ -1576,7 +1576,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    touch->staging_active = 0;
    if (!touch->staging)
    {
-      RARCH_ERR("[udev] Failed to allocate staging for touch state tracking!\n");
+      RARCH_ERR("[udev] Failed to allocate staging for touch state tracking.\n");
       udev_destroy_touch_dev(dev);
       return;
    }
@@ -1584,7 +1584,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    touch->current_active = 0;
    if (!touch->current)
    {
-      RARCH_ERR("[udev] Failed to allocate current for touch state tracking!\n");
+      RARCH_ERR("[udev] Failed to allocate current for touch state tracking.\n");
       udev_destroy_touch_dev(dev);
       return;
    }
@@ -2383,7 +2383,7 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                touch->staging_active--;
             else
             {
-               RARCH_ERR("[udev] Cannot report touch up since there are no active points!\n");
+               RARCH_ERR("[udev] Cannot report touch up since there are no active points.\n");
             }
 
             /* Letting go of the primary gesture point -> Wait for full release */
@@ -2608,7 +2608,7 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
             }
             break;
          default:
-            RARCH_ERR("[udev] Unknown slot change %d!\n", touch->staging[iii].change);
+            RARCH_ERR("[udev] Unknown slot change %d.\n", touch->staging[iii].change);
             break;
       }
 
@@ -2752,7 +2752,7 @@ static void udev_handle_touch(void *data,
                   touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_MOVE;
                break;
             default:
-               RARCH_WARN("[udev] handle_touch: EV_ABS (code %d) is not handled!\n", event->code);
+               RARCH_WARN("[udev] handle_touch: EV_ABS (code %d) is not handled\n", event->code);
                break;
          }
          break;
@@ -2768,11 +2768,11 @@ static void udev_handle_touch(void *data,
          }
          else
          {
-            RARCH_WARN("[udev] handle_touch: EV_KEY (code %d) is not handled!\n", event->code);
+            RARCH_WARN("[udev] handle_touch: EV_KEY (code %d) is not handled\n", event->code);
          }
          break;
       case EV_REL:
-         RARCH_WARN("[udev] handle_touch: EV_REL (code %d) is not handled!\n", event->code);
+         RARCH_WARN("[udev] handle_touch: EV_REL (code %d) is not handled\n", event->code);
          break;
       case EV_SYN:
          switch (event->code)
@@ -2789,12 +2789,12 @@ static void udev_handle_touch(void *data,
                udev_report_touch(udev, dev);
                break;
             default:
-               RARCH_WARN("[udev] handle_touch: EV_SYN (code %d) is not handled!\n", event->code);
+               RARCH_WARN("[udev] handle_touch: EV_SYN (code %d) is not handled\n", event->code);
                break;
          }
          break;
       default:
-         RARCH_WARN("[udev] handle_touch: Event type %d is not handled!\n", event->type);
+         RARCH_WARN("[udev] handle_touch: Event type %d is not handled\n", event->type);
          break;
    }
 }
@@ -3203,7 +3203,7 @@ static int udev_input_add_device(udev_input_t *udev,
             mouse = 1;
 
             if (!test_bit(keycaps, BTN_MOUSE))
-               RARCH_DBG("[udev]: Warning REL pointer device (%s) has no mouse button\n",device->ident);
+               RARCH_DBG("[udev] Warning REL pointer device (%s) has no mouse button.\n",device->ident);
          }
       }
 
@@ -3224,7 +3224,7 @@ static int udev_input_add_device(udev_input_t *udev,
                device->mouse.abs = 2;
 
             if ( !test_bit(keycaps, BTN_TOUCH) && !test_bit(keycaps, BTN_MOUSE) )
-               RARCH_DBG("[udev]: Warning ABS pointer device (%s) has no touch or mouse button\n",device->ident);
+               RARCH_DBG("[udev] Warning ABS pointer device (%s) has no touch or mouse button.\n",device->ident);
          }
       }
 
@@ -3237,7 +3237,7 @@ static int udev_input_add_device(udev_input_t *udev,
       {
          if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) == -1)
          {
-            RARCH_DBG("[udev]: ABS pointer device (%s) Failed to get ABS_X parameters \n",device->ident);
+            RARCH_DBG("[udev] ABS pointer device (%s) Failed to get ABS_X parameters.\n",device->ident);
             goto end;
          }
 
@@ -3246,7 +3246,7 @@ static int udev_input_add_device(udev_input_t *udev,
 
          if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) == -1)
          {
-            RARCH_DBG("[udev]: ABS pointer device (%s) Failed to get ABS_Y parameters \n",device->ident);
+            RARCH_DBG("[udev] ABS pointer device (%s) Failed to get ABS_Y parameters.\n",device->ident);
             goto end;
          }
          device->mouse.y_min = absinfo.minimum;
@@ -3281,14 +3281,14 @@ static int udev_input_add_device(udev_input_t *udev,
    /* Shouldn't happen, but just check it. */
    if (epoll_ctl(udev->fd, EPOLL_CTL_ADD, fd, &event) < 0)
    {
-      RARCH_ERR("udev]: Failed to add FD (%d) to epoll list (%s).\n",
+      RARCH_ERR("[udev] Failed to add FD (%d) to epoll list (%s).\n",
             fd, strerror(errno));
    }
 #elif defined(HAVE_KQUEUE)
    EV_SET(&event, fd, EVFILT_READ, EV_ADD, 0, 0, LISTENSOCKET);
    if (kevent(udev->fd, &event, 1, NULL, 0, NULL) == -1)
    {
-      RARCH_ERR("udev]: Failed to add FD (%d) to kqueue list (%s).\n",
+      RARCH_ERR("[udev] Failed to add FD (%d) to kqueue list (%s).\n",
             fd, strerror(errno));
    }
 #endif
@@ -3933,6 +3933,10 @@ static void udev_input_free(void *data)
    if (!data || !udev)
       return;
 
+#ifdef __linux__
+   linux_terminal_restore_input();
+#endif
+
    if (udev->fd >= 0)
       close(udev->fd);
 
@@ -4018,7 +4022,7 @@ static bool open_devices(udev_input_t *udev,
    struct udev_list_entry     *item = NULL;
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
 
-   RARCH_DBG("[udev] Adding devices of type %u -> \"%s\"\n", type, type_str);
+   RARCH_DBG("[udev] Adding devices of type %u -> \"%s\".\n", type, type_str);
    if (!enumerate)
       return false;
 
@@ -4032,7 +4036,7 @@ static bool open_devices(udev_input_t *udev,
       const char *devnode;
       const char *name = udev_list_entry_get_name(item);
 
-      RARCH_DBG("[udev] Adding device (t%u) \"%s\"\n", type, name);
+      RARCH_DBG("[udev] Adding device (t%u) \"%s\".\n", type, name);
 
       /* Get the filename of the /sys entry for the device
        * and create a udev_device object (dev) representing it. */
@@ -4046,7 +4050,7 @@ static bool open_devices(udev_input_t *udev,
          if (fd != -1)
          {
             if (udev_input_add_device(udev, type, devnode, cb) == 0)
-               RARCH_DBG("[udev]: udev_input_add_device error : %s (%s).\n",
+               RARCH_DBG("[udev] udev_input_add_device error: %s (%s).\n",
                      devnode, strerror(errno));
 
             close(fd);
@@ -4128,7 +4132,7 @@ static void *udev_input_init(const char *joypad_driver)
    if (!udev->num_devices)
    {
       settings_t *settings = config_get_ptr();
-      RARCH_WARN("[udev]: Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event* and /run/udev/?\n");
+      RARCH_WARN("[udev] Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event* and /run/udev/?\n");
       /* Start screen is not used nowadays, but it still gets true value only
        * on first startup without config file, so it should be good to catch
        * initial boots without udev devices available. */
@@ -4143,7 +4147,7 @@ static void *udev_input_init(const char *joypad_driver)
           */
          strlcpy(settings->arrays.input_driver, "linuxraw",
                  sizeof(settings->arrays.input_driver));
-         RARCH_WARN("[udev]: First boot and without input devices, forcing fallback to linuxraw.\n");
+         RARCH_WARN("[udev] First boot and without input devices, forcing fallback to linuxraw.\n");
          goto error;
       }
 #endif
@@ -4157,7 +4161,7 @@ static void *udev_input_init(const char *joypad_driver)
 
 #ifndef HAVE_X11
    /* TODO/FIXME - this can't be hidden behind a compile-time ifdef */
-   RARCH_WARN("[udev]: Full-screen pointer won't be available.\n");
+   RARCH_WARN("[udev] Fullscreen pointer won't be available.\n");
 #endif
 
    /* Reset the indirection array */
@@ -4171,7 +4175,7 @@ static void *udev_input_init(const char *joypad_driver)
    {
       if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
       {
-          RARCH_LOG("[udev]: Mouse/Touch #%u: \"%s\" (%s) %s.\n",
+          RARCH_LOG("[udev] Mouse/Touch #%u: \"%s\" (%s) %s.\n",
              mouse,
              udev->devices[i]->ident,
              udev->devices[i]->mouse.abs ? "ABS" : "REL",
@@ -4183,7 +4187,7 @@ static void *udev_input_init(const char *joypad_driver)
        }
        else
        {
-          RARCH_LOG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
+          RARCH_LOG("[udev] Keyboard #%u: \"%s\" (%s).\n",
              keyboard,
              udev->devices[i]->ident,
              udev->devices[i]->devnode);
@@ -4218,7 +4222,7 @@ static void udev_input_grab_mouse(void *data, bool state)
 
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
    {
-      RARCH_WARN("[udev]: Mouse grab/ungrab feature unavailable.\n");
+      RARCH_WARN("[udev] Mouse grab/ungrab feature unavailable.\n");
       return;
    }
 
@@ -4232,7 +4236,7 @@ static void udev_input_grab_mouse(void *data, bool state)
    else
       XUngrabPointer(display, CurrentTime);
 #else
-   RARCH_WARN("[udev]: Mouse grab/ungrab feature unavailable.\n");
+   RARCH_WARN("[udev] Mouse grab/ungrab feature unavailable.\n");
 #endif
 }
 
