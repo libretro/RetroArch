@@ -28,14 +28,14 @@
 #include "glslang_util.h"
 #include "../../verbosity.h"
 
-static char *slang_get_include_file(const char *line)
+static char *slang_get_include_file(const char *line, size_t len)
 {
    char *end   = NULL;
-   char *start = (char*)strchr(line, '\"');
+   char *start = (char*)memchr(line, '\"', len + 1);
    if (!start)
       return NULL;
    start++;
-   if (!(end = (char*)strchr(start, '\"')))
+   if (!(end = (char*)memchr(start, '\"', len - (start - line))))
       return NULL;
    *end = '\0';
    return start;
@@ -226,7 +226,7 @@ bool glslang_read_shader_file(const char *path,
       if ( !strncmp("#include ", line, STRLEN_CONST("#include ")) || include_optional )
       {
          char include_path[PATH_MAX_LENGTH];
-         char *include_file = slang_get_include_file(line);
+         char *include_file = slang_get_include_file(line, strlen(line));
 
          if (string_is_empty(include_file))
          {

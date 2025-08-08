@@ -328,15 +328,16 @@ void net_http_urlencode_full(char *s, const char *source, size_t len)
    size_t tmp_len;
    char url_domain[256];
    char url_path[PATH_MAX_LENGTH];
-   char *tmp                         = NULL;
-   int count                         = 0;
+   int count      = 0;
+   char *tmp      = url_path;
 
    strlcpy(url_path, source, sizeof(url_path));
-   tmp            = url_path;
 
    while (count < 3 && tmp[0] != '\0')
    {
       tmp = strchr(tmp, '/');
+      if (!tmp)
+         break;
       count++;
       tmp++;
    }
@@ -1155,11 +1156,11 @@ int net_http_fd(struct http_t *state)
    return state->conn->fd;
 }
 
-static ssize_t net_http_receive_header(struct http_t *state, ssize_t newlen)
+static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
 {
    struct response *response = (struct response*)&state->response;
 
-   response->pos       += newlen;
+   response->pos += len;
 
    while (response->part < P_BODY)
    {
@@ -1227,7 +1228,7 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t newlen)
 
    if (response->part >= P_BODY)
    {
-      newlen        = response->pos;
+      len           = response->pos;
       response->pos = 0;
       if (response->bodytype == T_LEN)
       {
@@ -1243,7 +1244,7 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t newlen)
          response->data    = (char*)realloc(response->data, response->buflen);
       }
    }
-   return newlen;
+   return len;
 }
 
 static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
@@ -1411,12 +1412,9 @@ static bool net_http_redirect(struct http_t *state, const char *location)
 bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 {
    struct response *response;
-   ssize_t newlen   = 0;
+   ssize_t _len = 0;
 
-   if (!state)
-      return true;
-
-   if (state->err)
+   if (!state || state->err)
       return true;
 
    if (!state->conn)
@@ -1444,26 +1442,38 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
 #ifdef HAVE_SSL
    if (state->ssl && state->conn->ssl_ctx)
-      newlen = ssl_socket_receive_all_nonblocking(state->conn->ssl_ctx, &state->err,
+      _len = ssl_socket_receive_all_nonblocking(state->conn->ssl_ctx, &state->err,
             (uint8_t*)response->data + response->pos,
             response->buflen - response->pos);
    else
 #endif
-      newlen = socket_receive_all_nonblocking(state->conn->fd, &state->err,
+      _len = socket_receive_all_nonblocking(state->conn->fd, &state->err,
             (uint8_t*)response->data + response->pos,
             response->buflen - response->pos);
 
    if (response->part < P_BODY)
    {
-      if (newlen < 0 || state->err)
-         goto error;
-      newlen = net_http_receive_header(state, newlen);
+      if (_len < 0 || state->err)
+      {
+         net_http_conn_pool_remove(state->conn);
+         state->err       = true;
+         response->part   = P_DONE;
+         response->status = -1;
+         return true;
+      }
+      _len = net_http_receive_header(state, _len);
    }
 
    if (response->part >= P_BODY && response->part < P_DONE)
    {
-      if (!net_http_receive_body(state, newlen))
-         goto error;
+      if (!net_http_receive_body(state, _len))
+      {
+         net_http_conn_pool_remove(state->conn);
+         state->err       = true;
+         response->part   = P_DONE;
+         response->status = -1;
+         return true;
+      }
    }
 
    if (progress)
@@ -1480,9 +1490,9 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    if (response->part != P_DONE)
       return false;
 
-   for (newlen = 0; (size_t)newlen < response->headers->size; newlen++)
+   for (_len = 0; (size_t)_len < response->headers->size; _len++)
    {
-      if (string_is_equal_case_insensitive(response->headers->elems[newlen].data, "connection: close"))
+      if (string_is_equal_case_insensitive(response->headers->elems[_len].data, "connection: close"))
       {
          net_http_conn_pool_remove(state->conn);
          state->conn = NULL;
@@ -1496,22 +1506,13 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
    if (response->status >= 300 && response->status < 400)
    {
-      for (newlen = 0; (size_t)newlen < response->headers->size; newlen++)
+      for (_len = 0; (size_t)_len < response->headers->size; _len++)
       {
-         if (string_starts_with_case_insensitive(response->headers->elems[newlen].data, "Location: "))
-         {
-            return net_http_redirect(state, response->headers->elems[newlen].data + STRLEN_CONST("Location: "));
-         }
+         if (string_starts_with_case_insensitive(response->headers->elems[_len].data, "Location: "))
+            return net_http_redirect(state, response->headers->elems[_len].data + STRLEN_CONST("Location: "));
       }
    }
 
-   return true;
-
-error:
-   net_http_conn_pool_remove(state->conn);
-   state->err       = true;
-   response->part   = P_DONE;
-   response->status = -1;
    return true;
 }
 
@@ -1542,12 +1543,8 @@ int net_http_status(struct http_t *state)
  **/
 struct string_list *net_http_headers(struct http_t *state)
 {
-   if (!state)
+   if (!state || !state->err)
       return NULL;
-
-   if (state->err)
-      return NULL;
-
    return state->response.headers;
 }
 
