@@ -405,8 +405,25 @@ static void *coreaudio_macos_microphone_open_mic(void *data, const char *device,
    else
    {
       mic->device_name = strdup("default");
-      mic->selected_device_id = kAudioObjectUnknown; /* System default */
-      RARCH_LOG("[CoreAudio macOS Mic]: Requested default device, selected AudioDeviceID: %u (system default)\n", (unsigned int)mic->selected_device_id);
+
+      /* Get the actual system default input device instead of using kAudioObjectUnknown */
+      AudioObjectPropertyAddress prop_addr = {
+         kAudioHardwarePropertyDefaultInputDevice,
+         kAudioObjectPropertyScopeGlobal,
+         kAudioObjectPropertyElementMaster
+      };
+      UInt32 prop_size = sizeof(AudioDeviceID);
+      OSStatus default_status = AudioObjectGetPropertyData(kAudioObjectSystemObject, &prop_addr, 0, NULL, &prop_size, &mic->selected_device_id);
+
+      if (default_status == noErr && mic->selected_device_id != kAudioObjectUnknown)
+      {
+         RARCH_LOG("[CoreAudio macOS Mic]: Requested default device, found actual default input device ID: %u\n", (unsigned int)mic->selected_device_id);
+      }
+      else
+      {
+         RARCH_ERR("[CoreAudio macOS Mic]: Failed to get default input device (status: %d), falling back to kAudioObjectUnknown\n", (int)default_status);
+         mic->selected_device_id = kAudioObjectUnknown;
+      }
    }
 
    OSStatus status = noErr;
