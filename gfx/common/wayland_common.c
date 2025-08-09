@@ -515,9 +515,9 @@ static void presentation_feedback_presented(void *data,
       }
    }
 
-   int64_t sec = (uint64_t)tv_sec_lo + ((uint64_t)tv_sec_hi << 32);
-   wl->last_ust = sec * 1000000LL + tv_nsec / 1000;
-   wl->last_msc = (uint64_t)seq_lo + ((uint64_t)seq_hi << 32);
+   uint64_t sec = ((uint64_t)tv_sec_hi << 32) | (uint64_t)tv_sec_lo;
+   wl->last_ust = sec * 1000000000ULL + (uint64_t)tv_nsec;
+   wl->last_msc = ((uint64_t)seq_hi << 32) | (uint64_t)seq_lo;
    wl->refresh_interval = (int64_t)refresh;
    wl->is_presented = true;
 }
