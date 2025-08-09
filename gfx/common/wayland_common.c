@@ -578,20 +578,26 @@ void wait_for_next_frame(gfx_ctx_wayland_data_t *wl)
     if (!wl->present_clock || wl->refresh_interval <= 0 || !wl->is_presented)
         return;
 
-    struct timespec now;
     clockid_t clock_type = (wl->present_clock_id == CLOCK_MONOTONIC ||
                             wl->present_clock_id == CLOCK_MONOTONIC_RAW)
                             ? wl->present_clock_id
                             : CLOCK_MONOTONIC;
-    clock_gettime(clock_type, &now);
-    int64_t current_time = now.tv_sec * 1000000LL + now.tv_nsec / 1000;
-    int64_t next_frame = wl->last_ust + (wl->refresh_interval / 1000);
 
-    if (current_time < next_frame) {
-        int64_t sleep_us = next_frame - current_time;
-        const int64_t max_sleep = 1000000;
-        usleep(sleep_us > max_sleep ? max_sleep : sleep_us);
+    uint64_t next_frame_ns = wl->last_ust + wl->refresh_interval;
+
+    struct timespec ts;
+    ts.tv_sec = next_frame_ns / 1000000000ULL;
+    ts.tv_nsec = next_frame_ns % 1000000000ULL;
+
+    struct timespec now;
+    if (clock_gettime(clock_type, &now) == 0)
+    {
+       uint64_t now_ns = (uint64_t)now.tv_sec * 1000000000ULL + now.tv_nsec;
+       if (now_ns >= next_frame_ns)
+          return;
     }
+
+    clock_nanosleep(clock_type, TIMER_ABSTIME, &ts, NULL);
 }
 
 static int create_shm_file(off_t size)
