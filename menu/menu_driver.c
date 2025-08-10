@@ -1154,7 +1154,11 @@ static float menu_input_get_dpi(
       mets.type         = DISPLAY_METRIC_DPI;
       mets.value        = &dpi;
       if (!video_context_driver_get_metrics(&mets))
+#ifdef VITA
+         dpi            = 220.0f;
+#else
          dpi            = 0.0f;
+#endif
 
       dpi_cached        = true;
       last_video_width  = video_width;
