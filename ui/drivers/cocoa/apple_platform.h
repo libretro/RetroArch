@@ -73,7 +73,7 @@ extern id<ApplePlatform> apple_platform;
 extern id apple_platform;
 #endif
 
-#if defined(HAVE_COCOATOUCH)
+#if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
 void rarch_start_draw_observer(void);
 void rarch_stop_draw_observer(void);
 
@@ -100,6 +100,7 @@ UINavigationControllerDelegate> {
 
 - (void)showGameView;
 - (void)supportOtherAudioSessions;
+- (BOOL)openRetroArchURL:(NSURL *)url;
 
 @end
 

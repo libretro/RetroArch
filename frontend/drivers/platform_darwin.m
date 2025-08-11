@@ -61,6 +61,14 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#ifdef HAVE_SWIFT
+#if TARGET_OS_TV
+#import "RetroArchTV-Swift.h"
+#else
+#import "RetroArch-Swift.h"
+#endif
+#endif
+
 #include "../frontend_driver.h"
 #include "../../file_path_special.h"
 #include "../../configuration.h"
@@ -987,6 +995,15 @@ static bool frontend_darwin_accessibility_speak(int speed,
 #endif
 }
 
+static void frontend_darwin_content_loaded(void)
+{
+#ifdef HAVE_SWIFT
+   if (@available(iOS 16.0, tvOS 16.0, *)) {
+      [RetroArchAppShortcuts contentLoaded];
+   }
+#endif
+}
+
 frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_env,         /* get_env */
    NULL,                            /* init */
@@ -999,7 +1016,7 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_name,        /* get_name */
    frontend_darwin_get_os,          /* get_os               */
    frontend_darwin_get_rating,      /* get_rating           */
-   NULL,                            /* content_loaded       */
+   frontend_darwin_content_loaded,  /* content_loaded       */
    frontend_darwin_get_arch,        /* get_architecture     */
    frontend_darwin_get_powerstate,  /* get_powerstate       */
    frontend_darwin_parse_drive_list,/* parse_drive_list     */

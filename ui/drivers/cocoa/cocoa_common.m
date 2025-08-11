@@ -21,6 +21,7 @@
 #include "apple_platform.h"
 #include "../ui_cocoa.h"
 #include <compat/apple_compat.h>
+#include "RetroArchPlaylistManager.h"
 
 #ifdef HAVE_COCOATOUCH
 #import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
@@ -1227,4 +1228,96 @@ void cocoa_file_load_with_detect_core(const char *filename)
                CORE_TYPE_PLAIN,
                NULL, NULL);
    }
+}
+
+bool cocoa_launch_game_by_filename(NSString *filename)
+{
+   core_info_list_t *core_info_list = NULL;
+   const core_info_t *core_info = NULL;
+   size_t list_size = 0;
+   char full_path[PATH_MAX_LENGTH] = {0};
+   content_ctx_info_t content_info = { 0 };
+
+   RARCH_LOG("Launching game by filename: %s\n", [filename UTF8String]);
+
+   // Strategy 1: Try to find game in playlists first (existing behavior)
+   RetroArchPlaylistGame *game = [RetroArchPlaylistManager findGameByFilename:filename];
+
+   if (game && game.corePath && game.fullPath) {
+      char core_path[PATH_MAX_LENGTH] = {0};
+
+      RARCH_LOG("Found game '%s' in playlist with core '%s'\n",
+                [game.fullPath UTF8String], [game.corePath UTF8String]);
+
+      fill_pathname_expand_special(core_path, [game.corePath UTF8String], sizeof(core_path));
+      fill_pathname_expand_special(full_path, [game.fullPath UTF8String], sizeof(full_path));
+
+      bool success = task_push_load_content_with_new_core_from_companion_ui(core_path, full_path,
+                                                                            NULL, NULL, NULL,
+                                                                            &content_info, NULL, NULL);
+      if (success) {
+         RARCH_LOG("Successfully launched playlist game '%s'\n", [filename UTF8String]);
+         return YES;
+      } else {
+         RARCH_WARN("Failed to launch playlist game '%s'\n", [filename UTF8String]);
+         return NO;
+      }
+   }
+
+   // Strategy 2: Fallback to automatic core detection for non-playlist content
+   RARCH_LOG("Game '%s' not found in playlists, trying automatic core detection\n", [filename UTF8String]);
+
+   fill_pathname_expand_special(full_path, [filename UTF8String], sizeof(full_path));
+   if (!path_is_valid(full_path)) {
+      RARCH_WARN("Could not find file '%s'\n", full_path);
+      return NO;
+   }
+
+   RARCH_LOG("Found file at path: %s\n", full_path);
+
+   // Get list of compatible cores for this content file
+   core_info_get_list(&core_info_list);
+   if (!core_info_list) {
+      RARCH_WARN("No core info list available\n");
+      return NO;
+   }
+
+   core_info_list_get_supported_cores(core_info_list, full_path, &core_info, &list_size);
+
+   if (list_size == 0) {
+      RARCH_WARN("No compatible cores found for '%s'\n", full_path);
+      return NO;
+   }
+
+   RARCH_LOG("Found %zu compatible core(s) for '%s'\n", list_size, full_path);
+
+   path_set(RARCH_PATH_CONTENT, full_path);
+
+   // Strategy 2a: Check if current core supports this content
+   if (!path_is_empty(RARCH_PATH_CORE)) {
+      const char *current_core = path_get(RARCH_PATH_CORE);
+      for (size_t i = 0; i < list_size; i++) {
+         const core_info_t *info = &core_info[i];
+         if (string_is_equal(current_core, info->path)) {
+            RARCH_LOG("Current core '%s' supports this content, using it\n", info->display_name);
+            return task_push_load_content_with_current_core_from_companion_ui(
+               NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+         }
+      }
+   }
+
+   // Strategy 2b: If only one compatible core, use it automatically
+   if (list_size == 1) {
+      const core_info_t *info = &core_info[0];
+      RARCH_LOG("Only one compatible core found: '%s', using it automatically\n", info->display_name);
+      return task_push_load_content_with_new_core_from_companion_ui(
+         info->path, full_path, NULL, NULL, NULL, &content_info, NULL, NULL);
+   }
+
+   // Strategy 2c: Multiple cores available - use the first one
+   // In a future implementation, this could present a user choice dialog
+   const core_info_t *info = &core_info[0];
+   RARCH_LOG("Multiple cores available, automatically selecting first: '%s'\n", info->display_name);
+   return task_push_load_content_with_new_core_from_companion_ui(
+      info->path, full_path, NULL, NULL, NULL, &content_info, NULL, NULL);
 }
