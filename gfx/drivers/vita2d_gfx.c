@@ -1042,6 +1042,9 @@ static void vita2d_set_viewport_wrapper(void *data, unsigned vp_width,
       vita->vp.height = vp_height;
    }
 
+   vita->vp.full_width  = vita->vp.width;
+   vita->vp.full_height = vita->vp.height;
+
    vita2d_set_viewport(vita->vp.x, vita->vp.y, vita->vp.width, vita->vp.height);
    vita2d_set_projection(vita, &ortho, allow_rotate);
 
