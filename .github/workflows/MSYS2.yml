@@ -18,7 +18,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up MSYS2
         uses: msys2/setup-msys2@v2
