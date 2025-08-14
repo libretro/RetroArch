@@ -160,6 +160,20 @@ FS.stat = async function(path) {
 	}
 }
 
+/* create fake core files for RetroArch */
+
+async function listInstalledCores() {
+	loadScripts("core_list.js");
+	const cores = Object.keys(libretroCores);
+	const coreFiles = (await FS.readdir("/retroarch/cores") || []).map(i => i.slice(0, -14));
+	for (let core of cores) {
+		if (!coreFiles.includes(core)) await FS.writeFile("/retroarch/cores/" + core + "_libretro.core", new Uint8Array());
+	}
+	for (let core of coreFiles) {
+		if (!cores.includes(core)) await FS.rm("/retroarch/cores/" + core + "_libretro.core");
+	}
+}
+
 /* data migration */
 
 function idbExists(dbName, objStoreName) {
@@ -350,6 +364,7 @@ async function tryLoadBundle() {
 /* helper functions */
 
 helper.loadFS = async function() {
+	await listInstalledCores();
 	await tryMigrateFromIdbfs();
 	await tryLoadBundle();
 }
