@@ -2035,7 +2035,7 @@ static int action_bind_sublabel_playlist_entry(
    if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
    {
       size_t n = 0;
-      char tmp[64];
+      char tmp[128];
 
       /* Runtime/last played strings are now cached in the
        * playlist, so we can add both in one go */
@@ -2043,7 +2043,7 @@ static int action_bind_sublabel_playlist_entry(
       tmp[++n] = '\0';
       n       += strlcpy(tmp + n, entry->runtime_str, sizeof(tmp) - n);
 
-      if (n < 64 - 1)
+      if (n < 128 - 1)
       {
          tmp[  n] = '\n';
          tmp[++n] = '\0';
