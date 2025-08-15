@@ -9599,6 +9599,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_INSERT_DISK_RESUME,                               PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,                                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,                               PARSE_ONLY_UINT,   false},
+               {MENU_ENUM_LABEL_MENU_STARTUP_PAGE,                                     PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS,                                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,                                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,                              PARSE_ONLY_STRING, false},

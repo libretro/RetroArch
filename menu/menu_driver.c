@@ -4650,6 +4650,10 @@ static bool menu_driver_init_internal(
    else
       generic_menu_init_list(menu_st, settings);
 
+   /* Set startup page */
+   if (settings->uints.menu_startup_page != MENU_STARTUP_PAGE_MAIN_MENU)
+      menu_st->flags |= MENU_ST_FLAG_PENDING_STARTUP_PAGE;
+
    /* Initialise menu screensaver */
    menu_st->input_last_time_us    = cpu_features_get_time_usec();
    menu_st->flags                &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
