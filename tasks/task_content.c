@@ -977,7 +977,7 @@ static bool content_file_load(
                   &content_data)) == 0)
             {
                char msg[PATH_MAX_LENGTH];
-               snprintf(msg, sizeof(msg), "%s \"%s\"\n",
+               snprintf(msg, sizeof(msg), "%s: \"%s\".\n",
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      content_path);
                *err_string = strdup(msg);
@@ -1058,7 +1058,7 @@ static bool content_file_load(
                   {
                      char msg[PATH_MAX_LENGTH];
                      /* TODO/FIXME - localize */
-                     snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read or write)\n",
+                     snprintf(msg, sizeof(msg), "%s: \"%s\". (during copy read or write)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                         content_path);
                      *err_string = strdup(msg);
@@ -3143,6 +3143,12 @@ bool content_init(void)
 
    if (err_string)
    {
+      /* Trim ending newline */
+      size_t err_len = strlen(err_string);
+
+      if (err_string[err_len - 1] == '\n')
+         err_string[err_len - 1] = '\0';
+
       if (ret)
          RARCH_LOG("[Content] %s\n", err_string);
       else
