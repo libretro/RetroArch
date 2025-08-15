@@ -7804,6 +7804,10 @@ MSG_HASH(
    "Legutóbbi játék:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
+   "Indítások száma:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
    "másodperccel"
    )
@@ -12899,6 +12903,14 @@ MSG_HASH(
    "Adatbázis - Szűrés: Edge magazin besorolás"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_GENRE,
+   "Adatbázis - Szűrés: Műfaj"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_REGION,
+   "Adatbázis - Szűrés: Régió"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
    "Adatbázis infó"
    )
@@ -13656,6 +13668,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    "Becenév fogadása a klienstől sikertelen."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD,
+   "Betöltés sikertelen."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_CONTENT,
+   "A tartalom betöltése nem sikerült."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "A bemenet-újrajátszás fájl betöltése nem sikerült."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
