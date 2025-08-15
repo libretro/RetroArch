@@ -2587,7 +2587,7 @@ static int setting_action_ok_bind_all_save_autoconfig(
    {
       const char *_msg = msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    }
 
    return 0;

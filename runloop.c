@@ -5025,7 +5025,7 @@ bool core_options_create_override(bool game_specific)
 error:
    _msg = msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE);
    runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
    if (conf)
       config_file_free(conf);
@@ -5192,7 +5192,7 @@ error:
    {
       const char *_msg = msg_hash_to_str(MSG_ERROR_REMOVING_CORE_OPTIONS_FILE);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    }
 
    if (conf)

@@ -3414,7 +3414,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
       {
          const char *_msg = msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET);
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       }
    }
 
@@ -3482,7 +3482,7 @@ static int generic_action_ok_shader_preset_remove(const char *path,
    {
       const char *_msg = msg_hash_to_str(MSG_ERROR_REMOVING_SHADER_PRESET);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    }
 
    return 0;
@@ -3532,7 +3532,7 @@ static int generic_action_ok_shader_preset_save(const char *path,
    {
       const char *_msg = msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    }
 
    return 0;
@@ -3800,16 +3800,14 @@ static int generic_action_ok_remap_file_operation(const char *path,
          _msg = msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY);
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         /* TODO/FIXME - localize */
-         RARCH_LOG("[Remap] File saved successfully: \"%s\".\n",remap_file_path);
+         RARCH_LOG("[Remap] %s: \"%s\".\n", _msg, remap_file_path);
       }
       else
       {
          _msg = msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE);
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         /* TODO/FIXME - localize */
-         RARCH_ERR("[Remap] File save unsuccessful: \"%s\".\n",remap_file_path);
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+         RARCH_ERR("[Remap] %s: \"%s\".\n", _msg, remap_file_path);
       }
    }
    else
@@ -3848,7 +3846,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
       {
          const char *_msg = msg_hash_to_str(MSG_ERROR_REMOVING_REMAP_FILE);
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       }
    }
 
