@@ -9663,11 +9663,9 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
 #endif
-#if defined(HAVE_XMB) || defined(HAVE_OZONE) || defined(HAVE_RGUI) || defined(HAVE_MATERIALUI)
                   case MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION:
                         build_list[i].checked = true;
                      break;
-#endif
 #if defined(HAVE_QT) || defined(HAVE_COCOA)
                   case MENU_ENUM_LABEL_UI_COMPANION_TOGGLE:
                      if (desktop_menu_enable)

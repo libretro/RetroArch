@@ -839,9 +839,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_timeout,      MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_animation,       MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_animation_speed, MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED)
 #endif
-#if defined(HAVE_XMB) || defined(HAVE_OZONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_remember_selection,       MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION)
-#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_startup_page,             MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_driver,                  MENU_ENUM_SUBLABEL_VIDEO_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_driver,                  MENU_ENUM_SUBLABEL_AUDIO_DRIVER)
@@ -4067,11 +4065,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_screensaver_animation_speed);
             break;
 #endif
-#if defined(HAVE_XMB) || defined(HAVE_OZONE)
          case MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_remember_selection);
             break;
-#endif
          case MENU_ENUM_LABEL_MENU_STARTUP_PAGE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_startup_page);
             break;

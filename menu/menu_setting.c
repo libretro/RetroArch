@@ -7178,7 +7178,6 @@ static size_t setting_get_string_representation_uint_menu_screensaver_animation(
 }
 #endif
 
-#if defined(HAVE_XMB) || defined(HAVE_OZONE) || defined(HAVE_RGUI) || defined(HAVE_MATERIALUI)
 static size_t setting_get_string_representation_uint_menu_remember_selection(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -7210,7 +7209,6 @@ static size_t setting_get_string_representation_uint_menu_remember_selection(
    }
    return 0;
 }
-#endif
 
 static size_t setting_get_string_representation_uint_menu_startup_page(
       rarch_setting_t *setting, char *s, size_t len)
@@ -18165,32 +18163,25 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0.1, 10.0, 0.1, true, true);
          }
 #endif
-#if defined(HAVE_XMB) || defined(HAVE_OZONE) || defined(HAVE_RGUI) || defined(HAVE_MATERIALUI)
-         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
-             || string_is_equal(settings->arrays.menu_driver, "ozone")
-             || string_is_equal(settings->arrays.menu_driver, "rgui")
-             || string_is_equal(settings->arrays.menu_driver, "glui"))
-         {
-            CONFIG_UINT(
-                  list, list_info,
-                  &settings->uints.menu_remember_selection,
-                  MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,
-                  MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-                  DEFAULT_MENU_REMEMBER_SELECTION,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
-            (*list)[list_info->index - 1].get_string_representation =
-                  &setting_get_string_representation_uint_menu_remember_selection;
-            menu_settings_list_current_add_range(list, list_info, 0, MENU_REMEMBER_SELECTION_LAST-1, 1, true, true);
-            (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_UINT_COMBOBOX;
-         }
-#endif
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.menu_remember_selection,
+               MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,
+               MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+               DEFAULT_MENU_REMEMBER_SELECTION,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_menu_remember_selection;
+         menu_settings_list_current_add_range(list, list_info, 0, MENU_REMEMBER_SELECTION_LAST-1, 1, true, true);
+         (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_UINT_COMBOBOX;
 
          CONFIG_UINT(
                list, list_info,
