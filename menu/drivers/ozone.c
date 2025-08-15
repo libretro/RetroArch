@@ -589,10 +589,9 @@ struct ozone_handle
       float scroll_y;
       float scroll_y_sidebar;
 
+      float alpha;
       float list_alpha;
-
       float messagebox_alpha;
-
       float sidebar_text_alpha;
       float thumbnail_bar_position;
 
@@ -3518,6 +3517,8 @@ static void ozone_draw_sidebar(
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
 
+   text_alpha *= ozone->animations.alpha;
+
    for (i = 0; i < (unsigned)(ozone->system_tab_end + 1); i++)
    {
       float *col                     = NULL;
@@ -3526,6 +3527,8 @@ static void ozone_draw_sidebar(
 
       if (!(col = selected ? ozone->theme->text_selected : ozone->theme->entries_icon))
          col = ozone->pure_white;
+
+      gfx_display_set_alpha(col, ozone->animations.alpha);
 
       /* Icon */
       ozone_draw_icon(
@@ -3657,6 +3660,8 @@ static void ozone_draw_sidebar(
          if (!(col = (selected ? ozone->theme->text_selected : ozone->theme->entries_icon)))
             col = ozone->pure_white;
 
+         gfx_display_set_alpha(col, ozone->animations.alpha);
+
          /* Icon */
          ozone_draw_icon(
                p_disp,
@@ -3762,11 +3767,6 @@ static bool ozone_is_main_menu_playlist(void *userdata)
 {
    ozone_handle_t *ozone      = (ozone_handle_t*)userdata;
    menu_entry_t entry;
-
-   if (     (ozone->depth != 3)
-         || (ozone->flags & OZONE_FLAG_IS_DB_MANAGER_LIST)
-         || (ozone->flags & OZONE_FLAG_IS_FILE_LIST))
-      return false;
 
    MENU_ENTRY_INITIALIZE(entry);
    menu_entry_get(&entry, 0, 0, NULL, true);
@@ -4069,15 +4069,15 @@ static void ozone_sidebar_update_collapse(ozone_handle_t *ozone,
    if (ozone_get_horizontal_selection_type(ozone) == MENU_EXPLORE_TAB)
       is_playlist = true;
 
-   /* Playlists under "Main Menu" don't need sidebar animations */
-   if (is_playlist && ozone->depth > 2)
-      goto end;
+   /* Do not animate sidebar above first depth level */
+   if (ozone->depth > 1)
+      allow_animation = false;
 
    /* To collapse or not to collapse */
    collapse = ozone_want_collapse(ozone, ozone_collapse_sidebar, is_playlist);
 
    /* Skip if already at wanted state */
-   if (    (collapse  && ozone->sidebar_collapsed)
+   if (    ( collapse &&  ozone->sidebar_collapsed)
         || (!collapse && !ozone->sidebar_collapsed))
       goto end;
 
@@ -4112,9 +4112,7 @@ static void ozone_sidebar_update_collapse(ozone_handle_t *ozone,
    {
       if (allow_animation)
       {
-         ozone->sidebar_collapsed = false;
-
-         entry.cb = NULL;
+         entry.cb             = NULL;
 
          /* Text alpha */
          entry.subject        = &ozone->animations.sidebar_text_alpha;
@@ -4127,6 +4125,8 @@ static void ozone_sidebar_update_collapse(ozone_handle_t *ozone,
          entry.target_value   = ozone->dimensions.sidebar_width_normal;
 
          gfx_animation_push(&entry);
+
+         ozone->sidebar_collapsed               = false;
       }
       else
       {
@@ -5735,6 +5735,7 @@ static void ozone_draw_entries(
    }
 
    x_offset       += (int)sidebar_offset;
+   alpha          *= ozone->animations.alpha;
    alpha_uint32    = (uint32_t)(alpha * 255.0f);
 
    /* Borders layer */
@@ -5920,7 +5921,7 @@ border_iterate:
       if (use_smooth_ticker)
       {
          ticker_smooth.selected    = entry_selected && (!(ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR));
-         ticker_smooth.field_width = entry_width - entry_padding - ozone->dimensions.entry_icon_padding * 6;
+         ticker_smooth.field_width = entry_width - ozone->dimensions.entry_icon_padding * 6;
          ticker_smooth.src_str     = entry_rich_label;
          ticker_smooth.dst_str     = rich_label;
          ticker_smooth.dst_str_len = sizeof(rich_label);
@@ -5932,7 +5933,7 @@ border_iterate:
          ticker.s        = rich_label;
          ticker.str      = entry_rich_label;
          ticker.selected = entry_selected && (!(ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR));
-         ticker.len      = (entry_width - entry_padding - ozone->dimensions.entry_icon_padding) / ozone->fonts.entries_label.glyph_width;
+         ticker.len      = (entry_width - ozone->dimensions.entry_icon_padding * 6) / ozone->fonts.entries_label.glyph_width;
 
          gfx_animation_ticker(&ticker);
       }
@@ -6033,7 +6034,19 @@ border_iterate:
                if (pl_entry
                      && !string_is_empty(pl_entry->db_name)
                      && (db_node = RHMAP_GET_STR(ozone->playlist_db_node_map, pl_entry->db_name)))
-                  texture = db_node->content_icon;
+               {
+                  switch (show_history_icons)
+                  {
+                     case PLAYLIST_SHOW_HISTORY_ICONS_MAIN:
+                        texture = db_node->icon;
+                        break;
+                     case PLAYLIST_SHOW_HISTORY_ICONS_CONTENT:
+                        texture = db_node->content_icon;
+                        break;
+                     default:
+                        break;
+                  }
+               }
             }
             else if (ozone->depth == 2 && entry.type == FILE_TYPE_PLAYLIST_COLLECTION)
             {
@@ -9697,6 +9710,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone->animations.cursor_alpha      = 1.0f;
       ozone->animations.scroll_y          = 0.0f;
       ozone->animations.list_alpha        = 1.0f;
+      ozone->animations.alpha             = 1.0f;
 
       /* Thumbnails */
       ozone_update_thumbnail_image(ozone);
@@ -10517,8 +10531,7 @@ static void ozone_render(void *data,
                      menu_st->selection_ptr = i;
 
                      /* If this is a playlist, must update thumbnails */
-                     if (    ((ozone->flags & OZONE_FLAG_IS_PLAYLIST)
-                           && (ozone->depth == 1 || ozone->depth == 3))
+                     if (     (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
                            || (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST))
                      {
                         ozone->flags &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
@@ -10555,8 +10568,7 @@ static void ozone_render(void *data,
                               settings->uints.menu_remember_selection);
                   }
                   /* If this is a playlist, must update thumbnails */
-                  else if ((ozone->flags & OZONE_FLAG_IS_PLAYLIST)
-                        && (ozone->depth == 1 || ozone->depth == 3))
+                  else if (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
                   {
                      ozone_set_thumbnail_content(ozone, "");
                      ozone_update_thumbnail_image(ozone);
@@ -10737,6 +10749,8 @@ static void ozone_draw_header(
    header_margin *= ozone->last_padding_factor;
    if (header_margin < header_margin_min)
       header_margin = header_margin_min;
+
+   gfx_display_set_alpha(col, ozone->animations.alpha);
 
    /* Initial ticker configuration */
    if (use_smooth_ticker)
@@ -11774,8 +11788,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
          bool update_thumbnails = false;
 
          /* Playlist updates */
-         if (     (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
-               && (ozone->depth == 1 || ozone->depth == 3))
+         if (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
          {
             ozone_set_thumbnail_content(ozone, "");
             update_thumbnails = true;
@@ -12013,6 +12026,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    }
    else
       background_color = ozone->theme->background;
+
+   gfx_display_set_alpha(background_color, ozone->animations.alpha);
 
    gfx_display_draw_quad(p_disp,
          userdata,
@@ -12667,7 +12682,7 @@ static void ozone_populate_entries(
     * and savestate slots */
    if (
             (   (ozone->flags  & OZONE_FLAG_WANT_THUMBNAIL_BAR))
-         && (  ((ozone->flags  & OZONE_FLAG_IS_PLAYLIST) && (ozone->depth == 1 || ozone->depth == 3))
+         && (   (ozone->flags  & OZONE_FLAG_IS_PLAYLIST)
             || ((ozone->flags  & OZONE_FLAG_IS_DB_MANAGER_LIST) && (ozone->depth >= 4))
             ||  (ozone->flags  & OZONE_FLAG_IS_EXPLORE_LIST)
             ||  (ozone->flags  & OZONE_FLAG_IS_FILE_LIST)
@@ -12699,6 +12714,23 @@ static void ozone_toggle(void *userdata, bool menu_on)
 
    if (!ozone)
       return;
+
+   /* Fade in animation */
+   if (menu_on)
+   {
+      struct gfx_animation_ctx_entry entry;
+
+      ozone->animations.alpha      = 0.0f;
+
+      entry.cb                     = NULL;
+      entry.duration               = ANIMATION_PUSH_ENTRY_DURATION * 1.25f;
+      entry.easing_enum            = OZONE_EASING_ALPHA;
+      entry.subject                = &ozone->animations.alpha;
+      entry.tag                    = (uintptr_t)NULL;
+      entry.target_value           = 1.0f;
+
+      gfx_animation_push(&entry);
+   }
 
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
@@ -13052,7 +13084,6 @@ static int ozone_pointer_up(void *userdata,
                /* If this is a playlist and the selection
                 * has changed, must update thumbnails */
                else if (   (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
-                        && (ozone->depth == 1)
                         && (ptr != selection))
                {
                   ozone_set_thumbnail_content(ozone, "");

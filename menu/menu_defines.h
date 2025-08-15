@@ -49,7 +49,8 @@ enum menu_state_flags
     * - Is screensaver currently active? */
    MENU_ST_FLAG_SCREENSAVER_SUPPORTED       = (1 << 10),
    MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11),
-   MENU_ST_FLAG_PENDING_RELOAD_CORE         = (1 << 12)
+   MENU_ST_FLAG_PENDING_RELOAD_CORE         = (1 << 12),
+   MENU_ST_FLAG_PENDING_STARTUP_PAGE        = (1 << 13)
 };
 
 enum menu_scroll_mode
@@ -73,6 +74,19 @@ enum action_iterate_type
    ITERATE_TYPE_BIND
 };
 
+enum menu_startup_page_type
+{
+   MENU_STARTUP_PAGE_MAIN_MENU = 0,
+   MENU_STARTUP_PAGE_HISTORY,
+   MENU_STARTUP_PAGE_FAVORITES,
+   MENU_STARTUP_PAGE_CONTENTLESS_CORES,
+   MENU_STARTUP_PAGE_EXPLORE,
+   MENU_STARTUP_PAGE_PLAYLISTS,
+   MENU_STARTUP_PAGE_LOAD_CONTENT,
+   MENU_STARTUP_PAGE_START_DIRECTORY,
+   MENU_STARTUP_PAGE_DOWNLOADS,
+   MENU_STARTUP_PAGE_LAST
+};
 
 enum menu_image_type
 {

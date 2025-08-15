@@ -6113,7 +6113,7 @@ static enum runloop_state_enum runloop_check_state(
             && ((menu_st->current_time_us - menu_st->input_last_time_us)
              > ((retro_time_t)screensaver_timeout * 1000000)))
       {
-         menu_st->flags             |= MENU_ST_FLAG_SCREENSAVER_ACTIVE;
+         menu_st->flags |= MENU_ST_FLAG_SCREENSAVER_ACTIVE;
          if (menu_st->driver_ctx->environ_cb)
             menu_st->driver_ctx->environ_cb(MENU_ENVIRON_ENABLE_SCREENSAVER,
                      NULL, menu_st->userdata);
@@ -6133,13 +6133,104 @@ static enum runloop_state_enum runloop_check_state(
             menu_st->driver_ctx->list_cache(menu_st->userdata,
                   MENU_LIST_PLAIN, MENU_ACTION_NOOP);
 
-         p_disp->flags   |= GFX_DISP_FLAG_MSG_FORCE;
+         p_disp->flags |= GFX_DISP_FLAG_MSG_FORCE;
 
          generic_action_ok_displaylist_push("", NULL,
                "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
 
-         menu_st->selection_ptr      = 0;
-         menu_st->flags             &= ~MENU_ST_FLAG_PENDING_QUICK_MENU;
+         menu_st->selection_ptr  = 0;
+         menu_st->flags         &= ~MENU_ST_FLAG_PENDING_QUICK_MENU;
+         menu_st->flags         &= ~MENU_ST_FLAG_PENDING_STARTUP_PAGE;
+      }
+      /* Navigate to initial startup page */
+      else if (menu_st->flags & MENU_ST_FLAG_PENDING_STARTUP_PAGE)
+      {
+         unsigned startup_page = settings->uints.menu_startup_page;
+
+         switch (startup_page)
+         {
+            default:
+            case MENU_STARTUP_PAGE_MAIN_MENU:
+               break;
+            case MENU_STARTUP_PAGE_HISTORY:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
+                     MENU_SETTING_ACTION,
+                     0, 0, ACTION_OK_DL_GENERIC);
+               break;
+            case MENU_STARTUP_PAGE_FAVORITES:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB),
+                     MENU_SETTING_ACTION,
+                     0, 0, ACTION_OK_DL_FAVORITES_LIST);
+               break;
+            case MENU_STARTUP_PAGE_CONTENTLESS_CORES:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES),
+                     MENU_SETTING_ACTION,
+                     0, 0, ACTION_OK_DL_CONTENTLESS_CORES_LIST);
+               break;
+            case MENU_STARTUP_PAGE_EXPLORE:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_TAB),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE),
+                     MENU_EXPLORE_TAB,
+                     0, 0, ACTION_OK_DL_EXPLORE_LIST);
+               break;
+            case MENU_STARTUP_PAGE_PLAYLISTS:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+                     MENU_SETTING_ACTION,
+                     0, 0, ACTION_OK_DL_CONTENT_COLLECTION_LIST);
+               break;
+            case MENU_STARTUP_PAGE_LOAD_CONTENT:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST),
+                     MENU_SETTING_ACTION,
+                     0, 0, ACTION_OK_DL_GENERIC);
+               break;
+            case MENU_STARTUP_PAGE_START_DIRECTORY:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+                     MENU_SETTING_ACTION_FAVORITES_DIR,
+                     0, 0, ACTION_OK_DL_CONTENT_LIST);
+               break;
+            case MENU_STARTUP_PAGE_DOWNLOADS:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                     settings->paths.directory_core_assets,
+                     msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                     MENU_SETTING_ACTION,
+                     0, 0, ACTION_OK_DL_CONTENT_LIST);
+               break;
+         }
+
+         if (startup_page != MENU_STARTUP_PAGE_MAIN_MENU)
+         {
+            menu_displaylist_info_t info;
+
+            menu_displaylist_info_init(&info);
+
+            info.flags |= MD_FLAG_NEED_PUSH;
+
+            menu_displaylist_process(&info);
+            menu_displaylist_info_free(&info);
+         }
+
+         menu_st->flags &= ~MENU_ST_FLAG_PENDING_STARTUP_PAGE;
       }
       else if (!menu_driver_iterate(menu_st, p_disp, anim_get_ptr(),
                settings, action, current_time))
@@ -6222,8 +6313,8 @@ static enum runloop_state_enum runloop_check_state(
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
    else
-#endif
-#endif
+#endif /* HAVE_MENU */
+#endif /* defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS) */
    {
       if (runloop_st->flags & RUNLOOP_FLAG_IDLE)
       {

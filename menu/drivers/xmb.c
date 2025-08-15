@@ -5246,17 +5246,22 @@ static int xmb_draw_item(
                {
                   /* Special fall-through for "Main Menu" > Playlists > History/Favorites */
                   char title[NAME_MAX_LENGTH];
+                  bool is_history = false;
+
                   menu_entries_get_title(title, sizeof(title));
-                  if (     string_is_equal(title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY))
-                        || string_is_equal(title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES)))
-                     ; /* no-op */
-                  /* Force "Main Menu" playlists to use content icon while
-                   * inside the playlist content regardless of the option,
+                  is_history =
+                           string_is_equal(title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY))
+                        || string_is_equal(title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES));
+
+                  /* Reset unknown file icon */
+                  if (is_history || xmb->is_quick_menu)
+                     texture = xmb->textures.list[XMB_TEXTURE_FILE];
+
+                  /* Force "Main Menu" playlists to use content icon
+                   * inside the playlist regardless of the option,
                    * since playlists themselves use the main icon */
-                  else if (xmb->depth == 4)
+                  if (!is_history && (xmb->is_quick_menu || xmb->depth > 2))
                      show_history_icons = PLAYLIST_SHOW_HISTORY_ICONS_CONTENT;
-                  else
-                     break;
                }
             case XMB_SYSTEM_TAB_HISTORY:
             case XMB_SYSTEM_TAB_FAVORITES:
@@ -5961,14 +5966,14 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->items_active_alpha       = 1.0f;
    xmb->items_passive_alpha      = 0.75f;
 
-   xmb->shadow_offset            = 4.0f * scale_factor;
+   xmb->shadow_offset            = 4.0f           * scale_factor;
    if (xmb->shadow_offset < 1.0)
       xmb->shadow_offset         = 1.0f;
    if (xmb->shadow_offset > 2.0)
       xmb->shadow_offset         = 2.0f;
 
    xmb->font_size                = new_font_size;
-   xmb->font2_size               = 22.0f         * scale_factor;
+   xmb->font2_size               = 22.0f          * scale_factor;
 
    /* Limit minimum font size */
    xmb->font_size                = (xmb->font_size  < 7) ? 7.0f : xmb->font_size;
@@ -6014,10 +6019,10 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->items_active_zoom        = 1.0f;
    xmb->items_passive_zoom       = 0.5f;
 
-   xmb->categories_active_alpha  = 1.0;
-   xmb->categories_passive_alpha = 0.75;
-   xmb->items_active_alpha       = 1.0;
-   xmb->items_passive_alpha      = 0.75;
+   xmb->categories_active_alpha  = 1.0f;
+   xmb->categories_passive_alpha = 0.75f;
+   xmb->items_active_alpha       = 1.0f;
+   xmb->items_passive_alpha      = 0.75f;
 
    xmb->shadow_offset            = 4.0f           * scale_factor;
    if (xmb->shadow_offset < 1.0)
@@ -6029,24 +6034,23 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->font2_size               = 18.0f          * scale_factor;
 
    /* Limit minimum font size */
-   xmb->font_size                = (xmb->font_size  < 7) ? 7 : xmb->font_size;
-   xmb->font2_size               = (xmb->font2_size < 6) ? 6 : xmb->font2_size;
+   xmb->font_size                = (xmb->font_size  < 7) ? 7.0f : xmb->font_size;
+   xmb->font2_size               = (xmb->font2_size < 6) ? 6.0f : xmb->font2_size;
 
-   xmb->cursor_size              = 64.0           * scale_factor;
-   xmb->icon_size                = 128.0          * scale_factor;
-   xmb->icon_spacing_horizontal  = 250.0          * scale_factor;
-   xmb->icon_spacing_vertical    = 82.0           * scale_factor;
+   xmb->cursor_size              = 64.0f          * scale_factor;
+   xmb->icon_size                = 128.0f         * scale_factor;
+   xmb->icon_spacing_horizontal  = 250.0f         * scale_factor;
+   xmb->icon_spacing_vertical    = 82.0f          * scale_factor;
 
    xmb->margins_screen_top       = (256 + 16)     * scale_factor;
-   xmb->margins_screen_left      = 136.0          * scale_factor;
+   xmb->margins_screen_left      = 136.0f         * scale_factor;
 
    xmb->margins_title_left       = (margins_title * scale_factor)
                                  + (4 * scale_factor)
                                  + (margins_title_h_offset * scale_factor);
    xmb->margins_title_top        = (margins_title * scale_factor)
                                  + (new_font_size - (new_font_size / 6) * scale_factor);
-   xmb->margins_title_bottom     = (margins_title * scale_factor)
-                                 + (4 * scale_factor);
+   xmb->margins_title_bottom     = (margins_title * scale_factor) + (4 * scale_factor);
 
    xmb->margins_label_left       = 85.0f          * scale_factor;
    xmb->margins_label_top        = new_font_size / 3.0f;
@@ -8725,7 +8729,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->textures_arrow_alpha          = 0;
    xmb->depth                         = 1;
    xmb->old_depth                     = 1;
-   xmb->alpha                         = 1.0f;
+   xmb->alpha                         = 0;
 
    xmb_refresh_system_tabs_list(xmb);
 
@@ -9192,7 +9196,7 @@ static void xmb_fade_in(xmb_handle_t *xmb)
 
    tag                     = (uintptr_t)&xmb->textures.bg;
 
-   anim_entry.duration     = XMB_DELAY;
+   anim_entry.duration     = XMB_DELAY * 1.25f;
    anim_entry.subject      = &xmb->alpha;
    anim_entry.easing_enum  = EASING_IN_QUINT;
    anim_entry.tag          = tag;

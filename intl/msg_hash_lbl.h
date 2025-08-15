@@ -4033,6 +4033,10 @@ MSG_HASH(
    "menu_remember_selection"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_STARTUP_PAGE,
+   "menu_startup_page"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
    "ui_companion_enable"
    )
