@@ -124,8 +124,9 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_NEGATIVE                  = (1 << 9),
    DISPWIDG_FLAG_CATEGORY_WARNING          = (1 << 10),
    DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 11),
+   DISPWIDG_FLAG_CATEGORY_SUCCESS          = (1 << 12),
    /* Size */
-   DISPWIDG_FLAG_SMALL                     = (1 << 12)
+   DISPWIDG_FLAG_SMALL                     = (1 << 13)
 };
 
 /* There can only be one message animation at a time to

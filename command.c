@@ -1927,7 +1927,7 @@ bool command_event_save_core_config(
    {
       const char *_msg = msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       RARCH_ERR("[Config] %s\n", _msg);
       return false;
    }
@@ -2010,24 +2010,32 @@ void command_event_save_current_config(enum override_type type)
          {
             size_t _len;
             char msg[256];
+            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             msg[0] = '\0';
 
             if (path_is_empty(RARCH_PATH_CONFIG))
             {
-               _len = strlcpy(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
-               runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               msg_cat = MESSAGE_QUEUE_CATEGORY_ERROR;
+               _len    = strlcpy(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
             }
             else
             {
                if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
-                  _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ACTIVE_NOT_SAVING), sizeof(msg));
+               {
+                  msg_cat = MESSAGE_QUEUE_CATEGORY_ERROR;
+                  _len    = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ACTIVE_NOT_SAVING), sizeof(msg));
+               }
                else
-                  _len = command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
-               runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               {
+                  msg_cat = MESSAGE_QUEUE_CATEGORY_SUCCESS;
+                  _len    = command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
+               }
             }
+
+            RARCH_LOG("[Overrides] %s\n", msg);
+            runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
          }
          break;
       case OVERRIDE_GAME:
@@ -2036,29 +2044,33 @@ void command_event_save_current_config(enum override_type type)
          {
             size_t _len;
             char msg[256];
-            int8_t ret = config_save_overrides(type, &runloop_st->system, false, NULL);
+            int8_t ret      = config_save_overrides(type, &runloop_st->system, false, NULL);
+            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             switch (ret)
             {
                case 1:
-                  _len = strlcpy(msg,
+                  msg_cat = MESSAGE_QUEUE_CATEGORY_SUCCESS;
+                  _len    = strlcpy(msg,
                         msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
                   /* set overrides to active so the original config can be
                      restored after closing content */
                   runloop_st->flags |= RUNLOOP_FLAG_OVERRIDES_ACTIVE;
                   break;
                case -1:
-                  _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_NOT_SAVED), sizeof(msg));
+                  msg_cat = MESSAGE_QUEUE_CATEGORY_WARNING;
+                  _len    = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_NOT_SAVED), sizeof(msg));
                   break;
                default:
                case 0:
+                  msg_cat = MESSAGE_QUEUE_CATEGORY_ERROR;
                   _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
                   break;
             }
 
             RARCH_LOG("[Overrides] %s\n", msg);
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
 
 #ifdef HAVE_MENU
             {
@@ -2087,14 +2099,22 @@ void command_event_remove_current_config(enum override_type type)
          {
             size_t _len;
             char msg[256];
+            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
+
             if (config_save_overrides(type, &runloop_st->system, true, NULL))
-               _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_REMOVED_SUCCESSFULLY), sizeof(msg));
+            {
+               msg_cat = MESSAGE_QUEUE_CATEGORY_SUCCESS;
+               _len    = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_REMOVED_SUCCESSFULLY), sizeof(msg));
+            }
             else
-               _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_REMOVING), sizeof(msg));
+            {
+               msg_cat = MESSAGE_QUEUE_CATEGORY_ERROR;
+               _len    = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_REMOVING), sizeof(msg));
+            }
 
             RARCH_LOG("[Overrides] %s\n", msg);
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
 #ifdef HAVE_MENU
             {
                struct menu_state *menu_st      = menu_state_get_ptr();

@@ -216,6 +216,8 @@ void gfx_widgets_msg_queue_push(
             msg_widget->flags                  |=  DISPWIDG_FLAG_CATEGORY_WARNING;
          else if (category == MESSAGE_QUEUE_CATEGORY_ERROR)
             msg_widget->flags                  |=  DISPWIDG_FLAG_CATEGORY_ERROR;
+         else if (category == MESSAGE_QUEUE_CATEGORY_SUCCESS)
+            msg_widget->flags                  |=  DISPWIDG_FLAG_CATEGORY_SUCCESS;
 
          if (prio > 1 && category != MESSAGE_QUEUE_CATEGORY_ERROR)
             msg_widget->flags                  |= DISPWIDG_FLAG_SMALL;
@@ -1371,6 +1373,7 @@ static void gfx_widgets_draw_regular_msg(
    static float msg_queue_info_blue[16]   = COLOR_HEX_TO_FLOAT(ICON_COLOR_BLUE, 1.0f);
    static float msg_queue_info_yellow[16] = COLOR_HEX_TO_FLOAT(ICON_COLOR_YELLOW, 1.0f);
    static float msg_queue_info_red[16]    = COLOR_HEX_TO_FLOAT(ICON_COLOR_RED, 1.0f);
+   static float msg_queue_info_green[16]  = COLOR_HEX_TO_FLOAT(ICON_COLOR_GREEN, 1.0f);
    static float msg_queue_bar[16]         = COLOR_HEX_TO_FLOAT(BG_COLOR_MARGIN, 1.0f);
    float* msg_queue_info;
    float text_y_base;
@@ -1382,11 +1385,14 @@ static void gfx_widgets_draw_regular_msg(
    msg->flags             &= ~DISPWIDG_FLAG_UNFOLDING;
    msg->flags             |=  DISPWIDG_FLAG_UNFOLDED;
 
-   /* Tint icon yellow for warnings and red for errors, otherwise use blue */
+   /* Tint icon yellow for warnings, red for errors,
+    * green for success, and blue for info */
    if (msg->flags & DISPWIDG_FLAG_CATEGORY_WARNING)
       msg_queue_info = msg_queue_info_yellow;
    else if (msg->flags & DISPWIDG_FLAG_CATEGORY_ERROR)
       msg_queue_info = msg_queue_info_red;
+   else if (msg->flags & DISPWIDG_FLAG_CATEGORY_SUCCESS)
+      msg_queue_info = msg_queue_info_green;
    else
       msg_queue_info = msg_queue_info_blue;
 
