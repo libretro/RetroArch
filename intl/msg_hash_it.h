@@ -6981,6 +6981,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "Solo per il menu principale e le impostazioni"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "Pagina iniziale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "La pagina iniziale del menu all'avvio."
+   )
 
 /* Settings > AI Service */
 

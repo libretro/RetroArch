@@ -7085,6 +7085,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "Don Phríomh-Roghchlár agus Socruithe Amháin"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "Leathanach Tosaithe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "Leathanach roghchláir tosaigh ag an am tosaithe."
+   )
 
 /* Settings > AI Service */
 

@@ -7085,6 +7085,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "Sadece Ana Menü ve Ayarlar İçin"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "Başlangıç Sayfası"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "Başlangıçta ilk menü sayfası."
+   )
 
 /* Settings > AI Service */
 
