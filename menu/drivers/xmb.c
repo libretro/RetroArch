@@ -5847,7 +5847,7 @@ static enum menu_action xmb_parse_menu_entry_action(
                menu_st->selection_ptr = 0;
                xmb_selection_pointer_changed(xmb, true);
             }
-            else
+            else if (config_get_ptr()->bools.input_menu_allow_tabs_back)
             {
                /* Jump to Main Menu */
                size_t i           = 0;

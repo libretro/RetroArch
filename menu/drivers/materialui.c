@@ -10430,8 +10430,9 @@ static enum menu_action materialui_parse_menu_entry_action(
             }
 
             /* If current tab is not main, switch to main */
-            if (main_menu_tab &&
-                (main_menu_tab_index != mui->nav_bar.active_menu_tab_index))
+            if (     main_menu_tab
+                  && main_menu_tab_index != mui->nav_bar.active_menu_tab_index
+                  && config_get_ptr()->bools.input_menu_allow_tabs_back)
             {
                materialui_switch_tabs(mui, main_menu_tab, MENU_ACTION_NOOP);
                new_action = MENU_ACTION_NOOP;

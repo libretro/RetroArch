@@ -550,7 +550,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_camera_allow,                  MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_location_allow,                MENU_ENUM_SUBLABEL_LOCATION_ALLOW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_max_users,               MENU_ENUM_SUBLABEL_INPUT_MAX_USERS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_poll_type_behavior,      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_all_users_control_menu,  MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_bind_timeout,            MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_bind_hold,               MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_volume,                  MENU_ENUM_SUBLABEL_AUDIO_VOLUME)
@@ -830,6 +829,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_auto_mouse_grab,         MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_auto_game_focus,         MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_swap_ok_cancel,          MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_swap_scroll,             MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_all_users_control_menu,  MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_allow_tabs_back,          MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_pause_libretro,                MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_savestate_resume,         MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_insert_disk_resume,       MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME)
@@ -4077,6 +4078,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MENU_INPUT_SWAP_SCROLL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_swap_scroll);
             break;
+         case MENU_ENUM_LABEL_MENU_ALLOW_TABS_BACK:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_allow_tabs_back);
+            break;
+         case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_all_users_control_menu);
+            break;
          case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_autodetect_enable);
             break;
@@ -4757,9 +4764,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_AUDIOMIXER
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_volume);
 #endif
-            break;
-         case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_all_users_control_menu);
             break;
          case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_poll_type_behavior);
