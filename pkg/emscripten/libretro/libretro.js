@@ -3,24 +3,32 @@
  *
  * This provides the basic JavaScript for the RetroArch web player.
  */
+
+const defaultCore = "gambatte";
+var autoStart = false;
+
 var BrowserFS = BrowserFS;
 var afs;
+var zipTOC;
 var initializationCount = 0;
+var Module;
+var currentCore;
+var canvas = document.getElementById("canvas");
 
-var Module = {
+function modulePreRun(module) {
+   module.ENV["LIBRARY_PATH"] = module.corePath;
+}
+
+var ModuleBase = {
    noInitialRun: true,
-   arguments: ["-v", "--menu", "-c", "/home/web_user/retroarch/userdata/retroarch.cfg"],
-
-   encoder: new TextEncoder(),
-   message_queue: [],
-   message_out: [],
-   message_accum: "",
-
    retroArchSend: function(msg) {
       this.EmscriptenSendCommand(msg);
    },
    retroArchRecv: function() {
       return this.EmscriptenReceiveCommandReply();
+   },
+   retroArchExit: function(core, content) {
+      relaunch(core, content);
    },
    onRuntimeInitialized: function() {
       appInitialized();
@@ -31,13 +39,8 @@ var Module = {
    printErr: function(text) {
       console.log("stderr:", text);
    },
-   canvas: document.getElementById("canvas"),
-   totalDependencies: 0,
-   monitorRunDependencies: function(left) {
-      this.totalDependencies = Math.max(this.totalDependencies, left);
-   }
+   canvas: canvas
 };
-
 
 function cleanupStorage() {
    localStorage.clear();
@@ -58,8 +61,6 @@ function cleanupStorage() {
 }
 
 function idbfsInit() {
-   $('#icnLocal').removeClass('fa-globe');
-   $('#icnLocal').addClass('fa-spinner fa-spin');
    var imfs = new BrowserFS.FileSystem.InMemory();
    if (BrowserFS.FileSystem.IndexedDB.isAvailable()) {
       afs = new BrowserFS.FileSystem.AsyncMirror(imfs,
@@ -77,7 +78,8 @@ function idbfsInit() {
                         console.error("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
                         appInitialized();
                      } else {
-                        idbfsSyncComplete();
+                        console.log("WEBPLAYER: idbfs setup successful");
+                        appInitialized();
                      }
                   });
                }
@@ -85,38 +87,6 @@ function idbfsInit() {
             "RetroArch"));
    }
 }
-
-function idbfsSyncComplete() {
-   $('#icnLocal').removeClass('fa-spinner').removeClass('fa-spin');
-   $('#icnLocal').addClass('fa-check');
-   console.log("WEBPLAYER: idbfs setup successful");
-
-   appInitialized();
-}
-
-function appInitialized() {
-   /* Need to wait for the file system, the wasm runtime, and the zip download
-      to complete before enabling the Run button. */
-   initializationCount++;
-   if (initializationCount == 3) {
-      setupFileSystem("browser");
-      preLoadingComplete();
-   }
-}
-
-function preLoadingComplete() {
-   // Make the Preview image clickable to start RetroArch.
-   $('.webplayer-preview').addClass('loaded').click(function() {
-      startRetroArch();
-      return false;
-   });
-   $('#btnRun').removeClass('disabled').removeAttr("disabled").click(function() {
-      startRetroArch();
-      return false;
-   });
-}
-
-var zipTOC;
 
 function zipfsInit() {
    // 256 MB max bundle size
@@ -140,13 +110,54 @@ function zipfsInit() {
          }
          BrowserFS.FileSystem.ZipFS.computeIndex(BrowserFS.BFSRequire('buffer').Buffer(new Uint8Array(buffer, 0, idx)), function(toc) {
             zipTOC = toc;
+            console.log("WEBPLAYER: zipfs setup successful");
             appInitialized();
          });
       })
    });
 }
 
-function setupFileSystem(backend) {
+function appInitialized() {
+   /* Need to wait for the file system, the wasm runtime, and the zip download
+      to complete before enabling the Run button. */
+   initializationCount++;
+   if (initializationCount == 3) {
+      setupFileSystem();
+      preLoadingComplete();
+   }
+}
+
+function preLoadingComplete() {
+   $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
+   $('#icnRun').addClass('fa-play');
+
+   if (autoStart) {
+      startRetroArch();
+   } else {
+      // Make the Preview image clickable to start RetroArch.
+      $('.webplayer-preview').addClass('loaded').click(function() {
+         startRetroArch();
+      });
+      $('#btnRun').removeClass('disabled').removeAttr("disabled").click(function() {
+         startRetroArch();
+      });
+   }
+}
+
+function mountBrowserFS() {
+   var BFS = new BrowserFS.EmscriptenFS(Module.FS, Module.PATH, Module.ERRNO_CODES);
+   Module.FS.mount(BFS, {
+      root: '/home'
+   }, '/home');
+
+   // create fake core files for RetroArch
+   Module.FS.writeFile("/home/web_user/retroarch/cores/" + currentCore + "_libretro.core", new Uint8Array());
+   for (let core of Object.keys(libretroCores)) {
+      Module.FS.writeFile("/home/web_user/retroarch/cores/" + core + "_libretro.core", new Uint8Array());
+   }
+}
+
+function setupFileSystem() {
    // create a mountable filesystem that will server as a root mountpoint for browserfs
    var mfs = new BrowserFS.FileSystem.MountableFileSystem();
 
@@ -155,24 +166,14 @@ function setupFileSystem(backend) {
    // create an XmlHttpRequest filesystem for core assets
    var xfs = new BrowserFS.FileSystem.XmlHttpRequest(".index-xhr", "assets/cores/");
 
-   console.log("WEBPLAYER: initializing filesystem: " + backend);
    mfs.mount('/home/web_user/retroarch', zipfs);
+   mfs.mount('/home/web_user/retroarch/cores', new BrowserFS.FileSystem.InMemory());
    mfs.mount('/home/web_user/retroarch/userdata', afs);
    mfs.mount('/home/web_user/retroarch/userdata/content/downloads', xfs);
    BrowserFS.initialize(mfs);
-   var BFS = new BrowserFS.EmscriptenFS(Module.FS, Module.PATH, Module.ERRNO_CODES);
-   Module.FS.mount(BFS, {
-      root: '/home'
-   }, '/home');
-   console.log("WEBPLAYER: " + backend + " filesystem initialization successful");
-}
+   mountBrowserFS();
 
-// Retrieve the value of the given GET parameter.
-function getParam(name) {
-   var results = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.href);
-   if (results) {
-      return results[1] || null;
-   }
+   console.log("WEBPLAYER: filesystem initialization successful");
 }
 
 function startRetroArch() {
@@ -194,6 +195,14 @@ function startRetroArch() {
       Module.retroArchSend("FULLSCREEN_TOGGLE");
       Module.canvas.focus();
    });
+
+   // subsequent relaunches will start automatically
+   ModuleBase.onRuntimeInitialized = function() {
+      setTimeout(function() {
+         mountBrowserFS();
+         Module.callMain(Module.arguments);
+      }, 0);
+   };
 
    Module.callMain(Module.arguments);
 }
@@ -235,19 +244,21 @@ function uploadData(data, name) {
    Module.FS.unlink(name);
 }
 
-function switchCore(corename) {
-   localStorage.setItem("core", corename);
-}
-
-function switchStorage(backend) {
-   if (backend != localStorage.getItem("backend")) {
-      localStorage.setItem("backend", backend);
-      location.reload();
-   }
-}
-
 // When the browser has loaded everything.
 $(function() {
+   // create core list
+   var coreArray = Object.entries(libretroCores);
+   var coreNames = Object.values(libretroCores).sort();
+   var coreSelector = document.getElementById("core-selector");
+   for (let name of coreNames) {
+      let a = document.createElement("a");
+      a.href = ".";
+      a.dataset.core = coreArray.find(i => i[1] == name)[0];
+      a.textContent = name;
+      a.classList.add("dropdown-item");
+      coreSelector.appendChild(a);
+   }
+
    // Enable data clear
    $('#btnClean').click(function() {
       cleanupStorage();
@@ -302,36 +313,61 @@ $(function() {
    // Switch the core when selecting one.
    $('#core-selector a').click(function() {
       var coreChoice = $(this).data('core');
-      switchCore(coreChoice);
+      localStorage.setItem("core", coreChoice);
    });
+
    // Find which core to load.
-   var core = localStorage.getItem("core", core);
-   if (!core) {
-      core = 'gambatte';
-   }
-   loadCore(core);
+   currentCore = localStorage.getItem("core") || defaultCore;
+   loadCore(currentCore);
+
+   // Start loading the filesystem
+   idbfsInit();
+   zipfsInit();
 });
 
-function loadCore(core) {
+function loadCoreFallback(currentCore) {
+   if (currentCore == defaultCore) {
+      alert("Error: could not load default core!");
+      return;
+   }
+   loadCore(defaultCore);
+}
+
+function loadCore(core, args) {
    // Make the core the selected core in the UI.
+   $('#core-selector a.active').removeClass('active');
    var coreTitle = $('#core-selector a[data-core="' + core + '"]').addClass('active').text();
    $('#dropdownMenu1').text(coreTitle);
+
+   ModuleBase.arguments = args || ["-v", "--menu", "-c", "/home/web_user/retroarch/userdata/retroarch.cfg"];
+   ModuleBase.preRun = [modulePreRun];
+   ModuleBase.canvas = canvas;
+   ModuleBase.corePath = "/home/web_user/retroarch/cores/" + core + "_libretro.core";
+
    // Load the Core's related JavaScript.
    import("./" + core + "_libretro.js").then(script => {
-      script.default(Module).then(mod => {
+      script.default(Object.assign({}, ModuleBase)).then(mod => {
          Module = mod;
-         $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
-         $('#icnRun').addClass('fa-play');
-         $('#lblDrop').removeClass('active');
-         $('#lblLocal').addClass('active');
-         idbfsInit();
-         zipfsInit();
       }).catch(err => {
          console.error("Couldn't instantiate module", err);
+         loadCoreFallback(core);
          throw err;
       });
    }).catch(err => {
       console.error("Couldn't load script", err);
+      loadCoreFallback(core);
       throw err;
    });
+}
+
+// exit/exitspawn hook
+function relaunch(core, content) {
+   // force restart on exit
+   if (!core) core = ModuleBase.corePath;
+
+   if (!content) content = "--menu";
+   currentCore = core.slice(0, -14).split("/").slice(-1)[0];
+
+   localStorage.setItem("core", currentCore);
+   loadCore(currentCore, ["-v", content, "-c", "/home/web_user/retroarch/userdata/retroarch.cfg"]);
 }
