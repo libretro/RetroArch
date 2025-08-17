@@ -1016,8 +1016,8 @@ MSG_HASH(
    )
 #ifdef ANDROID
 MSG_HASH(
-        MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD,
-    "deferred_dropdown_box_list_input_select_physical_keyboard"
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "deferred_dropdown_box_list_input_select_physical_keyboard"
 )
 #endif
 MSG_HASH(
@@ -4150,23 +4150,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION,
-	  "crt_switch_resolution"
+   "crt_switch_resolution"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_SUPER,
-	  "crt_switch_resolution_super"
+   "crt_switch_resolution_super"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,
-	  "crt_switch_horizontal_shift"
+   "crt_switch_horizontal_shift"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST,
-	  "crt_switch_horizontal_size"
+   "crt_switch_horizontal_size"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST,
-	  "crt_switch_vertical_size"
+   "crt_switch_vertical_size"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO,

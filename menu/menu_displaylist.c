@@ -9598,7 +9598,6 @@ unsigned menu_displaylist_build_list(
             uico_driver_state_t *uico_st    = uico_state_get_ptr();
 
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_APPICON_SETTINGS,                                      PARSE_ONLY_STRING_OPTIONS, false},
                {MENU_ENUM_LABEL_MENU_SETTINGS,                                         PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,                                   PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,                       PARSE_ACTION,      true},
@@ -9637,6 +9636,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,                                PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS,                                  PARSE_ACTION,      true},
 #endif
+               {MENU_ENUM_LABEL_APPICON_SETTINGS,                                      PARSE_ONLY_STRING_OPTIONS, false},
                {MENU_ENUM_LABEL_USER_LANGUAGE,                                         PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_DRIVER,                                           PARSE_ONLY_STRING_OPTIONS, true},
             };
