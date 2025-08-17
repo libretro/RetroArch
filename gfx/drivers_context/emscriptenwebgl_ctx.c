@@ -210,9 +210,11 @@ static uint32_t gfx_ctx_emscripten_webgl_get_flags(void *data)
 
 static void gfx_ctx_emscripten_webgl_set_flags(void *data, uint32_t flags) { }
 
+void *emscripten_GetProcAddress(const char *);
+
 static gfx_ctx_proc_t gfx_ctx_emscripten_webgl_get_proc_address(const char *symbol)
 {
-   return emscripten_webgl_get_proc_address(symbol);
+   return emscripten_GetProcAddress(symbol);
 }
 
 const gfx_ctx_driver_t gfx_ctx_emscripten_webgl = {
