@@ -13714,6 +13714,18 @@ MSG_HASH(
    "Не ўдалося атрымаць ад кліента мянушку."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD,
+   "Не атрымалася загрузіць."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_CONTENT,
+   "Не атрымалася загрузіць змесціва."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "Не атрымалася загрузіць файл запісу."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Не атрымалася загрузіць накладку."
    )
@@ -14166,6 +14178,10 @@ MSG_HASH(
    "Дасягнута мяжа буфера перамоткі."
    )
 MSG_HASH(
+   MSG_SAVED_NEW_CONFIG_TO,
+   "Канфігурацыя захавана ў"
+   )
+MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
    "Захавана ў слот #%d."
    )
@@ -14311,7 +14327,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
-   "Націсніце зноў каб выйсці..."
+   "Націсніце зноў, каб выйсці..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   "Націсніце зноў, каб закрыць змесціва..."
+   )
+MSG_HASH(
+   MSG_PRESS_AGAIN_TO_RESET,
+   "Націсніце зноў, каб скінуць..."
    )
 MSG_HASH(
    MSG_TO,

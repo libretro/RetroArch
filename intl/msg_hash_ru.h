@@ -7109,6 +7109,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "Только для главного меню и настроек"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "Начальный экран"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "Стартовая страница меню при запуске."
+   )
 
 /* Settings > AI Service */
 
