@@ -3728,6 +3728,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    "Allow any user to control the menu. If disabled, only User 1 can control the menu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "Allow Back From Tabs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "Return to Main Menu from tabs/sidebar when pressing Back."
+   )
 
 /* Settings > Input > Hotkeys */
 
