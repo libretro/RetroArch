@@ -147,6 +147,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    input_autoconfigure_connect(
          g_pads[g_joypad_cnt].joy_name,
          g_pads[g_joypad_cnt].joy_friendly_name,
+         NULL,
          dinput_joypad.ident,
          g_joypad_cnt,
          g_pads[g_joypad_cnt].vid,

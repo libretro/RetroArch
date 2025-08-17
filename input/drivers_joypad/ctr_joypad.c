@@ -41,7 +41,7 @@ static void ctr_joypad_autodetect_add(unsigned autoconf_pad)
 {
    input_autoconfigure_connect(
          ctr_joypad_name(autoconf_pad),
-         NULL,
+         NULL, NULL,
          ctr_joypad.ident,
          autoconf_pad,
          0,

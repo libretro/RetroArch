@@ -215,12 +215,12 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       pad->pid = inputid.product;
    }
    if (ioctl(fd, EVIOCGPHYS(sizeof(pad->phys)), pad->phys) < 0)
-      pad->phys[0] = '\0';  // Clear if unavailable
+      pad->phys[0] = '\0';  /* Clear if unavailable */
    else
       physlen = strlen(pad->phys);
 
    if (ioctl(fd, EVIOCGUNIQ(sizeof(pad->phys)-physlen), pad->phys+physlen) < 0)
-       pad->phys[physlen] = '\0';  // Clear if unavailable
+       pad->phys[physlen] = '\0';  /* Clear if unavailable */
 
    if (fstat(fd, &st) < 0)
       return -1;

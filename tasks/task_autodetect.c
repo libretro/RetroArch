@@ -151,6 +151,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
       if (config_get_int(config, config_key, &tmp_int))
          config_pid = (uint16_t)tmp_int;
 
+      /* Check for matching VID+PID */
 #ifdef HAVE_BLISSBOX
       /* > Bliss-Box shenanigans... */
       if (autoconfig_handle->device_info.vid == BLISSBOX_VID)

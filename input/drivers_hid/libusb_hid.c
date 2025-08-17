@@ -151,7 +151,7 @@ static void libusb_hid_device_add_autodetect(unsigned idx,
 {
    input_autoconfigure_connect(
          device_name,
-         NULL,
+         NULL, NULL,
          "hid",
          idx,
          dev_vid,
