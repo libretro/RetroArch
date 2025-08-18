@@ -2217,10 +2217,6 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "انتخاب صفحه‌کلید فیزیکی"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
    "انتخاب این دستگاه به‌عنوان صفحه‌کلید فیزیکی به‌جای دسته‌بازی."
    )
