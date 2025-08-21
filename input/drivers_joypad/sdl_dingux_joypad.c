@@ -385,7 +385,7 @@ static void sdl_dingux_joypad_connect(void)
     * autoconfig task */
    input_autoconfigure_connect(
          sdl_dingux_joypad_name(0), /* name */
-         NULL,                      /* display_name */
+         NULL, NULL,                /* display_names */
          sdl_dingux_joypad.ident,   /* driver */
          0,                         /* port */
          0,                         /* vid */

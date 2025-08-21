@@ -32,7 +32,7 @@ static void *qnx_joypad_init(void *data)
    for (autoconf_pad = 0; autoconf_pad < MAX_USERS; autoconf_pad++)
       input_autoconfigure_connect(
             qnx_joypad_name(autoconf_pad),
-            NULL,
+            NULL, NULL,
             qnx_joypad.ident,
             autoconf_pad,
             0,

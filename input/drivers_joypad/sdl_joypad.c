@@ -154,7 +154,7 @@ static void sdl_pad_connect(unsigned id)
 
    input_autoconfigure_connect(
          sdl_joypad_name(id),
-         NULL,
+         NULL, NULL,
          sdl_joypad.ident,
          id,
          vendor,

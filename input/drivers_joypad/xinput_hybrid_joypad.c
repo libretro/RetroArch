@@ -318,6 +318,7 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
       input_autoconfigure_connect(
             g_pads[g_joypad_cnt].joy_name,
             g_pads[g_joypad_cnt].joy_friendly_name,
+            NULL,
             dinput_joypad.ident,
             g_joypad_cnt,
             g_pads[g_joypad_cnt].vid,
@@ -476,7 +477,7 @@ static void *xinput_joypad_init(void *data)
 
          input_autoconfigure_connect(
                name,
-               NULL,
+               NULL, NULL,
                xinput_joypad.ident,
                j,
                vid,
@@ -598,7 +599,7 @@ static void xinput_joypad_poll(void)
             int32_t pid = 0;
             input_autoconfigure_connect(
                name,
-               NULL,
+               NULL, NULL,
                xinput_joypad.ident,
                xinput_hotplug_index,
                vid,

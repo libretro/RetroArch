@@ -1346,7 +1346,7 @@ static void handle_hotplug(android_input_t *android,
 
    input_autoconfigure_connect(
          name_buf,
-         NULL,
+         NULL, NULL,
          android_joypad.ident,
          *port,
          vendorId,

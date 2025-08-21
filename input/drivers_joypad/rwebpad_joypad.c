@@ -64,7 +64,7 @@ static EM_BOOL rwebpad_gamepad_cb(int event_type,
          rwebpad_joypad_data->live_pads[gamepad_event->index] = true;
          input_autoconfigure_connect(
                gamepad_event->id,    /* name */
-               NULL,                 /* display name */
+               NULL, NULL,           /* display names */
                rwebpad_joypad.ident, /* driver */
                gamepad_event->index, /* idx */
                vid,                  /* vid */

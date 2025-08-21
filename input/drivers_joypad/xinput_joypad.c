@@ -226,7 +226,7 @@ static void *xinput_joypad_init(void *data)
          int32_t pid          = 0;
          input_autoconfigure_connect(
                name,
-               NULL,
+               NULL, NULL,
                xinput_joypad.ident,
                j,
                vid,
@@ -369,7 +369,7 @@ static void xinput_joypad_poll(void)
             int32_t pid = 0;
             input_autoconfigure_connect(
                   name,
-                  NULL,
+                  NULL, NULL,
                   xinput_joypad.ident,
                   xinput_hotplug_index,
                   vid,
