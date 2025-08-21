@@ -248,6 +248,7 @@ void input_autoconfigure_blissbox_override_handler(
 bool input_autoconfigure_connect(
       const char *name,
       const char *display_name,
+      const char *phys,
       const char *driver,
       unsigned port,
       unsigned vid,

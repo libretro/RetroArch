@@ -187,6 +187,7 @@ retry:
                      input_autoconfigure_connect(
                            NULL,
                            NULL,
+                           NULL,
                            "linuxraw",
                            idx,
                            0,
@@ -207,6 +208,7 @@ retry:
                   {
                      input_autoconfigure_connect(
                            linuxraw_pads[idx].ident,
+                           NULL,
                            NULL,
                            "linuxraw",
                            idx,

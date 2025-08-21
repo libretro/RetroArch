@@ -5570,7 +5570,7 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
       return;
    }
 
-   input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
+   input_autoconfigure_connect(driver->name(port), NULL, NULL, driver->ident,
           port, 0, 0);
 }
 

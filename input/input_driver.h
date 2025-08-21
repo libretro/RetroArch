@@ -296,6 +296,7 @@ typedef struct
    char joypad_driver[32];
    char name[128];
    char display_name[128];
+   char phys[NAME_MAX_LENGTH];
    char config_name[NAME_MAX_LENGTH]; /* Base name of the RetroArch config file */
    bool autoconfigured;
 } input_device_info_t;
