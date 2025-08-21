@@ -556,6 +556,9 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    char bundle_path[PATH_MAX];
    const char *home = getenv("HOME");
 
+   /* Try to set core library path so the frontend knows what core is currently loaded.
+    * It's not an issue if left unspecified, but turning off the "Always Reload Core on
+    * Run Content" option will only work if the frontend knows the current core. */
    path_set(RARCH_PATH_CORE, getenv("LIBRARY_PATH"));
 
    if (home)

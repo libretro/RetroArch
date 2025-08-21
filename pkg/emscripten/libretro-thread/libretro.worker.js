@@ -165,7 +165,7 @@ FS.stat = async function(path) {
 async function listInstalledCores() {
 	loadScripts("core_list.js");
 	const cores = Object.keys(libretroCores);
-	const coreFiles = (await FS.readdir("/retroarch/cores") || []).map(i => i.slice(0, -14));
+	const coreFiles = (await FS.readdir("/retroarch/cores") || []).map(i => i.slice(0, -14)); // remove "_libretro.core"
 	for (let core of cores) {
 		if (!coreFiles.includes(core)) await FS.writeFile("/retroarch/cores/" + core + "_libretro.core", new Uint8Array());
 	}

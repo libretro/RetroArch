@@ -366,6 +366,8 @@ function relaunch(core, content) {
    if (!core) core = ModuleBase.corePath;
 
    if (!content) content = "--menu";
+
+   // parse core name from full path ("/home/web_user/retroarch/cores/NAME_libretro.core")
    currentCore = core.slice(0, -14).split("/").slice(-1)[0];
 
    localStorage.setItem("core", currentCore);
