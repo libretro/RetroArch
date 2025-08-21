@@ -3333,6 +3333,10 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "물리적 키보드 선택"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
    "이 장치를 게임패드가 아닌 물리적 키보드로서 사용합니다."
    )
@@ -3659,6 +3663,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    "모든 사용자가 메뉴를 제어할 수 있도록 허용합니다. 비활성 시 1번 사용자만 메뉴를 제어할 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "탭에서 뒤로 나가기 허용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "탭 또는 사이드바에서 뒤로 나가면 메인 메뉴로 돌아오게 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
@@ -7116,6 +7128,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "메인 메뉴와 설정만"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "시작 페이지"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "시작 시 표시될 메뉴 페이지입니다."
    )
 
 /* Settings > AI Service */
