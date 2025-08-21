@@ -194,6 +194,7 @@ C89_GLSLANG=no
 HAVE_BUILTINGLSLANG=auto   # Bake in glslang support
 C89_BUILTINGLSLANG=no
 HAVE_SPIRV_CROSS=auto      # SPIRV-Cross support (requires C++11)
+HAVE_BUILTINSPIRV_CROSS=auto    # Use bundled SPIRV-Cross source
 C89_SPIRV_CROSS=no
 HAVE_METAL=no              # Metal support (macOS-only)
 C89_METAL=no
