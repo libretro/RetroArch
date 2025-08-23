@@ -938,15 +938,15 @@ static void gfx_ctx_drm_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-#ifdef HAVE_X11
    settings_t *settings = config_get_ptr();
 
-   /* We cannot use the X11 input driver for DRM/KMS */
-   if (string_is_equal(settings->arrays.input_driver, "x"))
+   /* We cannot use the X11 input driver for DRM/KMS, and udev may be restricted */
+   if (   string_is_equal(settings->arrays.input_driver, "x")
+       || string_is_equal(settings->arrays.input_driver, "udev"))
    {
 #ifdef HAVE_UDEV
       {
-         /* Try to set it to udev instead */
+         /* Try to set it to udev */
          void *udev = input_driver_init_wrap(&input_udev, joypad_name);
          if (udev)
          {
@@ -958,7 +958,7 @@ static void gfx_ctx_drm_input_driver(void *data,
 #endif
 #if defined(__linux__) && !defined(ANDROID)
       {
-         /* Try to set it to linuxraw instead */
+         /* Try to set it to linuxraw if not available or failed to initialize */
          void *linuxraw = input_driver_init_wrap(&input_linuxraw, joypad_name);
          if (linuxraw)
          {
@@ -969,7 +969,6 @@ static void gfx_ctx_drm_input_driver(void *data,
       }
 #endif
    }
-#endif
 
    *input      = NULL;
    *input_data = NULL;
