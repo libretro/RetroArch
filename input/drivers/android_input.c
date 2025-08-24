@@ -132,6 +132,17 @@ static bool hover_guard_drop(float x, float y, int64_t now_ms, float eps_px)
            fabsf(y - g_hover_guard_y) <= eps_px);
 }
 
+static void android_stylus_proximity_check_expire(android_input_t *android)
+{
+   if (android->stylus_proximity_active)
+   {
+      retro_time_t now = cpu_features_get_time_usec();
+      /* Convert both to milliseconds for comparison: now(µs)/1000 vs proximity(ns)/1000000 */
+      if (now / 1000 > android->stylus_proximity_until_ns / 1000000)
+         android->stylus_proximity_active = false;
+   }
+}
+
 #define ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds, id) (BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[(binds)[(id)].key]))
 
 #define ANDROID_KEYBOARD_INPUT_PRESSED(key) (BIT_GET(android_key_state[0], (key)))
@@ -184,6 +195,8 @@ typedef struct state_device
 typedef struct android_input
 {
    int64_t quick_tap_time;
+   bool    stylus_proximity_active;
+   int64_t stylus_proximity_until_ns;
    state_device_t pad_states[MAX_USERS];        /* int alignment */
    int mouse_x, mouse_y;
    int16_t mouse_x_viewport_screen, mouse_y_viewport_screen;
@@ -650,6 +663,8 @@ static void *android_input_init(const char *joypad_driver)
    android->mouse_activated = false;
    android->pads_connected = 0;
    android->quick_tap_time = 0;
+   android->stylus_proximity_active = false;
+   android->stylus_proximity_until_ns = 0;
 
    input_keymaps_init_keyboard_lut(rarch_key_map_android);
 
@@ -852,6 +867,11 @@ static INLINE void android_input_poll_event_type_motion(
 #endif
             hover_guard_arm(x, y, event_time_ms, 100); /* 100ms guard window */
             
+            /* Set stylus proximity flag and cancel any pending quick-tap */
+            android->stylus_proximity_active = true;
+            android->stylus_proximity_until_ns = AMotionEvent_getEventTime(event) + 120000000; /* 120ms in ns */
+            android->quick_tap_time = 0;
+            
             /* Optional: Update cursor position for hover if settings allow */
             if (settings->bools.input_stylus_hover_moves_pointer && action == AMOTION_EVENT_ACTION_HOVER_MOVE)
             {
@@ -865,9 +885,12 @@ static INLINE void android_input_poll_event_type_motion(
          case AMOTION_EVENT_ACTION_DOWN:
          case AMOTION_EVENT_ACTION_MOVE:
          case AMOTION_EVENT_ACTION_UP:
-            /* Clear guard on real contact down */
+            /* Clear guard and proximity on real contact down */
             if (action == AMOTION_EVENT_ACTION_DOWN)
+            {
                g_hover_guard_active = false;
+               android->stylus_proximity_active = false;
+            }
 
             /* Implement proper contact detection with settings support */
             require_contact = 
@@ -913,7 +936,9 @@ static INLINE void android_input_poll_event_type_motion(
                /* Initialize mouse position to prevent cursor jump */
                android->mouse_x_prev = x;
                android->mouse_y_prev = y;
+#ifdef DEBUG_ANDROID_INPUT
                RARCH_LOG("[Android Input] S Pen activated\n");
+#endif
             }
             
             /* Button mapping: tip=left, side=right */
@@ -935,7 +960,9 @@ static INLINE void android_input_poll_event_type_motion(
                android->mouse_activated = false;
                android->mouse_l = 0;
                android->mouse_r = 0;
+#ifdef DEBUG_ANDROID_INPUT
                RARCH_LOG("[Android Input] S Pen mouse deactivated\n");
+#endif
             }
             
             return;
@@ -984,7 +1011,9 @@ static INLINE void android_input_poll_event_type_motion(
       {
          if (!android->mouse_activated)
          {
+#ifdef DEBUG_ANDROID_INPUT
             RARCH_LOG("[Android Input] Mouse activated.\n");
+#endif
             android->mouse_activated = true;
          }
          /* getButtonState requires API level 14 */
@@ -1998,7 +2027,22 @@ static int16_t android_input_state(
                   if (android->mouse_activated)
                      return android->mouse_l;
                   else
-                     return android_check_quick_tap(android);
+                  {
+                     /* Only finger taps should participate in quick-tap emulation.
+                        Suppress when stylus is in proximity or hover-guard is active. */
+                     bool allow_quick_tap;
+                     android_stylus_proximity_check_expire(android);
+                     allow_quick_tap = !android->stylus_proximity_active
+                                       && !g_hover_guard_active;
+                     
+                     if (allow_quick_tap)
+                        return android_check_quick_tap(android);
+                     else
+                     {
+                        android->quick_tap_time = 0; /* cancel any pending quick tap when stylus nearby */
+                        return 0;
+                     }
+                  }
                case RETRO_DEVICE_ID_MOUSE_RIGHT:
                   return android->mouse_r;
                case RETRO_DEVICE_ID_MOUSE_MIDDLE:
@@ -2071,7 +2115,22 @@ static int16_t android_input_state(
                   if (android->mouse_activated)
                      return android->mouse_l || android->pointer_count == 1;
                   else
-                     return android_check_quick_tap(android) || android->pointer_count == 1;
+                  {
+                     /* Only finger taps should participate in quick-tap emulation.
+                        Suppress when stylus is in proximity or hover-guard is active. */
+                     bool allow_quick_tap;
+                     android_stylus_proximity_check_expire(android);
+                     allow_quick_tap = !android->stylus_proximity_active
+                                       && !g_hover_guard_active;
+                     
+                     if (allow_quick_tap)
+                        return android_check_quick_tap(android) || android->pointer_count == 1;
+                     else
+                     {
+                        android->quick_tap_time = 0; /* cancel any pending quick tap when stylus nearby */
+                        return android->pointer_count == 1;
+                     }
+                  }
                case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
                   return input_driver_pointer_is_offscreen(android->pointer[idx].x, android->pointer[idx].y);
             }

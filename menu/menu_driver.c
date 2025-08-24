@@ -6188,7 +6188,16 @@ static int menu_input_post_iterate(
          /* Normal menu input */
          else
          {
-            /* Detect gesture type */
+            /* Only TOUCHSCREEN pointer should produce gesture-based taps.
+               Mouse (incl. stylus-as-mouse) shouldn't get TAP/SHORT/LONG gestures from motion timing. */
+            if (menu_input->pointer.type != MENU_POINTER_TOUCHSCREEN)
+            {
+               point.gesture = MENU_INPUT_GESTURE_NONE;
+               /* continue through non-gesture mouse handling; do not enter TAP/SHORT/LONG branches */
+            }
+            else
+            {
+               /* Detect gesture type */
             if (!(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
             {
                /* Pointer hasn't moved - check press duration */
@@ -6266,6 +6275,7 @@ static int menu_input_post_iterate(
                         )
                      point.gesture = MENU_INPUT_GESTURE_SWIPE_DOWN;
                }
+            }
             }
 
             /* Trigger a 'pointer up' event */
