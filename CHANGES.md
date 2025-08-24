@@ -1,12 +1,17 @@
 # Future
 - APPLE: Include sameduck, gearcoleco, geargrafx cores in App Store builds
 - APPLE: Include reminiscence, virtualjaguar, vitaquake2 cores in App Store builds
+- APPLE: Include gam4980 core in App Store builds
 - APPLE: Bundle identifier added to Information menu
 - APPLE: Option to control the usage of Metal argument buffers
 - APPLE: Don't force fullscreen, allow multitasking on iPad
+- APPLE: AppIntents for Siri, Shortcuts
 - AUDIO: Microphone CoreAudio driver for iOS and macOS
+- AUTOCONF: Autoconfig match extended with a physical identifier
 - CAMERA: Use ffmpeg libavfilter virtual input device as default
 - CHEEVOS: Show additional message for unsupported achievements
+- CHEEVOS: Upgrade to rcheevos 12.0
+- DATABASE: Filter in Database Manager now works for genre and region
 - CLOUDSYNC: Enable icloud_drive cloud sync backend on MacOS / iOS
 - CLOUDSYNC: Don't always trust the server hash
 - CLOUDSYNC: Enable WebDAV support for Android
@@ -23,10 +28,13 @@
 - INPUT: Fix menu usage when OK/Cancel has mouse binds
 - INPUT: Ignore menu mouse startup position before moving
 - INPUT: Fix heavy slowdown when using Bluetooth XInput controllers with rumble
+- INPUT: Reset and close content hotkeys now require confirmation, similar to quit
+- INPUT/ANDROID: Favor mouse coordinates for lightgun
 - INPUT/UDEV: Fix lost terminal settings after restart from menu
 - INTL: Add Irish Gaelic to selectable languages
 - IOS: Fix crash on iOS9 when fetching refresh rate
 - LINUX: Add full complement of key/value pairs to desktop entry
+- MACOS: Fix coreaudio microphone handling
 - MENU: Common Thumbnail Background option for all menu drivers
 - MENU: Move core options reset from Settings/Configuration to Main Menu / Configuration Files
 - MENU: Use right analog stick for thumbnail cycling in playlists
@@ -40,27 +48,39 @@
 - MENU: Unwanted input is prevented when menu is triggered by toggle combo
 - MENU: 32-bit values in cheats and rumble are not presented as huge lists
 - MENU: Less important widgets are now sized like task notifications
+- MENU: Play count is added to runtime log
+- MENU: Configurable startup page (several options beside default Main Menu)
+- MENU/GLUI: Show thumbnails in Explore view
 - MENU/XMB: Select button toggles thumbnails in playlists
 - MENU/XMB,OZONE: Fix content icons when playlist tabs are hidden
 - MENU/OZONE: Horizontal padding factor option
 - MENU/OZONE: Custom font selection and scaling factor
+- MENU/RGUI: Clock format is now configurable and moved to top header
 - NETWORK: Fixes for nmcli wifi driver
 - NETWORK: Network command interface enabled for Android, iOS, TVOS
 - OTHER: ZStandard support and libchdr update for support of chd files converted with createdvd option
 - OVERLAY: Speed limit on touch pointer tracking
+- OVERLAY: Dedicate each touch pointer to hitboxes or pointing devices
 - PLAYLIST: Built-in playlists are now stored under playlists/builtin
 - PLAYLIST: Fix subsystem information in playlists
+- PS3: Fix psl1ght target of dist-cores.sh
 - REPLAY: Bugs fixed regarding rewind
 - REPLAY: Same timeline check and future state check for replays vs. savestates
 - SAVESTATES: Savestate thumbnails are default enabled for x86_64 builds
+- SAVESTATES: Slot is now remembered using the runtime log file
+- SAVESTATES: Slot hotkey widget shows save state thumbnail
 - VIDEO: Fix auto swap interval setup
 - VIDEO: Improvements for integer scale half scaling
 - VIDEO: Frame delay improvements for the automatic setting
 - VIDEO/D3D11/D3D12: snappy extra vsync presentation mode
+- VIDEO/GL: Fallback OpenGL symbol loader for Linux devices with EGL < 1.5
+- VIDEO/GL: Support for Cg and GLSL shaders in the GLCore video driver
 - VIDEO/SHADER: Shader hold function, useful for some lightguns and shader comparison
 - VIDEO/SWITCHRES: Horizontal and vertical geometry adjustment options added
 - VIDEO/SWITCHRES: Game overrides
 - VIDEO/WAYLAND: Support for xdg-toplevel-icon-v1
+- VIDEO/WAYLAND: Fix deadlock when using Wayland Vulkan driver
+- VITA: Touchscreen support for PS Vita
 - WEBOS: Various fixes and tunings
 - WEBOS: Disable core dumps
 - WEBOS: Debug builds enabled
