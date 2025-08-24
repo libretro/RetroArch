@@ -697,6 +697,19 @@ static void *android_input_init(const char *joypad_driver)
 
 static int android_check_quick_tap(android_input_t *android)
 {
+   /* Abort quick tap detection if a stylus hover transition is currently
+    * being processed. When the hover guard is active, phantom
+    * touchscreen events may follow a stylus hover exit, which should
+    * never promote to a mouse click. Clearing quick_tap_time here
+    * prevents any pending tap from accidentally firing while the
+    * hover guard suppresses input. */
+   if (g_hover_guard_active)
+   {
+      /* Cancel any pending quick tap and skip click promotion */
+      android->quick_tap_time = 0;
+      return 0;
+   }
+
    /* Check if the touch screen has been been quick tapped
     * and then not touched again for 200ms
     * If so then return true and deactivate quick tap timer */
