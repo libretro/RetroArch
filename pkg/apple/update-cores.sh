@@ -145,6 +145,7 @@ appstore_cores=(
     bsnes-jg
     bsnes_hd_beta
     cap32
+    clownmdemu
     crocods
     desmume
     dice
