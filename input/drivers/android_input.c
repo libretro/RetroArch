@@ -187,6 +187,8 @@ typedef struct android_input
    int64_t quick_tap_time;
    bool    stylus_proximity_active;
    int64_t stylus_proximity_until_ns;
+   bool    stylus_side_button_active;  /* Track side button state */
+   size_t  stylus_side_button_ptr;     /* Track which pointer index */
    state_device_t pad_states[MAX_USERS];        /* int alignment */
    int mouse_x, mouse_y;
    int16_t mouse_x_viewport_screen, mouse_y_viewport_screen;
@@ -666,6 +668,8 @@ static void *android_input_init(const char *joypad_driver)
    android->quick_tap_time = 0;
    android->stylus_proximity_active = false;
    android->stylus_proximity_until_ns = 0;
+   android->stylus_side_button_active = false;
+   android->stylus_side_button_ptr = 0;
 
    input_keymaps_init_keyboard_lut(rarch_key_map_android);
 
@@ -869,6 +873,18 @@ static INLINE void android_input_poll_event_type_motion(
       settings = config_get_ptr();
       if (!settings)
          return;
+      
+      /* Check if stylus support is globally disabled */
+      if (!settings->bools.input_stylus_enable)
+      {
+#ifdef DEBUG_ANDROID_INPUT
+         RARCH_LOG("[RA Input] Stylus support disabled - ignoring stylus event\n");
+#endif
+         return; /* Treat stylus events as if they never happened */
+      }
+      
+      /* Get stylus settings once for all cases */
+      require_contact = settings->bools.input_stylus_require_contact_for_click;
 
       switch (action)
       {
@@ -894,7 +910,104 @@ static INLINE void android_input_poll_event_type_motion(
                RARCH_LOG("[RA Input] Stylus hover cursor update (user enabled)\n");
 #endif
             }
-            return; /* NEVER allow hover to trigger clicks */
+            
+            /* Handle side button during hover for DRAG, regardless of click/contact policy */
+            buttons = p_AMotionEvent_getButtonState ?
+               AMotionEvent_getButtonState(event) : 0;
+            side_primary   = (buttons & AMOTION_EVENT_BUTTON_STYLUS_PRIMARY)   != 0;
+            side_secondary = (buttons & AMOTION_EVENT_BUTTON_STYLUS_SECONDARY) != 0;
+            bool side_pressed = side_primary || side_secondary;
+            
+#ifdef DEBUG_ANDROID_INPUT
+            if (buttons != 0)
+               RARCH_LOG("[Stylus Btn] state=0x%x primary=%d secondary=%d\n",
+                         buttons, !!side_primary, !!side_secondary);
+#endif
+               
+            /* Side button pressed - start drag operation */
+            if (side_pressed && !android->stylus_side_button_active)
+               {
+                  /* Start new pointer down */
+                  struct video_viewport vp = {0};
+                  
+                  video_driver_translate_coord_viewport_confined_wrap(
+                        &vp, x, y,
+                        &android->pointer[motion_ptr].confined_x,
+                        &android->pointer[motion_ptr].confined_y,
+                        &android->pointer[motion_ptr].full_x,
+                        &android->pointer[motion_ptr].full_y);
+                  
+                  video_driver_translate_coord_viewport_wrap(
+                        &vp, x, y,
+                        &android->pointer[motion_ptr].x,
+                        &android->pointer[motion_ptr].y,
+                        &android->pointer[motion_ptr].full_x,
+                        &android->pointer[motion_ptr].full_y);
+                  
+                  if (android->pointer_count < (int)motion_ptr + 1)
+                     android->pointer_count = (int)motion_ptr + 1;
+                  
+                  android->stylus_side_button_active = true;
+                  android->stylus_side_button_ptr = motion_ptr;
+                  
+#ifdef DEBUG_ANDROID_INPUT
+                  RARCH_LOG("[Stylus] POINTER DOWN @ (%.1f, %.1f) idx=%zu cnt=%d (side button start)\n",
+                            x, y, motion_ptr, android->pointer_count);
+#endif
+                  return;
+               }
+            /* Side button held - continue drag (update coordinates) */
+            else if (side_pressed && android->stylus_side_button_active)
+               {
+                  /* Update existing pointer coordinates */
+                  struct video_viewport vp = {0};
+                  size_t ptr_idx = android->stylus_side_button_ptr;
+                  
+                  video_driver_translate_coord_viewport_confined_wrap(
+                        &vp, x, y,
+                        &android->pointer[ptr_idx].confined_x,
+                        &android->pointer[ptr_idx].confined_y,
+                        &android->pointer[ptr_idx].full_x,
+                        &android->pointer[ptr_idx].full_y);
+                  
+                  video_driver_translate_coord_viewport_wrap(
+                        &vp, x, y,
+                        &android->pointer[ptr_idx].x,
+                        &android->pointer[ptr_idx].y,
+                        &android->pointer[ptr_idx].full_x,
+                        &android->pointer[ptr_idx].full_y);
+                  
+#ifdef DEBUG_ANDROID_INPUT
+                  RARCH_LOG("[Stylus] POINTER MOVE @ (%.1f, %.1f) idx=%zu (side button drag)\n",
+                            x, y, ptr_idx);
+#endif
+                  return;
+               }
+            /* Side button released - end drag operation */
+            else if (!side_pressed && android->stylus_side_button_active)
+               {
+                  /* End pointer operation */
+                  size_t ptr_idx = android->stylus_side_button_ptr;
+                  
+                  if (ptr_idx < MAX_TOUCH - 1)
+                  {
+                     memmove(android->pointer + ptr_idx,
+                             android->pointer + ptr_idx + 1,
+                             (MAX_TOUCH - ptr_idx - 1) * sizeof(android->pointer[0]));
+                  }
+                  if (android->pointer_count > 0)
+                     android->pointer_count--;
+                  
+                  android->stylus_side_button_active = false;
+                  
+#ifdef DEBUG_ANDROID_INPUT
+                  RARCH_LOG("[Stylus] POINTER UP   idx=%zu cnt=%d (side button end)\n", 
+                            ptr_idx, android->pointer_count);
+#endif
+                  return;
+               }
+            
+            return; /* Standard hover - no clicks allowed */
             
          case AMOTION_EVENT_ACTION_DOWN:
          case AMOTION_EVENT_ACTION_MOVE:
@@ -932,8 +1045,7 @@ static INLINE void android_input_poll_event_type_motion(
             /* Apply contact requirement setting */
             stylus_pressed = require_contact
                 ? tip_down  /* Only tip contact counts when setting enabled */
-                : (tip_down || side_primary ||
-                   action == AMOTION_EVENT_ACTION_DOWN); /* Tip or side */
+                : (tip_down || side_primary); /* Tip contact OR side button when disabled */
             
 #ifdef DEBUG_ANDROID_INPUT
             RARCH_LOG("[RA Input] S Pen contact - req_contact:%s tip_down:%s "
