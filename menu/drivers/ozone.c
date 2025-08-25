@@ -12028,7 +12028,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    else
       background_color = ozone->theme->background;
 
-   gfx_display_set_alpha(background_color, ozone->animations.alpha);
+   gfx_display_set_alpha(background_color, menu_framebuffer_opacity * ozone->animations.alpha);
 
    gfx_display_draw_quad(p_disp,
          userdata,
