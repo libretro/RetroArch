@@ -3376,6 +3376,30 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
    "If RetroArch identifies a hardware keyboard as some kind of gamepad, this setting can be used to force RetroArch to treat the misidentified device as a keyboard.\nThis can be useful if you are trying to emulate a computer in some Android TV device and also own a physical keyboard that can be attached to the box."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Android Input Disconnect Workaround"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Workaround for controllers disconnecting and reconnecting. Prevents users from having the same controller twice."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
+   "Stylus Requires Contact for Click"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
+   "S Pen stylus must make contact with screen to register clicks. When disabled, side button also works."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HOVER_MOVES_POINTER,
+   "Stylus Hover Moves Pointer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,
+   "Allow S Pen hover to move cursor without clicking (for games that support it)."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
@@ -3641,14 +3665,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
    "Change core-specific input mappings."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Android disconnect workaround"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Workaround for controllers disconnecting and reconnecting. Impedes 2 players with the identical controllers."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,

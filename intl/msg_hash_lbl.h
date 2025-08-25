@@ -1865,6 +1865,18 @@ MSG_HASH(
         MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
         "input_android_physical_keyboard"
 )
+MSG_HASH(
+        MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+        "android_input_disconnect_workaround"
+)
+MSG_HASH(
+        MENU_ENUM_LABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
+        "input_stylus_require_contact_for_click"
+)
+MSG_HASH(
+        MENU_ENUM_LABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,
+        "input_stylus_hover_moves_pointer"
+)
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,

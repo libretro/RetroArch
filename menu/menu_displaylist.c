@@ -8311,6 +8311,8 @@ unsigned menu_displaylist_build_list(
 #endif
 #ifdef ANDROID
                {MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,   PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK, PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,      PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,                   PARSE_ONLY_UINT,  true},
 #endif
                {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,              PARSE_ONLY_UINT,  true},

@@ -978,9 +978,9 @@
 
 #define DEFAULT_QUIT_PRESS_TWICE true
 
-#define DEFAULT_LOG_TO_FILE false
+#define DEFAULT_LOG_TO_FILE true
 
-#define DEFAULT_LOG_TO_FILE_TIMESTAMP false
+#define DEFAULT_LOG_TO_FILE_TIMESTAMP true
 
 /* Crop overscanned frames. */
 #define DEFAULT_CROP_OVERSCAN true
