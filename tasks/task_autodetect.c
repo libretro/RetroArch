@@ -442,7 +442,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
    int player;
    char settings_value[NAME_MAX_LENGTH];
    char settings_value_device_name[NAME_MAX_LENGTH];
-   unsigned prev_assigned_player_slots[MAX_USERS];
+   unsigned prev_assigned_player_slots[MAX_USERS] = {0};
    int  settings_value_vendor_id;
    int  settings_value_product_id;
    unsigned first_free_player_slot = MAX_USERS + 1;
