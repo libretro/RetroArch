@@ -911,12 +911,14 @@ static INLINE void android_input_poll_event_type_motion(
 #endif
             }
             
-            /* Handle side button during hover for DRAG, regardless of click/contact policy */
-            buttons = p_AMotionEvent_getButtonState ?
-               AMotionEvent_getButtonState(event) : 0;
-            side_primary   = (buttons & AMOTION_EVENT_BUTTON_STYLUS_PRIMARY)   != 0;
-            side_secondary = (buttons & AMOTION_EVENT_BUTTON_STYLUS_SECONDARY) != 0;
-            bool side_pressed = side_primary || side_secondary;
+            /* Handle side button during hover (when contact requirement is OFF) */
+            if (!require_contact)
+            {
+               buttons = p_AMotionEvent_getButtonState ?
+                  AMotionEvent_getButtonState(event) : 0;
+               side_primary   = (buttons & AMOTION_EVENT_BUTTON_STYLUS_PRIMARY)   != 0;
+               side_secondary = (buttons & AMOTION_EVENT_BUTTON_STYLUS_SECONDARY) != 0;
+               bool side_pressed = side_primary || side_secondary;
             
 #ifdef DEBUG_ANDROID_INPUT
             if (buttons != 0)
@@ -924,8 +926,8 @@ static INLINE void android_input_poll_event_type_motion(
                          buttons, !!side_primary, !!side_secondary);
 #endif
                
-            /* Side button pressed - start drag operation */
-            if (side_pressed && !android->stylus_side_button_active)
+               /* Side button pressed - start drag operation */
+               if (side_pressed && !android->stylus_side_button_active)
                {
                   /* Start new pointer down */
                   struct video_viewport vp = {0};
@@ -956,8 +958,8 @@ static INLINE void android_input_poll_event_type_motion(
 #endif
                   return;
                }
-            /* Side button held - continue drag (update coordinates) */
-            else if (side_pressed && android->stylus_side_button_active)
+               /* Side button held - continue drag (update coordinates) */
+               else if (side_pressed && android->stylus_side_button_active)
                {
                   /* Update existing pointer coordinates */
                   struct video_viewport vp = {0};
@@ -983,8 +985,8 @@ static INLINE void android_input_poll_event_type_motion(
 #endif
                   return;
                }
-            /* Side button released - end drag operation */
-            else if (!side_pressed && android->stylus_side_button_active)
+               /* Side button released - end drag operation */
+               else if (!side_pressed && android->stylus_side_button_active)
                {
                   /* End pointer operation */
                   size_t ptr_idx = android->stylus_side_button_ptr;
@@ -1006,6 +1008,7 @@ static INLINE void android_input_poll_event_type_motion(
 #endif
                   return;
                }
+            }
             
             return; /* Standard hover - no clicks allowed */
             
