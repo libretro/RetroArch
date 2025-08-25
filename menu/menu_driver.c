@@ -97,8 +97,8 @@ extern u32 __nx_applet_type;
 void libnx_apply_overclock(void);
 #endif
 
-/* Accelerated navigation buttons */
-#define NAVIGATION_BUTTONS 9
+/* Accelerated and latched navigation buttons */
+#define NAVIGATION_BUTTONS 12
 
 struct key_desc key_descriptors[RARCH_MAX_KEYS] =
 {
@@ -5229,9 +5229,10 @@ unsigned menu_event(
    static retro_time_t last_time_us                = 0;
    static float delay_timer                        = 0.0f;
    static float delay_count                        = 0.0f;
+   static unsigned ok_old                          = 0;
+   static bool navigation_reset_delay              = true;
    static bool hold_initial                        = true;
    static bool hold_reset                          = true;
-   static unsigned ok_old                          = 0;
    unsigned ret                                    = MENU_ACTION_NOOP;
    bool set_scroll                                 = false;
    unsigned new_scroll_accel                       = 0;
@@ -5272,6 +5273,7 @@ unsigned menu_event(
          RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
+   unsigned ok_trigger_release                     = !ok_current && ok_old;
    static unsigned navigation_initial              = 0;
    unsigned navigation_current                     = 0;
    unsigned navigation_buttons[NAVIGATION_BUTTONS] =
@@ -5280,10 +5282,13 @@ unsigned menu_event(
       RETRO_DEVICE_ID_JOYPAD_DOWN,
       RETRO_DEVICE_ID_JOYPAD_LEFT,
       RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_SELECT,
+      RETRO_DEVICE_ID_JOYPAD_START,
       RETRO_DEVICE_ID_JOYPAD_L,
       RETRO_DEVICE_ID_JOYPAD_R,
       RETRO_DEVICE_ID_JOYPAD_L2,
       RETRO_DEVICE_ID_JOYPAD_R2,
+      RETRO_DEVICE_ID_JOYPAD_X,
       RETRO_DEVICE_ID_JOYPAD_Y
    };
 
@@ -5424,6 +5429,7 @@ unsigned menu_event(
       float delta_time              = (float)(menu_st->current_time_us - last_time_us) / 1000;
 
       last_time_us                  = menu_st->current_time_us;
+      navigation_reset_delay        = true;
 
       /* Store first direction in order to block "diagonals" */
       if (!navigation_initial)
@@ -5459,7 +5465,12 @@ unsigned menu_event(
       set_scroll                    = true;
       hold_reset                    = true;
       hold_initial                  = true;
-      navigation_initial            = 0;
+
+      /* Buffer for keyboard combo jitter */
+      if (navigation_reset_delay)
+         navigation_reset_delay     = false;
+      else
+         navigation_initial         = 0;
    }
 
    if (set_scroll)
@@ -5575,6 +5586,7 @@ unsigned menu_event(
    }
    else
    {
+      static size_t ok_enum_idx = 0;
       static uint8_t switch_old = 0;
       static bool keydown[RARCH_FIRST_CUSTOM_BIND] = {false};
       unsigned onkeyup          =
@@ -5584,6 +5596,27 @@ unsigned menu_event(
       uint8_t switch_trigger    = switch_current & ~switch_old;
 
       switch_old                = switch_current;
+
+      /* Always process Select and Start on release */
+      onkeyup |= (1 << RETRO_DEVICE_ID_JOYPAD_SELECT)
+               | (1 << RETRO_DEVICE_ID_JOYPAD_START);
+
+      /* Handle OK on release with specific items */
+      if (ok_current || ok_trigger_release)
+      {
+         menu_entry_t entry;
+         MENU_ENTRY_INITIALIZE(entry);
+         menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+
+         /* Due to navigation animations changing current entry between
+          * keypress, require OK trigger enum match for release action */
+         if (ok_trigger)
+            ok_enum_idx = entry.enum_idx;
+
+         if (     ok_enum_idx == entry.enum_idx
+               && ok_enum_idx == MENU_ENUM_LABEL_RESUME_CONTENT)
+            ok_trigger = ok_trigger_release;
+      }
 
       /* Prevent holding down left/right with boolean settings */
       if (switch_current)
@@ -5660,10 +5693,13 @@ unsigned menu_event(
       MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_L3, MENU_ACTION_SCROLL_HOME);
       MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_R3, MENU_ACTION_SCROLL_END);
 
-      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_X, MENU_ACTION_SEARCH);
-      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_Y, MENU_ACTION_SCAN);
-      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_START, MENU_ACTION_START);
-      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_SELECT, MENU_ACTION_INFO);
+      if (ret == MENU_ACTION_NOOP)
+      {
+         MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_START, MENU_ACTION_START);
+         MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_SELECT, MENU_ACTION_INFO);
+         MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_X, MENU_ACTION_SEARCH);
+         MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_Y, MENU_ACTION_SCAN);
+      }
 
       if (ok_trigger)
          ret = MENU_ACTION_OK;
@@ -5673,6 +5709,14 @@ unsigned menu_event(
       if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
          ret = MENU_ACTION_TOGGLE;
 
+      /* Prevent simultaneous hotkey actions according to hotkey block delay */
+      if (input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey != NO_BTN)
+      {
+         if (      (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
+               || !(input_st->flags & INP_FLAG_BLOCK_HOTKEY))
+         ret = MENU_ACTION_NOOP;
+      }
+
       if (ret != MENU_ACTION_NOOP)
          menu_st->input_last_time_us = menu_st->current_time_us;
    }
@@ -5680,7 +5724,7 @@ unsigned menu_event(
    /* Menu must be alive, and input must be released after menu toggle. */
    if (     !(menu_st->flags & MENU_ST_FLAG_ALIVE)
          || menu_st->input_driver_flushing_input > 0)
-      return MENU_ACTION_NOOP;
+      ret = MENU_ACTION_NOOP;
 
    return ret;
 }
