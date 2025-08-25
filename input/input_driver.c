@@ -5577,7 +5577,7 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
 static bool input_keys_pressed_other_sources(
       input_driver_state_t *input_st,
       unsigned i,
-      input_bits_t* p_new_state)
+      input_bits_t *p_new_state)
 {
 #ifdef HAVE_COMMAND
    int j;
@@ -5623,8 +5623,10 @@ static void input_keys_pressed(
       bool input_hotkey_device_merge)
 {
    unsigned i;
+   int32_t ret                    = 0;
    input_driver_state_t *input_st = &input_driver_st;
    bool block_hotkey[RARCH_BIND_LIST_END];
+   bool any_pressed               = false;
    bool libretro_hotkey_set       =
             binds[port][RARCH_ENABLE_HOTKEY].joykey                 != NO_BTN
          || binds[port][RARCH_ENABLE_HOTKEY].joyaxis                != AXIS_NONE
@@ -5660,75 +5662,71 @@ static void input_keys_pressed(
             input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
       }
       else
-      {
-         input_st->input_hotkey_block_counter = 0;
          input_st->flags |= INP_FLAG_BLOCK_HOTKEY;
+   }
+
+   /* Prevent triggering menu actions after binding */
+   if (     !(input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+         && menu_state_get_ptr()->input_driver_flushing_input)
+      input_st->flags |= INP_FLAG_WAIT_INPUT_RELEASE;
+
+   /* Check libretro input if emulated device type is active,
+    * except device type must be always active in menu. */
+   if (     !(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
+         && !(!is_menu && !input_config_get_device(port)))
+      ret = input_state_wrap(
+            input_st->current_driver,
+            input_st->current_data,
+            input_st->primary_joypad,
+            sec_joypad,
+            joypad_info,
+            binds,
+            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+            port, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_MASK);
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      if (     (ret & (UINT64_C(1) << i))
+            || input_keys_pressed_other_sources(input_st, i, p_new_state))
+      {
+         any_pressed = true;
+         if (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+            continue;
+
+         BIT256_SET_PTR(p_new_state, i);
       }
    }
 
-   if (!is_menu && binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
+   /* Read autoconf menu toggle regardless of 'enable_hotkey'
+    * unless 'enable_hotkey' is set in autoconf. */
+   if (     !any_pressed
+         && !(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+         && (input_autoconf_binds[port][RARCH_MENU_TOGGLE].joykey != NO_BTN)
+         && (  input_autoconf_binds[port][RARCH_ENABLE_HOTKEY].joykey == input_autoconf_binds[port][RARCH_MENU_TOGGLE].joykey
+            || input_autoconf_binds[port][RARCH_ENABLE_HOTKEY].joykey == NO_BTN)
+         && (  binds[port][RARCH_MENU_TOGGLE].joykey == input_autoconf_binds[port][RARCH_MENU_TOGGLE].joykey
+            || binds[port][RARCH_MENU_TOGGLE].joykey == NO_BTN))
    {
-      const struct retro_keybind *focus_binds_auto =
-            &input_autoconf_binds[port][RARCH_GAME_FOCUS_TOGGLE];
-      const struct retro_keybind *focus_normal     =
-            &binds[port][RARCH_GAME_FOCUS_TOGGLE];
+      /* Ignore keyboard menu toggle button and check
+       * joypad menu toggle button for pressing
+       * it without 'enable_hotkey', because Guide button
+       * is not part of the usual buttons. */
+      i = RARCH_MENU_TOGGLE;
 
-      /* Allows Game Focus toggle hotkey to still work
-       * even though every hotkey is blocked */
-      if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(focus_normal, focus_binds_auto))
+      if (!(binds[port][i].valid
+            && input_state_wrap(
+                  input_st->current_driver,
+                  input_st->current_data,
+                  input_st->primary_joypad,
+                  sec_joypad,
+                  joypad_info,
+                  binds,
+                  (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                  port, RETRO_DEVICE_KEYBOARD, 0,
+                  input_config_binds[port][i].key)))
       {
-         if (input_state_wrap(
-               input_st->current_driver,
-               input_st->current_data,
-               input_st->primary_joypad,
-               sec_joypad,
-               joypad_info,
-               binds,
-               (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-               port, RETRO_DEVICE_JOYPAD, 0,
-               RARCH_GAME_FOCUS_TOGGLE))
-            input_st->flags &= ~INP_FLAG_BLOCK_HOTKEY;
-      }
-   }
-
-   {
-      int32_t ret                 = 0;
-      bool libretro_input_pressed = false;
-
-      /* Check libretro input if emulated device type is active,
-       * except device type must be always active in menu. */
-      if (     !(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
-            && !(!is_menu && !input_config_get_device(port)))
-         ret = input_state_wrap(
-               input_st->current_driver,
-               input_st->current_data,
-               input_st->primary_joypad,
-               sec_joypad,
-               joypad_info,
-               binds,
-               (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-               port, RETRO_DEVICE_JOYPAD, 0,
-               RETRO_DEVICE_ID_JOYPAD_MASK);
-
-      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-      {
-         if (     (ret & (UINT64_C(1) << i))
-               || input_keys_pressed_other_sources(input_st, i, p_new_state))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-            libretro_input_pressed = true;
-         }
-      }
-
-      if (!libretro_input_pressed)
-      {
-         /* Ignore keyboard menu toggle button and check
-          * joypad menu toggle button for pressing
-          * it without 'enable_hotkey', because Guide button
-          * is not part of the usual buttons. */
-         i = RARCH_MENU_TOGGLE;
-
-         if (!(binds[port][i].valid
+         bool bit_pressed = binds[port][i].valid
                && input_state_wrap(
                      input_st->current_driver,
                      input_st->current_data,
@@ -5737,29 +5735,40 @@ static void input_keys_pressed(
                      joypad_info,
                      binds,
                      (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-                     port, RETRO_DEVICE_KEYBOARD, 0,
-                     input_config_binds[port][i].key)))
-         {
-            bool bit_pressed = binds[port][i].valid
-                  && input_state_wrap(
-                        input_st->current_driver,
-                        input_st->current_data,
-                        input_st->primary_joypad,
-                        sec_joypad,
-                        joypad_info,
-                        binds,
-                        (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-                        port, RETRO_DEVICE_JOYPAD, 0, i);
+                     port, RETRO_DEVICE_JOYPAD, 0, i);
 
-            if (
-                     bit_pressed
-                  || BIT64_GET(lifecycle_state, i)
-                  || input_keys_pressed_other_sources(input_st, i, p_new_state))
-            {
-               BIT256_SET_PTR(p_new_state, i);
-            }
-         }
+         if (     bit_pressed
+               || BIT64_GET(lifecycle_state, i)
+               || input_keys_pressed_other_sources(input_st, i, p_new_state))
+            input_st->flags |= INP_FLAG_MENU_PRESS_PENDING;
+         else if (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+            /* Also set 'enable_hotkey' to prevent hotkey delay untrigger */
+            BIT256_SET_PTR(p_new_state, RARCH_ENABLE_HOTKEY);
       }
+   }
+
+   /* Ignore hotkey block delay when menu toggle and hotkey enabler share the same key */
+   if (     !any_pressed
+         && !(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+         && binds[port][RARCH_MENU_TOGGLE].key == binds[port][RARCH_ENABLE_HOTKEY].key)
+   {
+      i = RARCH_MENU_TOGGLE;
+
+      if (     binds[port][i].valid
+            && input_state_wrap(
+                  input_st->current_driver,
+                  input_st->current_data,
+                  input_st->primary_joypad,
+                  sec_joypad,
+                  joypad_info,
+                  binds,
+                  (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                  port, RETRO_DEVICE_KEYBOARD, 0,
+                  input_config_binds[port][i].key))
+         input_st->flags |= INP_FLAG_MENU_PRESS_PENDING;
+      else if (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+         /* Also set 'enable_hotkey' to prevent hotkey delay untrigger */
+         BIT256_SET_PTR(p_new_state, RARCH_ENABLE_HOTKEY);
    }
 
    /* Hotkeys are only relevant for first port */
@@ -5869,7 +5878,6 @@ static void input_keys_pressed(
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i))
                {
-
                   /* Only block if keyboard is not pressed */
                   if (!keyboard_hotkey_pressed)
                      block_hotkey[i] = true;
@@ -5885,41 +5893,86 @@ static void input_keys_pressed(
          block_hotkey[i] = false;
    }
 
+   if (!is_menu && binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
    {
-      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+      /* Never block Game Focus toggle hotkey */
+      block_hotkey[RARCH_GAME_FOCUS_TOGGLE] = false;
+   }
+
+   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+   {
+      bool other_pressed = input_keys_pressed_other_sources(input_st, i, p_new_state);
+      bool bit_pressed   = binds[port][i].valid
+            && input_state_wrap(
+                  input_st->current_driver,
+                  input_st->current_data,
+                  input_st->primary_joypad,
+                  sec_joypad,
+                  joypad_info,
+                  binds,
+                  (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                  port, RETRO_DEVICE_JOYPAD, 0,
+                  i);
+
+      if (     bit_pressed
+            || other_pressed
+            || BIT64_GET(lifecycle_state, i))
       {
-         bool other_pressed = input_keys_pressed_other_sources(input_st, i, p_new_state);
-         bool bit_pressed   = binds[port][i].valid
-               && input_state_wrap(
-                     input_st->current_driver,
-                     input_st->current_data,
-                     input_st->primary_joypad,
-                     sec_joypad,
-                     joypad_info,
-                     binds,
-                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-                     port, RETRO_DEVICE_JOYPAD, 0,
-                     i);
+         any_pressed = true;
+         if (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+            continue;
 
-         if (     bit_pressed
-               || other_pressed
-               || BIT64_GET(lifecycle_state, i))
+         if (libretro_hotkey_set || keyboard_hotkey_set)
          {
-            if (libretro_hotkey_set || keyboard_hotkey_set)
+            /* Do not block "other source" (input overlay) presses */
+            if (block_hotkey[i] && !other_pressed)
+               continue;
+         }
+
+         /* Set menu toggle on release */
+         if (i == RARCH_MENU_TOGGLE)
+         {
+            if (!(input_st->flags & INP_FLAG_MENU_PRESS_PENDING))
             {
-               /* Do not block "other source" (input overlay) presses */
-               if (block_hotkey[i] && !other_pressed)
-                  continue;
+               input_st->flags |=  INP_FLAG_MENU_PRESS_PENDING;
+               input_st->flags &= ~INP_FLAG_MENU_PRESS_CANCEL;
             }
+            continue;
+         }
+         else if (i != RARCH_ENABLE_HOTKEY)
+            input_st->flags |= INP_FLAG_MENU_PRESS_CANCEL;
 
-            BIT256_SET_PTR(p_new_state, i);
+         BIT256_SET_PTR(p_new_state, i);
+      }
+      else
+      {
+         if (i == RARCH_MENU_TOGGLE)
+         {
+            /* Untrigger menu if press was shorter than hotkey block delay */
+            if (      (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+                  && !(input_st->flags & INP_FLAG_MENU_PRESS_CANCEL)
+                  && !BIT256_GET_PTR(p_new_state, RARCH_ENABLE_HOTKEY)
+                  && input_st->input_hotkey_block_counter
+                  && input_st->input_hotkey_block_counter < input_hotkey_block_delay)
+               input_st->flags &= ~INP_FLAG_MENU_PRESS_PENDING;
 
-            /* Ignore all other hotkeys if menu toggle is pressed */
-            if (i == RARCH_MENU_TOGGLE)
-               break;
+            if (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+            {
+               /* Forget menu press if any other hotkey was pressed */
+               if (!(input_st->flags & INP_FLAG_MENU_PRESS_CANCEL))
+                  BIT256_SET_PTR(p_new_state, i);
+
+               input_st->flags &= ~(INP_FLAG_MENU_PRESS_PENDING | INP_FLAG_MENU_PRESS_CANCEL);
+            }
          }
       }
    }
+
+   if ((input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE) && !any_pressed)
+      input_st->flags &= ~INP_FLAG_WAIT_INPUT_RELEASE;
+
+   if (input_st->flags & INP_FLAG_BLOCK_HOTKEY)
+      input_st->input_hotkey_block_counter = 0;
 }
 
 #ifdef HAVE_BSV_MOVIE
@@ -7745,12 +7798,12 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R      },
             {RETROK_HOME,      RETRO_DEVICE_ID_JOYPAD_L3     },
             {RETROK_END,       RETRO_DEVICE_ID_JOYPAD_R3     },
+            /* Extra keys read regardless of 'enable_hotkey' */
             {0,                RARCH_QUIT_KEY                }, /* 14 */
             {0,                RARCH_FULLSCREEN_TOGGLE_KEY   },
             {0,                RARCH_UI_COMPANION_TOGGLE     },
             {0,                RARCH_FPS_TOGGLE              },
             {0,                RARCH_NETPLAY_HOST_TOGGLE     },
-            {0,                RARCH_MENU_TOGGLE             },
          };
 
          ids[14][0] = input_config_binds[0][RARCH_QUIT_KEY].key;
@@ -7758,7 +7811,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          ids[16][0] = input_config_binds[0][RARCH_UI_COMPANION_TOGGLE].key;
          ids[17][0] = input_config_binds[0][RARCH_FPS_TOGGLE].key;
          ids[18][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
-         ids[19][0] = input_config_binds[0][RARCH_MENU_TOGGLE].key;
 
          if (settings->bools.input_menu_swap_ok_cancel_buttons)
          {

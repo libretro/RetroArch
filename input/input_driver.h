@@ -181,7 +181,9 @@ enum input_driver_state_flags
    INP_FLAG_GRAB_MOUSE_STATE         = (1 << 6),
    INP_FLAG_REMAPPING_CACHE_ACTIVE   = (1 << 7),
    INP_FLAG_DEFERRED_WAIT_KEYS       = (1 << 8),
-   INP_FLAG_WAIT_INPUT_RELEASE       = (1 << 9)
+   INP_FLAG_WAIT_INPUT_RELEASE       = (1 << 9),
+   INP_FLAG_MENU_PRESS_PENDING       = (1 << 10),
+   INP_FLAG_MENU_PRESS_CANCEL        = (1 << 11)
 };
 
 #ifdef HAVE_BSV_MOVIE
