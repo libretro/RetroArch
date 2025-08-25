@@ -15350,6 +15350,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      count++;
 #endif
 
+               if (!count)
+               {
+                  menu_entries_clear(info->list);
+                  menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_NO_ITEM, 0, 0, NULL);
+
+                        info->flags |=  MD_FLAG_NEED_REFRESH;
+               }
+
                info->flags       |=  MD_FLAG_NEED_PUSH;
             }
             break;
