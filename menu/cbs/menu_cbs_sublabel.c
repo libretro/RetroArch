@@ -571,6 +571,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_vmouse_touchpad,   MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_vmouse_trackball,  MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_vmouse_gesture,    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE)
 #endif
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_stylus_enable,                     MENU_ENUM_SUBLABEL_INPUT_STYLUS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_stylus_require_contact_for_click, MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_stylus_hover_moves_pointer,       MENU_ENUM_SUBLABEL_INPUT_STYLUS_HOVER_MOVES_POINTER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_button_axis_threshold,         MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD)
@@ -4790,6 +4791,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_touch_vmouse_gesture);
             break;
 #endif
+         case MENU_ENUM_LABEL_INPUT_STYLUS_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_stylus_enable);
+            break;
          case MENU_ENUM_LABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_stylus_require_contact_for_click);
             break;

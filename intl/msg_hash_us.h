@@ -3385,12 +3385,20 @@ MSG_HASH(
    "Workaround for controllers disconnecting and reconnecting. Prevents users from having the same controller twice."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_ENABLE,
+   "Stylus Support"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_STYLUS_ENABLE,
+   "Enable support for S Pen and other stylus input devices. When disabled, all stylus events are ignored."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
    "Stylus Requires Contact for Click"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
-   "S Pen stylus must make contact with screen to register clicks. When disabled, side button also works."
+   "When ON: S Pen must touch screen to click. When OFF: S Pen can click by touching screen OR by hovering and pressing side button."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HOVER_MOVES_POINTER,

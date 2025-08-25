@@ -1122,6 +1122,7 @@ typedef struct settings
 
 #ifdef ANDROID
       bool android_input_disconnect_workaround;
+      bool input_stylus_enable;
       bool input_stylus_require_contact_for_click;
       bool input_stylus_hover_moves_pointer;
 #endif
