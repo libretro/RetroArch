@@ -132,6 +132,17 @@ if (!is_stylus && !is_finger) {
 
 **Note:** ToolType classification is more reliable than source-only filtering because xlabs' research showed stylus events sometimes come through `TOUCHSCREEN` source.
 
+### Side Button Support (Updated August 2025)
+Comprehensive button detection supports both common stylus button types:
+```c
+buttons = p_AMotionEvent_getButtonState ? AMotionEvent_getButtonState(event) : 0;
+side_primary   = (buttons & AMOTION_EVENT_BUTTON_STYLUS_PRIMARY)   != 0;
+side_secondary = (buttons & AMOTION_EVENT_BUTTON_STYLUS_SECONDARY) != 0;
+bool side_pressed = side_primary || side_secondary;
+```
+
+This ensures compatibility with stylus devices that report barrel button as either PRIMARY or SECONDARY.
+
 ## Contact Detection Logic
 
 ### Hardware-Based Detection
@@ -213,7 +224,8 @@ These values can be adjusted per device if needed.
 - **Core Logic:** `input/drivers/android_input.c`
   - Lines ~105-143: Hover guard implementation
   - Lines ~698-722: Quick-tap defense function
-  - Lines ~853-983: Stylus event processing
+  - Lines ~914-1002: Stylus hover and side button processing (updated August 2025)
+  - Lines ~1007-1080: Stylus contact event processing
   - Lines ~2040-2055, ~2128-2143: Input state queries
 
 - **Menu Integration:** `menu/menu_driver.c`
@@ -285,7 +297,18 @@ The implementation was developed across multiple commits:
 - `7daf2ae`: Base S Pen implementation with toolType classification
 - `050a396`: Comprehensive hover→tap prevention with proximity tracking  
 - `4c47eac`: Defense-in-depth enhancement to quick-tap function
+- `5e64f61`: Fix side button hover click detection  
+- `488b368`: Fix S Pen side button drag with comprehensive button support
 - Build integration fixes: Function declaration ordering and enum integration
+
+### Recent Fixes (August 2025)
+
+**Side Button Drag Implementation (`488b368`)**:
+- **Issue**: Side button drag was broken due to `require_contact` gate preventing hover-drag when contact setting was enabled
+- **Issue**: Only `STYLUS_PRIMARY` button was supported, missing `STYLUS_SECONDARY` button devices
+- **Solution**: Removed contact requirement gate from hover path since hover-drag ≠ click semantics
+- **Solution**: Added support for both PRIMARY and SECONDARY stylus buttons for broader device compatibility
+- **Result**: Side button hover-drag now works regardless of contact setting and supports more stylus devices
 
 ## Build Status
 
