@@ -17,6 +17,7 @@
 - CLOUDSYNC: Enable WebDAV support for Android
 - CLOUDSYNC: Speed up cloudsync on Apple
 - DATABASE: Improve multidisk game scanning
+- EMSCRIPTEN: Support core switching
 - EMSCRIPTEN: Support suspend screensaver
 - EMSCRIPTEN/RWEBCAM: Fix camera driver
 - EMSCRIPTEN/RWEBINPUT: Add accelerometer/gyroscope support
