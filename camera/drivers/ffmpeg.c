@@ -97,6 +97,17 @@ static int ffmpeg_camera_get_initial_options(
 {
    int result = 0;
    char dimensions[128];
+
+#ifdef __APPLE__
+   /* For AVFoundation, we need to handle options differently */
+   if (backend && string_is_equal(backend->name, "avfoundation"))
+   {
+      /* AVFoundation expects these options to be passed to avformat_open_input */
+      /* We'll set them later in ffmpeg_camera_open_device */
+      return 0;
+   }
+#endif
+
    if (width != 0 && height != 0)
    { /* If the core is letting the frontend pick the size... */
       snprintf(dimensions, sizeof(dimensions), "%ux%u", width, height);
@@ -143,7 +154,8 @@ static void ffmpeg_camera_get_source_url(ffmpeg_camera_t *ffmpeg, const AVDevice
    if (string_is_equal(ffmpeg->input_format->name, "avfoundation"))
    {
       /* we only want video, not audio */
-      snprintf(ffmpeg->url, sizeof(ffmpeg->url), "%s:none", device->device_description);
+      /* Use "0:none" for the first video device, no audio */
+      snprintf(ffmpeg->url, sizeof(ffmpeg->url), "0:none");
       return;
    }
 #endif
@@ -172,6 +184,41 @@ static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
       goto done;
    }
 
+#ifdef __APPLE__
+   /* For AVFoundation, set the options that the device expects */
+   if (ffmpeg->input_format && string_is_equal(ffmpeg->input_format->name, "avfoundation"))
+   {
+      char dimensions[128];
+
+      /* Set video size if requested */
+      if (ffmpeg->requested_width != 0 && ffmpeg->requested_height != 0)
+      {
+         /* Use a resolution that the device likely supports */
+         /* Common resolutions: 640x480, 1280x720, 1920x1080 */
+         unsigned width = ffmpeg->requested_width;
+         unsigned height = ffmpeg->requested_height;
+
+         /* If the requested resolution is too small, use a minimum supported size */
+         if (width < 640 || height < 480)
+         {
+            width = 640;
+            height = 480;
+            RARCH_LOG("[FFMPEG] Requested resolution %ux%u too small, using %ux%u instead.\n",
+                     ffmpeg->requested_width, ffmpeg->requested_height, width, height);
+         }
+
+         snprintf(dimensions, sizeof(dimensions), "%ux%u", width, height);
+         av_dict_set(&options, "video_size", dimensions, 0);
+      }
+
+      /* Set framerate */
+      av_dict_set(&options, "framerate", "30", 0);
+
+      /* Set pixel format to a widely supported format */
+      av_dict_set(&options, "pixel_format", "uyvy422", 0);
+   }
+#endif
+
    result = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, &options);
    if (result < 0)
    {
@@ -179,6 +226,43 @@ static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
       av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, result);
       RARCH_WARN("[FFMPEG] Failed to open video input device \"%s\": %s.\n", ffmpeg->url, msg);
 
+#ifdef __APPLE__
+      /* For AVFoundation, try with default settings if custom settings fail */
+      if (ffmpeg->input_format && string_is_equal(ffmpeg->input_format->name, "avfoundation"))
+      {
+         RARCH_LOG("[FFMPEG] Trying with default AVFoundation settings...\n");
+         av_dict_free(&options);
+
+         /* Try with just the basic framerate option */
+         av_dict_set(&options, "framerate", "30", 0);
+
+         result = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, &options);
+         if (result < 0)
+         {
+            av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, result);
+            RARCH_WARN("[FFMPEG] Failed with basic options, trying with no options: %s.\n", msg);
+            av_dict_free(&options);
+
+            /* Last resort: try with no options at all */
+            result = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, NULL);
+            if (result < 0)
+            {
+               av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, result);
+               RARCH_ERR("[FFMPEG] Failed to open device even with default settings: %s.\n", msg);
+               goto done;
+            }
+            else
+            {
+               RARCH_LOG("[FFMPEG] Successfully opened device with default settings.\n");
+            }
+         }
+         else
+         {
+            RARCH_LOG("[FFMPEG] Successfully opened device with basic settings.\n");
+         }
+      }
+      else
+#endif
       if (ffmpeg->options)
       { /* If we're not already requesting the default format... */
 
@@ -196,8 +280,8 @@ static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
 done:
    if (options)
    {
-      const AVDictionaryEntry *prev = NULL;
-      while ((e = av_dict_get(options, "", prev, AV_DICT_IGNORE_SUFFIX)))
+      e = NULL;
+      while ((e = av_dict_get(options, "", e, AV_DICT_IGNORE_SUFFIX)))
       {
          /* av_dict_iterate isn't always available, so we use av_dict_get's legacy behavior instead */
          RARCH_WARN("[FFMPEG] Unrecognized option on video input device: %s=%s.\n", e->key, e->value);
@@ -258,6 +342,28 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
    }
 
    num_sources = avdevice_list_input_sources(ffmpeg->input_format, NULL, ffmpeg->options, &device_list);
+
+#ifdef __APPLE__
+   /* AVFoundation device listing may fail or return -38 (function not implemented) */
+   /* but we can still use the device with index 0 */
+   if (num_sources < 0)
+   {
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, num_sources);
+      RARCH_WARN("[FFMPEG] Device enumeration not fully supported on AVFoundation: %s. Using default device.\n", msg);
+      /* Continue with default device */
+      ffmpeg_camera_get_source_url(ffmpeg, NULL);
+   }
+   else if (num_sources == 0)
+   {
+      RARCH_ERR("[FFMPEG] No video input sources found.\n");
+      goto error;
+   }
+   else
+   {
+      ffmpeg_camera_get_source_url(ffmpeg, device_list->devices[0]);
+   }
+#else
    if (num_sources == 0)
    {
       RARCH_ERR("[FFMPEG] No video input sources found.\n");
@@ -273,6 +379,7 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
    }
 
    ffmpeg_camera_get_source_url(ffmpeg, device_list->devices[0]);
+#endif
    RARCH_LOG("[FFMPEG] Using video input device: %s (%s, flags=0x%x).\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
 
    avdevice_free_list_devices(&device_list);
