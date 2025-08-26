@@ -3269,6 +3269,10 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Seleccionar teclado físico"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
    "Usa este dispositivo como teclado físico e non como gamepad."
    )
@@ -3456,11 +3460,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
-   "Permitir direccións do D-Pad no Turbo"
+   "Permitir direccións da cruceta no Turbo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
-   "Se está activado, as entradas direccionais dixitais (tamén coñecidas como D-Pad ou 'hatswitch') poden usar o turbo."
+   "Se está activado, as entradas direccionais dixitais (tamén coñecidas como cruceta, D-Pad ou 'hatswitch') poden usar o turbo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -3587,6 +3591,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    "Permitir a calquera usuario controlar o menú. Se está desactivado, só o usuario 1 pode controlar o menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "Permitir voltar desde lapelas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "Volver ao menú principal desde lapelas/barra lateral ao premer Volver."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
@@ -4141,7 +4153,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "Use o stick analóxico especificado para a entrada de D-Pad. Os modos \"forzados\" anulan a entrada analóxica nativa principal."
+   "Use o stick analóxico especificado para a entrada da cruceta. Os modos \"forzados\" anulan a entrada analóxica nativa principal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
@@ -4349,19 +4361,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
-   "Arma D-Pad arriba"
+   "Arma cruceta arriba"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
-   "Arma D-Pad abaixo"
+   "Arma cruceta abaixo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
-   "Arma D-Pad esquerda"
+   "Arma cruceta esquerda"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
-   "Arma D-Pad dereita"
+   "Arma cruceta dereita"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
@@ -5288,7 +5300,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
-   "Sensibilidade diagonal D-Pad"
+   "Sensibilidade diagonal da cruceta"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
@@ -6985,6 +6997,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "Só para o menú principal e a configuración"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "Páxina de inicio"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "Páxina de menú inicial ao iniciar."
+   )
 
 /* Settings > AI Service */
 
@@ -7714,6 +7734,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "Último xogado:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
+   "Contador de partidas:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
@@ -13768,6 +13792,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    "Produciuse un erro ao obter o apelido do cliente."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD,
+   "Non se puido cargar."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_CONTENT,
+   "Non se puido cargar o contido."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "Erro ao cargar o ficheiro de vídeo."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
