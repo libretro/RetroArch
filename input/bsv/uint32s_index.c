@@ -228,7 +228,7 @@ void uint32s_index_commit(uint32s_index_t *index)
    {
       struct uint32s_bucket *bucket;
       if (index->counts[i] >= threshold) continue;
-     // RARCH_LOG("[STATESTREAM] remove index %d\n", i);
+      // RARCH_LOG("[STATESTREAM] remove index %d\n", i);
       free(index->objects[i]);
       index->objects[i] = NULL;
       bucket = RHMAP_PTR(index->index, index->hashes[i]);

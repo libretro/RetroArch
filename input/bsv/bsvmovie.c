@@ -1094,6 +1094,8 @@ int16_t bsv_movie_read_state(input_driver_state_t *input_st,
 
 int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t state_size, uint8_t *output, size_t output_capacity)
 {
+   static uint32_t skipped_blocks = 0;
+   static uint32_t memcmps = 0, hashes = 0;
    static uint32_t reused_blocks = 0;
    static uint32_t reused_superblocks = 0;
    static uint32_t total_blocks = 0;
@@ -1131,25 +1133,6 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    {
       uint32s_insert_result_t found_block;
       total_superblocks++;
-#if 0
-      if (can_compare_saves &&
-            memcmp(movie->last_save + superblock*superblock_byte_size,
-                  state + superblock*superblock_byte_size,
-                  superblock_byte_size) == 0)
-      {
-         uint32_t *existing_superblock;
-         found_block.index = movie->superblock_seq[superblock];
-         found_block.is_new = false;
-         reused_superblocks++;
-         reused_blocks += superblock_size;
-         existing_superblock = uint32s_index_get(movie->superblocks, found_block.index);
-         /* bump usage counts */
-         uint32s_index_bump_count(movie->superblocks, found_block.index);
-         for (block = 0; block < superblock_size; block++)
-            uint32s_index_bump_count(movie->blocks, existing_superblock[block]);
-         continue;
-      }
-#endif
       for(block = 0; block < superblock_size; block++)
       {
          size_t block_start = superblock*superblock_byte_size+block*block_byte_size;
@@ -1161,13 +1144,14 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
             found_block.is_new = false;
          }
          else if (can_compare_saves &&
-               memcmp(movie->last_save + block_start,
-                     state + block_start,
-                     block_end-block_start) == 0)
+                  (++memcmps) &&
+                  memcmp(movie->last_save + block_start,
+                         state + block_start,
+                         block_end-block_start) == 0)
          {
-            found_block.index = uint32s_index_get(
-                  movie->superblocks,
-                  movie->superblock_seq[superblock])[block];
+            skipped_blocks++;
+            found_block.index = uint32s_index_get(movie->superblocks,
+                                                  movie->superblock_seq[superblock])[block];
             found_block.is_new = false;
             /* bump usage count */
             uint32s_index_bump_count(movie->blocks, found_block.index);
@@ -1184,11 +1168,15 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
             found_block = uint32s_index_insert(movie->blocks,
                                                (uint32_t*)padded_block,
                                                movie->frame_counter);
+            hashes++;
          }
          else
+         {
+            hashes++;
             found_block = uint32s_index_insert(movie->blocks,
                                                (uint32_t*)(state+block_start),
                                                movie->frame_counter);
+         }
          total_blocks++;
          if(found_block.is_new)
          {
@@ -1216,7 +1204,8 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
       movie->superblock_seq[superblock] = found_block.index;
    }
    uint32s_index_commit(movie->blocks);
-   uint32s_index_commit(movie->superblocks);
+   /* Superblocks are small enough that there's no real benefit to garbage collecting them */
+   /* uint32s_index_commit(movie->superblocks); */
    /* write "here is the superblock seq" and superblock seq to file */
    rmsgpack_write_int(out_stream, BSV_IFRAME_SUPERBLOCK_SEQ_TOKEN);
    rmsgpack_write_array_header(out_stream, superblock_count);
@@ -1230,7 +1219,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    total_encode_micros += cpu_features_get_time_usec() - start;
    total_bytes_input += state_size;
    total_bytes_written += intfstream_tell(out_stream);
-   RARCH_DBG("[STATESTREAM] Encode stats at checkpoint %d: %d blocks (%d reused, %d distinct); %d superblocks (%d reused, %d distinct); unencoded size (KB) %d, encoded size (KB) %d; net time (secs) %f\n", total_checkpoints, total_blocks, reused_blocks, uint32s_index_count(movie->blocks), total_superblocks, reused_superblocks, uint32s_index_count(movie->superblocks), total_bytes_input/1024, total_bytes_written/1024, ((float)total_encode_micros) / 1000000.0);
+   RARCH_DBG("[STATESTREAM] Encode stats at checkpoint %d: %d blocks (%d reused, %d skipped [%d checks], %d distinct [%d hashes]); %d superblocks (%d reused, %d distinct); unencoded size (KB) %d, encoded size (KB) %d; net time (secs) %f\n", total_checkpoints, total_blocks, reused_blocks, skipped_blocks, memcmps, uint32s_index_count(movie->blocks), hashes, total_superblocks, reused_superblocks, uint32s_index_count(movie->superblocks), total_bytes_input/1024, total_bytes_written/1024, ((float)total_encode_micros) / 1000000.0);
    encoded_size = intfstream_tell(out_stream);
    intfstream_close(out_stream);
    return encoded_size;
@@ -1413,7 +1402,8 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie,
    }
 exit:
    uint32s_index_commit(movie->blocks);
-   uint32s_index_commit(movie->superblocks);
+   /* Superblocks are small enough that there's no real benefit to garbage collecting them */
+   /* uint32s_index_commit(movie->superblocks); */
    rmsgpack_dom_reader_state_free(reader_state);
    intfstream_close(read_mem);
    if(!ret)

@@ -53,7 +53,7 @@
 #define REPLAY_DEFAULT_COMMIT_THRESHOLD 2
 
 /* Superblock and block sizes for incremental savestates. */
-#define DEFAULT_SUPERBLOCK_SIZE 32  /* measured in blocks */
+#define DEFAULT_SUPERBLOCK_SIZE 16  /* measured in blocks */
 #define DEFAULT_BLOCK_SIZE      16384 /* measured in bytes  */
 
 #define SMALL_STATE_THRESHOLD (1<<20) /* states < 1MB are "small" and are tuned differently */
