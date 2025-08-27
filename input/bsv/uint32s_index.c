@@ -236,7 +236,8 @@ void uint32s_index_commit(uint32s_index_t *index)
       if (bucket->len == 0)
       {
          uint32s_bucket_free(bucket);
-         RHMAP_DEL(index->index, index->hashes[i]);
+         if (!RHMAP_DEL(index->index, index->hashes[i]))
+            RARCH_ERR("[STATESTREAM] Trying to remove absent hash %x\n",index->hashes[i]);
       }
    }
 }
@@ -273,7 +274,8 @@ void uint32s_index_pop(uint32s_index_t *index)
    if (bucket->len == 0)
    {
       uint32s_bucket_free(bucket);
-      RHMAP_DEL(index->index, hash);
+      if (!RHMAP_DEL(index->index, hash))
+         RARCH_ERR("[STATESTREAM] Trying to remove absent hash %x\n",hash);
    }
 }
 
