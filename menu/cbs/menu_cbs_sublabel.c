@@ -1251,9 +1251,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_num_passes,                  
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset,                         MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_prepend,                 MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_append,                  MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save,                    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_remove,                  MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_manager,                 MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_file_info,               MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save_reference,          MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save_current,            MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save_as,                 MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save_global,             MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save_core,               MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE)
@@ -2709,14 +2710,17 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_parameters);
             break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save);
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_manager);
             break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_remove);
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_FILE_INFO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_file_info);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_reference);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_current);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_as);

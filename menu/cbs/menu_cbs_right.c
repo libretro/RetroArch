@@ -1028,6 +1028,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_PLAIN:
          case FILE_TYPE_DIRECTORY:
+         case FILE_TYPE_PATH:
          case FILE_TYPE_PARENT_DIRECTORY:
          case FILE_TYPE_CARCHIVE:
          case FILE_TYPE_IN_CARCHIVE:

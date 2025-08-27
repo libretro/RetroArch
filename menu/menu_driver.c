@@ -3122,6 +3122,15 @@ static bool menu_shader_manager_operate_auto_preset(
             fill_pathname_join_special(file, core_name, game_name, sizeof(file));
             break;
          }
+      case SHADER_PRESET_CURRENT:
+         {
+            const char *current = video_shader_get_current_shader_preset();
+            if (string_is_empty(current))
+               return false;
+            strlcpy(file, current, sizeof(file));
+            path_remove_extension(file);
+         }
+         break;
       default:
          return false;
    }

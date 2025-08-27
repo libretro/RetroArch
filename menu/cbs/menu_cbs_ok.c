@@ -511,10 +511,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST;
       case ACTION_OK_DL_CDROM_INFO_DETAIL_LIST:
          return MENU_ENUM_LABEL_DEFERRED_CDROM_INFO_LIST;
-      case ACTION_OK_DL_SHADER_PRESET_SAVE:
-         return MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST;
-      case ACTION_OK_DL_SHADER_PRESET_REMOVE:
-         return MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST;
+      case ACTION_OK_DL_SHADER_PRESET_MANAGER_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_MANAGER_LIST;
       case ACTION_OK_DL_MANUAL_CONTENT_SCAN_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST;
       case ACTION_OK_DL_CORE_MANAGER_LIST:
@@ -1848,8 +1846,7 @@ int generic_action_ok_displaylist_push(
 #ifdef HAVE_LAKKA
       case ACTION_OK_DL_EJECT_DISC:
 #endif
-      case ACTION_OK_DL_SHADER_PRESET_REMOVE:
-      case ACTION_OK_DL_SHADER_PRESET_SAVE:
+      case ACTION_OK_DL_SHADER_PRESET_MANAGER_LIST:
       case ACTION_OK_DL_CDROM_INFO_LIST:
       case ACTION_OK_DL_MANUAL_CONTENT_SCAN_LIST:
       case ACTION_OK_DL_CORE_MANAGER_LIST:
@@ -3428,7 +3425,8 @@ DEFAULT_ACTION_DIALOG_START(action_ok_shader_preset_save_as,
 
 enum
 {
-   ACTION_OK_SHADER_PRESET_SAVE_GLOBAL = 0,
+   ACTION_OK_SHADER_PRESET_SAVE_CURRENT = 0,
+   ACTION_OK_SHADER_PRESET_SAVE_GLOBAL,
    ACTION_OK_SHADER_PRESET_SAVE_CORE,
    ACTION_OK_SHADER_PRESET_SAVE_PARENT,
    ACTION_OK_SHADER_PRESET_SAVE_GAME
@@ -3499,6 +3497,9 @@ static int generic_action_ok_shader_preset_save(const char *path,
 
    switch (action_type)
    {
+      case ACTION_OK_SHADER_PRESET_SAVE_CURRENT:
+         preset_type = SHADER_PRESET_CURRENT;
+         break;
       case ACTION_OK_SHADER_PRESET_SAVE_GLOBAL:
          preset_type = SHADER_PRESET_GLOBAL;
          break;
@@ -3536,6 +3537,13 @@ static int generic_action_ok_shader_preset_save(const char *path,
    }
 
    return 0;
+}
+
+static int action_ok_shader_preset_save_current(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_shader_preset_save(path, label, type,
+         idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_CURRENT);
 }
 
 static int action_ok_shader_preset_save_global(const char *path,
@@ -6461,8 +6469,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_goto_music, ACTION_OK_DL_MUSIC_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_goto_explore, ACTION_OK_DL_EXPLORE_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_goto_contentless_cores, ACTION_OK_DL_CONTENTLESS_CORES_LIST)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_save, ACTION_OK_DL_SHADER_PRESET_SAVE)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_remove, ACTION_OK_DL_SHADER_PRESET_REMOVE)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_manager, ACTION_OK_DL_SHADER_PRESET_MANAGER_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_shader_parameters, ACTION_OK_DL_SHADER_PARAMETERS)
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_parent_directory_push, ACTION_OK_DL_PARENT_DIRECTORY_PUSH)
@@ -9005,8 +9012,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,             action_ok_shader_parameters},
          {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,      action_ok_shader_parameters},
          {MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,                action_ok_shader_apply_changes},
-         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE,          action_ok_shader_preset_remove},
-         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE,            action_ok_shader_preset_save},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER,         action_ok_shader_preset_manager},
+         {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,    action_ok_shader_preset_save_current},
          {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,         action_ok_shader_preset_save_as},
          {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,     action_ok_shader_preset_save_global},
          {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,       action_ok_shader_preset_save_core},
