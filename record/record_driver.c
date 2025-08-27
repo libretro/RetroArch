@@ -207,12 +207,12 @@ bool recording_init(void)
 
    if (!video_gpu_record && video_driver_is_hw_context())
    {
-      RARCH_WARN("[Recording] %s.\n",
+      RARCH_WARN("[Recording] %s\n",
             msg_hash_to_str(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING));
-      return false;
+      video_gpu_record = true;
    }
 
-   RARCH_LOG("[Recording] %s: FPS: %.2f, Sample rate: %.2f.\n",
+   RARCH_LOG("[Recording] %s: FPS: %.2f, Sample rate: %.2f Hz.\n",
          msg_hash_to_str(MSG_CUSTOM_TIMING_GIVEN),
          (float)av_info->timing.fps,
          (float)av_info->timing.sample_rate);
@@ -279,7 +279,7 @@ bool recording_init(void)
    }
 
    params.audio_resampler           = settings->arrays.audio_resampler;
-   params.video_gpu_record          = settings->bools.video_gpu_record;
+   params.video_gpu_record          = video_gpu_record;
    params.video_record_scale_factor = settings->uints.video_record_scale_factor;
    params.video_stream_scale_factor = settings->uints.video_stream_scale_factor;
    params.video_record_threads      = settings->uints.video_record_threads;
@@ -317,7 +317,7 @@ bool recording_init(void)
       }
    }
 
-   if (settings->bools.video_gpu_record
+   if (  video_gpu_record
       && video_st->current_video->read_viewport)
    {
       unsigned gpu_size;
