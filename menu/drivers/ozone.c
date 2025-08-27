@@ -1945,8 +1945,6 @@ static uintptr_t ozone_entries_icon_get_texture(
       /* Menu icons */
       case MENU_ENUM_LABEL_CONTENT_SETTINGS:
       case MENU_ENUM_LABEL_UPDATE_ASSETS:
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL:
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_QUICKMENU];
       case MENU_ENUM_LABEL_START_CORE:
       case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
@@ -1958,7 +1956,6 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
       case MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES:
       case MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD:
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
       case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
@@ -2094,8 +2091,12 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_SAVE_MAIN_CONFIG:
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
       case MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT:
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
       case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
       case MENU_ENUM_LABEL_OVERRIDE_FILE_SAVE_AS:
       case MENU_ENUM_LABEL_REMAP_FILE_SAVE_AS:
@@ -2196,7 +2197,6 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY:
       case MENU_ENUM_LABEL_SCAN_DIRECTORY:
       case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FOLDER];
       case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_PRIVACY];
@@ -8016,10 +8016,24 @@ static bool ozone_scan_available(ozone_handle_t *ozone, size_t current_selection
    switch (last_entry.type)
    {
       case FILE_TYPE_DIRECTORY:
-         return true;
       case FILE_TYPE_CARCHIVE:
       case FILE_TYPE_PLAIN:
          return true;
+      default:
+         break;
+   }
+   switch (last_entry.enum_idx)
+   {
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
+      case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
+      case MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY:
+         return true;
+      default:
+         break;
    }
    return false;
 }
@@ -8051,6 +8065,12 @@ static bool ozone_manage_available(ozone_handle_t *ozone, size_t current_selecti
       case MENU_ENUM_LABEL_GOTO_IMAGES:
       case MENU_ENUM_LABEL_GOTO_MUSIC:
       case MENU_ENUM_LABEL_GOTO_VIDEO:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
+      case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
          return true;
       default:
          break;

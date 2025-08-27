@@ -94,8 +94,7 @@ static int deferred_push_database_manager_list_deferred(
 GENERIC_DEFERRED_PUSH(deferred_push_remappings_port,                DISPLAYLIST_OPTIONS_REMAPPINGS_PORT)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_parameters, DISPLAYLIST_SHADER_PARAMETERS_PRESET)
 GENERIC_DEFERRED_PUSH(deferred_push_video_shader_parameters,        DISPLAYLIST_SHADER_PARAMETERS)
-GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_save,       DISPLAYLIST_SHADER_PRESET_SAVE)
-GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_remove,     DISPLAYLIST_SHADER_PRESET_REMOVE)
+GENERIC_DEFERRED_PUSH(deferred_push_video_shader_preset_manager,    DISPLAYLIST_SHADER_PRESET_MANAGER)
 GENERIC_DEFERRED_PUSH(deferred_push_settings,                       DISPLAYLIST_SETTINGS_ALL)
 GENERIC_DEFERRED_PUSH(deferred_push_shader_options,                 DISPLAYLIST_OPTIONS_SHADERS)
 GENERIC_DEFERRED_PUSH(deferred_push_quick_menu_override_options,    DISPLAYLIST_OPTIONS_OVERRIDES)
@@ -827,8 +826,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_YOUTUBE_LIST, deferred_push_accounts_youtube_list},
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST, deferred_push_accounts_twitch_list},
       {MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_FACEBOOK_LIST, deferred_push_accounts_facebook_list},
-      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST, deferred_push_video_shader_preset_save},
-      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST, deferred_push_video_shader_preset_remove},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_MANAGER_LIST, deferred_push_video_shader_preset_manager},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME, deferred_push_dropdown_box_list_manual_content_scan_system_name},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME, deferred_push_dropdown_box_list_manual_content_scan_core_name},
       {MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST, deferred_push_recording_settings_list},
@@ -871,7 +869,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_FRONTEND_COUNTERS, deferred_push_frontend_counters},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS, deferred_push_video_shader_preset_parameters},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS, deferred_push_video_shader_parameters},
-      {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE, deferred_push_video_shader_preset_save},
       {MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS, deferred_push_core_cheat_options},
       {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS, deferred_push_core_input_remapping_options},
       {MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST, deferred_push_remap_file_manager},

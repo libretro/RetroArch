@@ -28,6 +28,7 @@
 
 #include "../../input/input_driver.h"
 
+#include "../../config.def.h"
 #include "../../configuration.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -256,6 +257,52 @@ static int action_scan_video_ozone_font(const char *path,
 }
 #endif
 
+static int action_scan_video_shader_opacity_toggle(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   settings_t *settings             = config_get_ptr();
+   const char *menu_ident           = menu_driver_ident();
+   static float framebuffer_opacity = -1;
+   static float wallpaper_opacity   = -1;
+#ifdef HAVE_XMB
+   static int xmb_alpha_factor      = -1;
+#endif
+
+   if (string_is_equal(menu_ident, "rgui"))
+      return 0;
+
+   /* Remember current settings */
+   if (framebuffer_opacity < 0)
+      framebuffer_opacity = settings->floats.menu_framebuffer_opacity;
+   if (wallpaper_opacity < 0)
+      wallpaper_opacity = settings->floats.menu_wallpaper_opacity;
+
+#ifdef HAVE_XMB
+   if (xmb_alpha_factor < 0)
+      xmb_alpha_factor = settings->uints.menu_xmb_alpha_factor;
+#endif
+
+   /* Switch between off and current */
+   if (settings->floats.menu_framebuffer_opacity == 0)
+      settings->floats.menu_framebuffer_opacity = framebuffer_opacity ? framebuffer_opacity : DEFAULT_MENU_FRAMEBUFFER_OPACITY;
+   else
+      settings->floats.menu_framebuffer_opacity = 0;
+
+   if (settings->floats.menu_wallpaper_opacity == 0)
+      settings->floats.menu_wallpaper_opacity = wallpaper_opacity ? wallpaper_opacity : DEFAULT_MENU_WALLPAPER_OPACITY;
+   else
+      settings->floats.menu_wallpaper_opacity = 0;
+
+#ifdef HAVE_XMB
+   if (settings->uints.menu_xmb_alpha_factor == 0)
+      settings->uints.menu_xmb_alpha_factor = xmb_alpha_factor ? xmb_alpha_factor : DEFAULT_XMB_ALPHA_FACTOR;
+   else
+      settings->uints.menu_xmb_alpha_factor = 0;
+#endif
+
+   return 0;
+}
+
 static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
@@ -331,6 +378,25 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
             break;
          default:
          case ST_NONE:
+            break;
+      }
+   }
+
+   if (cbs->enum_idx != MSG_UNKNOWN)
+   {
+      switch (cbs->enum_idx)
+      {
+         case MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
+         case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
+         case MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY:
+            BIND_ACTION_SCAN(cbs, action_scan_video_shader_opacity_toggle);
+            break;
+         default:
             break;
       }
    }

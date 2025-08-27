@@ -935,12 +935,8 @@ MSG_HASH(
    "deferred_frame_time_counter_settings_list"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST,
-   "deferred_video_shader_preset_remove_list"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST,
-   "deferred_video_shader_preset_save_list"
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_MANAGER_LIST,
+   "deferred_video_shader_preset_manager_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CDROM_INFO_LIST,
@@ -3759,26 +3755,6 @@ MSG_HASH(
    "settings_tab"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,
-   "shader_apply_changes"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES,
-   "video_shader_watch_files"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "video_shader_remember_last_dir"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_SHADER_OPTIONS,
-   "shader_options"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY,
-   "shader_parameters_entry"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS,
    "menu_show_advanced_settings"
    )
@@ -4591,6 +4567,26 @@ MSG_HASH(
    "video_shader_dir"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES,
+   "video_shader_watch_files"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   "video_shader_remember_last_dir"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,
+   "shader_apply_changes"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SHADER_OPTIONS,
+   "shader_options"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY,
+   "shader_parameters_entry"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS,
    "video_shader_filter_pass"
    )
@@ -4623,8 +4619,8 @@ MSG_HASH(
    "video_shader_preset_parameters"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "video_shader_preset_remove"
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "video_shader_preset_manager"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
@@ -4643,12 +4639,12 @@ MSG_HASH(
    "video_shader_preset_remove_game"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE,
-   "video_shader_preset_save"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "video_shader_preset_save_reference"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "video_shader_preset_save_current"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,

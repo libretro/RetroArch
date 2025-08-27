@@ -7521,11 +7521,63 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
-      case DISPLAYLIST_SHADER_PRESET_REMOVE:
+      case DISPLAYLIST_SHADER_PRESET_MANAGER:
          {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            bool has_content = !string_is_empty(path_get(RARCH_PATH_CONTENT));
             const char *dir_video_shader  = settings->paths.directory_video_shader;
             const char *dir_menu_config   = settings->paths.directory_menu_config;
+
+            if (frontend_driver_can_watch_for_changes())
+            {
+               if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES),
+                        MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES,
+                        0, 0, 0, NULL))
+                  count++;
+            }
+
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+                     0, 0, 0, NULL))
+               count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+
+            /* Show current shader preset */
+            if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_FILE_INFO),
+                  MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+               count++;
+
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
             if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL,
                      dir_video_shader, dir_menu_config))
                if (menu_entries_append(list,
@@ -7535,6 +7587,12 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
             if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_CORE,
                      dir_video_shader, dir_menu_config))
                if (menu_entries_append(list,
@@ -7544,54 +7602,6 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT,
-                     dir_video_shader, dir_menu_config))
-               if (menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT),
-                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT),
-                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME,
-                     dir_video_shader, dir_menu_config))
-               if (menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME),
-                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME),
-                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-#endif
-         }
-         break;
-      case DISPLAYLIST_SHADER_PRESET_SAVE:
-         {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            bool has_content = !string_is_empty(path_get(RARCH_PATH_CONTENT));
-
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (menu_entries_append(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-            if (menu_entries_append(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-            if (menu_entries_append(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-
             if (has_content)
             {
                if (menu_entries_append(list,
@@ -7600,12 +7610,29 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
+               if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT,
+                        dir_video_shader, dir_menu_config))
+                  if (menu_entries_append(list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT),
+                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT),
+                           MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+                           MENU_SETTING_ACTION, 0, 0, NULL))
+                     count++;
+
                if (menu_entries_append(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME),
                         MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
+               if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME,
+                        dir_video_shader, dir_menu_config))
+                  if (menu_entries_append(list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME),
+                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME),
+                           MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+                           MENU_SETTING_ACTION, 0, 0, NULL))
+                     count++;
             }
 #endif
          }
@@ -13260,21 +13287,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   const char *val_scale =
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCALE);
 
-                  if (frontend_driver_can_watch_for_changes())
-                  {
-                     if (menu_entries_append(info->list,
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES),
-                              msg_hash_to_str(MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES),
-                              MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES,
-                              0, 0, 0, NULL))
-                        count++;
-                  }
+                  if (menu_entries_append(info->list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER),
+                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER),
+                           MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER,
+                           MENU_SETTING_ACTION, 0, 0, NULL))
+                     count++;
 
                   if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR),
-                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR),
-                           MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-                           0, 0, 0, NULL))
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS),
+                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS),
+                           MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,
+                           MENU_SETTING_ACTION, 0, 0, NULL))
                      count++;
 
                   if (menu_entries_append(info->list,
@@ -13299,30 +13323,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      count++;
 
                   if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE),
-                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE),
-                           MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE),
-                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE),
-                           MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-
-                  if (menu_entries_append(info->list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES),
                            msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES),
                            MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS),
-                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS),
-                           MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,
                            MENU_SETTING_ACTION, 0, 0, NULL))
                      count++;
 
@@ -14693,8 +14696,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_BROWSE_URL_START:
          case DISPLAYLIST_CONTENT_SETTINGS:
          case DISPLAYLIST_NETPLAY_ROOM_LIST:
-         case DISPLAYLIST_SHADER_PRESET_SAVE:
-         case DISPLAYLIST_SHADER_PRESET_REMOVE:
+         case DISPLAYLIST_SHADER_PRESET_MANAGER:
          case DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST:
          case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
          case DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST:
@@ -14716,13 +14718,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                switch (type)
                {
-                  case DISPLAYLIST_SHADER_PRESET_REMOVE:
-                     menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND),
-                           msg_hash_to_str(MENU_ENUM_LABEL_NO_PRESETS_FOUND),
-                           MENU_ENUM_LABEL_NO_PRESETS_FOUND,
-                           0, 0, 0, NULL);
-                     break;
                   case DISPLAYLIST_DISC_INFO:
                   case DISPLAYLIST_DUMP_DISC:
 #ifdef HAVE_LAKKA
