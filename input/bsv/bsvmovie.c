@@ -1126,8 +1126,8 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    static uint32_t total_blocks = 0;
    static uint32_t total_superblocks = 0;
    static uint32_t total_checkpoints = 0;
-   static uint64_t total_bytes_input = 0;
-   static uint64_t total_bytes_written = 0;
+   static uint32_t total_kbs_input = 0;
+   static uint32_t total_kbs_written = 0;
    static retro_perf_tick_t total_encode_micros = 0;
    retro_perf_tick_t start = cpu_features_get_time_usec();
    size_t block_byte_size = movie->blocks->object_size*4;
@@ -1136,7 +1136,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    size_t superblock_count = state_size / superblock_byte_size + (state_size % superblock_byte_size != 0);
    uint32_t *superblock_buf = calloc(superblock_size, sizeof(uint32_t));
    uint8_t *padded_block = NULL;
-   intfstream_t *out_stream = intfstream_open_memory(output, RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE, output_capacity);
+   intfstream_t *out_stream = intfstream_open_writable_memory(output, RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE, output_capacity);
    int64_t encoded_size;
    size_t superblock, block;
    uint32_t i;
@@ -1241,10 +1241,11 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    movie->cur_save_valid = true;
    total_checkpoints++;
    total_encode_micros += cpu_features_get_time_usec() - start;
-   total_bytes_input += state_size;
-   total_bytes_written += intfstream_tell(out_stream);
-   RARCH_DBG("[STATESTREAM] Encode stats at checkpoint %d: %d blocks (%d reused, %d skipped [%d checks], %d distinct [%d hashes]); %d superblocks (%d reused, %d distinct); unencoded size (KB) %d, encoded size (KB) %d; net time (secs) %f\n", total_checkpoints, total_blocks, reused_blocks, skipped_blocks, memcmps, uint32s_index_count(movie->blocks), hashes, total_superblocks, reused_superblocks, uint32s_index_count(movie->superblocks), total_bytes_input/1024, total_bytes_written/1024, ((float)total_encode_micros) / 1000000.0);
+   total_kbs_input += state_size/1024;
    encoded_size = intfstream_tell(out_stream);
+   total_kbs_written += encoded_size/1024;
+   RARCH_DBG("[STATESTREAM] Encode stats at checkpoint %d: %d blocks (%d reused, %d skipped [%d checks], %d distinct [%d hashes])\n", total_checkpoints, total_blocks, reused_blocks, skipped_blocks, memcmps, uint32s_index_count(movie->blocks), hashes);
+   RARCH_DBG("[STATESTREAM] %d superblocks (%d reused, %d distinct); unencoded size (KB) %d, encoded size (KB) %d; net time (secs) %f\n", total_superblocks, reused_superblocks, uint32s_index_count(movie->superblocks), total_kbs_input, total_kbs_written, ((float)total_encode_micros) / (float)1000000.0);
    intfstream_close(out_stream);
    return encoded_size;
 }
