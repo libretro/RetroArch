@@ -63,6 +63,39 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   }
 
   @Override
+  public void onNewIntent(Intent intent) {
+    super.onNewIntent(intent);
+    
+    // Check if this intent contains game launch parameters
+    String newRom = intent.getStringExtra("ROM");
+    String newCore = intent.getStringExtra("LIBRETRO");
+    
+    // Get current intent parameters for comparison
+    Intent currentIntent = getIntent();
+    String currentRom = currentIntent != null ? currentIntent.getStringExtra("ROM") : null;
+    String currentCore = currentIntent != null ? currentIntent.getStringExtra("LIBRETRO") : null;
+    
+    // Check if we're trying to launch different content
+    boolean isDifferentContent = false;
+    if (newRom != null && !newRom.equals(currentRom)) {
+      isDifferentContent = true;
+    }
+    if (newCore != null && !newCore.equals(currentCore)) {
+      isDifferentContent = true;
+    }
+    
+    if (isDifferentContent) {
+      // Exit cleanly and let the system restart us with new content
+      finish();
+      System.exit(0);
+    } else {
+      // Same content, just update intent
+      setIntent(intent);
+    }
+  }
+
+
+  @Override
   public void onResume() {
     super.onResume();
 
