@@ -1,3 +1,4 @@
+#ifdef HAVE_STATESTREAM
 #include "uint32s_index.h"
 #include <string.h>
 #include <array/rhmap.h>
@@ -362,4 +363,5 @@ void uint32s_index_print_count_data(uint32s_index_t *index)
       RARCH_DBG("%d--%d: %d\n", bin_start, bin_end, bins[i]);
    }
 }
+#endif
 #endif

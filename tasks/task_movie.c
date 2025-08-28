@@ -45,6 +45,7 @@
 #include "../input/input_driver.h"
 #include "../input/bsv/bsvmovie.h"
 
+#ifdef HAVE_STATESTREAM
 #if DEBUG
 #include "input/bsv/uint32s_index.h"
 #endif
@@ -60,6 +61,8 @@
 #define SMALL_SUPERBLOCK_SIZE 16  /* measured in blocks */
 #define SMALL_BLOCK_SIZE      128 /* measured in bytes  */
 
+#endif
+
 /* Forward declaration */
 bool content_load_state_in_progress(void* data);
 
@@ -71,8 +74,10 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
    uint32_t state_size         = 0;
    uint32_t header[REPLAY_HEADER_LEN] = {0};
    uint32_t vsn                = 0;
+#ifdef HAVE_STATESTREAM
    uint32_t superblock_size    = DEFAULT_SUPERBLOCK_SIZE,
       block_size = DEFAULT_BLOCK_SIZE/4;
+#endif
    intfstream_t *file          = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -137,6 +142,7 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
    {
       retro_ctx_serialize_info_t serial_info;
       uint8_t compression, encoding;
+#ifdef HAVE_STATESTREAM
       uint32_t commit_settings = header[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX];
       superblock_size = swap_if_big32(header[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX]);
       block_size = swap_if_big32(header[REPLAY_HEADER_BLOCK_SIZE_INDEX]);
@@ -145,6 +151,7 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
       handle->checkpoint_compression = (commit_settings >> 8) & 0x000000FF;
       handle->superblocks = uint32s_index_new(superblock_size,handle->commit_interval,handle->commit_threshold);
       handle->blocks = uint32s_index_new(block_size/4,handle->commit_interval,handle->commit_threshold);
+#endif
 
       if (intfstream_read(handle->file, &(compression), sizeof(uint8_t)) != sizeof(uint8_t) ||
             intfstream_read(handle->file, &(encoding), sizeof(uint8_t)) != sizeof(uint8_t))
@@ -172,10 +179,12 @@ static bool bsv_movie_init_record(
    intfstream_t *file           = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   settings_t *settings         = config_get_ptr();
+#ifdef HAVE_STATESTREAM
    bool is_small                = false;
    uint32_t superblock_size;
    uint32_t block_size;
-   settings_t *settings         = config_get_ptr();
+#endif
 
    if (!file)
    {
@@ -185,8 +194,10 @@ static bool bsv_movie_init_record(
 
    handle->file             = file;
    handle->version          = REPLAY_FORMAT_VERSION;
+#ifdef HAVE_STATESTREAM
    handle->commit_interval  = REPLAY_DEFAULT_COMMIT_INTERVAL;
    handle->commit_threshold = REPLAY_DEFAULT_COMMIT_THRESHOLD;
+#endif
    handle->checkpoint_compression = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
    if (settings->bools.savestate_file_compression)
 #if defined(HAVE_ZSTD)
@@ -205,23 +216,32 @@ static bool bsv_movie_init_record(
 
    info_size                = core_serialize_size();
    state_size               = (unsigned)info_size;
+#ifdef HAVE_STATESTREAM
    is_small                 = info_size < SMALL_STATE_THRESHOLD;
    superblock_size          = is_small ? SMALL_SUPERBLOCK_SIZE : DEFAULT_SUPERBLOCK_SIZE;
    block_size               = is_small ? SMALL_BLOCK_SIZE : DEFAULT_BLOCK_SIZE;
+#endif
    header[REPLAY_HEADER_STATE_SIZE_INDEX]      = 0; /* Will fill this in later */
    header[REPLAY_HEADER_FRAME_COUNT_INDEX]     = 0;
+#ifdef HAVE_STATESTREAM
    header[REPLAY_HEADER_BLOCK_SIZE_INDEX]      = swap_if_big32(block_size);
    header[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX] = swap_if_big32(superblock_size);
    header[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX] = (((uint32_t)handle->commit_interval) << 24) |
       ((uint32_t)handle->commit_threshold << 16) |
       (((uint32_t)handle->checkpoint_compression) << 8);
+#else
+   header[REPLAY_HEADER_BLOCK_SIZE_INDEX]      = 0;
+   header[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX] = 0;
+   header[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX] = 0;
+#endif
    handle->identifier       = (int64_t)t;
    *((int64_t *)(header+REPLAY_HEADER_IDENTIFIER_INDEX)) = time_lil;
    intfstream_write(handle->file, header, REPLAY_HEADER_LEN_BYTES);
 
+#ifdef HAVE_STATESTREAM
    handle->superblocks      = uint32s_index_new(superblock_size, handle->commit_interval, handle->commit_threshold);
    handle->blocks           = uint32s_index_new(block_size/4, handle->commit_interval, handle->commit_threshold);
-
+#endif
    if (state_size)
       return bsv_movie_reset_recording(handle);
    
@@ -237,9 +257,11 @@ void bsv_movie_free(bsv_movie_t *handle)
 
    free(handle->frame_pos);
 
+#ifdef HAVE_STATESTREAM
    uint32s_index_free(handle->superblocks);
    uint32s_index_free(handle->blocks);
    free(handle->superblock_seq);
+#endif
    if (handle->last_save)
       free(handle->last_save);
    if (handle->cur_save)
@@ -408,11 +430,13 @@ bool movie_stop_playback(input_driver_state_t *input_st)
    /* Checks if movie is being played back. */
    if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK))
       return false;
+#ifdef HAVE_STATESTREAM
 #if DEBUG
    RARCH_DBG("[Replay] superblock histogram\n");
    uint32s_index_print_count_data(input_st->bsv_movie_state_handle->superblocks);
    RARCH_DBG("[Replay] block histogram\n");
    uint32s_index_print_count_data(input_st->bsv_movie_state_handle->blocks);
+#endif
 #endif
    _msg = msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED);
    runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, false, NULL,
@@ -437,11 +461,13 @@ bool movie_stop_record(input_driver_state_t *input_st)
    runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("[Replay] %s\n", _msg);
+#ifdef HAVE_STATESTREAM
 #if DEBUG
    RARCH_DBG("[Replay] superblock histogram\n");
    uint32s_index_print_count_data(movie->superblocks);
    RARCH_DBG("[Replay] block histogram\n");
    uint32s_index_print_count_data(movie->blocks);
+#endif
 #endif
    frame_count = swap_if_big32(movie->frame_counter);
    intfstream_seek(movie->file, REPLAY_HEADER_FRAME_COUNT_INDEX*sizeof(uint32_t), SEEK_SET);

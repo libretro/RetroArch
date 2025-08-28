@@ -7,7 +7,9 @@
 #include "../../tasks/task_content.h"
 #include "../../libretro-db/rmsgpack.h"
 #include "../../libretro-db/rmsgpack_dom.h"
+#ifdef HAVE_STATESTREAM
 #include "input/bsv/uint32s_index.h"
+#endif
 #include "libretro.h"
 #include "streams/interface_stream.h"
 #ifdef HAVE_CHEEVOS
@@ -48,20 +50,27 @@
 
 /* Forward declarations */
 void bsv_movie_free(bsv_movie_t*);
+
+#ifdef HAVE_STATESTREAM
 int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t state_size, uint8_t *output, size_t output_capacity);
 bool bsv_movie_read_deduped_state(bsv_movie_t *movie,
       uint8_t *encoded, size_t encoded_size, bool output);
+#endif
 
 bool bsv_movie_reset_recording(bsv_movie_t *handle)
 {
    retro_ctx_serialize_info_t serial_info;
    size_t state_size, state_size_;
    uint8_t compression = handle->checkpoint_compression;
+#if HAVE_STATESTREAM
    uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_STATESTREAM;
    /* If recording, we simply reset
     * the starting point. Nice and easy. */
    uint32s_index_clear(handle->superblocks);
    uint32s_index_clear(handle->blocks);
+#else
+   uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_RAW;
+#endif
 
    intfstream_seek(handle->file, REPLAY_HEADER_LEN_BYTES, SEEK_SET);
    intfstream_truncate(handle->file, REPLAY_HEADER_LEN_BYTES);
@@ -123,8 +132,10 @@ void bsv_movie_frame_rewind()
       handle->frame_counter = 0;
       intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
       /* clear incremental checkpoint table data.  We do this both on recording and playback for simplicity. */
+#ifdef HAVE_STATESTREAM
       uint32s_index_remove_after(handle->superblocks, 0);
       uint32s_index_remove_after(handle->blocks, 0);
+#endif
       if (recording)
          intfstream_truncate(handle->file, (int)handle->min_file_pos);
       else
@@ -143,8 +154,10 @@ void bsv_movie_frame_rewind()
          handle->frame_counter -= delta;
       else
          handle->frame_counter = 0;
+#ifdef HAVE_STATESTREAM
       uint32s_index_remove_after(handle->superblocks, handle->frame_counter);
       uint32s_index_remove_after(handle->blocks, handle->frame_counter);
+#endif
       RARCH_LOG("[REPLAY] rewound to %d\n", handle->frame_counter);
       intfstream_seek(handle->file, (int)handle->frame_pos[handle->frame_counter & handle->frame_mask], SEEK_SET);
       if (recording)
@@ -160,8 +173,10 @@ void bsv_movie_frame_rewind()
       if (handle->playback)
       {
          intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
+#ifdef HAVE_STATESTREAM
          uint32s_index_remove_after(handle->superblocks, 0);
          uint32s_index_remove_after(handle->blocks, 0);
+#endif
          bsv_movie_read_next_events(handle, false);
       }
       else
@@ -356,6 +371,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
          else
             encoded_data = NULL;
          break;
+#ifdef HAVE_STATESTREAM
       case REPLAY_CHECKPOINT2_ENCODING_STATESTREAM:
          if(!bsv_movie_read_deduped_state(handle, encoded_data, encoded_size, !just_update_structures))
          {
@@ -364,6 +380,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
             goto exit;
          }
          break;
+#endif
       default:
          RARCH_WARN("[Replay] Unrecognized encoding scheme %d\n", encoding);
          ret = false;
@@ -373,6 +390,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
       goto exit;
    serial_info.data_const = handle->cur_save;
    serial_info.size       = size;
+   /* TODO: should this happen at the end of the current frame, or at the beginning before inputs have been polled/etc?  FCEUMM and PPSSPP have some jankiness here */
    if (!core_unserialize(&serial_info))
    {
       abort();
@@ -419,12 +437,14 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
          encoded_size = serial_info.size;
          encoded_data = serial_info.data;
          break;
+#ifdef HAVE_STATESTREAM
       case REPLAY_CHECKPOINT2_ENCODING_STATESTREAM:
          encoded_size = serial_info.size + serial_info.size / 2;
          encoded_data = malloc(encoded_size);
          owns_encoded = true;
          encoded_size = bsv_movie_write_deduped_state(handle, serial_info.data, serial_info.size, encoded_data, encoded_size);
          break;
+#endif
       default:
          RARCH_ERR("[Replay] Unrecognized encoding scheme %d\n", encoding);
          ret = -1;
@@ -702,7 +722,11 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          uint8_t frame_tok   = REPLAY_TOKEN_CHECKPOINT2_FRAME;
          retro_ctx_serialize_info_t serial_info;
          uint8_t compression = handle->checkpoint_compression;
+#if HAVE_STATESTREAM
          uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_STATESTREAM;
+#else
+         uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_RAW;
+#endif
          /* "next frame is a checkpoint" */
          intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
          /* compression and encoding schemes */
@@ -1001,8 +1025,10 @@ bool replay_set_serialized_data(void* buf)
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
                RARCH_WARN("[Replay] %s.\n", _msg);
             }
+#ifdef HAVE_STATESTREAM
             uint32s_index_remove_after(handle->superblocks, 0);
             uint32s_index_remove_after(handle->blocks, 0);
+#endif
             intfstream_rewind(handle->file);
             intfstream_write(handle->file, header, loaded_len);
             /* also need to update/reinit frame_pos,
@@ -1014,8 +1040,10 @@ bool replay_set_serialized_data(void* buf)
          }
          else
          {
+#ifdef HAVE_STATESTREAM
             uint32s_index_remove_after(handle->superblocks, 0);
             uint32s_index_remove_after(handle->blocks, 0);
+#endif
             intfstream_seek(handle->file, loaded_len, SEEK_SET);
             /* TODO: in the future, don't clear indices above and only
                update frame counter and remove index entries after the
@@ -1092,6 +1120,7 @@ int16_t bsv_movie_read_state(input_driver_state_t *input_st,
    return 0;
 }
 
+#ifdef HAVE_STATESTREAM
 int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t state_size, uint8_t *output, size_t output_capacity)
 {
    static uint32_t skipped_blocks = 0;
@@ -1415,3 +1444,4 @@ exit:
    RARCH_DBG("[STATESTREAM] Total statestream decodes %d ; net time (secs): %f\n", total_decode_count, (double)total_decode_micros / (1000000.0));
    return ret;
 }
+#endif
