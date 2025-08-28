@@ -1175,28 +1175,24 @@ static INLINE void android_input_poll_event_type_motion(
     * and mouse deltas and don't process as touchscreen event.
     * NOTE: AINPUT_SOURCE_* defines have multiple bits set so do full check 
     * Stylus events are now handled above in the toolType-first section */
-   if (    (source & AINPUT_SOURCE_MOUSE) == AINPUT_SOURCE_MOUSE
+   if (((source & AINPUT_SOURCE_MOUSE) == AINPUT_SOURCE_MOUSE
         || (source & AINPUT_SOURCE_MOUSE_RELATIVE) == AINPUT_SOURCE_MOUSE_RELATIVE)
+       && !is_stylus)
    {
-      /* Only handle regular mouse if not currently using stylus */
-      if (!is_stylus)
+      if (!android->mouse_activated)
       {
-         if (!android->mouse_activated)
-         {
-#ifdef DEBUG_ANDROID_INPUT
-            RARCH_LOG("[Android Input] Mouse activated.\n");
-#endif
-            android->mouse_activated = true;
-         }
-         /* getButtonState requires API level 14 */
-         if (p_AMotionEvent_getButtonState)
-         {
-            int btn              = (int)AMotionEvent_getButtonState(event);
+         RARCH_LOG("[Android Input] Mouse activated.\n");
+         android->mouse_activated = true;
+      }
+      /* getButtonState requires API level 14 */
+      if (p_AMotionEvent_getButtonState)
+      {
+         int btn              = (int)AMotionEvent_getButtonState(event);
 
-            /* Regular mouse button mapping (stylus events handled above) */
-            android->mouse_l     = (btn & AMOTION_EVENT_BUTTON_PRIMARY);
-            android->mouse_r     = (btn & AMOTION_EVENT_BUTTON_SECONDARY);
-            android->mouse_m     = (btn & AMOTION_EVENT_BUTTON_TERTIARY);
+         /* Regular mouse button mapping (stylus events handled above) */
+         android->mouse_l     = (btn & AMOTION_EVENT_BUTTON_PRIMARY);
+         android->mouse_r     = (btn & AMOTION_EVENT_BUTTON_SECONDARY);
+         android->mouse_m     = (btn & AMOTION_EVENT_BUTTON_TERTIARY);
 
          btn                  = (int)AMotionEvent_getAxisValue(event,
                AMOTION_EVENT_AXIS_VSCROLL, motion_ptr);
@@ -1205,19 +1201,18 @@ static INLINE void android_input_poll_event_type_motion(
             android->mouse_wu = btn;
          else if (btn < 0)
             android->mouse_wd = btn;
-         }
-         else
-         {
-            /* If getButtonState is not available
-             * then treat all MotionEvent.ACTION_DOWN as left button presses */
-            if (action == AMOTION_EVENT_ACTION_DOWN)
-               android->mouse_l = 1;
-            if (action == AMOTION_EVENT_ACTION_UP)
-               android->mouse_l = 0;
-         }
-
-         android_mouse_calculate_deltas(android,event,motion_ptr,source);
       }
+      else
+      {
+         /* If getButtonState is not available
+          * then treat all MotionEvent.ACTION_DOWN as left button presses */
+         if (action == AMOTION_EVENT_ACTION_DOWN)
+            android->mouse_l = 1;
+         if (action == AMOTION_EVENT_ACTION_UP)
+            android->mouse_l = 0;
+      }
+
+      android_mouse_calculate_deltas(android,event,motion_ptr,source);
       /* If stylus is active, don't interfere with its mouse state */
       return;
    }
