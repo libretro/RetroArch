@@ -537,7 +537,7 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
 
 bool bsv_movie_read_next_events(bsv_movie_t *handle, bool skip_checkpoints)
 {
-   input_driver_state_t *input_st = input_state_get_ptr();
+   input_driver_state_t *input_st  = input_state_get_ptr();
    /* Skip over backref */
    intfstream_seek(handle->file, sizeof(uint32_t), SEEK_CUR);
    /* Start by reading key event */
@@ -671,6 +671,7 @@ void bsv_movie_scan_from_start(input_driver_state_t *input_st, int32_t len)
 void bsv_movie_next_frame(input_driver_state_t *input_st)
 {
    unsigned checkpoint_interval   = config_get_ptr()->uints.replay_checkpoint_interval;
+   unsigned checkpoint_deserialize= config_get_ptr()->bools.replay_checkpoint_deserialize;
    /* if bsv_movie_state_next_handle is not null, deinit and set
       bsv_movie_state_handle to bsv_movie_state_next_handle and clear
       next_handle */
@@ -747,7 +748,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
    }
 
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
-      bsv_movie_read_next_events(handle, false);
+      bsv_movie_read_next_events(handle, !checkpoint_deserialize);
    handle->frame_pos[handle->frame_counter & handle->frame_mask] = intfstream_tell(handle->file);
 }
 

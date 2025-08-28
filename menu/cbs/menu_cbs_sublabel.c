@@ -814,6 +814,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_max_keep,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_autosave_interval,             MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_max_keep,               MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_checkpoint_interval,    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_checkpoint_deserialize, MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_remap_binds_enable,      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_remap_sort_by_controller_enable,      MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_autodetect_enable,       MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE)
@@ -4124,6 +4125,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_replay_checkpoint_interval);
+            break;
+         case MENU_ENUM_LABEL_REPLAY_CHECKPOINT_DESERIALIZE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_replay_checkpoint_deserialize);
             break;
          case MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_max_keep);

@@ -11607,6 +11607,21 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_replay_checkpoint_interval;
             menu_settings_list_current_add_range(list, list_info, 0, 3600, 60, true, true);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.replay_checkpoint_deserialize,
+                  MENU_ENUM_LABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+                  MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+                  DEFAULT_REPLAY_CHECKPOINT_DESERIALIZE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 #endif
 
             CONFIG_BOOL(

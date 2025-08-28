@@ -1407,6 +1407,11 @@
 /* Specifies how often checkpoints will be saved to replay files during recording.
  * > Setting value to zero disables recording checkpoints. */
 #define DEFAULT_REPLAY_CHECKPOINT_INTERVAL 0
+/* Specifies whether checkpoints in replay files should be loaded
+ * during playback.  This can be helpful for cores that are not
+ * deterministic but in some cores produces janky results depending on
+ * when inputs are processed. */
+#define DEFAULT_REPLAY_CHECKPOINT_DESERIALIZE true
 
 /* Automatically saves a savestate at the end of RetroArch's lifetime.
  * The path is $SRAM_PATH.auto.

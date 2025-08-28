@@ -10995,6 +10995,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_REPLAY_AUTO_INDEX,                  PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_REPLAY_MAX_KEEP,                    PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL,         PARSE_ONLY_UINT, true},
+               {MENU_ENUM_LABEL_REPLAY_CHECKPOINT_DESERIALIZE,      PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,                PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,      PARSE_ONLY_BOOL, true},
 #if HAVE_CLOUDSYNC

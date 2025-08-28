@@ -31,6 +31,11 @@
 - INPUT: Reset and close content hotkeys now require confirmation, similar to quit
 - INPUT/ANDROID: Favor mouse coordinates for lightgun
 - INPUT/UDEV: Fix lost terminal settings after restart from menu
+- INPUT/BSV/REPLAY: Bumped replay format version to 2. Old replays will still play back fine.
+- INPUT/BSV/REPLAY: Add option to skip deserializing checkpoints from replay files (it introduces jank in some emulators).
+- INPUT/BSV/REPLAY: Add checkpoint and initial savestate compression, following the `savestate_file_compression` config boolean.  Use zstd if available, or fall back to zlib.
+- INPUT/BSV/REPLAY: Add incremental checkpoints based on statestreams (depending on `HAVE_STATESTREAM` compile time flag).  As an example, 60 `pcsx_rearmed` savestates would take 267MB uncompressed; with incremental encoding this is reduced to 77MB.  Compressing the result can reduce the size to just 4MB.
+- INPUT/BSV/REPLAY: Checkpoint compression and encoding can be combined. For example, 60 `pcsx_rearmed` checkpoints can take up just 15MB if each state is incremental and compressed. This is not as optimal as using incremental states without save state compression followed by offline compression, but is a good compromise in many use cases.
 - INTL: Add Irish Gaelic to selectable languages
 - IOS: Fix crash on iOS9 when fetching refresh rate
 - LINUX: Add full complement of key/value pairs to desktop entry
