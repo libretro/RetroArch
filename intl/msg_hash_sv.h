@@ -9370,22 +9370,6 @@ MSG_HASH(
    "Lägg till förval till de redan inlästa förvalen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Spara förinställning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Spara aktuella shader-förvalet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Ta bort förinställning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Ta bort ett automatiskt shader-förval."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Tillämpa ändringar"
    )
@@ -9434,21 +9418,13 @@ MSG_HASH(
    "Skala för detta pass. Skalfaktorn ackumuleras, dvs. 2x för första passet och 2x för andra passet ger dig en total skala på 4x.\nOm det finns en skalfaktor för sista passet sträcks resultatet till skärmen med standardfiltret, beroende på inställningen Bilineär filtrering under Videoinställningar.\nOm ”Standard” är inställt används antingen 1x skala eller sträckning till fullskärm beroende på om det inte är sista passet eller inte."
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Enkla förinställningar"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Spara en shader-förinställning som har en länk till den ursprungliga förinställningen och som endast innehåller de parameterändringar som du har gjort."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Spara förinställd Shader som"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9486,9 +9462,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Spara de aktuella shaderinställningarna som standardinställningar för innehållet."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Inga automatiska shader-förinställningar hittades"

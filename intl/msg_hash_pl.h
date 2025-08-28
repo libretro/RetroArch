@@ -8486,14 +8486,6 @@ MSG_HASH(
    "Załaduj ustawienie wstępne shadera. Potok shadera zostanie automatycznie skonfigurowany."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Zapisz ustawienie wstępne bieżącego shadera."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Usuń automatyczne ustawienie shadera."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Zastosuj zmiany"
    )
@@ -8526,21 +8518,13 @@ MSG_HASH(
    "Skala"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Proste ustawienia wstępne"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Zapisz ustawienie cienia, które ma link do oryginalnego ustawienia wstępnego i zawiera tylko zmiany parametrów."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Zapisz ustawienie wstępne shadera jako"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -8578,9 +8562,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Zapisz bieżące ustawienia shadera jako ustawienia domyślne dla zawartości."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Nie znaleziono automatycznych ustawień wstępnych shadera"

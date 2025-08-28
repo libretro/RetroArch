@@ -9714,22 +9714,6 @@ MSG_HASH(
    "Дадаць набор налад па-за бягучымі загружанымі."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Захаваць набор налад"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Захаваць бягучы набор налад шэйдара."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Прыбраць набор налад"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Прыбраць аўтаматычны набор налад шэйдара."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Ужыць змены"
    )
@@ -9786,21 +9770,13 @@ MSG_HASH(
    "Маштаб для бягучага праходу. Множнікі маштабавання складаюцца, напрыклад 2x для першага праходу і 2x для другога ў суме даюць множнік 4x.\nПры наяўнасці множніка ў апошнім праходзе выніковая выява расцягваецца на ўвесь экран з фільтрам па змаўчанні, зыходзячы са значэння 'Біл[...]"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Простыя наборы налад"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Захоўваць прасэты шэйдараў у выглядзе спасылкі на арыгінальны прасэт з наборам параметраў, змененых карыстальнікам."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Захаваць набор налад шэйдара як"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9838,9 +9814,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Захаваць бягучыя наладкі шэйдара ў якасці стандартных для загружанага кантэнту."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Аўтаматычныя прасэты шэйдараў не знойдзены"

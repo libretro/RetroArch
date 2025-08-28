@@ -9266,22 +9266,6 @@ MSG_HASH(
    "已載入著色器的最後通道加入配置檔並應用變化。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "儲存預設"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "儲存目前著色器設置為預設。\n載入優先順序: 項目>路徑>核心>應用程式。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "刪除預設"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "刪除已儲存的預設著色器。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "應用變化"
    )
@@ -9338,21 +9322,13 @@ MSG_HASH(
    "此通道的縮放比例, 每個通道的縮放比例會累加。\n例如: 通道#0使用2倍, 通道#1使用2倍, 最後輸出為4倍。\n當最後的通道有設定縮放比例, 並且過濾器設定為<預設>時, 依顯示選項中「雙線性過濾」開或關的設定, 使用1倍縮放或填滿螢幕, 具體取決於最後通道的設定。"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "簡化儲存預設"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "儲存為預設時, 只建立載入位置和變更參數的資料。"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "另存新檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9390,9 +9366,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "儲存目前著色器設置, 並預設為此項目使用的著色器。"
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "沒有預設的著色器。"

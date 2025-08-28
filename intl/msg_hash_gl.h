@@ -9774,22 +9774,6 @@ MSG_HASH(
    "Engadir preselección ao predefinido cargado actualmente."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Gardar preaxuste"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Garda a configuración predeterminada do sombreador actual."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Eliminar predefinido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Eliminar un predefinido de sombreado automático."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Aplicar os cambios"
    )
@@ -9846,21 +9830,13 @@ MSG_HASH(
    "Escala para este pase. O factor de escala acumúlase, é dicir, 2x para o primeiro pase e 2x para o segundo pase, dará unha escala total de 4x.\nSe hai un factor de escala para o último pase, o resultado amplíase á pantalla co filtro predeterminado, dependendo da configuración de Filtrado bilineal. en Configuración de vídeo.\nSe se define como \"Predeterminado\", utilizarase a escala 1x ou a extensión a pantalla completa, dependendo de se non é a última pasada ou non."
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Presets simples"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Garda un preset de sombreado que ten unha ligazón ao preset orixinal cargado e inclúe só os cambios de parámetro que fixeches."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Gardar sombreado predefinido como"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9898,9 +9874,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Garda a configuración actual do sombreador como a configuración predeterminada para o contido."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Non se atoparon presets de sombreadores automáticos"

@@ -2462,10 +2462,6 @@ MSG_HASH(
 /* Quick Menu > Shaders */
 
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Remove shader presets of a specific type."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Áp dụng Changes"
    )
@@ -2473,13 +2469,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
    "Preview Shader Parameters"
    )
-
-/* Quick Menu > Shaders > Save */
-
-
-
-
-/* Quick Menu > Shaders > Remove */
 
 
 /* Quick Menu > Shaders > Shader Parameters */

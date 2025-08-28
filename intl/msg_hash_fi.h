@@ -8550,22 +8550,6 @@ MSG_HASH(
    "Lataa varjostimen esiasetus. Varjostimen liukuhihna asetetaan automaattisesti."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Tallenna esiasetus"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Tallenna nykyinen varjostimen esiasetus."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Poista esiasetus"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Poista automaattinen varjostimen esiasetus."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Toteuta muutokset"
    )
@@ -8602,21 +8586,13 @@ MSG_HASH(
    "Skaala"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Yksinkertaiset esiasetukset"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Tallenna varjostimen esiasetus, jolla on linkki alkuperäiseen esiasetukseen ja joka sisältää vain tekemäsi parametrimuutokset."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Tallenna varjostimen esiasetus nimellä"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -8654,9 +8630,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Tallenna nykyisen varjostimen asetukset sisällön oletusasetuksina."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Automaattisia varjostimen esiasetuksia ei löytynyt"

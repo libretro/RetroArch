@@ -9818,22 +9818,6 @@ MSG_HASH(
    "Додати пресет до поточно завантаженого пресету."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Зберегти набір налаштувань"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Зберегти поточний шаблон шейдера."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Вилучити пресет ядра"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Видалити автоматичний пресет шейдера."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Застосувати зміни"
    )
@@ -9890,21 +9874,13 @@ MSG_HASH(
    "Масштаб для цього проходу. Масштаб накопичується, тобто 2х для першого пропуску, 2х для другого параметра дає вам 4х загальний масштаб.\nЯкщо коефіцієнт масштабу протягом останнього проходу, результат розтягується на екран із стандартним фільтром, в залежності від налаштув[...]"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Прості пресети"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Зберегти пресет шейдера, який має посилання на оригінальний пресет і включає в себе тільки той параметр, який ви зробили."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Зберегти пресет Шейдера як"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9942,9 +9918,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Зберегти поточні налаштування шейдера в якості параметрів за замовчуванням для вмісту."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Автоматичних шейдерів не знайдено"

@@ -5571,7 +5571,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
-   "키보드 오버레이 사전 설정"
+   "키보드 오버레이 프리셋"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
@@ -9899,7 +9899,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "사전 설정 불러오기"
+   "프리셋 불러오기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
@@ -9907,39 +9907,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
-   "셰이더 사전 설정을 직접 불러옵니다. 그에 따라 셰이더 메뉴가 업데이트됩니다.\n메뉴에 표시되는 배율은 사전 설정이 간단한 배율 조정 방법(예: 소스 배율 조정, X/Y에 대해 동일한 배율)을 사용하는 경우에만 신뢰할 수 있습니다."
+   "셰이더 프리셋을 직접 불러옵니다. 불러온 프리셋에 따라 셰이더 메뉴가 업데이트됩니다.\n메뉴에 표시되는 배율은 프리셋이 간단한 배율 조정 방법(예: 소스 배율 조정, X/Y에 대해 동일한 배율)을 사용하는 경우에만 신뢰할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
-   "사전 설정 추가"
+   "앞에 프리셋 추가"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "현재 불러온 사전 설정 앞에 사전 설정을 추가합니다."
+   "현재 불러와진 프리셋 앞에 프리셋을 추가합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
-   "사전 설정 추가"
+   "뒤에 프리셋 추가"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "현재 불러온 사전 설정에 사전 설정을 추가합니다."
+   "현재 불러와진 프리셋 뒤에 프리셋을 추가합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "사전 설정 저장"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "프리셋 관리"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "현재 셰이더 프리셋을 저장합니다."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "셰이더 프리셋을 저장하거나 삭제합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "사전 설정 제거"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "활성 프리셋 파일"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "자동 셰이더 프리셋을 제거합니다."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "현재 사용 중인 셰이더 프리셋입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9959,7 +9959,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
-   "현재 셰이더를 직접 변경합니다. 변경사항이 프리셋 파일로 저장되지는 않습니다."
+   "현재 셰이더를 직접 변경합니다. 변경사항이 프리셋 파일에 저장되지는 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
@@ -9998,21 +9998,25 @@ MSG_HASH(
    "현재 패스의 배율. 배율 인수는 누적됩니다. 첫 번째 패스에서 2x, 두 번째 패스에서 2x일 경우 총 배율은 4배가 됩니다.\n마지막 패스에 배율 인수가 있는 경우 결과는 비디오 설정의 이중선형 필터링 설정에 따라 기본 필터에 적용되어 화면에 확장됩니다.\n'기본값'이 설정되어 있으면 마지막 패스가 아닌지 여부에 따라 1x 배율 또는 전체 화면으로 확대가 사용됩니다."
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "간단 프리셋"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "원본 프리셋 링크와 사용자가 변경한 항목만을 포함한 셰이더 프리셋을 저장합니다."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "현재 프리셋 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "현재 셰이더 프리셋을 저장합니다."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "셰이더 프리셋 다른 이름으로 저장"
+   "다른 이름으로 프리셋 저장"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -10050,9 +10054,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "현재 셰이더 설정을 콘텐츠의 기본 값으로 저장합니다."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "자동 셰이더 프리셋 찾지 못함"

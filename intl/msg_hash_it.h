@@ -3217,6 +3217,10 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Seleziona tastiera fisica"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
    "Usa questo dispositivo come una tastiera fisica e non come un gamepad."
    )
@@ -3539,6 +3543,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    "Permetti a qualsiasi utente di controllare il menu. Se disabilitato, solo l'utente 1 può controllare il menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "Consenti di tornare indietro dalle schede"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "Ritorna al menu principale dalle schede/barra laterale quando premi Indietro."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
@@ -9738,20 +9750,20 @@ MSG_HASH(
    "Aggiungi preset al preset attualmente caricato."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Salva preset"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Gestisci preimpostazioni"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Salva la preimpostazione shader corrente."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "Salva o rimuovi le preimpostazioni delle shader."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Rimuovi preset"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "File preimpostazioni attivo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Rimuove i shader presets di un tipo specifico."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "L'attuale preimpostazione delle shader in uso."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9806,21 +9818,25 @@ MSG_HASH(
    "Scala per questo passaggio. Il fattore di scala si accumula, cioè 2x per il primo passaggio e 2x per il secondo passaggio, ti darà una scala totale di 4x.\nSe c'è un fattore di scala per l'ultimo passaggio, il risultato viene esteso allo schermo con il filtro predefinito, a seconda delle impostazioni di filtraggio Bilineare nelle impostazioni video.\nSe 'Predefinito' è impostato, la scala 1x o il tratto a schermo intero saranno usati a seconda che non sia l'ultimo passaggio o meno."
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Preimpostazioni Semplici"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Salva una preimpostazione shader che ha un collegamento alla preimpostazione originale caricata e include solo le modifiche apportate ai parametri."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Salva preimpostazioni attuali"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Salva la preimpostazione delle shader attuale."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Salvare Preset Shader come"
+   "Salva la preimpostazione come"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9858,9 +9874,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Salva le impostazioni dello shader corrente come impostazioni predefinite per il contenuto."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Nessun parametro di shader automatici trovato"

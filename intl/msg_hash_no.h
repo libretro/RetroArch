@@ -3858,13 +3858,6 @@ MSG_HASH(
    "Bruk endringer"
    )
 
-/* Quick Menu > Shaders > Save */
-
-
-
-
-/* Quick Menu > Shaders > Remove */
-
 
 /* Quick Menu > Shaders > Shader Parameters */
 

@@ -9378,22 +9378,6 @@ MSG_HASH(
    "現在読み込まれているプリセットの末尾にプリセットを追加します。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "プリセットを保存"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "現在のシェーダープリセットを保存します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "プリセットを削除"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "自動シェーダープリセットを削除します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "変更を適用"
    )
@@ -9450,21 +9434,13 @@ MSG_HASH(
    "このパスの倍率です。例えば、最初のパスで 2 倍、2 番目のパスで 2 倍であれば、合計で 4 倍の倍率になります。\n最後のパスに倍率係数がある場合、結果はビデオ設定のバイリニアフィルタリングの設定に応じてでデフォルトのフィルターで画面に引き伸ばされます。\n[デフォルト] が設定されている場合、最後のパスでないかどうかに応じて、1 倍のスケールまたはフル[...]"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "シンプルプリセット"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "元のプリセットへのリンクが読み込まれ、パラメータのみの変更が含まれるシェーダープリセットを保存します。"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "シェーダープリセットに名前を付けて保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9502,9 +9478,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "現在のシェーダー設定をコンテンツのデフォルト設定として保存します。"
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "自動シェーダープリセットが見つかりません"

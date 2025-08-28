@@ -9854,20 +9854,20 @@ MSG_HASH(
    "Annexa l'ajustament actual en carregar-lo."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Desar ajust predeterminat"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Gestiona els fitxers predeterminats"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Desa el shader predefinit actual."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "Desa o elimina la configuració de shaders."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Elimina el preajust"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Fitxer predeterminat actiu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Suprimeix un shader predefinit automàtic."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Un shader predeterminat actualment en ús."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9922,21 +9922,25 @@ MSG_HASH(
    "Ajusta l'escala per aquesta passada. El factor d'escala és acumulatiu, per exemple: 2x per a la primera passada i 2x per a la segona serà una escala global de 4x.\nSi l'última passada té un factor d'escala, el resultat final estirarà per tota la pantalla amb el filtre predeterminat segons la configuració del filtre bilineal (en la configuració de vídeo).\nSi has escollit 'Irellevant', es farà servir l'escala 1x o bé s'estirarà a pantalla completa, en funció de si és l'última passad[...]"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Predefinicions simples"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Desa una predefinició de shader que té un enllaç a la predefinició carregada originalment i inclou només els paràmetres canviats."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Desa l'ajust predeterminat actual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Desa l'ajust predeterminat de shaders actual."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Anomena i desa la predefinició de shader"
+   "Desa ajust predeterminat com"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9974,9 +9978,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Desa la configuració actual de shaders per aquest contingut."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "No s’han trobat predefinicions de shader automàtiques"

@@ -9398,22 +9398,6 @@ MSG_HASH(
    "附加预设到当前加载."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "保存预设"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "保存当前着色器预设。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "删除预设"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "移除自动着色器预设。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "应用更改"
    )
@@ -9470,21 +9454,13 @@ MSG_HASH(
    "缩放此通道。缩放系数累积，即第一通道2x，第二通道2x，将给您4倍总缩放。\n如果上次通过时有一个缩放系数，结果会被拉伸到屏幕，并带有默认过滤器， 视视频设置下的 Bilinear 过滤设置。\n如果设置了“默认”，将根据不是最后一次通过的情况使用1x尺寸或伸展至全屏幕。"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "简单预设"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "保存着色器预设，链接到原有预设且只包含更改的参数。"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "保存着色器预设为"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9522,9 +9498,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "将当前着色器设置保存为当前游戏内容的默认设置。"
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "未找到自动着色器预设。"

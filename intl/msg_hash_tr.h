@@ -9890,22 +9890,6 @@ MSG_HASH(
    "Mevcut yüklü ön ayara bu ön ayarı ekleyin."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Ön Ayarı Kaydet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Mevcut gölgelendirici ön ayarını kaydet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Ön Ayarı Kaldır"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Belirli bir türdeki gölgelendirici hazır ayarlarını kaldır."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Değişiklikleri Uygula"
    )
@@ -9962,21 +9946,13 @@ MSG_HASH(
    "Bu geçiş için ölçeklendirin. Ölçek etkeni birikir, yani ilk geçiş için 2x ve ikinci geçiş için 2x toplam ölçeğin 4 katını verir.\nSon geçiş için bir ölçek etkeni varsa sonuç, Çift Doğrusal Filtreleme ayarına bağlı olarak varsayılan filtreyle ekrana uzatılır Video ayarları altında.\n'Varsayılan' ayarlanırsa, son geçiş olup olmamasına bağlı olarak 1x ölçekleme veya tam ekrana genişletme kullanılır."
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Basit Hazır Ayarlar"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Yüklenen orijinal ön ayara bir bağlantı içeren ve yalnızca yaptığınız parametre değişikliklerini içeren bir gölgelendirici ön ayarını kaydeder."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Gölgelendirici Hazır Ayarını Farklı Kaydet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -10014,9 +9990,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Mevcut gölgelendirici ayarlarını içerik için varsayılan ayarlar olarak kaydedin."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Otomatik Gölgelendirici Hazır Ayarı Bulunamadı"

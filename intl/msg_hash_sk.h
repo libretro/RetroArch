@@ -4710,13 +4710,6 @@ MSG_HASH(
    "Škálovať"
    )
 
-/* Quick Menu > Shaders > Save */
-
-
-
-
-/* Quick Menu > Shaders > Remove */
-
 
 /* Quick Menu > Shaders > Shader Parameters */
 

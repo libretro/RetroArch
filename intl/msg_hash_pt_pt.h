@@ -4102,10 +4102,6 @@ MSG_HASH(
    "Carregar uma pré-definição de sombreamento. O canal do shader será definido automaticamente."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Remove shader presets of a specific type."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Aplicar alterações"
    )
@@ -4134,14 +4130,6 @@ MSG_HASH(
    "Escala"
    )
 
-/* Quick Menu > Shaders > Save */
-
-
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Guardar pré-definições de shaders como"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
    "Guardar as definições de shader atuais como novas pré-definições de sombreamento."
@@ -4158,9 +4146,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Guardar as definições de shader atuais como definições padrão para o conteúdo."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 
 /* Quick Menu > Shaders > Shader Parameters */
 

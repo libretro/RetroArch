@@ -518,13 +518,6 @@ MSG_HASH(
 /* Quick Menu > Shaders */
 
 
-/* Quick Menu > Shaders > Save */
-
-
-
-
-/* Quick Menu > Shaders > Remove */
-
 
 /* Quick Menu > Shaders > Shader Parameters */
 

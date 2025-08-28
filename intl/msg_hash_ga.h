@@ -9894,22 +9894,6 @@ MSG_HASH(
    "Cuir réamhshocrú leis an réamhshocrú atá luchtaithe faoi láthair."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Sábháil Réamhshocrú"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Sábháil an réamhshocrú scáthaithe reatha."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Bain Réamhshocrú"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Bain réamhshocrú scáthaithe uathoibríoch."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Cuir Athruithe i bhFeidhm"
    )
@@ -9966,21 +9950,13 @@ MSG_HASH(
    "Scála don phas seo. Bailíonn an fachtóir scála, i.e. 2x don chéad phas agus 2x don dara pas, gheobhaidh tú scála iomlán 4x.\nMá tá fachtóir scála ann don phas deireanach, síntear an toradh go dtí an scáileán leis an scagaire réamhshocraithe, ag brath ar an socrú Scagtha Délíneach faoi shocruithe Físe.\nMá shocraítear 'Réamhshocrú', úsáidfear scála 1x nó síneadh go dtí lánscáileán ag brath ar cibé nach é an pas deireanach é nó nach ea."
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Réamhshocruithe Simplí"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Sábháil réamhshocrú scáthaithe a bhfuil nasc ann chuig an réamhshocrú bunaidh a luchtaíodh agus nach bhfuil ann ach na hathruithe paraiméadair a rinne tú."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Sábháil Réamhshocrú Scáthóra Mar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -10018,9 +9994,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Sábháil na socruithe scáthaithe reatha mar na socruithe réamhshocraithe don ábhar."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Níor aimsíodh aon réamhshocruithe scáthaithe uathoibríocha"

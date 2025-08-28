@@ -9866,22 +9866,6 @@ MSG_HASH(
    "A preset beszúrása a jelenleg betöltött mögé."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Preset mentése"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "A jelenlegi shader preset elmentése."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Preset eltávolítása"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Automatikus shader preset eltávolítása."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Változtatások alkalmazása"
    )
@@ -9934,21 +9918,13 @@ MSG_HASH(
    "A menet méretezése. A méretezési faktor halmozódik, pl. az első menetben 2x és a második menetben 2x összesen 4x méretezést ad.\nHa az utolsó menethez van méretezési faktor, az eredmény a képernyőhöz lesz illesztve, a képbeállítások Bilineáris szűrő beállításától függő alapértelmezett szűrővel.\nAlapértelmezett beállításnál vagy 1x méretezés, vagy a teljes képernyőhöz igazítás történik, attól függően, hogy ez az utolsó menet-e vagy sem."
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Egyszerű presetek"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Olyan shader preset mentése, amely hivatkozik az eredeti betöltött shaderre és csak a paraméter változásokat tartalmazza."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Shader preset mentése másként"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9986,9 +9962,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "A jelenlegi shader beállítások mentése mint erre a tartalomra alapértelmezett beállítás."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Nem található automatikus shader preset"

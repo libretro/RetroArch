@@ -9590,22 +9590,6 @@ MSG_HASH(
    "Přidání předvolby k aktuálně načtené předvolbě."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Uložení předvolby"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Uložení aktuální předvolby shaderu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Odstranění předvolby"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Odstranění automatické předvolby shaderu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Použít změny"
    )
@@ -9658,21 +9642,13 @@ MSG_HASH(
    "Měřítko pro tento průchod. Faktor měřítka se kumuluje, tj. 2x pro první průchod a 2x pro druhý průchod vám dá celkové měřítko 4x.\nPokud je faktor měřítka pro poslední průchod, výsledek se roztáhne na obrazovku pomocí výchozího filtru v závislosti na nastavení Bilineární filtrování v Nastavení videa.\nPokud je nastaveno 'Výchozí', použije se buď měřítko 1x, nebo roztažení na celou obrazovku v závislosti na tom, zda se nejedná o poslední průchod, neb[...]"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Jednoduché předvolby"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Uložit předvolbu shaderu, která má odkaz na původní načtenou předvolbu a obsahuje pouze změny parametrů, které jste provedli."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Uložit předvolbu shaderu jako"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9710,9 +9686,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Uloží aktuální nastavení shaderu jako výchozí nastavení obsahu."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Nebyly nalezeny žádné automatické předvolby shaderů"

@@ -9874,20 +9874,20 @@ MSG_HASH(
    "Anexa el preajuste al cargado actualmente."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Guardar preajuste"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Administrar preajustes"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Guarda el preajuste de shaders actual."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "Guarda o elimina los preajustes de shaders."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Eliminar preajuste"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Archivo de preajuste activo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Elimina un preajuste de shaders."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "El preajuste de shaders que se está utilizando actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9942,21 +9942,25 @@ MSG_HASH(
    "La escala de esta pasada. El factor de escala es acumulativo, por ejemplo: 2x para el primer pase y 2x para el segundo resultará en una escala total de 4x.\nSi el último pase tiene un factor de escala, el resultado se estirará por toda la pantalla con el filtro predeterminado según la configuración del filtro bilineal (en los ajustes de Vídeo).\nSi has seleccionado «Irrelevante», se utilizará o bien la escala 1x o se estirará a pantalla completa, dependiendo de si es el último pase o [...]"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Preajustes sencillos"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Guarda un preajuste de shaders con un enlace al preajuste original ya cargado e incluye únicamente los cambios que hayas hecho en sus parámetros."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Guardar preajuste actual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Guarda el preajuste de shaders actual."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Guardar preajuste de shaders como..."
+   "Guardar preajuste como..."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9994,9 +9998,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Guarda la configuración actual de shaders para este contenido."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "No se han encontrado preajustes automáticos de shaders"

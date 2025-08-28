@@ -5402,14 +5402,6 @@ MSG_HASH(
    "تحميل معالج مسبقًا. سيتم إعداد خط أنابيب المعالج تلقائياً."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "حفظ الإعداد المسبق للعرض الحالي."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "إزالة الإعداد المسبق للعرض التلقائي."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "تطبيق التغييرات"
    )
@@ -5438,14 +5430,6 @@ MSG_HASH(
    "مقياس"
    )
 
-/* Quick Menu > Shaders > Save */
-
-
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "حفظ تجهيزات شيدر الظلال تحت"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
    "يحفظ إعدادات شيدر الظلال، بمثابة تجهيز شيدر ظلال جديد."
@@ -5474,9 +5458,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "يحفظ إعدادات شيدر الظلال، بمثابة الإعداد الافتراضي لهذا المحتوى حصرا."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "لم يتم العثور على إعدادات مسبقة للشاق التلقائي"

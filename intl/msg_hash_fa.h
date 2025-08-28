@@ -3374,13 +3374,6 @@ MSG_HASH(
    "سایه‌زن‌های ویدیو"
    )
 
-/* Quick Menu > Shaders > Save */
-
-
-
-
-/* Quick Menu > Shaders > Remove */
-
 
 /* Quick Menu > Shaders > Shader Parameters */
 

@@ -9810,22 +9810,6 @@ MSG_HASH(
    "Ajouter un préréglage après le préréglage actuellement chargé."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Enregistrer le préréglage"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Enregistrer les réglages de shaders actuels."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Supprimer le préréglage"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Supprimer les préréglages de shaders d'un type specifique."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Appliquer les changements"
    )
@@ -9878,21 +9862,13 @@ MSG_HASH(
    "Échelle pour ce passage. Le facteur d’échelle s’accumule, c’est-à-dire x 2 pour le premier passage et x 2 pour le second passage vous donneront une échelle totale de x 4.\nS'il existe un facteur d'échelle pour la dernière passe, le résultat sera étiré à l'écran avec le filtre par défaut, en fonction du réglage 'Filtrage bilinéaire' dans les réglages Vidéo.\nSi l'option 'Par défaut' est définie, soit une échelle de x 1 ou une extension en plein écran sera utilisée selon[...]"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Préréglages simples"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Enregistrer un préréglage de shaders lié au préréglage original chargé et n'inclure que les changements de paramètres que vous avez effectués."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Enregistrer les préréglages de shaders sous"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9930,9 +9906,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Enregistrer les réglages de shaders actuels en tant que réglages par défaut pour ce contenu."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Aucun paramètre de shaders automatiques trouvé."

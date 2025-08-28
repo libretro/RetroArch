@@ -9682,20 +9682,20 @@ MSG_HASH(
    "Voreinstellung hinter aktuell geladene Voreinstellung hängen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Voreinstellung speichern"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Voreinstellungen verwalten"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Die aktuelle Shader-Voreinstellung speichern."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "Shader-Voreinstellungen speichern oder entfernen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Voreinstellung entfernen"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Aktive Voreinstellungdatei"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Automatische Shader-Voreinstellungen entfernen."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Die aktuell verwendete Shader-Voreinstellung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9746,21 +9746,25 @@ MSG_HASH(
    "Skalierung für diesen Durchgang. Der Skalierungsfaktor wird akkumuliert, d. h. 2x für den ersten Durchgang und 2x für den zweiten Durchgang ergibt eine Gesamtskalierung von 4×.\nWenn es einen Skalierungsfaktor für den letzten Durchgang gibt, wird das Ergebnis mit dem im Standardfilter angegebenen Filter auf den Bildschirm gestreckt, abhängig von der Einstellung der bilinearen Filterung in den Videoeinstellungen.\nWenn „Standard“ eingestellt ist, wird entweder auf den Vollbildschirm ge[...]"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Einfache Voreinstellungen"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Eine Shader-Voreinstellung speichern, die nur die von Dir vorgenommenen Parameteränderungen und einen Link zur ursprünglichen Voreinstellung enthält."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Aktuelle Voreinstellung speichern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Die aktuelle Shader-Voreinstellung speichern."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Shader-Voreinstellung speichern unter"
+   "Voreinstellung speichern unter"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9798,9 +9802,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Die aktuellen Shader-Einstellungen als Standard-Einstellung für diesen Inhalt speichern."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Keine automatischen Shader-Voreinstellungen gefunden"
