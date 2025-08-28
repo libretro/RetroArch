@@ -1392,10 +1392,10 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie,
                /* assert(inner_item.type == RDT_INT); */
                uint32_t superblock_idx = inner_item.val.int_;
                uint32_t *superblock;
+               size_t j;
                /* if this superblock is the same as last time, no need to scan the blocks. */
                if (movie->cur_save_valid && movie->cur_save && superblock_idx == movie->superblock_seq[i])
                {
-                  size_t j;
                   superblock = uint32s_index_get(movie->superblocks, movie->superblock_seq[i]);
                   uint32s_index_bump_count(movie->superblocks, movie->superblock_seq[i]);
                   /* We do need to increment all the involved block counts though */
@@ -1406,7 +1406,6 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie,
                movie->superblock_seq[i] = superblock_idx;
                superblock = uint32s_index_get(movie->superblocks, superblock_idx);
                uint32s_index_bump_count(movie->superblocks, superblock_idx);
-               size_t j;
                for(j = 0; j < movie->superblocks->object_size; j++)
                {
                   uint32_t block_idx = superblock[j];

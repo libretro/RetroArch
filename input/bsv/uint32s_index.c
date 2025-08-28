@@ -144,7 +144,6 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
       result.index = idx;
       result.is_new = true;
       uint32s_bucket_expand(bucket, idx);
-      //RARCH_LOG("[STATESTREAM] insert index %d\n",idx);
    }
    else
    {
@@ -162,7 +161,6 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
       RHMAP_SET(index->index, hash, new_bucket);
       result.index = idx;
       result.is_new = true;
-      //RARCH_LOG("[STATESTREAM] insert index %d\n",idx);
    }
    if(additions_len == 0 || index->additions[additions_len-1].frame_counter < frame)
    {
@@ -224,12 +222,10 @@ void uint32s_index_commit(uint32s_index_t *index)
    prev = index->additions[additions_len-interval];
    cur  = index->additions[additions_len-(interval-1)];
    limit = cur.first_index;
-   //RARCH_LOG("[STATESTREAM] remove index range %d..%d\n", prev.first_index, limit);
    for (i = prev.first_index; i < limit; i++)
    {
       struct uint32s_bucket *bucket;
       if (index->counts[i] >= threshold) continue;
-      // RARCH_LOG("[STATESTREAM] remove index %d\n", i);
       free(index->objects[i]);
       index->objects[i] = NULL;
       bucket = RHMAP_PTR(index->index, index->hashes[i]);
@@ -266,11 +262,11 @@ void uint32s_index_pop(uint32s_index_t *index)
 {
    uint32_t idx = RBUF_LEN(index->objects)-1;
    uint32_t *object = RBUF_POP(index->objects);
-   RBUF_RESIZE(index->counts, idx);
-   RBUF_RESIZE(index->hashes, idx);
    size_t size_bytes = index->object_size * sizeof(uint32_t);
    uint32_t hash = uint32s_hash_bytes((uint8_t *)object, size_bytes);
    struct uint32s_bucket *bucket = RHMAP_PTR(index->index, hash);
+   RBUF_RESIZE(index->counts, idx);
+   RBUF_RESIZE(index->hashes, idx);
    uint32s_bucket_remove(bucket, idx);
    if (bucket->len == 0)
    {
@@ -343,7 +339,7 @@ uint32_t uint32s_index_count(uint32s_index_t *index)
 uint32_t bins[BIN_COUNT];
 void uint32s_index_print_count_data(uint32s_index_t *index)
 {
-	// TODO: don't count or differently count NULL objects entries
+   /* TODO: don't count or differently count NULL objects entries */
    uint32_t max=1;
    uint32_t i;
    for(i = 0; i < BIN_COUNT; i++)
