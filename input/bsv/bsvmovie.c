@@ -59,7 +59,6 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie,
 
 bool bsv_movie_reset_recording(bsv_movie_t *handle)
 {
-   retro_ctx_serialize_info_t serial_info;
    size_t state_size, state_size_;
    uint8_t compression = handle->checkpoint_compression;
 #if HAVE_STATESTREAM
@@ -253,11 +252,9 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
 {
    input_driver_state_t *input_st = input_state_get_ptr();
    uint32_t compressed_encoded_size, encoded_size, size;
-   uint8_t *compressed_data = NULL, *encoded_data = NULL, *state = NULL;
+   uint8_t *compressed_data = NULL, *encoded_data = NULL;
    retro_ctx_serialize_info_t serial_info;
    bool ret = true;
-   uint8_t *swap;
-   size_t size_swap;
 
    if (intfstream_read(handle->file, &(size),
                sizeof(uint32_t)) != sizeof(uint32_t))
@@ -636,7 +633,6 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle, bool skip_checkpoints)
       }
       else if (next_frame_type == REPLAY_TOKEN_CHECKPOINT2_FRAME)
       {
-         retro_ctx_serialize_info_t serial_info;
          uint8_t compression, encoding;
          if (intfstream_read(handle->file, &(compression), sizeof(uint8_t)) != sizeof(uint8_t) ||
              intfstream_read(handle->file, &(encoding), sizeof(uint8_t)) != sizeof(uint8_t))
@@ -721,7 +717,6 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
             && (handle->frame_counter % (checkpoint_interval*60) == 0))
       {
          uint8_t frame_tok   = REPLAY_TOKEN_CHECKPOINT2_FRAME;
-         retro_ctx_serialize_info_t serial_info;
          uint8_t compression = handle->checkpoint_compression;
 #if HAVE_STATESTREAM
          uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_STATESTREAM;
@@ -1135,7 +1130,6 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    static uint64_t total_bytes_written = 0;
    static retro_perf_tick_t total_encode_micros = 0;
    retro_perf_tick_t start = cpu_features_get_time_usec();
-   size_t block_size = movie->blocks->object_size;
    size_t block_byte_size = movie->blocks->object_size*4;
    size_t superblock_size = movie->superblocks->object_size;
    size_t superblock_byte_size = superblock_size*block_byte_size;

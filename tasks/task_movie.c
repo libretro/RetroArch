@@ -140,7 +140,6 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
    }
    else if (vsn >= 2)
    {
-      retro_ctx_serialize_info_t serial_info;
       uint8_t compression, encoding;
 #ifdef HAVE_STATESTREAM
       uint32_t commit_settings = header[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX];

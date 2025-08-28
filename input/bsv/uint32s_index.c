@@ -115,7 +115,7 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
    size_t size_bytes = index->object_size * sizeof(uint32_t);
    uint32_t hash = uint32s_hash_bytes((uint8_t *)object, size_bytes);
    uint32_t idx;
-   uint32_t *copy, *check;
+   uint32_t *copy;
    uint32_t additions_len = RBUF_LEN(index->additions);
    result.index = 0;
    result.is_new = false;
