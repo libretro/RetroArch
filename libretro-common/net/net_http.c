@@ -838,7 +838,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->request.port          = conn->port;
 
    state->response.status  = -1;
-   state->response.buflen  = 16 * 1024;
+   state->response.buflen  = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
    state->response.data    = (char*)malloc(state->response.buflen);
    state->response.headers = string_list_new();
 
@@ -1391,7 +1391,7 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    state->request_sent       = false;
    state->response.part      = P_HEADER_TOP;
    state->response.status    = -1;
-   state->response.buflen    = 16 * 1024;
+   state->response.buflen    = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
    state->response.data      = (char*)realloc(state->response.data, state->response.buflen);
    state->response.pos       = 0;
    state->response.len       = 0;

@@ -1637,9 +1637,9 @@ SSL
 #include "../deps/mbedtls/ssl_srv.c"
 #include "../deps/mbedtls/ssl_ticket.c"
 #include "../deps/mbedtls/ssl_tls.c"
+#endif
 
 #include "../libretro-common/net/net_socket_ssl_mbed.c"
-#endif
 #endif
 #endif
 
