@@ -905,9 +905,32 @@ static INLINE void android_input_poll_event_type_motion(
             /* Optional: Update cursor position for hover if settings allow */
             if (settings->bools.input_stylus_hover_moves_pointer && action == AMOTION_EVENT_ACTION_HOVER_MOVE)
             {
+               struct video_viewport vp = {0};
+               
+               /* Update mouse deltas for mouse-like cursor behavior */
                android_mouse_calculate_deltas(android, event, motion_ptr, source);
+               
+               /* Also update absolute pointer coordinates for RETRO_DEVICE_POINTER */
+               video_driver_translate_coord_viewport_confined_wrap(
+                     &vp, x, y,
+                     &android->pointer[motion_ptr].confined_x,
+                     &android->pointer[motion_ptr].confined_y,
+                     &android->pointer[motion_ptr].full_x,
+                     &android->pointer[motion_ptr].full_y);
+               
+               video_driver_translate_coord_viewport_wrap(
+                     &vp, x, y,
+                     &android->pointer[motion_ptr].x,
+                     &android->pointer[motion_ptr].y,
+                     &android->pointer[motion_ptr].full_x,
+                     &android->pointer[motion_ptr].full_y);
+               
+               /* Ensure pointer_count covers this motion_ptr */
+               if (android->pointer_count < (int)motion_ptr + 1)
+                  android->pointer_count = (int)motion_ptr + 1;
+               
 #ifdef DEBUG_ANDROID_INPUT
-               RARCH_LOG("[RA Input] Stylus hover cursor update (user enabled)\n");
+               RARCH_LOG("[RA Input] Stylus hover cursor update (user enabled) - mouse + pointer coords\n");
 #endif
             }
             
