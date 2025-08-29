@@ -713,7 +713,7 @@ intfstream_t *intfstream_open_memory(void *data,
    info.type            = INTFSTREAM_MEMORY;
    info.memory.buf.data = (uint8_t*)data;
    info.memory.buf.size = size;
-   info.memory.writable = false;
+   info.memory.writable = (mode & RETRO_VFS_FILE_ACCESS_WRITE) != 0;
 
    if (!(fd = (intfstream_t*)intfstream_init(&info)))
       return NULL;
@@ -729,23 +729,7 @@ intfstream_t *intfstream_open_memory(void *data,
 intfstream_t *intfstream_open_writable_memory(void *data,
       unsigned mode, unsigned hints, uint64_t size)
 {
-   intfstream_info_t info;
-   intfstream_t *fd     = NULL;
-
-   info.type            = INTFSTREAM_MEMORY;
-   info.memory.buf.data = (uint8_t*)data;
-   info.memory.buf.size = size;
-   info.memory.writable = true;
-
-   if (!(fd = (intfstream_t*)intfstream_init(&info)))
-      return NULL;
-
-   if (intfstream_open(fd, NULL, mode, hints))
-      return fd;
-
-   intfstream_close(fd);
-   free(fd);
-   return NULL;
+   return intfstream_open_memory(data, mode | RETRO_VFS_FILE_ACCESS_WRITE, hints, size);
 }
 
 intfstream_t *intfstream_open_chd_track(const char *path,
