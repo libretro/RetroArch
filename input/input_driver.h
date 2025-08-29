@@ -202,7 +202,8 @@ enum bsv_flags
    BSV_FLAG_MOVIE_PLAYBACK           = (1 << 2),
    BSV_FLAG_MOVIE_RECORDING          = (1 << 3),
    BSV_FLAG_MOVIE_END                = (1 << 4),
-   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 5)
+   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 5),
+   BSV_FLAG_MOVIE_FORCE_CHECKPOINT   = (1 << 6)
 };
 
 struct bsv_state

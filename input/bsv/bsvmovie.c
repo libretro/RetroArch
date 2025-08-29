@@ -713,9 +713,10 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       handle->input_event_count = 0;
 
       /* Maybe record checkpoint */
-      if (     (checkpoint_interval != 0)
-            && (handle->frame_counter > 0)
-            && (handle->frame_counter % (checkpoint_interval*60) == 0))
+      if ((input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_FORCE_CHECKPOINT) ||
+            ((checkpoint_interval != 0)
+                  && (handle->frame_counter > 0)
+                  && (handle->frame_counter % (checkpoint_interval*60) == 0)))
       {
          uint8_t frame_tok   = REPLAY_TOKEN_CHECKPOINT2_FRAME;
          uint8_t compression = handle->checkpoint_compression;
@@ -724,6 +725,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
 #else
          uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_RAW;
 #endif
+         input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_FORCE_CHECKPOINT;
          /* "next frame is a checkpoint" */
          intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
          /* compression and encoding schemes */
@@ -1449,7 +1451,10 @@ exit:
 
 bool movie_commit_checkpoint(input_driver_state_t *input_st)
 {
-   return false;
+   if (!input_st->bsv_movie_state_handle)
+      return false;
+   input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_FORCE_CHECKPOINT;
+   return true;
 }
 bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st)
 {
