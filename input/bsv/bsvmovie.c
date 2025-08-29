@@ -942,7 +942,6 @@ bool replay_set_serialized_data(void* buf)
    bsv_movie_t *handle            = input_st->bsv_movie_state_handle;
    bool playback                  = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)  ? true : false;
    bool recording                 = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING) ? true : false;
-   handle->cur_save_valid = false;
    /* If there is no current replay, ignore this entirely.
       TODO/FIXME: Later, consider loading up the replay
       and allow the user to continue it?
@@ -951,6 +950,9 @@ bool replay_set_serialized_data(void* buf)
    if (!(playback || recording))
       return true;
 
+   if (!handle)
+      return false;
+   handle->cur_save_valid = false;
    if (!buffer)
    {
       if (recording)
