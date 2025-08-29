@@ -1095,6 +1095,9 @@ void bsv_movie_deinit(input_driver_state_t *input_st);
 void bsv_movie_deinit_full(input_driver_state_t *input_st);
 void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t *state, enum bsv_flags flags);
 
+bool movie_commit_checkpoint(input_driver_state_t *input_st);
+bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st);
+bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st);
 bool movie_start_playback(input_driver_state_t *input_st, char *path);
 bool movie_start_record(input_driver_state_t *input_st, char *path);
 bool movie_stop_playback(input_driver_state_t *input_st);

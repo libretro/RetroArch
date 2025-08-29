@@ -1446,3 +1446,16 @@ exit:
    return ret;
 }
 #endif
+
+bool movie_commit_checkpoint(input_driver_state_t *input_st)
+{
+   return false;
+}
+bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st)
+{
+   return false;
+}
+bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st)
+{
+   return false;
+}
