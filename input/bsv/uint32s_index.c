@@ -263,7 +263,7 @@ void uint32s_index_pop(uint32s_index_t *index)
    uint32_t idx = RBUF_LEN(index->objects)-1;
    uint32_t *object = RBUF_POP(index->objects);
    size_t size_bytes = index->object_size * sizeof(uint32_t);
-   uint32_t hash = uint32s_hash_bytes((uint8_t *)object, size_bytes);
+   uint32_t hash = index->hashes[idx];
    struct uint32s_bucket *bucket = RHMAP_PTR(index->index, hash);
    RBUF_RESIZE(index->counts, idx);
    RBUF_RESIZE(index->hashes, idx);
