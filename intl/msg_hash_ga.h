@@ -9894,6 +9894,22 @@ MSG_HASH(
    "Cuir réamhshocrú leis an réamhshocrú atá luchtaithe faoi láthair."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Bainistigh Réamhshocruithe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "Sábháil nó bain réamhshocruithe scáthaithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Comhad Réamhshocraithe Gníomhach"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "An réamhshocrú scáthaithe atá in úsáid faoi láthair."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Cuir Athruithe i bhFeidhm"
    )
@@ -9957,6 +9973,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Sábháil réamhshocrú scáthaithe a bhfuil nasc ann chuig an réamhshocrú bunaidh a luchtaíodh agus nach bhfuil ann ach na hathruithe paraiméadair a rinne tú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Sábháil Réamhshocrú Reatha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Sábháil an réamhshocrú scáthaithe reatha."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
+   "Sábháil Réamhshocrú Mar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
