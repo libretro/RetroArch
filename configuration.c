@@ -2180,6 +2180,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("all_users_control_menu",        &settings->bools.input_all_users_control_menu, true, DEFAULT_ALL_USERS_CONTROL_MENU, false);
    SETTING_BOOL("menu_swap_ok_cancel_buttons",   &settings->bools.input_menu_swap_ok_cancel_buttons, true, DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS, false);
    SETTING_BOOL("menu_swap_scroll_buttons",      &settings->bools.input_menu_swap_scroll_buttons, true, DEFAULT_MENU_SWAP_SCROLL_BUTTONS, false);
+   SETTING_BOOL("menu_singleclick_playlists",    &settings->bools.input_menu_singleclick_playlists, true, DEFAULT_MENU_SINGLECLICK_PLAYLISTS, false);
    SETTING_BOOL("menu_allow_tabs_back",          &settings->bools.input_menu_allow_tabs_back, true, DEFAULT_MENU_ALLOW_TABS_BACK, false);
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)

@@ -388,6 +388,7 @@ typedef struct xmb_handle
    float fullscreen_thumbnail_alpha;
    float x;
    float alpha;
+   float alpha_list;
    float above_subitem_offset;
    float above_item_offset;
    float active_item_factor;
@@ -2192,6 +2193,21 @@ static void xmb_push_animations(xmb_node_t *node,
    anim_entry.easing_enum  = XMB_EASING_XY;
 
    gfx_animation_push(&anim_entry);
+}
+
+static void xmb_animation_list_alpha(xmb_handle_t *xmb, bool fade_in)
+{
+   struct gfx_animation_ctx_entry entry;
+
+   entry.cb                     = NULL;
+   entry.duration               = XMB_DELAY * 4;
+   entry.easing_enum            = XMB_EASING_ALPHA;
+   entry.subject                = &xmb->alpha_list;
+   entry.tag                    = (uintptr_t)NULL;
+   entry.target_value           = (fade_in) ? 1.0f : 0.0f;
+   entry.userdata               = xmb;
+
+   gfx_animation_push(&entry);
 }
 
 static void xmb_list_switch_old(xmb_handle_t *xmb,
@@ -5055,7 +5071,7 @@ static int xmb_draw_item(
                entry_sublabel,
                sublabel_x,
                ticker_y_offset + sublabel_y,
-               1, node->label_alpha, TEXT_ALIGN_LEFT,
+               1, node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
                width, height, xmb->font2);
 
          /* Draw top/bottom line fade effect, if required */
@@ -5066,7 +5082,7 @@ static int xmb_draw_item(
                xmb_draw_text(shadows_enable, xmb, settings,
                      entry_sublabel_top_fade,
                      sublabel_x, ticker_top_fade_y_offset + sublabel_y,
-                     1, ticker_top_fade_alpha * node->label_alpha, TEXT_ALIGN_LEFT,
+                     1, ticker_top_fade_alpha * node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
                      width, height, xmb->font2);
 
             if (     !string_is_empty(entry_sublabel_bottom_fade)
@@ -5074,7 +5090,7 @@ static int xmb_draw_item(
                xmb_draw_text(shadows_enable, xmb, settings,
                      entry_sublabel_bottom_fade,
                      sublabel_x, ticker_bottom_fade_y_offset + sublabel_y,
-                     1, ticker_bottom_fade_alpha * node->label_alpha, TEXT_ALIGN_LEFT,
+                     1, ticker_bottom_fade_alpha * node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
                      width, height, xmb->font2);
          }
       }
@@ -5104,7 +5120,7 @@ static int xmb_draw_item(
          xmb->margins_screen_top
                + node->y
                + label_offset,
-         1, node->label_alpha, TEXT_ALIGN_LEFT,
+         1, node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
          width, height, xmb->font);
 
    tmp[0]                       = '\0';
@@ -5143,10 +5159,12 @@ static int xmb_draw_item(
             xmb->margins_screen_top
                   + node->y
                   + xmb->margins_label_top,
-            1, node->label_alpha, TEXT_ALIGN_LEFT,
+            1, node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
             width, height, xmb->font);
 
    gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
+   if (list != &xmb->selection_buf_old)
+      gfx_display_set_alpha(color, MIN(node->alpha * xmb->alpha_list, xmb->alpha));
 
    if (     (!xmb->assets_missing)
          && (!node->icon_hide)
@@ -5823,6 +5841,11 @@ static enum menu_action xmb_parse_menu_entry_action(
             if (!xmb->is_state_slot && !xmb->is_playlist && !xmb->is_explore_list)
                return MENU_ACTION_NOOP;
          }
+
+         /* Make transition smoother for single-click playlist launching */
+         if (     config_get_ptr()->bools.input_menu_singleclick_playlists
+               && (xmb->is_playlist || xmb->is_explore_list))
+            xmb->alpha_list = 0.0f;
          break;
       case MENU_ACTION_CANCEL:
          if (xmb->is_state_slot)
@@ -5895,6 +5918,24 @@ static enum menu_action xmb_parse_menu_entry_action(
       default:
          /* In all other cases, pass through input
           * menu action without intervention */
+         break;
+   }
+
+   switch (new_action)
+   {
+      case MENU_ACTION_UP:
+      case MENU_ACTION_DOWN:
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_CANCEL:
+         if (     config_get_ptr()->bools.input_menu_singleclick_playlists
+               && xmb->alpha_list < 1.0f)
+         {
+            xmb_animation_list_alpha(xmb, true);
+            new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      default:
          break;
    }
 
@@ -7801,7 +7842,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Arrow image */
    gfx_display_set_alpha(xmb_item_color,
-         MIN(xmb->textures_arrow_alpha, xmb->alpha));
+         MIN(xmb->textures_arrow_alpha, xmb->alpha * xmb->alpha_list));
 
    if (!xmb->assets_missing)
    {
@@ -8728,7 +8769,8 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->textures_arrow_alpha          = 0;
    xmb->depth                         = 1;
    xmb->old_depth                     = 1;
-   xmb->alpha                         = 0;
+   xmb->alpha                         = 0.0f;
+   xmb->alpha_list                    = 1.0f;
 
    xmb_refresh_system_tabs_list(xmb);
 
@@ -9212,6 +9254,9 @@ static void xmb_toggle(void *userdata, bool menu_on)
 
    if (!xmb)
       return;
+
+   /* Reset */
+   xmb->alpha_list = 1.0f;
 
    if (!menu_on)
    {

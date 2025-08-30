@@ -3697,6 +3697,14 @@ MSG_HASH(
    "Allow any user to control the menu. If disabled, only User 1 can control the menu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "Single-Click Playlists"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "Skip 'Run' menu when launching playlist entries. Press D-Pad while holding OK to access 'Run' menu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
    "Allow Back From Tabs"
    )

@@ -67,6 +67,7 @@
 #define OZONE_THUMBNAIL_STREAM_DELAY  16.66667f * 3
 
 #define OZONE_EASING_ALPHA            EASING_OUT_CIRC
+#define OZONE_EASING_ALPHA_IN         EASING_IN_QUAD
 #define OZONE_EASING_XY               EASING_OUT_QUAD
 
 #define FONT_SIZE_FOOTER              18
@@ -1581,6 +1582,7 @@ static ozone_theme_t *ozone_default_theme   = &ozone_theme_dark; /* also used as
 static float ozone_last_framebuffer_opacity = -1.0f;
 
 /* Forward declarations */
+static void ozone_animation_list_alpha(ozone_handle_t *ozone, bool fade_in);
 static void ozone_cursor_animation_cb(void *userdata);
 static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation);
 static void ozone_unload_thumbnail_textures(void *data);
@@ -8698,6 +8700,12 @@ static enum menu_action ozone_parse_menu_entry_action(
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL;
             break;
          }
+
+         /* Make transition smoother for single-click playlist launching */
+         if (     settings->bools.input_menu_singleclick_playlists
+               && (  ozone->flags & OZONE_FLAG_IS_PLAYLIST
+                  || ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST))
+            ozone->animations.list_alpha = 0.0f;
          break;
       case MENU_ACTION_CANCEL:
          ozone->flags &= ~OZONE_FLAG_CURSOR_MODE;
@@ -8967,6 +8975,24 @@ static enum menu_action ozone_parse_menu_entry_action(
       default:
          /* In all other cases, pass through input
           * menu action without intervention */
+         break;
+   }
+
+   switch (new_action)
+   {
+      case MENU_ACTION_UP:
+      case MENU_ACTION_DOWN:
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_CANCEL:
+         if (     settings->bools.input_menu_singleclick_playlists
+               && ozone->animations.list_alpha < 1.0f)
+         {
+            ozone_animation_list_alpha(ozone, true);
+            new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      default:
          break;
    }
 
@@ -9309,6 +9335,8 @@ static void ozone_refresh_thumbnail_image(void *data, size_t i)
 
    ozone->flags &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
    ozone_unload_thumbnail_textures(ozone);
+
+   ozone->flags |= OZONE_FLAG_FIRST_FRAME;
 
    /* Refresh metadata */
    if (!i)
@@ -11950,15 +11978,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
-   if (ozone->flags & OZONE_FLAG_FIRST_FRAME)
-   {
-      menu_input_get_pointer_state(&ozone->pointer);
-
-      ozone->cursor_x_old = ozone->pointer.x;
-      ozone->cursor_y_old = ozone->pointer.y;
-      ozone->flags       &= ~OZONE_FLAG_FIRST_FRAME;
-   }
-
    /* OSK Fade detection */
    if (draw_osk != draw_osk_old)
    {
@@ -12337,6 +12356,21 @@ static void ozone_animation_end(void *userdata)
    ozone->animations.cursor_alpha   = 1.0f;
 }
 
+static void ozone_animation_list_alpha(ozone_handle_t *ozone, bool fade_in)
+{
+   struct gfx_animation_ctx_entry entry;
+
+   entry.cb                     = ozone_animation_end;
+   entry.duration               = ANIMATION_PUSH_ENTRY_DURATION;
+   entry.easing_enum            = (fade_in) ? OZONE_EASING_ALPHA_IN : OZONE_EASING_ALPHA;
+   entry.subject                = &ozone->animations.list_alpha;
+   entry.tag                    = (uintptr_t)NULL;
+   entry.target_value           = (fade_in) ? 1.0f : 0.0f;
+   entry.userdata               = ozone;
+
+   gfx_animation_push(&entry);
+}
+
 static void ozone_list_open(
       ozone_handle_t *ozone,
       bool ozone_collapse_sidebar,
@@ -12346,6 +12380,9 @@ static void ozone_list_open(
    uintptr_t sidebar_tag           = (uintptr_t)&ozone->sidebar_offset;
 
    ozone->flags                   |= OZONE_FLAG_DRAW_OLD_LIST;
+
+   if (ozone->flags & OZONE_FLAG_FIRST_FRAME)
+      animate = false;
 
    /* Sidebar animation */
    ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, animate);
@@ -12386,8 +12423,6 @@ static void ozone_list_open(
    {
       if (animate)
       {
-         struct gfx_animation_ctx_entry entry;
-
          entry.cb              = ozone_collapse_end;
          entry.duration        = ANIMATION_PUSH_ENTRY_DURATION;
          entry.easing_enum     = OZONE_EASING_XY;
@@ -12406,14 +12441,13 @@ static void ozone_list_open(
          ozone->sidebar_offset = -ozone->dimensions_sidebar_width;
    }
 
-   /* Left/right animation */
    if (animate)
    {
       ozone->animations.list_alpha = 0.0f;
 
       entry.cb                     = ozone_animation_end;
-      entry.duration               = ANIMATION_PUSH_ENTRY_DURATION;
-      entry.easing_enum            = OZONE_EASING_ALPHA;
+      entry.duration               = ANIMATION_PUSH_ENTRY_DURATION / 2;
+      entry.easing_enum            = OZONE_EASING_ALPHA_IN;
       entry.subject                = &ozone->animations.list_alpha;
       entry.tag                    = (uintptr_t)NULL;
       entry.target_value           = 1.0f;
@@ -12604,6 +12638,15 @@ static void ozone_populate_entries(
       if (ozone->categories_selection_ptr == ozone->categories_active_idx_old)
          ozone_list_open(ozone, ozone_collapse_sidebar, (!(ozone->flags & OZONE_FLAG_FIRST_FRAME)));
 
+   if (ozone->flags & OZONE_FLAG_FIRST_FRAME)
+   {
+      menu_input_get_pointer_state(&ozone->pointer);
+
+      ozone->cursor_x_old = ozone->pointer.x;
+      ozone->cursor_y_old = ozone->pointer.y;
+      ozone->flags       &= ~OZONE_FLAG_FIRST_FRAME;
+   }
+
    /* Reset savestate thumbnails always */
    ozone_update_savestate_thumbnail_path(ozone, (unsigned)menu_st->selection_ptr);
    ozone_update_savestate_thumbnail_image(ozone);
@@ -12752,6 +12795,9 @@ static void ozone_toggle(void *userdata, bool menu_on)
 
       gfx_animation_push(&entry);
    }
+
+   /* Reset */
+   ozone->animations.list_alpha    = 1.0f;
 
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
