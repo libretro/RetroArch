@@ -5288,7 +5288,9 @@ unsigned menu_event(
          RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
    unsigned menu_cancel_btn                        = swap_ok_cancel_btns ?
          RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
-   unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
+   unsigned ok_current                             =
+            BIT256_GET_PTR(p_input, menu_ok_btn)
+         || (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT);
    unsigned ok_trigger                             = ok_current & ~ok_old;
    unsigned ok_trigger_release                     = !ok_current && ok_old;
    static unsigned navigation_initial              = 0;
