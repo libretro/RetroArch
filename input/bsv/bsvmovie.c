@@ -536,7 +536,8 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle, bool skip_checkpoints)
 {
    input_driver_state_t *input_st  = input_state_get_ptr();
    /* Skip over backref */
-   intfstream_seek(handle->file, sizeof(uint32_t), SEEK_CUR);
+   if (handle->version > 1)
+      intfstream_seek(handle->file, sizeof(uint32_t), SEEK_CUR);
    /* Start by reading key event */
    if (intfstream_read(handle->file, &(handle->key_event_count), 1) == 1)
    {
@@ -831,8 +832,11 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
          goto exit;
       }
       /* skip past backref */
-      intfstream_seek(movie->file, 4, SEEK_CUR);
-      intfstream_seek(check_stream, 4, SEEK_CUR);
+      if (movie->version > 1)
+      {
+         intfstream_seek(movie->file, sizeof(uint32_t), SEEK_CUR);
+         intfstream_seek(check_stream, sizeof(uint32_t), SEEK_CUR);
+      }
       if (intfstream_read(movie->file, &keycount1, 1) < 1 ||
             intfstream_read(check_stream, &keycount2, 1) < 1 ||
             keycount1 != keycount2)
