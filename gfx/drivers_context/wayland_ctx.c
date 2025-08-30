@@ -503,10 +503,10 @@ static const struct wl_callback_listener wl_surface_frame_listener = {
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
-   struct wl_callback *cb;
-   gfx_ctx_wayland_data_t *wl     = (gfx_ctx_wayland_data_t*)data;
-   settings_t *settings           = config_get_ptr();
-   unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
+   gfx_ctx_wayland_data_t *wl    = (gfx_ctx_wayland_data_t*)data;
+   settings_t *settings          = config_get_ptr();
+   unsigned max_swapchain_images = settings->uints.video_max_swapchain_images;
+   struct wl_callback *cb        = NULL;
 
    if (max_swapchain_images <= 2)
    {
@@ -517,7 +517,12 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 
    egl_swap_buffers(&wl->egl);
 
-   if (max_swapchain_images <= 2)
+   if (wl->present_clock)
+      wl_request_presentation_feedback(wl);
+
+   wait_for_next_frame(wl);
+
+   if (cb)
    {
       /* Wait for the frame callback we set earlier. */
       struct pollfd pollfd = {.fd = wl->input.fd, .events = POLLIN};
