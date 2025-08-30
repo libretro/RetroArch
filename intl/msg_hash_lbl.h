@@ -403,6 +403,10 @@ MSG_HASH(
    "replay_checkpoint_interval"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "replay_checkpoint_deserialize"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,
    "auto_overrides_enable"
    )

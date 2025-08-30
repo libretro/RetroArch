@@ -1108,6 +1108,10 @@ typedef struct settings
       bool ai_service_pause;
 
       bool gamemode_enable;
+#ifdef HAVE_BSV_MOVIE
+      bool replay_checkpoint_deserialize;
+#endif
+
 #ifdef _3DS
       bool new3ds_speedup_enable;
       bool bottom_font_enable;
