@@ -93,7 +93,7 @@ struct rmsgpack_dom_value *rmsgpack_dom_value_map_value(
 
 int rmsgpack_dom_read(intfstream_t *stream, struct rmsgpack_dom_value *out);
 
-struct rmsgpack_dom_reader_state *rmsgpack_dom_reader_state_new();
+struct rmsgpack_dom_reader_state *rmsgpack_dom_reader_state_new(void);
 int rmsgpack_dom_read_with(intfstream_t *stream, struct rmsgpack_dom_value *out, struct rmsgpack_dom_reader_state *state);
 void rmsgpack_dom_reader_state_free(struct rmsgpack_dom_reader_state *state);
 
