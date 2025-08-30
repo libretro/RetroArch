@@ -5732,8 +5732,17 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
       menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
    }
 
+   /* Single-click playlist return */
+   if (config_get_ptr()->bools.input_menu_singleclick_playlists)
+   {
+      size_t new_selection = menu_st->selection_ptr;
+      menu_entries_pop_stack(&new_selection, 0, 0);
+      menu_st->selection_ptr = new_selection;
+      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+   }
+
    /* Try to reload last core if loaded manually */
-   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
+   menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
 
    return ret;
 }

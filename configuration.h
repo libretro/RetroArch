@@ -719,6 +719,7 @@ typedef struct settings
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
+      bool input_menu_singleclick_playlists;
       bool input_menu_allow_tabs_back;
       bool input_menu_swap_ok_cancel_buttons;
       bool input_menu_swap_scroll_buttons;

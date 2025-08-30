@@ -831,6 +831,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_auto_game_focus,         MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_swap_ok_cancel,          MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_swap_scroll,             MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_all_users_control_menu,  MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_singleclick_playlists,    MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_allow_tabs_back,          MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_pause_libretro,                MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_savestate_resume,         MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME)
@@ -4082,6 +4083,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_MENU_INPUT_SWAP_SCROLL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_swap_scroll);
+            break;
+         case MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_singleclick_playlists);
             break;
          case MENU_ENUM_LABEL_MENU_ALLOW_TABS_BACK:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_allow_tabs_back);

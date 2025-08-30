@@ -5622,8 +5622,17 @@ unsigned menu_event(
          if (ok_trigger)
             ok_enum_idx = entry.enum_idx;
 
-         if (     ok_enum_idx == entry.enum_idx
-               && ok_enum_idx == MENU_ENUM_LABEL_RESUME_CONTENT)
+         /* Single-click playlist entries */
+         if (     settings->bools.input_menu_singleclick_playlists
+               && (  entry.enum_idx == MENU_ENUM_LABEL_RUN
+                  || entry.enum_idx == MENU_ENUM_LABEL_RESUME_CONTENT)
+               && (  ok_enum_idx == MENU_ENUM_LABEL_PLAYLIST_ENTRY
+                  || ok_enum_idx == MENU_ENUM_LABEL_EXPLORE_ITEM))
+            ok_trigger = ok_trigger_release;
+
+         /* Resume */
+         if (     ok_enum_idx == MENU_ENUM_LABEL_RESUME_CONTENT
+               && ok_enum_idx == entry.enum_idx)
             ok_trigger = ok_trigger_release;
       }
 
@@ -5662,18 +5671,30 @@ unsigned menu_event(
 
       if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP)
             && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+      {
          ret = MENU_ACTION_UP;
+         keydown[RETRO_DEVICE_ID_JOYPAD_UP] = true;
+      }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN)
             && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      {
          ret = MENU_ACTION_DOWN;
+         keydown[RETRO_DEVICE_ID_JOYPAD_DOWN] = true;
+      }
       if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
             && switch_trigger
             && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+      {
          ret = MENU_ACTION_LEFT;
+         keydown[RETRO_DEVICE_ID_JOYPAD_LEFT] = true;
+      }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT)
             && switch_trigger
             && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      {
          ret = MENU_ACTION_RIGHT;
+         keydown[RETRO_DEVICE_ID_JOYPAD_RIGHT] = true;
+      }
 
       if (BIT256_GET_PTR(p_trigger_input, RARCH_ANALOG_RIGHT_Y_MINUS))
          ret = MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY;
@@ -5710,15 +5731,35 @@ unsigned menu_event(
          MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_Y, MENU_ACTION_SCAN);
       }
       else
-         memset(keydown, false, RARCH_FIRST_CUSTOM_BIND);
+      {
+         /* Ignore OK release if navigation happened while down */
+         if (ok_trigger_release)
+         {
+            if (     keydown[RETRO_DEVICE_ID_JOYPAD_UP]
+                  || keydown[RETRO_DEVICE_ID_JOYPAD_DOWN]
+                  || keydown[RETRO_DEVICE_ID_JOYPAD_LEFT]
+                  || keydown[RETRO_DEVICE_ID_JOYPAD_RIGHT]
+                  || keydown[menu_cancel_btn]
+               )
+               ok_trigger = false;
+
+            memset(keydown, 0, sizeof(keydown));
+         }
+      }
 
       if (ok_trigger)
          ret = MENU_ACTION_OK;
       else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
+      {
          ret = MENU_ACTION_CANCEL;
+         keydown[menu_cancel_btn] = true;
+      }
 
       if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
          ret = MENU_ACTION_TOGGLE;
+
+      if (ret != MENU_ACTION_NOOP && !ok_current)
+         memset(keydown, 0, sizeof(keydown));
 
       /* Prevent simultaneous hotkey actions according to hotkey block delay */
       if (input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey != NO_BTN)
@@ -8001,6 +8042,15 @@ int generic_menu_entry_action(
        * the menu stack. We therefore have to unset
        * MENU_ST_FLAG_PREVENT_POPULATE */
       menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+
+      /* Single-click playlist return */
+      if (settings->bools.input_menu_singleclick_playlists)
+      {
+         size_t new_selection = menu_st->selection_ptr;
+         menu_entries_pop_stack(&new_selection, 0, 0);
+         menu_st->selection_ptr = new_selection;
+         reset_navigation = false;
+      }
 
       /* Ozone requires thumbnail refreshing */
       if (menu_st->driver_ctx && menu_st->driver_ctx->refresh_thumbnail_image)

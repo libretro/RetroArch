@@ -7336,6 +7336,7 @@ unsigned menu_displaylist_build_list(
 #endif
                {MENU_ENUM_LABEL_PLAYLIST_USE_FILENAME,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_ALLOW_NON_PNG,              PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS,          PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,                 PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,                PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE,              PARSE_ONLY_INT,  true},
@@ -8200,6 +8201,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,          PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_INPUT_SWAP_SCROLL,             PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU,       PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS,         PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_ALLOW_TABS_BACK,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_SCROLL_FAST,                   PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_SCROLL_DELAY,                  PARSE_ONLY_UINT, true},

@@ -1835,6 +1835,10 @@ MSG_HASH(
    "all_users_control_menu"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "menu_singleclick_playlists"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MENU_ALLOW_TABS_BACK,
    "menu_allow_tabs_back"
    )

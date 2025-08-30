@@ -275,7 +275,8 @@ enum rgui_flags
    RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL  = (1 << 22),
    RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL = (1 << 23),
    RGUI_FLAG_IS_PLAYLISTS_TAB          = (1 << 24),
-   RGUI_FLAG_IS_QUICK_MENU             = (1 << 25)
+   RGUI_FLAG_IS_QUICK_MENU             = (1 << 25),
+   RGUI_FLAG_DRAW_ENTRY_SKIP           = (1 << 26)
 };
 
 typedef struct
@@ -5303,6 +5304,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       unsigned title_y               = rgui->term_layout.start_y - rgui->font_height_stride - 1;
       unsigned sublabel_y            = (rgui->term_layout.height * rgui->font_height_stride) + rgui->term_layout.start_y + 4;
       unsigned term_end_x            = rgui->term_layout.start_x + (rgui->term_layout.width * rgui->font_width_stride);
+      bool show_entries              = (rgui->flags & RGUI_FLAG_DRAW_ENTRY_SKIP) ? false : true;
       bool show_mini_thumbnails      = rgui_inline_thumbnails
             && rgui->playlist_index >= 0
             && (   (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
@@ -5488,7 +5490,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       y         = rgui->term_layout.start_y;
       new_start = menu_st->entries.begin;
 
-      for (i = new_start; i < end; i++, y += rgui->font_height_stride)
+      for (i = new_start; i < end && show_entries; i++, y += rgui->font_height_stride)
       {
          char entry_title_buf[NAME_MAX_LENGTH];
          char type_str_buf[NAME_MAX_LENGTH];
@@ -7905,6 +7907,9 @@ static void rgui_toggle(void *userdata, bool menu_on)
    if (!rgui || !settings)
       return;
 
+   /* Reset */
+   rgui->flags &= ~RGUI_FLAG_DRAW_ENTRY_SKIP;
+
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
     * 'save state' option */
@@ -8064,6 +8069,12 @@ static enum menu_action rgui_parse_menu_entry_action(
                   && (!(rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)))
                new_action = MENU_ACTION_NOOP;
          }
+
+         /* Make transition smoother for single-click playlist launching */
+         if (     config_get_ptr()->bools.input_menu_singleclick_playlists
+               && (  rgui->flags & RGUI_FLAG_IS_PLAYLIST
+                  || rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST))
+            rgui->flags |= RGUI_FLAG_DRAW_ENTRY_SKIP;
          break;
       case MENU_ACTION_CANCEL:
          if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
@@ -8242,6 +8253,24 @@ static enum menu_action rgui_parse_menu_entry_action(
       default:
          /* In all other cases, pass through input
           * menu action without intervention */
+         break;
+   }
+
+   switch (new_action)
+   {
+      case MENU_ACTION_UP:
+      case MENU_ACTION_DOWN:
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_CANCEL:
+         if (     config_get_ptr()->bools.input_menu_singleclick_playlists
+               && rgui->flags & RGUI_FLAG_DRAW_ENTRY_SKIP)
+         {
+            rgui->flags &= ~RGUI_FLAG_DRAW_ENTRY_SKIP;
+            new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      default:
          break;
    }
 

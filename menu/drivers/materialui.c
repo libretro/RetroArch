@@ -697,6 +697,7 @@ typedef struct materialui_handle
    float touch_feedback_alpha;
    int16_t pointer_start_x;
    int16_t pointer_start_y;
+   bool transition_alpha_lock;
 
    /* Colour theme parameters */
    enum materialui_color_theme color_theme;
@@ -7616,6 +7617,9 @@ error:
  * a transition animation is in process */
 static void materialui_colors_set_transition_alpha(materialui_handle_t *mui)
 {
+   if (mui->transition_alpha_lock)
+      mui->transition_alpha = 0.0f;
+
    if (mui->transition_alpha < 1.0f)
    {
       float alpha        = mui->transition_alpha;
@@ -7686,6 +7690,9 @@ static void materialui_colors_set_transition_alpha(materialui_handle_t *mui)
  * previously altered by a menu transition animation */
 static void materialui_colors_reset_transition_alpha(materialui_handle_t *mui)
 {
+   if (mui->transition_alpha_lock)
+      mui->transition_alpha = 0.0f;
+
    if (mui->transition_alpha < 1.0f)
    {
       /* Text colours */
@@ -9035,6 +9042,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->last_stack_size                   = 1;
 
    mui->scroll_animation_selection        = 0;
+   mui->transition_alpha_lock             = false;
 
    /* Ensure message box string is empty */
    mui->msgbox[0]                         = '\0';
@@ -10393,6 +10401,12 @@ static enum menu_action materialui_parse_menu_entry_action(
             if (!materialui_entry_onscreen(mui, selection))
                new_action = MENU_ACTION_NOOP;
          }
+
+         /* Make transition smoother for single-click playlist launching */
+         if (     config_get_ptr()->bools.input_menu_singleclick_playlists
+               && (  mui->flags & MUI_FLAG_IS_PLAYLIST
+                  || mui->flags & MUI_FLAG_IS_EXPLORE_LIST))
+            mui->transition_alpha_lock = true;
          break;
       case MENU_ACTION_CANCEL:
          if (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
@@ -10451,6 +10465,25 @@ static enum menu_action materialui_parse_menu_entry_action(
       default:
          /* In all other cases, pass through input
           * menu action without intervention */
+         break;
+   }
+
+   switch (new_action)
+   {
+      case MENU_ACTION_UP:
+      case MENU_ACTION_DOWN:
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_CANCEL:
+         if (     config_get_ptr()->bools.input_menu_singleclick_playlists
+               && mui->transition_alpha_lock)
+         {
+            mui->transition_alpha_lock = false;
+            mui->transition_alpha      = 1.0f;
+            new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      default:
          break;
    }
 
@@ -12244,6 +12277,9 @@ static void materialui_toggle(void *userdata, bool menu_on)
 
    if (!mui)
       return;
+
+   /* Reset */
+   mui->transition_alpha_lock = false;
 
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
