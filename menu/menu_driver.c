@@ -1863,6 +1863,7 @@ static void menu_input_get_mouse_hw_state(
       bool overlay_active,
       menu_input_pointer_hw_state_t *hw_state)
 {
+   struct menu_state *menu_st      = &menu_driver_state;
    rarch_joypad_info_t joypad_info;
    static int16_t last_x           = -0x7fff;
    static int16_t last_y           = -0x7fff;
@@ -1882,6 +1883,13 @@ static void menu_input_get_mouse_hw_state(
    if (overlay_active)
       menu_mouse_enable            = false;
 #endif
+
+   /* Ignore initial mouse position also after reinit */
+   if (menu_st->input_pointer_hw_state.flags & MENU_INP_PTR_FLG_RESET)
+   {
+      menu_st->input_pointer_hw_state.flags &= ~MENU_INP_PTR_FLG_RESET;
+      last_x = last_y = -0x7fff;
+   }
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */

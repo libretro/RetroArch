@@ -1682,6 +1682,11 @@ void drivers_init(
             location_st->active = false;
    }
 
+#ifdef HAVE_MENU
+   if (flags & DRIVER_INPUT_MASK)
+      menu_st->input_pointer_hw_state.flags |= MENU_INP_PTR_FLG_RESET;
+#endif
+
    core_info_init_current_core();
 
 #if defined(HAVE_GFX_WIDGETS)
