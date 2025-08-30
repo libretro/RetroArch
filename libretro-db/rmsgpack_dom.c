@@ -430,7 +430,7 @@ int rmsgpack_dom_read_with(intfstream_t *fd, struct rmsgpack_dom_value *out, str
    return rv;
 }
 
-struct rmsgpack_dom_reader_state *rmsgpack_dom_reader_state_new()
+struct rmsgpack_dom_reader_state *rmsgpack_dom_reader_state_new(void)
 {
    struct rmsgpack_dom_reader_state *s = calloc(1, sizeof(struct rmsgpack_dom_reader_state));
    s->i = 0;
@@ -451,7 +451,7 @@ int rmsgpack_dom_read(intfstream_t *fd, struct rmsgpack_dom_value *out)
    s.i = 0;
    s.growable = false;
    s.capacity = MAX_DEPTH;
-   s.stack = alloca(MAX_DEPTH);
+   s.stack = alloca(MAX_DEPTH*sizeof(struct rmsgpack_dom_value *));
    return rmsgpack_dom_read_with(fd, out, &s);
 }
 
