@@ -448,7 +448,8 @@ enum ozone_handle_flags2
    OZONE_FLAG2_PENDING_CURSOR_IN_SIDEBAR             = (1 <<  9),
    OZONE_FLAG2_IS_QUICK_MENU                         = (1 << 10),
    OZONE_FLAG2_IS_PLAYLISTS_TAB                      = (1 << 11),
-   OZONE_FLAG2_IGNORE_MISSING_ASSETS                 = (1 << 12)
+   OZONE_FLAG2_IGNORE_MISSING_ASSETS                 = (1 << 12),
+   OZONE_FLAG2_BLOCK_ANIMATION                       = (1 << 13)
 };
 
 struct ozone_handle
@@ -9104,6 +9105,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->num_search_terms_old                  = 0;
 
    ozone->flags2                               &= ~OZONE_FLAG2_CURSOR_WIGGLING;
+   ozone->flags2                               &= ~OZONE_FLAG2_BLOCK_ANIMATION;
 
    if (!(ozone->screensaver = menu_screensaver_init()))
       goto error;
@@ -9336,7 +9338,7 @@ static void ozone_refresh_thumbnail_image(void *data, size_t i)
    ozone->flags &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
    ozone_unload_thumbnail_textures(ozone);
 
-   ozone->flags |= OZONE_FLAG_FIRST_FRAME;
+   ozone->flags2 |= OZONE_FLAG2_BLOCK_ANIMATION;
 
    /* Refresh metadata */
    if (!i)
@@ -11978,6 +11980,15 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
+   if (ozone->flags & OZONE_FLAG_FIRST_FRAME)
+   {
+      menu_input_get_pointer_state(&ozone->pointer);
+
+      ozone->cursor_x_old = ozone->pointer.x;
+      ozone->cursor_y_old = ozone->pointer.y;
+      ozone->flags       &= ~OZONE_FLAG_FIRST_FRAME;
+   }
+
    /* OSK Fade detection */
    if (draw_osk != draw_osk_old)
    {
@@ -12381,9 +12392,6 @@ static void ozone_list_open(
 
    ozone->flags                   |= OZONE_FLAG_DRAW_OLD_LIST;
 
-   if (ozone->flags & OZONE_FLAG_FIRST_FRAME)
-      animate = false;
-
    /* Sidebar animation */
    ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, animate);
 
@@ -12636,16 +12644,11 @@ static void ozone_populate_entries(
 
    if (animate)
       if (ozone->categories_selection_ptr == ozone->categories_active_idx_old)
-         ozone_list_open(ozone, ozone_collapse_sidebar, (!(ozone->flags & OZONE_FLAG_FIRST_FRAME)));
+         ozone_list_open(ozone, ozone_collapse_sidebar,
+               (  !(ozone->flags & OZONE_FLAG_FIRST_FRAME)
+               && !(ozone->flags2 & OZONE_FLAG2_BLOCK_ANIMATION)));
 
-   if (ozone->flags & OZONE_FLAG_FIRST_FRAME)
-   {
-      menu_input_get_pointer_state(&ozone->pointer);
-
-      ozone->cursor_x_old = ozone->pointer.x;
-      ozone->cursor_y_old = ozone->pointer.y;
-      ozone->flags       &= ~OZONE_FLAG_FIRST_FRAME;
-   }
+   ozone->flags2 &= ~OZONE_FLAG2_BLOCK_ANIMATION;
 
    /* Reset savestate thumbnails always */
    ozone_update_savestate_thumbnail_path(ozone, (unsigned)menu_st->selection_ptr);
