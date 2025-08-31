@@ -9390,17 +9390,20 @@ static void materialui_populate_nav_bar(materialui_handle_t *mui,
    }
 
    /* > Settings */
-   mui->nav_bar.menu_tabs[menu_tab_index].type          =
-         MUI_NAV_BAR_MENU_TAB_SETTINGS;
-   mui->nav_bar.menu_tabs[menu_tab_index].texture_index =
-         MUI_TEXTURE_TAB_SETTINGS;
-   mui->nav_bar.menu_tabs[menu_tab_index].active        =
-         string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB));
+   if (!settings->bools.kiosk_mode_enable)
+   {
+      mui->nav_bar.menu_tabs[menu_tab_index].type          =
+            MUI_NAV_BAR_MENU_TAB_SETTINGS;
+      mui->nav_bar.menu_tabs[menu_tab_index].texture_index =
+            MUI_TEXTURE_TAB_SETTINGS;
+      mui->nav_bar.menu_tabs[menu_tab_index].active        =
+            string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB));
 
-   if (mui->nav_bar.menu_tabs[menu_tab_index].active)
-      mui->nav_bar.active_menu_tab_index = menu_tab_index;
+      if (mui->nav_bar.menu_tabs[menu_tab_index].active)
+         mui->nav_bar.active_menu_tab_index = menu_tab_index;
 
-   menu_tab_index++;
+      menu_tab_index++;
+   }
 
    /* Cache current number of menu tabs */
    mui->nav_bar.num_menu_tabs = menu_tab_index;
@@ -11869,7 +11872,9 @@ static void materialui_list_insert(void *userdata,
                node->icon_texture_index = MUI_TEXTURE_SAVE_STATE;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE)))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_LOAD_STATE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS))
+            )
             {
                node->icon_texture_index = MUI_TEXTURE_UNDO_LOAD_STATE;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
@@ -11878,6 +11883,7 @@ static void materialui_list_insert(void *userdata,
                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_UNDO_SAVE_STATE))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_UNLOAD))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_UNDO_SAVE_STATE;
