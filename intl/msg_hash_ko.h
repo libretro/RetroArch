@@ -4788,6 +4788,18 @@ MSG_HASH(
    "리플레이 녹화 중에 게임의 상태저장을 일정 간격으로 자동 실행합니다. 기본값은 비활성이며 기간은 초 단위입니다. 0으로 설정시 자동 상태저장이 비활성 됩니다."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "리플레이 중간에 일정 간격으로 저장되어 있는 상태저장을 재생 중에 불러올 지 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "리플레이 체크포인트 역직렬화 수행"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "리플레이 중간에 일정 간격으로 저장되어 있는 상태저장을 재생 중에 불러올 지 설정합니다. 대부분의 코어에서 활성화하는 것이 좋지만, 일부 코어는 역직렬화 과정에서 이상 증상을 보일 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "상태저장 인덱스 자동 증가"
    )

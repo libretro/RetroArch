@@ -4664,6 +4664,10 @@ MSG_HASH(
    "Salva automaticamente il salvataggio rapidondurante la registrazione del replay a intervalli regolari. Questa funzione è disattivata per impostazione predefinita, a meno che non venga modificata. L’intervallo è misurato in secondi. Un valore pari a 0 disattiva la registrazione dei checkpoint."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Scegli se deserializzare i checkpoint memorizzati nei replay durante la normale riproduzione."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "Incrementa automaticamente l’indice del salvataggio rapido"
    )

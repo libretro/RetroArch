@@ -4756,6 +4756,18 @@ MSG_HASH(
    "Guarda automáticamente y a intervalos regulares el estado del juego durante la grabación de una repetición. Esta opción está desactivada por defecto a menos que se especifique lo contrario. Esta función se desactiva seleccionando 0."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Indica si se deben deserializar los puntos de control almacenados en las repeticiones durante su reproducción."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Deserializar puntos de control de repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Indica si se deben deserializar los puntos de control almacenados en las repeticiones durante su reproducción. La mayoría de núcleos deberían tener activada esta opción, pero algunos podrían mostrar comportamientos erráticos al deserializar un contenido."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    "Aumentar automáticamente el índice de guardados rápidos"
    )
