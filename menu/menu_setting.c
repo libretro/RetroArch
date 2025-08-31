@@ -9530,6 +9530,31 @@ static void update_streaming_url_write_handler(rarch_setting_t *setting)
    recording_driver_update_streaming_url();
 }
 
+static void record_driver_write_handler(rarch_setting_t *setting)
+{
+   /* Force the recording settings page to rebuild so that
+    * driver-specific items are shown/hidden immediately. */
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_st->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                    | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+}
+
+static int setting_record_driver_action_left(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   int ret = setting_string_action_left_driver(setting, idx, wraparound);
+   record_driver_write_handler(setting);
+   return ret;
+}
+
+static int setting_record_driver_action_right(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   int ret = setting_string_action_right_driver(setting, idx, wraparound);
+   record_driver_write_handler(setting);
+   return ret;
+}
+
 #ifdef HAVE_LAKKA
 static void systemd_service_toggle(const char *path, char *unit, bool enable)
 {
@@ -11375,6 +11400,17 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].action_ok    = setting_action_ok_uint;
                (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
                (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+
+               /* Record driver needs refresh-aware handlers so that the
+                * recording settings page rebuilds when the driver changes. */
+               if (string_options_entries[i].name_enum_idx
+                     == MENU_ENUM_LABEL_RECORD_DRIVER)
+               {
+                  (*list)[list_info->index - 1].action_left
+                        = setting_record_driver_action_left;
+                  (*list)[list_info->index - 1].action_right
+                        = setting_record_driver_action_right;
+               }
             }
 
             END_SUB_GROUP(list, list_info, parent_group);

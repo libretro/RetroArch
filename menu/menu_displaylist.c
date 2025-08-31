@@ -3596,7 +3596,9 @@ static int menu_displaylist_parse_load_content_settings(
                      count++;
                }
 
-               if (settings->bools.quick_menu_show_start_streaming)
+               if (  settings->bools.quick_menu_show_start_streaming
+                  && string_is_equal(settings->arrays.record_driver,
+                        "ffmpeg"))
                {
                   if (menu_entries_append(list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING),
@@ -9441,18 +9443,24 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_RECORDING_SETTINGS_LIST:
          {
             unsigned streaming_mode        = settings->uints.streaming_mode;
+            bool is_ffmpeg = string_is_equal(
+                  settings->arrays.record_driver, "ffmpeg");
+            bool has_video = is_ffmpeg
+                  || string_is_equal(
+                     settings->arrays.record_driver, "avfoundation");
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,                                  PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_RECORD_CONFIG,                                         PARSE_ONLY_PATH,   true},
-               {MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,                                  PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD,                              PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_VIDEO_GPU_RECORD,                                      PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_STREAMING_MODE,                                        PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,                                  PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_STREAM_CONFIG,                                         PARSE_ONLY_PATH,   true},
-               {MENU_ENUM_LABEL_STREAMING_TITLE,                                       PARSE_ONLY_STRING, true},
-               {MENU_ENUM_LABEL_STREAMING_URL,                                         PARSE_ONLY_STRING, true},
-               {MENU_ENUM_LABEL_UDP_STREAM_PORT,                                       PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_RECORD_DRIVER,                                         PARSE_ONLY_STRING_OPTIONS, true},
+               {MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,                                  PARSE_ONLY_UINT,   has_video},
+               {MENU_ENUM_LABEL_RECORD_CONFIG,                                         PARSE_ONLY_PATH,   is_ffmpeg},
+               {MENU_ENUM_LABEL_VIDEO_RECORD_THREADS,                                  PARSE_ONLY_UINT,   is_ffmpeg},
+               {MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD,                              PARSE_ONLY_BOOL,   has_video},
+               {MENU_ENUM_LABEL_VIDEO_GPU_RECORD,                                      PARSE_ONLY_BOOL,   has_video},
+               {MENU_ENUM_LABEL_STREAMING_MODE,                                        PARSE_ONLY_UINT,   is_ffmpeg},
+               {MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY,                                  PARSE_ONLY_UINT,   is_ffmpeg},
+               {MENU_ENUM_LABEL_STREAM_CONFIG,                                         PARSE_ONLY_PATH,   is_ffmpeg},
+               {MENU_ENUM_LABEL_STREAMING_TITLE,                                       PARSE_ONLY_STRING, is_ffmpeg},
+               {MENU_ENUM_LABEL_STREAMING_URL,                                         PARSE_ONLY_STRING, is_ffmpeg},
+               {MENU_ENUM_LABEL_UDP_STREAM_PORT,                                       PARSE_ONLY_UINT,   false},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -9460,7 +9468,7 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_UDP_STREAM_PORT:
-                     if (streaming_mode == STREAMING_MODE_LOCAL)
+                     if (is_ffmpeg && streaming_mode == STREAMING_MODE_LOCAL)
                         build_list[i].checked = true;
                      break;
                   default:
