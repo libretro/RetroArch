@@ -3717,6 +3717,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CORE_OPTIONS_RESET:
       case MENU_ENUM_LABEL_REMAP_FILE_RESET:
       case MENU_ENUM_LABEL_OVERRIDE_UNLOAD:
+      case MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE:
+      case MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_CORE_OPTIONS_FLUSH:
       case MENU_ENUM_LABEL_REMAP_FILE_FLUSH:

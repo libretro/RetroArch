@@ -4332,6 +4332,33 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
          count++;
    }
 
+   /* Move password-hidden enablers under Information if visible */
+   {
+      const char *menu_ident = menu_driver_ident();
+      settings_t *settings   = config_get_ptr();
+
+      if (     !settings->bools.menu_content_show_settings
+            && !settings->bools.kiosk_mode_enable
+            && !( string_is_equal(menu_ident, "glui")
+               && settings->bools.menu_materialui_show_nav_bar)
+            && !string_is_empty(settings->paths.menu_content_show_settings_password))
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+               info_list,
+               MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+               PARSE_ACTION,
+               false) == 0)
+            count++;
+
+      if (     settings->bools.kiosk_mode_enable
+            && !string_is_empty(settings->paths.kiosk_mode_password))
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+               info_list,
+               MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE,
+               PARSE_ACTION,
+               false) == 0)
+            count++;
+   }
+
    return count;
 }
 
@@ -15076,6 +15103,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB)
                   && !settings->bools.kiosk_mode_enable;
                bool show_settings            = settings->bools.menu_content_show_settings
+                     && !settings->bools.kiosk_mode_enable
                      && (  (string_is_equal(menu_ident, "rgui"))
                         || (string_is_equal(menu_ident, "glui")
                      &&    !settings->bools.menu_materialui_show_nav_bar));
@@ -15261,23 +15289,30 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_ENUM_LABEL_SETTINGS, PARSE_ACTION, false) == 0)
                      count++;
 
-               if (     !settings->bools.menu_content_show_settings
-                     && !string_is_empty(settings->paths.menu_content_show_settings_password))
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
-                        info->list,
-                        MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
-                        PARSE_ACTION,
-                        false) == 0)
-                     count++;
+               /* Move password-hidden enablers under Information if visible */
+               if (!settings->bools.menu_show_information)
+               {
+                  if (     !settings->bools.menu_content_show_settings
+                        && !settings->bools.kiosk_mode_enable
+                        && !( string_is_equal(menu_ident, "glui")
+                           && settings->bools.menu_materialui_show_nav_bar)
+                        && !string_is_empty(settings->paths.menu_content_show_settings_password))
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                           info->list,
+                           MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+                           PARSE_ACTION,
+                           false) == 0)
+                        count++;
 
-               if (     settings->bools.kiosk_mode_enable
-                     && !string_is_empty(settings->paths.kiosk_mode_password))
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
-                        info->list,
-                        MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE,
-                        PARSE_ACTION,
-                        false) == 0)
-                     count++;
+                  if (     settings->bools.kiosk_mode_enable
+                        && !string_is_empty(settings->paths.kiosk_mode_password))
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                           info->list,
+                           MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE,
+                           PARSE_ACTION,
+                           false) == 0)
+                        count++;
+               }
 
                if (settings->bools.menu_show_information)
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,

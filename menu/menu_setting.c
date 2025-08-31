@@ -18738,43 +18738,39 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-         if (     string_is_equal(settings->arrays.menu_driver, "xmb")
-               || string_is_equal(settings->arrays.menu_driver, "ozone"))
-         {
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.kiosk_mode_enable,
-                  MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,
-                  MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-                  DEFAULT_KIOSK_MODE_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.kiosk_mode_enable,
+               MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,
+               MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
+               DEFAULT_KIOSK_MODE_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         (*list)[list_info->index - 1].action_ok     = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = setting_bool_action_right_with_refresh;
 
-            CONFIG_STRING(
-                  list, list_info,
-                  settings->paths.kiosk_mode_password,
-                  sizeof(settings->paths.kiosk_mode_password),
-                  MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,
-                  MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
-                  "",
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
-            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
-         }
+         CONFIG_STRING(
+               list, list_info,
+               settings->paths.kiosk_mode_password,
+               sizeof(settings->paths.kiosk_mode_password),
+               MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,
+               MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
+               "",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
+         (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
 
 #ifdef HAVE_THREADS
          CONFIG_BOOL(
@@ -19355,10 +19351,6 @@ static bool setting_append_list(
 #endif
 #endif
 
-#if defined(HAVE_XMB) || defined(HAVE_OZONE)
-         if (     string_is_equal(settings->arrays.menu_driver, "xmb")
-               || string_is_equal(settings->arrays.menu_driver, "ozone"))
-         {
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_content_show_settings,
@@ -19390,8 +19382,6 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED);
             (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_PASSWORD_LINE_EDIT;
             (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
-         }
-#endif
 
             CONFIG_BOOL(
                   list, list_info,
