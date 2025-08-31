@@ -5443,6 +5443,12 @@ unsigned menu_event(
          navigation_current        |= (1 << navigation_buttons[i]);
    }
 
+   /* Ignore Start when both Start and OK are pressed
+    * by non-unified menu input (Enter) */
+   if (     BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
+         && BIT256_GET_PTR(p_input, menu_ok_btn))
+      navigation_current &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
+
    if (navigation_current)
    {
       float delta_time              = (float)(menu_st->current_time_us - last_time_us) / 1000;
