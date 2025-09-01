@@ -288,16 +288,26 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #endif
 #else /* !HAVE_QT && !__WINRT__ */
 #if TARGET_OS_MAC /* any apple variant: macOS, iOS, tvOS, ... */
-   char buffer[2048];
+   char *buffer = NULL;
    va_list ap_cp;
    va_copy(ap_cp, ap);
-   vsnprintf(buffer, sizeof(buffer), fmt, ap_cp);
+   int r = vasprintf(&buffer, fmt, ap_cp);
    va_end(ap_cp);
+   if (r < 0 || !buffer)
+   {
+      /* Fallback to a minimal newline to keep output formatting sensible */
+      buffer = (char*)malloc(2);
+      if (buffer)
+      {
+         buffer[0] = '\n';
+         buffer[1] = '\0';
+      }
+   }
 
 #if TARGET_OS_OSX /* really macOS */
    /* macOS: output to stdout for developer convenience */
    printf("%s %s", tag_v, buffer);
-#elif TARGET_OS_IPHONE /* iOS, tvOS, ... */
+#else /* iOS, tvOS, ... */
 #if TARGET_OS_SIMULATOR
    /* iOS Simulator: output to stderr for Xcode console */
    fprintf(stderr, "%s %s", tag_v, buffer);
@@ -323,15 +333,9 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s %s", tag_v, buffer);
    asl_free(msg);
 #endif
-#endif /* TARGET_OS_IPHONE */
-
-   /* Always write to file for all Apple platforms */
-   if (fp)
-   {
-      fprintf(fp, "%s %s", tag_v, buffer);
-      fflush(fp);
-   }
-#else
+#endif /* TARGET_OS_OSX */
+   free(buffer);
+#endif /* TARGET_OS_MAC */
 #if defined(HAVE_LIBNX)
    mutexLock(&g_verbosity->mtx);
 #endif
@@ -345,7 +349,6 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    mutexUnlock(&g_verbosity->mtx);
 #endif
 
-#endif
 #endif
 #endif
 }
