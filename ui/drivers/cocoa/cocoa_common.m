@@ -196,7 +196,11 @@ void rarch_stop_draw_observer(void)
       view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
       if (@available(iOS 15.0, tvOS 15.0, *))
-         [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeDefault];
+      {
+         /* Use a wide range by default to support ProMotion displays,
+          * the display server will set the exact rate when needed */
+         [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(60, 120, 120)];
+      }
 #endif
       [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
 #elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000

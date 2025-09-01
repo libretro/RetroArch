@@ -354,6 +354,43 @@ static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
 }
 #endif
 
+static void cocoa_vk_gfx_ctx_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+{
+#if TARGET_OS_IPHONE
+   /* iOS/tvOS: Return physical screen resolution, not window size */
+   UIScreen *screen = [UIScreen mainScreen];
+   CGRect nativeBounds = screen.nativeBounds;
+   *width  = (unsigned)nativeBounds.size.width;
+   *height = (unsigned)nativeBounds.size.height;
+
+   if (desc && desc_len > 0)
+   {
+      float scale = cocoa_screen_get_native_scale();
+      if (scale >= 3.0f)
+         strlcpy(desc, "Super Retina", desc_len);
+      else if (scale >= 2.0f)
+         strlcpy(desc, "Retina", desc_len);
+      else
+         strlcpy(desc, "Standard", desc_len);
+   }
+#else
+   /* macOS: Return display resolution */
+   CGDirectDisplayID display = CGMainDisplayID();
+   *width  = (unsigned)CGDisplayPixelsWide(display);
+   *height = (unsigned)CGDisplayPixelsHigh(display);
+
+   if (desc && desc_len > 0)
+   {
+      float scale = cocoa_screen_get_backing_scale_factor();
+      if (scale >= 2.0f)
+         strlcpy(desc, "Retina", desc_len);
+      else
+         strlcpy(desc, "Standard", desc_len);
+   }
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_vk_gfx_ctx_init,
    cocoa_vk_gfx_ctx_destroy,
@@ -367,7 +404,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_vk_gfx_ctx_get_video_size,
 #endif
    cocoa_vk_gfx_ctx_get_refresh_rate,
-   NULL, /* get_video_output_size */
+   cocoa_vk_gfx_ctx_get_video_output_size,
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    cocoa_get_metrics,
