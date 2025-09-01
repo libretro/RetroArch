@@ -10409,7 +10409,21 @@ static enum menu_action materialui_parse_menu_entry_action(
          if (     config_get_ptr()->bools.input_menu_singleclick_playlists
                && (  mui->flags & MUI_FLAG_IS_PLAYLIST
                   || mui->flags & MUI_FLAG_IS_EXPLORE_LIST))
+         {
+            if (mui->flags & MUI_FLAG_IS_EXPLORE_LIST)
+            {
+#if defined(HAVE_LIBRETRODB)
+               menu_entry_t entry;
+               MENU_ENTRY_INITIALIZE(entry);
+               menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+               if (     entry.type == FILE_TYPE_RDB
+                     || entry.type == FILE_TYPE_PLAIN
+                     || !menu_explore_is_content_list())
+                  break;
+#endif
+            }
             mui->transition_alpha_lock = true;
+         }
          break;
       case MENU_ACTION_CANCEL:
          if (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)

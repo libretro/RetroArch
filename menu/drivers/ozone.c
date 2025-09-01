@@ -8708,7 +8708,21 @@ static enum menu_action ozone_parse_menu_entry_action(
          if (     settings->bools.input_menu_singleclick_playlists
                && (  ozone->flags & OZONE_FLAG_IS_PLAYLIST
                   || ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST))
+         {
+            if (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
+            {
+#if defined(HAVE_LIBRETRODB)
+               menu_entry_t entry;
+               MENU_ENTRY_INITIALIZE(entry);
+               menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+               if (     entry.type == FILE_TYPE_RDB
+                     || entry.type == FILE_TYPE_PLAIN
+                     || !menu_explore_is_content_list())
+                  break;
+#endif
+            }
             ozone->animations.list_alpha = 0.0f;
+         }
          break;
       case MENU_ACTION_CANCEL:
          ozone->flags &= ~OZONE_FLAG_CURSOR_MODE;
@@ -12451,7 +12465,7 @@ static void ozone_list_open(
          ozone->sidebar_offset = -ozone->dimensions_sidebar_width;
    }
 
-   if (animate)
+   if (animate && ozone->animations.list_alpha != 0.0f)
    {
       ozone->animations.list_alpha = 0.0f;
 

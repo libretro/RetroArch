@@ -8074,7 +8074,21 @@ static enum menu_action rgui_parse_menu_entry_action(
          if (     config_get_ptr()->bools.input_menu_singleclick_playlists
                && (  rgui->flags & RGUI_FLAG_IS_PLAYLIST
                   || rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST))
+         {
+            if (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
+            {
+#if defined(HAVE_LIBRETRODB)
+               menu_entry_t entry;
+               MENU_ENTRY_INITIALIZE(entry);
+               menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+               if (     entry.type == FILE_TYPE_RDB
+                     || entry.type == FILE_TYPE_PLAIN
+                     || !menu_explore_is_content_list())
+                  break;
+#endif
+            }
             rgui->flags |= RGUI_FLAG_DRAW_ENTRY_SKIP;
+         }
          break;
       case MENU_ACTION_CANCEL:
          if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)

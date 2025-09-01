@@ -5847,7 +5847,21 @@ static enum menu_action xmb_parse_menu_entry_action(
          /* Make transition smoother for single-click playlist launching */
          if (     config_get_ptr()->bools.input_menu_singleclick_playlists
                && (xmb->is_playlist || xmb->is_explore_list))
+         {
+            if (xmb->is_explore_list)
+            {
+#if defined(HAVE_LIBRETRODB)
+               menu_entry_t entry;
+               MENU_ENTRY_INITIALIZE(entry);
+               menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+               if (     entry.type == FILE_TYPE_RDB
+                     || entry.type == FILE_TYPE_PLAIN
+                     || !menu_explore_is_content_list())
+                  break;
+#endif
+            }
             xmb->alpha_list = 0.0f;
+         }
          break;
       case MENU_ACTION_CANCEL:
          if (xmb->is_state_slot)
