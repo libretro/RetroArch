@@ -138,10 +138,6 @@ MSG_HASH(
    "Άνοιγμα του παραδοσιακού μενού επιφάνειας εργασίας."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Απενεργοποίηση λειτουργίας Kiosk (απαιτείται επανεκκίνηση)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Εμφάνιση όλων των σχετικών ρυθμίσεων ρυθμίσεων."
    )

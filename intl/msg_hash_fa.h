@@ -134,10 +134,6 @@ MSG_HASH(
    "باز کردن فهرست سنتی میزکار."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "غیرفعال کردن حالت کیوسک (نیازمند شروع مجدد)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "نمایش تمام تنظیمات مربوط به پیکربندی."
    )

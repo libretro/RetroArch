@@ -142,10 +142,6 @@ MSG_HASH(
    "Abre o menu tradicional do desktop."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Desativar o Modo Quiosque (é necessário reiniciar)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Mostrar todas as definições relacionadas às configurações."
    )

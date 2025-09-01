@@ -146,10 +146,6 @@ MSG_HASH(
    "Адкрывае традыцыйнае меню працоўнага стала."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Адключыць рэжым кіёска (патрабуецца перазапуск)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Паказаць усе адпаведныя канфігурацыі налады."
    )
@@ -11352,10 +11348,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    "Зрух загалоўка па гарызанталі"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Уключыць укладку 'Налады' (патрабуецца перазапуск)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,

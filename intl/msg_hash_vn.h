@@ -146,10 +146,6 @@ MSG_HASH(
    "Mở Desktop Menu cổ điển."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Vô hiệu hóa chế độ Kiosk (Yêu cầu khởi động lại)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Hiện tất cả cấu hình cài đặt liên quan."
    )

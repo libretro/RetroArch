@@ -134,10 +134,6 @@ MSG_HASH(
    "Åpne den tradisjonelle skrivebordsmenyen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Deaktiver Kiosk-modus (Omstart kreves)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Vis alle konfigurasjonsrelaterte innstillinger."
    )

@@ -142,10 +142,6 @@ MSG_HASH(
    "Oscail an roghchlár deisce traidisiúnta."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Díchumasaigh Mód Ciosc (Atosú ag teastáil)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Taispeáin na socruithe uile a bhaineann leis an gcumraíocht."
    )
@@ -11560,10 +11556,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    "Fritháireamh Cothrománach Imeall Teidil"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Cumasaigh an cluaisín Socruithe (Atosú ag teastáil)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,

@@ -134,10 +134,6 @@ MSG_HASH(
    "Отворете традиционното меню на работния плот."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Изключване на режим Киоск (Необходимо е рестартиране)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Показване на всички настройки свързани с конфигурацията."
    )
