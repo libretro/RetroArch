@@ -5711,6 +5711,8 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
 {
    int ret;
    struct menu_state   *menu_st = menu_state_get_ptr();
+   bool contentless_core        = false;
+
    /* Reset navigation pointer
     * > If we are returning to the quick menu, want
     *   the active entry to be 'Run' (first item in
@@ -5742,7 +5744,10 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
 
          if (   string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB))
              || string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST)))
+         {
             flush_target = parent_label;
+            contentless_core = true;
+         }
       }
 
       menu_entries_flush_stack(flush_target, 0);
@@ -5755,7 +5760,7 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
    }
 
    /* Single-click playlist return */
-   if (config_get_ptr()->bools.input_menu_singleclick_playlists)
+   if (config_get_ptr()->bools.input_menu_singleclick_playlists && !contentless_core)
    {
       size_t new_selection = menu_st->selection_ptr;
       menu_entries_pop_stack(&new_selection, 0, 0);

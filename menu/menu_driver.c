@@ -8060,7 +8060,7 @@ int generic_menu_entry_action(
       menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
 
       /* Single-click playlist return */
-      if (settings->bools.input_menu_singleclick_playlists)
+      if (settings->bools.input_menu_singleclick_playlists && reset_navigation)
       {
          size_t new_selection = menu_st->selection_ptr;
          menu_entries_pop_stack(&new_selection, 0, 0);
