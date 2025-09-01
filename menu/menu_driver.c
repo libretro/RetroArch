@@ -8021,16 +8021,19 @@ int generic_menu_entry_action(
          if (string_is_empty(parent_label))
             continue;
 
-         /* If core was launched via a playlist, flush
+         /* If core was launched via a playlist or Explore, flush
           * to playlist entry menu */
-         if (    string_is_equal(parent_label,
-                 msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS))
-              && (!string_is_empty(deferred_path)
-              && !string_is_empty(content_path)
-              && string_is_equal(deferred_path, content_path))
-             )
+         if (     (  string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS))
+                  || string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+               && (!string_is_empty(deferred_path)
+               && !string_is_empty(content_path)
+               && string_is_equal(deferred_path, content_path))
+            )
          {
-            flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
+            if (string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+               flush_target = msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB);
+            else
+               flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
             break;
          }
          /* If core was launched via 'Contentless Cores' menu,
