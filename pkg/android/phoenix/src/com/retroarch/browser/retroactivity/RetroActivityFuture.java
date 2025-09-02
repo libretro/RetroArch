@@ -19,6 +19,9 @@ import java.lang.reflect.Method;
 
 public final class RetroActivityFuture extends RetroActivityCamera {
 
+  // Tracks activity lifecycle state for MainMenuActivity resume detection
+  public static volatile boolean isRunning = false;
+
   // If set to true then RetroArch will completely exit when it loses focus
   private boolean quitfocus = false;
 
@@ -55,7 +58,8 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-
+    
+    isRunning = true;
     mDecorView = getWindow().getDecorView();
 
     // If QUITFOCUS parameter is provided then enable that Retroarch quits when focus is lost
@@ -66,7 +70,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   public void onNewIntent(Intent intent) {
     super.onNewIntent(intent);
     
-    // Check if this intent contains game launch parameters
+    // Extract game parameters from new intent
     String newRom = intent.getStringExtra("ROM");
     String newCore = intent.getStringExtra("LIBRETRO");
     
@@ -75,17 +79,11 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     String currentRom = currentIntent != null ? currentIntent.getStringExtra("ROM") : null;
     String currentCore = currentIntent != null ? currentIntent.getStringExtra("LIBRETRO") : null;
     
-    // Check if we're trying to launch different content
-    boolean isDifferentContent = false;
-    if (newRom != null && !newRom.equals(currentRom)) {
-      isDifferentContent = true;
-    }
-    if (newCore != null && !newCore.equals(currentCore)) {
-      isDifferentContent = true;
-    }
     
-    if (isDifferentContent) {
-      // Exit cleanly and let the system restart us with new content
+    // Check if we're trying to launch different content  
+    if ((newRom != null && !newRom.equals(currentRom)) ||
+        (newCore != null && !newCore.equals(currentCore))) {
+      // Different game content - exit cleanly and let launcher restart us
       finish();
       System.exit(0);
     } else {
@@ -93,7 +91,6 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       setIntent(intent);
     }
   }
-
 
   @Override
   public void onResume() {
@@ -132,6 +129,12 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
     // If QUITFOCUS parameter was set then completely exit RetroArch when focus is lost
     if (quitfocus) System.exit(0);
+  }
+
+  @Override
+  public void onDestroy() {
+    super.onDestroy();
+    isRunning = false;
   }
 
   @Override
