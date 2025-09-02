@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Check Out Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download ares-cli-rs
         uses: robinraju/release-downloader@v1.11
