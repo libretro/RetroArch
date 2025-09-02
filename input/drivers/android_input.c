@@ -905,9 +905,32 @@ static INLINE void android_input_poll_event_type_motion(
             /* Optional: Update cursor position for hover if settings allow */
             if (settings->bools.input_stylus_hover_moves_pointer && action == AMOTION_EVENT_ACTION_HOVER_MOVE)
             {
+               struct video_viewport vp = {0};
+               
+               /* Update mouse deltas for mouse-like cursor behavior */
                android_mouse_calculate_deltas(android, event, motion_ptr, source);
+               
+               /* Also update absolute pointer coordinates for RETRO_DEVICE_POINTER */
+               video_driver_translate_coord_viewport_confined_wrap(
+                     &vp, x, y,
+                     &android->pointer[motion_ptr].confined_x,
+                     &android->pointer[motion_ptr].confined_y,
+                     &android->pointer[motion_ptr].full_x,
+                     &android->pointer[motion_ptr].full_y);
+               
+               video_driver_translate_coord_viewport_wrap(
+                     &vp, x, y,
+                     &android->pointer[motion_ptr].x,
+                     &android->pointer[motion_ptr].y,
+                     &android->pointer[motion_ptr].full_x,
+                     &android->pointer[motion_ptr].full_y);
+               
+               /* Ensure pointer_count covers this motion_ptr */
+               if (android->pointer_count < (int)motion_ptr + 1)
+                  android->pointer_count = (int)motion_ptr + 1;
+               
 #ifdef DEBUG_ANDROID_INPUT
-               RARCH_LOG("[RA Input] Stylus hover cursor update (user enabled)\n");
+               RARCH_LOG("[RA Input] Stylus hover cursor update (user enabled) - mouse + pointer coords\n");
 #endif
             }
             
@@ -1058,12 +1081,12 @@ static INLINE void android_input_poll_event_type_motion(
                       pressure, distance);
 #endif
                
-            /* STYLUS AS POINTER: Route to RETRO_DEVICE_POINTER for menu interaction
-             * Handle DOWN/MOVE => active pointer; UP => release pointer
-             * Only activate pointer when stylus_pressed (respects contact setting) */
+            /* STYLUS POINTER: Mimic native touchscreen behavior for menu consistency
+             * Native touchscreen ONLY updates coordinates on contact, NOT during hover
+             * This prevents menu jumping between hover and tap states */
             if (action == AMOTION_EVENT_ACTION_DOWN || action == AMOTION_EVENT_ACTION_MOVE)
             {
-               if (stylus_pressed)  /* Only when contact detected */
+               if (stylus_pressed)  /* ONLY update coordinates on actual contact, like native touchscreen */
                {
                   struct video_viewport vp = {0};
                   
@@ -1082,14 +1105,57 @@ static INLINE void android_input_poll_event_type_motion(
                         &android->pointer[motion_ptr].full_x,
                         &android->pointer[motion_ptr].full_y);
                   
-                  /* Ensure pointer_count covers this motion_ptr */
-                  if (android->pointer_count < (int)motion_ptr + 1)
-                     android->pointer_count = (int)motion_ptr + 1;
+                  /* S-Pen Menu Coordination: Activate mouse mode for menu consistency */
+                  if (!android->mouse_activated)
+                  {
+                     RARCH_LOG("[Android Input] S-Pen activated menu mouse mode.\n");
+                     android->mouse_activated = true;
+                  }
+                  
+                  /* Update mouse coordinates only on contact - matches native touchscreen behavior */
+                  android->mouse_x_viewport = android->pointer[motion_ptr].x;
+                  android->mouse_y_viewport = android->pointer[motion_ptr].y;
+                  
+                  /* S-Pen Virtual Pointer System for libretro cores:
+                   * Index 0 = tip pointer (when tip pressed)
+                   * Index 1 = virtual barrel pointer (when barrel pressed, mirrors tip XY) 
+                   * This allows cores to detect barrel via pointer_count > 1 or checking index 1 */
+                  
+                  android->pointer_count = 0; /* Reset count, will increment based on active states */
+                  
+                  if (tip_down) {
+                     /* Set up tip pointer at index 0 */
+                     android->pointer[0] = android->pointer[motion_ptr]; /* Copy translated coordinates */
+                     android->pointer_count = 1;
+                  }
+                  
+                  if (side_primary) {
+                     /* Set up virtual barrel pointer at index 1, mirroring tip coordinates */
+                     android->pointer[1] = android->pointer[motion_ptr]; /* Same coordinates as tip */
+                     android->pointer_count = tip_down ? 2 : 1; /* Increment if tip also active */
+                  }
+                  
+                  /* Update mouse button states for menu interaction */
+                  android->mouse_l = tip_down;     /* Left click when tip touches */
+                  android->mouse_r = side_primary; /* Right click on barrel button */
                   
 #ifdef DEBUG_ANDROID_INPUT
                   if (action == AMOTION_EVENT_ACTION_DOWN)
-                     RARCH_LOG("[Stylus] POINTER DOWN @ (%.1f, %.1f) idx=%zu cnt=%d\n",
-                               x, y, motion_ptr, android->pointer_count);
+                     RARCH_LOG("[Stylus] POINTER DOWN @ (%.1f, %.1f) tip=%d barrel=%d cnt=%d\n",
+                               x, y, tip_down, side_primary, android->pointer_count);
+#endif
+               }
+               else
+               {
+                  /* Hovering: Like native touchscreen, DON'T update coordinates during hover
+                   * This prevents menu jumping and matches user expectations */
+                  android->pointer_count = 0;
+                  android->mouse_l = false;
+                  android->mouse_r = false;
+                  
+#ifdef DEBUG_ANDROID_INPUT
+                  RARCH_LOG("[Stylus] HOVER (no coord update) @ (%.1f, %.1f) p=%.3f d=%.3f\n",
+                            x, y, pressure, distance);
 #endif
                }
                return;  /* Early return - no shared processing */
@@ -1097,18 +1163,13 @@ static INLINE void android_input_poll_event_type_motion(
             
             if (action == AMOTION_EVENT_ACTION_UP)
             {
-               /* Compact/release pointer array like the touch path */
-               if (motion_ptr < MAX_TOUCH - 1)
-               {
-                  memmove(android->pointer + motion_ptr,
-                          android->pointer + motion_ptr + 1,
-                          (MAX_TOUCH - motion_ptr - 1) * sizeof(android->pointer[0]));
-               }
-               if (android->pointer_count > 0)
-                  android->pointer_count--;
+               /* S-Pen UP: Clear all virtual pointers and button states */
+               android->pointer_count = 0;
+               android->mouse_l = false;
+               android->mouse_r = false;
                
 #ifdef DEBUG_ANDROID_INPUT
-               RARCH_LOG("[Stylus] POINTER UP   idx=%zu cnt=%d\n", motion_ptr, android->pointer_count);
+               RARCH_LOG("[Stylus] POINTER UP - cleared all virtual pointers\n");
 #endif
                return;  /* Early return - no shared processing */
             }
@@ -1152,28 +1213,24 @@ static INLINE void android_input_poll_event_type_motion(
     * and mouse deltas and don't process as touchscreen event.
     * NOTE: AINPUT_SOURCE_* defines have multiple bits set so do full check 
     * Stylus events are now handled above in the toolType-first section */
-   if (    (source & AINPUT_SOURCE_MOUSE) == AINPUT_SOURCE_MOUSE
+   if (((source & AINPUT_SOURCE_MOUSE) == AINPUT_SOURCE_MOUSE
         || (source & AINPUT_SOURCE_MOUSE_RELATIVE) == AINPUT_SOURCE_MOUSE_RELATIVE)
+       && !is_stylus)
    {
-      /* Only handle regular mouse if not currently using stylus */
-      if (!is_stylus)
+      if (!android->mouse_activated)
       {
-         if (!android->mouse_activated)
-         {
-#ifdef DEBUG_ANDROID_INPUT
-            RARCH_LOG("[Android Input] Mouse activated.\n");
-#endif
-            android->mouse_activated = true;
-         }
-         /* getButtonState requires API level 14 */
-         if (p_AMotionEvent_getButtonState)
-         {
-            int btn              = (int)AMotionEvent_getButtonState(event);
+         RARCH_LOG("[Android Input] Mouse activated.\n");
+         android->mouse_activated = true;
+      }
+      /* getButtonState requires API level 14 */
+      if (p_AMotionEvent_getButtonState)
+      {
+         int btn              = (int)AMotionEvent_getButtonState(event);
 
-            /* Regular mouse button mapping (stylus events handled above) */
-            android->mouse_l     = (btn & AMOTION_EVENT_BUTTON_PRIMARY);
-            android->mouse_r     = (btn & AMOTION_EVENT_BUTTON_SECONDARY);
-            android->mouse_m     = (btn & AMOTION_EVENT_BUTTON_TERTIARY);
+         /* Regular mouse button mapping (stylus events handled above) */
+         android->mouse_l     = (btn & AMOTION_EVENT_BUTTON_PRIMARY);
+         android->mouse_r     = (btn & AMOTION_EVENT_BUTTON_SECONDARY);
+         android->mouse_m     = (btn & AMOTION_EVENT_BUTTON_TERTIARY);
 
          btn                  = (int)AMotionEvent_getAxisValue(event,
                AMOTION_EVENT_AXIS_VSCROLL, motion_ptr);
@@ -1182,19 +1239,18 @@ static INLINE void android_input_poll_event_type_motion(
             android->mouse_wu = btn;
          else if (btn < 0)
             android->mouse_wd = btn;
-         }
-         else
-         {
-            /* If getButtonState is not available
-             * then treat all MotionEvent.ACTION_DOWN as left button presses */
-            if (action == AMOTION_EVENT_ACTION_DOWN)
-               android->mouse_l = 1;
-            if (action == AMOTION_EVENT_ACTION_UP)
-               android->mouse_l = 0;
-         }
-
-         android_mouse_calculate_deltas(android,event,motion_ptr,source);
       }
+      else
+      {
+         /* If getButtonState is not available
+          * then treat all MotionEvent.ACTION_DOWN as left button presses */
+         if (action == AMOTION_EVENT_ACTION_DOWN)
+            android->mouse_l = 1;
+         if (action == AMOTION_EVENT_ACTION_UP)
+            android->mouse_l = 0;
+      }
+
+      android_mouse_calculate_deltas(android,event,motion_ptr,source);
       /* If stylus is active, don't interfere with its mouse state */
       return;
    }
