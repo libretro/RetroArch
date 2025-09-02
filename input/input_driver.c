@@ -5735,7 +5735,12 @@ static void input_keys_pressed(
          if (     bit_pressed
                || BIT64_GET(lifecycle_state, i)
                || input_keys_pressed_other_sources(input_st, i, p_new_state))
+         {
+            if (!(input_st->flags & INP_FLAG_MENU_PRESS_PENDING))
+               input_st->flags &= ~INP_FLAG_MENU_PRESS_CANCEL;
+
             input_st->flags |= INP_FLAG_MENU_PRESS_PENDING;
+         }
          else if (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
             /* Also set 'enable_hotkey' to prevent hotkey delay untrigger */
             BIT256_SET_PTR(p_new_state, RARCH_ENABLE_HOTKEY);
