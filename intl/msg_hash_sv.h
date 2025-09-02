@@ -142,6 +142,10 @@ MSG_HASH(
    "Öppna traditionell skrivbordsmeny."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Inaktivera kioskläge"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Visar även dolda konfigurationsrelaterade inställningar."
    )

@@ -1868,6 +1868,10 @@ MSG_HASH(
    "RGUI é uma interface gráfica simples integrada ao RetroArch. Tem os requisitos de desempenho mais baixos entre os controladores de menu e pode ser utilizado em ecrãs de baixa resolução."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "Em dispositivos móveis, RetroArch usa a ‘interface’ de usuário móvel, MaterialUI, por padrão. Essa interface é projetada em torno da tela de toque e dispositivos do ponteiro como um mouse/trackball."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Gravação de vídeo"
    )
@@ -1943,12 +1947,20 @@ MSG_HASH(
    "Previne que proteção de ecrã do sistema seja ativada."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "Suspende o salvador de tela. É uma dica que não precisa necessariamente ser honrada pelo driver de vídeo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    "Vídeo segmentado"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    "Aumenta performance a custo de latência e mais stuttering de vídeo. Use apenas se velocidade máxima não pode ser obtida de outra maneira."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "Use um driver de vídeo thread. Usar isto pode melhorar o desempenho a custo de latência possível e mais travamentos de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,

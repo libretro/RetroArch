@@ -142,6 +142,10 @@ MSG_HASH(
    "Oscail an roghchlár deisce traidisiúnta."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Díchumasaigh Mód Ciosc"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Taispeáin na socruithe uile a bhaineann leis an gcumraíocht."
    )
@@ -3629,6 +3633,14 @@ MSG_HASH(
    "Lig d'aon úsáideoir an roghchlár a rialú. Mura bhfuil sé seo indéanta, ní féidir ach le hÚsáideoir 1 an roghchlár a rialú."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "Seinmliostaí Aon-Cliceáil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "Scipeáil ar an roghchlár 'Rith' agus iontrálacha seinmliosta á seoladh. Brúigh an D-Pad agus tú ag coinneáil síos OK chun rochtain a fháil ar an roghchlár 'Rith'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
    "Ceadaigh Filleadh ó Chluaisíní"
    )
@@ -4750,6 +4762,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "Sábhálann sé staid an chluiche go huathoibríoch le linn taifeadadh athimeartha ag eatramh rialta. Tá sé seo díchumasaithe de réir réamhshocraithe mura socraítear a mhalairt. Tomhaistear an t-eatramh i soicindí. Díchumasaíonn luach 0 taifeadadh seicphointe."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Cibé acu ar cheart seicphointí atá stóráilte in athsheinm a dhíshraithiú le linn athsheinm rialta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Athsheinm Seicphointe Díshraithiú"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Cibé acu ar cheart seicphointí atá stóráilte in athsheinm a dhíshraithiú le linn athsheinm rialta. Ba chóir é seo a shocrú go fíor do fhormhór na gcroíleacán, ach d’fhéadfadh go mbeadh iompar salach ag cuid acu agus ábhar á dhíshraithiú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -11556,6 +11580,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    "Fritháireamh Cothrománach Imeall Teidil"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   "Cumasaigh Táb Socruithe"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
