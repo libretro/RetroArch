@@ -3000,7 +3000,6 @@ bool video_shader_apply_shader(
       if ((video_st->current_video->set_shader(
                   video_st->data, type, preset_path)))
       {
-         configuration_set_bool(settings, settings->bools.video_shader_enable, true);
          if (!string_is_empty(preset_path))
          {
             if (runloop_st->runtime_shader_preset_path != preset_path)

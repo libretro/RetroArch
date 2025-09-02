@@ -2923,9 +2923,6 @@ void menu_shader_manager_apply_changes(
    }
 
    menu_shader_manager_set_preset(NULL, type, NULL, true);
-
-   /* Reinforce disabled state on failure */
-   configuration_set_bool(settings, settings->bools.video_shader_enable, false);
 }
 
 static bool menu_shader_manager_save_preset_internal(
