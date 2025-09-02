@@ -384,6 +384,7 @@ typedef struct xmb_handle
    unsigned categories_active_idx;
    unsigned categories_active_idx_old;
    unsigned ticker_limit;
+   unsigned draw_entry_delay;
 
    float fullscreen_thumbnail_alpha;
    float x;
@@ -5861,6 +5862,7 @@ static enum menu_action xmb_parse_menu_entry_action(
 #endif
             }
             xmb->alpha_list = 0.0f;
+            xmb->draw_entry_delay = MENU_DRAW_ENTRY_DELAY;
          }
          break;
       case MENU_ACTION_CANCEL:
@@ -7807,6 +7809,14 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    xmb->raster_block.carr.coords.vertices  = 0;
    xmb->raster_block2.carr.coords.vertices = 0;
+
+   /* Single-click playlist button hold delay */
+   if (xmb->alpha_list == 0.0f && xmb->draw_entry_delay)
+   {
+      xmb->draw_entry_delay--;
+      if (!xmb->draw_entry_delay)
+         xmb_animation_list_alpha(xmb, true);
+   }
 
    /* Blank dummy core output */
    if (!libretro_running)

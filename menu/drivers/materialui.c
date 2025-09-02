@@ -661,6 +661,7 @@ typedef struct materialui_handle
 
    unsigned ticker_x_offset;
    unsigned ticker_str_width;
+   unsigned draw_entry_delay;
 
    /* Touch feedback animation parameters */
    unsigned touch_feedback_selection;
@@ -7782,6 +7783,24 @@ static void materialui_update_scrollbar(materialui_handle_t *mui,
       mui->scrollbar.y = y_max;
 }
 
+/* Entry list fade in/out */
+static void materialui_animation_list_alpha(materialui_handle_t *mui, bool fade_in)
+{
+   gfx_animation_ctx_entry_t entry;
+
+   entry.easing_enum  = EASING_OUT_QUAD;
+   entry.tag          = (uintptr_t)NULL;
+   entry.duration     = gfx_thumb_get_ptr()->fade_duration;
+   entry.target_value = (fade_in) ? 1.0f : 0.0f;
+   entry.subject      = &mui->transition_alpha;
+   entry.cb           = NULL;
+   entry.userdata     = NULL;
+
+   gfx_animation_push(&entry);
+
+   mui->transition_alpha_lock = false;
+}
+
 /* Main function of the menu driver
  * Draws all menu elements */
 static void materialui_frame(void *data, video_frame_info_t *video_info)
@@ -7841,6 +7860,14 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    font_bind(&mui->font_data.title);
    font_bind(&mui->font_data.list);
    font_bind(&mui->font_data.hint);
+
+   /* Single-click playlist button hold delay */
+   if (mui->transition_alpha_lock && mui->draw_entry_delay)
+   {
+      mui->draw_entry_delay--;
+      if (!mui->draw_entry_delay)
+         materialui_animation_list_alpha(mui, true);
+   }
 
    /* Update theme colours, if required */
    if (mui->color_theme != materialui_color_theme)
@@ -10423,6 +10450,7 @@ static enum menu_action materialui_parse_menu_entry_action(
 #endif
             }
             mui->transition_alpha_lock = true;
+            mui->draw_entry_delay = MENU_DRAW_ENTRY_DELAY;
          }
          break;
       case MENU_ACTION_CANCEL:
@@ -10495,8 +10523,7 @@ static enum menu_action materialui_parse_menu_entry_action(
          if (     config_get_ptr()->bools.input_menu_singleclick_playlists
                && mui->transition_alpha_lock)
          {
-            mui->transition_alpha_lock = false;
-            mui->transition_alpha      = 1.0f;
+            materialui_animation_list_alpha(mui, true);
             new_action = MENU_ACTION_NOOP;
          }
          break;

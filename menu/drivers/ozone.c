@@ -568,6 +568,7 @@ struct ozone_handle
    unsigned theme_dynamic_cursor_state; /* 0 -> 1 -> 0 -> 1 [...] */
    unsigned selection_core_name_lines;
    unsigned old_list_offset_y;
+   unsigned draw_entry_delay;
 
    uint32_t flags;
 
@@ -8722,6 +8723,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 #endif
             }
             ozone->animations.list_alpha = 0.0f;
+            ozone->draw_entry_delay = MENU_DRAW_ENTRY_DELAY;
          }
          break;
       case MENU_ACTION_CANCEL:
@@ -12062,6 +12064,14 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    font_bind(&ozone->fonts.entries_label);
    font_bind(&ozone->fonts.entries_sublabel);
    font_bind(&ozone->fonts.sidebar);
+
+   /* Single-click playlist button hold delay */
+   if (ozone->animations.list_alpha == 0.0f && ozone->draw_entry_delay)
+   {
+      ozone->draw_entry_delay--;
+      if (!ozone->draw_entry_delay)
+         ozone_animation_list_alpha(ozone, true);
+   }
 
    /* Blank dummy core output */
    if (!libretro_running)
