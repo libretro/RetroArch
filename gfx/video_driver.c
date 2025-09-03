@@ -2141,6 +2141,9 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
          x                 = custom_vp->x;
          y                 = custom_vp->y;
 
+         if (!y_down)
+            y = -y;
+
          padding_x         = vp_width - custom_vp->width;
          padding_y         = vp_height - custom_vp->height;
 
@@ -2475,6 +2478,9 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       {
          x         = custom_vp->x;
          y         = custom_vp->y;
+
+         if (!y_down)
+            y = -y;
 
          padding_x = width - custom_vp->width;
          padding_y = height - custom_vp->height;
