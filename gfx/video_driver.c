@@ -2146,12 +2146,12 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
 
          if (padding_x < 0)
          {
-            x -= padding_x / 2;
+            x -= padding_x * vp_bias_x;
             padding_x *= 2;
          }
          if (padding_y < 0)
          {
-            y -= padding_y / 2;
+            y -= padding_y * vp_bias_y;
             padding_y *= 2;
          }
 
@@ -2481,12 +2481,12 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
          if (padding_x < 0)
          {
-            x -= padding_x / 2;
+            x -= padding_x * vp_bias_x;
             padding_x *= 2;
          }
          if (padding_y < 0)
          {
-            y -= padding_y / 2;
+            y -= padding_y * vp_bias_y;
             padding_y *= 2;
          }
 
