@@ -15760,21 +15760,6 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
-	    CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.input_stylus_hover_moves_pointer,
-                  MENU_ENUM_LABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,
-                  MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HOVER_MOVES_POINTER,
-                  false,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
 
         input_driver_state_t *st = input_state_get_ptr();
         input_driver_t *current_input = st->current_driver;

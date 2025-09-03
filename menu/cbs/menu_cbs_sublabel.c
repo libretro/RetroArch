@@ -573,7 +573,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_vmouse_gesture,    MENU_
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_stylus_enable,                     MENU_ENUM_SUBLABEL_INPUT_STYLUS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_stylus_require_contact_for_click, MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_stylus_hover_moves_pointer,       MENU_ENUM_SUBLABEL_INPUT_STYLUS_HOVER_MOVES_POINTER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_button_axis_threshold,         MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_analog_deadzone,               MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_analog_sensitivity,            MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY)
@@ -4796,9 +4795,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_stylus_require_contact_for_click);
-            break;
-         case MENU_ENUM_LABEL_INPUT_STYLUS_HOVER_MOVES_POINTER:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_stylus_hover_moves_pointer);
             break;
          case MENU_ENUM_LABEL_AUDIO_SYNC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_sync);
