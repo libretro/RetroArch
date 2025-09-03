@@ -2259,7 +2259,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("android_input_disconnect_workaround", &settings->bools.android_input_disconnect_workaround, true, false, false);
    SETTING_BOOL("input_stylus_enable", &settings->bools.input_stylus_enable, true, true, false);
    SETTING_BOOL("input_stylus_require_contact_for_click", &settings->bools.input_stylus_require_contact_for_click, true, true, false);
-   SETTING_BOOL("input_stylus_hover_moves_pointer", &settings->bools.input_stylus_hover_moves_pointer, true, false, false);
 #endif
 
 #ifdef _3DS
