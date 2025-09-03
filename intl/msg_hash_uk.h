@@ -7410,10 +7410,6 @@ MSG_HASH(
    "Південно-Східна Азія"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "Східна Азія (Чанч'он, Південна Корея)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Користувацька"
    )

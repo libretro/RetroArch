@@ -7494,10 +7494,6 @@ MSG_HASH(
    "Юго-Восточная Азия"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "Восточная Азия (Чхунчхон, Южная Корея)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Ручная установка"
    )

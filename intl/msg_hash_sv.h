@@ -7134,10 +7134,6 @@ MSG_HASH(
    "Sydostasien"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "Östra Asien (Chuncheon, Sydkorea)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Anpassa"
    )

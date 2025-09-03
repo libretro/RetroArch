@@ -7446,10 +7446,6 @@ MSG_HASH(
    "Dél-Kelet-Ázsia"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "Kelet-Ázsia (Chuncheon, Dél-Korea)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Egyedi"
    )

@@ -7490,10 +7490,6 @@ MSG_HASH(
    "Oirdheisceart na hÁise"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "Oirthear na hÁise (Chuncheon, an Chóiré Theas)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Saincheaptha"
    )
