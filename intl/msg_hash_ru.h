@@ -146,6 +146,10 @@ MSG_HASH(
    "Открывает классическое меню рабочего стола."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Отключить режим киоска"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Отображать все настройки, связанные с конфигурацией."
    )
