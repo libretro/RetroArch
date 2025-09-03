@@ -902,40 +902,11 @@ static INLINE void android_input_poll_event_type_motion(
             android->stylus_proximity_until_ns = AMotionEvent_getEventTime(event) + 120000000; /* 120ms in ns */
             android->quick_tap_time = 0;
             
-            /* Optional: Update cursor position for hover if settings allow */
-            if (settings->bools.input_stylus_hover_moves_pointer && action == AMOTION_EVENT_ACTION_HOVER_MOVE)
-            {
-               struct video_viewport vp = {0};
-               
-               /* Update mouse deltas for mouse-like cursor behavior */
-               android_mouse_calculate_deltas(android, event, motion_ptr, source);
-               
-               /* Also update absolute pointer coordinates for RETRO_DEVICE_POINTER */
-               video_driver_translate_coord_viewport_confined_wrap(
-                     &vp, x, y,
-                     &android->pointer[motion_ptr].confined_x,
-                     &android->pointer[motion_ptr].confined_y,
-                     &android->pointer[motion_ptr].full_x,
-                     &android->pointer[motion_ptr].full_y);
-               
-               video_driver_translate_coord_viewport_wrap(
-                     &vp, x, y,
-                     &android->pointer[motion_ptr].x,
-                     &android->pointer[motion_ptr].y,
-                     &android->pointer[motion_ptr].full_x,
-                     &android->pointer[motion_ptr].full_y);
-               
-               /* Ensure pointer_count covers this motion_ptr */
-               if (android->pointer_count < (int)motion_ptr + 1)
-                  android->pointer_count = (int)motion_ptr + 1;
-               
-#ifdef DEBUG_ANDROID_INPUT
-               RARCH_LOG("[RA Input] Stylus hover cursor update (user enabled) - mouse + pointer coords\n");
-#endif
-            }
+            /* S-Pen hover: NO cursor movement - normal stylus behavior
+             * Hover is used ONLY for proximity detection (phantom click prevention) 
+             * and side button functionality. Cursor moves only on contact. */
             
-            /* Handle side button during hover (when contact requirement is OFF) */
-            if (!require_contact)
+            /* Handle side button during hover - side button works regardless of contact requirement setting */
             {
                buttons = p_AMotionEvent_getButtonState ?
                   AMotionEvent_getButtonState(event) : 0;
@@ -1116,32 +1087,35 @@ static INLINE void android_input_poll_event_type_motion(
                   android->mouse_x_viewport = android->pointer[motion_ptr].x;
                   android->mouse_y_viewport = android->pointer[motion_ptr].y;
                   
-                  /* S-Pen Virtual Pointer System for libretro cores:
-                   * Index 0 = tip pointer (when tip pressed)
-                   * Index 1 = virtual barrel pointer (when barrel pressed, mirrors tip XY) 
-                   * This allows cores to detect barrel via pointer_count > 1 or checking index 1 */
+                  /* S-Pen Semantic Pointer System for libretro cores:
+                   * Index 0: Current cursor position (always available during hover/contact)
+                   * Index 1: Tip contact coordinates (only active during tip press)
+                   * Index 2: Barrel button coordinates (only active during barrel press)
+                   * This gives cores semantic meaning rather than arbitrary indices */
                   
-                  android->pointer_count = 0; /* Reset count, will increment based on active states */
+                  /* Always provide cursor position at index 0 */
+                  android->pointer[0] = android->pointer[motion_ptr];
+                  android->pointer_count = 1;
                   
+                  /* Index 1: Tip contact - only active when stylus tip is pressed */
                   if (tip_down) {
-                     /* Set up tip pointer at index 0 */
-                     android->pointer[0] = android->pointer[motion_ptr]; /* Copy translated coordinates */
-                     android->pointer_count = 1;
+                     android->pointer[1] = android->pointer[motion_ptr];
+                     android->pointer_count = 2;
                   }
                   
+                  /* Index 2: Barrel button - only active when barrel button is pressed */
                   if (side_primary) {
-                     /* Set up virtual barrel pointer at index 1, mirroring tip coordinates */
-                     android->pointer[1] = android->pointer[motion_ptr]; /* Same coordinates as tip */
-                     android->pointer_count = tip_down ? 2 : 1; /* Increment if tip also active */
+                     android->pointer[2] = android->pointer[motion_ptr];
+                     android->pointer_count = 3;
                   }
                   
-                  /* Update mouse button states for menu interaction */
-                  android->mouse_l = tip_down;     /* Left click when tip touches */
-                  android->mouse_r = side_primary; /* Right click on barrel button */
+                  /* S-Pen uses ONLY pointer system - no mouse button states to avoid conflicts */
+                  /* Core access: RETRO_DEVICE_POINTER[0-2] with semantic meaning for each index */
+                  /* Menu interaction handled via pointer->mouse translation in menu system */
                   
 #ifdef DEBUG_ANDROID_INPUT
                   if (action == AMOTION_EVENT_ACTION_DOWN)
-                     RARCH_LOG("[Stylus] POINTER DOWN @ (%.1f, %.1f) tip=%d barrel=%d cnt=%d\n",
+                     RARCH_LOG("[Stylus] POINTER DOWN @ (%.1f, %.1f) tip=%d[idx1] barrel=%d[idx2] cnt=%d\n",
                                x, y, tip_down, side_primary, android->pointer_count);
 #endif
                }
@@ -1150,8 +1124,7 @@ static INLINE void android_input_poll_event_type_motion(
                   /* Hovering: Like native touchscreen, DON'T update coordinates during hover
                    * This prevents menu jumping and matches user expectations */
                   android->pointer_count = 0;
-                  android->mouse_l = false;
-                  android->mouse_r = false;
+                  /* No mouse button states set - S-Pen uses only pointer system */
                   
 #ifdef DEBUG_ANDROID_INPUT
                   RARCH_LOG("[Stylus] HOVER (no coord update) @ (%.1f, %.1f) p=%.3f d=%.3f\n",
@@ -1163,10 +1136,9 @@ static INLINE void android_input_poll_event_type_motion(
             
             if (action == AMOTION_EVENT_ACTION_UP)
             {
-               /* S-Pen UP: Clear all virtual pointers and button states */
+               /* S-Pen UP: Clear all virtual pointers - no mouse button states to clear */
                android->pointer_count = 0;
-               android->mouse_l = false;
-               android->mouse_r = false;
+               /* S-Pen uses only pointer system for core input */
                
 #ifdef DEBUG_ANDROID_INPUT
                RARCH_LOG("[Stylus] POINTER UP - cleared all virtual pointers\n");
