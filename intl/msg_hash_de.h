@@ -7362,10 +7362,6 @@ MSG_HASH(
    "Südostasien"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "Ostasien (Chuncheon, Südkorea)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Benutzerdefiniert"
    )

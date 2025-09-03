@@ -7470,10 +7470,6 @@ MSG_HASH(
    "Sud-est Àsia"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "Àsia Oriental (Chuncheon, Corea del sud)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Personalitzat"
    )
