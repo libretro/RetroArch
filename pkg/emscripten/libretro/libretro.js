@@ -13,6 +13,8 @@ var zipTOC;
 var initializationCount = 0;
 var Module;
 var currentCore;
+var reloadTimeout;
+var retroArchRunning = false;
 var canvas = document.getElementById("canvas");
 
 function modulePreRun(module) {
@@ -204,6 +206,7 @@ function startRetroArch() {
       }, 0);
    };
 
+   retroArchRunning = true;
    Module.callMain(Module.arguments);
 }
 
@@ -311,9 +314,22 @@ $(function() {
    });
 
    // Switch the core when selecting one.
-   $('#core-selector a').click(function() {
-      var coreChoice = $(this).data('core');
-      localStorage.setItem("core", coreChoice);
+   $('#core-selector a').click(function(e) {
+      e.preventDefault();
+      var core = $(this).data('core');
+      if (!core) return;
+      localStorage.setItem("core", core);
+      if (Module && retroArchRunning) {
+         Module.retroArchSend("LOAD_CORE /home/web_user/retroarch/cores/" + core + "_libretro.core");
+
+         // maybe RetroArch crashed? reload if RetroArch doesn't exit within a second.
+         if (reloadTimeout) clearTimeout(reloadTimeout);
+         reloadTimeout = setTimeout(function() {
+            location.reload();
+         }, 1000);
+      } else {
+         location.reload();
+      }
    });
 
    // Find which core to load.
@@ -366,6 +382,12 @@ function relaunch(core, content) {
    if (!core) core = ModuleBase.corePath;
 
    if (!content) content = "--menu";
+
+   Module = null;
+   if (reloadTimeout) {
+      clearTimeout(reloadTimeout);
+      reloadTimeout = null;
+   }
 
    // parse core name from full path ("/home/web_user/retroarch/cores/NAME_libretro.core")
    currentCore = core.slice(0, -14).split("/").slice(-1)[0];

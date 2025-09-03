@@ -70,6 +70,8 @@ const disableKeys = {
 
 let Module;
 let fsLoadPromise;
+let reloadTimeout;
+let retroArchRunning = false;
 
 // all methods provided by the worker that we may require
 const workerHandlers = {FS: ["init", "writeFile", "readFile", "mkdirTree", "readdir", "readdirTree", "rm", "stat"], helper: ["loadFS", "zipDirs"]};
@@ -342,6 +344,7 @@ function startRetroArch() {
 	ModuleBase.noInitialRun = false;
 	ModuleBase.onRuntimeInitialized = null;
 
+	retroArchRunning = true;
 	Module.callMain(Module.arguments);
 }
 
@@ -434,6 +437,12 @@ function relaunch(core, content) {
 
 	if (!content) content = "--menu";
 
+	Module = null;
+	if (reloadTimeout) {
+		clearTimeout(reloadTimeout);
+		reloadTimeout = null;
+	}
+
 	// parse core name from full path ("/retroarch/cores/NAME_libretro.core")
 	currentCore = core.slice(0, -14).split("/").slice(-1)[0];
 
@@ -504,8 +513,22 @@ document.addEventListener("DOMContentLoaded", async function() {
 
 	// Switch the core when selecting one.
 	coreSelector.addEventListener("click", function(e) {
-		const coreChoice = e.target.dataset?.core;
-		if (coreChoice) localStorage.setItem("core", coreChoice);
+		e.preventDefault();
+		const core = e.target.dataset?.core;
+		if (!core) return;
+		dropdownBox.checked = false;
+		localStorage.setItem("core", core);
+		if (Module && retroArchRunning) {
+			Module.retroArchSend("LOAD_CORE /home/web_user/retroarch/cores/" + core + "_libretro.core");
+
+			// maybe RetroArch crashed? reload if RetroArch doesn't exit within a second.
+			if (reloadTimeout) clearTimeout(reloadTimeout);
+			reloadTimeout = setTimeout(function() {
+				location.reload();
+			}, 1000);
+		} else {
+			location.reload();
+		}
 	});
 
 	// Find which core to load.
