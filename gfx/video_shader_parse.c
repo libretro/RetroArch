@@ -2783,7 +2783,7 @@ static bool video_shader_load_shader_preset_internal(
    {
       /* Shader preset priority, highest to lowest
        * only important for video drivers with multiple shader backends */
-      RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG, RARCH_SHADER_HLSL
+      RARCH_SHADER_SLANG, RARCH_SHADER_GLSL, RARCH_SHADER_CG, RARCH_SHADER_HLSL
    };
 
    flags.flags     = 0;
