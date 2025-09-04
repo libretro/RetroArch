@@ -4278,7 +4278,14 @@ static bool event_init_content(
    runloop_path_fill_names();
 
    if (!content_init())
+   {
+#ifdef HAVE_MENU
+      /* Single-click playlist return */
+      if (settings->bools.input_menu_singleclick_playlists)
+         menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+#endif
       return false;
+   }
 
    command_event_set_savestate_auto_index(settings);
    command_event_set_replay_auto_index(settings);
