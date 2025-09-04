@@ -8022,9 +8022,7 @@ int generic_menu_entry_action(
           * to playlist entry menu */
          if (     (  string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS))
                   || string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
-               && (!string_is_empty(deferred_path)
-               && !string_is_empty(content_path)
-               && string_is_equal(deferred_path, content_path))
+               && !string_is_empty(deferred_path)
             )
          {
             if (string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))

@@ -2897,6 +2897,10 @@ error:
          1, 100, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
+   /* Single-click playlist return */
+   if (settings->bools.input_menu_singleclick_playlists)
+      menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+
    if (playlist_initialized && tmp_playlist)
    {
       playlist_free(tmp_playlist);
