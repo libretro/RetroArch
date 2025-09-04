@@ -2891,11 +2891,12 @@ static int action_ok_playlist_entry_collection(const char *path,
          core_path, content_path, string_is_empty(content_label) ? NULL : content_label);
 
 error:
-   runloop_msg_queue_push(
-         "File could not be loaded from playlist.\n",
-         STRLEN_CONST("File could not be loaded from playlist.\n"),
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   {
+      const char *_msg = msg_hash_to_str(MSG_FAILED_TO_LOAD_FROM_PLAYLIST);
+      RARCH_ERR("[Content] %s\n", _msg);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   }
 
    /* Single-click playlist return */
    if (settings->bools.input_menu_singleclick_playlists)

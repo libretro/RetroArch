@@ -14735,6 +14735,10 @@ MSG_HASH(
    "Failed to load content."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Failed to load from playlist."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "Failed to load movie file."
    )
