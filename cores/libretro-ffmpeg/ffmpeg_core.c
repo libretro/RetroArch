@@ -2089,16 +2089,16 @@ void CORE_PREFIX(retro_unload_game)(void)
    for (i = 0; i < MAX_STREAMS; i++)
    {
       if (sctx[i])
-         avcodec_close(sctx[i]);
+         avcodec_free_context(&sctx[i]);
       if (actx[i])
-         avcodec_close(actx[i]);
+         avcodec_free_context(&actx[i]);
       sctx[i] = NULL;
       actx[i] = NULL;
    }
 
    if (vctx)
    {
-      avcodec_close(vctx);
+      (avcodec_free_context&vctx);
       vctx = NULL;
    }
 
