@@ -2033,7 +2033,10 @@ void command_event_save_current_config(enum override_type type)
                }
             }
 
-            RARCH_LOG("[Overrides] %s\n", msg);
+            /* command_event_save_config() does its own logging */
+            if (msg_cat == MESSAGE_QUEUE_CATEGORY_ERROR)
+               RARCH_ERR("[Overrides] %s\n", msg);
+
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
          }
@@ -2068,7 +2071,20 @@ void command_event_save_current_config(enum override_type type)
                   break;
             }
 
-            RARCH_LOG("[Overrides] %s\n", msg);
+            switch (msg_cat)
+            {
+               case MESSAGE_QUEUE_CATEGORY_ERROR:
+                  RARCH_ERR("[Overrides] %s\n", msg);
+                  break;
+               case MESSAGE_QUEUE_CATEGORY_WARNING:
+                  RARCH_WARN("[Overrides] %s\n", msg);
+                  break;
+               case MESSAGE_QUEUE_CATEGORY_SUCCESS:
+               default:
+                  RARCH_LOG("[Overrides] %s\n", msg);
+                  break;
+            }
+
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
 
@@ -2112,7 +2128,11 @@ void command_event_remove_current_config(enum override_type type)
                _len    = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_REMOVING), sizeof(msg));
             }
 
-            RARCH_LOG("[Overrides] %s\n", msg);
+            if (msg_cat == MESSAGE_QUEUE_CATEGORY_ERROR)
+               RARCH_ERR("[Overrides] %s\n", msg);
+            else
+               RARCH_LOG("[Overrides] %s\n", msg);
+
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
 #ifdef HAVE_MENU
