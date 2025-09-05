@@ -5,7 +5,7 @@
  malloc is unavailable
 
  Copyright (c) 2006 Michael "Chishm" Chisholm
-	
+
  Redistribution and use in source and binary forms, with or without modification,
  are permitted provided that the following conditions are met:
 
@@ -42,6 +42,8 @@ static inline void* _FAT_mem_align (size_t size)
 {
 #ifdef __wii__
    return memalign (32, size);
+#elif defined(__wiiu__)
+   return memalign (64, size);
 #else
    return malloc (size);
 #endif

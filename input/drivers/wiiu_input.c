@@ -21,8 +21,8 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 
-#include <wiiu/nsyskbd.h>
-#include <wiiu/vpad.h>
+#include <../../wiiu/include/nsyskbd/ra_nsyskbd.h>
+#include <../../wiiu/include/vpad/ra_input.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -97,7 +97,7 @@ static int16_t wiiu_input_state(
       unsigned idx,
       unsigned id)
 {
-   if (!(port < DEFAULT_MAX_PADS) || !binds || !binds[port])
+   if (!(port < DEFAULT_MAX_PADS) || !binds)
       return 0;
 
    switch (device)

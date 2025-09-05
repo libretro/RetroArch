@@ -8,19 +8,6 @@
 #ifdef __wiiu__
 #include <wiiu/types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* void wait_for_input(void); */
-/* void dump_result_value(Result val); */
-void* OSGetSymbolName(u32 addr, char* out, u32 out_size);
-void DisassemblePPCRange(void *start, void *end, void* printf_func, void* GetSymbolName_func, u32 flags);
-
-#ifdef __cplusplus
-}
-#endif
-
 #define DEBUG_DISASM(start, count) DisassemblePPCRange((void*)start, (u32*)(start) + (count), printf, OSGetSymbolName, 0)
 #endif /* WIIU */
 

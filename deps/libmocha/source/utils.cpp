@@ -74,7 +74,7 @@ MochaUtilsStatus Mocha_InitLibrary() {
     if (Mocha_CheckAPIVersion(&version) != MOCHA_RESULT_SUCCESS) {
         IOS_Close(iosuhaxHandle);
         iosuhaxHandle = -1;
-        return MOCHA_RESULT_UNSUPPORTED_COMMAND;
+        return MOCHA_RESULT_UNSUPPORTED_API_VERSION;
     }
 
     mochaApiVersion = version;

@@ -234,28 +234,6 @@ int inet_pton(int af, const char *src, void *dst)
    return 0;
 }
 
-#elif defined(WIIU)
-#include <malloc.h>
-
-static int _net_compat_thread_entry(int argc, const char **argv)
-{
-   void *buf = memalign(128, WIIU_RCVBUF + WIIU_SNDBUF);
-
-   if (!buf)
-      return -1;
-
-   somemopt(1, buf, WIIU_RCVBUF + WIIU_SNDBUF, 0);
-
-   free(buf);
-
-   return 0;
-}
-
-static void _net_compat_thread_cleanup(OSThread *thread, void *stack)
-{
-   free(stack);
-}
-
 #elif defined(_3DS)
 #include <malloc.h>
 #include <3ds/types.h>
@@ -565,36 +543,6 @@ failure:
 
          return false;
       }
-
-      initialized = true;
-   }
-
-   return true;
-#elif defined(WIIU)
-   static OSThread net_compat_thread;
-   static bool initialized = false;
-
-   if (!initialized)
-   {
-      void *stack = malloc(0x1000);
-
-      if (!stack)
-         return false;
-
-      socket_lib_init();
-
-      if (!OSCreateThread(&net_compat_thread, _net_compat_thread_entry,
-            0, NULL, (void*)((size_t)stack + 0x1000), 0x1000, 3,
-            OS_THREAD_ATTRIB_AFFINITY_ANY))
-      {
-         free(stack);
-
-         return false;
-      }
-
-      OSSetThreadName(&net_compat_thread, "Network compat thread");
-      OSSetThreadDeallocator(&net_compat_thread, _net_compat_thread_cleanup);
-      OSResumeThread(&net_compat_thread);
 
       initialized = true;
    }

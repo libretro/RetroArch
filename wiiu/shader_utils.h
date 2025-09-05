@@ -1,10 +1,8 @@
 #ifndef _GX2_SHADER_UTILS_H
 #define _GX2_SHADER_UTILS_H
 
-#include <wiiu/gx2/shaders.h>
-
-/* incompatible with elf builds */
-/* #define GX2_CAN_ACCESS_DATA_SECTION */
+#include <wiiu/types.h>
+#include <gx2/ra_shaders.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,6 +10,7 @@ extern "C" {
 
 typedef union
 __attribute__((aligned (16)))
+__attribute__((scalar_storage_order ("little-endian")))
 {
    struct __attribute__((scalar_storage_order ("little-endian")))
    {
@@ -31,7 +30,7 @@ __attribute__((scalar_storage_order ("little-endian")))
 {
    float x;
    float y;
-   union
+   union __attribute__((scalar_storage_order ("little-endian")))
    {
       struct __attribute__((scalar_storage_order ("little-endian")))
       {
@@ -46,9 +45,9 @@ __attribute__((scalar_storage_order ("little-endian")))
    };
 }GX2_vec4;
 
-typedef union
+typedef union __attribute__((scalar_storage_order ("little-endian")))
 {
-   struct
+   struct __attribute__((scalar_storage_order ("little-endian")))
    {
       GX2_vec4 v0;
       GX2_vec4 v1;
