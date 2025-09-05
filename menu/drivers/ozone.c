@@ -8059,8 +8059,11 @@ static bool ozone_manage_available(ozone_handle_t *ozone, size_t current_selecti
    switch (last_entry.type)
    {
       case FILE_TYPE_PLAYLIST_COLLECTION:
-      case FILE_TYPE_RPL_ENTRY:
          return true;
+      case FILE_TYPE_RPL_ENTRY:
+         if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
+            return true;
+         break;
       default:
          break;
    }
