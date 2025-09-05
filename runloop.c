@@ -670,7 +670,8 @@ void runloop_runtime_log_deinit(
       const char *dir_runtime_log,
       const char *dir_playlist)
 {
-   if (verbosity_is_enabled())
+   if (     verbosity_is_enabled()
+         && runloop_st->core_runtime_usec > 0)
    {
       char log[256]             = {0};
       unsigned hours            = 0;
@@ -683,7 +684,7 @@ void runloop_runtime_log_deinit(
 
       /* TODO/FIXME - localize */
       snprintf(log, sizeof(log),
-            "[Core] Content ran for a total of:"
+            "[Runtime] Content ran for a total of:"
             " %02u hours, %02u minutes, %02u seconds.",
             hours, minutes, seconds);
       RARCH_LOG("%s\n", log);
