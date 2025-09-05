@@ -1,5 +1,5 @@
 #include "devoptab_fsa.h"
-#include "logger.h"
+#include "../logger.h"
 #include <mutex>
 
 // Extended "magic" value that allows opening files with FS_OPEN_FLAG_UNENCRYPTED in underlying FSOpenFileEx() call similar to O_DIRECTORY

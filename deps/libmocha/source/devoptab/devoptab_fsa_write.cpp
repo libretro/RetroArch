@@ -1,5 +1,5 @@
 #include "devoptab_fsa.h"
-#include "logger.h"
+#include "../logger.h"
 #include <mutex>
 
 ssize_t __fsa_write(struct _reent *r, void *fd, const char *ptr, size_t len) {

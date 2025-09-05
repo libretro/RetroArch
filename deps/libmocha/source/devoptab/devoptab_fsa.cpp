@@ -1,5 +1,5 @@
 #include "devoptab_fsa.h"
-#include "logger.h"
+#include "../logger.h"
 #include "mocha/mocha.h"
 #include <coreinit/cache.h>
 #include <coreinit/filesystem_fsa.h>
