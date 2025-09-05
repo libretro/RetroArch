@@ -146,6 +146,10 @@ MSG_HASH(
    "Avaa perinteinen työpöytävalikko."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Poista kioskitila käytöstä"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Näytä kaikki kokoonpanoon liittyvät asetukset."
    )
@@ -2896,6 +2900,10 @@ MSG_HASH(
    )
 #endif
 #ifdef ANDROID
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Valitse fyysinen näppäimistö"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
@@ -12377,6 +12385,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    "Nimimerkin saaminen asiakkaalta epäonnistui."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_CONTENT,
+   "Sisällön lataaminen epäonnistui."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Soittolistalta lataaminen epäonnistui."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "Elokuvatiedoston lataaminen epäonnistui."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,

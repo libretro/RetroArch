@@ -13923,6 +13923,10 @@ MSG_HASH(
    "Échec de chargement du contenu."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Échec de chargement depuis la liste de lecture."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "Échec de chargement du fichier vidéo."
    )

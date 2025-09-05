@@ -3653,6 +3653,14 @@ MSG_HASH(
    "Разрешать всем пользователям управлять меню. Если откл., управление меню доступно только для Игрока 1."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "Плейлисты с одним нажатием"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "Пропускать меню запуска при открытии записей плейлиста. Для доступа к меню запуска нажмите D-Pad, удерживая OK."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
    "Разрешить возврат с вкладок"
    )
@@ -4774,6 +4782,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "Автоматически сохраняет состояние игры через равные интервалы при записи повтора. По умолчанию отключено, если не переопределено другими настройками. Интервал измеряется в секундах. Значение 0 отключает запись контрольных точек."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Производит десериализацию контрольных точек в повторах при стандартном воспроизведении."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Десериализация контрольных точек повторов"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Производит десериализацию контрольных точек в повторах при стандартном воспроизведении. Должно быть включено для большинства ядер, но может влиять на стабильность отдельных ядер при десериализации контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -11554,6 +11574,10 @@ MSG_HASH(
    "Сдвиг заголовка по горизонтали"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   "Включить вкладку 'Настройки'"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Показать вкладку 'Настройки', содержащую настройки программы."
    )
@@ -13969,6 +13993,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
    "Не удалось загрузить контент."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Не удалось загрузить из плейлиста."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,

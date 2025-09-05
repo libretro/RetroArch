@@ -13615,6 +13615,10 @@ MSG_HASH(
    "Laden des Inhalts fehlgeschlagen."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Fehler beim Laden von Wiedergabeliste."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "Laden der Filmdatei fehlgeschlagen."
    )

@@ -146,6 +146,10 @@ MSG_HASH(
    "Abre el menú tradicional de escritorio."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Desactivar modo quiosco"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Muestra todos los elementos de los ajustes."
    )
@@ -11518,6 +11522,10 @@ MSG_HASH(
    "Desplazamiento horizontal del margen del título"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   "Mostrar la sección de Ajustes"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Muestra la sección de Ajustes, que permite configurar el programa."
    )
@@ -13941,6 +13949,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_LOAD_CONTENT,
    "Error al cargar contenido."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Error al cargar desde la lista de reproducción."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
