@@ -374,7 +374,7 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
    if (!audio->buffer)
       return false;
 
-   audio->outbuf_size = AV_INPUT_BUFFER_MIN_SIZE;
+   audio->outbuf_size = AV_INPUT_BUFFER_PADDING_SIZE;
    audio->outbuf      = (uint8_t*)av_malloc(audio->outbuf_size);
 
    if (!audio->outbuf)
@@ -951,7 +951,7 @@ static void ffmpeg_free(void *data)
 
    if (handle->audio.codec)
    {
-      avcodec_close(handle->audio.codec);
+      avcodec_free_context(&handle->audio.codec);
       av_free(handle->audio.codec);
    }
 
@@ -959,7 +959,7 @@ static void ffmpeg_free(void *data)
 
    if (handle->video.codec)
    {
-      avcodec_close(handle->video.codec);
+      avcodec_free_context(&handle->video.codec);
       av_free(handle->video.codec);
    }
 
