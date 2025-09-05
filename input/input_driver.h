@@ -203,12 +203,14 @@ enum bsv_flags
    BSV_FLAG_MOVIE_RECORDING          = (1 << 3),
    BSV_FLAG_MOVIE_END                = (1 << 4),
    BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 5),
-   BSV_FLAG_MOVIE_FORCE_CHECKPOINT   = (1 << 6)
+   BSV_FLAG_MOVIE_FORCE_CHECKPOINT   = (1 << 6),
+   BSV_FLAG_MOVIE_PREV_CHECKPOINT    = (1 << 7),
+   BSV_FLAG_MOVIE_NEXT_CHECKPOINT    = (1 << 8)
 };
 
 struct bsv_state
 {
-   uint8_t flags;
+   uint16_t flags;
    /* Movie playback/recording support. */
    char movie_auto_path[PATH_MAX_LENGTH];
    /* Immediate playback/recording. */
@@ -279,6 +281,15 @@ struct bsv_movie
 };
 
 typedef struct bsv_movie bsv_movie_t;
+
+enum replay_checkpoint_behavior_ {
+   REPLAY_CPBEHAVIOR_SKIP,
+   REPLAY_CPBEHAVIOR_UPDATE,
+   REPLAY_CPBEHAVIOR_DESERIALIZE
+};
+
+typedef enum replay_checkpoint_behavior_ replay_checkpoint_behavior;
+
 #endif
 
 /**
@@ -1087,9 +1098,11 @@ void input_overlay_check_mouse_cursor(void);
 #endif
 
 #ifdef HAVE_BSV_MOVIE
+void replay_maybe_skip_prev_next(input_driver_state_t *input_st);
 void bsv_movie_frame_rewind(void);
 void bsv_movie_next_frame(input_driver_state_t *input_st);
-bool bsv_movie_read_next_events(bsv_movie_t *handle, bool skip_checkpoints);
+bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior checkpoint_behavior, bool end_movie_on_eof);
+bool bsv_movie_reset_playback(bsv_movie_t *handle);
 bool bsv_movie_reset_recording(bsv_movie_t *handle);
 void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);

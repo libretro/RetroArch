@@ -252,7 +252,15 @@ uint32_t *uint32s_index_get(uint32s_index_t *index, uint32_t which)
       return NULL;
    if (!index->objects[which])
    {
+      int i;
       RARCH_LOG("[STATESTREAM] accessed garbage collected block %d\n", which);
+      for (i = RBUF_LEN(index->additions); i != 0; i--)
+      {
+         if (which >= index->additions[i].first_index)
+         {
+            RARCH_LOG("[STATESTREAM] originally allocated on frame %ld\n", index->additions[i].frame_counter);
+         }
+      }
       return NULL;
    }
    return index->objects[which];

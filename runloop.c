@@ -19,6 +19,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "input/input_driver.h"
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -7286,6 +7287,16 @@ int runloop_iterate(void)
 #ifdef HAVE_NETWORKING
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
+#ifdef HAVE_BSV_MOVIE
+         if (input_st->bsv_movie_state.flags &
+               (BSV_FLAG_MOVIE_FORCE_CHECKPOINT |
+                     BSV_FLAG_MOVIE_PREV_CHECKPOINT |
+                     BSV_FLAG_MOVIE_NEXT_CHECKPOINT))
+         {
+            runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;
+            runloop_st->run_frames_and_pause = 2;
+         }
 #endif
          video_driver_cached_frame();
          goto end;
