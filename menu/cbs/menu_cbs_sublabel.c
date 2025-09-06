@@ -447,6 +447,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_state_slot_minus,      ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_play_replay_key,        MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_record_replay_key,      MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_halt_replay_key,        MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_replay_checkpoint_key, MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_prev_replay_checkpoint_key, MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_next_replay_checkpoint_key, MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_replay_slot_plus,       MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_replay_slot_minus,      MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS)
 
@@ -2382,6 +2385,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
                return 0;
             case RARCH_HALT_REPLAY_KEY:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_halt_replay_key);
+               return 0;
+            case RARCH_SAVE_REPLAY_CHECKPOINT_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_replay_checkpoint_key);
+               return 0;
+            case RARCH_PREV_REPLAY_CHECKPOINT_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_prev_replay_checkpoint_key);
+               return 0;
+            case RARCH_NEXT_REPLAY_CHECKPOINT_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_next_replay_checkpoint_key);
                return 0;
             case RARCH_REPLAY_SLOT_PLUS:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_replay_slot_plus);

@@ -3553,6 +3553,21 @@ bool command_event(enum event_command cmd, void *data)
             configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
          }
          break;
+      case CMD_EVENT_SAVE_REPLAY_CHECKPOINT:
+#ifdef HAVE_BSV_MOVIE
+         movie_commit_checkpoint(input_state_get_ptr());
+#endif
+         break;
+      case CMD_EVENT_PREV_REPLAY_CHECKPOINT:
+#ifdef HAVE_BSV_MOVIE
+         movie_skip_to_prev_checkpoint(input_state_get_ptr());
+#endif
+         break;
+      case CMD_EVENT_NEXT_REPLAY_CHECKPOINT:
+#ifdef HAVE_BSV_MOVIE
+         movie_skip_to_next_checkpoint(input_state_get_ptr());
+#endif
+         break;
       case CMD_EVENT_REPLAY_DECREMENT:
 #ifdef HAVE_BSV_MOVIE
          {

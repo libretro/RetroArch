@@ -25,10 +25,6 @@ ifeq ($(HAVE_SAPI), 1)
    LIBS += sapi.dll
 endif
 
-ifeq ($(HAVE_STATESTREAM), 1)
-   DEF_FLAGS += -DHAVE_STATESTREAM
-endif
-
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT = 0
    HAVE_GL_MODERN  = 0
@@ -455,8 +451,12 @@ endif
 
 ifeq ($(HAVE_BSV_MOVIE), 1)
    DEFINES += -DHAVE_BSV_MOVIE
-   OBJ += input/bsv/bsvmovie.o \
-          input/bsv/uint32s_index.o
+   OBJ += input/bsv/bsvmovie.o
+endif
+
+ifeq ($(HAVE_STATESTREAM), 1)
+   DEFINES += -DHAVE_STATESTREAM
+   OBJ += input/bsv/uint32s_index.o
 endif
 
 ifeq ($(HAVE_RUNAHEAD), 1)

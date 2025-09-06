@@ -73,11 +73,8 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
    int64_t *identifier_loc;
    uint32_t state_size         = 0;
    uint32_t header[REPLAY_HEADER_LEN] = {0};
+   uint64_t header_size = REPLAY_HEADER_LEN_BYTES;
    uint32_t vsn                = 0;
-#ifdef HAVE_STATESTREAM
-   uint32_t superblock_size    = DEFAULT_SUPERBLOCK_SIZE,
-      block_size = DEFAULT_BLOCK_SIZE/4;
-#endif
    intfstream_t *file          = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -103,67 +100,16 @@ static bool bsv_movie_init_playback(bsv_movie_t *handle, const char *path)
       RARCH_ERR("[Replay] %s : vsn %d vs %d\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE), vsn, REPLAY_FORMAT_VERSION);
       return false;
    }
+   if (vsn < 2)
+      header_size = REPLAY_HEADER_V0V1_LEN_BYTES;
    handle->version    = vsn;
 
    state_size         = swap_if_big32(header[REPLAY_HEADER_STATE_SIZE_INDEX]);
    identifier_loc     = (int64_t *)(header+REPLAY_HEADER_IDENTIFIER_INDEX);
    handle->identifier = swap_if_big64(*identifier_loc);
 
-   handle->min_file_pos = sizeof(header) + state_size;
-   if (state_size && vsn <= 1)
-   {
-      size_t info_size;
-      retro_ctx_serialize_info_t serial_info;
-      uint8_t *buf           = (uint8_t*)malloc(state_size);
-
-      if (!buf)
-         return false;
-
-      /* The header used to be six ints long */
-      intfstream_seek(handle->file, REPLAY_HEADER_V0V1_LEN_BYTES, SEEK_SET);
-
-      if (intfstream_read(handle->file, buf, state_size) != state_size)
-      {
-         RARCH_ERR("[Replay] %s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
-         return false;
-      }
-      info_size              = core_serialize_size();
-      /* For cores like dosbox, the reported size is not always
-         correct. So we just give a warning if they don't match up. */
-      serial_info.data_const = buf;
-      serial_info.size       = state_size;
-      core_unserialize(&serial_info);
-      free(buf);
-      if (info_size != state_size)
-         RARCH_WARN("[Replay] %s\n",
-               msg_hash_to_str(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION));
-   }
-   else if (vsn >= 2)
-   {
-      uint8_t compression, encoding;
-#ifdef HAVE_STATESTREAM
-      uint32_t commit_settings = header[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX];
-      superblock_size = swap_if_big32(header[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX]);
-      block_size = swap_if_big32(header[REPLAY_HEADER_BLOCK_SIZE_INDEX]);
-      handle->commit_interval  = commit_settings >> 24;
-      handle->commit_threshold = (commit_settings >> 16) & 0x000000FF;
-      handle->checkpoint_compression = (commit_settings >> 8) & 0x000000FF;
-      handle->superblocks = uint32s_index_new(superblock_size,handle->commit_interval,handle->commit_threshold);
-      handle->blocks = uint32s_index_new(block_size/4,handle->commit_interval,handle->commit_threshold);
-#endif
-
-      if (intfstream_read(handle->file, &(compression), sizeof(uint8_t)) != sizeof(uint8_t) ||
-            intfstream_read(handle->file, &(encoding), sizeof(uint8_t)) != sizeof(uint8_t))
-         return false;
-      if (!bsv_movie_load_checkpoint(handle, compression, encoding, false))
-         return false;
-   }
-
-   if(vsn > 0)
-     bsv_movie_read_next_events(handle, false);
-
-
-   return true;
+   handle->min_file_pos = header_size + state_size;
+   return bsv_movie_reset_playback(handle);
 }
 
 static bool bsv_movie_init_record(
@@ -277,6 +223,14 @@ static bsv_movie_t *bsv_movie_init_internal(const char *path, enum rarch_movie_t
    if (!handle)
       return NULL;
 
+   /* Just pick something really large
+    * ~1 million frames rewind should do the trick. */
+   if (!(frame_pos = (size_t*)calloc((1 << 20), sizeof(size_t))))
+      goto error;
+
+   handle->frame_pos       = frame_pos;
+   handle->frame_mask      = (1 << 20) - 1;
+
    if (type == RARCH_MOVIE_PLAYBACK)
    {
       if (!bsv_movie_init_playback(handle, path))
@@ -285,14 +239,7 @@ static bsv_movie_t *bsv_movie_init_internal(const char *path, enum rarch_movie_t
    else if (!bsv_movie_init_record(handle, path))
       goto error;
 
-   /* Just pick something really large
-    * ~1 million frames rewind should do the trick. */
-   if (!(frame_pos = (size_t*)calloc((1 << 20), sizeof(size_t))))
-      goto error;
-
-   handle->frame_pos       = frame_pos;
    handle->frame_pos[0]    = handle->min_file_pos;
-   handle->frame_mask      = (1 << 20) - 1;
 
    return handle;
 
