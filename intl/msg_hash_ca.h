@@ -13859,6 +13859,10 @@ MSG_HASH(
    "Error en carregar contingut."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Error en carregar des d'una llista de reproducció."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "Error en carregar el fitxer de vídeo."
    )

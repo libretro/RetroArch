@@ -14043,6 +14043,10 @@ MSG_HASH(
    "İçerik yükleme başarısız."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Oynatma listesinden yükleme başarısız."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "Film dosyası yüklenemedi."
    )
