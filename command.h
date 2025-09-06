@@ -424,6 +424,7 @@ bool command_get_config_param(command_t *cmd, const char* arg);
 bool command_show_osd_msg(command_t *cmd, const char* arg);
 bool command_load_state_slot(command_t *cmd, const char* arg);
 bool command_play_replay_slot(command_t *cmd, const char* arg);
+bool command_seek_replay(command_t *cmd, const char *arg);
 bool command_save_savefiles(command_t *cmd, const char* arg);
 bool command_load_savefiles(command_t *cmd, const char* arg);
 #ifdef HAVE_CHEEVOS
@@ -452,6 +453,7 @@ static const struct cmd_action_map action_map[] = {
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>"},
    { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},
+   { "SEEK_REPLAY",command_seek_replay, "<frame number>"},
 
    { "SAVE_FILES", command_save_savefiles, "No argument"},
    { "LOAD_FILES", command_load_savefiles, "No argument"},

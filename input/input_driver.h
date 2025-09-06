@@ -205,7 +205,8 @@ enum bsv_flags
    BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 5),
    BSV_FLAG_MOVIE_FORCE_CHECKPOINT   = (1 << 6),
    BSV_FLAG_MOVIE_PREV_CHECKPOINT    = (1 << 7),
-   BSV_FLAG_MOVIE_NEXT_CHECKPOINT    = (1 << 8)
+   BSV_FLAG_MOVIE_NEXT_CHECKPOINT    = (1 << 8),
+   BSV_FLAG_MOVIE_SEEK_TO_FRAME      = (1 << 9)
 };
 
 struct bsv_state
@@ -215,6 +216,8 @@ struct bsv_state
    char movie_auto_path[PATH_MAX_LENGTH];
    /* Immediate playback/recording. */
    char movie_start_path[PATH_MAX_LENGTH];
+   /* Target frame/position to seek to next iteration. */
+   int64_t seek_target_frame, seek_target_pos;
 };
 
 /* These data are always little-endian. */
@@ -1098,7 +1101,6 @@ void input_overlay_check_mouse_cursor(void);
 #endif
 
 #ifdef HAVE_BSV_MOVIE
-void replay_maybe_skip_prev_next(input_driver_state_t *input_st);
 void bsv_movie_frame_rewind(void);
 void bsv_movie_next_frame(input_driver_state_t *input_st);
 bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior checkpoint_behavior, bool end_movie_on_eof);
@@ -1112,6 +1114,8 @@ void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t *state, enum 
 bool movie_commit_checkpoint(input_driver_state_t *input_st);
 bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st);
 bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st);
+bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame);
+bool movie_find_checkpoint_before(bsv_movie_t *movie, uint64_t frame, bool assume_paused, int64_t *cp_pos_out, int64_t *cp_frame_out);
 bool movie_start_playback(input_driver_state_t *input_st, char *path);
 bool movie_start_record(input_driver_state_t *input_st, char *path);
 bool movie_stop_playback(input_driver_state_t *input_st);
