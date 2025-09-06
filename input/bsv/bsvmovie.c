@@ -1592,6 +1592,10 @@ bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st)
    /* For now, can't skip forward in a recording replay */
    if (!input_st->bsv_movie_state_handle || !input_st->bsv_movie_state_handle->playback)
       return false;
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+      return false;
+#endif
    input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_NEXT_CHECKPOINT;
    return true;
 }
@@ -1626,6 +1630,10 @@ bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st)
 {
    if (!input_st->bsv_movie_state_handle)
       return false;
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+      return false;
+#endif
    input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_PREV_CHECKPOINT;
    return true;
 }

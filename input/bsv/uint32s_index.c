@@ -259,6 +259,7 @@ uint32_t *uint32s_index_get(uint32s_index_t *index, uint32_t which)
          if (which >= index->additions[i].first_index)
          {
             RARCH_LOG("[STATESTREAM] originally allocated on frame %ld\n", index->additions[i].frame_counter);
+            break;
          }
       }
       return NULL;
