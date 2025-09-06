@@ -998,7 +998,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
 static void frontend_darwin_content_loaded(void)
 {
 #ifdef HAVE_SWIFT
-   if (@available(iOS 16.0, tvOS 16.0, *)) {
+   if (@available(macOS 13.0, iOS 16.0, tvOS 16.0, *)) {
       [RetroArchAppShortcuts contentLoaded];
    }
 #endif
