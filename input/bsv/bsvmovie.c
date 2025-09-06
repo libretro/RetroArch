@@ -853,17 +853,50 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
 
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_SEEK_TO_FRAME)
    {
-      bsv_movie_seek_to_pos_impl(handle, input_st->bsv_movie_state.seek_target_pos);
+      if (bsv_movie_seek_to_pos_impl(handle, input_st->bsv_movie_state.seek_target_pos))
+      {
+         const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_FRAME);
+         runloop_msg_queue_push(_msg, strlen(_msg), 10, 15, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+      }
+      else
+      {
+         const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_FRAME_FAILED);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      }
       input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_SEEK_TO_FRAME;
    }
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PREV_CHECKPOINT)
    {
-      bsv_movie_skip_to_prev_checkpoint_impl(handle);
+      if (bsv_movie_skip_to_prev_checkpoint_impl(handle))
+      {
+         const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT);
+         runloop_msg_queue_push(_msg, strlen(_msg), 10, 15, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+      }
+      else
+      {
+         const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      }
       input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_PREV_CHECKPOINT;
    }
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_NEXT_CHECKPOINT)
    {
-      bsv_movie_skip_to_next_checkpoint_impl(handle);
+      if (bsv_movie_skip_to_next_checkpoint_impl(handle))
+      {
+         const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT);
+         runloop_msg_queue_push(_msg, strlen(_msg), 10, 15, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+      }
+      else
+      {
+         const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      }
       input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_NEXT_CHECKPOINT;
    }
 }
@@ -1619,6 +1652,10 @@ bool bsv_movie_peek_frame_info(bsv_movie_t *movie, uint8_t *token, uint64_t *len
          /* seek past the state data */
          ret = intfstream_seek(movie->file, state_length, SEEK_CUR) >= 0;
       }
+      else if (tok == REPLAY_TOKEN_REGULAR_FRAME)
+      {
+         /* we are already at the end of the frame */
+      }
       else
       {
          RARCH_LOG("[Replay] Unrecognized frame token type %c\n", token);
@@ -1735,7 +1772,7 @@ bool bsv_movie_skip_to_next_checkpoint_impl(bsv_movie_t *movie)
 {
    uint8_t tok = REPLAY_TOKEN_INVALID;
    uint64_t frame_len;
-   int64_t frame = (int64_t)movie->frame_counter, initial_pos, cp_pos;
+   int64_t frame = (int64_t)movie->frame_counter, cp_pos, initial_pos;
    if (!movie || movie->version == 0)
       return false;
    initial_pos = intfstream_tell(movie->file);
@@ -1746,6 +1783,7 @@ bool bsv_movie_skip_to_next_checkpoint_impl(bsv_movie_t *movie)
             tok != REPLAY_TOKEN_CHECKPOINT2_FRAME))
       intfstream_seek(movie->file, frame_len, SEEK_CUR);
    cp_pos = intfstream_tell(movie->file);
+   intfstream_seek(movie->file, initial_pos, SEEK_SET);
    return bsv_movie_seek_to_pos_impl(movie, cp_pos);
 }
 bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st)

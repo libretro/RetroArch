@@ -1115,7 +1115,6 @@ bool movie_commit_checkpoint(input_driver_state_t *input_st);
 bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st);
 bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st);
 bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame);
-bool movie_find_checkpoint_before(bsv_movie_t *movie, uint64_t frame, bool assume_paused, int64_t *cp_pos_out, int64_t *cp_frame_out);
 bool movie_start_playback(input_driver_state_t *input_st, char *path);
 bool movie_start_record(input_driver_state_t *input_st, char *path);
 bool movie_stop_playback(input_driver_state_t *input_st);

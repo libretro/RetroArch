@@ -824,7 +824,7 @@ bool command_seek_replay(command_t *cmd, const char *arg)
    if (ret)
    {
       _len = strlcpy(reply, "OK ", sizeof(reply));
-      sprintf(reply+_len, "%ld", input_st->bsv_movie_state.seek_target);
+      sprintf(reply+_len, "%ld", input_st->bsv_movie_state.seek_target_frame);
    }
    else
       _len = strlcpy(reply, "NO", sizeof(reply));
