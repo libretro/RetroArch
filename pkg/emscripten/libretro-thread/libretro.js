@@ -4,7 +4,11 @@
  * This provides the basic JavaScript for the RetroArch web player.
  */
 
-const canvas = document.getElementById("canvas");
+const defaultCore = "gambatte";
+var autoStart = true;
+
+let currentCore;
+let canvas = document.getElementById("canvas");
 const webplayerPreview = document.getElementById("webplayer-preview");
 const menuBar = document.getElementById("navbar");
 const menuHider = document.getElementById("menuhider");
@@ -64,7 +68,10 @@ const disableKeys = {
 	123: "F12"
 };
 
+let Module;
 let fsLoadPromise;
+let reloadTimeout;
+let retroArchRunning = false;
 
 // all methods provided by the worker that we may require
 const workerHandlers = {FS: ["init", "writeFile", "readFile", "mkdirTree", "readdir", "readdirTree", "rm", "stat"], helper: ["loadFS", "zipDirs"]};
@@ -151,11 +158,18 @@ function openModal(which) {
 
 modalClose.addEventListener("click", function() {
 	modalContainer.style.display = "none";
+	setTimeout(function() {
+		canvas.focus();
+	}, 0);
 });
 
-var Module = {
+function modulePreRun(module) {
+	module.ENV["OPFS_MOUNT"] = "/home/web_user";
+	module.ENV["LIBRARY_PATH"] = module.corePath;
+}
+
+const ModuleBase = {
 	noInitialRun: true,
-	arguments: ["-v", "--menu"],
 	noImageDecoding: true,
 	noAudioDecoding: true,
 
@@ -165,11 +179,9 @@ var Module = {
 	retroArchRecv: function() {
 		return this.EmscriptenReceiveCommandReply();
 	},
-	preRun: [
-		function(module) {
-			module.ENV["OPFS_MOUNT"] = "/home/web_user";
-		}
-	],
+	retroArchExit: function(core, content) {
+		relaunch(core, content);
+	},
 	locateFile: function(path, prefix) {
 		if (path.endsWith(".js")) return typeof this.mainScriptUrlOrBlob == "string" ? this.mainScriptUrlOrBlob : URL.createObjectURL(this.mainScriptUrlOrBlob);
 		return path;
@@ -183,11 +195,7 @@ var Module = {
 	printErr: function(text) {
 		console.log("stderr:", text);
 	},
-	canvas: canvas,
-	totalDependencies: 0,
-	monitorRunDependencies: function(left) {
-		this.totalDependencies = Math.max(this.totalDependencies, left);
-	}
+	canvas: canvas
 };
 
 // read File object to an ArrayBuffer
@@ -301,7 +309,7 @@ function appIsSmallScreen() {
 // used for the menu hider
 function adjustMenuHeight() {
 	const actualMenuHeight = menuHider.checked ? 0 : 65;
-	document.body.style.setProperty("--actualmenuheight", actualMenuHeight + "px", "important")
+	document.body.style.setProperty("--actualmenuheight", actualMenuHeight + "px", "important");
 }
 
 function startRetroArch() {
@@ -328,10 +336,15 @@ function startRetroArch() {
 	// refocus the canvas so that keyboard events work
 	menuBar.addEventListener("pointerdown", function() {
 		setTimeout(function() {
-			Module.canvas.focus();
+			canvas.focus();
 		}, 0);
 	}, false);
 
+	// subsequent relaunches will start automatically
+	ModuleBase.noInitialRun = false;
+	ModuleBase.onRuntimeInitialized = null;
+
+	retroArchRunning = true;
 	Module.callMain(Module.arguments);
 }
 
@@ -340,39 +353,107 @@ async function appInitialized() {
 	console.log("WASM runtime initialized");
 	await fsLoadPromise;
 	console.log("FS initialized");
+
+	// ensure the current core exists even if it's not in the core list
+	await FS.writeFile("/retroarch/cores/" + currentCore + "_libretro.core", new Uint8Array());
 	setProgress("main");
 	setProgressText("main");
 	icnRun.classList.remove("fa-spinner", "fa-spin");
 	icnRun.classList.add("fa-play");
-	// Make the Preview image clickable to start RetroArch.
-	webplayerPreview.classList.add("loaded");
-	webplayerPreview.addEventListener("click", function() {
+
+	if (autoStart) {
 		startRetroArch();
-	});
-	btnRun.classList.remove("disabled");
-	btnRun.addEventListener("click", function() {
-		startRetroArch();
-	});
+	} else {
+		// Make the Preview image clickable to start RetroArch.
+		webplayerPreview.classList.add("loaded");
+		webplayerPreview.addEventListener("click", function() {
+			startRetroArch();
+		});
+		btnRun.classList.remove("disabled");
+		btnRun.addEventListener("click", function() {
+			startRetroArch();
+		});
+	}
 }
 
 async function downloadScript(src) {
 	let resp = await fetch(src);
+	if (resp.status >= 400) throw "HTTP " + resp.status;
 	let blob = await resp.blob();
 	return blob;
 }
 
-async function loadCore(core) {
+function loadCoreFallback(currentCore) {
+	URL.revokeObjectURL(ModuleBase.mainScriptUrlOrBlob);
+	if (currentCore == defaultCore) {
+		alert("Error: could not load default core!");
+		return;
+	}
+	loadCore(defaultCore);
+}
+
+function loadCoreFromUrl(url, core, args) {
+	ModuleBase.arguments = args || ["-v", "--menu"];
+	ModuleBase.preRun = [modulePreRun];
+	ModuleBase.mainScriptUrlOrBlob = url;
+	ModuleBase.canvas = canvas;
+	ModuleBase.corePath = "/home/web_user/retroarch/cores/" + core + "_libretro.core";
+	import(url).then(script => {
+		script.default(Object.assign({}, ModuleBase)).then(mod => {
+			Module = mod;
+		}).catch(err => {
+			console.error("Couldn't instantiate module", err);
+			loadCoreFallback(core);
+			throw err;
+		});
+	}).catch(err => {
+		console.error("Couldn't load script", err);
+		loadCoreFallback(core);
+		throw err;
+	});
+}
+
+function loadCore(core, args) {
 	// Make the core the selected core in the UI.
-	const coreTitle = document.querySelector('#core-selector a[data-core="' + core + '"]')?.textContent;
+	const coreTitle = libretroCores[core];
 	if (coreTitle) coreSelectorCurrent.textContent = coreTitle;
 	const fileExt = (core == "retroarch") ? ".js" : "_libretro.js";
-	const url = URL.createObjectURL(await downloadScript("./" + core + fileExt));
-	Module.mainScriptUrlOrBlob = url;
-	import(url).then(script => {
-		script.default(Module).then(mod => {
-			Module = mod;
-		}).catch(err => { console.error("Couldn't instantiate module", err); throw err; });
-	}).catch(err => { console.error("Couldn't load script", err); throw err; });
+	downloadScript("./" + core + fileExt).then(blob => {
+		loadCoreFromUrl(URL.createObjectURL(blob), core, args);
+	}).catch(err => {
+		console.error("Couldn't download script", err);
+		loadCoreFallback(core);
+		throw err;
+	});
+}
+
+// exit/exitspawn hook
+function relaunch(core, content) {
+	// get the new canvas element
+	canvas = Module.canvas;
+
+	// force restart on exit
+	if (!core) core = ModuleBase.corePath;
+
+	if (!content) content = "--menu";
+
+	Module = null;
+	if (reloadTimeout) {
+		clearTimeout(reloadTimeout);
+		reloadTimeout = null;
+	}
+
+	// parse core name from full path ("/retroarch/cores/NAME_libretro.core")
+	currentCore = core.slice(0, -14).split("/").slice(-1)[0];
+
+	// don't download the core again when restarting
+	if (core == ModuleBase.corePath) {
+		loadCoreFromUrl(ModuleBase.mainScriptUrlOrBlob, currentCore, ["-v", content]);
+	} else {
+		localStorage.setItem("core", currentCore);
+		URL.revokeObjectURL(ModuleBase.mainScriptUrlOrBlob);
+		loadCore(currentCore, ["-v", content]);
+	}
 }
 
 // When the browser has loaded everything.
@@ -386,6 +467,17 @@ document.addEventListener("DOMContentLoaded", async function() {
 	document.addEventListener("click", function(e) {
 		if (!coreSelector.parentElement.contains(e.target)) dropdownBox.checked = false;
 	});
+
+	// create core list
+	var coreArray = Object.entries(libretroCores);
+	var coreNames = Object.values(libretroCores).sort();
+	for (let name of coreNames) {
+		let a = document.createElement("a");
+		a.href = ".";
+		a.dataset.core = coreArray.find(i => i[1] == name)[0];
+		a.textContent = name;
+		coreSelector.appendChild(a);
+	}
 
 	// disable default right click action
 	canvas.addEventListener("contextmenu", function(e) {
@@ -421,11 +513,25 @@ document.addEventListener("DOMContentLoaded", async function() {
 
 	// Switch the core when selecting one.
 	coreSelector.addEventListener("click", function(e) {
-		const coreChoice = e.target.dataset?.core;
-		if (coreChoice) localStorage.setItem("core", coreChoice);
+		e.preventDefault();
+		const core = e.target.dataset?.core;
+		if (!core) return;
+		dropdownBox.checked = false;
+		localStorage.setItem("core", core);
+		if (Module && retroArchRunning) {
+			Module.retroArchSend("LOAD_CORE /home/web_user/retroarch/cores/" + core + "_libretro.core");
+
+			// maybe RetroArch crashed? reload if RetroArch doesn't exit within a second.
+			if (reloadTimeout) clearTimeout(reloadTimeout);
+			reloadTimeout = setTimeout(function() {
+				location.reload();
+			}, 1000);
+		} else {
+			location.reload();
+		}
 	});
 
 	// Find which core to load.
-	const core = localStorage.getItem("core") || "gambatte";
-	loadCore(core);
+	currentCore = localStorage.getItem("core") || defaultCore;
+	loadCore(currentCore);
 });

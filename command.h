@@ -429,6 +429,7 @@ bool command_write_ram(command_t *cmd, const char *arg);
 #endif
 bool command_read_memory(command_t *cmd, const char *arg);
 bool command_write_memory(command_t *cmd, const char *arg);
+bool command_load_core(command_t *cmd, const char* arg);
 
 static const struct cmd_action_map action_map[] = {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -452,6 +453,8 @@ static const struct cmd_action_map action_map[] = {
 
    { "SAVE_FILES", command_save_savefiles, "No argument"},
    { "LOAD_FILES", command_load_savefiles, "No argument"},
+
+   { "LOAD_CORE", command_load_core, "<core path>"},
 };
 
 static const struct cmd_map map[] = {
