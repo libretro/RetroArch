@@ -13975,6 +13975,10 @@ MSG_HASH(
    "Не вдалося отримати псевдонім від клієнта."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Не вдалося завантажити зі списку відтворення."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "Не вдалося завантажити накладку."
    )
