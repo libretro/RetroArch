@@ -1734,6 +1734,8 @@ bool bsv_movie_seek_to_pos_impl(bsv_movie_t *movie, int64_t pos)
    if (!movie || movie->version == 0)
       return false;
    movie_pos = intfstream_tell(movie->file);
+   if (pos == movie_pos)
+      return true;
    /* assume file is at a frame boundary and frame is at a checkpoint boundary. */
    if (pos < movie_pos)
       /* TODO: this could be made more efficient with backrefs if we
@@ -1746,15 +1748,16 @@ bool bsv_movie_seek_to_pos_impl(bsv_movie_t *movie, int64_t pos)
       bsv_movie_reset_playback(movie);
    if (pos != movie_pos)
       bsv_movie_scan_to(movie, pos);
-   ret = bsv_movie_read_next_events(movie, REPLAY_CPBEHAVIOR_DESERIALIZE, false);
-   return ret;
+   return bsv_movie_read_next_events(movie, REPLAY_CPBEHAVIOR_DESERIALIZE, false);
 }
 
 bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st)
 {
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
    /* For now, can't skip forward in a recording replay */
    if (!input_st->bsv_movie_state_handle ||
-         !input_st->bsv_movie_state_handle->playback ||
+         (!input_st->bsv_movie_state_handle->playback && !paused) ||
          input_st->bsv_movie_state_handle->version == 0)
       return false;
 #ifdef HAVE_CHEEVOS
@@ -1768,7 +1771,7 @@ bool bsv_movie_skip_to_next_checkpoint_impl(bsv_movie_t *movie)
 {
    uint8_t tok = REPLAY_TOKEN_INVALID;
    uint64_t frame_len;
-   int64_t frame = (int64_t)movie->frame_counter, cp_pos, initial_pos;
+   int64_t cp_pos, initial_pos;
    if (!movie || movie->version == 0)
       return false;
    initial_pos = intfstream_tell(movie->file);
@@ -1778,6 +1781,8 @@ bool bsv_movie_skip_to_next_checkpoint_impl(bsv_movie_t *movie)
             tok != REPLAY_TOKEN_CHECKPOINT_FRAME &&
             tok != REPLAY_TOKEN_CHECKPOINT2_FRAME))
       intfstream_seek(movie->file, frame_len, SEEK_CUR);
+   if (tok == REPLAY_TOKEN_INVALID)
+      return false;
    cp_pos = intfstream_tell(movie->file);
    intfstream_seek(movie->file, initial_pos, SEEK_SET);
    return bsv_movie_seek_to_pos_impl(movie, cp_pos);
