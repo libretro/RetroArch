@@ -7292,7 +7292,8 @@ int runloop_iterate(void)
          if (input_st->bsv_movie_state.flags &
                (BSV_FLAG_MOVIE_FORCE_CHECKPOINT |
                      BSV_FLAG_MOVIE_PREV_CHECKPOINT |
-                     BSV_FLAG_MOVIE_NEXT_CHECKPOINT))
+                     BSV_FLAG_MOVIE_NEXT_CHECKPOINT |
+                     BSV_FLAG_MOVIE_SEEK_TO_FRAME))
          {
             runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;
             runloop_st->run_frames_and_pause = 2;

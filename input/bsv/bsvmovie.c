@@ -1679,7 +1679,7 @@ bool movie_find_checkpoint_before(bsv_movie_t *movie, int64_t frame, bool consid
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    bool paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED) || consider_paused;
    const int64_t prev_skip_min_distance = 60;
-   int64_t target_frame = (int64_t)movie->frame_counter, cur_frame = 0;
+   int64_t target_frame = frame, cur_frame = 0;
    bool ret = false;
    int64_t initial_pos, cp_pos=-1, cp_frame=-1;
    uint64_t frame_len;
@@ -1696,10 +1696,11 @@ bool movie_find_checkpoint_before(bsv_movie_t *movie, int64_t frame, bool consid
          break;
       if (tok == REPLAY_TOKEN_CHECKPOINT_FRAME || tok == REPLAY_TOKEN_CHECKPOINT2_FRAME)
       {
-         if (!paused && target_frame - cur_frame < prev_skip_min_distance)
-            break;
-         cp_pos = intfstream_tell(movie->file);
-         cp_frame = cur_frame;
+         if (target_frame - cur_frame >= prev_skip_min_distance || paused)
+         {
+            cp_pos = intfstream_tell(movie->file);
+            cp_frame = cur_frame;
+         }
       }
       cur_frame += 1;
       intfstream_seek(movie->file, frame_len, SEEK_CUR);
@@ -1721,8 +1722,8 @@ bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame)
       return false;
 #endif
    if (!movie_find_checkpoint_before(input_st->bsv_movie_state_handle, frame, true,
-               &input_st->bsv_movie_state.seek_target_frame,
-               &input_st->bsv_movie_state.seek_target_pos))
+               &input_st->bsv_movie_state.seek_target_pos,
+               &input_st->bsv_movie_state.seek_target_frame))
       return false;
    input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_SEEK_TO_FRAME;
    return true;
