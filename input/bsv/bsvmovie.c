@@ -149,7 +149,6 @@ bool bsv_movie_reset_recording(bsv_movie_t *handle)
    handle->cur_save_valid = false;
 
    intfstream_seek(handle->file, REPLAY_HEADER_LEN_BYTES, SEEK_SET);
-   intfstream_truncate(handle->file, REPLAY_HEADER_LEN_BYTES);
 
    intfstream_write(handle->file, &compression, 1);
    intfstream_write(handle->file, &encoding, 1);
@@ -241,7 +240,7 @@ void bsv_movie_frame_rewind()
       RARCH_LOG("[REPLAY] rewound to %d\n", handle->frame_counter);
       intfstream_seek(handle->file, (int)handle->frame_pos[handle->frame_counter & handle->frame_mask], SEEK_SET);
       if (recording)
-         intfstream_truncate(handle->file, (int)handle->frame_pos[handle->frame_counter & handle->frame_mask]);
+         intfstream_truncate(handle->file, intfstream_tell(handle->file));
       else
          bsv_movie_read_next_events(handle, REPLAY_CPBEHAVIOR_DESERIALIZE, true);
    }
@@ -251,19 +250,11 @@ void bsv_movie_frame_rewind()
       RARCH_LOG("[Replay] rewound past beginning\n");
       /* We rewound past the beginning. */
       if (handle->playback)
-      {
-         intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
-#ifdef HAVE_STATESTREAM
-      if (handle->superblocks)
-         uint32s_index_remove_after(handle->superblocks, 0);
-      if (handle->blocks)
-         uint32s_index_remove_after(handle->blocks, 0);
-#endif
-         bsv_movie_read_next_events(handle, REPLAY_CPBEHAVIOR_DESERIALIZE, true);
-      }
+         bsv_movie_reset_playback(handle);
       else
       {
          bsv_movie_reset_recording(handle);
+         intfstream_truncate(handle->file, intfstream_tell(handle->file));
       }
    }
 }
@@ -844,6 +835,10 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          /* write "next frame is not a checkpoint" */
          intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
       }
+      /* To support seeking forwards during a paused replay, we would
+         need to *not* truncate here if we are in the "just paused,
+         running a frame to get the updated image, then will pause
+         again" state. */
       intfstream_truncate(handle->file, intfstream_tell(handle->file));
    }
 
@@ -1591,7 +1586,7 @@ exit:
    if(!ret)
    {
       RARCH_ERR("[STATESTREAM] made it to end without superblock seq\n");
-      abort();
+      return false;
    }
    total_decode_micros += cpu_features_get_time_usec() - start;
    RARCH_DBG("[STATESTREAM] Total statestream decodes %d ; net time (secs): %f\n", total_decode_count, (double)total_decode_micros / (1000000.0));
@@ -1730,6 +1725,10 @@ bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame)
 }
 bool bsv_movie_seek_to_pos_impl(bsv_movie_t *movie, int64_t pos)
 {
+   /* TODO:
+      1. fix under "no previous replay" while recording
+      2. fix under "some previous replay" while recording
+    */
    int64_t movie_pos;
    bool ret;
    if (!movie || movie->version == 0)
@@ -1737,21 +1736,17 @@ bool bsv_movie_seek_to_pos_impl(bsv_movie_t *movie, int64_t pos)
    movie_pos = intfstream_tell(movie->file);
    /* assume file is at a frame boundary and frame is at a checkpoint boundary. */
    if (pos < movie_pos)
-   {
       /* TODO: this could be made more efficient with backrefs if we
          had a way to scan backwards; we wouldn't need to reset to go
          backwards. */
-      if (movie->playback)
-         bsv_movie_reset_playback(movie);
-      else
-         bsv_movie_reset_recording(movie);
-   }
+      /* It seems strange, but we want `reset_playback` here and not
+         `reset_recording`, even if the movie is in record mode. This
+         is because we don't want to re-serialize the initial state or
+         whatever and act "as if" we just started recording. */
+      bsv_movie_reset_playback(movie);
    if (pos != movie_pos)
       bsv_movie_scan_to(movie, pos);
    ret = bsv_movie_read_next_events(movie, REPLAY_CPBEHAVIOR_DESERIALIZE, false);
-   /* truncate recording after seek */
-   if (!movie->playback)
-      intfstream_truncate(movie->file, intfstream_tell(movie->file));
    return ret;
 }
 
