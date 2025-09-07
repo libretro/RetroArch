@@ -406,6 +406,7 @@ static int wiiu_hid_polling_thread(int argc, const char **argv)
    {
       wiiu_handle_attach_events(hid, wiiu_hid_synchronized_get_events_list());
       wiiu_poll_adapters(hid);
+      usleep(500);
    }
 
    return 0;
