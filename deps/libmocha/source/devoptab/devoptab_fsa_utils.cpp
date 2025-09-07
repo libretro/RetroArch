@@ -1,34 +1,73 @@
 #include "devoptab_fsa.h"
+#include <cstdio>
+
+#define COMP_MAX      50
+
+#define ispathsep(ch) ((ch) == '/' || (ch) == '\\')
+#define iseos(ch)     ((ch) == '\0')
+#define ispathend(ch) (ispathsep(ch) || iseos(ch))
+
+// https://gist.github.com/starwing/2761647
+static char *
+__fsa_normpath(char *out, const char *in) {
+    char *pos[COMP_MAX], **top = pos, *head = out;
+    int   isabs                = ispathsep(*in);
+
+    if (isabs) *out++ = '/';
+    *top++ = out;
+
+    while (!iseos(*in)) {
+        while (ispathsep(*in)) { ++in; }
+
+        if (iseos(*in)) { break; }
+
+        if (memcmp(in, ".", 1) == 0 && ispathend(in[1])) {
+            ++in;
+            continue;
+        }
+
+        if (memcmp(in, "..", 2) == 0 && ispathend(in[2])) {
+            in += 2;
+            if (top != pos + 1) { out = *--top; } else if (isabs) { out = top[-1]; } else {
+                strcpy(out, "../");
+                out += 3;
+            }
+            continue;
+        }
+
+        if (top - pos >= COMP_MAX) {
+            return NULL; // path to complicate
+        }
+
+        *top++ = out;
+        while (!ispathend(*in)) { *out++ = *in++; }
+        if (ispathsep(*in)) { *out++ = '/'; }
+    }
+
+    *out = '\0';
+    if (*head == '\0') { strcpy(head, "./"); }
+    return head;
+}
 
 char *
 __fsa_fixpath(struct _reent *r,
-              const char *path) {
-    char *p;
-    char *fixedPath;
-
+              const char *   path) {
     if (!path) {
         r->_errno = EINVAL;
         return nullptr;
     }
 
-    p = strchr(path, ':') + 1;
-    if (!strchr(path, ':')) {
-        p = (char *) path;
-    }
-
-    size_t pathLength = strlen(p);
-    if (pathLength > FS_MAX_PATH) {
-        r->_errno = ENAMETOOLONG;
-        return nullptr;
-    }
+    char* p = strchr(path, ':') + 1;
+    if (!strchr(path, ':')) { p = (char *) path; }
 
     // wii u softlocks on empty strings so give expected error back
-    if (pathLength == 0) {
+    if (strlen(p) == 0) {
         r->_errno = ENOENT;
         return nullptr;
     }
 
-    fixedPath = static_cast<char *>(memalign(0x40, FS_MAX_PATH + 1));
+    int maxPathLength = PATH_MAX;
+    char* fixedPath = static_cast<char*>(memalign(0x40, maxPathLength));
     if (!fixedPath) {
         r->_errno = ENOMEM;
         return nullptr;
@@ -38,8 +77,37 @@ __fsa_fixpath(struct _reent *r,
         auto *deviceData = (FSADeviceData *) r->deviceData;
         strcpy(fixedPath, deviceData->mount_path);
         strcat(fixedPath, p);
-    } else {
-        strcpy(fixedPath, p);
+    } else { strcpy(fixedPath, p); }
+
+    // Normalize path (resolve any ".", "..", or "//")
+    char *normalizedPath = strdup(fixedPath);
+    if (!normalizedPath) {
+        WUT_DEBUG_REPORT("__wut_fsa_fixpath: failed to allocate memory for normalizedPath\n");
+        free(fixedPath);
+        r->_errno = ENOMEM;
+        return nullptr;
+    }
+
+    char *resPath = __fsa_normpath(normalizedPath, fixedPath);
+    if (!resPath) {
+        WUT_DEBUG_REPORT("__wut_fsa_fixpath: failed to normalize path\n");
+        free(normalizedPath);
+        free(fixedPath);
+        r->_errno = EIO;
+        return nullptr;
+    }
+
+    if (snprintf(fixedPath, maxPathLength, "%s", resPath) >= maxPathLength) {
+        WUT_DEBUG_REPORT("__wut_fsa_fixpath: fixedPath snprintf result (relative) was truncated\n");
+    }
+
+    free(normalizedPath);
+
+    size_t pathLength = strlen(fixedPath);
+    if (pathLength > FS_MAX_PATH) {
+        free(fixedPath);
+        r->_errno = ENAMETOOLONG;
+        return nullptr;
     }
 
     return fixedPath;
@@ -102,9 +170,7 @@ void __fsa_translate_stat(FSAStat *fsStat, struct stat *posStat) {
      (EPOCH_DIFF_YEARS(year) - 1 + EPOCH_YEARS_SINCE_LEAP_CENTURY) / 400)
 #define EPOCH_DIFF_SECS(year) (60ull * 60ull * 24ull * (uint64_t) EPOCH_DIFF_DAYS(year))
 
-time_t __fsa_translate_time(FSTime timeValue) {
-    return (timeValue / 1000000) + EPOCH_DIFF_SECS(WIIU_FSTIME_EPOCH_YEAR);
-}
+time_t __fsa_translate_time(FSTime timeValue) { return (timeValue / 1000000) + EPOCH_DIFF_SECS(WIIU_FSTIME_EPOCH_YEAR); }
 
 FSMode __fsa_translate_permission_mode(mode_t mode) {
     // Convert normal Unix octal permission bits into CafeOS hexadecimal permission bits
@@ -146,49 +212,39 @@ int __fsa_translate_error(FSError error) {
             return EROFS;
         case FS_ERROR_NOT_INIT:
             return ENODEV;
-            // TODO
         case FS_ERROR_MAX_MOUNT_POINTS:
-            break;
         case FS_ERROR_MAX_VOLUMES:
-            break;
         case FS_ERROR_MAX_CLIENTS:
-            break;
         case FS_ERROR_MAX_FILES:
-            break;
         case FS_ERROR_MAX_DIRS:
-            break;
+            return EMFILE;
         case FS_ERROR_ALREADY_OPEN:
-            break;
+            return EBUSY;
         case FS_ERROR_NOT_EMPTY:
-            break;
+            return ENOTEMPTY;
         case FS_ERROR_ACCESS_ERROR:
-            break;
+            return EACCES;
         case FS_ERROR_DATA_CORRUPTED:
-            break;
+            return EILSEQ;
         case FS_ERROR_JOURNAL_FULL:
-            break;
+            return EBUSY;
         case FS_ERROR_UNAVAILABLE_COMMAND:
-            break;
+            return EBUSY;
         case FS_ERROR_INVALID_PARAM:
-            break;
+            return EBUSY;
         case FS_ERROR_INVALID_BUFFER:
-            break;
         case FS_ERROR_INVALID_ALIGNMENT:
-            break;
         case FS_ERROR_INVALID_CLIENTHANDLE:
-            break;
         case FS_ERROR_INVALID_FILEHANDLE:
-            break;
         case FS_ERROR_INVALID_DIRHANDLE:
-            break;
+            return EINVAL;
         case FS_ERROR_OUT_OF_RESOURCES:
-            break;
+            return ENOMEM;
         case FS_ERROR_MEDIA_NOT_READY:
-            break;
+            return EIO;
         case FS_ERROR_INVALID_MEDIA:
-            break;
+            return EIO;
         default:
-            break;
+            return EIO;
     }
-    return (int) EIO;
 }

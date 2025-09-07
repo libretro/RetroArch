@@ -31,14 +31,13 @@ ssize_t __fsa_read(struct _reent *r, void *fd, char *ptr, size_t len) {
         // otherwise read into alignedBuffer
         uint8_t *tmp = (uint8_t *) ptr;
         size_t size  = len - bytesRead;
-
-        if ((uintptr_t) ptr & 0x3F) {
+        if (size < 0x40) {
+            // read partial cache-line back-end
+            tmp = alignedBuffer;
+        } else if ((uintptr_t) ptr & 0x3F) {
             // read partial cache-line front-end
             tmp  = alignedBuffer;
             size = MIN(size, 0x40 - ((uintptr_t) ptr & 0x3F));
-        } else if (size < 0x40) {
-            // read partial cache-line back-end
-            tmp = alignedBuffer;
         } else {
             // read whole cache lines
             size &= ~0x3F;

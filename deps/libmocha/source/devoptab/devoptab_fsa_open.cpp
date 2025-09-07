@@ -33,6 +33,12 @@ int __fsa_open(struct _reent *r,
         fsMode = "w";
     } else if (((flags & O_ACCMODE) == O_RDWR) && ((flags & commonFlagMask) == (O_CREAT | O_TRUNC))) {
         fsMode = "w+";
+    } else if (((flags & O_ACCMODE) == O_WRONLY) && ((flags & commonFlagMask) == O_CREAT) && (flags & O_EXCL) == O_EXCL) {
+        // if O_EXCL is set, we don't need O_TRUNC
+        fsMode = "w";
+    } else if (((flags & O_ACCMODE) == O_RDWR) && ((flags & commonFlagMask) == O_CREAT) && (flags & O_EXCL) == O_EXCL) {
+        // if O_EXCL is set, we don't need O_TRUNC
+        fsMode = "w+";
     } else if (((flags & O_ACCMODE) == O_WRONLY) && ((flags & commonFlagMask) == (O_CREAT | O_APPEND))) {
         fsMode = "a";
     } else if (((flags & O_ACCMODE) == O_RDWR) && ((flags & commonFlagMask) == (O_CREAT | O_APPEND))) {
@@ -43,6 +49,10 @@ int __fsa_open(struct _reent *r,
         // It's not possible to open a file with write only mode which doesn't truncate the file
         // Technically we could read from the file, but our read implementation is blocking this.
         fsMode = "r+";
+    } else if (((flags & O_ACCMODE) == O_RDWR) && ((flags & commonFlagMask) == (O_CREAT))) {
+        // Cafe OS doesn't have a matching mode for this, so we have to be creative and create the file.
+        createFileIfNotFound = true;
+        fsMode               = "r+";
     } else if (((flags & O_ACCMODE) == O_WRONLY) && ((flags & commonFlagMask) == (O_APPEND))) {
         // Cafe OS doesn't have a matching mode for this, so we have to check if the file exists.
         failIfFileNotFound = true;

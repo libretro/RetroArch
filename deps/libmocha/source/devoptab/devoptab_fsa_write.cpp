@@ -37,13 +37,13 @@ ssize_t __fsa_write(struct _reent *r, void *fd, const char *ptr, size_t len) {
         uint8_t *tmp = (uint8_t *) ptr;
         size_t size  = len - bytesWritten;
 
-        if ((uintptr_t) ptr & 0x3F) {
+        if (size < 0x40) {
+            // write partial cache-line back-end
+            tmp = alignedBuffer;
+        } else if ((uintptr_t) ptr & 0x3F) {
             // write partial cache-line front-end
             tmp  = alignedBuffer;
             size = MIN(size, 0x40 - ((uintptr_t) ptr & 0x3F));
-        } else if (size < 0x40) {
-            // write partial cache-line back-end
-            tmp = alignedBuffer;
         } else {
             // write whole cache lines
             size &= ~0x3F;
