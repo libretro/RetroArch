@@ -820,7 +820,7 @@ void rarch_stop_draw_observer(void)
     if (server.bonjourServerURL != nil)
         [servers appendString:[NSString stringWithFormat:@"%@",server.bonjourServerURL]];
 
-#if TARGET_OS_TV || TARGET_OS_IOS
+#if TARGET_OS_TV && !TARGET_OS_IOS
     settings_t *settings = config_get_ptr();
     if (!settings->bools.gcdwebserver_alert)
         return;

@@ -648,7 +648,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
       /* Send our response */
       sendto(net_st->lan_ad_server_fd,
          (char*)&ad_packet_buffer, sizeof(ad_packet_buffer), 0,
-         (struct sockaddr*)&their_addr, sizeof(their_addr));
+         (struct sockaddr*)&their_addr, addr_size);
    }
 
    return true;
