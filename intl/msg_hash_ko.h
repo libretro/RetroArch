@@ -14059,6 +14059,10 @@ MSG_HASH(
    "콘텐츠를 불러오는 데 실패했습니다."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "실행목록에서 불러오기가 실패했습니다."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "동영상 파일을 불러오는 데 실패했습니다."
    )

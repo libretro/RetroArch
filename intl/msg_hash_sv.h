@@ -3165,6 +3165,10 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Välj fysiskt tangentbord"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
    "Använd denna enhet som ett fysiskt tangentbord och inte som en spelkontroll."
    )
@@ -3216,6 +3220,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "Pausa innehållet när någon spelkontroll kopplas från. Återuppta med Start."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   "Tröskelvärde för inmatningsknappsaxel"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
