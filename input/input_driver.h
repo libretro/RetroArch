@@ -206,7 +206,8 @@ enum bsv_flags
    BSV_FLAG_MOVIE_FORCE_CHECKPOINT   = (1 << 6),
    BSV_FLAG_MOVIE_PREV_CHECKPOINT    = (1 << 7),
    BSV_FLAG_MOVIE_NEXT_CHECKPOINT    = (1 << 8),
-   BSV_FLAG_MOVIE_SEEK_TO_FRAME      = (1 << 9)
+   BSV_FLAG_MOVIE_SEEK_TO_FRAME      = (1 << 9),
+   BSV_FLAG_MOVIE_SEEKING            = (1 << 10)
 };
 
 struct bsv_state

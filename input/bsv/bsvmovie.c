@@ -781,7 +781,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       return;
 #endif
 
-   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
+   if (!handle->playback && !(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_SEEKING))
    {
       int i;
       uint16_t evt_count = swap_if_big16(handle->input_event_count);
@@ -841,9 +841,12 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          again" state. */
       intfstream_truncate(handle->file, intfstream_tell(handle->file));
    }
-
-   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
+   else /* either playback or seeking while recording */
+   {
       bsv_movie_read_next_events(handle, checkpoint_deserialize ? REPLAY_CPBEHAVIOR_DESERIALIZE : REPLAY_CPBEHAVIOR_UPDATE, true);
+      /* clear seeking flag since we did read one frame */
+      input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_SEEKING;
+   }
    handle->frame_pos[handle->frame_counter & handle->frame_mask] = intfstream_tell(handle->file);
 
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_SEEK_TO_FRAME)
@@ -853,6 +856,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_FRAME);
          runloop_msg_queue_push(_msg, strlen(_msg), 10, 15, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+         input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_SEEKING;
       }
       else
       {
@@ -869,6 +873,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT);
          runloop_msg_queue_push(_msg, strlen(_msg), 10, 15, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+         input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_SEEKING;
       }
       else
       {
@@ -885,6 +890,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT);
          runloop_msg_queue_push(_msg, strlen(_msg), 10, 15, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
+         input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_SEEKING;
       }
       else
       {
@@ -1755,7 +1761,7 @@ bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    bool paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
-   /* For now, can't skip forward in a recording replay */
+   /* Can't skip forward in an unpaused recording replay. */
    if (!input_st->bsv_movie_state_handle ||
          (!input_st->bsv_movie_state_handle->playback && !paused) ||
          input_st->bsv_movie_state_handle->version == 0)
