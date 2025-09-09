@@ -69,6 +69,9 @@ enum event_command
    CMD_EVENT_PLAY_REPLAY,
    CMD_EVENT_RECORD_REPLAY,
    CMD_EVENT_HALT_REPLAY,
+   CMD_EVENT_SAVE_REPLAY_CHECKPOINT,
+   CMD_EVENT_PREV_REPLAY_CHECKPOINT,
+   CMD_EVENT_NEXT_REPLAY_CHECKPOINT,
    CMD_EVENT_REPLAY_DECREMENT,
    CMD_EVENT_REPLAY_INCREMENT,
    /* Save state actions. */
@@ -421,6 +424,7 @@ bool command_get_config_param(command_t *cmd, const char* arg);
 bool command_show_osd_msg(command_t *cmd, const char* arg);
 bool command_load_state_slot(command_t *cmd, const char* arg);
 bool command_play_replay_slot(command_t *cmd, const char* arg);
+bool command_seek_replay(command_t *cmd, const char *arg);
 bool command_save_savefiles(command_t *cmd, const char* arg);
 bool command_load_savefiles(command_t *cmd, const char* arg);
 #ifdef HAVE_CHEEVOS
@@ -449,6 +453,7 @@ static const struct cmd_action_map action_map[] = {
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>"},
    { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},
+   { "SEEK_REPLAY",command_seek_replay, "<frame number>"},
 
    { "SAVE_FILES", command_save_savefiles, "No argument"},
    { "LOAD_FILES", command_load_savefiles, "No argument"},
@@ -480,6 +485,9 @@ static const struct cmd_map map[] = {
    { "PLAY_REPLAY",            RARCH_PLAY_REPLAY_KEY },
    { "RECORD_REPLAY",          RARCH_RECORD_REPLAY_KEY },
    { "HALT_REPLAY",            RARCH_HALT_REPLAY_KEY },
+   { "SAVE_REPLAY_CHECKPOINT", RARCH_SAVE_REPLAY_CHECKPOINT_KEY },
+   { "PREV_REPLAY_CHECKPOINT", RARCH_PREV_REPLAY_CHECKPOINT_KEY },
+   { "NEXT_REPLAY_CHECKPOINT", RARCH_NEXT_REPLAY_CHECKPOINT_KEY },
    { "REPLAY_SLOT_PLUS",       RARCH_REPLAY_SLOT_PLUS },
    { "REPLAY_SLOT_MINUS",      RARCH_REPLAY_SLOT_MINUS },
 

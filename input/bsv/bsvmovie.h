@@ -38,7 +38,7 @@ void bsv_movie_push_input_event(bsv_movie_t *movie,
 
 bool bsv_movie_load_checkpoint(bsv_movie_t *movie,
       uint8_t compression, uint8_t encoding,
-      bool just_update_structures);
+      replay_checkpoint_behavior cpbehavior);
 int64_t bsv_movie_write_checkpoint(bsv_movie_t *movie,
       uint8_t compression, uint8_t encoding);
 

@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "input/input_driver.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -798,6 +799,42 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
    cmd->replier(cmd, reply, strlen(reply));
    return ret;
 #else
+   return false;
+#endif
+}
+
+bool command_seek_replay(command_t *cmd, const char *arg)
+{
+#ifdef HAVE_BSV_MOVIE
+   char reply[32];
+   bool ret = true;
+   char *endptr;
+   size_t  _len;
+   int64_t frame = strtoll(arg, &endptr, 10), target_frame;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   if (!endptr)
+      ret = false;
+   if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_PLAYBACK | BSV_FLAG_MOVIE_RECORDING)))
+      ret = false;
+#ifdef HAVE_CHEEVOS
+   ret = !rcheevos_hardcore_active();
+#endif
+   if (ret)
+      ret = movie_seek_to_frame(input_st, frame);
+   if (ret)
+   {
+      _len = strlcpy(reply, "OK ", sizeof(reply));
+      _len += snprintf(reply+_len, sizeof(reply)-_len,
+            "%ld", input_st->bsv_movie_state.seek_target_frame);
+   }
+   else
+      _len = strlcpy(reply, "NO", sizeof(reply));
+   reply[_len] = '\n';
+   reply[++_len] = '\0';
+   cmd->replier(cmd, reply, _len);
+   return ret;
+#else
+   cmd->replier(cmd, "NO\n", 4);
    return false;
 #endif
 }

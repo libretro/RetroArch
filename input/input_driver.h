@@ -202,16 +202,23 @@ enum bsv_flags
    BSV_FLAG_MOVIE_PLAYBACK           = (1 << 2),
    BSV_FLAG_MOVIE_RECORDING          = (1 << 3),
    BSV_FLAG_MOVIE_END                = (1 << 4),
-   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 5)
+   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 5),
+   BSV_FLAG_MOVIE_FORCE_CHECKPOINT   = (1 << 6),
+   BSV_FLAG_MOVIE_PREV_CHECKPOINT    = (1 << 7),
+   BSV_FLAG_MOVIE_NEXT_CHECKPOINT    = (1 << 8),
+   BSV_FLAG_MOVIE_SEEK_TO_FRAME      = (1 << 9),
+   BSV_FLAG_MOVIE_SEEKING            = (1 << 10)
 };
 
 struct bsv_state
 {
-   uint8_t flags;
+   uint16_t flags;
    /* Movie playback/recording support. */
    char movie_auto_path[PATH_MAX_LENGTH];
    /* Immediate playback/recording. */
    char movie_start_path[PATH_MAX_LENGTH];
+   /* Target frame/position to seek to next iteration. */
+   int64_t seek_target_frame, seek_target_pos;
 };
 
 /* These data are always little-endian. */
@@ -278,6 +285,15 @@ struct bsv_movie
 };
 
 typedef struct bsv_movie bsv_movie_t;
+
+enum replay_checkpoint_behavior_ {
+   REPLAY_CPBEHAVIOR_SKIP,
+   REPLAY_CPBEHAVIOR_UPDATE,
+   REPLAY_CPBEHAVIOR_DESERIALIZE
+};
+
+typedef enum replay_checkpoint_behavior_ replay_checkpoint_behavior;
+
 #endif
 
 /**
@@ -1088,13 +1104,18 @@ void input_overlay_check_mouse_cursor(void);
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
 void bsv_movie_next_frame(input_driver_state_t *input_st);
-bool bsv_movie_read_next_events(bsv_movie_t *handle, bool skip_checkpoints);
+bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior checkpoint_behavior, bool end_movie_on_eof);
+bool bsv_movie_reset_playback(bsv_movie_t *handle);
 bool bsv_movie_reset_recording(bsv_movie_t *handle);
 void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
 void bsv_movie_deinit_full(input_driver_state_t *input_st);
 void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t *state, enum bsv_flags flags);
 
+bool movie_commit_checkpoint(input_driver_state_t *input_st);
+bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st);
+bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st);
+bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame);
 bool movie_start_playback(input_driver_state_t *input_st, char *path);
 bool movie_start_record(input_driver_state_t *input_st, char *path);
 bool movie_stop_playback(input_driver_state_t *input_st);

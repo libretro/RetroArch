@@ -19,6 +19,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "input/input_driver.h"
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -7009,6 +7010,9 @@ static enum runloop_state_enum runloop_check_state(
    HOTKEY_CHECK(RARCH_PLAY_REPLAY_KEY, CMD_EVENT_PLAY_REPLAY, true, NULL);
    HOTKEY_CHECK(RARCH_RECORD_REPLAY_KEY, CMD_EVENT_RECORD_REPLAY, true, NULL);
    HOTKEY_CHECK(RARCH_HALT_REPLAY_KEY, CMD_EVENT_HALT_REPLAY, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_REPLAY_CHECKPOINT_KEY, CMD_EVENT_SAVE_REPLAY_CHECKPOINT, true, NULL);
+   HOTKEY_CHECK(RARCH_PREV_REPLAY_CHECKPOINT_KEY, CMD_EVENT_PREV_REPLAY_CHECKPOINT, true, NULL);
+   HOTKEY_CHECK(RARCH_NEXT_REPLAY_CHECKPOINT_KEY, CMD_EVENT_NEXT_REPLAY_CHECKPOINT, true, NULL);
 
    /* Check Disc Control hotkeys */
    HOTKEY_CHECK3(
@@ -7283,6 +7287,17 @@ int runloop_iterate(void)
 #ifdef HAVE_NETWORKING
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
+#ifdef HAVE_BSV_MOVIE
+         if (input_st->bsv_movie_state.flags &
+               (BSV_FLAG_MOVIE_FORCE_CHECKPOINT |
+                     BSV_FLAG_MOVIE_PREV_CHECKPOINT |
+                     BSV_FLAG_MOVIE_NEXT_CHECKPOINT |
+                     BSV_FLAG_MOVIE_SEEK_TO_FRAME))
+         {
+            runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;
+            runloop_st->run_frames_and_pause = 2;
+         }
 #endif
          video_driver_cached_frame();
          goto end;
