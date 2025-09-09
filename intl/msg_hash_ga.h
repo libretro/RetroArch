@@ -14027,6 +14027,10 @@ MSG_HASH(
    "Theip ar an ábhar a lódáil."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Theip ar luchtú ón seinmliosta."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "Theip ar an gcomhad scannáin a luchtú."
    )
