@@ -8212,7 +8212,8 @@ unsigned menu_displaylist_build_list(
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
 
-         if (!settings->bools.kiosk_mode_enable)
+         if (     !settings->bools.kiosk_mode_enable
+               &&  settings->bools.settings_show_file_browser)
             menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
