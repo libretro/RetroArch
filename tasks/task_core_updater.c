@@ -979,7 +979,6 @@ static void task_core_updater_download_handler(retro_task_t *task)
    return;
 
 task_finished:
-
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
@@ -1787,7 +1786,6 @@ static void task_play_feature_delivery_core_install_handler(
    return;
 
 task_finished:
-
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
