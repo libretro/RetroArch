@@ -50,11 +50,11 @@
 #define BG_COLOR_WHITE    0xFFFFFF
 #define BG_COLOR_DEFAULT  0x161616
 #define BG_COLOR_PROGRESS 0x323232
-#define BG_COLOR_MARGIN   0xCCCCCC
+#define BG_COLOR_MARGIN   0xBBBBBB
 
 #define ICON_COLOR_RED    0xD82020
 #define ICON_COLOR_GREEN  0x20D820
-#define ICON_COLOR_BLUE   0x209BD8
+#define ICON_COLOR_BLUE   0x208BD8
 #define ICON_COLOR_YELLOW 0xD8BA20
 
 RETRO_BEGIN_DECLS
@@ -239,7 +239,6 @@ typedef struct dispgfx_widget
    unsigned msg_queue_regular_padding_x;
    unsigned msg_queue_regular_text_start;
    unsigned msg_queue_task_text_start_x;
-   unsigned msg_queue_task_hourglass_x;
    unsigned divider_width_1px;
 
    float last_scale_factor;

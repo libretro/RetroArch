@@ -291,6 +291,7 @@ static void *task_push_http_transfer_generic(
    t->cleanup              = task_http_transfer_cleanup;
    t->user_data            = user_data;
    t->progress             = -1;
+   t->flags               |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       t->flags            |=  RETRO_TASK_FLG_MUTE;
    else
@@ -450,7 +451,8 @@ void* task_push_http_transfer_file(const char* url, bool mute,
       s        = url;
 
    _len        = strlcpy(tmp, msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
-   tmp[  _len] = ' ';
+   tmp[  _len] = ':';
+   tmp[++_len] = ' ';
    tmp[++_len] = '\0';
 
    if (string_ends_with_size(s, ".index",
