@@ -4022,6 +4022,30 @@ MSG_HASH(
    "Stopann sé taifeadadh/sheinm an athsheinm reatha."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Sábháil Seicphointe Athsheinm"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Cuireann sé seicphointe i bhfeidhm don athsheinm atá ag imirt faoi láthair."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Seicphointe Athsheinm Roimhe Seo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Casann sé an t-athsheinm ar ais go dtí an seicphointe roimhe seo a sábháladh go huathoibríoch nó de láimh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "An chéad phointe seiceála athimeartha eile"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Bogann sé an t-athsheinm ar aghaidh go dtí an chéad phointe seiceála eile a shábháiltear go huathoibríoch nó de láimh."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
    "An chéad sliotán athimeartha eile"
    )
@@ -14189,6 +14213,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
    "Amlíne mícheart; taifeadadh á scríobh arís"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
+   "Lorg Ar Ais"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
+   "Theip ar an Lorg Ar Ais"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
+   "Lorg Ar Aghaidh"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
+   "Theip ar Lorg Ar Aghaidh"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME,
+   "Lorg Críochnaithe"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME_FAILED,
+   "Theip ar an Lorg"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
