@@ -2579,8 +2579,8 @@ enum retro_mod
  * Returns the audio sample rate the frontend is targeting, in Hz.
  * The intended use case is for the core to use the result to select an ideal sample rate.
  *
- * @param[out] data <tt>float *</tt>.
- * Pointer to the \c float in which the frontend will store its target sample rate.
+ * @param[out] data <tt>unsigned *</tt>.
+ * Pointer to the \c unsigned integer in which the frontend will store its target sample rate.
  * Behavior is undefined if \c data is <tt>NULL</tt>.
  * @return \c true if this environment call is available,
  * regardless of the value returned in \c data.
