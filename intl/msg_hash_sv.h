@@ -3410,6 +3410,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Lösning för kontroller som kopplas bort och återansluts. Förhindrar 2 spelare med identiska kontroller."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
+   "Bekräfta avsluta/stänga/återställ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
+   "Kräv att snabbtangent för avsluta/stänga/återställ trycks två gånger."
+   )
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -3463,6 +3471,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    "Tillåt alla spelare att styra menyn. Inaktiverad kan endast spelare 1 styra menyn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "Spellistor med ett klick"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "Tillåt bakåt från flikar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "Återgå till huvudmenyn från flikar/sidofält när Bakåt trycks."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
