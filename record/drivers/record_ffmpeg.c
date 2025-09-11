@@ -73,6 +73,15 @@ extern "C" {
 #define FFMPEG3 ((LIBAVUTIL_VERSION_INT < (56, 6, 100)) || \
       (LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 10, 100)))
 #endif
+
+#ifndef FFMPEG8
+#define FFMPEG8 (LIBAVCODEC_VERSION_MAJOR >= 62)
+#endif
+
+#ifndef AV_INPUT_BUFFER_MIN_SIZE
+#define AV_INPUT_BUFFER_MIN_SIZE 16384
+#endif
+
 #define HAVE_CH_LAYOUT (LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 28, 100))
 
 struct ff_video_info
@@ -952,7 +961,11 @@ static void ffmpeg_free(void *data)
 
    if (handle->audio.codec)
    {
+#if FFMPEG8
+      avcodec_free_context(&handle->audio.codec);
+#else
       avcodec_close(handle->audio.codec);
+#endif
       av_free(handle->audio.codec);
    }
 
@@ -960,7 +973,11 @@ static void ffmpeg_free(void *data)
 
    if (handle->video.codec)
    {
+#if FFMPEG8
+      avcodec_free_context(&handle->video.codec);
+#else
       avcodec_close(handle->video.codec);
+#endif
       av_free(handle->video.codec);
    }
 
