@@ -2575,6 +2575,32 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_FILE_BROWSER_START_DIRECTORY 80
 
+/**
+ * Sets a pointer to arbitrary data for the actively running core.
+ *
+ * Intended for use as a substitute for global state, which is a common
+ * source of bugs. Can be set in either \c retro_init() or \c retro_load_game().
+ *
+ * @param[in] data <tt>void *</tt>. Pointer to the data to set.
+ * @return \c true if the environment call is available.
+ *
+ * @see RETRO_ENVIRONMENT_GET_CORE_DATA
+ */
+#define RETRO_ENVIRONMENT_SET_CORE_DATA (81 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Gets a pointer to arbitrary data for the actively running core.
+ *
+ * This is persistent for the lifetime of the core until \c retro_deinit() is called.
+ *
+ * @param[out] data <tt>void **</tt>. Pointer to the data that was set.
+ * May be \c NULL if the data was not set yet.
+ * @return \c true if the environment call is available.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CORE_DATA
+ */
+#define RETRO_ENVIRONMENT_GET_CORE_DATA (82 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
 /**@}*/
 
 /**

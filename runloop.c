@@ -3581,6 +3581,18 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
+
+      case RETRO_ENVIRONMENT_SET_CORE_DATA:
+         runloop_st->current_core.core_data = data;
+         break;
+
+      case RETRO_ENVIRONMENT_GET_CORE_DATA:
+         if (data != NULL) {
+            void **core_data = (void **)data;
+            *core_data = runloop_st->current_core.core_data;
+         }
+         break;
+
       default:
          RARCH_LOG("[Environ] UNSUPPORTED (#%u).\n", cmd);
          return false;
