@@ -3333,6 +3333,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          *(unsigned *)data = 2;
          break;
 
+      case RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE:
+      {
+         if (!settings)
+            return false;
+
+         *(unsigned *)data = settings->uints.audio_output_sample_rate;
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE:
       {
          /* Try to use the polled refresh rate first.  */

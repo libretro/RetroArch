@@ -2575,6 +2575,18 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_FILE_BROWSER_START_DIRECTORY 80
 
+/**
+ * Returns the audio sample rate the frontend is targeting, in Hz.
+ * The intended use case is for the core to use the result to select an ideal sample rate.
+ *
+ * @param[out] data <tt>float *</tt>.
+ * Pointer to the \c float in which the frontend will store its target sample rate.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @return \c true if this environment call is available,
+ * regardless of the value returned in \c data.
+*/
+#define RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE (81 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
 /**@}*/
 
 /**
