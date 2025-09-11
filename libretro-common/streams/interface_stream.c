@@ -382,8 +382,8 @@ int64_t intfstream_write(intfstream_internal_t *intf,
 int intfstream_printf(intfstream_internal_t *intf,
       const char* format, ...)
 {
+   int ret;
    va_list vl;
-   int result;
 
    if (!intf)
       return 0;
@@ -392,9 +392,9 @@ int intfstream_printf(intfstream_internal_t *intf,
    {
       case INTFSTREAM_FILE:
          va_start(vl, format);
-         result = filestream_vprintf(intf->file.fp, format, vl);
+         ret = filestream_vprintf(intf->file.fp, format, vl);
          va_end(vl);
-         return result;
+         return ret;
       case INTFSTREAM_MEMORY:
          return -1;
       case INTFSTREAM_CHD:
@@ -402,9 +402,9 @@ int intfstream_printf(intfstream_internal_t *intf,
       case INTFSTREAM_RZIP:
 #if defined(HAVE_ZLIB)
          va_start(vl, format);
-         result = rzipstream_vprintf(intf->rzip.fp, format, vl);
+         ret = rzipstream_vprintf(intf->rzip.fp, format, vl);
          va_end(vl);
-         return result;
+         return ret;
 #else
          return -1;
 #endif

@@ -157,16 +157,16 @@ int64_t rfflush(RFILE * stream)
 
 int rfprintf(RFILE * stream, const char * format, ...)
 {
-   int result;
+   int ret;
    va_list vl;
 
    if (!stream)
       return -1;
 
    va_start(vl, format);
-   result = filestream_vprintf(stream, format, vl);
+   ret = filestream_vprintf(stream, format, vl);
    va_end(vl);
-   return result;
+   return ret;
 }
 
 int rferror(RFILE* stream)
@@ -181,14 +181,14 @@ int rfeof(RFILE* stream)
 
 int rfscanf(RFILE * stream, const char * format, ...)
 {
-   int result;
+   int ret;
    va_list vl;
 
    if (!stream)
       return 0;
 
    va_start(vl, format);
-   result = filestream_vscanf(stream, format, &vl);
+   ret = filestream_vscanf(stream, format, &vl);
    va_end(vl);
-   return result;
+   return ret;
 }

@@ -462,20 +462,20 @@ static bool retro_task_threaded_find(
       retro_task_finder_t func, void *user_data)
 {
    retro_task_t *task = NULL;
-   bool        result = false;
+   bool ret = false;
 
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
    {
       if (func(task, user_data))
       {
-         result = true;
+         ret = true;
          break;
       }
    }
    slock_unlock(running_lock);
 
-   return result;
+   return ret;
 }
 
 static void retro_task_threaded_retrieve(task_retriever_data_t *data)

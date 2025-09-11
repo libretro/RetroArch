@@ -912,7 +912,7 @@ void gfx_widgets_iterate(
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
     * On some platforms (e.g. 32-bit x86 without SSE),
-    * gcc can produce inconsistent floating point results
+    * GCC can produce inconsistent floating point results
     * depending upon optimisation level. This can break
     * floating point variable comparisons. A workaround is
     * to declare the affected variable as 'volatile', which

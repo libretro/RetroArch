@@ -214,7 +214,7 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file* stream)
 
 int retro_vfs_file_remove_impl(const char *path)
 {
-   BOOL result;
+   BOOL ret;
    wchar_t *path_wide;
 
    if (!path || !*path)
@@ -224,9 +224,9 @@ int retro_vfs_file_remove_impl(const char *path)
    windowsize_path(path_wide);
 
    /* Try Win32 first, this should work in AppData */
-   result = DeleteFileFromAppW(path_wide);
+   ret = DeleteFileFromAppW(path_wide);
    free(path_wide);
-   if (result)
+   if (ret)
       return 0;
 
    return -1;
@@ -480,13 +480,13 @@ static int uwp_move_path(
                 /* Check if source path is a dir */
                 if (lpFileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
                 {
-                   int result;
+                   int ret;
                    /* create the target dir */
                    CreateDirectoryFromAppW(new_path.wstring().c_str(), NULL);
                    /* Call move function again but with first run disabled in
                     * order to move the folder */
-                   if ((result = uwp_move_path(old_path, new_path, false)) != 0)
-                      return result;
+                   if ((ret = uwp_move_path(old_path, new_path, false)) != 0)
+                      return ret;
                 }
                 else
                 {
