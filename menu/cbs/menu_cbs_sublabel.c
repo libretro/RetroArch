@@ -574,6 +574,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_vmouse_gesture,    MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_button_axis_threshold,         MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_analog_deadzone,               MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_analog_sensitivity,            MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY)
+
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sensor_accelerometer_sensitivity,            MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sensor_gyroscope_sensitivity,            MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY)
+
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_enable,            MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_period,            MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_duty_cycle,        MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE)
@@ -4752,6 +4756,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_analog_sensitivity);
+            break;
+         case MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sensor_accelerometer_sensitivity);
+            break;
+         case MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sensor_gyroscope_sensitivity);
             break;
 #if defined(GEKKO)
          case MENU_ENUM_LABEL_INPUT_MOUSE_SCALE:

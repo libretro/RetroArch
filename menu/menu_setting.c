@@ -15835,6 +15835,36 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, -5.0, 5.0, 0.1, true, true);
 
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.input_sensor_accelerometer_sensitivity,
+                  MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+                  DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY,
+                  "%.1f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, -5.0, 5.0, 0.1, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.input_sensor_gyroscope_sensitivity,
+                  MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+                  DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY,
+                  "%.1f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, -5.0, 5.0, 0.1, true, true);
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->uints.input_bind_timeout,

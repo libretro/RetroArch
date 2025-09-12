@@ -4520,8 +4520,17 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
  **/
 float input_get_sensor_state(unsigned port, unsigned id)
 {
-   bool input_sensors_enable              = config_get_ptr()->bools.input_sensors_enable;
-   return input_driver_get_sensor(port, input_sensors_enable, id);
+   settings_t *settings                   = config_get_ptr();
+   bool input_sensors_enable              = settings->bools.input_sensors_enable;
+   float sensitivity;
+   if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z) {
+      sensitivity = settings->floats.input_sensor_accelerometer_sensitivity;
+   } else if (id >= RETRO_SENSOR_GYROSCOPE_X && id <= RETRO_SENSOR_GYROSCOPE_Z) {
+      sensitivity = settings->floats.input_sensor_gyroscope_sensitivity;
+   } else {
+      sensitivity = 1.0f;
+   }
+   return input_driver_get_sensor(port, input_sensors_enable, id) * sensitivity;
 }
 
 /**
