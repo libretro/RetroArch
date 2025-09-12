@@ -463,6 +463,8 @@ typedef struct settings
       float input_analog_deadzone;
       float input_axis_threshold;
       float input_analog_sensitivity;
+      float input_sensor_accelerometer_sensitivity;
+      float input_sensor_gyroscope_sensitivity;
 #ifdef _3DS
       float bottom_font_scale;
 #endif
