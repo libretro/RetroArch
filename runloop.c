@@ -5301,7 +5301,7 @@ void core_options_flush(void)
    core_option_manager_t *coreopts = runloop_st->core_options;
    const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
    const char *core_options_file   = NULL;
-   bool success                    = false;
+   bool ret                        = false;
 
    msg[0] = '\0';
 
@@ -5329,7 +5329,7 @@ void core_options_flush(void)
       {
          core_option_manager_flush(runloop_st->core_options, conf_tmp);
 
-         success = config_file_write(conf_tmp, path_core_options, true);
+         ret = config_file_write(conf_tmp, path_core_options, true);
          config_file_free(conf_tmp);
       }
    }
@@ -5353,7 +5353,7 @@ void core_options_flush(void)
          if (!path_is_valid(path_core_options))
             runloop_st->core_options->conf->flags |= CONF_FILE_FLG_MODIFIED;
 
-         success = config_file_write(runloop_st->core_options->conf,
+         ret = config_file_write(runloop_st->core_options->conf,
                path_core_options, true);
       }
    }
@@ -5365,7 +5365,7 @@ void core_options_flush(void)
    if (string_is_empty(core_options_file))
       core_options_file = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
 
-   if (success)
+   if (ret)
    {
       /* Log result */
       _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_OPTIONS_FLUSHED),

@@ -161,7 +161,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
    SP_DEVICE_INTERFACE_DATA deviceInterfaceData;
    HANDLE hDeviceHandle                 = INVALID_HANDLE_VALUE;
    BOOL bResult                         = TRUE;
-   BOOL success                         = FALSE;
+   BOOL ret                             = FALSE;
    GUID guidDeviceInterface             = {0};
    PSP_DEVICE_INTERFACE_DETAIL_DATA
       pInterfaceDetailData              = NULL;
@@ -200,9 +200,9 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
    /* Enumerate all the device interfaces in the device information set. */
    device_info_data.cbSize = sizeof(SP_DEVINFO_DATA);
 
-   while (!success)
+   while (!ret)
    {
-      success = SetupDiEnumDeviceInfo(hDeviceInfo, index, &device_info_data);
+      ret = SetupDiEnumDeviceInfo(hDeviceInfo, index, &device_info_data);
 
       /* Reset for this iteration */
       if (lp_device_path)
@@ -314,7 +314,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
             goto found;
       }
 
-      success = FALSE;
+      ret = FALSE;
       index++;
    }
 

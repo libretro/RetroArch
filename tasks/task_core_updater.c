@@ -194,14 +194,14 @@ static uint32_t task_core_updater_get_core_crc(const char *core_path)
    {
       uint32_t crc = 0;
       /* Get CRC value */
-      bool success = intfstream_get_crc(core_file, &crc);
+      bool ret = intfstream_get_crc(core_file, &crc);
 
       /* Close core file */
       intfstream_close(core_file);
       free(core_file);
       core_file = NULL;
 
-      if (success)
+      if (ret)
          return crc;
    }
 
@@ -216,9 +216,9 @@ static void cb_http_task_core_updater_get_list(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
-   file_transfer_t *transf                 = (file_transfer_t*)user_data;
-   http_transfer_data_t *data              = (http_transfer_data_t*)task_data;
-   bool success                            = data && string_is_empty(err);
+   file_transfer_t *transf    = (file_transfer_t*)user_data;
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   bool ret                   = data && string_is_empty(err);
 
    if (transf)
    {
@@ -229,12 +229,12 @@ static void cb_http_task_core_updater_get_list(
 
          list_handle->http_data          = data;
          list_handle->http_task_complete = true;
-         list_handle->http_task_success  = success;
+         list_handle->http_task_success  = ret;
       }
    }
 
    /* Log any error messages */
-   if (!success)
+   if (!ret)
       RARCH_ERR("[Core Updater] Download of core list \"%s\" failed: %s.\n",
             (transf ? transf->path: "unknown"),
             (err ? err : "unknown"));
@@ -1947,7 +1947,7 @@ static void task_play_feature_delivery_switch_cores_handler(
              * core list' error */
             struct string_list *available_cores =
                   play_feature_delivery_available_cores();
-            bool success                        = false;
+            bool ret                        = false;
 
             if (!available_cores)
             {
@@ -1957,7 +1957,7 @@ static void task_play_feature_delivery_switch_cores_handler(
             }
 
             /* Populate core updater list */
-            success = core_updater_list_parse_pfd_data(
+            ret = core_updater_list_parse_pfd_data(
                   pfd_switch_cores_handle->core_list,
                   pfd_switch_cores_handle->path_dir_libretro,
                   pfd_switch_cores_handle->path_libretro_info,
@@ -1966,7 +1966,7 @@ static void task_play_feature_delivery_switch_cores_handler(
             string_list_free(available_cores);
 
             /* Cache list size */
-            if (success)
+            if (ret)
                pfd_switch_cores_handle->list_size =
                      core_updater_list_size(pfd_switch_cores_handle->core_list);
 

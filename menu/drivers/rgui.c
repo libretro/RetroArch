@@ -3098,7 +3098,7 @@ static void rgui_load_custom_theme(
    unsigned particle_color     = 0;
    config_file_t *conf         = NULL;
    const char *wallpaper_key   = NULL;
-   bool success                = false;
+   bool ret                    = false;
 #if defined(DINGUX)
    menu_rgui_aspect_ratio      = RGUI_DINGUX_ASPECT_RATIO;
 #endif
@@ -3178,11 +3178,11 @@ static void rgui_load_custom_theme(
       particle_color = (normal_color & 0x00FFFFFF) |
                        (bg_light_color & 0xFF000000);
 
-   success = true;
+   ret = true;
 
 end:
 
-   if (success)
+   if (ret)
    {
       theme_colors->normal_color       = (uint32_t)normal_color;
       theme_colors->hover_color        = (uint32_t)hover_color;

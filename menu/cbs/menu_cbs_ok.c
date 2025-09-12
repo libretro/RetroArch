@@ -3987,7 +3987,7 @@ static int action_ok_remap_file_flush(const char *path,
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *path_remapfile  = runloop_st->name.remapfile;
    const char *remapfile       = NULL;
-   bool success                = false;
+   bool ret                    = false;
 
    msg[0] = '\0';
 
@@ -3995,7 +3995,7 @@ static int action_ok_remap_file_flush(const char *path,
    if (!string_is_empty(path_remapfile))
    {
       /* Update existing remap file */
-      success   = input_remapping_save_file(path_remapfile);
+      ret = input_remapping_save_file(path_remapfile);
       /* Get remap file name for display purposes */
       remapfile = path_basename_nocompression(path_remapfile);
    }
@@ -4004,7 +4004,7 @@ static int action_ok_remap_file_flush(const char *path,
       remapfile = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
 
    /* Log result */
-   if (success)
+   if (ret)
    {
       /* TODO/FIXME - localize */
       RARCH_LOG(
@@ -4027,7 +4027,7 @@ static int action_ok_remap_file_flush(const char *path,
 
    runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT,
-         (success) ? MESSAGE_QUEUE_CATEGORY_SUCCESS : MESSAGE_QUEUE_CATEGORY_ERROR);
+         ret ? MESSAGE_QUEUE_CATEGORY_SUCCESS : MESSAGE_QUEUE_CATEGORY_ERROR);
 
    return 0;
 }
@@ -5001,14 +5001,14 @@ static int action_ok_core_updater_list(const char *path,
        *   interface */
       struct string_list *available_cores =
          play_feature_delivery_available_cores();
-      bool success                        = false;
+      bool ret                            = false;
 
       if (!available_cores)
          return -1;
 
       core_updater_list_reset(core_list);
 
-      success = core_updater_list_parse_pfd_data(
+      ret = core_updater_list_parse_pfd_data(
             core_list,
             path_dir_libretro,
             path_libretro_info,
@@ -5016,7 +5016,7 @@ static int action_ok_core_updater_list(const char *path,
 
       string_list_free(available_cores);
 
-      if (!success)
+      if (!ret)
          return -1;
 
       /* Ensure network is initialised */

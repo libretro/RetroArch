@@ -4213,7 +4213,7 @@ static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx
    size_t line_ticker_str_len   = 0;
    struct string_list lines     = {0};
    size_t line_offset           = 0;
-   bool success                 = false;
+   bool ret                     = false;
    bool is_active               = false;
 
    /* Sanity check */
@@ -4253,7 +4253,7 @@ static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx
    if (lines.size <= line_ticker->max_lines)
    {
       strlcpy(line_ticker->s, wrapped_str, line_ticker->len);
-      success = true;
+      ret = true;
       goto end;
    }
 
@@ -4282,7 +4282,7 @@ static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx
       line_ticker->max_lines, line_offset, &lines, lines.size,
       line_ticker->s, line_ticker->len);
 
-   success                  = true;
+   ret                      = true;
    is_active                = true;
    p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
@@ -4295,7 +4295,7 @@ end:
    }
 
    string_list_deinitialize(&lines);
-   if (!success)
+   if (!ret)
       if (line_ticker->len > 0)
          line_ticker->s[0] = '\0';
 
@@ -4513,7 +4513,7 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
    size_t top_fade_line_offset    = 0;
    size_t bottom_fade_line_offset = 0;
    bool fade_active               = false;
-   bool success                   = false;
+   bool ret                       = false;
    bool is_active                 = false;
    int wideglyph_width            = 100;
    size_t (*word_wrap_func)(char *dst, size_t dst_size,
@@ -4615,7 +4615,7 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
          *line_ticker->bottom_fade_alpha    = 0.0f;
       }
 
-      success = true;
+      ret = true;
       goto end;
    }
 
@@ -4671,7 +4671,7 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
                line_ticker->bottom_fade_str_len);
    }
 
-   success                  = true;
+   ret                      = true;
    is_active                = true;
    p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
@@ -4685,7 +4685,7 @@ end:
 
    string_list_deinitialize(&lines);
 
-   if (!success)
+   if (!ret)
    {
       if (line_ticker->dst_str_len > 0)
          line_ticker->dst_str[0] = '\0';
