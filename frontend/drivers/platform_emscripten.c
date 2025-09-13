@@ -76,6 +76,7 @@ void emscripten_mainloop(void);
 
 /* javascript library functions */
 void PlatformEmscriptenWatchCanvasSizeAndDpr(double *dpr);
+void PlatformEmscriptenCanvasListenersInit(void);
 void PlatformEmscriptenWatchWindowVisibility(void);
 void PlatformEmscriptenPowerStateInit(void);
 void PlatformEmscriptenMemoryUsageInit(void);
@@ -84,6 +85,7 @@ void PlatformEmscriptenGLContextEventInit(void);
 void PlatformEmscriptenSetCanvasSize(int width, int height);
 void PlatformEmscriptenSetWakeLock(bool state);
 uint32_t PlatformEmscriptenGetSystemInfo(void);
+void PlatformEmscriptenFree(void);
 
 typedef struct
 {
@@ -95,8 +97,10 @@ typedef struct
    uint64_t memory_used;
    uint64_t memory_limit;
    double device_pixel_ratio;
+   double device_pixel_ratio_temp;
    enum platform_emscripten_browser browser;
    enum platform_emscripten_os os;
+   enum frontend_fork fork_mode;
    int raf_interval;
    int canvas_width;
    int canvas_height;
@@ -383,7 +387,7 @@ size_t platform_emscripten_command_read(char **into, size_t max_len)
       var next_command = RPE.command_queue.shift();
       var length = lengthBytesUTF8(next_command);
       if (length > $2) {
-         console.error("[CMD] Command too long, skipping", next_command);
+         err("[CMD] Command too long, skipping", next_command);
          return 0;
       }
       stringToUTF8(next_command, $1, $2);
@@ -552,6 +556,11 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    char bundle_path[PATH_MAX];
    const char *home = getenv("HOME");
 
+   /* Try to set core library path so the frontend knows what core is currently loaded.
+    * It's not an issue if left unspecified, but turning off the "Always Reload Core on
+    * Run Content" option will only work if the frontend knows the current core. */
+   path_set(RARCH_PATH_CORE, getenv("LIBRARY_PATH"));
+
    if (home)
    {
       size_t _len = strlcpy(base_path, home, sizeof(base_path));
@@ -684,6 +693,51 @@ static uint64_t frontend_emscripten_get_free_mem(void)
    uint64_t used = mallinfo().uordblks;
 #endif
    return (PLATFORM_GETVAL(u64, &emscripten_platform_data->memory_limit) - used);
+}
+
+#ifdef HAVE_AUDIOWORKLET
+void audioworklet_close(void);
+#endif
+
+static void frontend_emscripten_exec_browser(void *path)
+{
+   const char *core    = emscripten_platform_data->fork_mode == FRONTEND_FORK_NONE ? 0 : path;
+   const char *content = emscripten_platform_data->fork_mode == FRONTEND_FORK_CORE_WITH_ARGS ? path_get(RARCH_PATH_CONTENT) : 0;
+
+#ifdef HAVE_AUDIOWORKLET
+   audioworklet_close();
+#endif
+
+   EM_ASM({
+#ifdef PROXY_TO_PTHREAD
+      /* undo OffscreenCanvas */
+      let newCanvas = Module.canvas.cloneNode();
+      Module.canvas.replaceWith(newCanvas);
+      Module.canvas = newCanvas;
+#endif
+      if (typeof Module.retroArchExit == "function")
+         setTimeout(Module.retroArchExit, 0, $0 && UTF8ToString($0), $1 && UTF8ToString($1));
+      else
+         out("[INFO] Exiting, but Module.retroArchExit was not provided");
+   }, core, content);
+   emscripten_force_exit(0);
+}
+
+static void frontend_emscripten_exec(const char *path, bool should_load_content)
+{
+   PlatformEmscriptenFree();
+   platform_emscripten_run_on_browser_thread_sync(frontend_emscripten_exec_browser, (void *)path);
+}
+
+static void frontend_emscripten_exitspawn(char *s, size_t len, char *args)
+{
+   frontend_emscripten_exec(s, false);
+}
+
+static bool frontend_emscripten_set_fork(enum frontend_fork fork_mode)
+{
+   emscripten_platform_data->fork_mode = fork_mode;
+   return true;
 }
 
 /* program entry and startup */
@@ -890,14 +944,6 @@ int main(int argc, char *argv[])
       if (!Module.canvas.getAttribute("tabindex"))
          Module.canvas.setAttribute("tabindex", "-1");
       Module.canvas.focus();
-      Module.canvas.addEventListener("pointerdown", function() {
-         Module.canvas.focus();
-      }, false);
-
-      /* disable browser right click menu */
-      Module.canvas.addEventListener("contextmenu", function(e) {
-         e.preventDefault();
-      }, false);
 
       /* background should be black */
       Module.canvas.style.backgroundColor = "#000000";
@@ -908,7 +954,7 @@ int main(int argc, char *argv[])
 
       /* ensure canvas size is constrained by CSS, otherwise infinite resizing may occur */
       if (window.getComputedStyle(Module.canvas).display == "inline") {
-         console.warn("[WARN] Canvas should not use display: inline!");
+         err("[WARN] Canvas should not use display: inline!");
          Module.canvas.style.display = "inline-block";
       }
       var oldWidth  = Module.canvas.clientWidth;
@@ -916,13 +962,14 @@ int main(int argc, char *argv[])
       Module.canvas.width  = 64;
       Module.canvas.height = 64;
       if (oldWidth != Module.canvas.clientWidth || oldHeight != Module.canvas.clientHeight) {
-         console.warn("[WARN] Canvas size should be set using CSS properties!");
+         err("[WARN] Canvas size should be set using CSS properties!");
          Module.canvas.style.width  = oldWidth  + "px";
          Module.canvas.style.height = oldHeight + "px";
       }
    });
 
-   PlatformEmscriptenWatchCanvasSizeAndDpr(malloc(sizeof(double)));
+   PlatformEmscriptenWatchCanvasSizeAndDpr(&emscripten_platform_data->device_pixel_ratio_temp);
+   PlatformEmscriptenCanvasListenersInit();
    PlatformEmscriptenWatchWindowVisibility();
    PlatformEmscriptenPowerStateInit();
    PlatformEmscriptenMemoryUsageInit();
@@ -956,10 +1003,10 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    frontend_emscripten_get_env,         /* environment_get */
    NULL,                                /* init */
    NULL,                                /* deinit */
-   NULL,                                /* exitspawn */
+   frontend_emscripten_exitspawn,       /* exitspawn */
    NULL,                                /* process_args */
-   NULL,                                /* exec */
-   NULL,                                /* set_fork */
+   frontend_emscripten_exec,            /* exec */
+   frontend_emscripten_set_fork,        /* set_fork */
    NULL,                                /* shutdown */
    NULL,                                /* get_name */
    NULL,                                /* get_os */

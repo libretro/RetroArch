@@ -67,6 +67,7 @@
 #include "verbosity.h"
 #include "version.h"
 #include "version_git.h"
+#include "tasks/task_content.h"
 
 #define CMD_BUF_SIZE 4096
 
@@ -936,6 +937,14 @@ bool command_version(command_t *cmd, const char* arg)
    reply[  _len] = '\n';
    reply[++_len] = '\0';
    cmd->replier(cmd, reply, _len);
+   return true;
+}
+
+bool command_load_core(command_t *cmd, const char* arg)
+{
+   content_ctx_info_t content_info = {0};
+   task_push_load_new_core(arg, NULL,
+         &content_info, CORE_TYPE_PLAIN, NULL, NULL);
    return true;
 }
 

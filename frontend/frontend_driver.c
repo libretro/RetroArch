@@ -212,6 +212,9 @@ size_t frontend_driver_get_core_extension(char *s, size_t len)
    if (envIsHomebrew())
       return strlcpy(s, "3dsx", len);
    return strlcpy(s, "cia", len);
+#elif defined(EMSCRIPTEN)
+   /* may not contain the core */
+   return strlcpy(s, "core", len);
 #else
    return 0;
 #endif

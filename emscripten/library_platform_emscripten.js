@@ -4,12 +4,21 @@ var LibraryPlatformEmscripten = {
    $RPE: {
       canvasWidth: 0,
       canvasHeight: 0,
+      battery: null,
+      observer: null,
+      memoryUsageTimeout: null,
       sentinelPromise: null,
       command_queue: [],
       command_reply_queue: []
    },
 
-   PlatformEmscriptenWatchCanvasSizeAndDpr__deps: ["platform_emscripten_update_canvas_dimensions_cb"],
+   $PlatformEmscriptenOnWindowResize: function() {
+      RPE.observer.unobserve(Module.canvas);
+      RPE.observer.observe(Module.canvas);
+   },
+
+   PlatformEmscriptenWatchCanvasSizeAndDpr__deps: ["platform_emscripten_update_canvas_dimensions_cb", "$PlatformEmscriptenOnWindowResize"],
+   PlatformEmscriptenWatchCanvasSizeAndDpr__proxy: "sync",
    PlatformEmscriptenWatchCanvasSizeAndDpr: function(dpr) {
       if (RPE.observer) {
          RPE.observer.unobserve(Module.canvas);
@@ -34,31 +43,49 @@ var LibraryPlatformEmscripten = {
          _platform_emscripten_update_canvas_dimensions_cb(width, height, dpr);
       });
       RPE.observer.observe(Module.canvas);
-      window.addEventListener("resize", function() {
-         RPE.observer.unobserve(Module.canvas);
-         RPE.observer.observe(Module.canvas);
-      }, false);
+      window.addEventListener("resize", PlatformEmscriptenOnWindowResize, false);
    },
 
-   PlatformEmscriptenWatchWindowVisibility__deps: ["platform_emscripten_update_window_hidden_cb"],
+   $PlatformEmscriptenOnCanvasPointerDown: function() {
+      Module.canvas.focus();
+   },
+
+   $PlatformEmscriptenOnCanvasContextMenu: function(e) {
+      e.preventDefault();
+   },
+
+   PlatformEmscriptenCanvasListenersInit__deps: ["$PlatformEmscriptenOnCanvasPointerDown", "$PlatformEmscriptenOnCanvasContextMenu"],
+   PlatformEmscriptenCanvasListenersInit__proxy: "sync",
+   PlatformEmscriptenCanvasListenersInit: function() {
+      Module.canvas.addEventListener("pointerdown", PlatformEmscriptenOnCanvasPointerDown, false);
+      Module.canvas.addEventListener("contextmenu", PlatformEmscriptenOnCanvasContextMenu, false);
+   },
+
+   $PlatformEmscriptenOnVisibilityChange__deps: ["platform_emscripten_update_window_hidden_cb"],
+   $PlatformEmscriptenOnVisibilityChange: function() {
+      _platform_emscripten_update_window_hidden_cb(document.visibilityState == "hidden");
+   },
+
+   PlatformEmscriptenWatchWindowVisibility__deps: ["$PlatformEmscriptenOnVisibilityChange"],
+   PlatformEmscriptenWatchWindowVisibility__proxy: "sync",
    PlatformEmscriptenWatchWindowVisibility: function() {
-      document.addEventListener("visibilitychange", function() {
-         _platform_emscripten_update_window_hidden_cb(document.visibilityState == "hidden");
-      }, false);
+      document.addEventListener("visibilitychange", PlatformEmscriptenOnVisibilityChange, false);
    },
 
-   $PlatformEmscriptenPowerStateChange__deps: ["platform_emscripten_update_power_state_cb"],
-   $PlatformEmscriptenPowerStateChange: function(e) {
+   $PlatformEmscriptenOnPowerStateChange__deps: ["platform_emscripten_update_power_state_cb"],
+   $PlatformEmscriptenOnPowerStateChange: function(e) {
       _platform_emscripten_update_power_state_cb(true, Number.isFinite(e.target.dischargingTime) ? e.target.dischargingTime : 0x7FFFFFFF, e.target.level, e.target.charging);
    },
 
-   PlatformEmscriptenPowerStateInit__deps: ["$PlatformEmscriptenPowerStateChange"],
+   PlatformEmscriptenPowerStateInit__deps: ["$PlatformEmscriptenOnPowerStateChange"],
+   PlatformEmscriptenPowerStateInit__proxy: "sync",
    PlatformEmscriptenPowerStateInit: function() {
       if (!navigator.getBattery) return;
       navigator.getBattery().then(function(battery) {
-         battery.addEventListener("chargingchange", PlatformEmscriptenPowerStateChange);
-         battery.addEventListener("levelchange", PlatformEmscriptenPowerStateChange);
-         PlatformEmscriptenPowerStateChange({target: battery});
+         RPE.battery = battery;
+         battery.addEventListener("chargingchange", PlatformEmscriptenOnPowerStateChange);
+         battery.addEventListener("levelchange", PlatformEmscriptenOnPowerStateChange);
+         PlatformEmscriptenOnPowerStateChange({target: battery});
       });
    },
 
@@ -66,7 +93,7 @@ var LibraryPlatformEmscripten = {
    $PlatformEmscriptenUpdateMemoryUsage: function() {
       // unfortunately this will be inaccurate in threaded (worker) builds
       _platform_emscripten_update_memory_usage_cb(BigInt(performance.memory.usedJSHeapSize || 0), BigInt(performance.memory.jsHeapSizeLimit || 0));
-      setTimeout(PlatformEmscriptenUpdateMemoryUsage, 5000);
+      RPE.memoryUsageTimeout = setTimeout(PlatformEmscriptenUpdateMemoryUsage, 5000);
    },
 
    PlatformEmscriptenMemoryUsageInit__deps: ["$PlatformEmscriptenUpdateMemoryUsage"],
@@ -75,22 +102,33 @@ var LibraryPlatformEmscripten = {
       PlatformEmscriptenUpdateMemoryUsage();
    },
 
-   PlatformEmscriptenWatchFullscreen__deps: ["platform_emscripten_update_fullscreen_state_cb"],
-   PlatformEmscriptenWatchFullscreen: function() {
-      document.addEventListener("fullscreenchange", function() {
-         _platform_emscripten_update_fullscreen_state_cb(!!document.fullscreenElement);
-      }, false);
+   $PlatformEmscriptenOnFullscreenChange__deps: ["platform_emscripten_update_fullscreen_state_cb"],
+   $PlatformEmscriptenOnFullscreenChange: function() {
+      _platform_emscripten_update_fullscreen_state_cb(!!document.fullscreenElement);
    },
 
-   PlatformEmscriptenGLContextEventInit__deps: ["platform_emscripten_gl_context_lost_cb", "platform_emscripten_gl_context_restored_cb"],
+   PlatformEmscriptenWatchFullscreen__deps: ["$PlatformEmscriptenOnFullscreenChange"],
+   PlatformEmscriptenWatchFullscreen__proxy: "sync",
+   PlatformEmscriptenWatchFullscreen: function() {
+      document.addEventListener("fullscreenchange", PlatformEmscriptenOnFullscreenChange, false);
+   },
+
+   $PlatformEmscriptenOnGLContextLost__deps: ["platform_emscripten_gl_context_lost_cb"],
+   $PlatformEmscriptenOnGLContextLost: function(e) {
+      e.preventDefault();
+      _platform_emscripten_gl_context_lost_cb();
+   },
+
+   $PlatformEmscriptenOnGLContextRestored__deps: ["platform_emscripten_gl_context_restored_cb"],
+   $PlatformEmscriptenOnGLContextRestored: function() {
+      _platform_emscripten_gl_context_restored_cb();
+   },
+
+   PlatformEmscriptenGLContextEventInit__deps: ["$PlatformEmscriptenOnGLContextLost", "$PlatformEmscriptenOnGLContextRestored"],
+   PlatformEmscriptenGLContextEventInit__proxy: "sync",
    PlatformEmscriptenGLContextEventInit: function() {
-      Module.canvas.addEventListener("webglcontextlost", function(e) {
-         e.preventDefault();
-         _platform_emscripten_gl_context_lost_cb();
-      });
-      Module.canvas.addEventListener("webglcontextrestored", function() {
-         _platform_emscripten_gl_context_restored_cb();
-      });
+      Module.canvas.addEventListener("webglcontextlost", PlatformEmscriptenOnGLContextLost);
+      Module.canvas.addEventListener("webglcontextrestored", PlatformEmscriptenOnGLContextRestored);
    },
 
    $PlatformEmscriptenDoSetCanvasSize: async function(width, height) {
@@ -156,6 +194,34 @@ var LibraryPlatformEmscripten = {
 
    $EmscriptenReceiveCommandReply: function() {
       return RPE.command_reply_queue.shift();
+   },
+
+   $PlatformEmscriptenFreeBrowser__proxy: "sync",
+   $PlatformEmscriptenFreeBrowser__deps: ["$PlatformEmscriptenDoSetWakeLock", "$PlatformEmscriptenOnCanvasPointerDown", "$PlatformEmscriptenOnCanvasContextMenu", "$PlatformEmscriptenOnWindowResize", "$PlatformEmscriptenOnVisibilityChange", "$PlatformEmscriptenOnFullscreenChange", "$PlatformEmscriptenOnPowerStateChange"],
+   $PlatformEmscriptenFreeBrowser: function() {
+      if (RPE.memoryUsageTimeout) clearTimeout(RPE.memoryUsageTimeout);
+      PlatformEmscriptenDoSetWakeLock(false);
+      if (RPE.observer) {
+         RPE.observer.unobserve(Module.canvas);
+         RPE.observer = null;
+      }
+      Module.canvas.removeEventListener("pointerdown", PlatformEmscriptenOnCanvasPointerDown);
+      Module.canvas.removeEventListener("contextmenu", PlatformEmscriptenOnCanvasContextMenu);
+      window.removeEventListener("resize", PlatformEmscriptenOnWindowResize);
+      document.removeEventListener("visibilitychange", PlatformEmscriptenOnVisibilityChange);
+      document.removeEventListener("fullscreenchange", PlatformEmscriptenOnFullscreenChange);
+      if (RPE.battery) {
+         RPE.battery.removeEventListener("chargingchange", PlatformEmscriptenOnPowerStateChange);
+         RPE.battery.removeEventListener("levelchange", PlatformEmscriptenOnPowerStateChange);
+         RPE.battery = null;
+      }
+   },
+
+   PlatformEmscriptenFree__deps: ["$PlatformEmscriptenFreeBrowser"],
+   PlatformEmscriptenFree: function() {
+      Module.canvas.removeEventListener("webglcontextlost", PlatformEmscriptenOnGLContextLost);
+      Module.canvas.removeEventListener("webglcontextrestored", PlatformEmscriptenOnGLContextRestored);
+      PlatformEmscriptenFreeBrowser();
    }
 };
 
