@@ -2265,7 +2265,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Anzeige im Vollbild.Lässt sich während der Laufzeit ändern. Kann über einen Kommandozeilenschalter übersteuert werden."
+   "Anzeige im Vollbild. Lässt sich während der Laufzeit ändern. Kann über einen Kommandozeilenschalter übersteuert werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
@@ -3286,8 +3286,24 @@ MSG_HASH(
    "Analogempfindlichkeit"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Empfindlichkeit des Beschleunigungsmessers"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "Empfindlichkeit des Gyroskops"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Die Empfindlichkeit von analogen Sticks anpassen."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Die Empfindlichkeit für den Beschleunigungsmesser anpassen."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+  "Die Empfindlichkeit für das Gyroskop anpassen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -4477,7 +4493,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Legt fest, ob Savestate-Fähigkeiten der Core-Info ignoriert werden sollen, so dass mit verwandten Funktionen experimentiert werden kann (Run-Ahead, Zurückspulen usw.)."
+   "Gibt an, ob Kerninfospeicherfunktionen ignoriert werden sollen, so dass mit verwandten Funktionen (Vorlauf, Rücklauf usw.) experimentiert werden kann."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
