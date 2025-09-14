@@ -14214,6 +14214,14 @@ MSG_HASH(
    "%.*s has joined with input devices %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d player(s)"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d player(s) (%d spectating)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "A netplay connection attempt failed because the peer is not running RetroArch, or is running an old version of RetroArch."
    )
