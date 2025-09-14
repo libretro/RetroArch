@@ -511,6 +511,7 @@ bool input_driver_set_sensor(
          enum retro_sensor_action action, unsigned rate)
 {
    const input_driver_t *current_driver;
+   bool enabled = false;
 
    if (!input_driver_st.current_data)
       return false;
@@ -521,17 +522,19 @@ bool input_driver_set_sensor(
         || (action == RETRO_SENSOR_GYROSCOPE_ENABLE)
         || (action == RETRO_SENSOR_ILLUMINANCE_ENABLE)))
       return false;
-   if (   (current_driver = input_driver_st.current_driver)
+
+   if (input_driver_st.primary_joypad && input_driver_st.primary_joypad->set_sensor_state)
+      enabled = input_driver_st.primary_joypad->set_sensor_state(port, action, rate);
+
+   if (   !enabled
+       && (current_driver = input_driver_st.current_driver)
        &&  current_driver->set_sensor_state)
    {
       void *current_data = input_driver_st.current_data;
-      return current_driver->set_sensor_state(current_data,
+      enabled |= current_driver->set_sensor_state(current_data,
             port, action, rate);
    }
-   else if (input_driver_st.primary_joypad && input_driver_st.primary_joypad->set_sensor_state)
-      return input_driver_st.primary_joypad->set_sensor_state(NULL,
-            port, action, rate);
-   return false;
+   return enabled;
 }
 
 /**************************************/
@@ -539,18 +542,24 @@ bool input_driver_set_sensor(
 float input_driver_get_sensor(
          unsigned port, bool sensors_enable, unsigned id)
 {
+   if (!sensors_enable)
+      return 0.0f;
+
+   if (input_driver_st.primary_joypad && input_driver_st.primary_joypad->get_sensor_input)
+   {
+      float value;
+      /* if joypad driver's get_sensor_input returns false, let input driver try */
+      if (input_driver_st.primary_joypad->get_sensor_input(port, id, &value))
+         return value;
+   }
    if (input_driver_st.current_data)
    {
       const input_driver_t *current_driver = input_driver_st.current_driver;
-      if (sensors_enable && current_driver->get_sensor_input)
+      if (current_driver->get_sensor_input)
       {
          void *current_data = input_driver_st.current_data;
          return current_driver->get_sensor_input(current_data, port, id);
       }
-      else if (sensors_enable && input_driver_st.primary_joypad &&
-               input_driver_st.primary_joypad->get_sensor_input)
-         return input_driver_st.primary_joypad->get_sensor_input(NULL,
-               port, id);
    }
 
    return 0.0f;
