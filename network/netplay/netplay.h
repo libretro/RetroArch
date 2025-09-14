@@ -72,6 +72,8 @@ struct netplay_room
    int  port;
    int  mitm_port;
    int  host_method;
+   int  player_count;
+   int  spectator_count;
    char nickname[NETPLAY_NICK_LEN];
    char frontend[NETPLAY_HOST_STR_LEN];
    char corename[NETPLAY_HOST_STR_LEN];
