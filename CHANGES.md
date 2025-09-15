@@ -1,4 +1,5 @@
 # Future
+- ANDROID: OnNewIntent handler to allow launchers start new content without closing first
 - APPLE: Include sameduck, gearcoleco, geargrafx cores in App Store builds
 - APPLE: Include reminiscence, virtualjaguar, vitaquake2 cores in App Store builds
 - APPLE: Include gam4980 core in App Store builds
@@ -6,6 +7,7 @@
 - APPLE: Option to control the usage of Metal argument buffers
 - APPLE: Don't force fullscreen, allow multitasking on iPad
 - APPLE: AppIntents for Siri, Shortcuts
+- APPLE: Fix ffmpeg camera driver
 - AUDIO: Microphone CoreAudio driver for iOS and macOS
 - AUTOCONF: Autoconfig match extended with a physical identifier
 - CAMERA: Use ffmpeg libavfilter virtual input device as default
@@ -30,6 +32,7 @@
 - INPUT: Ignore menu mouse startup position before moving
 - INPUT: Fix heavy slowdown when using Bluetooth XInput controllers with rumble
 - INPUT: Reset and close content hotkeys now require confirmation, similar to quit
+- INPUT: Menu toggle and hotkey enable can now be assigned to the same key
 - INPUT/ANDROID: Favor mouse coordinates for lightgun
 - INPUT/UDEV: Fix lost terminal settings after restart from menu
 - INPUT/BSV/REPLAY: Bumped replay format version to 2. Old replays will still play back fine.
@@ -41,6 +44,8 @@
 - INPUT/BSV/REPLAY: Add a text command to seek to a specific frame of the currently playing/recording replay; it will return via the command replier the actual seeked-to frame (right now it only supports seeking to checkpoints).
 - INTL: Add Irish Gaelic to selectable languages
 - IOS: Fix crash on iOS9 when fetching refresh rate
+- LIBRETRO: Deprecate intfstream_open_writable_memory
+- LIBRETRO: New environment function RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE
 - LINUX: Add full complement of key/value pairs to desktop entry
 - MACOS: Fix coreaudio microphone handling
 - MENU: Common Thumbnail Background option for all menu drivers
@@ -58,6 +63,10 @@
 - MENU: Less important widgets are now sized like task notifications
 - MENU: Play count is added to runtime log
 - MENU: Configurable startup page (several options beside default Main Menu)
+- MENU: Shader menu rework, combined save/remove menus, save current, Y and Start hotkeys for shader parameters and background opacity toggle
+- MENU: Single-click start option from playlists and Explore view
+- MENU: Allow kiosk mode and hiding of Settings menu also in GLUI and RGUI
+- MENU: Task widget improvements
 - MENU/GLUI: Show thumbnails in Explore view
 - MENU/XMB: Select button toggles thumbnails in playlists
 - MENU/XMB,OZONE: Fix content icons when playlist tabs are hidden
@@ -80,6 +89,8 @@
 - VIDEO: Fix auto swap interval setup
 - VIDEO: Improvements for integer scale half scaling
 - VIDEO: Frame delay improvements for the automatic setting
+- VIDEO: Auto-enable GPU recording with HW context cores
+- VIDEO: Fix viewport bias when using custom aspect ratio
 - VIDEO/D3D11/D3D12: snappy extra vsync presentation mode
 - VIDEO/GL: Fallback OpenGL symbol loader for Linux devices with EGL < 1.5
 - VIDEO/GL: Support for Cg and GLSL shaders in the GLCore video driver
