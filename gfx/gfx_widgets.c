@@ -188,6 +188,7 @@ void gfx_widgets_msg_queue_push(
 
          msg_widget->offset_y                   = 0;
          msg_widget->alpha                      = 1.0f;
+         msg_widget->alternative_look           = (task && (task->flags & RETRO_TASK_FLG_ALTERNATIVE_LOOK));
 
          msg_widget->width                      = 0;
 
@@ -1168,7 +1169,7 @@ static void gfx_widgets_draw_task_msg(
    size_t task_percentage_offset     = 0;
    char task_percentage[256]         = "";
    bool draw_msg_new                 = false;
-   bool msg_alternative              = (task_get_flags(msg->task_ptr) & RETRO_TASK_FLG_ALTERNATIVE_LOOK);
+   bool msg_alternative              = msg->alternative_look;
 
    if (msg->msg_new)
       draw_msg_new                   = !string_is_equal(msg->msg_new, msg->msg);
