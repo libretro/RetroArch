@@ -7201,6 +7201,9 @@ int runloop_iterate(void)
 #endif
    }
 #endif
+#ifdef HAVE_BSV_MOVIE
+   bsv_movie_dequeue_next(input_st);
+#endif
 
    if (runloop_st->frame_time.callback)
    {
@@ -7354,10 +7357,6 @@ int runloop_iterate(void)
       autosave_lock();
 #endif
 
-#ifdef HAVE_BSV_MOVIE
-   bsv_movie_next_frame(input_st);
-#endif
-
    if (     settings->bools.camera_allow
          && camera_st->cb.caps
          && camera_st->driver
@@ -7370,6 +7369,10 @@ int runloop_iterate(void)
    /* Measure the time between core_run() and video_driver_frame() */
    runloop_st->core_run_time = cpu_features_get_time_usec();
 
+#ifdef HAVE_BSV_MOVIE
+   bsv_movie_start_frame(input_st);
+#endif
+   
    {
 #ifdef HAVE_RUNAHEAD
       bool run_ahead_enabled            = settings->bools.run_ahead_enabled;
@@ -7396,6 +7399,11 @@ int runloop_iterate(void)
 #endif
          core_run();
    }
+#ifdef HAVE_BSV_MOVIE
+   bsv_movie_finish_rewind(input_st);
+   bsv_movie_next_frame(input_st);
+#endif
+
 
    /* Increment runtime tick counter after each call to
     * core_run() or run_ahead() */
@@ -7413,12 +7421,6 @@ int runloop_iterate(void)
    presence_update(PRESENCE_GAME);
 #endif
 #ifdef HAVE_BSV_MOVIE
-   bsv_movie_finish_rewind(input_st);
-   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
-   {
-      movie_stop_playback(input_st);
-      command_event(CMD_EVENT_PAUSE, NULL);
-   }
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
    {
       movie_stop_playback(input_st);

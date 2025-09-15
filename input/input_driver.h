@@ -277,6 +277,7 @@ struct bsv_movie
 #endif
 
    uint8_t checkpoint_compression, checkpoint_encoding;
+   bool make_checkpoint_frame;
 
    uint8_t *last_save, *cur_save;
    size_t last_save_size, cur_save_size;
@@ -1104,6 +1105,7 @@ void input_overlay_check_mouse_cursor(void);
 
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
+void bsv_movie_start_frame(input_driver_state_t *input_st);
 void bsv_movie_next_frame(input_driver_state_t *input_st);
 bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior checkpoint_behavior, bool end_movie_on_eof);
 bool bsv_movie_reset_playback(bsv_movie_t *handle);
@@ -1112,6 +1114,7 @@ void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
 void bsv_movie_deinit_full(input_driver_state_t *input_st);
 void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t *state, enum bsv_flags flags);
+void bsv_movie_dequeue_next(input_driver_state_t *input_st);
 
 bool movie_commit_checkpoint(input_driver_state_t *input_st);
 bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st);

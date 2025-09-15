@@ -60,6 +60,25 @@ bool bsv_movie_skip_to_next_checkpoint_impl(bsv_movie_t *movie);
 bool bsv_movie_skip_to_prev_checkpoint_impl(bsv_movie_t *movie);
 bool bsv_movie_seek_to_pos_impl(bsv_movie_t *movie, int64_t pos);
 
+void bsv_movie_store_frame(bsv_movie_t *handle)
+{
+   retro_ctx_serialize_info_t serial_info;
+   serial_info.size = core_serialize_size();
+   if (handle->cur_save_size < serial_info.size && handle->cur_save)
+   {
+      free(handle->cur_save);
+      handle->cur_save = NULL;
+   }
+   if (!handle->cur_save)
+   {
+      handle->cur_save_size = serial_info.size;
+      handle->cur_save = malloc(serial_info.size);
+      handle->cur_save_valid = false;
+   }
+   serial_info.data = handle->cur_save;
+   core_serialize(&serial_info);
+}
+
 bool bsv_movie_reset_playback(bsv_movie_t *handle)
 {
    uint32_t state_size = 0;
@@ -153,6 +172,7 @@ bool bsv_movie_reset_recording(bsv_movie_t *handle)
    intfstream_write(handle->file, &compression, 1);
    intfstream_write(handle->file, &encoding, 1);
    handle->frame_counter = 0;
+   bsv_movie_store_frame(handle);
    state_size = 2 + bsv_movie_write_checkpoint(handle, compression, encoding);
    handle->min_file_pos = intfstream_tell(handle->file);
    /* Have to write initial state size header too */
@@ -479,6 +499,23 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
    return ret;
 }
 
+void bsv_movie_start_frame(input_driver_state_t *input_st) {
+   unsigned checkpoint_interval = config_get_ptr()->uints.replay_checkpoint_interval;
+   bsv_movie_t *handle = input_st->bsv_movie_state_handle;
+   if (!handle || handle->playback)
+      return;
+   /* Is this a checkpoint recording frame? */
+   if ((input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_FORCE_CHECKPOINT) ||
+         ((checkpoint_interval != 0)
+               && (handle->frame_counter > 0)
+               && (handle->frame_counter % (checkpoint_interval*60) == 0)))
+   {
+      bsv_movie_store_frame(handle);
+      handle->make_checkpoint_frame = true;
+      input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_FORCE_CHECKPOINT;
+   }
+}
+
 int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t encoding)
 {
    int64_t ret = -1;
@@ -487,33 +524,18 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
    size_t size_swap;
    uint8_t *encoded_data = NULL, *compressed_encoded_data = NULL;
    bool owns_encoded = false, owns_compressed_encoded = false;
-   retro_ctx_serialize_info_t serial_info;
-   serial_info.size = core_serialize_size();
-   if (handle->cur_save_size < serial_info.size)
-   {
-      free(handle->cur_save);
-      handle->cur_save = NULL;
-   }
-   if (!handle->cur_save)
-   {
-      handle->cur_save_size = serial_info.size;
-      handle->cur_save = malloc(serial_info.size);
-      handle->cur_save_valid = false;
-   }
-   serial_info.data = handle->cur_save;
-   core_serialize(&serial_info);
    switch (encoding)
    {
       case REPLAY_CHECKPOINT2_ENCODING_RAW:
-         encoded_size = serial_info.size;
-         encoded_data = serial_info.data;
+         encoded_size = handle->cur_save_size;
+         encoded_data = handle->cur_save;
          break;
 #ifdef HAVE_STATESTREAM
       case REPLAY_CHECKPOINT2_ENCODING_STATESTREAM:
-         encoded_size = serial_info.size + serial_info.size / 2;
+         encoded_size = handle->cur_save_size + handle->cur_save_size / 2;
          encoded_data = malloc(encoded_size);
          owns_encoded = true;
-         encoded_size = bsv_movie_write_deduped_state(handle, serial_info.data, serial_info.size, encoded_data, encoded_size);
+         encoded_size = bsv_movie_write_deduped_state(handle, handle->cur_save, handle->cur_save_size, encoded_data, encoded_size);
          break;
 #endif
       default:
@@ -564,7 +586,7 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
          goto exit;
    }
    /* uncompressed, unencoded size */
-   size_ = swap_if_big32(serial_info.size);
+   size_ = swap_if_big32(handle->cur_save_size);
    if (intfstream_write(handle->file, &size_, sizeof(uint32_t)) < (int64_t)sizeof(uint32_t))
    {
       ret = -1;
@@ -757,6 +779,17 @@ void bsv_movie_scan_from_start(bsv_movie_t *movie, int32_t len)
    bsv_movie_scan_to(movie, len);
 }
 
+void bsv_movie_dequeue_next(input_driver_state_t *input_st)
+{
+   if (input_st->bsv_movie_state_next_handle)
+   {
+      if (input_st->bsv_movie_state_handle)
+         bsv_movie_deinit(input_st);
+      input_st->bsv_movie_state_handle = input_st->bsv_movie_state_next_handle;
+      input_st->bsv_movie_state_next_handle = NULL;
+   }
+}
+
 void bsv_movie_next_frame(input_driver_state_t *input_st)
 {
    unsigned checkpoint_interval   = config_get_ptr()->uints.replay_checkpoint_interval;
@@ -765,14 +798,6 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       bsv_movie_state_handle to bsv_movie_state_next_handle and clear
       next_handle */
    bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
-   if (input_st->bsv_movie_state_next_handle)
-   {
-      if (handle)
-         bsv_movie_deinit(input_st);
-      handle = input_st->bsv_movie_state_next_handle;
-      input_st->bsv_movie_state_handle = handle;
-      input_st->bsv_movie_state_next_handle = NULL;
-   }
 
    if (!handle)
       return;
@@ -805,10 +830,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       handle->input_event_count = 0;
 
       /* Maybe record checkpoint */
-      if ((input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_FORCE_CHECKPOINT) ||
-            ((checkpoint_interval != 0)
-                  && (handle->frame_counter > 0)
-                  && (handle->frame_counter % (checkpoint_interval*60) == 0)))
+      if (handle->make_checkpoint_frame)
       {
          uint8_t frame_tok   = REPLAY_TOKEN_CHECKPOINT2_FRAME;
          uint8_t compression = handle->checkpoint_compression;
@@ -817,7 +839,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
 #else
          uint8_t encoding    = REPLAY_CHECKPOINT2_ENCODING_RAW;
 #endif
-         input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_FORCE_CHECKPOINT;
+         handle->make_checkpoint_frame = false;
          /* "next frame is a checkpoint" */
          intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
          /* compression and encoding schemes */
@@ -1276,7 +1298,6 @@ int16_t bsv_movie_read_state(input_driver_state_t *input_st,
 #endif
       return bsv_result;
    }
-   input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
    return 0;
 }
 
