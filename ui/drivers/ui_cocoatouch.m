@@ -57,7 +57,9 @@
 #import <MetricKit/MXMetricManager.h>
 
 #ifdef HAVE_MFI
+#import <GameController/GameController.h>
 #import <GameController/GCMouse.h>
+#import <GameController/GCMouseInput.h>
 #endif
 
 #ifdef HAVE_KSCRASH
