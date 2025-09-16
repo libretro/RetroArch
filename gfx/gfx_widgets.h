@@ -185,6 +185,7 @@ typedef struct disp_widget_msg
    int8_t task_progress;
    /* How many tasks have used this notification? */
    uint8_t task_count;
+   bool alternative_look;
 } disp_widget_msg_t;
 
 typedef struct dispgfx_widget
