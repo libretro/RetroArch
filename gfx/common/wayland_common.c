@@ -755,6 +755,9 @@ bool gfx_ctx_wl_init_common(
 
    wl->registry = wl_display_get_registry(wl->input.dpy);
    wl_registry_add_listener(wl->registry, &registry_listener, wl);
+   /* first roundtrip to bind compositor globals */
+   wl_display_roundtrip(wl->input.dpy);
+   /* second roundtrip for listeners on bound globals (wl_output, wl_seat) */
    wl_display_roundtrip(wl->input.dpy);
 
    if (!wl->compositor)
