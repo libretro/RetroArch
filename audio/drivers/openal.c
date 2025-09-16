@@ -237,15 +237,11 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
       if (al_unqueue_buffers(al))
          break;
 
-#ifndef EMSCRIPTEN
       if (al->nonblock)
-#endif
          return false;
 
-#ifndef _WIN32
       /* Must sleep as there is no proper blocking method. */
       retro_sleep(1);
-#endif
    }
 
    *buffer = al->res_buf[--al->res_ptr];
