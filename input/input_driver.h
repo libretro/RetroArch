@@ -267,6 +267,7 @@ struct bsv_movie
    bool playback;
    bool first_rewind;
    bool did_rewind;
+   bool checkpoint_ready;
 
 #ifdef HAVE_STATESTREAM
    /* Block index and superblock index for incremental checkpoints */
@@ -1112,6 +1113,7 @@ void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
 void bsv_movie_deinit_full(input_driver_state_t *input_st);
 void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t *state, enum bsv_flags flags);
+void bsv_movie_dequeue_next(input_driver_state_t *input_st);
 
 bool movie_commit_checkpoint(input_driver_state_t *input_st);
 bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st);

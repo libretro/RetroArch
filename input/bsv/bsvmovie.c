@@ -237,7 +237,6 @@ void bsv_movie_frame_rewind()
       if (handle->blocks)
          uint32s_index_remove_after(handle->blocks, handle->frame_counter);
 #endif
-      RARCH_LOG("[REPLAY] rewound to %d\n", handle->frame_counter);
       intfstream_seek(handle->file, (int)handle->frame_pos[handle->frame_counter & handle->frame_mask], SEEK_SET);
       if (recording)
          intfstream_truncate(handle->file, intfstream_tell(handle->file));
@@ -310,16 +309,6 @@ bool bsv_movie_handle_read_input_event(bsv_movie_t *movie,
       }
    }
    return false;
-}
-
-void bsv_movie_finish_rewind(input_driver_state_t *input_st)
-{
-   bsv_movie_t *handle    = input_st->bsv_movie_state_handle;
-   if (!handle)
-      return;
-   handle->frame_counter += 1;
-   handle->first_rewind   = !handle->did_rewind;
-   handle->did_rewind     = false;
 }
 
 bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t encoding, replay_checkpoint_behavior checkpoint_behavior)
@@ -460,14 +449,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
    }
    if (checkpoint_behavior != REPLAY_CPBEHAVIOR_DESERIALIZE)
       goto exit;
-   serial_info.data_const = handle->cur_save;
-   serial_info.size       = size;
-   /* TODO: should this happen at the end of the current frame, or at the beginning before inputs have been polled/etc?  FCEUMM and PPSSPP have some jankiness here */
-   if (!core_unserialize(&serial_info))
-   {
-      ret = false;
-      goto exit;
-   }
+   handle->checkpoint_ready = true;
  exit:
    handle->cur_save_size = size;
    handle->last_save_size = handle->cur_save_size;
@@ -609,6 +591,20 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
 bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior checkpoint_behavior, bool end_movie)
 {
    input_driver_state_t *input_st  = input_state_get_ptr();
+   if (handle->checkpoint_ready)
+   {
+      retro_ctx_serialize_info_t serial_info;
+      handle->checkpoint_ready = false;
+      serial_info.data_const = handle->cur_save;
+      serial_info.size       = handle->cur_save_size;
+      if (!core_unserialize(&serial_info))
+      {
+         RARCH_ERR("[Replay] Failed to deserialize checkpoint\n");
+         if (end_movie)
+            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+         return false;
+      }
+   }
    /* Skip over backref */
    if (handle->version > 1)
       intfstream_seek(handle->file, sizeof(uint32_t), SEEK_CUR);
@@ -694,26 +690,24 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior 
             intfstream_seek(handle->file, size, SEEK_CUR);
          else
          {
-            state = (uint8_t*)malloc(size);
-            if (intfstream_read(handle->file, state, size) != (int64_t)size)
+            if (!handle->cur_save || handle->cur_save_size < size)
+            {
+               if (handle->cur_save)
+                  free(handle->cur_save);
+               handle->cur_save = malloc(size);
+               handle->cur_save_size = size;
+            }
+            if (intfstream_read(handle->file, handle->cur_save, size) != (int64_t)size)
             {
                RARCH_ERR("[Replay] Replay checkpoint truncated\n");
                if (end_movie)
                   input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
-               free(state);
+               free(handle->cur_save);
+               handle->cur_save = NULL;
                return false;
             }
-            serial_info.data_const = state;
-            serial_info.size       = size;
-            if (!core_unserialize(&serial_info))
-            {
-               RARCH_ERR("[Replay] Failed to load movie checkpoint, failing\n");
-               if (end_movie)
-                  input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
-               free(state);
-               return false;
-            }
-            free(state);
+            handle->cur_save_size = size;
+            handle->checkpoint_ready = true;
          }
       }
       else if (next_frame_type == REPLAY_TOKEN_CHECKPOINT2_FRAME)
@@ -746,6 +740,18 @@ void bsv_movie_scan_to(bsv_movie_t *movie, int64_t pos)
    }
 }
 
+void bsv_movie_dequeue_next(input_driver_state_t *input_st)
+{
+   if (input_st->bsv_movie_state_next_handle)
+   {
+      if (input_st->bsv_movie_state_handle)
+         bsv_movie_deinit(input_st);
+      input_st->bsv_movie_state_handle = input_st->bsv_movie_state_next_handle;
+      input_st->bsv_movie_state_next_handle = NULL;
+   }
+}
+
+
 void bsv_movie_scan_from_start(bsv_movie_t *movie, int32_t len)
 {
    if (!movie || movie->version == 0)
@@ -765,21 +771,20 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       bsv_movie_state_handle to bsv_movie_state_next_handle and clear
       next_handle */
    bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
-   if (input_st->bsv_movie_state_next_handle)
-   {
-      if (handle)
-         bsv_movie_deinit(input_st);
-      handle = input_st->bsv_movie_state_next_handle;
-      input_st->bsv_movie_state_handle = handle;
-      input_st->bsv_movie_state_next_handle = NULL;
-   }
 
    if (!handle)
       return;
 #ifdef HAVE_REWIND
    if (state_manager_frame_is_reversed())
+   {
+      handle->checkpoint_ready = false;
       return;
+   }
 #endif
+
+   handle->frame_counter += 1;
+   handle->first_rewind   = !handle->did_rewind;
+   handle->did_rewind     = false;
 
    if (!handle->playback && !(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_SEEKING))
    {
@@ -1276,7 +1281,6 @@ int16_t bsv_movie_read_state(input_driver_state_t *input_st,
 #endif
       return bsv_result;
    }
-   input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
    return 0;
 }
 
