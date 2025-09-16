@@ -703,23 +703,11 @@ static void net_http_conn_pool_remove_expired(void)
    {
       if (!entry->in_use && FD_ISSET(entry->fd, &fds))
       {
-         char buf[4096];
-         bool err = false;
-#ifdef HAVE_SSL
-         if (entry->ssl && entry->ssl_ctx)
-            ssl_socket_receive_all_nonblocking(entry->ssl_ctx, &err, buf, sizeof(buf));
-         else
-#endif
-            socket_receive_all_nonblocking(entry->fd, &err, buf, sizeof(buf));
-
-         if (!err)
-            continue;
-
+         /* if it's not in use and it's reaadable we assume that means it's closed without checking recv */
          if (prev)
             prev->next = entry->next;
          else
             conn_pool = entry->next;
-         /* if it's not in use and it's reaadable we assume that means it's closed without checking recv */
          net_http_conn_pool_free(entry);
          entry = prev ? prev->next : conn_pool;
       }
