@@ -755,7 +755,6 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
             id, &wl_output_interface, MIN(version, 2));
       wl_output_add_listener(oi->output, &output_listener, oi);
       wl_list_insert(&wl->all_outputs, &od->link);
-      wl_display_roundtrip(wl->input.dpy);
    }
    else if (string_is_equal(interface, xdg_wm_base_interface.name) && found++)
       wl->xdg_shell = (struct xdg_wm_base*)
