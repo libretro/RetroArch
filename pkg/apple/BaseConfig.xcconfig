@@ -39,7 +39,6 @@ OTHER_CFLAGS = $(inherited) -DHAVE_GIT_VERSION
 OTHER_CFLAGS = $(inherited) -DHAVE_GLSL
 OTHER_CFLAGS = $(inherited) -DHAVE_GLSLANG
 OTHER_CFLAGS = $(inherited) -DHAVE_GRIFFIN
-OTHER_CFLAGS = $(inherited) -DHAVE_HID
 OTHER_CFLAGS = $(inherited) -DHAVE_IFINFO
 OTHER_CFLAGS = $(inherited) -DHAVE_IMAGEVIEWER
 OTHER_CFLAGS = $(inherited) -DHAVE_LANGEXTRA
@@ -107,6 +106,7 @@ OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COREMIDI
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DISCORD
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DYLIB
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_GETOPT_LONG
+OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_HID
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_IOHIDMANAGER
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_MATERIALUI
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_OPENGL_CORE
