@@ -1817,14 +1817,23 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
 
    if (     string_is_empty(room->subsystem_name)
          || string_is_equal_case_insensitive(room->subsystem_name, "N/A"))
-      snprintf(s + _len, len - _len, "(%08lX)",
+      _len += snprintf(s + _len, len - _len, "(%08lX)\n",
             (unsigned long)(unsigned)room->gamecrc);
    else
    {
       _len += strlcpy(s + _len, "(", len - _len);
       _len += strlcpy(s + _len, room->subsystem_name, len - _len);
-      strlcpy(s + _len, ")", len - _len);
+      _len += strlcpy(s + _len, ")\n", len - _len);
    }
+
+   if (room->spectator_count > 0)
+      _len += snprintf(s + _len, len - _len,
+         msg_hash_to_str(MSG_NETPLAY_SPECTATORS_INFO),
+         room->player_count, room->spectator_count);
+   else if (room->player_count >= 0)
+      _len += snprintf(s + _len, len - _len,
+         msg_hash_to_str(MSG_NETPLAY_PLAYERS_INFO),
+         room->player_count);
    return 0;
 }
 
