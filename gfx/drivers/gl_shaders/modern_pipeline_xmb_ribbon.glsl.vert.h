@@ -1,6 +1,6 @@
 #include "shaders_common.h"
 
-static const char *stock_vertex_xmb_ribbon_modern = GLSL(
+static const char *stock_vertex_xmb_ribbon_modern = GLSL_STANDARD_DERIVATIVES(
    in vec3 VertexCoord;
    uniform float time;
    out vec3 fragVertexEc;
