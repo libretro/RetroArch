@@ -48,10 +48,13 @@
 #endif
 #endif
 
-#if defined(HAVE_LIBMOCHA) && defined(HAVE_LIBFAT)
-#include <fat.h>
+#ifdef HAVE_LIBMOCHA
 #include <mocha/disc_interface.h>
 #include <mocha/mocha.h>
+#endif
+
+#ifdef HAVE_LIBFAT
+#include <fat.h>
 #endif
 
 #include "system/memory.h"
@@ -83,11 +86,13 @@
 
 #ifndef IS_SALAMANDER
 static enum frontend_fork wiiu_fork_mode     = FRONTEND_FORK_NONE;
+static bool               in_main            = false;
+
 static bool               have_libfat_usb    = false;
 static bool               have_libfat_sdcard = false;
-static bool               have_wfs_usb       = false;
 #endif
-static bool in_exec = false;
+static bool have_wfs_usb = false;
+static bool in_exec      = false;
 
 static bool exists(char* path)
 {
@@ -509,15 +514,15 @@ static uint32_t proc_release(void* param)
    return 0;
 }
 
-static bool in_main = false;
-
 static uint32_t proc_home_button_deny(void* param)
 {
    (void)param;
 
+#ifndef IS_SALAMANDER
    /* Don't toggle the menu in, like, the middle of a core switch */
    if (in_main)
       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+#endif
 
    return 0;
 }

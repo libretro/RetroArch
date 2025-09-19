@@ -43,12 +43,40 @@ OBJ += wiiu/system/stubs_rpl.o
 ifeq ($(SALAMANDER_BUILD),1)
    DEFINES += -DRARCH_CONSOLE -DIS_SALAMANDER -DHAVE_LIBMOCHA
 
+   DEFINES += -DHAVE_LIBMOCHA
    INCDIRS += -Ideps/libmocha/include
+   OBJ += deps/libmocha/source/disc_interface.o \
+      deps/libmocha/source/fsa.o \
+      deps/libmocha/source/utils.o \
+      deps/libmocha/source/devoptab/devoptab_fsa.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_chdir.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_chmod.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_close.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_dirclose.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_dirnext.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_diropen.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_dirreset.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_fchmod.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_fstat.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_fsync.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_link.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_mkdir.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_open.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_read.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_rename.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_rmdir.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_seek.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_stat.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_statvfs.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_truncate.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_unlink.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_utils.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_utimes.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_write.o
 
    OBJ += frontend/frontend_salamander.o
    OBJ += frontend/frontend_driver.o
    OBJ += frontend/drivers/platform_wiiu.o
-   OBJ += deps/libmocha/source/utils.o
    OBJ += libretro-common/encodings/encoding_utf.o
    OBJ += libretro-common/compat/compat_strcasestr.o
    OBJ += libretro-common/compat/fopen_utf8.o
