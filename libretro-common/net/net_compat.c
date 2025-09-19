@@ -29,6 +29,11 @@
 
 #include <net/net_compat.h>
 
+#ifdef WIIU
+#include <nn/nets2.h>
+#include <sys/socket.h>
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX)
 #if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
 const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
@@ -232,6 +237,32 @@ int inet_pton(int af, const char *src, void *dst)
       return 1;
 
    return 0;
+}
+
+#elif defined(WIIU)
+#include <malloc.h>
+
+static int net_compat_thread_entry(int argc, const char **argv)
+{
+   (void)argc; (void)argv;
+
+   const int somemopt_buffer_area_size = 0x200000; /* 2 mibs */
+   void *buf = memalign(0x40, somemopt_buffer_area_size);
+
+   if (!buf)
+      return -1;
+
+   somemopt(SOMEMOPT_REQUEST_INIT, buf, somemopt_buffer_area_size, SOMEMOPT_FLAGS_NONE);
+
+   free(buf);
+
+   return 0;
+}
+
+static void net_compat_thread_cleanup(OSThread *thread, void *stack)
+{
+   (void)thread;
+   free(stack);
 }
 
 #elif defined(_3DS)
@@ -543,6 +574,38 @@ failure:
 
          return false;
       }
+
+      initialized = true;
+   }
+
+   return true;
+#elif defined(WIIU)
+   static OSThread net_compat_thread;
+   static bool initialized = false;
+
+   if (!initialized)
+   {
+      /* freed in net_compat_thread_cleanup */
+      void *stack = malloc(0x1000);
+      /* Do not like SIGPIPE killing our app. */
+      signal(SIGPIPE, SIG_IGN);
+
+      if (!stack)
+         return false;
+
+      /* TODO port to rthreads */
+      if (!OSCreateThread(&net_compat_thread, net_compat_thread_entry,
+            0, NULL, stack + 0x1000, 0x1000, 3,
+            OS_THREAD_ATTRIB_AFFINITY_ANY))
+      {
+         free(stack);
+
+         return false;
+      }
+
+      OSSetThreadName(&net_compat_thread, "Network compat thread");
+      OSSetThreadDeallocator(&net_compat_thread, net_compat_thread_cleanup);
+      OSResumeThread(&net_compat_thread);
 
       initialized = true;
    }

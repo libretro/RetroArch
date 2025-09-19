@@ -682,10 +682,37 @@ bool socket_bind(int fd, void *data)
    return !bind(fd, addr->ai_addr, addr->ai_addrlen);
 }
 
+#ifdef WIIU
+static void set_socket_options(const int fd, const struct addrinfo *addr)
+{
+   const int op = 1;
+
+   setsockopt(fd, SOL_SOCKET, SO_WINSCALE, &op, sizeof(op));
+
+   if (addr->ai_socktype == SOCK_STREAM)
+   {
+      const int recv_sz = 128 * 1024;
+      const int send_sz = 128 * 1024;
+
+      setsockopt(fd, SOL_SOCKET, SO_TCPSACK, &op, sizeof(op));
+      setsockopt(fd, SOL_SOCKET, SO_RUSRBUF, &op, sizeof(op));
+      setsockopt(fd, SOL_SOCKET, SO_WINSCALE, &op, sizeof(op));
+      setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &recv_sz, sizeof(recv_sz));
+      setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &send_sz, sizeof(send_sz));
+   }
+}
+#else
+static void set_socket_options(const int fd, const struct addrinfo *addr)
+{
+
+}
+#endif
+
 int socket_connect(int fd, void *data)
 {
    struct addrinfo *addr = (struct addrinfo*)data;
 
+   set_socket_options(fd, addr);
    return connect(fd, addr->ai_addr, addr->ai_addrlen);
 }
 
@@ -697,6 +724,7 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
    if (!socket_nonblock(fd))
       return false;
 
+   set_socket_options(fd, addr);
    res = connect(fd, addr->ai_addr, addr->ai_addrlen);
    if (res)
    {
