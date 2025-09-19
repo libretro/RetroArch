@@ -195,20 +195,23 @@ INCDIRS += -Ilibretro-common/include
 INCDIRS += -Iwiiu
 INCDIRS += -Iwiiu/include
 
-CFLAGS  := -mcpu=750 -meabi -mhard-float
-CFLAGS  += -Werror=implicit-function-declaration
-CFLAGS  += -ffunction-sections -fdata-sections
-#CFLAGS += -fomit-frame-pointer -mword-relocations
+FLAGS   := -mcpu=750 -meabi -mhard-float
+FLAGS   += -ffunction-sections -fdata-sections
+FLAGS   += -Wall
+
+ifeq ($(DEBUG), 1)
+   FLAGS += -O0 -g -DDEBUG
+else
+   FLAGS += -O3 -DNDEBUG
+endif
+
+CFLAGS := $(FLAGS) -Werror=implicit-function-declaration
 # Some Wii U dependencies and headers are using C++ style comments, so use gnu89 here instead of C89 proper
-CFLAGS += -Wall -std=gnu89 -Wno-scalar-storage-order
+CFLAGS += -std=gnu89 -Wno-scalar-storage-order
 # wut's 'gx2/shaders.h' isn't c89-compliant
 $(BUILD_DIR)/wiiu/shader_utils.o: CFLAGS += -std=c99
 
-ifeq ($(DEBUG), 1)
-   CFLAGS += -O0 -g
-else
-   CFLAGS += -O3
-endif
+CXXFLAGS := $(FLAGS)
 
 ASFLAGS := $(CFLAGS) -mregnames
 

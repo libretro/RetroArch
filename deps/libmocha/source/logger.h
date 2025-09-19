@@ -19,5 +19,12 @@
 
 #define LOG_EX_DEFAULT(LOG_FUNC, LOG_LEVEL, LINE_END, FMT, ARGS...) LOG_EX(__FILENAME__, __FUNCTION__, __LINE__, LOG_FUNC, LOG_LEVEL, LINE_END, FMT, ##ARGS)
 
+#ifdef NDEBUG
+#define DEBUG_FUNCTION_LINE_ERR(FMT, ARGS...)
+#define DEBUG_FUNCTION_LINE_WARN(FMT, ARGS...)
+
+#else
 #define DEBUG_FUNCTION_LINE_ERR(FMT, ARGS...)                       LOG_EX_DEFAULT(OSReport, "##ERROR## ", "\n", FMT, ##ARGS)
 #define DEBUG_FUNCTION_LINE_WARN(FMT, ARGS...)                      LOG_EX_DEFAULT(OSReport, "##WARNING## ", "\n", FMT, ##ARGS)
+
+#endif
