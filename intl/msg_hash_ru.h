@@ -13474,6 +13474,14 @@ MSG_HASH(
    "%.*s подключился с устройствами ввода %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d игрок(ов)"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d игрок(ов) (%d наблюдают)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Попытка соединения не удалась, т.к. на стороне peer'а не запущен RetroArch или используется устаревшая версия."
    )

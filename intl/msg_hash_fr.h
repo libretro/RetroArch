@@ -13402,6 +13402,14 @@ MSG_HASH(
    "%.*s à rejoint le jeu avec des dispositifs d'entrée %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d joueur(s)"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d joueur(s) (%d spectateur(s))"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Une tentative de connexion au jeu en réseau à échoué car RetroArch n'est pas en cours d'exécution chez le partenaire, ou est sur une ancienne version de RetroArch."
    )

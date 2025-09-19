@@ -13538,6 +13538,14 @@ MSG_HASH(
    "%.*s 사용자가 %.*s 입력장치로 접속했습니다"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "플레이어 %d명"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "플레이어 %d명 (%d명 관전 중)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "사용자가 이전 버전의 RetroArch가 아니거나 구버전을 사용하여 접속에 실패했습니다."
    )

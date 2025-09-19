@@ -11650,6 +11650,10 @@ MSG_HASH(
    "%.*s dołączył z urządzeniami wejściowymi %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d gracz(y)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Próba połączenia online nie powiodła się, ponieważ peer nie działa w trybie RetroArch lub używa starej wersji RetroArch."
    )
