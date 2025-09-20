@@ -13482,6 +13482,14 @@ MSG_HASH(
    "%.*s giriş cihazlarıyla birlikte katıldı %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d oyuncu"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d oyuncu (%d izleyici)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Diğer eş RetroArch çalıştırmadığı veya RetroArch'ın eski bir sürümünü çalıştırdığı için bir netplay bağlantı girişimi başarısız oldu."
    )

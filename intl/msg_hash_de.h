@@ -13094,6 +13094,14 @@ MSG_HASH(
    "%.*s ist mit Eingabegeräten %.*s beigetreten"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d Spieler"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d Spieler (%d Zuschauer)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Ein Netzwerkspiel-Verbindungsversuch ist fehlgeschlagen, da beim Teilnehmer RetroArch nicht oder in einer älteren Version ausgeführt wird."
    )
