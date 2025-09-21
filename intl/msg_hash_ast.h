@@ -264,7 +264,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   "Restola tol conteníu que concase cola base de datos per una interfaz de busca per estayes."
+   "Restola tol conteníu que concase cola base de datos per una interfaz de busca con categoríes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
@@ -820,8 +820,16 @@ MSG_HASH(
 /* Main Menu > Configuration File */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   "Carga una configuración esistente ya sustitúi los valores actuales."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Guardar la configuración actual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   "Sobrescribe'l ficheru de configuración actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
@@ -830,6 +838,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
    "Guardar la configuración principal"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "Restaura los valores predeterminaos de la configuración."
    )
 
 /* Main Menu > Help */
@@ -894,7 +906,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   "Entrada"
+   "Controles"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
@@ -1042,7 +1054,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-   "Entrada"
+   "Controles"
    )
 
 MSG_HASH(
@@ -1298,11 +1310,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-   "Entrada"
+   "Controles"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_INPUT,
-   "Seleiciona'l preséu d'entrada."
+   "Seleiciona'l preséu d'introducción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -1761,6 +1773,10 @@ MSG_HASH(
    "Aspeutu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SETTINGS,
+   "Camuda la configuración del aspeutu del menú."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
    "Visibilidá de los elementos del menú"
    )
@@ -1821,6 +1837,10 @@ MSG_HASH(
    "Vórtiz"
    )
 #ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+   "Camuda la configuración del aspeutu de la pantalla baxera."
+   )
 #endif
 
 /* Settings > User Interface > Menu Item Visibility */
@@ -2281,9 +2301,21 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
    "Llingua"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
+   "Traduz el menú ya tolos mensaxes qu'apaezan a la llingua que seleiciones equí. Ye obligatorio que reanicies Retroarch pa que los cambeos faigan efeutu.\nAl llau de cada opción va apaecer el grau de finalización de cada traducción. Nel casu de que dalgún menú nun tea traducíu a la llingua seleicionada, va usase l'inglés."
+   )
 
 /* Settings > User > Privacy */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   "Permitir la cámara"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
+   "Permite que los nucleos accedan a la cámara."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    "Presencia arriquecida de Discord"
@@ -2291,6 +2323,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
    "Permite que l'aplicación Discord amuese datos tocante al conteníu que ta en reproducción.\nEsta función namás ta disponible pal veceru nativu d'ordenador."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
+   "Permitir la llocalización"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
+   "Permite que los nucleos accedan a la llocalización."
    )
 
 /* Settings > User > Accounts */
@@ -2343,8 +2383,16 @@ MSG_HASH(
 /* Settings > Directory */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
+   "Nesti direutoriu atróxense los ficheros de BIOS, les ROMs d'arrinque ya otros ficheros específicos del sistema."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
    "Descargues"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
+   "Nesti direutoriu atróxense los ficheros baxaos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
@@ -2383,6 +2431,10 @@ MSG_HASH(
    "Bases de datos"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
+   "Nesti direutoriu atróxense les bases de datos."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
    "Asolombradores de videu"
    )
@@ -2395,6 +2447,22 @@ MSG_HASH(
    "Les grabaciones atróxense nesti direutoriu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
+   "Superposiciones"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
+   "Nesti direutoriu atróxense les superposiciones."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   "Superposiciones del tecláu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   "Nesti direutoriu atróxense les superposiciones del tecláu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    "Captures de pantalla"
    )
@@ -2403,12 +2471,40 @@ MSG_HASH(
    "Llistes"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
+   "Llista d'imáxenes"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_MUSIC_HISTORY_DIRECTORY,
+   "Llistes de música"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
+   "Nesti direutoriu guárdense les llistes de música."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
+   "Ficheros de guardáu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
+   "Nesti direutoriu van guardase tolos puntos de guardáu. Si nun se configura nengún, los puntos de guardáu van guardase dientro del direutoriu de trabayu del conteníu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "Puntos de guardáu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+   "Nesti direutoriu van atroxase los puntos de guardáu ya les repiticiones. Si nun se configura nengún direutoriu, estos elementos van guardase dientro del direutoriu de trabayu del conteníu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "Caché"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
+   "Nesti direutoriu va estrayese temporalmente'l conteníu archiváu."
    )
 
 #ifdef HAVE_MIST
@@ -3923,7 +4019,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
-   "Los preseos d'entrada solicitaos nun tán disponibles"
+   "Los preseos d'introducción solicitaos nun tán disponibles"
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY,
@@ -3992,7 +4088,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DOWNLOADING,
-   "Baxando"
+   "Ta baxando"
    )
 MSG_HASH(
    MSG_INDEX_FILE,
@@ -4000,7 +4096,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_EXTRACTING,
-   "Estrayendo"
+   "Ta estrayendo"
    )
 MSG_HASH(
    MSG_EXTRACTING_FILE,
