@@ -91,6 +91,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
    "Volquiar un discu"
    )
+MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
+   MENU_ENUM_SUBLABEL_DUMP_DISC,
+   "Volquia un discu físicu al almacenamientu internu ya guárdalu como un ficheru d'imaxe."
+   )
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
@@ -291,7 +295,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   "Sustitúi tolos nucleos heredaos ya instalaos manualmente poles últimes versiones de la Play Store onde seya posible."
+   "Sustitúi tolos nucleos heredaos ya instalaos manualmente poles últimes versiones de la Play Store si tán disponibles."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
@@ -299,11 +303,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "Baxa'l paquete de miniatures completu pal sistema seleicionáu."
+   "Baxa'l paquete de miniatures completu del sistema seleicionáu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   "Anovador de miniatures de les llistes"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   "Baxa les miniatures de les entraes que tán na llista seleicionada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Baxador de conteníu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Baxa conteníu gratuitu pal nucleu seleicionáu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
@@ -416,6 +432,10 @@ MSG_HASH(
    "Categoríes"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   "Autoría"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
    "Permisos"
    )
@@ -435,6 +455,30 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
    "Camín completu"
 )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   "Compatibilidá colos puntos de guardáu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   "Básica (guardar/cargar)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "Falta mas ríquese:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "Falta mas ye opcional:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "Ta presente mas ríquese:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "Ta presente mas ye opcional:"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Bloquiar el nucleu instaláu"

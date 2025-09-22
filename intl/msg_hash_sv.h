@@ -3874,6 +3874,26 @@ MSG_HASH(
    "Stoppar inspelning/uppspelning av aktuell repris."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Spara kontrollpunkt för återuppspelning"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Föregående kontrollpunkt för återuppspelning"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Nästa kontrollpunkt för återuppspelning"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   "Nästa återuppspelningsplats"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   "Föregående återuppspelningsplats"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
    "Turboavfyrning (växla)"
    )
@@ -4564,12 +4584,24 @@ MSG_HASH(
    "Autosparar det icke-flyktiga SRAM-minnet med jämna mellanrum. Detta är inaktiverat som standard om inget annat anges. Intervallet mäts i sekunder. Ett värde på 0 inaktiverar autosparning."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Kontrollpunktsintervall för återuppspelning"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
    "Automatisk bokmärkning av speltillstånd under uppspelning av inspelning med ett regelbundet intervall (i sekunder)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "Sparar automatiskt speltillståndet under inspelning av repriser med ett regelbundet intervall. Detta är inaktiverat som standard om inget annat anges. Intervallet mäts i sekunder. Ett värde på 0 avaktiverar inspelning av kontrollpunkter."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Huruvida kontrollpunkter som lagrats i återuppspelningar ska avserialiseras under normal uppspelning."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Avserialisera kontrollpunkter för återuppspelning"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -7548,6 +7580,10 @@ MSG_HASH(
    "Senast spelad:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
+   "Spelantal:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
    "sekund"
    )
@@ -8017,6 +8053,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
    "Ommappningar för inmatning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
+   "Ommappningar för inmatning lagras i denna katalog."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -8784,6 +8824,10 @@ MSG_HASH(
    "Om ett tillstånd blev överskrivet kommer den att återgå till det tidigare sparade tillståndet."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   "Återuppspelningsplats"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_SLOT,
    "Ändra den för närvarande valda tillståndsplatsen."
    )
@@ -8806,6 +8850,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
    "Stoppa Inspelning/Repris"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_HALT_REPLAY,
+   "Stoppar inspelning/uppspelning av aktuell återuppspelning"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
@@ -8990,24 +9038,88 @@ MSG_HASH(
 
 /* Quick Menu > Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST,
+   "Hantera ommappningsfiler"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST,
+   "Läs in, spara eller ta bort ommappningsfiler för inmatning för aktuellt innehåll."
+   )
 
 /* Quick Menu > Controls > Manage Remap Files */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
+   "Aktiv ommappningsfil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
+   "Aktuell ommappningsfil som används."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
+   "Läs in ommappningsfil"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
    "Läs in och ersätt nuvarande inmatningsmappningar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
+   "Spara ommappningsfil som"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
    "Spara aktuella inmatningsmappningar som en ny ommappningsfil."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
+   "Spara ommappningsfil för kärna"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CORE,
+   "Spara en ommappningsfil som tillämpas för allt innehåll inläst med denna kärna."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
+   "Ta bort ommappningsfil för kärna"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE,
+   "Ta bort ommappningsfilen som tillämpas för allt innehåll inläst med denna kärna."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+   "Spara ommappningsfil i innehållskatalog"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+   "Spara en ommappningsfil som tillämpas för allt innehåll inläst från samma katalog som aktuella filen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "Ta bort ommappningsfil i spelets innehållskatalog"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+   "Ta bort ommappningsfil som tillämpas för allt innehåll inläst från samma katalog som aktuella filen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "Spara spelommappningsfil"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
+   "Spara en ommappningsfil som tillämpas endast för det aktuella innehållet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
    "Ta bort fil för spelommappningar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
+   "Ta bort ommappningsfilen som tillämpas endast för det aktuella innehållet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
@@ -9017,9 +9129,21 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
    "Ställ in alla inmatningsalternativ till standardvärden."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   "Uppdatera ommappningsfil för inmatning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   "Skriv över aktiva ommappningsfilen med aktuella alternativ för ommappning av inmatning."
+   )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE,
+   "Ommappningsfil"
+   )
 
 /* Quick Menu > Cheats */
 
@@ -9511,6 +9635,10 @@ MSG_HASH(
    "Spara aktuellt shader-förval."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
+   "Spara förval som"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
    "Spara de aktuella shaderinställningarna som en ny shaderförinställning."
    )
@@ -9694,6 +9822,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
    "Lämna hardcore-läget för prestationer inaktiverat för den aktuella sessionen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Återupptagning av hardcore-läget för prestationer inaktiverat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Du måste läsa om kärnan för att återuppta hardcore-läget för prestationer"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
@@ -10472,8 +10608,16 @@ MSG_HASH(
    "Nedre miniatyrbild"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
+   "Typ av miniatyrbild att visa i nedre högra hörnet av spellistor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    "Växla miniatyrbilder"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+   "Nedskalningsmetod för miniatyrbilder"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
@@ -10810,12 +10954,24 @@ MSG_HASH(
    "Minska visningsstorlek för miniatyrbild genom att skala maximal tillåten bredd."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   "Vertikal toningsfaktor"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
    "Visa titelrubrik"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
    "Titelmarginal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   "Horisontell förskjutning av titelmarginal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   "Aktivera inställningsflik"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -10982,6 +11138,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
    "Skalningsfaktor för titeltypsnitt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
+   "Skala typsnittsstorleken för titeltexten i menyrubriken."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Skalfaktor för vänstra sidofältets typsnitt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   "Skala typsnittsstorleken för text i vänstra sidofältet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
+   "Skalfaktor för typsnittet för etiketter"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
@@ -12530,6 +12702,14 @@ MSG_HASH(
    "%.*s är ansluten, med inmatningsenheter %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d spelare"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d spelare (%d åskådare)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Ett försök till Netplay-anslutning misslyckades eftersom motparten inte kör RetroArch eller kör en gammal version av RetroArch."
    )
@@ -13011,6 +13191,14 @@ MSG_HASH(
    "Fel vid borttagning av kärnans alternativfil."
    )
 MSG_HASH(
+   MSG_ERROR_SAVING_REMAP_FILE,
+   "Fel vid sparning av ommappningsfil."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_REMAP_FILE,
+   "Fel vid borttagning av ommappningsfil."
+   )
+MSG_HASH(
    MSG_ERROR_SAVING_SHADER_PRESET,
    "Fel vid sparning av shader-förval."
    )
@@ -13071,6 +13259,10 @@ MSG_HASH(
    "Misslyckades med att läsa in innehåll."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Misslyckades med att läsa in från spellista."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "Misslyckades med att läsa filmfil."
    )
@@ -13093,6 +13285,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_PATCH,
    "Misslyckades med att patcha"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
+   "Misslyckades med att ta emot rubrik från klient."
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_NICKNAME,
@@ -13203,8 +13399,16 @@ MSG_HASH(
    "Hittade senaste tillståndsplats"
    )
 MSG_HASH(
+   MSG_FOUND_LAST_REPLAY_SLOT,
+   "Hittade senaste återuppspelningsplatsen"
+   )
+MSG_HASH(
    MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
    "Inte från aktuell inspelning"
+   )
+MSG_HASH(
+   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   "Inte kompatibel med återuppspelning"
    )
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
@@ -13217,6 +13421,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
    "Felaktig tidslinje; skriver över inspelning"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
+   "Spola bakåt"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
+   "Tillbakaspolning misslyckades"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
+   "Spola framåt"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
+   "Framåtspolning misslyckades"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME,
+   "Spolning färdig"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME_FAILED,
+   "Spolning misslyckades"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -13451,6 +13679,10 @@ MSG_HASH(
    "Återställ"
    )
 MSG_HASH(
+   MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
+   "Startar om inspelning på grund av ominitiering av drivrutin."
+   )
+MSG_HASH(
    MSG_RESTORED_OLD_SAVE_STATE,
    "Återställde äldre sparat tillstånd."
    )
@@ -13473,6 +13705,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
    "Buffertkapaciteten räcker inte till."
+   )
+MSG_HASH(
+   MSG_REWIND_UNSUPPORTED,
+   "Tillbakaspolning inte tillgänglig på grund av att denna kärna saknas serialiserat stöd för sparade tillstånd."
+   )
+MSG_HASH(
+   MSG_REWIND_INIT,
+   "Initierar tillbakaspolningsbuffert med storlek"
+   )
+MSG_HASH(
+   MSG_REWIND_INIT_FAILED,
+   "Misslyckades med att initiera tillbakaspolningsbuffert. Tillbakaspolning kommer inaktiveras."
    )
 MSG_HASH(
    MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
@@ -13523,6 +13767,10 @@ MSG_HASH(
    "Flera patchar är explicit definierade, ignorerar alla..."
    )
 MSG_HASH(
+   MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
+   "Shader-förval sparades."
+   )
+MSG_HASH(
    MSG_FAST_FORWARD,
    "Snabbspolning."
    )
@@ -13557,6 +13805,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_STATE_SLOT,
    "Tillståndsplats"
+   )
+MSG_HASH(
+   MSG_REPLAY_SLOT,
+   "Återuppspelningsplats"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,
@@ -13793,6 +14045,26 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONFIG_OVERRIDE_LOADED,
    "Åsidosättning av konfiguration inläst."
+   )
+MSG_HASH(
+   MSG_GAME_REMAP_FILE_LOADED,
+   "Ommappningsfil för spel inläst."
+   )
+MSG_HASH(
+   MSG_DIRECTORY_REMAP_FILE_LOADED,
+   "Ommappningsfil för innehållskatalog inläst."
+   )
+MSG_HASH(
+   MSG_CORE_REMAP_FILE_LOADED,
+   "Ommappningsfil för kärna inläst."
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSHED,
+   "Ommappningsalternativ för inmatning sparades till:"
+   )
+MSG_HASH(
+   MSG_REMAP_FILE_FLUSH_FAILED,
+   "Misslyckades med att spara ommappningsalternativ för inmatning till:"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,
