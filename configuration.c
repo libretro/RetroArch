@@ -3801,7 +3801,7 @@ static bool config_load_file(global_t *global,
    struct config_array_setting *array_settings     = NULL;
    struct config_path_setting *path_settings       = NULL;
    config_file_t *conf                             = NULL;
-   uint16_t rarch_flags                            = retroarch_get_flags();
+   uint32_t rarch_flags                            = retroarch_get_flags();
 
    tmp_str[0]                                      = '\0';
 
