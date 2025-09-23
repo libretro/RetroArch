@@ -13510,6 +13510,14 @@ MSG_HASH(
    "Tá %.*s tar éis dul isteach le gléasanna ionchuir %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d imreoir(í)"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d imreoir(í) (%d ag breathnú)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Theip ar iarracht ceangail netplay mar nach bhfuil RetroArch á rith ag an gcomhghleacaí, nó go bhfuil seanleagan de RetroArch á rith aige."
    )

@@ -3878,12 +3878,24 @@ MSG_HASH(
    "Spara kontrollpunkt för återuppspelning"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Verkställer en kontrollpunkt till aktuellt uppspelade återuppspelningen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
    "Föregående kontrollpunkt för återuppspelning"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Spolar tillbaka återuppspelningen till tidigare automatiskt eller manuellt sparade kontrollpunkten."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
    "Nästa kontrollpunkt för återuppspelning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Snabbspolar återuppspelningen till nästa automatiskt eller manuellt sparade kontrollpunkten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
@@ -4610,6 +4622,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Innan ett sparat tillstånd skapas, ökas sparat tillstånd-index automatiskt. När innehåll laddas in kommer indexet att sättas till det högsta befintliga indexet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Öka återuppspelningsindex automatiskt"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
@@ -6487,6 +6503,14 @@ MSG_HASH(
    "Visa alternativet 'Spara kärnåsidosättningar' i menyn 'Åsidosättningar'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Visa 'Spara åsidosättningar för innehållskatalog'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   "Visa alternativet 'Spara åsidosättningar för innehållskatalog' i menyn 'Åsidosättningar'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
    "Visa 'Åsidosättningar för sparat spel'"
    )
@@ -7153,6 +7177,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
    "Topplistespårare"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   "Visar spårare på skärmen med aktuellt värde för aktiva ledartavlor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
