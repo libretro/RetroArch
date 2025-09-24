@@ -582,6 +582,8 @@ static int16_t xinput_joypad_state_func(
 static void xinput_joypad_poll(void)
 {
    int i;
+   bool has_active_ports = false;
+   
    /* Hotplugging detection: scanning one port at a time every few frames,
     * to avoid polling overload and framerate drops. */
    xinput_poll_counter++;
@@ -613,11 +615,25 @@ static void xinput_joypad_poll(void)
 
    for (i = 0; i < 4; ++i)
    {
+      if (xinput_active_port[i])
+         has_active_ports = true;
+   }
+
+   for (i = 0; i < 4; ++i)
+   {
       DWORD status;
       bool success, new_connected;
       xinput_joypad_state *state;
+       /* On UWP, controllers may become available after initialization.
+       * If no ports are currently active, we need to poll all ports
+       * to catch any late arriving controllers. */
+#ifdef __WINRT__
+      if (!xinput_active_port[i] && has_active_ports)
+         continue;
+#else
       if (!xinput_active_port[i])
          continue;
+#endif
 
       state         = &g_xinput_states[i];
       status        = g_XInputGetStateEx(i, &state->xstate);
