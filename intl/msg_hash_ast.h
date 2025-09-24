@@ -655,6 +655,10 @@ MSG_HASH(
    "Compatibilidá con OpenGL ES"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
+   "Compatibilidá cola función multifilu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
    "Compatibilidá con KMS/EGL"
    )
@@ -912,6 +916,10 @@ MSG_HASH(
 /* Main Menu > Configuration File */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   "Cargar una configuración"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS,
    "Carga una configuración esistente ya sustitúi los valores actuales."
    )
@@ -1085,12 +1093,20 @@ MSG_HASH(
    "Ficheru ensin formatu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+   "Regulación de fotogrames"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   "Camuda la configuración del rebobináu, l'avance rápidu ya la cámara lenta."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
    "Grabación"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "Camuda los axustes de grabación."
+   "Camuda la configuración de grabación."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
@@ -1151,6 +1167,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Direutorios"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   "Camuda los direutorios predeterminaos onde se llocalicen los ficheros."
    )
 
 /* Core option category placeholders for icons */
@@ -1235,6 +1255,14 @@ MSG_HASH(
 /* Settings > Video */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+   "SwitchRes pa pantalles CTR"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   "Xenera señales natives a resolución baxa pa les pantalles CRT."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    "Salida"
    )
@@ -1299,6 +1327,10 @@ MSG_HASH(
 #endif
 #endif
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   "Retrasu del asolombrador automáticu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    "Filtru de videu"
    )
@@ -1309,6 +1341,10 @@ MSG_HASH(
 
 /* Settings > Video > CRT SwitchRes */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+   "SwitchRes pa pantalles CTR"
+   )
 
 /* Settings > Video > Output */
 
@@ -1324,6 +1360,10 @@ MSG_HASH(
 /* Settings > Video > Fullscreen Mode */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   "Mou de ventana a pantalla completa"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    "Llargor de la pantalla completa"
    )
@@ -1337,6 +1377,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    "Opacidá de la ventana"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   "Amosar les decoraciones de ventana"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
@@ -1355,8 +1399,24 @@ MSG_HASH(
    "Llargor de la ventana"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   "Configura'l llargor predetermináu p'amosar la ventana."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
    "Altor de la ventana"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+   "Configura l'altor predetermináu p'amosar la ventana."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   "Llargor máximu de la ventana"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   "Altor máximu de la ventana"
    )
 
 /* Settings > Video > Scaling */
@@ -1367,7 +1427,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-   "Proporción d'aspeutu"
+   "Proporción del aspeutu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
@@ -1551,6 +1611,10 @@ MSG_HASH(
    "Mecedor"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   "Reproduz fluxos d'audiu simultáneos, tamién nel menú."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    "Activar el soníu «OK»"
    )
@@ -1575,13 +1639,25 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
-   "El númberu máximu d'usuarios sofitaos por RetroArch."
+   "El númberu máximu d'usuarios compatibles con RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   "Remapiar los controles esti nucleu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Configuración automática"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+   "Configura automáticamente los mandos que tienen un perfil, al estilu Plug-and-Play."
+   )
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "Caltién les combinaciones de la tecla «Windows» dientro de l'aplicación."
+   )
 #endif
 #ifdef ANDROID
 #endif
@@ -3365,7 +3441,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Proporción d'aspeutu"
+   "Proporción del aspeutu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
@@ -4344,7 +4420,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SLOW_MOTION,
-   "Movimientu lentu."
+   "Cámara lenta."
    )
 MSG_HASH(
    MSG_FAST_FORWARD,
