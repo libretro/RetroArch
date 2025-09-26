@@ -247,16 +247,13 @@ void gfx_ctx_wl_get_video_size_common(void *data,
 
       wl->reported_display_size = true;
 
-      /* If window is not ready get any monitor */
-      if (!oi)
-         wl_list_for_each(od, &wl->all_outputs, link)
-         {
-            oi = od->output;
-            break;
-         };
-
-      *width  = oi->width;
-      *height = oi->height;
+      /* We won't know which monitor we're targeting until the surface enters it.
+       * This only happens once we've attached a buffer to it. */
+      if (oi)
+      {
+         *width  = oi->width;
+         *height = oi->height;
+      }
    }
    else
    {
