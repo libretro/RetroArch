@@ -142,6 +142,10 @@ MSG_HASH(
    "A hagyományos asztali menü megnyitása."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Kioszk mód kikapcsolása"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Az összes konfigurációs beállítás megjelenítése."
    )
@@ -4786,6 +4790,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "A játékállás automatikus mentése rendszeres időközönként, újrajátszás felvétele közben. Alapértelmezésben ki van kapcsolva, hacsak nincs más beállítás. Az időköz másodpercekben értendő. 0-s érték letiltja az automatikus mentést."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Az újrajátszásban tárolt ellenőrzőpontok kibontása normál visszajátszás közben."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Újrajátszás ellenőrzőpontjainak kibontása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Az újrajátszásban tárolt ellenőrzőpontok kibontása normál visszajátszás közben. A legtöbb magnál érdemes bekapcsolni, de néhány esetben rángatást okozhat a tartalom kibontása közben."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -13172,6 +13188,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
    "%.*s csatlakozott %.*s bemeneti eszközökkel"
+   )
+MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d játékos"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d játékos (%d néző)"
    )
 MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
