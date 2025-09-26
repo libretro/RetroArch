@@ -1,19 +1,17 @@
 TARGET := retroarch_wiiu
 
-BUILD_HBL_ELF              = 1
-BUILD_RPX                  = 1
 DEBUG                      = 0
 GRIFFIN_BUILD              = 0
 SALAMANDER_BUILD           = 0
-HAVE_STATIC_DUMMY ?= 0
+HAVE_STATIC_DUMMY         ?= 0
 WHOLE_ARCHIVE_LINK         = 0
 WIIU_HID                   = 1
 HAVE_HID                   = 1
 HAVE_RUNAHEAD              = 1
 WIIU_LOG_RPX               = 0
 BUILD_DIR                  = objs/wiiu
-PC_DEVELOPMENT_TCP_PORT    ?=
-LOAD_WITHOUT_CORE_INFO     ?= 0
+PC_DEVELOPMENT_TCP_PORT   ?=
+LOAD_WITHOUT_CORE_INFO    ?= 0
 
 ifeq ($(SALAMANDER_BUILD),1)
    BUILD_DIR := $(BUILD_DIR)-salamander
@@ -37,21 +35,44 @@ INCDIRS :=
 #-----------------------------
 # Features and object files
 
-OBJ += wiiu/main.o
 OBJ += wiiu/system/memory.o
-OBJ += wiiu/system/atomic.o
 OBJ += wiiu/system/exception_handler.o
 OBJ += wiiu/system/missing_libc_functions.o
-OBJ += wiiu/fs/sd_fat_devoptab.o
-OBJ += wiiu/fs/fs_utils.o
-OBJ += wiiu/hbl.o
-
-RPX_OBJ = $(BUILD_DIR)/wiiu/system/stubs_rpl.o
-HBL_ELF_OBJ = $(BUILD_DIR)/wiiu/system/dynamic.o \
-              $(BUILD_DIR)/wiiu/system/stubs_elf.o
+OBJ += wiiu/system/stubs_rpl.o
 
 ifeq ($(SALAMANDER_BUILD),1)
-   DEFINES += -DRARCH_CONSOLE -DIS_SALAMANDER
+   DEFINES += -DRARCH_CONSOLE -DIS_SALAMANDER -DHAVE_LIBMOCHA
+
+   DEFINES += -DHAVE_LIBMOCHA
+   INCDIRS += -Ideps/libmocha/include
+   OBJ += deps/libmocha/source/disc_interface.o \
+      deps/libmocha/source/fsa.o \
+      deps/libmocha/source/utils.o \
+      deps/libmocha/source/devoptab/devoptab_fsa.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_chdir.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_chmod.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_close.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_dirclose.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_dirnext.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_diropen.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_dirreset.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_fchmod.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_fstat.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_fsync.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_link.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_mkdir.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_open.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_read.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_rename.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_rmdir.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_seek.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_stat.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_statvfs.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_truncate.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_unlink.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_utils.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_utimes.o \
+      deps/libmocha/source/devoptab/devoptab_fsa_write.o
 
    OBJ += frontend/frontend_salamander.o
    OBJ += frontend/frontend_driver.o
@@ -109,8 +130,8 @@ endif
       OBJ += griffin/griffin.o griffin/griffin_cpp.o
 
       INCDIRS += -Ilibretro-common/include/compat/zlib
-      # for stb, libfat, iosuhax
-      INCDIRS += -Ideps -Ideps/libfat/include -Ideps/libiosuhax/include
+      # for stb, libfat, libmocha
+      INCDIRS += -Ideps -Ideps/libfat/include -Ideps/libmocha/include
       # pad_functions uses wiiu/input.h
       INCDIRS += -Iinput/include
       INCDIRS += -Ideps/SPIRV-Cross
@@ -118,7 +139,7 @@ endif
       DEFINES += -DHAVE_AUDIOMIXER
       DEFINES += -DHAVE_RWAV
       DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_CHEATS -DHAVE_RGUI -DHAVE_LIBRETRODB
-		DEFINES += -DHAVE_REWIND
+      DEFINES += -DHAVE_REWIND
       DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_CC_RESAMPLER
       DEFINES += -DHAVE_SPIRV_CROSS -DHAVE_SLANG
       DEFINES += -DHAVE_STB_FONT -DHAVE_STB_VORBIS -DHAVE_LANGEXTRA -DHAVE_LIBRETRODB -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_NETPLAYDISCOVERY
@@ -126,7 +147,7 @@ endif
       #DEFINES += -DHAVE_FREETYPE
       DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
       DEFINES += -DHAVE_HID
-      DEFINES += -DWANT_LIBFAT -DHAVE_LIBFAT -DWANT_IOSUHAX -DHAVE_IOSUHAX
+      DEFINES += -DWANT_LIBFAT -DHAVE_LIBFAT -DWANT_LIBMOCHA -DHAVE_LIBMOCHA
       DEFINES += -DHAVE_CORE_INFO_CACHE
       DEFINES += -DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
 
@@ -171,7 +192,7 @@ endif
       HAVE_STATIC_VIDEO_FILTERS = 1
       HAVE_STATIC_AUDIO_FILTERS = 1
       WANT_LIBFAT = 1
-      WANT_IOSUHAX = 1
+      WANT_LIBMOCHA = 1
       HAVE_CORE_INFO_CACHE = 1
 
       include Makefile.common
@@ -202,17 +223,23 @@ INCDIRS += -Ilibretro-common/include
 INCDIRS += -Iwiiu
 INCDIRS += -Iwiiu/include
 
-CFLAGS  := -mcpu=750 -meabi -mhard-float
-CFLAGS  += -Werror=implicit-function-declaration
-CFLAGS  += -ffunction-sections -fdata-sections
-#CFLAGS += -fomit-frame-pointer -mword-relocations
-CFLAGS += -Wall
+FLAGS   := -mcpu=750 -meabi -mhard-float
+FLAGS   += -ffunction-sections -fdata-sections
+FLAGS   += -Wall
 
 ifeq ($(DEBUG), 1)
-   CFLAGS += -O0 -g
+   FLAGS += -O0 -g -DDEBUG
 else
-   CFLAGS += -O3
+   FLAGS += -O3 -DNDEBUG
 endif
+
+CFLAGS := $(FLAGS) -Werror=implicit-function-declaration
+# Some Wii U dependencies and headers are using C++ style comments, so use gnu89 here instead of C89 proper
+CFLAGS += -std=gnu89 -Wno-scalar-storage-order
+# wut's 'gx2/shaders.h' isn't c89-compliant
+$(BUILD_DIR)/wiiu/shader_utils.o: CFLAGS += -std=c99
+
+CXXFLAGS := $(FLAGS)
 
 ASFLAGS := $(CFLAGS) -mregnames
 
@@ -248,15 +275,6 @@ ifeq ($(HAVE_BUILTINZLIB),0)
 endif
 endif
 
-LDFLAGS += -Wl,--gc-sections
-
-RPX_LDFLAGS      := -pie -fPIE
-RPX_LDFLAGS      += -z common-page-size=64 -z max-page-size=64
-RPX_LDFLAGS      += -T wiiu/link_rpl.ld
-RPX_LDFLAGS      += -nostartfiles
-
-HBL_ELF_LDFLAGS  := -T wiiu/link_elf.ld
-
 #-----------------------------
 # Compiler setup
 
@@ -267,7 +285,7 @@ ifeq ($(strip $(DEVKITPRO)),)
 $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitPRO")
 endif
 
-export PATH   := $(PATH):$(DEVKITPPC)/bin
+export PATH   := $(PATH):$(DEVKITPPC)/bin:$(DEVKITPRO)/tools/bin
 
 PREFIX := powerpc-eabi-
 
@@ -280,25 +298,19 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
-ELF2RPL   := wiiu/wut/elf2rpl/elf2rpl
+WUT_ROOT ?= $(DEVKITPRO)/wut
 
-ifneq ($(findstring Linux,$(shell uname -a)),)
-else ifneq ($(findstring Darwin,$(shell uname -a)),)
-else
-   ELF2RPL   := $(ELF2RPL).exe
-endif
+RPXSPECS := -specs=$(WUT_ROOT)/share/wut.specs
+RPLSPECS := -specs=$(WUT_ROOT)/share/wut.specs -specs=$(WUT_ROOT)/share/rpl.specs
+
+INCDIRS += -I$(WUT_ROOT)/include
+LIBDIRS += -L$(WUT_ROOT)/lib
+LIBS += -lwut
 
 #-----------------------------
 # Targets and build rules
 
-TARGETS :=
-ifeq ($(BUILD_RPX), 1)
-TARGETS += $(TARGET).rpx
-endif
-
-ifeq ($(BUILD_HBL_ELF), 1)
-TARGETS += $(TARGET).elf
-endif
+TARGETS := $(TARGET).rpx
 
 DEPFLAGS    = -MT $@ -MMD -MP -MF $(BUILD_DIR)/$*.depend
 
@@ -365,38 +377,21 @@ $(BUILD_DIR)/%.o: %.s %.depend
 %.depend: ;
 %.last: ;
 
-$(ELF2RPL):
-	@$(if $(Q), echo MAKE $@,)
-	$(Q)$(MAKE) -C wiiu/wut/elf2rpl/
-
-$(BUILD_DIR)/$(TARGET).elf: $(OBJ) $(HBL_ELF_OBJ) libretro_wiiu.a wiiu/link_elf.ld .$(TARGET).elf.last
+$(BUILD_DIR)/$(TARGET).rpx.elf: $(OBJ) libretro_wiiu.a
 	@$(if $(Q), echo LD $@,)
-	@touch .$(TARGET).elf.last
-	$(Q)$(LD) $(OBJ) $(HBL_ELF_OBJ) $(LDFLAGS) $(HBL_ELF_LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
+	$(Q)$(LD) $(OBJ) $(RPXSPECS) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
-$(BUILD_DIR)/$(TARGET).rpx.elf: $(OBJ) $(RPX_OBJ) libretro_wiiu.a wiiu/link_elf.ld
-	@$(if $(Q), echo LD $@,)
-	$(Q)$(LD) $(OBJ) $(RPX_OBJ) $(LDFLAGS) $(RPX_LDFLAGS) $(LIBDIRS)  $(LIBS) -o $@
-
-$(BUILD_DIR)/$(TARGET).large.rpx: $(BUILD_DIR)/$(TARGET).rpx.elf $(ELF2RPL) .$(TARGET).rpx.large.last
+$(BUILD_DIR)/$(TARGET).rpx: $(BUILD_DIR)/$(TARGET).rpx.elf
 	@$(if $(Q), echo ELF2RPL $@,)
-	@touch .$(TARGET).rpx.large.last
-	$(Q)-$(ELF2RPL) $< $@
-
-$(BUILD_DIR)/$(TARGET).rpx: $(BUILD_DIR)/$(TARGET).large.rpx .$(TARGET).rpx.last
-	@$(if $(Q), echo COMPRESS $@,)
-	@touch .$(TARGET).rpx.large.last
-	$(Q)wiiurpxtool -c $< $@
+	$(Q)elf2rpl $< $@
 
 clean:
 	@$(if $(Q), echo $@,)
-	$(Q)rm -f $(OBJ) $(RPX_OBJ) $(HBL_ELF_OBJ) $(TARGET).elf $(TARGET).rpx.elf $(TARGET).rpx
-	$(Q)rm -f $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).rpx.elf $(BUILD_DIR)/$(TARGET).large.rpx $(BUILD_DIR)/$(TARGET).rpx
-	$(Q)rm -f .$(TARGET).elf.last .$(TARGET).rpx.elf.last .$(TARGET).rpx.large.last .$(TARGET).rpx.last
-	$(Q)rm -f $(OBJ:.o=.depend) $(RPX_OBJ:.o=.depend) $(HBL_ELF_OBJ:.o=.depend)
-	$(Q)$(MAKE) -C wiiu/wut/elf2rpl/ clean
+	$(Q)rm -f $(OBJ) $(TARGET).rpx.elf $(TARGET).rpx
+	$(Q)rm -f $(BUILD_DIR)/$(TARGET).rpx.elf $(BUILD_DIR)/$(TARGET).rpx
+	$(Q)rm -f $(OBJ:.o=.depend)
 
 .PHONY: clean all
 .PRECIOUS: %.depend %.last
 
--include $(OBJ:.o=.depend) $(RPX_OBJ:.o=.depend) $(HBL_ELF_OBJ:.o=.depend)
+-include $(OBJ:.o=.depend)

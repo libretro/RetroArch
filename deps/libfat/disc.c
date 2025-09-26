@@ -40,16 +40,16 @@ The list is terminated by a NULL/NULL entry.
 
 /* ====================== Wii U ====================== */
 #if   defined (__wiiu__)
-#include <iosuhax_disc_interface.h>
+#include <mocha/disc_interface.h>
 
 static const DISC_INTERFACE* get_io_wiiu_sd (void)
 {
-	return &IOSUHAX_sdio_disc_interface;
+	return &Mocha_sdio_disc_interface;
 }
 
 static const DISC_INTERFACE* get_io_wiiu_usb (void)
 {
-	return &IOSUHAX_usb_disc_interface;
+	return &Mocha_usb_disc_interface;
 }
 
 const INTERFACE_ID _FAT_disc_interfaces[] = {
