@@ -1493,6 +1493,10 @@ MSG_HASH(
    "Người dùng"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   "Thay đổi cài đặt quyền riêng tư, tài khoản và tên người dùng."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    "Thư mục"
    )
@@ -1520,10 +1524,34 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "Input Driver"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "Trình điều khiển Linux cho bộ điều khiển được kết nối qua cổng song song thông qua bộ điều hợp đặc biệt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "Trình điều khiển bộ điều khiển dựa trên thư viện SDL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   "Trình điều khiển bộ điều khiển với giao diện udev, thường được khuyến nghị. Sử dụng API evdev joypad mới nhất để hỗ trợ cần điều khiển. Nó hỗ trợ hotpluging và phản hồi cưỡng bức.\nTheo mặc định trong hầu hết các bản phân phối, các nút /dev/input chỉ dành cho root (chế độ 600). Bạn có thể thiết lập quy tắc udev để cho phép những nút này truy cập được bởi người dùng không ph[...]"
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    "Video Driver"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "Trình điều khiển OpenVG. Sử dụng API đồ họa vector 2D được tăng tốc bằng phần cứng OpenVG."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "Trình điều khiển GDI. Sử dụng giao diện Windows cũ. Không khuyến khích sử dụng."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   "Trình điều khiển video hiện tại."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -1585,6 +1613,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Âm thanh Sync"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "CẢNH BÁO: Hiện tượng nhấp nháy nhanh có thể gây ra hiện tượng lưu ảnh trên một số màn hình. Tự chịu rủi ro khi sử dụng // Chèn khung đen giữa các khung hình. Có thể giảm đáng kể hiện tượng nhòe chuyển động bằng cách mô phỏng quét CRT, nhưng độ sáng sẽ giảm."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "Chèn khung hình đen vào giữa các khung hình để tăng cường độ rõ nét của chuyển động. Chỉ sử dụng tùy chọn được chỉ định cho tần số quét màn hình hiện tại của bạn. Không sử dụng ở tần số quét không phải bội số của 60Hz, chẳng hạn như 144Hz, 165Hz, v.v. Không kết hợp với Swap Interval > 1, khung hình phụ, Frame Delay hoặc Sync to Exact Content Framerate. Bật VRR hệ thống là được, nhưng kh[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Chèn khung đen - Khung tối"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
