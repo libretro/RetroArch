@@ -4424,6 +4424,10 @@ MSG_HASH(
    "Tillåter kärnor att visa alternativ i kategoribaserade undermenyer. OBS: Kärnan måste laddas om för att ändringar ska börja gälla."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
+   "Mellanlagra infofiler för kärna"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
    "Behåller en ihållande lokal cache av installerad kärninformation. Minskar inläsningstiderna avsevärt på plattformar med långsam diskåtkomst."
    )
