@@ -1557,6 +1557,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    "Trình điều khiển âm thanh"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   "Trình điều khiển hệ thống âm thanh mở cũ."
+   )
 #ifdef HAVE_MICROPHONE
 #endif
 MSG_HASH(
@@ -1627,8 +1631,16 @@ MSG_HASH(
    "Chèn khung đen - Khung tối"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "CẢNH BÁO: Hiện tượng nhấp nháy nhanh có thể gây ra hiện tượng lưu ảnh trên một số màn hình. Tự chịu rủi ro khi sử dụng // Mô phỏng một đường quét cơ bản trên nhiều khung hình phụ bằng cách chia màn hình theo chiều dọc và hiển thị từng phần của màn hình theo số lượng khung hình phụ."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Kích hoạt GPU Screenshot"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "CẢNH BÁO: Hiện tượng nhấp nháy nhanh có thể gây ra hiện tượng lưu ảnh trên một số màn hình. Tự chịu rủi ro khi sử dụng // Mô phỏng một đường quét cơ bản trên nhiều khung hình phụ bằng cách chia màn hình theo chiều dọc và hiển thị từng phần của màn hình theo số lượng khung hình phụ."
    )
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
@@ -1682,6 +1694,10 @@ MSG_HASH(
 /* Settings > Video > Scaling */
 
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Làm tròn xuống hoặc lên đến số nguyên tiếp theo. 'Thông minh' sẽ giảm xuống mức dưới tỷ lệ khi hình ảnh bị cắt quá nhiều."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
    "Config Danh mục"
    )
@@ -1702,6 +1718,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    "Tự động"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "Độ trễ khung hình"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -1774,6 +1794,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Âm thanh Latency (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   "Độ trễ âm thanh tối đa tính bằng mili giây. Trình điều khiển đặt mục tiêu duy trì độ trễ thực tế ở mức 50% giá trị này. Có thể không được chấp nhận nếu trình điều khiển âm thanh không thể cung cấp độ trễ nhất định."
    )
 
 #ifdef HAVE_MICROPHONE
