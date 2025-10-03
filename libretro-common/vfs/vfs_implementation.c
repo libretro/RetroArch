@@ -492,9 +492,6 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          stream->buf = (char*)memalign(0x40, bufsize);
          if (stream->fp)
             setvbuf(stream->fp, stream->buf, _IOFBF, bufsize);
-         stream->buf = (char*)calloc(1, 0x4000);
-         if (stream->fp)
-            setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
       }
 #endif
    }

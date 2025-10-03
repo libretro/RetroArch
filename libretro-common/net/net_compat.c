@@ -29,6 +29,11 @@
 
 #include <net/net_compat.h>
 
+#ifdef WIIU
+#include <nn/nets2.h>
+#include <sys/socket.h>
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX)
 #if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
 const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
@@ -237,22 +242,26 @@ int inet_pton(int af, const char *src, void *dst)
 #elif defined(WIIU)
 #include <malloc.h>
 
-static int _net_compat_thread_entry(int argc, const char **argv)
+static int net_compat_thread_entry(int argc, const char **argv)
 {
-   void *buf = memalign(128, WIIU_RCVBUF + WIIU_SNDBUF);
+   (void)argc; (void)argv;
+
+   const int somemopt_buffer_area_size = 0x200000; /* 2 mibs */
+   void *buf = memalign(0x40, somemopt_buffer_area_size);
 
    if (!buf)
       return -1;
 
-   somemopt(1, buf, WIIU_RCVBUF + WIIU_SNDBUF, 0);
+   somemopt(SOMEMOPT_REQUEST_INIT, buf, somemopt_buffer_area_size, SOMEMOPT_FLAGS_NONE);
 
    free(buf);
 
    return 0;
 }
 
-static void _net_compat_thread_cleanup(OSThread *thread, void *stack)
+static void net_compat_thread_cleanup(OSThread *thread, void *stack)
 {
+   (void)thread;
    free(stack);
 }
 
@@ -576,15 +585,17 @@ failure:
 
    if (!initialized)
    {
+      /* freed in net_compat_thread_cleanup */
       void *stack = malloc(0x1000);
+      /* Do not like SIGPIPE killing our app. */
+      signal(SIGPIPE, SIG_IGN);
 
       if (!stack)
          return false;
 
-      socket_lib_init();
-
-      if (!OSCreateThread(&net_compat_thread, _net_compat_thread_entry,
-            0, NULL, (void*)((size_t)stack + 0x1000), 0x1000, 3,
+      /* TODO port to rthreads */
+      if (!OSCreateThread(&net_compat_thread, net_compat_thread_entry,
+            0, NULL, stack + 0x1000, 0x1000, 3,
             OS_THREAD_ATTRIB_AFFINITY_ANY))
       {
          free(stack);
@@ -593,7 +604,7 @@ failure:
       }
 
       OSSetThreadName(&net_compat_thread, "Network compat thread");
-      OSSetThreadDeallocator(&net_compat_thread, _net_compat_thread_cleanup);
+      OSSetThreadDeallocator(&net_compat_thread, net_compat_thread_cleanup);
       OSResumeThread(&net_compat_thread);
 
       initialized = true;
