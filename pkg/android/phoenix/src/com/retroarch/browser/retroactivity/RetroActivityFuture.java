@@ -66,7 +66,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     
-    try { request60HzIfPossible(); } catch (Throwable ignored) {}
+    try { requestRefreshIfPossible(); } catch (Throwable ignored) {}
     isRunning = true;
     mDecorView = getWindow().getDecorView();
 
@@ -77,7 +77,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onNewIntent(Intent intent) {
     super.onNewIntent(intent);
-    try { request60HzIfPossible(); } catch (Throwable ignored) {}
+    try { requestRefreshIfPossible(); } catch (Throwable ignored) {}
     // Extract game parameters from new intent
     String newRom = intent.getStringExtra("ROM");
     String newCore = intent.getStringExtra("LIBRETRO");
@@ -249,6 +249,57 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   }
 
   /** Requests a 60 Hz mode matching the current resolution, if available. */
+  private void request60HzIfPossible() {
+      final Window window = getWindow();
+      if (window == null) return;
+      final WindowManager wm = getWindowManager();
+      if (wm == null) return;
+
+      try {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // API 23+
+              final Display display = wm.getDefaultDisplay();
+              if (display == null) return;
+              final Display.Mode current = display.getMode();
+              final Display.Mode[] modes = display.getSupportedModes();
+              int bestId = current.getModeId();
+              float bestScore = Float.MAX_VALUE;
+
+              // Prefer 60 Hz at current resolution; penalize >60.5 so we don't land on 120
+              for (Display.Mode m : modes) {
+                  if (m.getPhysicalWidth() == current.getPhysicalWidth()
+                          && m.getPhysicalHeight() == current.getPhysicalHeight()) {
+                      final float refresh = m.getRefreshRate();
+                      float penalty = Math.abs(refresh - 60.0f);
+                      if (refresh > 60.5f) penalty += 1000f;
+                      if (penalty < bestScore) {
+                          bestScore = penalty;
+                          bestId = m.getModeId();
+                      }
+                  }
+              }
+
+              WindowManager.LayoutParams lp = window.getAttributes();
+              // preferredDisplayModeId (via reflection for vendor quirks)
+              try {
+                  lp.getClass().getField("preferredDisplayModeId").setInt(lp, bestId);
+              } catch (NoSuchFieldException ignored) { }
+              // preferredRefreshRate (hint)
+              try {
+                  lp.getClass().getField("preferredRefreshRate").setFloat(lp, 60.0f);
+              } catch (NoSuchFieldException ignored) { }
+              window.setAttributes(lp);
+          } else {
+              // Very old APIs: try legacy setter via reflection
+              try {
+                  Window.class.getMethod("setPreferredRefreshRate", float.class)
+                          .invoke(window, 60.0f);
+              } catch (Throwable ignored) { }
+          }
+      } catch (Throwable t) {
+          try { Log.w("RetroArch", "Failed to request 60Hz: " + t); } catch (Throwable ignored) { }
+      }
+  }
+
   private void requestRefreshIfPossible(float targetHz) {
       final Window window = getWindow();
       if (window == null) return;
@@ -302,7 +353,6 @@ public final class RetroActivityFuture extends RetroActivityCamera {
           try { Log.w("RetroArch", "Failed to request " + targetHz + "Hz: " + t); } catch (Throwable ignored) {}
       }
   }
-
 
   // 2a) Try to read FPS from the most recent RetroArch log (it prints "FPS: 59.73" at core init)
   private Float detectFpsFromLog() {
