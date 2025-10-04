@@ -345,7 +345,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
                   lp.getClass().getField("preferredRefreshRate").setFloat(lp, targetHz);
               } catch (NoSuchFieldException ignored) {}
               window.setAttributes(lp);
-               Log.w("[Retroarch]","Window target FPS SET " + bestId + targetHz);
+               Log.w("[Retroarch]","Window target FPS SET " + bestId + " - " + targetHz);
           } else {
               try {
                   Window.class.getMethod("setPreferredRefreshRate", float.class)
