@@ -249,76 +249,27 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     }
   }
 
-  /** Requests a 60 Hz mode matching the current resolution, if available. */
-  private void request60HzIfPossible() {
-      final Window window = getWindow();
-      if (window == null) return;
-      final WindowManager wm = getWindowManager();
-      if (wm == null) return;
-
-      try {
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // API 23+
-              final Display display = wm.getDefaultDisplay();
-              if (display == null) return;
-              final Display.Mode current = display.getMode();
-              final Display.Mode[] modes = display.getSupportedModes();
-              int bestId = current.getModeId();
-              float bestScore = Float.MAX_VALUE;
-
-              // Prefer 60 Hz at current resolution; penalize >60.5 so we don't land on 120
-              for (Display.Mode m : modes) {
-                  if (m.getPhysicalWidth() == current.getPhysicalWidth()
-                          && m.getPhysicalHeight() == current.getPhysicalHeight()) {
-                      final float refresh = m.getRefreshRate();
-                      float penalty = Math.abs(refresh - 60.0f);
-                      if (refresh > 60.5f) penalty += 1000f;
-                      if (penalty < bestScore) {
-                          bestScore = penalty;
-                          bestId = m.getModeId();
-                      }
-                  }
-              }
-
-              WindowManager.LayoutParams lp = window.getAttributes();
-              // preferredDisplayModeId (via reflection for vendor quirks)
-              try {
-                  lp.getClass().getField("preferredDisplayModeId").setInt(lp, bestId);
-              } catch (NoSuchFieldException ignored) { }
-              // preferredRefreshRate (hint)
-              try {
-                  lp.getClass().getField("preferredRefreshRate").setFloat(lp, 60.0f);
-              } catch (NoSuchFieldException ignored) { }
-              window.setAttributes(lp);
-          } else {
-              // Very old APIs: try legacy setter via reflection
-              try {
-                  Window.class.getMethod("setPreferredRefreshRate", float.class)
-                          .invoke(window, 60.0f);
-              } catch (Throwable ignored) { }
-          }
-      } catch (Throwable t) {
-          try { Log.w("RetroArch", "Failed to request 60Hz: " + t); } catch (Throwable ignored) { }
-      }
-  }
 
   private void requestRefreshIfPossible(float targetHz) {
-    Log.w("[Retroarch]","setting target FPS");
+      Log.w("[Retroarch FPS]", "setting target FPS");
+
       final Window window = getWindow();
       if (window == null) return;
       final WindowManager wm = getWindowManager();
       if (wm == null) return;
-  Log.w("[Retroarch]","Window found setting target FPS");
+
+      Log.w("[Retroarch FPS]", "Window found setting target FPS");
+
+      // --- Your rule: map target -> desired 60/120 ---
+      final float desiredHz = (targetHz >= 118f || targetHz <= 52f) ? 120f : 60f;
+
       try {
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // API 23+
               final Display display = wm.getDefaultDisplay();
               if (display == null) return;
+
               final Display.Mode current = display.getMode();
               final Display.Mode[] modes = display.getSupportedModes();
-
-              // Snap target to ‘nice’ broadcast rates when very close
-              if (Math.abs(targetHz - 59.94f) < 0.15f) targetHz = 59.94f;
-              else if (Math.abs(targetHz - 60.0f) < 0.15f) targetHz = 60.0f;
-              else if (Math.abs(targetHz - 50.0f) < 0.15f) targetHz = 50.0f;
 
               int bestId = current.getModeId();
               float bestScore = Float.MAX_VALUE;
@@ -327,9 +278,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
                   if (m.getPhysicalWidth() == current.getPhysicalWidth()
                           && m.getPhysicalHeight() == current.getPhysicalHeight()) {
                       final float refresh = m.getRefreshRate();
-                      // cost = distance from target; add small bias against >120 for retro content
-                      float cost = Math.abs(refresh - targetHz);
-                      if (targetHz <= 62f && refresh > 90f) cost += 5f; // avoid 90/120 when we want ~60
+                      final float cost = Math.abs(refresh - desiredHz);
                       if (cost < bestScore) {
                           bestScore = cost;
                           bestId = m.getModeId();
@@ -338,73 +287,50 @@ public final class RetroActivityFuture extends RetroActivityCamera {
               }
 
               WindowManager.LayoutParams lp = window.getAttributes();
-              try {
-                  lp.getClass().getField("preferredDisplayModeId").setInt(lp, bestId);
-              } catch (NoSuchFieldException ignored) {}
-              try {
-                  lp.getClass().getField("preferredRefreshRate").setFloat(lp, targetHz);
-              } catch (NoSuchFieldException ignored) {}
+              try { lp.getClass().getField("preferredDisplayModeId").setInt(lp, bestId); } catch (Throwable ignored) {}
+              try { lp.getClass().getField("preferredRefreshRate").setFloat(lp, desiredHz); } catch (Throwable ignored) {}
               window.setAttributes(lp);
-               Log.w("[Retroarch]","Window target FPS SET " + bestId + " - " + targetHz);
+
+              Log.w("[Retroarch FPS]", "Window target Hz SET modeId=" + bestId + " desired=" + desiredHz + " (from target=" + targetHz + ")");
           } else {
+              // Legacy fallback (may no-op on many builds)
               try {
                   Window.class.getMethod("setPreferredRefreshRate", float.class)
-                          .invoke(window, targetHz);
-                 Log.w("[Retroarch]","else Window target FPS SET " + targetHz);
-              } catch (Throwable ignored) {}
+                          .invoke(window, desiredHz);
+                  Log.w("[Retroarch FPS]", "legacy setPreferredRefreshRate(" + desiredHz + ")");
+              } catch (Throwable ignored) {
+                  // As another legacy attempt, try preferredRefreshRate on LayoutParams if present
+                  try {
+                      WindowManager.LayoutParams lp = window.getAttributes();
+                      lp.getClass().getField("preferredRefreshRate").setFloat(lp, desiredHz);
+                      window.setAttributes(lp);
+                      Log.w("[Retroarch FPS]", "legacy LayoutParams preferredRefreshRate=" + desiredHz);
+                  } catch (Throwable ignored2) {}
+              }
           }
       } catch (Throwable t) {
-          try { Log.w("RetroArch", "Failed to request " + targetHz + "Hz (FPS): " + t); } catch (Throwable ignored) {}
+          try { Log.w("Retroarch FPS", "Failed to request " + desiredHz + "Hz (from target " + targetHz + "): " + t); } catch (Throwable ignored) {}
       }
-  }
-
-
-  // 2b) Fallback: guess by content extension/system
-  private Float guessFpsFromContentPath(String pathLower) {
-      if (pathLower == null) return null;
-      // PAL first
-      if (pathLower.contains("(e)") || pathLower.contains("[pal]") || pathLower.contains("pal"))
-          return 50.0f;
-
-      // System heuristics (common libretro rates)
-      if (pathLower.endsWith(".gb") || pathLower.endsWith(".gbc")) return 59.73f;
-      if (pathLower.endsWith(".gba")) return 59.73f; // GBA nominal
-      if (pathLower.endsWith(".nes") || pathLower.endsWith(".fds")) return 60.0f;
-      if (pathLower.endsWith(".sfc") || pathLower.endsWith(".smc")) return 60.0f;
-      if (pathLower.endsWith(".gen") || pathLower.endsWith(".md") || pathLower.endsWith(".bin")) return 59.92f;
-      if (pathLower.endsWith(".pce")) return 59.82f;
-      if (pathLower.endsWith(".ngp") || pathLower.endsWith(".ngc")) return 60.0f;
-      if (pathLower.endsWith(".n64") || pathLower.endsWith(".z64") || pathLower.endsWith(".v64")) return 60.0f;
-      // Archive inner names
-      if (pathLower.contains(".gba#") || pathLower.contains(".gba|")) return 59.73f;
-
-      return null;
   }
 
 
   private static native float nativeGetContentFps();
 
   private void requestNativeGameRefreshRate() {
-    Log.w("[Retroarch]","requestNative FPS");
+    Log.w("[Retroarch FPS]","requestNative FPS");
     Float fps = 0f;
      try { fps = nativeGetContentFps(); } catch (Throwable ignored) {}
      
-      if (fps <= 0f || fps == null) {
-         Log.w("[Retroarch]","Native FPS not found");
-          // Try to get the current content path from intent extras, if available
-          String content = getIntent() != null ? getIntent().getStringExtra("content_path") : null;
-          fps = guessFpsFromContentPath(content != null ? content.toLowerCase() : null);
-      }
-      if (fps == null || fps <= 0f) {
-         Log.w("[Retroarch]","Content FPS not found");
-        fps = 60.0f;
-      }
+    if (fps == null || fps <= 0f) {
+      Log.w("[Retroarch FPS]","requestNative FPS not found setting default");
+      fps = 60.0f;
+    }
 
-      // Clamp to sane range
-      if (fps < 45f) fps = 50.0f;      // avoid weird low reads
-      if (fps > 65f && fps < 85f) fps = 60.0f; // round 70ish mistakes down to 60
-      Log.w("[Retroarch]","FPS found: " + fps);
-      requestRefreshIfPossible(fps);
+    // Clamp to sane range
+    if (fps < 45f) fps = 50.0f;      // avoid weird low reads
+    if (fps > 65f && fps < 85f) fps = 60.0f; // round 70ish mistakes down to 60
+    Log.w("[Retroarch FPS]","FPS found: " + fps);
+    requestRefreshIfPossible(fps);
   }
 
 
