@@ -24,6 +24,25 @@ import android.util.Log;
 import java.io.*;
 import java.util.regex.*;
 
+
+public final class RALog {
+    // levels: 0=INFO, 1=WARN, 2=ERROR (pick whatever mapping you like)
+    private static native void nativeLog(int level, String tag, String msg);
+
+    public static void w(String tag, String msg) {
+        android.util.Log.w(tag, msg);      // still shows in logcat
+        nativeLog(1, tag, msg);            // also goes to RetroArch logger
+    }
+    public static void e(String tag, String msg) {
+        android.util.Log.e(tag, msg);
+        nativeLog(2, tag, msg);
+    }
+    public static void i(String tag, String msg) {
+        android.util.Log.i(tag, msg);
+        nativeLog(0, tag, msg);
+    }
+}
+
 public final class RetroActivityFuture extends RetroActivityCamera {
 
   // Tracks activity lifecycle state for MainMenuActivity resume detection
