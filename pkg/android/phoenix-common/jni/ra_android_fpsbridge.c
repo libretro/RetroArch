@@ -29,3 +29,4 @@ Java_com_retroarch_browser_retroactivity_RetroActivityFuture_nativeGetContentFps
 
     return fps;
 }
+
