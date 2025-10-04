@@ -400,15 +400,29 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       return null;
   }
 
+
+  private static native float nativeGetContentFps();
+
+
   // 2c) Single entry point: decide and request
   private void requestNativeGameRefreshRate() {
-      Float fps = detectFpsFromLog();
-      if (fps == null) {
+    Float fps = 0f;
+     try { fps = nativeGetContentFps(); } catch (Throwable ignored) { Log.w("couldng get content fps"); fps = f0;}
+     
+      if (fps <= 0f) {
+        Log.w("content fps is 0");
+        fps = detectFpsFromLog();
+      }
+      if (fps <= 0f) {
+          Log.w("log fps is 0");
           // Try to get the current content path from intent extras, if available
           String content = getIntent() != null ? getIntent().getStringExtra("content_path") : null;
           fps = guessFpsFromContentPath(content != null ? content.toLowerCase() : null);
       }
-      if (fps == null) fps = 60.0f;
+      if (fps == null || fps <= 0f) {
+        Log.w("fps was still 0");
+        fps = 60.0f;
+      }
 
       // Clamp to sane range
       if (fps < 45f) fps = 50.0f;      // avoid weird low reads
