@@ -407,7 +407,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   // 2c) Single entry point: decide and request
   private void requestNativeGameRefreshRate() {
     Float fps = 0f;
-     try { fps = nativeGetContentFps(); } catch (Throwable ignored) { Log.w("couldng get content fps"); fps = f0;}
+     try { fps = nativeGetContentFps(); } catch (Throwable ignored) {}
      
       if (fps <= 0f) {
         Log.w("content fps is 0");
