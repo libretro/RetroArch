@@ -382,6 +382,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   private static native float nativeGetContentFps();
 
   private void requestNativeGameRefreshRate() {
+     Log.w("[Retroarch]","requestNative FPS");
     Float fps = 0f;
      try { fps = nativeGetContentFps(); } catch (Throwable ignored) {}
      
@@ -397,7 +398,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       // Clamp to sane range
       if (fps < 45f) fps = 50.0f;      // avoid weird low reads
       if (fps > 65f && fps < 85f) fps = 60.0f; // round 70ish mistakes down to 60
-
+      Log.w("[Retroarch]","fps found" + fps);
       requestRefreshIfPossible(fps);
   }
 
