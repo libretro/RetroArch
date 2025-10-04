@@ -66,7 +66,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     
-    try { requestRefreshIfPossible(); } catch (Throwable ignored) {}
+    try { requestNativeGameRefreshRate(); } catch (Throwable ignored) {}
     isRunning = true;
     mDecorView = getWindow().getDecorView();
 
@@ -77,7 +77,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onNewIntent(Intent intent) {
     super.onNewIntent(intent);
-    try { requestRefreshIfPossible(); } catch (Throwable ignored) {}
+    try { requestNativeGameRefreshRate(); } catch (Throwable ignored) {}
     // Extract game parameters from new intent
     String newRom = intent.getStringExtra("ROM");
     String newCore = intent.getStringExtra("LIBRETRO");
