@@ -915,6 +915,7 @@ bool gfx_ctx_wl_init_common(
    wl_display_roundtrip(wl->input.dpy);
    xdg_wm_base_add_listener(wl->xdg_shell, &xdg_shell_listener, NULL);
 
+#ifndef HAVE_LIBDECOR_H
    /* Bind SHM based wl_buffer to wl_surface until the vulkan surface is ready.
     * This shows the window which assigns us a display (wl_output)
     * which is useful for HiDPI and auto selecting a display for fullscreen. */
@@ -924,23 +925,12 @@ bool gfx_ctx_wl_init_common(
          RARCH_ERR("[Wayland] Failed to draw splash screen.\n");
 
       /* Make sure splash screen is on screen and sized */
-#ifdef HAVE_LIBDECOR_H
-      if (wl->libdecor)
-      {
-         wl->configured = true;
-         while (wl->configured)
-            if (wl->libdecor_dispatch(wl->libdecor_context, 0) < 0)
-               RARCH_ERR("[Wayland] libdecor failed to dispatch.\n");
-      }
-      else
-#endif
-      {
-         wl->configured = true;
-
-         while (wl->configured)
-            wl_display_dispatch(wl->input.dpy);
-      }
+      wl->configured = true;
+      
+      while (wl->configured)
+      wl_display_dispatch(wl->input.dpy);
    }
+#endif
 
    // Ignore configure events until splash screen has been replaced
    wl->ignore_configuration = true;
@@ -1021,12 +1011,19 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
       struct wl_output *output = NULL;
       int output_i             = 0;
 
+#ifdef HAVE_LIBDECOR_H
+      if (video_monitor_index <= 0)
+      {
+         RARCH_LOG("[Wayland] Auto fullscreen monitor index, letting compositor decide.\n");
+      }
+#else
       if (video_monitor_index <= 0 && wl->current_output != NULL)
       {
          oi     = wl->current_output;
          output = oi->output;
          RARCH_LOG("[Wayland] Auto fullscreen on display \"%s\" \"%s\".\n", oi->make, oi->model);
       }
+#endif
       else
       {
          wl_list_for_each(od, &wl->all_outputs, link)
@@ -1039,10 +1036,10 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
                break;
             }
          };
-      }
 
-      if (!output)
-         RARCH_LOG("[Wayland] Failed to specify monitor for fullscreen, letting compositor decide.\n");
+         if (!output)
+            RARCH_LOG("[Wayland] Failed to specify monitor for fullscreen, letting compositor decide.\n");
+      }
 
 #ifdef HAVE_LIBDECOR_H
       if (wl->libdecor)
