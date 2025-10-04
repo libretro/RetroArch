@@ -380,7 +380,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
 
   private static native float nativeGetContentFps();
-  // 2c) Single entry point: decide and request
+
   private void requestNativeGameRefreshRate() {
     Float fps = 0f;
      try { fps = nativeGetContentFps(); } catch (Throwable ignored) {}

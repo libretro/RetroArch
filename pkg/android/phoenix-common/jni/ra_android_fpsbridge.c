@@ -2,6 +2,7 @@
 #include <string.h>
 #include <libretro.h>   /* struct retro_system_av_info */
 #include "runloop.h"    /* runloop_state_get_ptr(), runloop_state_t */
+#include "verbosity.h"
 
 JNIEXPORT jfloat JNICALL
 Java_com_retroarch_browser_retroactivity_RetroActivityFuture_nativeGetContentFps
