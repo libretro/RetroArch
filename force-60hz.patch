@@ -1,0 +1,107 @@
+diff --git a/pkg/android/phoenix/src/main/java/com/retroarch/browser/retroactivity/RetroActivityFuture.java b/pkg/android/phoenix/src/main/java/com/retroarch/browser/retroactivity/RetroActivityFuture.java
+index 0000000000..0000000001 100644
+--- a/pkg/android/phoenix/src/main/java/com/retroarch/browser/retroactivity/RetroActivityFuture.java
++++ b/pkg/android/phoenix/src/main/java/com/retroarch/browser/retroactivity/RetroActivityFuture.java
+@@ -1,5 +1,11 @@
+ package com.retroarch.browser.retroactivity;
+ 
++import android.os.Build;
++import android.view.Display;
++import android.view.WindowManager;
++import android.view.Window;
++import android.util.Log;
++
+ public class RetroActivityFuture extends /* whatever it extends in your tree */ {
+     // ... existing imports/members/methods ...
+ 
+@@ -20,6 +26,10 @@ public class RetroActivityFuture extends /* whatever it extends in your tree */ {
+         super.onCreate(savedInstanceState);
+         // existing code...
+ 
++        // Make an initial best-effort 60 Hz request on create as well.
++        try {
++            request60HzIfPossible();
++        } catch (Throwable t) { /* ignore */ }
+     }
+ 
+     @Override
+@@ -27,6 +37,10 @@ public class RetroActivityFuture extends /* whatever it extends in your tree */ {
+         super.onResume();
+         // existing code...
+ 
++        // Re-assert 60 Hz whenever gameplay resumes (after fast-forward/menu, etc.)
++        try {
++            request60HzIfPossible();
++        } catch (Throwable t) { /* ignore */ }
+     }
+ 
+     @Override
+@@ -34,4 +48,92 @@ public class RetroActivityFuture extends /* whatever it extends in your tree */ {
+         super.onPause();
+         // existing code...
+     }
++
++    /**
++     * Requests a 60 Hz display mode that matches the current resolution.
++     * Works via preferredDisplayModeId (API 23+). Also sets a preferredRefreshRate hint.
++     */
++    private void request60HzIfPossible() {
++        final Window window = getWindow();
++        if (window == null) return;
++        final WindowManager wm = getWindowManager();
++        if (wm == null) return;
++
++        try {
++            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // API 23
++                final Display display = wm.getDefaultDisplay();
++                if (display == null) return;
++                final Display.Mode current = display.getMode();
++                final Display.Mode[] modes = display.getSupportedModes();
++                int bestId = current.getModeId();
++
++                // Pick a 60 Hz mode that matches current resolution. If exact 60 not found,
++                // pick the closest below 61 Hz. If none below, pick the closest overall.
++                float bestScore = Float.MAX_VALUE;
++                for (Display.Mode m : modes) {
++                    if (m.getPhysicalWidth() == current.getPhysicalWidth()
++                            && m.getPhysicalHeight() == current.getPhysicalHeight()) {
++                        final float refresh = m.getRefreshRate();
++                        // Favor anything within ~0.5 of 60 first, otherwise distance to 60
++                        float penalty = Math.abs(refresh - 60.0f);
++                        // Heavily prefer <= 60.5 over > 60.5 so we don't land on 120 by accident
++                        if (refresh > 60.5f) penalty += 1000f;
++                        if (penalty < bestScore) {
++                            bestScore = penalty;
++                            bestId = m.getModeId();
++                        }
++                    }
++                }
++
++                WindowManager.LayoutParams lp = window.getAttributes();
++                // Preferred mode id (API 23+)
++                try {
++                    lp.getClass().getField("preferredDisplayModeId").setInt(lp, bestId);
++                } catch (NoSuchFieldException nsf) {
++                    // Some vendor builds gate this; ignore.
++                }
++
++                // Also set preferredRefreshRate as a hint (older devices/vendors)
++                try {
++                    lp.getClass().getField("preferredRefreshRate").setFloat(lp, 60.0f);
++                } catch (NoSuchFieldException nsf) {
++                    // ignore
++                }
++                window.setAttributes(lp);
++            } else {
++                // Very old APIs: try the legacy Window#setPreferredRefreshRate if available
++                try {
++                    Window.class.getMethod("setPreferredRefreshRate", float.class)
++                            .invoke(window, 60.0f);
++                } catch (Throwable ignored) {
++                }
++            }
++        } catch (Throwable t) {
++            try { Log.w("RetroArch", "Failed to request 60Hz: " + t); } catch (Throwable ignored) {}
++        }
++    }
+ }
