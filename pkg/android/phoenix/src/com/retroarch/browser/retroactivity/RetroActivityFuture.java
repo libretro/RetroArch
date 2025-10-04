@@ -104,7 +104,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onResume() {
     super.onResume();
-
+    try { requestNativeGameRefreshRate(); } catch (Throwable ignored) {}
     setSustainedPerformanceMode(sustainedPerformanceMode);
 
     // Check for Android UI specific parameters
