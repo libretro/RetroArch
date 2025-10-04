@@ -21,6 +21,8 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.view.Window;
 import android.util.Log;
+import java.io.*;
+import java.util.regex.*;
 
 public final class RetroActivityFuture extends RetroActivityCamera {
 
@@ -247,7 +249,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   }
 
   /** Requests a 60 Hz mode matching the current resolution, if available. */
-  private void request60HzIfPossible() {
+  private void requestRefreshIfPossible(float targetHz) {
       final Window window = getWindow();
       if (window == null) return;
       final WindowManager wm = getWindowManager();
@@ -259,43 +261,111 @@ public final class RetroActivityFuture extends RetroActivityCamera {
               if (display == null) return;
               final Display.Mode current = display.getMode();
               final Display.Mode[] modes = display.getSupportedModes();
+
+              // Snap target to ‘nice’ broadcast rates when very close
+              if (Math.abs(targetHz - 59.94f) < 0.15f) targetHz = 59.94f;
+              else if (Math.abs(targetHz - 60.0f) < 0.15f) targetHz = 60.0f;
+              else if (Math.abs(targetHz - 50.0f) < 0.15f) targetHz = 50.0f;
+
               int bestId = current.getModeId();
               float bestScore = Float.MAX_VALUE;
 
-              // Prefer 60 Hz at current resolution; penalize >60.5 so we don't land on 120
               for (Display.Mode m : modes) {
                   if (m.getPhysicalWidth() == current.getPhysicalWidth()
                           && m.getPhysicalHeight() == current.getPhysicalHeight()) {
                       final float refresh = m.getRefreshRate();
-                      float penalty = Math.abs(refresh - 60.0f);
-                      if (refresh > 60.5f) penalty += 1000f;
-                      if (penalty < bestScore) {
-                          bestScore = penalty;
+                      // cost = distance from target; add small bias against >120 for retro content
+                      float cost = Math.abs(refresh - targetHz);
+                      if (targetHz <= 62f && refresh > 90f) cost += 5f; // avoid 90/120 when we want ~60
+                      if (cost < bestScore) {
+                          bestScore = cost;
                           bestId = m.getModeId();
                       }
                   }
               }
 
               WindowManager.LayoutParams lp = window.getAttributes();
-              // preferredDisplayModeId (via reflection for vendor quirks)
               try {
                   lp.getClass().getField("preferredDisplayModeId").setInt(lp, bestId);
-              } catch (NoSuchFieldException ignored) { }
-              // preferredRefreshRate (hint)
+              } catch (NoSuchFieldException ignored) {}
               try {
-                  lp.getClass().getField("preferredRefreshRate").setFloat(lp, 60.0f);
-              } catch (NoSuchFieldException ignored) { }
+                  lp.getClass().getField("preferredRefreshRate").setFloat(lp, targetHz);
+              } catch (NoSuchFieldException ignored) {}
               window.setAttributes(lp);
           } else {
-              // Very old APIs: try legacy setter via reflection
               try {
                   Window.class.getMethod("setPreferredRefreshRate", float.class)
-                          .invoke(window, 60.0f);
-              } catch (Throwable ignored) { }
+                          .invoke(window, targetHz);
+              } catch (Throwable ignored) {}
           }
       } catch (Throwable t) {
-          try { Log.w("RetroArch", "Failed to request 60Hz: " + t); } catch (Throwable ignored) { }
+          try { Log.w("RetroArch", "Failed to request " + targetHz + "Hz: " + t); } catch (Throwable ignored) {}
       }
   }
+
+
+  // 2a) Try to read FPS from the most recent RetroArch log (it prints "FPS: 59.73" at core init)
+  private Float detectFpsFromLog() {
+      // Adjust if your log dir differs; your cfg shows: /storage/emulated/0/RetroArch/logs
+      final File logDir = new File("/storage/emulated/0/RetroArch/logs");
+      if (!logDir.exists()) return null;
+      File newest = null;
+      for (File f : logDir.listFiles()) {
+          if (f.isFile() && (newest == null || f.lastModified() > newest.lastModified())) newest = f;
+      }
+      if (newest == null) return null;
+
+      final Pattern p = Pattern.compile("FPS:\\s*([0-9]+(?:\\.[0-9]+)?)");
+      try (BufferedReader br = new BufferedReader(new FileReader(newest))) {
+          String line;
+          while ((line = br.readLine()) != null) {
+              Matcher m = p.matcher(line);
+              if (m.find()) {
+                  return Float.parseFloat(m.group(1));
+              }
+          }
+      } catch (Throwable ignored) {}
+      return null;
+  }
+
+  // 2b) Fallback: guess by content extension/system
+  private Float guessFpsFromContentPath(String pathLower) {
+      if (pathLower == null) return null;
+      // PAL first
+      if (pathLower.contains("(e)") || pathLower.contains("[pal]") || pathLower.contains("pal"))
+          return 50.0f;
+
+      // System heuristics (common libretro rates)
+      if (pathLower.endsWith(".gb") || pathLower.endsWith(".gbc")) return 59.73f;
+      if (pathLower.endsWith(".gba")) return 59.73f; // GBA nominal
+      if (pathLower.endsWith(".nes") || pathLower.endsWith(".fds")) return 60.0f;
+      if (pathLower.endsWith(".sfc") || pathLower.endsWith(".smc")) return 60.0f;
+      if (pathLower.endsWith(".gen") || pathLower.endsWith(".md") || pathLower.endsWith(".bin")) return 59.92f;
+      if (pathLower.endsWith(".pce")) return 59.82f;
+      if (pathLower.endsWith(".ngp") || pathLower.endsWith(".ngc")) return 60.0f;
+      if (pathLower.endsWith(".n64") || pathLower.endsWith(".z64") || pathLower.endsWith(".v64")) return 60.0f;
+      // Archive inner names
+      if (pathLower.contains(".gba#") || pathLower.contains(".gba|")) return 59.73f;
+
+      return null;
+  }
+
+  // 2c) Single entry point: decide and request
+  private void requestNativeGameRefreshRate() {
+      Float fps = detectFpsFromLog();
+      if (fps == null) {
+          // Try to get the current content path from intent extras, if available
+          String content = getIntent() != null ? getIntent().getStringExtra("content_path") : null;
+          fps = guessFpsFromContentPath(content != null ? content.toLowerCase() : null);
+      }
+      if (fps == null) fps = 60.0f;
+
+      // Clamp to sane range
+      if (fps < 45f) fps = 50.0f;      // avoid weird low reads
+      if (fps > 65f && fps < 85f) fps = 60.0f; // round 70ish mistakes down to 60
+
+      requestRefreshIfPossible(fps);
+  }
+
 
 }
