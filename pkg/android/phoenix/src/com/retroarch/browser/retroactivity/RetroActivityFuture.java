@@ -429,17 +429,14 @@ public final class RetroActivityFuture extends RetroActivityCamera {
      try { fps = nativeGetContentFps(); } catch (Throwable ignored) {}
      
       if (fps <= 0f) {
-        Log.w("content fps is 0");
         fps = detectFpsFromLog();
       }
       if (fps <= 0f) {
-          Log.w("log fps is 0");
           // Try to get the current content path from intent extras, if available
           String content = getIntent() != null ? getIntent().getStringExtra("content_path") : null;
           fps = guessFpsFromContentPath(content != null ? content.toLowerCase() : null);
       }
       if (fps == null || fps <= 0f) {
-        Log.w("fps was still 0");
         fps = 60.0f;
       }
 
