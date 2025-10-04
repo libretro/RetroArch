@@ -355,29 +355,6 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       }
   }
 
-  // 2a) Try to read FPS from the most recent RetroArch log (it prints "FPS: 59.73" at core init)
-  private Float detectFpsFromLog() {
-      // Adjust if your log dir differs; your cfg shows: /storage/emulated/0/RetroArch/logs
-      final File logDir = new File("/storage/emulated/0/RetroArch/logs");
-      if (!logDir.exists()) return null;
-      File newest = null;
-      for (File f : logDir.listFiles()) {
-          if (f.isFile() && (newest == null || f.lastModified() > newest.lastModified())) newest = f;
-      }
-      if (newest == null) return null;
-
-      final Pattern p = Pattern.compile("FPS:\\s*([0-9]+(?:\\.[0-9]+)?)");
-      try (BufferedReader br = new BufferedReader(new FileReader(newest))) {
-          String line;
-          while ((line = br.readLine()) != null) {
-              Matcher m = p.matcher(line);
-              if (m.find()) {
-                  return Float.parseFloat(m.group(1));
-              }
-          }
-      } catch (Throwable ignored) {}
-      return null;
-  }
 
   // 2b) Fallback: guess by content extension/system
   private Float guessFpsFromContentPath(String pathLower) {
@@ -403,17 +380,12 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
 
   private static native float nativeGetContentFps();
-
-
   // 2c) Single entry point: decide and request
   private void requestNativeGameRefreshRate() {
     Float fps = 0f;
      try { fps = nativeGetContentFps(); } catch (Throwable ignored) {}
      
-      if (fps <= 0f) {
-        fps = detectFpsFromLog();
-      }
-      if (fps <= 0f) {
+      if (fps <= 0f || fps == null) {
           // Try to get the current content path from intent extras, if available
           String content = getIntent() != null ? getIntent().getStringExtra("content_path") : null;
           fps = guessFpsFromContentPath(content != null ? content.toLowerCase() : null);
