@@ -302,11 +302,12 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   }
 
   private void requestRefreshIfPossible(float targetHz) {
+    Log.w("[Retroarch]","setting target FPS");
       final Window window = getWindow();
       if (window == null) return;
       final WindowManager wm = getWindowManager();
       if (wm == null) return;
-
+  Log.w("[Retroarch]","Window found setting target FPS");
       try {
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // API 23+
               final Display display = wm.getDefaultDisplay();
@@ -344,14 +345,16 @@ public final class RetroActivityFuture extends RetroActivityCamera {
                   lp.getClass().getField("preferredRefreshRate").setFloat(lp, targetHz);
               } catch (NoSuchFieldException ignored) {}
               window.setAttributes(lp);
+               Log.w("[Retroarch]","Window target FPS SET " + bestId + targetHz);
           } else {
               try {
                   Window.class.getMethod("setPreferredRefreshRate", float.class)
                           .invoke(window, targetHz);
+                 Log.w("[Retroarch]","else Window target FPS SET " + targetHz);
               } catch (Throwable ignored) {}
           }
       } catch (Throwable t) {
-          try { Log.w("RetroArch", "Failed to request " + targetHz + "Hz: " + t); } catch (Throwable ignored) {}
+          try { Log.w("RetroArch", "Failed to request " + targetHz + "Hz (FPS): " + t); } catch (Throwable ignored) {}
       }
   }
 
@@ -382,23 +385,25 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   private static native float nativeGetContentFps();
 
   private void requestNativeGameRefreshRate() {
-     Log.w("[Retroarch]","requestNative FPS");
+    Log.w("[Retroarch]","requestNative FPS");
     Float fps = 0f;
      try { fps = nativeGetContentFps(); } catch (Throwable ignored) {}
      
       if (fps <= 0f || fps == null) {
+         Log.w("[Retroarch]","Native FPS not found");
           // Try to get the current content path from intent extras, if available
           String content = getIntent() != null ? getIntent().getStringExtra("content_path") : null;
           fps = guessFpsFromContentPath(content != null ? content.toLowerCase() : null);
       }
       if (fps == null || fps <= 0f) {
+         Log.w("[Retroarch]","Content FPS not found");
         fps = 60.0f;
       }
 
       // Clamp to sane range
       if (fps < 45f) fps = 50.0f;      // avoid weird low reads
       if (fps > 65f && fps < 85f) fps = 60.0f; // round 70ish mistakes down to 60
-      Log.w("[Retroarch]","fps found" + fps);
+      Log.w("[Retroarch]","FPS found: " + fps);
       requestRefreshIfPossible(fps);
   }
 
