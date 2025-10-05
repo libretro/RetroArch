@@ -2385,7 +2385,7 @@ static struct config_float_setting *populate_settings_float(
 #endif
 
    *size = count;
-   ra_notify_refresh_rate(settings->floats.video_refresh_rate);
+   ra_notify_refresh_rate(&settings->floats.video_refresh_rate);
    return tmp;
 }
 
