@@ -2385,7 +2385,11 @@ static struct config_float_setting *populate_settings_float(
 #endif
 
    *size = count;
-   ra_notify_refresh_rate(&settings->floats.video_refresh_rate);
+#if defined(ANDROID)
+   if (settings && settings->floats.video_refresh_rate > 0.0f) {
+      ra_notify_refresh_rate(settings->floats.video_refresh_rate);
+   }
+#endif
    return tmp;
 }
 
