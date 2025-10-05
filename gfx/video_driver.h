@@ -1210,8 +1210,6 @@ void video_context_driver_free(void);
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
-void video_driver_set_refresh_rate(int hz);
-
 float video_driver_get_refresh_rate(void);
 
 
