@@ -209,6 +209,8 @@
 
 #include "accessibility.h"
 
+#include "pkg/android/phoenix-common/jni/ra_android_fpsbridge.h"
+
 #ifdef HAVE_GAME_AI
 #include "ai/game_ai.h"
 #endif
