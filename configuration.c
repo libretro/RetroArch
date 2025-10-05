@@ -56,7 +56,7 @@
 
 #include "list_special.h"
 
-#if defined(ANDROID
+#if defined(ANDROID)
 #include "pkg/android/phoenix-common/jni/ra_android_bridge.h"
 #endif
 
