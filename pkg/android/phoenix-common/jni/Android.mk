@@ -59,7 +59,7 @@ LOCAL_SRC_FILES  +=	$(RARCH_DIR)/griffin/griffin.c \
 							$(RARCH_DIR)/griffin/griffin_cpp.cpp
 
 LOCAL_SRC_FILES += \
-    ra_android_fpsbridge.c
+    ra_android_bridge.c
 
 LOCAL_C_INCLUDES += \
     $(RA_ROOT) \

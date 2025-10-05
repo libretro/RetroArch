@@ -1,5 +1,5 @@
-#ifndef RA_ANDROID_FPSBRIDGE_H
-#define RA_ANDROID_FPSBRIDGE_H
+#ifndef RA_ANDROID_BRIDGE_H
+#define RA_ANDROID_BRIDGE_H
 
 #ifdef __cplusplus
 extern "C" {

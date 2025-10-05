@@ -56,7 +56,9 @@
 
 #include "list_special.h"
 
-#include "pkg/android/phoenix-common/jni/ra_android_fpsbridge.h"
+#if defined(ANDROID
+#include "pkg/android/phoenix-common/jni/ra_android_bridge.h"
+#endif
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #include "uwp/uwp_func.h"
