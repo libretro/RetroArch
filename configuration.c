@@ -4760,6 +4760,12 @@ bool config_load_override(void *data)
    else
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 
+
+#if defined(__ANDROID__) || defined(ANDROID)
+   if (settings && settings->floats.video_refresh_rate > 0.0f) {
+      ra_notify_refresh_rate(settings->floats.video_refresh_rate);
+   }
+#endif
    return true;
 }
 
