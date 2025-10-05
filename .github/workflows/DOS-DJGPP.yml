@@ -1,9 +1,8 @@
-name: CI Android
+name: CI DOS/DJGPP
 
 on:
   push:
   pull_request:
-  workflow_dispatch:
   repository_dispatch:
     types: [run_build]
 
@@ -15,16 +14,18 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: git.libretro.com:5050/libretro-infrastructure/libretro-djgpp-build-container:latest
+      options: --user root
 
     steps:
     - uses: actions/checkout@v3
 
     - name: Compile RA
       run: |
-        cd pkg/android/phoenix
-        ./gradlew assembleDebug
-        find . -iname "*.apk" -exec ls -l "{}" \;
+        make -f Makefile.dos -j$(getconf _NPROCESSORS_ONLN) clean
+        make -f Makefile.dos -j$(getconf _NPROCESSORS_ONLN) HAVE_STATIC_DUMMY=1 info all
 
     - name: Get short SHA
       id: slug
@@ -32,7 +33,6 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: retroarch-android-${{ steps.slug.outputs.sha8 }}
+        name: RA-DOS-dummy-${{ steps.slug.outputs.sha8 }}
         path: |
-          pkg/android/phoenix/build/outputs/apk/normal/debug/phoenix-normal-debug.apk
-          pkg/android/phoenix/build/outputs/apk/aarch64/debug/phoenix-aarch64-debug.apk
+          retrodos.exe

@@ -1,0 +1,33 @@
+name: CI Emscripten
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-emscripten:latest
+      options: --user root
+
+    steps:
+    - uses: taiki-e/checkout-action@v1
+
+    - name: Compile RA
+      run: |
+        emmake make -f Makefile.emscripten -j$(getconf _NPROCESSORS_ONLN) clean
+        emmake make -f Makefile.emscripten -j$(getconf _NPROCESSORS_ONLN) HAVE_STATIC_DUMMY=1
+
+    - name: Get short SHA
+      id: slug
+      run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
+
