@@ -1368,6 +1368,7 @@ static bool video_driver_monitor_adjust_system_rates(
             target_video_sync_rate,
             (float)input_fps);
    }
+   ra_notify_refresh_rate(target_video_sync_rate);
    return input_fps <= target_video_sync_rate;
 }
 
