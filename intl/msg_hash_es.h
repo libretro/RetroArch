@@ -13438,6 +13438,14 @@ MSG_HASH(
    "%.*s se ha unido con los dispositivos de entrada %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d jugador(es)"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d jugador(es) (%d espectador[es])"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Una conexión de juego en red ha fallado porque el cliente no utilizaba RetroArch o utilizaba una versión antigua de RetroArch."
    )
