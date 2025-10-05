@@ -307,7 +307,7 @@ int rc_runtime_activate_lboard(rc_runtime_t* self, uint32_t id, const char* mema
   rc_lboard_t* lboard;
   rc_preparse_state_t preparse;
   rc_runtime_lboard_t* runtime_lboard;
-  int size;
+  int32_t size;
   uint32_t i;
 
   (void)unused_L;
@@ -341,9 +341,8 @@ int rc_runtime_activate_lboard(rc_runtime_t* self, uint32_t id, const char* mema
   for (i = 0; i < self->lboard_count; ++i) {
     if (self->lboards[i].id == id && memcmp(self->lboards[i].md5, md5, 16) == 0) {
       /* retrieve the lboard pointer from the buffer */
-      int32_t offset = 0;
-
-      lboard = (rc_lboard_t*)rc_alloc(self->lboards[i].buffer, &offset, sizeof(rc_lboard_t), RC_ALIGNOF(rc_lboard_t), NULL, -1);
+      size = 0;
+      lboard = (rc_lboard_t*)rc_alloc(self->lboards[i].buffer, &size, sizeof(rc_lboard_t), RC_ALIGNOF(rc_lboard_t), NULL, -1);
       self->lboards[i].lboard = lboard;
 
       rc_reset_lboard(lboard);
