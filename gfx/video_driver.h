@@ -650,7 +650,6 @@ typedef struct video_poke_interface
    void (*set_video_mode)(void *data, unsigned width,
          unsigned height, bool fullscreen);
    float (*get_refresh_rate)(void *data);
-   void (*set_refresh_rate)(int hz);
    void (*set_filtering)(void *data, unsigned index, bool smooth, bool ctx_scaling);
    void (*get_video_output_size)(void *data,
          unsigned *width, unsigned *height, char *s, size_t len);
