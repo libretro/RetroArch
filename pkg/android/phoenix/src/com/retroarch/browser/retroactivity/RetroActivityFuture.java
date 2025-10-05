@@ -14,13 +14,20 @@ import android.os.Looper;
 import android.os.Message;
 import com.retroarch.browser.preferences.util.ConfigFile;
 import com.retroarch.browser.preferences.util.UserPreferences;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import android.view.Display;
+import android.view.Window;
+import java.lang.ref.WeakReference;   // <-- added
+import java.io.*;
+import java.util.regex.*;
 
 public final class RetroActivityFuture extends RetroActivityCamera {
 
   // Tracks activity lifecycle state for MainMenuActivity resume detection
   public static volatile boolean isRunning = false;
+
+  // Keep a weak reference to the current activity so static JNI can reach instance safely
+  private static volatile WeakReference<RetroActivityFuture> sLastActivity = new WeakReference<>(null); // <-- added
 
   // If set to true then RetroArch will completely exit when it loses focus
   private boolean quitfocus = false;
@@ -36,6 +43,9 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   private static final int HANDLER_ARG_TRUE = 1;
   private static final int HANDLER_ARG_FALSE = 0;
   private static final int HANDLER_MESSAGE_DELAY_DEFAULT_MS = 300;
+
+  // Main-thread handler for static callbacks from native
+  private static final Handler MAIN = new Handler(Looper.getMainLooper()); // <-- added
 
   // Handler used for UI events
   private final Handler mHandler = new Handler(Looper.getMainLooper()) {
@@ -58,7 +68,10 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    
+
+    // Track current instance for static callbacks
+    sLastActivity = new WeakReference<>(this); // <-- added
+
     isRunning = true;
     mDecorView = getWindow().getDecorView();
 
@@ -69,18 +82,16 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onNewIntent(Intent intent) {
     super.onNewIntent(intent);
-    
     // Extract game parameters from new intent
     String newRom = intent.getStringExtra("ROM");
     String newCore = intent.getStringExtra("LIBRETRO");
-    
+
     // Get current intent parameters for comparison
     Intent currentIntent = getIntent();
     String currentRom = currentIntent != null ? currentIntent.getStringExtra("ROM") : null;
     String currentCore = currentIntent != null ? currentIntent.getStringExtra("LIBRETRO") : null;
-    
-    
-    // Check if we're trying to launch different content  
+
+    // Check if we're trying to launch different content
     if ((newRom != null && !newRom.equals(currentRom)) ||
         (newCore != null && !newCore.equals(currentCore))) {
       // Different game content - exit cleanly and let launcher restart us
@@ -95,7 +106,6 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onResume() {
     super.onResume();
-
     setSustainedPerformanceMode(sustainedPerformanceMode);
 
     // Check for Android UI specific parameters
@@ -115,7 +125,8 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       ConfigFile configFile = new ConfigFile(UserPreferences.getDefaultConfigPath(this));
       try {
         if (configFile.getBoolean("video_notch_write_over_enable")) {
-          getWindow().getAttributes().layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+          getWindow().getAttributes().layoutInDisplayCutoutMode =
+              WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
       } catch (Exception e) {
         Log.w("Key doesn't exist yet.", e.getMessage());
@@ -135,6 +146,12 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   public void onDestroy() {
     super.onDestroy();
     isRunning = false;
+
+    // Clear ref if this instance is the one held
+    RetroActivityFuture held = sLastActivity.get();
+    if (held == this) {
+      sLastActivity.clear(); // <-- added
+    }
   }
 
   @Override
@@ -211,7 +228,8 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
       try {
         boolean cursorVisibility = !state;
-        Method mInputManager_setCursorVisibility = InputManager.class.getMethod("setCursorVisibility", boolean.class);
+        Method mInputManager_setCursorVisibility =
+            InputManager.class.getMethod("setCursorVisibility", boolean.class);
         InputManager inputManager = (InputManager) getSystemService(Context.INPUT_SERVICE);
         mInputManager_setCursorVisibility.invoke(inputManager, cursorVisibility);
       } catch (NoSuchMethodException e) {
@@ -238,5 +256,88 @@ public final class RetroActivityFuture extends RetroActivityCamera {
         Log.w("[attemptTogglePointerIcon] exception thrown:", e.getMessage());
       }
     }
+  }
+
+private void requestRefreshIfPossible(float targetHz) {
+    Log.w("[Retroarch FPS]", "setting target FPS");
+
+    final Window window = getWindow();
+    if (window == null) return;
+    final WindowManager wm = getWindowManager();
+    if (wm == null) return;
+
+    Log.w("[Retroarch FPS]", "Window found setting target FPS");
+
+    final float desiredHz = targetHz; // keep caller's target
+
+    try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // API 23+
+            final Display display = wm.getDefaultDisplay();
+            if (display == null) return;
+
+            final Display.Mode current = display.getMode();
+            final Display.Mode[] modes = display.getSupportedModes();
+
+            int   bestId    = current.getModeId();
+            float bestHz    = current.getRefreshRate();
+            float bestScore = Math.abs(bestHz - desiredHz);
+
+            // Find closest refresh among modes with identical resolution
+            for (Display.Mode m : modes) {
+                if (m.getPhysicalWidth() == current.getPhysicalWidth()
+                        && m.getPhysicalHeight() == current.getPhysicalHeight()) {
+                    final float hz    = m.getRefreshRate();
+                    final float score = Math.abs(hz - desiredHz);
+                    // prefer smaller score; on (near) tie, pick the higher Hz
+                    if (score < bestScore - 0.05f ||
+                       (Math.abs(score - bestScore) <= 0.05f && hz > bestHz)) {
+                        bestScore = score;
+                        bestHz    = hz;
+                        bestId    = m.getModeId();
+                    }
+                }
+            }
+
+            // Apply the *chosen* refresh rate/mode
+            WindowManager.LayoutParams lp = window.getAttributes();
+            try { lp.getClass().getField("preferredDisplayModeId").setInt(lp, bestId); } catch (Throwable ignored) {}
+            try { lp.getClass().getField("preferredRefreshRate").setFloat(lp, bestHz); } catch (Throwable ignored) {}
+            window.setAttributes(lp);
+
+            Log.w("[Retroarch FPS]", "Window target Hz SET modeId=" + bestId +
+                    " chosen=" + bestHz + "Hz (target=" + desiredHz + ", Δ=" + bestScore + ")");
+        } else {
+            // Legacy fallback (may no-op on many builds)
+            try {
+                Window.class.getMethod("setPreferredRefreshRate", float.class)
+                        .invoke(window, desiredHz);
+                Log.w("[Retroarch FPS]", "legacy setPreferredRefreshRate(" + desiredHz + ")");
+            } catch (Throwable ignored) {
+                try {
+                    WindowManager.LayoutParams lp = window.getAttributes();
+                    lp.getClass().getField("preferredRefreshRate").setFloat(lp, desiredHz);
+                    window.setAttributes(lp);
+                    Log.w("[Retroarch FPS]", "legacy LayoutParams preferredRefreshRate=" + desiredHz);
+                } catch (Throwable ignored2) {}
+            }
+        }
+    } catch (Throwable t) {
+        try { Log.w("Retroarch FPS", "Failed to request closest to " + desiredHz + "Hz: " + t); } catch (Throwable ignored) {}
+    }
+  }
+
+  public static void nativePushContentFps(final float fps) { // <-- added
+    MAIN.post(() -> {
+      RetroActivityFuture a = sLastActivity.get();
+      if (a != null && isRunning && fps > 0f) {
+        float f = fps;
+        // optional clamping to match your pull path
+        if (f < 65f) f = 60.0f;
+        else if (f > 64f && f < 115f) f = 90.0f;
+        else f = 120f;
+        Log.w("[Retroarch FPS]", "nativePushContentFps: " + f);
+        a.requestRefreshIfPossible(f);
+      }
+    });
   }
 }
