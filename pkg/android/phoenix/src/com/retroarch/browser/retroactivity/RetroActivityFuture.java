@@ -50,7 +50,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     @Override
     public void handleMessage(Message msg) {
       boolean state = (msg.arg1 == HANDLER_ARG_TRUE) ? true : false;
-      try { requestNativeGameRefreshRate(); } catch (Throwable ignored) {}
+
       if (msg.what == HANDLER_WHAT_TOGGLE_IMMERSIVE) {
         attemptToggleImmersiveMode(state);
       } else if (msg.what == HANDLER_WHAT_TOGGLE_POINTER_CAPTURE) {
@@ -149,7 +149,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onWindowFocusChanged(boolean hasFocus) {
     super.onWindowFocusChanged(hasFocus);
-    try { requestNativeGameRefreshRate(); } catch (Throwable ignored) {}
+
     mHandlerSendUiMessage(HANDLER_WHAT_TOGGLE_IMMERSIVE, hasFocus);
 
     try {
