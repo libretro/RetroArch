@@ -72,7 +72,6 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     // Track current instance for static callbacks
     sLastActivity = new WeakReference<>(this); // <-- added
 
-    try { requestNativeGameRefreshRate(); } catch (Throwable ignored) {}
     isRunning = true;
     mDecorView = getWindow().getDecorView();
 
@@ -83,7 +82,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onNewIntent(Intent intent) {
     super.onNewIntent(intent);
-    try { requestNativeGameRefreshRate(); } catch (Throwable ignored) {}
+    // try { requestNativeGameRefreshRate(); } catch (Throwable ignored) {}
     // Extract game parameters from new intent
     String newRom = intent.getStringExtra("ROM");
     String newCore = intent.getStringExtra("LIBRETRO");
@@ -108,7 +107,6 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onResume() {
     super.onResume();
-    try { requestNativeGameRefreshRate(); } catch (Throwable ignored) {}
     setSustainedPerformanceMode(sustainedPerformanceMode);
 
     // Check for Android UI specific parameters
@@ -326,8 +324,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
   // --- Native <-> Java bridge ---
 
-  // Existing pull API: Java asks native for current content FPS
-  private static native float nativeGetContentFps();
+
 
   // New push API: native can push a fresh FPS to Java at any time
   // Call this from C via CallStaticVoidMethod(..., "nativePushContentFps", "(F)V")
@@ -345,20 +342,23 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     });
   }
 
-  private void requestNativeGameRefreshRate() {
-    Log.w("[Retroarch FPS]","requestNative FPS");
-    Float fps = 0f;
-    try { fps = nativeGetContentFps(); } catch (Throwable ignored) {}
+  // Existing pull API: Java asks native for current content FPS
+  // private static native float nativeGetContentFps();
+  
+  // private void requestNativeGameRefreshRate() {
+  //   Log.w("[Retroarch FPS]","requestNative FPS");
+  //   Float fps = 0f;
+  //   try { fps = nativeGetContentFps(); } catch (Throwable ignored) {}
 
-    if (fps == null || fps <= 0f) {
-      Log.w("[Retroarch FPS]","requestNative FPS not found setting default");
-      fps = 60.0f;
-    }
+  //   if (fps == null || fps <= 0f) {
+  //     Log.w("[Retroarch FPS]","requestNative FPS not found setting default");
+  //     fps = 60.0f;
+  //   }
 
-    // Clamp to sane range
-    if (fps < 45f) fps = 50.0f;      // avoid weird low reads
-    if (fps > 65f && fps < 85f) fps = 60.0f; // round 70ish mistakes down to 60
-    Log.w("[Retroarch FPS]","FPS found: " + fps);
-    requestRefreshIfPossible(fps);
-  }
+  //   // Clamp to sane range
+  //   if (fps < 45f) fps = 50.0f;      // avoid weird low reads
+  //   if (fps > 65f && fps < 85f) fps = 60.0f; // round 70ish mistakes down to 60
+  //   Log.w("[Retroarch FPS]","FPS found: " + fps);
+  //   requestRefreshIfPossible(fps);
+  // }
 }

@@ -81,29 +81,23 @@ void ra_notify_refresh_rate(float fps)
 }
 
 // ---------- Java -> C: pull current content FPS ----------
-JNIEXPORT jfloat JNICALL
-Java_com_retroarch_browser_retroactivity_RetroActivityFuture_nativeGetContentFps
-  (JNIEnv* env, jclass clazz)
-{
-    // Prefer content timing (what the core reports)
-    const float fallback = 60.0f;
+// JNIEXPORT jfloat JNICALL
+// Java_com_retroarch_browser_retroactivity_RetroActivityFuture_nativeGetContentFps
+//   (JNIEnv* env, jclass clazz)
+// {
+//     // Prefer content timing (what the core reports)
+//     const float fallback = 60.0f;
 
-    // Try runloop/system av_info first
-    const struct retro_system_av_info *av = runloop_get_system_av_info();
-    if (av && av->timing.fps > 0.0) {
-        RARCH_LOG("[Android] Content FPS (av_info): %.4f\n", (float)av->timing.fps);
-        return (jfloat)av->timing.fps;
-    }
 
-    // Fallback to configured display refresh rate if available
-    settings_t *settings = config_get_ptr();
-    if (settings && settings->floats.video_refresh_rate > 0.0f) {
-        RARCH_LOG("[Android] Using video_refresh_rate as FPS: %.4f\n",
-                  settings->floats.video_refresh_rate);
-        return (jfloat)settings->floats.video_refresh_rate;
-    }
+//     // Fallback to configured display refresh rate if available
+//     settings_t *settings = config_get_ptr();
+//     if (settings && settings->floats.video_refresh_rate > 0.0f) {
+//         RARCH_LOG("[Android] Using video_refresh_rate as FPS: %.4f\n",
+//                   settings->floats.video_refresh_rate);
+//         return (jfloat)settings->floats.video_refresh_rate;
+//     }
 
-    // Final fallback
-    RARCH_LOG("[Android] Falling back to default FPS: %.2f\n", fallback);
-    return (jfloat)fallback;
-}
+//     // Final fallback
+//     RARCH_LOG("[Android] Falling back to default FPS: %.2f\n", fallback);
+//     return (jfloat)fallback;
+// }
