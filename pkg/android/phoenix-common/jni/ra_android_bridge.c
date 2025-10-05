@@ -1,5 +1,3 @@
-// ra_android_bridge.c
-// If compiled as C++ file, wrap with extern "C"
 #include <jni.h>
 #include <libretro.h>
 #include "runloop.h"
@@ -79,25 +77,3 @@ void ra_notify_refresh_rate(float fps)
     if (attached)
         (*g_vm)->DetachCurrentThread(g_vm);
 }
-
-// ---------- Java -> C: pull current content FPS ----------
-// JNIEXPORT jfloat JNICALL
-// Java_com_retroarch_browser_retroactivity_RetroActivityFuture_nativeGetContentFps
-//   (JNIEnv* env, jclass clazz)
-// {
-//     // Prefer content timing (what the core reports)
-//     const float fallback = 60.0f;
-
-
-//     // Fallback to configured display refresh rate if available
-//     settings_t *settings = config_get_ptr();
-//     if (settings && settings->floats.video_refresh_rate > 0.0f) {
-//         RARCH_LOG("[Android] Using video_refresh_rate as FPS: %.4f\n",
-//                   settings->floats.video_refresh_rate);
-//         return (jfloat)settings->floats.video_refresh_rate;
-//     }
-
-//     // Final fallback
-//     RARCH_LOG("[Android] Falling back to default FPS: %.2f\n", fallback);
-//     return (jfloat)fallback;
-// }
