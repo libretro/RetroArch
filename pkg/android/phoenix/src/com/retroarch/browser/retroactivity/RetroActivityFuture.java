@@ -258,30 +258,18 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     }
   }
 
-  private void requestRefreshIfPossible(float targetHz) {
-    Log.w("[Retroarch FPS]", "request " + targetHz + "Hz");
+private void requestRefreshIfPossible(float targetHz) {
+    Log.w("[Retroarch FPS]", "setting target FPS");
 
     final Window window = getWindow();
     if (window == null) return;
     final WindowManager wm = getWindowManager();
     if (wm == null) return;
 
-    // ---- Modern API (Android 11+): let the system choose closest mode ----
-    // This already snaps to the nearest available refresh and can switch seamlessly.
-    boolean usedSetFrameRate = false;
-    if (Build.VERSION.SDK_INT >= 30) {
-        try {
-            window.getDecorView().setFrameRate(
-                targetHz,
-                android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,
-                android.hardware.display.DisplayManager.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS
-            );
-            Log.w("[Retroarch FPS]", "setFrameRate() requested " + targetHz + "Hz");
-            usedSetFrameRate = true;
-        } catch (Throwable ignored) { /* fall through to manual */ }
-    }
+    Log.w("[Retroarch FPS]", "Window found setting target FPS");
 
-    // ---- Manual closest-mode selection (fallback / pre-30) ----
+    final float desiredHz = targetHz; // keep caller's target
+
     try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // API 23+
             final Display display = wm.getDefaultDisplay();
@@ -290,51 +278,51 @@ public final class RetroActivityFuture extends RetroActivityCamera {
             final Display.Mode current = display.getMode();
             final Display.Mode[] modes = display.getSupportedModes();
 
-            int bestId = current.getModeId();
-            float bestRefresh = current.getRefreshRate();
-            float bestScore = Math.abs(bestRefresh - targetHz);
+            int   bestId    = current.getModeId();
+            float bestHz    = current.getRefreshRate();
+            float bestScore = Math.abs(bestHz - desiredHz);
 
-            // Pick the closest refresh among modes with identical resolution
+            // Find closest refresh among modes with identical resolution
             for (Display.Mode m : modes) {
                 if (m.getPhysicalWidth() == current.getPhysicalWidth()
                         && m.getPhysicalHeight() == current.getPhysicalHeight()) {
-                    final float refresh = m.getRefreshRate();
-                    final float score = Math.abs(refresh - targetHz);
-                    // prefer lower score; on tie pick higher refresh (often smoother/VRR-friendly)
+                    final float hz    = m.getRefreshRate();
+                    final float score = Math.abs(hz - desiredHz);
+                    // prefer smaller score; on (near) tie, pick the higher Hz
                     if (score < bestScore - 0.05f ||
-                       (Math.abs(score - bestScore) <= 0.05f && refresh > bestRefresh)) {
+                       (Math.abs(score - bestScore) <= 0.05f && hz > bestHz)) {
                         bestScore = score;
-                        bestRefresh = refresh;
-                        bestId = m.getModeId();
+                        bestHz    = hz;
+                        bestId    = m.getModeId();
                     }
                 }
             }
 
-            // Apply: set preferred mode id and hint with the actual chosen refresh
+            // Apply the *chosen* refresh rate/mode
             WindowManager.LayoutParams lp = window.getAttributes();
             try { lp.getClass().getField("preferredDisplayModeId").setInt(lp, bestId); } catch (Throwable ignored) {}
-            try { lp.getClass().getField("preferredRefreshRate").setFloat(lp, bestRefresh); } catch (Throwable ignored) {}
+            try { lp.getClass().getField("preferredRefreshRate").setFloat(lp, bestHz); } catch (Throwable ignored) {}
             window.setAttributes(lp);
 
-            Log.w("[Retroarch FPS]", "chose modeId=" + bestId + " @ " + bestRefresh +
-                    "Hz (target " + targetHz + "Hz, Δ=" + bestScore + ")");
+            Log.w("[Retroarch FPS]", "Window target Hz SET modeId=" + bestId +
+                    " chosen=" + bestHz + "Hz (target=" + desiredHz + ", Δ=" + bestScore + ")");
         } else {
-            // Legacy fallback (API < 23). May no-op on many devices.
+            // Legacy fallback (may no-op on many builds)
             try {
                 Window.class.getMethod("setPreferredRefreshRate", float.class)
-                        .invoke(window, targetHz);
-                Log.w("[Retroarch FPS]", "legacy setPreferredRefreshRate(" + targetHz + ")");
+                        .invoke(window, desiredHz);
+                Log.w("[Retroarch FPS]", "legacy setPreferredRefreshRate(" + desiredHz + ")");
             } catch (Throwable ignored) {
                 try {
                     WindowManager.LayoutParams lp = window.getAttributes();
-                    lp.getClass().getField("preferredRefreshRate").setFloat(lp, targetHz);
+                    lp.getClass().getField("preferredRefreshRate").setFloat(lp, desiredHz);
                     window.setAttributes(lp);
-                    Log.w("[Retroarch FPS]", "legacy LP preferredRefreshRate=" + targetHz);
+                    Log.w("[Retroarch FPS]", "legacy LayoutParams preferredRefreshRate=" + desiredHz);
                 } catch (Throwable ignored2) {}
             }
         }
     } catch (Throwable t) {
-        try { Log.w("[Retroarch FPS]", "Failed to select nearest Hz to " + targetHz + ": " + t); } catch (Throwable ignored) {}
+        try { Log.w("Retroarch FPS", "Failed to request closest to " + desiredHz + "Hz: " + t); } catch (Throwable ignored) {}
     }
   }
 
