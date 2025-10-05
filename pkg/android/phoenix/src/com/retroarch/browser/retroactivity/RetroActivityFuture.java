@@ -14,21 +14,20 @@ import android.os.Looper;
 import android.os.Message;
 import com.retroarch.browser.preferences.util.ConfigFile;
 import com.retroarch.browser.preferences.util.UserPreferences;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import android.os.Build;
 import android.view.Display;
-import android.view.WindowManager;
 import android.view.Window;
-import android.util.Log;
+import java.lang.ref.WeakReference;   // <-- added
 import java.io.*;
 import java.util.regex.*;
-
 
 public final class RetroActivityFuture extends RetroActivityCamera {
 
   // Tracks activity lifecycle state for MainMenuActivity resume detection
   public static volatile boolean isRunning = false;
+
+  // Keep a weak reference to the current activity so static JNI can reach instance safely
+  private static volatile WeakReference<RetroActivityFuture> sLastActivity = new WeakReference<>(null); // <-- added
 
   // If set to true then RetroArch will completely exit when it loses focus
   private boolean quitfocus = false;
@@ -44,6 +43,9 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   private static final int HANDLER_ARG_TRUE = 1;
   private static final int HANDLER_ARG_FALSE = 0;
   private static final int HANDLER_MESSAGE_DELAY_DEFAULT_MS = 300;
+
+  // Main-thread handler for static callbacks from native
+  private static final Handler MAIN = new Handler(Looper.getMainLooper()); // <-- added
 
   // Handler used for UI events
   private final Handler mHandler = new Handler(Looper.getMainLooper()) {
@@ -66,7 +68,10 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    
+
+    // Track current instance for static callbacks
+    sLastActivity = new WeakReference<>(this); // <-- added
+
     try { requestNativeGameRefreshRate(); } catch (Throwable ignored) {}
     isRunning = true;
     mDecorView = getWindow().getDecorView();
@@ -82,14 +87,13 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     // Extract game parameters from new intent
     String newRom = intent.getStringExtra("ROM");
     String newCore = intent.getStringExtra("LIBRETRO");
-    
+
     // Get current intent parameters for comparison
     Intent currentIntent = getIntent();
     String currentRom = currentIntent != null ? currentIntent.getStringExtra("ROM") : null;
     String currentCore = currentIntent != null ? currentIntent.getStringExtra("LIBRETRO") : null;
-    
-    
-    // Check if we're trying to launch different content  
+
+    // Check if we're trying to launch different content
     if ((newRom != null && !newRom.equals(currentRom)) ||
         (newCore != null && !newCore.equals(currentCore))) {
       // Different game content - exit cleanly and let launcher restart us
@@ -124,7 +128,8 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       ConfigFile configFile = new ConfigFile(UserPreferences.getDefaultConfigPath(this));
       try {
         if (configFile.getBoolean("video_notch_write_over_enable")) {
-          getWindow().getAttributes().layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+          getWindow().getAttributes().layoutInDisplayCutoutMode =
+              WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
       } catch (Exception e) {
         Log.w("Key doesn't exist yet.", e.getMessage());
@@ -144,6 +149,12 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   public void onDestroy() {
     super.onDestroy();
     isRunning = false;
+
+    // Clear ref if this instance is the one held
+    RetroActivityFuture held = sLastActivity.get();
+    if (held == this) {
+      sLastActivity.clear(); // <-- added
+    }
   }
 
   @Override
@@ -220,7 +231,8 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
       try {
         boolean cursorVisibility = !state;
-        Method mInputManager_setCursorVisibility = InputManager.class.getMethod("setCursorVisibility", boolean.class);
+        Method mInputManager_setCursorVisibility =
+            InputManager.class.getMethod("setCursorVisibility", boolean.class);
         InputManager inputManager = (InputManager) getSystemService(Context.INPUT_SERVICE);
         mInputManager_setCursorVisibility.invoke(inputManager, cursorVisibility);
       } catch (NoSuchMethodException e) {
@@ -248,7 +260,6 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       }
     }
   }
-
 
   private void requestRefreshIfPossible(float targetHz) {
       Log.w("[Retroarch FPS]", "setting target FPS");
@@ -313,14 +324,32 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       }
   }
 
+  // --- Native <-> Java bridge ---
 
+  // Existing pull API: Java asks native for current content FPS
   private static native float nativeGetContentFps();
+
+  // New push API: native can push a fresh FPS to Java at any time
+  // Call this from C via CallStaticVoidMethod(..., "nativePushContentFps", "(F)V")
+  public static void nativePushContentFps(final float fps) { // <-- added
+    MAIN.post(() -> {
+      RetroActivityFuture a = sLastActivity.get();
+      if (a != null && isRunning && fps > 0f) {
+        float f = fps;
+        // optional clamping to match your pull path
+        if (f < 45f) f = 50.0f;
+        if (f > 65f && f < 85f) f = 60.0f;
+        Log.w("[Retroarch FPS]", "nativePushContentFps: " + f);
+        a.requestRefreshIfPossible(f);
+      }
+    });
+  }
 
   private void requestNativeGameRefreshRate() {
     Log.w("[Retroarch FPS]","requestNative FPS");
     Float fps = 0f;
-     try { fps = nativeGetContentFps(); } catch (Throwable ignored) {}
-     
+    try { fps = nativeGetContentFps(); } catch (Throwable ignored) {}
+
     if (fps == null || fps <= 0f) {
       Log.w("[Retroarch FPS]","requestNative FPS not found setting default");
       fps = 60.0f;
@@ -332,6 +361,4 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     Log.w("[Retroarch FPS]","FPS found: " + fps);
     requestRefreshIfPossible(fps);
   }
-
-
 }
