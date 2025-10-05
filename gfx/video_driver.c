@@ -3312,6 +3312,14 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
    return true;
 }
 
+float video_driver_set_refresh_rate(int hz)
+{
+   video_driver_state_t *video_st           = &video_driver_st;
+   if (video_st->poke && video_st->poke->get_refresh_rate)
+      return video_st->poke->get_refresh_rate(video_st->data);
+
+   return 0.0f;
+}
 float video_driver_get_refresh_rate(void)
 {
    video_driver_state_t *video_st           = &video_driver_st;
