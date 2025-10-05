@@ -82,7 +82,6 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   @Override
   public void onNewIntent(Intent intent) {
     super.onNewIntent(intent);
-    // try { requestNativeGameRefreshRate(); } catch (Throwable ignored) {}
     // Extract game parameters from new intent
     String newRom = intent.getStringExtra("ROM");
     String newCore = intent.getStringExtra("LIBRETRO");
@@ -342,24 +341,4 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       }
     });
   }
-
-  // Existing pull API: Java asks native for current content FPS
-  // private static native float nativeGetContentFps();
-
-  // private void requestNativeGameRefreshRate() {
-  //   Log.w("[Retroarch FPS]","requestNative FPS");
-  //   Float fps = 0f;
-  //   try { fps = nativeGetContentFps(); } catch (Throwable ignored) {}
-
-  //   if (fps == null || fps <= 0f) {
-  //     Log.w("[Retroarch FPS]","requestNative FPS not found setting default");
-  //     fps = 60.0f;
-  //   }
-
-  //   // Clamp to sane range
-  //   if (fps < 45f) fps = 50.0f;      // avoid weird low reads
-  //   if (fps > 65f && fps < 85f) fps = 60.0f; // round 70ish mistakes down to 60
-  //   Log.w("[Retroarch FPS]","FPS found: " + fps);
-  //   requestRefreshIfPossible(fps);
-  // }
 }
