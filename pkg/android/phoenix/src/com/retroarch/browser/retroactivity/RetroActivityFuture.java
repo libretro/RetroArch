@@ -334,8 +334,9 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       if (a != null && isRunning && fps > 0f) {
         float f = fps;
         // optional clamping to match your pull path
-        if (f < 45f) f = 50.0f;
-        if (f > 65f && f < 85f) f = 60.0f;
+        if (f < 65f) f = 60.0f;
+        else if (f > 64f && f < 115) f = 90.0f;
+        else f = 120f;
         Log.w("[Retroarch FPS]", "nativePushContentFps: " + f);
         a.requestRefreshIfPossible(f);
       }
@@ -344,7 +345,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
   // Existing pull API: Java asks native for current content FPS
   // private static native float nativeGetContentFps();
-  
+
   // private void requestNativeGameRefreshRate() {
   //   Log.w("[Retroarch FPS]","requestNative FPS");
   //   Float fps = 0f;
