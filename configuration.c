@@ -2998,11 +2998,10 @@ void config_set_defaults(void *data)
    settings->floats.video_msg_color_b          = ((DEFAULT_MESSAGE_COLOR >>  0) & 0xff) / 255.0f;
 
    if (g_defaults.settings_video_refresh_rate > 0.0 &&
-         g_defaults.settings_video_refresh_rate != DEFAULT_REFRESH_RATE) {
+         g_defaults.settings_video_refresh_rate != DEFAULT_REFRESH_RATE)
       settings->floats.video_refresh_rate      = g_defaults.settings_video_refresh_rate;
 
-         }
-
+      
    if (DEFAULT_AUDIO_DEVICE)
       configuration_set_string(settings,
             settings->arrays.audio_device,
