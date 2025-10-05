@@ -248,12 +248,12 @@ static void rcheevos_client_http_task_callback(retro_task_t* task,
 
    if (!http_data)
    {
-      CHEEVOS_LOG(RCHEEVOS_TAG "http_task returned null");
+      CHEEVOS_LOG(RCHEEVOS_TAG "http_task returned null\n");
       callback_data->callback(&server_response, callback_data->callback_data);
    }
    else if (http_data->status < 0)
    {
-      CHEEVOS_LOG(RCHEEVOS_TAG "http_task returned %d", http_data->status);
+      CHEEVOS_LOG(RCHEEVOS_TAG "http_task returned %d\n", http_data->status);
       callback_data->callback(&server_response, callback_data->callback_data);
    }
    else

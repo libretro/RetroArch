@@ -1346,7 +1346,14 @@ static void rcheevos_client_login_callback(int result,
       _len += strlcpy(msg + _len, error_message, sizeof(msg) - _len);
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);
       runloop_msg_queue_push(msg, _len, 0, 2 * 60, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+
+      if (result == RC_EXPIRED_TOKEN)
+      {
+         /* expired token, clear it out */
+         settings_t* settings = config_get_ptr();
+         settings->arrays.cheevos_token[0] = '\0';
+      }
       return;
    }
 
@@ -1444,18 +1451,29 @@ static void rcheevos_client_load_game_callback(int result,
             return;
 
          _len = strlcpy(msg, msg_hash_to_str(MSG_CHEEVOS_GAME_NOT_IDENTIFIED), sizeof(msg));
+
+         runloop_msg_queue_push(msg, _len, 0, 2 * 60, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
       {
          if (!error_message)
             error_message = "Unknown error";
 
-         _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_GAME_LOAD_FAILED), error_message);
          CHEEVOS_LOG(RCHEEVOS_TAG "Game load failed: %s\n", error_message);
+
+         if (result == RC_LOGIN_REQUIRED)
+         {
+            /* assume error already reported by rcheevos_client_login_callback */
+         }
+         else
+         {
+            _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_GAME_LOAD_FAILED), error_message);
+            runloop_msg_queue_push(msg, _len, 0, 2 * 60, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+         }
       }
 
-      runloop_msg_queue_push(msg, _len, 0, 2 * 60, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return;
    }
 
