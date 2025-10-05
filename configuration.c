@@ -2996,7 +2996,6 @@ void config_set_defaults(void *data)
    if (g_defaults.settings_video_refresh_rate > 0.0 &&
          g_defaults.settings_video_refresh_rate != DEFAULT_REFRESH_RATE) {
       settings->floats.video_refresh_rate      = g_defaults.settings_video_refresh_rate;
- ra_notify_refresh_rate(settings->floats.video_refresh_rate);
          }
 
    if (DEFAULT_AUDIO_DEVICE)
