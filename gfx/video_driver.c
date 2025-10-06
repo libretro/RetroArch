@@ -2511,47 +2511,67 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
          uint8_t max_scale_w = 1;
          uint8_t max_scale_h = 1;
 
-         /* Overscale if less screen is lost by cropping instead of empty added by underscale */
+         /* Overscale if only overscan or a small number of rows get cropped.
+          * Otherwise, underscale if the smallest margin doesn't exceed 12%.
+          * Otherwise, fall back to non-integer scaling. */
          if (scaling == VIDEO_SCALE_INTEGER_SCALING_SMART)
          {
-            unsigned overscale_w  = (width / content_width) + !!(width % content_width);
-            unsigned underscale_w = (width / content_width);
-            unsigned overscale_h  = (height / content_height) + !!(height % content_height);
-            unsigned underscale_h = (height / content_height);
-            int overscale_w_diff  = (content_width * overscale_w) - width;
-            int underscale_w_diff = width - (content_width * underscale_w);
-            int overscale_h_diff  = (content_height * overscale_h) - height;
-            int underscale_h_diff = height - (content_height * underscale_h);
-            int scale_h_diff      = overscale_h_diff - underscale_h_diff;
+            unsigned max_scale_w  = width / content_width;
+            unsigned underscale_h = height / content_height;
+            /* Always check if the next integer factor results in a usable
+             * overscale even if the underscale factor already fills the screen.
+             * This is particularly relevant when scaling 240p content to 4k -
+             * a x9 scale will fill the height, but a x10 overscale will only
+             * crop overscan and fills more of the screen. */
+            unsigned overscale_h  = underscale_h + 1;
+            unsigned max_scale_h  = underscale_h;
 
-            max_scale_w = underscale_w;
-            max_scale_h = underscale_h;
+            /* This is the minimum amount content that must be shown in order
+             * for overscan to be used.
+             *
+             * Handhelds don't have overscan, but there are noteworthy cases
+             * where overscaling crops so few pixels that it's worth allowing:
+             * - Atari Lynx @ 800p
+             * - GBA @ 1080p or 4k
+             * - PSP @ 800p, 1080p or 4k
+             * 6 pixels has no special significance, it's simply the smallest
+             * value that covers all of the above cases. */
+            unsigned overscale_min_height = content_height - 6;
+            /* Overscale 240p content if only the overscan area gets cropped.
+             * The core may have applied some cropping, or the emulated console
+             * may not use all 240 lines, so the content height may be lower.
+             * 192 is 80% of 240, and is the title safe area used by Nintendo
+             * for NES development. See https://www.nesdev.org/wiki/Overscan */
+            if (192 <= content_height && content_height <= 240)
+               overscale_min_height = 192;
+            /* Use the 240p thresholds for 480p, just doubled. */
+            else if (192 * 2 <= content_height && content_height <= 480)
+               overscale_min_height = 192 * 2;
 
-            /* Prefer nearest scale */
-            if (overscale_w_diff <= underscale_w_diff)
-               max_scale_w = overscale_w;
-
-            if (overscale_h_diff <= underscale_h_diff)
+            if (height / overscale_h >= overscale_min_height)
                max_scale_h = overscale_h;
-
-            /* Limit width overscale */
-            if (max_scale_w * content_width >= width + ((int)content_width / 2))
-               max_scale_w = underscale_w;
-
-            /* Allow overscale when it is close enough */
-            if (scale_h_diff > 0 && scale_h_diff < 64)
-               max_scale_h = overscale_h;
-            /* Overscale will be too much even if it is closer */
-            else if ((scale_h_diff < -140 && scale_h_diff >= (int)-content_height / 2)
-                  || (scale_h_diff < -30 && scale_h_diff > -50)
-                  || (scale_h_diff > 20))
-               max_scale_h = underscale_h;
-
-            /* Sensible limiting for small sources */
-            if (content_height <= 200)
-               max_scale_h = underscale_h;
-
             max_scale = MIN(max_scale_w, max_scale_h);
+
+            /* Final step: check if the underscaling margins are too large.
+             *
+             * Sometimes there's no reasonable integer scale that can be used,
+             * such as when scaling 480p to 720p. Overscaling would crop 25% of
+             * the content height, but underscaling would only use 2/3 of the
+             * display's height.
+             *
+             * A threshold of 88% utilization (i.e. 12% margin) captures the
+             * majority of underscaling scenarios for HD resolutions while
+             * keeping the margins relatively small. Noteworthy use cases that
+             * straddle this cutoff include: GBA scaled to 720p; Nintendo DS
+             * scaled to 1080p; and 480p content scaled to 1080p. Past this,
+             * noticeable jumps in margin size would be needed to capture a
+             * relatively small number of additional use cases.
+             * TODO: Make this threshold configurable. */
+             float width_utilization  = (float)content_width * max_scale / width;
+             float height_utilization = (float)content_height * max_scale / height;
+             float max_utilization    = MAX(height_utilization, width_utilization);
+             if (max_utilization < 0.88)
+                return video_viewport_get_scaled_aspect(vp, width, height, y_down);
          }
          else if (scaling == VIDEO_SCALE_INTEGER_SCALING_OVERSCALE)
             max_scale = MIN((width / content_width) + !!(width % content_width),
