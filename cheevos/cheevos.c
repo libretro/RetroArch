@@ -1345,15 +1345,22 @@ static void rcheevos_client_login_callback(int result,
             sizeof(msg));
       _len += strlcpy(msg + _len, error_message, sizeof(msg) - _len);
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);
-      runloop_msg_queue_push(msg, _len, 0, 2 * 60, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
       if (result == RC_EXPIRED_TOKEN)
       {
          /* expired token, clear it out */
          settings_t* settings = config_get_ptr();
          settings->arrays.cheevos_token[0] = '\0';
+
+         /* the server message says to log in again. RetroArch doesn't really
+            have a login form, so use a custom message (that's translated) to
+            tell them to re-enter their password and restart the game. */
+         _len = strlcpy(msg, msg_hash_to_str(MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED),
+               sizeof(msg));
       }
+
+      runloop_msg_queue_push(msg, _len, 0, 2 * 60, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       return;
    }
 
