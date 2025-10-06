@@ -1340,16 +1340,17 @@ static void rcheevos_client_login_callback(int result,
 
    if (result != RC_OK)
    {
+      settings_t* settings = config_get_ptr();
       char msg[256];
       size_t _len = strlcpy(msg, "RetroAchievements login failed: ",
             sizeof(msg));
       _len += strlcpy(msg + _len, error_message, sizeof(msg) - _len);
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);
 
-      if (result == RC_EXPIRED_TOKEN)
+      if (result == RC_EXPIRED_TOKEN || /* token expired */
+          (result == RC_INVALID_CREDENTIALS && settings->arrays.cheevos_token[0])) /* token invalid */
       {
          /* expired token, clear it out */
-         settings_t* settings = config_get_ptr();
          settings->arrays.cheevos_token[0] = '\0';
 
          /* the server message says to log in again. RetroArch doesn't really
