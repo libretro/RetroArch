@@ -1221,8 +1221,8 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             {
                update_installed_handle->list_size =
                      core_updater_list_size(update_installed_handle->core_list);
-               RARCH_DBG("[Core Updater] Updater list size from buildbot: %d\n",
-                          update_installed_handle->list_size);
+               RARCH_DBG("[Core Updater] Updater list size from buildbot: %d.\n",
+                     update_installed_handle->list_size);
 
                if (update_installed_handle->list_size < 1)
                   update_installed_handle->status = UPDATE_INSTALLED_CORES_END;
@@ -1257,7 +1257,8 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                         update_installed_handle->list_index;
                   update_installed_handle->status          =
                         UPDATE_INSTALLED_CORES_UPDATE_CORE;
-                  RARCH_DBG("[Core Updater] Updating installed core: \"%s\"\n",list_entry->local_core_path);
+                  RARCH_LOG("[Core Updater] Checking: \"%s\"...\n",
+                        list_entry->local_core_path);
                }
             }
 
@@ -1310,7 +1311,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
              *   updater list provides 'sane' core paths */
             if (core_info_get_core_lock(list_entry->local_core_path, false))
             {
-               RARCH_LOG("[Core Updater] Skipping locked core: %s\n",
+               RARCH_LOG("[Core Updater] Skipping locked core: \"%s\".\n",
                      list_entry->display_name);
 
                /* Core update is disabled
@@ -1340,7 +1341,8 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             if ((local_crc != 0) && (local_crc == list_entry->crc))
             {
                update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
-               RARCH_DBG("[Core Updater] Core %s is already at latest version\n",list_entry->display_name);
+               RARCH_LOG("[Core Updater] Core \"%s\" is already at latest version.\n",
+                     list_entry->display_name);
                break;
             }
 
@@ -1380,7 +1382,8 @@ static void task_update_installed_cores_handler(retro_task_t *task)
 
                /* Wait for download to complete */
                update_installed_handle->status = UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD;
-               RARCH_DBG("[Core Updater] Downloading core %s\n",list_entry->display_name);
+               RARCH_LOG("[Core Updater] Downloading: \"%s\"...\n",
+                     list_entry->display_name);
             }
          }
          break;
