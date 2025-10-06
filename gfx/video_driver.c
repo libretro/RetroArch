@@ -2525,6 +2525,8 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
              * crop overscan and fills more of the screen. */
             unsigned overscale_h  = underscale_h + 1;
             unsigned max_scale_h  = underscale_h;
+            float width_utilization;
+            float height_utilization;
 
             /* This is the minimum amount content that must be shown in order
              * for overscan to be used.
@@ -2567,11 +2569,13 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
              * noticeable jumps in margin size would be needed to capture a
              * relatively small number of additional use cases.
              * TODO: Make this threshold configurable. */
-             float width_utilization  = (float)content_width * max_scale / width;
-             float height_utilization = (float)content_height * max_scale / height;
-             float max_utilization    = MAX(height_utilization, width_utilization);
-             if (max_utilization < 0.88)
-                return video_viewport_get_scaled_aspect(vp, width, height, y_down);
+            width_utilization  = (float)content_width * max_scale / width;
+            height_utilization = (float)content_height * max_scale / height;
+            if (MAX(height_utilization, width_utilization) < 0.88)
+            {
+               video_viewport_get_scaled_aspect(vp, width, height, y_down);
+               return;
+            }
          }
          else if (scaling == VIDEO_SCALE_INTEGER_SCALING_OVERSCALE)
             max_scale = MIN((width / content_width) + !!(width % content_width),
