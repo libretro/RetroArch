@@ -15007,6 +15007,10 @@ MSG_HASH(
    "Error en canviar els medis a RetroAchievements: %s"
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "L'inici de sessió a RetroAchievements ha expirat. Reintrodueix, si us plau, la teva contrasenya i recarrega el joc."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Més baix"
    )

@@ -279,6 +279,10 @@ MSG_HASH(
    "Видеа"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   "Предишно пуснати видеота, ще се покажат тук."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
    "Разгледайте"
    )

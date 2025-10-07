@@ -13011,6 +13011,10 @@ MSG_HASH(
    "Osiągnięcia Tryb Hardcore Włączono, zapisywanie stanu i przewijanie wyłączone."
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "Login RetroAchOsiągnięcia wygasł. Wprowadź ponownie hasło i odśwież grę."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Najniższa"
    )

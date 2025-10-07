@@ -14767,6 +14767,10 @@ MSG_HASH(
    "RetroAchievements Medienwechsel fehlgeschlagen: %s"
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "RetroArchievements-Login ist abgelaufen. Bitte das Passwort erneut eingeben und das Spiel neu laden."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Niedrigste"
    )
