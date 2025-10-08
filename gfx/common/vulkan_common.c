@@ -1249,32 +1249,6 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
    vk->context.num_recycled_acquire_semaphores = 0;
 }
 
-static void vulkan_acquire_clear_fences(gfx_ctx_vulkan_data_t *vk)
-{
-   unsigned i;
-   for (i = 0; i < vk->context.num_swapchain_images; i++)
-   {
-      if (vk->context.swapchain_fences[i])
-      {
-         vkDestroyFence(vk->context.device,
-               vk->context.swapchain_fences[i], NULL);
-         vk->context.swapchain_fences[i]        = VK_NULL_HANDLE;
-      }
-      vk->context.swapchain_fences_signalled[i] = false;
-
-      if (vk->context.swapchain_wait_semaphores[i])
-      {
-         struct vulkan_context *ctx = &vk->context;
-         VkSemaphore sem            = vk->context.swapchain_wait_semaphores[i];
-         assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
-         ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
-      }
-      vk->context.swapchain_wait_semaphores[i] = VK_NULL_HANDLE;
-   }
-
-   vk->context.current_frame_index = 0;
-}
-
 static VkSemaphore vulkan_get_wsi_acquire_semaphore(struct vulkan_context *ctx)
 {
    VkSemaphore sem;
