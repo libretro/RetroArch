@@ -1,24 +1,14 @@
-
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include <wiiu/gx2.h>
+#include <wiiu/types.h>
 #include <wiiu/system/memory.h>
 #include <wiiu/shader_utils.h>
 #include <wiiu/wiiu_dbg.h>
-
-/* this is a hack for elf builds since their data section is below 0x10000000
- * and thus can't be accessed by the GX2 hardware */
-#ifndef GX2_CAN_ACCESS_DATA_SECTION
-typedef struct
-{
-   void *vs_program;
-   void *ps_program;
-   void *gs_program;
-   void *gs_copy_program;
-} org_programs_t;
-#endif
+#include <gx2/ra_shaders.h>
+#include <gx2/enum.h>
+#include <gx2/mem.h>
 
 void GX2InitShader(GX2Shader *shader)
 {
@@ -27,63 +17,16 @@ void GX2InitShader(GX2Shader *shader)
 
    shader->fs.size = GX2CalcFetchShaderSizeEx(shader->vs.attribVarCount,
                      GX2_FETCH_SHADER_TESSELLATION_NONE, GX2_TESSELLATION_MODE_DISCRETE);
-#ifdef GX2_CAN_ACCESS_DATA_SECTION
-   shader->fs.program = MEM2_alloc(shader->fs.size, GX2_SHADER_ALIGNMENT);
-#else
-   shader->fs.program = MEM2_alloc(shader->fs.size + sizeof(org_programs_t), GX2_SHADER_ALIGNMENT);
-#endif
+   shader->fs.program = MEM2_alloc(shader->fs.size, GX2_SHADER_PROGRAM_ALIGNMENT);
    GX2InitFetchShaderEx(&shader->fs, (uint8_t *)shader->fs.program,
                         shader->vs.attribVarCount,
                         shader->attribute_stream,
                         GX2_FETCH_SHADER_TESSELLATION_NONE, GX2_TESSELLATION_MODE_DISCRETE);
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, shader->fs.program, shader->fs.size);
-
-#ifndef GX2_CAN_ACCESS_DATA_SECTION
-   org_programs_t *org = (org_programs_t *)(shader->fs.program + shader->fs.size);
-   org->vs_program = shader->vs.program;
-   org->ps_program = shader->ps.program;
-   org->gs_program = shader->gs.program;
-   org->gs_copy_program = shader->gs.copyProgram;
-
-   shader->vs.program = MEM2_alloc(shader->vs.size, GX2_SHADER_ALIGNMENT);
-   memcpy(shader->vs.program, org->vs_program, shader->vs.size);
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, shader->vs.program, shader->vs.size);
-
-   shader->ps.program = MEM2_alloc(shader->ps.size, GX2_SHADER_ALIGNMENT);
-   memcpy(shader->ps.program, org->ps_program, shader->ps.size);
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, shader->ps.program, shader->ps.size);
-
-   if (org->gs_program)
-   {
-      shader->gs.program = MEM2_alloc(shader->gs.size, GX2_SHADER_ALIGNMENT);
-      memcpy(shader->gs.program, org->gs_program, shader->gs.size);
-      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, shader->gs.program, shader->gs.size);
-
-      shader->gs.copyProgram = MEM2_alloc(shader->gs.copyProgramSize, GX2_SHADER_ALIGNMENT);
-      memcpy(shader->gs.copyProgram, org->gs_copy_program, shader->gs.copyProgramSize);
-      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, shader->gs.copyProgram, shader->gs.copyProgramSize);
-   }
-
-#endif
-
 }
 
 void GX2DestroyShader(GX2Shader *shader)
 {
-#ifndef GX2_CAN_ACCESS_DATA_SECTION
-   MEM2_free(shader->vs.program);
-   MEM2_free(shader->ps.program);
-   MEM2_free(shader->gs.program);
-   MEM2_free(shader->gs.copyProgram);
-
-   org_programs_t *org = (org_programs_t *)(shader->fs.program + shader->fs.size);
-
-   shader->vs.program = org->vs_program;
-   shader->ps.program = org->ps_program;
-   shader->gs.program = org->gs_program;
-   shader->gs.copyProgram = org->gs_copy_program;
-#endif
-
    MEM2_free(shader->fs.program);
    shader->fs.program = NULL;
 }
@@ -378,7 +321,7 @@ GFDFile *gfd_open(const char *filename)
    fseek(fp, 0, SEEK_END);
    size      = ftell(fp);
    fseek(fp, 0, SEEK_SET);
-   gfd->data = MEM2_alloc(size, GX2_SHADER_ALIGNMENT);
+   gfd->data = MEM2_alloc(size, GX2_SHADER_PROGRAM_ALIGNMENT);
    fread(gfd->data, 1, size, fp);
    fclose(fp);
 

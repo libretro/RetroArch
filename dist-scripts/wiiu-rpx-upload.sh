@@ -37,10 +37,10 @@ fi
 
 filesToUpload()
 {
-  find . -type f \( -name "*.rpx" -o -name "*.xml" -o -name "*.png" -o -name "*.info" \)
+  find . -type f \( -name "*.rpx" -o -name "*.wuhb" -o -name "*.info" \)
 }
 
-cd ../pkg/wiiu/rpx
+cd ../pkg/wiiu
 
 # First, delete any previous *.remote files from previous uploads.
 find . -name '*.remote' | xargs rm -f {}

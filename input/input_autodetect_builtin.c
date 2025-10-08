@@ -350,7 +350,6 @@ DECL_AXIS_EX(r_y_plus,  +3, "C-stick up") \
 DECL_AXIS_EX(r_y_minus, -3, "C-stick down")
 
 #define WIIUINPUT_DS3_DEFAULT_BINDS \
-DECL_BTN_EX(menu_toggle, 16, "Playstation") \
 DECL_BTN_EX(select, 2, "Select") \
 DECL_BTN_EX(start,  3, "Start") \
 DECL_BTN_EX(a, 8, "Circle") \
@@ -377,7 +376,6 @@ DECL_AXIS_EX(r_y_plus,  +3, "R Analog up") \
 DECL_AXIS_EX(r_y_minus, -3, "R Analog down")
 
 #define WIIUINPUT_GAMEPAD_DEFAULT_BINDS \
-DECL_BTN_EX(menu_toggle,  1, "Home") \
 DECL_BTN_EX(select,       2, "-") \
 DECL_BTN_EX(start,        3, "+") \
 DECL_BTN_EX(r,            4, "R") \
@@ -414,7 +412,6 @@ DECL_BTN_EX(b,            6, "B") \
 DECL_BTN_EX(l2,           7, "ZL") \
 DECL_BTN_EX(r,            9, "R") \
 DECL_BTN_EX(start,       10, "+") \
-DECL_BTN_EX(menu_toggle, 11, "Home") \
 DECL_BTN_EX(select,      12, "-") \
 DECL_BTN_EX(l,           13, "L") \
 DECL_BTN_EX(down,        14, "D-Pad Down") \
@@ -441,7 +438,6 @@ DECL_BTN_EX(b,            6, "B") \
 DECL_BTN_EX(l2,           7, "ZL") \
 DECL_BTN_EX(r,            9, "R") \
 DECL_BTN_EX(start,       10, "+") \
-DECL_BTN_EX(menu_toggle, 11, "Home") \
 DECL_BTN_EX(select,      12, "-") \
 DECL_BTN_EX(l,           13, "L") \
 DECL_BTN_EX(down,        14, "D-Pad Down") \
@@ -468,7 +464,6 @@ DECL_BTN_EX(y,           11, "A") \
 DECL_BTN_EX(select,      12, "-") \
 DECL_BTN_EX(l,           13, "Z") \
 DECL_BTN_EX(r,           14, "C") \
-DECL_BTN_EX(menu_toggle, 15, "Home")
 
 #define WIIUINPUT_NUNCHUK_DEFAULT_BINDS \
 DECL_BTN_EX(left,         0, "D-Pad Left") \
@@ -483,7 +478,6 @@ DECL_BTN_EX(a,           11, "A") \
 DECL_BTN_EX(select,      12, "-") \
 DECL_BTN_EX(l,           13, "Z") \
 DECL_BTN_EX(r,           14, "C") \
-DECL_BTN_EX(menu_toggle, 15, "Home") \
 DECL_AXIS_EX(l_x_plus,   +0, "Stick Right") \
 DECL_AXIS_EX(l_x_minus,  -0, "Stick Left") \
 DECL_AXIS_EX(l_y_minus,  +1, "Stick Up") \
