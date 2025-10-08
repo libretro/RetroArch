@@ -15071,6 +15071,10 @@ MSG_HASH(
    "RetroSuccès (RetroAchievements) : Le changement de média a échoué : %s"
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "La connexion à RetroSuccès (RetroAchievements) a expiré. Veuillez saisir à nouveau votre mot de passe et relancer le jeu."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "La plus basse"
    )

@@ -46,7 +46,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Core không cần trò chơi"
+   "Core tự chạy"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -105,11 +105,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   "Xuất nội dung đĩa - Dump"
+   "Sao lưu đĩa"
    )
 MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
    MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "Đổ đĩa vật lý vào bộ nhớ trong. Đĩa sẽ được lưu dưới dạng tệp hình ảnh."
+   "Sao chép đĩa vật lý vào bộ nhớ trong. Tệp sẽ được lưu dưới dạng file ảnh."
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -127,7 +127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   "Đã quét trò chơi khớp với Csdl và hiển thị tại đây."
+   "Nội dung đã quét trùng khớp với cơ sở dữ liệu sẽ hiển thị tại đây."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
@@ -316,7 +316,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Core không cần trò chơi"
+   "Core tự chạy"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -577,7 +577,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Ngăn không cho core này xuất hiện trong tab/menu 'Core không cần trò chơi'. Chỉ áp dụng khi chế độ hiển thị đang đặt ở 'Tùy chỉnh'."
+   "Ngăn không cho core này xuất hiện trong tab/menu 'Core tự chạy'. Chỉ áp dụng khi chế độ hiển thị đang đặt ở 'Tùy chỉnh'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -3287,7 +3287,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-   "Ánh xạ lại các điều khiển cho lõi này"
+   "Gán lại phím điều khiển cho Core này"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
@@ -4218,7 +4218,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "Bật/tắt lưu trữ netplay."
+   "Bật/tắt máy chủ netplay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
@@ -4265,7 +4265,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
-   "Ánh xạ cần analog đã chỉ định cho đầu vào D-Pad.\nNếu core có hỗ trợ analog gốc, ánh xạ D-Pad sẽ bị vô hiệu trừ khi chọn tùy chọn '(Bắt buộc)'.\nNếu ánh xạ D-Pad bị bắt buộc, core sẽ không nhận đầu vào analog từ cần đã chỉ định."
+   "Gán cần analog được chỉ định cho đầu vào D-Pad.\nNếu core hỗ trợ analog gốc, ánh xạ D-Pad sẽ bị tắt trừ khi chọn tùy chọn “(Bắt buộc)”.\nNếu ánh xạ D-Pad được ép buộc, core sẽ không nhận đầu vào analog từ cần được chỉ định."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -6391,7 +6391,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
-   "Hiển thị tùy chọn \"Dump đĩa\" trong Menu chính."
+   "Hiển thị tùy chọn “Sao chép đĩa” trong Menu chính."
    )
 #ifdef HAVE_LAKKA
 MSG_HASH(
@@ -6581,11 +6581,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Hiển thị \"Core không cần trò chơi\""
+   "Hiển thị \"Core tự chạy\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Chỉ định loại core (nếu có) để hiển thị trong menu \"Core không cần trò chơi\". Khi đặt thành \"Tùy chỉnh\", khả năng hiển thị từng core có thể được bật/tắt trong menu \"Quản lý Core\"."
+   "Chỉ định loại core (nếu có) để hiển thị trong menu \"Core tự chạy\". Khi đặt thành \"Tùy chỉnh\", khả năng hiển thị từng core có thể được bật/tắt trong menu \"Quản lý Core\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -7274,7 +7274,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Chế độ Hardcore"
+   "Chế độ Thử thách"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
@@ -7290,7 +7290,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
-   "Định kỳ gửi thông tin trò chơi theo ngữ cảnh đến trang RetroAchievements. Không có tác dụng nếu chế độ “Hardcore” được bật."
+   "Định kỳ gửi thông tin trò chơi theo ngữ cảnh đến trang Thành tích Retro. Không có tác dụng nếu chế độ “Thử thách” được bật."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
@@ -7591,7 +7591,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
-   "Độ trễ kết nối (ping) tối đa mà máy chủ sẽ chấp nhận. Đặt 0 để không giới hạn."
+   "Độ trễ kết nối tối đa mà máy chủ sẽ chấp nhận. Đặt 0 để không giới hạn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
@@ -7599,7 +7599,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
-   "Mật khẩu dùng cho client khi kết nối tới máy chủ."
+   "Mật khẩu dùng cho máy khách khi kết nối tới máy chủ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
@@ -7607,7 +7607,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-   "Mật khẩu dùng cho client khi kết nối tới máy chủ ở chế độ khán giả."
+   "Mật khẩu dùng cho máy khách khi kết nối tới máy chủ ở chế độ khán giả."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
@@ -9459,7 +9459,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
-   "Lưu ánh xạ điều khiển hiện tại thành một file gán lại phím mới."
+   "Lưu gán phím điều khiển hiện tại thành một file gán lại phím mới."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
@@ -9530,7 +9530,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE,
-   "Tệp ánh xạ"
+   "Tệp gán lại phím"
    )
 
 /* Quick Menu > Cheats */
@@ -10229,39 +10229,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
-   "Hủy Tạm dừng Chế độ Thành tựu Hardcore"
+   "Hủy Tạm dừng Chế độ Thành tựu Thử thách"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
-   "Giữ chế độ thành tựu hardcore được bật cho phiên hiện tại"
+   "Giữ chế độ thành tựu Thử thách được bật cho phiên hiện tại"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
-   "Hủy Tiếp tục Chế độ Thành tựu Hardcore"
+   "Hủy Tiếp tục Chế độ Thành tựu Thử thách"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
-   "Giữ chế độ thành tựu hardcore được tắt cho phiên hiện tại"
+   "Giữ chế độ thành tựu Thử thách được tắt cho phiên hiện tại"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
-   "Tiếp tục Chế độ Thành tựu Hardcore đã Tắt"
+   "Tiếp tục Chế độ Thành tựu Thử thách đã Tắt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
-   "Bạn phải tải lại core để tiếp tục Chế độ Thành tựu Hardcore"
+   "Bạn phải tải lại core để tiếp tục Chế độ Thành tựu Thử thách"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-   "Tạm dừng Chế độ Thành tựu Hardcore"
+   "Tạm dừng Chế độ Thành tựu Thử thách"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Tạm dừng chế độ thành tựu hardcore cho phiên hiện tại. Hành động này sẽ bật cheat, tua lại, chuyển động chậm và tải trạng thái lưu."
+   "Tạm dừng chế độ thành tựu Thử thách cho phiên hiện tại. Hành động này sẽ bật cheat, tua lại, chuyển động chậm và tải trạng thái lưu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
-   "Tiếp tục Chế độ Thành tựu Hardcore"
+   "Tiếp tục Chế độ Thành tựu Thử thách"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
@@ -10846,7 +10846,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE,
-   "Chế độ khó"
+   "Chế độ Thử thách"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNOFFICIAL_ENTRY,
@@ -13174,7 +13174,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
-   "Thành tích (Chế độ Hardcore)"
+   "Thành tích (Chế độ Thử thách)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
@@ -14896,15 +14896,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CORE_REMAP_FILE_LOADED,
-   "Đã tải file ánh xạ lại core."
+   "Đã tải tệp gán lại phím core."
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSHED,
-   "Tùy chọn ánh xạ lại phím đã được lưu tại:"
+   "Tùy chọn gán lại phím đã được lưu tại:"
    )
 MSG_HASH(
    MSG_REMAP_FILE_FLUSH_FAILED,
-   "Không thể lưu tùy chọn ánh xạ lại phím tại:"
+   "Không thể lưu tùy chọn gán lại phím tại:"
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED,
@@ -15080,23 +15080,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE,
-   "Bạn phải tạm dừng hoặc tắt Chế độ Hardcore Achievements để tải lưu srm."
+   "Bạn phải tạm dừng hoặc tắt Chế độ Thử thách Thành tích để tải lưu srm."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "Một trạng thái lưu đã được tải. Chế độ Hardcore Achievements bị tắt cho phiên hiện tại."
+   "Một trạng thái lưu đã được tải. Chế độ Thử thách Thành tích bị tắt cho phiên hiện tại."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
-   "Một cheat đã được kích hoạt. Chế độ Hardcore Achievements bị tắt cho phiên hiện tại."
+   "Một cheat đã được kích hoạt. Chế độ Thử thách Thành tích bị tắt cho phiên hiện tại."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
-   "Chế độ Hardcore Achievements đã bị thay đổi bởi host."
+   "Chế độ Thử thách Thành tích đã bị thay đổi bởi máy chủ."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
-   "Netplay host cần được cập nhật. Chế độ Hardcore Achievements bị tắt cho phiên hiện tại."
+   "Netplay host cần được cập nhật. Chế độ Thử thách Thành tích bị tắt cho phiên hiện tại."
    )
 MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
@@ -15140,23 +15140,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
-   "Hardcore tạm dừng. Không cho phép thiết lập độ trễ khung hình video thủ công."
+   "Thử thách tạm dừng. Không cho phép thiết lập độ trễ khung hình video thủ công."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
-   "Hardcore tạm dừng. Không cho phép vsync swap interval lớn hơn 1."
+   "Thử thách tạm dừng. Không cho phép vsync swap interval lớn hơn 1."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
-   "Hardcore tạm dừng. Không cho phép chèn khung hình đen."
+   "Thử thách tạm dừng. Không cho phép chèn khung hình đen."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
-   "Hardcore tạm dừng. Thiết lập không hợp lệ: %s=%s"
+   "Thử thách tạm dừng. Thiết lập không hợp lệ: %s=%s"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
-   "Hardcore tạm dừng. Bạn không thể kiếm Hardcore achievements cho %s bằng %s"
+   "Chế độ Thử thách đã tạm dừng. Bạn không thể nhận thành tựu Chế độ Thử thách cho %s khi dùng %s"
    )
 MSG_HASH(
    MSG_CHEEVOS_GAME_NOT_IDENTIFIED,

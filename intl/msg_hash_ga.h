@@ -15183,6 +15183,10 @@ MSG_HASH(
    "Theip ar athrú meán RetroAchievements: %s"
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "Tá logáil isteach RetroAchievements imithe in éag. Cuir isteach do phasfhocal arís agus athlódáil an cluiche."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Is ísle"
    )
