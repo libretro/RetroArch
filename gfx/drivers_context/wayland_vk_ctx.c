@@ -56,6 +56,7 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
    if (!wl)
       return;
+
    vulkan_context_destroy(&wl->vk, wl->surface);
    gfx_ctx_wl_destroy_resources_common(wl);
 }
@@ -259,6 +260,11 @@ static void gfx_ctx_wl_swap_buffers(void *data)
       else
          vulkan_present(&wl->vk, wl->vk.context.current_swapchain_index);
    }
+
+   if (wl->present_clock)
+      wl_request_presentation_feedback(wl);
+
+   wait_for_next_frame(wl);
    vulkan_acquire_next_image(&wl->vk);
    flush_wayland_fd(&wl->input);
 }

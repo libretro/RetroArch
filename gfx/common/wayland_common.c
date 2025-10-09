@@ -22,6 +22,7 @@
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <poll.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "wayland_common.h"
@@ -38,6 +39,10 @@
 
 #ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
+#endif
+
+#ifndef CLOCK_MONOTONIC_RAW
+#define CLOCK_MONOTONIC_RAW 4
 #endif
 
 #define DEFAULT_WINDOWED_WIDTH 640
@@ -287,6 +292,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 
    if (wl->viewport)
       wp_viewport_destroy(wl->viewport);
+   if (wl->presentation)
+      wp_presentation_destroy(wl->presentation);
    if (wl->fractional_scale)
       wp_fractional_scale_v1_destroy(wl->fractional_scale);
    if (wl->idle_inhibitor)
@@ -376,6 +383,7 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    wl->seat                      = NULL;
    wl->relative_pointer_manager  = NULL;
    wl->pointer_constraints       = NULL;
+   wl->presentation              = NULL;
    wl->content_type              = NULL;
    wl->content_type_manager      = NULL;
    wl->cursor_shape_manager      = NULL;
@@ -466,6 +474,124 @@ bool gfx_ctx_wl_get_metrics_common(void *data,
    }
 
    return true;
+}
+
+static void presentation_handle_clock_id(void *data,
+   struct wp_presentation *presentation,
+   uint32_t clock_id)
+{
+   gfx_ctx_wayland_data_t *wl = data;
+
+   if (clock_id == CLOCK_MONOTONIC || clock_id == CLOCK_MONOTONIC_RAW)
+   {
+      wl->present_clock = true;
+      wl->present_clock_id = (clockid_t)clock_id;
+   }
+}
+
+static void presentation_feedback_sync_output(void *data,
+   struct wp_presentation_feedback *feedback,
+   struct wl_output *output)
+{
+}
+
+static void presentation_feedback_remove(gfx_ctx_wayland_data_t *wl,
+   struct wp_presentation_feedback *feedback)
+{
+   wp_presentation_feedback_t *fb, *tmp;
+   wl_list_for_each_safe(fb, tmp, &wl->feedbacks, link)
+   {
+      if (fb->feedback == feedback)
+      {
+         wl_list_remove(&fb->link);
+         wp_presentation_feedback_destroy(fb->feedback);
+         free(fb);
+         return;
+      }
+   }
+}
+
+static void presentation_feedback_presented(void *data,
+   struct wp_presentation_feedback *feedback,
+   uint32_t tv_sec_hi, uint32_t tv_sec_lo, uint32_t tv_nsec,
+   uint32_t refresh, uint32_t seq_hi, uint32_t seq_lo,
+   uint32_t flags)
+{
+   gfx_ctx_wayland_data_t *wl = data;
+   presentation_feedback_remove(wl, feedback);
+
+   uint64_t sec = ((uint64_t)tv_sec_hi << 32) | (uint64_t)tv_sec_lo;
+   wl->last_ust = sec * 1000000000ULL + (uint64_t)tv_nsec;
+   wl->last_msc = ((uint64_t)seq_hi << 32) | (uint64_t)seq_lo;
+   wl->refresh_interval = (int64_t)refresh;
+   wl->is_presented = true;
+}
+
+static void presentation_feedback_discarded(void *data,
+   struct wp_presentation_feedback *feedback)
+{
+   gfx_ctx_wayland_data_t *wl = data;
+   presentation_feedback_remove(wl, feedback);
+}
+
+const struct wp_presentation_listener presentation_listener = {
+   presentation_handle_clock_id,
+};
+
+static const struct wp_presentation_feedback_listener presentation_feedback_listener = {
+   presentation_feedback_sync_output,
+   presentation_feedback_presented,
+   presentation_feedback_discarded,
+};
+
+void wl_request_presentation_feedback(gfx_ctx_wayland_data_t *wl)
+{
+   wp_presentation_feedback_t *fb = calloc(1, sizeof(*fb));
+   if (!fb)
+   {
+      RARCH_ERR("[Wayland] Failed to allocate feedback struct\n");
+      return;
+   }
+
+   fb->feedback = wp_presentation_feedback(wl->presentation, wl->surface);
+   if (!fb->feedback)
+   {
+      RARCH_ERR("[Wayland] Failed to create feedback object\n");
+      free(fb);
+      return;
+   }
+
+   wl->is_presented = false;
+   wp_presentation_feedback_add_listener(fb->feedback,
+         &presentation_feedback_listener, wl);
+   wl_list_insert(&wl->feedbacks, &fb->link);
+}
+
+void wait_for_next_frame(gfx_ctx_wayland_data_t *wl)
+{
+    if (!wl->present_clock || wl->refresh_interval <= 0 || !wl->is_presented)
+        return;
+
+    clockid_t clock_type = (wl->present_clock_id == CLOCK_MONOTONIC ||
+                            wl->present_clock_id == CLOCK_MONOTONIC_RAW)
+                            ? wl->present_clock_id
+                            : CLOCK_MONOTONIC;
+
+    uint64_t next_frame_ns = wl->last_ust + wl->refresh_interval;
+
+    struct timespec ts;
+    ts.tv_sec = next_frame_ns / 1000000000ULL;
+    ts.tv_nsec = next_frame_ns % 1000000000ULL;
+
+    struct timespec now;
+    if (clock_gettime(clock_type, &now) == 0)
+    {
+       uint64_t now_ns = (uint64_t)now.tv_sec * 1000000000ULL + now.tv_nsec;
+       if (now_ns >= next_frame_ns)
+          return;
+    }
+
+    clock_nanosleep(clock_type, TIMER_ABSTIME, &ts, NULL);
 }
 
 static int create_shm_file(off_t size)
@@ -829,6 +955,19 @@ bool gfx_ctx_wl_init_common(
    if (!wl->xdg_toplevel_icon_manager)
    {
       RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", xdg_toplevel_icon_manager_v1_interface.name);
+   }
+
+   if (wl->presentation)
+   {
+      wl_list_init(&wl->feedbacks);
+      wl->last_ust = 0;
+      wl->last_sbc = 0;
+      wl->last_msc = 0;
+      wl->refresh_interval = 0;
+   }
+   else
+   {
+      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_presentation_interface.name);
    }
 
    wl->surface = wl_compositor_create_surface(wl->compositor);
