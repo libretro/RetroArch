@@ -38,7 +38,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   "Kích hoạt Netplay"
+   "Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
@@ -163,11 +163,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
-   "Kết nối mạng Netplay"
+   "Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   "Tham gia hoặc làm máy chủ cho netplay."
+   "Tham gia hoặc làm máy chủ cho Trò chơi trực tuyến."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -924,7 +924,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   "Hỗ trợ Netplay (Peer-to-Peer)"
+   "Hỗ trợ Trò chơi trực tuyến (Người chơi trực tiếp)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
@@ -1058,7 +1058,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
-   ""
+   "Xếp hạng tạp chí Edge"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
@@ -3508,15 +3508,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "Chế độ chuyển đổi cổ điển, thao tác bằng hai nút. Giữ một nút và chạm vào nút nhấn nhanh để bật gán nút cho nút đó. Để tắt Turbo: giữ nút và nhấn lại nút Turbo.\nCó thể gán nút nhấn nhanh trong Cài đặt/Đầu vào/Điều khiển Cổng X."
+   "Bật/Tắt chế độ cổ điển, thao tác bằng hai nút. Giữ một nút và chạm vào nút nhấn nhanh để bật gán nút cho nút đó. Để tắt Turbo: giữ nút và nhấn lại nút Turbo.\nCó thể gán nút nhấn nhanh trong Cài đặt/Đầu vào/Điều khiển Cổng X."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Chuyển đổi chế độ. Nhấn nút Turbo một lần để kích hoạt chuỗi nhấn cho nút mặc định đã chọn, nhấn lại một lần nữa để tắt.\nCó thể chỉ định Gán nút nhấn nhanh trong Cài đặt/Đầu vào/Điều khiển Cổng X."
+   "Chuyển đổi chế độ. Nhấn nút Tự động một lần để kích hoạt chuỗi nhấn cho nút mặc định đã chọn, nhấn lại một lần nữa để tắt.\nCó thể chỉ định Gán nút nhấn nhanh trong Cài đặt/Đầu vào/Điều khiển Cổng X."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Chế độ giữ. Chuỗi nhấn nút mặc định đã chọn sẽ hoạt động miễn là nút Turbo được giữ.\nCó thể gán chế độ Turbo Bind trong Cài đặt/Đầu vào/Điều khiển Cổng X.\nĐể mô phỏng chức năng tự động bắn của thời đại máy tính gia đình, hãy đặt Bind và Button thành cùng một nút bắn trên cần điều khiển."
+   "Chế độ giữ. Chuỗi nhấn nút mặc định đã chọn sẽ hoạt động miễn là nút Tự động nhấn được giữ.\nCó thể gán chế độ tự động nhấn nhanh trong Cài đặt/Đầu vào/Điều khiển Cổng X.\nĐể mô phỏng chức năng tự động bắn của thời đại máy tính gia đình, hãy đặt Gán và Nút thành cùng một nút bắn trên cần điều khiển."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
@@ -3524,31 +3524,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
-   "Nút nhấn nhanh gán cho RetroPad. Nếu để trống, sẽ dùng gán mặc định theo cổng."
+   "Chế độ tự động nhấn nhanh gán cho tay cầm. Nếu để trống, sẽ dùng gán mặc định theo cổng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
-   "Nút nhấn nhanh"
+   "Nút tự động nhấn nhanh"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
-   "Nhấn nhanh mục tiêu ở chế độ 'Nút đơn'."
+   "Tự động nhấn nhanh mục tiêu ở chế độ 'Nút đơn'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
-   "Cho phép nhấn nhanh trên D-Pad"
+   "Cho phép tự động nhấn nhanh trên D-Pad"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
-   "Nếu bật, các phím điều hướng (D-Pad/hatswitch) cũng hỗ trợ nhấn nhanh."
+   "Nếu bật, các phím điều hướng (D-Pad/hatswitch) cũng hỗ trợ tự động nhấn nhanh."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   "Nhấn nhanh"
+   "Tự động nhấn nhanh"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Thay đổi cài đặt nhấn nhanh"
+   "Thay đổi cài đặt tự động nhấn nhanh."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3560,7 +3560,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
-   "Điều khiển menu"
+   "Menu điều khiển"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
@@ -3588,7 +3588,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-   "Cổng %u Điều khiển"
+   "Tay cầm cổng %u"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
@@ -4099,11 +4099,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
-   "Chế độ Bấm Nhanh (Bật/Tắt)"
+   "Chế độ tự động nhấn nhanh (Bật/Tắt)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
-   "Chuyển chế độ bấm nhanh sang Bật/Tắt."
+   "Chuyển chế độ tự động nhấn nhanh sang Bật/Tắt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
@@ -4210,7 +4210,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Bật/tắt bộ đếm ping cho phòng netplay hiện tại."
+   "Bật/tắt bộ đếm ping cho phòng Trò chơi trực tuyến hiện tại."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
@@ -4218,19 +4218,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "Bật/tắt máy chủ netplay."
+   "Bật/tắt máy chủ Trò chơi trực tuyến."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-   "Chế độ Chơi/Xem Netplay (Bật/Tắt)"
+   "Chế độ Chơi/Xem Trò chơi trực tuyến (Bật/Tắt)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
-   "Chuyển đổi phiên netplay hiện tại giữa chế độ 'play' và 'spectate'."
+   "Chuyển đổi phiên Trò chơi trực tuyến hiện tại giữa chế độ 'play' và 'spectate'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Trò chuyện người chơi Netplay"
+   "Trò chuyện người chơi Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
@@ -4238,11 +4238,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Ẩn/Hiện chat Netplay (Bật/Tắt)"
+   "Ẩn/Hiện chat Trò chơi trực tuyến (Bật/Tắt)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Chuyển đổi giữa hiển thị mờ và tĩnh cho tin nhắn chat netplay."
+   "Chuyển đổi giữa hiển thị mờ và tĩnh cho tin nhắn chat Trò chơi trực tuyến."
    )
 
 /* Settings > Input > Port # Controls */
@@ -4485,7 +4485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
-   "Nhấn nhanh"
+   "Tự động nhấn nhanh"
    )
 
 /* Settings > Latency */
@@ -5879,11 +5879,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
-   "Hiển thị độ trễ Netplay"
+   "Hiển thị độ trễ Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
-   "Hiển thị độ trễ cho phòng netplay hiện tại."
+   "Hiển thị độ trễ cho phòng Trò chơi trực tuyến hiện tại."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -6031,11 +6031,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Thông báo Netplay bổ sung"
+   "Thông báo Trò chơi trực tuyến bổ sung"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Hiển thị các thông báo Netplay không bắt buộc trên màn hình."
+   "Hiển thị các thông báo Trò chơi trực tuyến không bắt buộc trên màn hình."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
@@ -6525,11 +6525,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
-   "Hiển thị ‘Netplay’"
+   "Hiển thị ‘Trò chơi trực tuyến’"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Hiển thị menu ‘Netplay’."
+   "Hiển thị menu ‘Trò chơi trực tuyến’."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -7511,11 +7511,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
-   "Công khai thông báo Netplay"
+   "Công khai thông báo Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-   "Có công khai thông báo trò chơi netplay hay không. Nếu không bật, người chơi phải kết nối thủ công thay vì dùng sảnh công cộng."
+   "Có công khai thông báo trò chơi Trò chơi trực tuyến hay không. Nếu không bật, người chơi phải kết nối thủ công thay vì dùng sảnh công cộng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
@@ -7523,7 +7523,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Chuyển tiếp kết nối netplay thông qua máy chủ trung gian. Hữu ích nếu máy chủ ở sau tường lửa hoặc gặp sự cố NAT/UPnP."
+   "Chuyển tiếp kết nối Trò chơi trực tuyến thông qua máy chủ trung gian. Hữu ích nếu máy chủ ở sau tường lửa hoặc gặp sự cố NAT/UPnP."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
@@ -7571,7 +7571,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
-   "Cổng TCP Netplay"
+   "Cổng TCP Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
@@ -7611,7 +7611,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
-   "Chế độ khán giả Netplay"
+   "Chế độ khán giả Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
@@ -7619,7 +7619,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
-   "Có bắt đầu netplay ở chế độ khán giả hay không. Nếu bật, netplay sẽ khởi động ở chế độ khán giả. Luôn có thể thay đổi chế độ sau này."
+   "Có bắt đầu Trò chơi trực tuyến ở chế độ khán giả hay không. Nếu bật, Trò chơi trực tuyến sẽ khởi động ở chế độ khán giả. Luôn có thể thay đổi chế độ sau này."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
@@ -7671,15 +7671,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Kiểm tra khung hình Netplay"
+   "Kiểm tra khung hình Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "Tần số (tính theo khung hình) mà netplay sẽ kiểm tra xem máy chủ và máy khách có đồng bộ hay không."
+   "Tần số (tính theo khung hình) mà Trò chơi trực tuyến sẽ kiểm tra xem máy chủ và máy khách có đồng bộ hay không."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   "Tần số tính theo khung hình mà netplay sẽ kiểm tra xem máy chủ và máy khách có đồng bộ hay không. Với hầu hết các core, giá trị này sẽ không có ảnh hưởng rõ rệt và có thể bỏ qua. Với các core không xác định được kết quả, giá trị này quyết định tần suất các peer netplay được đồng bộ hóa. Với các core bị lỗi, thiết lập giá trị khác 0 có thể gây ra các vấn đề hiệu năng nghiêm tr[...]"
+   "Tần số tính theo khung hình mà Trò chơi trực tuyến sẽ kiểm tra xem máy chủ và máy khách có đồng bộ hay không. Với hầu hết các core, giá trị này sẽ không có ảnh hưởng rõ rệt và có thể bỏ qua. Với các core không xác định được kết quả, giá trị này quyết định tần suất người chơi trực tiếp Trò chơi trực tuyến được đồng bộ hóa. Với các core bị lỗi, thiết lập giá trị khác 0 có[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -7687,7 +7687,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Số khung hình trễ đầu vào mà netplay sử dụng để che đi độ trễ mạng. Giảm hiện tượng giật và làm netplay ít tốn CPU hơn, nhưng đổi lại sẽ có độ trễ đầu vào rõ rệt."
+   "Số khung hình trễ đầu vào mà Trò chơi trực tuyến sử dụng để che đi độ trễ mạng. Giảm hiện tượng giật và làm Trò chơi trực tuyến ít tốn CPU hơn, nhưng đổi lại sẽ có độ trễ đầu vào rõ rệt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -7703,7 +7703,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Phạm vi số khung hình độ trễ đầu vào có thể được dùng bởi chơi mạng để che giấu độ trễ mạng.\nNếu được đặt, chơi mạng sẽ điều chỉnh số khung hình độ trễ đầu vào một cách linh hoạt để cân bằng thời gian CPU, độ trễ đầu vào và độ trễ mạng. Điều này giảm giật hình và làm cho chơi mạng ít tốn CPU hơn, nhưng phải đánh đổi bằng độ trễ đầu vào khó đoán."
+   "Phạm vi số khung hình độ trễ đầu vào có thể được dùng bởi mạng để ẩn độ trễ mạng.\nNếu được đặt, chơi mạng sẽ điều chỉnh số khung hình độ trễ đầu vào một cách linh hoạt để cân bằng thời gian CPU, độ trễ đầu vào và độ trễ mạng. Điều này giảm giật hình và làm cho chơi mạng ít tốn CPU hơn, nhưng phải đánh đổi bằng độ trễ đầu vào khó đoán."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -8595,19 +8595,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Kết nối tới Máy chủ Netplay"
+   "Kết nối tới Máy chủ Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Nhập địa chỉ máy chủ NetPlay và kết nối ở chế độ máy khách."
+   "Nhập địa chỉ máy chủ Trò chơi trực tuyến và kết nối ở chế độ máy khách."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "Ngắt kết nối khỏi Máy chủ Netplay"
+   "Ngắt kết nối khỏi Máy chủ Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   "Ngắt kết nối Netplay đang hoạt động."
+   "Ngắt kết nối Trò chơi trực tuyến đang hoạt động."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
@@ -8627,34 +8627,34 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "Làm mới danh sách máy chủ Netplay"
+   "Làm mới danh sách máy chủ Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "Quét các máy chủ Netplay."
+   "Quét các máy chủ Trò chơi trực tuyến."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   "Làm mới danh sách LAN Netplay"
+   "Làm mới danh sách Trò chơi trực tuyến trong mạng LAN"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   "Quét máy chủ netplay trong LAN."
+   "Quét máy chủ Trò chơi trực tuyến trong LAN."
    )
 
 /* Netplay > Host */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "Bắt đầu máy chủ Netplay"
+   "Bắt đầu máy chủ Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-   "Bắt đầu netplay ở chế độ máy chủ (server)."
+   "Bắt đầu Trò chơi trực tuyến ở chế độ máy chủ (dịch vụ)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
-   "Dừng máy chủ Netplay"
+   "Dừng máy chủ Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
@@ -8662,7 +8662,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_KICK,
-   "Đuổi một client khỏi phòng bạn đang chủ trì."
+   "Đuổi một máy khách ra khỏi phòng bạn đang chủ trì."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
@@ -12795,7 +12795,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
-   "Turbo/Vùng chết"
+   "Tự động nhấn / Vùng chết"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
@@ -12804,6 +12804,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
    "Bộ đếm Core"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_DISK,
+   "Chưa chọn đĩa"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
@@ -12855,11 +12859,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
-   "Không tìm thấy máy chủ netplay."
+   "Không tìm thấy máy chủ Trò chơi trực tuyến."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
-   "Không tìm thấy client netplay."
+   "Không tìm thấy client Trò chơi trực tuyến."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
@@ -13078,7 +13082,7 @@ MSG_HASH( /* FIXME Still exists in a comment about being removed */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
-   "Chơi qua mạng Netplay"
+   "Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
@@ -13130,7 +13134,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
-   "Khung trễ Netplay"
+   "Độ trễ khung hình Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
@@ -13138,15 +13142,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
-   "Tìm kiếm và kết nối với các máy chủ netplay trên mạng cục bộ."
+   "Tìm kiếm và kết nối với các máy chủ Trò chơi trực tuyến trên mạng cục bộ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
-   "Chế độ chơi qua mạng – Client"
+   "Trò chơi trực tuyến - Máy khách"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
-   "Chế độ quan sát Netplay"
+   "Chế độ quan sát Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
@@ -13305,7 +13309,7 @@ MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
-   "Thiết lập Netplay"
+   "Thiết lập Trò chơi trực tuyến"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT,
@@ -13387,11 +13391,11 @@ MSG_HASH(
 
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
-   "Netplay sẽ bắt đầu khi trò chơi được mở."
+   "Trò chơi trực tuyến sẽ bắt đầu khi trò chơi được mở."
    )
 MSG_HASH(
    MSG_NETPLAY_NEED_CONTENT_LOADED,
-   "Phải mở trò chơi trước khi bắt đầu netplay."
+   "Phải mở trò chơi trước khi bắt đầu Trò chơi trực tuyến."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
@@ -13419,11 +13423,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCAN_COMPLETE,
-   "Quét netplay hoàn tất."
+   "Quét Trò chơi trực tuyến hoàn tất."
    )
 MSG_HASH(
    MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-   "Xin lỗi, chưa hỗ trợ: các core không cần trò chơi không thể tham gia netplay."
+   "Xin lỗi, chưa hỗ trợ: các core không cần trò chơi không thể tham gia Trò chơi trực tuyến."
    )
 MSG_HASH(
    MSG_NATIVE,
@@ -13431,7 +13435,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-   "Đã nhận được lệnh netplay không xác định"
+   "Đã nhận được lệnh Trò chơi trực tuyến không xác định"
    )
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
@@ -13447,7 +13451,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "Bản đồ cổng Netplay thành công"
+   "Bản đồ cổng Trò chơi trực tuyến thành công"
    )
 MSG_HASH(
    MSG_PRIVATE_OR_SHARED_ADDRESS,
@@ -13455,7 +13459,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Bản đồ cổng Netplay UPnP thất bại"
+   "Bản đồ cổng Trò chơi trực tuyến UPnP thất bại"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -13507,39 +13511,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
-   "Một lần thử kết nối netplay thất bại vì đối phương không chạy RetroArch, hoặc đang chạy phiên bản RetroArch cũ."
+   "Một lần thử kết nối Trò chơi trực tuyến thất bại vì đối phương không chạy RetroArch, hoặc đang chạy phiên bản RetroArch cũ."
    )
 MSG_HASH(
    MSG_NETPLAY_OUT_OF_DATE,
-   "Một đối phương netplay đang chạy phiên bản RetroArch cũ. Không thể kết nối."
+   "Một đối phương Trò chơi trực tuyến đang chạy phiên bản RetroArch cũ. Không thể kết nối."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
-   "CẢNH BÁO: Một đối phương netplay đang chạy phiên bản RetroArch khác. Nếu xảy ra sự cố, hãy dùng cùng phiên bản."
+   "CẢNH BÁO: Một đối phương Trò chơi trực tuyến đang chạy phiên bản RetroArch khác. Nếu xảy ra sự cố, hãy dùng cùng phiên bản."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORES,
-   "Một đối phương netplay đang chạy core khác. Không thể kết nối."
+   "Một đối phương Trò chơi trực tuyến đang chạy core khác. Không thể kết nối."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
-   "CẢNH BÁO: Một đối phương netplay đang chạy phiên bản core khác. Nếu xảy ra sự cố, hãy dùng cùng phiên bản."
+   "CẢNH BÁO: Một đối phương Trò chơi trực tuyến đang chạy phiên bản core khác. Nếu xảy ra sự cố, hãy dùng cùng phiên bản."
    )
 MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "Core này không hỗ trợ netplay giữa các nền tảng này"
+   "Core này không hỗ trợ Trò chơi trực tuyến giữa các nền tảng này"
    )
 MSG_HASH(
    MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "Core này không hỗ trợ netplay giữa các nền tảng khác nhau"
+   "Core này không hỗ trợ Trò chơi trực tuyến giữa các nền tảng khác nhau"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
-   "Nhập mật khẩu máy chủ netplay:"
+   "Nhập mật khẩu máy chủ Trò chơi trực tuyến:"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_CHAT,
-   "Nhập tin nhắn chat netplay:"
+   "Nhập tin nhắn chat Trò chơi trực tuyến:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
@@ -13555,11 +13559,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_SERVER_HANGUP,
-   "Một client netplay đã ngắt kết nối"
+   "Một máy khách Trò chơi trực tuyến đã ngắt kết nối"
    )
 MSG_HASH(
    MSG_NETPLAY_CLIENT_HANGUP,
-   "Ngắt kết nối Netplay"
+   "Ngắt kết nối Trò chơi trực tuyến"
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
@@ -13579,7 +13583,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_PEER_PAUSED,
-   "Đối thủ Netplay \"%s\" đã tạm dừng"
+   "Đối thủ Trò chơi trực tuyến \"%s\" đã tạm dừng"
    )
 MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
@@ -13587,19 +13591,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_KICKED_CLIENT_S,
-   "Client bị đá: \"%s\""
+   "Máy khách bị đá: \"%s\""
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
-   "Không thể đá client: \"%s\""
+   "Không thể đá máy khách: \"%s\""
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED_CLIENT_S,
-   "Client bị cấm: \"%s\""
+   "Máy khách bị cấm: \"%s\""
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
-   "Không thể cấm client: \"%s\""
+   "Không thể cấm máy khách: \"%s\""
    )
 MSG_HASH(
    MSG_NETPLAY_STATUS_PLAYING,
@@ -13636,7 +13640,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONNECTING_TO_NETPLAY_HOST,
-   "Đang kết nối vào máy chủ netplay"
+   "Đang kết nối vào máy chủ Trò chơi trực tuyến"
    )
 MSG_HASH(
    MSG_CONNECTING_TO_PORT,
@@ -14408,11 +14412,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED,
-   "Khởi tạo Netplay thất bại."
+   "Khởi tạo Trò chơi trực tuyến thất bại."
    )
 MSG_HASH(
    MSG_NETPLAY_UNSUPPORTED,
-   "Core không hỗ trợ Netplay."
+   "Core này không hỗ trợ Trò chơi trực tuyến."
    )
 MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
@@ -14461,6 +14465,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_READING_FIRST_DATA_TRACK,
    "Đang đọc bản dữ liệu đầu tiên..."
+   )
+MSG_HASH(
+   MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
+   "Đã dừng ghi do thay đổi kích thước."
    )
 MSG_HASH(
    MSG_RECORDING_TO,
@@ -14852,7 +14860,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
-   "Quét máy chủ netplay..."
+   "Quét máy chủ Trò chơi trực tuyến..."
    )
 MSG_HASH(
    MSG_PREPARING_FOR_CONTENT_SCAN,
@@ -15060,7 +15068,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
-   "Máy chủ Netplay đã đầy."
+   "Máy chủ Trò chơi trực tuyến đã đầy."
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,
@@ -15096,7 +15104,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
-   "Netplay host cần được cập nhật. Chế độ Thử thách Thành tích bị tắt cho phiên hiện tại."
+   "Máy chủ Trò chơi trực tuyến cần được cập nhật. Chế độ Thử thách Thành tích bị tắt cho phiên hiện tại."
    )
 MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
@@ -15169,6 +15177,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    "Thành tích thay đổi phương tiện thất bại: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "Phiên đăng nhập Thành tích Retro đã hết hạn. Vui lòng nhập lại mật khẩu và tải lại trò chơi."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

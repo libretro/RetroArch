@@ -15151,6 +15151,10 @@ MSG_HASH(
    "RetroAchievements: не удалось сменить медиа: %s"
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "Срок действия входа в RetroAchievements истёк. Пожалуйста, введите пароль снова и перезагрузите игру."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Самое низкое"
    )
