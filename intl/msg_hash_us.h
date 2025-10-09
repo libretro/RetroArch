@@ -12648,7 +12648,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
    "Selenium"
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BRIGHT,
+   "Bright"
+   )
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
