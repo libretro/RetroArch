@@ -1217,10 +1217,6 @@ MSG_HASH(
    "Thay đổi ổ đĩa được dùng bởi hệ thống."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-   "Trình điều khiển Video"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    "Điều chỉnh thiết lập đầu ra cho video."
    )
@@ -2527,7 +2523,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
-   "Cấu hình"
+   "Theo cấu hình mặc định"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_SQUARE_PIXEL,
@@ -2543,7 +2539,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
-   "Đầy đủ"
+   "Toàn màn hình"
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -3322,7 +3318,7 @@ MSG_HASH(
 #ifdef ANDROID
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Chọn Bàn phím vật lýChọn Bàn phím vật lý"
+   "Chọn Bàn phím vật lý"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
