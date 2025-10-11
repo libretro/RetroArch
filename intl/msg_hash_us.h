@@ -2535,7 +2535,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Round down or up to the next integer. 'Smart' drops to underscale when image is cropped too much."
+   "Round down or up to the next integer. 'Smart' drops to underscale when image is cropped too much, and finally falls back to non-integer scaling if the underscale margins are too large."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
