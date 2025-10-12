@@ -7998,10 +7998,6 @@ int generic_menu_entry_action(
    if (   (menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT)
        || (menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
    {
-      const char *content_path  = (menu_st->flags
-            & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH)
-            ? menu_st->pending_env_shutdown_content_path
-            : path_get(RARCH_PATH_CONTENT);
       const char *deferred_path = menu ? menu->deferred_path : NULL;
       const char *flush_target  = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
       size_t stack_offset       = 1;

@@ -808,10 +808,10 @@ bool command_seek_replay(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
    char reply[32];
-   bool ret = true;
    char *endptr;
-   size_t  _len;
-   int64_t frame = strtoll(arg, &endptr, 10), target_frame;
+   size_t _len;
+   bool ret      = true;
+   int64_t frame = strtoll(arg, &endptr, 10);
    input_driver_state_t *input_st = input_state_get_ptr();
    if (!endptr)
       ret = false;

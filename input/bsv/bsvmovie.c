@@ -316,7 +316,6 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
    input_driver_state_t *input_st = input_state_get_ptr();
    uint32_t compressed_encoded_size, encoded_size, size;
    uint8_t *compressed_data = NULL, *encoded_data = NULL;
-   retro_ctx_serialize_info_t serial_info;
    bool ret = true;
    if (intfstream_read(handle->file, &(size),
                sizeof(uint32_t)) != sizeof(uint32_t))
@@ -676,8 +675,6 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior 
       else if (next_frame_type == REPLAY_TOKEN_CHECKPOINT_FRAME)
       {
          uint64_t size;
-         uint8_t *state;
-         retro_ctx_serialize_info_t serial_info;
          if (intfstream_read(handle->file, &(size), sizeof(uint64_t)) != sizeof(uint64_t))
          {
             RARCH_ERR("[Replay] Replay ran out of frames\n");
@@ -1685,7 +1682,6 @@ bool movie_find_checkpoint_before(bsv_movie_t *movie, int64_t frame, bool consid
    bool paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED) || consider_paused;
    const int64_t prev_skip_min_distance = 60;
    int64_t target_frame = frame, cur_frame = 0;
-   bool ret = false;
    int64_t initial_pos, cp_pos=-1, cp_frame=-1;
    uint64_t frame_len;
    uint8_t tok;
@@ -1740,7 +1736,6 @@ bool bsv_movie_seek_to_pos_impl(bsv_movie_t *movie, int64_t pos)
       2. fix under "some previous replay" while recording
     */
    int64_t movie_pos;
-   bool ret;
    if (!movie || movie->version == 0)
       return false;
    movie_pos = intfstream_tell(movie->file);

@@ -3771,9 +3771,7 @@ static void ozone_thumbnail_bar_hide_end(void *userdata)
 
 static bool ozone_is_main_menu_playlist(void *userdata)
 {
-   ozone_handle_t *ozone      = (ozone_handle_t*)userdata;
    menu_entry_t entry;
-
    MENU_ENTRY_INITIALIZE(entry);
    menu_entry_get(&entry, 0, 0, NULL, true);
    return entry.type == FILE_TYPE_RPL_ENTRY;
