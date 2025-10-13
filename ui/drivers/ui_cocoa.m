@@ -573,11 +573,10 @@ static ui_application_t ui_application_cocoa = {
        return;
 
    NSRect frame = self.window.frame;
-   NSRect bounds = self.window.contentView.bounds;
    settings->uints.window_position_x      = (unsigned)frame.origin.x;
    settings->uints.window_position_y      = (unsigned)frame.origin.y;
-   settings->uints.window_position_width  = (unsigned)bounds.size.width;
-   settings->uints.window_position_height = (unsigned)bounds.size.height;
+   settings->uints.window_position_width  = (unsigned)frame.size.width;
+   settings->uints.window_position_height = (unsigned)frame.size.height;
 }
 
 - (void)windowDidResize:(NSNotification *)notification
@@ -591,11 +590,10 @@ static ui_application_t ui_application_cocoa = {
        return;
 
    NSRect frame = self.window.frame;
-   NSRect bounds = self.window.contentView.bounds;
    settings->uints.window_position_x      = (unsigned)frame.origin.x;
    settings->uints.window_position_y      = (unsigned)frame.origin.y;
-   settings->uints.window_position_width  = (unsigned)bounds.size.width;
-   settings->uints.window_position_height = (unsigned)bounds.size.height;
+   settings->uints.window_position_width  = (unsigned)frame.size.width;
+   settings->uints.window_position_height = (unsigned)frame.size.height;
 }
 
 @end
