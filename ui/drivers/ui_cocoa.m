@@ -572,11 +572,11 @@ static ui_application_t ui_application_cocoa = {
    if (!window_save_positions || is_fullscreen)
        return;
 
-   NSRect frame = self.window.frame;
-   settings->uints.window_position_x      = (unsigned)frame.origin.x;
-   settings->uints.window_position_y      = (unsigned)frame.origin.y;
-   settings->uints.window_position_width  = (unsigned)frame.size.width;
-   settings->uints.window_position_height = (unsigned)frame.size.height;
+   NSRect contentRect = [self.window contentRectForFrameRect:self.window.frame];
+   settings->uints.window_position_x      = (unsigned)contentRect.origin.x;
+   settings->uints.window_position_y      = (unsigned)contentRect.origin.y;
+   settings->uints.window_position_width  = (unsigned)contentRect.size.width;
+   settings->uints.window_position_height = (unsigned)contentRect.size.height;
 }
 
 - (void)windowDidResize:(NSNotification *)notification
@@ -589,11 +589,11 @@ static ui_application_t ui_application_cocoa = {
    if (!window_save_positions || is_fullscreen)
        return;
 
-   NSRect frame = self.window.frame;
-   settings->uints.window_position_x      = (unsigned)frame.origin.x;
-   settings->uints.window_position_y      = (unsigned)frame.origin.y;
-   settings->uints.window_position_width  = (unsigned)frame.size.width;
-   settings->uints.window_position_height = (unsigned)frame.size.height;
+   NSRect contentRect = [self.window contentRectForFrameRect:self.window.frame];
+   settings->uints.window_position_x      = (unsigned)contentRect.origin.x;
+   settings->uints.window_position_y      = (unsigned)contentRect.origin.y;
+   settings->uints.window_position_width  = (unsigned)contentRect.size.width;
+   settings->uints.window_position_height = (unsigned)contentRect.size.height;
 }
 
 @end
@@ -778,11 +778,12 @@ static ui_application_t ui_application_cocoa = {
 
    if (window_save_positions)
    {
-      NSRect frame;
-      frame.origin.x    = settings->uints.window_position_x;
-      frame.origin.y    = settings->uints.window_position_y;
-      frame.size.width  = settings->uints.window_position_width;
-      frame.size.height = settings->uints.window_position_height;
+      NSRect contentRect;
+      contentRect.origin.x    = settings->uints.window_position_x;
+      contentRect.origin.y    = settings->uints.window_position_y;
+      contentRect.size.width  = settings->uints.window_position_width;
+      contentRect.size.height = settings->uints.window_position_height;
+      NSRect frame = [self.window frameRectForContentRect:contentRect];
       [self.window setFrame:frame display:YES];
    }
    else
