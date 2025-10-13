@@ -31,7 +31,7 @@
 #include <time/rtime.h>
 
 #ifdef WIIU
-#include <wiiu/os/energy.h>
+#include <coreinit/energysaver.h>
 #endif
 
 #ifdef HAVE_ACCESSIBILITY

@@ -1866,6 +1866,12 @@ MSG_HASH(
         "input_android_physical_keyboard"
 )
 #endif
+#ifdef WIIU
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_WIIU_ENABLE_HBM,
+   "input_wiiu_enable_hbm"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
    "input_sensors_enable"

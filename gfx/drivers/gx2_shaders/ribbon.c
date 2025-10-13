@@ -16,11 +16,12 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <string.h>
-#include <wiiu/gx2/common.h>
+#include "gx2/ra_shaders.h"
 #include "gx2_shader_inl.h"
 #include "menu_shaders.h"
+#include <gx2/enum.h>
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
    u64 cf[32];
@@ -243,7 +244,7 @@ static struct
    }
 };
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
    u64 cf[32];
@@ -307,27 +308,27 @@ ps_program =
    }
 };
 
-static GX2AttribVar attributes[] =
+static GX2AttribVar attributes[1] =
 {
    { "VertexCoord",  GX2_SHADER_VAR_TYPE_FLOAT2, 0, 0},
 };
 
-static GX2AttribStream attribute_stream[] =
+static GX2AttribStream attribute_stream[1] =
 {
    {0, 0, 0, GX2_ATTRIB_FORMAT_FLOAT_32_32,
     GX2_ATTRIB_INDEX_PER_VERTEX, 0, GX2_COMP_SEL(_x, _y, _0, _1), GX2_ENDIAN_SWAP_DEFAULT}
 };
 
-static GX2SamplerVar samplers[] =
+static GX2SamplerVar samplers[1] =
 {
    { "Source", GX2_SAMPLER_VAR_TYPE_SAMPLER_2D, 0 },
 };
 
-static GX2UniformBlock uniform_blocks[] = {
+static GX2UniformBlock uniform_blocks[1] = {
     {"UBO", 1, 16}
 };
 
-static GX2UniformVar uniform_vars[] = {
+static GX2UniformVar uniform_vars[1] = {
     {"constants.time", GX2_SHADER_VAR_TYPE_FLOAT, 1, 0, 0},
 };
 

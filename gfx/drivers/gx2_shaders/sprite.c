@@ -16,11 +16,12 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <string.h>
-#include <wiiu/gx2/common.h>
+#include "gx2/ra_shaders.h"
 #include "gx2_shader_inl.h"
 #include "sprite.h"
+#include <gx2/enum.h>
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
    u64 cf[32];
@@ -71,7 +72,7 @@ static struct
    }
 };
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
    u64 cf[32];     /* @0 */
@@ -97,7 +98,7 @@ static struct
    }
 };
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
    u64 cf[32];     /* @0 */
@@ -175,7 +176,7 @@ static struct
    }
 };
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
    u64 cf[16];     /* @0 */
@@ -195,14 +196,14 @@ static struct
    }
 };
 
-static GX2AttribVar attributes[] =
+static GX2AttribVar attributes[3] =
 {
    {"position", GX2_SHADER_VAR_TYPE_FLOAT4, 0, 0},
    {"coords",   GX2_SHADER_VAR_TYPE_FLOAT4, 0, 1},
    {"color",    GX2_SHADER_VAR_TYPE_FLOAT4, 0, 2},
 };
 
-static GX2AttribStream attribute_stream[] =
+static GX2AttribStream attribute_stream[3] =
 {
    {0, 0, offsetof(sprite_vertex_t, pos),   GX2_ATTRIB_FORMAT_FLOAT_32_32_32_32,
     GX2_ATTRIB_INDEX_PER_VERTEX, 0, GX2_COMP_SEL(_x, _y, _z, _w), GX2_ENDIAN_SWAP_DEFAULT},
@@ -212,18 +213,18 @@ static GX2AttribStream attribute_stream[] =
     GX2_ATTRIB_INDEX_PER_VERTEX, 0, GX2_COMP_SEL(_x, _y, _z, _w), GX2_ENDIAN_SWAP_DEFAULT},
 };
 
-static GX2SamplerVar samplers[] =
+static GX2SamplerVar samplers[1] =
 {
    { "s", GX2_SAMPLER_VAR_TYPE_SAMPLER_2D, 0 },
 };
 
-static GX2UniformBlock uniform_blocks[] =
+static GX2UniformBlock uniform_blocks[2] =
 {
     {"UBO_vp", 1, sizeof(GX2_vec2)},
     {"UBO_tex", 2, sizeof(GX2_vec2)},
 };
 
-static GX2UniformVar uniform_vars[] =
+static GX2UniformVar uniform_vars[2] =
 {
     {"vp_size",  GX2_SHADER_VAR_TYPE_FLOAT2, 1, 0, 0},
     {"tex_size", GX2_SHADER_VAR_TYPE_FLOAT2, 1, 0, 1},

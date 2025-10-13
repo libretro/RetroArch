@@ -44,7 +44,7 @@
 #include <ws2tcpip.h>
 
 #if _MSC_VER && _MSC_VER <= 1600
-/* If we are using MSVC2010 or lower, disable WSAPoll support 
+/* If we are using MSVC2010 or lower, disable WSAPoll support
  * to ensure Windows XP and earlier backwards compatibility */
 #else
 #ifndef WIN32_SUPPORTS_POLL
@@ -180,10 +180,6 @@
 #include <net/poll.h>
 
 #define NETWORK_HAVE_POLL 1
-
-#elif defined(WIIU)
-#define WIIU_RCVBUF 0x40000
-#define WIIU_SNDBUF 0x40000
 
 #elif !defined(__PS3__)
 #include <poll.h>
@@ -350,8 +346,6 @@ static INLINE bool isagain(int val)
    return (sys_net_errno == SYS_NET_EAGAIN) || (sys_net_errno == SYS_NET_EWOULDBLOCK);
 #elif defined(VITA)
    return (val == SCE_NET_ERROR_EAGAIN) || (val == SCE_NET_ERROR_EWOULDBLOCK);
-#elif defined(WIIU)
-   return (val == -1) && (socketlasterr() == SO_SUCCESS || socketlasterr() == SO_EWOULDBLOCK);
 #elif defined(GEKKO)
    return (-val == EAGAIN);
 #else
@@ -367,8 +361,6 @@ static INLINE bool isinprogress(int val)
    return (sys_net_errno == SYS_NET_EINPROGRESS);
 #elif defined(VITA)
    return (val == SCE_NET_ERROR_EINPROGRESS);
-#elif defined(WIIU)
-   return (val == -1) && (socketlasterr() == SO_EINPROGRESS);
 #elif defined(GEKKO)
    return (-val == EINPROGRESS);
 #else
