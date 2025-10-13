@@ -1242,7 +1242,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   "Thay đổi độ trễ của hình ảnh, âm thanh và dữ liệu đầu vào."
+   "Thay đổi độ trễ của hình ảnh, âm thanh và dữ liệu điều khiển."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
@@ -2797,7 +2797,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
-   "Thay đổi cài đặt đầu vào âm thanh."
+   "Thay đổi cài đặt điều khiển âm thanh."
    )
 #endif
 MSG_HASH(
@@ -2894,7 +2894,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
-   "Âm lượng, được biểu thị bằng dB. 0 dB là âm lượng bình thường, không áp dụng độ khuếch đại. Độ khuếch đại có thể được điều khiển trong thời gian chạy bằng cách tăng âm lượng đầu vào/giảm âm lượng đầu vào."
+   "Âm lượng, được biểu thị bằng dB. 0 dB là âm lượng bình thường, không áp dụng độ khuếch đại. Độ khuếch đại có thể được điều khiển trong thời gian chạy bằng cách tăng âm lượng điều khiển/giảm âm lượng đầu vào."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
@@ -3000,7 +3000,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
-   "Cho phép đầu vào âm thanh trong các Core được hỗ trợ. Không có chi phí phát sinh nếu lõi không sử dụng micrô."
+   "Cho phép điều khiển âm thanh trong các Core được hỗ trợ. Không có chi phí phát sinh nếu lõi không sử dụng micrô."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
@@ -3008,11 +3008,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
-   "Ghi đè thiết bị đầu vào mặc định mà trình điều khiển micrô sử dụng. Điều này phụ thuộc vào trình điều khiển."
+   "Ghi đè thiết bị điều khiển mặc định mà trình điều khiển micrô sử dụng. Điều này phụ thuộc vào trình điều khiển."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
-   "Ghi đè thiết bị đầu vào mặc định mà trình điều khiển micrô sử dụng. Điều này phụ thuộc vào trình điều khiển."
+   "Ghi đè thiết bị điều khiển mặc định mà trình điều khiển micrô sử dụng. Điều này phụ thuộc vào trình điều khiển."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
@@ -3024,19 +3024,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
-   "Tốc độ đầu vào mặc định (Hz)"
+   "Tốc độ điều khiển mặc định (Hz)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
-   "Tốc độ mẫu đầu vào âm thanh, được sử dụng nếu Core không yêu cầu số lượng cụ thể."
+   "Tốc độ mẫu điều khiển âm thanh, được sử dụng nếu Core không yêu cầu số lượng cụ thể."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
-   "Độ trễ đầu vào âm thanh (mili giây)"
+   "Độ trễ điều khiển âm thanh (mili giây)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
-   "Độ trễ đầu vào âm thanh mong muốn tính bằng mili giây. Có thể không được đáp ứng nếu trình điều khiển micrô không cung cấp được độ trễ mong muốn."
+   "Độ trễ điều khiển âm thanh mong muốn tính bằng mili giây. Có thể không được đáp ứng nếu trình điều khiển micrô không cung cấp được độ trễ mong muốn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
@@ -3052,7 +3052,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
-   "Sử dụng đầu vào dấu chấm động cho trình điều khiển WASAPI, nếu thiết bị âm thanh của bạn hỗ trợ."
+   "Sử dụng điều khiển dấu chấm động cho trình điều khiển WASAPI, nếu thiết bị âm thanh của bạn hỗ trợ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
@@ -3099,11 +3099,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
-   "Mức thay đổi tối đa trong tốc độ đầu vào âm thanh. Việc tăng mức này sẽ dẫn đến những thay đổi rất lớn về thời gian, nhưng sẽ làm âm thanh không chính xác (ví dụ: chạy Core PAL trên màn hình NTSC)."
+   "Mức thay đổi tối đa trong tốc độ điều khiển âm thanh. Việc tăng mức này sẽ dẫn đến những thay đổi rất lớn về thời gian, nhưng sẽ làm âm thanh không chính xác (ví dụ: chạy Core PAL trên màn hình NTSC)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
-   "Độ lệch thời gian âm thanh tối đa.\nXác định mức thay đổi tối đa của tốc độ đầu vào. Bạn có thể muốn tăng giá trị này để cho phép thay đổi thời gian rất lớn, ví dụ như chạy Core PAL trên màn hình NTSC, với chi phí là độ cao âm thanh không chính xác.\nTốc độ đầu vào được định nghĩa là:\ntốc độ đầu vào * (1,0 +/- (độ lệch thời gian tối đa))"
+   "Độ lệch thời gian âm thanh tối đa.\nXác định mức thay đổi tối đa của tốc độ điều khiển. Bạn có thể muốn tăng giá trị này để cho phép thay đổi thời gian rất lớn, ví dụ như chạy Core PAL trên màn hình NTSC, với chi phí là độ cao âm thanh không chính xác.\nTốc độ điều khiển được định nghĩa là:\ntốc độ đầu vào * (1,0 +/- (độ lệch thời gian tối đa))"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -3115,7 +3115,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
-   "Đặt giá trị này thành 0 sẽ vô hiệu hóa điều khiển tốc độ. Bất kỳ giá trị nào khác sẽ kiểm soát delta điều khiển tốc độ âm thanh.\nXác định mức độ tốc độ đầu vào có thể được điều chỉnh động. Tốc độ đầu vào được định nghĩa là:\ntốc độ đầu vào * (1,0 +/- (delta điều khiển tốc độ))"
+   "Đặt giá trị này thành 0 sẽ vô hiệu hóa điều khiển tốc độ. Bất kỳ giá trị nào khác sẽ kiểm soát delta điều khiển tốc độ âm thanh.\nXác định mức độ tốc độ điều khiển có thể được điều chỉnh động. Tốc độ điều khiển được định nghĩa là:\ntốc độ điều khiển * (1,0 +/- (delta điều khiển tốc độ))"
    )
 
 /* Settings > Audio > MIDI */
@@ -3126,11 +3126,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_INPUT,
-   "Chọn thiết bị đầu vào."
+   "Chọn thiết bị điều khiển."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MIDI_INPUT,
-   "Thiết lập thiết bị đầu vào (tùy thuộc vào trình điều khiển). Khi được đặt thành \"Tắt\", đầu vào MIDI sẽ bị tắt. Bạn cũng có thể nhập tên thiết bị."
+   "Thiết lập thiết bị điều khiển (tùy thuộc vào trình điều khiển). Khi được đặt thành \"Tắt\", đầu vào MIDI sẽ bị tắt. Bạn cũng có thể nhập tên thiết bị."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -3275,11 +3275,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-   "Ảnh hưởng đến cách thực hiện thăm dò đầu vào trong RetroArch. Đặt thành \"Sớm\" hoặc \"Muộn\" có thể giảm độ trễ, tùy thuộc vào cấu hình của bạn."
+   "Ảnh hưởng đến cách thực hiện thăm dò điều khiển trong RetroArch. Đặt thành \"Sớm\" hoặc \"Muộn\" có thể giảm độ trễ, tùy thuộc vào cấu hình của bạn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
-   "Ảnh hưởng đến cách thực hiện thăm dò đầu vào bên trong RetroArch.\nSớm - Thăm dò đầu vào được thực hiện trước khi khung được xử lý.\nBình thường - Thăm dò đầu vào được thực hiện khi có yêu cầu thăm dò.\nTrễ - Thăm dò đầu vào được thực hiện khi có yêu cầu trạng thái đầu vào đầu tiên trên mỗi khung.\nĐặt thành 'Sớm' hoặc 'Trễ' có thể giảm độ trễ, tùy thuộc vào cấu hình[...]"
+   "Ảnh hưởng đến cách thực hiện thăm dò đầu vào bên trong RetroArch.\nSớm - Thăm dò điều khiển được thực hiện trước khi khung được xử lý.\nBình thường - Thăm dò điều khiển được thực hiện khi có yêu cầu thăm dò.\nTrễ - Thăm dò điều khiển được thực hiện khi có yêu cầu trạng thái điều khiển đầu tiên trên mỗi khung.\nĐặt thành 'Sớm' hoặc 'Trễ' có thể giảm độ trễ, tùy thuộc [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -3331,7 +3331,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
-   "Đầu vào cảm biến phụ"
+   "Điều khiển cảm biến phụ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
@@ -3375,7 +3375,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
-   "Ngưỡng trục nút đầu vào"
+   "Ngưỡng trục nút điều khiển"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -3500,19 +3500,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Chế độ cổ điển, thao tác bằng hai nút. Giữ một nút và chạm vào nút Turbo để kích hoạt chuỗi nhấn nhả.\nCó thể chỉ định Gán nút nhấn nhanh trong Cài đặt/Đầu vào/Điều khiển Cổng X."
+   "Chế độ cổ điển, thao tác bằng hai nút. Giữ một nút và chạm vào nút tự động nhấn nhanh để kích hoạt chuỗi nhấn nhả.\nCó thể chỉ định Gán nút nhấn nhanh trong Cài đặt/Điều khiển Cổng X."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "Bật/Tắt chế độ cổ điển, thao tác bằng hai nút. Giữ một nút và chạm vào nút nhấn nhanh để bật gán nút cho nút đó. Để tắt Turbo: giữ nút và nhấn lại nút Turbo.\nCó thể gán nút nhấn nhanh trong Cài đặt/Đầu vào/Điều khiển Cổng X."
+   "Bật/Tắt chế độ cổ điển, thao tác bằng hai nút. Giữ một nút và chạm vào nút nhấn nhanh để bật gán nút cho nút đó. Để tắt tự động nhấn nhanh: giữ nút và nhấn lại nút Turbo.\nCó thể gán nút nhấn nhanh trong Cài đặt/Điều khiển Cổng X."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Chuyển đổi chế độ. Nhấn nút Tự động một lần để kích hoạt chuỗi nhấn cho nút mặc định đã chọn, nhấn lại một lần nữa để tắt.\nCó thể chỉ định Gán nút nhấn nhanh trong Cài đặt/Đầu vào/Điều khiển Cổng X."
+   "Chuyển đổi chế độ. Nhấn nút Tự động một lần để kích hoạt chuỗi nhấn cho nút mặc định đã chọn, nhấn lại một lần nữa để tắt.\nCó thể chỉ định Gán nút nhấn nhanh trong Cài đặt/Điều khiển Cổng X."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Chế độ giữ. Chuỗi nhấn nút mặc định đã chọn sẽ hoạt động miễn là nút Tự động nhấn được giữ.\nCó thể gán chế độ tự động nhấn nhanh trong Cài đặt/Đầu vào/Điều khiển Cổng X.\nĐể mô phỏng chức năng tự động bắn của thời đại máy tính gia đình, hãy đặt Gán và Nút thành cùng một nút bắn trên cần điều khiển."
+   "Chế độ giữ. Chuỗi nhấn nút mặc định đã chọn sẽ hoạt động miễn là nút Tự động nhấn được giữ.\nCó thể gán chế độ tự động nhấn nhanh trong Cài đặt/Điều khiển Cổng X.\nĐể mô phỏng chức năng tự động bắn của thời đại máy tính gia đình, hãy đặt Gán và Nút thành cùng một nút bắn trên cần điều khiển."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
@@ -3576,11 +3576,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
-   "Thay đổi cách tay cầm ảo được ánh xạ đến thiết bị đầu vào vật lý. Nếu thiết bị đầu vào được nhận dạng và tự động cấu hình chính xác, người dùng có thể không cần sử dụng menu này.\nLưu ý: đối với các thay đổi đầu vào cụ thể cho Core, hãy sử dụng menu phụ 'Điều khiển' của Menu Nhanh."
+   "Thay đổi cách tay cầm ảo được ánh xạ đến thiết bị điều khiển vật lý. Nếu thiết bị đầu vào được nhận dạng và tự động cấu hình chính xác, người dùng có thể không cần sử dụng menu này.\nLưu ý: đối với các thay đổi điều khiển cụ thể cho Core, hãy sử dụng menu phụ 'Điều khiển' của Menu Nhanh."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro sử dụng một khái niệm trừu tượng về Tay cầm ảo được gọi là 'Tay cầm' để giao tiếp từ giao diện người dùng (như RetroArch) đến lõi và ngược lại. Menu này xác định cách Tay cầm ảo được ánh xạ đến các thiết bị đầu vào vật lý và các cổng đầu vào ảo mà các thiết bị này chiếm giữ.\nNếu thiết bị đầu vào vật lý được nhận dạng và tự động cấu hình chính xác, ng[...]"
+   "Libretro sử dụng một khái niệm trừu tượng về Tay cầm ảo được gọi là 'Tay cầm' để giao tiếp từ giao diện người dùng (như RetroArch) đến lõi và ngược lại. Menu này xác định cách Tay cầm ảo được ánh xạ đến các thiết bị điều khiển vật lý và các cổng đầu vào ảo mà các thiết bị này chiếm giữ.\nNếu thiết bị điều khiển vật lý được nhận dạng và tự động cấu hình chính [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -3588,11 +3588,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Thay đổi cách tay cầm ảo được ánh xạ tới thiết bị đầu vào vật lý của bạn cho cổng ảo này."
+   "Thay đổi cách tay cầm ảo được ánh xạ tới thiết bị điều khiển vật lý của bạn cho cổng ảo này."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
-   "Thay đổi ánh xạ đầu vào cụ thể của lõi."
+   "Thay đổi ánh xạ điều khiển cụ thể của lõi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3749,7 +3749,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
-   "Thêm độ trễ khung hình trước khi đầu vào bình thường bị chặn sau khi nhấn phím 'Bật phím tắt' được chỉ định. Cho phép ghi lại đầu vào bình thường từ phím 'Bật phím tắt' khi nó được ánh xạ sang một hành động khác (ví dụ: 'Chọn' của RetroPad)."
+   "Thêm độ trễ khung hình trước khi điều khiển bình thường bị chặn sau khi nhấn phím 'Bật phím tắt' được chỉ định. Cho phép ghi lại điều khiển bình thường từ phím 'Bật phím tắt' khi nó được ánh xạ sang một hành động khác (ví dụ: 'Chọn' của RetroPad)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
@@ -4257,11 +4257,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "Sử dụng cần analog đã chỉ định cho đầu vào D-Pad. Chế độ 'Bắt buộc' ghi đè đầu vào analog gốc của core."
+   "Sử dụng cần analog đã chỉ định cho điều khiển D-Pad. Chế độ 'Bắt buộc' ghi đè đầu vào analog gốc của core."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
-   "Gán cần analog được chỉ định cho đầu vào D-Pad.\nNếu core hỗ trợ analog gốc, ánh xạ D-Pad sẽ bị tắt trừ khi chọn tùy chọn “(Bắt buộc)”.\nNếu ánh xạ D-Pad được ép buộc, core sẽ không nhận đầu vào analog từ cần được chỉ định."
+   "Gán cần analog được chỉ định cho điều khiển D-Pad.\nNếu core hỗ trợ analog gốc, ánh xạ D-Pad sẽ bị tắt trừ khi chọn tùy chọn “(Bắt buộc)”.\nNếu ánh xạ D-Pad được ép buộc, core sẽ không nhận điều khiển analog từ cần được chỉ định."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -4305,7 +4305,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
-   "Chỉ định cổng Core nào sẽ nhận đầu vào từ cổng bộ điều khiển giao diện người dùng %u."
+   "Chỉ định cổng Core nào sẽ nhận điều khiển từ cổng bộ điều khiển giao diện người dùng %u."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
@@ -4508,12 +4508,12 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
-   "Chạy logic core bổ sung để giảm độ trễ. Chế độ Một Phiên bản chạy tới một khung hình tương lai, sau đó tải lại trạng thái hiện tại. Chế độ Phiên bản Thứ hai giữ một core chỉ video tại khung hình tương lai để tránh sự cố trạng thái âm thanh. Chế độ Khung hình Chủ động chạy qua các khung hình trước với dữ liệu đầu vào mới khi cần, để tăng hiệu quả."
+   "Chạy logic core bổ sung để giảm độ trễ. Chế độ Một Phiên bản chạy tới một khung hình tương lai, sau đó tải lại trạng thái hiện tại. Chế độ Phiên bản Thứ hai giữ một core chỉ video tại khung hình tương lai để tránh sự cố trạng thái âm thanh. Chế độ Khung hình Chủ động chạy qua các khung hình trước với dữ liệu điều khiển mới khi cần, để tăng hiệu quả."
    )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
-   "Chạy logic core bổ sung để giảm độ trễ. Chế độ Một Phiên bản chạy tới một khung hình tương lai, sau đó tải lại trạng thái hiện tại. Chế độ Khung hình Chủ động chạy qua các khung hình trước với dữ liệu đầu vào mới khi cần, để tăng hiệu quả."
+   "Chạy logic core bổ sung để giảm độ trễ. Chế độ Một Phiên bản chạy tới một khung hình tương lai, sau đó tải lại trạng thái hiện tại. Chế độ Khung hình Chủ động chạy qua các khung hình trước với dữ liệu điều khiển mới khi cần, để tăng hiệu quả."
    )
 #endif
 MSG_HASH(
@@ -5020,7 +5020,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
-   "Khi ghi log vào file, chuyển hướng đầu ra từ mỗi phiên RetroArch sang một file mới có đánh dấu thời gian. Nếu tắt, log sẽ bị ghi đè mỗi khi RetroArch được khởi động lại."
+   "Khi ghi nhật ký vào file, chuyển hướng đầu ra từ mỗi phiên RetroArch sang một file mới có đánh dấu thời gian. Nếu tắt, log sẽ bị ghi đè mỗi khi RetroArch được khởi động lại."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
@@ -5596,7 +5596,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
-   "Sử dụng bất kỳ thao tác chạm nào không nhấn vào các điều khiển lớp phủ để tạo đầu vào thiết bị trỏ cho core."
+   "Sử dụng bất kỳ thao tác chạm nào không nhấn vào các điều khiển lớp phủ để tạo điều khiển thiết bị trỏ cho core."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
@@ -5604,7 +5604,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
-   "Cấu hình đầu vào súng ánh sáng từ lớp phủ."
+   "Cấu hình điều khiển súng ánh sáng từ lớp phủ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
@@ -5612,7 +5612,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
-   "Cấu hình đầu vào chuột từ lớp phủ. Lưu ý: Nhấn 1, 2 hoặc 3 ngón sẽ gửi nhấp chuột trái, phải và giữa."
+   "Cấu hình điều khiển chuột từ lớp phủ. Lưu ý: Nhấn 1, 2 hoặc 3 ngón sẽ gửi nhấp chuột trái, phải và giữa."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
@@ -5650,7 +5650,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
-   "Chọn cổng core để nhận đầu vào từ súng ánh sáng lớp phủ."
+   "Chọn cổng core để nhận điều khiển từ súng ánh sáng lớp phủ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
@@ -5662,7 +5662,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
-   "Gửi tín hiệu kích hoạt cùng với đầu vào con trỏ."
+   "Gửi tín hiệu kích hoạt cùng với điều khiển con trỏ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
@@ -5670,31 +5670,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
-   "Trì hoãn kích hoạt đầu vào để cho con trỏ có thời gian di chuyển. Trì hoãn này cũng được sử dụng để chờ số lượng chạm đa điểm đúng."
+   "Trì hoãn kích hoạt điều khiển để cho con trỏ có thời gian di chuyển. Trì hoãn này cũng được sử dụng để chờ số lượng chạm đa điểm đúng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
-   "Đầu vào 2 chạm"
+   "Điều khiển 2 chạm"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
-   "Chọn đầu vào sẽ gửi khi có hai điểm chạm trên màn hình. Trì hoãn kích hoạt nên khác không để phân biệt với các đầu vào khác."
+   "Chọn điều khiển sẽ gửi khi có hai điểm chạm trên màn hình. Trì hoãn kích hoạt nên khác không để phân biệt với các điều khiển khác."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
-   "Đầu vào 3 chạm"
+   "Điều khiển 3 chạm"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
-   "Chọn đầu vào sẽ gửi khi có ba điểm chạm trên màn hình. Trì hoãn kích hoạt nên khác không để phân biệt với các đầu vào khác."
+   "Chọn điều khiển sẽ gửi khi có ba điểm chạm trên màn hình. Trì hoãn kích hoạt nên khác không để phân biệt với các điều khiển khác."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
-   "Đầu vào 4 chạm"
+   "Điều khiển vào 4 chạm"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
-   "Chọn đầu vào sẽ gửi khi có bốn điểm chạm trên màn hình. Trì hoãn kích hoạt nên khác không để phân biệt với các đầu vào khác."
+   "Chọn điều khiển sẽ gửi khi có bốn điểm chạm trên màn hình. Trì hoãn kích hoạt nên khác không để phân biệt với các điều khiển khác."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
@@ -5737,7 +5737,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
-   "Nhấn đôi vào màn hình để bắt đầu giữ một nút ở lần nhấn thứ hai. Thêm độ trễ cho các cú nhấp chuột."
+   "Nhấn hai lần vào màn hình để bắt đầu giữ một nút ở lần nhấn thứ hai. Thêm độ trễ cho các cú nhấp chuột."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
@@ -7679,27 +7679,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Số khung hình trễ đầu vào"
+   "Số khung hình trễ điều khiển"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Số khung hình trễ đầu vào mà Trò chơi trực tuyến sử dụng để che đi độ trễ mạng. Giảm hiện tượng giật và làm Trò chơi trực tuyến ít tốn CPU hơn, nhưng đổi lại sẽ có độ trễ đầu vào rõ rệt."
+   "Số khung hình trễ điều khiển mà Trò chơi trực tuyến sử dụng để che đi độ trễ mạng. Giảm hiện tượng giật và làm Trò chơi trực tuyến ít tốn CPU hơn, nhưng đổi lại sẽ có độ trễ điều khiển rõ rệt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Số khung hình trễ đầu vào mà netplay sử dụng để che đi độ trễ mạng.\nKhi chơi netplay, tùy chọn này sẽ trì hoãn đầu vào cục bộ, giúp khung hình đang chạy gần hơn với các khung hình nhận từ mạng. Điều này giảm hiện tượng giật và làm netplay ít tốn CPU hơn, nhưng đổi lại có độ trễ đầu vào rõ rệt."
+   "Số khung hình trễ điều khiển mà trò chơi trực tuyến sử dụng để che đi độ trễ mạng.\nKhi chơi trò chơi trực tuyến, tùy chọn này sẽ trì hoãn điều khiển cục bộ, giúp khung hình đang chạy gần hơn với các khung hình nhận từ mạng. Điều này giảm hiện tượng giật và làm trò chơi trực tuyến ít tốn CPU hơn, nhưng đổi lại có độ trễ điều khiển rõ rệt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Phạm vi số khung hình trễ đầu vào"
+   "Phạm vi số khung hình trễ điều khiển"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Phạm vi số khung hình độ trễ đầu vào có thể được dùng để che giấu độ trễ mạng. Giảm giật hình và làm cho chơi mạng ít tốn CPU hơn, nhưng phải đánh đổi bằng độ trễ đầu vào khó đoán."
+   "Phạm vi số khung hình độ trễ đầu vào có thể được dùng để che giấu độ trễ mạng. Giảm giật hình và làm cho chơi mạng ít tốn CPU hơn, nhưng phải đánh đổi bằng độ trễ điều khiển khó đoán."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Phạm vi số khung hình độ trễ đầu vào có thể được dùng bởi mạng để ẩn độ trễ mạng.\nNếu được đặt, chơi mạng sẽ điều chỉnh số khung hình độ trễ đầu vào một cách linh hoạt để cân bằng thời gian CPU, độ trễ đầu vào và độ trễ mạng. Điều này giảm giật hình và làm cho chơi mạng ít tốn CPU hơn, nhưng phải đánh đổi bằng độ trễ đầu vào khó đoán."
+   "Phạm vi số khung hình độ trễ điều khiển có thể được dùng bởi mạng để ẩn độ trễ mạng.\nNếu được đặt, chơi mạng sẽ điều chỉnh số khung hình độ trễ điều khiển một cách linh hoạt để cân bằng thời gian CPU, độ trễ điều khiển và độ trễ mạng. Điều này giảm giật hình và làm cho chơi mạng ít tốn CPU hơn, nhưng phải đánh đổi bằng độ trễ điều khiển khó đoán."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -7711,7 +7711,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
-   "Chia sẻ đầu vào kỹ thuật số"
+   "Chia sẻ điều khiển kỹ thuật số"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
@@ -7719,7 +7719,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
-   "Yêu cầu chơi bằng thiết bị đầu vào được chỉ định."
+   "Yêu cầu chơi bằng thiết bị điều khiển được chỉ định."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
@@ -10478,7 +10478,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
-   "Chia sẻ đầu vào Analog"
+   "Chia sẻ điều khiển Analog"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_MAX,
@@ -14396,7 +14396,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
-   "Định dạng phim phát lại đầu vào dường như có phiên bản serializer khác. Khả năng cao là sẽ không thành công."
+   "Định dạng phim phát lại điều khiển dường như có phiên bản serializer khác. Khả năng cao là sẽ không thành công."
    )
 MSG_HASH(
    MSG_MOVIE_PLAYBACK_ENDED,
@@ -15714,7 +15714,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
-   "Số mili-giây chờ để lấy mẫu đầu vào hoàn chỉnh. Dùng khi gặp vấn đề với nhấn nút đồng thời (chỉ Android)."
+   "Số mili-giây chờ để lấy mẫu điều khiển hoàn chỉnh. Dùng khi gặp vấn đề với nhấn nút đồng thời (chỉ Android)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,

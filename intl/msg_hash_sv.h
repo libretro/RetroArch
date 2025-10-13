@@ -11336,6 +11336,10 @@ MSG_HASH(
    "Ersätt panelen med innehållsmetadata med en annan miniatyrbild."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "Använd tickertext för innehållets metadata"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
    "När den är aktiverad kommer varje metadataobjekt som visas i spellistornas högra sidofält (associerad kärna, speltid) att uppta en enda rad; strängar som överskrider sidofältets bredd kommer att visas som rullande tickertext. När den är inaktiverad visas varje innehållsmetadata statiskt, omslaget så att det upptar så många rader som krävs."
    )
@@ -14473,6 +14477,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    "Mediabyte för RetroAchievements misslyckades: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "Inloggningen för RetroAchievements har gått ut. Ange ditt lösenord igen och läs om spelet."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
