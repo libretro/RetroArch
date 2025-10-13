@@ -45,6 +45,8 @@ static void *exception_handler(void *argument) {
 
 static bool jb_has_debugger_attached(void) {
     int flags;
+    if (@available(iOS 26, tvOS 26, *))
+        return false;
     return !csops(getpid(), CS_OPS_STATUS, &flags, sizeof(flags)) && flags & CS_DEBUGGED;
 }
 
