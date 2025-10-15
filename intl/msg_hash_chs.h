@@ -568,6 +568,10 @@ MSG_HASH(
    "锁定已安装核心"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   "防止修改当前安装的核心。可用于在内容需要特定核心版本（例如街机ROM集合）或核心自己的存档格式更改时避免不必要的更新。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    "从「无内容核心」菜单中排除"
    )
@@ -653,6 +657,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
    "JIT 可用"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
+   "Apple Bundle标识符"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -869,6 +877,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
    "7zip 支持"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
+   "Zstandard支持"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
@@ -2023,6 +2035,10 @@ MSG_HASH(
    "着色器子帧"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "警告：快速闪烁可能会导致某些显示器出现图像残留。使用风险自负 // 通过垂直分割屏幕，并根据子帧的数量渲染屏幕的每个部分，来模拟在多个子帧上的基本滚动扫描线。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    "设计用来在任何可能的着色器特效上提升游戏本身的帧率，在帧之间插入额外的着色器帧。仅可以使用为您当前显示器刷新率指定的选项。 不要在非60赫兹倍数的屏幕刷新率使用，例如144赫兹，165赫兹等。 不要与“Swap 间隔 > 1”, “BFI”, “帧延迟”, 或者 “精确同步游戏帧率”功能同时使用. 可以保持系统的 VRR 功能打开，仅仅不是那个设置。"
    )
@@ -2033,6 +2049,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "滚动扫描线模拟"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "警告：快速闪烁可能会导致某些显示器出现图像残留。使用风险自负 // 通过垂直分割屏幕，并根据子帧的数量渲染屏幕的每个部分，来模拟在多个子帧上的基本滚动扫描线。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
@@ -2126,6 +2146,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    "在 Android 和 iOS 刘海屏设备中启用全屏"
 )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   "使用Metal参数缓冲器（需要重启）"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   "尝试使用Metal参数缓冲区来提升性能。部分核心可能需要此项设置。这可能会导致某些着色器出现问题，尤其是在旧版硬件或操作系统上。"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -2146,12 +2174,24 @@ MSG_HASH(
    "在原生和超宽超分辨率间切换。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "水平居中"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    "循环这些选项，直到图像居中显示。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
    "水平大小"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   "循环浏览这些选项以调整水平设置来更改图像大小。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   "垂直居中"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -2316,6 +2356,10 @@ MSG_HASH(
    "全屏显示"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "全屏显示。可在运行时更改。可通过命令行开关覆盖。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    "窗口全屏模式"
    )
@@ -2446,8 +2490,24 @@ MSG_HASH(
    "整数缩放轴"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "缩放高度或宽度，或同时缩放高度和宽度。半步仅适用于高分辨率源。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
    "整数倍缩放"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "向下取整或向上取整至最接近的整数。当图像裁剪过度时，\"智能\"缩放会转为降尺度处理。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "小尺度"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "超尺度"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
@@ -2526,6 +2586,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    "视口锚点偏置 Y"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "当视口宽度大于内容宽度时内容的水平位置。0.0表示最左侧，0.5表示居中，1.0表示最右侧。"
    )
 #if defined(RARCH_MOBILE)
 #endif
