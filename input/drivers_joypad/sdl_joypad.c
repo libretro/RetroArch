@@ -507,7 +507,7 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
          return false;
    }
 
-#if SDK_SUPPORTS_RUMBLE
+#if SDL_SUPPORTS_RUMBLE
    if (joypad->rumble_effect == -3)
    {
       if (SDL_JoystickRumble(joypad->joypad, efx.leftright.large_magnitude, efx.leftright.small_magnitude, efx.leftright.length) == -1)
