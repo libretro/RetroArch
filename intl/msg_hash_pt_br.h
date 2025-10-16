@@ -13907,6 +13907,10 @@ MSG_HASH(
    "Falha ao carregar o conteúdo."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Falhou em carregar a lista de reprodução."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "Falha ao carregar o arquivo da gravação."
    )
