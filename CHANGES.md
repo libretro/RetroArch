@@ -12,7 +12,8 @@
 - AUTOCONF: Autoconfig match extended with a physical identifier
 - CAMERA: Use ffmpeg libavfilter virtual input device as default
 - CHEEVOS: Show additional message for unsupported achievements
-- CHEEVOS: Upgrade to rcheevos 12.0
+- CHEEVOS: Upgrade to rcheevos 12.1
+- CHEEVOS: Change expired token message from info to error
 - DATABASE: Filter in Database Manager now works for genre and region
 - CLOUDSYNC: Enable icloud_drive cloud sync backend on MacOS / iOS
 - CLOUDSYNC: Don't always trust the server hash
@@ -44,10 +45,12 @@
 - INPUT/BSV/REPLAY: Add a text command to seek to a specific frame of the currently playing/recording replay; it will return via the command replier the actual seeked-to frame (right now it only supports seeking to checkpoints).
 - INTL: Add Irish Gaelic to selectable languages
 - IOS: Fix crash on iOS9 when fetching refresh rate
+- IOS/MACOS: Fix display server resolution and refresh rates
 - LIBRETRO: Deprecate intfstream_open_writable_memory
 - LIBRETRO: New environment function RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE
 - LINUX: Add full complement of key/value pairs to desktop entry
 - MACOS: Fix coreaudio microphone handling
+- MACOS: Fix window size calculation
 - MENU: Common Thumbnail Background option for all menu drivers
 - MENU: Move core options reset from Settings/Configuration to Main Menu / Configuration Files
 - MENU: Use right analog stick for thumbnail cycling in playlists
@@ -73,6 +76,7 @@
 - MENU/OZONE: Horizontal padding factor option
 - MENU/OZONE: Custom font selection and scaling factor
 - MENU/RGUI: Clock format is now configurable and moved to top header
+- NETPLAY: Push room info to lobby
 - NETWORK: Fixes for nmcli wifi driver
 - NETWORK: Network command interface enabled for Android, iOS, TVOS
 - OTHER: ZStandard support and libchdr update for support of chd files converted with createdvd option
@@ -94,11 +98,13 @@
 - VIDEO/D3D11/D3D12: snappy extra vsync presentation mode
 - VIDEO/GL: Fallback OpenGL symbol loader for Linux devices with EGL < 1.5
 - VIDEO/GL: Support for Cg and GLSL shaders in the GLCore video driver
+- VIDEO/GL: Improve GLES version detection
 - VIDEO/SHADER: Shader hold function, useful for some lightguns and shader comparison
 - VIDEO/SWITCHRES: Horizontal and vertical geometry adjustment options added
 - VIDEO/SWITCHRES: Game overrides
 - VIDEO/WAYLAND: Support for xdg-toplevel-icon-v1
 - VIDEO/WAYLAND: Fix deadlock when using Wayland Vulkan driver
+- VIDEO/WAYLAND: Fix fullscreen on auto monitor index (partial)
 - VITA: Touchscreen support for PS Vita
 - WEBOS: Various fixes and tunings
 - WEBOS: Disable core dumps
