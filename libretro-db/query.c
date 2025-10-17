@@ -90,6 +90,8 @@ struct registered_func
    rarch_query_func func;
 };
 
+struct rmsgpack_dom_value intermediate_res;
+
 /* Forward declarations */
 static struct buffer query_parse_method_call(char *s, size_t len,
       struct buffer buff, struct invocation *invocation, const char **err);
@@ -254,12 +256,85 @@ static struct rmsgpack_dom_value query_func_glob(
    return res;
 }
 
+/* Min and max functions will return all entries smaller/larger than previous *
+ * - in practice, last entry will contain the actual min/max value.           *
+ * Empty result means there is no such field. */
+static struct rmsgpack_dom_value query_func_min(
+      struct rmsgpack_dom_value input,
+      unsigned argc, const struct argument * argv)
+{
+   struct rmsgpack_dom_value res;
+
+   res.type                       = RDT_BOOL;
+   res.val.bool_                  = 0;
+
+   switch (input.type)
+   {
+      case RDT_INT:
+         res.val.bool_ = (
+               (input.val.int_ == 0)
+               || (input.val.int_ < intermediate_res.val.int_)
+               || (intermediate_res.val.int_ == 0));
+         if (res.val.bool_ || intermediate_res.val.int_ == 0)
+            memcpy(&intermediate_res, &input, sizeof(intermediate_res));
+         break;
+      case RDT_UINT:
+         res.val.bool_ = (
+               (input.val.uint_ == 0)
+               || (input.val.uint_ < intermediate_res.val.uint_)
+               || (intermediate_res.val.uint_ == 0));
+         if (res.val.bool_ || intermediate_res.val.uint_ == 0)
+            memcpy(&intermediate_res, &input, sizeof(intermediate_res));
+         break;
+      default:
+         break;
+   }
+
+   return res;
+}
+
+static struct rmsgpack_dom_value query_func_max(
+      struct rmsgpack_dom_value input,
+      unsigned argc, const struct argument * argv)
+{
+   struct rmsgpack_dom_value res;
+
+   res.type                       = RDT_BOOL;
+   res.val.bool_                  = 0;
+
+   switch (input.type)
+   {
+      case RDT_INT:
+         res.val.bool_ = (
+               (input.val.int_ == 0)
+               || (input.val.int_ > intermediate_res.val.int_)
+               || (intermediate_res.val.int_ == 0));
+         if (res.val.bool_ || intermediate_res.val.int_ == 0)
+            memcpy(&intermediate_res, &input, sizeof(intermediate_res));
+         break;
+      case RDT_UINT:
+         res.val.bool_ = (
+               (input.val.uint_ == 0)
+               || (input.val.uint_ > intermediate_res.val.uint_)
+               || (intermediate_res.val.uint_ == 0));
+         if (res.val.bool_ || intermediate_res.val.uint_ == 0)
+            memcpy(&intermediate_res, &input, sizeof(intermediate_res));
+         break;
+      default:
+         break;
+   }
+
+   return res;
+}
+
 struct registered_func registered_functions[100] = {
    {"is_true", query_func_is_true},
    {"or",      query_func_operator_or},
    {"and",     query_func_operator_and},
    {"between", query_func_between},
    {"glob",    query_func_glob},
+   {"min",     query_func_min},
+   {"max",     query_func_max},
    {NULL, NULL}
 };
 
@@ -904,6 +979,9 @@ void *libretrodb_query_compile(libretrodb_t *db,
    static char tmp_err_buff [MAX_ERROR_LEN] = {0};
    struct query *q     = (struct query*)malloc(sizeof(*q));
    size_t err_buff_len = sizeof(tmp_err_buff);
+
+   intermediate_res.val.int_  = 0;
+   intermediate_res.val.uint_ = 0;
 
    if (!q)
       return NULL;
