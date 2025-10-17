@@ -1682,6 +1682,11 @@ void drivers_init(
             location_st->active = false;
    }
 
+#ifdef HAVE_MENU
+   if (flags & DRIVER_INPUT_MASK)
+      menu_st->input_pointer_hw_state.flags |= MENU_INP_PTR_FLG_RESET;
+#endif
+
    core_info_init_current_core();
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -2018,7 +2023,7 @@ global_t *global_get_ptr(void)
    return &global_driver_st;
 }
 
-uint16_t retroarch_get_flags(void)
+uint32_t retroarch_get_flags(void)
 {
    struct rarch_state *p_rarch = &rarch_st;
    return p_rarch->flags;
@@ -3547,6 +3552,21 @@ bool command_event(enum event_command cmd, void *data)
             int new_state_slot        = settings->ints.state_slot + 1;
             configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
          }
+         break;
+      case CMD_EVENT_SAVE_REPLAY_CHECKPOINT:
+#ifdef HAVE_BSV_MOVIE
+         movie_commit_checkpoint(input_state_get_ptr());
+#endif
+         break;
+      case CMD_EVENT_PREV_REPLAY_CHECKPOINT:
+#ifdef HAVE_BSV_MOVIE
+         movie_skip_to_prev_checkpoint(input_state_get_ptr());
+#endif
+         break;
+      case CMD_EVENT_NEXT_REPLAY_CHECKPOINT:
+#ifdef HAVE_BSV_MOVIE
+         movie_skip_to_next_checkpoint(input_state_get_ptr());
+#endif
          break;
       case CMD_EVENT_REPLAY_DECREMENT:
 #ifdef HAVE_BSV_MOVIE

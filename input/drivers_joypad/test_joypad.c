@@ -298,7 +298,7 @@ static void test_joypad_autodetect_add(unsigned autoconf_pad)
 
    input_autoconfigure_connect(
          test_joypad_name(autoconf_pad),
-         NULL,
+         NULL, NULL,
          "test",
          autoconf_pad,
          vid,

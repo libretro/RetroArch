@@ -582,7 +582,7 @@ static INLINE unsigned font_get_arabic_replacement(
       { 0 }, { 0 }, { 0 }, { 0 },
       { 0 }, { 0 }, { 0 }, { 0 },
    };
-   unsigned      result         = 0;
+   unsigned ret = 0;
    bool          prev_connected = false;
    bool          next_connected = false;
    unsigned char id             = GET_ID_ARABIC(src);
@@ -654,10 +654,10 @@ static INLINE unsigned font_get_arabic_replacement(
       next_connected = !!arabic_shape_map[next_id][1];
    }
 
-   if ((result =
+   if ((ret =
             arabic_shape_map[id][prev_connected | (next_connected <<
                1)]))
-      return result;
+      return ret;
    return arabic_shape_map[id][prev_connected];
 }
 /* clang-format on */

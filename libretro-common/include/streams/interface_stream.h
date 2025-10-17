@@ -121,6 +121,8 @@ intfstream_t *intfstream_open_file(const char *path,
 intfstream_t *intfstream_open_memory(void *data,
       unsigned mode, unsigned hints, uint64_t size);
 
+/* Deprecated.  Has the same effect as `intfstream_open_memory` with
+   a mode including `RETRO_VFS_FILE_ACCESS_WRITE`. */
 intfstream_t *intfstream_open_writable_memory(void *data,
       unsigned mode, unsigned hints, uint64_t size);
 

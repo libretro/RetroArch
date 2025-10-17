@@ -134,10 +134,6 @@ MSG_HASH(
    "Отворете традиционното меню на работния плот."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Изключване на режим Киоск (Необходимо е рестартиране)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Показване на всички настройки свързани с конфигурацията."
    )
@@ -281,6 +277,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
    "Видеа"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   "Предишно пуснати видеота, ще се покажат тук."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
@@ -1345,13 +1345,6 @@ MSG_HASH(
 
 /* Quick Menu > Shaders */
 
-
-/* Quick Menu > Shaders > Save */
-
-
-
-
-/* Quick Menu > Shaders > Remove */
 
 
 /* Quick Menu > Shaders > Shader Parameters */

@@ -30,6 +30,13 @@ else
     DRY_RUN=
 fi
 
+if [ "$1" = "-d" -o "$1" = "--dsym" ] ; then
+    DOWNLOAD_DSYM=1
+    shift
+else
+    DOWNLOAD_DSYM=
+fi
+
 URL_BASE="https://buildbot.libretro.com/nightly/apple"
 
 if [ "$PLATFORM_FAMILY_NAME" = "tvOS" -o "$1" = "tvos" -o "$1" = "--tvos" ] ; then
@@ -96,10 +103,44 @@ function update_dylib() {
         if [ "${#URL_PLATFORMS[@]}" != 1 ] ; then
             lipo -create -output "$dylib" "$dylib".*
         fi
+
+        # Download dSYM if requested
+        if [ -n "$DOWNLOAD_DSYM" ] ; then
+            for urlp in "${URL_PLATFORMS[@]}" ; do
+                debug curl $CURL_DEBUG -o "$dylib".dSYM.zip "$URL_BASE"/"$urlp"/latest/dSYM/"$dylib".dSYM.zip
+                curl $CURL_DEBUG -o "$dylib".dSYM.zip "$URL_BASE"/"$urlp"/latest/dSYM/"$dylib".dSYM.zip
+                if [ -f "$dylib".dSYM.zip ] ; then
+                    debug unzip $UNZIP_DEBUG "$dylib".dSYM.zip
+                    unzip $UNZIP_DEBUG "$dylib".dSYM.zip
+                    rm -f "$dylib".dSYM.zip
+
+                    # macos app store needs universal binaries - merge dSYMs
+                    if [ "${#URL_PLATFORMS[@]}" != 1 ] ; then
+                        mv "$dylib".dSYM "$dylib".dSYM.$(basename "$urlp")
+                    fi
+                fi
+            done
+            if [ "${#URL_PLATFORMS[@]}" != 1 ] ; then
+                # Merge dSYMs for universal binary if we have multiple architectures
+                if ls "$dylib".dSYM.* >/dev/null 2>&1 ; then
+                    lipo -create -output "$dylib".dSYM.tmp $(find . -name "$dylib".dSYM.*/Contents/Resources/DWARF/"$dylib" -o -name "$dylib".dSYM.*/Contents/Resources/DWARF/$(basename "$dylib" .dylib))
+                    # Reconstruct dSYM bundle structure
+                    mkdir -p "$dylib".dSYM/Contents/Resources/DWARF
+                    mv "$dylib".dSYM.tmp "$dylib".dSYM/Contents/Resources/DWARF/$(basename "$dylib" .dylib)
+                    rm -rf "$dylib".dSYM.*
+                fi
+            fi
+        fi
+
         popd >/dev/null
         if [ -f "$dylib".tmp/"$dylib" ] ; then
             printf "${GREEN}Download ${dylib} success!${NC}\n"
             mv "$dylib".tmp/"$dylib" "$dylib"
+            # Move dSYM if it exists (only when --dsym flag was used)
+            if [ -n "$DOWNLOAD_DSYM" ] && [ -d "$dylib".tmp/"$dylib".dSYM ] ; then
+                rm -rf "$dylib".dSYM
+                mv "$dylib".tmp/"$dylib".dSYM "$dylib".dSYM
+            fi
         fi
         rm -rf "$dylib".tmp
     ) &
@@ -145,6 +186,7 @@ appstore_cores=(
     bsnes-jg
     bsnes_hd_beta
     cap32
+    clownmdemu
     crocods
     desmume
     dice
@@ -262,6 +304,7 @@ else
         if [ "$1" = "all" ] ; then
             dylibs=(${allcores[*]})
         elif [ "$1" = "appstore" ] ; then
+            DOWNLOAD_DSYM=1
             exports=(${appstore_cores[*]})
             if [ "$PLATFORM" = "osx" ] ; then
                 exports+=(

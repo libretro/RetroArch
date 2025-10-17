@@ -305,7 +305,7 @@ static void *parport_joypad_init(void *data)
 
       input_autoconfigure_connect(
             "Generic Parallel Port device",
-            NULL,
+            NULL, NULL,
             "parport",
             i,
             0,

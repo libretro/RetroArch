@@ -287,33 +287,55 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    OutputDebugStringA(buffer);
 #endif
 #else /* !HAVE_QT && !__WINRT__ */
-#if TARGET_OS_IPHONE
-#if TARGET_IPHONE_SIMULATOR
-   vprintf(fmt, ap);
-#elif __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_10_0 || __TV_OS_VERSION_MIN_REQUIRED > __TVOS_10_0
-   int _len = vsnprintf(NULL, 0, fmt, ap) + 1;
-   char buffer[_len]; /* TODO/FIXME - VLA - C89 backwards compatibility */
-   vsnprintf(buffer, _len, fmt, ap);
+#if TARGET_OS_MAC /* any apple variant: macOS, iOS, tvOS, ... */
+   char *buffer = NULL;
+   va_list ap_cp;
+   va_copy(ap_cp, ap);
+   int r = vasprintf(&buffer, fmt, ap_cp);
+   va_end(ap_cp);
+   if (r < 0 || !buffer)
+   {
+      /* Fallback to a minimal newline to keep output formatting sensible */
+      buffer = (char*)malloc(2);
+      if (buffer)
+      {
+         buffer[0] = '\n';
+         buffer[1] = '\0';
+      }
+   }
+
+#if TARGET_OS_OSX /* really macOS */
+   /* macOS: output to stdout for developer convenience */
+   printf("%s %s", tag_v, buffer);
+#else /* iOS, tvOS, ... */
+#if TARGET_OS_SIMULATOR
+   /* iOS Simulator: output to stderr for Xcode console */
+   fprintf(stderr, "%s %s", tag_v, buffer);
+#elif defined(__IPHONE_10_0) && (__IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0)
+   /* iOS 10+ and tvOS 10+: use os_log for unified logging */
+   os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
+#elif defined(__TV_OS_VERSION_MIN_REQUIRED) && defined(__TVOS_10_0) && (__TV_OS_VERSION_MIN_REQUIRED >= __TVOS_10_0)
+   /* tvOS 10+: use os_log for unified logging */
    os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
 #else
+   /* iOS 9 and earlier: use ASL (Apple System Logger) */
    static aslclient asl_client;
    static int asl_initialized = 0;
    if (!asl_initialized)
    {
-      asl_client      = asl_open(
-                                 FILE_PATH_PROGRAM_NAME,
+      asl_client      = asl_open(FILE_PATH_PROGRAM_NAME,
                                  "com.apple.console",
                                  ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
       asl_initialized = 1;
    }
    aslmsg msg = asl_new(ASL_TYPE_MSG);
    asl_set(msg, ASL_KEY_READ_UID, "-1");
-   if (tag)
-      asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", tag);
-   asl_vlog(asl_client, msg, ASL_LEVEL_NOTICE, fmt, ap);
+   asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s %s", tag_v, buffer);
    asl_free(msg);
 #endif
-#endif
+#endif /* TARGET_OS_OSX */
+   free(buffer);
+#endif /* TARGET_OS_MAC */
 #if defined(HAVE_LIBNX)
    mutexLock(&g_verbosity->mtx);
 #endif
@@ -531,7 +553,7 @@ void rarch_log_file_init(
             sizeof(log_file_path));
    }
    else
-	   log_file_path[0] = '\0';
+       log_file_path[0] = '\0';
 
    /* > Attempt to initialise log file */
    if (!string_is_empty(log_file_path))

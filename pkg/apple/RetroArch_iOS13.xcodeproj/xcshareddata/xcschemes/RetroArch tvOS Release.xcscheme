@@ -51,6 +51,7 @@
       debugDocumentVersioning = "YES"
       debugXPCServices = "NO"
       debugServiceExtension = "internal"
+      enableGPUFrameCaptureMode = "3"
       enableGPUValidationMode = "1"
       allowLocationSimulation = "NO"
       viewDebuggingEnabled = "No"

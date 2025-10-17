@@ -860,7 +860,6 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
 #else
             bool frame_is_reversed         = false;
 #endif
-
             if (BSV_MOVIE_IS_RECORDING() && !seen_replay && !frame_is_reversed)
             {
                /* TODO OSD message */

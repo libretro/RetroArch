@@ -327,12 +327,9 @@ bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog,
       if (fileInfo.isDir())
       {
          QDir fileInfoDir(path);
-         bool success = addDirectoryFilesToList(
-               dialog, list, fileInfoDir, extensions);
-
-         if (!success)
+         if (!addDirectoryFilesToList(
+               dialog, list, fileInfoDir, extensions))
             return false;
-
          continue;
       }
 
@@ -523,12 +520,9 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       if (fileInfo.isDir())
       {
          QDir dir(path);
-         bool success = addDirectoryFilesToList(
-               dialog.data(), list, dir, selectedExtensions);
-
-         if (!success)
+         if (!addDirectoryFilesToList(
+               dialog.data(), list, dir, selectedExtensions))
             return;
-
          continue;
       }
 

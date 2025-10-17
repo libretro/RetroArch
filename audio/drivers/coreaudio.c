@@ -383,7 +383,7 @@ static bool coreaudio_start(void *data, bool is_shutdown)
    if (dev)
    {
       dev->is_paused = (AudioOutputUnitStart(dev->dev) == noErr) ? false : true;
-      if (dev->is_paused)
+      if (!dev->is_paused)
          return true;
    }
    return false;

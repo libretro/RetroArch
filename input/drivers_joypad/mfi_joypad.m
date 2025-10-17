@@ -315,7 +315,7 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
 
 static void mfi_joypad_autodetect_add(unsigned autoconf_pad, const char *display_name)
 {
-    input_autoconfigure_connect("mFi Controller", display_name, mfi_joypad.ident, autoconf_pad, 0, 0);
+    input_autoconfigure_connect("mFi Controller", display_name, NULL, mfi_joypad.ident, autoconf_pad, 0, 0);
 }
 
 #define MFI_RUMBLE_AVAIL API_AVAILABLE(macos(11.0), ios(14.0), tvos(14.0))

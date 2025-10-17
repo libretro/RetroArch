@@ -145,7 +145,7 @@ static void wiiusb_hid_device_add_autodetect(unsigned idx,
       const char *device_name, const char *driver_name,
       uint16_t dev_vid, uint16_t dev_pid)
 {
-   input_autoconfigure_connect(device_name, NULL, "hid",
+   input_autoconfigure_connect(device_name, NULL, NULL, "hid",
          idx, dev_vid, dev_pid);
 }
 

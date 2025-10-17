@@ -45,7 +45,6 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       customLLDBInitFile = "$(SRCROOT)/LLDBInitFile"
       disableMainThreadChecker = "YES"
-      disablePerformanceAntipatternChecker = "YES"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
@@ -55,7 +54,8 @@
       enableGPUValidationMode = "1"
       allowLocationSimulation = "NO"
       viewDebuggingEnabled = "No"
-      queueDebuggingEnabled = "No">
+      queueDebuggingEnabled = "No"
+      disablePerformanceAntipatternChecker = "YES">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference

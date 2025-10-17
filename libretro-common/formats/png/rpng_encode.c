@@ -410,7 +410,7 @@ uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
    if (!buf)
       GOTO_END_ERROR();
 
-   intf_s = intfstream_open_writable_memory(buf,
+   intf_s = intfstream_open_memory(buf,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE,
          _len);

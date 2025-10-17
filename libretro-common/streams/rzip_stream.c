@@ -863,18 +863,18 @@ int rzipstream_vprintf(rzipstream_t *stream, const char* format, va_list args)
 int rzipstream_printf(rzipstream_t *stream, const char* format, ...)
 {
    va_list vl;
-   int result = 0;
+   int ret = 0;
 
    /* Initialise variable argument list */
    va_start(vl, format);
 
    /* Write variable argument list to file */
-   result = rzipstream_vprintf(stream, format, vl);
+   ret = rzipstream_vprintf(stream, format, vl);
 
    /* End using variable argument list */
    va_end(vl);
 
-   return result;
+   return ret;
 }
 
 /* Writes contents of 'data' buffer to file

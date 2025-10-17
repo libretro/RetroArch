@@ -2191,10 +2191,9 @@ bool core_info_list_get_info(core_info_list_t *core_info_list,
       core_info_t *info = core_info_find_internal(
             core_info_list, core_path);
 
-      memset(out_info, 0, sizeof(*out_info));
-
       if (info)
       {
+         memset(out_info, 0, sizeof(*out_info));
          *out_info = *info;
          return true;
       }

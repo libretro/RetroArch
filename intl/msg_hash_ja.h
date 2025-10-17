@@ -138,10 +138,6 @@ MSG_HASH(
    "従来のデスクトップメニューを開きます。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "キオスクモードを無効にする (再起動が必要)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "設定に関係するすべての設定を表示します。"
    )
@@ -3121,10 +3117,6 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "物理キーボードを選択"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
    "このデバイスをゲームパッドとしてではなく物理キーボードとして使用します。"
    )
@@ -3357,14 +3349,6 @@ MSG_HASH(
    "キーボードでメニューを操作する際に、Enter/Backspace の代わりにレトロパッドの A/B ボタンに割り当てられたキーボードキーで決定/キャンセルを行います。PageUp/PageDown などの割り当ても、レトロパッドの割り当てに準じて変更されます。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
-   "情報ボタンを無効にする"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
-   "検索ボタンを無効にする"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
    "決定/キャンセルボタンの入れ替え"
    )
@@ -3387,6 +3371,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    "どのユーザーでもメニューを操作できるようにします。無効にすると、ユーザー 1 のみがメニューを操作できます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   "メニュースクロール加速度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   "一定方向にスクロールし続けたときのカーソルの最大速度です。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "メニュースクロール遅延"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "一定方向にスクロールし続けるときの初期遅延 (ms) です。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
+   "情報ボタンを無効にする"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
+   "検索ボタンを無効にする"
    )
 
 /* Settings > Input > Hotkeys */
@@ -5673,14 +5681,6 @@ MSG_HASH(
 /* Settings > User Interface */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   "メニュー項目の表示/非表示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-   "RetroArch のメニュー項目の表示/非表示を切り替えます。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "外観"
    )
@@ -5689,23 +5689,57 @@ MSG_HASH(
    "メニュー画面の外観の設定を変更します。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
-   "アプリアイコン"
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "メニュー項目の表示/非表示"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   "アプリアイコンを変更します。"
-   )
-#ifdef _3DS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
-   "3DS 下画面の外観"
+   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   "RetroArch のメニュー項目の表示/非表示を切り替えます。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
-   "下画面の外観の設定を変更します。"
+   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+   "メニュー表示時にコンテンツを一時停止"
    )
-#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+   "非アクティブ時にコンテンツを一時停止"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   "RetroArch がアクティブウィンドウではないときにコンテンツを一時停止します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "コンテンツを閉じるで終了"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "コンテンツを閉じたときに RetroArch を自動的に終了します。「CLI」が終了するのはコンテンツがコマンドライン経由で起動された場合のみです。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "ステートセーブ後にコンテンツを再開"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   "ステートセーブまたはロード後に自動的にメニューを閉じてコンテンツを再開します。これを無効にすると、非常に遅いデバイスでのステートセーブのパフォーマンスを向上させることができます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "ディスク入れ替え後にコンテンツを再開"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   "新しいディスクが挿入またはロードされた際に、自動的にメニューを閉じてコンテンツを再開します。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   "ナビゲーションの回り込み"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+   "リストの終端に水平または垂直に達したときに先頭/末尾に折り返します。"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    "詳細設定を表示"
@@ -5729,66 +5763,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
    "キオスクモードを有効にする際にあらかじめパスワードを設定しておくことで、後でメニューからキオスクモードを無効にすることができます。無効にするには、メインメニューを開き、[キオスクモードを無効にする] でそのパスワードを入力します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   "ナビゲーションの回り込み"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "リストの終端に水平または垂直に達したときに先頭/末尾に折り返します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-   "メニュー表示時にコンテンツを一時停止"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "ステートセーブ後にコンテンツを再開"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "ステートセーブまたはロード後に自動的にメニューを閉じてコンテンツを再開します。これを無効にすると、非常に遅いデバイスでのステートセーブのパフォーマンスを向上させることができます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "ディスク入れ替え後にコンテンツを再開"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
-   "新しいディスクが挿入またはロードされた際に、自動的にメニューを閉じてコンテンツを再開します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
-   "コンテンツを閉じるで終了"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   "コンテンツを閉じたときに RetroArch を自動的に終了します。「CLI」が終了するのはコンテンツがコマンドライン経由で起動された場合のみです。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
-   "メニュースクリーンセーバーのタイムアウト"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
-   "メニューを表示している間、指定した非アクティブ期間の後にスクリーンセーバーが表示されます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
-   "メニュースクリーンセーバーのアニメーション"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
-   "メニュースクリーンセーバーがアクティブである間、アニメーション効果を有効にします。パフォーマンスに影響を与えます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
-   "メニュースクリーンセーバーのアニメーション速度"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
-   "メニュースクリーンセーバーのアニメーション効果の速度を調整します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
@@ -5815,12 +5789,28 @@ MSG_HASH(
    "タスクを別のスレッドで実行します。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   "非アクティブ時にコンテンツを一時停止"
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   "メニュースクリーンセーバーのタイムアウト"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   "RetroArch がアクティブウィンドウではないときにコンテンツを一時停止します。"
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   "メニューを表示している間、指定した非アクティブ期間の後にスクリーンセーバーが表示されます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
+   "メニュースクリーンセーバーのアニメーション"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
+   "メニュースクリーンセーバーがアクティブである間、アニメーション効果を有効にします。パフォーマンスに影響を与えます。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "メニュースクリーンセーバーのアニメーション速度"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "メニュースクリーンセーバーのアニメーション効果の速度を調整します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
@@ -5833,22 +5823,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
    "コンポジションを強制的に無効にします。無効化は現在 Windows Vista/7 でのみ有効です。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "メニュースクロール加速度"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-   "一定方向にスクロールし続けたときのカーソルの最大速度です。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "メニュースクロール遅延"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   "一定方向にスクロールし続けるときの初期遅延 (ms) です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -5869,6 +5843,24 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "起動時にデスクトップメニューを開く"
+   )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+   "3DS 下画面の外観"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+   "下画面の外観の設定を変更します。"
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "アプリアイコン"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "アプリアイコンを変更します。"
    )
 
 /* Settings > User Interface > Menu Item Visibility */
@@ -7008,10 +7000,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    "東南アジア"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "東アジア（韓国・春川市）"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
@@ -9382,22 +9370,6 @@ MSG_HASH(
    "現在読み込まれているプリセットの末尾にプリセットを追加します。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "プリセットを保存"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "現在のシェーダープリセットを保存します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "プリセットを削除"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "自動シェーダープリセットを削除します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "変更を適用"
    )
@@ -9454,21 +9426,13 @@ MSG_HASH(
    "このパスの倍率です。例えば、最初のパスで 2 倍、2 番目のパスで 2 倍であれば、合計で 4 倍の倍率になります。\n最後のパスに倍率係数がある場合、結果はビデオ設定のバイリニアフィルタリングの設定に応じてでデフォルトのフィルターで画面に引き伸ばされます。\n[デフォルト] が設定されている場合、最後のパスでないかどうかに応じて、1 倍のスケールまたはフル[...]"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "シンプルプリセット"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "元のプリセットへのリンクが読み込まれ、パラメータのみの変更が含まれるシェーダープリセットを保存します。"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "シェーダープリセットに名前を付けて保存"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9506,9 +9470,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "現在のシェーダー設定をコンテンツのデフォルト設定として保存します。"
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "自動シェーダープリセットが見つかりません"
@@ -11003,10 +10964,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    "タイトル余白の水平オフセット"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "設定タブを有効にする (再起動が必要)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,

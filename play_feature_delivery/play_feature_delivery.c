@@ -491,15 +491,15 @@ bool play_feature_delivery_download(const char *core_file)
    play_feature_delivery_state_t* state = play_feature_delivery_get_state();
    JNIEnv *env                          = jni_thread_getenv();
    struct android_app *app              = (struct android_app*)g_android;
-   bool success                         = false;
+   bool ret                             = false;
    char core_name[256];
    jstring core_name_jni;
 
    core_name[0] = '\0';
 
-   if (!env ||
-       !app ||
-       !app->downloadCore)
+   if (   !env
+       || !app
+       || !app->downloadCore)
       return false;
 
    /* Extract core name */
@@ -532,7 +532,7 @@ bool play_feature_delivery_download(const char *core_file)
       /* Free core_name_jni reference */
       (*env)->DeleteLocalRef(env, core_name_jni);
 
-      success = true;
+      ret = true;
    }
 
    /* Unlock mutex */
@@ -540,7 +540,7 @@ bool play_feature_delivery_download(const char *core_file)
    slock_unlock(state->status_lock);
 #endif
 
-   return success;
+   return ret;
 }
 
 /* Deletes specified core.
@@ -554,9 +554,9 @@ bool play_feature_delivery_delete(const char *core_file)
 
    core_name[0] = '\0';
 
-   if (!env ||
-       !app ||
-       !app->deleteCore)
+   if (   !env
+       || !app
+       || !app->deleteCore)
       return false;
 
    /* Extract core name */

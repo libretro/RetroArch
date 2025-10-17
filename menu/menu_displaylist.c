@@ -4332,6 +4332,33 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
          count++;
    }
 
+   /* Move password-hidden enablers under Information if visible */
+   {
+      const char *menu_ident = menu_driver_ident();
+      settings_t *settings   = config_get_ptr();
+
+      if (     !settings->bools.menu_content_show_settings
+            && !settings->bools.kiosk_mode_enable
+            && !( string_is_equal(menu_ident, "glui")
+               && settings->bools.menu_materialui_show_nav_bar)
+            && !string_is_empty(settings->paths.menu_content_show_settings_password))
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+               info_list,
+               MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+               PARSE_ACTION,
+               false) == 0)
+            count++;
+
+      if (     settings->bools.kiosk_mode_enable
+            && !string_is_empty(settings->paths.kiosk_mode_password))
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+               info_list,
+               MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE,
+               PARSE_ACTION,
+               false) == 0)
+            count++;
+   }
+
    return count;
 }
 
@@ -7336,6 +7363,7 @@ unsigned menu_displaylist_build_list(
 #endif
                {MENU_ENUM_LABEL_PLAYLIST_USE_FILENAME,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_ALLOW_NON_PNG,              PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS,          PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,                 PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,                PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE,              PARSE_ONLY_INT,  true},
@@ -7521,11 +7549,63 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
-      case DISPLAYLIST_SHADER_PRESET_REMOVE:
+      case DISPLAYLIST_SHADER_PRESET_MANAGER:
          {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            bool has_content = !string_is_empty(path_get(RARCH_PATH_CONTENT));
             const char *dir_video_shader  = settings->paths.directory_video_shader;
             const char *dir_menu_config   = settings->paths.directory_menu_config;
+
+            if (frontend_driver_can_watch_for_changes())
+            {
+               if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES),
+                        msg_hash_to_str(MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES),
+                        MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES,
+                        0, 0, 0, NULL))
+                  count++;
+            }
+
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+                     0, 0, 0, NULL))
+               count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+
+            /* Show current shader preset */
+            if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_FILE_INFO),
+                  MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+               count++;
+
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
             if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GLOBAL,
                      dir_video_shader, dir_menu_config))
                if (menu_entries_append(list,
@@ -7535,6 +7615,12 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE),
+                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
             if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_CORE,
                      dir_video_shader, dir_menu_config))
                if (menu_entries_append(list,
@@ -7544,54 +7630,6 @@ unsigned menu_displaylist_build_list(
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
 
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT,
-                     dir_video_shader, dir_menu_config))
-               if (menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT),
-                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT),
-                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-            if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME,
-                     dir_video_shader, dir_menu_config))
-               if (menu_entries_append(list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME),
-                        msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME),
-                        MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-#endif
-         }
-         break;
-      case DISPLAYLIST_SHADER_PRESET_SAVE:
-         {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-            bool has_content = !string_is_empty(path_get(RARCH_PATH_CONTENT));
-
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
-            if (menu_entries_append(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-            if (menu_entries_append(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-            if (menu_entries_append(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE),
-                     MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
-                     MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
-
             if (has_content)
             {
                if (menu_entries_append(list,
@@ -7600,12 +7638,29 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
+               if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_PARENT,
+                        dir_video_shader, dir_menu_config))
+                  if (menu_entries_append(list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT),
+                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT),
+                           MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+                           MENU_SETTING_ACTION, 0, 0, NULL))
+                     count++;
+
                if (menu_entries_append(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME),
                         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME),
                         MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
                         MENU_SETTING_ACTION, 0, 0, NULL))
                   count++;
+               if (menu_shader_manager_auto_preset_exists(SHADER_PRESET_GAME,
+                        dir_video_shader, dir_menu_config))
+                  if (menu_entries_append(list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME),
+                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME),
+                           MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+                           MENU_SETTING_ACTION, 0, 0, NULL))
+                     count++;
             }
 #endif
          }
@@ -8157,7 +8212,8 @@ unsigned menu_displaylist_build_list(
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
 
-         if (!settings->bools.kiosk_mode_enable)
+         if (     !settings->bools.kiosk_mode_enable
+               &&  settings->bools.settings_show_file_browser)
             menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
@@ -8167,11 +8223,14 @@ unsigned menu_displaylist_build_list(
       }
       case DISPLAYLIST_INPUT_MENU_SETTINGS_LIST:
          {
+            const char *menu_driver     = menu_driver_ident();
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_INPUT_UNIFIED_MENU_CONTROLS,        PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL,          PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_INPUT_SWAP_SCROLL,             PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU,       PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS,         PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_MENU_ALLOW_TABS_BACK,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_SCROLL_FAST,                   PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_SCROLL_DELAY,                  PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_INPUT_DISABLE_INFO_BUTTON,          PARSE_ONLY_BOOL, true},
@@ -8179,6 +8238,19 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,  PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU, PARSE_ONLY_BOOL, true},
             };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_MENU_ALLOW_TABS_BACK:
+                     if (string_is_equal(menu_driver, "rgui"))
+                        build_list[i].checked = false;
+                     break;
+                  default:
+                     break;
+               }
+            }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -8218,6 +8290,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,           PARSE_ONLY_FLOAT, true},
                {MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,                 PARSE_ONLY_FLOAT, true},
                {MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,              PARSE_ONLY_FLOAT, true},
+               {MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,PARSE_ONLY_FLOAT, true  },
+               {MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,    PARSE_ONLY_FLOAT, true  },
 #if defined(GEKKO)
                {MENU_ENUM_LABEL_INPUT_MOUSE_SCALE,                     PARSE_ONLY_UINT,  true},
 #endif
@@ -9583,7 +9657,6 @@ unsigned menu_displaylist_build_list(
             uico_driver_state_t *uico_st    = uico_state_get_ptr();
 
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_APPICON_SETTINGS,                                      PARSE_ONLY_STRING_OPTIONS, false},
                {MENU_ENUM_LABEL_MENU_SETTINGS,                                         PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,                                   PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,                       PARSE_ACTION,      true},
@@ -9598,7 +9671,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SAVESTATE_RESUME,                                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_INSERT_DISK_RESUME,                               PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,                                 PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,                               PARSE_ONLY_UINT,   false},
+               {MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,                               PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_MENU_STARTUP_PAGE,                                     PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS,                                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,                                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,                              PARSE_ONLY_STRING, false},
@@ -9621,6 +9695,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,                                PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS,                                  PARSE_ACTION,      true},
 #endif
+               {MENU_ENUM_LABEL_APPICON_SETTINGS,                                      PARSE_ONLY_STRING_OPTIONS, false},
                {MENU_ENUM_LABEL_USER_LANGUAGE,                                         PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_DRIVER,                                           PARSE_ONLY_STRING_OPTIONS, true},
             };
@@ -9659,11 +9734,6 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION_SPEED:
                      if (    menu_screensaver_supported
                          && (menu_screensaver_animation != MENU_SCREENSAVER_BLANK))
-                        build_list[i].checked = true;
-                     break;
-#endif
-#if defined(HAVE_XMB) || defined(HAVE_OZONE) || defined(HAVE_RGUI) || defined(HAVE_MATERIALUI)
-                  case MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION:
                         build_list[i].checked = true;
                      break;
 #endif
@@ -10957,6 +11027,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_REPLAY_AUTO_INDEX,                  PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_REPLAY_MAX_KEEP,                    PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL,         PARSE_ONLY_UINT, true},
+               {MENU_ENUM_LABEL_REPLAY_CHECKPOINT_DESERIALIZE,      PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,                PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,      PARSE_ONLY_BOOL, true},
 #if HAVE_CLOUDSYNC
@@ -13249,21 +13320,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   const char *val_scale =
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCALE);
 
-                  if (frontend_driver_can_watch_for_changes())
-                  {
-                     if (menu_entries_append(info->list,
-                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES),
-                              msg_hash_to_str(MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES),
-                              MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES,
-                              0, 0, 0, NULL))
-                        count++;
-                  }
+                  if (menu_entries_append(info->list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER),
+                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER),
+                           MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER,
+                           MENU_SETTING_ACTION, 0, 0, NULL))
+                     count++;
 
                   if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR),
-                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR),
-                           MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-                           0, 0, 0, NULL))
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS),
+                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS),
+                           MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,
+                           MENU_SETTING_ACTION, 0, 0, NULL))
                      count++;
 
                   if (menu_entries_append(info->list,
@@ -13288,30 +13356,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      count++;
 
                   if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE),
-                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE),
-                           MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE),
-                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE),
-                           MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-
-                  if (menu_entries_append(info->list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES),
                            msg_hash_to_str(MENU_ENUM_LABEL_SHADER_APPLY_CHANGES),
                            MENU_ENUM_LABEL_SHADER_APPLY_CHANGES,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS),
-                           msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS),
-                           MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS,
                            MENU_SETTING_ACTION, 0, 0, NULL))
                      count++;
 
@@ -14682,8 +14729,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_BROWSE_URL_START:
          case DISPLAYLIST_CONTENT_SETTINGS:
          case DISPLAYLIST_NETPLAY_ROOM_LIST:
-         case DISPLAYLIST_SHADER_PRESET_SAVE:
-         case DISPLAYLIST_SHADER_PRESET_REMOVE:
+         case DISPLAYLIST_SHADER_PRESET_MANAGER:
          case DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST:
          case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
          case DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST:
@@ -14705,13 +14751,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                switch (type)
                {
-                  case DISPLAYLIST_SHADER_PRESET_REMOVE:
-                     menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND),
-                           msg_hash_to_str(MENU_ENUM_LABEL_NO_PRESETS_FOUND),
-                           MENU_ENUM_LABEL_NO_PRESETS_FOUND,
-                           0, 0, 0, NULL);
-                     break;
                   case DISPLAYLIST_DISC_INFO:
                   case DISPLAYLIST_DUMP_DISC:
 #ifdef HAVE_LAKKA
@@ -15067,6 +15106,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB)
                   && !settings->bools.kiosk_mode_enable;
                bool show_settings            = settings->bools.menu_content_show_settings
+                     && !settings->bools.kiosk_mode_enable
                      && (  (string_is_equal(menu_ident, "rgui"))
                         || (string_is_equal(menu_ident, "glui")
                      &&    !settings->bools.menu_materialui_show_nav_bar));
@@ -15252,23 +15292,30 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         MENU_ENUM_LABEL_SETTINGS, PARSE_ACTION, false) == 0)
                      count++;
 
-               if (     !settings->bools.menu_content_show_settings
-                     && !string_is_empty(settings->paths.menu_content_show_settings_password))
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
-                        info->list,
-                        MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
-                        PARSE_ACTION,
-                        false) == 0)
-                     count++;
+               /* Move password-hidden enablers under Information if visible */
+               if (!settings->bools.menu_show_information)
+               {
+                  if (     !settings->bools.menu_content_show_settings
+                        && !settings->bools.kiosk_mode_enable
+                        && !( string_is_equal(menu_ident, "glui")
+                           && settings->bools.menu_materialui_show_nav_bar)
+                        && !string_is_empty(settings->paths.menu_content_show_settings_password))
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                           info->list,
+                           MENU_ENUM_LABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+                           PARSE_ACTION,
+                           false) == 0)
+                        count++;
 
-               if (     settings->bools.kiosk_mode_enable
-                     && !string_is_empty(settings->paths.kiosk_mode_password))
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
-                        info->list,
-                        MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE,
-                        PARSE_ACTION,
-                        false) == 0)
-                     count++;
+                  if (     settings->bools.kiosk_mode_enable
+                        && !string_is_empty(settings->paths.kiosk_mode_password))
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                           info->list,
+                           MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE,
+                           PARSE_ACTION,
+                           false) == 0)
+                        count++;
+               }
 
                if (settings->bools.menu_show_information)
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
@@ -15338,6 +15385,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            PARSE_ACTION, false) == 0)
                      count++;
 #endif
+
+               if (!count)
+               {
+                  menu_entries_clear(info->list);
+                  menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_NO_ITEM, 0, 0, NULL);
+
+                        info->flags |=  MD_FLAG_NEED_REFRESH;
+               }
 
                info->flags       |=  MD_FLAG_NEED_PUSH;
             }

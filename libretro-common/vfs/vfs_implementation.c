@@ -718,34 +718,34 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
 
 int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, const void *s, uint64_t len)
 {
-   int64_t pos    = 0;
-   ssize_t result = -1;
+   int64_t pos = 0;
+   ssize_t ret = -1;
 
    if (!stream)
       return -1;
 
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
-      pos    = retro_vfs_file_tell_impl(stream);
-      result = fwrite(s, 1, (size_t)len, stream->fp);
+      pos = retro_vfs_file_tell_impl(stream);
+      ret = fwrite(s, 1, (size_t)len, stream->fp);
 
-      if (result != -1 && pos + result > stream->size)
-         stream->size = pos + result;
+      if (ret != -1 && pos + ret > stream->size)
+         stream->size = pos + ret;
 
-      return result;
+      return ret;
    }
 #ifdef HAVE_MMAP
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
       return -1;
 #endif
 
-   pos    = retro_vfs_file_tell_impl(stream);
-   result = write(stream->fd, s, (size_t)len);
+   pos = retro_vfs_file_tell_impl(stream);
+   ret = write(stream->fd, s, (size_t)len);
 
-   if (result != -1 && pos + result > stream->size)
-      stream->size = pos + result;
+   if (ret != -1 && pos + ret > stream->size)
+      stream->size = pos + ret;
 
-   return result;
+   return ret;
 }
 
 int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)

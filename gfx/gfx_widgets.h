@@ -50,12 +50,12 @@
 #define BG_COLOR_WHITE    0xFFFFFF
 #define BG_COLOR_DEFAULT  0x161616
 #define BG_COLOR_PROGRESS 0x323232
-#define BG_COLOR_MARGIN   0xCCCCCC
+#define BG_COLOR_MARGIN   0xBBBBBB
 
-#define ICON_COLOR_RED    0xD6160C
-#define ICON_COLOR_GREEN  0x00C80A
-#define ICON_COLOR_BLUE   0x0C99D6
-#define ICON_COLOR_YELLOW 0xD6C10C
+#define ICON_COLOR_RED    0xD82020
+#define ICON_COLOR_GREEN  0x20D820
+#define ICON_COLOR_BLUE   0x208BD8
+#define ICON_COLOR_YELLOW 0xD8BA20
 
 RETRO_BEGIN_DECLS
 
@@ -124,8 +124,9 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_NEGATIVE                  = (1 << 9),
    DISPWIDG_FLAG_CATEGORY_WARNING          = (1 << 10),
    DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 11),
+   DISPWIDG_FLAG_CATEGORY_SUCCESS          = (1 << 12),
    /* Size */
-   DISPWIDG_FLAG_SMALL                     = (1 << 12)
+   DISPWIDG_FLAG_SMALL                     = (1 << 13)
 };
 
 /* There can only be one message animation at a time to
@@ -184,6 +185,7 @@ typedef struct disp_widget_msg
    int8_t task_progress;
    /* How many tasks have used this notification? */
    uint8_t task_count;
+   bool alternative_look;
 } disp_widget_msg_t;
 
 typedef struct dispgfx_widget
@@ -238,7 +240,6 @@ typedef struct dispgfx_widget
    unsigned msg_queue_regular_padding_x;
    unsigned msg_queue_regular_text_start;
    unsigned msg_queue_task_text_start_x;
-   unsigned msg_queue_task_hourglass_x;
    unsigned divider_width_1px;
 
    float last_scale_factor;

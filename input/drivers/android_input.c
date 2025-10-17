@@ -744,7 +744,7 @@ static INLINE void android_input_poll_event_type_motion(
    {
       if (!android->mouse_activated)
       {
-         RARCH_LOG("[android input]: Mouse activated\n");
+         RARCH_LOG("[Android Input] Mouse activated.\n");
          android->mouse_activated = true;
       }
       /* getButtonState requires API level 14 */
@@ -1346,7 +1346,7 @@ static void handle_hotplug(android_input_t *android,
 
    input_autoconfigure_connect(
          name_buf,
-         NULL,
+         NULL, NULL,
          android_joypad.ident,
          *port,
          vendorId,

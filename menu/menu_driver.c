@@ -97,8 +97,8 @@ extern u32 __nx_applet_type;
 void libnx_apply_overclock(void);
 #endif
 
-/* Accelerated navigation buttons */
-#define NAVIGATION_BUTTONS 9
+/* Accelerated and latched navigation buttons */
+#define NAVIGATION_BUTTONS 12
 
 struct key_desc key_descriptors[RARCH_MAX_KEYS] =
 {
@@ -1154,7 +1154,11 @@ static float menu_input_get_dpi(
       mets.type         = DISPLAY_METRIC_DPI;
       mets.value        = &dpi;
       if (!video_context_driver_get_metrics(&mets))
+#ifdef VITA
+         dpi            = 220.0f;
+#else
          dpi            = 0.0f;
+#endif
 
       dpi_cached        = true;
       last_video_width  = video_width;
@@ -1859,6 +1863,7 @@ static void menu_input_get_mouse_hw_state(
       bool overlay_active,
       menu_input_pointer_hw_state_t *hw_state)
 {
+   struct menu_state *menu_st      = &menu_driver_state;
    rarch_joypad_info_t joypad_info;
    static int16_t last_x           = -0x7fff;
    static int16_t last_y           = -0x7fff;
@@ -1878,6 +1883,13 @@ static void menu_input_get_mouse_hw_state(
    if (overlay_active)
       menu_mouse_enable            = false;
 #endif
+
+   /* Ignore initial mouse position also after reinit */
+   if (menu_st->input_pointer_hw_state.flags & MENU_INP_PTR_FLG_RESET)
+   {
+      menu_st->input_pointer_hw_state.flags &= ~MENU_INP_PTR_FLG_RESET;
+      last_x = last_y = -0x7fff;
+   }
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
@@ -2911,9 +2923,6 @@ void menu_shader_manager_apply_changes(
    }
 
    menu_shader_manager_set_preset(NULL, type, NULL, true);
-
-   /* Reinforce disabled state on failure */
-   configuration_set_bool(settings, settings->bools.video_shader_enable, false);
 }
 
 static bool menu_shader_manager_save_preset_internal(
@@ -3118,6 +3127,15 @@ static bool menu_shader_manager_operate_auto_preset(
             fill_pathname_join_special(file, core_name, game_name, sizeof(file));
             break;
          }
+      case SHADER_PRESET_CURRENT:
+         {
+            const char *current = video_shader_get_current_shader_preset();
+            if (string_is_empty(current))
+               return false;
+            strlcpy(file, current, sizeof(file));
+            path_remove_extension(file);
+         }
+         break;
       default:
          return false;
    }
@@ -4646,6 +4664,10 @@ static bool menu_driver_init_internal(
    else
       generic_menu_init_list(menu_st, settings);
 
+   /* Set startup page */
+   if (settings->uints.menu_startup_page != MENU_STARTUP_PAGE_MAIN_MENU)
+      menu_st->flags |= MENU_ST_FLAG_PENDING_STARTUP_PAGE;
+
    /* Initialise menu screensaver */
    menu_st->input_last_time_us    = cpu_features_get_time_usec();
    menu_st->flags                &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
@@ -5221,9 +5243,10 @@ unsigned menu_event(
    static retro_time_t last_time_us                = 0;
    static float delay_timer                        = 0.0f;
    static float delay_count                        = 0.0f;
+   static unsigned ok_old                          = 0;
+   static bool navigation_reset_delay              = true;
    static bool hold_initial                        = true;
    static bool hold_reset                          = true;
-   static unsigned ok_old                          = 0;
    unsigned ret                                    = MENU_ACTION_NOOP;
    bool set_scroll                                 = false;
    unsigned new_scroll_accel                       = 0;
@@ -5262,8 +5285,11 @@ unsigned menu_event(
          RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
    unsigned menu_cancel_btn                        = swap_ok_cancel_btns ?
          RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
-   unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
+   unsigned ok_current                             =
+            BIT256_GET_PTR(p_input, menu_ok_btn)
+         || (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT);
    unsigned ok_trigger                             = ok_current & ~ok_old;
+   unsigned ok_trigger_release                     = !ok_current && ok_old;
    static unsigned navigation_initial              = 0;
    unsigned navigation_current                     = 0;
    unsigned navigation_buttons[NAVIGATION_BUTTONS] =
@@ -5272,10 +5298,13 @@ unsigned menu_event(
       RETRO_DEVICE_ID_JOYPAD_DOWN,
       RETRO_DEVICE_ID_JOYPAD_LEFT,
       RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_SELECT,
+      RETRO_DEVICE_ID_JOYPAD_START,
       RETRO_DEVICE_ID_JOYPAD_L,
       RETRO_DEVICE_ID_JOYPAD_R,
       RETRO_DEVICE_ID_JOYPAD_L2,
       RETRO_DEVICE_ID_JOYPAD_R2,
+      RETRO_DEVICE_ID_JOYPAD_X,
       RETRO_DEVICE_ID_JOYPAD_Y
    };
 
@@ -5411,11 +5440,18 @@ unsigned menu_event(
          navigation_current        |= (1 << navigation_buttons[i]);
    }
 
+   /* Ignore Start when both Start and OK are pressed
+    * by non-unified menu input (Enter) */
+   if (     BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
+         && BIT256_GET_PTR(p_input, menu_ok_btn))
+      navigation_current &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
+
    if (navigation_current)
    {
       float delta_time              = (float)(menu_st->current_time_us - last_time_us) / 1000;
 
       last_time_us                  = menu_st->current_time_us;
+      navigation_reset_delay        = true;
 
       /* Store first direction in order to block "diagonals" */
       if (!navigation_initial)
@@ -5451,7 +5487,12 @@ unsigned menu_event(
       set_scroll                    = true;
       hold_reset                    = true;
       hold_initial                  = true;
-      navigation_initial            = 0;
+
+      /* Buffer for keyboard combo jitter */
+      if (navigation_reset_delay)
+         navigation_reset_delay     = false;
+      else
+         navigation_initial         = 0;
    }
 
    if (set_scroll)
@@ -5567,6 +5608,7 @@ unsigned menu_event(
    }
    else
    {
+      static size_t ok_enum_idx = 0;
       static uint8_t switch_old = 0;
       static bool keydown[RARCH_FIRST_CUSTOM_BIND] = {false};
       unsigned onkeyup          =
@@ -5576,6 +5618,36 @@ unsigned menu_event(
       uint8_t switch_trigger    = switch_current & ~switch_old;
 
       switch_old                = switch_current;
+
+      /* Always process Select and Start on release */
+      onkeyup |= (1 << RETRO_DEVICE_ID_JOYPAD_SELECT)
+               | (1 << RETRO_DEVICE_ID_JOYPAD_START);
+
+      /* Handle OK on release with specific items */
+      if (ok_current || ok_trigger_release)
+      {
+         menu_entry_t entry;
+         MENU_ENTRY_INITIALIZE(entry);
+         menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+
+         /* Due to navigation animations changing current entry between
+          * keypress, require OK trigger enum match for release action */
+         if (ok_trigger)
+            ok_enum_idx = entry.enum_idx;
+
+         /* Single-click playlist entries */
+         if (     settings->bools.input_menu_singleclick_playlists
+               && (  entry.enum_idx == MENU_ENUM_LABEL_RUN
+                  || entry.enum_idx == MENU_ENUM_LABEL_RESUME_CONTENT)
+               && (  ok_enum_idx == MENU_ENUM_LABEL_PLAYLIST_ENTRY
+                  || ok_enum_idx == MENU_ENUM_LABEL_EXPLORE_ITEM))
+            ok_trigger = ok_trigger_release;
+
+         /* Resume */
+         if (     ok_enum_idx == MENU_ENUM_LABEL_RESUME_CONTENT
+               && ok_enum_idx == entry.enum_idx)
+            ok_trigger = ok_trigger_release;
+      }
 
       /* Prevent holding down left/right with boolean settings */
       if (switch_current)
@@ -5612,18 +5684,30 @@ unsigned menu_event(
 
       if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP)
             && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_UP))
+      {
          ret = MENU_ACTION_UP;
+         keydown[RETRO_DEVICE_ID_JOYPAD_UP] = true;
+      }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN)
             && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      {
          ret = MENU_ACTION_DOWN;
+         keydown[RETRO_DEVICE_ID_JOYPAD_DOWN] = true;
+      }
       if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
             && switch_trigger
             && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
+      {
          ret = MENU_ACTION_LEFT;
+         keydown[RETRO_DEVICE_ID_JOYPAD_LEFT] = true;
+      }
       else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT)
             && switch_trigger
             && navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      {
          ret = MENU_ACTION_RIGHT;
+         keydown[RETRO_DEVICE_ID_JOYPAD_RIGHT] = true;
+      }
 
       if (BIT256_GET_PTR(p_trigger_input, RARCH_ANALOG_RIGHT_Y_MINUS))
          ret = MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY;
@@ -5652,18 +5736,51 @@ unsigned menu_event(
       MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_L3, MENU_ACTION_SCROLL_HOME);
       MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_R3, MENU_ACTION_SCROLL_END);
 
-      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_X, MENU_ACTION_SEARCH);
-      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_Y, MENU_ACTION_SCAN);
-      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_START, MENU_ACTION_START);
-      MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_SELECT, MENU_ACTION_INFO);
+      if (ret == MENU_ACTION_NOOP && !ok_trigger && !ok_trigger_release)
+      {
+         MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_START, MENU_ACTION_START);
+         MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_SELECT, MENU_ACTION_INFO);
+         MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_X, MENU_ACTION_SEARCH);
+         MENU_ACTION_RET(RETRO_DEVICE_ID_JOYPAD_Y, MENU_ACTION_SCAN);
+      }
+      else
+      {
+         /* Ignore OK release if navigation happened while down */
+         if (ok_trigger_release)
+         {
+            if (     keydown[RETRO_DEVICE_ID_JOYPAD_UP]
+                  || keydown[RETRO_DEVICE_ID_JOYPAD_DOWN]
+                  || keydown[RETRO_DEVICE_ID_JOYPAD_LEFT]
+                  || keydown[RETRO_DEVICE_ID_JOYPAD_RIGHT]
+                  || keydown[menu_cancel_btn]
+               )
+               ok_trigger = false;
+
+            memset(keydown, 0, sizeof(keydown));
+         }
+      }
 
       if (ok_trigger)
          ret = MENU_ACTION_OK;
       else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
+      {
          ret = MENU_ACTION_CANCEL;
+         keydown[menu_cancel_btn] = true;
+      }
 
       if (BIT256_GET_PTR(p_trigger_input, RARCH_MENU_TOGGLE))
          ret = MENU_ACTION_TOGGLE;
+
+      if (ret != MENU_ACTION_NOOP && !ok_current)
+         memset(keydown, 0, sizeof(keydown));
+
+      /* Prevent simultaneous hotkey actions according to hotkey block delay */
+      if (input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey != NO_BTN)
+      {
+         if (      (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
+               || !(input_st->flags & INP_FLAG_BLOCK_HOTKEY))
+         ret = MENU_ACTION_NOOP;
+      }
 
       if (ret != MENU_ACTION_NOOP)
          menu_st->input_last_time_us = menu_st->current_time_us;
@@ -5672,7 +5789,7 @@ unsigned menu_event(
    /* Menu must be alive, and input must be released after menu toggle. */
    if (     !(menu_st->flags & MENU_ST_FLAG_ALIVE)
          || menu_st->input_driver_flushing_input > 0)
-      return MENU_ACTION_NOOP;
+      ret = MENU_ACTION_NOOP;
 
    return ret;
 }
@@ -7881,10 +7998,6 @@ int generic_menu_entry_action(
    if (   (menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT)
        || (menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
    {
-      const char *content_path  = (menu_st->flags
-            & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH)
-            ? menu_st->pending_env_shutdown_content_path
-            : path_get(RARCH_PATH_CONTENT);
       const char *deferred_path = menu ? menu->deferred_path : NULL;
       const char *flush_target  = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
       size_t stack_offset       = 1;
@@ -7901,16 +8014,17 @@ int generic_menu_entry_action(
          if (string_is_empty(parent_label))
             continue;
 
-         /* If core was launched via a playlist, flush
+         /* If core was launched via a playlist or Explore, flush
           * to playlist entry menu */
-         if (    string_is_equal(parent_label,
-                 msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS))
-              && (!string_is_empty(deferred_path)
-              && !string_is_empty(content_path)
-              && string_is_equal(deferred_path, content_path))
-             )
+         if (     (  string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS))
+                  || string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+               && !string_is_empty(deferred_path)
+            )
          {
-            flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
+            if (string_is_equal(parent_label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+               flush_target = msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB);
+            else
+               flush_target = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
             break;
          }
          /* If core was launched via 'Contentless Cores' menu,
@@ -7939,6 +8053,15 @@ int generic_menu_entry_action(
        * MENU_ST_FLAG_PREVENT_POPULATE */
       menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
 
+      /* Single-click playlist return */
+      if (settings->bools.input_menu_singleclick_playlists && reset_navigation)
+      {
+         size_t new_selection = menu_st->selection_ptr;
+         menu_entries_pop_stack(&new_selection, 0, 0);
+         menu_st->selection_ptr = new_selection;
+         reset_navigation = false;
+      }
+
       /* Ozone requires thumbnail refreshing */
       if (menu_st->driver_ctx && menu_st->driver_ctx->refresh_thumbnail_image)
          menu_st->driver_ctx->refresh_thumbnail_image(
@@ -7955,6 +8078,7 @@ int generic_menu_entry_action(
    {
       menu_st->flags &= ~MENU_ST_FLAG_PENDING_RELOAD_CORE;
 
+#ifdef HAVE_DYNAMIC
       if (!string_is_empty(path_get(RARCH_PATH_CORE_LAST)))
       {
          content_ctx_info_t content_info = {0};
@@ -7969,6 +8093,7 @@ int generic_menu_entry_action(
                             |  MENU_ST_FLAG_PREVENT_POPULATE;
          }
       }
+#endif
    }
 
    return ret;

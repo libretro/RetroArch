@@ -147,7 +147,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "키오스크 모드 비활성화 (재시작 필요)"
+   "키오스크 모드 비활성화"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -3410,8 +3410,24 @@ MSG_HASH(
    "아날로그 감도"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "가속도계 감도"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "자이로스코프 감도"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "아날로그 스틱의 감도를 조정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "가속도계의 감도를 조정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+  "자이로스코프의 감도를 조정합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3641,6 +3657,62 @@ MSG_HASH(
    "메뉴와 게임 모두에 동일한 컨트롤을 사용합니다. 키보드에 적용됩니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   "확인/취소 버튼 반전"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   "확인/취소 버튼을 바꿉니다. 비활성시 일본식 버튼 구성, 활성시 서양식 구성으로 설정됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "메뉴 스크롤 버튼 반전"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "스크롤 버튼 동작을 바꿉니다. 비활성 시 L/R은 10개씩, L2/R2는 알파벳 단위로 스크롤을 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   "모든 사용자가 메뉴 조작"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "모든 사용자가 메뉴를 제어할 수 있도록 허용합니다. 비활성 시 1번 사용자만 메뉴를 제어할 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "실행목록에서 바로 실행하기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "실행목록에서 항목을 선택할 때 '실행' 메뉴를 건너뜁니다. 확인 버튼을 꾹 누른 채로 방향 패드 키를 입력하면 '실행' 메뉴에 접근할 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "탭에서 뒤로 나가기 허용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "탭 또는 사이드바에서 뒤로 나가면 메인 메뉴로 돌아오게 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   "메뉴 스크롤 가속"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   "한 방향으로 스크롤할 때 커서의 최대 속도를 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "메뉴 스크롤 지연 시간"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "메뉴를 누르는 방향으로 빠르게 스크롤하기 전에 기다릴 지연 시간(밀리초)입니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
    "정보 버튼 사용 안 함"
    )
@@ -3671,30 +3743,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "메뉴에서 오른쪽 아날로그 스틱 입력을 비활성화합니다. 오른쪽 아날로그 스틱은 실행목록 화면에서 미리보기를 전환하는 데 사용됩니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "확인/취소 버튼 반전"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "확인/취소 버튼을 바꿉니다. 비활성시 일본식 버튼 구성, 활성시 서양식 구성으로 설정됩니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "메뉴 스크롤 버튼 반전"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
-   "스크롤 버튼 동작을 바꿉니다. 비활성 시 L/R은 10개씩, L2/R2는 알파벳 단위로 스크롤을 합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
-   "모든 사용자가 메뉴 조작"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "모든 사용자가 메뉴를 제어할 수 있도록 허용합니다. 비활성 시 1번 사용자만 메뉴를 제어할 수 있습니다."
    )
 
 /* Settings > Input > Hotkeys */
@@ -4020,6 +4068,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
    "현재 리플레이의 녹화/재생을 중지합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "리플레이 체크포인트 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "현재 재생중인 리플레이에 체크포인트를 생성합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "이전 리플레이 체크포인트"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "자동 또는 수동으로 저장된 이전 체크포인트까지 리플레이를 뒤로 감습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "다음 리플레이 체크포인트"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "자동 또는 수동으로 저장된 다음 체크포인트까지 리플레이를 빨리 감습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
@@ -4762,6 +4834,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "리플레이 녹화 중에 게임의 상태저장을 일정 간격으로 자동 실행합니다. 기본값은 비활성이며 기간은 초 단위입니다. 0으로 설정시 자동 상태저장이 비활성 됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "리플레이 중간에 일정 간격으로 저장되어 있는 상태저장을 재생 중에 불러올 지 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "리플레이 체크포인트 역직렬화 수행"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "리플레이 중간에 일정 간격으로 저장되어 있는 상태저장을 재생 중에 불러올 지 설정합니다. 대부분의 코어에서 활성화하는 것이 좋지만, 일부 코어는 역직렬화 과정에서 이상 증상을 보일 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -5547,7 +5631,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
-   "키보드 오버레이 사전 설정"
+   "키보드 오버레이 프리셋"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
@@ -6069,14 +6153,6 @@ MSG_HASH(
 /* Settings > User Interface */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   "메뉴 항목 표시"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-   "RetroArch상의 메뉴 항목 표시 유무를 설정합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "메뉴"
    )
@@ -6085,23 +6161,61 @@ MSG_HASH(
    "메뉴 화면 설정을 변경합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
-   "앱 아이콘"
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "메뉴 항목 표시"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   "앱 아이콘 변경합니다."
-   )
-#ifdef _3DS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
-   "3DS 아래 화면 메뉴"
+   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   "RetroArch상의 메뉴 항목 표시 유무를 설정합니다."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
-   "아래 화면 메뉴의 설정을 변경합니다."
+   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+   "메뉴 활성 시 콘텐츠 일시정지"
    )
-#endif
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+   "메뉴가 활성화되면 컨텐츠를 일시정지합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+   "활성 시가 아닐 경우 콘텐츠 일시정지"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   "RetroArch가 활성 창이 아닐 때 실행중인 콘텐츠를 일시중지합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "콘텐츠 종료시 함께 종료"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "콘텐츠 종료 시 자동으로 RetroArch를 종료합니다. 'CLI'로 설정할 경우 컨텐츠가 명령줄로 실행된 경우에만 종료합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "상태저장 후 콘텐츠 이어하기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   "빠른 메뉴에서 '상태저장' 또는 '상태저장 불러오기' 실행 후 자동으로 메뉴를 닫고 현재 콘텐츠를 이어합니다. 해제 시 낮은 성능의 기기에서 상태저장 성능을 개선 할 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "디스크 변경 후 콘텐츠 이어하기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   "새 디스크 삽입이나 로딩 후 자동으로 메뉴를 닫고 현재 콘텐츠를 이어합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   "이동 경로 연결"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+   "가로 또는 세로 목록의 끝에 도달하면 시작 또는 끝으로 이어서 연결합니다."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    "고급 설정 보임"
@@ -6127,44 +6241,28 @@ MSG_HASH(
    "키오스크 모드를 비활성화할때 비밀번호를 설정해 나중에 설정할 수 있게 끔 합니다. 메인 메뉴에서 '키오스크 모드 비활성화'를 선택 후 비밀번호를 입력해 설정할 수 있습니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   "이동 경로 연결"
+   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
+   "마우스 지원"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "가로 또는 세로 목록의 끝에 도달하면 시작 또는 끝으로 이어서 연결합니다."
+   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+   "메뉴를 마우스로 조작할 수 있게 합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-   "메뉴 활성 시 콘텐츠 일시정지"
+   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
+   "터치 지원"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "메뉴가 활성화되면 컨텐츠를 일시정지합니다."
+   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+   "메뉴를 터치스크린으로 조작할 수 있게 합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "상태저장 후 콘텐츠 이어하기"
+   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   "다중 스레드 작업"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "빠른 메뉴에서 '상태저장' 또는 '상태저장 불러오기' 실행 후 자동으로 메뉴를 닫고 현재 콘텐츠를 이어합니다. 해제 시 낮은 성능의 기기에서 상태저장 성능을 개선 할 수 있습니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "디스크 변경 후 콘텐츠 이어하기"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
-   "새 디스크 삽입이나 로딩 후 자동으로 메뉴를 닫고 현재 콘텐츠를 이어합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
-   "콘텐츠 종료시 함께 종료"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   "콘텐츠 종료 시 자동으로 RetroArch를 종료합니다. 'CLI'로 설정할 경우 컨텐츠가 명령줄로 실행된 경우에만 종료합니다."
+   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   "분할된 스레드에서 작업을 수행합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
@@ -6203,38 +6301,6 @@ MSG_HASH(
    "메뉴 화면 보호기 애니메이션 효과의 속도를 조정합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-   "마우스 지원"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "메뉴를 마우스로 조작할 수 있게 합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-   "터치 지원"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "메뉴를 터치스크린으로 조작할 수 있게 합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "다중 스레드 작업"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   "분할된 스레드에서 작업을 수행합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   "활성 시가 아닐 경우 콘텐츠 일시정지"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   "RetroArch가 활성 창이 아닐 때 실행중인 콘텐츠를 일시중지합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    "데스크탑 컴포지션 사용 안함"
    )
@@ -6245,22 +6311,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
    "콤퍼지션을 강제로 비활성화합니다. 비활성화는 현재 Windows Vista/7에서만 유효합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "메뉴 스크롤 가속"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-   "한 방향으로 스크롤할 때 커서의 최대 속도를 설정합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "메뉴 스크롤 지연 시간"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   "메뉴를 누르는 방향으로 빠르게 스크롤하기 전에 기다릴 지연 시간(밀리초)입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -6281,6 +6331,24 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "시작시 데스크탑 메뉴 열기"
+   )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+   "3DS 아래 화면 메뉴"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+   "아래 화면 메뉴의 설정을 변경합니다."
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "앱 아이콘"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "앱 아이콘 변경합니다."
    )
 
 /* Settings > User Interface > Menu Item Visibility */
@@ -7121,6 +7189,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "메인 메뉴와 설정만"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "시작 페이지"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "시작 시 표시될 메뉴 페이지입니다."
+   )
 
 /* Settings > AI Service */
 
@@ -7490,10 +7566,6 @@ MSG_HASH(
    "동남아시아"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "동아시아 (춘천, 대한민국)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "사용자"
    )
@@ -7858,6 +7930,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "최근 실행:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
+   "플레이 횟수:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
@@ -9879,7 +9955,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "사전 설정 불러오기"
+   "프리셋 불러오기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
@@ -9887,39 +9963,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
-   "셰이더 사전 설정을 직접 불러옵니다. 그에 따라 셰이더 메뉴가 업데이트됩니다.\n메뉴에 표시되는 배율은 사전 설정이 간단한 배율 조정 방법(예: 소스 배율 조정, X/Y에 대해 동일한 배율)을 사용하는 경우에만 신뢰할 수 있습니다."
+   "셰이더 프리셋을 직접 불러옵니다. 불러온 프리셋에 따라 셰이더 메뉴가 업데이트됩니다.\n메뉴에 표시되는 배율은 프리셋이 간단한 배율 조정 방법(예: 소스 배율 조정, X/Y에 대해 동일한 배율)을 사용하는 경우에만 신뢰할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
-   "사전 설정 추가"
+   "앞에 프리셋 추가"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "현재 불러온 사전 설정 앞에 사전 설정을 추가합니다."
+   "현재 불러와진 프리셋 앞에 프리셋을 추가합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
-   "사전 설정 추가"
+   "뒤에 프리셋 추가"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "현재 불러온 사전 설정에 사전 설정을 추가합니다."
+   "현재 불러와진 프리셋 뒤에 프리셋을 추가합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "사전 설정 저장"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "프리셋 관리"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "현재 셰이더 프리셋을 저장합니다."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "셰이더 프리셋을 저장하거나 삭제합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "사전 설정 제거"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "활성 프리셋 파일"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "자동 셰이더 프리셋을 제거합니다."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "현재 사용 중인 셰이더 프리셋입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9939,7 +10015,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
-   "현재 셰이더를 직접 변경합니다. 변경사항이 프리셋 파일로 저장되지는 않습니다."
+   "현재 셰이더를 직접 변경합니다. 변경사항이 프리셋 파일에 저장되지는 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
@@ -9978,21 +10054,25 @@ MSG_HASH(
    "현재 패스의 배율. 배율 인수는 누적됩니다. 첫 번째 패스에서 2x, 두 번째 패스에서 2x일 경우 총 배율은 4배가 됩니다.\n마지막 패스에 배율 인수가 있는 경우 결과는 비디오 설정의 이중선형 필터링 설정에 따라 기본 필터에 적용되어 화면에 확장됩니다.\n'기본값'이 설정되어 있으면 마지막 패스가 아닌지 여부에 따라 1x 배율 또는 전체 화면으로 확대가 사용됩니다."
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "간단 프리셋"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "원본 프리셋 링크와 사용자가 변경한 항목만을 포함한 셰이더 프리셋을 저장합니다."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "현재 프리셋 저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "현재 셰이더 프리셋을 저장합니다."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "셰이더 프리셋 다른 이름으로 저장"
+   "다른 이름으로 프리셋 저장"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -10030,9 +10110,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "현재 셰이더 설정을 콘텐츠의 기본 값으로 저장합니다."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "자동 셰이더 프리셋 찾지 못함"
@@ -11518,7 +11595,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "설정 탭 사용 (재시작 필요)"
+   "설정 탭 표시"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -13461,6 +13538,14 @@ MSG_HASH(
    "%.*s 사용자가 %.*s 입력장치로 접속했습니다"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "플레이어 %d명"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "플레이어 %d명 (%d명 관전 중)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "사용자가 이전 버전의 RetroArch가 아니거나 구버전을 사용하여 접속에 실패했습니다."
    )
@@ -14014,6 +14099,22 @@ MSG_HASH(
    "클라이언트에서 별칭 얻어오기 실패."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD,
+   "로드하는 데 실패했습니다."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_CONTENT,
+   "콘텐츠를 불러오는 데 실패했습니다."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "실행목록에서 불러오기가 실패했습니다."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "동영상 파일을 불러오는 데 실패했습니다."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
    "오버레이 불러오기 실패."
    )
@@ -14168,6 +14269,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
    "타임라인 잘못됨, 녹화 덮어쓰는 중"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
+   "뒤로 감기"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
+   "뒤로 감기 실패"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
+   "앞으로 감기"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
+   "앞으로 감기 실패"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME,
+   "감기 완료"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME_FAILED,
+   "감기 실패"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -15088,6 +15213,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    "RetroAchievements 미디어 변경 실패: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "RetroAchievements 로그인이 만료되었습니다. 비밀번호를 다시 입력하고 게임을 재시작해주세요."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

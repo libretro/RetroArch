@@ -310,6 +310,9 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL), len);
              break;
+          case MENU_ENUM_LABEL_REPLAY_CHECKPOINT_DESERIALIZE:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE), len);
+             break;
           case MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE), len);
              break;

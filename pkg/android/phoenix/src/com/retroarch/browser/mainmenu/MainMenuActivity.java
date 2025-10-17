@@ -115,22 +115,30 @@ public final class MainMenuActivity extends PreferenceActivity
 
 	public void finalStartup()
 	{
-		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		Intent retro = new Intent(this, RetroActivityFuture.class);
-
-		retro.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-		startRetroActivity(
-				retro,
-				null,
-				prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
-				UserPreferences.getDefaultConfigPath(this),
-				Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
-				getApplicationInfo().dataDir,
-				getApplicationInfo().sourceDir);
+		
+		if (RetroActivityFuture.isRunning) {
+			// RetroActivity is already running - just bring it to front
+			retro.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+		} else {
+			// RetroActivity not running - full setup with parameters
+			retro.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+			
+			startRetroActivity(
+					retro,
+					null,
+					prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
+					UserPreferences.getDefaultConfigPath(this),
+					Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
+					getApplicationInfo().dataDir,
+					getApplicationInfo().sourceDir);
+		}
+		
 		startActivity(retro);
 		finish();
 	}
+	
 
 	@Override
 	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)

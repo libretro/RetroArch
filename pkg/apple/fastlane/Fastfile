@@ -165,6 +165,7 @@ private_lane :ra_build_app do |options|
     xcodebuild_formatter: 'xcbeautify --renderer github-actions',
     buildlog_path: "buildlog",
     export_method: "app-store",
+    include_symbols: true,
     export_options: {
       provisioningProfiles: options[:provisioningProfiles]
     }

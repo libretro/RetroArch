@@ -206,7 +206,6 @@ const mitm_server_t netplay_mitm_server_list[NETPLAY_MITM_SERVERS] = {
    { "madrid",    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2 },
    { "saopaulo",  MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3 },
    { "singapore", MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4 },
-   { "chuncheon", MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5 },
    { "custom",    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM }
 };
 
@@ -649,7 +648,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
       /* Send our response */
       sendto(net_st->lan_ad_server_fd,
          (char*)&ad_packet_buffer, sizeof(ad_packet_buffer), 0,
-         (struct sockaddr*)&their_addr, sizeof(their_addr));
+         (struct sockaddr*)&their_addr, addr_size);
    }
 
    return true;
@@ -8401,6 +8400,31 @@ static bool netplay_should_skip(netplay_t *netplay)
       netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED;
 }
 
+static size_t retrieve_client_count(netplay_t *netplay,
+      unsigned *players, unsigned *spectators)
+{
+   size_t i, r = 0;
+
+   for (i = 0; i < netplay->connections_size; i++)
+   {
+      struct netplay_connection *connection = &netplay->connections[i];
+
+      /* We only want info from already connected clients. */
+      if (     (connection->flags & NETPLAY_CONN_FLAG_ACTIVE)
+            && (connection->mode >= NETPLAY_CONNECTION_CONNECTED))
+      {
+         r++;
+         if (connection->mode == NETPLAY_CONNECTION_SPECTATING)
+            (*spectators)++;
+         else if (connection->mode == NETPLAY_CONNECTION_PLAYING
+               || connection->mode == NETPLAY_CONNECTION_SLAVE)
+            (*players)++;
+      }
+   }
+
+   return r;
+}
+
 bool init_netplay_deferred(const char *server, unsigned port, const char *mitm_session)
 {
    net_driver_state_t *net_st = &networking_driver_st;
@@ -8601,6 +8625,8 @@ static void netplay_announce(netplay_t *netplay)
    int mitm_custom_port             = 0;
    int is_mitm                      = 0;
    uint32_t content_crc             = 0;
+   unsigned players                 = 0;
+   unsigned spectators              = 0;
    net_driver_state_t *net_st       = &networking_driver_st;
    struct netplay_room *host_room   = &net_st->host_room;
    struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
@@ -8679,6 +8705,15 @@ static void netplay_announce(netplay_t *netplay)
    else
       net_http_urlencode(&mitm_custom_addr, "");
 
+   /* Purely informational, should not be used to guess if a host is full. */
+   retrieve_client_count(netplay, &players, &spectators);
+
+   if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
+      spectators++;
+   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING
+         || netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
+      players++;
+
    /* Estimated to a maximum of 3062 bytes. */
    snprintf(buf, sizeof(buf),
       "username=%s&"
@@ -8696,7 +8731,9 @@ static void netplay_announce(netplay_t *netplay)
       "subsystem_name=%s&"
       "mitm_session=%s&"
       "mitm_custom_addr=%s&"
-      "mitm_custom_port=%d",
+      "mitm_custom_port=%d&"
+      "player_count=%d&"
+      "spectator_count=%d",
       username,
       corename,
       coreversion,
@@ -8712,7 +8749,9 @@ static void netplay_announce(netplay_t *netplay)
       subsystemname,
       mitm_session,
       mitm_custom_addr,
-      mitm_custom_port);
+      mitm_custom_port,
+      players,
+      spectators);
 
    if (task_push_http_post_transfer(FILE_PATH_LOBBY_LIBRETRO_URL "add", buf,
          true, NULL, netplay_announce_cb, NULL))

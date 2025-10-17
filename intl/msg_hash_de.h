@@ -143,7 +143,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Kiosk Modus deaktivieren (Neustart erforderlich)"
+   "Kioskmodus deaktivieren"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -2265,7 +2265,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Anzeige im Vollbild.Lässt sich während der Laufzeit ändern. Kann über einen Kommandozeilenschalter übersteuert werden."
+   "Anzeige im Vollbild. Lässt sich während der Laufzeit ändern. Kann über einen Kommandozeilenschalter übersteuert werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
@@ -3286,8 +3286,24 @@ MSG_HASH(
    "Analogempfindlichkeit"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Empfindlichkeit des Beschleunigungsmessers"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "Empfindlichkeit des Gyroskops"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Die Empfindlichkeit von analogen Sticks anpassen."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Die Empfindlichkeit für den Beschleunigungsmesser anpassen."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+  "Die Empfindlichkeit für das Gyroskop anpassen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3513,6 +3529,62 @@ MSG_HASH(
    "Dieselbe Steuerung für das Menü und die Spiele verwenden. Betrifft die Tastatur."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   "Vertausche OK- und Zurück-Tasten im Menü"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   "Die Tasten für 'OK' und 'Zurück' vertauschen. \"Aus\" verwendet die japanische Tastenbelegung; \"An\" die westliche Tastenbelegung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "Vertausche Scroll-Tasten im Menü"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "Die Tasten für Scrolling vertauschen. \"Aus\" scrollt 10 Einträge mit L/R und alphabetisch mit L2/R2."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   "Alle Benutzer können das Menü steuern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "Jedem Benutzer ermöglichen, das Menü zu steuern. Wenn deaktiviert, kann nur Benutzer 1 das Menü steuern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "Wiedergabelisten mit Einzelklick"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "„Ausführen“-Menü beim Starten von Wiedergabelisteneinträge überspringen. Das D-Pad drücken, während die OK-Taste gehalten wird, um auf das „Ausführen“-Menü zuzugreifen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "Zurück von Tabs erlauben"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "Zurück zum Hauptmenü aus Registerkarten/Seitenleiste beim Drücken von Zurück."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   "Menü Scroll-Beschleunigung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   "Maximale Geschwindigkeit des Cursors beim Halten einer Bildlaufrichtung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Menü Scroll-Verzögerung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "Initiale Verzögerung in Millisekunden, wenn eine Richtung zum Scrollen gedrückt gehalten wird."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
    "Info-Taste deaktivieren"
    )
@@ -3543,30 +3615,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "Eingabe von rechtem Analogstick im Menü verhindern. Der rechte Analogstick wechselt die Miniaturansichten in Wiedergabelisten durch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Vertausche OK- und Zurück-Tasten im Menü"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "Die Tasten für 'OK' und 'Zurück' vertauschen. \"Aus\" verwendet die japanische Tastenbelegung; \"An\" die westliche Tastenbelegung."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Vertausche Scroll-Tasten im Menü"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
-   "Die Tasten für Scrolling vertauschen. \"Aus\" scrollt 10 Einträge mit L/R und alphabetisch mit L2/R2."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
-   "Alle Benutzer können das Menü steuern"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "Jedem Benutzer ermöglichen, das Menü zu steuern. Wenn deaktiviert, kann nur Benutzer 1 das Menü steuern."
    )
 
 /* Settings > Input > Hotkeys */
@@ -3888,6 +3936,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
    "Stoppt das Aufzeichnen/Abspielen des aktuellen Replays."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Replay-Kontrollpunkt speichern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Übergibt einen Kontrollpunkt an die aktuell abgespielte Wiederholung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Vorheriger Replay-Kontrollpunkt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Spult das Replay an den vorherigen automatisch oder manuell gespeicherten Kontrollpunkt zurück."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Nächster Replay-Kontrollpunkt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Spult das Replay zum nächsten automatisch oder manuell gespeicherten Kontrollpunkt vor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
@@ -4421,7 +4493,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Legt fest, ob Savestate-Fähigkeiten der Core-Info ignoriert werden sollen, so dass mit verwandten Funktionen experimentiert werden kann (Run-Ahead, Zurückspulen usw.)."
+   "Gibt an, ob Kerninfospeicherfunktionen ignoriert werden sollen, so dass mit verwandten Funktionen (Vorlauf, Rücklauf usw.) experimentiert werden kann."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4626,6 +4698,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "Speichert den Spielstatus während der Replay-Aufnahme in einem regelmäßigen Intervall. Dies ist standardmäßig deaktiviert, es sei denn, es wird etwas anderes festgelegt. Das Intervall wird in Sekunden gemessen. Ein Wert von 0 deaktiviert die Aufzeichnung von Kontrollpunkten."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Ob in Replays gespeicherte Kontrollpunkte während der regulären Wiedergabe deserialisiert werden sollen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Replayprüfpunkte deserialisieren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Gibt an, ob Kontrollpunkte, die während der regulären Wiedergabe in Replays gespeichert werden, deserialisiert werden sollen. Sollte für die meisten Kerne auf true gesetzt werden, aber einige können bei der Deserialisierung von Inhalten janky Verhalten zeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -5917,14 +6001,6 @@ MSG_HASH(
 /* Settings > User Interface */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   "Sichtbarkeit von Menüelementen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-   "Die Sichtbarkeit von Menüelementen in RetroArch umschalten."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "Darstellung"
    )
@@ -5933,23 +6009,61 @@ MSG_HASH(
    "Einstellungen für das Aussehen des Menüs ändern."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
-   "Appsymbol"
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "Sichtbarkeit von Menüelementen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   "Appsymbol ändern."
-   )
-#ifdef _3DS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
-   "3DS untererer Bildschirm Erscheinungsbild"
+   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   "Die Sichtbarkeit von Menüelementen in RetroArch umschalten."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
-   "Einstellungen für das Erscheinungsbild des unteren Bildschirms ändern."
+   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+   "Inhalt pausieren, wenn das Menü aktiv ist"
    )
-#endif
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+   "Pausiert den Inhalt, wenn das Menü aktiv ist."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+   "Inhalt pausieren, wenn nicht aktiv"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   "Den Inhalt pausieren, wenn RetroArch nicht das aktive Fenster ist."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "Programm beim Schließen von Inhalten beenden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "RetroArch automatisch beenden, wenn Inhalte geschlossen werden. 'CLI' wird nur beendet, wenn der Inhalt über die Befehlszeile gestartet wird."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "Inhalte nach dem Verwenden von Savestates fortsetzen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   "Das Menü automatisch schließen und den Inhalt fortsetzen, nachdem ein Savestate erstellt oder geladen wurde. Das Deaktivieren dieser Option kann die Savestate-Operationen auf sehr langsamen Geräten beschleunigen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "Inhalte nach dem Disc-Wechsel fortsetzen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   "Das Menü automatisch schließen und den Inhalt fortsetzen, nachdem eine neue Disc eingelegt oder geladen wurde."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   "Navigationsumlauf"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+   "Zum Anfang und/oder Ende springen, wenn die Listengrenze horizontal oder vertikal erreicht wird."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    "Erweiterte Einstellungen zeigen"
@@ -5975,44 +6089,28 @@ MSG_HASH(
    "Wird beim Aktivieren des Kiosk-Modus ein Passwort vergeben, kann der Modus später unter Angabe des Passworts im Hauptmenü wieder deaktiviert werden."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   "Navigationsumlauf"
+   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
+   "Maus-Unterstützung"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "Zum Anfang und/oder Ende springen, wenn die Listengrenze horizontal oder vertikal erreicht wird."
+   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+   "Die Steuerung des Menüs mit einer Maus ermöglichen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-   "Inhalt pausieren, wenn das Menü aktiv ist"
+   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
+   "Touch-Unterstützung"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Pausiert den Inhalt, wenn das Menü aktiv ist."
+   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+   "Die Steuerung des Menüs mit einem Touchscreen ermöglichen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Inhalte nach dem Verwenden von Savestates fortsetzen"
+   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   "Multithreading"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "Das Menü automatisch schließen und den Inhalt fortsetzen, nachdem ein Savestate erstellt oder geladen wurde. Das Deaktivieren dieser Option kann die Savestate-Operationen auf sehr langsamen Geräten beschleunigen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Inhalte nach dem Disc-Wechsel fortsetzen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
-   "Das Menü automatisch schließen und den Inhalt fortsetzen, nachdem eine neue Disc eingelegt oder geladen wurde."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
-   "Programm beim Schließen von Inhalten beenden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   "RetroArch automatisch beenden, wenn Inhalte geschlossen werden. 'CLI' wird nur beendet, wenn der Inhalt über die Befehlszeile gestartet wird."
+   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   "Aufgaben in separaten Threads ausführen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
@@ -6047,38 +6145,6 @@ MSG_HASH(
    "Geschwindigkeit des Animationseffekts des Menü-Bildschirmschoners anpassen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-   "Maus-Unterstützung"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "Die Steuerung des Menüs mit einer Maus ermöglichen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-   "Touch-Unterstützung"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "Die Steuerung des Menüs mit einem Touchscreen ermöglichen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "Multithreading"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   "Aufgaben in separaten Threads ausführen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   "Inhalt pausieren, wenn nicht aktiv"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   "Den Inhalt pausieren, wenn RetroArch nicht das aktive Fenster ist."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    "Deaktiviere Desktopgestaltung"
    )
@@ -6089,22 +6155,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
    "Abschaltung der Desktopgestaltung erzwingen. Abschaltung bisher nur gültig für Windows Vista/7."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Menü Scroll-Beschleunigung"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-   "Maximale Geschwindigkeit des Cursors beim Halten einer Bildlaufrichtung."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Menü Scroll-Verzögerung"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   "Initiale Verzögerung in Millisekunden, wenn eine Richtung zum Scrollen gedrückt gehalten wird."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -6125,6 +6175,24 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "Desktop-Menü beim Start öffnen"
+   )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+   "3DS untererer Bildschirm Erscheinungsbild"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+   "Einstellungen für das Erscheinungsbild des unteren Bildschirms ändern."
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Appsymbol"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Appsymbol ändern."
    )
 
 /* Settings > User Interface > Menu Item Visibility */
@@ -6965,6 +7033,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "Nur für Hauptmenü und Einstellungen"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "Startseite"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "Anfangsseite nach dem Start."
+   )
 
 /* Settings > AI Service */
 
@@ -7324,10 +7400,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    "Südostasien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "Ostasien (Chuncheon, Südkorea)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
@@ -9666,20 +9738,20 @@ MSG_HASH(
    "Voreinstellung hinter aktuell geladene Voreinstellung hängen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Voreinstellung speichern"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Voreinstellungen verwalten"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Die aktuelle Shader-Voreinstellung speichern."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "Shader-Voreinstellungen speichern oder entfernen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Voreinstellung entfernen"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Aktive Voreinstellungdatei"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Automatische Shader-Voreinstellungen entfernen."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Die aktuell verwendete Shader-Voreinstellung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9730,21 +9802,25 @@ MSG_HASH(
    "Skalierung für diesen Durchgang. Der Skalierungsfaktor wird akkumuliert, d. h. 2x für den ersten Durchgang und 2x für den zweiten Durchgang ergibt eine Gesamtskalierung von 4×.\nWenn es einen Skalierungsfaktor für den letzten Durchgang gibt, wird das Ergebnis mit dem im Standardfilter angegebenen Filter auf den Bildschirm gestreckt, abhängig von der Einstellung der bilinearen Filterung in den Videoeinstellungen.\nWenn „Standard“ eingestellt ist, wird entweder auf den Vollbildschirm ge[...]"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Einfache Voreinstellungen"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Eine Shader-Voreinstellung speichern, die nur die von Dir vorgenommenen Parameteränderungen und einen Link zur ursprünglichen Voreinstellung enthält."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Aktuelle Voreinstellung speichern"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Die aktuelle Shader-Voreinstellung speichern."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Shader-Voreinstellung speichern unter"
+   "Voreinstellung speichern unter"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9782,9 +9858,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Die aktuellen Shader-Einstellungen als Standard-Einstellung für diesen Inhalt speichern."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Keine automatischen Shader-Voreinstellungen gefunden"
@@ -11262,7 +11335,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Registerkarte „Einstellungen“ aktivieren (Neustart erforderlich)"
+   "Einstellungen-Tab aktivieren"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -13021,6 +13094,14 @@ MSG_HASH(
    "%.*s ist mit Eingabegeräten %.*s beigetreten"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d Spieler"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d Spieler (%d Zuschauer)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Ein Netzwerkspiel-Verbindungsversuch ist fehlgeschlagen, da beim Teilnehmer RetroArch nicht oder in einer älteren Version ausgeführt wird."
    )
@@ -13582,6 +13663,10 @@ MSG_HASH(
    "Laden des Inhalts fehlgeschlagen."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Fehler beim Laden von Wiedergabeliste."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "Laden der Filmdatei fehlgeschlagen."
    )
@@ -13740,6 +13825,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
    "Falsche Zeitschiene; Aufnahme wird überschrieben"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
+   "Rückspulen"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
+   "Rückspulen fehlgeschlagen"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
+   "Vorspulen"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
+   "Vorspulen fehlgeschlagen"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME,
+   "Spulen abgeschlossen"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME_FAILED,
+   "Spulen fehlgeschlagen"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -14656,6 +14765,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    "RetroAchievements Medienwechsel fehlgeschlagen: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "RetroArchievements-Login ist abgelaufen. Bitte das Passwort erneut eingeben und das Spiel neu laden."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

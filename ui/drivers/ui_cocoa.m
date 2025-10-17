@@ -52,6 +52,10 @@
 
 #include "ui_cocoa.h"
 
+#ifdef HAVE_SWIFT
+#import "RetroArch-Swift.h"
+#endif
+
 #ifdef HAVE_MIST
 #include "steam/steam.h"
 #endif
@@ -445,13 +449,23 @@ static ui_application_t ui_application_cocoa = {
          {
             static NSUInteger old_flags           = 0;
             NSUInteger new_flags                  = event.modifierFlags;
-            bool down                             = (new_flags & old_flags) == old_flags;
+            NSUInteger changed_flags              = new_flags ^ old_flags;
             uint16_t keycode                      = event.keyCode;
+            bool down                             = false;
 
-            old_flags                             = new_flags;
+            /* Determine if the changed modifier is being pressed or released
+             * by checking if it's set in the new flags */
+            if (changed_flags != 0)
+            {
+               /* Find which specific modifier changed and its new state */
+               NSUInteger single_change = changed_flags & -changed_flags; /* Isolate rightmost bit */
+               down = (new_flags & single_change) != 0;
 
-            apple_input_keyboard_event(down, keycode,
-                  0, (uint32_t)new_flags, RETRO_DEVICE_KEYBOARD);
+               apple_input_keyboard_event(down, keycode,
+                     0, (uint32_t)new_flags, RETRO_DEVICE_KEYBOARD);
+            }
+
+            old_flags = new_flags;
          }
          break;
         case NSEventTypeMouseMoved:
@@ -558,12 +572,11 @@ static ui_application_t ui_application_cocoa = {
    if (!window_save_positions || is_fullscreen)
        return;
 
-   NSRect frame = self.window.frame;
-   NSRect bounds = self.window.contentView.bounds;
-   settings->uints.window_position_x      = (unsigned)frame.origin.x;
-   settings->uints.window_position_y      = (unsigned)frame.origin.y;
-   settings->uints.window_position_width  = (unsigned)bounds.size.width;
-   settings->uints.window_position_height = (unsigned)bounds.size.height;
+   NSRect contentRect = [self.window contentRectForFrameRect:self.window.frame];
+   settings->uints.window_position_x      = (unsigned)contentRect.origin.x;
+   settings->uints.window_position_y      = (unsigned)contentRect.origin.y;
+   settings->uints.window_position_width  = (unsigned)contentRect.size.width;
+   settings->uints.window_position_height = (unsigned)contentRect.size.height;
 }
 
 - (void)windowDidResize:(NSNotification *)notification
@@ -576,12 +589,11 @@ static ui_application_t ui_application_cocoa = {
    if (!window_save_positions || is_fullscreen)
        return;
 
-   NSRect frame = self.window.frame;
-   NSRect bounds = self.window.contentView.bounds;
-   settings->uints.window_position_x      = (unsigned)frame.origin.x;
-   settings->uints.window_position_y      = (unsigned)frame.origin.y;
-   settings->uints.window_position_width  = (unsigned)bounds.size.width;
-   settings->uints.window_position_height = (unsigned)bounds.size.height;
+   NSRect contentRect = [self.window contentRectForFrameRect:self.window.frame];
+   settings->uints.window_position_x      = (unsigned)contentRect.origin.x;
+   settings->uints.window_position_y      = (unsigned)contentRect.origin.y;
+   settings->uints.window_position_width  = (unsigned)contentRect.size.width;
+   settings->uints.window_position_height = (unsigned)contentRect.size.height;
 }
 
 @end
@@ -644,6 +656,12 @@ static ui_application_t ui_application_cocoa = {
 
 #ifdef HAVE_COCOA_METAL
    [self setupMainWindow];
+#endif
+
+#if HAVE_SWIFT
+   if (@available(macOS 13.0, *)) {
+      [RetroArchAppShortcuts updateAppShortcuts];
+   }
 #endif
 
 #ifdef HAVE_QT
@@ -760,11 +778,12 @@ static ui_application_t ui_application_cocoa = {
 
    if (window_save_positions)
    {
-      NSRect frame;
-      frame.origin.x    = settings->uints.window_position_x;
-      frame.origin.y    = settings->uints.window_position_y;
-      frame.size.width  = settings->uints.window_position_width;
-      frame.size.height = settings->uints.window_position_height;
+      NSRect contentRect;
+      contentRect.origin.x    = settings->uints.window_position_x;
+      contentRect.origin.y    = settings->uints.window_position_y;
+      contentRect.size.width  = settings->uints.window_position_width;
+      contentRect.size.height = settings->uints.window_position_height;
+      NSRect frame = [self.window frameRectForContentRect:contentRect];
       [self.window setFrame:frame display:YES];
    }
    else

@@ -45,7 +45,7 @@ static void switch_joypad_autodetect_add(unsigned autoconf_pad)
 {
    input_autoconfigure_connect(
             switch_joypad_name(autoconf_pad), /* name */
-            NULL,                             /* display name */
+            NULL, NULL,                       /* display names */
             switch_joypad.ident,              /* driver */
             autoconf_pad,                     /* idx */
             0,                                /* vid */

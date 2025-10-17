@@ -53,7 +53,7 @@ int rmsgpack_write_bool(intfstream_t *stream, int value);
 
 int rmsgpack_write_int(intfstream_t *stream, int64_t value);
 
-int rmsgpack_write_uint(intfstream_t *stream, uint64_t value );
+int rmsgpack_write_uint(intfstream_t *stream, uint64_t value);
 
 int rmsgpack_read(intfstream_t *stream, struct rmsgpack_read_callbacks *callbacks, void *data);
 

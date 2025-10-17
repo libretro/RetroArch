@@ -480,6 +480,7 @@ static int rc_hash_file_from_buffer(char hash[33], uint32_t console_id, const rc
   rc_hash_iterator_t buffered_file_iterator;
   memset(&buffered_file_iterator, 0, sizeof(buffered_file_iterator));
   memcpy(&buffered_file_iterator.callbacks, &iterator->callbacks, sizeof(iterator->callbacks));
+  buffered_file_iterator.userdata = iterator->userdata;
 
   buffered_file_iterator.callbacks.filereader.open = rc_file_open_buffered_file;
   buffered_file_iterator.callbacks.filereader.close = rc_file_close_buffered_file;
@@ -487,7 +488,6 @@ static int rc_hash_file_from_buffer(char hash[33], uint32_t console_id, const rc
   buffered_file_iterator.callbacks.filereader.seek = rc_file_seek_buffered_file;
   buffered_file_iterator.callbacks.filereader.tell = rc_file_tell_buffered_file;
   buffered_file_iterator.path = "memory stream";
-  buffered_file_iterator.userdata = iterator->userdata;
 
   rc_buffered_file.data = rc_buffered_file.read_ptr = iterator->buffer;
   rc_buffered_file.data_size = iterator->buffer_size;
@@ -1296,7 +1296,8 @@ static void rc_hash_initialize_iterator_from_path(rc_hash_iterator_t* iterator, 
   }
 
   /* find the handler for the extension */
-  handler = (const rc_hash_iterator_ext_handler_entry_t*)bsearch(&search, handlers, num_handlers, sizeof(*handler), rc_hash_iterator_find_handler);
+  handler = (const rc_hash_iterator_ext_handler_entry_t*)
+    bsearch(&search, handlers, num_handlers, sizeof(*handler), rc_hash_iterator_find_handler);
   if (handler) {
     handler->handler(iterator, handler->data);
   } else {

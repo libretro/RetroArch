@@ -29,8 +29,10 @@ fi
 
 if [ -n "$BUILT_PRODUCTS_DIR" -a -n "$FRAMEWORKS_FOLDER_PATH" ] ; then
     OUTDIR="$BUILT_PRODUCTS_DIR"/"$FRAMEWORKS_FOLDER_PATH"
+    DSYM_OUTDIR="$BUILT_PRODUCTS_DIR"
 else
     OUTDIR="$BASE_DIR"/Frameworks
+    DSYM_OUTDIR="$BASE_DIR"/Frameworks
 fi
 
 mkdir -p "$OUTDIR"
@@ -62,6 +64,29 @@ for dylib in $(find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*
     fi
     echo "signing $fwName"
     codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "$fwDir"
+
+    # Create framework dSYM if dylib dSYM exists
+    if [ -d "$dylib.dSYM" ] ; then
+        echo "Creating dSYM for framework $fwName"
+        dSYMDir="${DSYM_OUTDIR}/${fwName}.framework.dSYM"
+
+        # Copy entire dSYM structure to preserve all metadata and future additions
+        cp -R "$dylib.dSYM" "$dSYMDir"
+
+        # Rename DWARF binary to match framework name
+        dylibName=$(basename "$dylib")
+        mv "$dSYMDir/Contents/Resources/DWARF/$dylibName" "$dSYMDir/Contents/Resources/DWARF/$fwName"
+
+        # Update binary-path in Relocations yml files if they exist
+        if [ -d "$dSYMDir/Contents/Resources/Relocations" ] ; then
+            find "$dSYMDir/Contents/Resources/Relocations" -name "*.yml" -type f | while read -r ymlfile ; do
+                sed -i '' "s/binary-path: *$dylibName/binary-path:     $fwName/" "$ymlfile"
+            done
+        fi
+
+        # Update Info.plist with framework identifier
+        /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.apple.xcode.dsym.$fwName" "$dSYMDir/Contents/Info.plist"
+    fi
 done
 
 # Copy in MoltenVK as an embedded library manually instead of having

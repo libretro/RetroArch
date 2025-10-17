@@ -1,17 +1,25 @@
 # Future
+- ANDROID: OnNewIntent handler to allow launchers start new content without closing first
 - APPLE: Include sameduck, gearcoleco, geargrafx cores in App Store builds
 - APPLE: Include reminiscence, virtualjaguar, vitaquake2 cores in App Store builds
+- APPLE: Include gam4980 core in App Store builds
 - APPLE: Bundle identifier added to Information menu
 - APPLE: Option to control the usage of Metal argument buffers
 - APPLE: Don't force fullscreen, allow multitasking on iPad
+- APPLE: AppIntents for Siri, Shortcuts
+- APPLE: Fix ffmpeg camera driver
 - AUDIO: Microphone CoreAudio driver for iOS and macOS
+- AUTOCONF: Autoconfig match extended with a physical identifier
 - CAMERA: Use ffmpeg libavfilter virtual input device as default
 - CHEEVOS: Show additional message for unsupported achievements
+- CHEEVOS: Upgrade to rcheevos 12.0
+- DATABASE: Filter in Database Manager now works for genre and region
 - CLOUDSYNC: Enable icloud_drive cloud sync backend on MacOS / iOS
 - CLOUDSYNC: Don't always trust the server hash
 - CLOUDSYNC: Enable WebDAV support for Android
 - CLOUDSYNC: Speed up cloudsync on Apple
 - DATABASE: Improve multidisk game scanning
+- EMSCRIPTEN: Support core switching
 - EMSCRIPTEN: Support suspend screensaver
 - EMSCRIPTEN/RWEBCAM: Fix camera driver
 - EMSCRIPTEN/RWEBINPUT: Add accelerometer/gyroscope support
@@ -23,10 +31,23 @@
 - INPUT: Fix menu usage when OK/Cancel has mouse binds
 - INPUT: Ignore menu mouse startup position before moving
 - INPUT: Fix heavy slowdown when using Bluetooth XInput controllers with rumble
+- INPUT: Reset and close content hotkeys now require confirmation, similar to quit
+- INPUT: Menu toggle and hotkey enable can now be assigned to the same key
+- INPUT/ANDROID: Favor mouse coordinates for lightgun
 - INPUT/UDEV: Fix lost terminal settings after restart from menu
+- INPUT/BSV/REPLAY: Bumped replay format version to 2. Old replays will still play back fine.
+- INPUT/BSV/REPLAY: Add option to skip deserializing checkpoints from replay files (it introduces jank in some emulators).
+- INPUT/BSV/REPLAY: Add checkpoint and initial savestate compression, following the `savestate_file_compression` config boolean.  Use zstd if available, or fall back to zlib.
+- INPUT/BSV/REPLAY: Add incremental checkpoints based on statestreams (depending on `HAVE_STATESTREAM` compile time flag).  As an example, 60 `pcsx_rearmed` savestates would take 267MB uncompressed; with incremental encoding this is reduced to 77MB.  Compressing the result can reduce the size to just 4MB.
+- INPUT/BSV/REPLAY: Checkpoint compression and encoding can be combined. For example, 60 `pcsx_rearmed` checkpoints can take up just 15MB if each state is incremental and compressed. This is not as optimal as using incremental states without save state compression followed by offline compression, but is a good compromise in many use cases.
+- INPUT/BSV/REPLAY: Add hotkeys and text commands to force a checkpoint insertion into the currently recording replay, and to seek backwards to the previous checkpoint and forwards to the next checkpoint.
+- INPUT/BSV/REPLAY: Add a text command to seek to a specific frame of the currently playing/recording replay; it will return via the command replier the actual seeked-to frame (right now it only supports seeking to checkpoints).
 - INTL: Add Irish Gaelic to selectable languages
 - IOS: Fix crash on iOS9 when fetching refresh rate
+- LIBRETRO: Deprecate intfstream_open_writable_memory
+- LIBRETRO: New environment function RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE
 - LINUX: Add full complement of key/value pairs to desktop entry
+- MACOS: Fix coreaudio microphone handling
 - MENU: Common Thumbnail Background option for all menu drivers
 - MENU: Move core options reset from Settings/Configuration to Main Menu / Configuration Files
 - MENU: Use right analog stick for thumbnail cycling in playlists
@@ -40,27 +61,45 @@
 - MENU: Unwanted input is prevented when menu is triggered by toggle combo
 - MENU: 32-bit values in cheats and rumble are not presented as huge lists
 - MENU: Less important widgets are now sized like task notifications
+- MENU: Play count is added to runtime log
+- MENU: Configurable startup page (several options beside default Main Menu)
+- MENU: Shader menu rework, combined save/remove menus, save current, Y and Start hotkeys for shader parameters and background opacity toggle
+- MENU: Single-click start option from playlists and Explore view
+- MENU: Allow kiosk mode and hiding of Settings menu also in GLUI and RGUI
+- MENU: Task widget improvements
+- MENU/GLUI: Show thumbnails in Explore view
 - MENU/XMB: Select button toggles thumbnails in playlists
 - MENU/XMB,OZONE: Fix content icons when playlist tabs are hidden
 - MENU/OZONE: Horizontal padding factor option
 - MENU/OZONE: Custom font selection and scaling factor
+- MENU/RGUI: Clock format is now configurable and moved to top header
 - NETWORK: Fixes for nmcli wifi driver
 - NETWORK: Network command interface enabled for Android, iOS, TVOS
 - OTHER: ZStandard support and libchdr update for support of chd files converted with createdvd option
 - OVERLAY: Speed limit on touch pointer tracking
+- OVERLAY: Dedicate each touch pointer to hitboxes or pointing devices
 - PLAYLIST: Built-in playlists are now stored under playlists/builtin
 - PLAYLIST: Fix subsystem information in playlists
+- PS3: Fix psl1ght target of dist-cores.sh
 - REPLAY: Bugs fixed regarding rewind
 - REPLAY: Same timeline check and future state check for replays vs. savestates
 - SAVESTATES: Savestate thumbnails are default enabled for x86_64 builds
+- SAVESTATES: Slot is now remembered using the runtime log file
+- SAVESTATES: Slot hotkey widget shows save state thumbnail
 - VIDEO: Fix auto swap interval setup
 - VIDEO: Improvements for integer scale half scaling
 - VIDEO: Frame delay improvements for the automatic setting
+- VIDEO: Auto-enable GPU recording with HW context cores
+- VIDEO: Fix viewport bias when using custom aspect ratio
 - VIDEO/D3D11/D3D12: snappy extra vsync presentation mode
+- VIDEO/GL: Fallback OpenGL symbol loader for Linux devices with EGL < 1.5
+- VIDEO/GL: Support for Cg and GLSL shaders in the GLCore video driver
 - VIDEO/SHADER: Shader hold function, useful for some lightguns and shader comparison
 - VIDEO/SWITCHRES: Horizontal and vertical geometry adjustment options added
 - VIDEO/SWITCHRES: Game overrides
 - VIDEO/WAYLAND: Support for xdg-toplevel-icon-v1
+- VIDEO/WAYLAND: Fix deadlock when using Wayland Vulkan driver
+- VITA: Touchscreen support for PS Vita
 - WEBOS: Various fixes and tunings
 - WEBOS: Disable core dumps
 - WEBOS: Debug builds enabled

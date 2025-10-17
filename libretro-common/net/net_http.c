@@ -703,23 +703,11 @@ static void net_http_conn_pool_remove_expired(void)
    {
       if (!entry->in_use && FD_ISSET(entry->fd, &fds))
       {
-         char buf[4096];
-         bool err = false;
-#ifdef HAVE_SSL
-         if (entry->ssl && entry->ssl_ctx)
-            ssl_socket_receive_all_nonblocking(entry->ssl_ctx, &err, buf, sizeof(buf));
-         else
-#endif
-            socket_receive_all_nonblocking(entry->fd, &err, buf, sizeof(buf));
-
-         if (!err)
-            continue;
-
+         /* if it's not in use and it's reaadable we assume that means it's closed without checking recv */
          if (prev)
             prev->next = entry->next;
          else
             conn_pool = entry->next;
-         /* if it's not in use and it's reaadable we assume that means it's closed without checking recv */
          net_http_conn_pool_free(entry);
          entry = prev ? prev->next : conn_pool;
       }
@@ -838,7 +826,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->request.port          = conn->port;
 
    state->response.status  = -1;
-   state->response.buflen  = 16 * 1024;
+   state->response.buflen  = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
    state->response.data    = (char*)malloc(state->response.buflen);
    state->response.headers = string_list_new();
 
@@ -1391,7 +1379,7 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    state->request_sent       = false;
    state->response.part      = P_HEADER_TOP;
    state->response.status    = -1;
-   state->response.buflen    = 16 * 1024;
+   state->response.buflen    = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
    state->response.data      = (char*)realloc(state->response.data, state->response.buflen);
    state->response.pos       = 0;
    state->response.len       = 0;

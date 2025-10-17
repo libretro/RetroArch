@@ -68,6 +68,14 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	#DEFINES += -DHAVE_SOCKET_LEGACY
 	#-DHAVE_SSL -DHAVE_BUILTINMBEDTLS -DMBEDTLS_SSL_DEBUG_ALL
 	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
+	CFLAGS += -I. \
+		-Ideps \
+		-Ideps/7zip \
+		-Ideps/stb \
+		-Ideps/mbedtls \
+		-Ideps/rcheevos/include \
+		-Ilibretro-common/include \
+		-Ilibretro-common/include/compat/zlib
 else
 	HAVE_CC_RESAMPLER = 1
 	HAVE_MENU_COMMON = 1
@@ -104,7 +112,7 @@ else
 	HAVE_CLOUDSYNC = 1
 
 	include Makefile.common
-	CFLAGS += $(DEF_FLAGS)
+	CFLAGS += $(DEF_FLAGS) -I. $(INCLUDE_DIRS)
 endif
 
 ifeq ($(strip $(DEVKITPRO)),)
@@ -180,14 +188,6 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END := -Wl,--no-whole-archive
 endif
 
-CFLAGS += -I. \
-	  -Ideps \
-	  -Ideps/7zip \
-	  -Ideps/stb \
-	  -Ideps/mbedtls \
-	  -Ideps/rcheevos/include \
-	  -Ilibretro-common/include \
-	  -Ilibretro-common/include/compat/zlib
 
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)

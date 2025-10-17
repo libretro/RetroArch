@@ -406,8 +406,6 @@ static void dinput_poll(void *data)
 static bool dinput_mouse_button_pressed(
       struct dinput_input *di, unsigned port, unsigned key)
 {
-   bool result = false;
-
    switch (key)
    {
       case RETRO_DEVICE_ID_MOUSE_LEFT:
@@ -421,24 +419,36 @@ static bool dinput_mouse_button_pressed(
       case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
          return (di->flags & DINP_FLAG_MOUSE_B5_BTN) ? true : false;
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         result        = (di->flags & DINP_FLAG_MOUSE_WU_BTN)  ? true : false;
-         di->flags    &= ~DINP_FLAG_MOUSE_WU_BTN;
+         if (di->flags & DINP_FLAG_MOUSE_WU_BTN)
+         {
+            di->flags &= ~DINP_FLAG_MOUSE_WU_BTN;
+            return true;
+         }
          break;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         result        = (di->flags & DINP_FLAG_MOUSE_WD_BTN)  ? true : false;
-         di->flags    &= ~DINP_FLAG_MOUSE_WD_BTN;
+         if (di->flags & DINP_FLAG_MOUSE_WD_BTN)
+         {
+            di->flags &= ~DINP_FLAG_MOUSE_WD_BTN;
+            return true;
+         }
          break;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         result        = (di->flags & DINP_FLAG_MOUSE_HWU_BTN) ? true : false;
-         di->flags    &= ~DINP_FLAG_MOUSE_HWU_BTN;
+         if (di->flags & DINP_FLAG_MOUSE_HWU_BTN)
+         {
+            di->flags &= ~DINP_FLAG_MOUSE_HWU_BTN;
+            return true;
+         }
          break;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         result        = (di->flags & DINP_FLAG_MOUSE_HWD_BTN) ? true : false;
-         di->flags    &= ~DINP_FLAG_MOUSE_HWD_BTN;
+         if (di->flags & DINP_FLAG_MOUSE_HWD_BTN)
+         {
+            di->flags &= ~DINP_FLAG_MOUSE_HWD_BTN;
+            return true;
+         }
          break;
    }
 
-   return result;
+   return false;
 }
 
 static int16_t dinput_lightgun_aiming_state(

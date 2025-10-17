@@ -322,6 +322,7 @@ typedef struct settings
       unsigned menu_screensaver_timeout;
       unsigned menu_screensaver_animation;
       unsigned menu_remember_selection;
+      unsigned menu_startup_page;
 
       unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;
@@ -462,6 +463,8 @@ typedef struct settings
       float input_analog_deadzone;
       float input_axis_threshold;
       float input_analog_sensitivity;
+      float input_sensor_accelerometer_sensitivity;
+      float input_sensor_gyroscope_sensitivity;
 #ifdef _3DS
       float bottom_font_scale;
 #endif
@@ -718,6 +721,8 @@ typedef struct settings
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
+      bool input_menu_singleclick_playlists;
+      bool input_menu_allow_tabs_back;
       bool input_menu_swap_ok_cancel_buttons;
       bool input_menu_swap_scroll_buttons;
       bool input_backtouch_enable;
@@ -1106,6 +1111,10 @@ typedef struct settings
       bool ai_service_pause;
 
       bool gamemode_enable;
+#ifdef HAVE_BSV_MOVIE
+      bool replay_checkpoint_deserialize;
+#endif
+
 #ifdef _3DS
       bool new3ds_speedup_enable;
       bool bottom_font_enable;

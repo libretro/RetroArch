@@ -174,6 +174,25 @@ static size_t menu_action_setting_disp_set_label_override_file_info(
    return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
 
+static size_t menu_action_setting_disp_set_label_shader_preset_file_info(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   const char *current_path = video_shader_get_current_shader_preset();
+   *w = 19;
+   if (!string_is_empty(path))
+      strlcpy(s2, path, len2);
+   if (!string_is_empty(current_path))
+      return strlcpy(s, path_basename_nocompression(current_path), len);
+#endif
+   return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+}
+
 static size_t menu_action_setting_disp_set_label_configurations(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1891,6 +1910,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_CHEAT_DELETE_ALL:
          case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
          case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
@@ -1935,6 +1955,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_OVERRIDE_FILE_INFO:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_override_file_info);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_FILE_INFO:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_shader_preset_file_info);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -1998,8 +2022,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER:
          case MENU_ENUM_LABEL_FRONTEND_COUNTERS:
          case MENU_ENUM_LABEL_CORE_COUNTERS:
          case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:

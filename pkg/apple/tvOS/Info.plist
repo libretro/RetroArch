@@ -84,6 +84,10 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Some cores can use location.</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>PlayGameIntent</string>
+	</array>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>

@@ -20,7 +20,7 @@
 #include <Foundation/Foundation.h>
 #include <QuartzCore/QuartzCore.h>
 
-#if defined(HAVE_COCOATOUCH)
+#if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
 #if TARGET_OS_TV
 #import <GameController/GameController.h>
@@ -31,7 +31,7 @@
 
 #include "../../../retroarch.h"
 
-#if defined(HAVE_COCOATOUCH)
+#if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
 #define RAScreen UIScreen
 
 #ifndef UIUserInterfaceIdiomTV
@@ -61,7 +61,7 @@
 -(void)toggleCustomKeyboard;
 #endif
 
-#ifdef HAVE_IOS_TOUCHMOUSE
+#if TARGET_OS_IOS && defined(HAVE_IOS_TOUCHMOUSE)
 @property(nonatomic,strong) EmulatorTouchMouseHandler *mouseHandler;
 #endif
 
@@ -132,6 +132,8 @@ bool cocoa_has_focus(void *data);
 void cocoa_show_mouse(void *data, bool state);
 
 void *cocoa_screen_get_chosen(void);
+
+bool cocoa_launch_game_by_filename(NSString *filename);
 
 #ifdef HAVE_COCOATOUCH
 float cocoa_screen_get_native_scale(void);

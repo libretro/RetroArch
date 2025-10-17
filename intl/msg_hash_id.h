@@ -3626,13 +3626,6 @@ MSG_HASH(
    "Ubahan pada konfigurasi 'shader' akan diterapkan. Gunakan ini jika ingin mengubah jumlah laluan 'shader', penyaringan, skala FBO, dll."
    )
 
-/* Quick Menu > Shaders > Save */
-
-
-
-
-/* Quick Menu > Shaders > Remove */
-
 
 /* Quick Menu > Shaders > Shader Parameters */
 

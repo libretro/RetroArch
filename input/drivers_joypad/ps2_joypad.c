@@ -64,7 +64,7 @@ static void *ps2_joypad_init(void *data)
       for (port = 0; port < PS2_MAX_PORT; port++)
       {
          input_autoconfigure_connect( ps2_joypad_name(pad), /* name */
-            NULL,                                           /* display name */
+            NULL, NULL,                                     /* display names */
             ps2_joypad.ident,                               /* driver */
             pad,                                            /* idx */
             0,                                              /* vid */

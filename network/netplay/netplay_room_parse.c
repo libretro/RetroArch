@@ -223,6 +223,10 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->connectable;
          else if (string_is_equal(p_value, "is_retroarch"))
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->is_retroarch;
+         else if (string_is_equal(p_value, "player_count"))
+            p_ctx->cur_member_int    = &net_st->rooms_data->cur->player_count;
+         else if (string_is_equal(p_value, "spectator_count"))
+            p_ctx->cur_member_int    = &net_st->rooms_data->cur->spectator_count;
       }
    }
 

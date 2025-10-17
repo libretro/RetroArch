@@ -90,6 +90,10 @@
 		0798404C2E0F218D0079E1A3 /* huf_decompress_amd64.S in Sources */ = {isa = PBXBuildFile; fileRef = 079840352E0F20D50079E1A3 /* huf_decompress_amd64.S */; };
 		0798404D2E0F21910079E1A3 /* huf_decompress_amd64.S in Sources */ = {isa = PBXBuildFile; fileRef = 079840352E0F20D50079E1A3 /* huf_decompress_amd64.S */; };
 		0798404E2E0F21960079E1A3 /* huf_decompress_amd64.S in Sources */ = {isa = PBXBuildFile; fileRef = 079840352E0F20D50079E1A3 /* huf_decompress_amd64.S */; };
+		07B9B97F2E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B9B97D2E49A7A3007E419E /* RetroArchAppShortcuts.swift */; };
+		07B9B9802E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B9B97D2E49A7A3007E419E /* RetroArchAppShortcuts.swift */; };
+		07B9B9812E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B9B97D2E49A7A3007E419E /* RetroArchAppShortcuts.swift */; };
+		07B9B9822E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B9B97D2E49A7A3007E419E /* RetroArchAppShortcuts.swift */; };
 		07D851CD2CAF06E2005097EA /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 075650242C488918004C5E7E /* CloudKit.framework */; };
 		07F2BBC62BE83A4700FD1295 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		07F2BBC82BE83A4700FD1295 /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
@@ -474,6 +478,7 @@
 		0790F6782BF282B400AA58C9 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Media.xcassets; path = OSX/Media.xcassets; sourceTree = "<group>"; };
 		0795A8C6299A095300D5035D /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
 		079840352E0F20D50079E1A3 /* huf_decompress_amd64.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = huf_decompress_amd64.S; sourceTree = "<group>"; };
+		07B9B97D2E49A7A3007E419E /* RetroArchAppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetroArchAppShortcuts.swift; sourceTree = "<group>"; };
 		07F2BBC22BE83A4200FD1295 /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AppStore.xcconfig; sourceTree = "<group>"; };
 		07F2BBE92BE83A4700FD1295 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		07F8037C2BEFE4BD000FD557 /* RetroArchAppStore.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchAppStore.entitlements; sourceTree = "<group>"; };
@@ -705,6 +710,7 @@
 		05A8C51920DB72C200FF7857 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				07B9B97E2E49A7A3007E419E /* AppIntents */,
 				0538874F20DE117B00769232 /* libretro-common */,
 				05BF821320ED69A500D95B19 /* core */,
 				079840132E0F20440079E1A3 /* deps */,
@@ -1239,6 +1245,14 @@
 			path = zstd;
 			sourceTree = "<group>";
 		};
+		07B9B97E2E49A7A3007E419E /* AppIntents */ = {
+			isa = PBXGroup;
+			children = (
+				07B9B97D2E49A7A3007E419E /* RetroArchAppShortcuts.swift */,
+			);
+			path = AppIntents;
+			sourceTree = "<group>";
+		};
 		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -1667,6 +1681,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07B9B97F2E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */,
 				05422E432140C8DB00F09961 /* griffin_glslang.cpp in Sources */,
 				05422E442140C8DB00F09961 /* menu_pipeline.metal in Sources */,
 				05422E452140C8DB00F09961 /* griffin_cpp.cpp in Sources */,
@@ -1681,6 +1696,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07B9B9812E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */,
 				0720994429B1258C001642BB /* griffin_glslang.cpp in Sources */,
 				0720994529B1258C001642BB /* menu_pipeline.metal in Sources */,
 				0720994629B1258C001642BB /* griffin_cpp.cpp in Sources */,
@@ -1695,6 +1711,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07B9B9802E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */,
 				07F2BBCC2BE83A4700FD1295 /* griffin_glslang.cpp in Sources */,
 				07F2BBCD2BE83A4700FD1295 /* menu_pipeline.metal in Sources */,
 				07F2BBCE2BE83A4700FD1295 /* griffin_cpp.cpp in Sources */,
@@ -1709,6 +1726,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07B9B9822E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */,
 				05D7753720A567A700646447 /* griffin_glslang.cpp in Sources */,
 				05770B9920E805160013DABC /* menu_pipeline.metal in Sources */,
 				05D7753520A567A400646447 /* griffin_cpp.cpp in Sources */,
@@ -1976,6 +1994,8 @@
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				SDKROOT = macosx;
 				STRIP_STYLE = debugging;
+				SWIFT_OBJC_BRIDGING_HEADER = "RetroArch-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -2057,6 +2077,8 @@
 				PRODUCT_NAME = RetroArch;
 				SDKROOT = macosx;
 				STRIP_STYLE = debugging;
+				SWIFT_OBJC_BRIDGING_HEADER = "RetroArch-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};

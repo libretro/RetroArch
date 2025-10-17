@@ -3563,7 +3563,7 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
    newPath   = info.absolutePath();
 
    /* absolutePath() will always use / even on Windows */
-   if (newPath.at(newPath.count() - 1) != '/')
+   if (newPath.at(newPath.size() - 1) != '/')
       /* add trailing slash if the path doesn't have one */
       newPath += '/';
 
@@ -4246,7 +4246,7 @@ QString MainWindow::getScrubbedString(QString str)
    const QString chars("&*/:`\"<>?\\|");
    int i;
 
-   for (i = 0; i < chars.count(); i++)
+   for (i = 0; i < chars.size(); i++)
       str.replace(chars.at(i), '_');
 
    return str;

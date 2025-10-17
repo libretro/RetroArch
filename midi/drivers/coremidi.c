@@ -22,10 +22,23 @@
 #include "../../verbosity.h"
 
 #define CORE_MIDI_QUEUE_SIZE 1024
+#define CORE_MIDI_MAX_EVENT_SIZE 256
+
+/* Persistent CoreMIDI client shared across all driver instances.
+ * This avoids XPC race conditions from rapid client dispose/recreate cycles.
+ * CoreMIDI clients are designed to be long-lived; ports are disposable. */
+static MIDIClientRef shared_midi_client = 0;
 
 typedef struct
 {
-    midi_event_t events[CORE_MIDI_QUEUE_SIZE]; /* Event buffer */
+    uint8_t data[CORE_MIDI_MAX_EVENT_SIZE]; /* Inline data buffer */
+    size_t data_size;
+    uint32_t delta_time;
+} coremidi_event_t;
+
+typedef struct
+{
+    coremidi_event_t events[CORE_MIDI_QUEUE_SIZE]; /* Event buffer */
     int read_index;         /* Current read position */
     int write_index;        /* Current write position */
 } coremidi_queue_t;
@@ -43,11 +56,21 @@ typedef struct
 /* Write to the queue */
 static bool coremidi_queue_write(coremidi_queue_t *q, const midi_event_t *ev)
 {
+    size_t copy_size;
     int next_write = (q->write_index + 1) % CORE_MIDI_QUEUE_SIZE;
     if (next_write == q->read_index) /* Queue full */
         return false;
 
-    memcpy(&q->events[q->write_index], ev, sizeof(*ev));
+    /* Validate event data size */
+    if (!ev->data || ev->data_size == 0 || ev->data_size > CORE_MIDI_MAX_EVENT_SIZE)
+        return false;
+
+    /* Copy data inline instead of storing pointer */
+    copy_size = ev->data_size;
+    memcpy(q->events[q->write_index].data, ev->data, copy_size);
+    q->events[q->write_index].data_size = copy_size;
+    q->events[q->write_index].delta_time = ev->delta_time;
+
     q->write_index = next_write;
     return true;
 }
@@ -92,23 +115,30 @@ static void midi_read_callback(const MIDIPacketList *pktlist,
 static void *coremidi_init(const char *input, const char *output)
 {
     OSStatus err;
-    coremidi_t *d = (coremidi_t *)calloc(1, sizeof(coremidi_t));
+    coremidi_t *d;
+
+    /* Create persistent client on first call */
+    if (!shared_midi_client)
+    {
+        err = MIDIClientCreate(CFSTR("RetroArch MIDI Client"),
+                       NULL, NULL, &shared_midi_client);
+        if (err != noErr)
+        {
+            RARCH_ERR("[MIDI] MIDIClientCreate failed: %d.\n", err);
+            return NULL;
+        }
+        RARCH_LOG("[MIDI] Created persistent CoreMIDI client.\n");
+    }
+
+    d = (coremidi_t *)calloc(1, sizeof(coremidi_t));
     if (!d)
     {
         RARCH_ERR("[MIDI] Out of memory.\n");
         return NULL;
     }
 
-    err = MIDIClientCreate(CFSTR("RetroArch MIDI Client"),
-                   NULL, NULL, &d->client);
-    if (err != noErr)
-    {
-        RARCH_ERR("[MIDI] MIDIClientCreate failed: %d.\n", err);
-        free(d);
-        return NULL;
-    }
-
-    RARCH_LOG("[MIDI] CoreMIDI client created successfully.\n");
+    /* Store reference to shared client */
+    d->client = shared_midi_client;
 
     /* Create input port if specified */
     if (input)
@@ -118,13 +148,9 @@ static void *coremidi_init(const char *input, const char *output)
         if (err != noErr)
         {
             RARCH_ERR("[MIDI] MIDIInputPortCreate failed: %d.\n", err);
-            MIDIClientDispose(d->client);
             free(d);
             return NULL;
         }
-    }
-    else
-    {
         RARCH_LOG("[MIDI] CoreMIDI input port created successfully.\n");
     }
 
@@ -138,13 +164,9 @@ static void *coremidi_init(const char *input, const char *output)
             RARCH_ERR("[MIDI] MIDIOutputPortCreate failed: %d.\n", err);
             if (d->input_port)
                 MIDIPortDispose(d->input_port);
-            MIDIClientDispose(d->client);
             free(d);
             return NULL;
         }
-    }
-    else
-    {
         RARCH_LOG("[MIDI] CoreMIDI output port created successfully.\n");
     }
 
@@ -331,7 +353,11 @@ static bool coremidi_queue_read(coremidi_queue_t *q, midi_event_t *ev)
     if (q->read_index == q->write_index) /* Queue empty */
         return false;
 
-    memcpy(ev, &q->events[q->read_index], sizeof(*ev));
+    /* Return pointer to inline data buffer */
+    ev->data = q->events[q->read_index].data;
+    ev->data_size = q->events[q->read_index].data_size;
+    ev->delta_time = q->events[q->read_index].delta_time;
+
     q->read_index = (q->read_index + 1) % CORE_MIDI_QUEUE_SIZE;
     return true;
 }
@@ -443,23 +469,18 @@ static void coremidi_free(void *p)
     /* Clean up MIDI resources */
     if (d->input_port)
     {
-        RARCH_LOG("[MIDI] Disconnecting input port...\n");
-        MIDIPortDisconnectSource(d->input_port, d->input_endpoint);
+        RARCH_LOG("[MIDI] Disconnecting and disposing input port...\n");
+        if (d->input_endpoint)
+            MIDIPortDisconnectSource(d->input_port, d->input_endpoint);
         MIDIPortDispose(d->input_port);
     }
 
     if (d->output_port)
     {
-        RARCH_LOG("[MIDI] Disconnecting output port...\n");
-        MIDIPortDisconnectSource(d->output_port, d->output_endpoint);
+        RARCH_LOG("[MIDI] Disposing output port...\n");
         MIDIPortDispose(d->output_port);
     }
 
-    if (d->client)
-    {
-        RARCH_LOG("[MIDI] Disposing of CoreMIDI client...\n");
-        MIDIClientDispose(d->client);
-    }
 
     /* Free the driver instance */
     free(d);

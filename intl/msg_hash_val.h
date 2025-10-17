@@ -2548,16 +2548,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "Canvia els ajustos de l'aspecte del menú."
    )
-#ifdef _3DS
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
-   "Vore ajustos avançats"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
-   "Mostra els ajustos avançats per a usuaris experts."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
    "Reprendre contingut després d'usar un guardat ràpid"
@@ -2567,9 +2557,19 @@ MSG_HASH(
    "Reprendre contingut al canviar de disc"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
+   "Vore ajustos avançats"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
+   "Mostra els ajustos avançats per a usuaris experts."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    "Els gestors de finestres empraran la composició per aplicar efectes visuals, detectar finestres que no responguen, entre d'altres coses."
    )
+#ifdef _3DS
+#endif
 
 /* Settings > User Interface > Menu Item Visibility */
 
@@ -2877,13 +2877,6 @@ MSG_HASH(
 
 /* Quick Menu > Shaders */
 
-
-/* Quick Menu > Shaders > Save */
-
-
-
-
-/* Quick Menu > Shaders > Remove */
 
 
 /* Quick Menu > Shaders > Shader Parameters */

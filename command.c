@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "input/input_driver.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -66,6 +67,7 @@
 #include "verbosity.h"
 #include "version.h"
 #include "version_git.h"
+#include "tasks/task_content.h"
 
 #define CMD_BUF_SIZE 4096
 
@@ -802,6 +804,42 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
 #endif
 }
 
+bool command_seek_replay(command_t *cmd, const char *arg)
+{
+#ifdef HAVE_BSV_MOVIE
+   char reply[32];
+   char *endptr;
+   size_t _len;
+   bool ret      = true;
+   int64_t frame = strtoll(arg, &endptr, 10);
+   input_driver_state_t *input_st = input_state_get_ptr();
+   if (!endptr)
+      ret = false;
+   if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_PLAYBACK | BSV_FLAG_MOVIE_RECORDING)))
+      ret = false;
+#ifdef HAVE_CHEEVOS
+   ret = !rcheevos_hardcore_active();
+#endif
+   if (ret)
+      ret = movie_seek_to_frame(input_st, frame);
+   if (ret)
+   {
+      _len = strlcpy(reply, "OK ", sizeof(reply));
+      _len += snprintf(reply+_len, sizeof(reply)-_len,
+            "%lld", input_st->bsv_movie_state.seek_target_frame);
+   }
+   else
+      _len = strlcpy(reply, "NO", sizeof(reply));
+   reply[_len] = '\n';
+   reply[++_len] = '\0';
+   cmd->replier(cmd, reply, _len);
+   return ret;
+#else
+   cmd->replier(cmd, "NO\n", 4);
+   return false;
+#endif
+}
+
 bool command_save_savefiles(command_t *cmd, const char* arg)
 {
    char reply[4];
@@ -899,6 +937,14 @@ bool command_version(command_t *cmd, const char* arg)
    reply[  _len] = '\n';
    reply[++_len] = '\0';
    cmd->replier(cmd, reply, _len);
+   return true;
+}
+
+bool command_load_core(command_t *cmd, const char* arg)
+{
+   content_ctx_info_t content_info = {0};
+   task_push_load_new_core(arg, NULL,
+         &content_info, CORE_TYPE_PLAIN, NULL, NULL);
    return true;
 }
 
@@ -1927,7 +1973,7 @@ bool command_event_save_core_config(
    {
       const char *_msg = msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       RARCH_ERR("[Config] %s\n", _msg);
       return false;
    }
@@ -2010,24 +2056,35 @@ void command_event_save_current_config(enum override_type type)
          {
             size_t _len;
             char msg[256];
+            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             msg[0] = '\0';
 
             if (path_is_empty(RARCH_PATH_CONFIG))
             {
-               _len = strlcpy(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
-               runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               msg_cat = MESSAGE_QUEUE_CATEGORY_ERROR;
+               _len    = strlcpy(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
             }
             else
             {
                if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
-                  _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ACTIVE_NOT_SAVING), sizeof(msg));
+               {
+                  msg_cat = MESSAGE_QUEUE_CATEGORY_ERROR;
+                  _len    = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ACTIVE_NOT_SAVING), sizeof(msg));
+               }
                else
-                  _len = command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
-               runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               {
+                  msg_cat = MESSAGE_QUEUE_CATEGORY_SUCCESS;
+                  _len    = command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
+               }
             }
+
+            /* command_event_save_config() does its own logging */
+            if (msg_cat == MESSAGE_QUEUE_CATEGORY_ERROR)
+               RARCH_ERR("[Overrides] %s\n", msg);
+
+            runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
          }
          break;
       case OVERRIDE_GAME:
@@ -2036,29 +2093,46 @@ void command_event_save_current_config(enum override_type type)
          {
             size_t _len;
             char msg[256];
-            int8_t ret = config_save_overrides(type, &runloop_st->system, false, NULL);
+            int8_t ret      = config_save_overrides(type, &runloop_st->system, false, NULL);
+            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             switch (ret)
             {
                case 1:
-                  _len = strlcpy(msg,
+                  msg_cat = MESSAGE_QUEUE_CATEGORY_SUCCESS;
+                  _len    = strlcpy(msg,
                         msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
                   /* set overrides to active so the original config can be
                      restored after closing content */
                   runloop_st->flags |= RUNLOOP_FLAG_OVERRIDES_ACTIVE;
                   break;
                case -1:
-                  _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_NOT_SAVED), sizeof(msg));
+                  msg_cat = MESSAGE_QUEUE_CATEGORY_WARNING;
+                  _len    = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_NOT_SAVED), sizeof(msg));
                   break;
                default:
                case 0:
+                  msg_cat = MESSAGE_QUEUE_CATEGORY_ERROR;
                   _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
                   break;
             }
 
-            RARCH_LOG("[Overrides] %s\n", msg);
+            switch (msg_cat)
+            {
+               case MESSAGE_QUEUE_CATEGORY_ERROR:
+                  RARCH_ERR("[Overrides] %s\n", msg);
+                  break;
+               case MESSAGE_QUEUE_CATEGORY_WARNING:
+                  RARCH_WARN("[Overrides] %s\n", msg);
+                  break;
+               case MESSAGE_QUEUE_CATEGORY_SUCCESS:
+               default:
+                  RARCH_LOG("[Overrides] %s\n", msg);
+                  break;
+            }
+
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
 
 #ifdef HAVE_MENU
             {
@@ -2087,14 +2161,26 @@ void command_event_remove_current_config(enum override_type type)
          {
             size_t _len;
             char msg[256];
-            if (config_save_overrides(type, &runloop_st->system, true, NULL))
-               _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_REMOVED_SUCCESSFULLY), sizeof(msg));
-            else
-               _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_REMOVING), sizeof(msg));
+            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
-            RARCH_LOG("[Overrides] %s\n", msg);
+            if (config_save_overrides(type, &runloop_st->system, true, NULL))
+            {
+               msg_cat = MESSAGE_QUEUE_CATEGORY_SUCCESS;
+               _len    = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_REMOVED_SUCCESSFULLY), sizeof(msg));
+            }
+            else
+            {
+               msg_cat = MESSAGE_QUEUE_CATEGORY_ERROR;
+               _len    = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_REMOVING), sizeof(msg));
+            }
+
+            if (msg_cat == MESSAGE_QUEUE_CATEGORY_ERROR)
+               RARCH_ERR("[Overrides] %s\n", msg);
+            else
+               RARCH_LOG("[Overrides] %s\n", msg);
+
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
 #ifdef HAVE_MENU
             {
                struct menu_state *menu_st      = menu_state_get_ptr();

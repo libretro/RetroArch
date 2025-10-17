@@ -231,7 +231,7 @@ static int rbmp_bitcount(unsigned int a)
 
 static int rbmp_shiftsigned(int v, int shift, int bits)
 {
-   int result;
+   int ret;
    int z = bits;
 
    if (shift < 0)
@@ -239,14 +239,14 @@ static int rbmp_shiftsigned(int v, int shift, int bits)
    else
       v >>= shift;
 
-   result = v;
+   ret = v;
 
    while (z < 8)
    {
-      result += v >> z;
-      z      += bits;
+      ret += v >> z;
+      z   += bits;
    }
-   return result;
+   return ret;
 }
 
 static unsigned char *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,

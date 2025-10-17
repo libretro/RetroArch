@@ -783,9 +783,7 @@ DEFAULT_TITLE_COPY_MACRO(action_get_title_cheevos_list,           MENU_ENUM_LABE
 #endif
 DEFAULT_TITLE_COPY_MACRO(action_get_title_video_shader_parameters,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS)
 DEFAULT_TITLE_COPY_MACRO(action_get_title_video_shader_preset_parameters,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS)
-DEFAULT_TITLE_COPY_MACRO(action_get_title_video_shader_preset_save,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE)
-DEFAULT_TITLE_COPY_MACRO(action_get_title_video_shader_preset_remove,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE)
-DEFAULT_TITLE_COPY_MACRO(action_get_title_video_shader_preset_save_list,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE)
+DEFAULT_TITLE_COPY_MACRO(action_get_title_video_shader_preset_manager,MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER)
 
 #if defined(HAVE_LIBNX)
 DEFAULT_TITLE_MACRO(action_get_title_switch_cpu_profile,          MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE)
@@ -1265,8 +1263,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_title_video_shader_parameters},
       {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS,
          action_get_title_video_shader_preset_parameters},
-      {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE,
-         action_get_title_video_shader_preset_save},
+      {MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER,
+         action_get_title_video_shader_preset_manager},
       {MENU_ENUM_LABEL_MANAGEMENT,
          action_get_title_action_generic},
       {MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
@@ -1822,8 +1820,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_AUDIOMIXER
       {MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST,                                 action_get_title_mixer_stream_actions},
 #endif
-      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_SAVE_LIST,                              action_get_title_video_shader_preset_save_list},
-      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_REMOVE_LIST,                            action_get_title_video_shader_preset_remove},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_SHADER_PRESET_MANAGER_LIST,                           action_get_title_video_shader_preset_manager},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST,                                          action_get_title_dropdown_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL,                                  action_get_title_dropdown_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION,                               action_get_title_dropdown_resolution_item},

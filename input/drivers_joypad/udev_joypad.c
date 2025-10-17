@@ -86,6 +86,7 @@ struct udev_joypad
    unsigned rumble_gain;
 
    char ident[NAME_MAX_LENGTH];
+   char phys[NAME_MAX_LENGTH];
    bool has_set_ff[2];
    /* Deal with analog triggers that report -32767 to 32767 */
    bool neg_trigger[NUM_AXES];
@@ -195,6 +196,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
    unsigned long ffbit[NBITS(FF_MAX)]   = {0};
    const char *device_name              = input_config_get_device_name(p);
+   size_t physlen                       = 0;
 
    if (string_is_empty(device_name))
       pad->ident[0] = '\0';
@@ -212,6 +214,13 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       pad->vid = inputid.vendor;
       pad->pid = inputid.product;
    }
+   if (ioctl(fd, EVIOCGPHYS(sizeof(pad->phys)), pad->phys) < 0)
+      pad->phys[0] = '\0';  /* Clear if unavailable */
+   else
+      physlen = strlen(pad->phys);
+
+   if (ioctl(fd, EVIOCGUNIQ(sizeof(pad->phys)-physlen), pad->phys+physlen) < 0)
+       pad->phys[physlen] = '\0';  /* Clear if unavailable */
 
    if (fstat(fd, &st) < 0)
       return -1;
@@ -278,6 +287,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       input_autoconfigure_connect(
                pad->ident,
                NULL,
+               pad->phys,
                udev_joypad.ident,
                p,
                pad->vid,

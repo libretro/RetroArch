@@ -203,7 +203,7 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
    if (ptype != WPAD_EXP_NOCONTROLLER)
       input_autoconfigure_connect(
             gx_joypad_name(port),
-            NULL,
+            NULL, NULL,
             gx_joypad.ident,
             port,
             0,
@@ -227,7 +227,7 @@ static void check_port0_active(uint8_t pad_count)
 
       input_autoconfigure_connect(
             gx_joypad_name(0),
-            NULL,
+            NULL, NULL,
             gx_joypad.ident,
             0, /* port */
             0,

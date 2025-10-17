@@ -275,7 +275,8 @@ enum rgui_flags
    RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL  = (1 << 22),
    RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL = (1 << 23),
    RGUI_FLAG_IS_PLAYLISTS_TAB          = (1 << 24),
-   RGUI_FLAG_IS_QUICK_MENU             = (1 << 25)
+   RGUI_FLAG_IS_QUICK_MENU             = (1 << 25),
+   RGUI_FLAG_DRAW_ENTRY_SKIP           = (1 << 26)
 };
 
 typedef struct
@@ -325,6 +326,7 @@ typedef struct
    unsigned menu_aspect_ratio;
    unsigned menu_aspect_ratio_lock;
    unsigned language;
+   unsigned draw_entry_delay;
 
    rgui_term_layout_t term_layout;
 
@@ -3096,7 +3098,7 @@ static void rgui_load_custom_theme(
    unsigned particle_color     = 0;
    config_file_t *conf         = NULL;
    const char *wallpaper_key   = NULL;
-   bool success                = false;
+   bool ret                    = false;
 #if defined(DINGUX)
    menu_rgui_aspect_ratio      = RGUI_DINGUX_ASPECT_RATIO;
 #endif
@@ -3176,11 +3178,11 @@ static void rgui_load_custom_theme(
       particle_color = (normal_color & 0x00FFFFFF) |
                        (bg_light_color & 0xFF000000);
 
-   success = true;
+   ret = true;
 
 end:
 
-   if (success)
+   if (ret)
    {
       theme_colors->normal_color       = (uint32_t)normal_color;
       theme_colors->hover_color        = (uint32_t)hover_color;
@@ -5303,6 +5305,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       unsigned title_y               = rgui->term_layout.start_y - rgui->font_height_stride - 1;
       unsigned sublabel_y            = (rgui->term_layout.height * rgui->font_height_stride) + rgui->term_layout.start_y + 4;
       unsigned term_end_x            = rgui->term_layout.start_x + (rgui->term_layout.width * rgui->font_width_stride);
+      bool show_entries              = (rgui->flags & RGUI_FLAG_DRAW_ENTRY_SKIP) ? false : true;
       bool show_mini_thumbnails      = rgui_inline_thumbnails
             && rgui->playlist_index >= 0
             && (   (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
@@ -5488,7 +5491,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       y         = rgui->term_layout.start_y;
       new_start = menu_st->entries.begin;
 
-      for (i = new_start; i < end; i++, y += rgui->font_height_stride)
+      for (i = new_start; i < end && show_entries; i++, y += rgui->font_height_stride)
       {
          char entry_title_buf[NAME_MAX_LENGTH];
          char type_str_buf[NAME_MAX_LENGTH];
@@ -7751,6 +7754,17 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
                );
    }
 
+   /* Single-click playlist button hold delay */
+   if (rgui->flags & RGUI_FLAG_DRAW_ENTRY_SKIP && rgui->draw_entry_delay)
+   {
+      rgui->draw_entry_delay--;
+      if (!rgui->draw_entry_delay)
+      {
+         rgui->flags &= ~RGUI_FLAG_DRAW_ENTRY_SKIP;
+         rgui->flags |=  RGUI_FLAG_FORCE_REDRAW;
+      }
+   }
+
    /* Note: both rgui_set_aspect_ratio() and rgui_set_video_config()
     * normally call command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL)
     * ## THIS CANNOT BE DONE INSIDE rgui_frame() IF THREADED VIDEO IS ENABLED ##
@@ -7904,6 +7918,9 @@ static void rgui_toggle(void *userdata, bool menu_on)
     * exit, this doesn't get called. */
    if (!rgui || !settings)
       return;
+
+   /* Reset */
+   rgui->flags &= ~RGUI_FLAG_DRAW_ENTRY_SKIP;
 
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
@@ -8063,6 +8080,27 @@ static enum menu_action rgui_parse_menu_entry_action(
                   && (!(rgui->flags & RGUI_FLAG_IS_PLAYLIST))
                   && (!(rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)))
                new_action = MENU_ACTION_NOOP;
+         }
+
+         /* Make transition smoother for single-click playlist launching */
+         if (     config_get_ptr()->bools.input_menu_singleclick_playlists
+               && (  rgui->flags & RGUI_FLAG_IS_PLAYLIST
+                  || rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST))
+         {
+            if (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
+            {
+#if defined(HAVE_LIBRETRODB)
+               menu_entry_t entry;
+               MENU_ENTRY_INITIALIZE(entry);
+               menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+               if (     entry.type == FILE_TYPE_RDB
+                     || entry.type == FILE_TYPE_PLAIN
+                     || !menu_explore_is_content_list())
+                  break;
+#endif
+            }
+            rgui->flags |= RGUI_FLAG_DRAW_ENTRY_SKIP;
+            rgui->draw_entry_delay = MENU_DRAW_ENTRY_DELAY;
          }
          break;
       case MENU_ACTION_CANCEL:
@@ -8242,6 +8280,24 @@ static enum menu_action rgui_parse_menu_entry_action(
       default:
          /* In all other cases, pass through input
           * menu action without intervention */
+         break;
+   }
+
+   switch (new_action)
+   {
+      case MENU_ACTION_UP:
+      case MENU_ACTION_DOWN:
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_CANCEL:
+         if (     config_get_ptr()->bools.input_menu_singleclick_playlists
+               && rgui->flags & RGUI_FLAG_DRAW_ENTRY_SKIP)
+         {
+            rgui->flags &= ~RGUI_FLAG_DRAW_ENTRY_SKIP;
+            new_action = MENU_ACTION_NOOP;
+         }
+         break;
+      default:
          break;
    }
 
