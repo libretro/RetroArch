@@ -31,7 +31,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
-#include <time.h>
 
 #include <boolean.h>
 #include <retro_inline.h>
@@ -69,8 +68,6 @@ typedef struct
    bool         connected;
 } xinput_joypad_state;
 
-#define RUMBLE_INTERVAL 0.005
-
 /* TODO/FIXME - static globals */
 static int g_xinput_pad_indexes[MAX_USERS];
 static unsigned g_last_xinput_pad_idx       = 0;
@@ -94,7 +91,6 @@ static XINPUT_VIBRATION    g_xinput_rumble_states[4];
 #endif
 static xinput_joypad_state g_xinput_states[4];
 static bool xinput_active_port[4] = {0};
-static clock_t last_rumble_time[4] = {0};
 
 static unsigned xinput_hotplug_index = 0;
 static unsigned xinput_poll_counter = 0;
@@ -582,7 +578,9 @@ static int16_t xinput_joypad_state_func(
 static void xinput_joypad_poll(void)
 {
    int i;
+#ifdef __WINRT__
    bool has_active_ports = false;
+#endif
    
    /* Hotplugging detection: scanning one port at a time every few frames,
     * to avoid polling overload and framerate drops. */
@@ -613,11 +611,13 @@ static void xinput_joypad_poll(void)
          xinput_hotplug_index = (xinput_hotplug_index + 1) % 4;
    }
 
+#ifdef __WINRT__
    for (i = 0; i < 4; ++i)
    {
       if (xinput_active_port[i])
          has_active_ports = true;
    }
+#endif
 
    for (i = 0; i < 4; ++i)
    {
@@ -714,43 +714,27 @@ static void xinput_joypad_poll(void)
 static bool xinput_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   clock_t now;
-   double time_since_last_rumble;
-   XINPUT_VIBRATION new_state, *state;
+   XINPUT_VIBRATION *state, prev;
    int xuser = PAD_INDEX_TO_XUSER_INDEX(pad);
 
    if (xuser == -1)
       return dinput_joypad_set_rumble(pad, effect, strength);
 
-   state          = &g_xinput_rumble_states[xuser];
-   new_state      = *state;
+   state = &g_xinput_rumble_states[xuser];
+   prev  = *state;
 
    /* Consider the low frequency (left) motor the "strong" one. */
    if (effect == RETRO_RUMBLE_STRONG)
-      new_state.wLeftMotorSpeed  = strength;
+      state->wLeftMotorSpeed  = strength;
    else if (effect == RETRO_RUMBLE_WEAK)
-      new_state.wRightMotorSpeed = strength;
+      state->wRightMotorSpeed = strength;
 
    /* Rumble state unchanged? */
-   if (   (new_state.wLeftMotorSpeed  == state->wLeftMotorSpeed)
-       && (new_state.wRightMotorSpeed == state->wRightMotorSpeed))
+   if (   (state->wLeftMotorSpeed  == prev.wLeftMotorSpeed)
+       && (state->wRightMotorSpeed == prev.wRightMotorSpeed))
       return true;
 
-   now                           = clock();
-   time_since_last_rumble        = (double)(now - last_rumble_time[xuser]) / CLOCKS_PER_SEC;
-
-   /* Rumble interval unelapsed? */
-   if (time_since_last_rumble < RUMBLE_INTERVAL)
-      return true;
-
-   if (g_XInputSetState)
-   {
-      *state                  = new_state;
-      last_rumble_time[xuser] = now;
-      if (g_XInputSetState(xuser, state) == ERROR_SUCCESS)
-         return true;
-   }
-   return false;
+   return g_XInputSetState && (g_XInputSetState(xuser, state) == ERROR_SUCCESS);
 }
 
 static void xinput_joypad_destroy(void)
