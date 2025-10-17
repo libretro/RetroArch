@@ -527,7 +527,8 @@ static int zip_parse_file_iterate_step(void *context,
    if (ret != 1)
       return ret;
 
-   userdata->crc = checksum;
+   userdata->crc  = checksum;
+   userdata->size = size;
 
    if (file_cb && !file_cb(userdata->current_file_path, valid_exts, cdata, cmode,
             csize, size, checksum, userdata))
