@@ -3966,6 +3966,14 @@ MSG_HASH(
    "Riavvolge il replay al checkpoint precedente salvato automaticamente o manualmente."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Replay Checkpoint Successivo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Avanza velocemente il replay al prossimo checkpoint automaticamente o salvato manualmente."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
    "Prossimo Slot Di replay"
    )
@@ -13222,6 +13230,14 @@ MSG_HASH(
    "%.*s si è unito con i dispositivi di input %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d giocatore(i)"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d giocatore(i) (%d spettatori)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Un tentativo di connessione alla rete fallito perché il peer non esegue RetroArch, o sta eseguendo una vecchia versione di RetroArch."
    )
@@ -13945,6 +13961,22 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
    "Linea temporale errata; sovrascrittura della registrazione"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
+   "Cerca indietro"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
+   "Ricerca Indietro Non Riuscita"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
+   "Cerca avanti"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
+   "Ricerca Avanti Non Riuscita"
    )
 MSG_HASH(
    MSG_REPLAY_SEEK_TO_FRAME,
@@ -14869,6 +14901,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    "Cambio media RetroAchievements non riuscito: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "Login RetroAchievements scaduto. Si prega di reinserire la password e ricaricare il gioco."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
