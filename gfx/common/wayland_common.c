@@ -280,10 +280,10 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    if (wl->wl_touch)
       wl_touch_destroy(wl->wl_touch);
 
-   if (wl->cursor.theme)
-      wl_cursor_theme_destroy(wl->cursor.theme);
    if (wl->cursor.surface)
       wl_surface_destroy(wl->cursor.surface);
+   if (wl->cursor.theme)
+      wl_cursor_theme_destroy(wl->cursor.theme);
 
    if (wl->viewport)
       wp_viewport_destroy(wl->viewport);
@@ -293,12 +293,10 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
    if (wl->deco)
       zxdg_toplevel_decoration_v1_destroy(wl->deco);
-   if (wl->xdg_toplevel)
-      xdg_toplevel_destroy(wl->xdg_toplevel);
-   if (wl->xdg_toplevel_icon_manager)
-      xdg_toplevel_icon_manager_v1_destroy(wl->xdg_toplevel_icon_manager);
    if (wl->xdg_toplevel_icon)
       xdg_toplevel_icon_v1_destroy(wl->xdg_toplevel_icon);
+   if (wl->xdg_toplevel)
+      xdg_toplevel_destroy(wl->xdg_toplevel);
    if (wl->xdg_surface)
       xdg_surface_destroy(wl->xdg_surface);
    if (wl->surface)
@@ -306,6 +304,10 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 
    if (wl->deco_manager)
       zxdg_decoration_manager_v1_destroy(wl->deco_manager);
+   if (wl->xdg_toplevel_icon_manager)
+      xdg_toplevel_icon_manager_v1_destroy(wl->xdg_toplevel_icon_manager);
+   if (wl->xdg_toplevel_tag_manager)
+      xdg_toplevel_tag_manager_v1_destroy(wl->xdg_toplevel_tag_manager);
    if (wl->idle_inhibit_manager)
       zwp_idle_inhibit_manager_v1_destroy(wl->idle_inhibit_manager);
    else
@@ -388,6 +390,7 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    wl->xdg_toplevel              = NULL;
    wl->xdg_toplevel_icon         = NULL;
    wl->xdg_toplevel_icon_manager = NULL;
+   wl->xdg_toplevel_tag_manager  = NULL;
    wl->deco                      = NULL;
    wl->idle_inhibitor            = NULL;
    wl->wl_touch                  = NULL;
@@ -831,6 +834,11 @@ bool gfx_ctx_wl_init_common(
       RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", xdg_toplevel_icon_manager_v1_interface.name);
    }
 
+   if (!wl->xdg_toplevel_tag_manager)
+   {
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", xdg_toplevel_tag_manager_v1_interface.name);
+   }
+
    wl->surface = wl_compositor_create_surface(wl->compositor);
    if (wl->viewporter)
       wl->viewport = wp_viewporter_get_viewport(wl->viewporter, wl->surface);
@@ -903,6 +911,14 @@ bool gfx_ctx_wl_init_common(
 
       if (wl->xdg_toplevel_icon_manager)
          wl_create_toplevel_icon(wl, wl->xdg_toplevel);
+
+      if (wl->xdg_toplevel_tag_manager)
+      {
+         xdg_toplevel_tag_manager_v1_set_toplevel_tag(
+            wl->xdg_toplevel_tag_manager, wl->xdg_toplevel, WAYLAND_APP_ID);
+         xdg_toplevel_tag_manager_v1_set_toplevel_description(
+            wl->xdg_toplevel_tag_manager, wl->xdg_toplevel, WINDOW_TITLE);
+      }
 
       /* Waiting for xdg_toplevel to be configured before starting to draw */
       wl_surface_commit(wl->surface);
