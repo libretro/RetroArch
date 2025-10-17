@@ -604,6 +604,10 @@ INPUT
 ============================================================ */
 
 #include "../input/input_driver.c"
+#ifdef HAVE_BSV_MOVIE
+#include "../input/bsv/bsvmovie.c"
+#include "../input/bsv/uint32s_index.c"
+#endif
 #include "../input/input_keymaps.c"
 #include "../tasks/task_autodetect.c"
 #include "../input/input_autodetect_builtin.c"
@@ -1637,9 +1641,9 @@ SSL
 #include "../deps/mbedtls/ssl_srv.c"
 #include "../deps/mbedtls/ssl_ticket.c"
 #include "../deps/mbedtls/ssl_tls.c"
+#endif
 
 #include "../libretro-common/net/net_socket_ssl_mbed.c"
-#endif
 #endif
 #endif
 

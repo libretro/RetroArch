@@ -310,6 +310,7 @@ void apple_input_keyboard_event(bool down,
    settings_t *settings         = config_get_ptr();
    bool keyboard_gamepad_enable = settings->bools.input_keyboard_gamepad_enable;
    bool small_keyboard_enable   = settings->bools.input_small_keyboard_enable;
+   unsigned original_code       = code;
 
    if (keyboard_gamepad_enable)
    {
@@ -326,10 +327,15 @@ void apple_input_keyboard_event(bool down,
          character = 0;
    }
 
+   /* Update state for both original and translated keys if different */
+   if (original_code > 0 && original_code < MAX_KEYS)
+      apple_key_state[original_code] = down;
+
    if (code == 0 || code >= MAX_KEYS)
       return;
 
-   apple_key_state[code] = down;
+   if (code != original_code)
+      apple_key_state[code] = down;
 
    input_keyboard_event(down,
          input_keymaps_translate_keysym_to_rk(code),
@@ -441,7 +447,7 @@ static int16_t cocoa_lightgun_aiming_state(
    int16_t res_y               = 0;
    int16_t res_screen_x        = 0;
    int16_t res_screen_y        = 0;
-   
+
    int16_t x = apple->window_pos_x;
    int16_t y = apple->window_pos_y;
 
@@ -679,7 +685,7 @@ static int16_t cocoa_input_state(
                   float axis_threshold           = joypad_info->axis_threshold;
                   const uint32_t joykey          = (bind_joykey != NO_BTN) ? bind_joykey  : autobind_joykey;
                   const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE) ? bind_joyaxis : autobind_joyaxis;
-                  
+
                   if (binds[port][new_id].valid)
                   {
                      if ((uint16_t)joykey != NO_BTN && joypad->button(joyport, (uint16_t)joykey))

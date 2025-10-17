@@ -19,6 +19,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "input/input_driver.h"
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -670,7 +671,8 @@ void runloop_runtime_log_deinit(
       const char *dir_runtime_log,
       const char *dir_playlist)
 {
-   if (verbosity_is_enabled())
+   if (     verbosity_is_enabled()
+         && runloop_st->core_runtime_usec > 0)
    {
       char log[256]             = {0};
       unsigned hours            = 0;
@@ -683,7 +685,7 @@ void runloop_runtime_log_deinit(
 
       /* TODO/FIXME - localize */
       snprintf(log, sizeof(log),
-            "[Core] Content ran for a total of:"
+            "[Runtime] Content ran for a total of:"
             " %02u hours, %02u minutes, %02u seconds.",
             hours, minutes, seconds);
       RARCH_LOG("%s\n", log);
@@ -3151,29 +3153,37 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       {
          int result = RETRO_SAVESTATE_CONTEXT_NORMAL;
 
-#if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
-         if (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE)
-         {
-#ifdef HAVE_NETWORKING
-            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-               result = RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY;
-            else
+#ifdef HAVE_REWIND
+         if (runloop_st->rewind_st.flags &
+               STATE_MGR_REWIND_ST_FLAG_IS_REWIND_SERIALIZE)
+            result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE;
+         else
 #endif
+         {
+#if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
+            if (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE)
             {
+#ifdef HAVE_NETWORKING
+               if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+                  result = RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY;
+               else
+#endif
+               {
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-               settings_t *settings = config_get_ptr();
-               if (      settings->bools.run_ahead_secondary_instance
-                     && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
-                     &&  secondary_core_ensure_exists(runloop_st, settings))
-                  result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY;
-               else
+                  settings_t *settings = config_get_ptr();
+                  if (      settings->bools.run_ahead_secondary_instance
+                        && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
+                        &&  secondary_core_ensure_exists(runloop_st, settings))
+                     result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY;
+                  else
 #endif
                   result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE;
 #endif
+               }
             }
-         }
 #endif
+         }
 
          if (data)
             *(int*)data = result;
@@ -3330,6 +3340,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          /* Current API version is 2 */
          *(unsigned *)data = 2;
          break;
+
+      case RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE:
+      {
+         if (!settings)
+            return false;
+
+         *(unsigned *)data = settings->uints.audio_output_sample_rate;
+         break;
+      }
 
       case RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE:
       {
@@ -4278,7 +4297,14 @@ static bool event_init_content(
    runloop_path_fill_names();
 
    if (!content_init())
+   {
+#ifdef HAVE_MENU
+      /* Single-click playlist return */
+      if (settings->bools.input_menu_singleclick_playlists)
+         menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+#endif
       return false;
+   }
 
    command_event_set_savestate_auto_index(settings);
    command_event_set_replay_auto_index(settings);
@@ -5025,7 +5051,7 @@ bool core_options_create_override(bool game_specific)
 error:
    _msg = msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE);
    runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
    if (conf)
       config_file_free(conf);
@@ -5192,7 +5218,7 @@ error:
    {
       const char *_msg = msg_hash_to_str(MSG_ERROR_REMOVING_CORE_OPTIONS_FILE);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    }
 
    if (conf)
@@ -5283,7 +5309,7 @@ void core_options_flush(void)
    core_option_manager_t *coreopts = runloop_st->core_options;
    const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
    const char *core_options_file   = NULL;
-   bool success                    = false;
+   bool ret                        = false;
 
    msg[0] = '\0';
 
@@ -5311,7 +5337,7 @@ void core_options_flush(void)
       {
          core_option_manager_flush(runloop_st->core_options, conf_tmp);
 
-         success = config_file_write(conf_tmp, path_core_options, true);
+         ret = config_file_write(conf_tmp, path_core_options, true);
          config_file_free(conf_tmp);
       }
    }
@@ -5335,7 +5361,7 @@ void core_options_flush(void)
          if (!path_is_valid(path_core_options))
             runloop_st->core_options->conf->flags |= CONF_FILE_FLG_MODIFIED;
 
-         success = config_file_write(runloop_st->core_options->conf,
+         ret = config_file_write(runloop_st->core_options->conf,
                path_core_options, true);
       }
    }
@@ -5347,7 +5373,7 @@ void core_options_flush(void)
    if (string_is_empty(core_options_file))
       core_options_file = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
 
-   if (success)
+   if (ret)
    {
       /* Log result */
       _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_OPTIONS_FLUSHED),
@@ -6113,7 +6139,7 @@ static enum runloop_state_enum runloop_check_state(
             && ((menu_st->current_time_us - menu_st->input_last_time_us)
              > ((retro_time_t)screensaver_timeout * 1000000)))
       {
-         menu_st->flags             |= MENU_ST_FLAG_SCREENSAVER_ACTIVE;
+         menu_st->flags |= MENU_ST_FLAG_SCREENSAVER_ACTIVE;
          if (menu_st->driver_ctx->environ_cb)
             menu_st->driver_ctx->environ_cb(MENU_ENVIRON_ENABLE_SCREENSAVER,
                      NULL, menu_st->userdata);
@@ -6133,13 +6159,104 @@ static enum runloop_state_enum runloop_check_state(
             menu_st->driver_ctx->list_cache(menu_st->userdata,
                   MENU_LIST_PLAIN, MENU_ACTION_NOOP);
 
-         p_disp->flags   |= GFX_DISP_FLAG_MSG_FORCE;
+         p_disp->flags |= GFX_DISP_FLAG_MSG_FORCE;
 
          generic_action_ok_displaylist_push("", NULL,
                "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
 
-         menu_st->selection_ptr      = 0;
-         menu_st->flags             &= ~MENU_ST_FLAG_PENDING_QUICK_MENU;
+         menu_st->selection_ptr  = 0;
+         menu_st->flags         &= ~MENU_ST_FLAG_PENDING_QUICK_MENU;
+         menu_st->flags         &= ~MENU_ST_FLAG_PENDING_STARTUP_PAGE;
+      }
+      /* Navigate to initial startup page */
+      else if (menu_st->flags & MENU_ST_FLAG_PENDING_STARTUP_PAGE)
+      {
+         unsigned startup_page = settings->uints.menu_startup_page;
+
+         switch (startup_page)
+         {
+            default:
+            case MENU_STARTUP_PAGE_MAIN_MENU:
+               break;
+            case MENU_STARTUP_PAGE_HISTORY:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
+                     MENU_SETTING_ACTION,
+                     0, 0, ACTION_OK_DL_GENERIC);
+               break;
+            case MENU_STARTUP_PAGE_FAVORITES:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB),
+                     MENU_SETTING_ACTION,
+                     0, 0, ACTION_OK_DL_FAVORITES_LIST);
+               break;
+            case MENU_STARTUP_PAGE_CONTENTLESS_CORES:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES),
+                     MENU_SETTING_ACTION,
+                     0, 0, ACTION_OK_DL_CONTENTLESS_CORES_LIST);
+               break;
+            case MENU_STARTUP_PAGE_EXPLORE:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_TAB),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_EXPLORE),
+                     MENU_EXPLORE_TAB,
+                     0, 0, ACTION_OK_DL_EXPLORE_LIST);
+               break;
+            case MENU_STARTUP_PAGE_PLAYLISTS:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+                     MENU_SETTING_ACTION,
+                     0, 0, ACTION_OK_DL_CONTENT_COLLECTION_LIST);
+               break;
+            case MENU_STARTUP_PAGE_LOAD_CONTENT:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST),
+                     MENU_SETTING_ACTION,
+                     0, 0, ACTION_OK_DL_GENERIC);
+               break;
+            case MENU_STARTUP_PAGE_START_DIRECTORY:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
+                     NULL,
+                     msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+                     MENU_SETTING_ACTION_FAVORITES_DIR,
+                     0, 0, ACTION_OK_DL_CONTENT_LIST);
+               break;
+            case MENU_STARTUP_PAGE_DOWNLOADS:
+               generic_action_ok_displaylist_push(
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                     settings->paths.directory_core_assets,
+                     msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                     MENU_SETTING_ACTION,
+                     0, 0, ACTION_OK_DL_CONTENT_LIST);
+               break;
+         }
+
+         if (startup_page != MENU_STARTUP_PAGE_MAIN_MENU)
+         {
+            menu_displaylist_info_t info;
+
+            menu_displaylist_info_init(&info);
+
+            info.flags |= MD_FLAG_NEED_PUSH;
+
+            menu_displaylist_process(&info);
+            menu_displaylist_info_free(&info);
+         }
+
+         menu_st->flags &= ~MENU_ST_FLAG_PENDING_STARTUP_PAGE;
       }
       else if (!menu_driver_iterate(menu_st, p_disp, anim_get_ptr(),
                settings, action, current_time))
@@ -6222,8 +6339,8 @@ static enum runloop_state_enum runloop_check_state(
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
    else
-#endif
-#endif
+#endif /* HAVE_MENU */
+#endif /* defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS) */
    {
       if (runloop_st->flags & RUNLOOP_FLAG_IDLE)
       {
@@ -6910,6 +7027,9 @@ static enum runloop_state_enum runloop_check_state(
    HOTKEY_CHECK(RARCH_PLAY_REPLAY_KEY, CMD_EVENT_PLAY_REPLAY, true, NULL);
    HOTKEY_CHECK(RARCH_RECORD_REPLAY_KEY, CMD_EVENT_RECORD_REPLAY, true, NULL);
    HOTKEY_CHECK(RARCH_HALT_REPLAY_KEY, CMD_EVENT_HALT_REPLAY, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_REPLAY_CHECKPOINT_KEY, CMD_EVENT_SAVE_REPLAY_CHECKPOINT, true, NULL);
+   HOTKEY_CHECK(RARCH_PREV_REPLAY_CHECKPOINT_KEY, CMD_EVENT_PREV_REPLAY_CHECKPOINT, true, NULL);
+   HOTKEY_CHECK(RARCH_NEXT_REPLAY_CHECKPOINT_KEY, CMD_EVENT_NEXT_REPLAY_CHECKPOINT, true, NULL);
 
    /* Check Disc Control hotkeys */
    HOTKEY_CHECK3(
@@ -7090,6 +7210,10 @@ int runloop_iterate(void)
    }
 #endif
 
+#ifdef HAVE_BSV_MOVIE
+   bsv_movie_dequeue_next(input_st);
+#endif
+   
    if (runloop_st->frame_time.callback)
    {
       /* Updates frame timing if frame timing callback is in use by the core.
@@ -7185,6 +7309,17 @@ int runloop_iterate(void)
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
+#ifdef HAVE_BSV_MOVIE
+         if (input_st->bsv_movie_state.flags &
+               (BSV_FLAG_MOVIE_FORCE_CHECKPOINT |
+                     BSV_FLAG_MOVIE_PREV_CHECKPOINT |
+                     BSV_FLAG_MOVIE_NEXT_CHECKPOINT |
+                     BSV_FLAG_MOVIE_SEEK_TO_FRAME))
+         {
+            runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;
+            runloop_st->run_frames_and_pause = 2;
+         }
+#endif
          video_driver_cached_frame();
          goto end;
       case RUNLOOP_STATE_MENU:
@@ -7229,10 +7364,6 @@ int runloop_iterate(void)
 #ifdef HAVE_THREADS
    if (runloop_st->flags & RUNLOOP_FLAG_AUTOSAVE)
       autosave_lock();
-#endif
-
-#ifdef HAVE_BSV_MOVIE
-   bsv_movie_next_frame(input_st);
 #endif
 
    if (     settings->bools.camera_allow
@@ -7290,12 +7421,7 @@ int runloop_iterate(void)
    presence_update(PRESENCE_GAME);
 #endif
 #ifdef HAVE_BSV_MOVIE
-   bsv_movie_finish_rewind(input_st);
-   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
-   {
-      movie_stop_playback(input_st);
-      command_event(CMD_EVENT_PAUSE, NULL);
-   }
+   bsv_movie_next_frame(input_st);
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
    {
       movie_stop_playback(input_st);

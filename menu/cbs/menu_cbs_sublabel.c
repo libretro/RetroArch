@@ -447,6 +447,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_state_slot_minus,      ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_play_replay_key,        MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_record_replay_key,      MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_halt_replay_key,        MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_replay_checkpoint_key, MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_prev_replay_checkpoint_key, MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_next_replay_checkpoint_key, MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_replay_slot_plus,       MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_replay_slot_minus,      MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS)
 
@@ -550,7 +553,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_camera_allow,                  MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_location_allow,                MENU_ENUM_SUBLABEL_LOCATION_ALLOW)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_max_users,               MENU_ENUM_SUBLABEL_INPUT_MAX_USERS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_poll_type_behavior,      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_all_users_control_menu,  MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_bind_timeout,            MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_bind_hold,               MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_volume,                  MENU_ENUM_SUBLABEL_AUDIO_VOLUME)
@@ -572,6 +574,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_touch_vmouse_gesture,    MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_button_axis_threshold,         MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_analog_deadzone,               MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_analog_sensitivity,            MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY)
+
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sensor_accelerometer_sensitivity,            MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sensor_gyroscope_sensitivity,            MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY)
+
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_enable,            MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_period,            MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_turbo_duty_cycle,        MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE)
@@ -815,6 +821,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_max_keep,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_autosave_interval,             MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_max_keep,               MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_checkpoint_interval,    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_checkpoint_deserialize, MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_remap_binds_enable,      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_remap_sort_by_controller_enable,      MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_autodetect_enable,       MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE)
@@ -830,6 +837,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_auto_mouse_grab,         MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_auto_game_focus,         MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_swap_ok_cancel,          MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_swap_scroll,             MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_all_users_control_menu,  MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_singleclick_playlists,    MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_allow_tabs_back,          MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_pause_libretro,                MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_savestate_resume,         MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_insert_disk_resume,       MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME)
@@ -839,9 +849,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_timeout,      MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_animation,       MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_animation_speed, MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED)
 #endif
-#if defined(HAVE_XMB) || defined(HAVE_OZONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_remember_selection,       MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION)
-#endif
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_startup_page,             MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_driver,                  MENU_ENUM_SUBLABEL_VIDEO_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_driver,                  MENU_ENUM_SUBLABEL_AUDIO_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_driver,                  MENU_ENUM_SUBLABEL_INPUT_DRIVER)
@@ -1251,9 +1260,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_num_passes,                  
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset,                         MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_prepend,                 MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_append,                  MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save,                    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_remove,                  MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_manager,                 MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_file_info,               MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save_reference,          MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save_current,            MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save_as,                 MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save_global,             MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_shader_preset_save_core,               MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE)
@@ -1807,14 +1817,23 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
 
    if (     string_is_empty(room->subsystem_name)
          || string_is_equal_case_insensitive(room->subsystem_name, "N/A"))
-      snprintf(s + _len, len - _len, "(%08lX)",
+      _len += snprintf(s + _len, len - _len, "(%08lX)\n",
             (unsigned long)(unsigned)room->gamecrc);
    else
    {
       _len += strlcpy(s + _len, "(", len - _len);
       _len += strlcpy(s + _len, room->subsystem_name, len - _len);
-      strlcpy(s + _len, ")", len - _len);
+      _len += strlcpy(s + _len, ")\n", len - _len);
    }
+
+   if (room->spectator_count > 0)
+      _len += snprintf(s + _len, len - _len,
+         msg_hash_to_str(MSG_NETPLAY_SPECTATORS_INFO),
+         room->player_count, room->spectator_count);
+   else if (room->player_count >= 0)
+      _len += snprintf(s + _len, len - _len,
+         msg_hash_to_str(MSG_NETPLAY_PLAYERS_INFO),
+         room->player_count);
    return 0;
 }
 
@@ -2034,7 +2053,7 @@ static int action_bind_sublabel_playlist_entry(
    if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
    {
       size_t n = 0;
-      char tmp[64];
+      char tmp[128];
 
       /* Runtime/last played strings are now cached in the
        * playlist, so we can add both in one go */
@@ -2042,7 +2061,7 @@ static int action_bind_sublabel_playlist_entry(
       tmp[++n] = '\0';
       n       += strlcpy(tmp + n, entry->runtime_str, sizeof(tmp) - n);
 
-      if (n < 64 - 1)
+      if (n < 128 - 1)
       {
          tmp[  n] = '\n';
          tmp[++n] = '\0';
@@ -2380,6 +2399,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             case RARCH_HALT_REPLAY_KEY:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_halt_replay_key);
                return 0;
+            case RARCH_SAVE_REPLAY_CHECKPOINT_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_replay_checkpoint_key);
+               return 0;
+            case RARCH_PREV_REPLAY_CHECKPOINT_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_prev_replay_checkpoint_key);
+               return 0;
+            case RARCH_NEXT_REPLAY_CHECKPOINT_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_next_replay_checkpoint_key);
+               return 0;
             case RARCH_REPLAY_SLOT_PLUS:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_replay_slot_plus);
                return 0;
@@ -2709,14 +2737,17 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_parameters);
             break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save);
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_manager);
             break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_remove);
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_FILE_INFO:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_file_info);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_reference);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_current);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_preset_save_as);
@@ -4066,16 +4097,26 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_screensaver_animation_speed);
             break;
 #endif
-#if defined(HAVE_XMB) || defined(HAVE_OZONE)
          case MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_remember_selection);
             break;
-#endif
+         case MENU_ENUM_LABEL_MENU_STARTUP_PAGE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_startup_page);
+            break;
          case MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_swap_ok_cancel);
             break;
          case MENU_ENUM_LABEL_MENU_INPUT_SWAP_SCROLL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_swap_scroll);
+            break;
+         case MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_singleclick_playlists);
+            break;
+         case MENU_ENUM_LABEL_MENU_ALLOW_TABS_BACK:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_allow_tabs_back);
+            break;
+         case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_all_users_control_menu);
             break;
          case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_autodetect_enable);
@@ -4113,6 +4154,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_replay_checkpoint_interval);
+            break;
+         case MENU_ENUM_LABEL_REPLAY_CHECKPOINT_DESERIALIZE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_replay_checkpoint_deserialize);
             break;
          case MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_max_keep);
@@ -4722,6 +4766,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_analog_sensitivity);
             break;
+         case MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sensor_accelerometer_sensitivity);
+            break;
+         case MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sensor_gyroscope_sensitivity);
+            break;
 #if defined(GEKKO)
          case MENU_ENUM_LABEL_INPUT_MOUSE_SCALE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_mouse_scale);
@@ -4757,9 +4807,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_AUDIOMIXER
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mixer_volume);
 #endif
-            break;
-         case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_all_users_control_menu);
             break;
          case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_poll_type_behavior);

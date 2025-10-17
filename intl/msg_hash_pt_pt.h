@@ -142,10 +142,6 @@ MSG_HASH(
    "Abre o menu tradicional do desktop."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Desativar o Modo Quiosque (é necessário reiniciar)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Mostrar todas as definições relacionadas às configurações."
    )
@@ -1872,6 +1868,10 @@ MSG_HASH(
    "RGUI é uma interface gráfica simples integrada ao RetroArch. Tem os requisitos de desempenho mais baixos entre os controladores de menu e pode ser utilizado em ecrãs de baixa resolução."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "Em dispositivos móveis, RetroArch usa a ‘interface’ de usuário móvel, MaterialUI, por padrão. Essa interface é projetada em torno da tela de toque e dispositivos do ponteiro como um mouse/trackball."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Gravação de vídeo"
    )
@@ -1947,12 +1947,20 @@ MSG_HASH(
    "Previne que proteção de ecrã do sistema seja ativada."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "Suspende o salvador de tela. É uma dica que não precisa necessariamente ser honrada pelo driver de vídeo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    "Vídeo segmentado"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    "Aumenta performance a custo de latência e mais stuttering de vídeo. Use apenas se velocidade máxima não pode ser obtida de outra maneira."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "Use um driver de vídeo thread. Usar isto pode melhorar o desempenho a custo de latência possível e mais travamentos de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
@@ -3252,8 +3260,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "Aparência"
    )
-#ifdef _3DS
-#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   "Envolver em torno da navegação"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+   "Envolver o início e/ou o final, caso o limite da lista seja alcançado horizontal ou verticalmente."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    "Mostrar definições avançadas"
@@ -3275,18 +3289,6 @@ MSG_HASH(
    "Fornecer uma palavra-passe durante a ativação do modo Quiosque faz com que seja possível desativar esse modo a partir do menu, utilizando o Menu Principal, selecionando Desativar modo quiosque e introduzindo a palavra-passe."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   "Envolver em torno da navegação"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "Envolver o início e/ou o final, caso o limite da lista seja alcançado horizontal ou verticalmente."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
-   "Neve"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "Suporte de rato"
    )
@@ -3303,6 +3305,10 @@ MSG_HASH(
    "Executar tarefas numa thread independente."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "Neve"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    "Desativar composição do ambiente de trabalho"
    )
@@ -3310,6 +3316,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
    "Ativar assistente de interface do utilizador"
    )
+#ifdef _3DS
+#endif
 
 /* Settings > User Interface > Menu Item Visibility */
 
@@ -4102,10 +4110,6 @@ MSG_HASH(
    "Carregar uma pré-definição de sombreamento. O canal do shader será definido automaticamente."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Remove shader presets of a specific type."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Aplicar alterações"
    )
@@ -4134,14 +4138,6 @@ MSG_HASH(
    "Escala"
    )
 
-/* Quick Menu > Shaders > Save */
-
-
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Guardar pré-definições de shaders como"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
    "Guardar as definições de shader atuais como novas pré-definições de sombreamento."
@@ -4158,9 +4154,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Guardar as definições de shader atuais como definições padrão para o conteúdo."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 
 /* Quick Menu > Shaders > Shader Parameters */
 

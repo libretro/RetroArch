@@ -84,7 +84,7 @@
 
 #define DEFAULT_TOUCH_SCALE 1
 
-#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(EMSCRIPTEN)
+#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(EMSCRIPTEN) || defined (VITA)
 #define DEFAULT_POINTER_ENABLE true
 #else
 #define DEFAULT_POINTER_ENABLE false
@@ -967,6 +967,8 @@
 
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
 #define DEFAULT_MENU_SWAP_SCROLL_BUTTONS false
+#define DEFAULT_MENU_SINGLECLICK_PLAYLISTS false
+#define DEFAULT_MENU_ALLOW_TABS_BACK true
 
 #if defined(WIIU)
 #define DEFAULT_ALL_USERS_CONTROL_MENU true
@@ -1406,6 +1408,11 @@
 /* Specifies how often checkpoints will be saved to replay files during recording.
  * > Setting value to zero disables recording checkpoints. */
 #define DEFAULT_REPLAY_CHECKPOINT_INTERVAL 0
+/* Specifies whether checkpoints in replay files should be loaded
+ * during playback.  This can be helpful for cores that are not
+ * deterministic but in some cores produces janky results depending on
+ * when inputs are processed. */
+#define DEFAULT_REPLAY_CHECKPOINT_DESERIALIZE true
 
 /* Automatically saves a savestate at the end of RetroArch's lifetime.
  * The path is $SRAM_PATH.auto.
@@ -1582,6 +1589,9 @@
 #define DEFAULT_AXIS_THRESHOLD 0.5f
 #define DEFAULT_ANALOG_DEADZONE 0.0f
 #define DEFAULT_ANALOG_SENSITIVITY 1.0f
+#define DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY 1.0f
+#define DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY 1.0f
+
 
 /* Describes speed of which turbo-enabled buttons toggle. */
 #define DEFAULT_TURBO_ENABLE true
@@ -1664,6 +1674,7 @@
 #define DEFAULT_MENU_TIMEDATE_STYLE          MENU_TIMEDATE_STYLE_DDMM_HM
 #define DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 #define DEFAULT_MENU_REMEMBER_SELECTION      MENU_REMEMBER_SELECTION_ALWAYS
+#define DEFAULT_MENU_STARTUP_PAGE            MENU_STARTUP_PAGE_MAIN_MENU
 #endif
 
 #define DEFAULT_XMB_VERTICAL_THUMBNAILS false

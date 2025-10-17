@@ -146,10 +146,6 @@ MSG_HASH(
    "افتح قائمة سطح المكتب التقليدية."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "تعطيل وضع الكشك (مطلوب إعادة التشغيل)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "إظهار كافة الإعدادات ذات الصلة بالتهيئات."
    )
@@ -2644,6 +2640,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
    "قائمة التحكم في جميع المستخدمين"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   "تسريع تمرير القائمة"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   "أقصى سرعة للمؤشر عند الضغط على اتجاه للتمرير."
+   )
 
 /* Settings > Input > Hotkeys */
 
@@ -3809,6 +3813,10 @@ MSG_HASH(
 /* Settings > User Interface */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
+   "المظهر"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
    "رؤية عنصر القائمة"
    )
@@ -3817,11 +3825,13 @@ MSG_HASH(
    "تبديل رؤية عناصر القائمة في RetroArch."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-   "المظهر"
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   "تغليف التنقل حول"
    )
-#ifdef _3DS
-#endif
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+   "تغلق الشاشة للبدء و/أو النهاية إذا تم الوصول إلى حدود القائمة أفقياً أو عمودياً."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    "إظهار الإعدادات المتقدمة"
@@ -3847,26 +3857,6 @@ MSG_HASH(
    "توفير كلمة مرور عند تمكين وضع الأكشاك يجعل من الممكن تعطيلها لاحقاً من القائمة، عن طريق الذهاب إلى القائمة الرئيسية، واختيار وضع كيوسك المعطل وإدخال كلمة المرور."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   "تغليف التنقل حول"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "تغلق الشاشة للبدء و/أو النهاية إذا تم الوصول إلى حدود القائمة أفقياً أو عمودياً."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
-   "الثلج"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
-   "مرج النجوم"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
-   "دوامة"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "دعم الفأرة"
    )
@@ -3883,21 +3873,27 @@ MSG_HASH(
    "تنفيذ المهام على موضوع منفصل."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   "الثلج"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
+   "مرج النجوم"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
+   "دوامة"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    "تعطيل تكوين سطح المكتب"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "تسريع تمرير القائمة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-   "أقصى سرعة للمؤشر عند الضغط على اتجاه للتمرير."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
    "مرفقة واجهة المستخدم"
    )
+#ifdef _3DS
+#endif
 
 /* Settings > User Interface > Menu Item Visibility */
 
@@ -5402,14 +5398,6 @@ MSG_HASH(
    "تحميل معالج مسبقًا. سيتم إعداد خط أنابيب المعالج تلقائياً."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "حفظ الإعداد المسبق للعرض الحالي."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "إزالة الإعداد المسبق للعرض التلقائي."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "تطبيق التغييرات"
    )
@@ -5438,14 +5426,6 @@ MSG_HASH(
    "مقياس"
    )
 
-/* Quick Menu > Shaders > Save */
-
-
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "حفظ تجهيزات شيدر الظلال تحت"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
    "يحفظ إعدادات شيدر الظلال، بمثابة تجهيز شيدر ظلال جديد."
@@ -5474,9 +5454,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "يحفظ إعدادات شيدر الظلال، بمثابة الإعداد الافتراضي لهذا المحتوى حصرا."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "لم يتم العثور على إعدادات مسبقة للشاق التلقائي"

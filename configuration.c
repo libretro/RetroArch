@@ -366,6 +366,9 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_META_BIND(1, play_replay,           RARCH_PLAY_REPLAY_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY),
    DECLARE_META_BIND(1, record_replay,         RARCH_RECORD_REPLAY_KEY,      MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY),
    DECLARE_META_BIND(1, halt_replay,           RARCH_HALT_REPLAY_KEY,        MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY),
+   DECLARE_META_BIND(1, save_replay_checkpoint,RARCH_SAVE_REPLAY_CHECKPOINT_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY),
+   DECLARE_META_BIND(1, prev_replay_checkpoint,RARCH_PREV_REPLAY_CHECKPOINT_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY),
+   DECLARE_META_BIND(1, next_replay_checkpoint,RARCH_NEXT_REPLAY_CHECKPOINT_KEY, MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY),
    DECLARE_META_BIND(2, replay_slot_increase,  RARCH_REPLAY_SLOT_PLUS,       MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS),
    DECLARE_META_BIND(2, replay_slot_decrease,  RARCH_REPLAY_SLOT_MINUS,      MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS),
 
@@ -2176,10 +2179,12 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_remap_binds_enable",      &settings->bools.input_remap_binds_enable, true, true, false);
    SETTING_BOOL("input_remap_sort_by_controller_enable",      &settings->bools.input_remap_sort_by_controller_enable, true, false, false);
    SETTING_BOOL("input_hotkey_device_merge",     &settings->bools.input_hotkey_device_merge, true, DEFAULT_INPUT_HOTKEY_DEVICE_MERGE, false);
-   SETTING_BOOL("all_users_control_menu",        &settings->bools.input_all_users_control_menu, true, DEFAULT_ALL_USERS_CONTROL_MENU, false);
 #ifdef HAVE_MENU
+   SETTING_BOOL("all_users_control_menu",        &settings->bools.input_all_users_control_menu, true, DEFAULT_ALL_USERS_CONTROL_MENU, false);
    SETTING_BOOL("menu_swap_ok_cancel_buttons",   &settings->bools.input_menu_swap_ok_cancel_buttons, true, DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS, false);
    SETTING_BOOL("menu_swap_scroll_buttons",      &settings->bools.input_menu_swap_scroll_buttons, true, DEFAULT_MENU_SWAP_SCROLL_BUTTONS, false);
+   SETTING_BOOL("menu_singleclick_playlists",    &settings->bools.input_menu_singleclick_playlists, true, DEFAULT_MENU_SINGLECLICK_PLAYLISTS, false);
+   SETTING_BOOL("menu_allow_tabs_back",          &settings->bools.input_menu_allow_tabs_back, true, DEFAULT_MENU_ALLOW_TABS_BACK, false);
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
    SETTING_BOOL("input_nowinkey_enable",         &settings->bools.input_nowinkey_enable, true, false, false);
@@ -2245,6 +2250,9 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_NETWORKGAMEPAD
    SETTING_BOOL("network_remote_enable",         &settings->bools.network_remote_enable, false, false /* TODO */, false);
 #endif
+#endif
+#ifdef HAVE_BSV_MOVIE
+   SETTING_BOOL("replay_checkpoint_deserialize", &settings->bools.replay_checkpoint_deserialize,  true, DEFAULT_REPLAY_CHECKPOINT_DESERIALIZE, false);
 #endif
 
 #ifdef ANDROID
@@ -2349,6 +2357,8 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("input_axis_threshold",         &settings->floats.input_axis_threshold,     true, DEFAULT_AXIS_THRESHOLD, false);
    SETTING_FLOAT("input_analog_deadzone",        &settings->floats.input_analog_deadzone,    true, DEFAULT_ANALOG_DEADZONE, false);
    SETTING_FLOAT("input_analog_sensitivity",     &settings->floats.input_analog_sensitivity, true, DEFAULT_ANALOG_SENSITIVITY, false);
+   SETTING_FLOAT("input_sensor_accelerometer_sensitivity",&settings->floats.input_sensor_accelerometer_sensitivity, true, DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY, false);
+   SETTING_FLOAT("input_sensor_gyroscope_sensitivity",    &settings->floats.input_sensor_gyroscope_sensitivity, true, DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY, false);
 #ifdef HAVE_OVERLAY
    SETTING_FLOAT("input_overlay_opacity",                 &settings->floats.input_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
    SETTING_FLOAT("input_osk_overlay_opacity",             &settings->floats.input_osk_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
@@ -2420,9 +2430,8 @@ static struct config_uint_setting *populate_settings_uint(
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
    SETTING_UINT("menu_screensaver_animation",    &settings->uints.menu_screensaver_animation, true, DEFAULT_MENU_SCREENSAVER_ANIMATION, false);
 #endif
-#if defined(HAVE_XMB) || defined(HAVE_OZONE)
    SETTING_UINT("menu_remember_selection",       &settings->uints.menu_remember_selection, true, DEFAULT_MENU_REMEMBER_SELECTION, false);
-#endif
+   SETTING_UINT("menu_startup_page",             &settings->uints.menu_startup_page, true, DEFAULT_MENU_STARTUP_PAGE, false);
 #ifdef HAVE_RGUI
    SETTING_UINT("rgui_menu_color_theme",         &settings->uints.menu_rgui_color_theme, true, DEFAULT_RGUI_COLOR_THEME, false);
    SETTING_UINT("rgui_thumbnail_downscaler",     &settings->uints.menu_rgui_thumbnail_downscaler, true, DEFAULT_RGUI_THUMBNAIL_DOWNSCALER, false);
@@ -3792,7 +3801,7 @@ static bool config_load_file(global_t *global,
    struct config_array_setting *array_settings     = NULL;
    struct config_path_setting *path_settings       = NULL;
    config_file_t *conf                             = NULL;
-   uint16_t rarch_flags                            = retroarch_get_flags();
+   uint32_t rarch_flags                            = retroarch_get_flags();
 
    tmp_str[0]                                      = '\0';
 

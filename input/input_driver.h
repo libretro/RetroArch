@@ -56,6 +56,10 @@
 #include "../command.h"
 #endif
 
+#ifdef HAVE_BSV_MOVIE
+#include "bsv/uint32s_index.h"
+#endif
+
 #if defined(ANDROID)
 #define DEFAULT_MAX_PADS 8
 #define ANDROID_KEYBOARD_PORT DEFAULT_MAX_PADS
@@ -129,8 +133,12 @@
 #define REPLAY_CHECKPOINT2_COMPRESSION_ZSTD 2
 
 /* Which encoding to use.
-   RAW: Just raw checkpoint data, possibly compressed. */
+   RAW: Just raw checkpoint data, possibly compressed.
+   STATESTREAM: Incremental, block-deduplicated encoding per
+             https://github.com/sumitshetye2/v86_savestreams
+*/
 #define REPLAY_CHECKPOINT2_ENCODING_RAW 0
+#define REPLAY_CHECKPOINT2_ENCODING_STATESTREAM 1
 
 /**
  * Takes as input analog key identifiers and converts them to corresponding
@@ -181,7 +189,9 @@ enum input_driver_state_flags
    INP_FLAG_GRAB_MOUSE_STATE         = (1 << 6),
    INP_FLAG_REMAPPING_CACHE_ACTIVE   = (1 << 7),
    INP_FLAG_DEFERRED_WAIT_KEYS       = (1 << 8),
-   INP_FLAG_WAIT_INPUT_RELEASE       = (1 << 9)
+   INP_FLAG_WAIT_INPUT_RELEASE       = (1 << 9),
+   INP_FLAG_MENU_PRESS_PENDING       = (1 << 10),
+   INP_FLAG_MENU_PRESS_CANCEL        = (1 << 11)
 };
 
 #ifdef HAVE_BSV_MOVIE
@@ -192,49 +202,54 @@ enum bsv_flags
    BSV_FLAG_MOVIE_PLAYBACK           = (1 << 2),
    BSV_FLAG_MOVIE_RECORDING          = (1 << 3),
    BSV_FLAG_MOVIE_END                = (1 << 4),
-   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 5)
+   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 5),
+   BSV_FLAG_MOVIE_FORCE_CHECKPOINT   = (1 << 6),
+   BSV_FLAG_MOVIE_PREV_CHECKPOINT    = (1 << 7),
+   BSV_FLAG_MOVIE_NEXT_CHECKPOINT    = (1 << 8),
+   BSV_FLAG_MOVIE_SEEK_TO_FRAME      = (1 << 9),
+   BSV_FLAG_MOVIE_SEEKING            = (1 << 10)
 };
 
 struct bsv_state
 {
-   uint8_t flags;
+   uint16_t flags;
    /* Movie playback/recording support. */
    char movie_auto_path[PATH_MAX_LENGTH];
    /* Immediate playback/recording. */
    char movie_start_path[PATH_MAX_LENGTH];
+   /* Target frame/position to seek to next iteration. */
+   int64_t seek_target_frame, seek_target_pos;
 };
 
 /* These data are always little-endian. */
 struct bsv_key_data
 {
-  uint8_t down;
-  uint8_t _padding;
-  uint16_t mod;
-  uint32_t code;
-  uint32_t character;
+   uint8_t down;
+   uint8_t _padding;
+   uint16_t mod;
+   uint32_t code;
+   uint32_t character;
 };
 typedef struct bsv_key_data bsv_key_data_t;
 
 struct bsv_input_data
 {
-  uint8_t port;
-  uint8_t device;
-  uint8_t idx;
-  uint8_t _padding;
-  /* little-endian numbers */
-  uint16_t id;
-  int16_t value;
+   uint8_t port;
+   uint8_t device;
+   uint8_t idx;
+   uint8_t _padding;
+   /* little-endian numbers */
+   uint16_t id;
+   int16_t value;
 };
 typedef struct bsv_input_data bsv_input_data_t;
 
 struct bsv_movie
 {
    intfstream_t *file;
-   uint8_t *state;
    int64_t identifier;
    uint32_t version;
    size_t min_file_pos;
-   size_t state_size;
 
    /* A ring buffer keeping track of positions
     * in the file for each frame. */
@@ -252,9 +267,34 @@ struct bsv_movie
    bool playback;
    bool first_rewind;
    bool did_rewind;
+   bool checkpoint_ready;
+
+#ifdef HAVE_STATESTREAM
+   /* Block index and superblock index for incremental checkpoints */
+   uint32s_index_t *superblocks;
+   uint32s_index_t *blocks;
+   uint32_t *superblock_seq;
+   uint8_t commit_interval, commit_threshold;
+#endif
+
+   uint8_t checkpoint_compression, checkpoint_encoding;
+
+   uint8_t *last_save, *cur_save;
+   size_t last_save_size, cur_save_size;
+
+   bool cur_save_valid;
 };
 
 typedef struct bsv_movie bsv_movie_t;
+
+enum replay_checkpoint_behavior_ {
+   REPLAY_CPBEHAVIOR_SKIP,
+   REPLAY_CPBEHAVIOR_UPDATE,
+   REPLAY_CPBEHAVIOR_DESERIALIZE
+};
+
+typedef enum replay_checkpoint_behavior_ replay_checkpoint_behavior;
+
 #endif
 
 /**
@@ -296,6 +336,7 @@ typedef struct
    char joypad_driver[32];
    char name[128];
    char display_name[128];
+   char phys[NAME_MAX_LENGTH];
    char config_name[NAME_MAX_LENGTH]; /* Base name of the RetroArch config file */
    bool autoconfigured;
 } input_device_info_t;
@@ -508,9 +549,10 @@ struct rarch_joypad_driver
    void (*poll)(void);
    bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
    bool (*set_rumble_gain)(unsigned, unsigned);
-   bool (*set_sensor_state)(void *data, unsigned port,
+   bool (*set_sensor_state)(unsigned port,
          enum retro_sensor_action action, unsigned rate);
-   float (*get_sensor_input)(void *data, unsigned port, unsigned id);
+   /* return true if handled; false to fall back to input driver */
+   bool (*get_sensor_input)(unsigned port, unsigned id, float *value);
    const char *(*name)(unsigned);
 
    const char *ident;
@@ -1064,12 +1106,19 @@ void input_overlay_check_mouse_cursor(void);
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
 void bsv_movie_next_frame(input_driver_state_t *input_st);
-void bsv_movie_read_next_events(bsv_movie_t*handle);
+bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior checkpoint_behavior, bool end_movie_on_eof);
+bool bsv_movie_reset_playback(bsv_movie_t *handle);
+bool bsv_movie_reset_recording(bsv_movie_t *handle);
 void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
 void bsv_movie_deinit_full(input_driver_state_t *input_st);
 void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t *state, enum bsv_flags flags);
+void bsv_movie_dequeue_next(input_driver_state_t *input_st);
 
+bool movie_commit_checkpoint(input_driver_state_t *input_st);
+bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st);
+bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st);
+bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame);
 bool movie_start_playback(input_driver_state_t *input_st, char *path);
 bool movie_start_record(input_driver_state_t *input_st, char *path);
 bool movie_stop_playback(input_driver_state_t *input_st);

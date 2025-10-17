@@ -451,6 +451,12 @@ endif
 
 ifeq ($(HAVE_BSV_MOVIE), 1)
    DEFINES += -DHAVE_BSV_MOVIE
+   OBJ += input/bsv/bsvmovie.o
+endif
+
+ifeq ($(HAVE_STATESTREAM), 1)
+   DEFINES += -DHAVE_STATESTREAM
+   OBJ += input/bsv/uint32s_index.o
 endif
 
 ifeq ($(HAVE_RUNAHEAD), 1)

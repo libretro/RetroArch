@@ -110,7 +110,7 @@ static void dos_joypad_autodetect_add(unsigned autoconf_pad)
 {
    input_autoconfigure_connect(
          dos_joypad_name(autoconf_pad),
-         NULL,
+         NULL, NULL,
          dos_joypad.ident,
          autoconf_pad,
          0,

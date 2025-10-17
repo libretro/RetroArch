@@ -27,6 +27,9 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
+#define SDL_SUPPORTS_RUMBLE  SDL_VERSION_ATLEAST(2, 0, 9)
+#define SDL_SUPPORTS_SENSORS SDL_VERSION_ATLEAST(2, 0, 14)
+
 typedef struct _sdl_joypad
 {
    SDL_Joystick *joypad;
@@ -154,7 +157,7 @@ static void sdl_pad_connect(unsigned id)
 
    input_autoconfigure_connect(
          sdl_joypad_name(id),
-         NULL,
+         NULL, NULL,
          sdl_joypad.ident,
          id,
          vendor,
@@ -216,7 +219,7 @@ static void sdl_pad_connect(unsigned id)
          RARCH_WARN("[SDL] Device #%u does not support leftright haptic effect.\n", id);
       }
    }
-#if SDL_VERSION_ATLEAST(2, 0, 9)
+#if SDL_SUPPORTS_RUMBLE
    if (!pad->haptic || pad->rumble_effect == -2)
    {
       pad->rumble_effect = -3;
@@ -299,7 +302,7 @@ static void *sdl_joypad_init(void *data)
    else
       g_has_haptic = true;
 
-#if SDL_VERSION_ATLEAST(2, 0, 9)
+#if SDL_SUPPORTS_RUMBLE
    /* enable extended hid reports to support ps4/ps5 rumble over bluetooth */
    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
 #endif
@@ -504,7 +507,7 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
          return false;
    }
 
-#if SDL_VERSION_ATLEAST(2, 0, 9)
+#if SDL_SUPPORTS_RUMBLE
    if (joypad->rumble_effect == -3)
    {
       if (SDL_JoystickRumble(joypad->joypad, efx.leftright.large_magnitude, efx.leftright.small_magnitude, efx.leftright.length) == -1)
@@ -548,6 +551,85 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
 }
 #endif
 
+static bool sdl_joypad_set_sensor_state(unsigned pad, enum retro_sensor_action action, unsigned rate)
+{
+   sdl_joypad_t *joypad = (sdl_joypad_t*)&sdl_pads[pad];
+   (void)joypad; /* maybe unused */
+
+   switch (action)
+   {
+#if SDL_SUPPORTS_SENSORS
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         if (SDL_GameControllerHasSensor(joypad->controller, SDL_SENSOR_GYRO))
+            return !SDL_GameControllerSetSensorEnabled(joypad->controller, SDL_SENSOR_GYRO,
+                  action == RETRO_SENSOR_GYROSCOPE_ENABLE);
+         else
+            return false;
+
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         if (SDL_GameControllerHasSensor(joypad->controller, SDL_SENSOR_ACCEL))
+            return !SDL_GameControllerSetSensorEnabled(joypad->controller, SDL_SENSOR_ACCEL,
+                  action == RETRO_SENSOR_ACCELEROMETER_ENABLE);
+         else
+            return false;
+#endif
+
+      default:
+         return false;
+   }
+   return false;
+}
+
+static bool sdl_joypad_get_sensor_input(unsigned pad, unsigned id, float *value)
+{
+#if SDL_SUPPORTS_SENSORS
+   sdl_joypad_t *joypad = (sdl_joypad_t*)&sdl_pads[pad];
+   SDL_SensorType sensor_type;
+   float sensor_data[3];
+
+   if (!joypad->controller)
+      return false;
+
+   if ((id >= RETRO_SENSOR_ACCELEROMETER_X) && (id <= RETRO_SENSOR_ACCELEROMETER_Z))
+      sensor_type = SDL_SENSOR_ACCEL;
+   else if ((id >= RETRO_SENSOR_GYROSCOPE_X) && (id <= RETRO_SENSOR_GYROSCOPE_Z))
+      sensor_type = SDL_SENSOR_GYRO;
+   else
+      return false;
+
+   if (SDL_GameControllerGetSensorData(joypad->controller, sensor_type, sensor_data, 3) < 0)
+      return false;
+
+   switch (id)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_X:
+         *value = sensor_data[0] / SDL_STANDARD_GRAVITY;
+         break;
+      case RETRO_SENSOR_ACCELEROMETER_Y:
+         *value = sensor_data[2] / SDL_STANDARD_GRAVITY;
+         break;
+      case RETRO_SENSOR_ACCELEROMETER_Z:
+         *value = sensor_data[1] / SDL_STANDARD_GRAVITY;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_X:
+         *value = sensor_data[0];
+         break;
+      case RETRO_SENSOR_GYROSCOPE_Y:
+         *value = -sensor_data[2];
+         break;
+      case RETRO_SENSOR_GYROSCOPE_Z:
+         *value = sensor_data[1];
+         break;
+   }
+
+   return true;
+#else
+   return false;
+#endif
+}
+
 static bool sdl_joypad_query_pad(unsigned pad)
 {
    return pad < MAX_USERS && sdl_pads[pad].joypad;
@@ -568,8 +650,8 @@ input_device_driver_t sdl_joypad = {
    NULL, /* set_rumble */
 #endif
    NULL, /* set_rumble_gain */
-   NULL, /* set_sensor_state */
-   NULL, /* get_sensor_input */
+   sdl_joypad_set_sensor_state,
+   sdl_joypad_get_sensor_input,
    sdl_joypad_name,
 #ifdef HAVE_SDL2
    "sdl2",

@@ -143,7 +143,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Kiosk Kipini Devre Dışı Bırak (Yeniden başlatılmalı)"
+   "Kiosk Kipini Devre Dışı Bırak"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -3302,7 +3302,7 @@ MSG_HASH(
 #ifdef ANDROID
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Fiziksel klavyeyi seçin"
+   "Fiziksel Klavye Seç"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
@@ -3378,8 +3378,24 @@ MSG_HASH(
    "Analog Hassasiyeti"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "İvmeölçer Hassasiyeti"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "Jiroskop Hassasiyeti"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Analog çubukların hassasiyetini ayarlayın."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "İvmeölçerin hassasiyetini ayarlayın."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+  "Jiroskopun hassasiyetini ayarlayın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3609,6 +3625,62 @@ MSG_HASH(
    "Hem menü hem de oyun için aynı kontrolcüleri kullan. Klavyeye uygulanır."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   "Menü Tamam & İptal Düğmeleri Değişimi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   "TAMAM/İptal için düğmeleri değiştirin. Devre dışı bırakılınca, Japonya düğme yönüne geçer, etkinleştirilirse Batı düğme yönüne geçer."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "Menü Kaydırma Düğmelerini Değiştir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "Kaydırmak için düğmeleri değiştirin. Devre dışı olduğunda, L/R ile 10 ögeyi ve L2/R2 ile alfabetik olarak kaydırır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   "Tüm Kullanıcılar Menüyü Kontrol Eder"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "Her kullanıcının menüyü kontrol etmesine izin verir. Devre dışı bırakılırsa, menüyü yalnızca Kullanıcı 1 kontrol edebilir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "Tek Tıklamalı Oynatma Listeleri"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "Oynatma listesi girişlerini başlatırken 'Çalıştır' menüsünü atla. 'Çalıştır' menüsüne erişmek için TAMAM tuşunu basılı tutarken D-Pad'e basın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "Sekmelerden Geri Dönmeye İzin Ver"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "Geri tuşuna basıldığında sekmelerden/kenar çubuğundan Ana Menüye dönülür."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   "Menü Kaydırma Hızlandırıcı"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   "Kaydırmak için bir yön tutarken imlecin azami hızı."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Menü Kaydırma Gecikmesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "Kaydırmak için bir yön tutarken milisaniye cinsinden ilk gecikme."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
    "Bilgi Düğmesini Devre Dışı Bırak"
    )
@@ -3639,30 +3711,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "Menü sağ analog çubuk girişini engelle. Sağ analog çubuk, oynatma listelerindeki küçük resimleri döndürür."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Menü Tamam & İptal Düğmeleri Değişimi"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "TAMAM/İptal için düğmeleri değiştirin. Devre dışı bırakılınca, Japonya düğme yönüne geçer, etkinleştirilirse Batı düğme yönüne geçer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Menü Kaydırma Düğmelerini Değiştir"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
-   "Kaydırmak için düğmeleri değiştirin. Devre dışı olduğunda, L/R ile 10 ögeyi ve L2/R2 ile alfabetik olarak kaydırır."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
-   "Tüm Kullanıcılar Menüyü Kontrol Eder"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "Her kullanıcının menüyü kontrol etmesine izin verir. Devre dışı bırakılırsa, menüyü yalnızca Kullanıcı 1 kontrol edebilir."
    )
 
 /* Settings > Input > Hotkeys */
@@ -3988,6 +4036,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
    "Mevcut tekrarın kaydını/oynatılmasını durdurur."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Tekrar Kontrol Noktasını Kaydet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Şu anda oynatılan tekrarı kontrol noktasına ekler."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Önceki Tekrar Kontrol Noktası"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Tekrarı, otomatik veya el ile kaydedilen önceki kontrol noktasına geri sarar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Sonraki Tekrar Kontrol Noktası"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Tekrarı bir sonraki otomatik veya el ile kaydedilen kontrol noktasına hızlı ileri sarar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
@@ -4730,6 +4802,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "Tekrar kaydı sırasında oyun durumunu düzenli aralıklarla otomatik olarak kaydeder. Bu, aksi ayarlanmadıkça varsayılan olarak devre dışıdır. Aralık saniye cinsinden ölçülür. 0 değeri, kontrol noktası kaydını devre dışı bırakır."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Tekrarlarda saklanan kontrol noktalarının normal oynatma sırasında seri durumdan çıkarılıp çıkarılmayacağı."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Tekrar Kontrol Noktası Seriyi Çöz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Tekrarlarda saklanan kontrol noktalarının normal oynatma sırasında seri durumdan çıkarılıp çıkarılmayacağı. Çoğu çekirdek için doğru olarak ayarlanmalıdır, ancak bazıları içerik seri durumdan çıkarılırken sorunlu davranışlar sergileyebilir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -6033,14 +6117,6 @@ MSG_HASH(
 /* Settings > User Interface */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   "Menü Ögesi Görünürlüğü"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-   "RetroArch menü ögelerinin görünürlüğünü değiştirin."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "Görünüm"
    )
@@ -6049,23 +6125,61 @@ MSG_HASH(
    "Menü ekranı görünüm ayarlarını düzenle."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
-   "Uygulama Simgesi"
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "Menü Ögesi Görünürlüğü"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   "Uygulama Simgesini Değiştir"
-   )
-#ifdef _3DS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
-   "3DS Alt Ekran Görünümü"
+   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   "RetroArch menü ögelerinin görünürlüğünü değiştirin."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
-   "Alt ekran görünüm ayarlarını değiştirin."
+   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+   "Menü Etkinken İçeriği Duraklat"
    )
-#endif
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+   "Menü etkinse içeriği duraklatır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+   "Etkin Değilken İçeriği Duraklat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   "RetroArch etkin pencere olmadığında içeriği duraklat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "İçeriği Kapatırken Çık"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "İçeriği kapatırken RetroArch'tan otomatik olarak çıkın. 'CLI' yalnızca içerik komut satırı aracılığıyla başlatıldığında çıkar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "Durum Kayıtlarını Kullandıktan Sonra İçeriğe Devam Et"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   "Bir durumu kaydettikten veya yükledikten sonra menüyü otomatik olarak kapatın ve içeriği sürdürün. Bunu devre dışı bırakmak, çok yavaş cihazlarda durum kaydı performansını artırabilir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "Diskleri Değiştirdikten Sonra İçeriğe Devam Et"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   "Yeni bir disk aktardıktan veya taktıktan sonra menüyü otomatik olarak kapatın ve içeriği sürdürün."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   "Gezinti Sarmalı"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+   "Liste sınırına yatay veya dikey olarak ulaşılırsa, baştan sona veya sona doğru kaydırın."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    "Gelişmiş Ayarları Göster"
@@ -6091,44 +6205,28 @@ MSG_HASH(
    "Kiosk kipini etkinleştirirken bir parola girilir, Ana Menü'ye gidip Kiosk Kipini Devre Dışı Bırak'ı seçip parolayı girerek daha sonra menüden devre dışı bırakmayı mümkün kılar."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   "Gezinti Sarmalı"
+   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
+   "Fare Desteği"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "Liste sınırına yatay veya dikey olarak ulaşılırsa, baştan sona veya sona doğru kaydırın."
+   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+   "Menünün bir fare ile kontrol edilmesini sağlar."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-   "Menü Etkinken İçeriği Duraklat"
+   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
+   "Dokunmatik Desteği"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Menü etkinse içeriği duraklatır."
+   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+   "Menünün dokunmatik ekranla kontrol edilmesini sağlar."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Durum Kayıtlarını Kullandıktan Sonra İçeriğe Devam Et"
+   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   "Baskın Görevler"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "Bir durumu kaydettikten veya yükledikten sonra menüyü otomatik olarak kapatın ve içeriği sürdürün. Bunu devre dışı bırakmak, çok yavaş cihazlarda durum kaydı performansını artırabilir."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Diskleri Değiştirdikten Sonra İçeriğe Devam Et"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
-   "Yeni bir disk aktardıktan veya taktıktan sonra menüyü otomatik olarak kapatın ve içeriği sürdürün."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
-   "İçeriği Kapatırken Çık"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   "İçeriği kapatırken RetroArch'tan otomatik olarak çıkın. 'CLI' yalnızca içerik komut satırı aracılığıyla başlatıldığında çıkar."
+   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   "Görevleri ayrı bir iş parçacığında gerçekleştirin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
@@ -6167,38 +6265,6 @@ MSG_HASH(
    "Menü ekran koruyucu animasyon efektinin hızını ayarlayın."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-   "Fare Desteği"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "Menünün bir fare ile kontrol edilmesini sağlar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-   "Dokunmatik Desteği"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "Menünün dokunmatik ekranla kontrol edilmesini sağlar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "Baskın Görevler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   "Görevleri ayrı bir iş parçacığında gerçekleştirin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   "Etkin Değilken İçeriği Duraklat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   "RetroArch etkin pencere olmadığında içeriği duraklat."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    "Masaüstü Bileşimi Devre Dışı Bırak"
    )
@@ -6209,22 +6275,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
    "Kompozisyonu zorla devre dışı bırakın. Devre dışı bırakma şimdilik yalnızca Windows Vista/7'de geçerlidir."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Menü Kaydırma Hızlandırıcı"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-   "Kaydırmak için bir yön tutarken imlecin azami hızı."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Menü Kaydırma Gecikmesi"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   "Kaydırmak için bir yön tutarken milisaniye cinsinden ilk gecikme."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -6245,6 +6295,24 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "Başlangıçta Masaüstü Menüsünü Aç"
+   )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+   "3DS Alt Ekran Görünümü"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+   "Alt ekran görünüm ayarlarını değiştirin."
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Uygulama Simgesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Uygulama Simgesini Değiştir"
    )
 
 /* Settings > User Interface > Menu Item Visibility */
@@ -7085,6 +7153,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "Sadece Ana Menü ve Ayarlar İçin"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "Başlangıç Sayfası"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "Başlangıçta ilk menü sayfası."
+   )
 
 /* Settings > AI Service */
 
@@ -7452,10 +7528,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    "Güneydoğu Asya"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "Doğu Asya (Chuncheon, Güney Kore)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
@@ -9874,20 +9946,20 @@ MSG_HASH(
    "Mevcut yüklü ön ayara bu ön ayarı ekleyin."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Ön Ayarı Kaydet"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Öntanımları Yönet"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Mevcut gölgelendirici ön ayarını kaydet."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "Gölgelendirici ön ayarlarını kaydedin veya kaldırın."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Ön Ayarı Kaldır"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Etkin Ön Ayar Dosyası"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Belirli bir türdeki gölgelendirici hazır ayarlarını kaldır."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Şu anda kullanılan gölgelendirici ön ayarı."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9946,21 +10018,25 @@ MSG_HASH(
    "Bu geçiş için ölçeklendirin. Ölçek etkeni birikir, yani ilk geçiş için 2x ve ikinci geçiş için 2x toplam ölçeğin 4 katını verir.\nSon geçiş için bir ölçek etkeni varsa sonuç, Çift Doğrusal Filtreleme ayarına bağlı olarak varsayılan filtreyle ekrana uzatılır Video ayarları altında.\n'Varsayılan' ayarlanırsa, son geçiş olup olmamasına bağlı olarak 1x ölçekleme veya tam ekrana genişletme kullanılır."
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Basit Hazır Ayarlar"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Yüklenen orijinal ön ayara bir bağlantı içeren ve yalnızca yaptığınız parametre değişikliklerini içeren bir gölgelendirici ön ayarını kaydeder."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Mevcut Ön Ayarı Kaydet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Mevcut gölgelendirici ön ayarını kaydet."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Gölgelendirici Hazır Ayarını Farklı Kaydet"
+   "Ön Ayarı Farklı Kaydet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9998,9 +10074,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Mevcut gölgelendirici ayarlarını içerik için varsayılan ayarlar olarak kaydedin."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Otomatik Gölgelendirici Hazır Ayarı Bulunamadı"
@@ -11534,7 +11607,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Ayarlar Sekmesini Etkinleştir (Yeniden başlatılmalı)"
+   "Ayarlar Sekmesini Etkinleştir"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -13449,6 +13522,14 @@ MSG_HASH(
    "%.*s giriş cihazlarıyla birlikte katıldı %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d oyuncu"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d oyuncu (%d izleyici)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Diğer eş RetroArch çalıştırmadığı veya RetroArch'ın eski bir sürümünü çalıştırdığı için bir netplay bağlantı girişimi başarısız oldu."
    )
@@ -14010,6 +14091,10 @@ MSG_HASH(
    "İçerik yükleme başarısız."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Oynatma listesinden yükleme başarısız."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "Film dosyası yüklenemedi."
    )
@@ -14168,6 +14253,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
    "Yanlış zaman çizelgesi; kaydın üzerine yazılması"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
+   "Geri Sar"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
+   "Geri Sarma Başarısız"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
+   "İleri Sar"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
+   "İleri Sarma Başarısız"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME,
+   "Sarma Tamamlandı"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME_FAILED,
+   "Sarma Başarısız"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -15088,6 +15197,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    "RetroAchievements medyayı değiştiremedi: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "RetroAchievements giriş süresi doldu. Lütfen şifrenizi tekrar girin ve oyunu yeniden yükleyin."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

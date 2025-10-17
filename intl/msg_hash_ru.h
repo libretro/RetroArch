@@ -147,7 +147,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Отключить режим киоска (требуется перезапуск)"
+   "Отключить режим киоска"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -3398,8 +3398,24 @@ MSG_HASH(
    "Чувствительность аналогового ввода"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Чувствительность акселерометра"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "Чувствительность гироскопа"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Настройка чувствительности аналоговых стиков."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Настройка чувствительности акселерометра."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+  "Настройка чувствительности гироскопа."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3629,6 +3645,62 @@ MSG_HASH(
    "Использовать одни элементы управления для меню и игр. Применяется для клавиатуры."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   "Поменять кнопки OK и Отмена"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   "Меняет местами кнопки OK/Отмена. При отключении действует японская раскладка, при включении - западная."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "Поменять кнопки прокрутки меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "Меняет местами кнопки скроллинга. L/R для перехода по алфавиту, L2/R2 для прокрутки по 10 элементов."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   "Все пользователи управляют меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "Разрешать всем пользователям управлять меню. Если откл., управление меню доступно только для Игрока 1."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "Плейлисты с одним нажатием"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "Пропускать меню запуска при открытии записей плейлиста. Для доступа к меню запуска нажмите D-Pad, удерживая OK."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "Разрешить возврат с вкладок"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "Возврат в главное меню с вкладок/боковой панели по нажатию Назад."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   "Ускорение прокрутки меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   "Максимальная скорость курсора при удержании прокрутки."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Задержка прокрутки меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "Начальная задержка в миллисекундах при удержании направления прокрутки."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
    "Отключить кнопку описания"
    )
@@ -3659,30 +3731,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "Отключает правый аналоговый стик в меню. Отклонения стика переключают миниатюры в плейлистах."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Поменять кнопки OK и Отмена"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "Меняет местами кнопки OK/Отмена. При отключении действует японская раскладка, при включении - западная."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Поменять кнопки прокрутки меню"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
-   "Меняет местами кнопки скроллинга. L/R для перехода по алфавиту, L2/R2 для прокрутки по 10 элементов."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
-   "Все пользователи управляют меню"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "Разрешать всем пользователям управлять меню. Если откл., управление меню доступно только для Игрока 1."
    )
 
 /* Settings > Input > Hotkeys */
@@ -4008,6 +4056,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
    "Останавливает запись/воспроизведение текущего повтора."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Создать контрольную точку повтора"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Добавляет контрольную точку для текущего повтора."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Предыдущая контрольная точка повтора"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Возвращает повтор к предыдущей контрольной точке, сделанной автоматически или вручную."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Следующая контрольная точка повтора"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Ускоряет повтор до следующей контрольной точки, сделанной автоматически или вручную."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
@@ -4750,6 +4822,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "Автоматически сохраняет состояние игры через равные интервалы при записи повтора. По умолчанию отключено, если не переопределено другими настройками. Интервал измеряется в секундах. Значение 0 отключает запись контрольных точек."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Производит десериализацию контрольных точек в повторах при стандартном воспроизведении."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Десериализация контрольных точек повторов"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Производит десериализацию контрольных точек в повторах при стандартном воспроизведении. Должно быть включено для большинства ядер, но может влиять на стабильность отдельных ядер при десериализации контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -6057,14 +6141,6 @@ MSG_HASH(
 /* Settings > User Interface */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   "Видимые элементы меню"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-   "Настройка отображаемых строк меню RetroArch."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "Оформление"
    )
@@ -6073,23 +6149,61 @@ MSG_HASH(
    "Настройка внешнего вида меню."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
-   "Значок приложения"
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "Видимые элементы меню"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   "Выбор иконки приложения."
-   )
-#ifdef _3DS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
-   "Отображение нижнего экрана 3DS"
+   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   "Настройка отображаемых строк меню RetroArch."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
-   "Настройки внешнего вида нижнего экрана."
+   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+   "Пауза при вызове меню"
    )
-#endif
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+   "Приостанавливать контент при вызове меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+   "Пауза при потере фокуса"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   "Приостанавливать контент при потере фокуса окна RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "Выход при закрытии контента"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "Автоматически закрывать RetroArch при остановке контента. Интерфейс командной строки будет закрыт только если контент был запущен через него."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "Возобновлять контент после сохранения"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   "Автоматически закрывать меню и возобновлять контент после сохранения или загрузки состояния. Отключение настройки повышает скорость сохранения для слабых устройств."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "Возобновлять контент при смене диска"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   "Автоматически закрывать меню и возобновлять контент, если был вставлен или загружен новый диск."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   "Циклическая прокрутка"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+   "Переходить в начало/конец списка, если достигнута горизонтальная или вертикальная граница."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    "Расширенные настройки"
@@ -6115,44 +6229,28 @@ MSG_HASH(
    "Если режим киоска включен, установка пароля позволяет отключить его из меню. Для этого выберите в главном меню 'Отключить режим киоска' и введите пароль."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   "Циклическая прокрутка"
+   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
+   "Поддержка мыши"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "Переходить в начало/конец списка, если достигнута горизонтальная или вертикальная граница."
+   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+   "Включает навигацию в меню с помощью мыши."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-   "Пауза при вызове меню"
+   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
+   "Поддержка касаний"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Приостанавливать контент при вызове меню."
+   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+   "Включает навигацию в меню с помощью тачскрина."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Возобновлять контент после сохранения"
+   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   "Отдельный поток для задач"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "Автоматически закрывать меню и возобновлять контент после сохранения или загрузки состояния. Отключение настройки повышает скорость сохранения для слабых устройств."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Возобновлять контент при смене диска"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
-   "Автоматически закрывать меню и возобновлять контент, если был вставлен или загружен новый диск."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
-   "Выход при закрытии контента"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   "Автоматически закрывать RetroArch при остановке контента. Интерфейс командной строки будет закрыт только если контент был запущен через него."
+   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   "Выполнять задачи в отдельном потоке."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
@@ -6191,38 +6289,6 @@ MSG_HASH(
    "Настройка скорости эффекта анимации заставки."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-   "Поддержка мыши"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "Включает навигацию в меню с помощью мыши."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-   "Поддержка касаний"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "Включает навигацию в меню с помощью тачскрина."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "Отдельный поток для задач"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   "Выполнять задачи в отдельном потоке."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   "Пауза при потере фокуса"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   "Приостанавливать контент при потере фокуса окна RetroArch."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    "Отключить композицию рабочего стола"
    )
@@ -6233,22 +6299,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
    "Принудительное отключение композиции. В настоящее время работает только в Windows Vista/7."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Ускорение прокрутки меню"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-   "Максимальная скорость курсора при удержании прокрутки."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Задержка прокрутки меню"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   "Начальная задержка в миллисекундах при удержании направления прокрутки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -6269,6 +6319,24 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "Открывать меню рабочего стола при запуске"
+   )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+   "Отображение нижнего экрана 3DS"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+   "Настройки внешнего вида нижнего экрана."
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Значок приложения"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Выбор иконки приложения."
    )
 
 /* Settings > User Interface > Menu Item Visibility */
@@ -7109,6 +7177,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "Только для главного меню и настроек"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "Начальный экран"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "Стартовая страница меню при запуске."
+   )
 
 /* Settings > AI Service */
 
@@ -7476,10 +7552,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    "Юго-Восточная Азия"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "Восточная Азия (Чхунчхон, Южная Корея)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
@@ -9894,20 +9966,20 @@ MSG_HASH(
    "Добавляет пресет после загруженного."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Сохранить пресет"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Управление пресетами"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Сохраняет текущий пресет шейдера."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "Сохранить или удалить пресеты шейдеров."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Удалить пресет"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Активный файл пресета"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Удаляет автоматический пресет шейдера."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Текущий используемый пресет шейдера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9966,21 +10038,25 @@ MSG_HASH(
    "Масштаб текущего прохода. Коэф. масштабирования суммируются, напр. 2x для 1-го прохода и 2x для 2-го в сумме дают множитель 4x.\nПри наличии коэф. в последнем проходе результат растягивается на весь экран с фильтром по умолчанию, согласно значению 'Билинейная фильтрация' в настро[...]"
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Простые пресеты"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Сохранять пресеты шейдеров в виде ссылки на оригинальный пресет с набором параметров, изменённых пользователем."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Сохранить текущий пресет"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Сохраняет текущий пресет шейдера."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Сохранить пресет шейдера как"
+   "Сохранить пресет как"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -10018,9 +10094,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Сохранить текущие настройки шейдера в качестве стандартных для загруженного контента."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Автоматические пресеты шейдеров не найдены"
@@ -11542,7 +11615,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Включить вкладку 'Настройки' (требуется перезапуск)"
+   "Включить вкладку 'Настройки'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -13401,6 +13474,14 @@ MSG_HASH(
    "%.*s подключился с устройствами ввода %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d игрок(ов)"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d игрок(ов) (%d наблюдают)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Попытка соединения не удалась, т.к. на стороне peer'а не запущен RetroArch или используется устаревшая версия."
    )
@@ -13962,6 +14043,10 @@ MSG_HASH(
    "Не удалось загрузить контент."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Не удалось загрузить из плейлиста."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "Не удалось загрузить файл записи."
    )
@@ -14120,6 +14205,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
    "Ошибка хронологии; перезапись повтора"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
+   "Переход назад"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
+   "Переход назад не удался"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
+   "Переход вперёд"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
+   "Переход вперёд не удался"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME,
+   "Переход завершён"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME_FAILED,
+   "Переход не удался"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -15040,6 +15149,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    "RetroAchievements: не удалось сменить медиа: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "Срок действия входа в RetroAchievements истёк. Пожалуйста, введите пароль снова и перезагрузите игру."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

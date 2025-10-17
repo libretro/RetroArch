@@ -38,7 +38,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   "Xogo en Rede"
+   "Xogo en Rede (Netplay)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
@@ -147,7 +147,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Desactivar o modo de quiosco (requírese reiniciar)"
+   "Desactivar o modo quiosco"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -163,7 +163,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
-   "Xogo en Rede"
+   "Xogo en Rede (Netplay)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
@@ -1663,7 +1663,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
-   "Controlador OpenGL 3.x. Este controlador permite que os núcleos de libretro GL se utilicen ademais dos núcleos renderizados por software. Versión mínima necesaria: OpenGL 3.2 ou OpenGLES 3.0+. Admite o formato Slang Shader."
+   "Controlador OpenGL 3.x. Este controlador permite que os núcleos de libretro GL se utilicen ademais dos núcleos renderizados por soporte lóxico. Versión mínima necesaria: OpenGL 3.2 ou OpenGLES 3.0+. Admite o formato Sombreador Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
@@ -1679,7 +1679,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
-   "Controlador de metal para plataformas Apple. Admite o formato Slang Shader."
+   "Controlador Metal para plataformas Apple. Soporta o formato de sombreadores Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
@@ -1687,11 +1687,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
-   "Controlador Direct3D 9 con soporte para o antigo formato Cg Shader."
+   "Controlador Direct3D 9 con soporte para o antigo formato Sombreador Cg."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
-   "Controlador direct3D 9 con soporte para o formato shader HLSL."
+   "Controlador direct3D 9 con soporte para o formato sombreador HLSL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
@@ -1699,11 +1699,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
-   "Controlador Direct3D 11 con soporte para HDR e o formato Slang Shader."
+   "Controlador Direct3D 11 con soporte para HDR e o formato Sombreador Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
-   "Controlador Direct3D 12 con soporte para HDR e o formato Slang Shader."
+   "Controlador Direct3D 12 con soporte para HDR e o formato Sombreador Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
@@ -1727,11 +1727,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
-   "Controlador de Wii U. Admite slang shaders."
+   "Controlador de Wii U. Admite sombreadores slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
-   "Cambiar controlador. Admite o formato de sombreado GLSL."
+   "Cambiar controlador. Admite o formato de sombreador GLSL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
@@ -2008,7 +2008,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
-   "Subcadros de sombreadores"
+   "Subfotogramas de sombreadores"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
@@ -2016,7 +2016,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   "Insire cadro(s) de sombreado extra entre os fotogramas para os posibles efectos de sombreado que estean deseñados para executarse máis rápido que a taxa de contido. Use só a opción designada para a súa frecuencia de actualización da pantalla actual. Non debe usarse con frecuencias de actualización que non sexan múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. Non combine con Intervalo de intercambio > 1, BFI, Retraso de fotogramas ou Sincronización con frecuencia de fotogramas de contido [...]"
+   "Insire fotograma(s) de sombreado extra entre os fotogramas para os posibles efectos de sombreado que estean deseñados para executarse máis rápido que a taxa de contido. Use só a opción designada para a súa frecuencia de actualización da pantalla actual. Non debe usarse con frecuencias de actualización que non sexan múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. Non combine con Intervalo de intercambio > 1, BFI, Retraso de fotogramas ou Sincronización con frecuencia de fotogramas de cont[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -3270,7 +3270,7 @@ MSG_HASH(
 #ifdef ANDROID
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Seleccione o teclado físico"
+   "Seleccionar teclado físico"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
@@ -3338,8 +3338,24 @@ MSG_HASH(
    "Sensibilidade analóxica"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Sensibilidade do acelerómetro"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "Sensibilidade do xiroscopio"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Axusta a sensibilidade dos sticks analóxicos."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Axustar a sensibilidade do acelerómetro."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+  "Axustar a sensibilidade do xiroscopio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3460,11 +3476,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
-   "Permitir direccións do D-Pad no Turbo"
+   "Permitir direccións da cruceta no Turbo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
-   "Se está activado, as entradas direccionais dixitais (tamén coñecidas como D-Pad ou 'hatswitch') poden usar o turbo."
+   "Se está activado, as entradas direccionais dixitais (tamén coñecidas como cruceta, D-Pad ou 'hatswitch') poden usar o turbo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -3569,6 +3585,62 @@ MSG_HASH(
    "Usa os mesmos controis tanto para o menú como para o xogo. Aplícase ao teclado."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   "Botóns Intercambiar menú Aceptar e Cancelar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   "Cambiar os botóns para Aceptar/Cancelar. Desactivada é a orientación do botón xaponés, activada é a orientación occidental."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "Botóns de desprazamento de cambio de menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "Intercambiar botóns para desprazarse. Desactivado despraza 10 elementos con L/R e alfabeticamente con L2/R2."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   "Menú de control de todos os usuarios"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "Permitir a calquera usuario controlar o menú. Se está desactivado, só o usuario 1 pode controlar o menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "Listas de reprodución cun só clic"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "Omitir o menú 'Executar' ao iniciar entradas de lista de reprodución. Preme a cruceta e ACEPTAR a vez para acceder ao menú 'Executar'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "Permitir voltar desde lapelas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "Volver ao menú principal desde lapelas/barra lateral ao premer Volver."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   "Aceleración de desprazamento do menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   "Velocidade máxima do cursor ao manter unha dirección para desprazarse."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Retraso de desprazamento do menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "Atraso inicial en milisegundos ao manter unha dirección para desprazarse."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
    "Desactivar o botón de información"
    )
@@ -3599,30 +3671,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "Impedir a entrada do stick analóxico dereito no menú. O stick analóxico dereito percorre as miniaturas nas listas de reprodución."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Botóns Intercambiar menú Aceptar e Cancelar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "Cambiar os botóns para Aceptar/Cancelar. Desactivada é a orientación do botón xaponés, activada é a orientación occidental."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Botóns de desprazamento de cambio de menú"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
-   "Intercambiar botóns para desprazarse. Desactivado despraza 10 elementos con L/R e alfabeticamente con L2/R2."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
-   "Menú de control de todos os usuarios"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "Permitir a calquera usuario controlar o menú. Se está desactivado, só o usuario 1 pode controlar o menú."
    )
 
 /* Settings > Input > Hotkeys */
@@ -3861,7 +3909,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
-   "Seguinte Shader"
+   "Seguinte Sombreador"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
@@ -3869,7 +3917,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
-   "Shader anterior"
+   "Sombreador anterior"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
@@ -3948,6 +3996,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
    "Detén a gravación/reprodución da reprodución actual."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Gardar punto de control da repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Garda un punto de control na repetición que se está a reproducir actualmente."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Punto de control de repetición anterior"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Rebobina a repetición ata o punto de control anterior gardado automáticamente ou manualmente."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Punto de control de repetición seguinte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Avanza rapidamente a repetición ata o seguinte punto de control gardado automáticamente ou manualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
@@ -4129,7 +4201,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "Use o stick analóxico especificado para a entrada de D-Pad. Os modos \"forzados\" anulan a entrada analóxica nativa principal."
+   "Use o stick analóxico especificado para a entrada da cruceta. Os modos \"forzados\" anulan a entrada analóxica nativa principal."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
@@ -4337,19 +4409,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
-   "Arma D-Pad arriba"
+   "Arma cruceta arriba"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
-   "Arma D-Pad abaixo"
+   "Arma cruceta abaixo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
-   "Arma D-Pad esquerda"
+   "Arma cruceta esquerda"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
-   "Arma D-Pad dereita"
+   "Arma cruceta dereita"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
@@ -4614,7 +4686,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-   "Cargar presets de Shader automaticamente"
+   "Cargar predefinidos de Sombreadores automaticamente"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
@@ -4690,6 +4762,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "Garda automaticamente o estado do xogo durante a gravación da repetición nun intervalo regular. Esta opción está desactivada por defecto a non ser que se estableza o contrario. O intervalo mídese en segundos. Un valor de 0 desactiva a gravación do punto de control."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Indica se se debe deserializar os puntos de control gardados nas repeticións durante a súa reprodución."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Deserialización de puntos de control da repetición"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Indica se se debe deserializar os puntos de control gardados nas repeticións durante a reprodución normal. Debe estar activado para a maioría dos núcleos, pero algúns poden comportarse de forma inestable ao deserializar contido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -5276,7 +5360,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
-   "Sensibilidade diagonal D-Pad"
+   "Sensibilidade diagonal da cruceta"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
@@ -5308,7 +5392,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
-   "Preferir cargar as superposicións en función do nome do sistema antes de recorrer á predefinición predeterminada. Será ignorado se se establece unha sobrecarga para a predefinición da superposición."
+   "Preferir cargar as superposicións baseadas no nome do sistema antes de recorrer ao predefinido por defecto. Ignórase se hai un predefinido de superposición configurado como substituto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
@@ -5348,7 +5432,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
-   "Se é compatible coa configuración predeterminada actual, axusta o espazo entre os elementos da IU nas metades esquerda e dereita dunha superposición cando utilices orientacións de visualización horizontal. Os valores positivos aumentan (mentres os negativos diminúen) a separación das dúas metades."
+   "Se o predefinido actual o admite, axusta o espazamento entre os elementos da interface nas mitades esquerda e dereita dunha superposición ao usar orientacións de pantalla horizontal. Valores positivos aumentan a separación, mentres que os negativos a diminúen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
@@ -5356,7 +5440,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
-   "Se é compatible coa configuración predeterminada actual, axusta o espazo entre os elementos da IU nas metades superior e inferior dunha superposición cando utilices orientacións de visualización horizontal. Os valores positivos aumentan (mentres os negativos diminúen) a separación das dúas metades."
+   "Se o predefinido actual o admite, axusta o espazamento entre os elementos da interface nas mitades superior e inferior dunha superposición ao usar orientacións de pantalla horizontal. Valores positivos aumentan a separación, mentres que os negativos a diminúen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
@@ -5396,7 +5480,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
-   "Se se admite a configuración predeterminada actual, axusta o espazo entre os elementos da IU nas metades esquerda e dereita dunha superposición cando utilices orientacións de visualización vertical. Os valores positivos aumentan (mentres os negativos diminúen) a separación das dúas metades."
+   "Se o predefinido actual o admite, axusta o espazamento entre os elementos da interface nas mitades esquerda e dereita dunha superposición ao usar orientacións de pantalla vertical. Valores positivos aumentan a separación, mentres que os negativos a diminúen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
@@ -5404,7 +5488,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
-   "Se é compatible coa configuración predeterminada actual, axusta o espazo entre os elementos da IU nas metades superior e inferior dunha superposición cando utilices orientacións de visualización vertical. Os valores positivos aumentan (mentres os negativos diminúen) a separación das dúas metades."
+   "Se o predefinido actual o admite, axusta o espazamento entre os elementos da interface nas mitades superior e inferior dunha superposición ao usar orientacións de pantalla vertical. Valores positivos aumentan a separación, mentres que os negativos a diminúen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
@@ -5969,14 +6053,6 @@ MSG_HASH(
 /* Settings > User Interface */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   "Visibilidade dos elementos do menú"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-   "Alterna a visibilidade dos elementos do menú en RetroArch."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "Aparencia"
    )
@@ -5985,23 +6061,57 @@ MSG_HASH(
    "Cambiar a configuración da aparencia da pantalla do menú."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
-   "Icona da aplicación"
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "Visibilidade dos elementos do menú"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   "Cambiar icona da app."
-   )
-#ifdef _3DS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
-   "Aspecto da pantalla inferior 3DS"
+   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   "Alterna a visibilidade dos elementos do menú en RetroArch."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
-   "Cambiar a configuración da aparencia da pantalla inferior."
+   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+   "Pausa o contido cando o menú estea activo"
    )
-#endif
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+   "Pausar o contido se o menú está activo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+   "Pausa o contido cando non está activo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   "Pausa o contido cando RetroArch non é a xanela activa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "Saír ao pechar contido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "Sae automaticamente de RetroArch ao pechar o contido. A 'CLI' só sae cando o contido se inicia a través da liña de comandos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "Retomar o contido despois de usar os estados de gardar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   "Pecha automaticamente o menú e retoma o contido despois de gardar ou cargar un estado. Desactivar isto pode mellorar o rendemento do estado de gardado en dispositivos moi lentos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "Retomar o contido despois de cambiar os discos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   "Pecha automaticamente o menú e retoma o contido despois de inserir ou cargar un novo disco."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   "Navegación envolvente"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    "Amosar axustes avanzados"
@@ -6027,40 +6137,28 @@ MSG_HASH(
    "Ao proporcionar un contrasinal ao activar o modo quiosco fai posible desactivalo posteriormente desde o menú, accedendo ao menú principal, seleccionando Desactivar modo quiosco e introducindo o contrasinal."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   "Navegación envolvente"
+   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
+   "Compatibilidade con rato"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-   "Pausa o contido cando o menú estea activo"
+   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+   "Permitir que o menú se controle cun rato."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Pausar o contido se o menú está activo."
+   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
+   "Soporte táctil"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Retomar o contido despois de usar os estados de gardar"
+   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+   "Permitir que o menú se controle cunha pantalla táctil."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "Pecha automaticamente o menú e retoma o contido despois de gardar ou cargar un estado. Desactivar isto pode mellorar o rendemento do estado de gardado en dispositivos moi lentos."
+   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   "Tarefas en fío"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Retomar o contido despois de cambiar os discos"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
-   "Pecha automaticamente o menú e retoma o contido despois de inserir ou cargar un novo disco."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
-   "Saír ao pechar contido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   "Sae automaticamente de RetroArch ao pechar o contido. A 'CLI' só sae cando o contido se inicia a través da liña de comandos."
+   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   "Realiza tarefas nun fío separado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
@@ -6091,38 +6189,6 @@ MSG_HASH(
    "Axusta a velocidade do efecto de animación do salvapantallas do menú."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-   "Compatibilidade con rato"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "Permitir que o menú se controle cun rato."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-   "Soporte táctil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "Permitir que o menú se controle cunha pantalla táctil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "Tarefas en fío"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   "Realiza tarefas nun fío separado."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   "Pausa o contido cando non está activo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   "Pausa o contido cando RetroArch non é a xanela activa."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    "Desactivar a composición do escritorio"
    )
@@ -6133,22 +6199,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
    "Desactivar forzadamente a composición. A desactivación só é válida en Windows Vista/7 polo momento."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Aceleración de desprazamento do menú"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-   "Velocidade máxima do cursor ao manter unha dirección para desprazarse."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Retraso de desprazamento do menú"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   "Atraso inicial en milisegundos ao manter unha dirección para desprazarse."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
@@ -6165,6 +6215,24 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "Abre o menú Escritorio ao iniciar"
+   )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+   "Aspecto da pantalla inferior 3DS"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+   "Cambiar a configuración da aparencia da pantalla inferior."
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Icona da aplicación"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Cambiar icona da app."
    )
 
 /* Settings > User Interface > Menu Item Visibility */
@@ -6644,11 +6712,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   "Mostrar \"Shaders\""
+   "Mostrar \"Sombreadores\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   "Mostra a opción 'Shaders'."
+   "Mostra a opción 'Sombreadores'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
@@ -6988,6 +7056,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "Só para o menú principal e a configuración"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "Páxina de inicio"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "Páxina de menú inicial ao iniciar."
    )
 
 /* Settings > AI Service */
@@ -7354,10 +7430,6 @@ MSG_HASH(
    "Sueste asiático"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "Asia Oriental (Chuncheon, Corea do Sur)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Personalizado"
    )
@@ -7718,6 +7790,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "Último xogado:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
+   "Contador de partidas:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
@@ -9707,7 +9783,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
-   "Consulta os ficheiros de Shader para ver os cambios"
+   "Consulta os ficheiros de Sombreadores para ver os cambios"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
@@ -9723,19 +9799,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "Abre o Explorador de ficheiros no último directorio utilizado ao cargar as opcións predeterminadas de sombreadores e pases."
+   "Abrir o explorador de arquivos no último directorio usado ao cargar predefinidos e pasos de sombreado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "Cargar preaxuste"
+   "Cargar predefinido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
-   "Cargar un preset de sombreado. A canalización do sombreado configurarase automaticamente."
+   "Cargar un predefinido de sombreado. A canalización do sombreado configurarase automaticamente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
-   "Carga directamente un preset de sombreado. O menú do sombreador actualízase en consecuencia.\nO factor de escala que se amosa no menú só é fiable se a configuración predeterminada usa métodos de escala sinxelos (é dicir, escala da fonte, mesmo factor de escala para X/Y)."
+   "Carga directamente un predefinido de sombreado. O menú do sombreador actualízase en consecuencia.\nO factor de escala que se amosa no menú só é fiable se a configuración predeterminada usa métodos de escala sinxelos (é dicir, escala da fonte, mesmo factor de escala para X/Y)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
@@ -9754,20 +9830,20 @@ MSG_HASH(
    "Engadir preselección ao predefinido cargado actualmente."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Gardar preaxuste"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Xestionar predefinidos"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Garda a configuración predeterminada do sombreador actual."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "Garda ou elimina predefinidos de sombreador."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Eliminar predefinido"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Arquivo de predefinido activo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Eliminar un predefinido de sombreado automático."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "O predefinido de sombreador actualmente en uso."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9826,25 +9902,29 @@ MSG_HASH(
    "Escala para este pase. O factor de escala acumúlase, é dicir, 2x para o primeiro pase e 2x para o segundo pase, dará unha escala total de 4x.\nSe hai un factor de escala para o último pase, o resultado amplíase á pantalla co filtro predeterminado, dependendo da configuración de Filtrado bilineal. en Configuración de vídeo.\nSe se define como \"Predeterminado\", utilizarase a escala 1x ou a extensión a pantalla completa, dependendo de se non é a última pasada ou non."
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   "Presets simples"
+   "Predefinidos simples"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   "Garda un preset de sombreado que ten unha ligazón ao preset orixinal cargado e inclúe só os cambios de parámetro que fixeches."
+   "Garda un predefinido de sombreado que ten unha ligazón ao predefinido orixinal cargado e inclúe só os cambios de parámetro que fixeches."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Gardar predefinido actual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Garda o predefinido de sombreador actual."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Gardar sombreado predefinido como"
+   "Gardar predefinido como"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Garda a configuración actual do sombreador como un novo sombreador predefinido."
+   "Garda a configuración actual do sombreador como un novo predefinido de sombreador."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
@@ -9872,18 +9952,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
-   "Gardar xogo predefinido"
+   "Gardar predefinido de xogo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Garda a configuración actual do sombreador como a configuración predeterminada para o contido."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
-   "Non se atoparon presets de sombreadores automáticos"
+   "Non se atoparon predefinidos de sombreadores automáticos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
@@ -9899,7 +9976,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
-   "Elimina a configuración predeterminada do núcleo, utilizada por todo o contido executado co núcleo cargado actualmente."
+   "Eliminar o predefinido do núcleo, utilizada por todo o contido executado co núcleo cargado actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
@@ -9907,15 +9984,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-   "Elimina a configuración predeterminada do directorio de contido, utilizada por todo o contido do directorio de traballo actual."
+   "Eliminar o predefinido do directorio de contido, utilizada por todo o contido do directorio de traballo actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
-   "Eliminar xogo predefinido"
+   "Eliminar predefinido de xogo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
-   "Elimina o xogo predefinido, usado só para o xogo específico en cuestión."
+   "Elimina o predefinido de xogo, usado só para o xogo específico en cuestión."
    )
 
 /* Quick Menu > Shaders > Shader Parameters */
@@ -11330,7 +11407,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Activar a pestana Configuración (requírese reiniciar)"
+   "Activar lapela de configuración"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -12686,19 +12763,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
-   "Modifica a configuración predeterminada do sombreador que se usa actualmente no menú."
+   "Modifica o predefinido de sombreado actualmente usado no menú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
-   "Preaxuste do sombreado"
+   "Predefinido de sombreado"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
-   "Preaxuste do sombreado"
+   "Predefinido de sombreado"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
-   "Preaxuste do sombreado"
+   "Predefinido de sombreado"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
@@ -13225,6 +13302,14 @@ MSG_HASH(
    "%.*s uniuse cos dispositivos de entrada %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d xogador(es)"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d xogador(es) (%d a observar)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Produciuse un erro nun intento de conexión ao xogo en rede porque o compañeiro non está a executar RetroArch ou está a executar unha versión antiga de RetroArch."
    )
@@ -13723,7 +13808,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_ERROR_SAVING_SHADER_PRESET,
-   "Produciuse un erro ao gardar a configuración predeterminada do sombreador."
+   "Erro ao gardar o predefinido de sombreado."
    )
 MSG_HASH(
    MSG_EXTERNAL_APPLICATION_DIR,
@@ -13772,6 +13857,22 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
    "Produciuse un erro ao obter o apelido do cliente."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD,
+   "Non se puido cargar."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_CONTENT,
+   "Non se puido cargar o contido."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Erro ao cargar desde a lista de reprodución."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "Erro ao cargar o ficheiro de vídeo."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
@@ -13928,6 +14029,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
    "Liña temporal incorrecta; sobrescribindo gravación"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
+   "Retroceder"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
+   "Erro ao retroceder"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
+   "Avanzar"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
+   "Erro ao avanzar"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME,
+   "Reprodución completada"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME_FAILED,
+   "Erro ao reproducir"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -14187,7 +14312,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
-   "Sombreadores: restaurando a configuración predeterminada do sombreador"
+   "Sombreadores: a restaurar o predefinido de sombreado por defecto a"
    )
 MSG_HASH(
    MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
@@ -14271,7 +14396,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
-   "A configuración predeterminada do sombreador gardouse correctamente."
+   "Predefinido de sombreado gardado correctamente."
    )
 MSG_HASH(
    MSG_SLOW_MOTION,
@@ -14891,11 +15016,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
-   "A configuración predeterminada do sombreador eliminouse correctamente."
+   "Predefinido de sombreado eliminado correctamente."
    )
 MSG_HASH(
    MSG_ERROR_REMOVING_SHADER_PRESET,
-   "Produciuse un erro ao eliminar o predefinido do sombreador."
+   "Erro ao eliminar o predefinido de sombreado."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,

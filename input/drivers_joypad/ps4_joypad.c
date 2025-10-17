@@ -130,7 +130,7 @@ static void *ps4_joypad_init(void *data)
 
                   input_autoconfigure_connect(
                         ps4_joypad_name(num_players),
-                        NULL,
+                        NULL, NULL,
                         ps4_joypad.ident,
                         num_players,
                         0,

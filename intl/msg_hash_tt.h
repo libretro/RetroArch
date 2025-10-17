@@ -344,12 +344,12 @@ MSG_HASH(
 
 /* Settings > User Interface */
 
-#ifdef _3DS
-#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
    "Кар"
    )
+#ifdef _3DS
+#endif
 
 /* Settings > User Interface > Menu Item Visibility */
 
@@ -517,13 +517,6 @@ MSG_HASH(
 
 /* Quick Menu > Shaders */
 
-
-/* Quick Menu > Shaders > Save */
-
-
-
-
-/* Quick Menu > Shaders > Remove */
 
 
 /* Quick Menu > Shaders > Shader Parameters */

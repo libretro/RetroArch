@@ -242,7 +242,7 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
 
       input_autoconfigure_connect(
             name_buf,
-            NULL,
+            NULL, NULL,
             "qnx",
             controller->port,
             *controller->vid,

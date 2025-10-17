@@ -431,6 +431,19 @@ bool audioworklet_external_block(void)
 }
 #endif
 
+/* called on program exit */
+void audioworklet_close(void)
+{
+   audioworklet_data_t *audioworklet = audioworklet_static_data;
+
+   if (!audioworklet)
+      return;
+
+   MAIN_THREAD_EM_ASM({
+      emscriptenGetAudioObject($0).close();
+   }, audioworklet->context);
+}
+
 static bool audioworklet_stop(void *data)
 {
    audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;

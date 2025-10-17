@@ -36,6 +36,15 @@
 #include "../../retroarch.h"
 #include "../../tasks/task_content.h"
 #include "../../verbosity.h"
+#include "../../core_info.h"
+
+#if HAVE_SWIFT
+#if TARGET_OS_TV
+#import "RetroArchTV-Swift.h"
+#else
+#import "RetroArch-Swift.h"
+#endif
+#endif
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_setting.h"
@@ -48,7 +57,17 @@
 #import <MetricKit/MXMetricManager.h>
 
 #ifdef HAVE_MFI
+#import <GameController/GameController.h>
 #import <GameController/GCMouse.h>
+#import <GameController/GCMouseInput.h>
+#endif
+
+#ifdef HAVE_KSCRASH
+#import <KSCrash.h>
+#import <KSCrashConfiguration.h>
+#import <KSCrashReportStore.h>
+#import <KSCrashInstallation.h>
+#import <KSCrashReport.h>
 #endif
 
 #ifdef HAVE_SDL2
@@ -620,8 +639,136 @@ enum
    }
 }
 
+#ifdef HAVE_KSCRASH
+- (NSString *)crashReportsPath
+{
+   /* Store crash reports in Documents directory for user access */
+   NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+   NSString *documentsPath = [paths firstObject];
+   return [documentsPath stringByAppendingPathComponent:@"CrashReports"];
+}
+
+- (void)initKSCrash
+{
+   NSString *crashReportsPath = [self crashReportsPath];
+
+   /* Create the crash reports directory if it doesn't exist */
+   NSFileManager *fileManager = [NSFileManager defaultManager];
+   NSError *createError = nil;
+   if (![fileManager fileExistsAtPath:crashReportsPath])
+   {
+      [fileManager createDirectoryAtPath:crashReportsPath
+             withIntermediateDirectories:YES
+                              attributes:nil
+                                   error:&createError];
+      if (createError)
+      {
+         NSLog(@"[KSCrash] Failed to create crash reports directory: %@\n", createError);
+         return;
+      }
+   }
+
+   /* Configure KSCrash for local storage only */
+   KSCrashConfiguration *config = [KSCrashConfiguration new];
+   config.installPath = crashReportsPath;
+   KSCrashReportStoreConfiguration *storeConfig = [KSCrashReportStoreConfiguration new];
+   storeConfig.reportsPath = crashReportsPath;
+   storeConfig.appName = @"RetroArch";
+   storeConfig.maxReportCount = 10; /* Keep last 10 crash reports */
+   config.reportStoreConfiguration = storeConfig;
+
+   /* Set appropriate monitors */
+   if (jit_available())
+      config.monitors = KSCrashMonitorTypeDebuggerSafe;
+   else
+      config.monitors = KSCrashMonitorTypeProductionSafe;
+   /* Enable useful debugging features */
+   config.enableMemoryIntrospection = YES;
+   config.enableQueueNameSearch = YES;
+   config.addConsoleLogToReport = YES;
+
+   /* Install KSCrash without any network sink */
+   NSError *installError = nil;
+   if (![[KSCrash sharedInstance] installWithConfiguration:config error:&installError])
+   {
+      NSLog(@"[KSCrash] Failed to install crash reporter: %@\n", installError);
+      return;
+   }
+
+   NSLog(@"[KSCrash] reports will be stored in: %@\n", crashReportsPath);
+}
+
+- (void)processKSCrashReports
+{
+   /* Check if we crashed last launch */
+   if (![[KSCrash sharedInstance] crashedLastLaunch])
+       return;
+
+   if ([[[KSCrash sharedInstance] reportStore] reportCount] <= 0)
+      return;
+
+   RARCH_LOG("[KSCrash] crash report available in Documents/CrashReports\n");
+
+   /* Process crash reports to strip binary_images section */
+   KSCrashReportStore *store = [[KSCrash sharedInstance] reportStore];
+   NSArray<NSNumber *> *reportIDs = [store reportIDs];
+   for (NSNumber *reportIDNum in reportIDs)
+   {
+      int64_t reportID = [reportIDNum longLongValue];
+      KSCrashReportDictionary *report = [store reportForID:reportID];
+      if (!report)
+         continue;
+
+      NSMutableDictionary *mutableReport = [report.value mutableCopy];
+
+      /* Remove binary_images to reduce file size */
+      if ([mutableReport objectForKey:@"binary_images"])
+         [mutableReport removeObjectForKey:@"binary_images"];
+
+      /* Save pretty-printed version as standalone file */
+      NSData *prettyData = [NSJSONSerialization dataWithJSONObject:mutableReport
+                                                           options:NSJSONWritingPrettyPrinted
+                                                             error:nil];
+      if (prettyData)
+      {
+         NSString *reportPath = [NSString stringWithFormat:@"%@/report-%lld.json",
+                                 [self crashReportsPath], reportID];
+         [prettyData writeToFile:reportPath options:NSDataWritingAtomic error:nil];
+         RARCH_LOG("[KSCrash] Saved stripped report %lld to: %s\n",
+                   reportID, [reportPath UTF8String]);
+      }
+
+      /* Log minified JSON on a single line for easy extraction */
+      NSData *minifiedData = [NSJSONSerialization dataWithJSONObject:mutableReport
+                                                             options:0  /* no pretty printing */
+                                                               error:nil];
+      if (minifiedData)
+      {
+         NSString *jsonString = [[NSString alloc] initWithData:minifiedData
+                                                      encoding:NSUTF8StringEncoding];
+         if (jsonString)
+         {
+            /* Log with a unique marker that can be extracted with grep/sed */
+            RARCH_LOG("[KSCrash] Report %lld follows on next line\n", reportID);
+            RARCH_LOG("%s\n", [jsonString UTF8String]);
+         }
+      }
+
+      /* Delete the report from KSCrash store to prevent re-logging on next launch */
+      [store deleteReportWithID:reportID];
+   }
+
+   if (reportIDs.count > 0)
+      RARCH_LOG("[KSCrash] Processed and removed %lu report(s) from store\n", (unsigned long)reportIDs.count);
+}
+#endif
+
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
+#ifdef HAVE_KSCRASH
+   [self initKSCrash];
+#endif
+
    char arguments[]   = "retroarch";
    char       *argv[] = {arguments,   NULL};
    int argc           = 1;
@@ -671,14 +818,18 @@ enum
 
    rarch_main(argc, argv, NULL);
 
+#ifdef HAVE_KSCRASH
+   [self processKSCrashReports];
+#endif
+
    uico_driver_state_t *uico_st     = uico_state_get_ptr();
    rarch_setting_t *appicon_setting = menu_setting_find_enum(MENU_ENUM_LABEL_APPICON_SETTINGS);
    struct string_list *icons;
    if (               appicon_setting
-		   && uico_st->drv
-		   && uico_st->drv->get_app_icons
-		   && (icons = uico_st->drv->get_app_icons())
-		   && icons->size > 1)
+           && uico_st->drv
+           && uico_st->drv->get_app_icons
+           && (icons = uico_st->drv->get_app_icons())
+           && icons->size > 1)
    {
       int i;
       size_t _len    = 0;
@@ -704,6 +855,12 @@ enum
 
 #if TARGET_OS_TV
    update_topshelf();
+#endif
+
+#if HAVE_SWIFT
+   if (@available(iOS 16.0, tvOS 16.0, *)) {
+      [RetroArchAppShortcuts updateAppShortcuts];
+   }
 #endif
 
 #if TARGET_OS_IOS
@@ -805,6 +962,9 @@ enum
 
 -(BOOL)openRetroArchURL:(NSURL *)url
 {
+   RARCH_LOG("RetroArch URL received: %s\n", [[url absoluteString] UTF8String]);
+
+   // Handle topshelf URLs: retroarch://topshelf?path=...&core_path=...
    if ([url.host isEqualToString:@"topshelf"])
    {
       NSURLComponents *comp = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
@@ -828,6 +988,26 @@ enum
                                                                     NULL, NULL, NULL,
                                                                     &content_info, NULL, NULL);
    }
+
+   // Handle simple start URL: retroarch://start
+   if ([url.host isEqualToString:@"start"])
+   {
+      RARCH_LOG("App shortcut: just starting RetroArch\n");
+      return YES; // Just bring app to foreground
+   }
+
+   // Handle game launch URL: retroarch://game/filename
+   if ([url.host isEqualToString:@"game"])
+   {
+      NSString *filename = [url.path hasPrefix:@"/"] ? [url.path substringFromIndex:1] : url.path;
+      if (filename && filename.length > 0)
+      {
+         RARCH_LOG("App shortcut: launching game '%s'\n", [filename UTF8String]);
+         return cocoa_launch_game_by_filename(filename);
+      }
+   }
+
+   RARCH_LOG("Unknown RetroArch URL format: %s\n", [[url absoluteString] UTF8String]);
    return NO;
 }
 

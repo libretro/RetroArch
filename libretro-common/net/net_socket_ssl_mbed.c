@@ -195,26 +195,61 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
 {
    ssize_t ret;
    struct ssl_state *state = (struct ssl_state*)state_data;
-   const uint8_t     *data = (const uint8_t*)data_;
-   /* mbedtls_ssl_read wants non-const data but it only reads it, so this cast is safe */
+   unsigned char     *data = (unsigned char*)data_;
+   size_t       total_read = 0;
+   int      max_iterations = 8;  /* Limit iterations to prevent infinite loops */
 
    mbedtls_net_set_nonblock(&state->net_ctx);
 
-   if ((ret = mbedtls_ssl_read(&state->ctx, (unsigned char*)data, len)) > 0)
-      return ret;
-
-   if (ret == 0)
+   /* Keep reading while we get data without blocking, up to max iterations
+    * This allows us to read multiple TLS records (16KB each) in one call */
+   while (len > 0 && max_iterations-- > 0)
    {
-      /* Socket closed */
-      *err = true;
-      return -1;
+      ret = mbedtls_ssl_read(&state->ctx, data, len);
+
+      if (ret > 0)
+      {
+         total_read += ret;
+         data += ret;
+         len -= ret;
+
+         /* If we read less than requested, there's likely no more data available
+          * But check if there's buffered data we can read without blocking */
+         if ((size_t)ret < len)
+         {
+            size_t bytes_avail = mbedtls_ssl_get_bytes_avail(&state->ctx);
+            if (bytes_avail == 0)
+
+               break;  /* No more buffered data, don't risk blocking */
+         }
+         /* Continue looping to read more records */
+      }
+      else if (ret == 0)
+      {
+         /* Socket closed */
+         if (total_read > 0)
+            return total_read;  /* Return what we got before close */
+         *err = true;
+         return -1;
+      }
+      else if (isagain((int)ret) || ret == MBEDTLS_ERR_SSL_WANT_READ)
+      {
+         /* Would block - return what we have so far */
+         if (total_read > 0)
+            return total_read;
+         return 0;  /* No data available yet */
+      }
+      else
+      {
+         /* Error */
+         if (total_read > 0)
+            return total_read;  /* Return what we got before error */
+         *err = true;
+         return -1;
+      }
    }
 
-   if (isagain((int)ret) || ret == MBEDTLS_ERR_SSL_WANT_READ)
-      return 0;
-
-   *err = true;
-   return -1;
+   return total_read;
 }
 
 int ssl_socket_receive_all_blocking(void *state_data,

@@ -336,12 +336,12 @@ int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
 
 int filestream_scanf(RFILE *stream, const char* format, ...)
 {
-   int result;
+   int ret;
    va_list vl;
    va_start(vl, format);
-   result = filestream_vscanf(stream, format, &vl);
+   ret = filestream_vscanf(stream, format, &vl);
    va_end(vl);
-   return result;
+   return ret;
 }
 
 int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
@@ -559,11 +559,11 @@ int filestream_vprintf(RFILE *stream, const char* format, va_list args)
 int filestream_printf(RFILE *stream, const char* format, ...)
 {
    va_list vl;
-   int result;
+   int ret;
    va_start(vl, format);
-   result = filestream_vprintf(stream, format, vl);
+   ret = filestream_vprintf(stream, format, vl);
    va_end(vl);
-   return result;
+   return ret;
 }
 
 int filestream_error(RFILE *stream)

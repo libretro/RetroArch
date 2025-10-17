@@ -53,7 +53,7 @@ static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
 {
    input_autoconfigure_connect(
          ps3_joypad_name(autoconf_pad),
-         NULL,
+         NULL, NULL,
          ps3_joypad.ident,
          autoconf_pad,
          0,

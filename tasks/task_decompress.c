@@ -334,16 +334,16 @@ void *task_push_decompress(
 
    _len                = strlcpy(tmp,
 		   msg_hash_to_str(MSG_EXTRACTING), sizeof(tmp));
-   tmp[  _len]         = ' ';
-   tmp[++_len]         = '\'';
+   tmp[  _len]         = ':';
+   tmp[++_len]         = ' ';
    tmp[++_len]         = '\0';
    _len               += strlcpy(tmp + _len,
          path_basename(source_file),
                          sizeof(tmp) - _len);
-   tmp[_len  ]         = '\'';
    tmp[++_len]         = '\0';
 
    t->title            = strdup(tmp);
+   t->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       t->flags        |=  RETRO_TASK_FLG_MUTE;
    else

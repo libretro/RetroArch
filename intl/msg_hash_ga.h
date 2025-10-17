@@ -143,7 +143,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Díchumasaigh Mód Ciosc (Atosú ag teastáil)"
+   "Díchumasaigh Mód Ciosc"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -3302,7 +3302,7 @@ MSG_HASH(
 #ifdef ANDROID
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Roghnaigh méarchlár fisiceach"
+   "Roghnaigh Méarchlár Fisiciúil"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
@@ -3378,8 +3378,24 @@ MSG_HASH(
    "Íogaireacht Analógach"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Íogaireacht Luasmhéadair"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "Íogaireacht Ghiroscóp"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Coigeartaigh íogaireacht na bataí analógacha."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Coigeartaigh íogaireacht an Luasmhéadair."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+  "Coigeartaigh íogaireacht an Ghiroscóip."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3609,6 +3625,62 @@ MSG_HASH(
    "Úsáid na rialuithe céanna don roghchlár agus don chluiche araon. Baineann sé seo leis an méarchlár."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   "Cnaipí Malartaithe Roghchláir Ceart go leor agus Cealaigh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   "Malartaigh cnaipí le haghaidh Ceart go leor/Cealaigh. Is é díchumasaithe treoshuíomh na gcnaipí Seapánacha, is é cumasaithe treoshuíomh an iarthair."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "Cnaipí Scrollaigh Malartaithe Roghchláir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "Malartaigh cnaipí le haghaidh scrollú. Scrollaíonn díchumasaithe 10 mír le C/D agus in ord aibítre le C2/D2."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   "Roghchlár Rialaithe Gach Úsáideoir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   "Lig d'aon úsáideoir an roghchlár a rialú. Mura bhfuil sé seo indéanta, ní féidir ach le hÚsáideoir 1 an roghchlár a rialú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "Seinmliostaí Aon-Cliceáil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "Scipeáil ar an roghchlár 'Rith' agus iontrálacha seinmliosta á seoladh. Brúigh an D-Pad agus tú ag coinneáil síos OK chun rochtain a fháil ar an roghchlár 'Rith'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "Ceadaigh Filleadh ó Chluaisíní"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "Fill ar an bPríomh-Roghchlár ó na cluaisíní/an barra taobh nuair a bhrúnn tú Ar Ais."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   "Luasghéarú Scrollaigh Roghchláir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   "Uasluas an chúrsóra agus treo á choinneáil chun scrolla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Moill Scrollaigh Roghchláir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   "Moill tosaigh i milleasoicindí agus treo á choinneáil chun scrollú."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
    "Díchumasaigh an Cnaipe Eolais"
    )
@@ -3639,30 +3711,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "Cosc a chur ar ionchur ón mbata analógach ar dheis sa roghchlár. Athraíonn an bata analógach ar dheis mionsamhlacha i seinmliostaí."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Cnaipí Malartaithe Roghchláir Ceart go leor agus Cealaigh"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "Malartaigh cnaipí le haghaidh Ceart go leor/Cealaigh. Is é díchumasaithe treoshuíomh na gcnaipí Seapánacha, is é cumasaithe treoshuíomh an iarthair."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Cnaipí Scrollaigh Malartaithe Roghchláir"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
-   "Malartaigh cnaipí le haghaidh scrollú. Scrollaíonn díchumasaithe 10 mír le C/D agus in ord aibítre le C2/D2."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
-   "Roghchlár Rialaithe Gach Úsáideoir"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "Lig d'aon úsáideoir an roghchlár a rialú. Mura bhfuil sé seo indéanta, ní féidir ach le hÚsáideoir 1 an roghchlár a rialú."
    )
 
 /* Settings > Input > Hotkeys */
@@ -3988,6 +4036,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
    "Stopann sé taifeadadh/sheinm an athsheinm reatha."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Sábháil Seicphointe Athsheinm"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Cuireann sé seicphointe i bhfeidhm don athsheinm atá ag imirt faoi láthair."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Seicphointe Athsheinm Roimhe Seo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Casann sé an t-athsheinm ar ais go dtí an seicphointe roimhe seo a sábháladh go huathoibríoch nó de láimh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "An chéad phointe seiceála athimeartha eile"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Bogann sé an t-athsheinm ar aghaidh go dtí an chéad phointe seiceála eile a shábháiltear go huathoibríoch nó de láimh."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
@@ -4730,6 +4802,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "Sábhálann sé staid an chluiche go huathoibríoch le linn taifeadadh athimeartha ag eatramh rialta. Tá sé seo díchumasaithe de réir réamhshocraithe mura socraítear a mhalairt. Tomhaistear an t-eatramh i soicindí. Díchumasaíonn luach 0 taifeadadh seicphointe."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Cibé acu ar cheart seicphointí atá stóráilte in athsheinm a dhíshraithiú le linn athsheinm rialta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Athsheinm Seicphointe Díshraithiú"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Cibé acu ar cheart seicphointí atá stóráilte in athsheinm a dhíshraithiú le linn athsheinm rialta. Ba chóir é seo a shocrú go fíor do fhormhór na gcroíleacán, ach d’fhéadfadh go mbeadh iompar salach ag cuid acu agus ábhar á dhíshraithiú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -6037,14 +6121,6 @@ MSG_HASH(
 /* Settings > User Interface */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   "Infheictheacht Míre Roghchláir"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-   "Athraigh infheictheacht míreanna roghchláir i RetroArch."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    "Dealramh"
    )
@@ -6053,23 +6129,61 @@ MSG_HASH(
    "Athraigh socruithe cuma scáileáin an roghchláir."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
-   "Deilbhín Aipe"
+   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   "Infheictheacht Míre Roghchláir"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   "Athraigh Deilbhín an Aipe."
-   )
-#ifdef _3DS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
-   "Dealramh Bunscáileáin 3DS"
+   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   "Athraigh infheictheacht míreanna roghchláir i RetroArch."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
-   "Athraigh socruithe cuma bun an scáileáin."
+   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+   "Cuir an t-ábhar ar sos nuair a bhíonn an roghchlár gníomhach"
    )
-#endif
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+   "Cuir an t-ábhar ar sos má tá an roghchlár gníomhach."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+   "Cuir Ábhar ar Sos Nuair nach bhfuil sé Gníomhach"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   "Cuir ábhar ar sos nuair nach í RetroArch an fhuinneog ghníomhach."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   "Scoir ar Dhúnadh Ábhar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "Scoir RetroArch go huathoibríoch nuair a dhúnfar ábhar. Ní scoireann 'CLI' ach amháin nuair a sheoltar ábhar tríd an líne ordaithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "Lean ar aghaidh leis an ábhar tar éis úsáid a bhaint as Stáit Sábháilte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   "Dún an roghchlár go huathoibríoch agus atosú an t-ábhar tar éis staid a shábháil nó a lódáil. Is féidir feidhmíocht staide sábhála a fheabhsú ar ghléasanna an-mhall má dhíchumasaítear é seo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "Lean ar aghaidh leis an Ábhar Tar éis Dioscaí a Athrú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   "Dún an roghchlár go huathoibríoch agus atosú an t-ábhar tar éis diosca nua a chur isteach nó a luchtú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   "Timpeall Loingseoireachta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+   "Timfhilleadh go dtí an tús agus/nó an deireadh má shroichtear teorainn an liosta go cothrománach nó go hingearach."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    "Taispeáin Socruithe Ardleibhéil"
@@ -6095,44 +6209,28 @@ MSG_HASH(
    "Má sholáthraíonn tú pasfhocal agus mód an chiosc á chumasú, is féidir é a dhíchumasú níos déanaí ón roghchlár, trí dhul go dtí an Príomh-Roghchlár, Díchumasaigh Mód an Chiosc a roghnú agus an pasfhocal a iontráil."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   "Timpeall Loingseoireachta"
+   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
+   "Tacaíocht Luiche"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "Timfhilleadh go dtí an tús agus/nó an deireadh má shroichtear teorainn an liosta go cothrománach nó go hingearach."
+   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+   "Lig don roghchlár a bheith á rialú leis an luch."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-   "Cuir an t-ábhar ar sos nuair a bhíonn an roghchlár gníomhach"
+   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
+   "Tacaíocht Tadhaill"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Cuir an t-ábhar ar sos má tá an roghchlár gníomhach."
+   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+   "Lig don roghchlár a bheith á rialú le scáileán tadhaill."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Lean ar aghaidh leis an ábhar tar éis úsáid a bhaint as Stáit Sábháilte"
+   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   "Tascanna Snáithithe"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "Dún an roghchlár go huathoibríoch agus atosú an t-ábhar tar éis staid a shábháil nó a lódáil. Is féidir feidhmíocht staide sábhála a fheabhsú ar ghléasanna an-mhall má dhíchumasaítear é seo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Lean ar aghaidh leis an Ábhar Tar éis Dioscaí a Athrú"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
-   "Dún an roghchlár go huathoibríoch agus atosú an t-ábhar tar éis diosca nua a chur isteach nó a luchtú."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
-   "Scoir ar Dhúnadh Ábhar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   "Scoir RetroArch go huathoibríoch nuair a dhúnfar ábhar. Ní scoireann 'CLI' ach amháin nuair a sheoltar ábhar tríd an líne ordaithe."
+   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   "Déan tascanna ar shnáithe ar leithligh."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
@@ -6167,38 +6265,6 @@ MSG_HASH(
    "Coigeartaigh luas éifeacht beochana scáileáin scáileáin an roghchláir."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-   "Tacaíocht Luiche"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "Lig don roghchlár a bheith á rialú leis an luch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-   "Tacaíocht Tadhaill"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "Lig don roghchlár a bheith á rialú le scáileán tadhaill."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "Tascanna Snáithithe"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   "Déan tascanna ar shnáithe ar leithligh."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   "Cuir Ábhar ar Sos Nuair nach bhfuil sé Gníomhach"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   "Cuir ábhar ar sos nuair nach í RetroArch an fhuinneog ghníomhach."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    "Díchumasaigh Comhdhéanamh Deisce"
    )
@@ -6209,22 +6275,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
    "Díchumasaigh comhdhéanamh go foréigneach. Ní féidir é sin a dhíchumasú ach ar Windows Vista/7 faoi láthair."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Luasghéarú Scrollaigh Roghchláir"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-   "Uasluas an chúrsóra agus treo á choinneáil chun scrolla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Moill Scrollaigh Roghchláir"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   "Moill tosaigh i milleasoicindí agus treo á choinneáil chun scrollú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
@@ -6245,6 +6295,24 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    "Oscail Roghchlár na Deisce ag an Tosaithe"
+   )
+#ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+   "Dealramh Bunscáileáin 3DS"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+   "Athraigh socruithe cuma bun an scáileáin."
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Deilbhín Aipe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Athraigh Deilbhín an Aipe."
    )
 
 /* Settings > User Interface > Menu Item Visibility */
@@ -7085,6 +7153,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
    "Don Phríomh-Roghchlár agus Socruithe Amháin"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   "Leathanach Tosaithe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "Leathanach roghchláir tosaigh ag an am tosaithe."
+   )
 
 /* Settings > AI Service */
 
@@ -7452,10 +7528,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    "Oirdheisceart na hÁise"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
-   "Oirthear na hÁise (Chuncheon, an Chóiré Theas)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
@@ -9878,20 +9950,20 @@ MSG_HASH(
    "Cuir réamhshocrú leis an réamhshocrú atá luchtaithe faoi láthair."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE,
-   "Sábháil Réamhshocrú"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Bainistigh Réamhshocruithe"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE,
-   "Sábháil an réamhshocrú scáthaithe reatha."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "Sábháil nó bain réamhshocruithe scáthaithe."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE,
-   "Bain Réamhshocrú"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Comhad Réamhshocraithe Gníomhach"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
-   "Bain réamhshocrú scáthaithe uathoibríoch."
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "An réamhshocrú scáthaithe atá in úsáid faoi láthair."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9950,21 +10022,25 @@ MSG_HASH(
    "Scála don phas seo. Bailíonn an fachtóir scála, i.e. 2x don chéad phas agus 2x don dara pas, gheobhaidh tú scála iomlán 4x.\nMá tá fachtóir scála ann don phas deireanach, síntear an toradh go dtí an scáileán leis an scagaire réamhshocraithe, ag brath ar an socrú Scagtha Délíneach faoi shocruithe Físe.\nMá shocraítear 'Réamhshocrú', úsáidfear scála 1x nó síneadh go dtí lánscáileán ag brath ar cibé nach é an pas deireanach é nó nach ea."
    )
 
-/* Quick Menu > Shaders > Save */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Réamhshocruithe Simplí"
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Sábháil réamhshocrú scáthaithe a bhfuil nasc ann chuig an réamhshocrú bunaidh a luchtaíodh agus nach bhfuil ann ach na hathruithe paraiméadair a rinne tú."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Sábháil Réamhshocrú Reatha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Sábháil an réamhshocrú scáthaithe reatha."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Sábháil Réamhshocrú Scáthóra Mar"
+   "Sábháil Réamhshocrú Mar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -10002,9 +10078,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    "Sábháil na socruithe scáthaithe reatha mar na socruithe réamhshocraithe don ábhar."
    )
-
-/* Quick Menu > Shaders > Remove */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
    "Níor aimsíodh aon réamhshocruithe scáthaithe uathoibríocha"
@@ -11546,7 +11619,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Cumasaigh an cluaisín Socruithe (Atosú ag teastáil)"
+   "Cumasaigh Táb Socruithe"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -13437,6 +13510,14 @@ MSG_HASH(
    "Tá %.*s tar éis dul isteach le gléasanna ionchuir %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d imreoir(í)"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d imreoir(í) (%d ag breathnú)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Theip ar iarracht ceangail netplay mar nach bhfuil RetroArch á rith ag an gcomhghleacaí, nó go bhfuil seanleagan de RetroArch á rith aige."
    )
@@ -13994,6 +14075,10 @@ MSG_HASH(
    "Theip ar an ábhar a lódáil."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   "Theip ar luchtú ón seinmliosta."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_MOVIE_FILE,
    "Theip ar an gcomhad scannáin a luchtú."
    )
@@ -14152,6 +14237,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
    "Amlíne mícheart; taifeadadh á scríobh arís"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
+   "Lorg Ar Ais"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
+   "Theip ar an Lorg Ar Ais"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
+   "Lorg Ar Aghaidh"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
+   "Theip ar Lorg Ar Aghaidh"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME,
+   "Lorg Críochnaithe"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME_FAILED,
+   "Theip ar an Lorg"
    )
 MSG_HASH(
    MSG_FOUND_SHADER,
@@ -15072,6 +15181,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    "Theip ar athrú meán RetroAchievements: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "Tá logáil isteach RetroAchievements imithe in éag. Cuir isteach do phasfhocal arís agus athlódáil an cluiche."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

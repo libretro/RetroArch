@@ -811,7 +811,7 @@ void video_monitor_set_refresh_rate(float hz)
    /* Message is visible for twice the usual duration */
    /* as modeswitch will cause monitors to go blank for a while */
    if (settings->bools.notification_show_refresh_rate)
-      runloop_msg_queue_push(msg, _len, 1, 360, false, NULL,
+      runloop_msg_queue_push(msg, _len, 2, 360, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("[Video] %s\n", msg);
 
@@ -2131,26 +2131,38 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
 
    if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      video_viewport_t
-         *custom_vp     = &settings->video_vp_custom;
-      int padding_x     = 0;
-      int padding_y     = 0;
+      video_viewport_t *custom_vp = &settings->video_vp_custom;
 
-      x                 = custom_vp->x;
-      y                 = custom_vp->y;
+      if (custom_vp)
+      {
+         int padding_x     = 0;
+         int padding_y     = 0;
 
-      if (!y_down)
-         y              = vp->full_height - (y + custom_vp->height);
-      padding_x        += (vp_width - custom_vp->width);
-      if (padding_x < 0)
-         padding_x     *= 2;
-      padding_y         = vp_height - custom_vp->height;
-      if (padding_y < 0)
-         padding_y     *= 2;
-      vp_width          = custom_vp->width;
-      vp_height         = custom_vp->height;
-      x                += padding_x * vp_bias_x;
-      y                += padding_y * vp_bias_y;
+         x                 = custom_vp->x;
+         y                 = custom_vp->y;
+
+         if (!y_down)
+            y = -y;
+
+         padding_x         = vp_width - custom_vp->width;
+         padding_y         = vp_height - custom_vp->height;
+
+         if (padding_x < 0)
+         {
+            x -= padding_x * vp_bias_x;
+            padding_x *= 2;
+         }
+         if (padding_y < 0)
+         {
+            y -= padding_y * vp_bias_y;
+            padding_y *= 2;
+         }
+
+         vp_width          = custom_vp->width;
+         vp_height         = custom_vp->height;
+         x                += padding_x * vp_bias_x;
+         y                += padding_y * vp_bias_y;
+      }
    }
    else
    {
@@ -2461,19 +2473,29 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       struct video_viewport *custom_vp = &settings->video_vp_custom;
+
       if (custom_vp)
       {
          x         = custom_vp->x;
          y         = custom_vp->y;
 
          if (!y_down)
-            y      = vp->height - (y + custom_vp->height);
+            y = -y;
+
          padding_x = width - custom_vp->width;
-         if (padding_x < 0)
-            padding_x *= 2;
          padding_y = height - custom_vp->height;
+
+         if (padding_x < 0)
+         {
+            x -= padding_x * vp_bias_x;
+            padding_x *= 2;
+         }
          if (padding_y < 0)
+         {
+            y -= padding_y * vp_bias_y;
             padding_y *= 2;
+         }
+
          width     = custom_vp->width;
          height    = custom_vp->height;
       }

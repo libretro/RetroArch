@@ -307,7 +307,7 @@ int rc_runtime_activate_lboard(rc_runtime_t* self, uint32_t id, const char* mema
   rc_lboard_t* lboard;
   rc_preparse_state_t preparse;
   rc_runtime_lboard_t* runtime_lboard;
-  int size;
+  int32_t size;
   uint32_t i;
 
   (void)unused_L;

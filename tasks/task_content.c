@@ -977,7 +977,7 @@ static bool content_file_load(
                   &content_data)) == 0)
             {
                char msg[PATH_MAX_LENGTH];
-               snprintf(msg, sizeof(msg), "%s \"%s\"\n",
+               snprintf(msg, sizeof(msg), "%s: \"%s\".\n",
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      content_path);
                *err_string = strdup(msg);
@@ -1058,7 +1058,7 @@ static bool content_file_load(
                   {
                      char msg[PATH_MAX_LENGTH];
                      /* TODO/FIXME - localize */
-                     snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read or write)\n",
+                     snprintf(msg, sizeof(msg), "%s: \"%s\". (during copy read or write)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                         content_path);
                      *err_string = strdup(msg);
@@ -1397,7 +1397,7 @@ static bool content_load(content_ctx_info_t *info,
       content_state_t *p_content)
 {
    size_t i;
-   bool success                      = false;
+   bool ret                          = false;
    int rarch_argc                    = 0;
    char *rarch_argv[MAX_ARGS]        = {NULL};
    char *argv_copy [MAX_ARGS]        = {NULL};
@@ -1439,13 +1439,13 @@ static bool content_load(content_ctx_info_t *info,
    wrap_args->argc = *rarch_argc_ptr;
    wrap_args->argv = rarch_argv_ptr;
 
-   success         = retroarch_main_init(wrap_args->argc, wrap_args->argv);
+   ret             = retroarch_main_init(wrap_args->argc, wrap_args->argv);
 
    for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
       free(argv_copy[i]);
    free(wrap_args);
 
-   if (!success)
+   if (!ret)
       return false;
 
    if (p_content->flags & CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT)
@@ -1913,7 +1913,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
    const char *path_dir_system             = settings->paths.directory_system;
    bool check_firmware_before_loading      = settings->bools.check_firmware_before_loading;
 #ifdef HAVE_PATCH
-   uint16_t rarch_flags                    = retroarch_get_flags();
+   uint32_t rarch_flags                    = retroarch_get_flags();
 #endif
 
    if (!content_info)
@@ -2014,7 +2014,7 @@ bool task_push_load_content_from_playlist_from_menu(
 #endif
    bool check_firmware_before_loading         = settings->bools.check_firmware_before_loading;
 #ifdef HAVE_PATCH
-   uint16_t rarch_flags                       = retroarch_get_flags();
+   uint32_t rarch_flags                       = retroarch_get_flags();
 #endif
 
    content_ctx.flags     = 0;
@@ -2166,7 +2166,7 @@ bool task_push_start_current_core(content_ctx_info_t *content_info)
       content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
    {
-      uint16_t rarch_flags = retroarch_get_flags();
+      uint32_t rarch_flags = retroarch_get_flags();
       if (rarch_flags & RARCH_FLAGS_IPS_PREF)
          content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
       if (rarch_flags & RARCH_FLAGS_BPS_PREF)
@@ -2412,7 +2412,7 @@ bool task_push_load_content_with_new_core_from_menu(
       content_ctx.flags |= CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING;
 #ifdef HAVE_PATCH
    {
-      uint16_t rarch_flags  = retroarch_get_flags();
+      uint32_t rarch_flags  = retroarch_get_flags();
       if (rarch_flags & RARCH_FLAGS_IPS_PREF)
          content_ctx.flags |= CONTENT_INFO_FLAG_IS_IPS_PREF;
       if (rarch_flags & RARCH_FLAGS_BPS_PREF)
@@ -2522,7 +2522,7 @@ static bool task_load_content_internal(
    const char *path_dir_system             = settings->paths.directory_system;
    const char *path_dir_cache              = settings->paths.directory_cache;
 #ifdef HAVE_PATCH
-   uint16_t rarch_flags                    = retroarch_get_flags();
+   uint32_t rarch_flags                    = retroarch_get_flags();
 #endif
    content_ctx.flags                       = 0;
 
@@ -3025,7 +3025,7 @@ bool content_init(void)
    const char *path_dir_system        = settings->paths.directory_system;
    const char *path_dir_cache         = settings->paths.directory_cache;
 #ifdef HAVE_PATCH
-   uint16_t rarch_flags               = retroarch_get_flags();
+   uint32_t rarch_flags               = retroarch_get_flags();
 #endif
 
    content_file_list_free(p_content->content_list);
@@ -3143,6 +3143,12 @@ bool content_init(void)
 
    if (err_string)
    {
+      /* Trim ending newline */
+      size_t err_len = strlen(err_string);
+
+      if (err_string[err_len - 1] == '\n')
+         err_string[err_len - 1] = '\0';
+
       if (ret)
          RARCH_LOG("[Content] %s\n", err_string);
       else
