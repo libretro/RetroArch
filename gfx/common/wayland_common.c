@@ -34,7 +34,7 @@
 
 #define SPLASH_SHM_NAME "retroarch-wayland-vk-splash"
 
-#define WINDOW_TITLE "RetroArch"
+#define DEFAULT_WINDOW_TITLE "RetroArch"
 
 #ifdef HAVE_LIBDECOR_H
 #include <libdecor.h>
@@ -877,7 +877,7 @@ bool gfx_ctx_wl_init_common(
       }
 
       wl->libdecor_frame_set_app_id(wl->libdecor_frame, WAYLAND_APP_ID);
-      wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
+      wl->libdecor_frame_set_title(wl->libdecor_frame, DEFAULT_WINDOW_TITLE);
       wl->libdecor_frame_map(wl->libdecor_frame);
 
       /* Waiting for libdecor to be configured before starting to draw */
@@ -903,7 +903,7 @@ bool gfx_ctx_wl_init_common(
       xdg_toplevel_add_listener(wl->xdg_toplevel, &toplevel_listener->xdg_toplevel_listener, wl);
 
       xdg_toplevel_set_app_id(wl->xdg_toplevel, WAYLAND_APP_ID);
-      xdg_toplevel_set_title(wl->xdg_toplevel, WINDOW_TITLE);
+      xdg_toplevel_set_title(wl->xdg_toplevel, DEFAULT_WINDOW_TITLE);
 
       if (wl->deco_manager)
          wl->deco = zxdg_decoration_manager_v1_get_toplevel_decoration(
@@ -915,9 +915,9 @@ bool gfx_ctx_wl_init_common(
       if (wl->xdg_toplevel_tag_manager)
       {
          xdg_toplevel_tag_manager_v1_set_toplevel_tag(
-            wl->xdg_toplevel_tag_manager, wl->xdg_toplevel, WAYLAND_APP_ID);
+            wl->xdg_toplevel_tag_manager, wl->xdg_toplevel, "main window");
          xdg_toplevel_tag_manager_v1_set_toplevel_description(
-            wl->xdg_toplevel_tag_manager, wl->xdg_toplevel, WINDOW_TITLE);
+            wl->xdg_toplevel_tag_manager, wl->xdg_toplevel, DEFAULT_WINDOW_TITLE " main window");
       }
 
       /* Waiting for xdg_toplevel to be configured before starting to draw */
