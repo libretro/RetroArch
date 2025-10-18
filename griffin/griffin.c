@@ -202,6 +202,10 @@ ACHIEVEMENTS
 #include "../cheevos/cheevos_client.c"
 #include "../cheevos/cheevos_menu.c"
 
+#if defined(HAVE_CHEEVOS_RVZ)
+#include "../cheevos/cheevos_rvz.c"
+#endif
+
 #include "../deps/rcheevos/src/rc_client.c"
 #include "../deps/rcheevos/src/rc_compat.c"
 #include "../deps/rcheevos/src/rc_libretro.c"
