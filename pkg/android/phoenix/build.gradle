@@ -72,7 +72,7 @@ android {
     }
     playStoreNormal {
       minSdkVersion 21
-      targetSdkVersion 30
+      targetSdkVersion 35
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
 
@@ -83,7 +83,7 @@ android {
     }
     playStorePlus {
       minSdkVersion 26
-      targetSdkVersion 30
+      targetSdkVersion 35
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
 
