@@ -18,6 +18,7 @@ import android.provider.DocumentsContract.Root;
 import android.provider.DocumentsProvider;
 import android.webkit.MimeTypeMap;
 
+import com.retroarch.BuildConfig;
 import com.retroarch.R;
 
 import java.io.File;
@@ -73,27 +74,40 @@ public class RetroDocumentsProvider extends DocumentsProvider {
         final MatrixCursor result = new MatrixCursor(projection != null ? projection : DEFAULT_ROOT_PROJECTION);
         @SuppressWarnings("ConstantConditions") final String applicationName = getContext().getString(R.string.app_name);
 
-        final File CORE_DIR = new File(getContext().getFilesDir().getParent());
-        final MatrixCursor.RowBuilder core = result.newRow();
-        core.add(Root.COLUMN_ROOT_ID, getDocIdForFile(CORE_DIR));
-        core.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(CORE_DIR));
-        core.add(Root.COLUMN_SUMMARY, "Core Data");
-        core.add(Root.COLUMN_FLAGS, Root.FLAG_SUPPORTS_CREATE | Root.FLAG_SUPPORTS_SEARCH | Root.FLAG_SUPPORTS_IS_CHILD);
-        core.add(Root.COLUMN_TITLE, applicationName);
-        core.add(Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES);
-        core.add(Root.COLUMN_AVAILABLE_BYTES, CORE_DIR.getFreeSpace());
-        core.add(Root.COLUMN_ICON, R.mipmap.ic_launcher);
+        if (BuildConfig.PLAY_STORE_BUILD) {
+            final File CORE_DIR = new File(getContext().getFilesDir().getParent());
+            final MatrixCursor.RowBuilder core = result.newRow();
+            core.add(Root.COLUMN_ROOT_ID, getDocIdForFile(CORE_DIR));
+            core.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(CORE_DIR));
+            core.add(Root.COLUMN_SUMMARY, "Core Data");
+            core.add(Root.COLUMN_FLAGS, Root.FLAG_SUPPORTS_CREATE | Root.FLAG_SUPPORTS_SEARCH | Root.FLAG_SUPPORTS_IS_CHILD);
+            core.add(Root.COLUMN_TITLE, applicationName);
+            core.add(Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES);
+            core.add(Root.COLUMN_AVAILABLE_BYTES, CORE_DIR.getFreeSpace());
+            core.add(Root.COLUMN_ICON, R.mipmap.ic_launcher);
 
-        final File USER_DIR = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + getContext().getPackageName() + "/files/RetroArch");
-        final MatrixCursor.RowBuilder user = result.newRow();
-        user.add(Root.COLUMN_ROOT_ID, getDocIdForFile(USER_DIR));
-        user.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(USER_DIR));
-        user.add(Root.COLUMN_SUMMARY, "User Data");
-        user.add(Root.COLUMN_FLAGS, Root.FLAG_SUPPORTS_CREATE | Root.FLAG_SUPPORTS_SEARCH | Root.FLAG_SUPPORTS_IS_CHILD);
-        user.add(Root.COLUMN_TITLE, applicationName);
-        user.add(Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES);
-        user.add(Root.COLUMN_AVAILABLE_BYTES, USER_DIR.getFreeSpace());
-        user.add(Root.COLUMN_ICON, R.mipmap.ic_launcher);
+            final File USER_DIR = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + getContext().getPackageName() + "/files/RetroArch");
+            final MatrixCursor.RowBuilder user = result.newRow();
+            user.add(Root.COLUMN_ROOT_ID, getDocIdForFile(USER_DIR));
+            user.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(USER_DIR));
+            user.add(Root.COLUMN_SUMMARY, "User Data");
+            user.add(Root.COLUMN_FLAGS, Root.FLAG_SUPPORTS_CREATE | Root.FLAG_SUPPORTS_SEARCH | Root.FLAG_SUPPORTS_IS_CHILD);
+            user.add(Root.COLUMN_TITLE, applicationName);
+            user.add(Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES);
+            user.add(Root.COLUMN_AVAILABLE_BYTES, USER_DIR.getFreeSpace());
+            user.add(Root.COLUMN_ICON, R.mipmap.ic_launcher);
+        } else {
+            final File BASE_DIR = new File(getContext().getFilesDir().getParent());
+            final MatrixCursor.RowBuilder row = result.newRow();
+            row.add(Root.COLUMN_ROOT_ID, getDocIdForFile(BASE_DIR));
+            row.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(BASE_DIR));
+            row.add(Root.COLUMN_SUMMARY, null);
+            row.add(Root.COLUMN_FLAGS, Root.FLAG_SUPPORTS_CREATE | Root.FLAG_SUPPORTS_SEARCH | Root.FLAG_SUPPORTS_IS_CHILD);
+            row.add(Root.COLUMN_TITLE, applicationName);
+            row.add(Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES);
+            row.add(Root.COLUMN_AVAILABLE_BYTES, BASE_DIR.getFreeSpace());
+            row.add(Root.COLUMN_ICON, R.mipmap.ic_launcher);
+        }
 
         return result;
     }
