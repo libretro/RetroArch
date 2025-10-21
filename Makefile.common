@@ -2404,6 +2404,12 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rapi/rc_api_runtime.o \
              deps/rcheevos/src/rapi/rc_api_user.o \
 
+      # RVZ/WIA disc image support for RetroAchievements
+      ifeq ($(HAVE_ZSTD), 1)
+         DEFINES += -DHAVE_CHEEVOS_RVZ
+         OBJ += cheevos/cheevos_rvz.o
+      endif
+
       ifeq ($(HAVE_LUA), 1)
          DEFINES += -DHAVE_LUA \
                     -DLUA_32BITS
