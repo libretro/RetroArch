@@ -97,6 +97,7 @@ struct archive_extract_userdata
    decompress_state_t *dec;
    void* cb_data;
    uint32_t crc;
+   uint64_t size;
    char archive_path[PATH_MAX_LENGTH];
    char current_file_path[PATH_MAX_LENGTH];
    bool found_file;
@@ -201,6 +202,17 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
  * file found inside is used.
  **/
 uint32_t file_archive_get_file_crc32(const char *path);
+
+/**
+ * file_archive_get_file_crc32_and_size:
+ * @path                         : filename path of archive
+ * @size                         : size of the file inside the archive
+ *
+ * Returns: CRC32 of the specified file in the archive, otherwise 0.
+ * If no path within the archive is specified, the first
+ * file found inside is used.
+ **/
+uint32_t file_archive_get_file_crc32_and_size(const char *path, uint64_t *size);
 
 extern const struct file_archive_file_backend zlib_backend;
 extern const struct file_archive_file_backend sevenzip_backend;
