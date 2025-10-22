@@ -72,7 +72,7 @@ android {
     }
     playStoreNormal {
       minSdkVersion 21
-      targetSdkVersion 30
+      targetSdkVersion 35
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
 
@@ -83,7 +83,7 @@ android {
     }
     playStorePlus {
       minSdkVersion 26
-      targetSdkVersion 30
+      targetSdkVersion 35
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
 
@@ -153,7 +153,7 @@ android {
   }
 }
 
-def playCore = 'com.google.android.play:core:1.8.0'
+def playCore = 'com.google.android.play:core:1.10.3'
 
 dependencies {
   playStoreNormalImplementation playCore

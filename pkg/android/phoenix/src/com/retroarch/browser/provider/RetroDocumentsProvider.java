@@ -10,12 +10,15 @@ import android.database.MatrixCursor;
 import android.graphics.Point;
 import android.os.Build;
 import android.os.CancellationSignal;
+import android.os.Environment;
 import android.os.ParcelFileDescriptor;
+import android.provider.DocumentsContract;
 import android.provider.DocumentsContract.Document;
 import android.provider.DocumentsContract.Root;
 import android.provider.DocumentsProvider;
 import android.webkit.MimeTypeMap;
 
+import com.retroarch.BuildConfig;
 import com.retroarch.R;
 
 import java.io.File;
@@ -35,10 +38,12 @@ import java.util.LinkedList;
  * offering two different ways of accessing your stored data. This would be confusing for users."
  * - http://developer.android.com/guide/topics/providers/document-provider.html#43
  */
-@TargetApi(Build.VERSION_CODES.KITKAT)
+@TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class RetroDocumentsProvider extends DocumentsProvider {
 
     private static final String ALL_MIME_TYPES = "*/*";
+
+    private String DOCUMENTS_AUTHORITY;
 
     // The default columns to return information about a root if no specific
     // columns are requested in a query.
@@ -66,19 +71,44 @@ public class RetroDocumentsProvider extends DocumentsProvider {
 
     @Override
     public Cursor queryRoots(String[] projection) throws FileNotFoundException {
-        final File BASE_DIR = new File(getContext().getFilesDir().getParent());
         final MatrixCursor result = new MatrixCursor(projection != null ? projection : DEFAULT_ROOT_PROJECTION);
         @SuppressWarnings("ConstantConditions") final String applicationName = getContext().getString(R.string.app_name);
 
-        final MatrixCursor.RowBuilder row = result.newRow();
-        row.add(Root.COLUMN_ROOT_ID, getDocIdForFile(BASE_DIR));
-        row.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(BASE_DIR));
-        row.add(Root.COLUMN_SUMMARY, null);
-        row.add(Root.COLUMN_FLAGS, Root.FLAG_SUPPORTS_CREATE | Root.FLAG_SUPPORTS_SEARCH | Root.FLAG_SUPPORTS_IS_CHILD);
-        row.add(Root.COLUMN_TITLE, applicationName);
-        row.add(Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES);
-        row.add(Root.COLUMN_AVAILABLE_BYTES, BASE_DIR.getFreeSpace());
-        row.add(Root.COLUMN_ICON, R.mipmap.ic_launcher);
+        if (BuildConfig.PLAY_STORE_BUILD) {
+            final File CORE_DIR = new File(getContext().getFilesDir().getParent());
+            final MatrixCursor.RowBuilder core = result.newRow();
+            core.add(Root.COLUMN_ROOT_ID, getDocIdForFile(CORE_DIR));
+            core.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(CORE_DIR));
+            core.add(Root.COLUMN_SUMMARY, "Core Data");
+            core.add(Root.COLUMN_FLAGS, Root.FLAG_SUPPORTS_CREATE | Root.FLAG_SUPPORTS_SEARCH | Root.FLAG_SUPPORTS_IS_CHILD);
+            core.add(Root.COLUMN_TITLE, applicationName);
+            core.add(Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES);
+            core.add(Root.COLUMN_AVAILABLE_BYTES, CORE_DIR.getFreeSpace());
+            core.add(Root.COLUMN_ICON, R.mipmap.ic_launcher);
+
+            final File USER_DIR = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + getContext().getPackageName() + "/files/RetroArch");
+            final MatrixCursor.RowBuilder user = result.newRow();
+            user.add(Root.COLUMN_ROOT_ID, getDocIdForFile(USER_DIR));
+            user.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(USER_DIR));
+            user.add(Root.COLUMN_SUMMARY, "User Data");
+            user.add(Root.COLUMN_FLAGS, Root.FLAG_SUPPORTS_CREATE | Root.FLAG_SUPPORTS_SEARCH | Root.FLAG_SUPPORTS_IS_CHILD);
+            user.add(Root.COLUMN_TITLE, applicationName);
+            user.add(Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES);
+            user.add(Root.COLUMN_AVAILABLE_BYTES, USER_DIR.getFreeSpace());
+            user.add(Root.COLUMN_ICON, R.mipmap.ic_launcher);
+        } else {
+            final File BASE_DIR = new File(getContext().getFilesDir().getParent());
+            final MatrixCursor.RowBuilder row = result.newRow();
+            row.add(Root.COLUMN_ROOT_ID, getDocIdForFile(BASE_DIR));
+            row.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(BASE_DIR));
+            row.add(Root.COLUMN_SUMMARY, null);
+            row.add(Root.COLUMN_FLAGS, Root.FLAG_SUPPORTS_CREATE | Root.FLAG_SUPPORTS_SEARCH | Root.FLAG_SUPPORTS_IS_CHILD);
+            row.add(Root.COLUMN_TITLE, applicationName);
+            row.add(Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES);
+            row.add(Root.COLUMN_AVAILABLE_BYTES, BASE_DIR.getFreeSpace());
+            row.add(Root.COLUMN_ICON, R.mipmap.ic_launcher);
+        }
+
         return result;
     }
 
@@ -90,12 +120,43 @@ public class RetroDocumentsProvider extends DocumentsProvider {
     }
 
     @Override
+    public String moveDocument(String sourceDocumentId, String sourceParentDocumentId, String targetParentDocumentId) throws FileNotFoundException {
+        File sourceFile = getFileForDocId(sourceDocumentId);
+        File targetParentFile = getFileForDocId(targetParentDocumentId);
+        File destination = new File(targetParentFile, sourceFile.getName());
+
+        boolean success = sourceFile.renameTo(destination);
+        if(!success){
+            throw new FileNotFoundException("Failed to move file " + sourceDocumentId + " to " + targetParentDocumentId);
+        }
+
+        getContext().getContentResolver().notifyChange(DocumentsContract.buildTreeDocumentUri(DOCUMENTS_AUTHORITY, sourceParentDocumentId), null);
+        getContext().getContentResolver().notifyChange(DocumentsContract.buildTreeDocumentUri(DOCUMENTS_AUTHORITY, targetParentDocumentId), null);
+        return getDocIdForFile(destination);
+    }
+
+    @Override
+    public String renameDocument(String documentId, String displayName) throws FileNotFoundException{
+        File document = getFileForDocId(documentId);
+        File destination = new File(document.getParentFile(), displayName);
+
+        boolean success = document.renameTo(destination);
+        if(!success){
+            throw new FileNotFoundException("Failed to rename file " + documentId + " to " + displayName);
+        }
+
+        getContext().getContentResolver().notifyChange(DocumentsContract.buildTreeDocumentUri(DOCUMENTS_AUTHORITY, getDocIdForFile(document.getParentFile())), null);
+        return getDocIdForFile(destination);
+    }
+
+    @Override
     public Cursor queryChildDocuments(String parentDocumentId, String[] projection, String sortOrder) throws FileNotFoundException {
         final MatrixCursor result = new MatrixCursor(projection != null ? projection : DEFAULT_DOCUMENT_PROJECTION);
         final File parent = getFileForDocId(parentDocumentId);
         for (File file : parent.listFiles()) {
             includeFile(result, null, file);
         }
+        result.setNotificationUri(getContext().getContentResolver(), DocumentsContract.buildTreeDocumentUri(DOCUMENTS_AUTHORITY, parentDocumentId));
         return result;
     }
 
@@ -115,6 +176,7 @@ public class RetroDocumentsProvider extends DocumentsProvider {
 
     @Override
     public boolean onCreate() {
+        DOCUMENTS_AUTHORITY = getContext().getPackageName() + ".documents";
         return true;
     }
 
@@ -138,14 +200,25 @@ public class RetroDocumentsProvider extends DocumentsProvider {
         } catch (IOException e) {
             throw new FileNotFoundException("Failed to create document with id " + newFile.getPath());
         }
+        getContext().getContentResolver().notifyChange(DocumentsContract.buildTreeDocumentUri(DOCUMENTS_AUTHORITY, parentDocumentId), null);
         return newFile.getPath();
     }
 
     @Override
     public void deleteDocument(String documentId) throws FileNotFoundException {
         File file = getFileForDocId(documentId);
-        if (!file.delete()) {
-            throw new FileNotFoundException("Failed to delete document with id " + documentId);
+        rm_r(file);
+        getContext().getContentResolver().notifyChange(DocumentsContract.buildTreeDocumentUri(DOCUMENTS_AUTHORITY, getDocIdForFile(file.getParentFile())), null);
+    }
+
+    void rm_r (File file) throws FileNotFoundException{
+        if(file.isDirectory()){
+            for(File child : file.listFiles()) {
+                rm_r(child);
+            }
+        }
+        if(!file.delete()){
+            throw new FileNotFoundException("Could not delete file " + file.getPath());
         }
     }
 
@@ -248,11 +321,11 @@ public class RetroDocumentsProvider extends DocumentsProvider {
 
         int flags = 0;
         if (file.isDirectory()) {
-            if (file.canWrite()) flags |= Document.FLAG_DIR_SUPPORTS_CREATE;
-        } else if (file.canWrite()) {
-            flags |= Document.FLAG_SUPPORTS_WRITE;
+            if (file.canWrite()) flags |= Document.FLAG_DIR_SUPPORTS_CREATE | Document.FLAG_SUPPORTS_RENAME;
+        } else {
+            if (file.canWrite()) flags |= Document.FLAG_SUPPORTS_WRITE | Document.FLAG_SUPPORTS_RENAME;
         }
-        if (file.getParentFile().canWrite()) flags |= Document.FLAG_SUPPORTS_DELETE;
+        if (file.getParentFile().canWrite()) flags |= Document.FLAG_SUPPORTS_DELETE | Document.FLAG_SUPPORTS_MOVE;
 
         final String displayName = file.getName();
         final String mimeType = getMimeType(file);

@@ -1,5 +1,6 @@
 package com.retroarch.browser.mainmenu;
 
+import com.retroarch.BuildConfig;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import com.retroarch.browser.retroactivity.RetroActivityFuture;
 
@@ -116,7 +117,7 @@ public final class MainMenuActivity extends PreferenceActivity
 	public void finalStartup()
 	{
 		Intent retro = new Intent(this, RetroActivityFuture.class);
-		
+
 		if (RetroActivityFuture.isRunning) {
 			// RetroActivity is already running - just bring it to front
 			retro.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
@@ -124,7 +125,7 @@ public final class MainMenuActivity extends PreferenceActivity
 			// RetroActivity not running - full setup with parameters
 			retro.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-			
+
 			startRetroActivity(
 					retro,
 					null,
@@ -134,11 +135,11 @@ public final class MainMenuActivity extends PreferenceActivity
 					getApplicationInfo().dataDir,
 					getApplicationInfo().sourceDir);
 		}
-		
+
 		startActivity(retro);
 		finish();
 	}
-	
+
 
 	@Override
 	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
@@ -178,8 +179,8 @@ public final class MainMenuActivity extends PreferenceActivity
 		retro.putExtra("IME", imePath);
 		retro.putExtra("DATADIR", dataDirPath);
 		retro.putExtra("APK", dataSourcePath);
-		retro.putExtra("SDCARD", Environment.getExternalStorageDirectory().getAbsolutePath());
 		String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + PACKAGE_NAME + "/files";
+		retro.putExtra("SDCARD", BuildConfig.PLAY_STORE_BUILD ? external : Environment.getExternalStorageDirectory().getAbsolutePath());
 		retro.putExtra("EXTERNAL", external);
 	}
 
@@ -195,6 +196,9 @@ public final class MainMenuActivity extends PreferenceActivity
 
 		UserPreferences.updateConfigFile(this);
 
-		checkRuntimePermissions();
+		if (BuildConfig.PLAY_STORE_BUILD)
+			finalStartup();
+		else
+			checkRuntimePermissions();
 	}
 }
