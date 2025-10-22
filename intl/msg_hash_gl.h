@@ -14963,6 +14963,10 @@ MSG_HASH(
    "Erro ao cambiar o medio en RetroLogros: %s"
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "A sesión de RetroAchievements expirou. Por favor, introduce de novo o teu contrasinal e recarga o xogo."
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "O máis baixo"
    )
