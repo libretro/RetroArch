@@ -725,6 +725,9 @@ static int database_info_list_iterate_end_no_match(
          string_list_free(archive_list);
       }
    }
+   else
+      RARCH_LOG("[Scanner] No match for: \"%s\" (%s %08X)\n", path,
+                db_state->serial, db_state->crc);
 
    db_state->list_index  = 0;
    db_state->entry_index = 0;
@@ -833,7 +836,7 @@ static int database_info_list_iterate_found_match(
       fill_pathname(entry_lbl,
             path_basename_nocompression(entry_path), "", str_len);
 
-      RARCH_LOG("[Scanner] No match for: \"%s\", CRC: 0x%08X\n", entry_path_str, db_state->crc);
+      RARCH_LOG("[Scanner] Faulty match for: \"%s\", CRC: 0x%08X\n", entry_path_str, db_state->crc);
    }
 
    if (!string_is_empty(archive_name))
