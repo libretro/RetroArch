@@ -96,10 +96,11 @@ static void *x_input_init(const char *joypad_driver)
    input_keymaps_init_keyboard_lut(rarch_key_map_x11);
 
 #ifdef HAVE_XI2
+   for (i = 0; i < MAX_MOUSE_IDX; i++)
+      x11->mouse_dev_list[i] = -1;
    x11->di = XIQueryDevice(x11->display, XIAllDevices, &cnt);
    for (i = 0; i < cnt; i++)
    {
-      x11->mouse_dev_list[i] = -1;
       dev = &(x11->di[i]);
       RARCH_DBG("[X11] Device detected, %d \"%s\" attached to %d.\n", i, dev->name, dev->attachment);
       if (dev->use == XIMasterPointer)
