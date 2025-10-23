@@ -2525,9 +2525,6 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
              * crop overscan and fills more of the screen. */
             unsigned overscale_h  = underscale_h + 1;
             unsigned max_scale_h  = underscale_h;
-            float width_utilization;
-            float height_utilization;
-
             /* This is the minimum amount content that must be shown in order
              * for overscan to be used.
              *
@@ -2553,29 +2550,6 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             if (height / overscale_h >= overscale_min_height)
                max_scale_h = overscale_h;
             max_scale = MIN(max_scale_w, max_scale_h);
-
-            /* Final step: check if the underscaling margins are too large.
-             *
-             * Sometimes there's no reasonable integer scale that can be used,
-             * such as when scaling 480p to 720p. Overscaling would crop 25% of
-             * the content height, but underscaling would only use 2/3 of the
-             * display's height.
-             *
-             * A threshold of 88% utilization (i.e. 12% margin) captures the
-             * majority of underscaling scenarios for HD resolutions while
-             * keeping the margins relatively small. Noteworthy use cases that
-             * straddle this cutoff include: GBA scaled to 720p; Nintendo DS
-             * scaled to 1080p; and 480p content scaled to 1080p. Past this,
-             * noticeable jumps in margin size would be needed to capture a
-             * relatively small number of additional use cases.
-             * TODO: Make this threshold configurable. */
-            width_utilization  = (float)content_width * max_scale / width;
-            height_utilization = (float)content_height * max_scale / height;
-            if (MAX(height_utilization, width_utilization) < 0.88)
-            {
-               video_viewport_get_scaled_aspect(vp, width, height, y_down);
-               return;
-            }
          }
          else if (scaling == VIDEO_SCALE_INTEGER_SCALING_OVERSCALE)
             max_scale = MIN((width / content_width) + !!(width % content_width),
@@ -2717,6 +2691,32 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
          padding_x = width  - content_width  * (max_scale_w + (half_w * 0.5f));
          padding_y = height - content_height * (max_scale_h + (half_h * 0.5f));
+
+         if (scaling == VIDEO_SCALE_INTEGER_SCALING_SMART)
+         {
+            /* Final step: check if the underscaling margins are too large.
+             *
+             * Sometimes there's no reasonable integer scale that can be used,
+             * such as when scaling 480p to 720p. Overscaling would crop 25% of
+             * the content height, but underscaling would only use 2/3 of the
+             * display's height.
+             *
+             * A threshold of 88% utilization (i.e. 12% margin) captures the
+             * majority of underscaling scenarios for HD resolutions while
+             * keeping the margins relatively small. Noteworthy use cases that
+             * straddle this cutoff include: GBA scaled to 720p; Nintendo DS
+             * scaled to 1080p; and 480p content scaled to 1080p. Past this,
+             * noticeable jumps in margin size would be needed to capture a
+             * relatively small number of additional use cases.
+             * TODO: Make this threshold configurable. */
+            float width_utilization  = (float)(width  - padding_x) / width;
+            float height_utilization = (float)(height - padding_y) / height;
+            if (MAX(height_utilization, width_utilization) < 0.88)
+            {
+               video_viewport_get_scaled_aspect(vp, width, height, y_down);
+               return;
+            }
+         }
 
          /* Use regular scaling if overscale is unreasonable */
          if (     padding_x <= (int)-video_st->av_info.geometry.base_width
