@@ -2490,10 +2490,6 @@ MSG_HASH(
    "Tỷ lệ số nguyên"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Làm tròn xuống hoặc lên đến số nguyên tiếp theo. 'Thông minh' sẽ giảm xuống mức dưới tỷ lệ khi hình ảnh bị cắt quá nhiều."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "Thu nhỏ hình"
    )

@@ -2462,10 +2462,6 @@ MSG_HASH(
    "Escalado de escala enteira"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Redondear cara abaixo ou arriba ao próximo enteiro. 'Intelixente' reduce a escala cando a imaxe está recortada en exceso."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "Subescala"
    )

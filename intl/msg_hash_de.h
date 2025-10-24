@@ -2407,7 +2407,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Auf die nächste Ganzzahl auf- oder abrunden. „Intelligent“ wechselt zu Unterskalieren, wenn das Bild zu stark beschnitten wird."
+   "Auf die nächste ganze Zahl auf- oder abrunden. „Smart“ wechselt zu einer Unterskalierung, wenn das Bild zu stark beschnitten wird, und fällt schließlich auf eine nicht ganzzahlige Skalierung zurück, wenn die Unterskalierungsränder zu groß sind."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,

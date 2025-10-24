@@ -2370,10 +2370,6 @@ MSG_HASH(
    "Celočíselné škálování"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Zaokrouhlujte dolů nebo nahoru na celé číslo. Při příliš velkém oříznutí obrázku se hodnota 'Smart' sníží na podměrečné."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    "Chytrá"
    )

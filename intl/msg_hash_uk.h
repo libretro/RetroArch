@@ -2498,10 +2498,6 @@ MSG_HASH(
    "Цілочисельне масштабування"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Округліть до наступного цілого числа. «Розумний» зменшується до масштабу, коли зображення надто обрізане."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "Занижена шкала"
    )

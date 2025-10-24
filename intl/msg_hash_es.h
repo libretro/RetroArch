@@ -2482,10 +2482,6 @@ MSG_HASH(
    "Tipo de escalado por números enteros"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Aumenta o reduce la escala al siguiente valor entero. «Inteligente» reducirá la escala cuando la imagen vaya a quedar demasiado recortada."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "Reducir escala"
    )
