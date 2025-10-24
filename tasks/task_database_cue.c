@@ -617,6 +617,8 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
    /** Dissect this pre serial into parts **/
    __len              = strlen(pre_game_id);
+   /** Force minimum serial length since it is assumed **/
+   __len              = (__len < 2) ? 2 : __len;
    ___len             = __len - 2;
    strncpy(check_suffix_50, &pre_game_id[___len], __len - 2 + 1);
    check_suffix_50[2] = '\0';
