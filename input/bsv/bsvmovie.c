@@ -1682,7 +1682,7 @@ bool movie_find_checkpoint_before(bsv_movie_t *movie, int64_t frame, bool consid
    /* skip to prev would prefer to go back at least 30 frames if
       rewinding when not paused, but won't skip over more than one
       checkpoint while going backwards. */
-   const int64_t prev_skip_min_distance = 60;
+   const int64_t prev_skip_min_distance = 30;
    int64_t target_frame = frame, cur_frame = 0;
    int64_t initial_pos, cp_pos=-1, cp_frame=-1;
    int64_t maybe_last_frame = -1, maybe_last_pos = -1;
