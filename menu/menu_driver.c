@@ -7165,9 +7165,10 @@ int action_cycle_thumbnail(unsigned mode)
       if (cur_primary == cur_secondary)
          cur_secondary++;
 
-      /* Wrap secondary to no image, and skip logo */
+      /* Wrap secondary to no image, and skip logo.
+       * If primary disabled, wrap to first image. */
       if (cur_secondary > PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 2)
-         cur_secondary = 0;
+         cur_secondary = (cur_primary) ? 0 : 1;
 
       configuration_set_uint(settings, settings->uints.menu_left_thumbnails, cur_secondary);
    }
