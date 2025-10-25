@@ -5647,6 +5647,21 @@ unsigned menu_event(
          if (     ok_enum_idx == MENU_ENUM_LABEL_RESUME_CONTENT
                && ok_enum_idx == entry.enum_idx)
             ok_trigger = ok_trigger_release;
+
+         /* Save state resume */
+         if (     settings->bools.menu_savestate_resume
+               && (  ok_enum_idx == MENU_ENUM_LABEL_LOAD_STATE
+                  || ok_enum_idx == MENU_ENUM_LABEL_SAVE_STATE
+                  || ok_enum_idx == MENU_ENUM_LABEL_UNDO_LOAD_STATE
+                  || ok_enum_idx == MENU_ENUM_LABEL_UNDO_SAVE_STATE)
+               && ok_enum_idx == entry.enum_idx)
+            ok_trigger = ok_trigger_release;
+
+         /* Disc insert resume */
+         if (     settings->bools.menu_insert_disk_resume
+               && ok_enum_idx == MENU_ENUM_LABEL_DISK_TRAY_INSERT
+               && ok_enum_idx == entry.enum_idx)
+            ok_trigger = ok_trigger_release;
       }
 
       /* Prevent holding down left/right with boolean settings */
