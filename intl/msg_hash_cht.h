@@ -2330,10 +2330,6 @@ MSG_HASH(
    "整數縮放模式"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "設定可以使用<最大化>或<最小化>調整比例, 設定<智能型>時影像過於放大會自動降低比例。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "最小化"
    )

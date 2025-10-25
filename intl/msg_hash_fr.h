@@ -2459,7 +2459,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Arrondir vers le bas ou jusqu'à l'entier suivant. 'Intelligent' passe à la sous-échelle lorsque l'image est trop recadrée."
+   "Arrondir à l'entier précédent ou suivant. 'Intelligent' sous-dimensionne lorsque l'image est trop recadrée, et revient finalement à l'échelle non entière si les marges de sous-dimension sont trop grandes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,

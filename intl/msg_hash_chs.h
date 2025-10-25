@@ -2498,10 +2498,6 @@ MSG_HASH(
    "整数倍缩放"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "向下取整或向上取整至最接近的整数。当图像裁剪过度时，\"智能\"缩放会转为降尺度处理。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "小尺度"
    )

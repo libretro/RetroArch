@@ -2475,7 +2475,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Aşağıya veya yukarıya bir sonraki tam sayıya yuvarlayın. Resim çok fazla kırpıldığında 'Akıllı' alt ölçeğe düşer."
+   "Bir sonraki tam sayıya yuvarlar. Görüntü çok fazla kırpıldığında 'Akıllı' ölçeklendirme alt ölçeklendirmeye düşer ve alt ölçeklendirme kenar boşlukları çok büyükse tam sayı olmayan ölçeklendirmeye geri döner."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,

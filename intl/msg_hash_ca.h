@@ -2475,7 +2475,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Augmenta o disminueix l'escala del següent valor enter. 'Intel·ligent' disminueix l'escala si la imatge queda retallada."
+   "Arrodoneix al següent nombre enter. 'Smart' redeueix l'escala quan la imatge està massa retallada, i acaba en un escalat no enter si els marges de reescalat son massa grans."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
@@ -15757,7 +15757,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
-   "Mode 'Touchpad' pel ratolí virtual"
+   "Mode «Touchpad» del ratolí virtual"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
@@ -15765,7 +15765,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
-   "Mode 'Trackball' del ratolí virtual"
+   "Mode «Trackball» del ratolí virtual"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
@@ -15773,7 +15773,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
-   "Empra els gestos pel ratolí virtual"
+   "Gestos del ratolí virtual"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,

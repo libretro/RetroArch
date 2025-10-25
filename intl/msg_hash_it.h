@@ -2419,7 +2419,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Arrotonda o fino al prossimo intero. 'Smart' scende in sottoscala quando l'immagine viene ritagliata troppo."
+   "Arrotonda o fino al prossimo numero intero. 'Smart' scende in sottoscala quando l'immagine viene ritagliata troppo, e infine cade a scala non-interi se i margini sottoscala sono troppo grandi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,

@@ -2498,10 +2498,6 @@ MSG_HASH(
    "Масштабирование целочисленной шкалы"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Округлять вниз или вверх до ближайшего целого значения. 'Умный' режим при избыточном кадрировании изображения переключается на занижение масштаба."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "Занижать масштаб"
    )

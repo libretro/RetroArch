@@ -2410,10 +2410,6 @@ MSG_HASH(
    "Heltalsskalning"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Avrunda nedåt eller uppåt till nästa heltal. ”Smart” sjunker till underskala när bilden beskärs för mycket."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "Underskala"
    )

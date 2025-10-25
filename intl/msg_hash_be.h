@@ -2450,10 +2450,6 @@ MSG_HASH(
    "Цэлалікавае маштабаванне"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Акругліць у меншы або большы бок да наступнага цэлага ліку. 'Разумна' заніжае маштаб пры празмернай абрэзцы выявы."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "Заніжэнне маштабу"
    )

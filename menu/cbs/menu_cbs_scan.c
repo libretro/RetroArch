@@ -139,7 +139,7 @@ int action_switch_thumbnail(const char *path,
       if (settings->uints.gfx_thumbnails)
          action_cycle_thumbnail(MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY);
       else
-         action_cycle_thumbnail(MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY);
+         action_cycle_thumbnail(MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY);
 
       if (menu_st->driver_ctx)
       {

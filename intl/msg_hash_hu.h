@@ -2466,10 +2466,6 @@ MSG_HASH(
    "Egész-szorzós méretezés"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Kerekítés felfele vagy lefele a következő egész számra. A \"Smart\" beállítás átvált lefelé méretezésre, ha a kép széléből túl sok lenne levágva."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "Alulméretezés"
    )

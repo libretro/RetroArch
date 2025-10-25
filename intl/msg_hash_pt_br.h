@@ -2459,7 +2459,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Arredonde para baixo ou para cima para o próximo inteiro. 'Inteligente' reduzirá a escala quando a imagem é cortada demais."
+   "Arredonda para o número inteiro mais próximo (para cima ou para baixo). A opção 'Smart' reduz a escala quando a imagem sofre um corte excessivo e, por fim, recorre à escala não inteira se as margens da escala reduzida forem muito grandes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,

@@ -496,6 +496,7 @@ char *bin_to_hex_alloc(const uint8_t *data, size_t len)
    if (len && !ret)
       return NULL;
 
+   ret[0] = '\0';
    for (i = 0; i < len; i++)
       snprintf(ret+i * 2, 3, "%02X", data[i]);
    return ret;

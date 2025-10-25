@@ -2502,10 +2502,6 @@ MSG_HASH(
    "정수 단위 조정 방식"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "정수 배율을 올림으로 계산할지 버림으로 계산할지 설정합니다. '스마트'로 설정하면 화면이 너무 많이 잘려 나갈 것 같을 때는 버림으로 계산합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "버림"
    )

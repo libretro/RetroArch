@@ -6811,6 +6811,18 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
             &thumbnails_missing))
          rgui->flags |=  RGUI_FLAG_ENTRY_HAS_THUMBNAIL;
    }
+   else if (!string_is_empty(menu_st->thumbnail_path_data->left_path))
+   {
+      if (rgui_request_thumbnail(
+            (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+                  ? &rgui->fs_thumbnail
+                  : &rgui->mini_left_thumbnail,
+            GFX_THUMBNAIL_LEFT,
+            &rgui->left_thumbnail_queue_size,
+            menu_st->thumbnail_path_data->left_path,
+            &thumbnails_missing))
+         rgui->flags |=  RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
+   }
 
    /* Left thumbnail
     * (Note: there is no need to load this when viewing
@@ -7232,7 +7244,7 @@ static void rgui_action_switch_thumbnail(rgui_t *rgui)
 
       /* Wrap secondary to no image, and skip logo */
       if (cur_secondary > PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 2)
-         cur_secondary = 0;
+         cur_secondary = (cur_primary) ? 0 : 1;
 
       configuration_set_uint(settings, settings->uints.menu_left_thumbnails, cur_secondary);
    }
@@ -8014,17 +8026,18 @@ static void rgui_thumbnail_cycle_dupe(rgui_t *rgui)
 {
    settings_t *settings = config_get_ptr();
 
-   if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
+   if (     settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails
+         && settings->uints.gfx_thumbnails)
    {
       unsigned tmp = (rgui->gfx_thumbnails_prev > 0)
-                  ? (unsigned)rgui->gfx_thumbnails_prev
-                  : settings->uints.gfx_thumbnails + 1;
+            ? (unsigned)rgui->gfx_thumbnails_prev
+            : settings->uints.gfx_thumbnails + 1;
+
+      if (tmp > 3)
+         tmp = 1;
+
       configuration_set_uint(settings,
             settings->uints.gfx_thumbnails, tmp);
-
-      if (settings->uints.gfx_thumbnails > 3)
-         configuration_set_uint(settings,
-               settings->uints.gfx_thumbnails, 1);
    }
 }
 
@@ -8138,27 +8151,9 @@ static enum menu_action rgui_parse_menu_entry_action(
             new_action = MENU_ACTION_NOOP;
 
             if (     (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
-                  && rgui->gfx_thumbnails_prev < 0)
+                  && rgui->gfx_thumbnails_prev < 0
+                  && settings->uints.gfx_thumbnails)
                rgui->gfx_thumbnails_prev = settings->uints.gfx_thumbnails;
-
-            /* Show fullscreen image from the left slot if main slot is empty */
-            if (     !rgui->mini_thumbnail.is_valid
-                  &&  rgui->mini_left_thumbnail.is_valid)
-            {
-               if (    (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
-                     && rgui->gfx_thumbnails_prev > 0)
-               {
-                  configuration_set_uint(settings,
-                        settings->uints.gfx_thumbnails,
-                        rgui->gfx_thumbnails_prev);
-               }
-               else if ((!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)))
-               {
-                  configuration_set_uint(settings,
-                        settings->uints.gfx_thumbnails,
-                        settings->uints.menu_left_thumbnails);
-               }
-            }
 
             /* Avoid showing the same thumbnail after returning from fullscreen mode after cycling images */
             if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)

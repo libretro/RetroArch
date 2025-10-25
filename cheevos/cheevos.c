@@ -52,6 +52,10 @@
 #include "streams/chd_stream.h"
 #endif
 
+#ifdef HAVE_CHEEVOS_RVZ
+#include "cheevos_rvz.h"
+#endif
+
 #include "cheevos.h"
 #include "cheevos_client.h"
 #include "cheevos_menu.h"
@@ -1636,8 +1640,33 @@ bool rcheevos_load(const void *data)
       gfx_widget_set_cheevos_set_loading(true);
 #endif
 
-   rc_client_begin_identify_and_load_game(rcheevos_locals.client, RC_CONSOLE_UNKNOWN,
-      info->path, (const uint8_t*)info->data, info->size, rcheevos_client_load_game_callback, NULL);
+   /* Detect RVZ files and determine console type (GameCube or Wii) */
+   {
+      uint32_t console_id = RC_CONSOLE_UNKNOWN;
+
+#ifdef HAVE_CHEEVOS_RVZ
+      if (string_is_equal_noncase(path_get_extension(info->path), "rvz"))
+      {
+         console_id = rcheevos_rvz_get_console_id(info->path);
+
+         /* Only register custom file reader for valid RVZ files */
+         if (console_id != RC_CONSOLE_UNKNOWN)
+         {
+            struct rc_hash_filereader filereader;
+
+            filereader.open  = rcheevos_rvz_open;
+            filereader.seek  = rcheevos_rvz_seek;
+            filereader.tell  = rcheevos_rvz_tell;
+            filereader.read  = rcheevos_rvz_read;
+            filereader.close = rcheevos_rvz_close;
+            rc_hash_init_custom_filereader(&filereader);
+         }
+      }
+#endif
+
+      rc_client_begin_identify_and_load_game(rcheevos_locals.client, console_id,
+         info->path, (const uint8_t*)info->data, info->size, rcheevos_client_load_game_callback, NULL);
+   }
 
    return true;
 }
