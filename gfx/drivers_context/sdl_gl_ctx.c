@@ -42,6 +42,7 @@ typedef struct gfx_ctx_sdl_data
 #ifdef HAVE_SDL2
    SDL_Window    *win;
    SDL_GLContext  ctx;
+   SDL_GLContext  shared_ctx;
 #else
    SDL_Surface *win;
 #endif
@@ -67,10 +68,14 @@ static void sdl_ctx_destroy_resources(gfx_ctx_sdl_data_t *sdl)
    if (sdl->ctx)
       SDL_GL_DeleteContext(sdl->ctx);
 
+   if (sdl->shared_ctx)
+      SDL_GL_DeleteContext(sdl->shared_ctx);
+
    if (sdl->win)
       SDL_DestroyWindow(sdl->win);
 
    sdl->ctx = NULL;
+   sdl->shared_ctx = NULL;
 #else
    if (sdl->win)
       SDL_FreeSurface(sdl->win);
@@ -423,6 +428,35 @@ static uint32_t sdl_ctx_get_flags(void *data)
 static bool sdl_ctx_suppress_screensaver(void *data, bool enable) { return false; }
 static void sdl_ctx_set_flags(void *data, uint32_t flags) { }
 
+static void sdl_ctx_bind_hw_render(void *data, bool enable)
+{
+#ifdef HAVE_SDL2
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
+   if (!sdl || !sdl->win || !sdl->ctx)
+      return;
+
+   if (enable)
+   {
+      if (!sdl->shared_ctx)
+      {
+         SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+         SDL_GL_MakeCurrent(sdl->win, sdl->ctx);
+         sdl->shared_ctx = SDL_GL_CreateContext(sdl->win);
+         if (!sdl->shared_ctx)
+         {
+            RARCH_ERR("[SDL_GL]: Failed to create shared GL context: %s\n", SDL_GetError());
+            return;
+         }
+      }
+      SDL_GL_MakeCurrent(sdl->win, sdl->shared_ctx);
+   }
+   else
+   {
+      SDL_GL_MakeCurrent(sdl->win, sdl->ctx);
+   }
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_sdl_gl =
 {
    sdl_ctx_init,
@@ -453,7 +487,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    "gl_sdl",
    sdl_ctx_get_flags,
    sdl_ctx_set_flags,
-   NULL, /* bind_hw_render */
+   sdl_ctx_bind_hw_render,
    NULL,
    NULL
 };
