@@ -2478,6 +2478,10 @@ MSG_HASH(
    "Scálú Scála Slánuimhreach"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Babhtaigh síos nó suas go dtí an chéad slánuimhir eile. Titeann 'Cliste' go dtí scála íseal nuair a bhíonn an íomhá ró-bhearrtha, agus ar deireadh titeann sé ar ais go scálú neamh-shlánuimhreach má tá na corrlaigh íseal-scála ró-mhór."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "Tearc-scála"
    )

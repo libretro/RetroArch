@@ -2482,6 +2482,10 @@ MSG_HASH(
    "Tipo de escalado por números enteros"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Calcula el redondeo del siguiente número entero a más o a menos. «Inteligente» reduce la escala cuando la imagen esté demasiado recortada, y en caso de que los márgenes sean demasiado grandes, desactiva el escalado por números enteros."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "Reducir escala"
    )
@@ -9415,7 +9419,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
-   "Guardar archivo de reasignación como"
+   "Guardar archivo de reasignación como..."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
@@ -15100,7 +15104,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
-   "Inicio de sesión a RetroAchievements expirado. Por favor, reintroduce tu contraseña y reinicia el juego."
+   "Sesión de RetroAchievements caducada. Vuelve a introducir tu contraseña y reinicia el juego."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
