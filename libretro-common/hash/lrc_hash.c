@@ -470,8 +470,10 @@ static void SHA1PadMessage(struct sha1_context *context)
    SHA1ProcessMessageBlock(context);
 }
 
-static int SHA1Result(struct sha1_context *context)
+static int SHA1Result(struct sha1_context *context, unsigned char digest[20])
 {
+   unsigned i;
+
    if (context->Corrupted)
       return 0;
 
@@ -479,6 +481,16 @@ static int SHA1Result(struct sha1_context *context)
    {
       SHA1PadMessage(context);
       context->Computed = 1;
+   }
+
+   if (digest)
+   {
+      /* Convert Message_Digest to byte array */
+      for (i = 0; i < 20; i++)
+      {
+         digest[i] = (unsigned char)
+            ((context->Message_Digest[i>>2] >> 8 * (3 - (i & 0x03))) & 0xFF);
+      }
    }
 
    return 1;
@@ -521,6 +533,17 @@ static void SHA1Input(struct sha1_context *context,
    }
 }
 
+void sha1_digest(const uint8_t* data, size_t len, uint8_t digest[20])
+{
+   struct sha1_context sha;
+
+   SHA1Reset(&sha);
+   SHA1Input(&sha, data, len);
+
+   if (!SHA1Result(&sha, digest))
+      memset(digest, 0, 20);
+}
+
 int sha1_calculate(const char *path, char *result)
 {
    struct sha1_context sha;
@@ -546,7 +569,7 @@ int sha1_calculate(const char *path, char *result)
       SHA1Input(&sha, buff, rv);
    } while (rv);
 
-   if (!SHA1Result(&sha))
+   if (!SHA1Result(&sha, NULL))
       goto error;
 
    sprintf(result, "%08X%08X%08X%08X%08X",
