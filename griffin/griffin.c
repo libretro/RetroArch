@@ -1082,6 +1082,10 @@ FILE
 #include "../libretro-common/media/media_detect_cd.c"
 #endif
 
+#ifdef ANDROID
+#include "../libretro-common/vfs/vfs_implementation_saf.c"
+#endif
+
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
 #if defined(__linux__)

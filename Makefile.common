@@ -302,6 +302,10 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/streams/network_stream.o \
        $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o
 
+ifeq ($(ANDROID), 1)
+   OBJ += $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_saf.o
+endif
+
 OBJ += \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \

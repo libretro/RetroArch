@@ -99,7 +99,7 @@ android {
     main {
       manifest.srcFile 'AndroidManifest.xml'
       assets.srcDirs = ['assets']
-      java.srcDirs = ['src', '../phoenix-common/src']
+      java.srcDirs = ['src', '../phoenix-common/src', '../../../libretro-common/vfs/saf/src']
       jniLibs.srcDir '../phoenix-common/libs'
       jni.srcDirs = []
       res.srcDirs = ['res', '../phoenix-common/res']
