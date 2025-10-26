@@ -688,6 +688,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_cheats_applied,  M
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_patch_applied,   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_remap_load,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_user_mapped_to_core_port, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_USER_MAPPED_TO_CORE_PORT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_config_override_load, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_set_initial_disk, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_disk_control, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL)
@@ -823,6 +824,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_autosave_interval,             MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_max_keep,               MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_checkpoint_interval,    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_checkpoint_deserialize, MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_assign_ports_on_button_press, MENU_ENUM_SUBLABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_remap_binds_enable,      MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_remap_sort_by_controller_enable,      MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_autodetect_enable,       MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE)
@@ -4138,6 +4140,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_sensors_enable);
             break;
+         case MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_assign_ports_on_button_press);
+            break;
          case MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_auto_mouse_grab);
             break;
@@ -4534,6 +4539,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_remap_load);
+            break;
+         case MENU_ENUM_LABEL_NOTIFICATION_SHOW_USER_MAPPED_TO_CORE_PORT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_user_mapped_to_core_port);
             break;
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_config_override_load);

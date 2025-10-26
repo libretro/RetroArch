@@ -3338,6 +3338,14 @@ MSG_HASH(
    "Override the input binds with the remapped binds set for the current core."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+   "Assign Ports on Button Press"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+   "Core input ports are mapped sequentially when input is received from a physical input device. The first person to press a button becomes player 1, the second becomes player 2, etc."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "Sort Remaps By Gamepad"
    )
@@ -6000,6 +6008,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
    "Display an on-screen message when loading input remap files."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_USER_MAPPED_TO_CORE_PORT,
+   "Assign Ports on Button Press Notifications"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_USER_MAPPED_TO_CORE_PORT,
+   "Display an on-screen message when a user is mapped to a core port."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
@@ -15553,6 +15569,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
    "%s (%u/%u) not configured, using fallback"
+   )
+MSG_HASH(
+   MSG_DEVICE_MAPPED_TO_CORE_PORT_NR,
+   "%s is Player %u"
+   )
+MSG_HASH(
+   MSG_PORT_MAPPED_TO_CORE_PORT_NR,
+   "Port %u is Player %u"
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
