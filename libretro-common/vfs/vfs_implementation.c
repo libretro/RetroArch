@@ -557,21 +557,24 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #endif
 
          default:
+            {
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(LEGACY_WIN32)
-            char *path_local    = utf8_to_local_string_alloc(path);
-            stream->fd          = open(path_local, flags, 0);
-            if (path_local)
-               free(path_local);
+               char *path_local    = utf8_to_local_string_alloc(path);
+               stream->fd          = open(path_local, flags, 0);
+               if (path_local)
+                  free(path_local);
 #else
-            wchar_t * path_wide = utf8_to_utf16_string_alloc(path);
-            stream->fd          = _wopen(path_wide, flags, 0);
-            if (path_wide)
-               free(path_wide);
+               wchar_t * path_wide = utf8_to_utf16_string_alloc(path);
+               stream->fd          = _wopen(path_wide, flags, 0);
+               if (path_wide)
+                  free(path_wide);
 #endif
 #else
-            stream->fd          = open(path, flags, 0);
+               stream->fd          = open(path, flags, 0);
 #endif
+            }
+            break;
       }
 
       if (stream->fd == -1)
