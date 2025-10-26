@@ -2171,6 +2171,10 @@ MSG_HASH(
    "input_remap_binds_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_REMAP_PORTS_ON_BUTTON_PRESS,
+   "input_remap_ports_on_button_press"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "input_remap_sort_by_controller_enable"
    )
@@ -6265,6 +6269,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD,
    "notification_show_remap_load"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_USER_MAPPED_TO_CORE_PORT,
+   "notification_show_user_mapped_to_core_port"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,

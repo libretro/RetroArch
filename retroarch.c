@@ -5541,7 +5541,11 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_CONTROLLER_INIT:
          {
             rarch_system_info_t *sys_info = &runloop_st->system;
-            if (sys_info)
+            bool core_inited = (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED) ? true : false;
+
+            /* Only (re)init controllers once the core is initialized otherwise the
+             * core might try to use callbacks that are not yet set. */
+            if (sys_info && core_inited)
                command_event_init_controllers(sys_info, settings,
                      settings->uints.input_max_users);
          }

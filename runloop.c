@@ -4797,7 +4797,12 @@ bool runloop_event_init_core(
     *   at runtime should not 'bleed through' into the
     *   master config file */
    input_remapping_cache_global_config();
+
 #ifdef HAVE_CONFIGFILE
+   /* The input_remap_ports_on_button_press setting might have been changed
+    * in the config file or in the override files loaded above. */
+   input_remapping_set_remap_ports_defaults();
+
    if (auto_remaps_enable)
       config_load_remap(dir_input_remapping, &runloop_st->system);
 #endif
