@@ -23,8 +23,6 @@
 #ifndef __LIBRETRO_SDK_VFS_IMPLEMENTATION_SAF_H
 #define __LIBRETRO_SDK_VFS_IMPLEMENTATION_SAF_H
 
-#ifdef HAVE_SAF
-
 #include <stdio.h>
 #include <stdint.h>
 #include <jni.h>
@@ -97,5 +95,4 @@ int retro_vfs_closedir_saf(libretro_vfs_implementation_saf_dir *dirstream);
 
 RETRO_END_DECLS
 
-#endif
 #endif
