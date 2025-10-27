@@ -233,15 +233,12 @@ bool retro_vfs_path_split_saf(struct libretro_vfs_implementation_saf_path_split_
          *tree_ptr++ = *serialized_path++;
    }
 
-   if (*serialized_path == 0)
-   {
-      free(tree);
-      return false;
-   }
-
    *tree_ptr = 0;
 
-   path = strdup(serialized_path + 1);
+   if (*serialized_path != 0)
+      ++serialized_path;
+
+   path = strdup(serialized_path);
    if (path == NULL)
    {
       free(tree);
