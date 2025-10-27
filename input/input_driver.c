@@ -6017,40 +6017,6 @@ void input_driver_poll(void)
          && input_st->current_driver->poll)
       input_st->current_driver->poll(input_st->current_data);
 
-   input_st->turbo_btns.count++;
-
-   if (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
-   {
-      for (i = 0; i < max_users; i++)
-         input_st->turbo_btns.frame_enable[i] = 0;
-      return;
-   }
-
-   /* This rarch_joypad_info_t struct contains the device index + autoconfig binds for the
-    * controller to be queried, and also (for unknown reasons) the analog axis threshold
-    * when mapping analog stick to dpad input. */
-   for (i = 0; i < max_users; i++)
-   {
-      uint16_t button_id = RARCH_TURBO_ENABLE;
-
-      if (settings->ints.input_turbo_bind != -1)
-         button_id = settings->ints.input_turbo_bind;
-
-      joypad_info[i].axis_threshold        = input_axis_threshold;
-      joypad_info[i].joy_idx               = settings->uints.input_joypad_index[i];
-      joypad_info[i].auto_binds            = input_autoconf_binds[joypad_info[i].joy_idx];
-
-      input_st->turbo_btns.frame_enable[i] =
-               (*input_st->libretro_input_binds[i])[button_id].valid
-            && settings->bools.input_turbo_enable ?
-         input_state_wrap(input_st->current_driver, input_st->current_data,
-               joypad, sec_joypad, &joypad_info[i],
-               (*input_st->libretro_input_binds),
-               (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-               (unsigned)i,
-               RETRO_DEVICE_JOYPAD, 0, button_id) : 0;
-   }
-
 #ifdef HAVE_OVERLAY
    if (      input_st->overlay_ptr
          && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE))
@@ -6090,6 +6056,50 @@ void input_driver_poll(void)
             settings->floats.input_axis_threshold);
    }
 #endif
+
+   input_st->turbo_btns.count++;
+
+   if (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
+   {
+      for (i = 0; i < max_users; i++)
+         input_st->turbo_btns.frame_enable[i] = 0;
+      return;
+   }
+
+   /* This rarch_joypad_info_t struct contains the device index + autoconfig binds for the
+    * controller to be queried, and also (for unknown reasons) the analog axis threshold
+    * when mapping analog stick to dpad input. */
+   for (i = 0; i < max_users; i++)
+   {
+      uint16_t button_id = RARCH_TURBO_ENABLE;
+      bool turbo_enable  = settings->bools.input_turbo_enable;
+
+      if (settings->ints.input_turbo_bind != -1)
+         button_id = settings->ints.input_turbo_bind;
+
+      joypad_info[i].axis_threshold        = input_axis_threshold;
+      joypad_info[i].joy_idx               = settings->uints.input_joypad_index[i];
+      joypad_info[i].auto_binds            = input_autoconf_binds[joypad_info[i].joy_idx];
+
+      input_st->turbo_btns.frame_enable[i] =
+               (*input_st->libretro_input_binds[i])[button_id].valid
+            && turbo_enable ?
+         input_state_wrap(input_st->current_driver, input_st->current_data,
+               joypad, sec_joypad, &joypad_info[i],
+               (*input_st->libretro_input_binds),
+               (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+               (unsigned)i,
+               RETRO_DEVICE_JOYPAD, 0, button_id) : 0;
+
+#ifdef HAVE_OVERLAY
+      if (     (i == 0)
+            && turbo_enable
+            && input_st->overlay_ptr
+            && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
+            && BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, button_id))
+         input_st->turbo_btns.frame_enable[i] = true;
+#endif
+   }
 
 #ifdef HAVE_MENU
    if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
