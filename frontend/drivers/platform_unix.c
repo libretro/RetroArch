@@ -2179,6 +2179,8 @@ static void frontend_unix_init(void *data)
    GET_METHOD_ID(env, android_app->accessibilitySpeak, class,
          "accessibilitySpeak", "(Ljava/lang/String;)V");
 
+   CALL_BOOLEAN_METHOD(env, android_app->is_play_store_build, android_app->activity->clazz, android_app->isPlayStoreBuild)
+
 #ifdef HAVE_SAF
    GET_METHOD_ID(env, android_app->requestOpenDocumentTree, class,
          "requestOpenDocumentTree", "()V");
@@ -2234,53 +2236,73 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    CALL_OBJ_METHOD(env, obj, g_android->activity->clazz,
          g_android->getIntent);
 
-   if (g_android->getVolumeCount)
+   if (!g_android->is_play_store_build && g_android->getVolumeCount)
    {
       CALL_INT_METHOD(env, output,
          g_android->activity->clazz, g_android->getVolumeCount);
       volume_count = output;
    }
 
-   if (!string_is_empty(internal_storage_path))
+   if (!g_android->is_play_store_build)
    {
-      if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
+      if (!string_is_empty(internal_storage_path))
       {
-         char user_data_path[PATH_MAX_LENGTH];
-         fill_pathname_join_special(user_data_path,
-               internal_storage_path, "RetroArch",
-               sizeof(user_data_path));
+         if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
+         {
+            char user_data_path[PATH_MAX_LENGTH];
+            fill_pathname_join_special(user_data_path,
+                  internal_storage_path, "RetroArch",
+                  sizeof(user_data_path));
+
+            menu_entries_append(list,
+                  user_data_path,
+                  msg_hash_to_str(MSG_INTERNAL_STORAGE),
+                  enum_idx,
+                  FILE_TYPE_DIRECTORY, 0, 0, NULL);
+         }
 
          menu_entries_append(list,
-               user_data_path,
+               internal_storage_path,
                msg_hash_to_str(MSG_INTERNAL_STORAGE),
+               enum_idx,
+               FILE_TYPE_DIRECTORY, 0, 0, NULL);
+      }
+      else
+         menu_entries_append(list,
+               "/storage/emulated/0",
+               msg_hash_to_str(MSG_REMOVABLE_STORAGE),
+               enum_idx,
+               FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   }
+
+   if (!g_android->is_play_store_build)
+      menu_entries_append(list,
+            "/storage",
+            msg_hash_to_str(MSG_REMOVABLE_STORAGE),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   if (!string_is_empty(internal_storage_app_path))
+   {
+      if (g_android->is_play_store_build)
+      {
+         char user_data_app_path[PATH_MAX_LENGTH];
+         fill_pathname_join_special(user_data_app_path,
+               internal_storage_app_path, "RetroArch",
+               sizeof(user_data_app_path));
+
+         menu_entries_append(list,
+               user_data_app_path,
+               msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
                enum_idx,
                FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
 
       menu_entries_append(list,
-            internal_storage_path,
-            msg_hash_to_str(MSG_INTERNAL_STORAGE),
-            enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   }
-   else
-      menu_entries_append(list,
-            "/storage/emulated/0",
-            msg_hash_to_str(MSG_REMOVABLE_STORAGE),
-            enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0, NULL);
-
-   menu_entries_append(list,
-         "/storage",
-         msg_hash_to_str(MSG_REMOVABLE_STORAGE),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   if (!string_is_empty(internal_storage_app_path))
-      menu_entries_append(list,
             internal_storage_app_path,
             msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   }
    if (!string_is_empty(app_dir))
       menu_entries_append(list,
             app_dir,
@@ -2316,7 +2338,6 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   enum_idx,
                   FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
-
    }
 
 #ifdef HAVE_SAF
@@ -2408,10 +2429,17 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    }
 #endif
 
-   menu_entries_append(list, "/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+#ifdef ANDROID
+   if (!g_android->is_play_store_build)
+#else
+   if (1)
+#endif
+   {
+      menu_entries_append(list, "/",
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   }
 #endif
 
    return 0;

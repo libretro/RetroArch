@@ -193,6 +193,8 @@ struct android_app
    uint16_t rumble_last_strength[MAX_USERS];
    int id[MAX_USERS];
 
+   bool is_play_store_build;
+
 #ifdef HAVE_SAF
    jmethodID requestOpenDocumentTree;
    bool have_saf;
