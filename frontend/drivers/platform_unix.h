@@ -192,6 +192,11 @@ struct android_app
    uint16_t rumble_last_strength_weak[MAX_USERS];
    uint16_t rumble_last_strength[MAX_USERS];
    int id[MAX_USERS];
+
+#ifdef HAVE_SAF
+   jmethodID requestOpenDocumentTree;
+   bool have_saf;
+#endif
 };
 
 enum
@@ -368,6 +373,10 @@ void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 extern struct android_app *g_android;
 
 bool is_screen_reader_enabled(void);
+
+#ifdef HAVE_SAF
+void android_show_saf_tree_picker(void);
+#endif
 
 #endif
 

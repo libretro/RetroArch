@@ -608,6 +608,50 @@ static void frontend_android_shutdown(bool unused)
    exit(0);
 }
 
+#ifdef HAVE_SAF
+void android_show_saf_tree_picker(void)
+{
+   JNIEnv *env;
+
+   if (!g_android || !g_android->have_saf)
+      return;
+
+   env = jni_thread_getenv();
+   if (!env)
+      return;
+
+   CALL_VOID_METHOD(env, g_android->activity->clazz, g_android->requestOpenDocumentTree);
+}
+
+/*
+ * Class:     com_retroarch_browser_retroactivity_RetroActivityCommon
+ * Method:    safTreeAdded
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCommon_safTreeAdded
+      (JNIEnv *env, jobject this_obj, jstring tree_obj)
+{
+   const char *tree;
+
+   tree = (*env)->GetStringUTFChars(env, tree_obj, NULL);
+   if ((*env)->ExceptionOccurred(env))
+   {
+      (*env)->ExceptionDescribe(env);
+      (*env)->ExceptionClear(env);
+      return;
+   }
+
+   /* TODO: do something with the added tree */
+
+   (*env)->ReleaseStringUTFChars(env, tree_obj, tree);
+   if ((*env)->ExceptionOccurred(env))
+   {
+      (*env)->ExceptionDescribe(env);
+      (*env)->ExceptionClear(env);
+   }
+}
+#endif
+
 #elif !defined(DINGUX)
 static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
 {
@@ -2135,6 +2179,12 @@ static void frontend_unix_init(void *data)
    GET_METHOD_ID(env, android_app->accessibilitySpeak, class,
          "accessibilitySpeak", "(Ljava/lang/String;)V");
 
+#ifdef HAVE_SAF
+   GET_METHOD_ID(env, android_app->requestOpenDocumentTree, class,
+         "requestOpenDocumentTree", "()V");
+   android_app->have_saf = retro_vfs_init_saf(jni_thread_getenv, android_app->activity->clazz);
+#endif
+
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
@@ -2268,6 +2318,15 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       }
 
    }
+
+#ifdef HAVE_SAF
+   if (g_android->have_saf)
+      menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
+            MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
+            MENU_SETTING_ACTION, 0, 0, NULL);
+#endif
 #elif defined(WEBOS)
    if (path_is_directory("/media/internal"))
       menu_entries_append(list, "/media/internal",

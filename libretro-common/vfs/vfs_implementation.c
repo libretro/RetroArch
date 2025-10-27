@@ -213,7 +213,7 @@
 #include <vfs/vfs_implementation_cdrom.h>
 #endif
 
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
 #include <vfs/vfs_implementation_saf.h>
 #endif
 
@@ -377,7 +377,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    }
 #endif
 
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
    if (     path
          && path[0] == 's'
          && path[1] == 'a'
@@ -467,7 +467,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
             break;
 #endif
 
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
          case VFS_SCHEME_SAF:
             {
                struct libretro_vfs_implementation_saf_path_split_result saf_split_result;
@@ -543,7 +543,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    {
       switch (stream->scheme)
       {
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
          case VFS_SCHEME_SAF:
             {
                struct libretro_vfs_implementation_saf_path_split_result saf_split_result;
@@ -822,7 +822,7 @@ int retro_vfs_file_remove_impl(const char *path)
    {
       int ret          = -1;
 
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
       if (path[0] == 's'
             && path[1] == 'a'
             && path[2] == 'f'
@@ -877,7 +877,7 @@ int retro_vfs_file_remove_impl(const char *path)
 
 int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 {
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
       if (old_path && new_path
             && old_path[0] == 's'
             && old_path[1] == 'a'
@@ -984,7 +984,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    if (!path || !*path)
       return 0;
 
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
    if (path[0] == 's'
          && path[1] == 'a'
          && path[2] == 'f'
@@ -1123,7 +1123,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
 
 int retro_vfs_mkdir_impl(const char *dir)
 {
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
    if (dir
          && dir[0] == 's'
          && dir[1] == 'a'
@@ -1223,7 +1223,7 @@ struct libretro_vfs_implementation_dir
    DIR *directory;
    const struct dirent *entry;
 #endif
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
    libretro_vfs_implementation_saf_dir *saf_directory;
 #endif
 };
@@ -1271,7 +1271,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
       return NULL;
    }
 
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
    rdir->saf_directory = NULL;
 
    if (name[0] == 's'
@@ -1352,7 +1352,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
 
 bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
 {
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
    if (rdir->saf_directory != NULL)
       return retro_vfs_readdir_saf(rdir->saf_directory);
 #endif
@@ -1380,7 +1380,7 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
 
 const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir)
 {
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
    if (rdir->saf_directory != NULL)
       return retro_vfs_dirent_get_name_saf(rdir->saf_directory);
    else
@@ -1409,7 +1409,7 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
 
 bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
 {
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
    if (rdir->saf_directory != NULL)
       return retro_vfs_dirent_is_dir_saf(rdir->saf_directory);
    else
@@ -1449,7 +1449,7 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
    if (!rdir)
       return -1;
 
-#ifdef HAVE_SAF
+#if defined(ANDROID) && defined(HAVE_SAF)
    if (rdir->saf_directory != NULL)
       return retro_vfs_closedir_saf(rdir->saf_directory);
 #endif

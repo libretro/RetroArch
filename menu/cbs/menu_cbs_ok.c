@@ -6697,6 +6697,8 @@ static int action_ok_open_picker(const char *path,
 #elif defined(OSX) && defined(HAVE_APPLE_STORE)
    osx_show_file_sheet();
    return 0;
+#elif defined(ANDROID) && defined(HAVE_SAF)
+   android_show_saf_tree_picker();
 #else
    char *new_path = NULL;
    int ret        = generic_action_ok_displaylist_push(
