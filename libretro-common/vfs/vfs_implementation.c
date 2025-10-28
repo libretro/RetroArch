@@ -1449,25 +1449,29 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
    if (!rdir)
       return -1;
 
+   int ret = 0;
+
 #if defined(ANDROID) && defined(HAVE_SAF)
    if (rdir->saf_directory != NULL)
-      return retro_vfs_closedir_saf(rdir->saf_directory);
+      ret = retro_vfs_closedir_saf(rdir->saf_directory);
+   else
 #endif
-
+   {
 #if defined(_WIN32)
-   if (rdir->directory != INVALID_HANDLE_VALUE)
-      FindClose(rdir->directory);
+      if (rdir->directory != INVALID_HANDLE_VALUE)
+         FindClose(rdir->directory);
 #elif defined(VITA)
-   sceIoDclose(rdir->directory);
+      sceIoDclose(rdir->directory);
 #elif defined(__PSL1GHT__) || defined(__PS3__)
-   rdir->error = sysFsClosedir(rdir->directory);
+      rdir->error = sysFsClosedir(rdir->directory);
 #else
-   if (rdir->directory)
-      closedir(rdir->directory);
+      if (rdir->directory)
+         closedir(rdir->directory);
 #endif
+   }
 
    if (rdir->orig_path)
       free(rdir->orig_path);
    free(rdir);
-   return 0;
+   return ret;
 }
