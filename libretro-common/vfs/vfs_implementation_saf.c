@@ -55,6 +55,11 @@ bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
    if (env == NULL)
       return false;
 
+   vfs_saf_content_resolver_object = NULL;
+   vfs_saf_vfs_implementation_saf_class = NULL;
+   vfs_saf_saf_stat_class = NULL;
+   vfs_saf_saf_directory_class = NULL;
+
    /*
     * ClassLoader class_loader_object = activity_object.getClassLoader();
     * Class<?> vfs_saf_vfs_implementation_saf_class = class_loader_object.loadClass("com.libretro.common.vfs.VfsImplementationSaf");
@@ -65,8 +70,11 @@ bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
       jobject class_loader_object;
       jmethodID load_class_method;
       jstring vfs_implementation_saf_string;
+      jclass vfs_implementation_saf_class;
       jstring saf_stat_string;
+      jclass saf_stat_class;
       jstring saf_directory_string;
+      jclass saf_directory_class;
 
       {
          jclass activity_class;
@@ -86,18 +94,27 @@ bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
 
       vfs_implementation_saf_string = (*env)->NewStringUTF(env, "com.libretro.common.vfs.VfsImplementationSaf");
       if ((*env)->ExceptionOccurred(env)) goto error;
-      vfs_saf_vfs_implementation_saf_class = (jclass)(*env)->CallObjectMethod(env, class_loader_object, load_class_method, vfs_implementation_saf_string);
+      vfs_implementation_saf_class = (jclass)(*env)->CallObjectMethod(env, class_loader_object, load_class_method, vfs_implementation_saf_string);
       if ((*env)->ExceptionOccurred(env)) goto error;
+      vfs_implementation_saf_class = (jclass)(*env)->NewGlobalRef(env, vfs_implementation_saf_class);
+      if ((*env)->ExceptionOccurred(env)) goto error;
+      vfs_saf_vfs_implementation_saf_class = vfs_implementation_saf_class;
 
       saf_stat_string = (*env)->NewStringUTF(env, "com.libretro.common.vfs.VfsImplementationSaf$SafStat");
       if ((*env)->ExceptionOccurred(env)) goto error;
-      vfs_saf_saf_stat_class = (jclass)(*env)->CallObjectMethod(env, class_loader_object, load_class_method, saf_stat_string);
+      saf_stat_class = (jclass)(*env)->CallObjectMethod(env, class_loader_object, load_class_method, saf_stat_string);
       if ((*env)->ExceptionOccurred(env)) goto error;
+      saf_stat_class = (jclass)(*env)->NewGlobalRef(env, saf_stat_class);
+      if ((*env)->ExceptionOccurred(env)) goto error;
+      vfs_saf_saf_stat_class = saf_stat_class;
 
       saf_directory_string = (*env)->NewStringUTF(env, "com.libretro.common.vfs.VfsImplementationSaf$SafDirectory");
       if ((*env)->ExceptionOccurred(env)) goto error;
-      vfs_saf_saf_directory_class = (jclass)(*env)->CallObjectMethod(env, class_loader_object, load_class_method, saf_directory_string);
+      saf_directory_class = (jclass)(*env)->CallObjectMethod(env, class_loader_object, load_class_method, saf_directory_string);
       if ((*env)->ExceptionOccurred(env)) goto error;
+      saf_directory_class = (jclass)(*env)->NewGlobalRef(env, saf_directory_class);
+      if ((*env)->ExceptionOccurred(env)) goto error;
+      vfs_saf_saf_directory_class = saf_directory_class;
    }
 
    vfs_saf_open_saf_file_method = (*env)->GetStaticMethodID(env, vfs_saf_vfs_implementation_saf_class, "openSafFile", "(Landroid/content/ContentResolver;Ljava/lang/String;Ljava/lang/String;ZZZ)I");
@@ -160,6 +177,30 @@ bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
 error:
    (*env)->ExceptionDescribe(env);
    (*env)->ExceptionClear(env);
+   if (vfs_saf_content_resolver_object != NULL)
+   {
+      (*env)->DeleteGlobalRef(env, vfs_saf_content_resolver_object);
+      vfs_saf_content_resolver_object = NULL;
+      if ((*env)->ExceptionOccurred(env)) goto error;
+   }
+   if (vfs_saf_vfs_implementation_saf_class != NULL)
+   {
+      (*env)->DeleteGlobalRef(env, vfs_saf_vfs_implementation_saf_class);
+      vfs_saf_vfs_implementation_saf_class = NULL;
+      if ((*env)->ExceptionOccurred(env)) goto error;
+   }
+   if (vfs_saf_saf_stat_class != NULL)
+   {
+      (*env)->DeleteGlobalRef(env, vfs_saf_saf_stat_class);
+      vfs_saf_saf_stat_class = NULL;
+      if ((*env)->ExceptionOccurred(env)) goto error;
+   }
+   if (vfs_saf_saf_directory_class != NULL)
+   {
+      (*env)->DeleteGlobalRef(env, vfs_saf_saf_directory_class);
+      vfs_saf_saf_directory_class = NULL;
+      if ((*env)->ExceptionOccurred(env)) goto error;
+   }
    return false;
 }
 
@@ -174,6 +215,27 @@ bool retro_vfs_deinit_saf(void)
       return false;
 
    (*env)->DeleteGlobalRef(env, vfs_saf_content_resolver_object);
+   if ((*env)->ExceptionOccurred(env))
+   {
+      (*env)->ExceptionDescribe(env);
+      (*env)->ExceptionClear(env);
+   }
+
+   (*env)->DeleteGlobalRef(env, vfs_saf_vfs_implementation_saf_class);
+   if ((*env)->ExceptionOccurred(env))
+   {
+      (*env)->ExceptionDescribe(env);
+      (*env)->ExceptionClear(env);
+   }
+
+   (*env)->DeleteGlobalRef(env, vfs_saf_saf_stat_class);
+   if ((*env)->ExceptionOccurred(env))
+   {
+      (*env)->ExceptionDescribe(env);
+      (*env)->ExceptionClear(env);
+   }
+
+   (*env)->DeleteGlobalRef(env, vfs_saf_saf_directory_class);
    if ((*env)->ExceptionOccurred(env))
    {
       (*env)->ExceptionDescribe(env);
@@ -363,7 +425,6 @@ int retro_vfs_file_rename_saf(const char *old_tree, const char *old_path, const 
 
 int retro_vfs_stat_saf(const char *tree, const char *path, int32_t *size)
 {
-
    JNIEnv *env;
    jstring tree_object;
    jstring path_object;

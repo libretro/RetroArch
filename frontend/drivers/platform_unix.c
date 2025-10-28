@@ -2035,6 +2035,11 @@ static void android_app_destroy(struct android_app *android_app)
       CALL_VOID_METHOD(env, android_app->activity->clazz,
             android_app->onRetroArchExit);
 
+#ifdef HAVE_SAF
+   if (android_app->have_saf)
+      retro_vfs_deinit_saf();
+#endif
+
    if (android_app->inputQueue)
       AInputQueue_detachLooper(android_app->inputQueue);
 
