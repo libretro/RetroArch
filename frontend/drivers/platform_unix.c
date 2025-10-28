@@ -57,6 +57,10 @@
 
 #ifdef ANDROID
 #include <sys/system_properties.h>
+#ifdef HAVE_SAF
+#include <vfs/vfs_implementation_saf.h>
+#include "../../menu/menu_cbs.h"
+#endif
 #endif
 
 #if defined(DINGUX)
@@ -632,6 +636,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       (JNIEnv *env, jobject this_obj, jstring tree_obj)
 {
    const char *tree;
+   char *serialized_path;
 
    tree = (*env)->GetStringUTFChars(env, tree_obj, NULL);
    if ((*env)->ExceptionOccurred(env))
@@ -641,7 +646,18 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       return;
    }
 
-   /* TODO: do something with the added tree */
+   if ((serialized_path = retro_vfs_path_join_saf(tree, "")) != NULL)
+   {
+      generic_action_ok_displaylist_push(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+            serialized_path,
+            msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+            MENU_SETTING_ACTION,
+            0,
+            0,
+            ACTION_OK_DL_CONTENT_LIST);
+      free(serialized_path);
+   }
 
    (*env)->ReleaseStringUTFChars(env, tree_obj, tree);
    if ((*env)->ExceptionOccurred(env))
@@ -2184,6 +2200,7 @@ static void frontend_unix_init(void *data)
 #ifdef HAVE_SAF
    GET_METHOD_ID(env, android_app->requestOpenDocumentTree, class,
          "requestOpenDocumentTree", "()V");
+
    android_app->have_saf = retro_vfs_init_saf(jni_thread_getenv, android_app->activity->clazz);
 #endif
 
@@ -2340,14 +2357,6 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
       }
    }
 
-#ifdef HAVE_SAF
-   if (g_android->have_saf)
-      menu_entries_append(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
-            msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
-            MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
-            MENU_SETTING_ACTION, 0, 0, NULL);
-#endif
 #elif defined(WEBOS)
    if (path_is_directory("/media/internal"))
       menu_entries_append(list, "/media/internal",
@@ -2440,6 +2449,17 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
+
+#if defined(ANDROID) && defined(HAVE_SAF)
+   if (g_android->have_saf)
+   {
+      menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
+            MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
+            MENU_SETTING_ACTION, 0, 0, NULL);
+   }
+#endif
 #endif
 
    return 0;
