@@ -132,37 +132,6 @@ public final class VfsImplementationSaf
       return true;
    }
 
-   /**
-    * Create a Storage Access Framework directory, returning 0 if it succeeded, -1 if it failed or -2 if the directory already exists.
-    * @param content the content resolver returned by getContentResolver()
-    * @param tree the URI returned by the ACTION_OPEN_DOCUMENT_TREE intent action
-    * @param path path of the directory to create, relative to the root directory of the tree
-    */
-   public static int mkdirSaf(ContentResolver content, String tree, String path)
-   {
-      final Uri treeUri = Uri.parse(tree);
-      final Path directoryPath = Paths.get("/" + path).normalize();
-      final Path parentPath = directoryPath.getParent();
-      if (parentPath == null)
-         return -1;
-      final String parentPathString = parentPath.toString();
-      final Uri parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentPathString.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + parentPathString);
-      try
-      {
-         if (DocumentsContract.createDocument(content, parentUri, Document.MIME_TYPE_DIR, directoryPath.getFileName().toString()) == null)
-            return -2;
-      }
-      catch (FileNotFoundException e)
-      {
-         return -1;
-      }
-      catch (IllegalArgumentException e)
-      {
-         return -1;
-      }
-      return 0;
-   }
-
    public static class SafStat
    {
       private static final String[] QUERY_ARGS_WITH_SIZE = {
@@ -200,6 +169,8 @@ public final class VfsImplementationSaf
          {
             return;
          }
+         if (cursor == null)
+            return;
          try
          {
             if (!cursor.moveToNext())
@@ -238,6 +209,37 @@ public final class VfsImplementationSaf
       {
          return isOpen ? size : -1;
       }
+   }
+
+   /**
+    * Create a Storage Access Framework directory, returning 0 if it succeeded, -1 if it failed or -2 if the directory already exists.
+    * @param content the content resolver returned by getContentResolver()
+    * @param tree the URI returned by the ACTION_OPEN_DOCUMENT_TREE intent action
+    * @param path path of the directory to create, relative to the root directory of the tree
+    */
+   public static int mkdirSaf(ContentResolver content, String tree, String path)
+   {
+      final Uri treeUri = Uri.parse(tree);
+      final Path directoryPath = Paths.get("/" + path).normalize();
+      final Path parentPath = directoryPath.getParent();
+      if (parentPath == null)
+         return -1;
+      final String parentPathString = parentPath.toString();
+      final Uri parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentPathString.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + parentPathString);
+      try
+      {
+         if (DocumentsContract.createDocument(content, parentUri, Document.MIME_TYPE_DIR, directoryPath.getFileName().toString()) == null)
+            return -2;
+      }
+      catch (FileNotFoundException e)
+      {
+         return -1;
+      }
+      catch (IllegalArgumentException e)
+      {
+         return -1;
+      }
+      return 0;
    }
 
    public static class SafDirectory implements Closeable
