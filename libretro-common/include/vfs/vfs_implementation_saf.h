@@ -73,6 +73,11 @@ bool retro_vfs_path_split_saf(struct libretro_vfs_implementation_saf_path_split_
  */
 char *retro_vfs_path_join_saf(const char *tree, const char *path);
 
+/*
+ * Open a file, returning its file descriptor if successful or -1 if not.
+ * The file descriptor can be operated on using the POSIX file system API (`read()`, `write()`, `lseek()`, `close()`, etc).
+ * You can also turn the file descriptor into a `FILE *` by calling `fdopen()` on it.
+ */
 int retro_vfs_file_open_saf(const char *tree, const char *path, unsigned mode);
 
 int retro_vfs_file_remove_saf(const char *tree, const char *path);

@@ -218,7 +218,7 @@ public final class VfsImplementationSaf
 		}
 
 		/**
-		 * Get whether or not the file is a directory, or false if there was an error determining this.
+		 * Get whether or not the file or directory is a directory, or false if there was an error determining this.
 		 */
 		public boolean getIsDirectory()
 		{
