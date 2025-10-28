@@ -626,6 +626,7 @@ void android_show_saf_tree_picker(void)
 
    CALL_VOID_METHOD(env, g_android->activity->clazz, g_android->requestOpenDocumentTree);
 }
+#endif
 
 /*
  * Class:     com_retroarch_browser_retroactivity_RetroActivityCommon
@@ -635,6 +636,7 @@ void android_show_saf_tree_picker(void)
 JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCommon_safTreeAdded
       (JNIEnv *env, jobject this_obj, jstring tree_obj)
 {
+#ifdef HAVE_SAF
    const char *tree;
    char *serialized_path;
 
@@ -665,8 +667,8 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       (*env)->ExceptionDescribe(env);
       (*env)->ExceptionClear(env);
    }
-}
 #endif
+}
 
 #elif !defined(DINGUX)
 static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
