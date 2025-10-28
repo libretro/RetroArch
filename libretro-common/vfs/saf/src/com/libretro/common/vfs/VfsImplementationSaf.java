@@ -165,9 +165,13 @@ public final class VfsImplementationSaf
 
    public static class SafStat
    {
-      private static final String[] QUERY_ARGS = {
+      private static final String[] QUERY_ARGS_WITH_SIZE = {
          Document.COLUMN_MIME_TYPE,
          Document.COLUMN_SIZE,
+      };
+
+      private static final String[] QUERY_ARGS_WITHOUT_SIZE = {
+         Document.COLUMN_MIME_TYPE,
       };
 
       private boolean isOpen = false;
@@ -179,8 +183,9 @@ public final class VfsImplementationSaf
        * @param content the content resolver returned by getContentResolver()
        * @param tree the URI returned by the ACTION_OPEN_DOCUMENT_TREE intent action
        * @param path path of the file or directory to open, relative to the root directory of the tree
+       * @param includeSize whether or not to query the size of the file or directory
        */
-      public SafStat(ContentResolver content, String tree, String path)
+      public SafStat(ContentResolver content, String tree, String path, boolean includeSize)
       {
          final Uri treeUri = Uri.parse(tree);
          path = Paths.get("/" + path).normalize().toString();
@@ -189,7 +194,7 @@ public final class VfsImplementationSaf
          final Cursor cursor;
          try
          {
-            cursor = content.query(fileUri, QUERY_ARGS, null, null, null);
+            cursor = content.query(fileUri, includeSize ? QUERY_ARGS_WITH_SIZE : QUERY_ARGS_WITHOUT_SIZE, null, null, null);
          }
          catch (IllegalArgumentException e)
          {
@@ -200,7 +205,7 @@ public final class VfsImplementationSaf
             if (!cursor.moveToNext())
                return;
             isDirectory = cursor.getString(0).equals(Document.MIME_TYPE_DIR);
-            size = cursor.getLong(0);
+            size = includeSize ? cursor.getLong(1) : 0;
             isOpen = true;
          }
          finally
@@ -218,7 +223,7 @@ public final class VfsImplementationSaf
       }
 
       /**
-       * Get whether or not the file or directory is a directory, or false if there was an error determining this.
+       * Get whether or not the file or directory is a directory, or false if there was an error opening the file or directory.
        */
       public boolean getIsDirectory()
       {
@@ -226,7 +231,8 @@ public final class VfsImplementationSaf
       }
 
       /**
-       * Get the size of the file or directory, or -1 if there was an error obtaining the size.
+       * Get the size of the file or directory, or -1 if there was an error opening the file or directory.
+       * If this object was initialized without includeSize, the size will be 0 if the file or directory was opened successfully or -1 if not.
        */
       public long getSize()
       {

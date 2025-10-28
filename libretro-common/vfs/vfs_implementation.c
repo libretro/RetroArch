@@ -995,7 +995,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
    {
       struct libretro_vfs_implementation_saf_path_split_result saf_split_result;
       if (!retro_vfs_path_split_saf(&saf_split_result, path))
-         return -1;
+         return 0;
       ret = retro_vfs_stat_saf(saf_split_result.tree, saf_split_result.path, size);
       free(saf_split_result.path);
       free(saf_split_result.tree);

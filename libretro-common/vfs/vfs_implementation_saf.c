@@ -33,6 +33,7 @@ static jmethodID vfs_saf_open_saf_file_method;
 static jmethodID vfs_saf_remove_saf_file_method;
 static jclass vfs_saf_saf_stat_class;
 static jmethodID vfs_saf_saf_stat_init_method;
+static jmethodID vfs_saf_saf_stat_get_is_open_method;
 static jmethodID vfs_saf_saf_stat_get_is_directory_method;
 static jmethodID vfs_saf_saf_stat_get_size_method;
 static jmethodID vfs_saf_mkdir_saf_method;
@@ -105,7 +106,10 @@ bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
    vfs_saf_remove_saf_file_method = (*env)->GetStaticMethodID(env, vfs_saf_vfs_implementation_saf_class, "removeSafFile", "(Landroid/content/ContentResolver;Ljava/lang/String;Ljava/lang/String;)Z");
    if ((*env)->ExceptionOccurred(env)) goto error;
 
-   vfs_saf_saf_stat_init_method = (*env)->GetMethodID(env, vfs_saf_saf_stat_class, "<init>", "(Landroid/content/ContentResolver;Ljava/lang/String;Ljava/lang/String;)V");
+   vfs_saf_saf_stat_init_method = (*env)->GetMethodID(env, vfs_saf_saf_stat_class, "<init>", "(Landroid/content/ContentResolver;Ljava/lang/String;Ljava/lang/String;Z)V");
+   if ((*env)->ExceptionOccurred(env)) goto error;
+
+   vfs_saf_saf_stat_get_is_open_method = (*env)->GetMethodID(env, vfs_saf_saf_stat_class, "getIsOpen", "()Z");
    if ((*env)->ExceptionOccurred(env)) goto error;
 
    vfs_saf_saf_stat_get_is_directory_method = (*env)->GetMethodID(env, vfs_saf_saf_stat_class, "getIsDirectory", "()Z");
@@ -379,17 +383,29 @@ int retro_vfs_stat_saf(const char *tree, const char *path, int32_t *size)
    path_object = (*env)->NewStringUTF(env, path);
    if ((*env)->ExceptionOccurred(env)) goto error;
 
-   saf_stat = (*env)->NewObject(env, vfs_saf_saf_stat_class, vfs_saf_saf_stat_init_method, vfs_saf_content_resolver_object, tree_object, path_object);
+   saf_stat = (*env)->NewObject(env, vfs_saf_saf_stat_class, vfs_saf_saf_stat_init_method, vfs_saf_content_resolver_object, tree_object, path_object, size != NULL);
    if ((*env)->ExceptionOccurred(env)) goto error;
 
-   saf_stat_size = (*env)->CallLongMethod(env, saf_stat, vfs_saf_saf_stat_get_size_method);
-   if ((*env)->ExceptionOccurred(env)) goto error;
-   if (saf_stat_size < 0)
-      return 0;
-   *size = saf_stat_size > INT32_MAX ? INT32_MAX : (int32_t)saf_stat_size;
+   if (size != NULL)
+   {
+      saf_stat_size = (*env)->CallLongMethod(env, saf_stat, vfs_saf_saf_stat_get_size_method);
+      if ((*env)->ExceptionOccurred(env)) goto error;
+      if (saf_stat_size < 0)
+         return 0;
+   }
+   else
+   {
+      bool saf_stat_is_open = (*env)->CallBooleanMethod(env, saf_stat, vfs_saf_saf_stat_get_is_open_method);
+      if ((*env)->ExceptionOccurred(env)) goto error;
+      if (!saf_stat_is_open)
+         return 0;
+   }
 
    saf_stat_is_directory = (*env)->CallBooleanMethod(env, saf_stat, vfs_saf_saf_stat_get_is_directory_method);
    if ((*env)->ExceptionOccurred(env)) goto error;
+
+   if (size != NULL)
+      *size = saf_stat_size > INT32_MAX ? INT32_MAX : (int32_t)saf_stat_size;
 
    return saf_stat_is_directory ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
 
