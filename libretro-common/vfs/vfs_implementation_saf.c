@@ -163,6 +163,8 @@ bool retro_vfs_deinit_saf(void)
 {
    JNIEnv *env;
 
+   if (vfs_saf_get_jni_env == NULL)
+      return false;
    env = vfs_saf_get_jni_env();
    if (env == NULL)
       return false;
@@ -296,9 +298,11 @@ int retro_vfs_file_open_saf(const char *tree, const char *path, unsigned mode)
    jstring path_object;
    int fd;
 
+   if (vfs_saf_get_jni_env == NULL)
+      return -1;
    env = vfs_saf_get_jni_env();
    if (env == NULL)
-      return false;
+      return -1;
 
    tree_object = (*env)->NewStringUTF(env, tree);
    if ((*env)->ExceptionOccurred(env)) goto error;
@@ -324,6 +328,8 @@ int retro_vfs_file_remove_saf(const char *tree, const char *path)
    jstring path_object;
    bool ret;
 
+   if (vfs_saf_get_jni_env == NULL)
+      return -1;
    env = vfs_saf_get_jni_env();
    if (env == NULL)
       return -1;
@@ -361,9 +367,11 @@ int retro_vfs_stat_saf(const char *tree, const char *path, int32_t *size)
    int64_t saf_stat_size;
    bool saf_stat_is_directory;
 
+   if (vfs_saf_get_jni_env == NULL)
+      return 0;
    env = vfs_saf_get_jni_env();
    if (env == NULL)
-      return false;
+      return 0;
 
    tree_object = (*env)->NewStringUTF(env, tree);
    if ((*env)->ExceptionOccurred(env)) goto error;
@@ -398,6 +406,8 @@ int retro_vfs_mkdir_saf(const char *tree, const char *dir)
    jstring path_object;
    int ret;
 
+   if (vfs_saf_get_jni_env == NULL)
+      return -1;
    env = vfs_saf_get_jni_env();
    if (env == NULL)
       return -1;
@@ -426,13 +436,15 @@ libretro_vfs_implementation_saf_dir *retro_vfs_opendir_saf(const char *tree, con
    jstring tree_object;
    jstring path_object;
 
+   if (vfs_saf_get_jni_env == NULL)
+      return NULL;
    env = vfs_saf_get_jni_env();
    if (env == NULL)
-      return false;
+      return NULL;
 
    dirstream = (libretro_vfs_implementation_saf_dir *)malloc(sizeof *dirstream);
    if (dirstream == NULL)
-      return false;
+      return NULL;
 
    tree_object = (*env)->NewStringUTF(env, tree);
    if ((*env)->ExceptionOccurred(env)) goto error;
@@ -465,6 +477,8 @@ bool retro_vfs_readdir_saf(libretro_vfs_implementation_saf_dir *dirstream)
    jobject dirent_name_object;
    const char *dirent_name;
 
+   if (vfs_saf_get_jni_env == NULL)
+      return false;
    env = vfs_saf_get_jni_env();
    if (env == NULL)
       return false;
@@ -543,12 +557,11 @@ int retro_vfs_closedir_saf(libretro_vfs_implementation_saf_dir *dirstream)
    if (dirstream == NULL)
       return -1;
 
+   if (vfs_saf_get_jni_env == NULL)
+      return -1;
    env = vfs_saf_get_jni_env();
    if (env == NULL)
-   {
-      free(dirstream);
       return -1;
-   }
 
    if (dirstream->dirent_name != NULL)
    {
