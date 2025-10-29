@@ -25,6 +25,7 @@ package com.libretro.common.vfs;
 import android.content.ContentResolver;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.DocumentsContract;
 import android.provider.DocumentsContract.Document;
 
@@ -52,6 +53,8 @@ public final class VfsImplementationSaf
     */
    public static int openSafFile(ContentResolver content, String tree, String path, boolean read, boolean write, boolean truncate)
    {
+      if (Build.VERSION.SDK_INT < 21)
+         return -1;
       boolean createdFile = false;
       while (true)
       {
@@ -126,6 +129,8 @@ public final class VfsImplementationSaf
     */
    public static boolean removeSafFile(ContentResolver content, String tree, String path)
    {
+      if (Build.VERSION.SDK_INT < 21)
+         return false;
       final Uri treeUri = Uri.parse(tree);
       try
       {
@@ -176,6 +181,8 @@ public final class VfsImplementationSaf
        */
       public SafStat(ContentResolver content, String tree, String path, boolean includeSize)
       {
+         if (Build.VERSION.SDK_INT < 21)
+            return;
          final Uri treeUri = Uri.parse(tree);
          try
          {
@@ -246,6 +253,8 @@ public final class VfsImplementationSaf
     */
    public static int mkdirSaf(ContentResolver content, String tree, String path)
    {
+      if (Build.VERSION.SDK_INT < 21)
+         return -1;
       final Uri treeUri = Uri.parse(tree);
       final Path directoryPath;
       try
@@ -320,6 +329,8 @@ public final class VfsImplementationSaf
        */
       public SafDirectory(ContentResolver content, String tree, String path)
       {
+         if (Build.VERSION.SDK_INT < 21)
+            return;
          final Uri treeUri = Uri.parse(tree);
          try
          {
@@ -355,6 +366,8 @@ public final class VfsImplementationSaf
        */
       public boolean readdir()
       {
+         if (Build.VERSION.SDK_INT < 21)
+            return false;
          if (cursor == null)
             return false;
          if (cursor.moveToNext())
