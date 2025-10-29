@@ -36,6 +36,10 @@ import java.nio.file.Paths;
 
 public final class VfsImplementationSaf
 {
+   private static final String[] QUERY_ARGS_MIME_TYPE = {
+      Document.COLUMN_MIME_TYPE,
+   };
+
    /**
     * Open a Storage Access Framework file, returning its file descriptor if successful or -1 if not.
     * The file is not guaranteed to be seeked to any particular position, so it may be a good idea to seek it immediately after opening.
@@ -252,6 +256,29 @@ public final class VfsImplementationSaf
       {
          return -1;
       }
+      path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
+      final Uri directoryUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path);
+      final Cursor cursor;
+      try
+      {
+         cursor = content.query(directoryUri, QUERY_ARGS_MIME_TYPE, null, null, null);
+      }
+      catch (IllegalArgumentException e)
+      {
+         return -1;
+      }
+      if (cursor != null)
+      {
+         try
+         {
+            if (cursor.moveToNext())
+               return cursor.getString(0).equals(Document.MIME_TYPE_DIR) ? -2 : -1;
+         }
+         finally
+         {
+            cursor.close();
+         }
+      }
       final Path parentPath = directoryPath.getParent();
       if (parentPath == null)
          return -1;
@@ -260,7 +287,7 @@ public final class VfsImplementationSaf
       try
       {
          if (DocumentsContract.createDocument(content, parentUri, Document.MIME_TYPE_DIR, directoryPath.getFileName().toString()) == null)
-            return -2;
+            return -1;
       }
       catch (FileNotFoundException e)
       {
