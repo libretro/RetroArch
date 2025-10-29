@@ -351,8 +351,14 @@ char *retro_vfs_path_join_saf(const char *tree, const char *path)
             break;
       }
 
-   *serialized_path_ptr++ = '/';
-   strcpy(serialized_path_ptr, path);
+   if (*path != 0)
+   {
+      *serialized_path_ptr++ = '/';
+      *serialized_path_ptr = 0;
+      strcpy(serialized_path_ptr, path);
+   }
+   else
+      *serialized_path_ptr = 0;
 
    return serialized_path;
 }
