@@ -265,7 +265,7 @@ public final class VfsImplementationSaf
          final Uri treeUri = Uri.parse(tree);
          path = Paths.get("/" + path).normalize().toString();
          path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
-         prefixLength = path.length() + 1;
+         prefixLength = path.length();
          final Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, path);
          try
          {
@@ -295,6 +295,16 @@ public final class VfsImplementationSaf
          if (cursor.moveToNext())
          {
             direntName = cursor.getString(0).substring(prefixLength);
+            // Remove leading slashes
+            int slashIndex = 0;
+            while (slashIndex < direntName.length() && direntName.charAt(slashIndex) == '/')
+               ++slashIndex;
+            direntName = direntName.substring(slashIndex);
+            // Remove trailing slashes
+            slashIndex = direntName.length();
+            while (slashIndex > 0 && direntName.charAt(slashIndex - 1) == '/')
+               --slashIndex;
+            direntName = direntName.substring(0, slashIndex);
             direntIsDirectory = cursor.getString(1).equals(Document.MIME_TYPE_DIR);
             return true;
          }
