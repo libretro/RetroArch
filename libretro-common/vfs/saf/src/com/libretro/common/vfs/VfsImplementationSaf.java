@@ -30,6 +30,7 @@ import android.provider.DocumentsContract.Document;
 
 import java.io.Closeable;
 import java.io.FileNotFoundException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -51,7 +52,15 @@ public final class VfsImplementationSaf
       while (true)
       {
          final Uri treeUri = Uri.parse(tree);
-         final Path filePath = Paths.get("/" + path).normalize();
+         final Path filePath;
+         try
+         {
+            filePath = Paths.get("/" + path).normalize();
+         }
+         catch (InvalidPathException e)
+         {
+            return -1;
+         }
          final String filePathString = filePath.toString();
          final Uri fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, filePathString.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + filePathString);
          final String mode;
@@ -114,7 +123,14 @@ public final class VfsImplementationSaf
    public static boolean removeSafFile(ContentResolver content, String tree, String path)
    {
       final Uri treeUri = Uri.parse(tree);
-      path = Paths.get("/" + path).normalize().toString();
+      try
+      {
+         path = Paths.get("/" + path).normalize().toString();
+      }
+      catch (InvalidPathException e)
+      {
+         return false;
+      }
       path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
       final Uri fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path);
       try
@@ -157,7 +173,14 @@ public final class VfsImplementationSaf
       public SafStat(ContentResolver content, String tree, String path, boolean includeSize)
       {
          final Uri treeUri = Uri.parse(tree);
-         path = Paths.get("/" + path).normalize().toString();
+         try
+         {
+            path = Paths.get("/" + path).normalize().toString();
+         }
+         catch (InvalidPathException e)
+         {
+            return;
+         }
          path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
          final Uri fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path);
          final Cursor cursor;
@@ -220,7 +243,15 @@ public final class VfsImplementationSaf
    public static int mkdirSaf(ContentResolver content, String tree, String path)
    {
       final Uri treeUri = Uri.parse(tree);
-      final Path directoryPath = Paths.get("/" + path).normalize();
+      final Path directoryPath;
+      try
+      {
+         directoryPath = Paths.get("/" + path).normalize();
+      }
+      catch (InvalidPathException e)
+      {
+         return -1;
+      }
       final Path parentPath = directoryPath.getParent();
       if (parentPath == null)
          return -1;
@@ -263,7 +294,14 @@ public final class VfsImplementationSaf
       public SafDirectory(ContentResolver content, String tree, String path)
       {
          final Uri treeUri = Uri.parse(tree);
-         path = Paths.get("/" + path).normalize().toString();
+         try
+         {
+            path = Paths.get("/" + path).normalize().toString();
+         }
+         catch (InvalidPathException e)
+         {
+            return;
+         }
          path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
          prefixLength = path.length();
          final Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, path);
