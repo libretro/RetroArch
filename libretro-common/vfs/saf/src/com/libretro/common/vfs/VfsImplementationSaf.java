@@ -91,7 +91,7 @@ public final class VfsImplementationSaf
          {
             return content.openFileDescriptor(fileUri, mode).detachFd();
          }
-         catch (FileNotFoundException e)
+         catch (FileNotFoundException | IllegalArgumentException e)
          {
             if (createdFile || !write)
                return -1;
@@ -105,18 +105,10 @@ public final class VfsImplementationSaf
             {
                DocumentsContract.createDocument(content, parentUri, "application/octet-stream", filePath.getFileName().toString());
             }
-            catch (FileNotFoundException f)
+            catch (FileNotFoundException | IllegalArgumentException f)
             {
                return -1;
             }
-            catch (IllegalArgumentException f)
-            {
-               return -1;
-            }
-         }
-         catch (IllegalArgumentException e)
-         {
-            return -1;
          }
       }
    }
@@ -146,11 +138,7 @@ public final class VfsImplementationSaf
       {
          DocumentsContract.deleteDocument(content, fileUri);
       }
-      catch (FileNotFoundException e)
-      {
-         return false;
-      }
-      catch (IllegalArgumentException e)
+      catch (FileNotFoundException | IllegalArgumentException e)
       {
          return false;
       }
@@ -296,11 +284,7 @@ public final class VfsImplementationSaf
          if (DocumentsContract.createDocument(content, parentUri, Document.MIME_TYPE_DIR, directoryPath.getFileName().toString()) == null)
             return -1;
       }
-      catch (FileNotFoundException e)
-      {
-         return -1;
-      }
-      catch (IllegalArgumentException e)
+      catch (FileNotFoundException | IllegalArgumentException e)
       {
          return -1;
       }
