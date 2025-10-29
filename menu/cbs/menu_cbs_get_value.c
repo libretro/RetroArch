@@ -823,7 +823,7 @@ static size_t menu_action_setting_disp_set_label_input_desc(
       }
    }
    /* If descriptor was not found, set this instead */
-   return strlcpy(s, "---", len);
+   return strlcpy(s, RARCH_NO_BIND, len);
 }
 
 static size_t menu_action_setting_disp_set_label_input_desc_kbd(
@@ -860,7 +860,7 @@ static size_t menu_action_setting_disp_set_label_input_desc_kbd(
       _len += strlcpy(s + _len, key_descriptors[key_id].desc, len - _len);
    }
    else
-      _len  = strlcpy(s, "---", len);
+      _len  = strlcpy(s, RARCH_NO_BIND, len);
 
    *w = 19;
 

@@ -3941,7 +3941,7 @@ size_t input_config_get_bind_string(
 
    /*completely empty?*/
    if (*s == '\0')
-      _len += strlcpy(s + _len, "---", len - _len);
+      _len += strlcpy(s + _len, RARCH_NO_BIND, len - _len);
    return _len;
 }
 
