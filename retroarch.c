@@ -1771,6 +1771,10 @@ void drivers_init(
 #ifdef HAVE_LAKKA
    cpu_scaling_driver_init();
 #endif
+
+#ifdef HAVE_MENU
+   srand(time(NULL));
+#endif
 }
 
 void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
