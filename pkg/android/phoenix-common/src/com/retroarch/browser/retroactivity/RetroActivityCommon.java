@@ -203,6 +203,24 @@ public class RetroActivityCommon extends NativeActivity
     return ret;
   }
 
+  public String[] getPersistedSafTrees()
+  {
+    if (Build.VERSION.SDK_INT >= 19)
+    {
+      List<android.content.UriPermission> uriPermissions = getContentResolver().getPersistedUriPermissions();
+      List<String> trees = new ArrayList<>();
+      for (android.content.UriPermission uriPermission : uriPermissions)
+      {
+        Uri uri = uriPermission.getUri();
+        if (uri != null)
+          trees.add(uri.toString());
+      }
+      return trees.toArray(new String[0]);
+    }
+    else
+      return new String[0];
+  }
+
 // https://stackoverflow.com/questions/4553650/how-to-check-device-natural-default-orientation-on-android-i-e-get-landscape/4555528#4555528
   public int getDeviceDefaultOrientation() {
     WindowManager windowManager = (WindowManager)getSystemService(Context.WINDOW_SERVICE);

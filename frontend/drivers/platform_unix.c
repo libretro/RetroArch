@@ -2208,6 +2208,9 @@ static void frontend_unix_init(void *data)
    GET_METHOD_ID(env, android_app->requestOpenDocumentTree, class,
          "requestOpenDocumentTree", "()V");
 
+   GET_METHOD_ID(env, android_app->getPersistedSafTrees, class,
+         "getPersistedSafTrees", "()[Ljava/lang/String;");
+
    android_app->have_saf = retro_vfs_init_saf(jni_thread_getenv, android_app->activity->clazz);
 #endif
 
@@ -2460,6 +2463,62 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 #if defined(ANDROID) && defined(HAVE_SAF)
    if (g_android->have_saf)
    {
+      JNIEnv *env = jni_thread_getenv();
+
+      if (env != NULL)
+      {
+         jarray trees = (*env)->CallObjectMethod(env, g_android->activity->clazz, g_android->getPersistedSafTrees);
+         if ((*env)->ExceptionOccurred(env))
+         {
+            (*env)->ExceptionDescribe(env);
+            (*env)->ExceptionClear(env);
+         }
+         else
+         {
+            jsize trees_length = (*env)->GetArrayLength(env, trees);
+            if ((*env)->ExceptionOccurred(env))
+            {
+               (*env)->ExceptionDescribe(env);
+               (*env)->ExceptionClear(env);
+            }
+            else
+               for (jsize i = 0; i < trees_length; ++i)
+               {
+                  const char *tree_chars;
+                  char *serialized_path;
+                  jstring tree = (*env)->GetObjectArrayElement(env, trees, i);
+                  if ((*env)->ExceptionOccurred(env))
+                  {
+                     (*env)->ExceptionDescribe(env);
+                     (*env)->ExceptionClear(env);
+                     continue;
+                  }
+                  tree_chars = (*env)->GetStringUTFChars(env, tree, NULL);
+                  if ((*env)->ExceptionOccurred(env))
+                  {
+                     (*env)->ExceptionDescribe(env);
+                     (*env)->ExceptionClear(env);
+                     continue;
+                  }
+                  if ((serialized_path = retro_vfs_path_join_saf(tree_chars, "")) != NULL)
+                  {
+                     menu_entries_append(list,
+                           serialized_path,
+                           msg_hash_to_str(MSG_REMOVABLE_STORAGE),
+                           enum_idx,
+                           FILE_TYPE_DIRECTORY, 0, 0, NULL);
+                     free(serialized_path);
+                  }
+                  (*env)->ReleaseStringUTFChars(env, tree, tree_chars);
+                  if ((*env)->ExceptionOccurred(env))
+                  {
+                     (*env)->ExceptionDescribe(env);
+                     (*env)->ExceptionClear(env);
+                  }
+               }
+         }
+      }
+
       menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),

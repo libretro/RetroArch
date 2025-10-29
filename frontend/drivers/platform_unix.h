@@ -197,6 +197,7 @@ struct android_app
 
 #ifdef HAVE_SAF
    jmethodID requestOpenDocumentTree;
+   jmethodID getPersistedSafTrees;
    bool have_saf;
 #endif
 };

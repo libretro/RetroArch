@@ -425,7 +425,6 @@ error:
 
 int retro_vfs_file_rename_saf(const char *old_tree, const char *old_path, const char *new_tree, const char *new_path)
 {
-   /* TODO: implement */
    return -1;
 }
 
