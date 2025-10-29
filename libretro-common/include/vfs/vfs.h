@@ -60,7 +60,7 @@ enum vfs_scheme
 {
    VFS_SCHEME_NONE = 0,
    VFS_SCHEME_CDROM,
-   VFS_SCHEME_SAF,
+   VFS_SCHEME_SAF
 };
 
 #if !(defined(__WINRT__) && defined(__cplusplus_winrt))
