@@ -267,15 +267,13 @@ public final class VfsImplementationSaf
       }
       path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
       final Uri directoryUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path);
-      final Cursor cursor;
+      Cursor cursor = null;
       try
       {
          cursor = content.query(directoryUri, QUERY_ARGS_MIME_TYPE, null, null, null);
       }
       catch (IllegalArgumentException e)
-      {
-         return -1;
-      }
+      {}
       if (cursor != null)
       {
          try
