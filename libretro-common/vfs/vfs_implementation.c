@@ -1446,10 +1446,10 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
 
 int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
 {
+   int ret = 0;
+
    if (!rdir)
       return -1;
-
-   int ret = 0;
 
 #if defined(ANDROID) && defined(HAVE_SAF)
    if (rdir->saf_directory != NULL)
