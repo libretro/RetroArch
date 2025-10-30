@@ -27,9 +27,11 @@ static void core_error_cb(void *data, uint32_t id, int seq, int res, const char 
 {
    pipewire_core_t *pw = (pipewire_core_t*)data;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
    RARCH_ERR("[PipeWire] Error id:%u seq:%d res:%d (%s): %s.\n",
              id, seq, res, spa_strerror(res), message);
-
+#pragma GCC diagnostic pop
    pw_thread_loop_stop(pw->thread_loop);
 }
 
@@ -54,8 +56,10 @@ static const struct pw_core_events core_events = {
 void pipewire_core_wait_resync(pipewire_core_t *pw)
 {
    retro_assert(pw);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
    pw->pending_seq = pw_core_sync(pw->core, PW_ID_CORE, pw->pending_seq);
-
+#pragma GCC diagnostic pop
    for (;;)
    {
       pw_thread_loop_wait(pw->thread_loop);
@@ -116,16 +120,21 @@ bool pipewire_core_init(pipewire_core_t **pw, const char *loop_name, const struc
    if (!(*pw)->core)
       goto unlock;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
    if (pw_core_add_listener((*pw)->core,
                             &(*pw)->core_listener,
                             &core_events, *pw) < 0)
       goto unlock;
-
+#pragma GCC diagnostic pop
    if (events)
    {
       (*pw)->registry = pw_core_get_registry((*pw)->core, PW_VERSION_REGISTRY, 0);
       spa_zero((*pw)->registry_listener);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
       pw_registry_add_listener((*pw)->registry, &(*pw)->registry_listener, events, *pw);
+#pragma GCC diagnostic pop
    }
 
    return true;
@@ -138,7 +147,10 @@ unlock:
 void pipewire_core_deinit(pipewire_core_t *pw)
 {
    if (!pw)
-      return pw_deinit();
+   {
+      pw_deinit();
+      return;
+   }
 
    if (pw->thread_loop)
       pw_thread_loop_stop(pw->thread_loop);

@@ -8005,8 +8005,8 @@ static size_t get_string_representation_input_device_reservation_type(
 static size_t setting_get_string_representation_input_device_reserved_device_name(
         rarch_setting_t *setting, char *s, size_t len)
 {
-   int dev_vendor_id;
-   int dev_product_id;
+   unsigned int dev_vendor_id;
+   unsigned int dev_product_id;
    if (!setting)
       return 0;
    if (string_is_empty(setting->value.target.string))

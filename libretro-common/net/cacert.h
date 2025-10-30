@@ -2,6 +2,9 @@
  * https://curl.haxx.se/docs/caextract.html
  * NOTE: Newlines are necessary for the file to be parsed correctly!
  */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverlength-strings"
+
 static const char cacert_pem[] = {
 "##\n"
 "## Bundle of CA Root Certificates\n"
@@ -3803,3 +3806,5 @@ static const char cacert_pem[] = {
 "q5Rm+K37DwhuJi1/FwcJsoz7UMCflo3Ptv0AnVoUmr8CRPXBwp8iXqIPoeM=\n"
 "-----END CERTIFICATE-----\n"
 };
+
+#pragma GCC diagnostic pop

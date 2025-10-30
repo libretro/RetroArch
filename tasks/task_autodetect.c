@@ -443,8 +443,8 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
    char settings_value[NAME_MAX_LENGTH];
    char settings_value_device_name[NAME_MAX_LENGTH];
    unsigned prev_assigned_player_slots[MAX_USERS] = {0};
-   int  settings_value_vendor_id;
-   int  settings_value_product_id;
+   unsigned int settings_value_vendor_id;
+   unsigned int settings_value_product_id;
    unsigned first_free_player_slot = MAX_USERS + 1;
    bool device_has_reserved_slot   = false;
    bool no_reservation_at_all      = true;
@@ -505,8 +505,8 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
                || string_is_equal(device_display_name, settings_value_device_name);
          }
          else
-            device_has_reserved_slot = (  vendor_id  == settings_value_vendor_id
-                                       && product_id == settings_value_product_id);
+            device_has_reserved_slot = (  vendor_id  == (int)settings_value_vendor_id
+                                       && product_id == (int)settings_value_product_id);
 
          if (device_has_reserved_slot)
          {

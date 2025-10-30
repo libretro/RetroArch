@@ -406,7 +406,8 @@ static void sdl_ctx_input_driver(void *data,
 
 static gfx_ctx_proc_t sdl_ctx_get_proc_address(const char *name)
 {
-   return (gfx_ctx_proc_t)SDL_GL_GetProcAddress(name);
+   void *addr = SDL_GL_GetProcAddress(name);
+   return *((gfx_ctx_proc_t*)(&addr));
 }
 
 static void sdl_ctx_show_mouse(void *data, bool state) { SDL_ShowCursor(state); }

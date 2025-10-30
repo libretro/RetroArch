@@ -212,10 +212,11 @@ end:
    RARCH_DBG("[ALSA] [capture thread %p] Ending microphone worker thread.\n", thread_id);
 }
 
-static int alsa_thread_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
+static int alsa_thread_microphone_read(void *driver_context, void *mic_context, void *sv, size_t len)
 {
    snd_pcm_state_t state;
    size_t _len = 0;
+   uint8_t *s = (uint8_t *)sv;
    alsa_thread_microphone_t       *alsa = (alsa_thread_microphone_t*)driver_context;
    alsa_thread_microphone_handle_t *mic = (alsa_thread_microphone_handle_t*)mic_context;
 

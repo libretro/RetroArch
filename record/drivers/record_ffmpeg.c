@@ -70,7 +70,7 @@ extern "C" {
 #include "../../verbosity.h"
 
 #ifndef FFMPEG3
-#define FFMPEG3 ((LIBAVUTIL_VERSION_INT < (56, 6, 100)) || \
+#define FFMPEG3 ((LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56, 6, 100)) || \
       (LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 10, 100)))
 #endif
 

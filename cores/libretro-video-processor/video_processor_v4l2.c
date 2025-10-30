@@ -78,7 +78,7 @@ struct v4l2_resolution
 
 struct v4l2_resolution v4l2_resolutions[] =
 {
-   //4:3
+   /*4:3*/
    {160,120},
    {320,240},
    {480,320},
@@ -92,7 +92,7 @@ struct v4l2_resolution v4l2_resolutions[] =
    {1440,1080},
    {1600,1200},
    {1920,1440},
-	//16:9
+   /*16:9*/
    {640,360},
    {960,540},
    {1280,720},
@@ -291,7 +291,7 @@ static void enumerate_audio_devices(char *s, size_t len)
          continue;
       }
 
-      //todo: add more info to make picking audio device more user friendly
+      /*todo: add more info to make picking audio device more user friendly*/
       descr = snd_device_name_get_hint(*n, "DESC");
       if (!descr)
       {
@@ -305,7 +305,7 @@ static void enumerate_audio_devices(char *s, size_t len)
       appendstr(s, name, len);
       ++ndevs;
 
-      // not sure if this is necessary but ensuring things are free/null
+      /* not sure if this is necessary but ensuring things are free/null*/
       if(name != NULL)
       {
          free(name);
@@ -593,6 +593,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_syst
    }
    else
    {
+      bool nodouble;
       /*
        * Query the device cropping limits. If available, we can use this to find the capture pixel aspect.
        */
@@ -618,14 +619,14 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_syst
          printf("Resolution postfix %ux%u\n", info->geometry.base_width,
                 info->geometry.base_height);
       }
-      // no doubling for interlaced or deinterlaced capture
-      bool nodouble = strcmp(video_capture_mode, "deinterlaced") == 0 || strcmp(video_capture_mode, "interlaced") == 0;
+      /* no doubling for interlaced or deinterlaced capture*/
+      nodouble = strcmp(video_capture_mode, "deinterlaced") == 0 || strcmp(video_capture_mode, "interlaced") == 0;
       info->geometry.max_height = nodouble ? video_format.fmt.pix.height : video_format.fmt.pix.height * 2;
 
       /* TODO Only double if frames ARE fields (progressive or deinterlaced, full framerate)
        * *2 for fields
        */
-      // defaulting to 60 if this this doesn't return a usable number
+      /* defaulting to 60 if this this doesn't return a usable number*/
       if(video_standard.frameperiod.denominator == 0 || video_standard.frameperiod.numerator == 0)
          info->timing.fps = 60;
       else
@@ -1281,7 +1282,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       fmt.fmt.pix.colorspace = V4L2_COLORSPACE_SRGB;
       fmt.fmt.pix.quantization = V4L2_QUANTIZATION_LIM_RANGE;
 
-      // applied set resolution if not set to auto
+      /* applied set resolution if not set to auto */
       if (strcmp(video_capture_resolution, "auto") != 0)
       {
          strcpy(splitresolution, video_capture_resolution);

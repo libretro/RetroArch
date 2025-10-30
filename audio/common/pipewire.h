@@ -18,10 +18,12 @@
 #define _RETROARCH_PIPEWIRE
 
 #include <stdint.h>
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <spa/param/audio/format-utils.h>
 #include <spa/utils/ringbuffer.h>
 #include <pipewire/pipewire.h>
+#pragma GCC diagnostic pop
 
 #include <lists/string_list.h>
 
