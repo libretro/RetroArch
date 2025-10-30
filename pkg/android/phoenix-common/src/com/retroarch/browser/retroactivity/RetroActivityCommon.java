@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.media.AudioAttributes;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
@@ -47,17 +48,18 @@ public class RetroActivityCommon extends NativeActivity
     System.loadLibrary("retroarch-activity");
   }
 
-  public static int FRONTEND_POWERSTATE_NONE = 0;
-  public static int FRONTEND_POWERSTATE_NO_SOURCE = 1;
-  public static int FRONTEND_POWERSTATE_CHARGING = 2;
-  public static int FRONTEND_POWERSTATE_CHARGED = 3;
-  public static int FRONTEND_POWERSTATE_ON_POWER_SOURCE = 4;
-  public static int FRONTEND_ORIENTATION_0 = 0;
-  public static int FRONTEND_ORIENTATION_90 = 1;
-  public static int FRONTEND_ORIENTATION_180 = 2;
-  public static int FRONTEND_ORIENTATION_270 = 3;
-  public static int RETRO_RUMBLE_STRONG = 0;
-  public static int RETRO_RUMBLE_WEAK = 1;
+  public static final int FRONTEND_POWERSTATE_NONE = 0;
+  public static final int FRONTEND_POWERSTATE_NO_SOURCE = 1;
+  public static final int FRONTEND_POWERSTATE_CHARGING = 2;
+  public static final int FRONTEND_POWERSTATE_CHARGED = 3;
+  public static final int FRONTEND_POWERSTATE_ON_POWER_SOURCE = 4;
+  public static final int FRONTEND_ORIENTATION_0 = 0;
+  public static final int FRONTEND_ORIENTATION_90 = 1;
+  public static final int FRONTEND_ORIENTATION_180 = 2;
+  public static final int FRONTEND_ORIENTATION_270 = 3;
+  public static final int RETRO_RUMBLE_STRONG = 0;
+  public static final int RETRO_RUMBLE_WEAK = 1;
+  public static final int REQUEST_CODE_OPEN_DOCUMENT_TREE = 0;
   public boolean sustainedPerformanceMode = true;
   public int screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 
@@ -74,6 +76,35 @@ public class RetroActivityCommon extends NativeActivity
   protected void onDestroy() {
     PlayCoreManager.getInstance().onDestroy();
     super.onDestroy();
+  }
+
+  @Override
+  public void onActivityResult(int requestCode, int resultCode, Intent intent)
+  {
+    if (intent == null)
+      return;
+
+    switch (requestCode)
+    {
+      case REQUEST_CODE_OPEN_DOCUMENT_TREE:
+        {
+          Uri uri = intent.getData();
+          if (uri == null)
+            break;
+          if (Build.VERSION.SDK_INT >= 19)
+            getContentResolver().takePersistableUriPermission(uri, intent.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
+          safTreeAdded(uri.toString());
+        }
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  public void requestOpenDocumentTree()
+  {
+    startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), REQUEST_CODE_OPEN_DOCUMENT_TREE);
   }
 
   public void doVibrate(int id, int effect, int strength, int oneShot)
@@ -170,6 +201,24 @@ public class RetroActivityCommon extends NativeActivity
     }
 
     return ret;
+  }
+
+  public String[] getPersistedSafTrees()
+  {
+    if (Build.VERSION.SDK_INT >= 19)
+    {
+      List<android.content.UriPermission> uriPermissions = getContentResolver().getPersistedUriPermissions();
+      List<String> trees = new ArrayList<>();
+      for (android.content.UriPermission uriPermission : uriPermissions)
+      {
+        Uri uri = uriPermission.getUri();
+        if (uri != null)
+          trees.add(uri.toString());
+      }
+      return trees.toArray(new String[0]);
+    }
+    else
+      return new String[0];
   }
 
 // https://stackoverflow.com/questions/4553650/how-to-check-device-natural-default-orientation-on-android-i-e-get-landscape/4555528#4555528
@@ -484,6 +533,11 @@ public class RetroActivityCommon extends NativeActivity
    * @param totalBytesToDownload Total number of bytes to download.
    */
   public native void coreInstallStatusChanged(String[] coreNames, int status, long bytesDownloaded, long totalBytesToDownload);
+
+  /**
+   * Called when the user grants access to a Storage Access Framework tree.
+   */
+  public native void safTreeAdded(String tree);
 
 
 
