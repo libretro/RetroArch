@@ -91,7 +91,7 @@ void *glkitview_init(void);
 void cocoa_file_load_with_detect_core(const char *filename);
 
 @interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate
-#ifdef HAVE_IOS_TOUCHMOUSE
+#ifdef HAVE_IOS_SWIFT
 ,EmulatorTouchMouseHandlerDelegate
 #endif
 #if TARGET_OS_IOS
@@ -539,7 +539,7 @@ void rarch_stop_draw_observer(void)
     });
 }
 
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
+#ifdef HAVE_IOS_SWIFT
 -(void)toggleCustomKeyboardUsingSwipe:(id)sender {
     UISwipeGestureRecognizer *gestureRecognizer = (UISwipeGestureRecognizer*)sender;
     [self.keyboardController.view setHidden:gestureRecognizer.direction == UISwipeGestureRecognizerDirectionDown];
@@ -550,19 +550,17 @@ void rarch_stop_draw_observer(void)
     [self.keyboardController.view setHidden:!self.keyboardController.view.isHidden];
     [self updateOverlayAndFocus];
 }
-#endif
 
 -(void) updateOverlayAndFocus
 {
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
     int cmdData = self.keyboardController.view.isHidden ? 0 : 1;
     command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &cmdData);
     if (self.keyboardController.view.isHidden)
         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
     else
         command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
-#endif
 }
+#endif
 
 -(BOOL)prefersHomeIndicatorAutoHidden { return YES; }
 -(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
@@ -653,11 +651,9 @@ void rarch_stop_draw_observer(void)
 - (void)viewWillLayoutSubviews
 {
    [self adjustViewFrameForSafeArea];
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
+#ifdef HAVE_IOS_SWIFT
    [self.view bringSubviewToFront:self.keyboardController.view];
-#endif
-#if HAVE_IOS_SWIFT
-    [self.view bringSubviewToFront:self.helperBarView];
+   [self.view bringSubviewToFront:self.helperBarView];
 #endif
 }
 
@@ -716,11 +712,9 @@ void rarch_stop_draw_observer(void)
     swipe.delegate                  = self;
     swipe.direction                 = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
-#ifdef HAVE_IOS_TOUCHMOUSE
+#ifdef HAVE_IOS_SWIFT
     if (@available(iOS 13, *))
         [self setupMouseSupport];
-#endif
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
     if (@available(iOS 13, *))
         [self setupEmulatorKeyboard];
     UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
@@ -733,8 +727,6 @@ void rarch_stop_draw_observer(void)
     hideKeyboardSwipe.direction                 = UISwipeGestureRecognizerDirectionDown;
     hideKeyboardSwipe.delegate                  = self;
     [self.view addGestureRecognizer:hideKeyboardSwipe];
-#endif
-#if defined(HAVE_IOS_TOUCHMOUSE) || defined(HAVE_IOS_CUSTOMKEYBOARDS)
     if (@available(iOS 13, *))
         [self setupHelperBar];
 #endif
@@ -780,7 +772,7 @@ void rarch_stop_draw_observer(void)
 #endif
 }
 
-#if TARGET_OS_IOS && HAVE_IOS_TOUCHMOUSE
+#ifdef HAVE_IOS_SWIFT
 
 #pragma mark EmulatorTouchMouseHandlerDelegate
 
