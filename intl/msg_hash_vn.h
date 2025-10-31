@@ -1952,11 +1952,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   "Phóng to/Thu nhỏ"
+   "Phóng to/Thu nhỏ hình ảnh"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   "Thay đổi cài đặt tỷ lệ video."
+   "Điều chỉnh màn hình."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SETTINGS,
@@ -2388,7 +2388,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   "Thu phóng cửa sổ"
+   "Phóng to/Thu nhỏ cửa sổ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
