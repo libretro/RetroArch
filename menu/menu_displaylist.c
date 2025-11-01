@@ -5751,7 +5751,7 @@ static int menu_displaylist_parse_input_retropad_bind_list(
       return 0;
 
    if (turbo_bind && menu_entries_append(info_list,
-         "---",
+         RARCH_NO_BIND,
          "-1",
          MENU_ENUM_LABEL_NO_ITEMS,
          MENU_SETTING_DROPDOWN_ITEM_INPUT_RETROPAD_BIND,
@@ -6134,7 +6134,6 @@ static int menu_displaylist_parse_input_description_list(
    unsigned count                = 0;
    rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
    size_t menu_index             = 0;
-   bool current_input_mapped     = false;
    struct menu_state *menu_st    = menu_state_get_ptr();
 
    entry_lbl[0] = '\0';
@@ -6157,8 +6156,8 @@ static int menu_displaylist_parse_input_description_list(
 
    /* Get current mapping for selected button */
    current_remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
-
-   if (current_remap_idx >= RARCH_CUSTOM_BIND_LIST_END)
+   if (     current_remap_idx >= RARCH_CUSTOM_BIND_LIST_END
+         || string_is_empty(sys_info->input_desc_btn[mapped_port][current_remap_idx]))
       current_remap_idx = RARCH_UNMAPPED;
 
    /* An annoyance: Menu entries do not have
@@ -6169,6 +6168,27 @@ static int menu_displaylist_parse_input_description_list(
     * and so have to convert 'info->type' to a string
     * and pass it as the entry label... */
    snprintf(entry_lbl, sizeof(entry_lbl), "%u", info->type);
+
+   /* Add 'unmapped' entry */
+   if (menu_entries_append(info->list,
+         RARCH_NO_BIND,
+         entry_lbl,
+         MENU_ENUM_LABEL_INPUT_DESCRIPTION,
+         MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION,
+         0, RARCH_UNMAPPED, NULL))
+   {
+      /* Add checkmark if input is currently unmapped */
+      if (current_remap_idx == RARCH_UNMAPPED)
+      {
+         menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
+         if (cbs)
+            cbs->checked            = true;
+         menu_st->selection_ptr     = menu_index;
+      }
+
+      count++;
+      menu_index++;
+   }
 
    /* Loop over core input definitions */
    for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
@@ -6219,34 +6239,12 @@ static int menu_displaylist_parse_input_description_list(
                if (cbs)
                   cbs->checked            = true;
                menu_st->selection_ptr     = menu_index;
-               current_input_mapped       = true;
             }
 
             count++;
             menu_index++;
          }
       }
-   }
-
-   /* Add 'unmapped' entry at end of list */
-   if (menu_entries_append(info->list,
-         "---",
-         entry_lbl,
-         MENU_ENUM_LABEL_INPUT_DESCRIPTION,
-         MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION,
-         0, RARCH_UNMAPPED, NULL))
-   {
-      /* Add checkmark if input is currently unmapped */
-      if (!current_input_mapped)
-      {
-         menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
-         if (cbs)
-            cbs->checked            = true;
-         menu_st->selection_ptr     = menu_index;
-      }
-
-      count++;
-      menu_index++;
    }
 
    return count;
@@ -6337,12 +6335,7 @@ static int menu_displaylist_parse_input_description_kbd_list(
          continue;
 
       if (key_id == RETROK_FIRST)
-      {
-         input_description[0] = '-';
-         input_description[1] = '-';
-         input_description[2] = '-';
-         input_description[3] = '\0';
-      }
+         strlcpy(input_description, RARCH_NO_BIND, sizeof(input_description));
       else
       {
          /* TODO/FIXME: Localize 'Keyboard' */

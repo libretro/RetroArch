@@ -6866,7 +6866,7 @@ static size_t setting_get_string_representation_retropad_bind(
       int retro_id         = *setting->value.target.integer;
 
       if (retro_id < 0)
-         return strlcpy(s, "---", len);
+         return strlcpy(s, RARCH_NO_BIND, len);
       else
       {
          const struct retro_keybind *keyptr =
