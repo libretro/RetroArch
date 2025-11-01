@@ -61,6 +61,7 @@
 #define NETRETROPAD_SCREEN_KEYBOARD 1
 #define NETRETROPAD_SCREEN_SENSORS 2
 #define EVENT_RATE 60
+#define POINTER_IDLE_MAX EVENT_RATE*2
 #define NETRETROPAD_MOUSE 3
 #define NETRETROPAD_POINTER 4
 #define NETRETROPAD_LIGHTGUN 5
@@ -101,6 +102,7 @@ static int pointer_y = 0;
 static unsigned pointer_prev_x = 0;
 static unsigned pointer_prev_y = 0;
 static unsigned pointer_prev_color = 0;
+static unsigned pointer_idle = 0;
 
 static int s;
 static int port;
@@ -536,7 +538,6 @@ void NETRETROPAD_CORE_PREFIX(retro_init)(void)
 
    NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "Initialising sockets...\n");
    network_init();
-
 }
 
 void NETRETROPAD_CORE_PREFIX(retro_deinit)(void)
@@ -833,6 +834,7 @@ static void netretropad_check_variables(void)
         || (current_screen == NETRETROPAD_SCREEN_KEYBOARD && strstr(screen_var.value,"Keyboard"))
         || (current_screen == NETRETROPAD_SCREEN_SENSORS  && strstr(screen_var.value,"Sensor"))))
       flip_screen();
+
    if (hide_a_var.value && strstr(hide_a_var.value,"True"))
       hide_analog_mismatch = true;
    else
@@ -1350,8 +1352,6 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
    }
    else if (current_screen == NETRETROPAD_SCREEN_SENSORS)
    {
-      unsigned pointer_x_coord = get_pixel_coordinate(pointer_x, 320);
-      unsigned pointer_y_coord = get_pixel_coordinate(pointer_y, 240);
 
       for (rle = 0; rle < ARRAY_SIZE(sensor_buttons); )
       {
@@ -1381,18 +1381,30 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 
          pixel += 65;
       }
+   }
 
-      if(pointer_x_coord != pointer_prev_x || pointer_y_coord != pointer_prev_y)
+   if (mouse_type)
+   {
+      unsigned pointer_x_coord = get_pixel_coordinate(pointer_x, 320);
+      unsigned pointer_y_coord = get_pixel_coordinate(pointer_y, 240);
+
+      set_pixel(pointer_prev_x, pointer_prev_y, pointer_prev_color);
+
+      if (pointer_x_coord != pointer_prev_x || pointer_y_coord != pointer_prev_y)
       {
-         set_pixel(pointer_prev_x, pointer_prev_y, pointer_prev_color);
-         pointer_prev_color = set_pixel(pointer_x_coord, pointer_y_coord, 0xffff);
+         pointer_prev_color = set_pixel(pointer_x_coord, pointer_y_coord, 0xbff7);
          pointer_prev_x = pointer_x_coord;
          pointer_prev_y = pointer_y_coord;
+         pointer_idle   = 0;
+      }
+      else if (pointer_idle <= POINTER_IDLE_MAX)
+      {
+         pointer_prev_color = set_pixel(pointer_x_coord, pointer_y_coord, (pointer_idle > POINTER_IDLE_MAX / 2) ? 0xA000 :  0xbff7);
+         pointer_idle++;
       }
    }
 
    NETRETROPAD_CORE_PREFIX(video_cb)(frame_buf, 320, 240, 640);
-   retro_sleep(4);
 }
 
 bool NETRETROPAD_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
