@@ -5492,11 +5492,6 @@ unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsign
 
    if (sys_info)
    {
-      /* Only push RETRO_DEVICE_ANALOG as default if we use an
-       * older core which doesn't use SET_CONTROLLER_INFO. */
-      if (!sys_info->ports.size)
-         devices[types++] = RETRO_DEVICE_ANALOG;
-
       if (port < sys_info->ports.size)
          desc = &sys_info->ports.data[port];
    }
