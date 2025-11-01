@@ -1531,9 +1531,14 @@ static int16_t input_state_device(
                   turbo_duty_cycle = turbo_period / 2;
 
                /* Clear underlying button to prevent duplicates. */
-               if (     input_st->turbo_btns.frame_enable[port]
-                     && (int)id == settings->ints.input_turbo_bind)
-                  res = 0;
+               if (input_st->turbo_btns.frame_enable[port])
+               {
+                  unsigned turbo_bind = settings->ints.input_turbo_bind;
+                  unsigned remap_bind = settings->uints.input_remap_ids[port][turbo_bind];
+
+                  if (id == remap_bind)
+                     res = 0;
+               }
 
                if (turbo_mode > INPUT_TURBO_MODE_CLASSIC_TOGGLE)
                {
@@ -1708,6 +1713,18 @@ static int16_t input_state_device(
                            reset_state = true;
                         else if (settings->uints.input_remap_ids[port][offset + 1] != (offset+1))
                            reset_state = true;
+
+                        if (input_st->turbo_btns.frame_enable[port])
+                        {
+                           unsigned turbo_bind = settings->ints.input_turbo_bind;
+                           unsigned remap_bind = settings->uints.input_remap_ids[port][turbo_bind];
+
+                           if (offset == remap_bind || offset + 1 == remap_bind)
+                           {
+                              res = 0;
+                              break;
+                           }
+                        }
                      }
 
                      if (reset_state)
