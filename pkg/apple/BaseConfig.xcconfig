@@ -140,12 +140,10 @@ OTHER_CFLAGS[sdk=appletvsimulator*] = $(inherited) $(OTHER_CFLAGS_IOS_TVOS_SHARE
 OTHER_CFLAGS_IOS = $(inherited) -DHAVE_AVF
 OTHER_CFLAGS_IOS = $(inherited) -DHAVE_COREMIDI
 OTHER_CFLAGS_IOS = $(inherited) -DHAVE_COREMOTION
-OTHER_CFLAGS_IOS = $(inherited) -DHAVE_IOS_SWIFT
 OTHER_CFLAGS_IOS = $(inherited) -DHAVE_MATERIALUI
 
 OTHER_CFLAGS[sdk=iphoneos*] = $(inherited) $(OTHER_CFLAGS_IOS)
 OTHER_CFLAGS[sdk=iphonesimulator*] = $(inherited) $(OTHER_CFLAGS_IOS)
-OTHER_SWIFT_FLAGS[sdk=iphoneos*] = $(inherited) -D HAVE_IOS_SWIFT
 
 OTHER_CFLAGS[config=Debug] = $(inherited) -DDEBUG=1
 OTHER_CFLAGS[config=Release] = $(inherited) -DNDEBUG -DNS_BLOCK_ASSERTIONS=1
