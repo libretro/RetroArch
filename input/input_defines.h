@@ -34,6 +34,7 @@
 #define RARCH_FIRST_META_KEY           RARCH_CUSTOM_BIND_LIST_END
 
 #define RARCH_UNMAPPED                 1024
+#define RARCH_NO_BIND                  "---"
 
 /* Specialized _MOUSE that targets the full screen regardless of viewport.
  */

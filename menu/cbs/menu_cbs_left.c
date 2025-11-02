@@ -136,60 +136,56 @@ static int action_left_cheat(unsigned type, const char *label,
 #endif
 
 static int action_left_input_desc(unsigned type, const char *label,
-   bool wraparound)
+      bool wraparound)
 {
-   unsigned user_idx;
-   unsigned btn_idx;
-   unsigned remap_idx;
-   unsigned bind_idx;
-   unsigned mapped_port;
-   settings_t *settings                  = config_get_ptr();
-   rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
+   settings_t *settings          = config_get_ptr();
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
 
-   if (!settings || !sys_info)
-      return 0;
-
-   user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-   btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
-   mapped_port = settings->uints.input_remap_ports[user_idx];
-   remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
-   for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
+   if (settings && sys_info)
    {
-      if (input_config_bind_order[bind_idx] == remap_idx)
-         break;
-   }
+      unsigned bind_idx;
+      unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+      unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+      unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
+      unsigned remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
 
-   /* Search for the last input desc bind */
-   if (remap_idx == RARCH_UNMAPPED)
-   {
-      uint8_t i;
-
-      for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
+      for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
       {
-         if (string_is_empty(sys_info->input_desc_btn[mapped_port][i]))
+         if (input_config_bind_order[bind_idx] == remap_idx)
             break;
       }
-      settings->uints.input_remap_ids[user_idx][btn_idx] = input_config_bind_order[i - 1];
-   }
-   else if (bind_idx > 0)
-   {
-      if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
-         settings->uints.input_remap_ids[user_idx][btn_idx]--;
-      else
+
+      /* If pressed from unmapped bind, start from the bottom */
+      if (label)
+      {
+         struct menu_state *menu_st = menu_state_get_ptr();
+         menu_entry_t entry;
+         MENU_ENTRY_INITIALIZE(entry);
+         entry.flags |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+         menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+         if (string_is_equal(entry.value, RARCH_NO_BIND))
+            bind_idx = RARCH_ANALOG_BIND_LIST_END;
+      }
+
+      if (bind_idx > 0)
       {
          bind_idx--;
          bind_idx = input_config_bind_order[bind_idx];
          settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
+
+         /* Skip empty descs */
+         if (string_is_empty(sys_info->input_desc_btn[mapped_port][bind_idx]))
+            return action_left_input_desc(type, NULL, wraparound);
       }
+      else
+         settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
    }
-   else if (bind_idx == 0)
-      settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
 
    return 0;
 }
 
 static int action_left_input_desc_kbd(unsigned type, const char *label,
-   bool wraparound)
+      bool wraparound)
 {
    unsigned remap_id;
    unsigned key_id, user_idx, btn_idx;
@@ -201,8 +197,7 @@ static int action_left_input_desc_kbd(unsigned type, const char *label,
    user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
    btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
 
-   remap_id =
-      settings->uints.input_keymapper_ids[user_idx][btn_idx];
+   remap_id = settings->uints.input_keymapper_ids[user_idx][btn_idx];
 
    for (key_id = 0; key_id < RARCH_MAX_KEYS; key_id++)
    {

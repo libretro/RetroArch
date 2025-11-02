@@ -42,30 +42,25 @@
 #define UIUserInterfaceIdiomCarPlay 3
 #endif
 
-#if TARGET_OS_IOS
+#ifdef HAVE_IOS_SWIFT
 @class EmulatorKeyboardController;
-
-#ifdef HAVE_IOS_TOUCHMOUSE
 @class EmulatorTouchMouseHandler;
 #endif
 
+#if TARGET_OS_IOS
 @interface CocoaView : UIViewController
 
 #elif TARGET_OS_TV
 @interface CocoaView : GCEventViewController
 #endif
 
-#if TARGET_OS_IOS && defined(HAVE_IOS_CUSTOMKEYBOARD)
+#ifdef HAVE_IOS_SWIFT
 @property(nonatomic,strong) EmulatorKeyboardController *keyboardController;
 @property(nonatomic,assign) unsigned int keyboardModifierState;
 -(void)toggleCustomKeyboard;
-#endif
 
-#if TARGET_OS_IOS && defined(HAVE_IOS_TOUCHMOUSE)
 @property(nonatomic,strong) EmulatorTouchMouseHandler *mouseHandler;
-#endif
 
-#if defined(HAVE_IOS_SWIFT)
 @property(nonatomic,strong) UIView *helperBarView;
 #endif
 

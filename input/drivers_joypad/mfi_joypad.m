@@ -50,7 +50,7 @@ static uint32_t mfi_buttons[MAX_USERS];
 static int16_t  mfi_axes[MAX_USERS][MAX_MFI_AXES];
 static uint32_t mfi_controllers[MAX_MFI_CONTROLLERS];
 static MFIRumbleController *mfi_rumblers[MAX_MFI_CONTROLLERS];
-#define MFI_WEAK_RUMBLE 0.3f
+#define MFI_WEAK_RUMBLE 0.5f
 static NSMutableArray *mfiControllers;
 static bool mfi_inited;
 
@@ -372,12 +372,17 @@ static void mfi_joypad_autodetect_add(unsigned autoconf_pad, const char *display
     CHHapticEvent *event;
     CHHapticPattern *pattern;
 
+    CHHapticEventParameter *sharp;
+
     intense = [[CHHapticEventParameter alloc]
                initWithParameterID:CHHapticEventParameterIDHapticIntensity
                value:intensity];
+    sharp   = [[CHHapticEventParameter alloc]
+               initWithParameterID:CHHapticEventParameterIDHapticSharpness
+               value:1.0];
     event   = [[CHHapticEvent alloc]
              initWithEventType:CHHapticEventTypeHapticContinuous
-             parameters:[NSArray arrayWithObjects:intense, nil]
+             parameters:[NSArray arrayWithObjects:intense, sharp, nil]
              relativeTime:0
              duration:GCHapticDurationInfinite];
     pattern = [[CHHapticPattern alloc]
@@ -573,12 +578,17 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_create_play
     CHHapticPattern *pattern;
     NSError *error;
 
+    CHHapticEventParameter *sharp;
+
     intense = [[CHHapticEventParameter alloc]
                initWithParameterID:CHHapticEventParameterIDHapticIntensity
                value:intensity];
+    sharp   = [[CHHapticEventParameter alloc]
+               initWithParameterID:CHHapticEventParameterIDHapticSharpness
+               value:1.0];
     event   = [[CHHapticEvent alloc]
                initWithEventType:CHHapticEventTypeHapticContinuous
-               parameters:[NSArray arrayWithObjects:intense, nil]
+               parameters:[NSArray arrayWithObjects:intense, sharp, nil]
                relativeTime:0
                duration:GCHapticDurationInfinite];
     pattern = [[CHHapticPattern alloc]
@@ -606,7 +616,7 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_strong_play
 static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_weak_player(void) IPHONE_RUMBLE_AVAIL
 {
     if (!deviceWeakPlayer)
-        deviceWeakPlayer = apple_gamecontroller_device_haptics_create_player(0.5f);
+        deviceWeakPlayer = apple_gamecontroller_device_haptics_create_player(0.7f);
     return deviceWeakPlayer;
 }
 #endif
@@ -770,8 +780,6 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
                 {
                    CHHapticDynamicParameter *param = NULL;
                    float str = (float)strength / 65535.0f;
-                   if (type == RETRO_RUMBLE_WEAK)
-                      str *= MFI_WEAK_RUMBLE;
                    param = [[CHHapticDynamicParameter alloc]
                       initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
                                     value:str

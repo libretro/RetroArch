@@ -250,7 +250,7 @@ MSG_HASH( /* FIXME Maybe add a description? */
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-   "Khởi động RetroPad từ xa"
+   "Khởi động tay cầm từ xa"
    )
 
 /* Main Menu > Load Content */
@@ -1952,11 +1952,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   "Phóng to/Thu nhỏ"
+   "Phóng to/Thu nhỏ hình ảnh"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   "Thay đổi cài đặt tỷ lệ video."
+   "Điều chỉnh màn hình."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SETTINGS,
@@ -2388,7 +2388,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   "Thu phóng cửa sổ"
+   "Phóng to/Thu nhỏ cửa sổ"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
@@ -2488,6 +2488,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
    "Tỷ lệ số nguyên"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Làm tròn xuống hoặc lên đến hệ số nguyên tiếp theo. Chế độ “Thông minh” sẽ giảm xuống mức thu nhỏ khi hình ảnh bị cắt quá nhiều, và cuối cùng quay về thu phóng không nguyên nếu phần bị thu nhỏ trở nên quá lớn."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,

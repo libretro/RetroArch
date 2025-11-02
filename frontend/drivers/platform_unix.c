@@ -57,6 +57,10 @@
 
 #ifdef ANDROID
 #include <sys/system_properties.h>
+#ifdef HAVE_SAF
+#include <vfs/vfs_implementation_saf.h>
+#include "../../menu/menu_cbs.h"
+#endif
 #endif
 
 #if defined(DINGUX)
@@ -606,6 +610,64 @@ static void frontend_android_shutdown(bool unused)
    (void)unused;
    /* Cleaner approaches don't work sadly. */
    exit(0);
+}
+
+#ifdef HAVE_SAF
+void android_show_saf_tree_picker(void)
+{
+   JNIEnv *env;
+
+   if (!g_android || !g_android->have_saf)
+      return;
+
+   env = jni_thread_getenv();
+   if (!env)
+      return;
+
+   CALL_VOID_METHOD(env, g_android->activity->clazz, g_android->requestOpenDocumentTree);
+}
+#endif
+
+/*
+ * Class:     com_retroarch_browser_retroactivity_RetroActivityCommon
+ * Method:    safTreeAdded
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCommon_safTreeAdded
+      (JNIEnv *env, jobject this_obj, jstring tree_obj)
+{
+#ifdef HAVE_SAF
+   const char *tree;
+   char *serialized_path;
+
+   tree = (*env)->GetStringUTFChars(env, tree_obj, NULL);
+   if ((*env)->ExceptionOccurred(env))
+   {
+      (*env)->ExceptionDescribe(env);
+      (*env)->ExceptionClear(env);
+      return;
+   }
+
+   if ((serialized_path = retro_vfs_path_join_saf(tree, "")) != NULL)
+   {
+      generic_action_ok_displaylist_push(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+            serialized_path,
+            msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+            MENU_SETTING_ACTION,
+            0,
+            0,
+            ACTION_OK_DL_CONTENT_LIST);
+      free(serialized_path);
+   }
+
+   (*env)->ReleaseStringUTFChars(env, tree_obj, tree);
+   if ((*env)->ExceptionOccurred(env))
+   {
+      (*env)->ExceptionDescribe(env);
+      (*env)->ExceptionClear(env);
+   }
+#endif
 }
 
 #elif !defined(DINGUX)
@@ -1973,6 +2035,11 @@ static void android_app_destroy(struct android_app *android_app)
       CALL_VOID_METHOD(env, android_app->activity->clazz,
             android_app->onRetroArchExit);
 
+#ifdef HAVE_SAF
+   if (android_app->have_saf)
+      retro_vfs_deinit_saf();
+#endif
+
    if (android_app->inputQueue)
       AInputQueue_detachLooper(android_app->inputQueue);
 
@@ -2135,6 +2202,18 @@ static void frontend_unix_init(void *data)
    GET_METHOD_ID(env, android_app->accessibilitySpeak, class,
          "accessibilitySpeak", "(Ljava/lang/String;)V");
 
+   CALL_BOOLEAN_METHOD(env, android_app->is_play_store_build, android_app->activity->clazz, android_app->isPlayStoreBuild)
+
+#ifdef HAVE_SAF
+   GET_METHOD_ID(env, android_app->requestOpenDocumentTree, class,
+         "requestOpenDocumentTree", "()V");
+
+   GET_METHOD_ID(env, android_app->getPersistedSafTrees, class,
+         "getPersistedSafTrees", "()[Ljava/lang/String;");
+
+   android_app->have_saf = retro_vfs_init_saf(jni_thread_getenv, android_app->activity->clazz);
+#endif
+
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
@@ -2184,53 +2263,73 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    CALL_OBJ_METHOD(env, obj, g_android->activity->clazz,
          g_android->getIntent);
 
-   if (g_android->getVolumeCount)
+   if (!g_android->is_play_store_build && g_android->getVolumeCount)
    {
       CALL_INT_METHOD(env, output,
          g_android->activity->clazz, g_android->getVolumeCount);
       volume_count = output;
    }
 
-   if (!string_is_empty(internal_storage_path))
+   if (!g_android->is_play_store_build)
    {
-      if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
+      if (!string_is_empty(internal_storage_path))
       {
-         char user_data_path[PATH_MAX_LENGTH];
-         fill_pathname_join_special(user_data_path,
-               internal_storage_path, "RetroArch",
-               sizeof(user_data_path));
+         if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
+         {
+            char user_data_path[PATH_MAX_LENGTH];
+            fill_pathname_join_special(user_data_path,
+                  internal_storage_path, "RetroArch",
+                  sizeof(user_data_path));
+
+            menu_entries_append(list,
+                  user_data_path,
+                  msg_hash_to_str(MSG_INTERNAL_STORAGE),
+                  enum_idx,
+                  FILE_TYPE_DIRECTORY, 0, 0, NULL);
+         }
 
          menu_entries_append(list,
-               user_data_path,
+               internal_storage_path,
                msg_hash_to_str(MSG_INTERNAL_STORAGE),
+               enum_idx,
+               FILE_TYPE_DIRECTORY, 0, 0, NULL);
+      }
+      else
+         menu_entries_append(list,
+               "/storage/emulated/0",
+               msg_hash_to_str(MSG_REMOVABLE_STORAGE),
+               enum_idx,
+               FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   }
+
+   if (!g_android->is_play_store_build)
+      menu_entries_append(list,
+            "/storage",
+            msg_hash_to_str(MSG_REMOVABLE_STORAGE),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   if (!string_is_empty(internal_storage_app_path))
+   {
+      if (g_android->is_play_store_build)
+      {
+         char user_data_app_path[PATH_MAX_LENGTH];
+         fill_pathname_join_special(user_data_app_path,
+               internal_storage_app_path, "RetroArch",
+               sizeof(user_data_app_path));
+
+         menu_entries_append(list,
+               user_data_app_path,
+               msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
                enum_idx,
                FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
 
       menu_entries_append(list,
-            internal_storage_path,
-            msg_hash_to_str(MSG_INTERNAL_STORAGE),
-            enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   }
-   else
-      menu_entries_append(list,
-            "/storage/emulated/0",
-            msg_hash_to_str(MSG_REMOVABLE_STORAGE),
-            enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0, NULL);
-
-   menu_entries_append(list,
-         "/storage",
-         msg_hash_to_str(MSG_REMOVABLE_STORAGE),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   if (!string_is_empty(internal_storage_app_path))
-      menu_entries_append(list,
             internal_storage_app_path,
             msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   }
    if (!string_is_empty(app_dir))
       menu_entries_append(list,
             app_dir,
@@ -2266,8 +2365,8 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   enum_idx,
                   FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
-
    }
+
 #elif defined(WEBOS)
    if (path_is_directory("/media/internal"))
       menu_entries_append(list, "/media/internal",
@@ -2349,10 +2448,84 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    }
 #endif
 
-   menu_entries_append(list, "/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+#ifdef ANDROID
+   if (!g_android->is_play_store_build)
+#else
+   if (1)
+#endif
+   {
+      menu_entries_append(list, "/",
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   }
+
+#if defined(ANDROID) && defined(HAVE_SAF)
+   if (g_android->have_saf)
+   {
+      JNIEnv *env = jni_thread_getenv();
+
+      if (env != NULL)
+      {
+         jarray trees = (*env)->CallObjectMethod(env, g_android->activity->clazz, g_android->getPersistedSafTrees);
+         if ((*env)->ExceptionOccurred(env))
+         {
+            (*env)->ExceptionDescribe(env);
+            (*env)->ExceptionClear(env);
+         }
+         else
+         {
+            jsize trees_length = (*env)->GetArrayLength(env, trees);
+            if ((*env)->ExceptionOccurred(env))
+            {
+               (*env)->ExceptionDescribe(env);
+               (*env)->ExceptionClear(env);
+            }
+            else
+               for (jsize i = 0; i < trees_length; ++i)
+               {
+                  const char *tree_chars;
+                  char *serialized_path;
+                  jstring tree = (*env)->GetObjectArrayElement(env, trees, i);
+                  if ((*env)->ExceptionOccurred(env))
+                  {
+                     (*env)->ExceptionDescribe(env);
+                     (*env)->ExceptionClear(env);
+                     continue;
+                  }
+                  tree_chars = (*env)->GetStringUTFChars(env, tree, NULL);
+                  if ((*env)->ExceptionOccurred(env))
+                  {
+                     (*env)->ExceptionDescribe(env);
+                     (*env)->ExceptionClear(env);
+                     continue;
+                  }
+                  if ((serialized_path = retro_vfs_path_join_saf(tree_chars, "")) != NULL)
+                  {
+                     menu_entries_append(list,
+                           serialized_path,
+                           msg_hash_to_str(MSG_REMOVABLE_STORAGE),
+                           enum_idx,
+                           FILE_TYPE_DIRECTORY, 0, 0, NULL);
+                     free(serialized_path);
+                  }
+                  (*env)->ReleaseStringUTFChars(env, tree, tree_chars);
+                  if ((*env)->ExceptionOccurred(env))
+                  {
+                     (*env)->ExceptionDescribe(env);
+                     (*env)->ExceptionClear(env);
+                  }
+               }
+         }
+      }
+
+      menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
+            MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
+            MENU_SETTING_ACTION, 0, 0, NULL);
+   }
+#endif
 #endif
 
    return 0;
