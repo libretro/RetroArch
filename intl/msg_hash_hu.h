@@ -2466,6 +2466,10 @@ MSG_HASH(
    "Egész-szorzós méretezés"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "A legközelebbi egész többszörösre kerekítés felfelé vagy lefelé. Az \"Intelligens\" mód átvált lefelé kerekítésre, ha a kép széléből túl sok lenne levágva, és visszaáll lineáris méretezésre, ha a margó így túl nagy lenne."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "Alulméretezés"
    )
@@ -14853,6 +14857,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    "RetroAchievements lemez váltása sikertelen: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "A RetroAchievements bejelentkezés lejárt. Írja be újra a jelszót és töltse újra a játékot."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
