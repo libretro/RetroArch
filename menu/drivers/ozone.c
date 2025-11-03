@@ -3425,7 +3425,7 @@ static void ozone_draw_sidebar(
             video_width,
             video_height,
             ozone->sidebar_offset,
-            ozone->dimensions.header_height + ozone->dimensions.spacer_1px,
+            ozone->dimensions.header_height,
             (unsigned)ozone->dimensions_sidebar_width,
             ozone->dimensions.sidebar_gradient_height,
             video_width,
@@ -3438,7 +3438,7 @@ static void ozone_draw_sidebar(
             video_width,
             video_height,
             ozone->sidebar_offset,
-            ozone->dimensions.header_height + ozone->dimensions.spacer_1px
+            ozone->dimensions.header_height
                   + ozone->dimensions.sidebar_gradient_height,
             (unsigned)ozone->dimensions_sidebar_width,
             sidebar_height,
@@ -3454,11 +3454,9 @@ static void ozone_draw_sidebar(
             ozone->sidebar_offset,
             video_height
                   - ozone->dimensions.footer_height
-                  - ozone->dimensions.sidebar_gradient_height
-                  - ozone->dimensions.spacer_1px,
+                  - ozone->dimensions.sidebar_gradient_height,
             (unsigned)ozone->dimensions_sidebar_width,
-            ozone->dimensions.sidebar_gradient_height
-                  + ozone->dimensions.spacer_1px,
+            ozone->dimensions.sidebar_gradient_height,
             video_width,
             video_height,
             ozone->theme->sidebar_bottom_gradient,
@@ -6308,7 +6306,7 @@ static void ozone_draw_thumbnail_bar(
             video_width,
             video_height,
             x_position,
-            ozone->dimensions.header_height + ozone->dimensions.spacer_1px,
+            ozone->dimensions.header_height,
             (unsigned)ozone->animations.thumbnail_bar_position,
             ozone->dimensions.sidebar_gradient_height,
             video_width,
@@ -6321,7 +6319,8 @@ static void ozone_draw_thumbnail_bar(
             video_width,
             video_height,
             x_position,
-            ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.sidebar_gradient_height,
+            ozone->dimensions.header_height
+                  + ozone->dimensions.sidebar_gradient_height,
             (unsigned)ozone->animations.thumbnail_bar_position,
             sidebar_height,
             video_width,
@@ -6334,9 +6333,11 @@ static void ozone_draw_thumbnail_bar(
             video_width,
             video_height,
             x_position,
-            video_height - ozone->dimensions.footer_height - ozone->dimensions.sidebar_gradient_height - ozone->dimensions.spacer_1px,
+            video_height
+                  - ozone->dimensions.footer_height
+                  - ozone->dimensions.sidebar_gradient_height,
             (unsigned)ozone->animations.thumbnail_bar_position,
-            ozone->dimensions.sidebar_gradient_height + ozone->dimensions.spacer_1px,
+            ozone->dimensions.sidebar_gradient_height,
             video_width,
             video_height,
             ozone->theme->sidebar_bottom_gradient,
