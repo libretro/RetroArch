@@ -5318,6 +5318,10 @@ unsigned menu_event(
       RETRO_DEVICE_ID_JOYPAD_Y
    };
 
+   /* Check if all menu input is blocked */
+   if (menu_st->flags & MENU_ST_FLAG_BLOCK_ALL_INPUT)
+      return MENU_ACTION_NOOP;
+
    ok_old                                          = ok_current;
 
    /* Get pointer (mouse + touchscreen) input

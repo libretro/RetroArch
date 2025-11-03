@@ -120,8 +120,12 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 #endif
 
    runloop_flags = runloop_get_flags();
-   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
+   if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
       CFRunLoopWakeUp(CFRunLoopGetMain());
+#if TARGET_OS_IPHONE
+   else
+      rarch_stop_draw_observer();
+#endif
 }
 
 void rarch_start_draw_observer(void)
@@ -173,8 +177,12 @@ void rarch_stop_draw_observer(void)
    }
 
    uint32_t runloop_flags = runloop_get_flags();
-   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
+   if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
+   {
+      /* Fast-forward: observer handles all iterations */
+      rarch_start_draw_observer();
       CFRunLoopWakeUp(CFRunLoopGetMain());
+   }
 #endif
 }
 #endif
@@ -195,14 +203,22 @@ void rarch_stop_draw_observer(void)
           * the display server will set the exact rate when needed */
          [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(60, 120, 120)];
       }
+      else
+      {
+         /* iOS 9-14: Use preferredFramesPerSecond as fallback */
+         view.displayLink.preferredFramesPerSecond = 120;
+      }
+#else
+      /* Building with SDK < iOS 15: Use preferredFramesPerSecond */
+      view.displayLink.preferredFramesPerSecond = 120;
 #endif
-      [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+      [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 #elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
       if (@available(macOS 14.0, *))
       {
          view.displayLink = [view displayLinkWithTarget:view selector:@selector(step:)];
          view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 120, 120);
-         [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+         [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
       }
 #endif
    }
@@ -757,22 +773,26 @@ void rarch_stop_draw_observer(void)
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
         [alert addAction:[UIAlertAction actionWithTitle:@"OK"
             style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                rarch_start_draw_observer();
+                struct menu_state *menu_st = menu_state_get_ptr();
+                menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;;
         }]];
         [alert addAction:[UIAlertAction actionWithTitle:@"Don't Show Again"
             style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                rarch_start_draw_observer();
+                struct menu_state *menu_st = menu_state_get_ptr();
+                menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;
                 configuration_set_bool(settings, settings->bools.gcdwebserver_alert, false);
         }]];
 #if TARGET_OS_IOS
         [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [[WebServer sharedInstance] webUploader].delegate = nil;
             [[WebServer sharedInstance] stopServers];
-           rarch_start_draw_observer();
+           struct menu_state *menu_st = menu_state_get_ptr();
+           menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;;
         }]];
 #endif
         [self presentViewController:alert animated:YES completion:^{
-            rarch_stop_draw_observer();
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_st->flags |= MENU_ST_FLAG_BLOCK_ALL_INPUT;
         }];
     });
 #endif

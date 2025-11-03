@@ -860,8 +860,6 @@ enum
       appicon_setting->values = options;
    }
 
-   rarch_start_draw_observer();
-
 #if TARGET_OS_TV
    update_topshelf();
 #endif
@@ -928,6 +926,14 @@ enum
 #endif
    rarch_stop_draw_observer();
    command_event(CMD_EVENT_SAVE_FILES, NULL);
+
+   /* Clear any stuck or stale touches when backgrounding */
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)input_state_get_ptr()->current_data;
+   if (apple)
+   {
+      apple->touch_count = 0;
+      memset(apple->touches, 0, sizeof(apple->touches));
+   }
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application
@@ -940,11 +946,18 @@ enum
 {
    self.bgDate = [NSDate date];
    rarch_stop_draw_observer();
+
+   /* Clear any stuck or stale touches when losing focus */
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)input_state_get_ptr()->current_data;
+   if (apple)
+   {
+      apple->touch_count = 0;
+      memset(apple->touches, 0, sizeof(apple->touches));
+   }
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-   rarch_start_draw_observer();
    NSError *error;
    settings_t *settings            = config_get_ptr();
    bool ui_companion_start_on_boot = settings->bools.ui_companion_start_on_boot;
