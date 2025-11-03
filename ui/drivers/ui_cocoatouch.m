@@ -32,6 +32,7 @@
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
 #include "../../input/drivers/cocoa_input.h"
+#include "../../input/input_driver.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../retroarch.h"
 #include "../../tasks/task_content.h"
@@ -512,6 +513,14 @@ enum
 @interface RetroArch_iOS () <MXMetricManagerSubscriber, UIPointerInteractionDelegate>
 @end
 #endif
+
+@interface RetroArch_iOS () <UITextFieldDelegate>
+@property (nonatomic, strong) UITextField *keyboardTextField;
+@property (nonatomic, copy) void(^keyboardCompletionCallback)(const char *);
+@property (nonatomic, assign) char **keyboardBufferPtr;
+@property (nonatomic, assign) size_t *keyboardSizePtr;
+@property (nonatomic, assign) char *keyboardAllocatedBuffer;
+@end
 
 @implementation RetroArch_iOS
 
@@ -1060,6 +1069,21 @@ enum
 
    [self.window setRootViewController:[CocoaView get]];
 
+   /* Initialize hidden keyboard text field for iOS native keyboard support */
+   if (!self.keyboardTextField)
+   {
+      self.keyboardTextField = [[UITextField alloc] initWithFrame:CGRectMake(0, -100, 1, 1)];
+      self.keyboardTextField.delegate = self;
+      self.keyboardTextField.autocapitalizationType = UITextAutocapitalizationTypeNone;
+      self.keyboardTextField.autocorrectionType = UITextAutocorrectionTypeNo;
+      self.keyboardTextField.spellCheckingType = UITextSpellCheckingTypeNo;
+      self.keyboardTextField.smartQuotesType = UITextSmartQuotesTypeNo;
+      self.keyboardTextField.smartDashesType = UITextSmartDashesTypeNo;
+      self.keyboardTextField.smartInsertDeleteType = UITextSmartInsertDeleteTypeNo;
+      self.keyboardTextField.returnKeyType = UIReturnKeyDone;
+      [[CocoaView get].view addSubview:self.keyboardTextField];
+   }
+
    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
          command_event(CMD_EVENT_AUDIO_START, NULL);
          });
@@ -1112,6 +1136,93 @@ enum
 }
 #endif
 
+#pragma mark - UITextFieldDelegate (iOS/tvOS Native Keyboard Support)
+
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
+{
+   if (textField != self.keyboardTextField || !self.keyboardAllocatedBuffer || !self.keyboardSizePtr)
+      return YES;
+
+   /* Calculate new text */
+   NSString *newText = [textField.text stringByReplacingCharactersInRange:range withString:string];
+
+   /* Update the RetroArch buffer in real-time so the menu can display it */
+   const char *utf8Text = [newText UTF8String];
+   if (utf8Text)
+   {
+      strlcpy(self.keyboardAllocatedBuffer, utf8Text, 512);
+      *self.keyboardSizePtr = strlen(self.keyboardAllocatedBuffer);
+   }
+
+   return YES;
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField
+{
+   if (textField == self.keyboardTextField)
+   {
+      /* Update buffer with final text before calling callback */
+      if (self.keyboardAllocatedBuffer && self.keyboardSizePtr)
+      {
+         const char *finalText = [textField.text UTF8String];
+         if (finalText)
+         {
+            strlcpy(self.keyboardAllocatedBuffer, finalText, 512);
+            *self.keyboardSizePtr = strlen(self.keyboardAllocatedBuffer);
+         }
+      }
+
+      /* Store callback and buffer before clearing callback reference */
+      void(^callback)(const char *) = self.keyboardCompletionCallback;
+      char *buffer = self.keyboardAllocatedBuffer;
+
+      /* Clear callback to prevent double-invoke, but keep buffer references
+       * since the callback will free the buffer via input_keyboard_line_free() */
+      self.keyboardCompletionCallback = nil;
+
+      /* DON'T dismiss keyboard here - let menu_input_dialog_end() -> ios_keyboard_end() do it
+       * This ensures ios_keyboard_active() returns true when the callback checks it */
+
+      /* Call completion callback with buffer pointer
+       * The callback will call menu_input_dialog_end() which will call ios_keyboard_end() */
+      if (callback && buffer)
+         callback(buffer);
+      /* Clear our references after callback completes */
+      self.keyboardBufferPtr = NULL;
+      self.keyboardSizePtr = NULL;
+      self.keyboardAllocatedBuffer = NULL;
+
+      return NO;  /* Return NO to prevent UIKit from processing the return key event further */
+   }
+   return YES;
+}
+
+- (void)textFieldDidEndEditing:(UITextField *)textField
+{
+   if (textField == self.keyboardTextField)
+   {
+      /* Only call callback if it wasn't already called (by textFieldShouldReturn) */
+      if (self.keyboardCompletionCallback)
+      {
+         /* User dismissed keyboard without hitting return - treat as cancel */
+         void(^callback)(const char *) = self.keyboardCompletionCallback;
+
+         /* Clear callback to prevent double-invoke, but keep buffer references
+          * since the callback will free the buffer via input_keyboard_line_free() */
+         self.keyboardCompletionCallback = nil;
+
+         /* Call callback with NULL to indicate cancel
+          * The callback will handle cleanup via input_keyboard_line_free() */
+         callback(NULL);
+
+         /* Clear our references after callback completes */
+         self.keyboardBufferPtr = NULL;
+         self.keyboardSizePtr = NULL;
+         self.keyboardAllocatedBuffer = NULL;
+      }
+   }
+}
+
 @end
 
 ui_companion_driver_t ui_companion_cocoatouch = {
@@ -1134,6 +1245,79 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    NULL, /* application */
    "cocoatouch",
 };
+
+/* C interface for iOS/tvOS native keyboard support */
+bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, const char *label,
+                       input_keyboard_line_complete_t callback, void *userdata)
+{
+   RetroArch_iOS *app = [RetroArch_iOS get];
+   if (!app || !app.keyboardTextField || !buffer_ptr || !size_ptr)
+      return false;
+
+   /* Allocate a fixed-size buffer for keyboard input */
+   char *allocated_buffer = (char *)malloc(512);
+   if (!allocated_buffer)
+      return false;
+
+   /* Initialize buffer with existing content if any */
+   if (*buffer_ptr && **buffer_ptr)
+      strlcpy(allocated_buffer, *buffer_ptr, 512);
+   else
+      allocated_buffer[0] = '\0';
+
+   /* Update the keyboard_line buffer pointer to point to our allocated buffer */
+   *buffer_ptr = allocated_buffer;
+   *size_ptr = strlen(allocated_buffer);
+
+   /* Store pointers so we can update them as user types */
+   app.keyboardBufferPtr = buffer_ptr;
+   app.keyboardSizePtr = size_ptr;
+   app.keyboardAllocatedBuffer = allocated_buffer;
+
+   /* Set up the text field with initial text from the buffer */
+   app.keyboardTextField.text = (allocated_buffer[0] != '\0') ?
+      [NSString stringWithUTF8String:allocated_buffer] : @"";
+
+   /* Optionally set placeholder from label */
+   if (label)
+      app.keyboardTextField.placeholder = [NSString stringWithUTF8String:label];
+
+   /* Store the completion callback */
+   app.keyboardCompletionCallback = ^(const char *text) {
+      input_driver_state_t *input_st = input_state_get_ptr();
+
+      if (callback)
+         callback(userdata, text);
+
+      /* Clean up RetroArch's keyboard state, mirroring what the built-in keyboard does */
+      if (input_st)
+      {
+         RARCH_LOG("[iOS KB] cleaning up input state\n");
+         input_keyboard_line_free(input_st);
+         input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+      }
+   };
+
+   /* Show the keyboard */
+   [app.keyboardTextField becomeFirstResponder];
+   return true;
+}
+
+bool ios_keyboard_active(void)
+{
+   RetroArch_iOS *app = [RetroArch_iOS get];
+   return app && app.keyboardTextField && [app.keyboardTextField isFirstResponder];
+}
+
+void ios_keyboard_end(void)
+{
+   RetroArch_iOS *app = [RetroArch_iOS get];
+   if (app && app.keyboardTextField)
+   {
+      [app.keyboardTextField resignFirstResponder];
+      app.keyboardCompletionCallback = nil;
+   }
+}
 
 int main(int argc, char *argv[])
 {

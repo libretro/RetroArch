@@ -15,6 +15,15 @@ extern void ios_show_file_sheet(void);
 extern bool ios_running_on_ipad(void);
 #endif
 
+#if TARGET_OS_IPHONE
+/* iOS native keyboard support */
+typedef void (*input_keyboard_line_complete_t)(void *userdata, const char *line);
+extern bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, const char *label,
+                                input_keyboard_line_complete_t callback, void *userdata);
+extern bool ios_keyboard_active(void);
+extern void ios_keyboard_end(void);
+#endif
+
 #if TARGET_OS_OSX
 extern void osx_show_file_sheet(void);
 #endif
