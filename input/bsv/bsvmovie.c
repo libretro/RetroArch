@@ -1677,12 +1677,15 @@ bool bsv_movie_peek_frame_info(bsv_movie_t *movie, uint8_t *token, uint64_t *len
 bool movie_find_checkpoint_before(bsv_movie_t *movie, int64_t frame, bool consider_paused,
       int64_t *cp_pos_out, int64_t *cp_frame_out)
 {
-      /* skip to prev needs to go back at least 60 frames if rewinding when not paused */
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    bool paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED) || consider_paused;
-   const int64_t prev_skip_min_distance = 60;
+   /* skip to prev would prefer to go back at least 30 frames if
+      rewinding when not paused, but won't skip over more than one
+      checkpoint while going backwards. */
+   const int64_t prev_skip_min_distance = 30;
    int64_t target_frame = frame, cur_frame = 0;
    int64_t initial_pos, cp_pos=-1, cp_frame=-1;
+   int64_t maybe_last_frame = -1, maybe_last_pos = -1;
    uint64_t frame_len;
    uint8_t tok;
    if (!movie || movie->version == 0)
@@ -1701,6 +1704,16 @@ bool movie_find_checkpoint_before(bsv_movie_t *movie, int64_t frame, bool consid
          {
             cp_pos = intfstream_tell(movie->file);
             cp_frame = cur_frame;
+         }
+         else
+         {
+            if (maybe_last_pos > 0)
+            {
+               cp_pos = maybe_last_pos;
+               cp_frame = maybe_last_frame;
+            }
+            maybe_last_pos = intfstream_tell(movie->file);
+            maybe_last_frame = cur_frame;
          }
       }
       cur_frame += 1;
