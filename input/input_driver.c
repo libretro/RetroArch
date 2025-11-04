@@ -1533,7 +1533,7 @@ static int16_t input_state_device(
                /* Clear underlying button to prevent duplicates. */
                if (input_st->turbo_btns.frame_enable[port])
                {
-                  unsigned turbo_bind = settings->ints.input_turbo_bind;
+                  int      turbo_bind = settings->ints.input_turbo_bind;
                   unsigned remap_bind = settings->uints.input_remap_ids[port][turbo_bind];
 
                   if (id == remap_bind)
@@ -1716,7 +1716,7 @@ static int16_t input_state_device(
 
                         if (input_st->turbo_btns.frame_enable[port])
                         {
-                           unsigned turbo_bind = settings->ints.input_turbo_bind;
+                           int      turbo_bind = settings->ints.input_turbo_bind;
                            unsigned remap_bind = settings->uints.input_remap_ids[port][turbo_bind];
 
                            if (offset == remap_bind || offset + 1 == remap_bind)
