@@ -1436,41 +1436,41 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
    }
    total_decode_count++;
    rmsgpack_dom_read_with(read_mem, &item, reader_state);
-   if(item.type != RDT_INT)
+   if(item.type != RDT_INT && item.type != RDT_UINT)
    {
       RARCH_ERR("[STATESTREAM] start token type is wrong\n");
       goto exit;
    }
-   if(item.val.int_ != BSV_IFRAME_START_TOKEN)
+   if(item.val.uint_ != BSV_IFRAME_START_TOKEN)
    {
       RARCH_ERR("[STATESTREAM] start token value is wrong\n");
       goto exit;
    }
    rmsgpack_dom_read_with(read_mem, &item, reader_state);
-   if(item.type != RDT_INT)
+   if(item.type != RDT_INT && item.type != RDT_UINT)
    {
       RARCH_ERR("[STATESTREAM] frame counter type is wrong\n");
       goto exit;
    }
-   /*frame_counter = item.val.int_;*/
+   /*frame_counter = item.val.uint_;*/
    while(rmsgpack_dom_read_with(read_mem, &item, reader_state) >= 0)
    {
       uint32_t index, *superblock;
       size_t len;
-      if(item.type != RDT_INT)
+      if(item.type != RDT_INT && item.type != RDT_UINT)
       {
          RARCH_ERR("[STATESTREAM] state update chunk token type is wrong\n");
          goto exit;
       }
-      switch(item.val.int_) {
+      switch(item.val.uint_) {
       case BSV_IFRAME_NEW_BLOCK_TOKEN:
          rmsgpack_dom_read_with(read_mem, &item, reader_state);
-         if(item.type != RDT_INT)
+            if(item.type != RDT_INT && item.type != RDT_UINT)
          {
             RARCH_ERR("[STATESTREAM] new block index type is wrong\n");
             goto exit;
          }
-         index = item.val.int_;
+         index = item.val.uint_;
          rmsgpack_dom_read_with(read_mem, &item, reader_state);
          if(item.type != RDT_BINARY)
          {
@@ -1494,12 +1494,12 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
          break;
       case BSV_IFRAME_NEW_SUPERBLOCK_TOKEN:
          rmsgpack_dom_read_with(read_mem, &item, reader_state);
-         if(item.type != RDT_INT)
+            if(item.type != RDT_INT && item.type != RDT_UINT)
          {
             RARCH_ERR("[STATESTREAM] new superblock index type is wrong\n");
             goto exit;
          }
-         index = item.val.int_;
+         index = item.val.uint_;
          if(rmsgpack_dom_read_with(read_mem, &item, reader_state) < 0)
          {
             RARCH_ERR("[STATESTREAM] array read failed\n");
@@ -1520,8 +1520,8 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
          for(i = 0; i < len; i++)
          {
             struct rmsgpack_dom_value inner_item = item.val.array.items[i];
-            /* assert(inner_item.type == RDT_INT); */
-            superblock[i] = inner_item.val.int_;
+            /* assert(inner_item.type == RDT_INT || inner_item.type == RDT_UINT); */
+            superblock[i] = inner_item.val.uint_;
          }
          if(!uint32s_index_insert_exact(movie->superblocks, index, superblock, movie->frame_counter))
          {
@@ -1546,8 +1546,8 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
          for(i = 0; i < len; i++)
          {
             struct rmsgpack_dom_value inner_item = item.val.array.items[i];
-            /* assert(inner_item.type == RDT_INT); */
-            uint32_t superblock_idx = inner_item.val.int_;
+            /* assert(inner_item.type == RDT_INT || inner_item.type == RDT_UINT); */
+            uint32_t superblock_idx = inner_item.val.uint_;
             uint32_t *superblock;
             size_t j;
             /* if this superblock is the same as last time, no need to scan the blocks. */
@@ -1580,7 +1580,7 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
          ret = true;
          goto exit;
       default:
-         RARCH_ERR("[STATESTREAM] state update chunk token value is invalid: %d @ %x\n", item.val.int_, intfstream_tell(read_mem));
+         RARCH_ERR("[STATESTREAM] state update chunk token value is invalid: %d @ %x\n", item.val.uint_, intfstream_tell(read_mem));
          goto exit;
      }
    }
