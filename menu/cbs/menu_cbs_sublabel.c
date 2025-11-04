@@ -491,6 +491,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_netplay_fade_chat_toggle,
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_block_delay,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_device_merge,        MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_hotkey_follows_player1,     MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_type,                MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_device_index,               MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_mouse_index,                MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX)
@@ -5083,6 +5084,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_HOTKEY_DEVICE_MERGE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_hotkey_device_merge);
+            break;
+         case MENU_ENUM_LABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_hotkey_follows_player1);
             break;
          case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
          case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:

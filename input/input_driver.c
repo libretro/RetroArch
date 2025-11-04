@@ -5638,6 +5638,7 @@ static bool input_keys_pressed_other_sources(
  */
 static void input_keys_pressed(
       unsigned port,
+      unsigned hotkey_port,
       bool is_menu,
       unsigned input_hotkey_block_delay,
       input_bits_t *p_new_state,
@@ -5650,17 +5651,19 @@ static void input_keys_pressed(
       bool input_hotkey_device_merge)
 {
    unsigned i;
+   /* Autoconf binds are indexed by joy_idx, not frontend port */
+   unsigned joy_idx               = joypad_info->joy_idx;
    int32_t ret                    = 0;
    input_driver_state_t *input_st = &input_driver_st;
    bool block_hotkey[RARCH_BIND_LIST_END];
    bool any_pressed               = false;
    bool libretro_hotkey_set       =
-            binds[port][RARCH_ENABLE_HOTKEY].joykey                 != NO_BTN
-         || binds[port][RARCH_ENABLE_HOTKEY].joyaxis                != AXIS_NONE
-         || input_autoconf_binds[port][RARCH_ENABLE_HOTKEY].joykey  != NO_BTN
-         || input_autoconf_binds[port][RARCH_ENABLE_HOTKEY].joyaxis != AXIS_NONE;
+            binds_norm->joykey  != NO_BTN
+         || binds_norm->joyaxis != AXIS_NONE
+         || binds_auto->joykey  != NO_BTN
+         || binds_auto->joyaxis != AXIS_NONE;
    bool keyboard_hotkey_set       =
-         binds[port][RARCH_ENABLE_HOTKEY].key != RETROK_UNKNOWN;
+         binds_norm->key != RETROK_UNKNOWN;
 
    if (!binds)
       return;
@@ -5669,7 +5672,8 @@ static void input_keys_pressed(
          && (libretro_hotkey_set || keyboard_hotkey_set))
       libretro_hotkey_set = keyboard_hotkey_set = true;
 
-   if (     binds[port][RARCH_ENABLE_HOTKEY].valid
+   if (     (port == hotkey_port)
+         && (binds_norm->valid || binds_auto->valid)
          && CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
       if (input_state_wrap(
@@ -5731,10 +5735,10 @@ static void input_keys_pressed(
     * unless 'enable_hotkey' is set in autoconf. */
    if (     !any_pressed
          && !(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
-         && (input_autoconf_binds[port][RARCH_MENU_TOGGLE].joykey != NO_BTN)
-         && (  input_autoconf_binds[port][RARCH_ENABLE_HOTKEY].joykey == input_autoconf_binds[port][RARCH_MENU_TOGGLE].joykey
-            || input_autoconf_binds[port][RARCH_ENABLE_HOTKEY].joykey == NO_BTN)
-         && (  binds[port][RARCH_MENU_TOGGLE].joykey == input_autoconf_binds[port][RARCH_MENU_TOGGLE].joykey
+         && (input_autoconf_binds[joy_idx][RARCH_MENU_TOGGLE].joykey != NO_BTN)
+         && (  input_autoconf_binds[joy_idx][RARCH_ENABLE_HOTKEY].joykey == input_autoconf_binds[joy_idx][RARCH_MENU_TOGGLE].joykey
+            || input_autoconf_binds[joy_idx][RARCH_ENABLE_HOTKEY].joykey == NO_BTN)
+         && (  binds[port][RARCH_MENU_TOGGLE].joykey == input_autoconf_binds[joy_idx][RARCH_MENU_TOGGLE].joykey
             || binds[port][RARCH_MENU_TOGGLE].joykey == NO_BTN))
    {
       /* Ignore keyboard menu toggle button and check
@@ -5805,8 +5809,8 @@ static void input_keys_pressed(
          BIT256_SET_PTR(p_new_state, RARCH_ENABLE_HOTKEY);
    }
 
-   /* Hotkeys are only relevant for first port */
-   if (port > 0)
+   /* Hotkeys are only relevant for the first user or core port */
+   if (port != hotkey_port)
       return;
 
    /* Check hotkeys to block keyboard and joypad hotkeys separately.
@@ -6777,6 +6781,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    unsigned block_delay                = settings->uints.input_hotkey_block_delay;
    uint8_t max_users                   = settings->uints.input_max_users;
    uint8_t port                        = 0;
+   uint8_t hotkey_port                 = 0;
 #ifdef HAVE_MENU
    bool all_users_control_menu         = settings->bools.input_all_users_control_menu;
    bool display_kb                     = menu_input_dialog_get_display_kb();
@@ -6791,10 +6796,11 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    for (port = 0; port < (int)max_users; port++)
    {
       const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
-      const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
+      const struct retro_keybind *binds_auto = NULL;
 
       joypad_info.joy_idx                    = settings->uints.input_joypad_index[port];
       joypad_info.auto_binds                 = input_autoconf_binds[joypad_info.joy_idx];
+      binds_auto                             = &input_autoconf_binds[joypad_info.joy_idx][RARCH_ENABLE_HOTKEY];
 
 #ifdef HAVE_MENU
       if (menu_is_alive)
@@ -6879,7 +6885,19 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       }
 #endif /* HAVE_MENU */
 
-      input_keys_pressed(port,
+      if (settings->bools.input_hotkey_follows_player1)
+      {
+         /* Hotkeys are bound to player 1 (the first user mapped to core port 0),
+          * even if player 1 is remapped to a different user. */
+         hotkey_port = settings->uints.input_remap_port_map[0][0];
+
+         if (hotkey_port >= MAX_USERS)
+            hotkey_port = 0;
+      }
+
+      input_keys_pressed(
+            port,
+            hotkey_port,
 #ifdef HAVE_MENU
             menu_is_alive,
 #else
