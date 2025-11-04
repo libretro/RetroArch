@@ -81,6 +81,7 @@ static CHHapticEngine *keypressHapticEngine KEYPRESS_HAPTIC_AVAIL;
 static id<CHHapticPatternPlayer> keypressHapticPlayer KEYPRESS_HAPTIC_AVAIL;
 /* Fallback for iOS 10-13 */
 static UISelectionFeedbackGenerator *feedbackGenerator;
+static void cocoa_input_init_haptic_engine(void) KEYPRESS_HAPTIC_AVAIL;
 #endif
 #endif
 
@@ -388,28 +389,7 @@ static void *cocoa_input_init(const char *joypad_driver)
 
 #if TARGET_OS_IOS
    if (@available(iOS 14, *))
-   {
-      if (!keypressHapticEngine && CHHapticEngine.capabilitiesForHardware.supportsHaptics)
-      {
-         NSError *error;
-         keypressHapticEngine = [[CHHapticEngine alloc] initAndReturnError:&error];
-         if (!error)
-         {
-            [keypressHapticEngine startAndReturnError:&error];
-            if (!error)
-            {
-               keypressHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {
-                  keypressHapticPlayer = nil;
-                  keypressHapticEngine = nil;
-               };
-               keypressHapticEngine.resetHandler = ^{
-                  if (keypressHapticEngine)
-                     [keypressHapticEngine startAndReturnError:nil];
-               };
-            }
-         }
-      }
-   }
+      cocoa_input_init_haptic_engine();
    else
    {
       /* Fallback for iOS 10-13 */
@@ -897,10 +877,38 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
 }
 
 #if TARGET_OS_IOS
+static void cocoa_input_init_haptic_engine(void) KEYPRESS_HAPTIC_AVAIL
+{
+   if (!keypressHapticEngine && CHHapticEngine.capabilitiesForHardware.supportsHaptics)
+   {
+      NSError *error;
+      keypressHapticEngine = [[CHHapticEngine alloc] initAndReturnError:&error];
+      if (!error)
+      {
+         [keypressHapticEngine startAndReturnError:&error];
+         if (!error)
+         {
+            keypressHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {
+               keypressHapticPlayer = nil;
+               keypressHapticEngine = nil;
+            };
+            keypressHapticEngine.resetHandler = ^{
+               if (keypressHapticEngine)
+                  [keypressHapticEngine startAndReturnError:nil];
+            };
+         }
+      }
+   }
+}
+
 static void cocoa_input_keypress_vibrate(void)
 {
    if (@available(iOS 14, *))
    {
+      /* Reinitialize engine if iOS stopped it (e.g., during backgrounding) */
+      if (!keypressHapticEngine)
+         cocoa_input_init_haptic_engine();
+
       settings_t *settings = config_get_ptr();
       if (!settings || !keypressHapticEngine)
          return;
