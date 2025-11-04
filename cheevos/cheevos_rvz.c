@@ -1372,7 +1372,7 @@ static bool rvz_decompress_chunk(rcheevos_rvz_file_t* rvz, uint32_t group_index,
                                             out_data, out_size);
 
       /* Raw uncompressed data - copy and handle exception lists if needed */
-      decompressed_data = (uint8_t*)malloc(decompressed_size);
+      decompressed_data = (uint8_t*)malloc(compressed_size > decompressed_size ? compressed_size : decompressed_size);
       if (!decompressed_data)
          return false;
 
