@@ -126,8 +126,6 @@ bool bsv_movie_reset_playback(bsv_movie_t *handle)
       if (!bsv_movie_load_checkpoint(handle, compression, encoding, REPLAY_CPBEHAVIOR_DESERIALIZE))
          return false;
    }
-   if(vsn == 0)
-      return true;
    return bsv_movie_read_next_events(handle, REPLAY_CPBEHAVIOR_DESERIALIZE, true);
 }
 
@@ -721,6 +719,12 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior 
          }
          if (!bsv_movie_load_checkpoint(handle, compression, encoding, checkpoint_behavior))
             RARCH_WARN("[Replay] Failed to load movie checkpoint\n");
+      }
+      else if (next_frame_type != REPLAY_TOKEN_REGULAR_FRAME)
+      {
+         RARCH_ERR("[Replay] Invalid replay token 0x%x\n", next_frame_type);
+         if (end_movie)
+            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
       }
    }
    return true;

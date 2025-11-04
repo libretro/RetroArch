@@ -323,6 +323,8 @@ void uint32s_index_clear(uint32s_index_t *index)
 void uint32s_index_free(uint32s_index_t *index)
 {
    size_t i, cap;
+   if (!index)
+      return;
    for(i = 0, cap = RHMAP_CAP(index->index); i != cap; i++)
       if(RHMAP_KEY(index->index, i))
          uint32s_bucket_free(&index->index[i]);
@@ -351,6 +353,8 @@ void uint32s_index_print_count_data(uint32s_index_t *index)
    /* TODO: don't count or differently count NULL objects entries */
    uint32_t max=1;
    uint32_t i;
+   if (!index)
+      return;
    for(i = 0; i < BIN_COUNT; i++)
       bins[i] = 0;
    for(i = 1; i < RBUF_LEN(index->counts); i++)
