@@ -1273,8 +1273,6 @@ static void gfx_widgets_draw_task_msg(
       int texture   = MENU_WIDGETS_ICON_CHECK;
       float *color  = msg_queue_task_positive;
 
-      gfx_display_set_alpha(color, msg->alpha);
-
       if (!(msg->flags & DISPWIDG_FLAG_TASK_FINISHED))
       {
          texture    = MENU_WIDGETS_ICON_HOURGLASS;
@@ -1297,6 +1295,8 @@ static void gfx_widgets_draw_task_msg(
          texture    = MENU_WIDGETS_ICON_EXIT;
          color      = msg_queue_task_negative;
       }
+
+      gfx_display_set_alpha(color, msg->alpha);
 
       gfx_widgets_draw_icon(
             userdata,
