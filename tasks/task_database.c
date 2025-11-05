@@ -1575,7 +1575,12 @@ static void task_database_handler(retro_task_t *task)
          else
          {
             const char *msg = NULL;
-            if (db->flags & DB_HANDLE_FLAG_IS_DIRECTORY)
+            if (dbstate->list->size == 0)
+            {
+               msg = msg_hash_to_str(MSG_SCANNING_NO_DATABASE);
+               task_set_error(task, strdup(msg));
+            }
+            else if (db->flags & DB_HANDLE_FLAG_IS_DIRECTORY)
                msg = msg_hash_to_str(MSG_SCANNING_OF_DIRECTORY_FINISHED);
             else
                msg = msg_hash_to_str(MSG_SCANNING_OF_FILE_FINISHED);

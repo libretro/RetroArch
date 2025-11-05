@@ -15315,6 +15315,10 @@ MSG_HASH(
    "Scanning of directory finished."
    )
 MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Scanning unsuccessful, no database found."
+   )
+MSG_HASH(
    MSG_SENDING_COMMAND,
    "Sending command"
    )

@@ -1292,7 +1292,8 @@ static void gfx_widgets_draw_task_msg(
          texture    = MENU_WIDGETS_ICON_ADD;
          color      = msg_queue_task_positive;
       }
-      else if (msg->flags & DISPWIDG_FLAG_NEGATIVE)
+      else if (   msg->flags & DISPWIDG_FLAG_NEGATIVE
+               || msg->flags & DISPWIDG_FLAG_TASK_ERROR)
       {
          texture    = MENU_WIDGETS_ICON_EXIT;
          color      = msg_queue_task_negative;
