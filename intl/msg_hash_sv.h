@@ -3592,6 +3592,14 @@ MSG_HASH(
    "Blockera alla snabbtangenter från både tangentbord och kontrollerenheter om någon av dessa har ”Snabbknappsaktivering” inställt."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Snabbtangenter för Följ spelare 1"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Snabbtangenter är kopplade till kärnport 1, även om kärnport 1 omdirigeras till en annan användare. Observera! Snabbtangenterna på tangentbordet fungerar inte om kärnport 1 omdirigeras till någon annan användare än > 1 (tangentbordsinmatningen kommer från användare 1)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Visa/dölj meny (spelkontroll kombo)"
    )
@@ -10410,7 +10418,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
-   "Omslagskonst"
+   "Omslagsbild"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
@@ -11784,7 +11792,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   "Omslagskonst"
+   "Omslagsbild"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,

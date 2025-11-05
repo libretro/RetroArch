@@ -3744,6 +3744,14 @@ MSG_HASH(
    "Bloquea todas las teclas rápidas de los teclados y mandos si cualquiera de los dos tiene una asignación para activar las teclas rápidas."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Dirigir las teclas rápidas al jugador 1"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Las teclas rápidas estarán asignadas al puerto 1 del núcleo, aunque dicho puerto sea reasignado a otro usuario. Nota: las teclas rápidas del teclado no funcionarán si el puerto 1 del núcleo es reasignado a cualquier usuario > 1 (las acciones del teclado son del usuario 1)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Mostrar menú (combinación de mando)"
    )

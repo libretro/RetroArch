@@ -3712,6 +3712,14 @@ MSG_HASH(
    "Bloqueia todas as hotkeys de ambos os tipos de dispositivos, teclado e controle, se qualquer um dos tipos tiver 'Ativar Hotkey' configurado."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Atalhos Seguem o Jogador 1"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Os atalhos ficam vinculados à porta 1 do núcleo, mesmo que ela seja remapeada para um usuário diferente. Observação: os atalhos de teclado não funcionarão se a porta 1 for remapeada para qualquer usuário acima de 1 (pois a entrada do teclado é do usuário 1)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Ativar Menu (Combo de Comandos)"
    )

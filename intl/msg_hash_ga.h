@@ -3744,6 +3744,14 @@ MSG_HASH(
    "Blocáil gach eochair the ó chineálacha gléas méarchláir agus rialtóra araon má tá 'Cumasaigh Eochracha Te' socraithe do cheachtar cineál."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Eochracha Te Lean Imreoir 1"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Tá eochracha te ceangailte le croí-phort 1, fiú má athmhapáiltear croí-phort 1 chuig úsáideoir difriúil. Tabhair faoi deara: ní oibreoidh eochracha te méarchláir má athmhapáiltear croí-phort 1 chuig aon úsáideoir > 1 (tá ionchur méarchláir ó úsáideoir 1)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Roghchlár Scoránaigh (Teaglaim Rialaitheora)"
    )
