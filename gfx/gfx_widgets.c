@@ -1202,7 +1202,7 @@ static void gfx_widgets_draw_task_msg(
       msg_queue_current_background = msg_queue_background;
 
    if (msg_alternative)
-      msg_queue_height *= 1.25f;
+      msg_queue_height *= 1.5f;
 
    rect_x      = p_dispwidget->msg_queue_rect_start_x;
    rect_y      = video_height - msg->offset_y;
@@ -1276,14 +1276,8 @@ static void gfx_widgets_draw_task_msg(
       if (!(msg->flags & DISPWIDG_FLAG_TASK_FINISHED))
       {
          texture    = MENU_WIDGETS_ICON_HOURGLASS;
-         color      = msg_queue_task_neutral;
+         color      = msg_queue_bar;
          radians    = msg->hourglass_rotation;
-
-         if (msg_alternative)
-         {
-            color   = msg_queue_bar;
-            gfx_display_set_alpha(color, msg->alpha * 0.5f);
-         }
       }
       else if (msg->flags & DISPWIDG_FLAG_POSITIVE)
       {
@@ -1297,7 +1291,10 @@ static void gfx_widgets_draw_task_msg(
          color      = msg_queue_task_negative;
       }
 
-      gfx_display_set_alpha(color, msg->alpha);
+      if (msg_alternative)
+         gfx_display_set_alpha(color, msg->alpha * 0.5f);
+      else
+         gfx_display_set_alpha(color, msg->alpha);
 
       gfx_widgets_draw_icon(
             userdata,
