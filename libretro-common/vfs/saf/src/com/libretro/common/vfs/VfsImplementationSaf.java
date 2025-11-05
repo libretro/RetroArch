@@ -93,7 +93,7 @@ public final class VfsImplementationSaf
          }
          catch (FileNotFoundException | IllegalArgumentException e)
          {
-            if (createdFile || !write)
+            if (createdFile || !write || !truncate)
                return -1;
             createdFile = true;
             final Path parentPath = filePath.getParent();
