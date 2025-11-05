@@ -359,6 +359,15 @@ static void mfi_joypad_autodetect_add(unsigned autoconf_pad, const char *display
     [self.engines addObject:engine];
 
     __weak MFIRumbleController *weakSelf = self;
+    engine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {
+        MFIRumbleController *strongSelf = weakSelf;
+        if (!strongSelf)
+            return;
+
+        /* Engine stopped (backgrounding/interruption) - clear players but keep engine in set */
+        strongSelf->_strongPlayer = nil;
+        strongSelf->_weakPlayer = nil;
+    };
     engine.resetHandler = ^{
         MFIRumbleController *strongSelf = weakSelf;
         if (!strongSelf)
@@ -416,12 +425,18 @@ static void mfi_joypad_autodetect_add(unsigned autoconf_pad, const char *display
 {
     if (@available(iOS 14, tvOS 14, macOS 11, *))
     {
-        for (CHHapticEngine *eng in self.engines)
-            eng.resetHandler = ^{};
-        [self.engines removeAllObjects];
         if (_weakPlayer) [_weakPlayer cancelAndReturnError:nil];
-        _weakPlayer   = nil;
         if (_strongPlayer) [_strongPlayer cancelAndReturnError:nil];
+
+        for (CHHapticEngine *eng in self.engines)
+        {
+            eng.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
+            eng.resetHandler = ^{};
+            [eng stopWithCompletionHandler:nil];
+        }
+        [self.engines removeAllObjects];
+
+        _weakPlayer = nil;
         _strongPlayer = nil;
     }
 }
@@ -553,9 +568,9 @@ static void apple_gamecontroller_device_haptics_setup(void) IPHONE_RUMBLE_AVAIL
 
     deviceHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason)
     {
+        /* Engine stopped (backgrounding/interruption) - clear players but keep engine */
         deviceWeakPlayer = nil;
         deviceStrongPlayer = nil;
-        deviceHapticEngine = nil;
     };
     deviceHapticEngine.resetHandler = ^{
         if (!deviceHapticEngine)
@@ -573,10 +588,23 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_create_play
     if (!deviceHapticEngine)
         return nil;
 
+    /* Ensure engine is started (may have been stopped by backgrounding) */
+    NSError *error;
+    [deviceHapticEngine startAndReturnError:&error];
+    if (error)
+    {
+        /* Engine couldn't start - recreate it */
+        deviceHapticEngine = nil;
+        deviceWeakPlayer = nil;
+        deviceStrongPlayer = nil;
+        apple_gamecontroller_device_haptics_setup();
+        if (!deviceHapticEngine)
+            return nil;
+    }
+
     CHHapticEventParameter *intense;
     CHHapticEvent *event;
     CHHapticPattern *pattern;
-    NSError *error;
 
     CHHapticEventParameter *sharp;
 
@@ -654,7 +682,24 @@ void *apple_gamecontroller_joypad_init(void *data)
    return (void*)-1;
 }
 
-static void apple_gamecontroller_joypad_destroy(void) { }
+static void apple_gamecontroller_joypad_destroy(void)
+{
+#if TARGET_OS_IOS
+   if (@available(iOS 14, *))
+   {
+      if (deviceHapticEngine)
+      {
+         deviceHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
+         deviceHapticEngine.resetHandler = ^{};
+         [deviceHapticEngine stopWithCompletionHandler:^(NSError *error) {
+            deviceWeakPlayer = nil;
+            deviceStrongPlayer = nil;
+            deviceHapticEngine = nil;
+         }];
+      }
+   }
+#endif
+}
 
 static int32_t apple_gamecontroller_joypad_button(
       unsigned port, uint16_t joykey)
