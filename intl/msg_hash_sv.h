@@ -13915,6 +13915,10 @@ MSG_HASH(
    "Genomsökning av katalog färdig."
    )
 MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Genomsökningen misslyckades, ingen databas hittades."
+   )
+MSG_HASH(
    MSG_SENDING_COMMAND,
    "Skickar kommando"
    )

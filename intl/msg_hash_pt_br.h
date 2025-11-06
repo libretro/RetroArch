@@ -14439,6 +14439,10 @@ MSG_HASH(
    "Análise concluída"
    )
 MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Escaneamento sem sucesso: nenhum banco de dados encontrado."
+   )
+MSG_HASH(
    MSG_SENDING_COMMAND,
    "Enviando comando"
    )

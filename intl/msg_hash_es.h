@@ -14527,6 +14527,10 @@ MSG_HASH(
    "Búsqueda de directorio finalizada."
    )
 MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Búsqueda fallida, no se ha encontrado una base de datos."
+   )
+MSG_HASH(
    MSG_SENDING_COMMAND,
    "Enviando comando"
    )

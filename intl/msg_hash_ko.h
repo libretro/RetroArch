@@ -3776,6 +3776,14 @@ MSG_HASH(
    "두 유형 중 하나에 '단축키 활성화'가 설정된 경우 키보드 및 컨트롤러 장치 유형 모두에서 모든 단축키를 차단합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "플레이어 1이 핫키 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "핫키 입력을 코어의 1번 포트에 할당합니다. 코어의 1번 포트에 할당된 사용자가 핫키를 사용할 수 있게 됩니다. 주의: 코어의 1번 포트가 1번 사용자가 아닌 다른 사용자에게 할당될 경우 키보드에서 핫키를 사용할 수 없게 됩니다(키보드 입력은 1번 사용자의 입력으로 처리됩니다)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "메뉴 열기/닫기 (컨트롤러 버튼 조합)"
    )
