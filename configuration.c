@@ -2190,6 +2190,9 @@ static struct config_bool_setting *populate_settings_bool(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
    SETTING_BOOL("input_nowinkey_enable",         &settings->bools.input_nowinkey_enable, true, false, false);
 #endif
+#ifdef WIIU
+   SETTING_BOOL("input_wiiu_enable_hbm",         &settings->bools.input_wiiu_enable_hbm, true, DEFAULT_WIIU_ENABLE_HBM, false);
+#endif
    SETTING_BOOL("input_sensors_enable",          &settings->bools.input_sensors_enable, true, DEFAULT_INPUT_SENSORS_ENABLE, false);
    SETTING_BOOL("vibrate_on_keypress",           &settings->bools.vibrate_on_keypress, true, DEFAULT_VIBRATE_ON_KEYPRESS, false);
    SETTING_BOOL("enable_device_vibration",       &settings->bools.enable_device_vibration, true, DEFAULT_ENABLE_DEVICE_VIBRATION, false);

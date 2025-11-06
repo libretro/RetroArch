@@ -208,7 +208,7 @@ int socket_close(int fd)
 #if defined(_WIN32) && !defined(_XBOX360)
    /* WinSock has headers from the stone age. */
    return closesocket(fd);
-#elif defined(__PS3__) || defined(WIIU)
+#elif defined(__PS3__)
    return socketclose(fd);
 #elif defined(VITA)
    return sceNetSocketClose(fd);
@@ -682,29 +682,37 @@ bool socket_bind(int fd, void *data)
    return !bind(fd, addr->ai_addr, addr->ai_addrlen);
 }
 
+#ifdef WIIU
+static void set_socket_options(const int fd, const struct addrinfo *addr)
+{
+   const int op = 1;
+
+   setsockopt(fd, SOL_SOCKET, SO_WINSCALE, &op, sizeof(op));
+
+   if (addr->ai_socktype == SOCK_STREAM)
+   {
+      const int recv_sz = 128 * 1024;
+      const int send_sz = 128 * 1024;
+
+      setsockopt(fd, SOL_SOCKET, SO_TCPSACK, &op, sizeof(op));
+      setsockopt(fd, SOL_SOCKET, SO_RUSRBUF, &op, sizeof(op));
+      setsockopt(fd, SOL_SOCKET, SO_WINSCALE, &op, sizeof(op));
+      setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &recv_sz, sizeof(recv_sz));
+      setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &send_sz, sizeof(send_sz));
+   }
+}
+#else
+static void set_socket_options(const int fd, const struct addrinfo *addr)
+{
+
+}
+#endif
+
 int socket_connect(int fd, void *data)
 {
    struct addrinfo *addr = (struct addrinfo*)data;
 
-#ifdef WIIU
-   {
-      int op = 1;
-
-      setsockopt(fd, SOL_SOCKET, SO_WINSCALE, &op, sizeof(op));
-
-      if (addr->ai_socktype == SOCK_STREAM)
-      {
-         int recvsz = WIIU_RCVBUF;
-         int sendsz = WIIU_SNDBUF;
-
-         setsockopt(fd, SOL_SOCKET, SO_TCPSACK, &op, sizeof(op));
-         setsockopt(fd, SOL_SOCKET, SO_RUSRBUF, &op, sizeof(op));
-         setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &recvsz, sizeof(recvsz));
-         setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sendsz, sizeof(sendsz));
-      }
-   }
-#endif
-
+   set_socket_options(fd, addr);
    return connect(fd, addr->ai_addr, addr->ai_addrlen);
 }
 
@@ -716,25 +724,7 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
    if (!socket_nonblock(fd))
       return false;
 
-#ifdef WIIU
-   {
-      int op = 1;
-
-      setsockopt(fd, SOL_SOCKET, SO_WINSCALE, &op, sizeof(op));
-
-      if (addr->ai_socktype == SOCK_STREAM)
-      {
-         int recvsz = WIIU_RCVBUF;
-         int sendsz = WIIU_SNDBUF;
-
-         setsockopt(fd, SOL_SOCKET, SO_TCPSACK, &op, sizeof(op));
-         setsockopt(fd, SOL_SOCKET, SO_RUSRBUF, &op, sizeof(op));
-         setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &recvsz, sizeof(recvsz));
-         setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sendsz, sizeof(sendsz));
-      }
-   }
-#endif
-
+   set_socket_options(fd, addr);
    res = connect(fd, addr->ai_addr, addr->ai_addrlen);
    if (res)
    {
@@ -758,12 +748,6 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
 #elif defined(_3DS)
    /* libctru getsockopt does not return expected value */
    if ((connect(fd, addr->ai_addr, addr->ai_addrlen) < 0) && errno != EISCONN)
-      return false;
-#elif defined(WIIU)
-   /* On WiiU, getsockopt() returns -1 and sets lastsocketerr() (Wii's
-    * equivalent to errno) to 16. */
-   if ((connect(fd, addr->ai_addr, addr->ai_addrlen) == -1)
-         && socketlasterr() != SO_EISCONN)
       return false;
 #else
    {

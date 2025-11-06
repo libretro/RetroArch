@@ -32,7 +32,7 @@
 #elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
 #include <unistd.h>
 #elif defined(WIIU)
-#include <wiiu/os/thread.h>
+#include <coreinit/thread.h>
 #elif defined(PSP)
 #include <pspthreadman.h>
 #elif defined(VITA)
@@ -97,7 +97,7 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 #elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
 #define retro_sleep(msec) (usleep(1000 * (msec)))
 #elif defined(WIIU)
-#define retro_sleep(msec) (OSSleepTicks(ms_to_ticks((msec))))
+#define retro_sleep(msec) (OSSleepTicks(OSMillisecondsToTicks((msec))))
 #elif defined(__EMSCRIPTEN__)
 /* defined in frontend */
 #ifdef __cplusplus

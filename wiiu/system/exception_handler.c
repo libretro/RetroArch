@@ -19,7 +19,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include <wiiu/os.h>
+
+#include <coreinit/exception.h>
+#include <coreinit/memorymap.h>
+#include <coreinit/debug.h>
+#include <coreinit/dynload.h>
+
 #include "wiiu_dbg.h"
 #include "exception_handler.h"
 #include "version.h"
@@ -29,29 +34,14 @@
 /*	Settings */
 #define NUM_STACK_TRACE_LINES 5
 
-/*	Externals
-	From the linker scripts.
-*/
-extern unsigned int __code_start;
-#define TEXT_START (unsigned int)&__code_start
-extern unsigned int __code_end;
-#define TEXT_END (unsigned int)&__code_end
-
 void test_os_exceptions(void);
 void exception_print_symbol(uint32_t addr);
 
 typedef struct _framerec
 {
    struct _framerec* up;
-   void* lr;
+   void*             lr;
 } frame_rec, *frame_rec_t;
-
-/*	Fill in a few gaps in thread.h
-	Dimok calls these exception_specific0 and 1;
-	though we may as well name them by their function.
-*/
-#define dsisr __unknown[0]
-#define dar __unknown[1]
 
 /*	Some bitmasks for determining DSI causes.
 	Taken from the PowerPC Programming Environments Manual (32-bit).
@@ -84,12 +74,12 @@ typedef struct _framerec
 
 #define buf_add(...) wiiu_exception_handler_pos += sprintf(exception_msgbuf + wiiu_exception_handler_pos, __VA_ARGS__)
 size_t wiiu_exception_handler_pos = 0;
-char* exception_msgbuf;
+char*  exception_msgbuf;
 
 void __attribute__((__noreturn__)) exception_cb(OSContext* ctx, OSExceptionType type)
 {
    /*	No message buffer available, fall back onto MEM1 */
-   if (!exception_msgbuf || !OSEffectiveToPhysical(exception_msgbuf))
+   if (!exception_msgbuf || !OSEffectiveToPhysical((uint32_t)exception_msgbuf))
       exception_msgbuf = (char*)0xF4000000;
 
    /*	First up, the pretty header that tells you wtf just happened */
@@ -147,24 +137,24 @@ void __attribute__((__noreturn__)) exception_cb(OSContext* ctx, OSExceptionType 
    /*	Add register dump
       There's space for two more regs at the end of the last line...
       Any ideas for what to put there? */
-   buf_add( \
-         "r0  %08" PRIX32 " r1  %08" PRIX32 " r2  %08" PRIX32 " r3  %08" PRIX32 " r4  %08" PRIX32 "\n" \
-         "r5  %08" PRIX32 " r6  %08" PRIX32 " r7  %08" PRIX32 " r8  %08" PRIX32 " r9  %08" PRIX32 "\n" \
-         "r10 %08" PRIX32 " r11 %08" PRIX32 " r12 %08" PRIX32 " r13 %08" PRIX32 " r14 %08" PRIX32 "\n" \
-         "r15 %08" PRIX32 " r16 %08" PRIX32 " r17 %08" PRIX32 " r18 %08" PRIX32 " r19 %08" PRIX32 "\n" \
-         "r20 %08" PRIX32 " r21 %08" PRIX32 " r22 %08" PRIX32 " r23 %08" PRIX32 " r24 %08" PRIX32 "\n" \
-         "r25 %08" PRIX32 " r26 %08" PRIX32 " r27 %08" PRIX32 " r28 %08" PRIX32 " r29 %08" PRIX32 "\n" \
-         "r30 %08" PRIX32 " r31 %08" PRIX32 " lr  %08" PRIX32 " sr1 %08" PRIX32 " dsi %08" PRIX32 "\n" \
-         "ctr %08" PRIX32 " cr  %08" PRIX32 " xer %08" PRIX32 "\n",\
-         ctx->gpr[0],  ctx->gpr[1],  ctx->gpr[2],  ctx->gpr[3],  ctx->gpr[4],  \
-         ctx->gpr[5],  ctx->gpr[6],  ctx->gpr[7],  ctx->gpr[8],  ctx->gpr[9],  \
-         ctx->gpr[10], ctx->gpr[11], ctx->gpr[12], ctx->gpr[13], ctx->gpr[14], \
-         ctx->gpr[15], ctx->gpr[16], ctx->gpr[17], ctx->gpr[18], ctx->gpr[19], \
-         ctx->gpr[20], ctx->gpr[21], ctx->gpr[22], ctx->gpr[23], ctx->gpr[24], \
-         ctx->gpr[25], ctx->gpr[26], ctx->gpr[27], ctx->gpr[28], ctx->gpr[29], \
-         ctx->gpr[30], ctx->gpr[31], ctx->lr,      ctx->srr1,    ctx->dsisr,   \
-         ctx->ctr,     ctx->cr,      ctx->xer                                  \
-         );
+   buf_add(
+      "r0  %08" PRIX32 " r1  %08" PRIX32 " r2  %08" PRIX32 " r3  %08" PRIX32 " r4  %08" PRIX32 "\n"
+      "r5  %08" PRIX32 " r6  %08" PRIX32 " r7  %08" PRIX32 " r8  %08" PRIX32 " r9  %08" PRIX32 "\n"
+      "r10 %08" PRIX32 " r11 %08" PRIX32 " r12 %08" PRIX32 " r13 %08" PRIX32 " r14 %08" PRIX32 "\n"
+      "r15 %08" PRIX32 " r16 %08" PRIX32 " r17 %08" PRIX32 " r18 %08" PRIX32 " r19 %08" PRIX32 "\n"
+      "r20 %08" PRIX32 " r21 %08" PRIX32 " r22 %08" PRIX32 " r23 %08" PRIX32 " r24 %08" PRIX32 "\n"
+      "r25 %08" PRIX32 " r26 %08" PRIX32 " r27 %08" PRIX32 " r28 %08" PRIX32 " r29 %08" PRIX32 "\n"
+      "r30 %08" PRIX32 " r31 %08" PRIX32 " lr  %08" PRIX32 " sr1 %08" PRIX32 " dsi %08" PRIX32 "\n"
+      "ctr %08" PRIX32 " cr  %08" PRIX32 " xer %08" PRIX32 "\n",\
+      ctx->gpr[0], ctx->gpr[1], ctx->gpr[2], ctx->gpr[3], ctx->gpr[4],
+      ctx->gpr[5], ctx->gpr[6], ctx->gpr[7], ctx->gpr[8], ctx->gpr[9],
+      ctx->gpr[10], ctx->gpr[11], ctx->gpr[12], ctx->gpr[13], ctx->gpr[14],
+      ctx->gpr[15], ctx->gpr[16], ctx->gpr[17], ctx->gpr[18], ctx->gpr[19],
+      ctx->gpr[20], ctx->gpr[21], ctx->gpr[22], ctx->gpr[23], ctx->gpr[24],
+      ctx->gpr[25], ctx->gpr[26], ctx->gpr[27], ctx->gpr[28], ctx->gpr[29],
+      ctx->gpr[30], ctx->gpr[31], ctx->lr, ctx->srr1, ctx->dsisr,
+      ctx->ctr, ctx->cr, ctx->xer
+   );
 
    /*	Stack trace!
       First, let's print the PC... */
@@ -196,7 +186,7 @@ void __attribute__((__noreturn__)) exception_cb(OSContext* ctx, OSExceptionType 
 
 BOOL __attribute__((__noreturn__)) exception_dsi_cb(OSContext* ctx)
 {
-	exception_cb(ctx, OS_EXCEPTION_TYPE_DSI);
+   exception_cb(ctx, OS_EXCEPTION_TYPE_DSI);
 }
 
 BOOL __attribute__((__noreturn__)) exception_isi_cb(OSContext* ctx)
@@ -206,33 +196,26 @@ BOOL __attribute__((__noreturn__)) exception_isi_cb(OSContext* ctx)
 
 BOOL __attribute__((__noreturn__)) exception_prog_cb(OSContext* ctx)
 {
-	exception_cb(ctx, OS_EXCEPTION_TYPE_PROGRAM);
+   exception_cb(ctx, OS_EXCEPTION_TYPE_PROGRAM);
 }
 
 void exception_print_symbol(uint32_t addr)
 {
-   /*	Check if addr is within this RPX's .text */
-   if (addr >= TEXT_START && addr < TEXT_END)
-   {
-      char symbolName[64];
-      OSGetSymbolName(addr, symbolName, 63);
-
-      buf_add("%08" PRIX32 "(%08" PRIX32 "):%s\n",
-            addr, addr - TEXT_START, symbolName);
-   }
    /*	Check if addr is within the system library area... */
-   else if ((addr >= 0x01000000 && addr < 0x01800000) ||
-         /*	Or the rest of the app executable area.
-            I would have used whatever method JGeckoU uses to determine
-            the real lowest address, but *someone* didn't make it open-source :/ */
-         (addr >= 0x01800000 && addr < 0x1000000))
+   if ((addr >= 0x01000000 && addr < 0x01800000) ||
+      /*	Or the rest of the app executable area.
+         I would have used whatever method JGeckoU uses to determine
+         the real lowest address, but *someone* didn't make it open-source :/ */
+      (addr >= 0x01800000 && addr < 0x10000000))
    {
-      char *seperator = NULL;
-      char symbolName[64];
+      char* seperator = NULL;
+      char  symbolName[64];
 
       OSGetSymbolName(addr, symbolName, 63);
 
-      /*	Extract RPL name and try and find its base address */
+      /*	Extract RPL name and try and find its base address
+       *	TODO replace this with OSDynLoad_NotifyData
+       */
       seperator = strchr(symbolName, '|');
 
       if (seperator)
@@ -266,26 +249,35 @@ void exception_print_symbol(uint32_t addr)
       buf_add("%08" PRIX32 "(        ):%s\n", addr, symbolName);
    }
 
-   /*	Check if addr is in the HBL range
+   /*	Check if addr is in the HBL/Aroma range
       TODO there's no real reason we couldn't find the symbol here,
       it's just laziness and arguably uneccesary bloat */
    else if (addr >= 0x00800000 && addr < 0x01000000)
       buf_add("%08" PRIX32 "(%08" PRIX32 "):<unknown:HBL>\n", addr, addr - 0x00800000);
-   /*	If all else fails, just say "unknown" */
+      /*	If all else fails, just say "unknown" */
    else
       buf_add("%08" PRIX32 "(        ):<unknown>\n", addr);
 }
 
-/*	void setup_os_exceptions(void)
+/*	void init_os_exceptions(void)
 	Install and initialize the exception handler.
 */
-void setup_os_exceptions(void)
+void init_os_exceptions(void)
 {
    exception_msgbuf = malloc(4096);
    OSSetExceptionCallback(OS_EXCEPTION_TYPE_DSI, exception_dsi_cb);
    OSSetExceptionCallback(OS_EXCEPTION_TYPE_ISI, exception_isi_cb);
    OSSetExceptionCallback(OS_EXCEPTION_TYPE_PROGRAM, exception_prog_cb);
    test_os_exceptions();
+}
+
+void deinit_os_exceptions(void)
+{
+   OSSetExceptionCallback(OS_EXCEPTION_TYPE_DSI, NULL);
+   OSSetExceptionCallback(OS_EXCEPTION_TYPE_ISI, NULL);
+   OSSetExceptionCallback(OS_EXCEPTION_TYPE_PROGRAM, NULL);
+   free(exception_msgbuf);
+   exception_msgbuf = NULL;
 }
 
 /*	void test_os_exceptions(void)
@@ -296,17 +288,17 @@ void test_os_exceptions(void)
    /*Write to 0x00000000; causes DSI */
 #if 0
    __asm__ volatile (
-         "li %r3, 0 \n" \
-         "stw %r3, 0(%r3) \n"
-         );
+      "li %r3, 0 \n"
+      "stw %r3, 0(%r3) \n"
+   );
    DCFlushRange((void*)0, 4);
 #endif
 
    /*Malformed instruction, causes PROG. Doesn't seem to work. */
 #if 0
    __asm__ volatile (
-         ".int 0xDEADC0DE"
-         );
+      ".int 0xDEADC0DE"
+   );
 #endif
 
    /* Jump to 0; causes ISI */

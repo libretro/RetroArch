@@ -744,6 +744,9 @@ typedef struct settings
       bool input_touch_vmouse_trackball;
       bool input_touch_vmouse_gesture;
 #endif
+#ifdef WIIU
+      bool input_wiiu_enable_hbm;
+#endif
 
       /* Frame time counter */
       bool frame_time_counter_reset_after_fastforwarding;

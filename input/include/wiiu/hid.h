@@ -19,6 +19,9 @@
 
 #include "hid_types.h"
 #include "input.h"
+#include <coreinit/fastmutex.h>
+#include <coreinit/thread.h>
+#include <nsyshid/hid.h>
 
 #define DEVICE_UNUSED 0
 #define DEVICE_USED   1

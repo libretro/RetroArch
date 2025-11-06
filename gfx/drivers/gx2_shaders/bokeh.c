@@ -16,11 +16,13 @@
 #include <stddef.h>
 #include <malloc.h>
 #include <string.h>
-#include <wiiu/gx2/common.h>
+#include "gx2/ra_shaders.h"
 #include "gx2_shader_inl.h"
 #include "menu_shaders.h"
+#include <gx2/enum.h>
+#include <gx2/sampler.h>
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
    u64 cf[32];
@@ -62,7 +64,7 @@ static struct
    },
 };
 
-__attribute__((aligned(GX2_SHADER_ALIGNMENT)))
+__attribute__((aligned(GX2_SHADER_PROGRAM_ALIGNMENT)))
 static struct
 {
    u64 cf[32];
@@ -709,13 +711,13 @@ static struct
    },
 };
 
-static GX2AttribVar attributes[] =
+static GX2AttribVar attributes[2] =
 {
    { "Position",  GX2_SHADER_VAR_TYPE_FLOAT4, 0, 0},
    { "TexCoord",  GX2_SHADER_VAR_TYPE_FLOAT2, 0, 1},
 };
 
-static GX2AttribStream attribute_stream[] =
+static GX2AttribStream attribute_stream[2] =
 {
    {0, 0, 0, GX2_ATTRIB_FORMAT_FLOAT_32_32,
     GX2_ATTRIB_INDEX_PER_VERTEX, 0, GX2_COMP_SEL(_x, _y, _0, _1), GX2_ENDIAN_SWAP_DEFAULT},
@@ -723,16 +725,16 @@ static GX2AttribStream attribute_stream[] =
     GX2_ATTRIB_INDEX_PER_VERTEX, 0, GX2_COMP_SEL(_x, _y, _0, _0), GX2_ENDIAN_SWAP_DEFAULT},
 };
 
-static GX2SamplerVar samplers[] =
+static GX2SamplerVar samplers[1] =
 {
    { "Source", GX2_SAMPLER_VAR_TYPE_SAMPLER_2D, 0 },
 };
 
-static GX2UniformBlock uniform_blocks[] = {
+static GX2UniformBlock uniform_blocks[1] = {
     {"UBO", 1, 96}
 };
 
-static GX2UniformVar uniform_vars[] = {
+static GX2UniformVar uniform_vars[3] = {
    {"global.MVP", GX2_SHADER_VAR_TYPE_FLOAT, 1, 0, 0},
    {"global.OutputSize", GX2_SHADER_VAR_TYPE_FLOAT, 1, 16, 0},
    {"global.time", GX2_SHADER_VAR_TYPE_FLOAT, 1, 20, 0},

@@ -171,37 +171,40 @@ static void kpad_register(unsigned channel, uint8_t device_type)
    }
 }
 
-static void kpad_poll_one_channel(unsigned channel, KPADData *kpad)
+static void kpad_poll_one_channel(unsigned channel, KPADStatus *kpad)
 {
-   kpad_register(channel, kpad->device_type);
-   switch (kpad->device_type)
+   kpad_register(channel, kpad->extensionType);
+   switch (kpad->extensionType)
    {
-      case WIIMOTE_TYPE_PRO:
-         joypad_state.kpad.wiimotes[channel].button_state = kpad->classic.btns_h
+      case WPAD_EXT_PRO_CONTROLLER:
+         joypad_state.kpad.wiimotes[channel].button_state = kpad->pro.hold
             & ~WIIU_PRO_BUTTON_MASK;
          pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
-               WIIU_READ_STICK(kpad->classic.lstick_x),
-               WIIU_READ_STICK(kpad->classic.lstick_y),
-               WIIU_READ_STICK(kpad->classic.rstick_x),
-               WIIU_READ_STICK(kpad->classic.rstick_y), 0, 0);
+               WIIU_READ_STICK(kpad->pro.leftStick.x),
+               WIIU_READ_STICK(kpad->pro.leftStick.y),
+               WIIU_READ_STICK(kpad->pro.rightStick.x),
+               WIIU_READ_STICK(kpad->pro.rightStick.y), 0, 0);
          break;
-      case WIIMOTE_TYPE_CLASSIC:
-         joypad_state.kpad.wiimotes[channel].button_state = kpad->classic.btns_h
+      case WPAD_EXT_MPLUS_CLASSIC:
+      case WPAD_EXT_CLASSIC:
+         joypad_state.kpad.wiimotes[channel].button_state = kpad->classic.hold
             & ~CLASSIC_BUTTON_MASK;
          pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
-               WIIU_READ_STICK(kpad->classic.lstick_x),
-               WIIU_READ_STICK(kpad->classic.lstick_y),
-               WIIU_READ_STICK(kpad->classic.rstick_x),
-               WIIU_READ_STICK(kpad->classic.rstick_y), 0, 0);
+               WIIU_READ_STICK(kpad->classic.leftStick.x),
+               WIIU_READ_STICK(kpad->classic.leftStick.y),
+               WIIU_READ_STICK(kpad->classic.rightStick.x),
+               WIIU_READ_STICK(kpad->classic.rightStick.y), 0, 0);
          break;
-      case WIIMOTE_TYPE_NUNCHUK:
-         joypad_state.kpad.wiimotes[channel].button_state = kpad->btns_h;
+      case WPAD_EXT_MPLUS_NUNCHUK:
+      case WPAD_EXT_NUNCHUK:
+         joypad_state.kpad.wiimotes[channel].button_state = kpad->hold;
          pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
-               WIIU_READ_STICK(kpad->nunchuck.stick_x),
-               WIIU_READ_STICK(kpad->nunchuck.stick_y), 0, 0, 0, 0);
+               WIIU_READ_STICK(kpad->nunchuk.stick.x),
+               WIIU_READ_STICK(kpad->nunchuk.stick.y), 0, 0, 0, 0);
          break;
-      case WIIMOTE_TYPE_WIIPLUS:
-         joypad_state.kpad.wiimotes[channel].button_state = kpad->btns_h;
+      case WPAD_EXT_MPLUS:
+      case WPAD_EXT_CORE:
+         joypad_state.kpad.wiimotes[channel].button_state = kpad->hold;
          pad_functions.set_axis_value(joypad_state.kpad.wiimotes[channel].analog_state,
                0, 0, 0, 0, 0, 0);
          break;
@@ -224,9 +227,8 @@ static void kpad_deregister(unsigned channel)
 
 static void kpad_poll(void)
 {
-   KPADData kpad;
+   KPADStatus kpad;
    unsigned channel;
-   int32_t result = 0;
 
    for (channel = 0; channel < WIIU_WIIMOTE_CHANNELS; channel++)
    {
@@ -235,7 +237,7 @@ static void kpad_poll(void)
       /* This is a hack to prevent spurious disconnects */
       /* TODO: use KPADSetConnectCallback and use callbacks to detect */
       /*       pad disconnects properly. */
-      if ((result = KPADRead(channel, &kpad, 1)) == 0)
+      if (KPADRead(channel, &kpad, 1) != 1)
       {
          joypad_state.kpad.poll_failures[channel]++;
          if (joypad_state.kpad.poll_failures[channel] > 5)
@@ -246,7 +248,7 @@ static void kpad_poll(void)
 
       /* Several reads when a device is connected or an attachment added give */
       /* bogus results, try to weed them out */
-      if (kpad.wpad_error || kpad.device_type == 255)
+      if (kpad.error || kpad.extensionType == WPAD_EXT_UNKNOWN)
          continue;
 
       kpad_poll_one_channel(channel, &kpad);
@@ -261,15 +263,18 @@ static const char *kpad_name(unsigned pad)
 
    switch (joypad_state.kpad.wiimotes[channel].type)
    {
-      case WIIMOTE_TYPE_PRO:
+      case WPAD_EXT_PRO_CONTROLLER:
          return PAD_NAME_WIIU_PRO;
-      case WIIMOTE_TYPE_CLASSIC:
+      case WPAD_EXT_MPLUS_CLASSIC:
+      case WPAD_EXT_CLASSIC:
          return PAD_NAME_CLASSIC;
-      case WIIMOTE_TYPE_NUNCHUK:
+      case WPAD_EXT_MPLUS_NUNCHUK:
+      case WPAD_EXT_NUNCHUK:
          return PAD_NAME_NUNCHUK;
-      case WIIMOTE_TYPE_WIIPLUS:
+      case WPAD_EXT_MPLUS:
+      case WPAD_EXT_CORE:
          return PAD_NAME_WIIMOTE;
-      case WIIMOTE_TYPE_NONE:
+      case WPAD_EXT_DEV_NOT_FOUND:
       default:
 #ifdef DEBUG
          RARCH_LOG("[kpad] Unknown pad type %d\n", joypad_state.kpad.wiimotes[pad].type);

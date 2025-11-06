@@ -2632,12 +2632,38 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/upscale_mix_240x160_320x240.o
 endif
 
-ifeq ($(WANT_IOSUHAX), 1)
-   DEFINES += -DHAVE_IOSUHAX
-   INCLUDE_DIRS += -I$(DEPS_DIR)/libiosuhax/include
-   OBJ += $(DEPS_DIR)/libiosuhax/source/iosuhax.o \
-          $(DEPS_DIR)/libiosuhax/source/iosuhax_devoptab.o \
-          $(DEPS_DIR)/libiosuhax/source/iosuhax_disc_interface.o
+ifeq ($(WANT_LIBMOCHA), 1)
+   DEFINES += -DHAVE_LIBMOCHA
+   INCLUDE_DIRS += -I$(DEPS_DIR)/libmocha/include
+   OBJ += $(DEPS_DIR)/libmocha/source/disc_interface.o \
+          $(DEPS_DIR)/libmocha/source/fsa.o \
+          $(DEPS_DIR)/libmocha/source/utils.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_chdir.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_chmod.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_close.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_dirclose.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_dirnext.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_diropen.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_dirreset.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_fchmod.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_fstat.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_fsync.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_link.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_mkdir.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_open.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_read.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_rename.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_rmdir.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_seek.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_stat.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_statvfs.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_truncate.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_unlink.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_utils.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_utimes.o \
+          $(DEPS_DIR)/libmocha/source/devoptab/devoptab_fsa_write.o
+
 endif
 
 ifeq ($(WANT_LIBFAT), 1)
