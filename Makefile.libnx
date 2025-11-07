@@ -57,6 +57,8 @@ HAVE_CHD = 1
 HAVE_STB_VORBIS = 1
 HAVE_IBXM = 1
 HAVE_CORE_INFO_CACHE = 1
+HAVE_CLOUD_SYNC = 1
+HAVE_SSL = 1
 
 # RetroArch libnx useful flags
 HAVE_THREADS = 1
@@ -148,7 +150,7 @@ LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,--allow-multiple-de
 # add things from Makefile.common
 CFLAGS += $(DEF_FLAGS)
 
-LIBS	:= -lswresample -lavformat -lavcodec -lavutil -lswscale -lstdc++ -lbz2 -lpng -lz -lnx -lvpx -lopus -llzma -lm
+LIBS := -lswresample -lavformat -lavcodec -lavutil -lswscale -lstdc++ -lbz2 -lpng -lz -lnx -lvpx -lopus -llzma -lmbedtls -lmbedx509 -lmbedcrypto -lnx -lm
 
 ifeq ($(HAVE_OPENGL), 1)
   LIBS := -lEGL -lglapi -ldrm_nouveau $(LIBS)
