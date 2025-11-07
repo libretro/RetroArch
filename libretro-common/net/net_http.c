@@ -140,6 +140,9 @@ struct dns_cache_entry
    struct addrinfo *addr;
    retro_time_t timestamp;
    bool valid;
+#ifdef HAVE_THREADS
+   sthread_t *thread;
+#endif
    struct dns_cache_entry *next;
 };
 
@@ -580,6 +583,13 @@ static void net_http_dns_cache_remove_expired(void)
       if (     (entry->addr && (entry->timestamp + dns_cache_timeout < cpu_features_get_time_usec()))
             || (!entry->addr && (entry->timestamp + dns_cache_fail_timeout < cpu_features_get_time_usec())))
       {
+#ifdef HAVE_THREADS
+         if (entry->thread)
+         {
+            sthread_join(entry->thread);
+            entry->thread = NULL;
+         }
+#endif
          if (prev)
             prev->next = entry->next;
          else
@@ -609,6 +619,13 @@ static struct dns_cache_entry *net_http_dns_cache_find(const char *domain, int p
    {
       if (port == entry->port && string_is_equal(entry->domain, domain))
       {
+#ifdef HAVE_THREADS
+         if (entry->thread && entry->valid)
+         {
+            sthread_join(entry->thread);
+            entry->thread = NULL;
+         }
+#endif
          /* don't bump timeestamp for failures */
          if (entry->addr)
             entry->timestamp = cpu_features_get_time_usec();
@@ -629,6 +646,9 @@ static struct dns_cache_entry *net_http_dns_cache_add(const char *domain, int po
    entry->addr = addr;
    entry->timestamp = cpu_features_get_time_usec();
    entry->valid = (addr != NULL);
+#ifdef HAVE_THREADS
+   entry->thread = NULL;
+#endif
    entry->next = dns_cache;
    dns_cache = entry;
    return entry;
@@ -688,7 +708,7 @@ static void net_http_conn_pool_remove_expired(void)
    entry = conn_pool;
    while (entry)
    {
-      if (!entry->in_use)
+      if (!entry->in_use && entry->fd >= 0 && entry->fd < FD_SETSIZE)
       {
          FD_SET(entry->fd, &fds);
          if (entry->fd >= max)
@@ -883,8 +903,6 @@ static bool net_http_new_socket(struct http_t *state)
    struct dns_cache_entry *entry;
 
 #ifdef HAVE_THREADS
-   sthread_t *thread;
-
    if (!dns_cache_lock)
       dns_cache_lock = slock_new();
    LOCK_DNS_CACHE();
@@ -925,8 +943,7 @@ static bool net_http_new_socket(struct http_t *state)
       entry = net_http_dns_cache_add(state->request.domain, state->request.port, NULL);
 #ifdef HAVE_THREADS
       /* create the entry for it as an indicator that the request is underway */
-      thread = sthread_create(net_http_resolve, entry);
-      sthread_detach(thread);
+      entry->thread = sthread_create(net_http_resolve, entry);
 #else
       net_http_resolve(entry);
 #endif
@@ -1444,6 +1461,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       if (_len < 0 || state->err)
       {
          net_http_conn_pool_remove(state->conn);
+         state->conn      = NULL;
          state->err       = true;
          response->part   = P_DONE;
          response->status = -1;
@@ -1457,6 +1475,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       if (!net_http_receive_body(state, _len))
       {
          net_http_conn_pool_remove(state->conn);
+         state->conn      = NULL;
          state->err       = true;
          response->part   = P_DONE;
          response->status = -1;
