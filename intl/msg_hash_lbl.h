@@ -3019,6 +3019,10 @@ MSG_HASH(
    "quit_retroarch"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW,
+   "cloud_sync_sync_now"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RDB_ENTRY,
    "rdb_entry"
    )
@@ -3705,6 +3709,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SYSTEM,
    "cloud_sync_sync_system"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_STARTUP_SYNC,
+   "cloud_sync_startup_sync"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,

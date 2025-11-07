@@ -3667,9 +3667,7 @@ bool command_event(enum event_command cmd, void *data)
                }
             }
 #endif
-#ifdef HAVE_CLOUDSYNC
-            task_push_cloud_sync();
-#endif
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             runloop_st->runtime_shader_preset_path[0] = '\0';
 #endif
@@ -4631,6 +4629,11 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_QUIT, NULL);
 #endif
          break;
+#ifdef HAVE_CLOUDSYNC
+      case CMD_EVENT_CLOUD_SYNC:
+         task_push_cloud_sync();
+         break;
+#endif
       case CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG:
          config_set_defaults(global_get_ptr());
          break;
@@ -6040,8 +6043,9 @@ int rarch_main(int argc, char *argv[], void *data)
 #endif
          settings->bools.ui_companion_start_on_boot
          );
-#if HAVE_CLOUDSYNC
-   task_push_cloud_sync();
+#ifdef HAVE_CLOUDSYNC
+   if (settings->bools.cloud_sync_startup_sync)
+      task_push_cloud_sync();
 #endif
 #if !defined(HAVE_MAIN) || defined(HAVE_QT)
    for (;;)

@@ -10138,6 +10138,17 @@ static bool setting_append_list(
          }
 #endif
 
+#ifdef HAVE_CLOUDSYNC
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_CLOUD_SYNC);
+#endif
+
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
@@ -11784,6 +11795,21 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SYSTEM,
                MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
                false,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.cloud_sync_startup_sync,
+               MENU_ENUM_LABEL_CLOUD_SYNC_STARTUP_SYNC,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_STARTUP_SYNC,
+               true,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

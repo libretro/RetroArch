@@ -11066,6 +11066,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS, PARSE_ONLY_BOOL,           true},
                {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_THUMBS,  PARSE_ONLY_BOOL,           true},
                {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SYSTEM,  PARSE_ONLY_BOOL,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_STARTUP_SYNC, PARSE_ONLY_BOOL,           true},
                {MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,       PARSE_ONLY_STRING_OPTIONS, true},
                {MENU_ENUM_LABEL_CLOUD_SYNC_URL,          PARSE_ONLY_STRING,         false},
                {MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,     PARSE_ONLY_STRING,         false},
@@ -15241,6 +15242,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
 #endif /* HAVE_LAKKA */
 #endif /* HAVE_CDROM */
+
+#if defined(HAVE_CLOUDSYNC)
+               if (settings->bools.cloud_sync_enable)
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                        info->list,
+                        MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW,
+                        PARSE_ACTION, false) == 0)
+                     count++;
+#endif
 
                if (show_playlists)
                   if (menu_entries_append(info->list,
