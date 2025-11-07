@@ -3540,11 +3540,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
-   "Gyorsbillentyűk"
+   "Gyorsgombok"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "A gyorsbillentyűk kiosztása és beállításai, például a játék közbeni menü előhívásához."
+   "A gyorsgombok kiosztása és beállításai, például a játék közbeni menü előhívásához."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
@@ -3709,11 +3709,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
-   "A gyorsbillentyűk engedélyezése"
+   "Engedélyező gyorsgomb"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   "Ha be van állítva, akkor ezt a \"Gyorsbillentyű engedélyező\" gombot nyomva kell tartani a többi gyorsbillentyű használatához. Ezzel lehet a kontroller gombjait gyorsfunkciókhoz rendelni a normál bemenet zavarása nélkül. Ha csak kontrolleres módosító van megadva, az nem szükséges a billentyűzet gyorsgombjaihoz, de mindkét módosító működik mindkét eszközzel."
+   "Ha be van állítva, akkor az \"Engedélyező gyorsgomb\" gombot nyomva kell tartani a többi gyorsgomb használatához. Ezzel lehet a kontroller gombjait gyorsfunkciókhoz rendelni a normál bemenet zavarása nélkül. Ha csak kontrolleres módosító van megadva, az nem szükséges a billentyűzet gyorsgombjaihoz, de mindkét módosító működik mindkét eszközzel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
@@ -3721,7 +3721,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
-   "Gyorsgomb visszatartása (képkocka)"
+   "Engedélyező gyorsgomb visszatartása (képkocka)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
@@ -3729,11 +3729,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
-   "Kombinált eszközök a gyorsbillentyűknél"
+   "Kombinált eszközök a gyorsgomboknál"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    "A gyorsbillentyűk blokkolása mind billentyűzeten, mind kontroller típusú eszközökön, ha bármelyiknél be van állítva a gyorsbillentyűk engedélyezése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "A gyorsgombok az 1. játékoshoz tartoznak"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "A gyorsgombok a mag 1. csatlakozóján aktívak, akkor is, ha a mag 1. csatlakozója másik felhasználóhoz van rendelve. Figyelem: a billentyűzet gyorsgombjai ez esetben nem működnek."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -14268,11 +14276,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING,
-   "Vizsgálat"
+   "Beolvasás"
    )
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
    "Mappa beolvasása kész."
+   )
+MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Beolvasás sikertelen, adatbázis nem található."
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,

@@ -14603,6 +14603,10 @@ MSG_HASH(
    "Scanadh an eolaire críochnaithe."
    )
 MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Theip ar an scanadh, níor aimsíodh aon bhunachar sonraí."
+   )
+MSG_HASH(
    MSG_SENDING_COMMAND,
    "Ordú á sheoladh"
    )

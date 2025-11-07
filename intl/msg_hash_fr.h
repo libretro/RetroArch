@@ -14495,6 +14495,10 @@ MSG_HASH(
    "Analyse du dossier terminée."
    )
 MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Analyse échouée, aucune base de données trouvée."
+   )
+MSG_HASH(
    MSG_SENDING_COMMAND,
    "Envoi de la commande"
    )

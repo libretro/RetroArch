@@ -14435,6 +14435,10 @@ MSG_HASH(
    "S'ha acabat l'escaneig del directori."
    )
 MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Error en l'escaneig, no s'ha trobat una base de dades."
+   )
+MSG_HASH(
    MSG_SENDING_COMMAND,
    "Enviant comanda"
    )

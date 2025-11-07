@@ -14635,6 +14635,10 @@ MSG_HASH(
    "디렉토리 검색 완료."
    )
 MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "검색 실패, 데이터베이스를 찾을 수 없음."
+   )
+MSG_HASH(
    MSG_SENDING_COMMAND,
    "명령 전달중"
    )
