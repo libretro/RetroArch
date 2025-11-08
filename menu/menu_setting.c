@@ -8944,7 +8944,7 @@ static void general_write_handler(rarch_setting_t *setting)
                      NULL, menu_st->userdata);
          }
          break;
-      case MENU_ENUM_LABEL_INPUT_REMAP_PORTS_ON_BUTTON_PRESS:
+      case MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS:
          {
             input_remapping_set_defaults(false);
          }
@@ -15633,10 +15633,10 @@ static bool setting_append_list(
             
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->bools.input_remap_ports_on_button_press,
-                  MENU_ENUM_LABEL_INPUT_REMAP_PORTS_ON_BUTTON_PRESS,
-                  MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORTS_ON_BUTTON_PRESS,
-                  DEFAULT_INPUT_REMAP_PORTS_ON_BUTTON_PRESS,
+                  &settings->bools.input_assign_ports_on_button_press,
+                  MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+                  DEFAULT_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,

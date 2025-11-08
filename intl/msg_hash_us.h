@@ -3338,11 +3338,11 @@ MSG_HASH(
    "Override the input binds with the remapped binds set for the current core."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORTS_ON_BUTTON_PRESS,
+   MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
    "Remap Ports on Button Press"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORTS_ON_BUTTON_PRESS,
+   MENU_ENUM_SUBLABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
    "First user to press a button becomes player 1, second becomes player 2, etc."
    )
 MSG_HASH(
@@ -6011,7 +6011,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_USER_MAPPED_TO_CORE_PORT,
-   "Remap Ports on Button Press Notifications"
+   "Assign Ports on Button Press Notifications"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_USER_MAPPED_TO_CORE_PORT,
