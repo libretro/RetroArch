@@ -52,14 +52,14 @@ RETRO_BEGIN_DECLS
 void sha256_hash(char *s, const uint8_t *in, size_t len);
 
 /**
- * sha1_digest:
+ * SHA1Digest:
  * @data              : Input.
  * @len               : Size of @data.
  * @digest            : Output.
  *
  * Hashes SHA1
  **/
-void sha1_digest(const uint8_t* data, size_t len, uint8_t digest[20]);
+void SHA1Digest(const uint8_t* data, size_t len, uint8_t digest[20]);
 
 int sha1_calculate(const char *path, char *result);
 

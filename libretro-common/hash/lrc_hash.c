@@ -533,8 +533,11 @@ static void SHA1Input(struct sha1_context *context,
    }
 }
 
-void sha1_digest(const uint8_t* data, size_t len, uint8_t digest[20])
+void SHA1Digest(const uint8_t* data, size_t len, uint8_t digest[20])
 {
+#ifdef __APPLE__
+   CC_SHA1(data, (CC_LONG)len, digest);
+#else
    struct sha1_context sha;
 
    SHA1Reset(&sha);
@@ -542,6 +545,7 @@ void sha1_digest(const uint8_t* data, size_t len, uint8_t digest[20])
 
    if (!SHA1Result(&sha, digest))
       memset(digest, 0, 20);
+#endif
 }
 
 int sha1_calculate(const char *path, char *result)

@@ -1750,7 +1750,7 @@ static void wii_encrypt_group(const uint8_t* decrypted_blocks,
       const uint8_t* block_data = decrypted_blocks + (block * RVZ_WII_SECTOR_DATA_SIZE);
 
       for (i = 0; i < RVZ_WII_H0_HASHES_PER_BLOCK; i++)
-         sha1_digest(block_data + (i * RVZ_WII_H0_CHUNK_SIZE), RVZ_WII_H0_CHUNK_SIZE, block_hashes[block].h0 + (i * 20));
+         SHA1Digest(block_data + (i * RVZ_WII_H0_CHUNK_SIZE), RVZ_WII_H0_CHUNK_SIZE, block_hashes[block].h0 + (i * 20));
    }
 
    /* Step 2: Generate H1 hashes for each block and store in subgroup base
@@ -1763,8 +1763,8 @@ static void wii_encrypt_group(const uint8_t* decrypted_blocks,
       i = block % 8;               /* Index within subgroup (0-7) */
 
       /* Store this block's H1 hash in the subgroup base block */
-      sha1_digest(block_hashes[block].h0, 31 * 20,
-                  block_hashes[h1_base].h1 + (i * 20));
+      SHA1Digest(block_hashes[block].h0, 31 * 20,
+                 block_hashes[h1_base].h1 + (i * 20));
    }
 
    /* Step 2b: Copy H1 arrays from subgroup base to all blocks in subgroup
@@ -1786,8 +1786,8 @@ static void wii_encrypt_group(const uint8_t* decrypted_blocks,
    for (subgroup = 0; subgroup < 8; subgroup++)
    {
       h1_base = subgroup * 8;
-      sha1_digest(block_hashes[h1_base].h1, 8 * 20,
-                  block_hashes[0].h2 + (subgroup * 20));
+      SHA1Digest(block_hashes[h1_base].h1, 8 * 20,
+                 block_hashes[0].h2 + (subgroup * 20));
    }
 
    /* Step 3b: Copy H2 array from block 0 to all other blocks */
