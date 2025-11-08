@@ -147,7 +147,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "禁用游戏机厅模式"
+   "禁用街机模式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -207,7 +207,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "重新启动RetroArch。"
+   "重启 RetroArch 应用程序。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
@@ -367,7 +367,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   "下载所选核心的免费内容。"
+   "为所选核心下载免费内容。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -660,7 +660,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
-   "Apple Bundle标识符"
+   "软件包标识符"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -1125,7 +1125,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   "加载已有的配置并替换当前配置。"
+   "加载现有配置并覆盖当前值。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
@@ -1141,7 +1141,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
-   "将当前配置另存到一个文件。"
+   "将当前配置保存到独立文件。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
@@ -1747,7 +1747,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
-   "Switch 驱动程序。支持 GLSL 着色器格式。"
+   "Switch 驱动。支持 GLSL 着色器格式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
@@ -2098,7 +2098,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "指定禁用“整数比例”时的图像插值方法。“最近邻”对性能的影响最小。"
+   "当“整数缩放”关闭时，指定图像插值方法。“最近邻”对性能影响最小。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
@@ -2312,11 +2312,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
-   "在独占全屏模式下"
+   "仅限独占全屏模式"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
-   "仅在窗口全屏模式下"
+   "仅限窗口全屏模式"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
@@ -2337,7 +2337,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-   "设置显示器的垂直刷新率。如果运行PAL游戏，只需设为“50 Hz”就可以得到平滑的体验。"
+   "设置显示器的垂直刷新率。“50 Hz”可在运行 PAL 制式内容时实现流畅视频。"
    )
 #endif
 MSG_HASH(
@@ -3343,7 +3343,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
-   "自动捕捉鼠标。"
+   "自动捕捉鼠标"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
@@ -3600,7 +3600,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Android断开连接解决方法"
+   "安卓断开连接解决方法"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3789,7 +3789,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
-   "退出 (控制器组合)"
+   "退出（手柄组合键）"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
@@ -4242,7 +4242,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "发送一条聊天消息到当前的联机会话。"
+   "在当前的联机会话中发送一条聊天消息。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
@@ -4500,7 +4500,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
-   "[超前运行不可用]"
+   "【预运行功能不可用】"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
@@ -4690,7 +4690,7 @@ MSG_HASH(
 
 MSG_HASH(
    MSG_CORE_STEAM_UNINSTALLED,
-   "当退出RetroArch时，核心将被卸载."
+   "退出 RetroArch 时，该核心将被卸载。"
 )
 
 MSG_HASH(
@@ -5927,7 +5927,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
-   "在软补丁 ROM 时显示屏幕信息。"
+   "软打补丁时显示屏幕提示"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -7691,7 +7691,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   "Netplay 校验主机与客户端是否同步的帧间隔频率。对大多数核心而言，此值无可见效果，可忽略。对非确定性核心，此值决定 Netplay 对等端同步的频率。对存在缺陷的核心，设为非零值可能导致严重性能问题。设为 0 可禁用校验。此选项仅在 Netplay 主机端生效。"
+   "联机校验主机与客户端是否同步的帧间隔频率。对大多数核心而言，此值无可见效果，可忽略。对非确定性核心，此值决定联机对等端同步的频率。对存在缺陷的核心，设为非零值可能导致严重性能问题。设为 0 可禁用校验。此选项仅在联机主机端生效。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -7703,7 +7703,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Netplay 用于掩盖网络延迟的固定输入延迟帧数。\n启用 Netplay 时，此选项会延迟本地输入，使当前运行的帧更接近从网络接收的帧。这可减少画面抖动（jitter）并降低 CPU 负载，但会带来明显的操作延迟。"
+   "联机用于掩盖网络延迟的固定输入延迟帧数。\n启用联机时，此选项会延迟本地输入，使当前运行的帧更接近从网络接收的帧。这可减少画面抖动（jitter）并降低 CPU 负载，但会带来明显的操作延迟。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -7715,7 +7715,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Netplay 可用于掩盖网络延迟的输入延迟帧数范围。\n启用后，Netplay 将动态调整输入延迟帧数，以平衡 CPU 占用、操作延迟与网络延迟。这可减少画面抖动并降低 CPU 负载，但会导致操作延迟不可预测。"
+   "联机可用于掩盖网络延迟的输入延迟帧数范围。\n启用后，联机将动态调整输入延迟帧数，以平衡 CPU 占用、操作延迟与网络延迟。这可减少画面抖动并降低 CPU 负载，但会导致操作延迟不可预测。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -12356,7 +12356,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   "列表"
+   "游戏列表"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
@@ -12871,7 +12871,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
-   "没有找到 netplay客户端。"
+   "未发现联机客户端。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
@@ -13403,7 +13403,7 @@ MSG_HASH( /* FIXME Should be MSG_ */
    )
 MSG_HASH(
    MSG_NETPLAY_NEED_CONTENT_LOADED,
-   "必须在开始netplay之前加载内容。"
+   "内容应在联机前加载。"
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
@@ -13459,7 +13459,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "Netplay 端口映射成功"
+   "联机端口映射成功"
    )
 MSG_HASH(
    MSG_PRIVATE_OR_SHARED_ADDRESS,
@@ -14424,7 +14424,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_UNSUPPORTED,
-   "核心不支持 netplay。"
+   "核心不支持联机。"
    )
 MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,

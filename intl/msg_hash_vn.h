@@ -3760,6 +3760,14 @@ MSG_HASH(
    "Chặn tất cả phím tắt từ cả hai loại thiết bị bàn phím và bộ điều khiển nếu một trong hai loại có cài đặt 'Bật phím tắt'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Phím tắt theo Người chơi 1"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Các phím tắt được gán cho cổng lõi số 1, ngay cả khi cổng đó đã được gán lại cho một người dùng khác.Lưu ý: Các phím tắt trên bàn phím sẽ không hoạt động nếu cổng lõi số 1 được gán cho người chơi có số thứ tự lớn hơn 1 (vì bàn phím luôn được xem là thiết bị điều khiển của Người chơi 1)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Bật/Tắt Menu (Bộ điều khiển kết hợp)"
    )
@@ -14585,6 +14593,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
    "Quét thư mục hoàn tất."
+   )
+MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Quét không thành công, không tìm thấy cơ sở dữ liệu."
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,
