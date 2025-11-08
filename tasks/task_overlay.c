@@ -350,6 +350,8 @@ static bool task_overlay_load_desc(
       {
          if (!string_is_equal(tmp, "nul"))
             BIT256_SET(desc->button_mask, input_config_translate_str_to_bind_id(tmp));
+         else
+            desc->type = OVERLAY_TYPE_PASSIVE;
       }
 
       if (BIT256_GET(desc->button_mask, RARCH_OVERLAY_NEXT))

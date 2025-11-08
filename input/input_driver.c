@@ -2533,6 +2533,8 @@ static bool input_overlay_poll(
 
       if (!input_overlay_coords_inside_hitbox(desc, x, y, use_range_mod))
          continue;
+      if (desc->type == OVERLAY_TYPE_PASSIVE)
+         continue;
 
       /* Check for exclusive hitbox, which blocks other input.
        * range_mod_exclusive has priority over exclusive. */
