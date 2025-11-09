@@ -14463,6 +14463,10 @@ MSG_HASH(
    "Сканування каталогу завершено."
    )
 MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Сканування не вдалося, базу даних не знайдено."
+   )
+MSG_HASH(
    MSG_SENDING_COMMAND,
    "Відправити команду"
    )
