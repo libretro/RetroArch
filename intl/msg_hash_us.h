@@ -3339,11 +3339,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
-   "Remap Ports on Button Press"
+   "Assign Ports on Button Press"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
-   "First user to press a button becomes player 1, second becomes player 2, etc."
+   "Core input ports are mapped sequentially when input is received from a physical input device. The first person to press a button becomes player 1, the second becomes player 2, etc."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,

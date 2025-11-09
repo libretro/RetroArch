@@ -2163,16 +2163,16 @@ MSG_HASH(
    "input_prefer_front_touch"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+   "input_assign_ports_on_button_press"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY,
    "input_remapping_directory"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,
    "input_remap_binds_enable"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
-   "input_assign_ports_on_button_press"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,

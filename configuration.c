@@ -2176,9 +2176,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_autodetect_enable",       &settings->bools.input_autodetect_enable, true, DEFAULT_INPUT_AUTODETECT_ENABLE, false);
    SETTING_BOOL("input_turbo_enable",            &settings->bools.input_turbo_enable, true, DEFAULT_TURBO_ENABLE, false);
    SETTING_BOOL("input_turbo_allow_dpad",        &settings->bools.input_turbo_allow_dpad, true, DEFAULT_TURBO_ALLOW_DPAD, false);
+   SETTING_BOOL("input_assign_ports_on_button_press", &settings->bools.input_assign_ports_on_button_press, true, DEFAULT_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS, false);
    SETTING_BOOL("input_auto_mouse_grab",         &settings->bools.input_auto_mouse_grab, true, DEFAULT_INPUT_AUTO_MOUSE_GRAB, false);
    SETTING_BOOL("input_remap_binds_enable",      &settings->bools.input_remap_binds_enable, true, true, false);
-   SETTING_BOOL("input_assign_ports_on_button_press",   &settings->bools.input_assign_ports_on_button_press, true, DEFAULT_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS, false);
    SETTING_BOOL("input_remap_sort_by_controller_enable",      &settings->bools.input_remap_sort_by_controller_enable, true, false, false);
    SETTING_BOOL("input_hotkey_device_merge",     &settings->bools.input_hotkey_device_merge, true, DEFAULT_INPUT_HOTKEY_DEVICE_MERGE, false);
    SETTING_BOOL("input_hotkey_follows_player1",  &settings->bools.input_hotkey_follows_player1, true, DEFAULT_INPUT_HOTKEY_FOLLOWS_PLAYER1, false);

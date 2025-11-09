@@ -15617,10 +15617,10 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->bools.input_remap_binds_enable,
-                  MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,
-                  MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-                  true,
+                  &settings->bools.input_assign_ports_on_button_press,
+                  MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+                  DEFAULT_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
@@ -15630,13 +15630,13 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_ADVANCED
                   );
-            
+
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->bools.input_assign_ports_on_button_press,
-                  MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
-                  MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
-                  DEFAULT_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+                  &settings->bools.input_remap_binds_enable,
+                  MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+                  true,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,

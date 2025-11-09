@@ -1626,7 +1626,7 @@
 
 /* Map user to core port on first button press. First person
  * to press a button is player 1, second is player 2, etc. */
-#define DEFAULT_INPUT_REMAP_PORTS_ON_BUTTON_PRESS false
+#define DEFAULT_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS false
 
 /* Enables accelerometer/gyroscope/illuminance
  * sensor input, if supported */

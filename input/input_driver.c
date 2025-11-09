@@ -6126,8 +6126,8 @@ void input_driver_poll(void)
       *sec_joypad                 = NULL;
 #endif
    bool input_remap_binds_enable  = settings->bools.input_remap_binds_enable;
-   bool input_remap_ports_on_button_press
-                                  = settings->bools.input_remap_ports_on_button_press;
+   bool input_assign_ports_on_button_press
+                                  = settings->bools.input_assign_ports_on_button_press;
    float input_axis_threshold     = settings->floats.input_axis_threshold;
    uint8_t max_users              = (uint8_t)settings->uints.input_max_users;
 
@@ -6142,8 +6142,8 @@ void input_driver_poll(void)
    }
 
 #ifdef HAVE_MENU
-   input_remap_ports_on_button_press =
-            input_remap_ports_on_button_press
+   input_assign_ports_on_button_press =
+            input_assign_ports_on_button_press
          && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE);
 #endif
 
@@ -6155,7 +6155,7 @@ void input_driver_poll(void)
          && input_st->current_driver->poll)
       input_st->current_driver->poll(input_st->current_data);
 
-   if (input_remap_ports_on_button_press)
+   if (input_assign_ports_on_button_press)
    {
       for (i = 0; i < max_users; i++)
       {
@@ -6189,7 +6189,7 @@ void input_driver_poll(void)
 
       /* If user 0 is not mapped yet, use the port they would be mapped
        * to on overlay button press to get the input_analog_dpad_mode. */
-      if (!first_user_is_mapped && input_remap_ports_on_button_press)
+      if (!first_user_is_mapped && input_assign_ports_on_button_press)
          mapped_port = get_first_free_core_port(settings);
 
       switch (input_analog_dpad_mode)
@@ -6220,7 +6220,7 @@ void input_driver_poll(void)
             input_analog_dpad_mode,
             settings->floats.input_axis_threshold);
 
-      if (!first_user_is_mapped && input_remap_ports_on_button_press)
+      if (!first_user_is_mapped && input_assign_ports_on_button_press)
       {
          if (input_st->overlay_ptr->overlay_state.buttons.data[0])
             map_user_to_first_free_core_port(0, settings);
@@ -6875,17 +6875,17 @@ void input_remapping_set_remap_ports_defaults(void)
 {
    unsigned i;
    settings_t *settings = config_get_ptr();
-   bool remap_on_button_press = settings->bools.input_remap_ports_on_button_press;
+   bool assign_ports_on_button_press = settings->bools.input_assign_ports_on_button_press;
 
    for (i = 0; i < MAX_USERS; i++)
    {
       configuration_set_uint(settings,
          settings->uints.input_remap_ports[i],
-         remap_on_button_press ? MAX_USERS : i);
+         assign_ports_on_button_press ? MAX_USERS : i);
 
       configuration_set_uint(settings,
          settings->uints.input_libretro_device[i],
-         remap_on_button_press ? RETRO_DEVICE_NONE : RETRO_DEVICE_JOYPAD);
+         assign_ports_on_button_press ? RETRO_DEVICE_NONE : RETRO_DEVICE_JOYPAD);
    }
 
    /* Need to call 'input_remapping_update_port_map()'
