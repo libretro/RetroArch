@@ -970,6 +970,10 @@ enum
    if (!ui_companion_start_on_boot)
       [self showGameView];
 
+#if TARGET_OS_TV
+   rarch_start_draw_observer();
+#endif
+
 #ifdef HAVE_CLOUDSYNC
    if (self.bgDate)
    {

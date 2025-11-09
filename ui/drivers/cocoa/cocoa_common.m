@@ -120,9 +120,11 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 #endif
 
    runloop_flags = runloop_get_flags();
+#if !TARGET_OS_TV
    if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
+#endif
       CFRunLoopWakeUp(CFRunLoopGetMain());
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
    else
       rarch_stop_draw_observer();
 #endif
@@ -133,6 +135,7 @@ void rarch_start_draw_observer(void)
    if (iterate_observer && CFRunLoopObserverIsValid(iterate_observer))
        return;
 
+   RARCH_LOG("[NS] starting draw observer\n");
    if (iterate_observer != NULL)
       CFRelease(iterate_observer);
    iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
@@ -144,6 +147,7 @@ void rarch_stop_draw_observer(void)
 {
     if (!iterate_observer || !CFRunLoopObserverIsValid(iterate_observer))
         return;
+    RARCH_LOG("[NS] stopping draw observer\n");
     CFRunLoopObserverInvalidate(iterate_observer);
     CFRelease(iterate_observer);
     iterate_observer = NULL;
@@ -176,6 +180,7 @@ void rarch_stop_draw_observer(void)
       return;
    }
 
+#if !TARGET_OS_TV
    uint32_t runloop_flags = runloop_get_flags();
    if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
    {
@@ -183,6 +188,7 @@ void rarch_stop_draw_observer(void)
       rarch_start_draw_observer();
       CFRunLoopWakeUp(CFRunLoopGetMain());
    }
+#endif
 #endif
 }
 #endif
