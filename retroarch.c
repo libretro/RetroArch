@@ -3717,6 +3717,11 @@ bool command_event(enum event_command cmd, void *data)
                runloop_st->subsystem_current_count = 0;
                content_clear_subsystem();
             }
+#ifdef HAVE_CLOUDSYNC
+            /* Sync on core unload if in automatic mode */
+            if (settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC)
+               task_push_cloud_sync();
+#endif
          }
 
 #ifdef HAVE_MENU
@@ -6044,7 +6049,7 @@ int rarch_main(int argc, char *argv[], void *data)
          settings->bools.ui_companion_start_on_boot
          );
 #ifdef HAVE_CLOUDSYNC
-   if (settings->bools.cloud_sync_startup_sync)
+   if (settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC)
       task_push_cloud_sync();
 #endif
 #if !defined(HAVE_MAIN) || defined(HAVE_QT)

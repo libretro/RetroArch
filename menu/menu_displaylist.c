@@ -11061,6 +11061,7 @@ unsigned menu_displaylist_build_list(
          {
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,       PARSE_ONLY_BOOL,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE,    PARSE_ONLY_UINT,           true},
                {MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,  PARSE_ONLY_BOOL,           true},
                {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES,   PARSE_ONLY_BOOL,           true},
                {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS, PARSE_ONLY_BOOL,           true},

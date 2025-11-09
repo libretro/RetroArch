@@ -2613,6 +2613,9 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_NETWORKGAMEPAD
    SETTING_UINT("network_remote_base_port",      &settings->uints.network_remote_base_port, true, DEFAULT_NETWORK_REMOTE_BASE_PORT, false);
 #endif
+#ifdef HAVE_CLOUDSYNC
+   SETTING_UINT("cloud_sync_sync_mode",          &settings->uints.cloud_sync_sync_mode, true, CLOUD_SYNC_MODE_AUTOMATIC, false);
+#endif
 
 #ifdef HAVE_LANGEXTRA
    SETTING_UINT("user_language",                 msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, frontend_driver_get_user_language(), false);

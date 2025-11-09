@@ -5343,6 +5343,30 @@ static size_t setting_get_string_representation_uint_input_auto_game_focus(
    return 0;
 }
 
+#ifdef HAVE_CLOUDSYNC
+static size_t setting_get_string_representation_uint_cloud_sync_sync_mode(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case CLOUD_SYNC_MODE_AUTOMATIC:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC),
+                  len);
+         case CLOUD_SYNC_MODE_MANUAL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL),
+                  len);
+      }
+   }
+   return 0;
+}
+#endif
+
 #if defined(HAVE_OVERLAY)
 static size_t setting_get_string_representation_uint_input_overlay_show_inputs(
       rarch_setting_t *setting, char *s, size_t len)
@@ -11804,20 +11828,22 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-         CONFIG_BOOL(
+         CONFIG_UINT(
                list, list_info,
-               &settings->bools.cloud_sync_startup_sync,
-               MENU_ENUM_LABEL_CLOUD_SYNC_STARTUP_SYNC,
-               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_STARTUP_SYNC,
-               true,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
+               &settings->uints.cloud_sync_sync_mode,
+               MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+               CLOUD_SYNC_MODE_AUTOMATIC,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
+               general_read_handler);
+         (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_uint_cloud_sync_sync_mode;
+         menu_settings_list_current_add_range(list, list_info, 0, CLOUD_SYNC_MODE_LAST-1, 1, true, true);
 
          CONFIG_STRING_OPTIONS(
                list, list_info,

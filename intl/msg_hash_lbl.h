@@ -3691,6 +3691,18 @@ MSG_HASH(
    "cloud_sync_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE,
+   "cloud_sync_sync_mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "cloud_sync_sync_mode_automatic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "cloud_sync_sync_mode_manual"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,
    "cloud_sync_destructive"
    )
