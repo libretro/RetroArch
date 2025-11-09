@@ -53,7 +53,7 @@ static char _hShift[12];
 static char _vShift[12];
 
 #if defined(HAVE_VIDEOCORE) /* Need to add video core to SR2 */
-#include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
+#include <interface/vmcs_host/vc_vchi_gencmd.h>
 static void crt_rpi_switch(videocrt_switch_t *p_switch,int width, int height, float hz, int xoffset, int native_width);
 #endif
 
