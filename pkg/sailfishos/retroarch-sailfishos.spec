@@ -1,6 +1,6 @@
 Name:           retroarch
-Version:        1.21.0
-Release:        v1.21.0
+Version:        1.22.0
+Release:        v1.22.0
 Summary:        Official reference frontend for libretro
 
 Group:          Applications/Emulators

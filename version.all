@@ -6,5 +6,5 @@
 # /* - pkg/snap/snapcraft.yaml (including the github url) */
 
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.21.0"
+#define PACKAGE_VERSION "1.22.0"
 #endif

@@ -1,4 +1,6 @@
 # Future
+
+# 1.22.0
 - ANDROID: OnNewIntent handler to allow launchers start new content without closing first
 - ANDROID: Use app-specific storage for Google Play builds of RetroArch
 - ANDROID: Implement support for the Storage Access Framework, to allow the user to mount most directories1 from internal storage, the SD card, other removable storage devices and any document providers provided by other Android apps on the current device.
