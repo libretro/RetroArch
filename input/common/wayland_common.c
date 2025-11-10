@@ -882,7 +882,7 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
          if (null_terminate)
             new_buffer_length  = *total_length + 1;
          else
-            new_buffer_length = *total_length;
+            new_buffer_length  = *total_length;
 
          if (*buffer == NULL)
             output_buffer      = malloc(new_buffer_length);
