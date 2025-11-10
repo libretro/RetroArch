@@ -1,5 +1,6 @@
 #ifndef __UINT32S_INDEX__H
 #define __UINT32S_INDEX__H
+
 #ifdef HAVE_STATESTREAM
 #include <stdint.h>
 #include <stdlib.h>
@@ -67,4 +68,5 @@ void uint32s_index_print_count_data(uint32s_index_t *index);
 #endif
 RETRO_END_DECLS
 #endif
+
 #endif /* __UINT32S_INDEX__H */

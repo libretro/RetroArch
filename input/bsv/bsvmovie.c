@@ -1,17 +1,34 @@
+/**
+ *  RetroArch - A frontend for libretro.
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation, either version 3 of the License, or (at your option)
+ *  any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT
+ *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ *  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ *  more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with RetroArch. If not, see <http://www.gnu.org/licenses/>.
+ **/
+
 #include "bsvmovie.h"
 #include <retro_endianness.h>
+#include "../input_driver.h"
 #include "../../retroarch.h"
 #include "../../state_manager.h"
-#include "../../verbosity.h"
-#include "../input_driver.h"
 #include "../../tasks/task_content.h"
 #include "../../libretro-db/rmsgpack.h"
 #include "../../libretro-db/rmsgpack_dom.h"
+#include "../../verbosity.h"
 #ifdef HAVE_STATESTREAM
-#include "input/bsv/uint32s_index.h"
+#include "uint32s_index.h"
 #endif
-#include "libretro.h"
-#include "streams/interface_stream.h"
+#include <libretro.h>
+#include <streams/interface_stream.h>
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos/cheevos.h"
 #endif
@@ -379,13 +396,10 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
 #ifdef HAVE_ZLIB
       case REPLAY_CHECKPOINT2_COMPRESSION_ZLIB:
          {
-#ifdef EMSCRIPTEN
             uLongf uncompressed_size_zlib = encoded_size;
-#else
-            uint32_t uncompressed_size_zlib = encoded_size;
-#endif
-            encoded_data = calloc(encoded_size, sizeof(uint8_t));
-            if (uncompress(encoded_data, &uncompressed_size_zlib, compressed_data, compressed_encoded_size) != Z_OK)
+            encoded_data = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
+            if (uncompress(encoded_data, &uncompressed_size_zlib,
+                compressed_data, compressed_encoded_size) != Z_OK)
             {
                ret = false;
                goto exit;
@@ -403,7 +417,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
                margin.  but, how could the margin be known without
                calling the function that takes the compressed frames as
                an input?  */
-            encoded_data = calloc(encoded_size, sizeof(uint8_t));
+            encoded_data = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
             uncompressed_size_big = ZSTD_decompress(encoded_data, encoded_size, compressed_data, compressed_encoded_size);
             if (ZSTD_isError(uncompressed_size_big))
                {
@@ -431,7 +445,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression, uint8_t
          break;
 #ifdef HAVE_STATESTREAM
       case REPLAY_CHECKPOINT2_ENCODING_STATESTREAM:
-         if(!bsv_movie_read_deduped_state(handle, encoded_data, encoded_size))
+         if (!bsv_movie_read_deduped_state(handle, encoded_data, encoded_size))
          {
             RARCH_ERR("[STATESTREAM] Couldn't load incremental checkpoint");
             ret = false;
@@ -510,7 +524,7 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
       case REPLAY_CHECKPOINT2_COMPRESSION_ZLIB:
       {
          uLongf zlib_compressed_encoded_size = compressBound(encoded_size);
-         compressed_encoded_data = calloc(zlib_compressed_encoded_size, sizeof(uint8_t));
+         compressed_encoded_data = (uint8_t*)calloc(zlib_compressed_encoded_size, sizeof(uint8_t));
          owns_compressed_encoded = true;
          if (compress2(compressed_encoded_data, &zlib_compressed_encoded_size, encoded_data, encoded_size, 6) != Z_OK)
          {
@@ -525,7 +539,7 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
       case REPLAY_CHECKPOINT2_COMPRESSION_ZSTD:
       {
          size_t compressed_encoded_size_big = ZSTD_compressBound(encoded_size);
-         compressed_encoded_data = calloc(compressed_encoded_size_big, sizeof(uint8_t));
+         compressed_encoded_data = (uint8_t*)calloc(compressed_encoded_size_big, sizeof(uint8_t));
          owns_compressed_encoded = true;
          compressed_encoded_size_big = ZSTD_compress(compressed_encoded_data, compressed_encoded_size_big, encoded_data, encoded_size, 3);
          if (ZSTD_isError(compressed_encoded_size_big))
@@ -681,7 +695,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior 
             return false;
          }
          size = swap_if_big64(size);
-         if(checkpoint_behavior != REPLAY_CPBEHAVIOR_DESERIALIZE)
+         if (checkpoint_behavior != REPLAY_CPBEHAVIOR_DESERIALIZE)
             intfstream_seek(handle->file, size, SEEK_CUR);
          else
          {
@@ -734,7 +748,8 @@ void bsv_movie_scan_to(bsv_movie_t *movie, int64_t pos)
 {
    if (!movie || movie->version == 0)
      return; /* Old movies don't store enough information to fixup the frame counters. */
-   while(intfstream_tell(movie->file) < pos && bsv_movie_read_next_events(movie, REPLAY_CPBEHAVIOR_UPDATE, false))
+   while (intfstream_tell(movie->file) < pos
+         && bsv_movie_read_next_events(movie, REPLAY_CPBEHAVIOR_UPDATE, false))
    {
       movie->frame_counter += 1;
       movie->frame_pos[movie->frame_counter & movie->frame_mask] = intfstream_tell(movie->file);
@@ -943,13 +958,14 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
 {
    int64_t check_limit = MIN(other_len, intfstream_tell(movie->file));
    intfstream_t *check_stream = intfstream_open_memory(other_movie, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, other_len);
-   bool ret = true;
-   int64_t check_cap = MAX(128 << 10, MAX(128*sizeof(bsv_key_data_t), 512*sizeof(bsv_input_data_t)));
-   uint8_t *buf1 = calloc(check_cap,1), *buf2 = calloc(check_cap,1);
-   size_t movie_pos = intfstream_tell(movie->file);
+   uint64_t size1, size2;
    uint8_t keycount1, keycount2, frametok1, frametok2;
    uint16_t btncount1, btncount2;
-   uint64_t size1, size2;
+   bool ret          = true;
+   int64_t check_cap = MAX(128 << 10, MAX(128*sizeof(bsv_key_data_t), 512*sizeof(bsv_input_data_t)));
+   uint8_t *buf1     = (uint8_t*)calloc(check_cap,1);
+   uint8_t *buf2     = (uint8_t*)calloc(check_cap,1);
+   size_t movie_pos  = intfstream_tell(movie->file);
    intfstream_rewind(movie->file);
    intfstream_read(movie->file, buf1, REPLAY_HEADER_LEN_BYTES);
    intfstream_read(check_stream, buf2, REPLAY_HEADER_LEN_BYTES);
@@ -983,7 +999,8 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
       }
       goto exit;
    }
-   while(intfstream_tell(movie->file) < check_limit && intfstream_tell(check_stream) < check_limit)
+   while (  intfstream_tell(movie->file) < check_limit
+         && intfstream_tell(check_stream) < check_limit)
    {
       if (intfstream_tell(movie->file) < 0 || intfstream_tell(check_stream) < 0)
       {
@@ -1246,7 +1263,8 @@ bool replay_set_serialized_data(void* buf)
 }
 
 
-void bsv_movie_poll(input_driver_state_t *input_st) {
+void bsv_movie_poll(input_driver_state_t *input_st)
+{
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    retro_keyboard_event_t *key_event = &runloop_st->key_event;
    bsv_movie_t *handle = input_st->bsv_movie_state_handle;
@@ -1261,8 +1279,8 @@ void bsv_movie_poll(input_driver_state_t *input_st) {
 #endif
          k = handle->key_events[i];
          input_keyboard_event(k.down, swap_if_big32(k.code),
-                              swap_if_big32(k.character), swap_if_big16(k.mod),
-                              RETRO_DEVICE_KEYBOARD);
+               swap_if_big32(k.character), swap_if_big16(k.mod),
+               RETRO_DEVICE_KEYBOARD);
       }
       /* Have to clear here so we don't double-apply key events */
       /* Zero out key events when playing back or recording */
@@ -1272,7 +1290,8 @@ void bsv_movie_poll(input_driver_state_t *input_st) {
 
 int16_t bsv_movie_read_state(input_driver_state_t *input_st,
                              unsigned port, unsigned device,
-                             unsigned idx, unsigned id) {
+                             unsigned idx, unsigned id)
+{
    int16_t bsv_result = 0;
    bsv_movie_t *movie = input_st->bsv_movie_state_handle;
    if (bsv_movie_handle_read_input_event(movie, port, device, idx, id, &bsv_result))
@@ -1288,26 +1307,26 @@ int16_t bsv_movie_read_state(input_driver_state_t *input_st,
 #ifdef HAVE_STATESTREAM
 int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t state_size, uint8_t *output, size_t output_capacity)
 {
-   static uint32_t skipped_blocks = 0;
-   static uint32_t memcmps = 0, hashes = 0;
-   static uint32_t reused_blocks = 0;
-   static uint32_t reused_superblocks = 0;
-   static uint32_t total_blocks = 0;
-   static uint32_t total_superblocks = 0;
-   static uint32_t total_checkpoints = 0;
-   static uint32_t total_kbs_input = 0;
-   static uint32_t total_kbs_written = 0;
-   static retro_perf_tick_t total_encode_micros = 0;
-   retro_perf_tick_t start = cpu_features_get_time_usec();
-   size_t block_byte_size = movie->blocks->object_size*4;
-   size_t superblock_size = movie->superblocks->object_size;
-   size_t superblock_byte_size = superblock_size*block_byte_size;
-   size_t superblock_count = state_size / superblock_byte_size + (state_size % superblock_byte_size != 0);
-   uint32_t *superblock_buf = calloc(superblock_size, sizeof(uint32_t));
-   uint8_t *padded_block = NULL;
-   intfstream_t *out_stream = intfstream_open_writable_memory(output, RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE, output_capacity);
    int64_t encoded_size;
    size_t superblock, block;
+   static uint32_t skipped_blocks     = 0;
+   static uint32_t memcmps            = 0, hashes = 0;
+   static uint32_t reused_blocks      = 0;
+   static uint32_t reused_superblocks = 0;
+   static uint32_t total_blocks       = 0;
+   static uint32_t total_superblocks  = 0;
+   static uint32_t total_checkpoints  = 0;
+   static uint32_t total_kbs_input    = 0;
+   static uint32_t total_kbs_written  = 0;
+   static retro_perf_tick_t total_encode_micros = 0;
+   retro_perf_tick_t start     = cpu_features_get_time_usec();
+   size_t block_byte_size      = movie->blocks->object_size*4;
+   size_t superblock_size      = movie->superblocks->object_size;
+   size_t superblock_byte_size = superblock_size*block_byte_size;
+   size_t superblock_count     = state_size / superblock_byte_size + (state_size % superblock_byte_size != 0);
+   uint32_t *superblock_buf    = (uint32_t*)calloc(superblock_size, sizeof(uint32_t));
+   uint8_t *padded_block       = NULL;
+   intfstream_t *out_stream    = intfstream_open_writable_memory(output, RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE, output_capacity);
    uint32_t i;
    bool can_compare_saves = movie->cur_save_valid && movie->last_save && movie->last_save_size >= state_size;
    if (movie->last_save_size < state_size)
@@ -1318,60 +1337,61 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    if (!movie->superblock_seq)
    {
       movie->cur_save_valid = false;
-      movie->superblock_seq = calloc(superblock_count, sizeof(uint32_t));
+      movie->superblock_seq = (uint32_t*)calloc(superblock_count, sizeof(uint32_t));
    }
    rmsgpack_write_int(out_stream, BSV_IFRAME_START_TOKEN);
    rmsgpack_write_int(out_stream, movie->frame_counter);
-   for(superblock = 0; superblock < superblock_count; superblock++)
+   for (superblock = 0; superblock < superblock_count; superblock++)
    {
       uint32s_insert_result_t found_block;
       total_superblocks++;
-      for(block = 0; block < superblock_size; block++)
+      for (block = 0; block < superblock_size; block++)
       {
          size_t block_start = superblock*superblock_byte_size+block*block_byte_size;
          size_t block_end = MIN(block_start + block_byte_size, state_size);
-         if(block_start > state_size)
+         if (block_start > state_size)
          {
             /* pad superblocks with zero blocks */
-            found_block.index = 0;
+            found_block.index  = 0;
             found_block.is_new = false;
          }
-         else if (can_compare_saves &&
-                  (++memcmps) &&
-                  memcmp(movie->last_save + block_start,
+         else if (   can_compare_saves
+                  && (++memcmps)
+                  && memcmp(movie->last_save + block_start,
                          state + block_start,
                          block_end-block_start) == 0)
          {
             skipped_blocks++;
             found_block.index = uint32s_index_get(movie->superblocks,
-                                                  movie->superblock_seq[superblock])[block];
+                  movie->superblock_seq[superblock])[block];
             found_block.is_new = false;
             /* bump usage count */
             uint32s_index_bump_count(movie->blocks, found_block.index);
          }
-         else if(block_start + block_byte_size > state_size)
+         else if (block_start + block_byte_size > state_size)
          {
-            if(!padded_block)
-               padded_block = calloc(block_byte_size, sizeof(uint8_t));
+            if (!padded_block)
+               padded_block = (uint8_t*)calloc(block_byte_size, sizeof(uint8_t));
             else
-               memset(padded_block+(state_size-block_start),
+               memset(padded_block + (state_size-block_start),
                      0,
                      block_byte_size-(state_size-block_start));
             memcpy(padded_block, state+block_start, state_size - block_start);
             found_block = uint32s_index_insert(movie->blocks,
-                                               (uint32_t*)padded_block,
-                                               movie->frame_counter);
+                  (uint32_t*)padded_block,
+                  movie->frame_counter);
             hashes++;
          }
          else
          {
             hashes++;
             found_block = uint32s_index_insert(movie->blocks,
-                                               (uint32_t*)(state+block_start),
-                                               movie->frame_counter);
+                  (uint32_t*)(state+block_start),
+                  movie->frame_counter);
          }
          total_blocks++;
-         if(found_block.is_new)
+
+         if (found_block.is_new)
          {
             /* write "here is a new block" and new block to file */
             rmsgpack_write_int(out_stream, BSV_IFRAME_NEW_BLOCK_TOKEN);
@@ -1383,13 +1403,13 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
          superblock_buf[block] = found_block.index;
       }
       found_block = uint32s_index_insert(movie->superblocks, superblock_buf, movie->frame_counter);
-      if(found_block.is_new)
+      if (found_block.is_new)
       {
          /* write "here is a new superblock" and new superblock to file */
          rmsgpack_write_int(out_stream, BSV_IFRAME_NEW_SUPERBLOCK_TOKEN);
          rmsgpack_write_int(out_stream, found_block.index);
          rmsgpack_write_array_header(out_stream, superblock_size);
-         for(i = 0; i < superblock_size; i++)
+         for (i = 0; i < superblock_size; i++)
             rmsgpack_write_int(out_stream, superblock_buf[i]);
       }
       else
@@ -1402,17 +1422,17 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
    /* write "here is the superblock seq" and superblock seq to file */
    rmsgpack_write_int(out_stream, BSV_IFRAME_SUPERBLOCK_SEQ_TOKEN);
    rmsgpack_write_array_header(out_stream, superblock_count);
-   for(i = 0; i < superblock_count; i++)
+   for (i = 0; i < superblock_count; i++)
        rmsgpack_write_int(out_stream, movie->superblock_seq[i]);
    free(superblock_buf);
-   if(padded_block)
+   if (padded_block)
      free(padded_block);
    movie->cur_save_valid = true;
    total_checkpoints++;
    total_encode_micros += cpu_features_get_time_usec() - start;
-   total_kbs_input += state_size/1024;
-   encoded_size = intfstream_tell(out_stream);
-   total_kbs_written += encoded_size/1024;
+   total_kbs_input     += state_size / 1024;
+   encoded_size         = intfstream_tell(out_stream);
+   total_kbs_written   += encoded_size/1024;
    RARCH_DBG("[STATESTREAM] Encode stats at checkpoint %d: %d blocks (%d reused, %d skipped [%d checks], %d distinct [%d hashes])\n", total_checkpoints, total_blocks, reused_blocks, skipped_blocks, memcmps, uint32s_index_count(movie->blocks), hashes);
    RARCH_DBG("[STATESTREAM] %d superblocks (%d reused, %d distinct); unencoded size (KB) %d, encoded size (KB) %d; net time (secs) %f\n", total_superblocks, reused_superblocks, uint32s_index_count(movie->superblocks), total_kbs_input, total_kbs_written, ((float)total_encode_micros) / (float)1000000.0);
    intfstream_close(out_stream);
@@ -1421,18 +1441,18 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state, size_t
 
 bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t encoded_size)
 {
-   static retro_perf_tick_t total_decode_micros = 0;
-   static retro_perf_tick_t total_decode_count = 0;
-   retro_perf_tick_t start = cpu_features_get_time_usec();
-   bool ret = false;
-   size_t state_size = movie->cur_save_size;
-   /*uint32_t frame_counter = 0;*/
-   struct rmsgpack_dom_value item;
-   struct rmsgpack_dom_reader_state *reader_state = rmsgpack_dom_reader_state_new();
-   size_t block_byte_size = movie->blocks->object_size*4;
-   size_t superblock_byte_size = movie->superblocks->object_size*block_byte_size;
-   intfstream_t *read_mem = intfstream_open_memory(encoded, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, encoded_size);
    size_t i;
+   struct rmsgpack_dom_value item;
+   static retro_perf_tick_t total_decode_micros = 0;
+   static retro_perf_tick_t total_decode_count  = 0;
+   retro_perf_tick_t start = cpu_features_get_time_usec();
+   bool ret                = false;
+   size_t state_size       = movie->cur_save_size;
+   struct rmsgpack_dom_reader_state *reader_state = rmsgpack_dom_reader_state_new();
+   size_t block_byte_size      = movie->blocks->object_size*4;
+   size_t superblock_byte_size = movie->superblocks->object_size*block_byte_size;
+   intfstream_t *read_mem      = intfstream_open_memory(encoded,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, encoded_size);
    if (state_size > movie->last_save_size && movie->superblock_seq)
    {
       free(movie->superblock_seq);
@@ -1440,153 +1460,158 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
    }
    total_decode_count++;
    rmsgpack_dom_read_with(read_mem, &item, reader_state);
-   if(item.type != RDT_INT && item.type != RDT_UINT)
+   if (item.type != RDT_INT && item.type != RDT_UINT)
    {
       RARCH_ERR("[STATESTREAM] start token type is wrong\n");
       goto exit;
    }
-   if(item.val.uint_ != BSV_IFRAME_START_TOKEN)
+   if (item.val.uint_ != BSV_IFRAME_START_TOKEN)
    {
       RARCH_ERR("[STATESTREAM] start token value is wrong\n");
       goto exit;
    }
    rmsgpack_dom_read_with(read_mem, &item, reader_state);
-   if(item.type != RDT_INT && item.type != RDT_UINT)
+   if (item.type != RDT_INT && item.type != RDT_UINT)
    {
       RARCH_ERR("[STATESTREAM] frame counter type is wrong\n");
       goto exit;
    }
    /*frame_counter = item.val.uint_;*/
-   while(rmsgpack_dom_read_with(read_mem, &item, reader_state) >= 0)
+   while (rmsgpack_dom_read_with(read_mem, &item, reader_state) >= 0)
    {
-      uint32_t index, *superblock;
       size_t len;
-      if(item.type != RDT_INT && item.type != RDT_UINT)
+      uint32_t index, *superblock;
+      if (item.type != RDT_INT && item.type != RDT_UINT)
       {
          RARCH_ERR("[STATESTREAM] state update chunk token type is wrong\n");
          goto exit;
       }
-      switch(item.val.uint_) {
-      case BSV_IFRAME_NEW_BLOCK_TOKEN:
-         rmsgpack_dom_read_with(read_mem, &item, reader_state);
-            if(item.type != RDT_INT && item.type != RDT_UINT)
-         {
-            RARCH_ERR("[STATESTREAM] new block index type is wrong\n");
-            goto exit;
-         }
-         index = item.val.uint_;
-         rmsgpack_dom_read_with(read_mem, &item, reader_state);
-         if(item.type != RDT_BINARY)
-         {
-            RARCH_ERR("[STATESTREAM] new block value type is wrong\n");
-            rmsgpack_dom_value_free(&item);
-            goto exit;
-         }
-         if(item.val.binary.len != block_byte_size)
-         {
-            RARCH_ERR("[STATESTREAM] new block binary length is wrong: %d vs %d\n", item.val.binary.len, block_byte_size);
-            rmsgpack_dom_value_free(&item);
-            goto exit;
-         }
-         if(!uint32s_index_insert_exact(movie->blocks, index, (uint32_t *)item.val.binary.buff, movie->frame_counter))
-         {
-            RARCH_ERR("[STATESTREAM] couldn't insert new block at right index %d\n", index);
-            rmsgpack_dom_value_free(&item);
-            goto exit;
-         }
-         /* do not free binary rmsgpack item since insert_exact takes over its allocation */
-         break;
-      case BSV_IFRAME_NEW_SUPERBLOCK_TOKEN:
-         rmsgpack_dom_read_with(read_mem, &item, reader_state);
-            if(item.type != RDT_INT && item.type != RDT_UINT)
-         {
-            RARCH_ERR("[STATESTREAM] new superblock index type is wrong\n");
-            goto exit;
-         }
-         index = item.val.uint_;
-         if(rmsgpack_dom_read_with(read_mem, &item, reader_state) < 0)
-         {
-            RARCH_ERR("[STATESTREAM] array read failed\n");
-            goto exit;
-         }
-         if(item.type != RDT_ARRAY)
-         {
-            RARCH_ERR("[STATESTREAM] new superblock contents type is wrong\n");
-            goto exit;
-         }
-         if(item.val.array.len != movie->superblocks->object_size)
-         {
-            RARCH_ERR("[STATESTREAM] new superblock contents length is wrong\n");
-            goto exit;
-         }
-         len = movie->superblocks->object_size;
-         superblock = calloc(len, sizeof(uint32_t));
-         for(i = 0; i < len; i++)
-         {
-            struct rmsgpack_dom_value inner_item = item.val.array.items[i];
-            /* assert(inner_item.type == RDT_INT || inner_item.type == RDT_UINT); */
-            superblock[i] = inner_item.val.uint_;
-         }
-         if(!uint32s_index_insert_exact(movie->superblocks, index, superblock, movie->frame_counter))
-         {
-            RARCH_ERR("[STATESTREAM] new superblock couldn't be inserted at right index\n");
-            rmsgpack_dom_value_free(&item);
-            free(superblock);
-            goto exit;
-         }
-         /* Do not free superblock since insert_exact takes over its allocation */
-         rmsgpack_dom_value_free(&item);
-         break;
-      case BSV_IFRAME_SUPERBLOCK_SEQ_TOKEN:
-         rmsgpack_dom_read_with(read_mem, &item, reader_state);
-         if(item.type != RDT_ARRAY)
-         {
-            RARCH_ERR("[STATESTREAM] superblock seq type is wrong\n");
-            goto exit;
-         }
-         len = item.val.array.len;
-         if (!movie->superblock_seq)
-            movie->superblock_seq = calloc(len,sizeof(uint32_t));
-         for(i = 0; i < len; i++)
-         {
-            struct rmsgpack_dom_value inner_item = item.val.array.items[i];
-            /* assert(inner_item.type == RDT_INT || inner_item.type == RDT_UINT); */
-            uint32_t superblock_idx = inner_item.val.uint_;
-            uint32_t *superblock;
-            size_t j;
-            /* if this superblock is the same as last time, no need to scan the blocks. */
-            if (movie->cur_save_valid && movie->cur_save && superblock_idx == movie->superblock_seq[i])
+      switch(item.val.uint_)
+      {
+         case BSV_IFRAME_NEW_BLOCK_TOKEN:
+            rmsgpack_dom_read_with(read_mem, &item, reader_state);
+            if (item.type != RDT_INT && item.type != RDT_UINT)
             {
-               superblock = uint32s_index_get(movie->superblocks, movie->superblock_seq[i]);
-               uint32s_index_bump_count(movie->superblocks, movie->superblock_seq[i]);
-               /* We do need to increment all the involved block counts though */
+               RARCH_ERR("[STATESTREAM] new block index type is wrong\n");
+               goto exit;
+            }
+            index = item.val.uint_;
+            rmsgpack_dom_read_with(read_mem, &item, reader_state);
+            if (item.type != RDT_BINARY)
+            {
+               RARCH_ERR("[STATESTREAM] new block value type is wrong\n");
+               rmsgpack_dom_value_free(&item);
+               goto exit;
+            }
+            if (item.val.binary.len != block_byte_size)
+            {
+               RARCH_ERR("[STATESTREAM] new block binary length is wrong: %d vs %d\n",
+                     item.val.binary.len, block_byte_size);
+               rmsgpack_dom_value_free(&item);
+               goto exit;
+            }
+            if (!uint32s_index_insert_exact(movie->blocks, index,
+                     (uint32_t *)item.val.binary.buff, movie->frame_counter))
+            {
+               RARCH_ERR("[STATESTREAM] couldn't insert new block at right index %d\n", index);
+               rmsgpack_dom_value_free(&item);
+               goto exit;
+            }
+            /* do not free binary rmsgpack item since insert_exact takes over its allocation */
+            break;
+         case BSV_IFRAME_NEW_SUPERBLOCK_TOKEN:
+            rmsgpack_dom_read_with(read_mem, &item, reader_state);
+            if (item.type != RDT_INT && item.type != RDT_UINT)
+            {
+               RARCH_ERR("[STATESTREAM] new superblock index type is wrong\n");
+               goto exit;
+            }
+            index = item.val.uint_;
+            if (rmsgpack_dom_read_with(read_mem, &item, reader_state) < 0)
+            {
+               RARCH_ERR("[STATESTREAM] array read failed\n");
+               goto exit;
+            }
+            if (item.type != RDT_ARRAY)
+            {
+               RARCH_ERR("[STATESTREAM] new superblock contents type is wrong\n");
+               goto exit;
+            }
+            if (item.val.array.len != movie->superblocks->object_size)
+            {
+               RARCH_ERR("[STATESTREAM] new superblock contents length is wrong\n");
+               goto exit;
+            }
+            len        = movie->superblocks->object_size;
+            superblock = (uint32_t*)calloc(len, sizeof(uint32_t));
+
+            for (i = 0; i < len; i++)
+            {
+               struct rmsgpack_dom_value inner_item = item.val.array.items[i];
+               /* assert(inner_item.type == RDT_INT || inner_item.type == RDT_UINT); */
+               superblock[i] = inner_item.val.uint_;
+            }
+            if (!uint32s_index_insert_exact(movie->superblocks, index, superblock, movie->frame_counter))
+            {
+               RARCH_ERR("[STATESTREAM] new superblock couldn't be inserted at right index\n");
+               rmsgpack_dom_value_free(&item);
+               free(superblock);
+               goto exit;
+            }
+            /* Do not free superblock since insert_exact takes over its allocation */
+            rmsgpack_dom_value_free(&item);
+            break;
+         case BSV_IFRAME_SUPERBLOCK_SEQ_TOKEN:
+            rmsgpack_dom_read_with(read_mem, &item, reader_state);
+            if (item.type != RDT_ARRAY)
+            {
+               RARCH_ERR("[STATESTREAM] superblock seq type is wrong\n");
+               goto exit;
+            }
+            len = item.val.array.len;
+            if (!movie->superblock_seq)
+               movie->superblock_seq = (uint32_t*)calloc(len, sizeof(uint32_t));
+            for (i = 0; i < len; i++)
+            {
+               size_t j;
+               uint32_t *superblock;
+               struct rmsgpack_dom_value inner_item = item.val.array.items[i];
+               /* assert(inner_item.type == RDT_INT || inner_item.type == RDT_UINT); */
+               uint32_t superblock_idx = inner_item.val.uint_;
+               /* if this superblock is the same as last time, no need to scan the blocks. */
+               if (movie->cur_save_valid && movie->cur_save && superblock_idx == movie->superblock_seq[i])
+               {
+                  superblock = uint32s_index_get(movie->superblocks, movie->superblock_seq[i]);
+                  uint32s_index_bump_count(movie->superblocks, movie->superblock_seq[i]);
+                  /* We do need to increment all the involved block counts though */
+                  for (j = 0; j < movie->superblocks->object_size; j++)
+                     uint32s_index_bump_count(movie->blocks, superblock[j]);
+                  continue;
+               }
+               movie->superblock_seq[i] = superblock_idx;
+               superblock = uint32s_index_get(movie->superblocks, superblock_idx);
+               uint32s_index_bump_count(movie->superblocks, superblock_idx);
                for (j = 0; j < movie->superblocks->object_size; j++)
-                  uint32s_index_bump_count(movie->blocks, superblock[j]);
-               continue;
+               {
+                  uint32_t block_idx = superblock[j];
+                  size_t block_start = MIN(i*superblock_byte_size+j*block_byte_size, state_size);
+                  size_t block_end = MIN(block_start+block_byte_size, state_size);
+                  uint8_t *block;
+                  /* This (==) can only happen in the last superblock, if it was padded with extra blocks. */
+                  if (block_end <= block_start)
+                     break;
+                  block = (uint8_t *)uint32s_index_get(movie->blocks, block_idx);
+                  uint32s_index_bump_count(movie->blocks, block_idx);
+                  memcpy(movie->cur_save+block_start, (uint8_t*)block, block_end-block_start);
+               }
             }
-            movie->superblock_seq[i] = superblock_idx;
-            superblock = uint32s_index_get(movie->superblocks, superblock_idx);
-            uint32s_index_bump_count(movie->superblocks, superblock_idx);
-            for(j = 0; j < movie->superblocks->object_size; j++)
-            {
-               uint32_t block_idx = superblock[j];
-               size_t block_start = MIN(i*superblock_byte_size+j*block_byte_size, state_size);
-               size_t block_end = MIN(block_start+block_byte_size, state_size);
-               uint8_t *block;
-               /* This (==) can only happen in the last superblock, if it was padded with extra blocks. */
-               if(block_end <= block_start) { break; }
-               block = (uint8_t *)uint32s_index_get(movie->blocks, block_idx);
-               uint32s_index_bump_count(movie->blocks, block_idx);
-               memcpy(movie->cur_save+block_start, (uint8_t*)block, block_end-block_start);
-            }
-         }
-         rmsgpack_dom_value_free(&item);
-         ret = true;
-         goto exit;
-      default:
-         RARCH_ERR("[STATESTREAM] state update chunk token value is invalid: %d @ %x\n", item.val.uint_, intfstream_tell(read_mem));
-         goto exit;
-     }
+            rmsgpack_dom_value_free(&item);
+            ret = true;
+            goto exit;
+         default:
+            RARCH_ERR("[STATESTREAM] state update chunk token value is invalid: %d @ %x\n", item.val.uint_, intfstream_tell(read_mem));
+            goto exit;
+      }
    }
 exit:
    uint32s_index_commit(movie->blocks);
@@ -1594,7 +1619,7 @@ exit:
    /* uint32s_index_commit(movie->superblocks); */
    rmsgpack_dom_reader_state_free(reader_state);
    intfstream_close(read_mem);
-   if(!ret)
+   if (!ret)
    {
       RARCH_ERR("[STATESTREAM] made it to end without superblock seq\n");
       return false;
@@ -1620,7 +1645,7 @@ bool bsv_movie_peek_frame_info(bsv_movie_t *movie, uint8_t *token, uint64_t *len
    int64_t pos;
    bool ret = false;
    if (!movie || movie->version == 0)
-      return ret;
+      return false;
    pos = intfstream_tell(movie->file);
    if (movie->version > 1 &&
          intfstream_seek(movie->file, sizeof(uint32_t), SEEK_CUR) < 0)
@@ -1670,28 +1695,31 @@ bool bsv_movie_peek_frame_info(bsv_movie_t *movie, uint8_t *token, uint64_t *len
    }
    ret = true;
  end:
-   if (ret && token)
-      *token = tok;
-   if (ret && len)
-      *len = intfstream_tell(movie->file) - pos;
+   if (ret)
+   {
+      if (token)
+         *token = tok;
+      if (len)
+         *len = intfstream_tell(movie->file) - pos;
+   }
    if (intfstream_seek(movie->file, pos, SEEK_SET) < 0)
-      ret = false;
+      return false;
    return ret;
 }
 bool movie_find_checkpoint_before(bsv_movie_t *movie, int64_t frame, bool consider_paused,
       int64_t *cp_pos_out, int64_t *cp_frame_out)
 {
+   uint8_t tok;
+   uint64_t frame_len;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    bool paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED) || consider_paused;
-   /* skip to prev would prefer to go back at least 30 frames if
-      rewinding when not paused, but won't skip over more than one
-      checkpoint while going backwards. */
+   /* Skip to prev would prefer to go back at least 30 frames
+      if rewinding when not paused, but won't skip over more
+      than one checkpoint while going backwards. */
    const int64_t prev_skip_min_distance = 30;
    int64_t target_frame = frame, cur_frame = 0;
-   int64_t initial_pos, cp_pos=-1, cp_frame=-1;
+   int64_t initial_pos, cp_pos = -1, cp_frame = -1;
    int64_t maybe_last_frame = -1, maybe_last_pos = -1;
-   uint64_t frame_len;
-   uint8_t tok;
    if (!movie || movie->version == 0)
       return false;
    initial_pos = intfstream_tell(movie->file);
@@ -1706,17 +1734,17 @@ bool movie_find_checkpoint_before(bsv_movie_t *movie, int64_t frame, bool consid
       {
          if (target_frame - cur_frame >= prev_skip_min_distance || paused)
          {
-            cp_pos = intfstream_tell(movie->file);
+            cp_pos   = intfstream_tell(movie->file);
             cp_frame = cur_frame;
          }
          else
          {
             if (maybe_last_pos > 0)
             {
-               cp_pos = maybe_last_pos;
+               cp_pos   = maybe_last_pos;
                cp_frame = maybe_last_frame;
             }
-            maybe_last_pos = intfstream_tell(movie->file);
+            maybe_last_pos   = intfstream_tell(movie->file);
             maybe_last_frame = cur_frame;
          }
       }
@@ -1778,9 +1806,9 @@ bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st)
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    bool paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
    /* Can't skip forward in an unpaused recording replay. */
-   if (!input_st->bsv_movie_state_handle ||
-         (!input_st->bsv_movie_state_handle->playback && !paused) ||
-         input_st->bsv_movie_state_handle->version == 0)
+   if (      !input_st->bsv_movie_state_handle
+         || (!input_st->bsv_movie_state_handle->playback && !paused)
+         || input_st->bsv_movie_state_handle->version == 0)
       return false;
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
@@ -1798,10 +1826,10 @@ bool bsv_movie_skip_to_next_checkpoint_impl(bsv_movie_t *movie)
       return false;
    initial_pos = intfstream_tell(movie->file);
    /* scan forward until peek shows a checkpoint or checkpoint2 */
-   while (bsv_movie_peek_frame_info(movie, &tok, &frame_len) &&
-         (tok != REPLAY_TOKEN_INVALID &&
-            tok != REPLAY_TOKEN_CHECKPOINT_FRAME &&
-            tok != REPLAY_TOKEN_CHECKPOINT2_FRAME))
+   while (bsv_movie_peek_frame_info(movie, &tok, &frame_len)
+         && (     tok != REPLAY_TOKEN_INVALID
+               && tok != REPLAY_TOKEN_CHECKPOINT_FRAME
+               && tok != REPLAY_TOKEN_CHECKPOINT2_FRAME))
       intfstream_seek(movie->file, frame_len, SEEK_CUR);
    if (tok == REPLAY_TOKEN_INVALID)
       return false;
