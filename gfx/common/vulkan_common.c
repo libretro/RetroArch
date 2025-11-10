@@ -1940,6 +1940,23 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    settings_t                    *settings = config_get_ptr();
    bool vsync                              = settings->bools.video_vsync;
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
+   bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   HMONITOR fse_monitor;
+   VkSurfaceFullScreenExclusiveWin32InfoEXT fs_win32 = {
+       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
+       NULL,
+       NULL
+   };
+   /* Allow or disallow exclusive fullscreen based on user setting. */
+   VkSurfaceFullScreenExclusiveInfoEXT fs_info       = {
+       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
+       NULL,
+       video_windowed_fullscreen
+           ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
+           : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
+   };
+#endif
 
    format.format                           = VK_FORMAT_UNDEFINED;
    format.colorSpace                       = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
@@ -2289,25 +2306,12 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    /* Tie exclusive mode to the window's monitor. */
-   HMONITOR fse_monitor = MonitorFromWindow(GetActiveWindow(), MONITOR_DEFAULTTONEAREST);
-
-   VkSurfaceFullScreenExclusiveWin32InfoEXT fs_win32 = {
-       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
-       NULL,
-       fse_monitor
-   };
-
+   fse_monitor       = MonitorFromWindow(GetActiveWindow(), MONITOR_DEFAULTTONEAREST);
+   fs_win32.hmonitor = fse_monitor;
    /* Allow or disallow exclusive fullscreen based on user setting. */
-   VkSurfaceFullScreenExclusiveInfoEXT fs_info = {
-       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
-       &fs_win32,
-       settings->bools.video_windowed_fullscreen
-           ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
-           : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
-   };
-
+   fs_info.pNext     = &fs_win32;
    /* Attach fullscreen info to swapchain creation struct. */
-   info.pNext = &fs_info;
+   info.pNext        = &fs_info;
 #endif
 
    if (vkCreateSwapchainKHR(vk->context.device,
