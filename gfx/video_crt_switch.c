@@ -179,12 +179,14 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch,
 
    if (!p_switch->sr2_active)
    {
+      void (*logp)(const char *, ...) = &RARCH_LOG;
+      void (*dbgp)(const char *, ...) = &RARCH_DBG;
+      void (*errp)(const char *, ...) = &RARCH_ERR;
       sr_init();
-#if (__STDC_VERSION__ >= 199409L) /* no logs for C98 or less */
-      sr_set_log_callback_info(RARCH_LOG);
-      sr_set_log_callback_debug(RARCH_DBG);
-      sr_set_log_callback_error(RARCH_ERR);
-#endif
+      
+      sr_set_log_callback_info(*(void **)(&logp));
+      sr_set_log_callback_debug(*(void **)(&dbgp));
+      sr_set_log_callback_error(*(void **)(&errp));
 
       switch (crt_mode)
       {

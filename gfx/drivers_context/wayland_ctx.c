@@ -155,8 +155,7 @@ static const toplevel_listener_t toplevel_listener = {
    },
 };
 
-static const toplevel_listener_t xdg_toplevel_listener = {
-};
+static const toplevel_listener_t xdg_toplevel_listener = {0};
 
 #ifdef HAVE_EGL
 #define WL_EGL_ATTRIBS_BASE \

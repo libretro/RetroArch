@@ -290,8 +290,8 @@ static const char *test_joypad_name(unsigned pad)
 
 static void test_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   int vid = 0;
-   int pid = 0;
+   unsigned int vid = 0;
+   unsigned int pid = 0;
 
    sscanf(strstr(test_joypads[autoconf_pad].name, "(") + 1, "%04x:%04x", &vid, &pid);
    RARCH_DBG("[Test input] Autoconf vid/pid %x:%x.\n", vid, pid);

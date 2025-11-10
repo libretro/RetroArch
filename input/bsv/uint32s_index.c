@@ -17,7 +17,10 @@ uint32s_index_t *uint32s_index_new(size_t object_size, uint8_t commit_interval, 
    uint32s_index_t *index = malloc(sizeof(uint32s_index_t));
    index->object_size = object_size;
    index->index = NULL;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtautological-compare"
    RHMAP_FIT(index->index, HASHMAP_CAP);
+#pragma GCC diagnostic pop
    index->objects = NULL;
    index->counts = NULL;
    index->hashes = NULL;
@@ -270,10 +273,9 @@ uint32_t *uint32s_index_get(uint32s_index_t *index, uint32_t which)
 void uint32s_index_pop(uint32s_index_t *index)
 {
    uint32_t idx = RBUF_LEN(index->objects)-1;
-   uint32_t *object = RBUF_POP(index->objects);
-   size_t size_bytes = index->object_size * sizeof(uint32_t);
    uint32_t hash = index->hashes[idx];
    struct uint32s_bucket *bucket = RHMAP_PTR(index->index, hash);
+   RBUF_RESIZE(index->objects, idx);
    RBUF_RESIZE(index->counts, idx);
    RBUF_RESIZE(index->hashes, idx);
    uint32s_bucket_remove(bucket, idx);

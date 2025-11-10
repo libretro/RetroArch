@@ -12,12 +12,14 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <spa/param/audio/format-utils.h>
 #include <spa/utils/ringbuffer.h>
 #include <spa/utils/result.h>
 #include <spa/param/props.h>
 #include <pipewire/pipewire.h>
+#pragma GCC diagnostic pop
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
@@ -132,12 +134,16 @@ static void pwire_capture_process_cb(void *data)
    if (!(b = pw_stream_dequeue_buffer(mic->stream)))
    {
       RARCH_ERR("[Microphone] [PipeWire] Out of buffers: %s.\n", strerror(errno));
-      return pw_thread_loop_signal(mic->pw->thread_loop, false);
+      pw_thread_loop_signal(mic->pw->thread_loop, false);
+      return;
    }
 
    buf = b->buffer;
    if ((p = buf->datas[0].data) == NULL)
-      return pw_thread_loop_signal(mic->pw->thread_loop, false);
+   {
+      pw_thread_loop_signal(mic->pw->thread_loop, false);
+      return;
+   }
 
    offs    = MIN(buf->datas[0].chunk->offset, buf->datas[0].maxsize);
    n_bytes = MIN(buf->datas[0].chunk->size, buf->datas[0].maxsize - offs);
@@ -216,8 +222,10 @@ static void *pwire_microphone_init(void)
    struct pw_properties     *props = NULL;
    const char               *error = NULL;
    pipewire_core_t             *pw = NULL;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
    struct spa_pod_builder        b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
-
+#pragma GCC diagnostic pop
    if (!pipewire_core_init(&pw, "microphone_driver", &pwire_mic_registry_events))
       goto error;
 
@@ -336,7 +344,10 @@ static void *pwire_microphone_open_mic(void *driver_context,
    const struct spa_pod *params[1];
    struct pw_properties *props = NULL;
    const char           *error = NULL;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
    struct spa_pod_builder    b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
+#pragma GCC diagnostic pop
    pipewire_microphone_t   *mic = NULL;
 
    if (!driver_context || (mic = calloc(1, sizeof(pipewire_microphone_t))) == NULL)
@@ -494,12 +505,16 @@ static void pwire_playback_process_cb(void *data)
    if ((b = pw_stream_dequeue_buffer(audio->stream)) == NULL)
    {
       RARCH_WARN("[PipeWire] Out of buffers: %s.\n", strerror(errno));
-      return pw_thread_loop_signal(audio->pw->thread_loop, false);
+      pw_thread_loop_signal(audio->pw->thread_loop, false);
+      return;
    }
 
    buf = b->buffer;
    if ((p = buf->datas[0].data) == NULL)
-      return pw_thread_loop_signal(audio->pw->thread_loop, false);
+   {
+      pw_thread_loop_signal(audio->pw->thread_loop, false);
+      return;
+   }
 
    /* calculate the total no of bytes to read data from buffer */
    n_bytes = buf->datas[0].maxsize;
@@ -596,7 +611,10 @@ static void *pwire_init(const char *device, unsigned rate,
    struct pw_properties     *props = NULL;
    const char               *error = NULL;
    pipewire_audio_t         *audio = (pipewire_audio_t*)calloc(1, sizeof(*audio));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
    struct spa_pod_builder        b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
+#pragma GCC diagnostic pop
 
    if (!audio)
       return NULL;
