@@ -54,18 +54,13 @@ static int rmsgpack_dom_reader_state_push(
 {
    if ((s->i + 1) == s->capacity)
    {
-      if (s->growable)
-      {
-         s->capacity *= 2;
-         s->stack = (struct rmsgpack_dom_value **)realloc(s->stack, s->capacity * sizeof(struct rmsgpack_dom_value *));
-         if (!s->stack)
-         {
-            printf("[RMSGPACK_DOM] failed to reallocate stack to %ld\n",
-                  s->capacity*sizeof(struct rmsgpack_dom_value *));
-            return -1;
-         }
-      }
-      else
+      if (!s->growable)
+         return -1;
+
+      s->capacity *= 2;
+      s->stack     = (struct rmsgpack_dom_value **)
+         realloc(s->stack, s->capacity * sizeof(struct rmsgpack_dom_value *));
+      if (!s->stack)
          return -1;
    }
    s->i++;
