@@ -319,7 +319,7 @@ static bool gl_glsl_load_binary_shader(GLuint shader, char *save_path)
       shader_size=ftell (shader_binary);
       fseek(shader_binary, 0, SEEK_SET);
 
-      shader_data = malloc(shader_size);
+      shader_data = (char*)malloc(shader_size);
       fread(shader_data, shader_size, 1, shader_binary);
       fclose(shader_binary);
 
@@ -345,7 +345,7 @@ static void gl_glsl_dump_shader(GLuint shader, char *save_path)
    glGetShaderiv(shader, 0x8b89, &length);
 
    bufferSize   = length;
-   shaderBinary = malloc(bufferSize);
+   shaderBinary = (void*)malloc(bufferSize);
 
    memset(shaderBinary, 0, bufferSize);
 

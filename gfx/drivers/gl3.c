@@ -3409,7 +3409,7 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
        *
        * Keep codepath similar for GLES and desktop GL.
        */
-      gl->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
+      gl->readback_buffer_screenshot = (uint32_t*)malloc(num_pixels * sizeof(uint32_t));
 
       if (!gl->readback_buffer_screenshot)
          goto error;

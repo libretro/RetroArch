@@ -110,7 +110,7 @@ struct dat_converter_bt_node_t
 static dat_converter_list_t* dat_converter_list_create(
       dat_converter_list_enum type)
 {
-   dat_converter_list_t* list = malloc(sizeof(*list));
+   dat_converter_list_t* list = (dat_converter_list_t*)malloc(sizeof(*list));
 
    list->type                 = type;
    list->count                = 0;

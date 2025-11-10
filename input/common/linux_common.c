@@ -196,7 +196,8 @@ static void linux_poll_illuminance_sensor(void *data)
 linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 {
    RDIR *device = NULL;
-   linux_illuminance_sensor_t *sensor = malloc(sizeof(*sensor));
+   linux_illuminance_sensor_t *sensor = (linux_illuminance_sensor_t *)
+      malloc(sizeof(*sensor));
 
    if (!sensor)
       goto error;
