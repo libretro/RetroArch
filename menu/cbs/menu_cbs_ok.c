@@ -4077,7 +4077,7 @@ static void menu_input_st_string_cb_override_file_save_as(
       const char *label               = menu_st->input_dialog_kb_label;
       const char *msg_str             = NULL;
       int ret                         = false;
-      uint8_t msg_cat                 = MESSAGE_QUEUE_CATEGORY_INFO;
+      enum message_queue_category msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
       if (!string_is_empty(label))
          setting = menu_setting_find(label);

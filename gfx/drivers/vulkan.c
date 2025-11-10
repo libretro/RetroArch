@@ -1769,7 +1769,7 @@ static void vulkan_font_render_message(vk_t *vk,
    for (;;)
    {
       size_t _msg_len   = strlen(msg);
-      const char *delim = memchr(msg, '\n', _msg_len + 1);
+      const char *delim = (const char*)memchr(msg, '\n', _msg_len + 1);
       size_t msg_len    = delim ? (size_t)(delim - msg) : _msg_len;
 
       /* Draw the line */

@@ -198,7 +198,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
          else
             affinity -= 10;
       }
-            
+
       /* Store the selected alternative as last digit of affinity. */
       if (affinity > 0)
          affinity += i;
@@ -436,15 +436,19 @@ static bool input_autoconfigure_scan_config_files_internal(
  * - if there is no reservation, do not change anything
  *      (not even the assignment to first free player port)
  */
-static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
-      int product_id, const char *device_name, const char *device_display_name)
+static void reallocate_port_if_needed(
+      unsigned detected_port,
+      unsigned int vendor_id,
+      unsigned int product_id,
+      const char *device_name,
+      const char *device_display_name)
 {
    int player;
    char settings_value[NAME_MAX_LENGTH];
    char settings_value_device_name[NAME_MAX_LENGTH];
    unsigned prev_assigned_player_slots[MAX_USERS] = {0};
-   int  settings_value_vendor_id;
-   int  settings_value_product_id;
+   unsigned int settings_value_vendor_id;
+   unsigned int settings_value_product_id;
    unsigned first_free_player_slot = MAX_USERS + 1;
    bool device_has_reserved_slot   = false;
    bool no_reservation_at_all      = true;

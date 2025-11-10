@@ -2056,7 +2056,7 @@ void command_event_save_current_config(enum override_type type)
          {
             size_t _len;
             char msg[256];
-            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
+            enum message_queue_category msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             msg[0] = '\0';
 
@@ -2094,7 +2094,7 @@ void command_event_save_current_config(enum override_type type)
             size_t _len;
             char msg[256];
             int8_t ret      = config_save_overrides(type, &runloop_st->system, false, NULL);
-            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
+            enum message_queue_category msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             switch (ret)
             {
@@ -2161,7 +2161,7 @@ void command_event_remove_current_config(enum override_type type)
          {
             size_t _len;
             char msg[256];
-            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
+            enum message_queue_category msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             if (config_save_overrides(type, &runloop_st->system, true, NULL))
             {

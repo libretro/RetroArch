@@ -503,14 +503,14 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
    {
       case REPLAY_CHECKPOINT2_ENCODING_RAW:
          encoded_size = serial_info.size;
-         encoded_data = serial_info.data;
+         encoded_data = (uint8_t*)serial_info.data;
          break;
 #ifdef HAVE_STATESTREAM
       case REPLAY_CHECKPOINT2_ENCODING_STATESTREAM:
          encoded_size = serial_info.size + serial_info.size / 2;
          encoded_data = (uint8_t*)malloc(encoded_size);
          owns_encoded = true;
-         encoded_size = bsv_movie_write_deduped_state(handle, serial_info.data,
+         encoded_size = bsv_movie_write_deduped_state(handle, (uint8_t*)serial_info.data,
                serial_info.size, encoded_data, encoded_size);
          break;
 #endif
@@ -1126,7 +1126,7 @@ bool replay_check_same_timeline(bsv_movie_t *movie, uint8_t *other_movie, int64_
 
 bool replay_set_serialized_data(void *buf)
 {
-   uint8_t *buffer                = buf;
+   uint8_t *buffer                = (uint8_t*)buf;
    input_driver_state_t *input_st = input_state_get_ptr();
    bsv_movie_t *handle            = input_st->bsv_movie_state_handle;
    bool playback                  = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)  ? true : false;

@@ -54,11 +54,11 @@ static int rmsgpack_dom_reader_state_push(
 {
    if ((s->i + 1) == s->capacity)
    {
-      if(s->growable)
+      if (s->growable)
       {
          s->capacity *= 2;
-         s->stack = realloc(s->stack, s->capacity * sizeof(struct rmsgpack_dom_value *));
-         if(!s->stack)
+         s->stack = (struct rmsgpack_dom_value **)realloc(s->stack, s->capacity * sizeof(struct rmsgpack_dom_value *));
+         if (!s->stack)
          {
             printf("[RMSGPACK_DOM] failed to reallocate stack to %ld\n",
                   s->capacity*sizeof(struct rmsgpack_dom_value *));
@@ -432,13 +432,15 @@ int rmsgpack_dom_read_with(intfstream_t *fd, struct rmsgpack_dom_value *out, str
 
 struct rmsgpack_dom_reader_state *rmsgpack_dom_reader_state_new(void)
 {
-   struct rmsgpack_dom_reader_state *s = calloc(1, sizeof(struct rmsgpack_dom_reader_state));
-   s->i = 0;
+   struct rmsgpack_dom_reader_state *s = (struct rmsgpack_dom_reader_state *)calloc(1,
+         sizeof(struct rmsgpack_dom_reader_state));
+   s->i        = 0;
    s->capacity = 1024;
    s->growable = true;
-   s->stack = calloc(1024, sizeof(struct rmsgpack_dom_value *));
+   s->stack    = (struct rmsgpack_dom_value **)calloc(1024, sizeof(struct rmsgpack_dom_value *));
    return s;
 }
+
 void rmsgpack_dom_reader_state_free(struct rmsgpack_dom_reader_state *state)
 {
    free(state->stack);
@@ -448,10 +450,10 @@ void rmsgpack_dom_reader_state_free(struct rmsgpack_dom_reader_state *state)
 int rmsgpack_dom_read(intfstream_t *fd, struct rmsgpack_dom_value *out)
 {
    struct rmsgpack_dom_reader_state s;
-   s.i = 0;
+   s.i        = 0;
    s.growable = false;
    s.capacity = MAX_DEPTH;
-   s.stack = alloca(MAX_DEPTH*sizeof(struct rmsgpack_dom_value *));
+   s.stack    = alloca(MAX_DEPTH*sizeof(struct rmsgpack_dom_value *));
    return rmsgpack_dom_read_with(fd, out, &s);
 }
 
