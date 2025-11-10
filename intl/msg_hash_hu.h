@@ -14252,7 +14252,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
-   "Konfiiguráció mentve ide"
+   "Konfiguráció mentve ide"
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
