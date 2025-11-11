@@ -132,12 +132,16 @@ static void pwire_capture_process_cb(void *data)
    if (!(b = pw_stream_dequeue_buffer(mic->stream)))
    {
       RARCH_ERR("[Microphone] [PipeWire] Out of buffers: %s.\n", strerror(errno));
-      return pw_thread_loop_signal(mic->pw->thread_loop, false);
+      pw_thread_loop_signal(mic->pw->thread_loop, false);
+      return;
    }
 
    buf = b->buffer;
    if ((p = buf->datas[0].data) == NULL)
-      return pw_thread_loop_signal(mic->pw->thread_loop, false);
+   {
+      pw_thread_loop_signal(mic->pw->thread_loop, false);
+      return;
+   }
 
    offs    = MIN(buf->datas[0].chunk->offset, buf->datas[0].maxsize);
    n_bytes = MIN(buf->datas[0].chunk->size, buf->datas[0].maxsize - offs);
@@ -494,12 +498,16 @@ static void pwire_playback_process_cb(void *data)
    if ((b = pw_stream_dequeue_buffer(audio->stream)) == NULL)
    {
       RARCH_WARN("[PipeWire] Out of buffers: %s.\n", strerror(errno));
-      return pw_thread_loop_signal(audio->pw->thread_loop, false);
+      pw_thread_loop_signal(audio->pw->thread_loop, false);
+      return;
    }
 
    buf = b->buffer;
    if ((p = buf->datas[0].data) == NULL)
-      return pw_thread_loop_signal(audio->pw->thread_loop, false);
+   {
+      pw_thread_loop_signal(audio->pw->thread_loop, false);
+      return;
+   }
 
    /* calculate the total no of bytes to read data from buffer */
    n_bytes = buf->datas[0].maxsize;

@@ -313,9 +313,10 @@ static void sdl_microphone_set_nonblock_state(void *driver_context, bool state)
       sdl->nonblock = state;
 }
 
-static int sdl_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
+static int sdl_microphone_read(void *driver_context, void *mic_context, void *sv, size_t len)
 {
-   int ret = 0;
+   int ret    = 0;
+   uint8_t *s = (uint8_t*)sv;
    sdl_microphone_t        *sdl = (sdl_microphone_t*)driver_context;
    sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
 
