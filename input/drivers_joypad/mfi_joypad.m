@@ -238,6 +238,20 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
         gp.buttonOptions.preferredSystemGestureState = GCSystemGestureStateDisabled;
         gp.buttonMenu.preferredSystemGestureState    = GCSystemGestureStateDisabled;
         gp.buttonHome.preferredSystemGestureState    = GCSystemGestureStateDisabled;
+
+        GCPhysicalInputProfile *profile = controller.physicalInputProfile;
+        GCControllerButtonInput *homeBtn = (GCControllerButtonInput *)profile.buttons[GCInputButtonHome];
+        if (homeBtn) {
+            homeBtn.preferredSystemGestureState = GCSystemGestureStateDisabled;
+        }
+        GCControllerButtonInput *menuBtn = (GCControllerButtonInput *)profile.buttons[GCInputButtonMenu];
+        if (menuBtn) {
+            menuBtn.preferredSystemGestureState = GCSystemGestureStateDisabled;
+        }
+        GCControllerButtonInput *optionsBtn = (GCControllerButtonInput *)profile.buttons[GCInputButtonOptions];
+        if (optionsBtn) {
+            optionsBtn.preferredSystemGestureState = GCSystemGestureStateDisabled;
+        }
     }
 #endif
 
