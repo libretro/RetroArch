@@ -340,6 +340,19 @@ typedef struct xmb_handle
    xmb_node_t netplay_tab_node;
    menu_input_pointer_t pointer;
 
+   /* Touch drag state for direction locking */
+   enum
+   {
+      XMB_DRAG_NONE,
+      XMB_DRAG_DETECTING,
+      XMB_DRAG_HORIZONTAL,
+      XMB_DRAG_VERTICAL
+   } drag_mode;
+   float drag_start_x;
+   float drag_start_y;
+   float categories_drag_start_pos;
+   size_t drag_start_selection;
+
    font_data_t *font;
    font_data_t *font2;
    video_font_raster_block_t raster_block;
@@ -517,6 +530,7 @@ static int xmb_menu_entry_action(void *userdata,
       menu_entry_t *entry, size_t i, enum menu_action action);
 static bool xmb_load_image(void *userdata, void *data,
       enum menu_image_type type);
+static void xmb_navigation_set(void *data, bool scroll);
 
 
 static INLINE float xmb_item_y(const xmb_handle_t *xmb,
@@ -6782,6 +6796,123 @@ static void xmb_render(void *data,
    /* Read pointer state */
    menu_input_get_pointer_state(&xmb->pointer);
 
+   /* Direction locking for horizontal category dragging */
+   if (xmb->pointer.type == MENU_POINTER_TOUCHSCREEN)
+   {
+      if (xmb->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
+      {
+         if (xmb->drag_mode == XMB_DRAG_DETECTING)
+         {
+            /* Wait for movement threshold before locking direction */
+            float dx        = fabs((float)xmb->pointer.x - xmb->drag_start_x);
+            float dy        = fabs((float)xmb->pointer.y - xmb->drag_start_y);
+            float threshold = 10.0f;
+
+            if (dx > threshold || dy > threshold)
+            {
+               /* Lock to dominant direction */
+               if (dx > dy)
+                  xmb->drag_mode = XMB_DRAG_HORIZONTAL;
+               else
+                  xmb->drag_mode = XMB_DRAG_VERTICAL;
+            }
+         }
+
+         if (xmb->drag_mode == XMB_DRAG_HORIZONTAL)
+         {
+            /* Only allow horizontal category switching at the top level (depth == 1)
+             * When in submenus (depth > 1), horizontal drag is disabled */
+            if (xmb->depth == 1)
+            {
+               /* Apply horizontal drag to categories */
+               size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + xmb->system_tab_end + 1;
+               float current_dx = (float)xmb->pointer.x - xmb->drag_start_x;
+               float min_x      = -xmb->icon_spacing_horizontal * (float)(list_size > 0 ? list_size - 1 : 0);
+               float max_x      = 0.0f;
+
+               xmb->categories_x_pos = xmb->categories_drag_start_pos + current_dx;
+
+               /* Bounds checking */
+               if (xmb->categories_x_pos > max_x)
+                  xmb->categories_x_pos = max_x;
+               if (xmb->categories_x_pos < min_x)
+                  xmb->categories_x_pos = min_x;
+
+               /* Update selection and switch categories during drag */
+               {
+                  float normalized = -xmb->categories_x_pos / xmb->icon_spacing_horizontal;
+                  size_t nearest   = (size_t)(normalized + 0.5f);
+
+                  /* Clamp to valid range */
+                  if (nearest >= list_size)
+                     nearest = list_size > 0 ? list_size - 1 : 0;
+
+                  /* If category changed, do full switch */
+                  if (nearest != xmb->categories_selection_ptr)
+                  {
+                     struct menu_state *menu_st = menu_state_get_ptr();
+                     menu_list_t *menu_list     = menu_st->entries.list;
+                     file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
+
+                     /* Determine direction */
+                     enum menu_action action = (nearest > xmb->categories_selection_ptr)
+                                              ? MENU_ACTION_RIGHT
+                                              : MENU_ACTION_LEFT;
+
+                     /* Call list_cache to update state (increments/decrements by 1) */
+                     if (menu_st->driver_ctx && menu_st->driver_ctx->list_cache)
+                        menu_st->driver_ctx->list_cache(menu_st->userdata, MENU_LIST_HORIZONTAL, action);
+
+                     /* Repopulate vertical list with new category content */
+                     menu_driver_deferred_push_content_list(selection_buf);
+
+                     /* Visual update without animation during drag */
+                     xmb_list_switch_horizontal_list(xmb, false, 0);
+                  }
+               }
+            }
+         }
+         else if (xmb->drag_mode == XMB_DRAG_VERTICAL)
+         {
+            /* Apply vertical drag to list selection */
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_list_t *menu_list     = menu_st->entries.list;
+            size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+
+            /* Calculate how many items to move based on drag distance */
+            float dy          = (float)xmb->pointer.y - xmb->drag_start_y;
+            float item_height = xmb->icon_spacing_vertical;
+
+            /* Convert drag distance to item steps with threshold */
+            int steps = (int)((dy + (dy > 0 ? item_height * 0.5f : -item_height * 0.5f)) / item_height);
+
+            /* Calculate new selection (negative because dragging down = scroll up) */
+            int new_selection = (int)xmb->drag_start_selection - steps;
+
+            /* Clamp to valid range */
+            if (new_selection < 0)
+               new_selection = 0;
+            if (new_selection >= (int)list_size)
+               new_selection = list_size > 0 ? (int)list_size - 1 : 0;
+
+            /* Update selection if changed */
+            if ((size_t)new_selection != menu_st->selection_ptr)
+            {
+               file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
+               uintptr_t tag              = (uintptr_t)selection_buf;
+
+               menu_st->selection_ptr = (size_t)new_selection;
+
+               /* Kill existing animations to prevent stacking during continuous drag */
+               gfx_animation_kill_by_tag(&tag);
+
+               /* Enable animations for smooth scrolling */
+               xmb_navigation_set(xmb, true);
+            }
+         }
+      }
+   }
+
    /* If menu screensaver is active, update
     * screensaver and return */
    if (xmb->show_screensaver)
@@ -9701,6 +9832,26 @@ error:
    return false;
 }
 
+static int xmb_pointer_down(void *userdata,
+      unsigned x, unsigned y,
+      unsigned ptr, menu_file_list_cbs_t *cbs,
+      menu_entry_t *entry, unsigned action)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)userdata;
+
+   if (!xmb)
+      return -1;
+
+   /* Initialize drag detection */
+   xmb->drag_mode = XMB_DRAG_DETECTING;
+   xmb->drag_start_x = (float)x;
+   xmb->drag_start_y = (float)y;
+   xmb->categories_drag_start_pos = xmb->categories_x_pos;
+   xmb->drag_start_selection = menu_state_get_ptr()->selection_ptr;
+
+   return 0;
+}
+
 static int xmb_pointer_up(void *userdata,
       unsigned x, unsigned y, unsigned ptr,
       enum menu_input_pointer_gesture gesture,
@@ -9727,6 +9878,38 @@ static int xmb_pointer_up(void *userdata,
    if (xmb->show_fullscreen_thumbnails)
    {
       xmb_hide_fullscreen_thumbnails(xmb, true);
+      return 0;
+   }
+
+   /* Handle snap animation if we were dragging */
+   if (xmb->drag_mode == XMB_DRAG_HORIZONTAL || xmb->drag_mode == XMB_DRAG_VERTICAL)
+   {
+      /* Snap horizontal scrolling to final category position */
+      if (xmb->drag_mode == XMB_DRAG_HORIZONTAL)
+      {
+         settings_t *settings      = config_get_ptr();
+         bool horizontal_animation = settings->bools.menu_horizontal_animation;
+         float target_x            = xmb->icon_spacing_horizontal * -(float)xmb->categories_selection_ptr;
+
+         /* Animate to exact category position */
+         if (horizontal_animation)
+         {
+            gfx_animation_ctx_entry_t anim_entry;
+            anim_entry.duration     = XMB_DELAY;
+            anim_entry.target_value = target_x;
+            anim_entry.subject      = &xmb->categories_x_pos;
+            anim_entry.easing_enum  = EASING_OUT_QUAD;
+            anim_entry.tag          = -1;
+            anim_entry.cb           = NULL;
+
+            if (anim_entry.subject)
+               gfx_animation_push(&anim_entry);
+         }
+         else
+            xmb->categories_x_pos = target_x;
+      }
+
+      xmb->drag_mode = XMB_DRAG_NONE;
       return 0;
    }
 
@@ -9921,7 +10104,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    gfx_display_osk_ptr_at_pos,
    xmb_update_savestate_thumbnail_path,
    xmb_update_savestate_thumbnail_image,
-   NULL, /* pointer_down */
+   xmb_pointer_down,
    xmb_pointer_up,
    xmb_menu_entry_action
 };
