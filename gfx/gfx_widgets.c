@@ -1149,7 +1149,6 @@ static void gfx_widgets_draw_task_msg(
    static float msg_queue_task_progress[16] = COLOR_HEX_TO_FLOAT(BG_COLOR_PROGRESS, 1.0f);
    static float msg_queue_task_negative[16] = COLOR_HEX_TO_FLOAT(ICON_COLOR_RED, 1.0f);
    static float msg_queue_task_positive[16] = COLOR_HEX_TO_FLOAT(ICON_COLOR_GREEN, 1.0f);
-   static float msg_queue_task_neutral[16]  = COLOR_HEX_TO_FLOAT(ICON_COLOR_BLUE, 1.0f);
 
    unsigned msg_queue_height                = p_dispwidget->msg_queue_height;
    unsigned text_color;
