@@ -192,7 +192,7 @@ typedef struct ctr_video
    bool keep_aspect;
    bool should_resize;
    bool msg_rendering_enabled;
-   bool supports_parallax_disable;
+   bool supports_wide_display;
    bool enable_3d;
    bool p3d_event_pending;
    bool ppf_event_pending;
