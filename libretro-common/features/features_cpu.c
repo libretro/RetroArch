@@ -108,6 +108,10 @@
 #include <3ds/services/cfgu.h>
 #endif
 
+#if defined(WEBOS)
+#include <sys/stat.h>
+#endif
+
 /* iOS/OSX specific. Lacks clock_gettime(), so implement it. */
 #ifdef __MACH__
 #include <sys/time.h>
@@ -858,6 +862,69 @@ end:
       }
 
       filestream_close(fp);
+
+#if defined(WEBOS)
+      struct stat st;
+      if (stat("/usr/bin/lscpu", &st) == 0)
+      {
+         FILE *pipe = popen("/usr/bin/lscpu", "r");
+         if (pipe)
+         {
+            char buf[256];
+            while (fgets(buf, sizeof(buf), pipe))
+            {
+               if (strncmp(buf, "Model name:", 11) == 0)
+               {
+                  const char *p = strchr(buf, ':');
+                  if (p)
+                  {
+                     p++; // skip ':'
+                     while (*p == ' ' || *p == '\t') p++;
+                     size_t len2 = strcspn(p, "\r\n");
+
+                     char *tmp = (char *)malloc(len2 + 1);
+                     if (tmp)
+                     {
+                        memcpy(tmp, p, len2);
+                        tmp[len2] = '\0';
+
+                        if (model_name && *model_name)
+                        {
+                           size_t oldlen = strlen(model_name);
+                           char *combined = (char *)malloc(oldlen + len2 + 4);
+                           if (combined)
+                           {
+                              memcpy(combined, model_name, oldlen);
+                              combined[oldlen] = ' ';
+                              combined[oldlen + 1] = '(';
+                              memcpy(combined + oldlen + 2, tmp, len2);
+                              combined[oldlen + 2 + len2] = ')';
+                              combined[oldlen + 2 + len2 + 1] = '\0';
+                              free(model_name);
+                              model_name = combined;
+                           }
+                           free(tmp);
+                        }
+                        else
+                        {
+                           free(model_name);
+                           model_name = tmp;
+                        }
+                     }
+                  }
+                  break;
+               }
+            }
+            pclose(pipe);
+         }
+
+         if (model_name)
+         {
+            strncpy(s, model_name, len);
+            s[len - 1] = '\0';
+         }
+      }
+#endif
    }
 #endif
 }
