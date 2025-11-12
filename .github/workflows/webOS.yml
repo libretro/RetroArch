@@ -61,35 +61,56 @@ jobs:
           tar xzf arm-webos-linux-gnueabi_sdk-buildroot-x86_64.tar.gz
           ./arm-webos-linux-gnueabi_sdk-buildroot/relocate-sdk.sh
 
-      - name: Compile RA
+      - name: Load RARCH_VERSION from version.all
+        id: version
+        shell: bash
+        run: |
+          RARCH_VERSION=$(grep -Po '(?<=#define PACKAGE_VERSION ")[^"]+' version.all)
+          echo "RARCH_VERSION=$RARCH_VERSION" >> "$GITHUB_ENV"
+
+      - name: Compile RA (GLES3 variant)
         shell: bash
         run: |
           . /tmp/arm-webos-linux-gnueabi_sdk-buildroot/environment-setup
-          make -f Makefile.webos ipk PACKAGE_NAME=${PACKAGE_NAME} ADD_SDL2_LIB=1 -j$(getconf _NPROCESSORS_ONLN)
+          make -f Makefile.webos clean
+          make -f Makefile.webos ipk PACKAGE_NAME=${PACKAGE_NAME} ADD_SDL2_LIB=1 \
+            HAVE_OPENGLES3=1 HAVE_OPENGLES3_1=1 HAVE_OPENGLES3_2=1 -j"$(getconf _NPROCESSORS_ONLN)"
+          mv webos/com.retroarch.webos_${RARCH_VERSION}_arm.ipk \
+             webos/com.retroarch.webos.gles3_${RARCH_VERSION}_arm.ipk
         env:
           DEBUG: ${{ github.event_name == 'release' && '0' || '1' }}
 
-      - name: Get short SHA
-        id: slug
-        run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
-
-      - uses: actions/upload-artifact@v4
+      - name: Upload GLES3 artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: com.retroarch.webos_${{ steps.slug.outputs.sha8 }}_arm.ipk
-          path: |
-            webos/*.ipk
+          name: com.retroarch.webos.gles3_${{ env.RARCH_VERSION }}_${{ github.sha }}_arm.ipk
+          path: webos/com.retroarch.webos.gles3_${{ env.RARCH_VERSION }}_arm.ipk
 
-      - name: Generate Manifest
+      - name: Compile RA (default)
         shell: bash
         run: |
-          . version.all
+          . /tmp/arm-webos-linux-gnueabi_sdk-buildroot/environment-setup
+          make -f Makefile.webos ipk PACKAGE_NAME=${PACKAGE_NAME} ADD_SDL2_LIB=1 -j"$(getconf _NPROCESSORS_ONLN)"
+        env:
+          DEBUG: ${{ github.event_name == 'release' && '0' || '1' }}
+
+      - name: Upload default artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: com.retroarch.webos_${{ env.RARCH_VERSION }}_${{ github.sha }}_arm.ipk
+          path: webos/com.retroarch.webos_${{ env.RARCH_VERSION }}_arm.ipk
+
+      - name: Generate Manifest (default only)
+        if: github.repository == 'webosbrew/Retroarch'
+        shell: bash
+        run: |
           webosbrew-gen-manifest -o webos/${PACKAGE_NAME}.manifest.json \
               -p webos/${PACKAGE_NAME}_${RARCH_VERSION}_arm.ipk \
               -i https://github.com/webosbrew/RetroArch/raw/webos/webos/icon160.png \
               -l https://github.com/webosbrew/RetroArch
 
       - name: Release
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' && github.repository == 'webosbrew/Retroarch'
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -98,4 +119,7 @@ jobs:
           omitNameDuringUpdate: true
           omitBody: true
           omitPrereleaseDuringUpdate: true
-          artifacts: webos/*.ipk,webos/*.manifest.json
+          artifacts: |
+            webos/com.retroarch.webos_${{ env.RARCH_VERSION }}_arm.ipk
+            webos/com.retroarch.webos.gles3_${{ env.RARCH_VERSION }}_arm.ipk
+            webos/${{ env.PACKAGE_NAME }}.manifest.json
