@@ -3153,37 +3153,29 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       {
          int result = RETRO_SAVESTATE_CONTEXT_NORMAL;
 
-#ifdef HAVE_REWIND
-         if (runloop_st->rewind_st.flags &
-               STATE_MGR_REWIND_ST_FLAG_IS_REWIND_SERIALIZE)
-            result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE;
-         else
-#endif
-         {
 #if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
-            if (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE)
-            {
+         if (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE)
+         {
 #ifdef HAVE_NETWORKING
-               if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-                  result = RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY;
-               else
+            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+               result = RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY;
+            else
 #endif
-               {
+            {
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-                  settings_t *settings = config_get_ptr();
-                  if (      settings->bools.run_ahead_secondary_instance
-                        && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
-                        &&  secondary_core_ensure_exists(runloop_st, settings))
-                     result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY;
-                  else
+               settings_t *settings = config_get_ptr();
+               if (      settings->bools.run_ahead_secondary_instance
+                     && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
+                     &&  secondary_core_ensure_exists(runloop_st, settings))
+                  result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY;
+               else
 #endif
                   result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE;
 #endif
-               }
             }
-#endif
          }
+#endif
 
          if (data)
             *(int*)data = result;
