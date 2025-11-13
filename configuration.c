@@ -56,6 +56,10 @@
 
 #include "list_special.h"
 
+#if defined(ANDROID)
+#include "pkg/android/phoenix-common/jni/ra_android_bridge.h"
+#endif
+
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #include "uwp/uwp_func.h"
 #endif
@@ -2384,7 +2388,11 @@ static struct config_float_setting *populate_settings_float(
 #endif
 
    *size = count;
-
+#if defined(__ANDROID__) || defined(ANDROID)
+   if (settings && settings->floats.video_refresh_rate > 0.0f) {
+      ra_notify_refresh_rate(settings->floats.video_refresh_rate);
+   }
+#endif
    return tmp;
 }
 
@@ -2996,6 +3004,7 @@ void config_set_defaults(void *data)
          g_defaults.settings_video_refresh_rate != DEFAULT_REFRESH_RATE)
       settings->floats.video_refresh_rate      = g_defaults.settings_video_refresh_rate;
 
+      
    if (DEFAULT_AUDIO_DEVICE)
       configuration_set_string(settings,
             settings->arrays.audio_device,
@@ -4549,6 +4558,12 @@ static bool config_load_file(global_t *global,
    if (size_settings)
       free(size_settings);
    first_load = false;
+
+#if defined(__ANDROID__) || defined(ANDROID)
+   if (settings && settings->floats.video_refresh_rate > 0.0f) {
+      ra_notify_refresh_rate(settings->floats.video_refresh_rate);
+   }
+#endif
    return true;
 }
 
@@ -4752,6 +4767,12 @@ bool config_load_override(void *data)
    else
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 
+
+#if defined(__ANDROID__) || defined(ANDROID)
+   if (settings && settings->floats.video_refresh_rate > 0.0f) {
+      ra_notify_refresh_rate(settings->floats.video_refresh_rate);
+   }
+#endif
    return true;
 }
 
@@ -4794,6 +4815,11 @@ bool config_load_override_file(const char *config_path)
    else
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 
+#if defined(__ANDROID__) || defined(ANDROID)
+   if (settings && settings->floats.video_refresh_rate > 0.0f) {
+      ra_notify_refresh_rate(settings->floats.video_refresh_rate);
+   }
+#endif
    return true;
 }
 

@@ -3,6 +3,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 RARCH_DIR := ../../../..
+RA_ROOT := $(LOCAL_PATH)/$(RARCH_DIR)
 
 HAVE_NEON   := 1
 HAVE_LOGGER := 0
@@ -57,6 +58,14 @@ LOCAL_MODULE := retroarch-activity
 
 LOCAL_SRC_FILES  +=	$(RARCH_DIR)/griffin/griffin.c \
 							$(RARCH_DIR)/griffin/griffin_cpp.cpp
+
+LOCAL_SRC_FILES += \
+    ra_android_bridge.c
+
+LOCAL_C_INCLUDES += \
+    $(RA_ROOT) \
+    $(RA_ROOT)/libretro-common/include \
+    $(RA_ROOT)/gfx/include
 
 ifeq ($(HAVE_LOGGER), 1)
    DEFINES += -DHAVE_LOGGER
@@ -179,13 +188,14 @@ LOCAL_CPPFLAGS := -fexceptions -fpermissive -std=gnu++11 -fno-rtti -Wno-reorder 
 LOCAL_CFLAGS := $(subst -O3,-O2,$(LOCAL_CFLAGS))
 
 LOCAL_LDLIBS	 := -landroid -lEGL $(GLES_LIB) $(LOGGER_LDLIBS) -ldl
-LOCAL_C_INCLUDES := \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/7zip
+LOCAL_C_INCLUDES += \
+    $(RA_ROOT)/libretro-common/include \
+    $(RA_ROOT)/deps \
+    $(RA_ROOT)/deps/stb \
+    $(RA_ROOT)/deps/7zip
 
-INCLUDE_DIRS     := \
+
+INCLUDE_DIRS := \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/ \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
