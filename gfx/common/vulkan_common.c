@@ -1940,8 +1940,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    settings_t                    *settings = config_get_ptr();
    bool vsync                              = settings->bools.video_vsync;
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
-   bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
+   bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
    HMONITOR fse_monitor;
    VkSurfaceFullScreenExclusiveWin32InfoEXT fs_win32 = {
        VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
@@ -2371,7 +2371,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    if (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
       vulkan_emulated_mailbox_init(&vk->mailbox, vk->context.device, vk->swapchain);
-   
+
    /* This flag needs to be cleared otherwise elsewhere it can be perceived as if there's a new swapchain created everytime its being called */
    vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
    return true;

@@ -285,12 +285,11 @@ static struct string_list *coreaudio_macos_microphone_device_list_new(const void
       propsize = 0;
       status = AudioObjectGetPropertyDataSize(current_device_id, &prop_addr_streams_input, 0, NULL, &propsize);
       if (status == noErr && propsize > 0)
-      {
          input_stream_count = propsize / sizeof(AudioStreamID); /* Can be more than 1, but we just need > 0 */
-      }
 
       if (input_stream_count > 0)
       {
+         CFStringRef device_uid_cf = NULL;
          /* This device has input streams, get its name and UID */
          CFStringRef device_name_cf = NULL;
          propsize = sizeof(CFStringRef);
@@ -299,9 +298,7 @@ static struct string_list *coreaudio_macos_microphone_device_list_new(const void
             kAudioObjectPropertyScopeGlobal,
             kAudioObjectPropertyElementMaster
          };
-         status = AudioObjectGetPropertyData(current_device_id, &prop_addr_name, 0, NULL, &propsize, &device_name_cf);
-
-         CFStringRef device_uid_cf = NULL;
+         status   = AudioObjectGetPropertyData(current_device_id, &prop_addr_name, 0, NULL, &propsize, &device_name_cf);
          propsize = sizeof(CFStringRef);
          AudioObjectPropertyAddress prop_addr_uid = {
             kAudioDevicePropertyDeviceUID,
@@ -313,7 +310,7 @@ static struct string_list *coreaudio_macos_microphone_device_list_new(const void
          if (status == noErr && device_name_cf && uid_status == noErr && device_uid_cf)
          {
             char device_name_c[256] = {0};
-            char device_uid_c[256] = {0};
+            char device_uid_c[256]  = {0};
 
             CFStringGetCString(device_name_cf, device_name_c, sizeof(device_name_c), kCFStringEncodingUTF8);
             CFStringGetCString(device_uid_cf, device_uid_c, sizeof(device_uid_c), kCFStringEncodingUTF8);
@@ -335,8 +332,10 @@ static struct string_list *coreaudio_macos_microphone_device_list_new(const void
             }
 
          }
-         if (device_name_cf) CFRelease(device_name_cf);
-         if (device_uid_cf) CFRelease(device_uid_cf);
+         if (device_name_cf)
+            CFRelease(device_name_cf);
+         if (device_uid_cf)
+            CFRelease(device_uid_cf);
       }
    }
 
@@ -943,7 +942,6 @@ static AudioDeviceID get_macos_device_id_for_uid_or_name(const char *uid_or_name
    for (UInt32 i = 0; i < num_devices; i++)
    {
       AudioDeviceID current_device_id = all_devices[i];
-      UInt32 input_stream_count = 0;
       AudioObjectPropertyAddress prop_addr_streams_input = {
          kAudioDevicePropertyStreams,
          kAudioDevicePropertyScopeInput,
@@ -984,7 +982,6 @@ static AudioDeviceID get_macos_device_id_for_uid_or_name(const char *uid_or_name
    for (UInt32 i = 0; i < num_devices; i++)
    {
       AudioDeviceID current_device_id = all_devices[i];
-      UInt32 input_stream_count = 0;
       AudioObjectPropertyAddress prop_addr_streams_input = {
          kAudioDevicePropertyStreams,
          kAudioDevicePropertyScopeInput,
