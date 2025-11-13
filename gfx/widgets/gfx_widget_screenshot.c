@@ -100,6 +100,15 @@ static void gfx_widget_screenshot_fadeout(void *userdata)
    gfx_animation_push(&entry);
 }
 
+static void gfx_widget_screenshot_dispose(void *userdata)
+{
+   gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
+
+   state->loaded  = false;
+   video_driver_texture_unload(&state->texture);
+   state->texture = 0;
+}
+
 static void gfx_widgets_play_screenshot_flash(void *data)
 {
    gfx_animation_ctx_entry_t entry;
@@ -136,6 +145,12 @@ void gfx_widget_state_slot_show(
 
    state->state_slot = true;
 
+   if (!shotname || !filename)
+   {
+      gfx_widget_screenshot_dispose(NULL);
+      return;
+   }
+
    strlcpy(state->filename, filename, sizeof(state->filename));
    strlcpy(state->shotname, shotname, sizeof(state->shotname));
 }
@@ -158,15 +173,6 @@ void gfx_widget_screenshot_taken(
       strlcpy(state->filename, filename, sizeof(state->filename));
       strlcpy(state->shotname, shotname, sizeof(state->shotname));
    }
-}
-
-static void gfx_widget_screenshot_dispose(void *userdata)
-{
-   gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
-
-   state->loaded  = false;
-   video_driver_texture_unload(&state->texture);
-   state->texture = 0;
 }
 
 static void gfx_widget_screenshot_end(void *userdata)
