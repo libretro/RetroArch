@@ -1,3 +1,20 @@
+/**
+ *  RetroArch - A frontend for libretro.
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation, either version 3 of the License, or (at your option)
+ *  any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT
+ *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ *  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ *  more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with RetroArch. If not, see <http://www.gnu.org/licenses/>.
+ **/
+
 #ifdef HAVE_STATESTREAM
 #include "uint32s_index.h"
 #include <string.h>
@@ -56,10 +73,7 @@ bool uint32s_bucket_get(uint32s_index_t *index, struct uint32s_bucket *bucket, u
 void uint32s_bucket_expand(struct uint32s_bucket *bucket, uint32_t idx)
 {
    if (bucket->len < 3)
-   {
       bucket->contents.idxs[bucket->len] = idx;
-      bucket->len++;
-   }
    else if (bucket->len == 3)
    {
       uint32_t *idxs = (uint32_t*)calloc(8, sizeof(uint32_t));
@@ -67,20 +81,16 @@ void uint32s_bucket_expand(struct uint32s_bucket *bucket, uint32_t idx)
       bucket->contents.vec.cap  = 8;
       bucket->contents.vec.idxs = idxs;
       bucket->contents.vec.idxs[bucket->len] = idx;
-      bucket->len++;
    }
    else if (bucket->len < bucket->contents.vec.cap)
-   {
       bucket->contents.vec.idxs[bucket->len] = idx;
-      bucket->len++;
-   }
    else /* bucket->len == bucket->contents.vec.cap */
    {
       bucket->contents.vec.cap *= 2;
       bucket->contents.vec.idxs = (uint32_t*)realloc(bucket->contents.vec.idxs, bucket->contents.vec.cap * sizeof(uint32_t));
       bucket->contents.vec.idxs[bucket->len] = idx;
-      bucket->len++;
    }
+   bucket->len++;
 }
 
 bool uint32s_bucket_remove(struct uint32s_bucket *bucket, uint32_t idx)
@@ -125,16 +135,14 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
       bucket = RHMAP_PTR(index->index, hash);
       if (uint32s_bucket_get(index, bucket, object, size_bytes, &result.index))
       {
-         if (index->objects[result.index] == NULL)
+         if (index->objects[result.index])
          {
-            RARCH_LOG("[STATESTREAM] accessed collected index %d\n",result.index);
-	 }
-	 else
-	 {
             result.is_new = false;
             index->counts[result.index]++;
             return result;
          }
+
+         RARCH_LOG("[STATESTREAM] accessed collected index %d\n",result.index);
       }
       idx  = RBUF_LEN(index->objects);
       copy = (uint32_t*)malloc(size_bytes);
@@ -203,8 +211,8 @@ bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *
    RBUF_PUSH(index->objects, object);
    RBUF_PUSH(index->counts, 1);
    RBUF_PUSH(index->hashes, hash);
-   if (additions_len == 0 ||
-       index->additions[additions_len-1].frame_counter < frame)
+   if (   additions_len == 0
+       || index->additions[additions_len-1].frame_counter < frame)
    {
       struct uint32s_frame_addition addition;
       addition.frame_counter = frame;
@@ -219,14 +227,16 @@ void uint32s_index_commit(uint32s_index_t *index)
    uint32_t i, interval=index->commit_interval,threshold=index->commit_threshold;
    struct uint32s_frame_addition prev,cur;
    uint32_t additions_len = RBUF_LEN(index->additions), limit;
-   if (additions_len < interval || interval == 0) return;
-   prev = index->additions[additions_len-interval];
-   cur  = index->additions[additions_len-(interval-1)];
+   if (additions_len < interval || interval == 0)
+      return;
+   prev  = index->additions[additions_len-interval];
+   cur   = index->additions[additions_len-(interval-1)];
    limit = cur.first_index;
    for (i = prev.first_index; i < limit; i++)
    {
       struct uint32s_bucket *bucket;
-      if (index->counts[i] >= threshold) continue;
+      if (index->counts[i] >= threshold)
+         continue;
       free(index->objects[i]);
       index->objects[i] = NULL;
       bucket = RHMAP_PTR(index->index, index->hashes[i]);
@@ -351,7 +361,7 @@ uint32_t bins[BIN_COUNT];
 void uint32s_index_print_count_data(uint32s_index_t *index)
 {
    uint32_t i;
-   /* TODO: don't count or differently count NULL objects entries */
+   /* TODO/FIXME: Don't count or differently count NULL objects entries */
    uint32_t max=1;
    if (!index)
       return;
@@ -366,7 +376,8 @@ void uint32s_index_print_count_data(uint32s_index_t *index)
    {
       uint32_t bin_start = MAX(1,(i*(float)max/(float)BIN_COUNT));
       uint32_t bin_end = ((i+1)*(float)max/(float)BIN_COUNT);
-      if (bins[i] == 0) continue;
+      if (bins[i] == 0)
+         continue;
       RARCH_DBG("%d--%d: %d\n", bin_start, bin_end, bins[i]);
    }
 }

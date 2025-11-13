@@ -247,9 +247,6 @@
 
 #define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
 
-#define DEFAULT_NETWORK_GAMEPAD_PORT 55400
-#define UDP_FRAME_PACKETS 16
-
 #ifdef HAVE_ZLIB
 #define DEFAULT_EXT "zip"
 #else
@@ -7205,7 +7202,7 @@ int runloop_iterate(void)
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_dequeue_next(input_st);
 #endif
-   
+
    if (runloop_st->frame_time.callback)
    {
       /* Updates frame timing if frame timing callback is in use by the core.

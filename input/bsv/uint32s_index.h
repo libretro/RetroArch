@@ -1,3 +1,20 @@
+/**
+ *  RetroArch - A frontend for libretro.
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation, either version 3 of the License, or (at your option)
+ *  any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT
+ *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ *  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ *  more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with RetroArch. If not, see <http://www.gnu.org/licenses/>.
+ **/
+
 #ifndef __UINT32S_INDEX__H
 #define __UINT32S_INDEX__H
 
@@ -20,10 +37,13 @@ struct uint32s_bucket
      } vec;
    } contents;
 };
-struct uint32s_frame_addition {
+
+struct uint32s_frame_addition
+{
    uint64_t frame_counter;
    uint32_t first_index; /* lowest index added on this frame */
 };
+
 struct uint32s_index
 {
    size_t object_size; /* measured in ints */
@@ -34,6 +54,7 @@ struct uint32s_index
    struct uint32s_frame_addition *additions; /* an rbuf of addition info */
    uint8_t commit_interval, commit_threshold;
 };
+
 typedef struct uint32s_index uint32s_index_t;
 
 struct uint32s_insert_result
