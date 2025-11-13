@@ -93,6 +93,11 @@ static void command_post_state_loaded(void)
      if (frame_time_counter_reset_after_load_state)
         video_st->frame_time_count = 0;
    }
+#if defined(HAVE_GFX_WIDGETS) && defined(HAVE_SCREENSHOTS)
+   {
+      gfx_widget_state_slot_show(dispwidget_get_ptr(), NULL, NULL);
+   }
+#endif
 }
 
 #if defined(HAVE_COMMAND)
