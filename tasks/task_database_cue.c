@@ -543,37 +543,37 @@ size_t detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filenam
    {
       case 'E':
          _len += strlcpy(s + _len, "-USA", len - _len);
-         return _len;
+         break;
       case 'J':
          _len += strlcpy(s + _len, "-JPN", len - _len);
-         return _len;
+         break;
       case 'P': /** NYI: P can also be P-UKV, P-AUS **/
       case 'X': /** NYI: X can also be X-UKV, X-EUU **/
          _len += strlcpy(s + _len, "-EUR", len - _len);
-         return _len;
+         break;
       case 'Y':
          _len += strlcpy(s + _len, "-FAH", len - _len);
-         return _len;
+         break;
       case 'D':
          _len += strlcpy(s + _len, "-NOE", len - _len);
-         return _len;
+         break;
       case 'S':
          _len += strlcpy(s + _len, "-ESP", len - _len);
-         return _len;
+         break;
       case 'F':
          _len += strlcpy(s + _len, "-FRA", len - _len);
-         return _len;
+         break;
       case 'I':
          _len += strlcpy(s + _len, "-ITA", len - _len);
-         return _len;
+         break;
       case 'H':
          _len += strlcpy(s + _len, "-HOL", len - _len);
-         return _len;
+         break;
       default:
-    break;
+         return 0;
    }
 
-   return 0;
+   return _len;
 }
 
 int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
@@ -746,9 +746,7 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          if (     raw_game_id[0] == 'M'
                && raw_game_id[1] == 'K'
                && raw_game_id[2] == '-')
-         {
             strlcpy(s, &raw_game_id[3], len);
-         }
          else
             strlcpy(s, raw_game_id, len);
          cue_append_multi_disc_suffix(s, filename);
@@ -788,12 +786,12 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
 int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
+   int index;
    size_t _len, __len, ___len;
    int total_hyphens;
    int total_hyphens_recalc;
    char pre_game_id[50];
    char raw_game_id[50];
-   int index;
    char lgame_id[20];
    char rgame_id[20];
 

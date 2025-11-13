@@ -854,8 +854,7 @@ end:
          if ((model_name = strstr(line + 10, ": ")))
          {
             model_name += 2;
-            strncpy(s, model_name, len);
-            s[len - 1] = '\0';
+            strlcpy(s, model_name, len);
          }
 
          break;

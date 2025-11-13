@@ -526,7 +526,7 @@ static cdfs_track_t* cdfs_open_cue_track(
          {
             if (     strstr(current_track_path, "/")
                   || strstr(current_track_path, "\\"))
-               strncpy(track_path, current_track_path, sizeof(track_path));
+               strlcpy(track_path, current_track_path, sizeof(track_path));
             else
             {
                fill_pathname_basedir(track_path, path, sizeof(track_path));
