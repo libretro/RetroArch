@@ -6900,9 +6900,9 @@ static enum runloop_state_enum runloop_check_state(
       {
          check = true;
          state_slot--;
-         /* Wrap to 0 */
+         /* Wrap to Auto */
          if (state_slot < 0)
-            state_slot = 0;
+            state_slot = -1;
       }
 
       if (check)
@@ -6925,10 +6925,17 @@ static enum runloop_state_enum runloop_check_state(
 
             if (state_slot > 0)
                _len += snprintf(path + _len, sizeof(path) - _len, "%d", state_slot);
+            else if (state_slot < 0)
+               _len  = fill_pathname_join_delim(path,
+                     runloop_st->name.savestate, "auto", '.', sizeof(path));
 
             strlcpy(path + _len, FILE_PATH_PNG_EXTENSION, sizeof(path) - _len);
 
-            snprintf(msg, sizeof(msg), "%d", state_slot);
+            if (state_slot < 0)
+               snprintf(msg, sizeof(msg), "%s", "Auto");
+            else
+               snprintf(msg, sizeof(msg), "%d", state_slot);
+
             gfx_widget_state_slot_show(dispwidget_get_ptr(), msg, path);
          }
          else
