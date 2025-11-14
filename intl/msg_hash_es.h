@@ -14295,14 +14295,6 @@ MSG_HASH(
    "Front-end para Libretro"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Carga del guardado rápido n.º %d terminada."
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Carga del guardado rápido n.º -1 (automático) terminada."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Cargando"
    )
@@ -14497,14 +14489,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Se ha guardado la configuración en"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "Guardado rápido n.º %d terminado."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Guardado rápido n.º -1 (automático) terminado."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

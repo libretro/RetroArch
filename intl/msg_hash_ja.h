@@ -13455,14 +13455,6 @@ MSG_HASH(
    "libretro のフロントエンド"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "スロット #%d からステートをロードしました。"
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "スロット #-1 (自動) からステートをロードしました。"
-   )
-MSG_HASH(
    MSG_LOADING,
    "ロード中"
    )
@@ -13649,14 +13641,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "巻き戻しバッファの終わりに達しました。"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "スロット #%d にステートを保存しました。"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "スロット #-1 (自動) にステートを保存しました。"
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

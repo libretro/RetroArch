@@ -6363,10 +6363,6 @@ MSG_HASH(
    "Front-end voor libretro"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "State geladen van slot #%d."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Laden"
    )

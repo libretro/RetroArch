@@ -14207,14 +14207,6 @@ MSG_HASH(
    "Interface do usuário para Libretro"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Carregamento do compartimento %d."
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Ponto de save carregado do slot #-1 (Automático)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Carregando"
    )
@@ -14409,14 +14401,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Configuração salva em"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "Salvo no compartimento %d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Ponto de save no slot #-1 (Automático)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

@@ -14367,14 +14367,6 @@ MSG_HASH(
    "为libretro而设计的前端"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "加载卡槽 #%d 的状态。"
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "从槽位#-1加载状态 (Auto)。"
-   )
-MSG_HASH(
    MSG_LOADING,
    "正在加载"
    )
@@ -14573,14 +14565,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "配置已保存至"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "已保存状态到卡槽 #%d。"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "保存状态到槽位#-1 (Auto)。"
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

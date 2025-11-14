@@ -14231,14 +14231,6 @@ MSG_HASH(
    "Інтерфейс для лібретро"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Стан завантаження зі слота #%d."
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Завантажений стан з слота #-1 (Автомати)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Завантаження"
    )
@@ -14433,14 +14425,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Конфігурацію збережено у"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "Стан завантаження зі слота #%d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Збережений стан у слот #-1 (Автоматично)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

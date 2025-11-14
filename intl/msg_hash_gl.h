@@ -14147,14 +14147,6 @@ MSG_HASH(
    "Frontend para libretro"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Estado de carga do slot #%d."
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Estado de carga do slot #-1 (Automático)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Cargando"
    )
@@ -14349,14 +14341,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Configuración gardada en"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "Estado gardado no slot #%d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Estado gardado no slot #-1 (Automático)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

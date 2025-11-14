@@ -12411,14 +12411,6 @@ MSG_HASH(
    "Frontend dla libretro"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Załadowany stan z gniazda #%d."
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Stan załadowany z gniazda #-1 (Auto)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Ładuję"
    )
@@ -12581,14 +12573,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "Osiągnięto koniec bufora przewijania."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "Zapisany stan do gniazda #%d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Zapisano stan do gniazda #-1 (Auto)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

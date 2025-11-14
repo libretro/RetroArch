@@ -14403,14 +14403,6 @@ MSG_HASH(
    "libretro 프론트엔드"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "#%d 슬롯에서 상태 불러옴."
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "슬롯 #-1(자동)에서 상태 불러옴."
-   )
-MSG_HASH(
    MSG_LOADING,
    "불러오는 중"
    )
@@ -14605,14 +14597,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "구성을 다음 위치에 저장함:"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "슬롯 #%d에 상태저장."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "슬롯 #-1(자동)에 상태저장."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

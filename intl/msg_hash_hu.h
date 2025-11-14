@@ -14051,14 +14051,6 @@ MSG_HASH(
    "Libretro frontend"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Játékállás betöltve a #%d. rekeszből."
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Játékállás betöltve a #-1 (automata) rekeszből."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Betöltés"
    )
@@ -14253,14 +14245,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Konfiguráció mentve ide"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "Játékállás elmentve a #%d. rekeszbe."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Játékállás elmentve a #-1 (automatikus) rekeszbe."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

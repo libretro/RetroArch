@@ -14203,14 +14203,6 @@ MSG_HASH(
    "Interfície d'usuari per Libretro"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Carrega el desat ràpid %d."
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Carrega l'estat des de la ranura #-1 (Automàticament)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Carregant"
    )
@@ -14405,14 +14397,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Desa la configuració a"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "Estat desat a la ranura #%d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Desat l'estat a la ranura #-1 (Automàtic)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

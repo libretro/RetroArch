@@ -5587,10 +5587,6 @@ MSG_HASH(
    "Frontend para Libretro"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Estado carregado a partir da posição #%d."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Carregando"
    )
@@ -5729,10 +5725,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "Alcançado o final do buffer do recurso de retrocedimento do tempo."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "Estado guardado na posição #%d."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

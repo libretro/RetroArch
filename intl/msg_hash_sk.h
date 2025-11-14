@@ -6407,10 +6407,6 @@ MSG_HASH(
    "v gigabajtoch"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Načítaný stav zo slotu #%d."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Načítavanie"
    )

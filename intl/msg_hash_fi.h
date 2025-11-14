@@ -12635,14 +12635,6 @@ MSG_HASH(
    "Käyttöliittymä libretrolle"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Ladattiin tila lohkosta #%d."
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Ladattiin tila lohkosta #-1 (automaattisesti)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Ladataan"
    )
@@ -12833,14 +12825,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Tallennettu asetustiedostoon"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "Tila tallennettu lohkoon #%d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Tallennettiin tila lohkoon #-1 (automaattisesti)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

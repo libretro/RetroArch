@@ -8691,10 +8691,6 @@ MSG_HASH(
    "الواجهة للليبرترو"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "فتحت لقطة من الخانة [%d]."
-   )
-MSG_HASH(
    MSG_LOADING,
    "جار التحميل"
    )
@@ -8841,10 +8837,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "وصلت إلى نهاية التجديد المؤقت."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "حفظ الحالة إلى فتحة #%d."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

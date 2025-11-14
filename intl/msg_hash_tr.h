@@ -14379,14 +14379,6 @@ MSG_HASH(
    "Libretro için ön uç"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Yuva #%d üstünden durum yüklendi."
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Yuva #-1 üstünden yüklenmiş durum (Otomatik)."
-   )
-MSG_HASH(
    MSG_LOADING,
    "Yükleniyor"
    )
@@ -14581,14 +14573,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Yapılandırma kaydedildi"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "Yuvaya kaydedilmiş durum #%d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Durum #-1 yuvasına kaydedildi (Otomatik)."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

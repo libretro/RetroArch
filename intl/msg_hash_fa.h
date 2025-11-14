@@ -3679,14 +3679,6 @@ MSG_HASH(
    "شروع ضبط شکست خورد."
    )
 MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "وضعیت در شیار #%d ذخیره شد."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "وضعیت در شیار #%d ذخیره شد (خودکار)."
-   )
-MSG_HASH(
    MSG_STATE_SLOT,
    "شیار وضعیت"
    )
