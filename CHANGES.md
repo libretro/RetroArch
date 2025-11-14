@@ -4,6 +4,7 @@
 - ANDROID: OnNewIntent handler to allow launchers start new content without closing first
 - ANDROID: Use app-specific storage for Google Play builds of RetroArch
 - ANDROID: Implement support for the Storage Access Framework, to allow the user to mount most directories1 from internal storage, the SD card, other removable storage devices and any document providers provided by other Android apps on the current device.
+- 3DS: Add 800px mode for New 3DS models
 - APPLE: Include sameduck, gearcoleco, geargrafx cores in App Store builds
 - APPLE: Include reminiscence, virtualjaguar, vitaquake2 cores in App Store builds
 - APPLE: Include gam4980 core in App Store builds
@@ -57,6 +58,7 @@
 - IOS: Down arrow menu is removed, all 3 options are available by other means now
 - IOS/MACOS: Fix display server resolution and refresh rates
 - IOS/TVOS: Use native keyboard
+- JPEG: Fix clamping bug in JPEG decode
 - LIBRETRO: Deprecate intfstream_open_writable_memory
 - LIBRETRO: New environment function RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE
 - LINUX: Add full complement of key/value pairs to desktop entry
