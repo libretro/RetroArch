@@ -163,27 +163,7 @@ static s32 _get_input_report(void)
 	return ret;
 }
 
-#if 0
-//Get an input report from control pipe
-static s32 _get_output_report(u8 *leds)
-{
-	u8 *buffer = 0;
-	if(!_kbd || _kbd->fd==-1) return -1;
-	buffer = iosAlloc(hId, 1);
-
-	if (buffer == NULL)
-		return -1;
-
-	s32 ret = USB_WriteCtrlMsg(_kbd->fd, USB_REQTYPE_INTERFACE_GET, USB_REQ_GETREPORT, USB_REPTYPE_OUTPUT << 8, _kbd->interface, 1, buffer);
-
-	memcpy(leds, buffer, 1);
-	iosFree(hId, buffer);
-
-	return ret;
-}
-#endif
-
-//Set an input report to control pipe
+/* Set an input report to control pipe */
 static s32 _set_output_report(void)
 {
 	u8 *buffer = 0;

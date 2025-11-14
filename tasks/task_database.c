@@ -1487,51 +1487,6 @@ static void task_database_handler(retro_task_t *task)
             RARCH_LOG("[Scanner] %s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), db->fullpath);
             if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
                printf("%s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), db->fullpath);
-
-/* Shortcut removed, can be deleted later if no-one comes screaming that it was important. */
-#if 0
-            /* If the scan path matches a database path exactly then
-             * save time by only processing that database. */
-            if (dbstate->list && (db->flags & DB_HANDLE_FLAG_IS_DIRECTORY))
-            {
-               size_t i;
-               char *dirname = NULL;
-
-               if (!string_is_empty(db->fullpath))
-               {
-                  char *last_slash      = find_last_slash(db->fullpath);
-                  dirname               = last_slash + 1;
-               }
-
-               if (!string_is_empty(dirname))
-               {
-                  for (i = 0; i < dbstate->list->size; i++)
-                  {
-                     char *last_slash;
-                     const char *data = dbstate->list->elems[i].data;
-                     bool strmatch    = false;
-                     char *dbpath     = strdup(data);
-
-                     path_remove_extension(dbpath);
-
-                     last_slash       = find_last_slash(dbpath);
-                     strmatch         = strcasecmp(last_slash + 1, dirname) == 0;
-
-                     free(dbpath);
-
-                     if (strmatch)
-                     {
-                        struct string_list *single_list = string_list_new();
-                        string_list_append(single_list, data,
-                              dbstate->list->elems[i].attr);
-                        dir_list_free(dbstate->list);
-                        dbstate->list = single_list;
-                        break;
-                     }
-                  }
-               }
-            }
-#endif
          }
          dbinfo->status = DATABASE_STATUS_ITERATE_START;
          break;

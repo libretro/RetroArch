@@ -52,7 +52,6 @@ extern unsigned int stb_vorbis_get_file_offset(stb_vorbis *f);
 
 /*   PULLING INPUT API */
 
-#ifndef STB_VORBIS_NO_PULLDATA_API
 /* This API assumes stb_vorbis is allowed to pull data from a source--
  * either a block of memory containing the _entire_ vorbis stream, or a
  * FILE * that you or it create, or possibly some other reading mechanism
@@ -155,13 +154,6 @@ enum STBVorbisError
  * crucial)
  */
 
-/* STB_VORBIS_NO_PULLDATA_API
- *     does not compile the code for the non-pushdata APIs
- */
-#if 0
-#define STB_VORBIS_NO_PULLDATA_API
-#endif
-
 /* STB_VORBIS_MAX_CHANNELS [number]
  *     globally define this to the maximum number of channels you need.
  *     The spec does not put a restriction on channels except that
@@ -198,17 +190,6 @@ enum STBVorbisError
  */
 #ifndef STB_VORBIS_FAST_HUFFMAN_INT
 #define STB_VORBIS_FAST_HUFFMAN_SHORT
-#endif
-
-/* STB_VORBIS_NO_HUFFMAN_BINARY_SEARCH
- *     If the 'fast huffman' search doesn't succeed, then stb_vorbis falls
- *     back on binary searching for the correct one. This requires storing
- *     extra tables with the huffman codes in sorted order. Defining this
- *     symbol trades off space for speed by forcing a linear search in the
- *     non-fast case, except for "sparse" codebooks.
- */
-#if 0
-#define STB_VORBIS_NO_HUFFMAN_BINARY_SEARCH
 #endif
 
 /* STB_VORBIS_CODEBOOK_SHORTS
@@ -2438,9 +2419,6 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
                int low, high, pred, highroom, lowroom, room, val;
                low = g->neighbors[j][0];
                high = g->neighbors[j][1];
-#if 0
-               neighbors(g->Xlist, j, &low, &high);
-#endif
                pred = predict_point(g->Xlist[j], g->Xlist[low], g->Xlist[high], finalY[low], finalY[high]);
                val = finalY[j];
                highroom = range - pred;
@@ -2827,11 +2805,9 @@ static int start_decoder(vorb *f)
          sorted_count = total;
       } else {
          sorted_count = 0;
-         #ifndef STB_VORBIS_NO_HUFFMAN_BINARY_SEARCH
          for (j=0; j < c->entries; ++j)
             if (lengths[j] > STB_VORBIS_FAST_HUFFMAN_LENGTH && lengths[j] != NO_CODE)
                ++sorted_count;
-         #endif
       }
 
       c->sorted_entries = sorted_count;
@@ -3294,7 +3270,6 @@ unsigned int stb_vorbis_get_file_offset(stb_vorbis *f)
    return (unsigned int)(f->stream - f->stream_start);
 }
 
-#ifndef STB_VORBIS_NO_PULLDATA_API
 /* DATA-PULLING API */
 
 static uint32_t vorbis_find_page(stb_vorbis *f, uint32_t *end, uint32_t *last)
@@ -3905,6 +3880,3 @@ int stb_vorbis_get_samples_float(stb_vorbis *f, int channels, float **buffer, in
    }
    return n;
 }
-#endif /* STB_VORBIS_NO_PULLDATA_API */
-
-#endif /* STB_VORBIS_HEADER_ONLY */

@@ -334,10 +334,6 @@ static void twoxsai_generic_packets(void *data,
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
          packets[i].work     = twoxsai_work_cb_rgb565;
-#if 0
-      else if (filt->in_fmt == SOFTFILTER_FMT_RGB4444)
-         packets[i].work     = twoxsai_work_cb_rgb4444;
-#endif
       else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
          packets[i].work     = twoxsai_work_cb_xrgb8888;
       packets[i].thread_data = thr;

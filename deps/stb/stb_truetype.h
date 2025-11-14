@@ -1877,29 +1877,12 @@ static void stbtt__handle_clipped_edge(float *scanline, int x, stbtt__active_edg
       y1 = e->ey;
    }
 
-#if 0
-   if (x0 == x)
-      assert(x1 <= x+1);
-   else if (x0 == x+1)
-      assert(x1 >= x);
-   else if (x0 <= x)
-      assert(x1 <= x);
-   else if (x0 >= x+1)
-      assert(x1 >= x+1);
-   else
-      assert(x1 >= x && x1 <= x+1);
-#endif
-
    if (x0 <= x && x1 <= x)
       scanline[x] += e->direction * (y1-y0);
    else if (x0 >= x+1 && x1 >= x+1)
       ;
-   else {
-#if 0
-      assert(x0 >= x && x0 <= x+1 && x1 >= x && x1 <= x+1);
-#endif
+   else
       scanline[x] += e->direction * (y1-y0) * (1-((x0-x)+(x1-x))/2); /* coverage = 1 - average x position */
-   }
 }
 
 static void stbtt__fill_active_edges_new(float *scanline, float *scanline_fill,

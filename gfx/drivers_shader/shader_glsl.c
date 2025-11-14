@@ -450,13 +450,6 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
    gl_glsl_print_shader_log(shader);
 
-#if 0
-#if defined(ORBIS)
-   if (status == GL_TRUE)
-      gl_glsl_dump_shader(shader, save_path);
-#endif
-#endif
-
    return status == GL_TRUE;
 }
 

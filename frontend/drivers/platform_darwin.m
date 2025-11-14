@@ -483,18 +483,6 @@ static int frontend_darwin_get_rating(void)
 
    frontend_darwin_get_name(model, sizeof(model));
 
-   /* iPhone 4 */
-#if 0
-   if (strstr(model, "iPhone3"))
-      return -1;
-#endif
-
-   /* iPad 1 */
-#if 0
-   if (strstr(model, "iPad1,1"))
-      return -1;
-#endif
-
    /* iPhone 4S */
    if (strstr(model, "iPhone4,1"))
       return 8;

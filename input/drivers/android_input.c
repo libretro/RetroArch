@@ -1086,10 +1086,6 @@ static void handle_hotplug(android_input_t *android,
       /* only use the hack if the device is one of the built-in devices */
       RARCH_LOG("[Android] Special device detected: %s.\n", device_model);
       {
-#if 0
-         RARCH_LOG("[Android] - Pads Mapped: %d\n- Device Name: %s\n- IDS: %d, %d, %d",
-               android->pads_connected, device_name, id, pad_id1, pad_id2);
-#endif
          /* Remove the remote or virtual controller device if it is mapped */
          if (   strstr(android->pad_states[0].name, "SHIELD Remote")
              || strstr(android->pad_states[0].name, "SHIELD Virtual Controller"))

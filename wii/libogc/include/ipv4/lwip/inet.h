@@ -39,9 +39,6 @@
 #include "lwip/ip_addr.h"
 
 u16_t inet_chksum(void *dataptr, u16_t len);
-#if 0 /* optimized routine */
-u16_t inet_chksum4(u8_t *dataptr, u16_t len);
-#endif
 u16_t inet_chksum_pbuf(struct pbuf *p);
 u16_t inet_chksum_pseudo(struct pbuf *p,
        struct ip_addr *src, struct ip_addr *dest,

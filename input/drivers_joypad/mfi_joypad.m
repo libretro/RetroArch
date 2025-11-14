@@ -181,13 +181,7 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
         mfi_axes[slot][3]         = gp.rightThumbstick.yAxis.value * 32767.0f;
         mfi_axes[slot][4]         = gp.leftTrigger.value * 32767.0f;
         mfi_axes[slot][5]         = gp.rightTrigger.value * 32767.0f;
-
     }
-#if 0
-    else if (controller.microGamepad)
-    {
-    }
-#endif
 
     /* GCGamepad is deprecated */
 #pragma clang diagnostic push

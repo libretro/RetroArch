@@ -267,12 +267,6 @@ static bool fpga_frame(void *data, const void *frame,
             }
          }
       }
-#if 0
-      else
-      {
-         /* TODO/FIXME: handle 32-bit core output */
-      }
-#endif
    }
 
    return true;

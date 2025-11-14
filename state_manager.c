@@ -65,26 +65,6 @@
 #include <emmintrin.h>
 #endif
 
-/* Format per frame (pseudocode): */
-#if 0
-size nextstart;
-repeat {
-   uint16 numchanged; /* everything is counted in units of uint16 */
-   if (numchanged)
-   {
-      uint16 numunchanged; /* skip these before handling numchanged */
-      uint16[numchanged] changeddata;
-   }
-   else
-   {
-      uint32 numunchanged;
-      if (!numunchanged)
-         break;
-   }
-}
-size thisstart;
-#endif
-
 /* There's no equivalent in libc, you'd think so ...
  * std::mismatch exists, but it's not optimized at all. */
 static size_t find_change(const uint16_t *a, const uint16_t *b)

@@ -66,13 +66,9 @@ static struct mem *ram_end;
 static u8_t ram[MEM_SIZE + sizeof(struct mem) + MEM_ALIGNMENT];
 
 #define MIN_SIZE 12
-#if 0 /* this one does not align correctly for some, resulting in crashes */
-#define SIZEOF_STRUCT_MEM (unsigned int)MEM_ALIGN_SIZE(sizeof(struct mem))
-#else
 #define SIZEOF_STRUCT_MEM (sizeof(struct mem) + \
                           (((sizeof(struct mem) % MEM_ALIGNMENT) == 0)? 0 : \
                           (4 - (sizeof(struct mem) % MEM_ALIGNMENT))))
-#endif
 
 static struct mem *lfree;   /* pointer to the lowest free block */
 
