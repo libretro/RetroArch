@@ -1683,49 +1683,6 @@ static VC_CONTAINER_STATUS_T asf_reader_index_find_time( VC_CONTAINER_T *p_ctx,
    else return STREAM_STATUS(p_ctx);
 }
 
-#if 0
-/*****************************************************************************/
-static VC_CONTAINER_STATUS_T asf_reader_index_find_packet( VC_CONTAINER_T *p_ctx,
-   unsigned int track, uint32_t *packet_num, bool forward )
-{
-   VC_CONTAINER_STATUS_T status;
-   VC_CONTAINER_MODULE_T *module = p_ctx->priv->module;
-   VC_CONTAINER_TRACK_MODULE_T *track_module = 0;
-   uint32_t i, prev_packet_num = 0, next_packet_num;
-   bool eos = false;
-
-   /* Sanity checking */
-   if(track >= p_ctx->tracks_num) return VC_CONTAINER_ERROR_FAILED;
-   track_module = p_ctx->tracks[track]->priv->module;
-   if(!track_module->num_index_entries) return VC_CONTAINER_ERROR_UNSUPPORTED_OPERATION;
-   if(!track_module->index_time_interval) return VC_CONTAINER_ERROR_CORRUPTED;
-
-   status = SEEK(p_ctx, track_module->index_offset);
-   if(status != VC_CONTAINER_SUCCESS) return status;
-
-   /* Loop through all the entries in the index */
-   for(i = 0; i < track_module->num_index_entries; i++)
-   {
-      next_packet_num = READ_U32(p_ctx, "Packet Number");
-      SKIP_U16(p_ctx, "Packet Count");
-      if(next_packet_num > *packet_num) break;
-      if(STREAM_STATUS(p_ctx) != VC_CONTAINER_SUCCESS) break;
-      prev_packet_num = next_packet_num;
-   }
-   if(i == track_module->num_index_entries ) eos = true;
-
-   if(STREAM_STATUS(p_ctx) == VC_CONTAINER_SUCCESS && !eos)
-   {
-      if(forward) *packet_num = next_packet_num;
-      else *packet_num = prev_packet_num;
-   }
-
-   if(eos && track_module->index_incomplete) return VC_CONTAINER_ERROR_INCOMPLETE_DATA;
-   else if(eos) return VC_CONTAINER_ERROR_EOS;
-   else return STREAM_STATUS(p_ctx);
-}
-#endif
-
 /*****************************************************************************/
 static VC_CONTAINER_STATUS_T asf_reader_find_next_frame( VC_CONTAINER_T *p_ctx,
    unsigned int track, ASF_PACKET_STATE *p_state, bool keyframe, bool timeout )

@@ -315,25 +315,6 @@ int vc_hostfs_open(const char *inPath, int vc_oflag)
    // Replace all '\' with '/'
    backslash_to_slash( path );
 
-#if 0
-   s = path + strlen( path );
-   if (( s - path ) >= 4 )
-   {
-      if ( strcasecmp( &s[ -4 ], ".vll" ) == 0 )
-      {
-         // The Videocore is asking for a .vll file. Since it isn't consistent with
-         // the case, we convert .vll files to all lowercase.
-          "vc_hostfs_open: '%s'", path ;
-
-         s--;	 // backup to the last character (*s is on the '\0')
-         while (( s >= path ) && ( *s != '/' ))
-         {
-            *s = tolower( *s );
-            s--;
-         }
-      }
-   }
-#endif
    DEBUG_MINOR("vc_hostfs_open: '%s'", path);
 
    flags = O_RDONLY;

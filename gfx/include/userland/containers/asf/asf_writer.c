@@ -105,11 +105,6 @@ static VC_CONTAINER_STATUS_T asf_write_object_ext_stream_properties( VC_CONTAINE
 static VC_CONTAINER_STATUS_T asf_write_object_simple_index( VC_CONTAINER_T *p_ctx );
 static VC_CONTAINER_STATUS_T asf_write_object_index( VC_CONTAINER_T *p_ctx );
 static VC_CONTAINER_STATUS_T asf_write_object_data( VC_CONTAINER_T *p_ctx );
-#if 0
-static VC_CONTAINER_STATUS_T asf_write_object_codec_list( VC_CONTAINER_T *p_ctx );
-static VC_CONTAINER_STATUS_T asf_write_object_content_description( VC_CONTAINER_T *p_ctx );
-static VC_CONTAINER_STATUS_T asf_write_object_stream_bitrate_props( VC_CONTAINER_T *p_ctx );
-#endif
 
 static const GUID_T asf_guid_header = {0x75B22630, 0x668E, 0x11CF, {0xA6, 0xD9, 0x00, 0xAA, 0x00, 0x62, 0xCE, 0x6C}};
 static const GUID_T asf_guid_file_props = {0x8CABDCA1, 0xA947, 0x11CF, {0x8E, 0xE4, 0x00, 0xC0, 0x0C, 0x20, 0x53, 0x65}};
@@ -148,12 +143,6 @@ static struct {
    {ASF_OBJECT_TYPE_INDEX, &asf_guid_index, "index", asf_write_object_index},
    {ASF_OBJECT_TYPE_HEADER_EXT, &asf_guid_header_ext, "header extension", asf_write_object_header_ext},
    {ASF_OBJECT_TYPE_HEADER_EXT_INTERNAL, &asf_guid_header_ext, "header extension", asf_write_object_header_ext_internal},
-#if 0
-   {ASF_OBJECT_TYPE_CODEC_LIST, &asf_guid_codec_list, "codec list", asf_write_object_codec_list},
-   {ASF_OBJECT_TYPE_CONTENT_DESCRIPTION, &asf_guid_content_description, "content description", asf_write_object_content_description},
-   {ASF_OBJECT_TYPE_EXT_CONTENT_DESCRIPTION, &asf_guid_ext_content_description, "extended content description", 0},
-   {ASF_OBJECT_TYPE_STREAM_BITRATE_PROPS, &asf_guid_stream_bitrate_props, "stream bitrate properties", asf_write_object_stream_bitrate_props},
-#endif
    {ASF_OBJECT_TYPE_UNKNOWN, 0, "unknown", 0}
 };
 

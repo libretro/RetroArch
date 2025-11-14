@@ -1465,10 +1465,6 @@ HRESULT WINAPI D3DXSHProjectCubeMap
 }
 #endif
 
-#if 0
-#include "d3dx9math.inl"
-#endif
-
 #if _MSC_VER >= 1200
 #pragma warning(pop)
 #endif

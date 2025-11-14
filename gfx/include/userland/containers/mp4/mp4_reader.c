@@ -306,18 +306,12 @@ static VC_CONTAINER_STATUS_T mp4_read_box_header( VC_CONTAINER_T *p_ctx, int64_t
       return VC_CONTAINER_ERROR_CORRUPTED;
    }
 
-#if 0
-   /* It is valid for a box to have a zero size (i.e unknown) if it is the last one */
-   if(*box_size == 0 && size >= 0) *box_size = size;
-   else if(*box_size == 0) *box_size = INT64_C(-1);
-#else
    if(*box_size <= 0)
    {
       LOG_DEBUG(p_ctx, "box %4.4s has an invalid size (%"PRIi64")",
                 (const char *)box_type, *box_size);
       return VC_CONTAINER_ERROR_CORRUPTED;
    }
-#endif
 
    /* Sanity check box size against parent */
    if(size >= 0 && *box_size > size)

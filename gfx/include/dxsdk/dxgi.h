@@ -190,10 +190,6 @@ typedef struct DXGI_ADAPTER_DESC
 
 #if !defined(HMONITOR_DECLARED) && !defined(HMONITOR) && (WINVER < 0x0500)
 #define HMONITOR_DECLARED
-#if 0
-typedef HANDLE HMONITOR;
-
-#endif
 DECLARE_HANDLE(HMONITOR);
 #endif
 typedef struct DXGI_OUTPUT_DESC

@@ -2206,25 +2206,6 @@ static int vc_fs_message_handler( FILESERV_MSG_T* msg, uint32_t nbytes )
             }
          }
          break;
-#if 0  // I don't think host systems are ready for these yet
-      case VC_FILESYS_SCANDISK:
-
-         vc_hostfs_scandisk((const char *)msg->data);
-         rlen = 0;
-         break;
-
-      case VC_FILESYS_CHKDSK:
-
-         i = vc_hostfs_chkdsk((const char *)msg->data, msg->params[0]);
-         if (i < 0) {
-            retval = FILESERV_RESP_ERROR;
-            rlen = 0;
-         } else {
-            msg->params[0] = (uint32_t)i;
-            rlen = 4;
-         }
-         break;
-#endif
       case VC_FILESYS_WRITE:
          {
             uint32_t fd = msg->params[0];

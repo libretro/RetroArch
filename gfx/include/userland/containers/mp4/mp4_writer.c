@@ -474,10 +474,6 @@ static VC_CONTAINER_STATUS_T mp4_write_box_minf( VC_CONTAINER_T *p_ctx )
       status = mp4_write_box(p_ctx, MP4_BOX_TYPE_VMHD);
    else if(track->format->es_type == VC_CONTAINER_ES_TYPE_AUDIO)
       status = mp4_write_box(p_ctx, MP4_BOX_TYPE_SMHD);
-#if 0
-   else if(track->format->es_type == VC_CONTAINER_ES_TYPE_SUBPICTURE)
-      /*FIXME */;
-#endif
    if(status != VC_CONTAINER_SUCCESS) return status;
 
    status = mp4_write_box(p_ctx, MP4_BOX_TYPE_DINF);
@@ -597,10 +593,6 @@ static VC_CONTAINER_STATUS_T mp4_write_box_stsd( VC_CONTAINER_T *p_ctx )
       status = mp4_write_box_extended(p_ctx, MP4_BOX_TYPE_VIDE, track->priv->module->fourcc);
    else if(track->format->es_type == VC_CONTAINER_ES_TYPE_AUDIO)
       status = mp4_write_box_extended(p_ctx, MP4_BOX_TYPE_SOUN, track->priv->module->fourcc);
-#if 0
-   else if(track->format->es_type == VC_CONTAINER_ES_TYPE_SUBPICTURE)
-      /*FIXME*/;
-#endif
 
    return status;
 }
@@ -1289,13 +1281,6 @@ static VC_CONTAINER_STATUS_T mp4_writer_add_sample( VC_CONTAINER_T *p_ctx,
    p_ctx->size += track_module->sample_table[MP4_SAMPLE_TABLE_STSZ].entry_size;
    track_module->sample_table[MP4_SAMPLE_TABLE_STTS].entries++; /* time to sample */
    p_ctx->size += track_module->sample_table[MP4_SAMPLE_TABLE_STTS].entry_size;
-
-   #if 0
-   delta_ts = packet->dts - track_module->timestamp;
-   track_module->timestamp = packet->dts;
-   if(!track_module->samples) track_module->delta_ts =
-   if()
-#endif
 
    /* Is it a new chunk ? */
    if(module->sample_offset != track_module->offset)
