@@ -101,8 +101,6 @@ extern int stb_vorbis_get_samples_float(stb_vorbis *f, int channels, float **buf
  * at the end of the file. If there are no more samples in the file, returns 0.
  */
 
-#endif
-
 /*   ERROR CODES */
 
 enum STBVorbisError
@@ -2419,6 +2417,9 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
                int low, high, pred, highroom, lowroom, room, val;
                low = g->neighbors[j][0];
                high = g->neighbors[j][1];
+#if 0
+               neighbors(g->Xlist, j, &low, &high);
+#endif
                pred = predict_point(g->Xlist[j], g->Xlist[low], g->Xlist[high], finalY[low], finalY[high]);
                val = finalY[j];
                highroom = range - pred;
@@ -3880,3 +3881,5 @@ int stb_vorbis_get_samples_float(stb_vorbis *f, int channels, float **buffer, in
    }
    return n;
 }
+
+#endif /* STB_VORBIS_HEADER_ONLY */
