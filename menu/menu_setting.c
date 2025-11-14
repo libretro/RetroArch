@@ -20853,7 +20853,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_video_3ds_display_mode;
             menu_settings_list_current_add_range(list, list_info, 0,
-                  CTR_VIDEO_MODE_LAST - (((device_model == 0) || (device_model == 1)) ? 1 : 3),
+                  CTR_VIDEO_MODE_LAST - ((device_model != 3) ? 1 : 3),
                   1, true, true);
          }
 

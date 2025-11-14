@@ -192,7 +192,7 @@ typedef struct ctr_video
    bool keep_aspect;
    bool should_resize;
    bool msg_rendering_enabled;
-   bool supports_parallax_disable;
+   bool supports_wide_display;
    bool enable_3d;
    bool p3d_event_pending;
    bool ppf_event_pending;
@@ -831,18 +831,15 @@ static INLINE void ctr_check_3D_slider(ctr_video_t* ctr, ctr_video_mode_enum vid
 
             GSPGPU_FlushDataCache(ctr->frame_coords, 3 * sizeof(ctr_vertex_t));
 
-            if (ctr->supports_parallax_disable)
-               ctr_set_parallax_layer(true);
             ctr->enable_3d = true;
          }
          break;
       case CTR_VIDEO_MODE_2D_400X240:
       case CTR_VIDEO_MODE_2D_800X240:
-         if (ctr->supports_parallax_disable)
+         if (ctr->supports_wide_display)
          {
             ctr->video_mode = video_mode;
-            ctr_set_parallax_layer(false);
-            ctr->enable_3d = true;
+            ctr->enable_3d = false;
          }
          else
          {
@@ -853,8 +850,6 @@ static INLINE void ctr_check_3D_slider(ctr_video_t* ctr, ctr_video_mode_enum vid
       case CTR_VIDEO_MODE_2D:
       default:
          ctr->video_mode = CTR_VIDEO_MODE_2D;
-         if (ctr->supports_parallax_disable)
-            ctr_set_parallax_layer(false);
          ctr->enable_3d = false;
          break;
    }
@@ -1722,8 +1717,6 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
                   gfxTopRightFramebuffers[
                   ctr->current_buffer_top], 400 * 240 * 3);
          }
-         if (ctr->supports_parallax_disable)
-            ctr_set_parallax_layer(*(float*)0x1FF81080 != 0.0);
          ctr_set_bottom_screen_enable(true, ctr->bottom_is_idle);
          save_state_to_file(ctr);
          break;
@@ -1954,7 +1947,7 @@ static void* ctr_init(const video_info_t* video,
     * (i.e. these are the only platforms that can use
     * CTR_VIDEO_MODE_2D_400X240 and CTR_VIDEO_MODE_2D_800X240) */
    CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
-   ctr->supports_parallax_disable = (device_model == 0) || (device_model == 1);
+   ctr->supports_wide_display = device_model != 3;
 
    refresh_rate = (32730.0 * 8192.0) / 4481134.0;
 
@@ -2448,14 +2441,16 @@ static bool ctr_frame(void* data, const void* frame,
 
 #ifdef USE_CTRULIB_2
    u32 *buf0, *buf1, *bottom;
-   u32 stride;
+   u32 stride = 240 * 3;
+   u8 bit5, bit6;
 
    buf0 = (u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
 
    if (ctr->video_mode == CTR_VIDEO_MODE_2D_800X240)
    {
-      buf1 = (u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);
-      stride = 240 * 3 * 2;
+      buf1 = buf0;
+      bit5 = false;
+      bit6 = false;
    }
    else
    {
@@ -2464,13 +2459,14 @@ static bool ctr_frame(void* data, const void* frame,
       else
          buf1 = buf0;
 
-      stride = 240 * 3;
+      bit5 = (ctr->enable_3d != 0);
+      bit6 = 1^bit5;
    }
 
-   u8 bit5 = (ctr->enable_3d != 0);
+
 
    gspPresentBuffer(GFX_TOP, ctr->current_buffer_top, buf0, buf1,
-                    stride, (1<<8)|((1^bit5)<<6)|((bit5)<<5)|GSP_BGR8_OES);
+                    stride, (1<<8)|((bit6)<<6)|((bit5)<<5)|GSP_BGR8_OES);
 
 #ifndef CONSOLE_LOG
    if (ctr->refresh_bottom_menu)
@@ -2490,13 +2486,13 @@ static bool ctr_frame(void* data, const void* frame,
       active_framebuf           = ctr->current_buffer_top;
    topFramebufferInfo.
       framebuf0_vaddr           = (u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
+   topFramebufferInfo.
+      framebuf_widthbytesize = 240 * 3;
 
    if (ctr->video_mode == CTR_VIDEO_MODE_2D_800X240)
    {
       topFramebufferInfo.
          framebuf1_vaddr        = (u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);
-      topFramebufferInfo.
-         framebuf_widthbytesize = 240 * 3 * 2;
    }
    else
    {
@@ -2507,11 +2503,10 @@ static bool ctr_frame(void* data, const void* frame,
          topFramebufferInfo.
             framebuf1_vaddr     = topFramebufferInfo.framebuf0_vaddr;
 
-      topFramebufferInfo.
-         framebuf_widthbytesize = 240 * 3;
    }
 
-   u8 bit5                      = (ctr->enable_3d != 0);
+   u8 bit5                      = (ctr->enable_3d != 0) & (ctr->video_mode != CTR_VIDEO_MODE_2D_800X240);
+   u8 bit6                      = (1^bit5) & (ctr->video_mode != CTR_VIDEO_MODE_2D_800X240);
    topFramebufferInfo.format    = (1<<8)|((1^bit5)<<6)|((bit5)<<5)|GSP_BGR8_OES;
    topFramebufferInfo.
       framebuf_dispselect       = ctr->current_buffer_top;
