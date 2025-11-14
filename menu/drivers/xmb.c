@@ -7080,7 +7080,12 @@ static void xmb_render(void *data,
       for (i = first; i <= last; i++)
       {
          xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
-         xmb_icons_t *thumbnail_icon = &node->thumbnail_icon;
+         xmb_icons_t *thumbnail_icon;
+
+         if (!node)
+            continue;
+
+         thumbnail_icon = &node->thumbnail_icon;
 
          if (cur_per_frame >= max_per_frame)
          {
