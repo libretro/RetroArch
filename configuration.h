@@ -700,6 +700,7 @@ typedef struct settings
 #endif
 
       /* Input */
+      bool input_assign_ports_on_button_press;
       bool input_remap_binds_enable;
       bool input_remap_sort_by_controller_enable;
       bool input_autodetect_enable;
@@ -758,6 +759,7 @@ typedef struct settings
       bool notification_show_cheats_applied;
       bool notification_show_patch_applied;
       bool notification_show_remap_load;
+      bool notification_show_user_mapped_to_core_port;
       bool notification_show_config_override_load;
       bool notification_show_set_initial_disk;
       bool notification_show_disk_control;

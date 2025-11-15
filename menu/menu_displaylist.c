@@ -8270,6 +8270,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,                   PARSE_ACTION,     true},
                {MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,        PARSE_ACTION,     true},
                {MENU_ENUM_LABEL_INPUT_MAX_USERS,                       PARSE_ONLY_UINT,  true},
+               {MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,    PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,                 PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS,                 PARSE_ONLY_UINT,  true},
                {MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,                   PARSE_ONLY_BOOL,  true},
@@ -10853,6 +10854,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_PATCH_APPLIED,         PARSE_ONLY_BOOL,  false },
 #endif
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD,            PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_NOTIFICATION_SHOW_USER_MAPPED_TO_CORE_PORT, PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,  PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,      PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_NOTIFICATION_SHOW_DISK_CONTROL,          PARSE_ONLY_BOOL,  false },
@@ -12464,8 +12466,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                {
                   unsigned j;
-                  unsigned device  = settings->uints.input_libretro_device[mapped_port];
-                  device          &= RETRO_DEVICE_MASK;
+                  unsigned device = ((mapped_port < MAX_USERS)
+                                        ? settings->uints.input_libretro_device[mapped_port]
+                                        : RETRO_DEVICE_NONE
+                                    ) & RETRO_DEVICE_MASK;
 
                   if (device == RETRO_DEVICE_JOYPAD || device == RETRO_DEVICE_ANALOG)
                   {

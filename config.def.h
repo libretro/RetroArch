@@ -1124,6 +1124,10 @@
  * input remap file */
 #define DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD true
 
+/* Display a notification when a user is mapped to a core
+ * port on first button press */
+#define DEFAULT_NOTIFICATION_SHOW_USER_MAPPED_TO_CORE_PORT true
+
 /* Display a notification when loading a
  * configuration override file */
 #define DEFAULT_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD true
@@ -1619,6 +1623,10 @@
 /* Enable input auto-detection. Will attempt to autoconfigure
  * gamepads, plug-and-play style. */
 #define DEFAULT_INPUT_AUTODETECT_ENABLE true
+
+/* Map user to core port on first button press. First person
+ * to press a button is player 1, second is player 2, etc. */
+#define DEFAULT_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS false
 
 /* Enables accelerometer/gyroscope/illuminance
  * sensor input, if supported */

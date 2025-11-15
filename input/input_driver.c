@@ -6013,6 +6013,103 @@ static void input_keys_pressed(
       input_st->input_hotkey_block_counter = 0;
 }
 
+/* Ignore d-pad buttons to avoid false positives.
+ * Some wireless gamepad receivers report 0 values for all axes when the
+ * gamepad is powered off or not yet connected. Since 0 represents the
+ * "left" and "up" positions for d-pad axes, this creates false button
+ * presses that could trigger unwanted input mapping.
+ */
+static bool any_button_ex_dpad_pressed(int32_t state)
+{
+   static const uint32_t button_mask =
+      (1 << RETRO_DEVICE_ID_JOYPAD_A)     |
+      (1 << RETRO_DEVICE_ID_JOYPAD_B)     |
+      (1 << RETRO_DEVICE_ID_JOYPAD_X)     |
+      (1 << RETRO_DEVICE_ID_JOYPAD_Y)     |
+      (1 << RETRO_DEVICE_ID_JOYPAD_L)     |
+      (1 << RETRO_DEVICE_ID_JOYPAD_R)     |
+      (1 << RETRO_DEVICE_ID_JOYPAD_L2)    |
+      (1 << RETRO_DEVICE_ID_JOYPAD_R2)    |
+      (1 << RETRO_DEVICE_ID_JOYPAD_L3)    |
+      (1 << RETRO_DEVICE_ID_JOYPAD_R3)    |
+      (1 << RETRO_DEVICE_ID_JOYPAD_START) |
+      (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+
+   return (state & button_mask) != 0;
+}
+
+/* Returns MAX_USERS if all core ports are mapped to a user. */
+static unsigned get_first_free_core_port(settings_t *settings)
+{
+   unsigned core_port_idx;
+   for (core_port_idx = 0; core_port_idx < MAX_USERS; core_port_idx++)
+   {
+      unsigned *core_port_users = settings->uints.input_remap_port_map[core_port_idx];
+      if (core_port_users[0] == MAX_USERS)
+         return core_port_idx;
+   }
+
+   return MAX_USERS;
+}
+
+static void map_user_to_first_free_core_port(unsigned user_idx, settings_t *settings)
+{
+   unsigned core_port_idx;
+
+   if (!settings || user_idx >= MAX_USERS)
+   {
+      RARCH_ERR("[Automap] Invalid parameters\n");
+      return;
+   }
+
+   /* Check if user is already mapped */
+   if (settings->uints.input_remap_ports[user_idx] < MAX_USERS)
+   {
+      RARCH_LOG("[Automap] User %u already mapped to core port %u\n", 
+            user_idx, settings->uints.input_remap_ports[user_idx]);
+      return;
+   }
+
+   core_port_idx = get_first_free_core_port(settings);
+
+   if (core_port_idx < MAX_USERS)
+   {
+      configuration_set_uint(settings,
+            settings->uints.input_remap_ports[user_idx], core_port_idx);
+      configuration_set_uint(settings,
+            settings->uints.input_libretro_device[core_port_idx], RETRO_DEVICE_JOYPAD);
+
+      input_remapping_update_port_map();
+
+      RARCH_LOG("[Automap] user %u mapped to core port %u\n", user_idx, core_port_idx);
+
+      if (settings->bools.notification_show_user_mapped_to_core_port)
+      {
+         unsigned joypad_idx = settings->uints.input_joypad_index[user_idx];
+         const char *device_display_name = input_config_get_device_display_name(joypad_idx);
+         char msg[128] = { '\0'};
+
+         if (string_is_empty(device_display_name))
+            snprintf(msg, sizeof(msg),
+                  msg_hash_to_str(MSG_PORT_MAPPED_TO_CORE_PORT_NR),
+                  user_idx + 1,
+                  core_port_idx + 1);
+         else
+            snprintf(msg, sizeof(msg),
+                  msg_hash_to_str(MSG_DEVICE_MAPPED_TO_CORE_PORT_NR),
+                  device_display_name,
+                  core_port_idx + 1);
+
+         runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
+   }
+   else
+   {
+      RARCH_LOG("[Automap] No free core ports - user %u not mapped\n", user_idx);
+   }
+}
+
 void input_driver_poll(void)
 {
    size_t i, j;
@@ -6029,8 +6126,26 @@ void input_driver_poll(void)
       *sec_joypad                 = NULL;
 #endif
    bool input_remap_binds_enable  = settings->bools.input_remap_binds_enable;
+   bool input_assign_ports_on_button_press
+                                  = settings->bools.input_assign_ports_on_button_press;
    float input_axis_threshold     = settings->floats.input_axis_threshold;
    uint8_t max_users              = (uint8_t)settings->uints.input_max_users;
+
+   /* This rarch_joypad_info_t struct contains the device index + autoconfig binds for the
+    * controller to be queried, and also (for unknown reasons) the analog axis threshold
+    * when mapping analog stick to dpad input. */
+   for (i = 0; i < max_users; i++)
+   {
+      joypad_info[i].axis_threshold = input_axis_threshold;
+      joypad_info[i].joy_idx        = settings->uints.input_joypad_index[i];
+      joypad_info[i].auto_binds     = input_autoconf_binds[joypad_info[i].joy_idx];
+   }
+
+#ifdef HAVE_MENU
+   input_assign_ports_on_button_press =
+            input_assign_ports_on_button_press
+         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE);
+#endif
 
    if (joypad && joypad->poll)
       joypad->poll();
@@ -6040,22 +6155,49 @@ void input_driver_poll(void)
          && input_st->current_driver->poll)
       input_st->current_driver->poll(input_st->current_data);
 
+   if (input_assign_ports_on_button_press)
+   {
+      for (i = 0; i < max_users; i++)
+      {
+         bool user_already_mapped = settings->uints.input_remap_ports[i] < MAX_USERS;
+
+         if (!user_already_mapped)
+         {
+            int32_t buttons_st = input_state_wrap(input_st->current_driver, input_st->current_data,
+                  joypad, sec_joypad, &joypad_info[i],
+                  (*input_st->libretro_input_binds),
+                  (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                  (unsigned)i,
+                  RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+
+            if (any_button_ex_dpad_pressed(buttons_st))
+               map_user_to_first_free_core_port(i, settings);
+         }
+      }
+   }
+
 #ifdef HAVE_OVERLAY
    if (      input_st->overlay_ptr
          && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE))
    {
       unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[0];
+      unsigned mapped_port            = settings->uints.input_remap_ports[0];
+      bool first_user_is_mapped       = mapped_port < MAX_USERS;
       float input_overlay_opacity     = (input_st->overlay_ptr->flags & INPUT_OVERLAY_IS_OSK)
          ? settings->floats.input_osk_overlay_opacity
          : settings->floats.input_overlay_opacity;
+
+      /* If user 0 is not mapped yet, use the port they would be mapped
+       * to on overlay button press to get the input_analog_dpad_mode. */
+      if (!first_user_is_mapped && input_assign_ports_on_button_press)
+         mapped_port = get_first_free_core_port(settings);
 
       switch (input_analog_dpad_mode)
       {
          case ANALOG_DPAD_LSTICK:
          case ANALOG_DPAD_RSTICK:
             {
-               unsigned mapped_port      = settings->uints.input_remap_ports[0];
-               if (input_st->analog_requested[mapped_port])
+               if ((mapped_port < MAX_USERS) && input_st->analog_requested[mapped_port])
                   input_analog_dpad_mode = ANALOG_DPAD_NONE;
             }
             break;
@@ -6077,6 +6219,12 @@ void input_driver_poll(void)
             input_overlay_opacity,
             input_analog_dpad_mode,
             settings->floats.input_axis_threshold);
+
+      if (!first_user_is_mapped && input_assign_ports_on_button_press)
+      {
+         if (input_st->overlay_ptr->overlay_state.buttons.data[0])
+            map_user_to_first_free_core_port(0, settings);
+      }
    }
 #endif
 
@@ -6089,9 +6237,6 @@ void input_driver_poll(void)
       return;
    }
 
-   /* This rarch_joypad_info_t struct contains the device index + autoconfig binds for the
-    * controller to be queried, and also (for unknown reasons) the analog axis threshold
-    * when mapping analog stick to dpad input. */
    for (i = 0; i < max_users; i++)
    {
       uint16_t button_id = RARCH_TURBO_ENABLE;
@@ -6099,10 +6244,6 @@ void input_driver_poll(void)
 
       if (settings->ints.input_turbo_bind != -1)
          button_id = settings->ints.input_turbo_bind;
-
-      joypad_info[i].axis_threshold        = input_axis_threshold;
-      joypad_info[i].joy_idx               = settings->uints.input_joypad_index[i];
-      joypad_info[i].auto_binds            = input_autoconf_binds[joypad_info[i].joy_idx];
 
       input_st->turbo_btns.frame_enable[i] =
                (*input_st->libretro_input_binds[i])[button_id].valid
@@ -6142,8 +6283,10 @@ void input_driver_poll(void)
       {
          input_bits_t current_inputs;
          unsigned mapped_port            = settings->uints.input_remap_ports[i];
-         unsigned device                 = settings->uints.input_libretro_device[mapped_port]
-                                           & RETRO_DEVICE_MASK;
+         unsigned device                 = ((mapped_port < MAX_USERS)
+                                               ? settings->uints.input_libretro_device[mapped_port]
+                                               : RETRO_DEVICE_NONE
+                                           ) & RETRO_DEVICE_MASK;
          input_bits_t *p_new_state       = (input_bits_t*)&current_inputs;
          unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[i];
 
@@ -6151,7 +6294,7 @@ void input_driver_poll(void)
          {
             case ANALOG_DPAD_LSTICK:
             case ANALOG_DPAD_RSTICK:
-               if (input_st->analog_requested[mapped_port])
+               if ((mapped_port < MAX_USERS) && input_st->analog_requested[mapped_port])
                   input_analog_dpad_mode = ANALOG_DPAD_NONE;
                break;
             case ANALOG_DPAD_LSTICK_FORCED:
@@ -6705,6 +6848,11 @@ void input_remapping_update_port_map(void)
          port_map_index[remap_port]++;
       }
    }
+
+   /* Changing mapped port may leave a core port unused;
+    * reinitialise controllers to ensure that any such
+    * ports are set to 'RETRO_DEVICE_NONE' */
+   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
 }
 
 void input_remapping_deinit(bool save_remap)
@@ -6721,6 +6869,29 @@ void input_remapping_deinit(bool save_remap)
    runloop_st->flags           &= ~(RUNLOOP_FLAG_REMAPS_CORE_ACTIVE
                                |    RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE
                                |    RUNLOOP_FLAG_REMAPS_GAME_ACTIVE);
+}
+
+void input_remapping_set_remap_ports_defaults(void)
+{
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+   bool assign_ports_on_button_press = settings->bools.input_assign_ports_on_button_press;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      configuration_set_uint(settings,
+         settings->uints.input_remap_ports[i],
+         assign_ports_on_button_press ? MAX_USERS : i);
+
+      configuration_set_uint(settings,
+         settings->uints.input_libretro_device[i],
+         assign_ports_on_button_press ? RETRO_DEVICE_NONE : RETRO_DEVICE_JOYPAD);
+   }
+
+   /* Need to call 'input_remapping_update_port_map()'
+    * whenever 'settings->uints.input_remap_ports'
+    * is modified */
+   input_remapping_update_port_map();
 }
 
 void input_remapping_set_defaults(bool clear_cache)
@@ -6747,16 +6918,9 @@ void input_remapping_set_defaults(bool clear_cache)
       for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
          configuration_set_uint(settings,
                settings->uints.input_remap_ids[i][j], j);
-
-      /* Controller port remaps */
-      configuration_set_uint(settings,
-            settings->uints.input_remap_ports[i], i);
    }
 
-   /* Need to call 'input_remapping_update_port_map()'
-    * whenever 'settings->uints.input_remap_ports'
-    * is modified */
-   input_remapping_update_port_map();
+   input_remapping_set_remap_ports_defaults();
 
    /* Restore 'global' settings that were cached on
     * the last core init

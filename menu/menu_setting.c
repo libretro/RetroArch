@@ -5566,16 +5566,11 @@ static int setting_action_left_input_remap_port(
    if (settings->uints.input_remap_ports[port] > 0)
       settings->uints.input_remap_ports[port]--;
    else
-      settings->uints.input_remap_ports[port] = MAX_USERS - 1;
+      settings->uints.input_remap_ports[port] = MAX_USERS;
 
    /* Must be called whenever settings->uints.input_remap_ports
     * is modified */
    input_remapping_update_port_map();
-
-   /* Changing mapped port may leave a core port unused;
-    * reinitialise controllers to ensure that any such
-    * ports are set to 'RETRO_DEVICE_NONE' */
-   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
 
    menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
@@ -6688,8 +6683,12 @@ static size_t setting_get_string_representation_uint_input_remap_port(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
+   {
+      if (*setting->value.target.unsigned_integer == MAX_USERS)
+         return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
       return snprintf(s, len, "%u",
             *setting->value.target.unsigned_integer + 1);
+   }
    return 0;
 }
 
@@ -7706,11 +7705,6 @@ static int setting_action_start_input_remap_port(rarch_setting_t *setting)
     * is modified */
    input_remapping_update_port_map();
 
-   /* Changing mapped port may leave a core port unused;
-    * reinitialise controllers to ensure that any such
-    * ports are set to 'RETRO_DEVICE_NONE' */
-   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
-
    menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    return 0;
@@ -7817,7 +7811,7 @@ static int setting_action_right_input_remap_port(
 
    port = setting->index_offset;
 
-   if (settings->uints.input_remap_ports[port] < MAX_USERS - 1)
+   if (settings->uints.input_remap_ports[port] < MAX_USERS)
       settings->uints.input_remap_ports[port]++;
    else
       settings->uints.input_remap_ports[port] = 0;
@@ -7825,11 +7819,6 @@ static int setting_action_right_input_remap_port(
    /* Must be called whenever settings->uints.input_remap_ports
     * is modified */
    input_remapping_update_port_map();
-
-   /* Changing mapped port may leave a core port unused;
-    * reinitialise controllers to ensure that any such
-    * ports are set to 'RETRO_DEVICE_NONE' */
-   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
 
    menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
@@ -8955,6 +8944,11 @@ static void general_write_handler(rarch_setting_t *setting)
                      NULL, menu_st->userdata);
          }
          break;
+      case MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS:
+         {
+            input_remapping_set_defaults(false);
+         }
+         break;
       default:
          /* Special cases */
 
@@ -8967,11 +8961,6 @@ static void general_write_handler(rarch_setting_t *setting)
             /* Must be called whenever settings->uints.input_remap_ports
              * is modified */
             input_remapping_update_port_map();
-
-            /* Changing mapped port may leave a core port unused;
-             * reinitialise controllers to ensure that any such
-             * ports are set to 'RETRO_DEVICE_NONE' */
-            command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
          }
 
          break;
@@ -9802,7 +9791,7 @@ static bool setting_append_list_input_remap_port_options(
       (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
       (*list)[list_info->index - 1].get_string_representation =
          &setting_get_string_representation_uint_input_remap_port;
-      menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS-1, 1.0, true, true);
+      menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_REMAP_PORT + user));
    }
@@ -15628,6 +15617,22 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.input_assign_ports_on_button_press,
+                  MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+                  DEFAULT_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.input_remap_binds_enable,
                   MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,
                   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -17051,6 +17056,21 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD,
                MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
                DEFAULT_NOTIFICATION_SHOW_REMAP_LOAD,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.notification_show_user_mapped_to_core_port,
+               MENU_ENUM_LABEL_NOTIFICATION_SHOW_USER_MAPPED_TO_CORE_PORT,
+               MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_USER_MAPPED_TO_CORE_PORT,
+               DEFAULT_NOTIFICATION_SHOW_USER_MAPPED_TO_CORE_PORT,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
