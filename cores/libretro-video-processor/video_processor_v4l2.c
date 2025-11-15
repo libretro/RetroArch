@@ -33,6 +33,7 @@
 
 #include <libretro.h>
 #include <clamping.h>
+#include <compat/strl.h>
 #include <retro_miscellaneous.h>
 
 #include <sys/mman.h>
@@ -607,9 +608,9 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_syst
       info->geometry.base_height = video_format.fmt.pix.height;
 
       if(capture_resolution.value != NULL)
-         strncpy(video_capture_resolution, capture_resolution.value, ENVVAR_BUFLEN-1);
+         strlcpy(video_capture_resolution, capture_resolution.value, sizeof(video_capture_resolution));
       else
-         strncpy(video_capture_resolution, "auto", ENVVAR_BUFLEN-1);
+         strlcpy(video_capture_resolution, "auto", sizeof(video_capture_resolution));
 
       if (strcmp(video_capture_resolution, "auto") != 0)
       {
@@ -1047,7 +1048,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
       }
 
       if (frametimes.value != NULL)
-         strncpy(video_frame_times, frametimes.value, ENVVAR_BUFLEN-1);
+         strlcpy(video_frame_times, frametimes.value, sizeof(video_frame_times));
    }
 
    VIDEOPROC_CORE_PREFIX(input_poll_cb)();
@@ -1217,18 +1218,18 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
        close_devices();
        return false;
    }
-   strncpy(video_device, videodev.value, ENVVAR_BUFLEN-1);
+   strlcpy(video_device, videodev.value, sizeof(video_device));
 
    /* Audio device is optional... */
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &audiodev);
    if (audiodev.value != NULL)
-      strncpy(audio_device, audiodev.value, ENVVAR_BUFLEN-1);
+      strlcpy(audio_device, audiodev.value, sizeof(audio_device));
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_resolution);
    if(capture_resolution.value != NULL)
-      strncpy(video_capture_resolution, capture_resolution.value, ENVVAR_BUFLEN-1);
+      strlcpy(video_capture_resolution, capture_resolution.value, sizeof(video_capture_resolution));
    else
-      strncpy(video_capture_resolution, "auto", ENVVAR_BUFLEN-1);
+      strlcpy(video_capture_resolution, "auto", sizeof(video_capture_resolution));
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_mode);
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &output_mode);
@@ -1237,12 +1238,12 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
        close_devices();
        return false;
    }
-   strncpy(video_capture_mode, capture_mode.value, ENVVAR_BUFLEN-1);
-   strncpy(video_output_mode, output_mode.value, ENVVAR_BUFLEN-1);
+   strlcpy(video_capture_mode, capture_mode.value, sizeof(video_capture_mode));
+   strlcpy(video_output_mode,  output_mode.value,  sizeof(video_output_mode));
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &frame_times);
    if (frame_times.value != NULL)
-      strncpy(video_frame_times, frame_times.value, ENVVAR_BUFLEN-1);
+      strlcpy(video_frame_times, frame_times.value, sizeof(video_frame_times));
 
    if (strcmp(video_device, "dummy") == 0)
    {
@@ -1499,8 +1500,8 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
 {
-   struct v4l2_requestbuffers reqbufs;
    int i;
+   struct v4l2_requestbuffers reqbufs;
 
 #ifdef HAVE_ALSA
    if (audio_handle != NULL)
