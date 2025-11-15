@@ -1415,6 +1415,7 @@ MENU
 DEPENDENCIES
 ============================================================ */
 #ifdef HAVE_FLAC
+#include "../deps/dr/dr_flac.c"
 #include "../deps/libFLAC/bitmath.c"
 #include "../deps/libFLAC/bitreader.c"
 #include "../deps/libFLAC/cpu.c"
@@ -1458,7 +1459,6 @@ DEPENDENCIES
 #include "../libretro-common/formats/libchdr/libchdr_huffman.c"
 
 #ifdef HAVE_FLAC
-#include "../deps/dr/dr_flac.c"
 #include "../libretro-common/formats/libchdr/libchdr_flac.c"
 #include "../libretro-common/formats/libchdr/libchdr_flac_codec.c"
 #endif

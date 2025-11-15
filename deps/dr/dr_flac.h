@@ -7,15 +7,12 @@ David Reid - mackron@gmail.com
 GitHub: https://github.com/mackron/dr_libs
 */
 
-#ifndef DR_FLAC_H
-#define DR_FLAC_H
+#ifndef dr_flac_h
+#define dr_flac_h
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdint.h>
-#include <stddef.h> /* For size_t. */
 
 #define DRFLAC_STRINGIFY(x)      #x
 #define DRFLAC_XSTRINGIFY(x)     DRFLAC_STRINGIFY(x)
@@ -24,6 +21,8 @@ extern "C" {
 #define DRFLAC_VERSION_MINOR     12
 #define DRFLAC_VERSION_REVISION  42
 #define DRFLAC_VERSION_STRING    DRFLAC_XSTRINGIFY(DRFLAC_VERSION_MAJOR) "." DRFLAC_XSTRINGIFY(DRFLAC_VERSION_MINOR) "." DRFLAC_XSTRINGIFY(DRFLAC_VERSION_REVISION)
+
+#include <stddef.h> /* For size_t. */
 
 /* Sized Types */
 typedef   signed char           drflac_int8;
@@ -59,27 +58,6 @@ typedef drflac_uint32           drflac_bool32;
 #define DRFLAC_TRUE             1
 #define DRFLAC_FALSE            0
 /* End Sized Types */
-
-/*
-BIT READING ATTEMPT #2
-
-This uses a 32- or 64-bit bit-shifted cache - as bits are read, the cache is shifted such that the first valid bit is sitting
-on the most significant bit. It uses the notion of an L1 and L2 cache (borrowed from CPU architecture), where the L1 cache
-is a 32- or 64-bit unsigned integer (depending on whether or not a 32- or 64-bit build is being compiled) and the L2 is an
-array of "cache lines", with each cache line being the same size as the L1. The L2 is a buffer of about 4KB and is where data
-from onRead() is read into.
-*/
-#define DRFLAC_CACHE_L1_SIZE_BYTES(bs)                      (sizeof((bs)->cache))
-#define DRFLAC_CACHE_L1_SIZE_BITS(bs)                       (sizeof((bs)->cache)*8)
-#define DRFLAC_CACHE_L1_BITS_REMAINING(bs)                  (DRFLAC_CACHE_L1_SIZE_BITS(bs) - (bs)->consumedBits)
-#define DRFLAC_CACHE_L1_SELECTION_MASK(_bitCount)           (~((~(drflac_cache_t)0) >> (_bitCount)))
-#define DRFLAC_CACHE_L1_SELECTION_SHIFT(bs, _bitCount)      (DRFLAC_CACHE_L1_SIZE_BITS(bs) - (_bitCount))
-#define DRFLAC_CACHE_L1_SELECT(bs, _bitCount)               (((bs)->cache) & DRFLAC_CACHE_L1_SELECTION_MASK(_bitCount))
-#define DRFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, _bitCount)     (DRFLAC_CACHE_L1_SELECT((bs), (_bitCount)) >>  DRFLAC_CACHE_L1_SELECTION_SHIFT((bs), (_bitCount)))
-#define DRFLAC_CACHE_L1_SELECT_AND_SHIFT_SAFE(bs, _bitCount)(DRFLAC_CACHE_L1_SELECT((bs), (_bitCount)) >> (DRFLAC_CACHE_L1_SELECTION_SHIFT((bs), (_bitCount)) & (DRFLAC_CACHE_L1_SIZE_BITS(bs)-1)))
-#define DRFLAC_CACHE_L2_SIZE_BYTES(bs)                      (sizeof((bs)->cacheL2))
-#define DRFLAC_CACHE_L2_LINE_COUNT(bs)                      (DRFLAC_CACHE_L2_SIZE_BYTES(bs) / sizeof((bs)->cacheL2[0]))
-#define DRFLAC_CACHE_L2_LINES_REMAINING(bs)                 (DRFLAC_CACHE_L2_LINE_COUNT(bs) - (bs)->nextL2Line)
 
 /* Allocation Callbacks */
 typedef struct
@@ -536,38 +514,6 @@ typedef struct
     drflac_uint8 pExtraData[1];
 } drflac;
 
-/* Structure representing an iterator for vorbis comments in a VORBIS_COMMENT metadata block. */
-typedef struct
-{
-    drflac_uint32 countRemaining;
-    const char* pRunningData;
-} drflac_vorbis_comment_iterator;
-
-/* Structure representing an iterator for cuesheet tracks in a CUESHEET metadata block. */
-typedef struct
-{
-    drflac_uint32 countRemaining;
-    const char* pRunningData;
-} drflac_cuesheet_track_iterator;
-
-/* The order of members here is important because we map this directly to the raw data within the CUESHEET metadata block. */
-typedef struct
-{
-    drflac_uint64 offset;
-    drflac_uint8 index;
-    drflac_uint8 reserved[3];
-} drflac_cuesheet_track_index;
-
-typedef struct
-{
-    drflac_uint64 offset;
-    drflac_uint8 trackNumber;
-    char ISRC[12];
-    drflac_bool8 isAudio;
-    drflac_bool8 preEmphasis;
-    drflac_uint8 indexCount;
-    const drflac_cuesheet_track_index* pIndexPoints;
-} drflac_cuesheet_track;
 
 /*
 Opens a FLAC decoder.
@@ -770,7 +716,7 @@ Return Value
 -------------
 `DRFLAC_TRUE` if successful; `DRFLAC_FALSE` otherwise.
 */
-uint32_t drflac_seek_to_pcm_frame(drflac* pFlac, uint64_t pcmFrameIndex);
+drflac_bool32 drflac_seek_to_pcm_frame(drflac* pFlac, drflac_uint64 pcmFrameIndex);
 
 /*
 Opens a FLAC decoder from a pre-allocated block of memory
@@ -814,8 +760,62 @@ Set pAllocationCallbacks to the same object that was passed to drflac_open_*_and
 */
 void drflac_free(void* p, const drflac_allocation_callbacks* pAllocationCallbacks);
 
+
+/* Structure representing an iterator for vorbis comments in a VORBIS_COMMENT metadata block. */
+typedef struct
+{
+    drflac_uint32 countRemaining;
+    const char* pRunningData;
+} drflac_vorbis_comment_iterator;
+
+/* Structure representing an iterator for cuesheet tracks in a CUESHEET metadata block. */
+typedef struct
+{
+    drflac_uint32 countRemaining;
+    const char* pRunningData;
+} drflac_cuesheet_track_iterator;
+
+/* The order of members here is important because we map this directly to the raw data within the CUESHEET metadata block. */
+typedef struct
+{
+    drflac_uint64 offset;
+    drflac_uint8 index;
+    drflac_uint8 reserved[3];
+} drflac_cuesheet_track_index;
+
+typedef struct
+{
+    drflac_uint64 offset;
+    drflac_uint8 trackNumber;
+    char ISRC[12];
+    drflac_bool8 isAudio;
+    drflac_bool8 preEmphasis;
+    drflac_uint8 indexCount;
+    const drflac_cuesheet_track_index* pIndexPoints;
+} drflac_cuesheet_track;
+
+/*
+BIT READING ATTEMPT #2
+
+This uses a 32- or 64-bit bit-shifted cache - as bits are read, the cache is shifted such that the first valid bit is sitting
+on the most significant bit. It uses the notion of an L1 and L2 cache (borrowed from CPU architecture), where the L1 cache
+is a 32- or 64-bit unsigned integer (depending on whether or not a 32- or 64-bit build is being compiled) and the L2 is an
+array of "cache lines", with each cache line being the same size as the L1. The L2 is a buffer of about 4KB and is where data
+from onRead() is read into.
+*/
+#define DRFLAC_CACHE_L1_SIZE_BYTES(bs)                      (sizeof((bs)->cache))
+#define DRFLAC_CACHE_L1_SIZE_BITS(bs)                       (sizeof((bs)->cache)*8)
+#define DRFLAC_CACHE_L1_BITS_REMAINING(bs)                  (DRFLAC_CACHE_L1_SIZE_BITS(bs) - (bs)->consumedBits)
+#define DRFLAC_CACHE_L1_SELECTION_MASK(_bitCount)           (~((~(drflac_cache_t)0) >> (_bitCount)))
+#define DRFLAC_CACHE_L1_SELECTION_SHIFT(bs, _bitCount)      (DRFLAC_CACHE_L1_SIZE_BITS(bs) - (_bitCount))
+#define DRFLAC_CACHE_L1_SELECT(bs, _bitCount)               (((bs)->cache) & DRFLAC_CACHE_L1_SELECTION_MASK(_bitCount))
+#define DRFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, _bitCount)     (DRFLAC_CACHE_L1_SELECT((bs), (_bitCount)) >>  DRFLAC_CACHE_L1_SELECTION_SHIFT((bs), (_bitCount)))
+#define DRFLAC_CACHE_L1_SELECT_AND_SHIFT_SAFE(bs, _bitCount)(DRFLAC_CACHE_L1_SELECT((bs), (_bitCount)) >> (DRFLAC_CACHE_L1_SELECTION_SHIFT((bs), (_bitCount)) & (DRFLAC_CACHE_L1_SIZE_BITS(bs)-1)))
+#define DRFLAC_CACHE_L2_SIZE_BYTES(bs)                      (sizeof((bs)->cacheL2))
+#define DRFLAC_CACHE_L2_LINE_COUNT(bs)                      (DRFLAC_CACHE_L2_SIZE_BYTES(bs) / sizeof((bs)->cacheL2[0]))
+#define DRFLAC_CACHE_L2_LINES_REMAINING(bs)                 (DRFLAC_CACHE_L2_LINE_COUNT(bs) - (bs)->nextL2Line)
+
 #ifdef __cplusplus
 }
 #endif
-
-#endif  /* DR_FLAC_H */
+#endif  /* dr_flac_h */
