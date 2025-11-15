@@ -1413,6 +1413,7 @@ MENU
 DEPENDENCIES
 ============================================================ */
 #ifdef HAVE_FLAC
+#include "../deps/dr/dr_flac.c"
 #include "../deps/libFLAC/bitmath.c"
 #include "../deps/libFLAC/bitreader.c"
 #include "../deps/libFLAC/cpu.c"
