@@ -61,49 +61,10 @@ typedef drflac_uint32           drflac_bool32;
 
 /* Decorations */
 #if !defined(DRFLAC_API)
-    #if defined(DRFLAC_DLL)
-        #if defined(_WIN32)
-            #define DRFLAC_DLL_IMPORT  __declspec(dllimport)
-            #define DRFLAC_DLL_EXPORT  __declspec(dllexport)
-            #define DRFLAC_DLL_PRIVATE static
-        #else
-            #if defined(__GNUC__) && __GNUC__ >= 4
-                #define DRFLAC_DLL_IMPORT  __attribute__((visibility("default")))
-                #define DRFLAC_DLL_EXPORT  __attribute__((visibility("default")))
-                #define DRFLAC_DLL_PRIVATE __attribute__((visibility("hidden")))
-            #else
-                #define DRFLAC_DLL_IMPORT
-                #define DRFLAC_DLL_EXPORT
-                #define DRFLAC_DLL_PRIVATE static
-            #endif
-        #endif
-
-        #if defined(DR_FLAC_IMPLEMENTATION) || defined(DRFLAC_IMPLEMENTATION)
-            #define DRFLAC_API  DRFLAC_DLL_EXPORT
-        #else
-            #define DRFLAC_API  DRFLAC_DLL_IMPORT
-        #endif
-        #define DRFLAC_PRIVATE DRFLAC_DLL_PRIVATE
-    #else
-        #define DRFLAC_API extern
-        #define DRFLAC_PRIVATE static
-    #endif
+#define DRFLAC_API extern
+#define DRFLAC_PRIVATE static
 #endif
 /* End Decorations */
-
-#if defined(_MSC_VER) && _MSC_VER >= 1700   /* Visual Studio 2012 */
-    #define DRFLAC_DEPRECATED       __declspec(deprecated)
-#elif (defined(__GNUC__) && __GNUC__ >= 4)  /* GCC 4 */
-    #define DRFLAC_DEPRECATED       __attribute__((deprecated))
-#elif defined(__has_feature)                /* Clang */
-    #if __has_feature(attribute_deprecated)
-        #define DRFLAC_DEPRECATED   __attribute__((deprecated))
-    #else
-        #define DRFLAC_DEPRECATED
-    #endif
-#else
-    #define DRFLAC_DEPRECATED
-#endif
 
 /* Allocation Callbacks */
 typedef struct
@@ -1403,10 +1364,8 @@ static DRFLAC_INLINE drflac_uint16 drflac__be2host_16(drflac_uint16 n)
 
 static DRFLAC_INLINE drflac_uint32 drflac__be2host_32(drflac_uint32 n)
 {
-    if (drflac__is_little_endian()) {
+    if (drflac__is_little_endian())
         return drflac__swap_endian_uint32(n);
-    }
-
     return n;
 }
 
@@ -1418,20 +1377,16 @@ static DRFLAC_INLINE drflac_uint32 drflac__be2host_32_ptr_unaligned(const void* 
 
 static DRFLAC_INLINE drflac_uint64 drflac__be2host_64(drflac_uint64 n)
 {
-    if (drflac__is_little_endian()) {
+    if (drflac__is_little_endian())
         return drflac__swap_endian_uint64(n);
-    }
-
     return n;
 }
 
 
 static DRFLAC_INLINE drflac_uint32 drflac__le2host_32(drflac_uint32 n)
 {
-    if (!drflac__is_little_endian()) {
+    if (!drflac__is_little_endian())
         return drflac__swap_endian_uint32(n);
-    }
-
     return n;
 }
 
@@ -1452,8 +1407,6 @@ static DRFLAC_INLINE drflac_uint32 drflac__unsynchsafe_32(drflac_uint32 n)
 
     return result;
 }
-
-
 
 /* The CRC code below is based on this document: http://zlib.net/crc_v3.txt */
 static drflac_uint8 drflac__crc8_table[] = {
@@ -1669,14 +1622,14 @@ static DRFLAC_INLINE drflac_bool32 drflac__reload_l1_cache_from_l2(drflac_bs* bs
     If we get here it means we've run out of data in the L2 cache. We'll need to fetch more from the client, if there's
     any left.
     */
-    if (bs->unalignedByteCount > 0) {
+    if (bs->unalignedByteCount > 0)
         return DRFLAC_FALSE;   /* If we have any unaligned bytes it means there's no more aligned bytes left in the client. */
-    }
 
     bytesRead = bs->onRead(bs->pUserData, bs->cacheL2, DRFLAC_CACHE_L2_SIZE_BYTES(bs));
 
     bs->nextL2Line = 0;
-    if (bytesRead == DRFLAC_CACHE_L2_SIZE_BYTES(bs)) {
+    if (bytesRead == DRFLAC_CACHE_L2_SIZE_BYTES(bs))
+    {
         bs->cache = bs->cacheL2[bs->nextL2Line++];
         return DRFLAC_TRUE;
     }
@@ -1696,21 +1649,21 @@ static DRFLAC_INLINE drflac_bool32 drflac__reload_l1_cache_from_l2(drflac_bs* bs
         bs->unalignedCache = bs->cacheL2[alignedL1LineCount];
     }
 
-    if (alignedL1LineCount > 0) {
+    if (alignedL1LineCount > 0)
+    {
         size_t offset = DRFLAC_CACHE_L2_LINE_COUNT(bs) - alignedL1LineCount;
         size_t i;
-        for (i = alignedL1LineCount; i > 0; --i) {
+        for (i = alignedL1LineCount; i > 0; --i)
             bs->cacheL2[i-1 + offset] = bs->cacheL2[i-1];
-        }
 
         bs->nextL2Line = (drflac_uint32)offset;
         bs->cache = bs->cacheL2[bs->nextL2Line++];
         return DRFLAC_TRUE;
-    } else {
-        /* If we get into this branch it means we weren't able to load any L1-aligned data. */
-        bs->nextL2Line = DRFLAC_CACHE_L2_LINE_COUNT(bs);
-        return DRFLAC_FALSE;
     }
+
+    /* If we get into this branch it means we weren't able to load any L1-aligned data. */
+    bs->nextL2Line = DRFLAC_CACHE_L2_LINE_COUNT(bs);
+    return DRFLAC_FALSE;
 }
 
 static drflac_bool32 drflac__reload_cache(drflac_bs* bs)
@@ -1722,7 +1675,8 @@ static drflac_bool32 drflac__reload_cache(drflac_bs* bs)
 #endif
 
     /* Fast path. Try just moving the next value in the L2 cache to the L1 cache. */
-    if (drflac__reload_l1_cache_from_l2(bs)) {
+    if (drflac__reload_l1_cache_from_l2(bs))
+    {
         bs->cache = drflac__be2host__cache_line(bs->cache);
         bs->consumedBits = 0;
 #ifndef DR_FLAC_NO_CRC
@@ -1739,7 +1693,8 @@ static drflac_bool32 drflac__reload_cache(drflac_bs* bs)
     data from the unaligned cache.
     */
     bytesRead = bs->unalignedByteCount;
-    if (bytesRead == 0) {
+    if (bytesRead == 0)
+    {
         bs->consumedBits = DRFLAC_CACHE_L1_SIZE_BITS(bs);   /* <-- The stream has been exhausted, so marked the bits as consumed. */
         return DRFLAC_FALSE;
     }
@@ -1827,14 +1782,13 @@ static drflac_bool32 drflac__read_int32(drflac_bs* bs, unsigned int bitCount, dr
 {
     drflac_uint32 result;
 
-    if (!drflac__read_uint32(bs, bitCount, &result)) {
+    if (!drflac__read_uint32(bs, bitCount, &result))
         return DRFLAC_FALSE;
-    }
 
     /* Do not attempt to shift by 32 as it's undefined. */
-    if (bitCount < 32) {
-        drflac_uint32 signbit;
-        signbit = ((result >> (bitCount-1)) & 0x01);
+    if (bitCount < 32)
+    {
+        drflac_uint32 signbit = ((result >> (bitCount-1)) & 0x01);
         result |= (~signbit + 1) << bitCount;
     }
 
@@ -1895,55 +1849,55 @@ static drflac_bool32 drflac__read_int8(drflac_bs* bs, unsigned int bitCount, drf
 
 static drflac_bool32 drflac__seek_bits(drflac_bs* bs, size_t bitsToSeek)
 {
-    if (bitsToSeek <= DRFLAC_CACHE_L1_BITS_REMAINING(bs)) {
-        bs->consumedBits += (drflac_uint32)bitsToSeek;
-        bs->cache <<= bitsToSeek;
-        return DRFLAC_TRUE;
-    } else {
-        /* It straddles the cached data. This function isn't called too frequently so I'm favouring simplicity here. */
-        bitsToSeek       -= DRFLAC_CACHE_L1_BITS_REMAINING(bs);
-        bs->consumedBits += DRFLAC_CACHE_L1_BITS_REMAINING(bs);
-        bs->cache         = 0;
+   if (bitsToSeek <= DRFLAC_CACHE_L1_BITS_REMAINING(bs))
+   {
+      bs->consumedBits += (drflac_uint32)bitsToSeek;
+      bs->cache <<= bitsToSeek;
+      return DRFLAC_TRUE;
+   }
 
-        /* Simple case. Seek in groups of the same number as bits that fit within a cache line. */
+   /* It straddles the cached data. This function isn't called too frequently so I'm favouring simplicity here. */
+   bitsToSeek       -= DRFLAC_CACHE_L1_BITS_REMAINING(bs);
+   bs->consumedBits += DRFLAC_CACHE_L1_BITS_REMAINING(bs);
+   bs->cache         = 0;
+
+   /* Simple case. Seek in groups of the same number as bits that fit within a cache line. */
 #ifdef DRFLAC_64BIT
-        while (bitsToSeek >= DRFLAC_CACHE_L1_SIZE_BITS(bs)) {
-            drflac_uint64 bin;
-            if (!drflac__read_uint64(bs, DRFLAC_CACHE_L1_SIZE_BITS(bs), &bin)) {
-                return DRFLAC_FALSE;
-            }
-            bitsToSeek -= DRFLAC_CACHE_L1_SIZE_BITS(bs);
-        }
+   while (bitsToSeek >= DRFLAC_CACHE_L1_SIZE_BITS(bs)) {
+      drflac_uint64 bin;
+      if (!drflac__read_uint64(bs, DRFLAC_CACHE_L1_SIZE_BITS(bs), &bin)) {
+         return DRFLAC_FALSE;
+      }
+      bitsToSeek -= DRFLAC_CACHE_L1_SIZE_BITS(bs);
+   }
 #else
-        while (bitsToSeek >= DRFLAC_CACHE_L1_SIZE_BITS(bs)) {
-            drflac_uint32 bin;
-            if (!drflac__read_uint32(bs, DRFLAC_CACHE_L1_SIZE_BITS(bs), &bin)) {
-                return DRFLAC_FALSE;
-            }
-            bitsToSeek -= DRFLAC_CACHE_L1_SIZE_BITS(bs);
-        }
+   while (bitsToSeek >= DRFLAC_CACHE_L1_SIZE_BITS(bs)) {
+      drflac_uint32 bin;
+      if (!drflac__read_uint32(bs, DRFLAC_CACHE_L1_SIZE_BITS(bs), &bin)) {
+         return DRFLAC_FALSE;
+      }
+      bitsToSeek -= DRFLAC_CACHE_L1_SIZE_BITS(bs);
+   }
 #endif
 
-        /* Whole leftover bytes. */
-        while (bitsToSeek >= 8) {
-            drflac_uint8 bin;
-            if (!drflac__read_uint8(bs, 8, &bin)) {
-                return DRFLAC_FALSE;
-            }
-            bitsToSeek -= 8;
-        }
+   /* Whole leftover bytes. */
+   while (bitsToSeek >= 8) {
+      drflac_uint8 bin;
+      if (!drflac__read_uint8(bs, 8, &bin)) {
+         return DRFLAC_FALSE;
+      }
+      bitsToSeek -= 8;
+   }
 
-        /* Leftover bits. */
-        if (bitsToSeek > 0) {
-            drflac_uint8 bin;
-            if (!drflac__read_uint8(bs, (drflac_uint32)bitsToSeek, &bin)) {
-                return DRFLAC_FALSE;
-            }
-            bitsToSeek = 0; /* <-- Necessary for the assert below. */
-        }
+   /* Leftover bits. */
+   if (bitsToSeek > 0) {
+      drflac_uint8 bin;
+      if (!drflac__read_uint8(bs, (drflac_uint32)bitsToSeek, &bin))
+         return DRFLAC_FALSE;
+      bitsToSeek = 0; /* <-- Necessary for the assert below. */
+   }
 
-        return DRFLAC_TRUE;
-    }
+   return DRFLAC_TRUE;
 }
 
 
@@ -1954,41 +1908,36 @@ static drflac_bool32 drflac__find_and_seek_to_next_sync_code(drflac_bs* bs)
     The sync code is always aligned to 8 bits. This is convenient for us because it means we can do byte-aligned movements. The first
     thing to do is align to the next byte.
     */
-    if (!drflac__seek_bits(bs, DRFLAC_CACHE_L1_BITS_REMAINING(bs) & 7)) {
-        return DRFLAC_FALSE;
-    }
-
-    for (;;) {
-        drflac_uint8 hi;
+    if (drflac__seek_bits(bs, DRFLAC_CACHE_L1_BITS_REMAINING(bs) & 7))
+    {
+       for (;;)
+       {
+          drflac_uint8 hi;
 
 #ifndef DR_FLAC_NO_CRC
-        drflac__reset_crc16(bs);
+          drflac__reset_crc16(bs);
 #endif
 
-        if (!drflac__read_uint8(bs, 8, &hi)) {
-            return DRFLAC_FALSE;
-        }
+          if (!drflac__read_uint8(bs, 8, &hi))
+             return DRFLAC_FALSE;
 
-        if (hi == 0xFF) {
-            drflac_uint8 lo;
-            if (!drflac__read_uint8(bs, 6, &lo)) {
+          if (hi == 0xFF)
+          {
+             drflac_uint8 lo;
+             if (!drflac__read_uint8(bs, 6, &lo))
                 return DRFLAC_FALSE;
-            }
 
-            if (lo == 0x3E) {
+             if (lo == 0x3E)
                 return DRFLAC_TRUE;
-            } else {
-                if (!drflac__seek_bits(bs, DRFLAC_CACHE_L1_BITS_REMAINING(bs) & 7)) {
-                    return DRFLAC_FALSE;
-                }
-            }
-        }
+
+             if (!drflac__seek_bits(bs, DRFLAC_CACHE_L1_BITS_REMAINING(bs) & 7))
+                return DRFLAC_FALSE;
+          }
+       }
     }
 
-    /* Should never get here. */
-    /*return DRFLAC_FALSE;*/
+    return DRFLAC_FALSE;
 }
-
 
 #if defined(DRFLAC_HAS_LZCNT_INTRINSIC)
 #define DRFLAC_IMPLEMENT_CLZ_LZCNT
@@ -2047,11 +1996,11 @@ static DRFLAC_INLINE drflac_bool32 drflac__is_lzcnt_supported(void)
     return DRFLAC_TRUE;
 #else
     /* If the compiler itself does not support the intrinsic then we'll need to return false. */
-    #ifdef DRFLAC_HAS_LZCNT_INTRINSIC
-        return drflac__gIsLZCNTSupported;
-    #else
-        return DRFLAC_FALSE;
-    #endif
+#ifdef DRFLAC_HAS_LZCNT_INTRINSIC
+    return drflac__gIsLZCNTSupported;
+#else
+    return DRFLAC_FALSE;
+#endif
 #endif
 }
 
@@ -2138,11 +2087,8 @@ static DRFLAC_INLINE drflac_uint32 drflac__clz_lzcnt(drflac_cache_t x)
 static DRFLAC_INLINE drflac_uint32 drflac__clz_msvc(drflac_cache_t x)
 {
     drflac_uint32 n;
-
-    if (x == 0) {
+    if (x == 0)
         return sizeof(x)*8;
-    }
-
 #ifdef DRFLAC_64BIT
     _BitScanReverse64((unsigned long*)&n, x);
 #else
@@ -2200,19 +2146,19 @@ static DRFLAC_INLINE drflac_bool32 drflac__seek_past_next_set_bit(drflac_bs* bs,
     drflac_uint32 zeroCounter = 0;
     drflac_uint32 setBitOffsetPlus1;
 
-    while (bs->cache == 0) {
+    while (bs->cache == 0)
+    {
         zeroCounter += (drflac_uint32)DRFLAC_CACHE_L1_BITS_REMAINING(bs);
-        if (!drflac__reload_cache(bs)) {
+        if (!drflac__reload_cache(bs))
             return DRFLAC_FALSE;
-        }
     }
 
-    if (bs->cache == 1) {
+    if (bs->cache == 1)
+    {
         /* Not catching this would lead to undefined behaviour: a shift of a 32-bit number by 32 or more is undefined */
         *pOffsetOut = zeroCounter + (drflac_uint32)DRFLAC_CACHE_L1_BITS_REMAINING(bs) - 1;
-        if (!drflac__reload_cache(bs)) {
+        if (!drflac__reload_cache(bs))
             return DRFLAC_FALSE;
-        }
 
         return DRFLAC_TRUE;
     }
@@ -2220,10 +2166,9 @@ static DRFLAC_INLINE drflac_bool32 drflac__seek_past_next_set_bit(drflac_bs* bs,
     setBitOffsetPlus1 = drflac__clz(bs->cache);
     setBitOffsetPlus1 += 1;
 
-    if (setBitOffsetPlus1 > DRFLAC_CACHE_L1_BITS_REMAINING(bs)) {
-        /* This happens when we get to end of stream */
+    /* This happens when we get to end of stream */
+    if (setBitOffsetPlus1 > DRFLAC_CACHE_L1_BITS_REMAINING(bs))
         return DRFLAC_FALSE;
-    }
 
     bs->consumedBits += setBitOffsetPlus1;
     bs->cache <<= setBitOffsetPlus1;
@@ -2231,8 +2176,6 @@ static DRFLAC_INLINE drflac_bool32 drflac__seek_past_next_set_bit(drflac_bs* bs,
     *pOffsetOut = zeroCounter + setBitOffsetPlus1 - 1;
     return DRFLAC_TRUE;
 }
-
-
 
 static drflac_bool32 drflac__seek_to_byte(drflac_bs* bs, drflac_uint64 offsetFromStart)
 {
@@ -2289,26 +2232,29 @@ static drflac_result drflac__read_utf8_coded_number(drflac_bs* bs, drflac_uint64
     }
 
     /*byteCount = 1;*/
-    if ((utf8[0] & 0xE0) == 0xC0) {
+    if ((utf8[0] & 0xE0) == 0xC0)
         byteCount = 2;
-    } else if ((utf8[0] & 0xF0) == 0xE0) {
+    else if ((utf8[0] & 0xF0) == 0xE0)
         byteCount = 3;
-    } else if ((utf8[0] & 0xF8) == 0xF0) {
+    else if ((utf8[0] & 0xF8) == 0xF0)
         byteCount = 4;
-    } else if ((utf8[0] & 0xFC) == 0xF8) {
+    else if ((utf8[0] & 0xFC) == 0xF8)
         byteCount = 5;
-    } else if ((utf8[0] & 0xFE) == 0xFC) {
+    else if ((utf8[0] & 0xFE) == 0xFC)
         byteCount = 6;
-    } else if ((utf8[0] & 0xFF) == 0xFE) {
+    else if ((utf8[0] & 0xFF) == 0xFE)
         byteCount = 7;
-    } else {
+    else
+    {
         *pNumberOut = 0;
         return DRFLAC_CRC_MISMATCH;     /* Bad UTF-8 encoding. */
     }
 
     result = (drflac_uint64)(utf8[0] & (0xFF >> (byteCount + 1)));
-    for (i = 1; i < byteCount; ++i) {
-        if (!drflac__read_uint8(bs, 8, utf8 + i)) {
+    for (i = 1; i < byteCount; ++i)
+    {
+        if (!drflac__read_uint8(bs, 8, utf8 + i))
+        {
             *pNumberOut = 0;
             return DRFLAC_AT_END;
         }
@@ -4022,18 +3968,15 @@ static drflac_bool32 drflac__decode_samples_with_residual(drflac_bs* bs, drflac_
         }
 
         if (riceParam != 0xFF) {
-            if (!drflac__decode_samples_with_residual__rice(bs, bitsPerSample, samplesInPartition, riceParam, lpcOrder, lpcShift, lpcPrecision, coefficients, pDecodedSamples)) {
+            if (!drflac__decode_samples_with_residual__rice(bs, bitsPerSample, samplesInPartition, riceParam, lpcOrder, lpcShift, lpcPrecision, coefficients, pDecodedSamples))
                 return DRFLAC_FALSE;
-            }
         } else {
             drflac_uint8 unencodedBitsPerSample = 0;
-            if (!drflac__read_uint8(bs, 5, &unencodedBitsPerSample)) {
+            if (!drflac__read_uint8(bs, 5, &unencodedBitsPerSample))
                 return DRFLAC_FALSE;
-            }
 
-            if (!drflac__decode_samples_with_residual__unencoded(bs, bitsPerSample, samplesInPartition, unencodedBitsPerSample, lpcOrder, lpcShift, lpcPrecision, coefficients, pDecodedSamples)) {
+            if (!drflac__decode_samples_with_residual__unencoded(bs, bitsPerSample, samplesInPartition, unencodedBitsPerSample, lpcOrder, lpcShift, lpcPrecision, coefficients, pDecodedSamples))
                 return DRFLAC_FALSE;
-            }
         }
 
         pDecodedSamples += samplesInPartition;
