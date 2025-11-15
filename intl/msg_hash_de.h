@@ -13959,6 +13959,14 @@ MSG_HASH(
    "Frontend für Libretro"
    )
 MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT,
+   "Spielstand geladen aus Speicherplatz: %d."
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Spielstand geladen aus Speicherplatz: Automatisch."
+   )
+MSG_HASH(
    MSG_LOADING,
    "Wird geladen"
    )
@@ -14153,6 +14161,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Konfiguration gespeichert in"
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Spielstand gespeichert in Speicherplatz: %d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Spielstand gespeichert in Speicherplatz: Automatisch."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

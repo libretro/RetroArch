@@ -2498,6 +2498,10 @@ MSG_HASH(
    "Цілочисельне масштабування"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Округліть до меншого або більшого числа. «Розумне» масштабування зменшується до меншого, якщо зображення занадто обрізане, і, нарешті, повертається до нецілочисельного масштабування, якщо поля меншого масштабу занадто великі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    "Занижена шкала"
    )
@@ -3317,6 +3321,10 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Виберіть фізичну клавіатуру"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
    "Використовувати цей пристрій як фізичну клавіатуру і не як геймпад."
    )
@@ -3390,8 +3398,24 @@ MSG_HASH(
    "Аналогова Чутливість"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Чутливість акселерометра"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   "Чутливість гіроскопа"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Налаштувати чутливість аналогових джойстиків."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   "Налаштуйте чутливість акселерометра."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+  "Налаштуйте чутливість гіроскопа."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3637,6 +3661,22 @@ MSG_HASH(
    "Дозволяє будь-якому користувачу контролювати меню. Якщо вимкнено, тоді лише користувач 1 може керувати меню."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   "Списки відтворення одним кліком"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   "Пропустити меню «Виконати» під час запуску записів списку відтворення. Натисніть D-Pad, утримуючи OK, щоб отримати доступ до меню «Виконати»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   "Дозволити повернення з вкладок"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   "Повернення до головного меню з вкладок/бічної панелі після натискання кнопки «Назад»."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    "Прискорення прокрутки меню"
    )
@@ -3714,6 +3754,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    "Блокувати всі гарячі клавіші як на клавіатурі, так і на пристрої контролера, якщо для будь-якого типу встановлено параметр «Увімкнути гарячі клавіші»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Гарячі клавіші слідують за гравцем 1"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Гарячі клавіші прив’язані до основного порту 1, навіть якщо основний порт 1 перепризначено іншому користувачеві. Примітка: гарячі клавіші клавіатури не працюватимуть, якщо основний порт 1 перепризначено будь-якому користувачеві > 1 (введення з клавіатури здійснюється кори[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -4008,6 +4056,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
    "Зупинка запису/відтворення поточного повтору."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Контрольна точка збереження повтору"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   "Встановлює контрольну точку для поточного відтворення повтору."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Контрольна точка попереднього повтору"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   "Перемотує повтор до попередньої автоматично або вручну збереженої контрольної точки."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Наступна контрольна точка повтору"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   "Перемотує повтор до наступної автоматично або вручну збереженої контрольної точки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
@@ -4742,6 +4814,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    "Автоматично зберігає стан гри під час запису повтору з регулярним інтервалом. За замовчуванням вимкнено, якщо не встановлено інше. Інтервал вимірюється у секундах. Значення 0 вимикає запис контрольних точок."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Чи слід десеріалізувати контрольні точки, що зберігаються у повторах, під час звичайного відтворення."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Десеріалізація контрольної точки повтору"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Чи десеріалізувати контрольні точки, що зберігаються у повторах, під час звичайного відтворення. Слід встановити значення «true» для більшості ядер, але деякі можуть демонструвати нестабільну поведінку під час десеріалізації контенту."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -7053,6 +7137,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
    "Стартова Сторінка"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   "Початкова сторінка меню під час запуску."
+   )
 
 /* Settings > AI Service */
 
@@ -7766,6 +7854,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "Востаннє зіграно:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
+   "Кількість відтворень:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
@@ -9810,6 +9902,22 @@ MSG_HASH(
    "Додати пресет до поточно завантаженого пресету."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Керування шаблонами"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   "Збереження або вилучення шаблон шейдерів."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Активний файл шаблонів"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   "Поточний шаблон шейдера, що використовується."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
    "Застосувати зміни"
    )
@@ -9873,6 +9981,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Зберегти пресет шейдера, який має посилання на оригінальний пресет і включає в себе тільки той параметр, який ви зробили."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Зберегти поточний шаблон"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Зберегти поточний шаблон шейдера."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
+   "Зберегти шаблон як"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -13418,6 +13538,14 @@ MSG_HASH(
    "%.*s приєднався з пристроєм введення %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d гравець(і)"
+   )
+MSG_HASH(
+   MSG_NETPLAY_SPECTATORS_INFO,
+   "%d гравець(і) (%d глядачів)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Спроба з'єднання з мережею не вдалася, оскільки учасник не запущений RetroArch, або запущена стара версія Retroch."
    )
@@ -13971,8 +14099,20 @@ MSG_HASH(
    "Не вдалося отримати псевдонім від клієнта."
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD,
+   "Не вдалося завантажити."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_CONTENT,
+   "Не вдалося завантажити вміст."
+   )
+MSG_HASH(
    MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
    "Не вдалося завантажити зі списку відтворення."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "Не вдалося завантажити файл фільму."
    )
 MSG_HASH(
    MSG_FAILED_TO_LOAD_OVERLAY,
@@ -14131,6 +14271,30 @@ MSG_HASH(
    "Неправильна часова шкала; запис буде перезаписано"
    )
 MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
+   "Перемотати назад"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
+   "Не вдалося перемотати назад"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
+   "Перемотування вперед"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
+   "Не вдалося перемотати вперед"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME,
+   "Пошук завершено"
+   )
+MSG_HASH(
+   MSG_REPLAY_SEEK_TO_FRAME_FAILED,
+   "Пошук не вдався"
+   )
+MSG_HASH(
    MSG_FOUND_SHADER,
    "Знайдено шейдер"
    )
@@ -14229,6 +14393,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LIBRETRO_FRONTEND,
    "Інтерфейс для лібретро"
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT,
+   "Завантажений стан зі слота: %d."
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Стан завантаження зі слота: Авто."
    )
 MSG_HASH(
    MSG_LOADING,
@@ -14425,6 +14597,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Конфігурацію збережено у"
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Збережено стан у слоті: %d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Збережений стан у слоті: Авто."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
@@ -15033,6 +15213,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    "Не вдалося змінити ретроДосягнення: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   "Термін дії входу в RetroAchievements минув. Будь ласка, введіть свій пароль ще раз і перезавантажте гру."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

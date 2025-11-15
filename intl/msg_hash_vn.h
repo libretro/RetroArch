@@ -14363,6 +14363,14 @@ MSG_HASH(
    "Giao diện người dùng cho libretro"
    )
 MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT,
+   "Đã tải trạng thái từ khe: %d."
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Đã tải trạng thái từ khe: Tự động."
+   )
+MSG_HASH(
    MSG_LOADING,
    "Đang tải"
    )
@@ -14557,6 +14565,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Đã lưu cấu hình vào"
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Đã lưu trạng thái vào khe: %d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Đã lưu trạng thái vào khe: Tự động."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

@@ -14263,6 +14263,14 @@ MSG_HASH(
    "Interface pour libretro"
    )
 MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT,
+   "Sauvegarde instantanée chargée depuis l'emplacement : %d."
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Sauvegarde instantanée chargée depuis l'emplacement : Auto."
+   )
+MSG_HASH(
    MSG_LOADING,
    "Chargement"
    )
@@ -14457,6 +14465,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Configuration enregistrée vers"
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Sauvegarde instantanée enregistrée vers l'emplacement : %d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Sauvegarde instantanée enregistrée vers l'emplacement : Auto."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

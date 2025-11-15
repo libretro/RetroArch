@@ -13695,6 +13695,14 @@ MSG_HASH(
    "Frontend för libretro"
    )
 MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT,
+   "Läste in tillstånd från plats: %d."
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Läste in tillstånd från plats: Auto."
+   )
+MSG_HASH(
    MSG_LOADING,
    "Läser in"
    )
@@ -13877,6 +13885,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Sparade konfiguration till"
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Sparade tillstånd till plats: %d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Sparade tillstånd till plats: Auto."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

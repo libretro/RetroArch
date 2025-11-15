@@ -12411,6 +12411,14 @@ MSG_HASH(
    "Frontend dla libretro"
    )
 MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT,
+   "Wczytano stan ze slotu: %d."
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Załadowany stan ze slotu: Auto."
+   )
+MSG_HASH(
    MSG_LOADING,
    "Ładuję"
    )
@@ -12573,6 +12581,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "Osiągnięto koniec bufora przewijania."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Zapisano stan w slocie: %d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Zapisano stan w slocie: Auto."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
