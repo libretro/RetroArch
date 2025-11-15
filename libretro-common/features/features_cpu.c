@@ -919,8 +919,7 @@ end:
 
          if (model_name)
          {
-            strncpy(s, model_name, len);
-            s[len - 1] = '\0';
+            strlcpy(s, model_name, len);
          }
       }
 #endif
