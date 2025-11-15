@@ -5416,7 +5416,6 @@ static drflac_bool32 drflac__on_seek_ogg(void* pUserData, int offset, drflac_see
     return DRFLAC_TRUE;
 }
 
-
 static drflac_bool32 drflac_ogg__seek_to_pcm_frame(drflac* pFlac, drflac_uint64 pcmFrameIndex)
 {
     drflac_oggbs* oggbs = (drflac_oggbs*)pFlac->_oggbs;
@@ -7750,8 +7749,7 @@ drflac_uint64 drflac_read_pcm_frames_f32(drflac* pFlac, drflac_uint64 framesToRe
     return framesRead;
 }
 
-
-drflac_bool32 drflac_seek_to_pcm_frame(drflac* pFlac, drflac_uint64 pcmFrameIndex)
+uint32_t drflac_seek_to_pcm_frame(drflac* pFlac, uint64_t pcmFrameIndex)
 {
     if (pFlac == NULL)
         return DRFLAC_FALSE;
