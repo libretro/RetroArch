@@ -1276,6 +1276,7 @@ ifeq ($(HAVE_WAYLAND), 1)
         gfx/common/wayland/fractional-scale-v1.o \
         gfx/common/wayland/viewporter.o \
         gfx/common/wayland/xdg-toplevel-icon-v1.o \
+        gfx/common/wayland/xdg-toplevel-tag-v1.o \
         gfx/common/wayland/xdg-shell.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o \
