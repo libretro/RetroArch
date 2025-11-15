@@ -1997,8 +1997,7 @@ ifeq ($(HAVE_BUILTINFLAC),1)
    DEFINES += -DHAVE_FLAC -DHAVE_DR_FLAC  -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
               -DFLAC_PACKAGE_VERSION="\"retroarch\""
    INCLUDE_DIRS += -I$(DEPS_DIR) -I$(DEPS_DIR)/libFLAC/include
-   FLACOBJ  = $(DEPS_DIR)/dr/dr_flac.o
-   FLACOBJ += $(DEPS_DIR)/libFLAC/bitmath.o \
+   FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
              $(DEPS_DIR)/libFLAC/bitreader.o \
              $(DEPS_DIR)/libFLAC/cpu.o \
              $(DEPS_DIR)/libFLAC/crc.o \
