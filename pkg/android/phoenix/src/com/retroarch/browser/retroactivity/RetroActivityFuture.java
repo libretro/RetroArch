@@ -14,8 +14,17 @@ import android.os.Looper;
 import android.os.Message;
 import com.retroarch.browser.preferences.util.ConfigFile;
 import com.retroarch.browser.preferences.util.UserPreferences;
+import com.retroarch.browser.mainmenu.MainMenuActivity;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
+import android.content.pm.PackageManager;
+import android.Manifest;
 
 public final class RetroActivityFuture extends RetroActivityCamera {
 
@@ -62,8 +71,109 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     isRunning = true;
     mDecorView = getWindow().getDecorView();
 
+    // Check if we need permissions before proceeding
+    if (!checkPermissions()) {
+      // Redirect to MainMenuActivity to get permissions
+      Intent mainMenuIntent = new Intent(this, MainMenuActivity.class);
+      mainMenuIntent.putExtras(getIntent());
+      startActivity(mainMenuIntent);
+      finish();
+      return;
+    }
+
+    // Handle core sideloading if external core path provided
+    handleCoreSideloading();
+
     // If QUITFOCUS parameter is provided then enable that Retroarch quits when focus is lost
     quitfocus = getIntent().hasExtra("QUITFOCUS");
+  }
+
+  private boolean checkPermissions() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      List<String> permissionsNeeded = new ArrayList<String>();
+      
+      if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+        permissionsNeeded.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+      }
+      if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+        permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+      }
+      
+      return permissionsNeeded.isEmpty();
+    }
+    return true;
+  }
+
+  private void handleCoreSideloading() {
+    String corePath = getIntent().getStringExtra("LIBRETRO");
+    if (corePath == null || corePath.isEmpty()) {
+      return;
+    }
+
+    File coreFile = new File(corePath);
+    if (!coreFile.exists()) {
+      Log.w("RetroActivityFuture", "Core file does not exist: " + corePath);
+      return;
+    }
+
+    // Get the cores directory
+    String coresDir = getApplicationInfo().dataDir + "/cores/";
+    File coresDirFile = new File(coresDir);
+    
+    // Create cores directory if it doesn't exist
+    if (!coresDirFile.exists()) {
+      if (!coresDirFile.mkdirs()) {
+        Log.e("RetroActivityFuture", "Failed to create cores directory: " + coresDir);
+        return;
+      }
+    }
+
+    // Check if core is outside RetroArch cores folder - if so, sideload it
+    if (!corePath.startsWith(coresDir)) {
+      String coreFileName = coreFile.getName();
+      File destinationFile = new File(coresDir, coreFileName);
+      
+      try {
+        copyFile(coreFile, destinationFile);
+        Log.i("RetroActivityFuture", "Sideloaded core from " + corePath + " to " + destinationFile.getAbsolutePath());
+        
+        // Update intent to point to the new location
+        getIntent().putExtra("LIBRETRO", destinationFile.getAbsolutePath());
+      } catch (IOException e) {
+        Log.e("RetroActivityFuture", "Failed to sideload core: " + e.getMessage());
+      }
+    }
+  }
+
+  private void copyFile(File source, File destination) throws IOException {
+    FileInputStream inStream = null;
+    FileOutputStream outStream = null;
+    
+    try {
+      inStream = new FileInputStream(source);
+      outStream = new FileOutputStream(destination);
+      
+      byte[] buffer = new byte[8192];
+      int length;
+      while ((length = inStream.read(buffer)) > 0) {
+        outStream.write(buffer, 0, length);
+      }
+    } finally {
+      if (inStream != null) {
+        try {
+          inStream.close();
+        } catch (IOException e) {
+          // Ignore
+        }
+      }
+      if (outStream != null) {
+        try {
+          outStream.close();
+        } catch (IOException e) {
+          // Ignore
+        }
+      }
+    }
   }
 
   @Override
