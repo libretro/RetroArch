@@ -126,24 +126,14 @@ public final class MainMenuActivity extends PreferenceActivity
 			retro.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
-			// Check if we received intent extras from external launcher
-			Intent originalIntent = getIntent();
-			String romPath = originalIntent.getStringExtra("ROM");
-			String corePath = originalIntent.getStringExtra("LIBRETRO");
-			String configPath = originalIntent.getStringExtra("CONFIGFILE");
-			String imePath = originalIntent.getStringExtra("IME");
-			String dataDirPath = originalIntent.getStringExtra("DATADIR");
-			String dataSourcePath = originalIntent.getStringExtra("APK");
-
-			// Use provided values or defaults
 			startRetroActivity(
 					retro,
-					romPath,
-					corePath != null ? corePath : prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
-					configPath != null ? configPath : UserPreferences.getDefaultConfigPath(this),
-					imePath != null ? imePath : Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
-					dataDirPath != null ? dataDirPath : getApplicationInfo().dataDir,
-					dataSourcePath != null ? dataSourcePath : getApplicationInfo().sourceDir);
+					null,
+					prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
+					UserPreferences.getDefaultConfigPath(this),
+					Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
+					getApplicationInfo().dataDir,
+					getApplicationInfo().sourceDir);
 		}
 
 		startActivity(retro);
