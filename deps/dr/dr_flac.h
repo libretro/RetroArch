@@ -10,12 +10,12 @@ GitHub: https://github.com/mackron/dr_libs
 #ifndef DR_FLAC_H
 #define DR_FLAC_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h> /* For size_t. */
-#include <retro_common_api.h>
-#include <retro_inline.h>
-
-RETRO_BEGIN_DECLS
 
 #define DRFLAC_STRINGIFY(x)      #x
 #define DRFLAC_XSTRINGIFY(x)     DRFLAC_STRINGIFY(x)
@@ -814,6 +814,8 @@ Set pAllocationCallbacks to the same object that was passed to drflac_open_*_and
 */
 void drflac_free(void* p, const drflac_allocation_callbacks* pAllocationCallbacks);
 
-RETRO_END_DECLS
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* DR_FLAC_H */

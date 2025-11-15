@@ -55,15 +55,15 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <retro_common_api.h>
-#include <retro_inline.h>
 
 /* INTERFACE */
 
 #ifndef __STB_INCLUDE_STB_TRUETYPE_H__
 #define __STB_INCLUDE_STB_TRUETYPE_H__
 
-RETRO_BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* NEW TEXTURE BAKING API */
 
@@ -339,6 +339,8 @@ enum
    STBTT_MS_EID_UNICODE_FULL  =10
 };
 
-RETRO_END_DECLS
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __STB_INCLUDE_STB_TRUETYPE_H__ */
