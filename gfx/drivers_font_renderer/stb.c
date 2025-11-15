@@ -25,6 +25,9 @@
 
 #ifndef STB_TRUETYPE_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
+#define STB_RECT_PACK_IMPLEMENTATION
+#define STBTT_STATIC
+#define STBRP_STATIC
 #define STATIC static INLINE
 #include "../../deps/stb/stb_rect_pack.h"
 #include "../../deps/stb/stb_truetype.h"

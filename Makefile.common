@@ -1150,8 +1150,6 @@ ifeq ($(HAVE_OVERLAY), 1)
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)
-   OBJ += deps/stb/stb_rect_pack.o
-   OBJ += deps/stb/stb_truetype.o
    OBJ += gfx/drivers_font_renderer/stb.o
    OBJ += gfx/drivers_font_renderer/stb_unicode.o
    DEFINES += -DHAVE_STB_FONT

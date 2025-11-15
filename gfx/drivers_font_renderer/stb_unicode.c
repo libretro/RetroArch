@@ -29,6 +29,9 @@
 
 #ifndef STB_TRUETYPE_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
+#define STB_RECT_PACK_IMPLEMENTATION
+#define STBTT_STATIC
+#define STBRP_STATIC
 #define STATIC static INLINE
 #include "../../deps/stb/stb_rect_pack.h"
 #include "../../deps/stb/stb_truetype.h"
@@ -169,7 +172,7 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
     * *nearest* integer */
    glyph_advance_x                  = (float)advance_width * self->scale_factor;
    atlas_slot->glyph.advance_x      = (int)((glyph_advance_x > 0.0f)
-         ? (glyph_advance_x + 0.5f)
+         ? (glyph_advance_x + 0.5f) 
          : (glyph_advance_x - 0.5f));
    /* advance_y is always zero */
    atlas_slot->glyph.advance_y      = 0;
@@ -182,7 +185,7 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
     * to the nearest integer */
    glyph_draw_offset_y              = (float)(-y1) * self->scale_factor;
    atlas_slot->glyph.draw_offset_y  = (int)((glyph_draw_offset_y < 0.0f)
-         ? floor((double)glyph_draw_offset_y)
+         ? floor((double)glyph_draw_offset_y) 
          : ceil((double)glyph_draw_offset_y));
 
    self->atlas.dirty                = true;
