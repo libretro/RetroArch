@@ -591,6 +591,8 @@ FONTS
 #endif
 
 #if defined(HAVE_STB_FONT)
+#include "../deps/stb/stb_rect_pack.c"
+#include "../deps/stb/stb_truetype.c"
 #include "../gfx/drivers_font_renderer/stb_unicode.c"
 #include "../gfx/drivers_font_renderer/stb.c"
 #endif
