@@ -1280,6 +1280,7 @@ ifeq ($(HAVE_WAYLAND), 1)
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o \
         gfx/common/wayland/pointer-constraints-unstable-v1.o \
+        gfx/common/wayland/presentation-time.o \
         gfx/common/wayland/relative-pointer-unstable-v1.o \
         gfx/common/wayland/cursor-shape-v1.o \
         gfx/common/wayland/tablet-unstable-v2.o \
