@@ -10750,6 +10750,17 @@ static int materialui_list_push(void *data, void *userdata,
             }
 #endif
 
+#if defined(HAVE_CLOUDSYNC)
+            if (settings->bools.cloud_sync_enable)
+            {
+               MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
+                     info->list,
+                     MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW,
+                     PARSE_ACTION,
+                     false);
+            }
+#endif
+
 #if defined(HAVE_NETWORKING)
 #ifdef HAVE_LAKKA
             MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
@@ -12032,6 +12043,7 @@ static void materialui_list_insert(void *userdata,
             }
             else if (   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_QUIT_RETROARCH))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESTART_RETROARCH))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_QUIT;

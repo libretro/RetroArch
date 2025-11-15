@@ -261,6 +261,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_retro_achievements_settings_list, ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_saving_settings_list,          MENU_ENUM_SUBLABEL_SAVING_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_settings_list,      MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_enable,             MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_sync_mode,          MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_destructive,        MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_sync_saves,         MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cloud_sync_sync_configs,       MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS)
@@ -635,6 +636,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_list,                     MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_list_unload,              MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_download_core,                 MENU_ENUM_SUBLABEL_DOWNLOAD_CORE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_update_installed_cores,        MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sync_now,                      MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW)
 #if defined(ANDROID)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_installed_cores_pfd,    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD)
 #endif
@@ -4611,6 +4613,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_update_installed_cores);
             break;
+         case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sync_now);
+            break;
 #if defined(ANDROID)
          case MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_switch_installed_cores_pfd);
@@ -5246,6 +5251,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_enable);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_sync_mode);
             break;
          case MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_destructive);

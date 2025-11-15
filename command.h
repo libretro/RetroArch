@@ -149,6 +149,10 @@ enum event_command
    CMD_EVENT_VIDEO_SET_ASPECT_RATIO,
    /* Restarts RetroArch. */
    CMD_EVENT_RESTART_RETROARCH,
+#ifdef HAVE_CLOUDSYNC
+   /* Trigger cloud sync */
+   CMD_EVENT_CLOUD_SYNC,
+#endif
    /* Shutdown the OS */
    CMD_EVENT_SHUTDOWN,
    /* Reboot the OS */
