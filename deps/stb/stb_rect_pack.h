@@ -31,10 +31,14 @@
  *    [your name could be here]
 */
 
+#include <stdint.h>
+#include <retro_common_api.h>
+#include <retro_inline.h>
+
+RETRO_BEGIN_DECLS
+
 #ifndef STB_INCLUDE_STB_RECT_PACK_H
 #define STB_INCLUDE_STB_RECT_PACK_H
-
-#include <stdint.h>
 
 #define STB_RECT_PACK_VERSION  1
 
@@ -45,43 +49,6 @@ extern "C" {
 typedef struct stbrp_context stbrp_context;
 typedef struct stbrp_node    stbrp_node;
 typedef struct stbrp_rect    stbrp_rect;
-
-void stbrp_pack_rects (stbrp_context *context,
-      stbrp_rect *rects, int num_rects);
-
-/* Assign packed locations to rectangles. The rectangles are of type
- * 'stbrp_rect' defined below, stored in the array 'rects', and there
- * are 'num_rects' many of them.
- *
- * Rectangles which are successfully packed have the 'was_packed' flag
- * set to a non-zero value and 'x' and 'y' store the minimum location
- * on each axis (i.e. bottom-left in cartesian coordinates, top-left
- * if you imagine y increasing downwards). Rectangles which do not fit
- * have the 'was_packed' flag set to 0.
- *
- * You should not try to access the 'rects' array from another thread
- * while this function is running, as the function temporarily reorders
- * the array while it executes.
- *
- * To pack into another rectangle, you need to call stbrp_init_target
- * again. To continue packing into the same rectangle, you can call
- * this function again. Calling this multiple times with multiple rect
- * arrays will probably produce worse packing results than calling it
- * a single time with the full rectangle array, but the option is
- * available.
- */
-
-struct stbrp_rect
-{
-   int            id;          /* reserved for your use: */
-   uint16_t    w, h;        /* input: */
-   uint16_t    x, y;        /* output: */
-   int            was_packed;  /* non-zero if valid packing */
-}; /* 16 bytes, nominally */
-
-
-void stbrp_init_target (stbrp_context *context,
-      int width, int height, stbrp_node *nodes, int num_nodes);
 
 /* Initialize a rectangle packer to:
  *    pack a rectangle that is 'width' by 'height' in dimensions
@@ -134,8 +101,42 @@ struct stbrp_context
    stbrp_node extra[2]; /* we allocate two extra nodes so optimal user-node-count is 'width' not 'width+2' */
 };
 
-#ifdef __cplusplus
-}
-#endif
+/* Assign packed locations to rectangles. The rectangles are of type
+ * 'stbrp_rect' defined below, stored in the array 'rects', and there
+ * are 'num_rects' many of them.
+ *
+ * Rectangles which are successfully packed have the 'was_packed' flag
+ * set to a non-zero value and 'x' and 'y' store the minimum location
+ * on each axis (i.e. bottom-left in cartesian coordinates, top-left
+ * if you imagine y increasing downwards). Rectangles which do not fit
+ * have the 'was_packed' flag set to 0.
+ *
+ * You should not try to access the 'rects' array from another thread
+ * while this function is running, as the function temporarily reorders
+ * the array while it executes.
+ *
+ * To pack into another rectangle, you need to call stbrp_init_target
+ * again. To continue packing into the same rectangle, you can call
+ * this function again. Calling this multiple times with multiple rect
+ * arrays will probably produce worse packing results than calling it
+ * a single time with the full rectangle array, but the option is
+ * available.
+ */
+
+struct stbrp_rect
+{
+   int            id;          /* reserved for your use: */
+   uint16_t    w, h;        /* input: */
+   uint16_t    x, y;        /* output: */
+   int            was_packed;  /* non-zero if valid packing */
+}; /* 16 bytes, nominally */
+
+void stbrp_pack_rects (stbrp_context *context,
+      stbrp_rect *rects, int num_rects);
+
+void stbrp_init_target (stbrp_context *context,
+      int width, int height, stbrp_node *nodes, int num_nodes);
+
+RETRO_END_DECLS
 
 #endif
