@@ -5674,7 +5674,7 @@ enum retro_savestate_context
     * therefore, internal pointers to code or data are acceptable.
     * May still be loaded or saved at any time.
     *
-    * @note This context generally implies the use of runahead or rewinding,
+    * @note This context generally implies the use of runahead,
     * which may work by taking savestates multiple times per second.
     * Savestate code that runs in this context should be fast.
     */
@@ -5706,6 +5706,10 @@ enum retro_savestate_context
     */
    RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY       = 3,
 
+   /**
+    * Same as \c RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE, but for rewinding.
+    */
+   RETRO_SAVESTATE_CONTEXT_REWIND_SAME_INSTANCE   = 4,
    /**
     * @private Defined to ensure <tt>sizeof(retro_savestate_context) == sizeof(int)</tt>.
     * Do not use.

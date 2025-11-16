@@ -3153,7 +3153,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 #ifdef HAVE_REWIND
          if (runloop_st->rewind_st.flags &
                STATE_MGR_REWIND_ST_FLAG_IS_REWIND_SERIALIZE)
-            result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE;
+            result = RETRO_SAVESTATE_CONTEXT_REWIND_SAME_INSTANCE;
          else
 #endif
          {
