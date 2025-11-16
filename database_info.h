@@ -123,7 +123,7 @@ typedef struct
    int rumble_supported;
    int coop_supported;
    uint32_t crc32;
-   unsigned size;
+   uint64_t size;
    unsigned famitsu_magazine_rating;
    unsigned edge_magazine_rating;
    unsigned edge_magazine_issue;
