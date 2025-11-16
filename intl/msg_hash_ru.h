@@ -14339,6 +14339,14 @@ MSG_HASH(
    "Фронтенд для libretro"
    )
 MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT,
+   "Загружено сохранение в слоте %d."
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Загружено сохранение в автослоте."
+   )
+MSG_HASH(
    MSG_LOADING,
    "Загружается"
    )
@@ -14533,6 +14541,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Конфигурация сохранена в"
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Создано сохранение в слоте %d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Создано сохранение в автослоте."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
