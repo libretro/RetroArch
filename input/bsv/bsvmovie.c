@@ -668,7 +668,7 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
    uint8_t *swap;
    size_t size_swap;
    int64_t ret = -1;
-   uint32_t encoded_size, compressed_encoded_size, size_;
+   uint32_t encoded_size = 0, compressed_encoded_size = 0, size_ = 0;
    uint8_t *encoded_data = NULL, *compressed_encoded_data = NULL;
    bool owns_encoded = false, owns_compressed_encoded = false;
    retro_ctx_serialize_info_t serial_info;
