@@ -3723,10 +3723,6 @@ MSG_HASH(
    "cloud_sync_sync_system"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CLOUD_SYNC_STARTUP_SYNC,
-   "cloud_sync_startup_sync"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,
    "cloud_sync_driver"
    )
