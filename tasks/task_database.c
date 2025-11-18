@@ -52,6 +52,100 @@
 
 #define MAX_DATABASE_COUNT 256
 
+/* Scan result structure for accumulating identification results */
+typedef struct scan_result
+{
+   char *entry_path;       /* Full path to the ROM file */
+   char *entry_label;      /* Display label (usually game name) */
+   char *db_crc;           /* CRC or serial identifier */
+   char *db_name;          /* Database/playlist name (e.g., "Sega - Genesis.lpl") */
+   char *archive_name;     /* Archive entry name if inside zip, NULL otherwise */
+} scan_result_t;
+
+/* Result accumulation infrastructure */
+typedef struct scan_results
+{
+   scan_result_t *results; /* Dynamic array of results */
+   size_t count;           /* Number of results */
+   size_t capacity;        /* Allocated capacity */
+} scan_results_t;
+
+/* Helper functions for result accumulation */
+static bool scan_results_init(scan_results_t *sr, size_t initial_capacity)
+{
+   sr->results = (scan_result_t*)malloc(initial_capacity * sizeof(scan_result_t));
+   if (!sr->results)
+      return false;
+   sr->count = 0;
+   sr->capacity = initial_capacity;
+   return true;
+}
+
+static bool scan_results_ensure_capacity(scan_results_t *sr)
+{
+   if (sr->count >= sr->capacity)
+   {
+      size_t new_capacity = sr->capacity * 2;
+      scan_result_t *new_results = (scan_result_t*)realloc(
+         sr->results, new_capacity * sizeof(scan_result_t));
+      if (!new_results)
+         return false;
+      sr->results = new_results;
+      sr->capacity = new_capacity;
+   }
+   return true;
+}
+
+static bool scan_results_add(scan_results_t *sr,
+   const char *entry_path, const char *entry_label,
+   const char *db_crc, const char *db_name, const char *archive_name)
+{
+   scan_result_t *result;
+
+   if (!scan_results_ensure_capacity(sr))
+      return false;
+
+   result = &sr->results[sr->count];
+   result->entry_path = strdup(entry_path);
+   result->entry_label = strdup(entry_label);
+   result->db_crc = strdup(db_crc);
+   result->db_name = strdup(db_name);
+   result->archive_name = archive_name ? strdup(archive_name) : NULL;
+
+   if (!result->entry_path || !result->entry_label ||
+       !result->db_crc || !result->db_name)
+   {
+      /* Allocation failed, cleanup */
+      if (result->entry_path) free(result->entry_path);
+      if (result->entry_label) free(result->entry_label);
+      if (result->db_crc) free(result->db_crc);
+      if (result->db_name) free(result->db_name);
+      if (result->archive_name) free(result->archive_name);
+      return false;
+   }
+
+   sr->count++;
+   return true;
+}
+
+static void scan_results_free(scan_results_t *sr)
+{
+   size_t i;
+   for (i = 0; i < sr->count; i++)
+   {
+      if (sr->results[i].entry_path) free(sr->results[i].entry_path);
+      if (sr->results[i].entry_label) free(sr->results[i].entry_label);
+      if (sr->results[i].db_crc) free(sr->results[i].db_crc);
+      if (sr->results[i].db_name) free(sr->results[i].db_name);
+      if (sr->results[i].archive_name) free(sr->results[i].archive_name);
+   }
+   if (sr->results)
+      free(sr->results);
+   sr->results = NULL;
+   sr->count = 0;
+   sr->capacity = 0;
+}
+
 enum db_state_flags_enum
 {
    DB_STATE_FLAG_HAS_SERIAL               = (1 << 0),
@@ -95,6 +189,7 @@ typedef struct db_handle
    database_info_handle_t *handle;
    database_state_handle_t state;
    playlist_config_t playlist_config; /* size_t alignment */
+   scan_results_t scan_results;
    unsigned status;
    uint8_t flags;
 } db_handle_t;
@@ -537,10 +632,8 @@ static int database_info_list_iterate_found_match(
     * need to have all these big char arrays here */
    size_t str_len                 = PATH_MAX_LENGTH * sizeof(char);
    char* db_crc                   = (char*)malloc(str_len);
-   char* db_playlist_path         = (char*)malloc(str_len);
    char* entry_path_str           = (char*)malloc(str_len);
    char *hash                     = NULL;
-   playlist_t   *playlist         = NULL;
    const char         *db_path    =
       database_info_get_current_name(db_state);
    const char         *entry_path =
@@ -549,18 +642,10 @@ static int database_info_list_iterate_found_match(
       &db_state->info->list[db_state->entry_index];
 
    db_crc[0]                      = '\0';
-   db_playlist_path[0]            = '\0';
    entry_path_str[0]              = '\0';
 
    fill_pathname(db_playlist_base_str,
          path_basename_nocompression(db_path), ".lpl", sizeof(db_playlist_base_str));
-
-   if (!string_is_empty(_db->playlist_directory))
-      fill_pathname_join_special(db_playlist_path, _db->playlist_directory,
-            db_playlist_base_str, str_len);
-
-   playlist_config_set_path(&_db->playlist_config, db_playlist_path);
-   playlist = playlist_init(&_db->playlist_config);
 
    if (!string_is_empty(db_state->serial))
    {
@@ -615,49 +700,15 @@ static int database_info_list_iterate_found_match(
 
    fprintf(stderr, "\tPath: %s\n", db_path);
    fprintf(stderr, "\tCRC : %s\n", db_crc);
-   fprintf(stderr, "\tPlaylist Path: %s\n", db_playlist_path);
    fprintf(stderr, "\tEntry Path: %s\n", entry_path);
-   fprintf(stderr, "\tPlaylist not NULL: %d\n", playlist != NULL);
    fprintf(stderr, "\tZIP entry: %s\n", archive_name);
    fprintf(stderr, "\tentry path str: %s\n", entry_path_str);
 #endif
 
-   if (!playlist_entry_exists(playlist, entry_path_str))
-   {
-      struct playlist_entry entry;
-
-      /* the push function reads our entry as const,
-       * so these casts are safe */
-      entry.path              = entry_path_str;
-      entry.label             = entry_lbl;
-      entry.core_path         = (char*)"DETECT";
-      entry.core_name         = (char*)"DETECT";
-      entry.db_name           = db_playlist_base_str;
-      entry.crc32             = db_crc;
-      entry.subsystem_ident   = NULL;
-      entry.subsystem_name    = NULL;
-      entry.subsystem_roms    = NULL;
-      entry.entry_slot        = 0;
-      entry.runtime_hours     = 0;
-      entry.runtime_minutes   = 0;
-      entry.runtime_seconds   = 0;
-      entry.last_played_year  = 0;
-      entry.last_played_month = 0;
-      entry.last_played_day   = 0;
-      entry.last_played_hour  = 0;
-      entry.last_played_minute= 0;
-      entry.last_played_second= 0;
-
-      playlist_push(playlist, &entry);
-      RARCH_LOG("[Scanner] Add \"%s\" to \"%s\"\n", entry_lbl, entry.db_name);
-      if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
-         task_database_scan_console_output(entry_lbl, path_remove_extension(db_playlist_base_str), true);
-   }
-   else if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
-      task_database_scan_console_output(entry_lbl, path_remove_extension(db_playlist_base_str), false);
-
-   playlist_write_file(playlist);
-   playlist_free(playlist);
+   /* Accumulate result instead of immediately updating playlist */
+   if (!scan_results_add(&_db->scan_results, entry_path_str, entry_lbl,
+                         db_crc, db_playlist_base_str, archive_name))
+      RARCH_ERR("[Scanner] Failed to add result for: \"%s\"\n", entry_lbl);
 
    database_info_list_free(db_state->info);
    free(db_state->info);
@@ -699,7 +750,6 @@ static int database_info_list_iterate_found_match(
    }
 
    free(db_crc);
-   free(db_playlist_path);
    free(entry_path_str);
    return 0;
 }
@@ -1165,6 +1215,122 @@ static void task_database_cleanup_state(
    db_state->buf = NULL;
 }
 
+/* Batch update playlists from accumulated scan results */
+static void scan_results_batch_update_playlists(scan_results_t *sr, db_handle_t *db)
+{
+   size_t i;
+   const char *current_playlist = NULL;
+   playlist_t *playlist = NULL;
+   unsigned added_count = 0;
+   size_t str_len = PATH_MAX_LENGTH * sizeof(char);
+   char *db_playlist_path = (char*)malloc(str_len);
+
+   if (!db_playlist_path)
+   {
+      RARCH_ERR("[Scanner] Failed to allocate memory for batch playlist update\n");
+      return;
+   }
+
+   RARCH_LOG("[Scanner] Batch updating playlists with %u results...\n",
+            (unsigned)sr->count);
+
+   /* Process results, grouping by playlist */
+   for (i = 0; i < sr->count; i++)
+   {
+      scan_result_t *result = &sr->results[i];
+
+      /* Check if we need to switch to a different playlist */
+      if (!current_playlist || !string_is_equal(current_playlist, result->db_name))
+      {
+         /* Write and close previous playlist if any */
+         if (playlist)
+         {
+            RARCH_LOG("[Scanner] Added %u entries to \"%s\"\n",
+                     added_count, current_playlist);
+            playlist_write_file(playlist);
+            playlist_free(playlist);
+            playlist = NULL;
+            added_count = 0;
+         }
+
+         /* Open new playlist */
+         current_playlist = result->db_name;
+         db_playlist_path[0] = '\0';
+
+         if (!string_is_empty(db->playlist_directory))
+            fill_pathname_join_special(db_playlist_path, db->playlist_directory,
+                  result->db_name, str_len);
+
+         playlist_config_set_path(&db->playlist_config, db_playlist_path);
+         playlist = playlist_init(&db->playlist_config);
+
+         if (!playlist)
+         {
+            RARCH_ERR("[Scanner] Failed to open playlist: %s\n", result->db_name);
+            continue;
+         }
+
+         RARCH_LOG("[Scanner] Processing playlist: %s\n", result->db_name);
+      }
+
+      /* Add entry to playlist if it doesn't already exist */
+      if (playlist && !playlist_entry_exists(playlist, result->entry_path))
+      {
+         struct playlist_entry entry;
+
+         /* Build entry */
+         entry.path              = result->entry_path;
+         entry.label             = result->entry_label;
+         entry.core_path         = (char*)"DETECT";
+         entry.core_name         = (char*)"DETECT";
+         entry.db_name           = result->db_name;
+         entry.crc32             = result->db_crc;
+         entry.subsystem_ident   = NULL;
+         entry.subsystem_name    = NULL;
+         entry.subsystem_roms    = NULL;
+         entry.entry_slot        = 0;
+         entry.runtime_hours     = 0;
+         entry.runtime_minutes   = 0;
+         entry.runtime_seconds   = 0;
+         entry.last_played_year  = 0;
+         entry.last_played_month = 0;
+         entry.last_played_day   = 0;
+         entry.last_played_hour  = 0;
+         entry.last_played_minute= 0;
+         entry.last_played_second= 0;
+
+         playlist_push(playlist, &entry);
+         added_count++;
+
+         RARCH_LOG("[Scanner] Add \"%s\" to \"%s\"\n",
+                  result->entry_label, result->db_name);
+
+         if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+            task_database_scan_console_output(result->entry_label,
+                  path_remove_extension(result->db_name), true);
+      }
+      else if (playlist && retroarch_override_setting_is_set(
+            RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+      {
+         /* Entry already exists - output duplicate indicator for CLI scans */
+         task_database_scan_console_output(result->entry_label,
+               path_remove_extension(result->db_name), false);
+      }
+   }
+
+   /* Write and close final playlist */
+   if (playlist)
+   {
+      RARCH_LOG("[Scanner] Added %u entries to \"%s\"\n",
+               added_count, current_playlist);
+      playlist_write_file(playlist);
+      playlist_free(playlist);
+   }
+
+   free(db_playlist_path);
+   RARCH_LOG("[Scanner] Batch playlist update complete\n");
+}
+
 static void task_database_handler(retro_task_t *task)
 {
    uint8_t flg;
@@ -1219,6 +1385,13 @@ static void task_database_handler(retro_task_t *task)
                      "rdb", false,
                      db->flags & DB_HANDLE_FLAG_SHOW_HIDDEN_FILES,
                      false, false);
+
+            /* Initialize scan results accumulation */
+            if (!scan_results_init(&db->scan_results, 1024))
+            {
+               RARCH_ERR("[Scanner] Failed to initialize scan results\n");
+               goto task_finished;
+            }
 
             RARCH_LOG("[Scanner] %s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), db->fullpath);
             if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
@@ -1286,6 +1459,10 @@ static void task_database_handler(retro_task_t *task)
 #else
             fprintf(stderr, "msg: %s\n", msg);
 #endif
+            /* Batch update all playlists with accumulated results */
+            if (db->scan_results.count > 0)
+               scan_results_batch_update_playlists(&db->scan_results, db);
+
             goto task_finished;
          }
          break;
@@ -1300,6 +1477,9 @@ static void task_database_handler(retro_task_t *task)
 task_finished:
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+
+   /* Free accumulated scan results */
+   scan_results_free(&db->scan_results);
 
    if (dbstate)
    {
