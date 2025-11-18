@@ -185,12 +185,12 @@ LOCAL_C_INCLUDES := \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/7zip \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/zstd
+		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/zstd/lib
 
 INCLUDE_DIRS     := \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/ \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/zstd/ \
+		    -I$(LOCAL_PATH)/$(DEPS_DIR)/zstd/lib/ \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
 
 ifeq ($(HAVE_CHEEVOS),1)
