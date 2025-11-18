@@ -742,11 +742,21 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    /** redump serials are built differently for each region **/
    switch (region_id)
    {
-      case 'U':
+      case 'B':  /* Brazil/multi-region (BKUT) */
+      case 'T':  /* Taiwan/Asia */
+      case 'K':  /* Korea */
+      case 'A':  /* Americas */
+      case 'U':  /* USA */
          if (     raw_game_id[0] == 'M'
                && raw_game_id[1] == 'K'
                && raw_game_id[2] == '-')
-            strlcpy(s, &raw_game_id[3], len);
+         {
+            const char *serial_start = &raw_game_id[3];
+            /* Strip leading zeros from serial number */
+            while (*serial_start == '0' && *(serial_start + 1) != '\0')
+               serial_start++;
+            strlcpy(s, serial_start, len);
+         }
          else
             strlcpy(s, raw_game_id, len);
          cue_append_multi_disc_suffix(s, filename);
