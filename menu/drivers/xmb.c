@@ -8498,7 +8498,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                float margins_title       = (xmb->margins_title_bottom < margins_title_min)
                      ? margins_title_min : xmb->margins_title_bottom;
                float height_offset       = xmb->icon_size * 0.5f;
-               float y_offset            = xmb->icon_size * (icon_thumbnails ? 1.75f : 0.95f);
+               float y_offset            = xmb->icon_size * (icon_thumbnails ? 1.75f : 1.15f);
                float thumb_width         = left_thumbnail_margin_width;
                float thumb_height        = thumbnail_margin_height_under
                                          - (height_offset / 2.0f) - y_offset - margins_title;
