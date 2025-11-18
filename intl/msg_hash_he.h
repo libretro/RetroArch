@@ -72,6 +72,14 @@ MSG_HASH(
    "בחרו באיזו ליבה להשתמש."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   "פריקת ליבה"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   "שחרור הליבה הטעונה."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
    "עיון אחר ליבה עבור הטמעת ליבת libretro. היכן העיון מתחיל תלוי בנתיב הליבה שלך. אם ריק, העיון יתחיל בנתיב הראשי.\nאם נתיב הליבה הוא תיקייה, התפריט ישתמש בה כתיקיית על. אם נתיב ליבה הוא נתיב מלא, העיון יתחיל בתיקייה שבה הקובץ."
    )
