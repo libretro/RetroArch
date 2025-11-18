@@ -870,6 +870,7 @@ end:
          if (pipe)
          {
             char buf[256];
+
             while (fgets(buf, sizeof(buf), pipe))
             {
                if (strncmp(buf, "Model name:", 11) == 0)
@@ -881,33 +882,36 @@ end:
                      while (*p == ' ' || *p == '\t') p++;
                      size_t len2 = strcspn(p, "\r\n");
 
-                     char *tmp = (char *)malloc(len2 + 1);
-                     if (tmp)
+                     if (len2 > 0)
                      {
-                        memcpy(tmp, p, len2);
-                        tmp[len2] = '\0';
-
-                        if (model_name && *model_name)
+                        char *tmp = malloc(len2 + 1);
+                        if (tmp)
                         {
-                           size_t oldlen = strlen(model_name);
-                           char *combined = (char *)malloc(oldlen + len2 + 4);
-                           if (combined)
+                           memcpy(tmp, p, len2);
+                           tmp[len2] = '\0';
+
+                           if (s[0] != '\0')
                            {
-                              memcpy(combined, model_name, oldlen);
-                              combined[oldlen] = ' ';
-                              combined[oldlen + 1] = '(';
-                              memcpy(combined + oldlen + 2, tmp, len2);
-                              combined[oldlen + 2 + len2] = ')';
-                              combined[oldlen + 2 + len2 + 1] = '\0';
-                              free(model_name);
-                              model_name = combined;
+                              size_t oldlen = strlen(s);
+                              char *combined = malloc(oldlen + len2 + 4);
+                              if (combined)
+                              {
+                                 memcpy(combined, s, oldlen);
+                                 combined[oldlen] = ' ';
+                                 combined[oldlen + 1] = '(';
+                                 memcpy(combined + oldlen + 2, tmp, len2);
+                                 combined[oldlen + 2 + len2] = ')';
+                                 combined[oldlen + 2 + len2 + 1] = '\0';
+
+                                 strlcpy(s, combined, len);
+                                 free(combined);
+                              }
+                           }
+                           else
+                           {
+                              strlcpy(s, tmp, len);
                            }
                            free(tmp);
-                        }
-                        else
-                        {
-                           free(model_name);
-                           model_name = tmp;
                         }
                      }
                   }
@@ -915,11 +919,6 @@ end:
                }
             }
             pclose(pipe);
-         }
-
-         if (model_name)
-         {
-            strlcpy(s, model_name, len);
          }
       }
 #endif
