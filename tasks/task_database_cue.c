@@ -62,6 +62,7 @@ static struct magic_entry MAGIC_NUMBERS[] = {
    { "Sony - PlayStation 2",        "PLAYSTATION",      0x008008}, /* PS2 DVD */
    { "Sony - PlayStation 2",        "           ",      0x008008}, /* PS2 DVD */
    { "Sony - PlayStation Portable", "PSP GAME",         0x008008},
+   { "Philips - CD-i",              "\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00", 0x000000},
    { NULL,                          NULL,               0}
 };
 
@@ -1165,6 +1166,37 @@ int cue_find_track(const char *cue_path, bool first,
          task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
          is_data = !string_is_equal_noncase(tmp_token, "AUDIO");
          ++track;
+
+         /* Special case: CD-i stores data in AUDIO-labeled tracks */
+         /* Check if track 1 is AUDIO but contains CD-i magic bytes */
+         if (!is_data && track == 1 && last_file[0] != '\0')
+         {
+            intfstream_t *track_fd = NULL;
+            intfstream_info_t track_info;
+            uint8_t magic_buf[12];
+            const uint8_t cdi_magic[] = {0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00};
+
+            track_info.type = INTFSTREAM_FILE;
+            if ((track_fd = (intfstream_t*)intfstream_init(&track_info)))
+            {
+               if (intfstream_open(track_fd, last_file,
+                     RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE))
+               {
+                  if (intfstream_read(track_fd, magic_buf, sizeof(magic_buf)) == sizeof(magic_buf))
+                  {
+                     if (memcmp(magic_buf, cdi_magic, sizeof(cdi_magic)) == 0)
+                     {
+                        is_data = true;  /* CD-i AUDIO track contains data */
+#ifdef DEBUG
+                        RARCH_LOG("[Scanner] Detected CD-i data in AUDIO track 1\n");
+#endif
+                     }
+                  }
+                  intfstream_close(track_fd);
+               }
+               free(track_fd);
+            }
+         }
       }
       else if (string_is_equal_noncase(tmp_token, "INDEX"))
       {
