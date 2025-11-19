@@ -1289,6 +1289,10 @@ MSG_HASH(
    "無効にすると、ファイルは上書きまたは削除される前にバックアップフォルダに移動されます。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "手動"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "クラウド同期のバックエンド"
    )

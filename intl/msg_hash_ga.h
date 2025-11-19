@@ -210,6 +210,14 @@ MSG_HASH(
    "Scoir feidhmchlár RetroArch. Tá sábháil chumraíochta ar scor cumasaithe."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Sioncrónaigh Anois"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Spreag sioncrónú scamall de láimh."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Scoir feidhmchlár RetroArch. Tá sábháil chumraíochta ar scor díchumasaithe. Scoir feidhmchlár RetroArch. Tá sábháil chumraíochta ar scor díchumasaithe."
    )
@@ -1319,6 +1327,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Nuair a bhíonn sé díchumasaithe, bogtar comhaid chuig fillteán cúltaca sula ndéantar iad a athscríobh nó a scriosadh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Mód Sioncrónaithe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "Uathoibríoch: Sioncrónaigh ar thosú RetroArch agus nuair a dhíluchtaítear croíleacáin. Lámhleabhar: Sioncrónaigh ach amháin nuair a chuirtear an cnaipe 'Sioncrónaigh Anois' i ngníomh de láimh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "Uathoibríoch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "Lámhleabhar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,

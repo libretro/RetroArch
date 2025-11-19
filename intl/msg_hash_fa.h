@@ -1177,6 +1177,10 @@ MSG_HASH(
    "همگام‌سازی ابری تخریبی"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "دستی"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
    "شیوه‌نامهٔ شبکهٔ فضای ابری که باید استفاده شود."
    )

@@ -1325,6 +1325,14 @@ MSG_HASH(
    "Khi tắt, các tệp sẽ được chuyển vào thư mục sao lưu trước khi bị ghi đè hoặc xoá."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "Tự động"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "Thủ công"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Nền tảng đồng bộ đám mây."
    )

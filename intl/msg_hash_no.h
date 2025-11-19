@@ -1157,6 +1157,10 @@ MSG_HASH(
    "Når deaktivert, flyttes filer til en sikkerhetskopimappe før de overskrives eller slettes."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "Manuell"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
    "URL for sky-lagring"
    )

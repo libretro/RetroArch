@@ -1337,6 +1337,10 @@ MSG_HASH(
    "Όταν απενεργοποιηθεί, τα αρχεία μετακινούνται σε ένα φάκελο αντιγράφων ασφαλείας πριν αντικατασταθούν ή διαγραφούν."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "Χειροκίνητο"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Σύστημα υποστήριξης συγχρονισμού cloud"
    )

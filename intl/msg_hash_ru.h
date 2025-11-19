@@ -218,6 +218,14 @@ MSG_HASH(
    "Закрыть RetroArch. Сохранение конфигурации при выходе включено."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Синхронизировать сейчас"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Ручной запуск облачной синхронизации."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Закрыть RetroArch. Сохранение конфигурации при выходе отключено."
    )
@@ -1327,6 +1335,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "При отключении опции файлы перед удалением или перезаписью будут помещены в папку резервного копирования."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Режим синхронизации"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "Автоматический: синхронизировать при запуске RetroArch и когда нет загруженных ядер. Ручной: синхронизировать только вручную нажатием кнопки 'Синхронизировать сейчас'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "Вручную"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,

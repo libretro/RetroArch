@@ -1289,6 +1289,14 @@ MSG_HASH(
    "Quando questa opzione è disabilitata, i file vengono spostati in una cartella di backup prima di essere sovrascritti o cancellati."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "Automatico"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "Manuale"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Backend di sincronizzazione cloud"
    )

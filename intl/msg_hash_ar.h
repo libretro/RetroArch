@@ -1297,6 +1297,14 @@ MSG_HASH(
    "إذا تم التعطيل، سيتم نقل الملفات إلى مجلد النسخ الاحتياطي قبل الحذف أو الاستبدال."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "تلقائي"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "يدوي"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "خدمة المزامنة السحابية"
    )

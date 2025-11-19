@@ -123,7 +123,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   "Visar spellistor med skannat innehåll som matchar databasen."
+   "Visar spellistor med genomsökt innehåll som matchar databasen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
@@ -131,7 +131,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Skapa eller uppdatera spellistor genom att skanna Innehåll."
+   "Skapa eller uppdatera spellistor genom att söka igenom innehåll."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
@@ -204,6 +204,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut är aktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Synkronisera nu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Starta molnsynkronisering manuellt."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
@@ -1279,6 +1287,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Inaktiverat flyttas filer till en säkerhetskopia innan de skrivs över eller raderas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Synkroniseringsläge"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "Automatiskt: Synkronisering vid uppstart av RetroArch och när kärnor läses ur. Manuellt: Synkronisering endast när knappen ”Synkronisera nu” trycks in manuellt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "Automatiskt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "Manuellt"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
@@ -2637,7 +2661,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   "Synkronisera exakt till innehålls bildhastighet (G-syn, FreeSync)"
+   "Synkronisera exakt till innehållets bildhastighet (G-Sync, FreeSync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
@@ -3976,7 +4000,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "Synkronisera till exakt innehållsbildhastighet (På/Av)"
+   "Synkronisera till exakt bildhastighet för innehållet (På/Av)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
@@ -4914,7 +4938,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Ändra inställningar för Spola tillbaka."
+   "Ändra inställningar för Tillbakaspolning."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
@@ -4981,7 +5005,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
-   "Spola tillbaka Buffertstorlek (MB)"
+   "Buffertstorlek för tillbakaspolning (MB)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
@@ -6556,11 +6580,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-   "Visa 'Spola tillbaka'"
+   "Visa 'Tillbakaspolning'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "Visa alternativet 'Spola tillbaka'."
+   "Visa alternativet 'Tillbakaspolning'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
@@ -8417,23 +8441,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_FILE,
-   "Skanna fil"
+   "Sök igenom fil"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_FILE,
-   "Skannar en fil efter innehåll som matchar databasen."
+   "Söker igenom en fil efter innehåll som matchar databasen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Manuell skanning"
+   "Manuell genomsökning"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Konfigurerbar skanning baserad på filnamnet på innehåll. Kräver inte att innehåll matchar databasen."
+   "Konfigurerbar genomsökning baserad på filnamnet på innehåll. Kräver inte att innehåll matchar databasen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
-   "Skanna"
+   "Sök igenom"
    )
 
 /* Import Content > Scan File */
@@ -8499,7 +8523,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
-   "Skanna inuti Arkiv"
+   "Sök igenom inuti arkiv"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
@@ -8535,7 +8559,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
-   "Starta skanning"
+   "Starta genomsökning"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
@@ -13912,7 +13936,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SCANNING,
-   "Skannar"
+   "Söker igenom"
    )
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
@@ -14144,7 +14168,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
-   "Bluetooth-skanning slutförd."
+   "Bluetooth-genomsökning slutförd."
    )
 MSG_HASH(
    MSG_BLUETOOTH_PAIRING_REMOVED,
@@ -14152,15 +14176,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_WIFI_SCAN_COMPLETE,
-   "Wi-Fi-skanning slutförd."
+   "Wi-Fi-genomsökning slutförd."
    )
 MSG_HASH(
    MSG_SCANNING_BLUETOOTH_DEVICES,
-   "Skannar efter bluetooth-enheter..."
+   "Söker efter bluetooth-enheter..."
    )
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
-   "Skannar trådlösa nätverk..."
+   "Söker efter trådlösa nätverk..."
    )
 MSG_HASH(
    MSG_ENABLING_WIRELESS,
@@ -14580,7 +14604,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
-   "Skannar innehåll: "
+   "Söker igenom innehåll: "
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
@@ -14588,7 +14612,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
-   "Skannar: "
+   "Söker igenom: "
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
@@ -14834,11 +14858,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
-   "Skanna efter bluetooth-enheter och anslut dem."
+   "Sök efter bluetooth-enheter och anslut dem."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
-   "Skanna efter trådlösa nätverk och etablera anslutning."
+   "Sök efter trådlösa nätverk och etablera anslutning."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
