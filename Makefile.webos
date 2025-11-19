@@ -224,7 +224,10 @@ define APPINFO
     "main": "retroarch",
     "iconColor": "#333333",
     "type": "native",
-    "appDescription": "Emulation frontend"
+    "appDescription": "Emulation frontend",
+    "cloudgame_active": true,
+    "useAllMouseButtons": true,
+    "useAllKeyboardKeys": true
 }
 endef
 export APPINFO
