@@ -395,7 +395,7 @@ static int task_database_chd_get_serial(const char *name, char *serial, size_t l
    if (!fd)
       return 0;
 
-   *filesize = intfstream_get_size(fd);
+   *filesize = intfstream_get_size(fd); /* TODO: get the full CHD size instead */
    result = intfstream_get_serial(fd, serial, len, name);
    intfstream_close(fd);
    free(fd);
@@ -682,7 +682,7 @@ static int task_database_iterate_playlist(
       case FILE_TYPE_CHD:
          db_state->serial[0] = '\0';
          if (task_database_chd_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size))
-            db->type         = DATABASE_TYPE_SERIAL_LOOKUP_SIZEHINT;
+            db->type         = DATABASE_TYPE_SERIAL_LOOKUP;
          else
          {
             db->type         = DATABASE_TYPE_CRC_LOOKUP;
