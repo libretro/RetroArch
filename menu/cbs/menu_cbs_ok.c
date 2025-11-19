@@ -1948,8 +1948,8 @@ static bool menu_content_find_first_core(
             &supported);
 
 #ifdef HAVE_DYNAMIC
-   /* Don't suggest cores if a core is already loaded. */
-   if (     !path_is_empty(RARCH_PATH_CORE)
+   /* Don't suggest cores if a core is manually loaded. */
+   if (     !path_is_empty(RARCH_PATH_CORE_LAST)
          && !config_get_ptr()->bools.core_suggest_always)
       load_content_with_current_core = true;
 #endif

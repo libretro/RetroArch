@@ -8114,6 +8114,14 @@ int generic_menu_entry_action(
       menu_st->flags &= ~(MENU_ST_FLAG_PENDING_CLOSE_CONTENT
                         | MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH);
       menu_st->pending_env_shutdown_content_path[0] = '\0';
+
+      /* Reload core on launch failure if manually loaded */
+      if (     !path_is_empty(RARCH_PATH_CORE_LAST)
+            && !(menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE))
+      {
+         menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
+         menu_st->flags |= MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH;
+      }
    }
    else if (menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE)
    {

@@ -4291,6 +4291,10 @@ static bool event_init_content(
       /* Single-click playlist return */
       if (settings->bools.input_menu_singleclick_playlists)
          menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+
+      /* Return from empty Quick Menu if core is manually loaded and needs reloading */
+      if (!path_is_empty(RARCH_PATH_CORE_LAST))
+         menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
 #endif
       return false;
    }
