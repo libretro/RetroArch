@@ -25,7 +25,7 @@
 #define XXH_INLINE_ALL
 #include <xxHash/xxhash.h>
 
-#define HASHMAP_CAP (1 << 16)
+#define HASHMAP_CAP 65536
 #define uint32s_hash_bytes(bytes, len) XXH32(bytes,len,0)
 
 uint32s_index_t *uint32s_index_new(size_t object_size,
@@ -283,11 +283,16 @@ void uint32s_index_pop(uint32s_index_t *index)
    uint32_t idx  = RBUF_LEN(index->objects)-1;
    uint32_t hash = index->hashes[idx];
    struct uint32s_bucket *bucket = RHMAP_PTR(index->index, hash);
+   uint32_t old_len = bucket->len;
+   if (old_len == 0) {
+      RARCH_ERR("[STATESTREAM] trying to pop from empty bucket\n");
+      return;
+   }
    RBUF_RESIZE(index->objects, idx);
    RBUF_RESIZE(index->counts, idx);
    RBUF_RESIZE(index->hashes, idx);
    uint32s_bucket_remove(bucket, idx);
-   if (bucket->len == 0)
+   if (old_len - 1 == 0)
    {
       uint32s_bucket_free(bucket);
       if (!RHMAP_DEL(index->index, hash))

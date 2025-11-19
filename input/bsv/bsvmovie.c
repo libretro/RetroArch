@@ -17,6 +17,7 @@
 
 #include "bsvmovie.h"
 #include <retro_endianness.h>
+#include <stdint.h>
 #include "../input_driver.h"
 #include "../../retroarch.h"
 #include "../../state_manager.h"
@@ -144,7 +145,8 @@ static bool bsv_movie_peek_frame_info(bsv_movie_t *movie, uint8_t *token, uint64
          if (intfstream_read(movie->file, &(state_length), sizeof(uint64_t)) != sizeof(uint64_t))
             goto end;
          state_length = swap_if_big64(state_length);
-         ret = intfstream_seek(movie->file, state_length, SEEK_CUR) >= 0;
+         if (intfstream_seek(movie->file, state_length, SEEK_CUR) < 0)
+            goto end;
       }
       else if (tok == REPLAY_TOKEN_CHECKPOINT2_FRAME)
       {
@@ -156,7 +158,8 @@ static bool bsv_movie_peek_frame_info(bsv_movie_t *movie, uint8_t *token, uint64
          if (intfstream_read(movie->file, &(state_length), sizeof(uint32_t)) != sizeof(uint32_t))
             goto end;
          /* Seek past the state data */
-         ret = intfstream_seek(movie->file, state_length, SEEK_CUR) >= 0;
+         if (intfstream_seek(movie->file, state_length, SEEK_CUR) < 0)
+            goto end;
       }
       /* We are already at the end of the frame */
       else if (tok == REPLAY_TOKEN_REGULAR_FRAME) { }
@@ -668,7 +671,7 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
    uint8_t *swap;
    size_t size_swap;
    int64_t ret = -1;
-   uint32_t encoded_size = 0, compressed_encoded_size = 0, size_ = 0;
+   uint32_t encoded_size = 0, compressed_encoded_size, size_ = 0;
    uint8_t *encoded_data = NULL, *compressed_encoded_data = NULL;
    bool owns_encoded = false, owns_compressed_encoded = false;
    retro_ctx_serialize_info_t serial_info;
@@ -732,17 +735,17 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
 #ifdef HAVE_ZSTD
       case REPLAY_CHECKPOINT2_COMPRESSION_ZSTD:
       {
-         size_t compressed_encoded_size = ZSTD_compressBound(encoded_size);
-         compressed_encoded_data = (uint8_t*)calloc(compressed_encoded_size, sizeof(uint8_t));
+         size_t compressed_encoded_size_zstd = ZSTD_compressBound(encoded_size);
+         compressed_encoded_data = (uint8_t*)calloc(compressed_encoded_size_zstd, sizeof(uint8_t));
          owns_compressed_encoded = true;
-         compressed_encoded_size = ZSTD_compress(compressed_encoded_data, compressed_encoded_size, encoded_data, encoded_size, 3);
-         if (ZSTD_isError(compressed_encoded_size))
+         compressed_encoded_size_zstd = ZSTD_compress(compressed_encoded_data, compressed_encoded_size_zstd, encoded_data, encoded_size, 3);
+         if (ZSTD_isError(compressed_encoded_size_zstd))
          {
             ret = -1;
             goto exit;
          }
          /* Have to cast after checking the error flags, not before */
-         compressed_encoded_size = (uint32_t)compressed_encoded_size;
+         compressed_encoded_size = (uint32_t)compressed_encoded_size_zstd;
          break;
       }
 #endif
@@ -1207,11 +1210,13 @@ bool replay_check_same_timeline(bsv_movie_t *movie,
          intfstream_seek(movie->file, sizeof(uint32_t), SEEK_CUR);
          intfstream_seek(check_stream, sizeof(uint32_t), SEEK_CUR);
       }
+      keycount1 = UINT8_MAX;
+      keycount2 = UINT8_MAX;
       if (intfstream_read(movie->file, &keycount1, 1) < 1 ||
             intfstream_read(check_stream, &keycount2, 1) < 1 ||
             keycount1 != keycount2)
       {
-         RARCH_ERR("[Replay] Replay checkpoints disagree on key count, %d vs %d\n", keycount1, keycount2);
+         RARCH_ERR("[Replay] Replay checkpoints disagree on key count, %d vs %d (255 means read error)\n", keycount1, keycount2);
          ret = false;
          goto exit;
       }
@@ -1657,6 +1662,10 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
    {
       free(movie->superblock_seq);
       movie->superblock_seq = NULL;
+   }
+   if (!movie->cur_save) {
+      RARCH_ERR("[STATESTREAM] movie has no current serialized save\n");
+      goto exit;
    }
    total_decode_count++;
    rmsgpack_dom_read_with(read_mem, &item, reader_state);
