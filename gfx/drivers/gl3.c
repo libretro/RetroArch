@@ -2914,7 +2914,14 @@ static void *gl3_init(const video_info_t *video,
       goto error;
 
    if (!string_is_empty(version))
-      sscanf(version, "%u.%u", &gl->version_major, &gl->version_minor);
+   {
+      if (string_starts_with(version, "OpenGL ES "))
+         sscanf(version, "OpenGL ES %u.%u", &gl->version_major, &gl->version_minor);
+      else if (string_starts_with(version, "OpenGL "))
+         sscanf(version, "OpenGL %u.%u", &gl->version_major, &gl->version_minor);
+      else
+         sscanf(version, "%u.%u", &gl->version_major, &gl->version_minor);
+   }
 
    video_driver_set_gpu_api_version_string(version);
 
