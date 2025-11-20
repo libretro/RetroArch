@@ -5090,10 +5090,6 @@ MSG_HASH(
    "始终建议核心"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-   "即使已加载某个核心，仍显示所有可用的核心建议。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "使用内建媒体播放器"
    )

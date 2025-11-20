@@ -5062,10 +5062,6 @@ MSG_HASH(
    "Her Zaman Çekirdekleri Öner"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-   "Bir çekirdek zaten yüklü olsa bile kullanılabilir çekirdekleri öner."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "Dahili Medya Oynatıcı Kullan"
    )

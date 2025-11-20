@@ -5118,10 +5118,6 @@ MSG_HASH(
    "항상 코어 제안하기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-   "코어가 이미 불러와져 있더라도 항상 사용 가능한 코어 목록을 표시합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "내장 미디어 플레이어 사용"
    )

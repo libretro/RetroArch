@@ -5087,7 +5087,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-   "Mol croíthe atá ar fáil fiú nuair atá croí luchtaithe cheana féin."
+   "Mol croíleacáin atá ar fáil fiú nuair a luchtaítear croí de láimh."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,

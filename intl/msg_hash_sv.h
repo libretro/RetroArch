@@ -4919,7 +4919,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-   "Föreslå tillgängliga kärnor även när en kärna redan har lästs in."
+   "Föreslå tillgängliga kärnor även när en kärna lästs in manuellt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,

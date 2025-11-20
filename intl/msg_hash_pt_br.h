@@ -5046,10 +5046,6 @@ MSG_HASH(
    "Sempre Sugerir Núcleos"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-   "Sugerir núcleos disponíveis mesmo quando um núcleo já estiver carregado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "Utilizar o reprodutor de mídia integrado"
    )

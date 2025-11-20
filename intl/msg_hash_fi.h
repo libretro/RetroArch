@@ -4234,10 +4234,6 @@ MSG_HASH(
    "Ehdota aina ytimiä"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-   "Ehdota saatavilla olevia ytimiä silloinkin, kun ydin on jo ladattu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "Käytä sisäänrakennettua mediasoitinta"
    )

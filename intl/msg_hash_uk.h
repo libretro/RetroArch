@@ -5087,7 +5087,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-   "Пропозиція доступних ядер навіть тоді, коли ядро вже завантажено."
+   "Запропонувати доступні ядра навіть якщо ядро завантажується вручну."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,

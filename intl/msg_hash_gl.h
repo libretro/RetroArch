@@ -5006,10 +5006,6 @@ MSG_HASH(
    "Suxerir sempre núcleos"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-   "Suxerir núcleos dispoñibles incluso cando xa hai un núcleo cargado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "Usa o reprodutor multimedia integrado"
    )
