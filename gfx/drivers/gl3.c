@@ -503,8 +503,6 @@ static void gfx_display_gl3_draw_pipeline(
             gl->chain.shader->use(gl, gl->chain.shader_data, draw->pipeline_id,
                   true);
 
-            t += 0.01;
-
             uniform_param.type              = UNIFORM_1F;
             uniform_param.enabled           = true;
             uniform_param.location          = 0;
@@ -2545,9 +2543,15 @@ static bool gl3_create_fbo_targets(gl3_t *gl)
 error:
    RARCH_ERR("[GLCore] Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
    if (gl->chain.fbo_feedback_texture)
+   {
       glDeleteTextures(1, &gl->chain.fbo_feedback_texture);
+      gl->chain.fbo_feedback_texture = 0;
+   }
    if (gl->chain.fbo_feedback)
+   {
       glDeleteFramebuffers(1, &gl->chain.fbo_feedback);
+      gl->chain.fbo_feedback = 0;
+   }
    glDeleteTextures(gl->chain.num_fbo_passes, gl->chain.fbo_texture);
    glDeleteFramebuffers(gl->chain.num_fbo_passes, gl->chain.fbo);
    gl->chain.num_fbo_passes = 0;
@@ -3325,10 +3329,16 @@ static bool gl3_set_shader(void *data,
    }
 
    if (gl->chain.fbo_feedback)
+   {
       glDeleteFramebuffers(1, &gl->chain.fbo_feedback);
+      gl->chain.fbo_feedback = 0;
+   }
 
    if (gl->chain.fbo_feedback_texture)
+   {
       glDeleteTextures(1, &gl->chain.fbo_feedback_texture);
+      gl->chain.fbo_feedback_texture = 0;
+   }
 
    if (!gl3_init_filter_chain_with_path(gl, path))
       return false;
@@ -4323,9 +4333,16 @@ static void gl3_apply_state_changes(void *data)
 static struct video_shader *gl3_get_current_shader(void *data)
 {
    gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return NULL;
+   if (gl->chain.active)
+      return gl->chain.shader->get_current_shader(gl->chain.shader_data);
 #ifdef HAVE_SLANG
-   if (gl && gl->filter_chain)
-      return gl3_filter_chain_get_preset(gl->filter_chain);
+   else
+   {
+      if (gl->filter_chain)
+         return gl3_filter_chain_get_preset(gl->filter_chain);
+   }
 #endif
    return NULL;
 }
