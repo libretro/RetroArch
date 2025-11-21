@@ -903,7 +903,7 @@ static int database_info_list_iterate_found_match(
       if (delim)
          *delim = '\0';
       fill_pathname(entry_lbl,
-            path_basename_nocompression(entry_path), "", str_len);
+            path_basename_nocompression(entry_path), "", sizeof(entry_lbl));
 
       RARCH_LOG("[Scanner] Faulty match for: \"%s\", CRC: 0x%08X\n", entry_path_str, db_state->crc);
    }
