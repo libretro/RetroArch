@@ -45,6 +45,7 @@
 
 #if defined(WEBOS)
 #include <sys/resource.h>
+#include "input/common/wayland_common_webos.h"
 #endif
 
 #include <stdio.h>
@@ -5992,6 +5993,11 @@ int rarch_main(int argc, char *argv[], void *data)
       setenv("EGL_PLATFORM", "wayland", 0);
    if (getenv("XDG_RUNTIME_DIR") == NULL)
       setenv("XDG_RUNTIME_DIR", "/tmp/xdg", 0);
+   /* wayland */
+   if (getenv("XKB_CONFIG_ROOT") == NULL)
+      setenv("XKB_CONFIG_ROOT", "/usr/share/X11/xkb", 0);
+   if (getenv("WAYLAND_DISPLAY") == NULL)
+      setenv("WAYLAND_DISPLAY", "wayland-0", 0);
 
    struct rlimit limit = {0, 0};
    setrlimit(RLIMIT_CORE, &limit);
@@ -8704,6 +8710,10 @@ bool retroarch_main_quit(void)
 
 #ifdef HAVE_GAME_AI
    game_ai_shutdown();
+#endif
+
+#if defined(WEBOS) && defined(HAVE_WAYLAND)
+   shutdown_webos_contexts();
 #endif
 
    return true;
