@@ -404,37 +404,43 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    }
    else if (glsl_core)
    {
-      const char* version_extra = "";
       unsigned version_no = 0;
       unsigned gl_ver     = glsl_major * 100 + glsl_minor * 10;
 
 #ifdef HAVE_OPENGLES
-      if (gl_ver >= 300 && gl_check_capability(GL_CAPS_GLES3_SUPPORTED))
-      {
-         version_extra = " es";
-         version_no = gl_ver;
-      }
-      else version_no = 100;
+      version_no = 100;
 #else
-      switch (gl_ver)
-      {
-         case 300:
-            version_no = 130;
-            break;
-         case 310:
-            version_no = 140;
-            break;
-         case 320:
-            version_no = 150;
-            break;
-         default:
-            version_no = gl_ver;
-            break;
-      }
+      if (gl_ver >= 410)
+         version_no = 410;
+      else
+         switch (gl_ver)
+         {
+            case 400:
+               version_no = 400;
+               break;
+            case 330:
+               version_no = 330;
+               break;
+            case 320:
+               version_no = 150;
+               break;
+            case 310:
+               version_no = 140;
+               break;
+            case 300:
+               version_no = 130;
+               break;
+            case 210:
+               version_no = 120;
+               break;
+            default:
+               version_no = 110;
+               break;
+         }
 #endif
 
-      snprintf(version, sizeof(version), "#version %u%s\n", version_no, version_extra);
-      RARCH_LOG("[GLSL] Using GLSL version %u%s.\n", version_no, version_extra);
+      snprintf(version, sizeof(version), "#version %u\n", version_no);
+      RARCH_LOG("[GLSL] Using GLSL version %u.\n", version_no);
    }
 
    source[0] = version;
