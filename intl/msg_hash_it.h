@@ -3664,6 +3664,14 @@ MSG_HASH(
    "Blocca tutti i tasti di scelta rapida da entrambi i tipi di tastiera e dispositivo di controllo se entrambi i tipi sono impostati con 'Hotkey Abilita'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Scorciatoie seguono il Giocatore 1"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Le scorciatoie sono collegate alla porta principale 1, anche se la porta principale 1 è rimappata a un utente diverso. Nota: i tasti di scelta rapida della tastiera non funzioneranno se la porta principale 1 viene rimappata a qualsiasi utente > 1 (l'ingresso della tastiera è dall'utente 1)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Attiva/Disattiva Menu (Controller Combo)"
    )
@@ -4960,6 +4968,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
    "Suggerisci Sempre Nucleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "Suggerisci i core disponibili anche quando un core viene caricato manualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,

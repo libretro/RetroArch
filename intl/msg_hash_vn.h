@@ -42,7 +42,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   "Mở rộng"
+   "Khám phá"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
@@ -3616,7 +3616,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
-   "Thay đổi ánh xạ điều khiển cụ thể của lõi."
+   "Thay đổi gán nút điều khiển cụ thể của lõi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3906,7 +3906,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
-   "Tăng âm"
+   "Tăng âm lượng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
@@ -4734,7 +4734,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
-   "Lưu file ánh xạ phím khi thoát"
+   "Lưu tệp gán phím khi thoát"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
@@ -4758,7 +4758,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-   "Tự động tải file ánh xạ"
+   "Tự động tải tệp gán phím"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
@@ -5100,6 +5100,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
    "Luôn Gợi ý Core"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "Cung cấp các lõi có sẵn ngay cả khi một lõi đã được tải thủ công."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -9475,7 +9479,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
-   "Tải và thay thế ánh xạ điều khiển hiện tại."
+   "Tải và thay thế gán nút điều khiển hiện tại."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
@@ -9507,7 +9511,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CONTENT_DIR,
-   "Lưu tệp ánh xạ sẽ áp dụng cho tất cả trò chơi được tải từ cùng thư mục với tệp hiện tại."
+   "Lưu tệp gán phím sẽ áp dụng cho tất cả trò chơi được tải từ cùng thư mục với tệp hiện tại."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
@@ -9539,11 +9543,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
-   "Đặt tất cả tùy chọn ánh xạ về giá trị mặc định."
+   "Đặt tất cả tùy chọn gán nút bấm về giá trị mặc định."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
-   "Cập nhật file gán lại phím"
+   "Cập nhật tệp gán lại phím"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,

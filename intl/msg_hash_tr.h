@@ -210,6 +210,14 @@ MSG_HASH(
    "RetroArch uygulamasından çıkın. Çıkışta yapılandırma kaydetme etkin."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Şimdi Eşitle"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Bulut eşitlemesini el ile tetikle."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "RetroArch uygulamasından çıkın. Çıkışta yapılandırma kaydetme etkin değil."
    )
@@ -1315,6 +1323,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Devre dışı bırakıldığında, dosyalar üzerine yazılmadan veya silinmeden önce yedek klasörüne taşınır."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Eşitleme Modu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "Otomatik: RetroArch başlangıcında ve çekirdekler boşta olunca eşitle. El ile: Yalnızca 'Şimdi Eşitle' düğmesi el ile tetiklendiğinde eşitle."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
@@ -5060,6 +5076,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
    "Her Zaman Çekirdekleri Öner"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "Bir çekirdek el ile yüklendiğinde bile kullanılabilir çekirdek öner."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
