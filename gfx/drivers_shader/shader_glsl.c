@@ -407,16 +407,12 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
       unsigned version_no = 0;
       unsigned gl_ver     = glsl_major * 100 + glsl_minor * 10;
 
-#ifdef HAVE_OPENGLES
-      version_no = 100;
-#else
       if (gl_ver >= 300)
          version_no = 130;
       else if (gl_ver >= 210)
          version_no = 120;
       else
          version_no = 110;
-#endif
 
       snprintf(version, sizeof(version), "#version %u\n", version_no);
       RARCH_LOG("[GLSL] Using GLSL version %u.\n", version_no);

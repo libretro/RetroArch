@@ -2593,7 +2593,13 @@ static bool gl3_init_filter_chain_with_path(gl3_t *gl, const char *shader_path)
 
 #ifdef HAVE_GLSL
    if (type == RARCH_SHADER_GLSL)
-      gl_glsl_set_context_type(true, gl->version_major, gl->version_minor);
+      gl_glsl_set_context_type(
+#ifdef HAVE_OPENGLES
+            false,
+#else
+            true,
+#endif
+            gl->version_major, gl->version_minor);
 #endif
 
 #ifdef HAVE_SLANG
