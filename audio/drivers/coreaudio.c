@@ -285,6 +285,10 @@ static void *coreaudio_init(const char *device,
    if (AudioUnitInitialize(dev->dev) != noErr)
       goto error;
 
+   /* Enforce minimum latency to prevent buffer issues */
+   if (latency < 8)
+      latency        = 8;
+
    fifo_size         = (latency * (*new_rate)) / 1000;
    fifo_size        *= 2 * sizeof(float);
    dev->buffer_size  = fifo_size;
