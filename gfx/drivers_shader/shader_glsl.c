@@ -410,33 +410,12 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
 #ifdef HAVE_OPENGLES
       version_no = 100;
 #else
-      if (gl_ver >= 410)
-         version_no = 410;
+      if (gl_ver >= 300)
+         version_no = 130;
+      else if (gl_ver >= 210)
+         version_no = 120;
       else
-         switch (gl_ver)
-         {
-            case 400:
-               version_no = 400;
-               break;
-            case 330:
-               version_no = 330;
-               break;
-            case 320:
-               version_no = 150;
-               break;
-            case 310:
-               version_no = 140;
-               break;
-            case 300:
-               version_no = 130;
-               break;
-            case 210:
-               version_no = 120;
-               break;
-            default:
-               version_no = 110;
-               break;
-         }
+         version_no = 110;
 #endif
 
       snprintf(version, sizeof(version), "#version %u\n", version_no);
