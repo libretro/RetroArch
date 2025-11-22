@@ -4038,8 +4038,7 @@ static const gfx_ctx_driver_t *gl2_get_context(gl2_t *gl)
          minor = 0;
          break;
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-         major = major;
-         minor = minor;
+         // passthrough version_major / version_minor unchanged
          break;
       default:
          major = 2;
