@@ -62,7 +62,8 @@ static struct magic_entry MAGIC_NUMBERS[] = {
    { "Sony - PlayStation 2",        "PLAYSTATION",      0x008008}, /* PS2 DVD */
    { "Sony - PlayStation 2",        "           ",      0x008008}, /* PS2 DVD */
    { "Sony - PlayStation Portable", "PSP GAME",         0x008008},
-   { "Philips - CD-i",              "\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00", 0x000000},
+   /* CD-i magic number should start with \0 at position 0 but it throws off later strlen() */
+   { "Philips - CD-i",              "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00", 0x000001},
    { NULL,                          NULL,               0}
 };
 
