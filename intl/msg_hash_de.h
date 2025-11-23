@@ -214,6 +214,14 @@ MSG_HASH(
    "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist aktiviert."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Jetzt synchronisieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Cloud-Synchronisierung manuell auslösen."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist deaktiviert."
    )
@@ -1259,6 +1267,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Wenn deaktiviert, werden die Dateien in einen Sicherungsordner verschoben, bevor sie überschrieben oder gelöscht werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Synchronisierungsmodus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "Automatisch: Synchronisiert beim Start von RetroArch und beim Entladen von Kernen. Manuell: Synchronisiert nur, wenn die Schaltfläche „Jetzt synchronisieren“ manuell ausgelöst wird."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,

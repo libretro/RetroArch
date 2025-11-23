@@ -214,6 +214,14 @@ MSG_HASH(
    "Wyjdź z aplikacji RetroArch. Zapisywanie konfiguracji przy wyjściu jest włączone."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Synchronizuj teraz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Ręcznie wyzwalaj synchronizację w chmurze."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Wyjdź z aplikacji RetroArch. Zapisywanie konfiguracji przy wyjściu jest wyłączone."
    )
@@ -1303,6 +1311,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Gdy wyłączone, pliki są przenoszone do folderu kopii zapasowej przed nadpisaniem lub usunięciem."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Tryb synchronizacji"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
@@ -2794,6 +2806,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
    "Zastąp domyślne urządzenie audio używane przez sterownik. Zależne od sterownika."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
+   "Niestandardowa wartość urządzenia PCM dla sterownika ALSA."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
