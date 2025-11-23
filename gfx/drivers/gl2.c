@@ -4031,15 +4031,18 @@ static const gfx_ctx_driver_t *gl2_get_context(gl2_t *gl)
    bool video_shared_context            = settings->bools.video_shared_context;
 #ifdef HAVE_OPENGLES
    enum gfx_ctx_api api                 = GFX_CTX_OPENGL_ES_API;
-   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
+   switch(hwr->context_type)
    {
-      major                             = 3;
-      minor                             = 0;
-   }
-   else
-   {
-      major                             = 2;
-      minor                             = 0;
+      case RETRO_HW_CONTEXT_OPENGLES3:
+         major = 3;
+         minor = 0;
+         break;
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         // passthrough version_major / version_minor unchanged
+         break;
+      default:
+         major = 2;
+         minor = 0;
    }
 #else
    enum gfx_ctx_api api                 = GFX_CTX_OPENGL_API;
