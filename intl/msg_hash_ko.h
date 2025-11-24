@@ -5118,6 +5118,10 @@ MSG_HASH(
    "항상 코어 제안하기"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "코어를 수동으로 불러온 후에도 사용 가능한 코어 목록을 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "내장 미디어 플레이어 사용"
    )
