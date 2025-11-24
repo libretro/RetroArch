@@ -1612,6 +1612,15 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("ai_service_url",               settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
 #endif
 
+#ifdef HAVE_SMBCLIENT
+   SETTING_ARRAY("smb_client_server_address", settings->arrays.smb_client_server_address, false, NULL, true);
+   SETTING_ARRAY("smb_client_share", settings->arrays.smb_client_share, false, NULL, true);
+   SETTING_ARRAY("smb_client_subdir", settings->arrays.smb_client_subdir, false, NULL, true);
+   SETTING_ARRAY("smb_client_username", settings->arrays.smb_client_username, false, NULL, true);
+   SETTING_ARRAY("smb_client_password", settings->arrays.smb_client_password, false, NULL, true);
+   SETTING_ARRAY("smb_client_workgroup", settings->arrays.smb_client_workgroup, false, NULL, true);
+#endif
+
 #ifdef HAVE_LAKKA
    SETTING_ARRAY("cpu_main_gov",                 settings->arrays.cpu_main_gov, false, NULL, true);
    SETTING_ARRAY("cpu_menu_gov",                 settings->arrays.cpu_menu_gov, false, NULL, true);
@@ -2252,6 +2261,10 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("network_remote_enable",         &settings->bools.network_remote_enable, false, false /* TODO */, false);
 #endif
 #endif
+#ifdef HAVE_SMBCLIENT
+   SETTING_BOOL("settings_show_smb_client",      &settings->bools.settings_show_smb_client, true, DEFAULT_SETTINGS_SHOW_SMB_CLIENT, false);
+   SETTING_BOOL("smb_client_enable",             &settings->bools.smb_client_enable, true, false, false);
+#endif
 #ifdef HAVE_BSV_MOVIE
    SETTING_BOOL("replay_checkpoint_deserialize", &settings->bools.replay_checkpoint_deserialize,  true, DEFAULT_REPLAY_CHECKPOINT_DESERIALIZE, false);
 #endif
@@ -2749,6 +2762,10 @@ static struct config_int_setting *populate_settings_int(
    SETTING_INT("input_overlay_lightgun_port",    &settings->ints.input_overlay_lightgun_port, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_PORT, false);
 #endif
    SETTING_INT("input_turbo_bind",               &settings->ints.input_turbo_bind, true, DEFAULT_TURBO_BIND, false);
+
+#ifdef HAVE_SMBCLIENT
+   SETTING_INT("smb_client_auth_mode",           &settings->ints.smb_client_auth_mode, true, DEFAULT_SMB_CLIENT_AUTH_MODE, false);
+#endif
 
    *size = count;
 

@@ -72,6 +72,9 @@
 #include <libretro.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
+#ifdef HAVE_SMBCLIENT
+#include "libretro-common/vfs/vfs_implementation_smb.h"
+#endif
 
 #include <features/features_cpu.h>
 
@@ -8746,6 +8749,10 @@ bool retroarch_main_quit(void)
 
 #if defined(WEBOS) && defined(HAVE_WAYLAND)
    shutdown_webos_contexts();
+#endif
+
+#ifdef HAVE_SMBCLIENT
+   smb_shutdown();
 #endif
 
    return true;

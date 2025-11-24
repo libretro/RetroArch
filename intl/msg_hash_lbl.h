@@ -6732,3 +6732,53 @@ MSG_HASH(
    "game_ai_show_debug"
    )
 #endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "settings_show_smb_client"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
+   "smb_client_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST,
+   "deferred_smb_client_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_ENABLE,
+   "smb_client_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_SERVER,
+   "smb_client_server"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_SHARE,
+   "smb_client_share"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_SUBDIR,
+  "smb_client_subdir"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_USERNAME,
+   "smb_client_username"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD,
+   "smb_client_password"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP,
+   "smb_client_workgroup"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE,
+   "smb_client_auth_mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_BROWSE,
+   "smb_client_browse"
+   )
+#endif
