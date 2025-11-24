@@ -211,3 +211,5 @@ C89_CRTSWITCHRES=no
 HAVE_MICROPHONE=yes        # Microphone support
 HAVE_TEST_DRIVERS=yes      # Test input driver
 HAVE_GAME_AI=no
+HAVE_SMBCLIENT=auto        # SMB client support
+HAVE_BUILTINSMBCLIENT=no   # Use builtin libsmb2

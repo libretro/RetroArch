@@ -815,6 +815,10 @@ DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_overlay,                
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_game_ai_options_list,       MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS)
 #endif
 
+#ifdef HAVE_SMBCLIENT
+DEFAULT_TITLE_MACRO(action_get_smb_client_settings_list,                      MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS)
+#endif
+
 static int action_get_title_generic(char *s, size_t len,
       const char *path, const char *text)
 {
@@ -1019,6 +1023,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
 #endif
       {MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST,         action_get_user_interface_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST,             action_get_ai_service_settings_list},
+#ifdef HAVE_SMBCLIENT
+      {MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST,             action_get_smb_client_settings_list},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST,          action_get_accessibility_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_POWER_MANAGEMENT_SETTINGS_LIST,       action_get_power_management_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CPU_PERFPOWER_LIST,                   action_get_cpu_perfpower_settings_list},
@@ -1324,6 +1331,10 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
 #if defined(HAVE_GAME_AI)
       {MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS,
          action_get_core_game_ai_options_list},
+#endif
+#ifdef HAVE_SMBCLIENT
+      {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
+         action_get_smb_client_settings_list},
 #endif
    };
 
@@ -1772,6 +1783,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_core_game_ai_options_list);
             break;
 
+#endif
+#ifdef HAVE_SMBCLIENT
+         case MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS:
+            BIND_ACTION_GET_TITLE(cbs, action_get_smb_client_settings_list);
+            break;
 #endif
          default:
             return -1;

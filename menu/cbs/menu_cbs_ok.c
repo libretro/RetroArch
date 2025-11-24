@@ -35,6 +35,9 @@
 #ifdef HAVE_CDROM
 #include <vfs/vfs_implementation_cdrom.h>
 #endif
+#ifdef HAVE_SMBCLIENT
+#include "../vfs/vfs_implementation_smb.h"
+#endif
 
 #ifdef HAVE_DISCORD
 #include "../../network/discord.h"
@@ -403,6 +406,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST;
       case ACTION_OK_DL_AI_SERVICE_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST;
+#ifdef HAVE_SMBCLIENT
+      case ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST;
+#endif
       case ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST;
       case ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST:
@@ -1790,6 +1797,9 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_QUICK_MENU_OVERRIDE_OPTIONS_LIST:
       case ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST:
       case ACTION_OK_DL_AI_SERVICE_SETTINGS_LIST:
+#ifdef HAVE_SMBCLIENT
+      case ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST:
+#endif
       case ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST:
       case ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST:
       case ACTION_OK_DL_CPU_PERFPOWER_SETTINGS_LIST:
@@ -6632,6 +6642,9 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_synchronization_settings_list
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_mixer_settings_list, ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST)
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_ai_service_settings_list, ACTION_OK_DL_AI_SERVICE_SETTINGS_LIST)
+#ifdef HAVE_SMBCLIENT
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_smb_client_settings_list, ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST)
+#endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accessibility_settings_list, ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_settings_list, ACTION_OK_DL_INPUT_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_menu_settings_list, ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST)
@@ -8944,6 +8957,61 @@ static int action_ok_core_steam_uninstall(
 }
 #endif
 
+#ifdef HAVE_SMBCLIENT
+static int action_ok_smb_browse(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+   char smb_path[PATH_MAX_LENGTH];
+
+   if (!settings->bools.smb_client_enable)
+   {
+      runloop_msg_queue_push(
+            "SMB is not enabled. Enable it in Network Settings.",
+            0, 100, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_INFO);
+      return -1;
+   }
+
+   if (string_is_empty(settings->arrays.smb_client_server_address))
+   {
+      runloop_msg_queue_push(
+            "SMB server address not configured.",
+            0, 100, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_ERROR);
+      return -1;
+   }
+
+   /* Build base SMB path */
+   snprintf(smb_path, sizeof(smb_path), "smb://%s",
+            settings->arrays.smb_client_server_address);
+
+   if (!string_is_empty(settings->arrays.smb_client_share))
+   {
+      strlcat(smb_path, "/", sizeof(smb_path));
+      strlcat(smb_path, settings->arrays.smb_client_share, sizeof(smb_path));
+   }
+
+   if (!string_is_empty(settings->arrays.smb_client_subdir))
+   {
+      if (settings->arrays.smb_client_subdir[0] != '/')
+         strlcat(smb_path, "/", sizeof(smb_path));
+      strlcat(smb_path, settings->arrays.smb_client_subdir, sizeof(smb_path));
+   }
+
+   return generic_action_ok_displaylist_push(
+      smb_path,
+      smb_path,
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE),
+      FILE_TYPE_DIRECTORY,
+      idx,
+      entry_idx,
+      ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
+}
+#endif
+
 static int is_rdb_entry(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
@@ -9208,6 +9276,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,                 action_ok_netplay_enable_host},
          {MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,               action_ok_netplay_enable_client},
          {MENU_ENUM_LABEL_NETPLAY_DISCONNECT,                  action_ok_netplay_disconnect},
+#endif
+#ifdef HAVE_SMBCLIENT
+         {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,                 action_ok_push_smb_client_settings_list},
+         {MENU_ENUM_LABEL_SMB_CLIENT_BROWSE,                   action_ok_smb_browse},
 #endif
          {MENU_ENUM_LABEL_CORE_DELETE,                         action_ok_core_delete},
          {MENU_ENUM_LABEL_CORE_CREATE_BACKUP,                  action_ok_core_create_backup},
