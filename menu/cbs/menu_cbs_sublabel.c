@@ -1486,11 +1486,16 @@ static int action_bind_sublabel_core_info_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   if (list && list->list[i].label && strstr(list->list[i].label, "(md5)"))
+   if (!list || string_is_empty(list->list[i].label))
+      return 0;
+
+   if (strstr(list->list[i].label, "(md5)"))
    {
       int pos = string_find_index_substring_string(list->list[i].label, "(md5)");
       strlcpy(s, list->list[i].label + pos, len);
    }
+   else
+      strlcpy(s, list->list[i].label, len);
 
    return 0;
 }

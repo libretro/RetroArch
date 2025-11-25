@@ -781,6 +781,33 @@ static int menu_displaylist_parse_core_info(
          MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
       count++;
 
+   if (core_path)
+   {
+      char tmp_desc[PATH_MAX_LENGTH];
+      size_t _len = strlcpy(tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH),
+            sizeof(tmp));
+
+      _len += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+
+#if IOS
+      shortened_path[0] = '\0';
+      fill_pathname_abbreviate_special(shortened_path,
+            core_path, sizeof(shortened_path));
+      strlcpy(tmp_desc, shortened_path, sizeof(tmp_desc));
+#else
+      strlcpy(tmp_desc, core_path, sizeof(tmp_desc));
+#endif
+
+      if (!settings->bools.menu_show_sublabels)
+         _len += strlcpy(tmp + _len, tmp_desc, sizeof(tmp) - _len);
+
+      if (menu_entries_append(list, tmp, tmp_desc,
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY,
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+         count++;
+   }
+
    if (core_info->firmware_count > 0)
    {
       char tmp_path[PATH_MAX_LENGTH];
@@ -792,7 +819,7 @@ static int menu_displaylist_parse_core_info(
       bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
       bool content_is_inited          = flags & CONTENT_ST_FLAG_IS_INITED;
 
-      firmware_info.path             = core_info->path;
+      firmware_info.path              = core_info->path;
 
       /* If 'System Files are in Content Directory' is enabled and content is inited,
        * adjust the path to check for firmware files */
@@ -841,38 +868,64 @@ static int menu_displaylist_parse_core_info(
          tmp[  __len] = ':';
          tmp[++__len] = ' ';
          tmp[++__len] = '\0';
-         if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-            count++;
 
-         /* If 'System Files are in Content Directory' is enabled, let's add a note about it. */
-         if (systemfiles_in_content_dir)
+         /* Show the path that was checked */
          {
-            strlcpy(tmp,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY),
-                  sizeof(tmp));
-            if (menu_entries_append(list, tmp, "",
+            char tmp_desc[PATH_MAX_LENGTH];
+
+
+#ifdef IOS
+            shortened_path[0] = '\0';
+            fill_pathname_abbreviate_special(shortened_path,
+                  firmware_info.directory.system,
+                  sizeof(shortened_path));
+            snprintf(tmp_desc, sizeof(tmp_desc),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
+                  shortened_path);
+#else
+            snprintf(tmp_desc, sizeof(tmp_desc),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
+                  firmware_info.directory.system);
+#endif
+
+            if (!settings->bools.menu_show_sublabels)
+            {
+               if (menu_entries_append(list, tmp, "",
+                     MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+                  count++;
+
+               __len = strlcpy(tmp, "- ", sizeof(tmp));
+               strlcpy(tmp + __len, tmp_desc, sizeof(tmp) - __len);
+               tmp_desc[0] = '\0';
+            }
+
+            /* If 'System Files are in Content Directory' is enabled, let's add a note about it. */
+            if (systemfiles_in_content_dir)
+            {
+               if (!settings->bools.menu_show_sublabels)
+               {
+                  char tmp_note[PATH_MAX_LENGTH];
+
+                  snprintf(tmp_note, sizeof(tmp_note), "- %s",
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY));
+
+                  if (menu_entries_append(list, tmp_note, "",
+                        MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+                     count++;
+               }
+               else
+               {
+                  strlcat(tmp_desc, "\n", sizeof(tmp_desc));
+                  strlcat(tmp_desc,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY),
+                        sizeof(tmp_desc));
+               }
+            }
+
+            if (menu_entries_append(list, tmp, tmp_desc,
                   MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                count++;
          }
-
-         /* Show the path that was checked */
-#ifdef IOS
-         shortened_path[0] = '\0';
-         fill_pathname_abbreviate_special(shortened_path,
-               firmware_info.directory.system,
-               sizeof(shortened_path));
-         snprintf(tmp, sizeof(tmp),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
-               shortened_path);
-#else
-         snprintf(tmp, sizeof(tmp),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
-               firmware_info.directory.system);
-#endif
-         if (menu_entries_append(list, tmp, "",
-               MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-            count++;
 
          for (i = 0; i < core_info->firmware_count; i++)
          {
@@ -946,26 +999,6 @@ static int menu_displaylist_parse_core_info(
                MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
             count++;
       }
-   }
-
-   if (core_path)
-   {
-      size_t _len = strlcpy(tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH),
-            sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
-#if IOS
-      shortened_path[0] = '\0';
-      fill_pathname_abbreviate_special(shortened_path,
-            core_path, sizeof(shortened_path));
-      strlcpy(tmp + _len, shortened_path, sizeof(tmp) - _len);
-#else
-      strlcpy(tmp + _len, core_path, sizeof(tmp) - _len);
-#endif
-      if (menu_entries_append(list, tmp, "",
-            MENU_ENUM_LABEL_CORE_INFO_ENTRY,
-            MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-         count++;
    }
 
 end:
