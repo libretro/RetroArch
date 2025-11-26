@@ -548,14 +548,6 @@ MSG_HASH(
    "Системные файлы"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- примечание: включена опция 'Системные файлы в каталоге контента'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- поиск в: %s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Отсутствует, требуется:"
    )
@@ -9169,7 +9161,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Перезапустить загруженный контент."
+   "Перезапустить загруженный контент. Для аппаратного сброса нажмите Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -11241,7 +11233,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Тип миниатюры, отображаемой в правой верхней части плейлиста. Для циклического переключения миниатюры нажмите RetroPad Y."
+   "Тип миниатюры, отображаемой в плейлисте справа вверху. Для переключения нажмите правый аналоговый стик вверх или влево."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -11249,7 +11241,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Тип миниатюры, отображаемой в правом нижнем углу плейлиста."
+   "Тип миниатюры, отображаемой в плейлисте справа внизу. Для переключения нажмите правый аналоговый стик вниз или вправо."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,

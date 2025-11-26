@@ -548,14 +548,6 @@ MSG_HASH(
    "Phần mềm hệ thống"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "Ghi chú: Tùy chọn 'Tệp hệ thống nằm trong Thư mục trò chơi' hiện đang được bật."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Đang tìm trong: %s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Thiếu, Yêu cầu phải có:"
    )
@@ -9168,10 +9160,6 @@ MSG_HASH(
    "Khởi động lại"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Bắt đầu lại trò chơi từ đầu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Thoát trò chơi"
    )
@@ -11248,16 +11236,8 @@ MSG_HASH(
    "Ảnh Thu Nhỏ Trên"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Loại ảnh thu nhỏ hiển thị ở góc trên bên phải danh sách. Loại ảnh này có thể chuyển đổi bằng cách nhấn RetroPad Y."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "Ảnh Thu Nhỏ Dưới"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Loại ảnh thu nhỏ hiển thị ở góc dưới bên phải danh sách."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,

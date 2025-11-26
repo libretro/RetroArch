@@ -545,11 +545,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- Nota: La opción Guardar archivos del sistema en el directorio del contenido se encuentra activada."
+   "Nota: La opción Guardar archivos del sistema en el directorio del contenido está activada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Buscando en: %s"
+   "Buscando en: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -9137,7 +9137,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Reinicia el contenido desde el principio."
+   "Reinicia el contenido desde el principio. Pulsa Start en el RetroPad para un reinicio completo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -11161,7 +11161,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Indica el tipo de miniatura que se mostrará en la parte superior derecha de las listas de reproducción. El tipo seleccionado puede alternarse pulsando el botón RetroPad Y."
+   "Indica el tipo de miniatura que se mostrará en la esquina superior derecha de las listas de reproducción. Puede cambiarse moviendo el stick analógico derecho hacia la izquierda o la derecha."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -11169,7 +11169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Indica el tipo de miniatura que se mostrará en la parte inferior derecha de las listas de reproducción."
+   "Indica el tipo de miniatura que se mostrará en la esquina inferior derecha de las listas de reproducción. Puede cambiarse moviendo el stick analógico derecho hacia la izquierda o la derecha."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,

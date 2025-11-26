@@ -532,14 +532,6 @@ MSG_HASH(
    "Deterministisk (Spara/Läs in, Spola tillbaka, Run-Ahead, Netplay)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- Observera: 'Systemfiler är i innehållskatalog' är för närvarande aktiverat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Letar i: %s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Saknas, krävs:"
    )
@@ -8881,7 +8873,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Starta om innehållet från början."
+   "Starta om innehållet från början. RetroPad Start aktiverar hård omstart."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -10758,10 +10750,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "Nedre miniatyrbild"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Typ av miniatyrbild att visa i nedre högra hörnet av spellistor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,

@@ -210,6 +210,14 @@ MSG_HASH(
    "Esci dall'applicazione RetroArch. Il salvataggio della configurazione all'uscita è attivato."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Sincronizza Ora"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Attiva manualmente la sincronizzazione del cloud."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Esci dall'applicazione RetroArch. Il salvataggio della configurazione all'uscita è disattivato."
    )
@@ -526,14 +534,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
    "Deterministico (salva/carica, riavvolgi, esecuzione anticipata, netplay)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- Nota: 'I file di sistema sono contenuti nella directory' è attualmente abilitato."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Guardando in: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -1287,6 +1287,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Quando questa opzione è disabilitata, i file vengono spostati in una cartella di backup prima di essere sovrascritti o cancellati."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Modalità Sincronizzazione"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "Automatico: Sincronizza all'avvio di RetroArch e quando i core vengono scaricati. Manuale: Sincronizza solo quando il pulsante 'Sincronizza' viene attivato manualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
@@ -8997,7 +9005,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Riavvia il contenuto dall'inizio."
+   "Riavvia il contenuto dall'inizio. RetroPad Start attiva il reset rigido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -11005,7 +11013,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Tipo di miniatura da visualizzare in alto a destra delle playlist. Questo tipo di miniatura può essere ciclato premendo RetroPad Y."
+   "Tipo di miniatura da visualizzare in alto a destra delle playlist. Può essere caricata con destra analogica in alto/sinistra."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -11013,7 +11021,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Tipo di copertina da visualizzare in basso a destra delle playlist."
+   "Tipo di miniatura da visualizzare in basso a destra delle playlist. Può essere caricata con destra analogica in basso/destra."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
@@ -14333,6 +14341,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
    "Scansione della directory completata."
+   )
+MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Scansione non riuscita, nessun database trovato."
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,

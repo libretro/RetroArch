@@ -3240,10 +3240,6 @@ MSG_HASH(
    "شروع مجدد"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "شروع مجدد محتوا از ابتدا."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "بستن محتوا"
    )

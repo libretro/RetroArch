@@ -540,14 +540,6 @@ MSG_HASH(
    "Dochtearraí"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- Nóta: Tá 'Tá Comhaid Chórais san Eolaire Ábhair' cumasaithe faoi láthair."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Ag féachaint isteach: %s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Ar iarraidh, Riachtanach:"
    )
@@ -9149,7 +9141,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Atosaigh an t-ábhar ón tús."
+   "Atosaigh an t-ábhar ón tús. Spreagann RetroPad Start athshocrú crua."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -11241,7 +11233,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Cineál mionsamhail le taispeáint ag barr ar dheis seinmliostaí. Is féidir an cineál mionsamhail seo a athrú trí bhrú ar RetroPad Y."
+   "Cineál mionsamhail le taispeáint ag barr ar dheis seinmliostaí. Is féidir é a athrú le Deas Analógach Suas/Clé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -11249,7 +11241,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Cineál mionsamhail le taispeáint ag bun ar dheis seinmliostaí."
+   "Cineál mionsamhail le taispeáint ag bun ar dheis seinmliostaí. Is féidir é a rothlú le Analógach Deas Síos/Ar Dheas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,

@@ -468,10 +468,6 @@ MSG_HASH(
    "Básica (guardar/cargar)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- Nota: la opción «Los ficheros del sistema tán nel direutoriu del conteníu» ta desactivada."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Falta mas ríquese:"
    )

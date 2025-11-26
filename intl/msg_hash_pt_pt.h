@@ -524,14 +524,6 @@ MSG_HASH(
    "Determinante (Guardar/Carregar, Rebobinar, Run-Ahead, Netplay)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- Nota: A opção \"Ficheiros do Sistema estão na Pasta de Conteúdos\" está atualmente ativada."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- A procurar em: '%s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Em falta, Requerido:"
    )

@@ -548,14 +548,6 @@ MSG_HASH(
    "Прошивки"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- Примітка: \"Системні файли знаходяться у каталозі вмісту\" наразі увімкнено."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Перегляд: %s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Відсутній, обов'язково:"
    )
@@ -9108,10 +9100,6 @@ MSG_HASH(
    "Перезапустити"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Перезапустити вміст з самого початку."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Закрити вміст"
    )
@@ -11168,16 +11156,8 @@ MSG_HASH(
    "Верхня мініатюра"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Тип ескізу для відображення у верхньому правому куті списках відтворення. Цей тип ескізів можна налаштувати за допомогою RetroPad Y."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "Нижня мініатюра"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Тип ескізу для відображення в правому нижньому куті плейлістів."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,

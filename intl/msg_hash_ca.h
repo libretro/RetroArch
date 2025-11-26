@@ -545,11 +545,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- Nota: «Els fitxers del sistema són al directori del contingut» es troba activat."
+   "Nota: «Els fitxers del sistema són al directori del contingut» es troba activat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- S'està mirant en: %s"
+   "Cercant a: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -9125,7 +9125,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Reinicia el contingut des del principi."
+   "Reinicia el contingut des de l'inici."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -11125,7 +11125,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Indica el tipus de miniatura que es mostrarà a la part superior dreta de les llistes de reproducció. El tipus escollit es pot canviar clicant al botó RetroPad Y."
+   "Tipus de miniatures que es mostraran a la part superior dreta de les llistes de reproducció. Pot ser canviat com el joystick dret."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -11133,7 +11133,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Tipus de miniatura a mostrar a la part superior dreta de la llista de reproducció."
+   "Tipus de miniatures que es mostraran a la part inferior dreta de les llistes de reproducció. Pot ser canviat com el joystick dret."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,

@@ -528,14 +528,6 @@ MSG_HASH(
    "ファームウェア"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- 注意: [コンテンツディレクトリからシステムファイルを読み込む] が現在有効化されています。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- 検索中: '%s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "不足, 必須:"
    )
@@ -8572,10 +8564,6 @@ MSG_HASH(
    "再起動"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "コンテンツを最初から再開します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "コンテンツを閉じる"
    )
@@ -10596,16 +10584,8 @@ MSG_HASH(
    "上のサムネイル"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "プレイリストの右上に表示するサムネイルの種類です。このサムネイルの種類はレトロパッドの Y を押すことで切り替えることができます。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "下のサムネイル"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "プレイリストの右下に表示するサムネイルの種類です。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,

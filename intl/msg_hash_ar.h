@@ -536,14 +536,6 @@ MSG_HASH(
    "البرنامج الثابت فيرموير"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- ملاحظة: تم تمكين 'ملفات النظام في دليل المحتوى' حاليا."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "البحث في: %s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "مفقود، مطلوب:"
    )
@@ -6222,10 +6214,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "الصورة المصغرة السفلية"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "نوع الصورة المصغرة لعرضها في أسفل يمين قوائم التشغيل."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
