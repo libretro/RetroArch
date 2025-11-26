@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\asprintf.h" />
+    <ClInclude Include="..\include\libsmb2-private.h" />
+    <ClInclude Include="..\include\portable-endian.h" />
+    <ClInclude Include="..\include\slist.h" />
+    <ClInclude Include="..\include\smb2\libsmb2-dcerpc-lsa.h" />
+    <ClInclude Include="..\include\smb2\libsmb2-dcerpc-srvsvc.h" />
+    <ClInclude Include="..\include\smb2\libsmb2-dcerpc.h" />
+    <ClInclude Include="..\include\smb2\libsmb2-raw.h" />
+    <ClInclude Include="..\include\smb2\libsmb2.h" />
+    <ClInclude Include="..\include\smb2\smb2-errors.h" />
+    <ClInclude Include="..\include\smb2\smb2-ioctl.h" />
+    <ClInclude Include="..\include\smb2\smb2.h" />
+    <ClInclude Include="..\include\xbox\config.h" />
+    <ClInclude Include="..\lib\aes.h" />
+    <ClInclude Include="..\lib\aes128ccm.h" />
+    <ClInclude Include="..\lib\aes_apple.h" />
+    <ClInclude Include="..\lib\aes_reference.h" />
+    <ClInclude Include="..\lib\asn1-ber.h" />
+    <ClInclude Include="..\lib\compat.h" />
+    <ClInclude Include="..\lib\hmac-md5.h" />
+    <ClInclude Include="..\lib\krb5-wrapper.h" />
+    <ClInclude Include="..\lib\md4.h" />
+    <ClInclude Include="..\lib\md5.h" />
+    <ClInclude Include="..\lib\ntlmssp.h" />
+    <ClInclude Include="..\lib\sha-private.h" />
+    <ClInclude Include="..\lib\sha.h" />
+    <ClInclude Include="..\lib\smb2-signing.h" />
+    <ClInclude Include="..\lib\smb3-seal.h" />
+    <ClInclude Include="..\lib\spnego-wrapper.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\include\Makefile.am" />
+    <None Include="..\include\module.modulemap" />
+    <None Include="..\lib\libsmb2.syms" />
+    <None Include="..\lib\Makefile.am" />
+    <None Include="..\lib\Makefile.AMIGA" />
+    <None Include="..\lib\Makefile.AMIGA_AROS" />
+    <None Include="..\lib\Makefile.AMIGA_OS3" />
+    <None Include="..\lib\Makefile.PS3_PPU" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\lib\aes.c" />
+    <ClCompile Include="..\lib\aes128ccm.c" />
+    <ClCompile Include="..\lib\aes_apple.c" />
+    <ClCompile Include="..\lib\aes_reference.c" />
+    <ClCompile Include="..\lib\alloc.c" />
+    <ClCompile Include="..\lib\asn1-ber.c" />
+    <ClCompile Include="..\lib\compat.c" />
+    <ClCompile Include="..\lib\dcerpc-lsa.c" />
+    <ClCompile Include="..\lib\dcerpc-srvsvc.c" />
+    <ClCompile Include="..\lib\dcerpc.c" />
+    <ClCompile Include="..\lib\errors.c" />
+    <ClCompile Include="..\lib\hmac-md5.c" />
+    <ClCompile Include="..\lib\hmac.c" />
+    <ClCompile Include="..\lib\init.c" />
+    <ClCompile Include="..\lib\krb5-wrapper.c" />
+    <ClCompile Include="..\lib\libsmb2.c" />
+    <ClCompile Include="..\lib\md4c.c" />
+    <ClCompile Include="..\lib\md5.c" />
+    <ClCompile Include="..\lib\ntlmssp.c" />
+    <ClCompile Include="..\lib\pdu.c" />
+    <ClCompile Include="..\lib\sha1.c" />
+    <ClCompile Include="..\lib\sha224-256.c" />
+    <ClCompile Include="..\lib\sha384-512.c" />
+    <ClCompile Include="..\lib\smb2-cmd-close.c" />
+    <ClCompile Include="..\lib\smb2-cmd-create.c" />
+    <ClCompile Include="..\lib\smb2-cmd-echo.c" />
+    <ClCompile Include="..\lib\smb2-cmd-error.c" />
+    <ClCompile Include="..\lib\smb2-cmd-flush.c" />
+    <ClCompile Include="..\lib\smb2-cmd-ioctl.c" />
+    <ClCompile Include="..\lib\smb2-cmd-lock.c" />
+    <ClCompile Include="..\lib\smb2-cmd-logoff.c" />
+    <ClCompile Include="..\lib\smb2-cmd-negotiate.c" />
+    <ClCompile Include="..\lib\smb2-cmd-notify-change.c" />
+    <ClCompile Include="..\lib\smb2-cmd-oplock-break.c" />
+    <ClCompile Include="..\lib\smb2-cmd-query-directory.c" />
+    <ClCompile Include="..\lib\smb2-cmd-query-info.c" />
+    <ClCompile Include="..\lib\smb2-cmd-read.c" />
+    <ClCompile Include="..\lib\smb2-cmd-session-setup.c" />
+    <ClCompile Include="..\lib\smb2-cmd-set-info.c" />
+    <ClCompile Include="..\lib\smb2-cmd-tree-connect.c" />
+    <ClCompile Include="..\lib\smb2-cmd-tree-disconnect.c" />
+    <ClCompile Include="..\lib\smb2-cmd-write.c" />
+    <ClCompile Include="..\lib\smb2-data-file-info.c" />
+    <ClCompile Include="..\lib\smb2-data-filesystem-info.c" />
+    <ClCompile Include="..\lib\smb2-data-reparse-point.c" />
+    <ClCompile Include="..\lib\smb2-data-security-descriptor.c" />
+    <ClCompile Include="..\lib\smb2-share-enum.c" />
+    <ClCompile Include="..\lib\smb2-signing.c" />
+    <ClCompile Include="..\lib\smb3-seal.c" />
+    <ClCompile Include="..\lib\socket.c" />
+    <ClCompile Include="..\lib\spnego-wrapper.c" />
+    <ClCompile Include="..\lib\sync.c" />
+    <ClCompile Include="..\lib\timestamps.c" />
+    <ClCompile Include="..\lib\unicode.c" />
+    <ClCompile Include="..\lib\usha.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\lib\CMakeLists.txt" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{EF73A5DF-B372-4E1C-BCB4-3DA1A4002BDD}</ProjectGuid>
+    <RootNamespace>Triangle</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>libsmb2</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(VC_IncludePath);$(RXDK_LIBS)include</IncludePath>
+    <ExternalIncludePath>$(RXDK_LIBS)include</ExternalIncludePath>
+    <LibraryWPath />
+    <SourcePath />
+    <ExcludePath>$(CommonExcludePath);$(VC_ExecutablePath_x86);$(RXDK_LIBS)lib</ExcludePath>
+    <ReferencePath>$(RXDK_LIBS)lib</ReferencePath>
+    <LibraryPath>$(RXDK_LIBS)lib</LibraryPath>
+    <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
+    <TargetExt>.lib</TargetExt>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(VC_IncludePath);$(RXDK_LIBS)include</IncludePath>
+    <ExternalIncludePath>$(RXDK_LIBS)include</ExternalIncludePath>
+    <LibraryWPath />
+    <SourcePath />
+    <ExcludePath>$(CommonExcludePath);$(VC_ExecutablePath_x86);$(RXDK_LIBS)lib</ExcludePath>
+    <ReferencePath>$(RXDK_LIBS)lib</ReferencePath>
+    <LibraryPath>$(RXDK_LIBS)lib</LibraryPath>
+    <OutDir>$(ProjectDir)$(Configuration)\</OutDir>
+    <TargetExt>.lib</TargetExt>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>XBOX;_XBOX;_DEBUG;XBOX_PLATFORM;NEED_POLL;NEED_GETADDRINFO;NEED_FREEADDRINFO;NEED_GETPID;NEED_GETLOGIN_R;NEED_RANDOM;NEED_SRANDOM;HAVE_CONFIG_H;_U_=/**/;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>..\include\;..\include\xbox;..\include\smb2</AdditionalIncludeDirectories>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalOptions>/arch:SSE %(AdditionalOptions)</AdditionalOptions>
+      <SupportJustMyCode>false</SupportJustMyCode>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>xboxkrnl.lib;libcmtd.lib;xapilibd.lib;d3d8d.lib;d3dx8d.lib;xbdm.lib</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <BaseAddress>
+      </BaseAddress>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <GenerateMapFile>true</GenerateMapFile>
+      <FixedBaseAddress>false</FixedBaseAddress>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <SectionAlignment>32</SectionAlignment>
+      <MergeSections>.rdata=.text</MergeSections>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>XBOX;_XBOX;NDEBUG;XBOX_PLATFORM;NEED_POLL;NEED_GETADDRINFO;NEED_FREEADDRINFO;NEED_GETPID;NEED_GETLOGIN_R;NEED_RANDOM;NEED_SRANDOM;HAVE_CONFIG_H;_U_=/**/%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <AdditionalIncludeDirectories>..\include\;..\include\xbox;..\include\smb2</AdditionalIncludeDirectories>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalOptions>/arch:SSE %(AdditionalOptions)</AdditionalOptions>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>xboxkrnl.lib;libcmt.lib;xapilib.lib;d3d8.lib;d3dx8.lib;xbdm.lib</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <BaseAddress>
+      </BaseAddress>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <GenerateMapFile>true</GenerateMapFile>
+      <FixedBaseAddress>false</FixedBaseAddress>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <SectionAlignment>32</SectionAlignment>
+      <MergeSections>.rdata=.text</MergeSections>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project requires Team Resurgent's XDK Libs installed on this computer. Search for them on http://www.theusualplaces.co.uk.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists($(RXDK_LIBS))" Text="$([System.String]::Format('$(ErrorText)'))" />
+  </Target>
+</Project>

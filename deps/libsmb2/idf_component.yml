@@ -1,0 +1,5 @@
+version: "3.0.1"
+description: Libsmb2 is a userspace client library for accessing SMB2/SMB3 shares on a network
+url: https://github.com/sahlberg/libsmb2
+dependencies:
+  idf: ">=4.2"
