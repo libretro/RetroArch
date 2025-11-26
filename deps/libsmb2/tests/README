@@ -1,0 +1,28 @@
+To run the test you need an SMB server that exports a share and
+two configurations files:
+
+1, ./tests/NTLM
+===============
+This file contains the username to password mapping you need to authenticate
+to the server with NTLM.
+
+Example:
+$ cat tests/NTLM
+win16-1:Administrator:mypassword
+$
+
+2, tests/setup.local
+====================
+This file sets two environment variables the tests need, NTLM_USER_FILE
+and TESTURL.
+
+Example:
+$ cat tests/setup.local
+TESTURL=smb://Administrator@win16-1/Share
+NTLM_USER_FILE=`pwd`/NTLM
+$
+
+A good idea is to use a special share/subdirectory on the server
+so that the tests do not overwrite/corrupt/delete important files.
+Create a dedicated share on the server that is only used for testing
+and be prepared that any data in this share can be randomly deleted.
