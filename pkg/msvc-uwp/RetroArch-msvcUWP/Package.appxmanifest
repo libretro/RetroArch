@@ -32,6 +32,7 @@
   <Capabilities>
     <Capability Name="internetClient" />
     <Capability Name="internetClientServer" />
+    <Capability Name="privateNetworkClientServer" />
     <rescap:Capability Name="runFullTrust"/>
     <rescap:Capability Name="broadFileSystemAccess" />
     <rescap:Capability Name="expandedResources" />
