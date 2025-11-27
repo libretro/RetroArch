@@ -176,7 +176,9 @@ static bool CCJSONObjectMemberHandler(void *context,
                         pCtx->current_string_val      = &pCtx->core_info->licenses;
                         pCtx->current_string_list_val = &pCtx->core_info->licenses_list;
                      }
-                     else if (string_is_equal(pValue, "is_experimental"))
+                     break;
+                  case 'i':
+                     if (string_is_equal(pValue, "is_experimental"))
                         pCtx->current_entry_bool_val  = &pCtx->core_info->is_experimental;
                      break;
                   case 'n':
