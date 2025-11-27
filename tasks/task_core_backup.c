@@ -519,6 +519,15 @@ static void task_core_backup_handler(retro_task_t *task)
    return;
 
 task_finished:
+#ifdef HAVE_MENU
+   {
+      /* Refresh menu */
+      struct menu_state *menu_st       = menu_state_get_ptr();
+      if (menu_st)
+         menu_st->flags               |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                       | MENU_ST_FLAG_PREVENT_POPULATE;
+   }
+#endif
 
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);

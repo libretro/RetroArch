@@ -1067,22 +1067,29 @@ end:
                   MENU_SETTING_ACTION_CORE_CREATE_BACKUP, 0, 0, NULL))
             count++;
 
-         /* Restore core from backup */
-         if (!core_locked)
-            if (menu_entries_append(list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST),
-                     core_path,
-                     MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,
-                     MENU_SETTING_ACTION_CORE_RESTORE_BACKUP, 0, 0, NULL))
-               count++;
+         {
+            core_backup_list_t *backup_list = core_backup_list_init(core_path, settings->paths.directory_core_assets);
 
-         /* Delete core backup */
-         if (menu_entries_append(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST),
-                  core_path,
-                  MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST,
-                  MENU_SETTING_ACTION_CORE_DELETE_BACKUP, 0, 0, NULL))
-            count++;
+            if (backup_list && core_backup_list_size(backup_list))
+            {
+               /* Restore core from backup */
+               if (!core_locked)
+                  if (menu_entries_append(list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST),
+                           core_path,
+                           MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,
+                           MENU_SETTING_ACTION_CORE_RESTORE_BACKUP, 0, 0, NULL))
+                     count++;
+
+               /* Delete core backup */
+               if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST),
+                        core_path,
+                        MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST,
+                        MENU_SETTING_ACTION_CORE_DELETE_BACKUP, 0, 0, NULL))
+                  count++;
+            }
+         }
 
          /* Delete core
           * > Only add this option if online updater is
