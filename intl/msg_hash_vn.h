@@ -548,6 +548,14 @@ MSG_HASH(
    "Phần mềm hệ thống"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "Lưu ý: 'Tệp Hệ thống nằm trong Thư mục Nội dung' đã được bật."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "Đang tìm trong: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Thiếu, Yêu cầu phải có:"
    )
@@ -9160,6 +9168,10 @@ MSG_HASH(
    "Khởi động lại"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
+   "Khởi động lại nội dung từ đầu. Nhấn Start trên RetroPad để thực hiện reset cứng."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Thoát trò chơi"
    )
@@ -11236,8 +11248,16 @@ MSG_HASH(
    "Ảnh Thu Nhỏ Trên"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   "Loại hình thu nhỏ hiển thị ở góc trên bên phải của danh sách phát. Có thể thay đổi bằng cần analog phải lên/xuống."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "Ảnh Thu Nhỏ Dưới"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
+   "Loại hình thu nhỏ hiển thị ở dưới cùng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,

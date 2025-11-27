@@ -540,6 +540,14 @@ MSG_HASH(
    "Dochtearraí"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "Nóta: Tá 'Tá Comhaid Chórais san Eolaire Ábhair' cumasaithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "Ag féachaint isteach: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Ar iarraidh, Riachtanach:"
    )
