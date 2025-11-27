@@ -629,7 +629,7 @@ build-retroarch-android-playstore-plus:
       mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-static-retroarch-libnx-aarch64:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:v4-10-0
   stage: prepare-for-static-cores
   before_script:
     - export NUMPROC=$(($(nproc)/3))
@@ -649,7 +649,7 @@ build-static-retroarch-libnx-aarch64:
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
 build-static-retroarch-dummy-libnx-aarch64:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:v4-10-0
   stage: build
   variables:
     MEDIA_PATH: .media
