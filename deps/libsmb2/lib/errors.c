@@ -1073,7 +1073,7 @@ int nterror_to_errno(uint32_t status) {
         case SMB2_STATUS_PENDING:
                 return EAGAIN;
         case SMB2_STATUS_SHUTDOWN:
-                return -SMB2_STATUS_SHUTDOWN;
+                return -(int)SMB2_STATUS_SHUTDOWN;
         case SMB2_STATUS_NO_SUCH_FILE:
         case SMB2_STATUS_NO_SUCH_DEVICE:
         case SMB2_STATUS_BAD_NETWORK_NAME:
