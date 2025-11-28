@@ -246,7 +246,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   "Установить или восстановить ядро"
+   "Установить/восстановить ядро"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
@@ -375,7 +375,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   "Загрузка бесплатного контента для выбранного ядра."
+   "Загрузка бесплатного контента для отдельных ядер."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -5496,7 +5496,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
-   "Вместо установки стандартного оверлея предпочитать загрузку оверлея по названию текущей системы. Игнорируется, если пресет оверлея изменён переопределением."
+   "Предпочитать загрузку оверлея для текущей системы вместо оверлея по умолчанию. Игнорируется, если пресет оверлея изменён настройками переопределений."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
@@ -7798,7 +7798,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-   "Ссылка для загрузки ядер с билдбота"
+   "Ссылка для загрузки ядер"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
@@ -7806,7 +7806,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-   "Ссылка для загрузки ресурсов с билдбота"
+   "Ссылка для загрузки ресурсов"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
@@ -7814,7 +7814,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-   "Автоматическая распаковка скачанных архивов"
+   "Автоматическая распаковка архивов"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
@@ -7822,7 +7822,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
-   "Показывать экспериментальные ядра"
+   "Экспериментальные ядра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
@@ -13672,7 +13672,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_EXTRACTING_CORE,
-   "Извлечение ядра: "
+   "Распаковка ядра: "
    )
 MSG_HASH(
    MSG_CORE_INSTALLED,
@@ -13936,7 +13936,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
-   "Извлечение уже выполняется."
+   "Распаковка уже выполняется."
    )
 MSG_HASH(
    MSG_DECOMPRESSION_FAILED,
@@ -14020,11 +14020,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_EXTRACTING,
-   "Извлечение"
+   "Распаковка"
    )
 MSG_HASH(
    MSG_EXTRACTING_FILE,
-   "Извлечение файла"
+   "Распаковка файла"
    )
 MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
