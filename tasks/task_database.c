@@ -280,6 +280,7 @@ static int intfstream_get_serial(intfstream_t *fd, char *s, size_t len, const ch
                return 1;
          }
       }
+      /* Philips CD-i has no serial entry on disc, use default fallback to CRC */
    }
    return 0;
 }
@@ -695,6 +696,8 @@ static int task_database_iterate_playlist(
          else
          {
             db->type = DATABASE_TYPE_CRC_LOOKUP;
+            db_state->serial[0] = '\0';
+            RARCH_DBG("[Scanner] Cue file serial not detected, fallback to crc\n");
             return task_database_cue_get_crc_and_size(name, &db_state->crc, &db_state->size);
          }
          break;
@@ -706,6 +709,8 @@ static int task_database_iterate_playlist(
          else
          {
             db->type = DATABASE_TYPE_CRC_LOOKUP;
+            db_state->serial[0] = '\0';
+            RARCH_DBG("[Scanner] GDI file serial not detected, fallback to crc\n");
             return task_database_gdi_get_crc_and_size(name, &db_state->crc, &db_state->size);
          }
          break;
@@ -729,6 +734,8 @@ static int task_database_iterate_playlist(
          else
          {
             db->type         = DATABASE_TYPE_CRC_LOOKUP;
+            db_state->serial[0] = '\0';
+            RARCH_DBG("[Scanner] CHD file serial not detected, fallback to crc\n");
             return task_database_chd_get_crc_and_size(name, &db_state->crc, &db_state->size);
          }
          break;
@@ -903,7 +910,7 @@ static int database_info_list_iterate_found_match(
       if (delim)
          *delim = '\0';
       fill_pathname(entry_lbl,
-            path_basename_nocompression(entry_path), "", str_len);
+            path_basename_nocompression(entry_path), "", sizeof(entry_lbl));
 
       RARCH_LOG("[Scanner] Faulty match for: \"%s\", CRC: 0x%08X\n", entry_path_str, db_state->crc);
    }

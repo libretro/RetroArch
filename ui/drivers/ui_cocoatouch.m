@@ -417,6 +417,11 @@ enum
 
 - (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
+   /* Skip processing if iOS native keyboard (UITextField) is active
+    * to prevent double-processing and memory corruption in UIKit's string formatting */
+   if (ios_keyboard_active())
+      return [super pressesBegan:presses withEvent:event];
+
    for (UIPress *press in presses)
       [self handleUIPress:press withEvent:event down:YES];
    [super pressesBegan:presses withEvent:event];
@@ -424,6 +429,11 @@ enum
 
 - (void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
+   /* Skip processing if iOS native keyboard (UITextField) is active
+    * to prevent double-processing and memory corruption in UIKit's string formatting */
+   if (ios_keyboard_active())
+      return [super pressesEnded:presses withEvent:event];
+
    for (UIPress *press in presses)
       [self handleUIPress:press withEvent:event down:NO];
    [super pressesEnded:presses withEvent:event];
@@ -1333,6 +1343,9 @@ void ios_keyboard_end(void)
    {
       [app.keyboardTextField resignFirstResponder];
       app.keyboardCompletionCallback = nil;
+
+      /* Reset keyboard state to ensure keys aren't stuck after dialog closes */
+      apple_input_keyboard_reset();
    }
 }
 

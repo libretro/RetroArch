@@ -549,11 +549,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- Примітка: \"Системні файли знаходяться у каталозі вмісту\" наразі увімкнено."
+   "Примітка: 'Системні файли пов'язані з Контентом каталогу'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Перегляд: %s"
+   "Шукаєте: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -9109,7 +9109,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Перезапустити вміст з самого початку."
+   "Перезапуск вмісту з самого початку. Перезапуск програми RetroPad призведе до перезавантаження системи."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -11169,7 +11169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Тип ескізу для відображення у верхньому правому куті списках відтворення. Цей тип ескізів можна налаштувати за допомогою RetroPad Y."
+   "Тип ескізу для відображення у правому верхньому куті плейлістів. Можна зациклити з правим Аналогом вгору/ліворуч."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -11177,7 +11177,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Тип ескізу для відображення в правому нижньому куті плейлістів."
+   "Тип ескізу для відображення в правому нижньому куті плейлістів. Можна зациклити з правим аналогом вниз/праворуч."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,

@@ -31,6 +31,7 @@
 
 #include "../../configuration.h"
 #include "../../file_path_special.h"
+#include "../../tasks/task_content.h"
 #include "../../core.h"
 #include "../../core_info.h"
 #include "../../core_option_manager.h"
@@ -624,6 +625,26 @@ static int action_start_load_core(
    return ret;
 }
 
+static int action_start_restart_content(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *core_path      = path_get(RARCH_PATH_CORE);
+   const char *content_path   = path_get(RARCH_PATH_CONTENT);
+   content_ctx_info_t content_info;
+
+   content_info.argc          = 0;
+   content_info.argv          = NULL;
+   content_info.args          = NULL;
+   content_info.environ_get   = NULL;
+
+   return task_push_load_content_with_new_core_from_menu(
+         core_path, content_path,
+         &content_info,
+         CORE_TYPE_PLAIN,
+         NULL, NULL);
+}
+
 #ifdef HAVE_BLUETOOTH
 static int action_start_bluetooth(const char *path, const char *label,
          unsigned menu_type, size_t idx, size_t entry_idx)
@@ -783,6 +804,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
          case MENU_ENUM_LABEL_CORE_LIST:
          case MENU_ENUM_LABEL_CORE_LIST_UNLOAD:
             BIND_ACTION_START(cbs, action_start_load_core);
+            break;
+         case MENU_ENUM_LABEL_RESTART_CONTENT:
+            BIND_ACTION_START(cbs, action_start_restart_content);
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:

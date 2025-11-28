@@ -2360,6 +2360,12 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    }
 
 #elif defined(WEBOS)
+   if (path_is_directory("/media/developer/temp"))
+      menu_entries_append(list, "/media/developer/temp",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+
    if (path_is_directory("/media/internal"))
       menu_entries_append(list, "/media/internal",
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),

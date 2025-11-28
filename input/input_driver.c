@@ -4008,6 +4008,9 @@ size_t input_config_get_bind_string_joykey(
       _len  = strlcpy(s, "Button ", len);
       _len += snprintf(s + _len, len - _len, "%u",
             (unsigned)bind->joykey);
+
+      if (!string_is_empty(suffix))
+         _len += snprintf(s + _len, len - _len, " %s", suffix);
    }
    return _len;
 }

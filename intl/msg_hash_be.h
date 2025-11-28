@@ -536,14 +536,6 @@ MSG_HASH(
    "Прашыўка"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- Заўвага: уключана опцыя «Сістэмныя файлы ў каталогу змесціва»."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Прагляд у: %s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Адсутнічае, неабходнае:"
    )
@@ -8892,10 +8884,6 @@ MSG_HASH(
    "Перазапусціць"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Перазапусціць загружаны кантэнт."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Закрыць змесціва"
    )
@@ -10944,16 +10932,8 @@ MSG_HASH(
    "Верхняя мініяцюра"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Тып мініяцюры, якая адлюстроўваецца ў правай верхняй частцы плэйліста. Для цыклічнага пераключэння мініяцюры націсніце RetroPad Y."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "Ніжняя мініяцюра"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Тып мініяцюры, якая адлюстроўваецца ў правым ніжнім куце плэйліста."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,

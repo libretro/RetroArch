@@ -532,14 +532,6 @@ MSG_HASH(
    "Determinístico (Salvar/Carregar, Retroceder, Antecipação de Frames, Netplay)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- Nota: 'Arquivos de sistema estão no Diretório de Conteúdo' está ativado no momento."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Pesquisando em: \"%s\""
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Arquivo faltando (obrigatório):"
    )
@@ -5046,6 +5038,10 @@ MSG_HASH(
    "Sempre Sugerir Núcleos"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   "Sugerir núcleos disponíveis mesmo quando um núcleo estiver carregado manualmente."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    "Utilizar o reprodutor de mídia integrado"
    )
@@ -9093,7 +9089,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Reinicia o conteúdo."
+   "Reinicia o conteúdo do início. O botão Start do RetroPad aciona um hard reset."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -11085,7 +11081,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Tipo de miniatura exibida no canto superior direito das listas de reprodução. Esse tipo de miniatura pode ser alterado pressionando RetroPad Y."
+   "Tipo de miniatura para exibir no canto superior direito das listas de reprodução. Pode ser alternado com o Analógico Direito para Cima/Esquerda."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -11093,7 +11089,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Tipo de miniatura a ser exibido no canto inferior direito das listas de reprodução."
+   "Tipo de miniatura para exibir no canto inferior direito das listas de reprodução. Pode ser alternado com o Analógico Direito para Baixo/Direita."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
