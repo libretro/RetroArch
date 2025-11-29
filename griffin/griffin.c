@@ -1310,7 +1310,6 @@ DATA RUNLOOP
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
 #include "../tasks/task_playlist_manager.c"
-#include "../tasks/task_manual_content_scan.c"
 #include "../tasks/task_core_backup.c"
 #ifdef HAVE_TRANSLATE
 #include "../tasks/task_translation.c"
@@ -1318,8 +1317,8 @@ DATA RUNLOOP
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"
 #endif
-#ifdef HAVE_LIBRETRODB
 #include "../tasks/task_database.c"
+#ifdef HAVE_LIBRETRODB
 #include "../tasks/task_database_cue.c"
 #endif
 #if defined(HAVE_NETWORKING) && defined(HAVE_MENU)
