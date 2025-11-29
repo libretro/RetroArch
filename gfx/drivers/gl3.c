@@ -132,8 +132,8 @@ typedef struct gl3
    struct
    {
       GLuint alpha_blend;
-#ifdef HAVE_SHADERPIPELINE
       GLuint font;
+#ifdef HAVE_SHADERPIPELINE
       GLuint ribbon;
       GLuint ribbon_simple;
       GLuint snow_simple;
@@ -141,8 +141,8 @@ typedef struct gl3
       GLuint bokeh;
 #endif /* HAVE_SHADERPIPELINE */
       struct gl3_buffer_locations alpha_blend_loc;
-#ifdef HAVE_SHADERPIPELINE
       struct gl3_buffer_locations font_loc;
+#ifdef HAVE_SHADERPIPELINE
       struct gl3_buffer_locations ribbon_loc;
       struct gl3_buffer_locations ribbon_simple_loc;
       struct gl3_buffer_locations snow_simple_loc;
@@ -1661,12 +1661,12 @@ static void gl3_destroy_resources(gl3_t *gl)
       glDeleteProgram(gl->pipelines.alpha_blend);
       gl->pipelines.alpha_blend = 0;
    }
-#ifdef HAVE_SHADERPIPELINE
    if (gl->pipelines.font)
    {
       glDeleteProgram(gl->pipelines.font);
       gl->pipelines.font = 0;
    }
+#ifdef HAVE_SHADERPIPELINE
    if (gl->pipelines.ribbon)
    {
       glDeleteProgram(gl->pipelines.ribbon);
@@ -1987,11 +1987,11 @@ static bool gl3_init_pipelines(gl3_t *gl)
 #include "vulkan_shaders/alpha_blend.frag.inc"
       ;
 
-#ifdef HAVE_SHADERPIPELINE
    static const uint32_t font_frag[] =
 #include "vulkan_shaders/font.frag.inc"
       ;
 
+#ifdef HAVE_SHADERPIPELINE
    static const uint32_t pipeline_ribbon_vert[] =
 #include "vulkan_shaders/pipeline_ribbon.vert.inc"
       ;
@@ -2028,7 +2028,6 @@ static bool gl3_init_pipelines(gl3_t *gl)
    if (!gl->pipelines.alpha_blend)
       return false;
 
-#ifdef HAVE_SHADERPIPELINE
    if (!gl->pipelines.font)
       gl->pipelines.font = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
                                                       font_frag, sizeof(font_frag),
@@ -2036,6 +2035,7 @@ static bool gl3_init_pipelines(gl3_t *gl)
    if (!gl->pipelines.font)
       return false;
 
+#ifdef HAVE_SHADERPIPELINE
    if (!gl->pipelines.ribbon_simple)
       gl->pipelines.ribbon_simple = gl3_cross_compile_program(pipeline_ribbon_simple_vert, sizeof(pipeline_ribbon_simple_vert),
                                                                pipeline_ribbon_simple_frag, sizeof(pipeline_ribbon_simple_frag),
