@@ -46,8 +46,6 @@ static void xdg_toplevel_handle_configure(void *data,
       int32_t width, int32_t height, struct wl_array *states)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
    xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
    wl->configured = false;
 }
@@ -85,7 +83,6 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 
    if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
    {
-      wl->ignore_configuration = false;
       wl->vk.context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
       if (wl->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
          vulkan_acquire_next_image(&wl->vk);
@@ -105,8 +102,6 @@ libdecor_frame_handle_configure(struct libdecor_frame *frame,
       struct libdecor_configuration *configuration, void *data)
 {
    gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
    libdecor_frame_handle_configure_common(frame, configuration, wl);
 
    wl->configured = false;
