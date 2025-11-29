@@ -503,8 +503,6 @@ static void gfx_display_gl3_draw_pipeline(
             gl->chain.shader->use(gl, gl->chain.shader_data, draw->pipeline_id,
                   true);
 
-            t += 0.01;
-
             uniform_param.type              = UNIFORM_1F;
             uniform_param.enabled           = true;
             uniform_param.location          = 0;
@@ -2545,9 +2543,15 @@ static bool gl3_create_fbo_targets(gl3_t *gl)
 error:
    RARCH_ERR("[GLCore] Failed to set up frame buffer objects. Multi-pass shading will not work.\n");
    if (gl->chain.fbo_feedback_texture)
+   {
       glDeleteTextures(1, &gl->chain.fbo_feedback_texture);
+      gl->chain.fbo_feedback_texture = 0;
+   }
    if (gl->chain.fbo_feedback)
+   {
       glDeleteFramebuffers(1, &gl->chain.fbo_feedback);
+      gl->chain.fbo_feedback = 0;
+   }
    glDeleteTextures(gl->chain.num_fbo_passes, gl->chain.fbo_texture);
    glDeleteFramebuffers(gl->chain.num_fbo_passes, gl->chain.fbo);
    gl->chain.num_fbo_passes = 0;
@@ -2589,7 +2593,13 @@ static bool gl3_init_filter_chain_with_path(gl3_t *gl, const char *shader_path)
 
 #ifdef HAVE_GLSL
    if (type == RARCH_SHADER_GLSL)
-      gl_glsl_set_context_type(true, gl->version_major, gl->version_minor);
+      gl_glsl_set_context_type(
+#ifdef HAVE_OPENGLES
+            false,
+#else
+            true,
+#endif
+            gl->version_major, gl->version_minor);
 #endif
 
 #ifdef HAVE_SLANG
@@ -2914,7 +2924,14 @@ static void *gl3_init(const video_info_t *video,
       goto error;
 
    if (!string_is_empty(version))
-      sscanf(version, "%u.%u", &gl->version_major, &gl->version_minor);
+   {
+      if (string_starts_with(version, "OpenGL ES "))
+         sscanf(version, "OpenGL ES %u.%u", &gl->version_major, &gl->version_minor);
+      else if (string_starts_with(version, "OpenGL "))
+         sscanf(version, "OpenGL %u.%u", &gl->version_major, &gl->version_minor);
+      else
+         sscanf(version, "%u.%u", &gl->version_major, &gl->version_minor);
+   }
 
    video_driver_set_gpu_api_version_string(version);
 
@@ -3318,10 +3335,16 @@ static bool gl3_set_shader(void *data,
    }
 
    if (gl->chain.fbo_feedback)
+   {
       glDeleteFramebuffers(1, &gl->chain.fbo_feedback);
+      gl->chain.fbo_feedback = 0;
+   }
 
    if (gl->chain.fbo_feedback_texture)
+   {
       glDeleteTextures(1, &gl->chain.fbo_feedback_texture);
+      gl->chain.fbo_feedback_texture = 0;
+   }
 
    if (!gl3_init_filter_chain_with_path(gl, path))
       return false;
@@ -3439,6 +3462,15 @@ static void gl3_update_cpu_texture(gl3_t *gl,
       struct gl3_streamed_texture *streamed,
       const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
+   if (gl->chain.active)
+   {
+      /* The input texture is expected to be square with a power of 2 size when not using Slang */
+      unsigned max = width > height ? width : height;
+      unsigned pow2_size = next_pow2(max);
+      width = pow2_size;
+      height = pow2_size;
+   }
+
    if (width != streamed->width || height != streamed->height)
    {
       if (streamed->tex != 0)
@@ -4317,9 +4349,16 @@ static void gl3_apply_state_changes(void *data)
 static struct video_shader *gl3_get_current_shader(void *data)
 {
    gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return NULL;
+   if (gl->chain.active)
+      return gl->chain.shader->get_current_shader(gl->chain.shader_data);
 #ifdef HAVE_SLANG
-   if (gl && gl->filter_chain)
-      return gl3_filter_chain_get_preset(gl->filter_chain);
+   else
+   {
+      if (gl->filter_chain)
+         return gl3_filter_chain_get_preset(gl->filter_chain);
+   }
 #endif
    return NULL;
 }

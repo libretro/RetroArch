@@ -407,21 +407,12 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
       unsigned version_no = 0;
       unsigned gl_ver     = glsl_major * 100 + glsl_minor * 10;
 
-      switch (gl_ver)
-      {
-         case 300:
-            version_no = 130;
-            break;
-         case 310:
-            version_no = 140;
-            break;
-         case 320:
-            version_no = 150;
-            break;
-         default:
-            version_no = gl_ver;
-            break;
-      }
+      if (gl_ver >= 300)
+         version_no = 130;
+      else if (gl_ver >= 210)
+         version_no = 120;
+      else
+         version_no = 110;
 
       snprintf(version, sizeof(version), "#version %u\n", version_no);
       RARCH_LOG("[GLSL] Using GLSL version %u.\n", version_no);
