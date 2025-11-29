@@ -532,6 +532,14 @@ MSG_HASH(
    "Deterministisk (Spara/Läs in, Spola tillbaka, Run-Ahead, Netplay)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "Observera: 'Systemfiler finns i innehållskatalogen' är aktiverad."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "Letar i: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Saknas, krävs:"
    )

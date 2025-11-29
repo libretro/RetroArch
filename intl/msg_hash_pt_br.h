@@ -532,6 +532,14 @@ MSG_HASH(
    "Determinístico (Salvar/Carregar, Retroceder, Antecipação de Frames, Netplay)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "Nota: 'Arquivos de sistema estão no Diretório de Conteúdo' está habilitado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "Pesquisando em: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Arquivo faltando (obrigatório):"
    )
@@ -14219,6 +14227,14 @@ MSG_HASH(
    "Interface do usuário para Libretro"
    )
 MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT,
+   "Estado salvo do compartimento: %d."
+   )
+MSG_HASH(
+   MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   "Estado carregado do compartimento: Auto."
+   )
+MSG_HASH(
    MSG_LOADING,
    "Carregando"
    )
@@ -14413,6 +14429,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
    "Configuração salva em"
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT,
+   "Estado salvo no compartimento: %d."
+   )
+MSG_HASH(
+   MSG_SAVED_STATE_TO_SLOT_AUTO,
+   "Estado salvo no compartimento: Auto."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

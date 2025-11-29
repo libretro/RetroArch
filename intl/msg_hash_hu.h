@@ -536,6 +536,14 @@ MSG_HASH(
    "Determinisztikus (mentés/visszatöltés, visszatekerés, run-ahead, netplay)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "Megjegyzés: a 'Rendszerfájlok a tartalom könyvtárában' beállítás be van kapcsolva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "Keresés itt: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "Hiányzik, elvárt:"
    )
@@ -9120,6 +9128,10 @@ MSG_HASH(
    "Újraindítás"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
+   "Tartalom újraindítása. A RetroPad Start gomb hidegindítást eredményez."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Tartalom bezárása"
    )
@@ -11180,8 +11192,16 @@ MSG_HASH(
    "Felső bélyegkép"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   "A játéklista jobb felső sarkában megjelenő bélyegkép típusa. A jobb analóg kar fel/le mozgatásával váltható."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "Alsó bélyegkép"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
+   "A játéklista jobb alsó sarkában megjelenő bélyegkép típusa. A jobb analóg kar jobbra/balra mozgatásával váltható."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
