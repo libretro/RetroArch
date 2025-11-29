@@ -3792,35 +3792,6 @@ static bool gl3_frame(void *data, const void *frame,
       gl->textures_index = (gl->textures_index + 1)
          & (GL_CORE_NUM_TEXTURES - 1);
 
-   streamed = &gl->textures[gl->textures_index];
-
-   texture.image            = 0;
-   texture.width            = streamed->width;
-   texture.height           = streamed->height;
-   texture.padded_width     = 0;
-   texture.padded_height    = 0;
-   texture.format           = 0;
-
-   if (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
-   {
-      texture.image         = gl->hw_render_texture;
-      texture.format        = GL_RGBA8;
-      texture.padded_width  = gl->hw_render_max_width;
-      texture.padded_height = gl->hw_render_max_height;
-
-      if (texture.width == 0)
-         texture.width      = 1;
-      if (texture.height == 0)
-         texture.height     = 1;
-   }
-   else
-   {
-      texture.image         = streamed->tex;
-      texture.format        = gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565;
-      texture.padded_width  = streamed->width;
-      texture.padded_height = streamed->height;
-   }
-
    /* Render to texture in first pass. */
    if (gl->chain.active && gl->chain.num_fbo_passes != 0)
    {
@@ -3831,6 +3802,7 @@ static bool gl3_frame(void *data, const void *frame,
       gl3_renderchain_start_render(gl);
    }
 
+   streamed = &gl->textures[gl->textures_index];
    if (frame)
    {
       if (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
@@ -3839,22 +3811,8 @@ static bool gl3_frame(void *data, const void *frame,
          streamed->height   = frame_height;
       }
       else
-      {
-         if (gl->chain.active)
-            gl3_update_input_size(gl, frame_width, frame_height);
-
          gl3_update_cpu_texture(gl, streamed, frame,
                frame_width, frame_height, pitch);
-      }
-
-      /* No point regenerating mipmaps
-       * if there are no new frames. */
-      if (gl->chain.active && gl->chain.mipmap_active)
-      {
-         glBindTexture(GL_TEXTURE_2D, texture.image);
-         glGenerateMipmap(GL_TEXTURE_2D);
-         glBindTexture(GL_TEXTURE_2D, 0);
-      }
    }
 
    if (gl->flags & GL3_FLAG_SHOULD_RESIZE)
@@ -3918,6 +3876,49 @@ static bool gl3_frame(void *data, const void *frame,
       }
       else
          gl3_set_viewport(gl, width, height, false, true);
+   }
+
+   /* Can be NULL for frame dupe / NULL render. */
+   if (frame && gl->chain.active)
+   {
+      if (!(gl->flags & GL3_FLAG_HW_RENDER_ENABLE))
+         gl3_update_input_size(gl, frame_width, frame_height);
+
+      /* No point regenerating mipmaps
+       * if there are no new frames. */
+      if (gl->chain.mipmap_active)
+      {
+         glBindTexture(GL_TEXTURE_2D, texture.image);
+         glGenerateMipmap(GL_TEXTURE_2D);
+         glBindTexture(GL_TEXTURE_2D, 0);
+      }
+   }
+
+   texture.image            = 0;
+   texture.width            = streamed->width;
+   texture.height           = streamed->height;
+   texture.padded_width     = 0;
+   texture.padded_height    = 0;
+   texture.format           = 0;
+
+   if (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
+   {
+      texture.image         = gl->hw_render_texture;
+      texture.format        = GL_RGBA8;
+      texture.padded_width  = gl->hw_render_max_width;
+      texture.padded_height = gl->hw_render_max_height;
+
+      if (texture.width == 0)
+         texture.width      = 1;
+      if (texture.height == 0)
+         texture.height     = 1;
+   }
+   else
+   {
+      texture.image         = streamed->tex;
+      texture.format        = gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565;
+      texture.padded_width  = streamed->width;
+      texture.padded_height = streamed->height;
    }
 
    if (gl->chain.active)
