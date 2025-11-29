@@ -162,7 +162,7 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
 
    aud->running     = true;
    aud->paused      = false;
-   aud->nonblock    = !block_frames;
+   aud->nonblock    = false;
    aud->buffer_size = (real_latency * sample_rate / 1000);
    aud->samples     = (aud->buffer_size / num_channels / sizeof(int16_t));
 
