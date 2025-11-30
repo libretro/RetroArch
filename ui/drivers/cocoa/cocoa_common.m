@@ -127,6 +127,9 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 #if TARGET_OS_IOS
    else
       rarch_stop_draw_observer();
+#elif defined(OSX)
+   else if (!(@available(macOS 14.0, *)))
+      CFRunLoopWakeUp(CFRunLoopGetMain());
 #endif
 }
 
