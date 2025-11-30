@@ -70,8 +70,6 @@
 	<string>Local Netplay requires local network</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Some cores can use location.</string>
-	<key>NSMainNibFile</key>
-	<string>MainMenu_Metal</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Some cores are able to provide microphone input to games.</string>
 	<key>NSPrincipalClass</key>

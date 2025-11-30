@@ -11,11 +11,9 @@
 		07ACC0022026020100CB9D84 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07ACC0002026020100CB9D84 /* Accelerate.framework */; };
 		079650002CA9C99300CB9D84 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07964FFF2CA9C99300CB9D84 /* QuartzCore.framework */; };
 		07A960052BFEE67400CB7332 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07A960042BFEE67400CB7332 /* AVFoundation.framework */; };
-		1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
 		07C0DEB02026010100CB9D84 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07C0DEAF2026010100CB9D84 /* AudioToolbox.framework */; };
 		07C0DEB12026010100CB9D84 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07C0DEAF2026010100CB9D84 /* AudioToolbox.framework */; };
 		500845251B89300700CE6073 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
-		500845261B89300700CE6073 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
 		500845271B89300700CE6073 /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
 		500845291B89300700CE6073 /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
 		5008452A1B89300700CE6073 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; };
@@ -85,7 +83,6 @@
 		07A960042BFEE67400CB7332 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		07C0DEAF2026010100CB9D84 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		1DDD58150DA1D0A300B32029 /* MainMenu.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainMenu.xib; path = OSX/en.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		5008453A1B89300700CE6073 /* RetroArchCg.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchCg.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5008453B1B89300700CE6073 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = /../../pkg/apple/OSX/Info.plist; sourceTree = SOURCE_ROOT; };
@@ -219,7 +216,6 @@
 				84DD5EB71A89F1C7007336C1 /* retroarch.icns */,
 				8D1107310486CEB800E47090 /* Info.plist */,
 				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
-				1DDD58140DA1D0A300B32029 /* MainMenu.xib */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -328,7 +324,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				500845251B89300700CE6073 /* InfoPlist.strings in Resources */,
-				500845261B89300700CE6073 /* MainMenu.xib in Resources */,
 				9254B33425FA72ED00A1E0DA /* assets.zip in Resources */,
 				500845271B89300700CE6073 /* retroarch.icns in Resources */,
 			);
@@ -339,7 +334,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */,
-				1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */,
 				9254B33525FA72ED00A1E0DA /* assets.zip in Resources */,
 				84DD5EB81A89F1C7007336C1 /* retroarch.icns in Resources */,
 			);
@@ -375,14 +369,6 @@
 				089C165DFE840E0CC02AAC07 /* InfoPlist.strings */,
 			);
 			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
-		1DDD58140DA1D0A300B32029 /* MainMenu.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				1DDD58150DA1D0A300B32029 /* MainMenu.xib */,
-			);
-			name = MainMenu.xib;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */

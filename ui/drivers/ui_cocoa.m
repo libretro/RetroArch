@@ -1090,8 +1090,338 @@ static void open_document_handler(
 
 @end
 
+#pragma mark - Programmatic Menu Creation
+
+static NSMenuItem *cocoa_menu_item_with_action(NSString *title,
+      SEL action, NSString *keyEquiv, NSUInteger mods, id target, NSInteger tag)
+{
+   NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title
+                                                  action:action
+                                           keyEquivalent:keyEquiv];
+   if (mods)
+      [item setKeyEquivalentModifierMask:mods];
+   if (target)
+      [item setTarget:target];
+   if (tag)
+      [item setTag:tag];
+#ifndef HAVE_COCOA_METAL
+   [item autorelease];
+#endif
+   return item;
+}
+
+static NSMenu *cocoa_create_app_menu(id delegate)
+{
+   NSMenu *menu = [[NSMenu alloc] initWithTitle:@"RetroArch"];
+
+   [menu addItem:cocoa_menu_item_with_action(@"About RetroArch",
+         @selector(orderFrontStandardAboutPanel:), @"", 0, NSApp, 0)];
+   [menu addItem:[NSMenuItem separatorItem]];
+
+   NSMenuItem *servicesItem = [[NSMenuItem alloc] initWithTitle:@"Services"
+                                                          action:nil
+                                                   keyEquivalent:@""];
+   NSMenu *servicesMenu = [[NSMenu alloc] initWithTitle:@"Services"];
+   [NSApp setServicesMenu:servicesMenu];
+   [servicesItem setSubmenu:servicesMenu];
+   [menu addItem:servicesItem];
+#ifndef HAVE_COCOA_METAL
+   [servicesItem release];
+   [servicesMenu release];
+#endif
+
+   [menu addItem:[NSMenuItem separatorItem]];
+   [menu addItem:cocoa_menu_item_with_action(@"Hide RetroArch",
+         @selector(hide:), @"h", NSEventModifierFlagCommand, nil, 0)];
+   [menu addItem:cocoa_menu_item_with_action(@"Hide Others",
+         @selector(hideOtherApplications:), @"h",
+         NSEventModifierFlagOption | NSEventModifierFlagCommand, nil, 0)];
+   [menu addItem:cocoa_menu_item_with_action(@"Show All",
+         @selector(unhideAllApplications:), @"", 0, nil, 0)];
+   [menu addItem:[NSMenuItem separatorItem]];
+   [menu addItem:cocoa_menu_item_with_action(@"Quit RetroArch",
+         @selector(terminate:), @"q", NSEventModifierFlagCommand, NSApp, 0)];
+
+#ifndef HAVE_COCOA_METAL
+   [menu autorelease];
+#endif
+   return menu;
+}
+
+static NSMenu *cocoa_create_file_menu(id delegate)
+{
+   NSMenu *menu = [[NSMenu alloc] initWithTitle:@"File"];
+
+   [menu addItem:cocoa_menu_item_with_action(@"Load Core...",
+         @selector(openCore:), @"", 0, delegate, 0)];
+   [menu addItem:cocoa_menu_item_with_action(@"Load Content...",
+         @selector(openDocument:), @"o", NSEventModifierFlagCommand, nil, 0)];
+
+   NSMenuItem *recentItem = [[NSMenuItem alloc] initWithTitle:@"Open Recent"
+                                                        action:nil
+                                                 keyEquivalent:@""];
+   NSMenu *recentMenu = [[NSMenu alloc] initWithTitle:@"Open Recent"];
+   [recentItem setSubmenu:recentMenu];
+   [menu addItem:recentItem];
+   NSMenuItem *clearItem = cocoa_menu_item_with_action(@"Clear Menu",
+         @selector(clearRecentDocuments:), @"", 0, nil, 0);
+   [recentMenu addItem:clearItem];
+#ifndef HAVE_COCOA_METAL
+   [recentItem release];
+   [recentMenu release];
+#endif
+
+   [menu addItem:[NSMenuItem separatorItem]];
+   [menu addItem:cocoa_menu_item_with_action(@"Close",
+         @selector(performClose:), @"w", NSEventModifierFlagCommand, nil, 0)];
+
+#ifndef HAVE_COCOA_METAL
+   [menu autorelease];
+#endif
+   return menu;
+}
+
+static NSMenu *cocoa_create_command_menu(id delegate)
+{
+   NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Command"];
+
+   /* Audio Options submenu */
+   NSMenuItem *audioItem = [[NSMenuItem alloc] initWithTitle:@"Audio Options"
+                                                       action:nil
+                                                keyEquivalent:@""];
+   NSMenu *audioMenu = [[NSMenu alloc] initWithTitle:@"Audio Options"];
+   [audioMenu addItem:cocoa_menu_item_with_action(@"Mute Toggle",
+         @selector(basicEvent:), @"", 0, delegate, 22)];
+   [audioItem setSubmenu:audioMenu];
+   [menu addItem:audioItem];
+#ifndef HAVE_COCOA_METAL
+   [audioItem release];
+   [audioMenu release];
+#endif
+
+   /* Disk Options submenu */
+   NSMenuItem *diskItem = [[NSMenuItem alloc] initWithTitle:@"Disk Options"
+                                                      action:nil
+                                               keyEquivalent:@""];
+   NSMenu *diskMenu = [[NSMenu alloc] initWithTitle:@"Disk Options"];
+   [diskMenu addItem:cocoa_menu_item_with_action(@"Cycle Tray",
+         @selector(basicEvent:), @"", 0, delegate, 4)];
+   [diskMenu addItem:cocoa_menu_item_with_action(@"Next Disk",
+         @selector(basicEvent:), @"", 0, delegate, 6)];
+   [diskMenu addItem:cocoa_menu_item_with_action(@"Previous Disk",
+         @selector(basicEvent:), @"", 0, delegate, 5)];
+   [diskItem setSubmenu:diskMenu];
+   [menu addItem:diskItem];
+#ifndef HAVE_COCOA_METAL
+   [diskItem release];
+   [diskMenu release];
+#endif
+
+   /* Mouse Options submenu */
+   NSMenuItem *mouseItem = [[NSMenuItem alloc] initWithTitle:@"Mouse Options"
+                                                       action:nil
+                                                keyEquivalent:@""];
+   NSMenu *mouseMenu = [[NSMenu alloc] initWithTitle:@"Mouse Options"];
+   [mouseMenu addItem:cocoa_menu_item_with_action(@"Mouse Grab Toggle",
+         @selector(basicEvent:), @"", 0, delegate, 7)];
+   [mouseItem setSubmenu:mouseMenu];
+   [menu addItem:mouseItem];
+#ifndef HAVE_COCOA_METAL
+   [mouseItem release];
+   [mouseMenu release];
+#endif
+
+   /* Save State Options submenu */
+   NSMenuItem *stateItem = [[NSMenuItem alloc] initWithTitle:@"Save State Options"
+                                                       action:nil
+                                                keyEquivalent:@""];
+   NSMenu *stateMenu = [[NSMenu alloc] initWithTitle:@"Save State Options"];
+   [stateMenu addItem:cocoa_menu_item_with_action(@"Load State",
+         @selector(basicEvent:), @"", 0, delegate, 2)];
+   [stateMenu addItem:cocoa_menu_item_with_action(@"Save State",
+         @selector(basicEvent:), @"", 0, delegate, 3)];
+   [stateItem setSubmenu:stateMenu];
+   [menu addItem:stateItem];
+#ifndef HAVE_COCOA_METAL
+   [stateItem release];
+   [stateMenu release];
+#endif
+
+   [menu addItem:cocoa_menu_item_with_action(@"Reset",
+         @selector(basicEvent:), @"", 0, delegate, 1)];
+   [menu addItem:cocoa_menu_item_with_action(@"Menu Toggle",
+         @selector(basicEvent:), @"", 0, delegate, 8)];
+   [menu addItem:cocoa_menu_item_with_action(@"Pause Toggle",
+         @selector(basicEvent:), @"", 0, delegate, 9)];
+   [menu addItem:cocoa_menu_item_with_action(@"Take Screenshot",
+         @selector(basicEvent:), @"", 0, delegate, 21)];
+
+#ifndef HAVE_COCOA_METAL
+   [menu autorelease];
+#endif
+   return menu;
+}
+
+static NSMenu *cocoa_create_paths_menu(id delegate)
+{
+   NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Paths"];
+   [menu addItem:cocoa_menu_item_with_action(@"Core Directory",
+         @selector(showCoresDirectory:), @"", 0, delegate, 0)];
+#ifndef HAVE_COCOA_METAL
+   [menu autorelease];
+#endif
+   return menu;
+}
+
+static NSMenu *cocoa_create_window_menu(id delegate)
+{
+   NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Window"];
+
+   [menu addItem:cocoa_menu_item_with_action(@"Minimize",
+         @selector(performMiniaturize:), @"m", NSEventModifierFlagCommand, nil, 0)];
+   [menu addItem:cocoa_menu_item_with_action(@"Zoom",
+         @selector(performZoom:), @"", 0, nil, 0)];
+
+   /* Windowed Scale submenu */
+   NSMenuItem *scaleItem = [[NSMenuItem alloc] initWithTitle:@"Windowed Scale"
+                                                       action:nil
+                                                keyEquivalent:@""];
+   NSMenu *scaleMenu = [[NSMenu alloc] initWithTitle:@"Windowed Scale"];
+   int i;
+   for (i = 1; i <= 10; i++)
+   {
+      NSString *title = [NSString stringWithFormat:@"%dx", i];
+      [scaleMenu addItem:cocoa_menu_item_with_action(title,
+            @selector(basicEvent:), @"", 0, delegate, 9 + i)];
+   }
+   [scaleItem setSubmenu:scaleMenu];
+   [menu addItem:scaleItem];
+#ifndef HAVE_COCOA_METAL
+   [scaleItem release];
+   [scaleMenu release];
+#endif
+
+   [menu addItem:cocoa_menu_item_with_action(@"Enter Full Screen",
+         @selector(toggleFullScreen:), @"f",
+         NSEventModifierFlagControl | NSEventModifierFlagCommand, nil, 0)];
+   [menu addItem:cocoa_menu_item_with_action(@"Toggle Exclusive Full Screen",
+         @selector(basicEvent:), @"", 0, delegate, 20)];
+   [menu addItem:[NSMenuItem separatorItem]];
+   [menu addItem:cocoa_menu_item_with_action(@"Bring All to Front",
+         @selector(arrangeInFront:), @"", 0, nil, 0)];
+
+   [NSApp setWindowsMenu:menu];
+
+#ifndef HAVE_COCOA_METAL
+   [menu autorelease];
+#endif
+   return menu;
+}
+
+static NSMenu *cocoa_create_help_menu(void)
+{
+   NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Help"];
+   [menu addItem:cocoa_menu_item_with_action(@"RetroArch Help",
+         @selector(showHelp:), @"?", NSEventModifierFlagCommand, nil, 0)];
+   [NSApp setHelpMenu:menu];
+#ifndef HAVE_COCOA_METAL
+   [menu autorelease];
+#endif
+   return menu;
+}
+
+static void cocoa_create_menu_bar(id delegate)
+{
+   NSMenu *menubar = [[NSMenu alloc] init];
+   NSMenuItem *item;
+   NSMenu *submenu;
+
+   /* RetroArch (Apple) menu */
+   item = [[NSMenuItem alloc] init];
+   submenu = cocoa_create_app_menu(delegate);
+   [item setSubmenu:submenu];
+   [menubar addItem:item];
+#ifndef HAVE_COCOA_METAL
+   [item release];
+#endif
+
+   /* File menu */
+   item = [[NSMenuItem alloc] init];
+   [item setSubmenu:cocoa_create_file_menu(delegate)];
+   [menubar addItem:item];
+#ifndef HAVE_COCOA_METAL
+   [item release];
+#endif
+
+   /* Command menu */
+   item = [[NSMenuItem alloc] init];
+   [item setSubmenu:cocoa_create_command_menu(delegate)];
+   [menubar addItem:item];
+#ifndef HAVE_COCOA_METAL
+   [item release];
+#endif
+
+   /* Paths menu */
+   item = [[NSMenuItem alloc] init];
+   [item setSubmenu:cocoa_create_paths_menu(delegate)];
+   [menubar addItem:item];
+#ifndef HAVE_COCOA_METAL
+   [item release];
+#endif
+
+   /* Window menu */
+   item = [[NSMenuItem alloc] init];
+   [item setSubmenu:cocoa_create_window_menu(delegate)];
+   [menubar addItem:item];
+#ifndef HAVE_COCOA_METAL
+   [item release];
+#endif
+
+   /* Help menu */
+   item = [[NSMenuItem alloc] init];
+   [item setSubmenu:cocoa_create_help_menu()];
+   [menubar addItem:item];
+#ifndef HAVE_COCOA_METAL
+   [item release];
+#endif
+
+   [NSApp setMainMenu:menubar];
+#ifndef HAVE_COCOA_METAL
+   [menubar release];
+#endif
+}
+
+static NSWindow *cocoa_create_main_window(void)
+{
+   NSUInteger style = NSWindowStyleMaskTitled
+                    | NSWindowStyleMaskClosable
+                    | NSWindowStyleMaskMiniaturizable
+                    | NSWindowStyleMaskResizable;
+   NSRect frame = NSMakeRect(0, 0, 480, 360);
+
+#ifdef HAVE_COCOA_METAL
+   NSWindow *window = [[RAWindow alloc] initWithContentRect:frame
+                                                  styleMask:style
+                                                    backing:NSBackingStoreBuffered
+                                                      defer:NO];
+#else
+   NSWindow *window = [[NSWindow alloc] initWithContentRect:frame
+                                                  styleMask:style
+                                                    backing:NSBackingStoreBuffered
+                                                      defer:NO];
+#endif
+   [window setTitle:@"RetroArch"];
+   [window setReleasedWhenClosed:NO];
+   [window setAllowsToolTipsWhenApplicationIsInactive:NO];
+   [window center];
+   return window;
+}
+
 int main(int argc, char *argv[])
 {
+   RetroArch_OSX *delegate;
+   NSWindow *window;
+
 #ifndef NDEBUG
    task_set_exception_ports(mach_task_self(), EXC_MASK_BAD_ACCESS, MACH_PORT_NULL, EXCEPTION_DEFAULT, THREAD_STATE_NONE);
 #endif
@@ -1106,7 +1436,30 @@ int main(int argc, char *argv[])
    waiting_argc = argc;
    waiting_argv = argv;
 
-   return NSApplicationMain(argc, (const char **) argv);
+#ifdef HAVE_COCOA_METAL
+   @autoreleasepool {
+#else
+   NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+#endif
+      [NSApplication sharedApplication];
+      [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+
+      delegate = [[RetroArch_OSX alloc] init];
+      window = cocoa_create_main_window();
+      [delegate setWindow:window];
+      [NSApp setDelegate:delegate];
+
+      cocoa_create_menu_bar(delegate);
+
+      [window makeKeyAndOrderFront:nil];
+      [NSApp activateIgnoringOtherApps:YES];
+      [NSApp run];
+#ifdef HAVE_COCOA_METAL
+   }
+#else
+   [pool release];
+#endif
+   return 0;
 }
 
 static void ui_companion_cocoa_deinit(void *data)
