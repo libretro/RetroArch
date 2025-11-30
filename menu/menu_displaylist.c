@@ -9927,17 +9927,29 @@ unsigned menu_displaylist_build_list(
                      count++;
 #endif
 
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_ROTATION,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+
+            if (video_display_server_can_set_screen_orientation())
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_SCREEN_ORIENTATION,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+
 #if defined(GEKKO) || defined(PS2) || defined(__PS3__)
             if (true)
 #else
-               if (video_display_server_has_resolution_list())
+            if (video_display_server_has_resolution_list())
 #endif
-               {
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_SCREEN_RESOLUTION,
-                           PARSE_ACTION, false) == 0)
-                     count++;
-               }
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_SCREEN_RESOLUTION,
+                     PARSE_ACTION, false) == 0)
+                  count++;
+            }
+
 #if defined(HAVE_WINDOW_OFFSET)
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_WINDOW_OFFSET_X,
@@ -9948,6 +9960,7 @@ unsigned menu_displaylist_build_list(
                      PARSE_ONLY_INT, false) == 0)
                count++;
 #endif
+
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_PAL60_ENABLE,
                      PARSE_ONLY_BOOL, false) == 0)
@@ -9964,16 +9977,6 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER,
                      PARSE_ONLY_UINT, false) == 0)
                count++;
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_ROTATION,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
-
-            if (video_display_server_can_set_screen_orientation())
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_SCREEN_ORIENTATION,
-                        PARSE_ONLY_UINT, false) == 0)
-                  count++;
 #if defined(DINGUX) && defined(DINGUX_BETA)
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_VIDEO_DINGUX_REFRESH_RATE,
