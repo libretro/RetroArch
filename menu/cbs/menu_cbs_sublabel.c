@@ -592,7 +592,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vertical_sync,           MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_adaptive_vsync,          MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_allow_rotate,             MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dummy_on_core_shutdown,        MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dummy_check_missing_firmware,  MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_option_category_enable,   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_info_cache_enable,        MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_info_savestate_bypass,    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS)
@@ -4711,9 +4710,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dummy_on_core_shutdown);
-            break;
-         case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_dummy_check_missing_firmware);
             break;
          case MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_option_category_enable);

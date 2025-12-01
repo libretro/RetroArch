@@ -815,7 +815,6 @@ static int menu_displaylist_parse_core_info(
       core_info_ctx_firmware_t firmware_info;
       uint8_t flags                   = content_get_flags();
       bool update_missing_firmware    = false;
-      bool set_missing_firmware       = false;
       bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
       bool content_is_inited          = flags & CONTENT_ST_FLAG_IS_INITED;
 
@@ -847,12 +846,7 @@ static int menu_displaylist_parse_core_info(
       else
          firmware_info.directory.system = settings->paths.directory_system;
 
-      update_missing_firmware         = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
-
-      if (set_missing_firmware)
-         runloop_st->missing_bios     = true;
-      else
-         runloop_st->missing_bios     = false;
+      update_missing_firmware         = core_info_list_update_missing_firmware(&firmware_info);
 
       if (update_missing_firmware)
       {
@@ -11543,7 +11537,6 @@ unsigned menu_displaylist_build_list(
             static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE,            PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS,        PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE,       PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE,              PARSE_ONLY_BOOL},

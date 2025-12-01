@@ -334,7 +334,6 @@
 #else
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN true
 #endif
-#define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
 
 /* Specifies whether cores are allowed to
  * present core options in category submenus */
