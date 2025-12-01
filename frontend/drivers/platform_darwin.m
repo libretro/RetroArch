@@ -19,10 +19,12 @@
 #include <stddef.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <sys/utsname.h>
 
 #include <mach/mach.h>
+#include <dispatch/dispatch.h>
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
@@ -124,6 +126,23 @@ static int speak_pid                            = 0;
 #endif
 
 static char darwin_cpu_model_name[64] = {0};
+
+/* Directory watching implementation using GCD dispatch sources */
+typedef struct darwin_watch_entry
+{
+   int fd;                    /* File descriptor opened with O_EVTONLY */
+   dispatch_source_t source;  /* GCD dispatch source for monitoring */
+   char *path;                /* Watched file path */
+} darwin_watch_entry_t;
+
+typedef struct darwin_watch_data
+{
+   dispatch_queue_t queue;       /* Dispatch queue for event handlers */
+   darwin_watch_entry_t *watches; /* Array of watch entries */
+   size_t watch_count;           /* Number of active watches */
+   volatile int32_t has_changes; /* Atomic flag indicating changes occurred */
+   int flags;                    /* Event flags to monitor */
+} darwin_watch_data_t;
 
 static void CFSearchPathForDirectoriesInDomains(
       char *s, size_t len)
@@ -932,6 +951,156 @@ static bool accessibility_speak_macos(int speed,
 
 #endif
 
+static void frontend_darwin_watch_path_for_changes(
+      struct string_list *list, int flags,
+      path_change_data_t **change_data)
+{
+   darwin_watch_data_t *watch_data = NULL;
+
+   /* Cleanup mode - free existing watch data */
+   if (!list)
+   {
+      if (!change_data || !*change_data)
+         return;
+
+      watch_data = (darwin_watch_data_t*)((*change_data)->data);
+      if (watch_data)
+      {
+         size_t i;
+         /* Cancel and release all dispatch sources, close file descriptors */
+         for (i = 0; i < watch_data->watch_count; i++)
+         {
+            if (watch_data->watches[i].source)
+            {
+               dispatch_source_cancel(watch_data->watches[i].source);
+#if !__has_feature(objc_arc)
+               dispatch_release(watch_data->watches[i].source);
+#endif
+            }
+            if (watch_data->watches[i].fd >= 0)
+               close(watch_data->watches[i].fd);
+            if (watch_data->watches[i].path)
+               free(watch_data->watches[i].path);
+         }
+#if !__has_feature(objc_arc)
+         if (watch_data->queue)
+            dispatch_release(watch_data->queue);
+#endif
+         if (watch_data->watches)
+            free(watch_data->watches);
+         free(watch_data);
+      }
+      free(*change_data);
+      *change_data = NULL;
+      return;
+   }
+
+   /* Setup mode - create new watch data */
+   watch_data = (darwin_watch_data_t*)calloc(1, sizeof(*watch_data));
+   if (!watch_data)
+      return;
+
+   watch_data->queue = dispatch_get_global_queue(
+         DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+   watch_data->watch_count = list->size;
+   watch_data->watches = (darwin_watch_entry_t*)calloc(
+         list->size, sizeof(darwin_watch_entry_t));
+   watch_data->flags = flags;
+   watch_data->has_changes = 0;
+
+   if (!watch_data->watches)
+   {
+      free(watch_data);
+      return;
+   }
+
+   /* Convert generic flags to GCD dispatch VNODE flags */
+   {
+      unsigned long vnode_flags = 0;
+      size_t i;
+
+      if (flags & PATH_CHANGE_TYPE_MODIFIED)
+         vnode_flags |= DISPATCH_VNODE_WRITE;
+      if (flags & PATH_CHANGE_TYPE_WRITE_FILE_CLOSED)
+         vnode_flags |= DISPATCH_VNODE_ATTRIB; /* mtime changes on close */
+      if (flags & PATH_CHANGE_TYPE_FILE_MOVED)
+         vnode_flags |= DISPATCH_VNODE_RENAME;
+      if (flags & PATH_CHANGE_TYPE_FILE_DELETED)
+         vnode_flags |= DISPATCH_VNODE_DELETE;
+
+      /* Set up watch for each file in the list */
+      for (i = 0; i < list->size; i++)
+      {
+         const char *path = list->elems[i].data;
+         int fd           = open(path, O_EVTONLY);
+
+         watch_data->watches[i].fd     = fd;
+         watch_data->watches[i].source = NULL;
+         watch_data->watches[i].path   = NULL;
+
+         if (fd >= 0)
+         {
+            dispatch_source_t source;
+
+            watch_data->watches[i].path = strdup(path);
+
+            /* Create dispatch source for monitoring file events */
+            source = dispatch_source_create(
+                  DISPATCH_SOURCE_TYPE_VNODE,
+                  fd,
+                  vnode_flags,
+                  watch_data->queue);
+
+            if (source)
+            {
+               /* Set up event handler - sets atomic flag when changes occur */
+               dispatch_source_set_event_handler(source, ^{
+                  OSAtomicCompareAndSwap32(0, 1, &watch_data->has_changes);
+               });
+
+               /* Set up cancellation handler to prevent fd leak */
+               dispatch_source_set_cancel_handler(source, ^{
+                  /* File descriptor is closed in cleanup function */
+               });
+
+               watch_data->watches[i].source = source;
+               dispatch_resume(source);
+            }
+            else
+            {
+               /* Failed to create dispatch source, close fd */
+               close(fd);
+               watch_data->watches[i].fd = -1;
+            }
+         }
+      }
+   }
+
+   /* Allocate and return change_data structure */
+   *change_data = (path_change_data_t*)calloc(1, sizeof(path_change_data_t));
+   if (*change_data)
+      (*change_data)->data = watch_data;
+   else
+   {
+      /* Failed to allocate change_data, cleanup */
+      frontend_darwin_watch_path_for_changes(NULL, 0, &(path_change_data_t*){watch_data});
+   }
+}
+
+static bool frontend_darwin_check_for_path_changes(
+      path_change_data_t *change_data)
+{
+   darwin_watch_data_t *watch_data = NULL;
+
+   if (!change_data || !change_data->data)
+      return false;
+
+   watch_data = (darwin_watch_data_t*)(change_data->data);
+
+   /* Atomically read and clear the flag */
+   return OSAtomicCompareAndSwap32(1, 0, &watch_data->has_changes);
+}
+
 static bool frontend_darwin_is_narrator_running(void)
 {
    if (@available(macOS 10.14, iOS 7, tvOS 9, *))
@@ -1018,8 +1187,8 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* detach_console */
    NULL,                            /* get_lakka_version */
    NULL,                            /* set_screen_brightness */
-   NULL,                            /* watch_path_for_changes */
-   NULL,                            /* check_for_path_changes */
+   frontend_darwin_watch_path_for_changes, /* watch_path_for_changes */
+   frontend_darwin_check_for_path_changes, /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    frontend_darwin_get_cpu_model_name, /* get_cpu_model_name */
    frontend_darwin_get_user_language, /* get_user_language   */
