@@ -1323,6 +1323,9 @@ static void scan_results_batch_update_playlists(scan_results_t *sr, db_handle_t 
    {
       RARCH_LOG("[Scanner] Added %u entries to \"%s\"\n",
                added_count, current_playlist);
+      /* Ensure playlist is alphabetically sorted (matches manual scan behavior) */
+      playlist_set_sort_mode(playlist, PLAYLIST_SORT_MODE_DEFAULT);
+      playlist_qsort(playlist);
       playlist_write_file(playlist);
       playlist_free(playlist);
    }
