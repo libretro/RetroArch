@@ -5024,7 +5024,7 @@ bool core_options_create_override(bool game_specific)
    RARCH_LOG("[Core] Core options file created: \"%s\".\n", options_path);
    _msg = msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY);
    runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
 
    path_set(RARCH_PATH_CORE_OPTIONS, options_path);
    if (game_specific)
@@ -5199,7 +5199,7 @@ bool core_options_remove_override(bool game_specific)
    {
       const char *_msg = msg_hash_to_str(MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
    }
 
    if (conf)
@@ -5298,6 +5298,8 @@ void core_options_flush(void)
 {
    size_t _len;
    char msg[128];
+   enum message_queue_category category
+                                   = MESSAGE_QUEUE_CATEGORY_INFO;
    runloop_state_t *runloop_st     = &runloop_state;
    core_option_manager_t *coreopts = runloop_st->core_options;
    const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
@@ -5368,7 +5370,6 @@ void core_options_flush(void)
 
    if (ret)
    {
-      /* Log result */
       _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_OPTIONS_FLUSHED),
             sizeof(msg));
       RARCH_LOG(
@@ -5377,19 +5378,19 @@ void core_options_flush(void)
    }
    else
    {
-      /* Log result */
       _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_OPTIONS_FLUSH_FAILED),
             sizeof(msg));
-      RARCH_LOG(
+      RARCH_ERR(
             "[Core] Failed to save core options to \"%s\".\n",
             path_core_options ? path_core_options : "UNKNOWN");
+      category = MESSAGE_QUEUE_CATEGORY_ERROR;
    }
 
    _len += snprintf(msg + _len, sizeof(msg) - _len, " \"%s\"",
          core_options_file);
 
    runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         MESSAGE_QUEUE_ICON_DEFAULT, category);
 }
 
 void runloop_msg_queue_push(
