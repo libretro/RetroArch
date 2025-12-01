@@ -299,7 +299,6 @@ struct runloop
       char label    [PATH_MAX_LENGTH*2];
    } name;
 
-   bool missing_bios;
    bool perfcnt_enable;
 };
 

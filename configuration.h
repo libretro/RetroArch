@@ -1042,7 +1042,6 @@ typedef struct settings
       bool network_remote_enable;
       bool network_remote_enable_user[MAX_USERS];
       bool load_dummy_on_core_shutdown;
-      bool check_firmware_before_loading;
       bool core_option_category_enable;
       bool core_info_cache_enable;
       bool core_info_savestate_bypass;
