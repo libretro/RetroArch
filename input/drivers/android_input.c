@@ -435,6 +435,11 @@ static void android_input_poll_main_cmd(void)
 
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
+         {
+            video_driver_state_t *state = video_state_get_ptr();
+            if (state->current_video_context.destroy_surface != NULL)
+               state->current_video_context.destroy_surface(state->context_data);
+         }
 
          android_app->window = NULL;
          scond_broadcast(android_app->cond);
@@ -1628,6 +1633,26 @@ static void android_input_poll_user(android_input_t *android)
    }
 }
 
+static void android_input_reinit(void)
+{
+   struct android_app *android_app = (struct android_app*)g_android;
+   uint32_t runloop_flags = runloop_get_flags();
+
+   if (runloop_flags & RUNLOOP_FLAG_PAUSED)
+   {
+      /* When using OpenGL, pausing the app (e.g. by opening the app switcher)
+       * will result in the EGL window surface being destroyed, but the actual
+       * OpenGL context will be preserved on most devices, so we may be able to
+       * get away with reinitializing only the window surface without having to
+       * do a full video driver reinitialization. */
+      video_driver_state_t *state = video_state_get_ptr();
+      if (state->current_video_context.create_surface == NULL || !state->current_video_context.create_surface(state->context_data))
+         command_event(CMD_EVENT_REINIT, NULL);
+   }
+
+   android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
+}
+
 /* Handle all events.
  */
 static void android_input_poll(void *data)
@@ -1662,10 +1687,7 @@ static void android_input_poll(void *data)
 
       if (android_app->reinitRequested != 0)
       {
-         uint32_t runloop_flags = runloop_get_flags();
-         if (runloop_flags & RUNLOOP_FLAG_PAUSED)
-            command_event(CMD_EVENT_REINIT, NULL);
-         android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
+         android_input_reinit();
          return;
       }
    }
@@ -1686,12 +1708,7 @@ bool android_run_events(void *data)
    }
 
    if (android_app->reinitRequested != 0)
-   {
-      uint32_t runloop_flags = runloop_get_flags();
-      if (runloop_flags & RUNLOOP_FLAG_PAUSED)
-         command_event(CMD_EVENT_REINIT, NULL);
-      android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
-   }
+      android_input_reinit();
 
    return true;
 }
