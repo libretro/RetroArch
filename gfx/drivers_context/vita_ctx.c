@@ -251,6 +251,26 @@ static float vita_get_refresh_rate(void *data)
 }
 #endif
 
+static bool vita_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   vita_ctx_data_t *ctx_vita = (vita_ctx_data_t*)data;
+   return egl_create_surface(&ctx_vita->egl, ctx_vita->native_window);
+#else
+   return false;
+#endif
+}
+
+static bool vita_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   vita_ctx_data_t *ctx_vita = (vita_ctx_data_t*)data;
+   return egl_destroy_surface(&ctx_vita->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t vita_ctx = {
    vita_init,
    vita_destroy,
@@ -290,5 +310,7 @@ const gfx_ctx_driver_t vita_ctx = {
    vita_set_flags,
    vita_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   vita_create_surface,
+   vita_destroy_surface
 };

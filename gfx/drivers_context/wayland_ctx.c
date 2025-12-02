@@ -595,6 +595,26 @@ static void gfx_ctx_wl_set_flags(void *data, uint32_t flags)
       wl->core_hw_context_enable = true;
 }
 
+static bool gfx_ctx_wl_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return egl_create_surface(&wl->egl, (void*)wl->win);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_wl_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return egl_destroy_surface(&wl->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
@@ -631,4 +651,6 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_bind_hw_render,
    NULL,
    NULL,
+   gfx_ctx_wl_create_surface,
+   gfx_ctx_wl_destroy_surface
 };

@@ -280,5 +280,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    android_gfx_ctx_vk_set_flags,
    android_gfx_ctx_vk_bind_hw_render,
    android_gfx_ctx_vk_get_context_data,
-   NULL                                      /* make_current */
+   NULL,                                     /* make_current */
+   NULL,                                     /* create_surface */
+   NULL                                      /* destroy_surface */
 };

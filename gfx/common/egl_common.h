@@ -118,6 +118,8 @@ bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs);
 
 bool egl_create_surface(egl_ctx_data_t *egl, void *native_window);
 
+bool egl_destroy_surface(egl_ctx_data_t *egl);
+
 bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value);
 
 bool egl_get_config_attrib(EGLDisplay dpy, EGLConfig config,
