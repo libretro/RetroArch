@@ -500,7 +500,7 @@ size_t fill_pathname_parent_dir_name(char *s, const char *in_dir, size_t len)
    if (in_dir && in_dir[1])
    {
        /* If path starts with an slash, eliminate it. */
-       if (path_is_absolute(in_dir))
+       if (path_is_absolute(in_dir) || in_dir[0] == '\\')
            _len = strlcpy(s, in_dir + 1, len);
        else
            _len = strlcpy(s, in_dir,     len);
