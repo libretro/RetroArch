@@ -320,7 +320,7 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    if (!in_illuminance_input)
    {
       RARCH_ERR("Failed to open \"%s\".\n", sensor->path);
-      return 0.0;
+      return -1.0;
    }
 
    /* Read the illuminance value from the file. If that fails... */
