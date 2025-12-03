@@ -2200,7 +2200,7 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
 }
 
 void video_driver_update_viewport(
-      struct video_viewport* vp, bool force_full, bool keep_aspect)
+      struct video_viewport* vp, bool force_full, bool keep_aspect, bool y_down)
 {
    settings_t *settings            = config_get_ptr();
    bool video_scale_integer        = settings->bools.video_scale_integer;
@@ -2217,9 +2217,18 @@ void video_driver_update_viewport(
             vp,
             vp->full_width,
             vp->full_height,
-            video_driver_aspect_ratio, keep_aspect, true);
+            video_driver_aspect_ratio, keep_aspect, y_down);
    else if (keep_aspect && !force_full)
-      video_viewport_get_scaled_aspect(vp, vp->full_width, vp->full_height, true);
+   {
+      /* Calculate device_aspect, using translate_aspect if available
+       * (e.g. for SD TV detection on Raspberry Pi) */
+      float device_aspect = (float)vp->full_width / vp->full_height;
+      if (video_st->current_video_context.translate_aspect)
+         device_aspect = video_st->current_video_context.translate_aspect(
+               video_st->context_data, vp->full_width, vp->full_height);
+      video_viewport_get_scaled_aspect2(vp, vp->full_width, vp->full_height,
+            y_down, device_aspect, video_driver_aspect_ratio);
+   }
 }
 
 void video_driver_restore_cached(void *settings_data)
