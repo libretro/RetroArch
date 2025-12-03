@@ -456,5 +456,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    sdl_ctx_set_flags,
    NULL, /* bind_hw_render */
    NULL,
-   NULL
+   NULL,
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };
