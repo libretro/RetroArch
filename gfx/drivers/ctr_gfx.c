@@ -902,44 +902,13 @@ static void ctr_free_overlay(ctr_video_t *ctr)
 }
 #endif
 
-static void ctr_update_viewport(
-      ctr_video_t* ctr,
-      settings_t *settings,
-      int custom_vp_x,
-      int custom_vp_y,
-      unsigned custom_vp_width,
-      unsigned custom_vp_height
-      )
+static void ctr_update_viewport(ctr_video_t* ctr)
 {
-   int x                     = 0;
-   int y                     = 0;
-   float width               = ctr->vp.full_width;
-   float height              = ctr->vp.full_height;
-   float desired_aspect      = video_driver_get_aspect_ratio();
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-
-   if (video_scale_integer)
-   {
-      /* TODO: does CTR use top-left or bottom-left coordinates? assuming top-left. */
-      video_viewport_get_scaled_integer(&ctr->vp, ctr->vp.full_width,
-          ctr->vp.full_height, desired_aspect, ctr->keep_aspect,
-          true);
-   }
-   else if (ctr->keep_aspect)
-      video_viewport_get_scaled_aspect(&ctr->vp, width, height, true);
-   else
-   {
-      ctr->vp.x      = 0;
-      ctr->vp.y      = 0;
-      ctr->vp.width  = width;
-      ctr->vp.height = height;
-   }
+   video_driver_update_viewport(&ctr->vp, false, ctr->keep_aspect, true);
 
    ctr_set_screen_coords(ctr);
 
    ctr->should_resize = false;
-
 }
 
 static const char *ctr_texture_path(unsigned id)
@@ -2120,12 +2089,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 
    if (ctr->should_resize)
-      ctr_update_viewport(ctr, settings,
-            custom_vp_x,
-            custom_vp_y,
-            custom_vp_width,
-            custom_vp_height
-            );
+      ctr_update_viewport(ctr);
 
    if (ctr->refresh_bottom_menu)
       ctrGuSetMemoryFill(true,
