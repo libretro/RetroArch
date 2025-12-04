@@ -534,6 +534,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_hard_sync_frames,        MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_threaded,                MENU_ENUM_SUBLABEL_VIDEO_THREADED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_settings,                      MENU_ENUM_SUBLABEL_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_config_save_on_exit,           MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_config_save_minimal,           MENU_ENUM_SUBLABEL_CONFIG_SAVE_MINIMAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_remap_save_on_exit,            MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_configuration_settings_list,   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_configurations_list_list,      MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST)
@@ -4986,6 +4987,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_on_exit);
+            break;
+         case MENU_ENUM_LABEL_CONFIG_SAVE_MINIMAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_minimal);
             break;
          case MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_remap_save_on_exit);

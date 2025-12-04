@@ -40,6 +40,7 @@
 #include "config.features.h"
 #include "input/input_keymaps.h"
 #include "input/input_remapping.h"
+#include "input/input_driver.h"
 #include "led/led_defines.h"
 #include "defaults.h"
 #include "core.h"
@@ -1810,6 +1811,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("screenshots_in_content_dir",    &settings->bools.screenshots_in_content_dir, true, DEFAULT_SCREENSHOTS_IN_CONTENT_DIR, false);
    SETTING_BOOL("quit_press_twice",              &settings->bools.quit_press_twice, true, DEFAULT_QUIT_PRESS_TWICE, false);
    SETTING_BOOL("config_save_on_exit",           &settings->bools.config_save_on_exit, true, DEFAULT_CONFIG_SAVE_ON_EXIT, false);
+   SETTING_BOOL("config_save_minimal",           &settings->bools.config_save_minimal, true, DEFAULT_CONFIG_SAVE_MINIMAL, false);
    SETTING_BOOL("remap_save_on_exit",            &settings->bools.remap_save_on_exit, true, DEFAULT_REMAP_SAVE_ON_EXIT, false);
    SETTING_BOOL("show_hidden_files",             &settings->bools.show_hidden_files, true, DEFAULT_SHOW_HIDDEN_FILES, false);
    SETTING_BOOL("use_last_start_directory",      &settings->bools.use_last_start_directory, true, DEFAULT_USE_LAST_START_DIRECTORY, false);
@@ -4820,6 +4822,12 @@ bool config_unload_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
+   /* When using minimal config, reset to defaults first.
+    * This ensures settings not present in the config file
+    * get their default values restored after override unload. */
+   if (settings->bools.config_save_minimal)
+      config_set_defaults(global_get_ptr());
+
    if (!config_load_file(global_get_ptr(),
             path_get(RARCH_PATH_CONFIG), config_st))
       return false;
@@ -5021,25 +5029,90 @@ static void config_parse_file(global_t *global)
    }
 }
 
-static void video_driver_save_settings(global_t *global, config_file_t *conf)
+static void video_driver_save_settings(global_t *global, config_file_t *conf,
+      bool minimal, global_t *defaults_global)
 {
-   config_set_int(conf, "gamma_correction",
-         global->console.screen.gamma_correction);
-   config_set_string(conf, "flicker_filter_enable",
-           global->console.flickerfilter_enable
-         ? "true"
-         : "false");
-   config_set_string(conf, "soft_filter_enable",
-           global->console.softfilter_enable
-         ? "true"
-         : "false");
+   /* gamma_correction */
+   if (   !minimal
+       || global->console.screen.gamma_correction !=
+          (defaults_global ? defaults_global->console.screen.gamma_correction : DEFAULT_GAMMA))
+   {
+      config_set_int(conf, "gamma_correction",
+            global->console.screen.gamma_correction);
+   }
+   else
+   {
+      config_unset(conf, "gamma_correction");
+   }
 
-   config_set_int(conf, "soft_filter_index",
-         global->console.screen.soft_filter_index);
-   config_set_int(conf, "current_resolution_id",
-         global->console.screen.resolutions.current.id);
-   config_set_int(conf, "flicker_filter_index",
-         global->console.screen.flicker_filter_index);
+   /* flicker_filter_enable */
+   if (   !minimal
+       || global->console.flickerfilter_enable !=
+          (defaults_global ? defaults_global->console.flickerfilter_enable : false))
+   {
+      config_set_string(conf, "flicker_filter_enable",
+              global->console.flickerfilter_enable
+            ? "true"
+            : "false");
+   }
+   else
+   {
+      config_unset(conf, "flicker_filter_enable");
+   }
+
+   /* soft_filter_enable */
+   if (   !minimal
+       || global->console.softfilter_enable !=
+          (defaults_global ? defaults_global->console.softfilter_enable : false))
+   {
+      config_set_string(conf, "soft_filter_enable",
+              global->console.softfilter_enable
+            ? "true"
+            : "false");
+   }
+   else
+   {
+      config_unset(conf, "soft_filter_enable");
+   }
+
+   /* soft_filter_index */
+   if (   !minimal
+       || global->console.screen.soft_filter_index !=
+          (defaults_global ? defaults_global->console.screen.soft_filter_index : 0))
+   {
+      config_set_int(conf, "soft_filter_index",
+            global->console.screen.soft_filter_index);
+   }
+   else
+   {
+      config_unset(conf, "soft_filter_index");
+   }
+
+   /* current_resolution_id */
+   if (   !minimal
+       || global->console.screen.resolutions.current.id !=
+          (defaults_global ? defaults_global->console.screen.resolutions.current.id : 0))
+   {
+      config_set_int(conf, "current_resolution_id",
+            global->console.screen.resolutions.current.id);
+   }
+   else
+   {
+      config_unset(conf, "current_resolution_id");
+   }
+
+   /* flicker_filter_index */
+   if (   !minimal
+       || global->console.screen.flicker_filter_index !=
+          (defaults_global ? defaults_global->console.screen.flicker_filter_index : 0))
+   {
+      config_set_int(conf, "flicker_filter_index",
+            global->console.screen.flicker_filter_index);
+   }
+   else
+   {
+      config_unset(conf, "flicker_filter_index");
+   }
 }
 
 static void save_keybind_hat(config_file_t *conf, const char *key,
@@ -5286,6 +5359,78 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
    }
 }
 
+/**
+ * input_config_save_keybinds_user_minimal:
+ * @conf               : pointer to config file object
+ * @user               : user number
+ * @default_binds      : default retro_keybind_set for comparison
+ *
+ * Save the current keybinds of a user (@user) to the config file (@conf),
+ * but only save binds that differ from defaults. Remove binds that match defaults.
+ */
+static void input_config_save_keybinds_user_minimal(config_file_t *conf,
+      unsigned user, const retro_keybind_set default_binds)
+{
+   size_t i = 0;
+   for (i = 0; input_config_bind_map_get_valid(i); i++)
+   {
+      char key[64];
+      char btn[64];
+      const struct input_bind_map *keybind =
+         (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
+      bool meta                            = keybind ? keybind->meta : false;
+      const char *prefix                   = input_config_get_prefix(user, meta);
+      const struct retro_keybind *bind     = &input_config_binds[user][i];
+      const struct retro_keybind *def_bind = &default_binds[i];
+      const char                 *base     = NULL;
+      bool differs_from_default            = false;
+
+      if (!prefix || !bind->valid || !keybind)
+         continue;
+
+      base                                 = keybind->base;
+      btn[0]                               = '\0';
+
+      /* Check if any component differs from default */
+      differs_from_default = (bind->key     != def_bind->key)
+                          || (bind->joykey  != def_bind->joykey)
+                          || (bind->joyaxis != def_bind->joyaxis)
+                          || (bind->mbutton != def_bind->mbutton);
+
+      fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+
+      if (differs_from_default)
+      {
+         /* Save the current bind */
+         input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
+         config_set_string(conf, key, btn);
+         save_keybind_joykey (conf, prefix, base, bind, true);
+         save_keybind_axis   (conf, prefix, base, bind, true);
+         save_keybind_mbutton(conf, prefix, base, bind, true);
+      }
+      else
+      {
+         /* Remove keys that match default */
+         char temp_key[64];
+
+         config_unset(conf, key);
+
+         /* Also unset joykey, axis, and mbutton keys */
+         fill_pathname_join_delim(temp_key, prefix, base, '_', sizeof(temp_key));
+         strlcat(temp_key, "_btn", sizeof(temp_key));
+         config_unset(conf, temp_key);
+
+         fill_pathname_join_delim(temp_key, prefix, base, '_', sizeof(temp_key));
+         strlcat(temp_key, "_axis", sizeof(temp_key));
+         config_unset(conf, temp_key);
+
+         fill_pathname_join_delim(temp_key, prefix, base, '_', sizeof(temp_key));
+         strlcat(temp_key, "_mbtn", sizeof(temp_key));
+         config_unset(conf, temp_key);
+      }
+   }
+}
+
 void config_get_autoconf_profile_filename(
       const char *device_name, unsigned user,
       char *s, size_t len)
@@ -5450,13 +5595,23 @@ bool config_save_file(const char *path)
    float msg_color;
    unsigned i                                        = 0;
    bool ret                                          = false;
+   bool minimal                                      = false;
+   settings_t                     *defaults          = NULL;
+   retro_keybind_set              *defaults_binds    = NULL;
    struct config_bool_setting     *bool_settings     = NULL;
+   struct config_bool_setting     *bool_defaults     = NULL;
    struct config_int_setting     *int_settings       = NULL;
+   struct config_int_setting     *int_defaults       = NULL;
    struct config_uint_setting     *uint_settings     = NULL;
+   struct config_uint_setting     *uint_defaults     = NULL;
    struct config_size_setting     *size_settings     = NULL;
+   struct config_size_setting     *size_defaults     = NULL;
    struct config_float_setting     *float_settings   = NULL;
+   struct config_float_setting     *float_defaults   = NULL;
    struct config_array_setting     *array_settings   = NULL;
+   struct config_array_setting     *array_defaults   = NULL;
    struct config_path_setting     *path_settings     = NULL;
+   struct config_path_setting     *path_defaults     = NULL;
    uint32_t flags                                    = runloop_get_flags();
    config_file_t                              *conf  = config_file_new_from_path_to_string(path);
    settings_t                              *settings = config_st;
@@ -5487,41 +5642,240 @@ bool config_save_file(const char *path)
    array_settings  = populate_settings_array (settings, &array_settings_size);
    path_settings   = populate_settings_path  (settings, &path_settings_size);
 
+   /* Check if we should save minimal config (only changed values) */
+   minimal         = settings->bools.config_save_minimal;
+
+   /* If minimal mode, create a defaults struct and populate it */
+   if (minimal)
+   {
+      int tmp_int;
+      settings_t *saved_config_st = config_st;
+
+      /* Allocate fresh settings struct for defaults */
+      defaults = (settings_t*)calloc(1, sizeof(settings_t));
+      if (!defaults)
+      {
+         /* Failed to allocate, fall back to non-minimal mode */
+         minimal = false;
+      }
+      else
+      {
+         /* Allocate space for default keybinds */
+         defaults_binds = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
+         if (!defaults_binds)
+         {
+            /* Failed to allocate, fall back to non-minimal mode */
+            free(defaults);
+            defaults = NULL;
+            minimal = false;
+         }
+         else
+         {
+            unsigned i, j;
+            input_driver_state_t *input_st = input_state_get_ptr();
+            input_device_info_t saved_device_info[MAX_INPUT_DEVICES];
+            retro_keybind_set *saved_autoconf_binds;
+
+            /* Save current input_config_binds */
+            retro_keybind_set saved_binds[MAX_USERS];
+            memcpy(saved_binds, input_config_binds, sizeof(saved_binds));
+
+            /* Save current input_autoconf_binds (deep copy with string duplication) */
+            saved_autoconf_binds = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
+            if (saved_autoconf_binds)
+            {
+               for (i = 0; i < MAX_USERS; i++)
+               {
+                  for (j = 0; j < RARCH_BIND_LIST_END; j++)
+                  {
+                     /* Copy struct fields */
+                     memcpy(&saved_autoconf_binds[i][j], &input_autoconf_binds[i][j],
+                            sizeof(struct retro_keybind));
+                     /* Duplicate allocated strings (don't share pointers!) */
+                     if (input_autoconf_binds[i][j].joykey_label)
+                        saved_autoconf_binds[i][j].joykey_label =
+                           strdup(input_autoconf_binds[i][j].joykey_label);
+                     else
+                        saved_autoconf_binds[i][j].joykey_label = NULL;
+
+                     if (input_autoconf_binds[i][j].joyaxis_label)
+                        saved_autoconf_binds[i][j].joyaxis_label =
+                           strdup(input_autoconf_binds[i][j].joyaxis_label);
+                     else
+                        saved_autoconf_binds[i][j].joyaxis_label = NULL;
+                  }
+               }
+            }
+
+            /* Save current input_device_info (simple memcpy, no allocated strings) */
+            memcpy(saved_device_info, input_st->input_device_info,
+                   sizeof(saved_device_info));
+
+            /* Temporarily set config_st to defaults struct so config_set_defaults populates it */
+            config_st = defaults;
+            config_set_defaults(global);  /* This calls input_config_reset() which sets default keybinds */
+
+            /* Capture default keybinds (set by input_config_reset() in config_set_defaults) */
+            memcpy(defaults_binds, input_config_binds, MAX_USERS * sizeof(retro_keybind_set));
+
+            /* Restore original config_st */
+            config_st = saved_config_st;
+
+            /* Restore input_config_binds */
+            memcpy(input_config_binds, saved_binds, sizeof(saved_binds));
+
+            /* Restore input_device_info */
+            memcpy(input_st->input_device_info, saved_device_info,
+                   sizeof(saved_device_info));
+
+            /* Restore input_autoconf_binds (free strings allocated by input_config_reset, then restore) */
+            if (saved_autoconf_binds)
+            {
+               for (i = 0; i < MAX_USERS; i++)
+               {
+                  for (j = 0; j < RARCH_BIND_LIST_END; j++)
+                  {
+                     /* Free strings allocated by input_config_reset() */
+                     if (input_autoconf_binds[i][j].joykey_label)
+                        free(input_autoconf_binds[i][j].joykey_label);
+                     if (input_autoconf_binds[i][j].joyaxis_label)
+                        free(input_autoconf_binds[i][j].joyaxis_label);
+
+                     /* Restore saved bind (with our duplicated strings) */
+                     memcpy(&input_autoconf_binds[i][j], &saved_autoconf_binds[i][j],
+                            sizeof(struct retro_keybind));
+                  }
+               }
+
+               /* Free the temporary backup array (strings are now owned by input_autoconf_binds) */
+               free(saved_autoconf_binds);
+            }
+         }
+
+         /* Populate default setting arrays */
+         if (minimal)
+         {
+            tmp_int = sizeof(defaults->bools) / sizeof(defaults->bools.placeholder);
+            bool_defaults = populate_settings_bool(defaults, &tmp_int);
+
+            tmp_int = sizeof(defaults->ints) / sizeof(defaults->ints.placeholder);
+            int_defaults = populate_settings_int(defaults, &tmp_int);
+
+            tmp_int = sizeof(defaults->uints) / sizeof(defaults->uints.placeholder);
+            uint_defaults = populate_settings_uint(defaults, &tmp_int);
+
+            tmp_int = sizeof(defaults->sizes) / sizeof(defaults->sizes.placeholder);
+            size_defaults = populate_settings_size(defaults, &tmp_int);
+
+            tmp_int = sizeof(defaults->floats) / sizeof(defaults->floats.placeholder);
+            float_defaults = populate_settings_float(defaults, &tmp_int);
+
+            tmp_int = sizeof(defaults->arrays) / sizeof(defaults->arrays.placeholder);
+            array_defaults = populate_settings_array(defaults, &tmp_int);
+
+            tmp_int = sizeof(defaults->paths) / sizeof(defaults->paths.placeholder);
+            path_defaults = populate_settings_path(defaults, &tmp_int);
+         }
+      }
+   }
+
    /* Path settings */
    if (path_settings && (path_settings_size > 0))
    {
       for (i = 0; i < (unsigned)path_settings_size; i++)
       {
-         const char *value = path_settings[i].ptr;
+         const char *value         = path_settings[i].ptr;
+         const char *default_value = path_defaults ? path_defaults[i].ptr : NULL;
 
          if (path_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
+         {
             if (string_is_empty(path_settings[i].ptr))
                value = "default";
+            if (minimal && string_is_empty(default_value))
+               default_value = "default";
+         }
 
-         config_set_path(conf, path_settings[i].ident, value);
+         /* In minimal mode, only save if value differs from default */
+         if (   !minimal
+             || !string_is_equal(value, default_value))
+         {
+            config_set_path(conf, path_settings[i].ident, value);
+         }
+         else
+         {
+            /* Remove key if it matches default */
+            config_unset(conf, path_settings[i].ident);
+         }
       }
 
       free(path_settings);
    }
 
 #ifdef HAVE_MENU
-   config_set_path(conf, "xmb_font",
-         !string_is_empty(settings->paths.path_menu_xmb_font)
-         ? settings->paths.path_menu_xmb_font : "");
-   config_set_path(conf, "ozone_font",
-         !string_is_empty(settings->paths.path_menu_ozone_font)
-         ? settings->paths.path_menu_ozone_font : "");
+   /* xmb_font */
+   {
+      const char *xmb_font_value = !string_is_empty(settings->paths.path_menu_xmb_font)
+         ? settings->paths.path_menu_xmb_font : "";
+      const char *xmb_font_default = (minimal && defaults)
+         ? (!string_is_empty(defaults->paths.path_menu_xmb_font)
+            ? defaults->paths.path_menu_xmb_font : "")
+         : "";
+
+      if (   !minimal
+          || !string_is_equal(xmb_font_value, xmb_font_default))
+      {
+         config_set_path(conf, "xmb_font", xmb_font_value);
+      }
+      else
+      {
+         config_unset(conf, "xmb_font");
+      }
+   }
+
+   /* ozone_font */
+   {
+      const char *ozone_font_value = !string_is_empty(settings->paths.path_menu_ozone_font)
+         ? settings->paths.path_menu_ozone_font : "";
+      const char *ozone_font_default = (minimal && defaults)
+         ? (!string_is_empty(defaults->paths.path_menu_ozone_font)
+            ? defaults->paths.path_menu_ozone_font : "")
+         : "";
+
+      if (   !minimal
+          || !string_is_equal(ozone_font_value, ozone_font_default))
+      {
+         config_set_path(conf, "ozone_font", ozone_font_value);
+      }
+      else
+      {
+         config_unset(conf, "ozone_font");
+      }
+   }
 #endif
 
    /* String settings  */
    if (array_settings && (array_settings_size > 0))
    {
       for (i = 0; i < (unsigned)array_settings_size; i++)
+      {
          if (   !array_settings[i].override
              || !retroarch_override_setting_is_set(array_settings[i].override, NULL))
-            config_set_string(conf,
-                  array_settings[i].ident,
-                  array_settings[i].ptr);
+         {
+            /* In minimal mode, only save if value differs from default */
+            if (   !minimal
+                || !string_is_equal(array_settings[i].ptr, array_defaults[i].ptr))
+            {
+               config_set_string(conf,
+                     array_settings[i].ident,
+                     array_settings[i].ptr);
+            }
+            else
+            {
+               /* Remove key if it matches default */
+               config_unset(conf, array_settings[i].ident);
+            }
+         }
+      }
 
       free(array_settings);
    }
@@ -5530,11 +5884,25 @@ bool config_save_file(const char *path)
    if (float_settings && (float_settings_size > 0))
    {
       for (i = 0; i < (unsigned)float_settings_size; i++)
+      {
          if (   !float_settings[i].override
              || !retroarch_override_setting_is_set(float_settings[i].override, NULL))
-            config_set_float(conf,
-                  float_settings[i].ident,
-                  *float_settings[i].ptr);
+         {
+            /* In minimal mode, only save if value differs from default */
+            if (   !minimal
+                || *float_settings[i].ptr != *float_defaults[i].ptr)
+            {
+               config_set_float(conf,
+                     float_settings[i].ident,
+                     *float_settings[i].ptr);
+            }
+            else
+            {
+               /* Remove key if it matches default */
+               config_unset(conf, float_settings[i].ident);
+            }
+         }
+      }
 
       free(float_settings);
    }
@@ -5543,11 +5911,25 @@ bool config_save_file(const char *path)
    if (int_settings && (int_settings_size > 0))
    {
       for (i = 0; i < (unsigned)int_settings_size; i++)
+      {
          if (   !int_settings[i].override
              || !retroarch_override_setting_is_set(int_settings[i].override, NULL))
-            config_set_int(conf,
-                  int_settings[i].ident,
-                  *int_settings[i].ptr);
+         {
+            /* In minimal mode, only save if value differs from default */
+            if (   !minimal
+                || *int_settings[i].ptr != *int_defaults[i].ptr)
+            {
+               config_set_int(conf,
+                     int_settings[i].ident,
+                     *int_settings[i].ptr);
+            }
+            else
+            {
+               /* Remove key if it matches default */
+               config_unset(conf, int_settings[i].ident);
+            }
+         }
+      }
 
       free(int_settings);
    }
@@ -5555,11 +5937,25 @@ bool config_save_file(const char *path)
    if (uint_settings && (uint_settings_size > 0))
    {
       for (i = 0; i < (unsigned)uint_settings_size; i++)
+      {
          if (   !uint_settings[i].override
              || !retroarch_override_setting_is_set(uint_settings[i].override, NULL))
-            config_set_int(conf,
-                  uint_settings[i].ident,
-                  *uint_settings[i].ptr);
+         {
+            /* In minimal mode, only save if value differs from default */
+            if (   !minimal
+                || *uint_settings[i].ptr != *uint_defaults[i].ptr)
+            {
+               config_set_int(conf,
+                     uint_settings[i].ident,
+                     *uint_settings[i].ptr);
+            }
+            else
+            {
+               /* Remove key if it matches default */
+               config_unset(conf, uint_settings[i].ident);
+            }
+         }
+      }
 
       free(uint_settings);
    }
@@ -5567,11 +5963,25 @@ bool config_save_file(const char *path)
    if (size_settings && (size_settings_size > 0))
    {
       for (i = 0; i < (unsigned)size_settings_size; i++)
+      {
          if (   !size_settings[i].override
              || !retroarch_override_setting_is_set(size_settings[i].override, NULL))
-            config_set_int(conf,
-                  size_settings[i].ident,
-                  (int)*size_settings[i].ptr);
+         {
+            /* In minimal mode, only save if value differs from default */
+            if (   !minimal
+                || *size_settings[i].ptr != *size_defaults[i].ptr)
+            {
+               config_set_int(conf,
+                     size_settings[i].ident,
+                     (int)*size_settings[i].ptr);
+            }
+            else
+            {
+               /* Remove key if it matches default */
+               config_unset(conf, size_settings[i].ident);
+            }
+         }
+      }
 
       free(size_settings);
    }
@@ -5587,33 +5997,67 @@ bool config_save_file(const char *path)
 
       _len = strlcpy(cfg, "input_device_p",     sizeof(cfg));
       strlcpy(cfg + _len, formatted_number,     sizeof(cfg) - _len);
-      config_set_int(conf, cfg, settings->uints.input_device[i]);
+      if (   !minimal
+          || settings->uints.input_device[i] != defaults->uints.input_device[i])
+         config_set_int(conf, cfg, settings->uints.input_device[i]);
+      else
+         config_unset(conf, cfg);
 
       _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
       _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
 
       strlcpy(cfg + _len, "_mouse_index",       sizeof(cfg) - _len);
-      config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
+      if (   !minimal
+          || settings->uints.input_mouse_index[i] != defaults->uints.input_mouse_index[i])
+         config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
+      else
+         config_unset(conf, cfg);
 
       strlcpy(cfg + _len, "_joypad_index",      sizeof(cfg) - _len);
-      config_set_int(conf, cfg, settings->uints.input_joypad_index[i]);
+      if (   !minimal
+          || settings->uints.input_joypad_index[i] != defaults->uints.input_joypad_index[i])
+         config_set_int(conf, cfg, settings->uints.input_joypad_index[i]);
+      else
+         config_unset(conf, cfg);
 
       strlcpy(cfg + _len, "_analog_dpad_mode",  sizeof(cfg) - _len);
-      config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
+      if (   !minimal
+          || settings->uints.input_analog_dpad_mode[i] != defaults->uints.input_analog_dpad_mode[i])
+         config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
+      else
+         config_unset(conf, cfg);
 
       strlcpy(cfg + _len, "_device_reservation_type",  sizeof(cfg) - _len);
-      config_set_int(conf, cfg, settings->uints.input_device_reservation_type[i]);
+      if (   !minimal
+          || settings->uints.input_device_reservation_type[i] != defaults->uints.input_device_reservation_type[i])
+         config_set_int(conf, cfg, settings->uints.input_device_reservation_type[i]);
+      else
+         config_unset(conf, cfg);
    }
 
    /* Boolean settings */
    if (bool_settings && (bool_settings_size > 0))
    {
       for (i = 0; i < (unsigned)bool_settings_size; i++)
+      {
          if (   !bool_settings[i].override
              || !retroarch_override_setting_is_set(bool_settings[i].override, NULL))
-            config_set_string(conf, bool_settings[i].ident,
-                  *bool_settings[i].ptr
-                  ? "true" : "false");
+         {
+            /* In minimal mode, only save if value differs from default */
+            if (   !minimal
+                || *bool_settings[i].ptr != *bool_defaults[i].ptr)
+            {
+               config_set_string(conf, bool_settings[i].ident,
+                     *bool_settings[i].ptr
+                     ? "true" : "false");
+            }
+            else
+            {
+               /* Remove key if it matches default */
+               config_unset(conf, bool_settings[i].ident);
+            }
+         }
+      }
 
       free(bool_settings);
    }
@@ -5625,30 +6069,97 @@ bool config_save_file(const char *path)
       for (i = 0; i < MAX_USERS; i++)
       {
          snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
-         config_set_string(conf, tmp,
-               settings->bools.network_remote_enable_user[i]
-               ? "true" : "false");
+         if (   !minimal
+             || settings->bools.network_remote_enable_user[i] != defaults->bools.network_remote_enable_user[i])
+         {
+            config_set_string(conf, tmp,
+                  settings->bools.network_remote_enable_user[i]
+                  ? "true" : "false");
+         }
+         else
+         {
+            config_unset(conf, tmp);
+         }
       }
+   }
+#endif
+
+#ifdef HAVE_MENU
+   /* menu_show_start_screen is force-written in minimal mode because the SETTING_BOOL
+    * default (false) doesn't match DEFAULT_MENU_SHOW_START_SCREEN (true) - see TODO
+    * comment at line 2095. This workaround ensures the config file is written correctly
+    * even though the default mismatch would normally cause it to be omitted.
+    * TODO: Remove this force-write when the default at line 2095 is fixed. */
+   if (minimal)
+   {
+      config_set_string(conf, "rgui_show_start_screen",
+            settings->bools.menu_show_start_screen ? "true" : "false");
    }
 #endif
 
    /* Verbosity isn't in bool_settings since it needs to be loaded differently */
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
-      config_set_string(conf, "log_verbosity",
-            verbosity_is_enabled() ? "true" : "false");
-   config_set_string(conf, "perfcnt_enable",
-            retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL)
-         ? "true" : "false");
+   {
+      bool verbosity_enabled = verbosity_is_enabled();
+      bool default_verbosity = false; /* Default is disabled */
+
+      if (   !minimal
+          || verbosity_enabled != default_verbosity)
+      {
+         config_set_string(conf, "log_verbosity",
+               verbosity_enabled ? "true" : "false");
+      }
+      else
+      {
+         config_unset(conf, "log_verbosity");
+      }
+   }
+
+   /* perfcnt_enable */
+   {
+      bool perfcnt_enabled = retroarch_ctl(RARCH_CTL_IS_PERFCNT_ENABLE, NULL);
+      bool default_perfcnt = false; /* Default is disabled */
+
+      if (   !minimal
+          || perfcnt_enabled != default_perfcnt)
+      {
+         config_set_string(conf, "perfcnt_enable",
+               perfcnt_enabled ? "true" : "false");
+      }
+      else
+      {
+         config_unset(conf, "perfcnt_enable");
+      }
+   }
 
    msg_color = (((int)(settings->floats.video_msg_color_r * 255.0f) & 0xff) << 16) +
                (((int)(settings->floats.video_msg_color_g * 255.0f) & 0xff) <<  8) +
                (((int)(settings->floats.video_msg_color_b * 255.0f) & 0xff));
 
    /* Hexadecimal settings */
-   config_set_hex(conf, "video_message_color", msg_color);
+   /* video_message_color */
+   {
+      uint32_t default_msg_color = DEFAULT_MESSAGE_COLOR;
+      if (minimal && defaults)
+      {
+         default_msg_color = (((int)(defaults->floats.video_msg_color_r * 255.0f) & 0xff) << 16) +
+                             (((int)(defaults->floats.video_msg_color_g * 255.0f) & 0xff) <<  8) +
+                             (((int)(defaults->floats.video_msg_color_b * 255.0f) & 0xff));
+      }
+
+      if (   !minimal
+          || msg_color != default_msg_color)
+      {
+         config_set_hex(conf, "video_message_color", msg_color);
+      }
+      else
+      {
+         config_unset(conf, "video_message_color");
+      }
+   }
 
    if (conf)
-      video_driver_save_settings(global, conf);
+      video_driver_save_settings(global, conf, minimal, NULL);
 
 #ifdef HAVE_LAKKA
    if (settings->bools.ssh_enable)
@@ -5672,7 +6183,12 @@ bool config_save_file(const char *path)
 #endif
 
    for (i = 0; i < MAX_USERS; i++)
-      input_config_save_keybinds_user(conf, i);
+   {
+      if (minimal && defaults_binds)
+         input_config_save_keybinds_user_minimal(conf, i, defaults_binds[i]);
+      else
+         input_config_save_keybinds_user(conf, i);
+   }
 
    ret = config_file_write(conf, path, true);
    config_file_free(conf);
@@ -5681,6 +6197,29 @@ bool config_save_file(const char *path)
    if (ret && string_is_equal(path, path_get(RARCH_PATH_CONFIG)))
        write_userdefaults_config_file();
 #endif
+
+   /* Clean up defaults struct and arrays if allocated */
+   if (defaults)
+   {
+      if (bool_defaults)
+         free(bool_defaults);
+      if (int_defaults)
+         free(int_defaults);
+      if (uint_defaults)
+         free(uint_defaults);
+      if (size_defaults)
+         free(size_defaults);
+      if (float_defaults)
+         free(float_defaults);
+      if (array_defaults)
+         free(array_defaults);
+      if (path_defaults)
+         free(path_defaults);
+      free(defaults);
+   }
+
+   if (defaults_binds)
+      free(defaults_binds);
 
    return ret;
 }

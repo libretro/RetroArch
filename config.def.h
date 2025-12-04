@@ -572,6 +572,9 @@
 /* Save configuration file on exit. */
 #define DEFAULT_CONFIG_SAVE_ON_EXIT true
 
+/* Save minimal configuration (only values that differ from defaults). */
+#define DEFAULT_CONFIG_SAVE_MINIMAL false
+
 /* Save active input remap file on exit/close content */
 #define DEFAULT_REMAP_SAVE_ON_EXIT true
 

@@ -11146,7 +11146,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_CONFIGURATION:
          {
             uint8_t i, listing = 0;
-            struct bool_entry bool_entries[9];
+            struct bool_entry bool_entries[10];
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS), parent_group);
 
@@ -11160,6 +11160,14 @@ static bool setting_append_list(
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT;
             bool_entries[listing].flags          = SD_FLAG_NONE;
             if (DEFAULT_CONFIG_SAVE_ON_EXIT)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
+            listing++;
+
+            bool_entries[listing].target         = &settings->bools.config_save_minimal;
+            bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CONFIG_SAVE_MINIMAL;
+            bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL;
+            bool_entries[listing].flags          = SD_FLAG_NONE;
+            if (DEFAULT_CONFIG_SAVE_MINIMAL)
                bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 

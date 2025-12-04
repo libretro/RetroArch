@@ -11577,6 +11577,7 @@ unsigned menu_displaylist_build_list(
          {
             static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CONFIG_SAVE_MINIMAL,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT,         PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,      PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,      PARSE_ONLY_BOOL},
