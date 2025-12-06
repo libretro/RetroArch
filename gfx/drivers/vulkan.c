@@ -4052,39 +4052,13 @@ static void vulkan_set_video_mode(void *data,
 static void vulkan_set_viewport(void *data, unsigned vp_width,
       unsigned vp_height, bool force_full, bool allow_rotate)
 {
-   float device_aspect       = (float)vp_width / vp_height;
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
-   bool video_scale_integer  = config_get_ptr()->bools.video_scale_integer;
    vk_t *vk                  = (vk_t*)data;
 
-   if (vk->ctx_driver->translate_aspect)
-      device_aspect         = vk->ctx_driver->translate_aspect(
-            vk->ctx_data, vp_width, vp_height);
-
-   if (video_scale_integer && !force_full)
-   {
-      video_viewport_get_scaled_integer(&vk->vp,
-            vp_width, vp_height,
-            video_driver_get_aspect_ratio(),
-            vk->flags & VK_FLAG_KEEP_ASPECT,
-            true);
-      vp_width  = vk->vp.width;
-      vp_height = vk->vp.height;
-   }
-   else if ((vk->flags & VK_FLAG_KEEP_ASPECT) && !force_full)
-   {
-      video_viewport_get_scaled_aspect2(&vk->vp, vp_width, vp_height,
-            true, device_aspect, video_driver_get_aspect_ratio());
-      vp_width        = vk->vp.width;
-      vp_height       = vk->vp.height;
-   }
-   else
-   {
-      vk->vp.x        = 0;
-      vk->vp.y        = 0;
-      vk->vp.width    = vp_width;
-      vk->vp.height   = vp_height;
-   }
+   vk->vp.full_width  = vp_width;
+   vk->vp.full_height = vp_height;
+   video_driver_update_viewport(&vk->vp, force_full,
+         (vk->flags & VK_FLAG_KEEP_ASPECT) ? true : false, true);
 
    if (vk->vp.x < 0)
    {
@@ -4107,8 +4081,8 @@ static void vulkan_set_viewport(void *data, unsigned vp_width,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      vk->out_vp_width  = vp_width;
-      vk->out_vp_height = vp_height;
+      vk->out_vp_width  = vk->vp.width;
+      vk->out_vp_height = vk->vp.height;
    }
 
    vk->vk_vp.x          = (float)vk->vp.x;

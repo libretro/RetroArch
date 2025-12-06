@@ -593,25 +593,9 @@ static void xv_calc_out_rect(bool keep_aspect,
       struct video_viewport *vp,
       unsigned vp_width, unsigned vp_height)
 {
-   settings_t *settings = config_get_ptr();
-   bool scale_integer   = settings->bools.video_scale_integer;
-
-   vp->full_width       = vp_width;
-   vp->full_height      = vp_height;
-
-   /* TODO: Does xvideo have its origin in top left or bottom-left? Assuming top left. */
-   if (scale_integer)
-      video_viewport_get_scaled_integer(vp, vp_width, vp_height,
-           video_driver_get_aspect_ratio(), keep_aspect, true);
-   else if (!keep_aspect)
-   {
-      vp->x      = 0;
-      vp->y      = 0;
-      vp->width  = vp_width;
-      vp->height = vp_height;
-   }
-   else
-      video_viewport_get_scaled_aspect(vp, vp_width, vp_height, true);
+   vp->full_width  = vp_width;
+   vp->full_height = vp_height;
+   video_driver_update_viewport(vp, false, keep_aspect, true);
 }
 
 static void *xv_init(const video_info_t *video,
