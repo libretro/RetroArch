@@ -7007,9 +7007,11 @@ static void xmb_render(void *data,
       /* Areas beyond the top/right margins are used
        * as a sort of virtual dpad:
        * - Above top margin: navigate left/right
-       * - Beyond right margin: navigate up/down */
-      if (     (pointer_y < margin_top)
-            || (pointer_x > margin_right))
+       * - Beyond right margin: navigate up/down
+       * Skip during drag operations to avoid fighting with drag scrolling */
+      if (     (xmb->drag_mode == XMB_DRAG_NONE)
+            && ((pointer_y < margin_top)
+            || (pointer_x > margin_right)))
       {
          menu_entry_t entry;
          bool get_entry = false;
