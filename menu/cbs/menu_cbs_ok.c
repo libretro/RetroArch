@@ -7152,11 +7152,11 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
    switch (setting->type)
    {
       case ST_INT:
-         *setting->value.target.integer = (int32_t)(idx + setting->offset_by);
+         *setting->value.target.integer = (int32_t)((idx * setting->step) + setting->offset_by);
          break;
       case ST_UINT:
          {
-            unsigned value = (unsigned)(idx + setting->offset_by);
+            unsigned value = (unsigned)((idx * setting->step) + setting->offset_by);
             *setting->value.target.unsigned_integer = value;
          }
          break;

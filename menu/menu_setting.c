@@ -14288,11 +14288,11 @@ static bool setting_append_list(
 				  parent_group,
 				  general_write_handler,
 				  general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
          (*list)[list_info->index - 1].action_left   = &setting_uint_action_left_crt_switch_resolution_super;
          (*list)[list_info->index - 1].action_right  = &setting_uint_action_right_crt_switch_resolution_super;
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_crt_switch_resolution_super;
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
 
 			CONFIG_INT(
 				  list, list_info,
@@ -14305,9 +14305,9 @@ static bool setting_append_list(
 				  parent_group,
 				  general_write_handler,
 				  general_read_handler);
-         /*(*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;*/
-         /*(*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;*/
-         (*list)[list_info->index - 1].offset_by     = 0;
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by     = -50;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
          menu_settings_list_current_add_range(list, list_info, -50, 50, 1.0, true, true);
 
@@ -14322,9 +14322,9 @@ static bool setting_append_list(
 				  parent_group,
 				  general_write_handler,
 				  general_read_handler);
-         /*(*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;*/
-         /*(*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;*/
-         (*list)[list_info->index - 1].offset_by     = 0;
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by     = -50;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
          menu_settings_list_current_add_range(list, list_info, -50, 100, 2.0, true, true);
 
@@ -14339,9 +14339,9 @@ static bool setting_append_list(
 				  parent_group,
 				  general_write_handler,
 				  general_read_handler);
-         /*(*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;*/
-         /*(*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;*/
-         (*list)[list_info->index - 1].offset_by     = 0;
+         (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_UINT_SPINBOX;
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].offset_by     = -20;
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
          menu_settings_list_current_add_range(list, list_info, -20, 20, 1.0, true, true);
 
