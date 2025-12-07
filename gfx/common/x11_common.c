@@ -810,11 +810,24 @@ void x11_update_title(void *data)
 {
    size_t _len;
    char title[128];
-   title[0]  = '\0';
-   _len      = video_driver_get_window_title(title, sizeof(title));
+   title[0]                         = '\0';
+   _len                             = video_driver_get_window_title(title, sizeof(title));
+   Atom XA_NET_WM_NAME              = XInternAtom(g_x11_dpy, "_NET_WM_NAME", False);
+   Atom XA_UTF8_STRING              = XInternAtom(g_x11_dpy, "UTF8_STRING", False);
+
    if (title[0])
-      XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
+   {
+      if (XA_NET_WM_NAME != None && XA_UTF8_STRING != None)
+      {
+         XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_NAME, XA_UTF8_STRING,
             8, PropModeReplace, (const unsigned char*)title, _len);
+      }
+      else
+      {
+         XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
+            8, PropModeReplace, (const unsigned char*)title, _len);
+      }
+   }
 }
 
 bool x11_input_ctx_new(bool true_full)
