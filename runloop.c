@@ -6161,6 +6161,7 @@ static enum runloop_state_enum runloop_check_state(
          menu_st->selection_ptr  = 0;
          menu_st->flags         &= ~MENU_ST_FLAG_PENDING_QUICK_MENU;
          menu_st->flags         &= ~MENU_ST_FLAG_PENDING_STARTUP_PAGE;
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
       }
       /* Navigate to initial startup page */
       else if (menu_st->flags & MENU_ST_FLAG_PENDING_STARTUP_PAGE)

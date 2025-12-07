@@ -4690,6 +4690,32 @@ static size_t setting_get_string_representation_uint_ozone_menu_color_theme(
    }
    return 0;
 }
+
+static size_t setting_get_string_representation_uint_ozone_header_icon(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE), len);
+         case 2:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED), len);
+         case 1:
+         default:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC), len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_ozone_header_separator(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -4714,6 +4740,7 @@ static size_t setting_get_string_representation_uint_ozone_header_separator(
    }
    return 0;
 }
+
 static size_t setting_get_string_representation_uint_ozone_font_scale(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -20092,6 +20119,22 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
+                  &settings->uints.menu_ozone_header_icon,
+                  MENU_ENUM_LABEL_OZONE_HEADER_ICON,
+                  MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
+                  DEFAULT_OZONE_HEADER_ICON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_ozone_header_icon;
+            menu_settings_list_current_add_range(list, list_info, 0, OZONE_HEADER_ICON_LAST-1, 1, true, true);
+
+            CONFIG_UINT(
+                  list, list_info,
                   &settings->uints.menu_ozone_header_separator,
                   MENU_ENUM_LABEL_OZONE_HEADER_SEPARATOR,
                   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
@@ -20104,7 +20147,7 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_ozone_header_separator;
-            menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, 0, OZONE_HEADER_SEPARATOR_LAST-1, 1, true, true);
          }
 #endif
 
