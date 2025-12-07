@@ -12,22 +12,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
    "Favourites"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   "Net-play"
-   )
 
 /* Main Menu */
 
 #ifdef HAVE_LAKKA
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY,
-   "Net-play"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY,
-   "Join or host a net-play session."
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Manually trigger cloud synchronisation."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
@@ -36,9 +28,7 @@ MSG_HASH(
 
 /* Main Menu > Load Core */
 
-
 /* Main Menu > Load Content */
-
 
 /* Main Menu > Load Content > Playlists */
 
@@ -59,18 +49,22 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   "Switch Cores to the Play Store Versions"
+   "Switch Cores to the Play Store versions"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
    "Download complete thumbnail package for the selected system."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Enable full-Screen over notch in Android and iOS devices"
    )
 
 /* Main Menu > Information */
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   "View information about the currently inserted media discs."
+   "View information about the currently inserted media disc(s)."
    )
 
 /* Main Menu > Information > Core Information */
@@ -83,34 +77,25 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
    "Serialised (Save/Load, Rewind)"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   "Deterministic (Save/Load, Rewind, Run-Ahead, Net-play)"
-   )
 
 /* Main Menu > Information > System Information */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   "Front-end Identifier"
+   "Front-End Identifier"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
-   "Front-end OS"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   "Net-play (Peer-to-Peer) Support"
+   "Front-End OS"
    )
 
 /* Main Menu > Information > Database Manager */
-
 
 /* Main Menu > Information > Database Manager > Information */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
-   "Art-style"
+   "Art Style"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
@@ -119,15 +104,11 @@ MSG_HASH(
 
 /* Main Menu > Configuration File */
 
-
 /* Main Menu > Help */
-
 
 /* Main Menu > Help > Basic Menu Controls */
 
-
 /* Settings */
-
 
 /* Core option category placeholders for icons */
 
@@ -136,17 +117,8 @@ MSG_HASH(
 
 /* Settings > Drivers */
 
-
 #ifdef HAVE_MICROPHONE
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-   "Audio Re-sampler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   "Audio re-sampler driver to use."
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
    "Recording driver to use."
@@ -156,7 +128,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "Full-screen Mode"
+   "Full-Screen Mode"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
@@ -185,11 +157,7 @@ MSG_HASH(
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   "Specify image interpolation method when scaling content with the internal IPU. 'Bi-cubic' or 'Bilinear' is recommended when using CPU-powered video filters. This option has no performance impact."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
-   "Bi-cubic"
+   "Specify image interpolation method when scaling content with the internal IPU. 'Bicubic' or 'Bilinear' is recommended when using CPU powered video filters. This option has no performance impact."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
@@ -212,15 +180,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "Apply a CPU-powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit colour."
+   "Apply a CPU powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit colour."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
-   "Apply a CPU-powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit colour. Dynamically linked video filter libraries can be selected."
+   "Apply a CPU powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit colour. Dynamically linked video filter libraries can be selected."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
-   "Apply a CPU-powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit colour. Built-in video filter libraries can be selected."
+   "Apply a CPU powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit colour. Built-in video filter libraries can be selected."
    )
 
 /* Settings > Video > CRT SwitchRes */
@@ -230,12 +198,12 @@ MSG_HASH(
    "Switch among native and ultra-wide super resolutions."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-   "Cycle through these options if the image is not centred properly on the display."
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   "Horizontal Centring"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   "Switch to high resolution mode-line for use with high-resolution menus when no content is loaded."
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   "Cycle through these options if the image is not centred properly on the display."
    )
 
 /* Settings > Video > Output */
@@ -248,24 +216,31 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
-   "Only in Exclusive Full-screen Mode"
+   "Only in Exclusive Full-Screen Mode"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
-   "Only in Windowed Full-screen Mode"
+   "Only in Windowed Full-Screen Mode"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
-   "All Full-screen Modes"
+   "All Full-Screen Modes"
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 #endif
-
-/* Settings > Video > Fullscreen Mode */
+/* Settings > Video > Full-Screen Mode */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   "Full-Screen Display"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   "Display in full-screen. Can be changed at runtime. Can be overridden by a command line switch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   "Windowed Full-screen Mode"
+   "Windowed Full-Screen Mode"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
@@ -273,7 +248,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   "Full-screen Width"
+   "Full-Screen Width"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -281,7 +256,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   "Full-screen Height"
+   "Full-Screen Height"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
@@ -289,11 +264,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Force the resolution to the full-screen size, if set to 0, a fixed value of 3840 x 2160 will be used."
+   "Force the resolution to the full-screen size. If set to 0, a fixed value of 3840 x 2160 will be used."
    )
 
 /* Settings > Video > Windowed Mode */
-
 
 /* Settings > Video > Scaling */
 
@@ -317,7 +291,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
    "Cut off a few pixels around the edges of the image customarily left blank by developers which sometimes also contain rubbish pixels."
    )
-
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 is centre, 1.0 is far right."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is centre, 1.0 is bottom."
+   )
+#if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 is centre, 1.0 is far right. (Portrait Orientation)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is centre, 1.0 is bottom. (Portrait Orientation)"
+   )
+#endif
 /* Settings > Video > HDR */
 
 MSG_HASH(
@@ -353,29 +344,17 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   "Hard-synchronise the CPU and GPU. Reduces latency at the cost of performance."
+   "Hard synchronise the CPU and GPU. Reduces latency at the cost of performance."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   "Sync to Exact Content Frame-rate (G-Sync, Free-Sync)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-   "No deviation from core requested timing. Use for Variable Refresh Rate screens (G-Sync, Free-Sync, HDMI 2.1 VRR)."
+   "Sync to Exact Content Frame Rate (G-Sync, FreeSync)"
    )
 
 /* Settings > Audio */
 
 #ifdef HAVE_MICROPHONE
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
-   "Re-sampler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
-   "Change audio re-sampler settings."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Synchronisation"
@@ -384,22 +363,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Change audio synchronisation settings."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-   "DSP Plug-in"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   "Audio DSP plug-in that processes audio before it's sent to the driver."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   "Remove DSP Plug-in"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
-   "Unload any active audio DSP plug-in."
-   )
 
 /* Settings > Audio > Output */
 
@@ -407,13 +370,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Maximum audio latency in milliseconds. The driver aims to keep actual latency at 50% of this value. Might not be honoured if the audio driver can't provide given latency."
    )
-
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
-   "Re-sampler Quality"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
    "Lower this value to favour performance/lower latency over audio quality, increase for better audio quality at the expense of performance/lower latency."
@@ -426,10 +384,6 @@ MSG_HASH(
 
 /* Settings > Audio > Resampler */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-   "Re-sampler Quality"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
    "Lower this value to favour performance/lower latency over audio quality, increase for better audio quality at the expense of performance/lower latency."
@@ -451,7 +405,6 @@ MSG_HASH(
    )
 
 /* Settings > Audio > MIDI */
-
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
@@ -495,11 +448,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
-   "Analogue Dead-zone"
+   "Analogue Dead Zone"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
-   "Ignore analogue stick movements below dead-zone value."
+   "Ignore analogue stick movements below dead zone value."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
@@ -509,18 +462,16 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
    "Adjust the sensitivity of analogue sticks."
    )
-
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
    "Select the general behaviour of turbo mode."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro uses a virtual gamepad abstraction known as the 'RetroPad' to communicate from frontends (like RetroArch) to cores and vice versa. This menu determines how the virtual RetroPad is mapped to the physical input devices and which virtual input ports these devices occupy.\nIf a physical input device is recognised and autoconfigured correctly, users probably do not need to use this menu at all, and for core-specific input changes, should use the Quick Menu's 'Controls' submenu instead."
+   "Libretro uses a virtual gamepad abstraction known as the 'RetroPad' to communicate from front-ends (like RetroArch) to cores and vice versa. This menu determines how the virtual RetroPad is mapped to the physical input devices and which virtual input ports these devices occupy.\nIf a physical input device is recognised and autoconfigured correctly, users probably do not need to use this menu at all, and for core-specific input changes, should use the Quick Menu's 'Controls' submenu instead."
    )
 
 /* Settings > Input > Haptic Feedback/Vibration */
-
 
 /* Settings > Input > Menu Controls */
 
@@ -537,8 +488,16 @@ MSG_HASH(
    "Disable Left Analogue in Menu"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Prevent menu left analogue stick input."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "Disable Right Analogue in Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Prevent menu right analogue stick input. Right analogue stick cycles thumbnails in playlists."
    )
 
 /* Settings > Input > Hotkeys */
@@ -548,39 +507,24 @@ MSG_HASH(
    "When assigned, the 'Hotkey Enable' key must be held before any other hotkeys are recognised. Allows controller buttons to be mapped to hotkey functions without affecting normal input. Assigning the modifier to controller only will not require it for keyboard hotkeys, and vice versa, but both modifiers work for both devices."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
-   "Add a delay in frames before normal input is blocked after pressing the assigned 'Hot-key Enable' key. Allows normal input from the 'Hot-key Enable' key to be captured when it is mapped to another action (e.g. RetroPad 'Select')."
-   )
-
-
-
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
    "If virtual disc tray is closed, this opens it and removes the loaded disc. Otherwise, it inserts the currently selected disc and closes the tray."
    )
-
-
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
-   "Switches 'Game Focus' mode on/off. When content has focus, hot-keys are disabled (full keyboard input is passed to the running core) and mouse is grabbed."
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "Full-screen (Toggle)"
+   "Full-Screen (Toggle)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "Switches between full-screen and windowed display modes."
    )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "Sync to Exact Content Frame-rate (Toggle)"
+   "Sync to Exact Content Frame Rate (Toggle)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "Toggles sync to exact content frame-rate on/off."
+   "Toggles sync to exact content frame rate on/off."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
@@ -589,44 +533,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
    "Switches Pre-emptive Frames on/off."
-   )
-
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Net-play Ping (Toggle)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Switches the ping counter for the current net-play room on/off."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "Net-play Hosting (Toggle)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "Switches net-play hosting on/off."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-   "Net-play Play/Spectate Mode (Toggle)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
-   "Switches current net-play session between 'play' and 'spectate' modes."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Net-play Player Chat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Sends a chat message to the current net-play session."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Toggle between fading and static net-play chat messages."
    )
 
 /* Settings > Input > Port # Controls */
@@ -710,13 +616,6 @@ MSG_HASH(
 #ifndef HAVE_DYNAMIC
 #endif
 #ifdef HAVE_MIST
-
-
-
-
-
-
-
 #endif
 /* Settings > Configuration */
 
@@ -756,7 +655,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
-   "Front-end Logging Level"
+   "Front-End Logging Level"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
@@ -765,36 +664,30 @@ MSG_HASH(
 
 /* Settings > File Browser */
 
-
 /* Settings > Frame Throttle */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
-   "Fast-Forward Frame-skip"
+   "Fast-Forward Frame-Skip"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Throttle Menu Frame-rate"
+   "Throttle Menu Frame Rate"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Makes sure the frame-rate is capped while inside the menu."
+   "Makes sure the frame rate is capped while inside the menu."
    )
 
 /* Settings > Frame Throttle > Rewind */
 
-
 /* Settings > Frame Throttle > Frame Time Counter */
-
 
 /* Settings > Recording */
 
-
 /* Settings > On-Screen Display */
 
-
 /* Settings > On-Screen Display > On-Screen Overlay */
-
 
 #if defined(ANDROID)
 #endif
@@ -813,7 +706,6 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
-
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
 
 MSG_HASH(
@@ -831,9 +723,7 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
-
 /* Settings > On-Screen Display > Video Layout */
-
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
@@ -847,7 +737,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   "Graphical Widgets Scale Override (Full-screen)"
+   "Graphical Widgets Scale Override (Full-Screen)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
@@ -863,27 +753,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-   "Display Frame-rate"
+   "Display Frame Rate"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
-   "Frame-rate Update Interval (In Frames)"
+   "Frame Rate Update Interval (In Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
-   "Frame-rate display will be updated at the set interval in frames."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
-   "Display Net-play Ping"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
-   "Display the ping for the current net-play room."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-   "\"Load Content\" Start-up Notification"
+   "Frame Rate display will be updated at the set interval in frames."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -896,14 +774,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "Display an on-screen message when automatically restoring at launch the last used disc of multi-disc content loaded with M3U playlists."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Extra Net-play Notifications"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Display non-essential net-play on-screen messages."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
@@ -974,7 +844,6 @@ MSG_HASH(
    )
 #ifdef _3DS
 #endif
-
 /* Settings > User Interface > Menu Item Visibility */
 
 #ifdef HAVE_LAKKA
@@ -984,8 +853,16 @@ MSG_HASH(
    "Show 'Favourites'"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
-   "Show 'Net-play'"
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
+   "Show the 'Favourites' menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
+   "Show Favourites First"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
+   "Show 'Favourites' before 'History'."
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
@@ -1004,8 +881,6 @@ MSG_HASH(
    )
 
 /* Settings > User Interface > Views > Settings */
-
-
 
 /* Settings > User Interface > Appearance */
 
@@ -1028,18 +903,12 @@ MSG_HASH(
 
 /* Settings > AI Service */
 
-
 /* Settings > Accessibility */
-
 
 /* Settings > Power Management */
 
 /* Settings > Achievements */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Leader-boards"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
    "Periodically send contextual game information to the RetroAchievements website. Has no effect if 'Hardcore Mode' is enabled."
@@ -1051,16 +920,20 @@ MSG_HASH(
 
 /* Settings > Achievements > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
+   "Top Centre"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
+   "Bottom Centre"
+   )
 
 /* Settings > Achievements > Visibility */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
-   "Log-in Messages"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
-   "Show messages related to RetroAchievements account log-in."
+   "Show messages related to RetroAchievements account login."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
@@ -1070,18 +943,6 @@ MSG_HASH(
 /* Settings > Network */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
-   "Publicly Announce Net-play"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-   "Whether to announce net-play games publicly. If unset, clients must manually connect rather than using the public lobby."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Forward net-play connections through a man-in-the-middle server. Useful if the host is behind a firewall or has NAT/UPnP problems."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
    "South America (South-east, Brazil)"
    )
@@ -1090,24 +951,8 @@ MSG_HASH(
    "South-east Asia"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
-   "Net-play TCP Port"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
    "Maximum Simultaneous Connections"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
-   "Net-play Spectator Mode"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   "Start net-play in spectator mode."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
-   "Whether to start net-play in spectator mode. If set to true, net-play will be in spectator mode on start. It's always possible to change mode later."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
@@ -1117,61 +962,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
    "Chat Colour (Message)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Allow players to pause during net-play."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Net-play Check Frames"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "The frequency (in frames) that net-play will verify that the host and client are in sync."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   "The frequency in frames with which net-play will verify that the host and client are in sync. With most cores, this value will have no visible effect and can be ignored. With nondeterminstic cores, this value determines how often the net-play peers will be brought into sync. With buggy cores, setting this to any non-zero value will cause severe performance issues. Set to zero to perform no checks. This value is only used on the net-play host."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "The number of frames of input latency for net-play to use to hide network latency. Reduces jitter and makes net-play less CPU-intensive, at the expense of noticeable input lag."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "The number of frames of input latency for net-play to use to hide network latency.\nWhen in net-play, this option delays local input, so that the frame being run is closer to the frames being received from the network. This reduces jitter and makes net-play less CPU-intensive, but at the price of noticeable input lag."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "The range of frames of input latency that may be used to hide network latency. Reduces jitter and makes net-play less CPU-intensive, at the expense of unpredictable input lag."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "The range of frames of input latency that may be used by net-play to hide network latency.\nIf set, net-play will adjust the number of frames of input latency dynamically to balance CPU time, input latency and network latency. This reduces jitter and makes net-play less CPU-intensive, but at the price of unpredictable input lag."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
-   "Net-play NAT Traversal"
-   )
 
 /* Settings > Network > Updater */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-   "Build-bot Cores URL"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
-   "URL to core updater directory on the libretro build-bot."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-   "Build-bot Assets URL"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
-   "URL to assets updater directory on the libretro build-bot."
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
    "Specify how many automatically generated backups to keep for each installed core. When this limit is reached, creating a new backup with an online update will delete the oldest backup. Manual core backups are unaffected by this setting."
@@ -1227,7 +1020,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-   "Input your username here. This will be used for net-play sessions, among other things."
+   "Input your username here. This will be used for netplay sessions, among other things."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
@@ -1235,7 +1028,6 @@ MSG_HASH(
    )
 
 /* Settings > User > Privacy */
-
 
 /* Settings > User > Accounts */
 
@@ -1253,12 +1045,9 @@ MSG_HASH(
 
 /* Settings > User > Accounts > YouTube */
 
-
 /* Settings > User > Accounts > Twitch */
 
-
 /* Settings > User > Accounts > Facebook Gaming */
-
 
 /* Settings > Directory */
 
@@ -1278,70 +1067,19 @@ MSG_HASH(
 #ifdef HAVE_MIST
 /* Settings > Steam */
 
-
-
 #endif
 
 /* Music */
 
 /* Music > Quick Menu */
 
-
 /* Netplay */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Connect to Net-play Host"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Enter net-play server address and connect in client mode."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "Disconnect From Net-play Host"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   "Disconnect an active net-play connection."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "Refresh Net-play Host List"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "Scan for net-play hosts."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   "Refresh Net-play LAN List"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   "Scan for net-play hosts on LAN."
-   )
 
 /* Netplay > Host */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "Start Net-play Host"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-   "Start net-play in host (server) mode."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
-   "Stop Net-play Host"
-   )
-
 /* Import Content */
 
-
 /* Import Content > Scan File */
-
 
 /* Import Content > Manual Scan */
 
@@ -1357,11 +1095,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
-   "By Art-style"
+   "By Art Style"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
-   "Enter name of the new view"
+   "Enter the name of the new view"
    )
 
 /* Playlist > Playlist Item */
@@ -1376,7 +1114,6 @@ MSG_HASH(
    )
 
 /* Playlist Item > Set Core Association */
-
 
 /* Playlist Item > Information */
 
@@ -1406,7 +1143,6 @@ MSG_HASH(
 
 /* Quick Menu > Options */
 
-
 /* Quick Menu > Options > Manage Core Options */
 
 MSG_HASH(
@@ -1418,12 +1154,9 @@ MSG_HASH(
 
 /* Quick Menu > Controls */
 
-
 /* Quick Menu > Controls > Manage Remap Files */
 
-
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
-
 
 /* Quick Menu > Cheats */
 
@@ -1449,9 +1182,7 @@ MSG_HASH(
 
 /* Quick Menu > Cheats > Load Cheat File (Replace) */
 
-
 /* Quick Menu > Cheats > Load Cheat File (Append) */
-
 
 /* Quick Menu > Cheats > Cheat Details */
 
@@ -1489,13 +1220,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
    "After changing shader settings such as the amount of shader passes, filtering, FBO scale, use this to apply changes.\nChanging these shader settings is a somewhat expensive operation so it has to be done explicitly.\nWhen you apply shaders, the shader settings are saved to a temporary file (retroarch.slangp/.cgp/.glslp) and loaded. The file persists after RetroArch exits and is saved to the Shader Directory."
    )
-
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
+   "Scale for this pass. The scale factor accumulates, i.e. 2x for first pass and 2x for second pass will give you a 4x total scale.\nIf there is a scale factor for last pass, the result is stretched to screen with the default filter, depending on Bilinear Filtering setting under Video settings.\nIf 'Default' is set, either 1x scale or stretch to full-screen will be used depending if it's not the last pass or not."
+   )
 
 /* Quick Menu > Shaders > Shader Parameters */
 
-
 /* Quick Menu > Overrides */
-
 
 /* Quick Menu > Achievements */
 
@@ -1505,7 +1237,6 @@ MSG_HASH(
 )
 
 /* Quick Menu > Information */
-
 
 /* Miscellaneous UI Items */
 
@@ -1542,7 +1273,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
-   "Box-art"
+   "Box Art"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
@@ -1642,6 +1373,18 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_LIGHT,
    "Grey Light"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+   "Enable display of inline downscaled thumbnails while viewing playlists. Toggleable with RetroPad Select. When disabled, thumbnails can still be toggled full-screen with RetroPad Start."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   "Type of thumbnail to display at the top right of playlists. Can be cycled with Right Analogue Up/Left."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
+   "Type of thumbnail to display at the bottom right of playlists. Can be cycled with Right Analogue Down/Right."
+   )
 
 /* XMB: Settings > User Interface > Appearance */
 
@@ -1686,7 +1429,6 @@ MSG_HASH(
    )
 
 /* Ozone: Settings > User Interface > Appearance */
-
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
@@ -1752,23 +1494,15 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   "Box-art"
+   "Box Art"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
-   "Highlight colour:"
+   "Highlight Colour:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
    "Select Colour"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
-   "\"All Playlists\" maximum list entries:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
-   "\"All Playlists\" maximum grid entries:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
@@ -1779,31 +1513,23 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
-   "Turbo/Dead-zone"
+   "Turbo/Dead Zone"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
-   "Front-end Counters"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
-   "No net-play hosts found."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
-   "No net-play clients found."
+   "Front-End Counters"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Maximum Swap-chain Images"
+   "Maximum Swap Chain Images"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
-   "Waitable Swap-chains"
+   "Waitable Swap Chains"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   "Hard-synchronise the CPU and GPU. Reduces latency at the cost of performance."
+   "Hard synchronise the CPU and GPU. Reduces latency at the cost of performance."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
@@ -1811,27 +1537,6 @@ MSG_HASH(
    )
 
 /* Unused (Only Exist in Translation Files) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
-   "Net-play"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
-   "Net-play Delay Frames"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
-   "Search for and connect to net-play hosts on the local network."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
-   "Net-play Client"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
-   "Net-play Spectator"
-   )
 
 /* Unused (Needs Confirmation) */
 
@@ -1860,12 +1565,8 @@ MSG_HASH(
    "Configured"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
-   "Net-play settings"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT,
-   "OpenGL/Direct3D Render-to-texture (multi-pass shaders) support"
+   "OpenGL/Direct3D Render-to-Texture (Multi-Pass Shaders) Support"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM,
@@ -1874,97 +1575,31 @@ MSG_HASH(
 
 /* Discord Status */
 
-
 /* Notifications */
 
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
-   "Net-play will start when content is loaded."
-   )
-MSG_HASH(
-   MSG_NETPLAY_NEED_CONTENT_LOADED,
-   "Content must be loaded before starting net-play."
-   )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
    "Couldn't find a suitable core or content file, please try loading it manually."
    )
 MSG_HASH(
-   MSG_NETPLAY_LAN_SCAN_COMPLETE,
-   "Net-play scan complete."
-   )
-MSG_HASH(
-   MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-   "Sorry, unimplemented: cores that don't demand content cannot participate in net-play."
-   )
-MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-   "Unknown net-play command received"
+   "Unknown Netplay command received"
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "Net-play Port Mapping Successful"
+   "Netplay port mapping successful"
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Net-play UPnP Port Mapping Failed"
-   )
-MSG_HASH(
-   MSG_NETPLAY_NOT_RETROARCH,
-   "A net-play connection attempt failed because the peer is not running RetroArch, or is running an old version of RetroArch."
-   )
-MSG_HASH(
-   MSG_NETPLAY_OUT_OF_DATE,
-   "A net-play peer is running an old version of RetroArch. Cannot connect."
-   )
-MSG_HASH(
-   MSG_NETPLAY_DIFFERENT_VERSIONS,
-   "WARNING: A net-play peer is running a different version of RetroArch. If problems occur, use the same version."
-   )
-MSG_HASH(
-   MSG_NETPLAY_DIFFERENT_CORES,
-   "A net-play peer is running a different core. Cannot connect."
-   )
-MSG_HASH(
-   MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
-   "WARNING: A net-play peer is running a different version of the core. If problems occur, use the same version."
-   )
-MSG_HASH(
-   MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "This core does not support net-play between these platforms"
-   )
-MSG_HASH(
-   MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "This core does not support net-play between different platforms"
-   )
-MSG_HASH(
-   MSG_NETPLAY_ENTER_PASSWORD,
-   "Enter net-play server password:"
-   )
-MSG_HASH(
-   MSG_NETPLAY_ENTER_CHAT,
-   "Enter net-play chat message:"
-   )
-MSG_HASH(
-   MSG_NETPLAY_SERVER_HANGUP,
-   "A net-play client has disconnected"
-   )
-MSG_HASH(
-   MSG_NETPLAY_CLIENT_HANGUP,
-   "Net-play disconnected"
+   "netplay UPnP port mapping failed"
    )
 MSG_HASH(
    MSG_NETPLAY_PEER_PAUSED,
-   "Net-play peer \"%s\" paused"
+   "netplay peer \"%s\" paused"
    )
 MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "Your nickname was changed to \"%s\""
-   )
-
-MSG_HASH(
-   MSG_CONNECTING_TO_NETPLAY_HOST,
-   "Connecting to net-play host"
    )
 MSG_HASH(
    MSG_ALL_CORES_UPDATED,
@@ -2011,10 +1646,6 @@ MSG_HASH(
    "Could not read state from film."
    )
 MSG_HASH(
-   MSG_CRC32_CHECKSUM_MISMATCH,
-   "CRC32 checksum mismatch between content file and saved content checksum in replay file header. Replay highly likely to de-sync on playback."
-   )
-MSG_HASH(
    MSG_FAILED_SAVING_CONFIG_TO,
    "Failed saving configuration to"
    )
@@ -2044,15 +1675,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_FAILED,
-   "Failed to initialise net-play."
-   )
-MSG_HASH(
-   MSG_NETPLAY_UNSUPPORTED,
-   "Core does not support net-play."
+   "Failed to initialise netplay."
    )
 MSG_HASH(
    MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
-   "Restarting recording due to driver re-initiation."
+   "Restarting recording due to driver reinitialisation."
    )
 MSG_HASH(
    MSG_REWIND_UNSUPPORTED,
@@ -2091,10 +1718,6 @@ MSG_HASH(
    "Scanning Bluetooth devices..."
    )
 MSG_HASH(
-   MSG_NETPLAY_LAN_SCANNING,
-   "Scanning for net-play hosts..."
-   )
-MSG_HASH(
    MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
    "Password is correct."
    )
@@ -2128,18 +1751,18 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VRR_RUNLOOP_ENABLED,
-   "Sync to exact content frame-rate enabled."
+   "Sync to exact content frame rate enabled."
    )
 MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
-   "Sync to exact content frame-rate disabled."
+   "Sync to exact content frame rate disabled."
    )
 
 /* Lakka */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
-   "Front-end name"
+   "Front-End Name"
    )
 
 /* Environment Specific Settings */
@@ -2159,10 +1782,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
    "Scan for wireless networks and establish a connection."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
-   "De-flicker"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
@@ -2185,34 +1804,18 @@ MSG_HASH(
    "Enabling Linux GameMode can improve latency, fix audio crackling issues and maximise overall performance by automatically configuring your CPU and GPU for best performance.\nThe GameMode software needs to be installed for this to work. See https://github.com/FeralInteractive/gamemode for information on how to install GameMode."
    )
 #ifdef HAVE_LIBNX
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
-   "CPU Over-clock"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-   "Over-clock the Switch CPU."
-   )
 #endif
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
-   "Displays a list of available time zones. After selecting a time zone, time and date is adjusted to the selected time zone. It assumes, that system/hardware clock is set to UTC."
+   "Displays a list of available time zones. After selecting a time zone, time and date is adjusted to the selected time zone. It assumes that system/hardware clock is set to UTC."
    )
 #ifdef HAVE_LAKKA_SWITCH
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
-   "CPU Over-clock"
-   )
 #endif
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
-   "Adjust x/y scale for Wii-mote light gun speed."
-   )
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
 MSG_HASH(
@@ -2221,10 +1824,6 @@ MSG_HASH(
    )
 #endif
 #ifdef HAVE_ODROIDGO2
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
-   "RGA scaling and bi-cubic filtering. May break widgets."
-   )
 #else
 #endif
 #ifdef _3DS
@@ -2262,15 +1861,6 @@ MSG_HASH(
    )
 #endif
 #ifdef HAVE_QT
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Scan Finished.<br><br>\nIn order for content to be correctly scanned, you must:\n<ul><li>have a compatible core already downloaded</li>\n<li>have \"Core Info Files\" updated with the Online Updater</li>\n<li>have \"Databases\" updated with the Online Updater</li>\n<li>restart RetroArch if any of the above was just done</li></ul>\nFinally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>."
-   )
 #endif
 #ifdef HAVE_GAME_AI
-
-
-
-
-
 #endif
