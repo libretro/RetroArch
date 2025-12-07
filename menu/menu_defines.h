@@ -454,6 +454,14 @@ enum ozone_color_theme
    OZONE_COLOR_THEME_LAST
 };
 
+enum ozone_header_icon
+{
+   OZONE_HEADER_ICON_NONE = 0,
+   OZONE_HEADER_ICON_DYNAMIC,
+   OZONE_HEADER_ICON_FIXED,
+   OZONE_HEADER_ICON_LAST
+};
+
 enum ozone_header_separator
 {
    OZONE_HEADER_SEPARATOR_NONE = 0,
