@@ -1502,6 +1502,10 @@ MSG_HASH(
    "Prođi kroz ove opcije ako slika nije pravilno centrirana na displeju."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Prođi kroz ove opcije ako slika nije pravilno centrirana na displeju."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Uključi visoko-rezolucioni mod za upotrebu sa visoko-rezolucionim menijem ako sadržaj nije učitan."
    )
