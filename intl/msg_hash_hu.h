@@ -2182,8 +2182,8 @@ MSG_HASH(
    "A különféle beállítások közt váltva változik a vízszintes képméret."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
-   "Függőleges középállás"
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Ha a kép nincs középen a megjelenítőn, próbáld változtatni az értékeket."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -11714,6 +11714,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
    "A fejléc és lábléc elválasztójának szélessége."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Nincs"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,

@@ -1590,6 +1590,10 @@ MSG_HASH(
    "Atur opsi ini jika gambar tidak dapat ditampilkan memusat semestinya."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Atur opsi ini jika gambar tidak dapat ditampilkan memusat semestinya."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Beralih ke modeline resolusi tinggi untuk menampilkan menu resolusi tinggi jika belum memuat konten."
    )
@@ -3810,6 +3814,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "Urut Daftar Main Setelah Pemenggalan Nama (Perlu Mulai Ulang)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Tak ada"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,

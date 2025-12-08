@@ -2142,8 +2142,8 @@ MSG_HASH(
    "Гарызантальны памер"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
-   "Вертыкальнае цэнтраванне"
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Прайдзіце праз гэтыя наладкі, калі выява не належным чынам адцэнтравана на дысплэі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -11530,6 +11530,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
    "Змяняе памер вобласці мініяцюр."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Няма"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
+   "Дынамічная"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,

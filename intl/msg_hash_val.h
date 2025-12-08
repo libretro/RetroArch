@@ -1502,6 +1502,10 @@ MSG_HASH(
    "Modifica esta opció si la imatge no està ben centrada a la pantalla."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Modifica esta opció si la imatge no està ben centrada a la pantalla."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Canvia els menús a línia de mode (modeline) en alta resolució quan no s'haja carregat cap contingut."
    )
@@ -3007,6 +3011,10 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Cap"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
    "Cap"

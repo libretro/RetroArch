@@ -2126,8 +2126,8 @@ MSG_HASH(
    "Scorri queste opzioni per regolare le impostazioni della dimensione orizzontale o per cambiare la dimensione dell'immagine."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
-   "Centratura verticale"
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Utilizza queste opzioni se l'immagine non è centrata correttamente sullo schermo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -11714,6 +11714,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
    "Larghezza alternativa per i separatori di intestazione e piè di pagina."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Nessuno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
+   "Dinamico"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,

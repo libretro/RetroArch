@@ -2206,8 +2206,8 @@ MSG_HASH(
    "Duyệt qua các tùy chọn này để điều chỉnh cài đặt theo chiều ngang nhằm thay đổi kích thước hình ảnh."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
-   "Căn giữa theo chiều dọc"
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Duyệt qua các tùy chọn này nếu hình ảnh không được căn giữa đúng cách trên màn hình."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -11930,6 +11930,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
    "Chiều rộng thay thế cho ngăn cách tiêu đề và chân trang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Không"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
+   "Động"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,

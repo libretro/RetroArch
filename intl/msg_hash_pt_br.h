@@ -2174,6 +2174,10 @@ MSG_HASH(
    "Centralização Vertical"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Alterne entre estas opções se a imagem não estiver centralizada corretamente na tela."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "Usar Menu de Alta Resolução"
    )
@@ -11784,12 +11788,32 @@ MSG_HASH(
    "Ajustar o tamanho do preenchimento horizontal."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
+   "Ícone do Cabeçalho"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
+   "O logo do cabeçalho pode ser oculto, dinâmico dependendo da navegação ou fixo no invasor clássico."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
    "Separador de Cabeçalho"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
    "Largura alternativa para os separadores de cabeçalho e rodapé."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Nenhum"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
+   "Dinâmico"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
+   "Fixo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,

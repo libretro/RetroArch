@@ -234,6 +234,10 @@ MSG_HASH(
    "Cycle through these options if the image is not centred properly on the display."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Cycle through these options if the image is not centred properly on the display."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Switch to high resolution mode-line for use with high-resolution menus when no content is loaded."
    )

@@ -2094,6 +2094,10 @@ MSG_HASH(
    "画像がディスプレイ上で正しく中央寄せされていない場合はこのオプションを微調整してください。"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "画像がディスプレイ上で正しく中央寄せされていない場合はこのオプションを微調整してください。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "高解像度メニューを使用"
    )
@@ -11162,6 +11166,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
    "サムネイルバーのサイズの表示倍率です。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "なし"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
+   "ダイナミック"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,

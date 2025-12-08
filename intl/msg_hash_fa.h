@@ -3472,6 +3472,10 @@ MSG_HASH(
    "مقیاس قلم"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "هیچکدام"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
    "هیچکدام"
    )

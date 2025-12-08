@@ -1898,6 +1898,10 @@ MSG_HASH(
    "Εναλλάξτε μεταξύ αυτών των επιλογών εάν η εικόνα δεν είναι σωστά κεντραρισμένη στην οθόνη."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Εναλλάξτε μεταξύ αυτών των επιλογών εάν η εικόνα δεν είναι σωστά κεντραρισμένη στην οθόνη."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "Χρήση προσαρμοσμένου ρυθμού ανανέωσης προσδιορισμένου στο αρχείο διαμόρφωσης εάν χρειάζεται."
    )
@@ -4711,6 +4715,10 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Κανείς"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
    "Κανείς"

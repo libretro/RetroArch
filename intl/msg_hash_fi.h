@@ -2006,6 +2006,10 @@ MSG_HASH(
    "Vaihdä tätä asetusta, jos kuva ei ole keskitetty oikein näytöllä."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Vaihdä tätä asetusta, jos kuva ei ole keskitetty oikein näytöllä."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "Käytä korkean resoluution valikkoa"
    )
@@ -10294,6 +10298,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
    "Skaalaa esikatselukuvien palkin koko."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Ei mitään"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
+   "Dynaaminen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,

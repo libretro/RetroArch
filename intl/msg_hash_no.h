@@ -1586,6 +1586,10 @@ MSG_HASH(
    "Bla gjennom disse alternativene hvis bildet ikke er sentrert riktig på skjermen."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Bla gjennom disse alternativene hvis bildet ikke er sentrert riktig på skjermen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "Bruk meny med høy oppløsning"
    )
@@ -4318,6 +4322,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "Sekundært miniatyrbilde"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Ingen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,

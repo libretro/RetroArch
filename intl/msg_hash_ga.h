@@ -2198,6 +2198,10 @@ MSG_HASH(
    "Lárú Ingearach"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Téigh trí na roghanna seo mura bhfuil an íomhá lárnaithe i gceart ar an taispeáint."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    "Úsáid an Roghchlár Ardtaifigh"
    )
@@ -11940,12 +11944,32 @@ MSG_HASH(
    "Scálaigh méid an líonadh cothrománach."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
+   "Deilbhín Ceanntásca"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
+   "Is féidir lógó an cheanntásca a cheilt, a bheith dinimiciúil ag brath ar an nascleanúint nó a shocrú go dtí an t-ionróir clasaiceach."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
    "Deighilteoir Ceanntásca"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
    "Leithead malartach do dheighilteoirí ceanntásca agus buntásca."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Dada"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
+   "Dinimiciúil"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
+   "Seasta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
