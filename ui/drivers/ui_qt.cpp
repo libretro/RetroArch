@@ -1832,7 +1832,7 @@ void MainWindow::showWelcomeScreen()
    const QString welcome_txt = QStringLiteral(""
       "Welcome to the RetroArch Desktop Menu!<br>\n"
       "<br>\n"
-      "This Desktop Menu window should be functional for "
+      "The Desktop Menu window should be functional for "
 	  "launching content and managing playlists.<br>\n"
       "<br>\n"
       "But many settings and actions are currently only available in the familiar "
