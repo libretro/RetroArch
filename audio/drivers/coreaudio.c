@@ -14,6 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdlib.h>
+#include <stdatomic.h>
+
+#include <dispatch/dispatch.h>
 
 #if TARGET_OS_IPHONE
 #include <AudioToolbox/AudioToolbox.h>
@@ -26,8 +29,6 @@
 #include <AudioUnit/AUComponent.h>
 
 #include <boolean.h>
-#include <queues/fifo_queue.h>
-#include <rthreads/rthreads.h>
 #include <retro_endianness.h>
 #include <string/stdstring.h>
 
@@ -38,19 +39,62 @@
 
 typedef struct coreaudio
 {
-   slock_t *lock;
-   scond_t *cond;
+   dispatch_semaphore_t sema;
+
+   /* Lock-free ring buffer */
+   float *buffer;
+   size_t capacity;           /* Power of 2 for fast masking */
+   size_t write_ptr;          /* Only touched by main thread */
+   size_t read_ptr;           /* Only touched by audio callback */
+   atomic_size_t filled;      /* Samples currently in buffer */
+
 #if !HAS_MACOSX_10_12
    ComponentInstance dev;
 #else
    AudioComponentInstance dev;
 #endif
-   fifo_buffer_t *buffer;
-   size_t buffer_size;
    bool dev_alive;
    bool is_paused;
    bool nonblock;
 } coreaudio_t;
+
+/* Lock-free ring buffer operations */
+
+static inline size_t rb_write_avail(coreaudio_t *dev)
+{
+   return dev->capacity - atomic_load_explicit(&dev->filled, memory_order_acquire);
+}
+
+static inline size_t rb_read_avail(coreaudio_t *dev)
+{
+   return atomic_load_explicit(&dev->filled, memory_order_acquire);
+}
+
+static void rb_write(coreaudio_t *dev, const float *data, size_t count)
+{
+   size_t first = dev->capacity - dev->write_ptr;
+   if (first > count)
+      first = count;
+
+   memcpy(dev->buffer + dev->write_ptr, data, first * sizeof(float));
+   memcpy(dev->buffer, data + first, (count - first) * sizeof(float));
+
+   dev->write_ptr = (dev->write_ptr + count) & (dev->capacity - 1);
+   atomic_fetch_add_explicit(&dev->filled, count, memory_order_release);
+}
+
+static void rb_read(coreaudio_t *dev, float *data, size_t count)
+{
+   size_t first = dev->capacity - dev->read_ptr;
+   if (first > count)
+      first = count;
+
+   memcpy(data, dev->buffer + dev->read_ptr, first * sizeof(float));
+   memcpy(data + first, dev->buffer, (count - first) * sizeof(float));
+
+   dev->read_ptr = (dev->read_ptr + count) & (dev->capacity - 1);
+   atomic_fetch_sub_explicit(&dev->filled, count, memory_order_release);
+}
 
 static void coreaudio_free(void *data)
 {
@@ -70,10 +114,10 @@ static void coreaudio_free(void *data)
    }
 
    if (dev->buffer)
-      fifo_free(dev->buffer);
+      free(dev->buffer);
 
-   slock_free(dev->lock);
-   scond_free(dev->cond);
+   if (dev->sema)
+      dispatch_release(dev->sema);
 
    free(dev);
 }
@@ -83,9 +127,10 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
       const AudioTimeStamp *time_stamp, UInt32 bus_number,
       UInt32 number_frames, AudioBufferList *io_data)
 {
-   unsigned write_avail;
-   void     *outbuf = NULL;
    coreaudio_t *dev = (coreaudio_t*)userdata;
+   float *outbuf;
+   size_t frames_needed;
+   size_t avail;
 
    (void)time_stamp;
    (void)bus_number;
@@ -94,21 +139,24 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
    if (!io_data || io_data->mNumberBuffers != 1)
       return noErr;
 
-   write_avail = io_data->mBuffers[0].mDataByteSize;
-   outbuf      = io_data->mBuffers[0].mData;
+   outbuf        = (float *)io_data->mBuffers[0].mData;
+   frames_needed = io_data->mBuffers[0].mDataByteSize / sizeof(float);
+   avail         = rb_read_avail(dev);
 
-   slock_lock(dev->lock);
-
-   if (FIFO_READ_AVAIL(dev->buffer) < write_avail)
+   if (avail < frames_needed)
    {
+      /* Underrun: read what we have, fill rest with silence */
       *action_flags = kAudioUnitRenderAction_OutputIsSilence;
-      /* Seems to be needed. */
-      memset(outbuf, 0, write_avail);
+      if (avail > 0)
+         rb_read(dev, outbuf, avail);
+      memset(outbuf + avail, 0, (frames_needed - avail) * sizeof(float));
    }
    else
-      fifo_read(dev->buffer, outbuf, write_avail);
-   slock_unlock(dev->lock);
-   scond_signal(dev->cond);
+      rb_read(dev, outbuf, frames_needed);
+
+   /* Wake writer if it might be waiting */
+   dispatch_semaphore_signal(dev->sema);
+
    return noErr;
 }
 
@@ -171,7 +219,7 @@ static void *coreaudio_init(const char *device,
       unsigned block_frames,
       unsigned *new_rate)
 {
-   size_t fifo_size;
+   size_t buffer_samples;
    UInt32 i_size;
    AudioStreamBasicDescription real_desc;
 #if !HAS_MACOSX_10_12
@@ -194,8 +242,7 @@ static void *coreaudio_init(const char *device,
    if (!dev)
       return NULL;
 
-   dev->lock = slock_new();
-   dev->cond = scond_new();
+   dev->sema = dispatch_semaphore_create(0);
 
    /* Create AudioComponent */
    desc.componentType         = kAudioUnitType_Output;
@@ -287,17 +334,29 @@ static void *coreaudio_init(const char *device,
 
    /* Enforce minimum latency to prevent buffer issues */
    if (latency < 8)
-      latency        = 8;
+      latency = 8;
 
-   fifo_size         = (latency * (*new_rate)) / 1000;
-   fifo_size        *= 2 * sizeof(float);
-   dev->buffer_size  = fifo_size;
+   /* Calculate buffer size in samples (stereo) */
+   buffer_samples   = (latency * (*new_rate)) / 1000;
+   buffer_samples  *= 2;  /* stereo */
 
-   if (!(dev->buffer = fifo_new(fifo_size)))
+   /* Round up to next power of 2 for fast modulo via masking */
+   dev->capacity = 1;
+   while (dev->capacity < buffer_samples)
+      dev->capacity <<= 1;
+
+   dev->buffer = (float *)calloc(dev->capacity, sizeof(float));
+   if (!dev->buffer)
       goto error;
 
-   RARCH_LOG("[CoreAudio] Using buffer size of %u bytes: (latency = %u ms).\n",
-         (unsigned)fifo_size, latency);
+   atomic_init(&dev->filled, 0);
+   dev->write_ptr = 0;
+   dev->read_ptr  = 0;
+
+   RARCH_LOG("[CoreAudio] Buffer: %u samples (%u bytes, %.1f ms).\n",
+         (unsigned)dev->capacity,
+         (unsigned)(dev->capacity * sizeof(float)),
+         (float)dev->capacity * 1000.0f / (*new_rate) / 2.0f);
 
    if (AudioOutputUnitStart(dev->dev) != noErr)
       goto error;
@@ -313,45 +372,38 @@ error:
 static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
 {
    coreaudio_t *dev   = (coreaudio_t*)data;
-   const uint8_t *buf = (const uint8_t*)buf_;
-   size_t _len        = 0;
+   const float *buf   = (const float *)buf_;
+   size_t samples     = len / sizeof(float);
+   size_t written     = 0;
 
-   while (!dev->is_paused && len > 0)
+   while (!dev->is_paused && samples > 0)
    {
-      size_t write_avail;
+      size_t avail    = rb_write_avail(dev);
+      size_t to_write = (avail < samples) ? avail : samples;
 
-      slock_lock(dev->lock);
-
-      write_avail = FIFO_WRITE_AVAIL(dev->buffer);
-      if (write_avail > len)
-         write_avail = len;
-
-      fifo_write(dev->buffer, buf, write_avail);
-      buf     += write_avail;
-      _len    += write_avail;
-      len     -= write_avail;
+      if (to_write > 0)
+      {
+         rb_write(dev, buf, to_write);
+         buf     += to_write;
+         written += to_write;
+         samples -= to_write;
+      }
 
       if (dev->nonblock)
-      {
-         slock_unlock(dev->lock);
          break;
-      }
 
-#if TARGET_OS_IOS
-      if (write_avail == 0 && !scond_wait_timeout(
-               dev->cond, dev->lock, 300000))
+      if (samples > 0)
       {
-         slock_unlock(dev->lock);
-         break;
+         /* Buffer full, wait for audio callback to drain some.
+          * Use a timeout as a safety net in case audio stalls. */
+         dispatch_time_t timeout = dispatch_time(
+               DISPATCH_TIME_NOW, 500 * NSEC_PER_MSEC);
+         if (dispatch_semaphore_wait(dev->sema, timeout) != 0)
+            break; /* Timeout - audio might be stalled */
       }
-#else
-      if (write_avail == 0)
-         scond_wait(dev->cond, dev->lock);
-#endif
-      slock_unlock(dev->lock);
    }
 
-   return _len;
+   return written * sizeof(float);
 }
 
 static void coreaudio_set_nonblock_state(void *data, bool state)
@@ -397,20 +449,14 @@ static bool coreaudio_use_float(void *data) { return true; }
 
 static size_t coreaudio_write_avail(void *data)
 {
-   size_t avail;
    coreaudio_t *dev = (coreaudio_t*)data;
-
-   slock_lock(dev->lock);
-   avail = FIFO_WRITE_AVAIL(dev->buffer);
-   slock_unlock(dev->lock);
-
-   return avail;
+   return rb_write_avail(dev) * sizeof(float);
 }
 
 static size_t coreaudio_buffer_size(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
-   return dev->buffer_size;
+   return dev->capacity * sizeof(float);
 }
 
 /* TODO/FIXME - implement */
