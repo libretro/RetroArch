@@ -2206,6 +2206,10 @@ MSG_HASH(
    "Duyệt qua các tùy chọn này để điều chỉnh cài đặt theo chiều ngang nhằm thay đổi kích thước hình ảnh."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   "Căn giữa theo chiều dọc"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
    "Duyệt qua các tùy chọn này nếu hình ảnh không được căn giữa đúng cách trên màn hình."
    )
@@ -11924,6 +11928,14 @@ MSG_HASH(
    "Thay đổi kích thước đệm ngang."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
+   "Biểu tượng phần đầu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
+   "Logo phần đầu có thể được ẩn, thay đổi linh hoạt tùy theo cách điều hướng, hoặc cố định theo kiểu “classic invader”."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
    "Ngăn cách tiêu đề"
    )
@@ -11938,6 +11950,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
    "Động"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
+   "Cố định"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,

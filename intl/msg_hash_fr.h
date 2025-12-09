@@ -2174,6 +2174,10 @@ MSG_HASH(
    "Parcourez ces options pour ajuster les réglages horizontaux afin de modifier la taille de l'image."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   "Centrage vertical"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
    "Parcourez ces options si l'image n'est pas centrée correctement à l'écran."
    )
@@ -11852,6 +11856,14 @@ MSG_HASH(
    "Mettre à l'échelle la taille du remplissage horizontal."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
+   "Icône de l'en-tête"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
+   "Le logo de l'en-tête peut être masqué, dynamique selon la navigation ou déterminé sur l'envahisseur classique."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
    "Séparateur d'en-tête"
    )
@@ -11866,6 +11878,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
    "Dynamique"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
+   "Déterminé"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
