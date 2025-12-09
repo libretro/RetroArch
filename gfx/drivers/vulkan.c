@@ -4264,8 +4264,14 @@ static bool vulkan_alive(void *data)
    bool quit            = false;
    bool resize          = false;
    vk_t *vk             = (vk_t*)data;
-   unsigned temp_width  = vk->video_width;
-   unsigned temp_height = vk->video_height;
+   unsigned temp_width;
+   unsigned temp_height;
+
+   if (!vk)
+      return false;
+
+   temp_width  = vk->video_width;
+   temp_height = vk->video_height;
 
    vk->ctx_driver->check_window(vk->ctx_data,
             &quit, &resize, &temp_width, &temp_height);
