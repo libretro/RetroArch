@@ -55,6 +55,9 @@ bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
    if (env == NULL)
       return false;
 
+   (*env)->PushLocalFrame(env, 14);
+   if ((*env)->ExceptionOccurred(env)) goto error;
+
    vfs_saf_content_resolver_object = NULL;
    vfs_saf_vfs_implementation_saf_class = NULL;
    vfs_saf_saf_stat_class = NULL;
@@ -172,6 +175,7 @@ bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
    }
 
    vfs_saf_get_jni_env = get_jni_env;
+   (*env)->PopLocalFrame(env, NULL);
    return true;
 
 error:
@@ -201,6 +205,7 @@ error:
       vfs_saf_saf_directory_class = NULL;
       if ((*env)->ExceptionOccurred(env)) goto error;
    }
+   (*env)->PopLocalFrame(env, NULL);
    return false;
 }
 
@@ -376,6 +381,9 @@ int retro_vfs_file_open_saf(const char *tree, const char *path, unsigned mode)
    if (env == NULL)
       return -1;
 
+   (*env)->PushLocalFrame(env, 2);
+   if ((*env)->ExceptionOccurred(env)) goto error;
+
    tree_object = (*env)->NewStringUTF(env, tree);
    if ((*env)->ExceptionOccurred(env)) goto error;
 
@@ -385,11 +393,13 @@ int retro_vfs_file_open_saf(const char *tree, const char *path, unsigned mode)
    fd = (*env)->CallStaticIntMethod(env, vfs_saf_vfs_implementation_saf_class, vfs_saf_open_saf_file_method, vfs_saf_content_resolver_object, tree_object, path_object, !!(mode & RETRO_VFS_FILE_ACCESS_READ), !!(mode & RETRO_VFS_FILE_ACCESS_WRITE), !(mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING));
    if ((*env)->ExceptionOccurred(env)) goto error;
 
+   (*env)->PopLocalFrame(env, NULL);
    return fd;
 
 error:
    (*env)->ExceptionDescribe(env);
    (*env)->ExceptionClear(env);
+   (*env)->PopLocalFrame(env, NULL);
    return -1;
 }
 
@@ -406,6 +416,9 @@ int retro_vfs_file_remove_saf(const char *tree, const char *path)
    if (env == NULL)
       return -1;
 
+   (*env)->PushLocalFrame(env, 2);
+   if ((*env)->ExceptionOccurred(env)) goto error;
+
    tree_object = (*env)->NewStringUTF(env, tree);
    if ((*env)->ExceptionOccurred(env)) goto error;
 
@@ -415,11 +428,13 @@ int retro_vfs_file_remove_saf(const char *tree, const char *path)
    ret = (*env)->CallStaticBooleanMethod(env, vfs_saf_vfs_implementation_saf_class, vfs_saf_remove_saf_file_method, vfs_saf_content_resolver_object, tree_object, path_object);
    if ((*env)->ExceptionOccurred(env)) goto error;
 
+   (*env)->PopLocalFrame(env, NULL);
    return ret ? 0 : -1;
 
 error:
    (*env)->ExceptionDescribe(env);
    (*env)->ExceptionClear(env);
+   (*env)->PopLocalFrame(env, NULL);
    return -1;
 }
 
@@ -443,6 +458,9 @@ int retro_vfs_stat_saf(const char *tree, const char *path, int32_t *size)
    if (env == NULL)
       return 0;
 
+   (*env)->PushLocalFrame(env, 3);
+   if ((*env)->ExceptionOccurred(env)) goto error;
+
    tree_object = (*env)->NewStringUTF(env, tree);
    if ((*env)->ExceptionOccurred(env)) goto error;
 
@@ -457,14 +475,20 @@ int retro_vfs_stat_saf(const char *tree, const char *path, int32_t *size)
       saf_stat_size = (*env)->CallLongMethod(env, saf_stat, vfs_saf_saf_stat_get_size_method);
       if ((*env)->ExceptionOccurred(env)) goto error;
       if (saf_stat_size < 0)
+      {
+         (*env)->PopLocalFrame(env, NULL);
          return 0;
+      }
    }
    else
    {
       bool saf_stat_is_open = (*env)->CallBooleanMethod(env, saf_stat, vfs_saf_saf_stat_get_is_open_method);
       if ((*env)->ExceptionOccurred(env)) goto error;
       if (!saf_stat_is_open)
+      {
+         (*env)->PopLocalFrame(env, NULL);
          return 0;
+      }
    }
 
    saf_stat_is_directory = (*env)->CallBooleanMethod(env, saf_stat, vfs_saf_saf_stat_get_is_directory_method);
@@ -473,11 +497,13 @@ int retro_vfs_stat_saf(const char *tree, const char *path, int32_t *size)
    if (size != NULL)
       *size = saf_stat_size > INT32_MAX ? INT32_MAX : (int32_t)saf_stat_size;
 
+   (*env)->PopLocalFrame(env, NULL);
    return saf_stat_is_directory ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
 
 error:
    (*env)->ExceptionDescribe(env);
    (*env)->ExceptionClear(env);
+   (*env)->PopLocalFrame(env, NULL);
    return 0;
 }
 
@@ -494,6 +520,9 @@ int retro_vfs_mkdir_saf(const char *tree, const char *dir)
    if (env == NULL)
       return -1;
 
+   (*env)->PushLocalFrame(env, 2);
+   if ((*env)->ExceptionOccurred(env)) goto error;
+
    tree_object = (*env)->NewStringUTF(env, tree);
    if ((*env)->ExceptionOccurred(env)) goto error;
 
@@ -503,11 +532,13 @@ int retro_vfs_mkdir_saf(const char *tree, const char *dir)
    ret = (*env)->CallStaticIntMethod(env, vfs_saf_vfs_implementation_saf_class, vfs_saf_mkdir_saf_method, vfs_saf_content_resolver_object, tree_object, path_object);
    if ((*env)->ExceptionOccurred(env)) goto error;
 
+   (*env)->PopLocalFrame(env, NULL);
    return ret;
 
 error:
    (*env)->ExceptionDescribe(env);
    (*env)->ExceptionClear(env);
+   (*env)->PopLocalFrame(env, NULL);
    return -1;
 }
 
@@ -528,6 +559,9 @@ libretro_vfs_implementation_saf_dir *retro_vfs_opendir_saf(const char *tree, con
    if (dirstream == NULL)
       return NULL;
 
+   (*env)->PushLocalFrame(env, 2);
+   if ((*env)->ExceptionOccurred(env)) goto error;
+
    tree_object = (*env)->NewStringUTF(env, tree);
    if ((*env)->ExceptionOccurred(env)) goto error;
 
@@ -543,12 +577,14 @@ libretro_vfs_implementation_saf_dir *retro_vfs_opendir_saf(const char *tree, con
    dirstream->dirent_name_object = NULL;
    dirstream->dirent_name = NULL;
    dirstream->dirent_is_dir = false;
+   (*env)->PopLocalFrame(env, NULL);
    return dirstream;
 
 error:
    free(dirstream);
    (*env)->ExceptionDescribe(env);
    (*env)->ExceptionClear(env);
+   (*env)->PopLocalFrame(env, NULL);
    return NULL;
 }
 
@@ -564,6 +600,9 @@ bool retro_vfs_readdir_saf(libretro_vfs_implementation_saf_dir *dirstream)
    env = vfs_saf_get_jni_env();
    if (env == NULL)
       return false;
+
+   (*env)->PushLocalFrame(env, 1);
+   if ((*env)->ExceptionOccurred(env)) goto error;
 
    ret = (*env)->CallBooleanMethod(env, dirstream->directory_object, vfs_saf_saf_directory_readdir_method);
    if ((*env)->ExceptionOccurred(env)) goto error;
@@ -584,6 +623,7 @@ bool retro_vfs_readdir_saf(libretro_vfs_implementation_saf_dir *dirstream)
    if (!ret)
    {
       dirstream->dirent_is_dir = false;
+      (*env)->PopLocalFrame(env, NULL);
       return false;
    }
 
@@ -601,6 +641,7 @@ bool retro_vfs_readdir_saf(libretro_vfs_implementation_saf_dir *dirstream)
    if ((*env)->ExceptionOccurred(env)) goto error;
    dirstream->dirent_name = dirent_name;
 
+   (*env)->PopLocalFrame(env, NULL);
    return true;
 
 error:
@@ -619,6 +660,7 @@ error:
       if ((*env)->ExceptionOccurred(env)) goto error;
    }
    dirstream->dirent_is_dir = false;
+   (*env)->PopLocalFrame(env, NULL);
    return false;
 }
 
