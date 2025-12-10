@@ -1832,7 +1832,7 @@ void MainWindow::showWelcomeScreen()
    const QString welcome_txt = QStringLiteral(""
       "Welcome to the RetroArch Desktop Menu!<br>\n"
       "<br>\n"
-      "The Desktop Menu provides a WIMP (Windows, Icons, Menus, Pointer) Qt interface 
+      "The Desktop Menu provides a Qt-based WIMP (Windows, Icons, Menus, Pointer) interface "
 	  "that's functional for launching content and managing playlists.<br>\n"
       "<br>\n"
       "But many settings and actions are currently only available in the familiar "
