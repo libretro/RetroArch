@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -2432,7 +2446,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
-   "Установка прозрачности окна."
+   "Настройка непрозрачности окна."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
@@ -2535,7 +2549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
-   "Умное"
+   "Умный режим"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2663,11 +2677,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Кадрировать вылеты развёртки (требуется перезапуск)"
+   "Кадрировать вылеты развёртки"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-   "Срезать часть пикселей по краям изображения, которые при разработке, как правило, остаются пустыми, но иногда могут содержать мусорные данные."
+   "Срезать часть пикселей вокруг изображения, которые при разработке обычно остаются пустыми, но иногда могут содержать мусорные данные. Требуется перезапуск."
    )
 
 /* Settings > Video > HDR */
@@ -2729,7 +2743,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "Ручная установка интервала подкачки верт. синхронизации. Понижает частоту экрана на заданный коэффициент. В режиме 'Автоматически' значение выбирается исходя из частоты обновления ядра, улучшая распределение кадров контента в 30 к/с на дисплеях 60 Гц либо контента в 60 к/с на[...]"
+   "Подстройка интервала подкачки верт. синхронизации. Понижает частоту экрана на заданный коэффициент. В автом. режиме значение выбирается исходя из частоты обновления ядра, улучшая распределение кадров контента в 30 к/с на дисплеях 60 Гц или контента в 60 к/с на 120 Гц."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
@@ -2816,7 +2830,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "Настройка параметров вывода звука."
+   "Настройки вывода звука."
    )
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
@@ -2922,15 +2936,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
-   "Громкость звука в дБ. Значение 0 дБ соответствует нормальной громкости без усиления. Уровень усиления можно изменять во время игры клавишами Увеличить громкость / Уменьшить громкость."
+   "Громкость звука (в дБ). Значение 0 соответствует стандартной громкости без усиления. Уровень усиления можно изменять во время игры клавишами Увеличить / Уменьшить громкость."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-   "Уровень громкости микшера (дБ)"
+   "Уровень громкости микшера"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   "Глобальная громкость аудиомикшера (в дБ). Значение 0 дБ соответствует стандартному уровню громкости без усиления."
+   "Глобальная громкость аудиомикшера (в дБ). Значение 0 соответствует стандартной громкости без усиления."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -2938,7 +2952,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   "DSP-плагин для обработки звука перед отправкой в драйвер."
+   "Аудиоплагин для обработки звука перед отправкой в драйвер."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
@@ -3013,18 +3027,18 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   "Задержка звука (мс)"
+   "Задержка звука"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Максимальная задержка звука в миллисекундах. Драйвер будет пытаться сохранять задержку на 50% от заданного значения. Может не учитываться, если значение не поддерживается аудиодрайвером."
+   "Максимальная задержка звука (в миллисекундах). Драйвер будет пытаться сохранять задержку в пределах 50% от заданного значения. Может не учитываться, если значение не поддерживается звуковым драйвером."
    )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
-   "Микрофон"
+   "Вкл. микрофон"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
@@ -3052,19 +3066,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
-   "Частота звука по умолчанию (Гц)"
+   "Частота звука по умолчанию"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
-   "Частота дискретизации, используемая, если ядро не запрашивает определённое значение."
+   "Частота дискретизации (в Гц), используемая, если ядро не запрашивает определённое значение."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
-   "Задержка звука (мс)"
+   "Задержка ввода звука"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
-   "Желаемая задержка звука в миллисекундах. Может не учитываться, если драйвер микрофона не поддерживает заданное значение."
+   "Целевая задержка ввода звука (в миллисекундах). Может не учитываться, если заданное значение не поддерживается драйвером микрофона."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
@@ -3927,7 +3941,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "Загрузить"
+   "Загрузить состояние"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
@@ -3935,7 +3949,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "Сохранить"
+   "Сохранить состояние"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
@@ -4071,7 +4085,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
-   "Воспроизвести файл повтора из текущего слота."
+   "Воспроизвести файл повтора в текущем слоте."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
@@ -4544,7 +4558,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
-   "Запуск доп. логики ядра для снижения задержки. Режим 1 экз. обрабатывает будущий кадр и перезагружает состояние. Режим 2 экз. использует доп. ядро для вывода будущего кадра, чтобы избежать проблем со звуком. Режим упр. кадров обрабатывает пред. кадры с новыми событиями ввода."
+   "Запуск доп. логики ядра для снижения задержки ввода. Режим 1 экз. обрабатывает будущий кадр и перезагружает текущее состояние. Режим 2 экз. использует доп. ядро для вывода будущего кадра, чтобы избежать проблем со звуком. Режим упр. кадров обрабатывает пред. кадры с новыми со[...]"
    )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
 MSG_HASH(
@@ -5508,7 +5522,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-   "Настройка прозрачности элементов оверлея."
+   "Настройка непрозрачности элементов оверлея."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
@@ -6167,7 +6181,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-   "Установка прозрачности фона текстовых сообщений. Диапазон допустимых значений от 0.0 до 1.0."
+   "Настройка непрозрачности фона уведомлений. Диапазон допустимых значений от 0.0 до 1.0."
    )
 
 /* Settings > User Interface */
@@ -6939,11 +6953,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
-   "Показывать 'Ввод'"
+   "Показывать 'Устройства ввода'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
-   "Показывать настройки 'Ввода'."
+   "Показывать настройки 'Устройств ввода'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
@@ -9201,7 +9215,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   "Сохранить"
+   "Сохранить состояние"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_STATE,
@@ -9213,7 +9227,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-   "Загрузить"
+   "Загрузить состояние"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
@@ -9221,7 +9235,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_STATE,
-   "Загрузить состояние из текущего выбранного слота. Может не работать при попытке загрузить сохранение с другой версии ядра."
+   "Загрузить состояние в текущем выбранном слоте. Может не работать, если состояние было создано другой версией ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -9253,7 +9267,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAY_REPLAY,
-   "Воспроизвести файл повтора из текущего слота."
+   "Воспроизвести файл повтора в текущем слоте."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
@@ -11937,7 +11951,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
-   "Динамическая"
+   "Динамический"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
@@ -13098,7 +13112,7 @@ MSG_HASH( /* FIXME Still exists in a comment about being removed */
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Настройка прозрачности нижней полосы."
+   "Настройка непрозрачности нижнего колонтитула."
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
@@ -13106,7 +13120,7 @@ MSG_HASH( /* FIXME Still exists in a comment about being removed */
    )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "Настройка прозрачности полосы заголовка."
+   "Настройка непрозрачности полосы заголовка."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
@@ -14188,7 +14202,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_START_MOVIE_RECORD,
-   "Не удалось начать запись видео."
+   "Не удалось начать запись."
    )
 MSG_HASH(
    MSG_FAILED_TO_START_RECORDING,
@@ -14664,7 +14678,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_STARTING_MOVIE_RECORD_TO,
-   "Запись видео в"
+   "Начата запись в"
    )
 MSG_HASH(
    MSG_STATE_SIZE,
