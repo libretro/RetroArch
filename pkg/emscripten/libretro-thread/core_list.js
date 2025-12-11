@@ -6,6 +6,7 @@ const libretroCores = {
 	"bk": "Elektronika - BK-0010/BK-0011 (BK)",
 	"chailove": "ChaiLove",
 	"craft": "Minecraft (Craft)",
+	"dice": "Arcade (DICE)",
 	"DoubleCherryGB": "Nintendo - Game Boy / Color (DoubleCherryGB)",
 	"ecwolf": "Wolfenstein 3D (ECWolf)",
 	"fbalpha2012": "Arcade (FB Alpha 2012)",

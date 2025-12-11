@@ -1,4 +1,5 @@
 # Future
+- EMSCRIPTEN: Added dice to core selection dropdown
 
 # 1.22.1
 - ANDROID: OnNewIntent handler to allow launchers start new content without closing first
