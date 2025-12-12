@@ -304,6 +304,7 @@ typedef struct settings
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
       unsigned menu_xmb_alpha_factor;
+      unsigned menu_xmb_current_menu_icon;
       unsigned menu_xmb_theme;
       unsigned menu_xmb_color_theme;
       unsigned menu_xmb_thumbnail_scale_factor;
