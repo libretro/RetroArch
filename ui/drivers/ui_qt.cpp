@@ -1845,7 +1845,7 @@ void MainWindow::showWelcomeScreen()
       "</ul>\n"
       "\n"
       "For more hotkeys and their assignments, see:<br>\n"
-      "Settings -> Input -> Hotkeys<br>\n"
+      "View -> Settings -> Input -> Hotkeys<br>\n"
       "<br>\n"
       "Documentation for RetroArch, libretro and cores:<br>\n"
       "<a href=\"https://docs.libretro.com/\">https://docs.libretro.com/</a>");
