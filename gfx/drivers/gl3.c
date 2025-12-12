@@ -1926,37 +1926,10 @@ static void gl3_set_viewport(gl3_t *gl,
       unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
-   settings_t *settings            = config_get_ptr();
-   float device_aspect             = (float)vp_width / vp_height;
-   bool video_scale_integer        = settings->bools.video_scale_integer;
-
-   if (gl->ctx_driver->translate_aspect)
-      device_aspect         = gl->ctx_driver->translate_aspect(
-            gl->ctx_data, vp_width, vp_height);
-
-   if (video_scale_integer && !force_full)
-   {
-      video_viewport_get_scaled_integer(&gl->vp,
-            vp_width, vp_height,
-            video_driver_get_aspect_ratio(),
-            (gl->flags & GL3_FLAG_KEEP_ASPECT) ? true : false,
-            false);
-      vp_width  = gl->vp.width;
-      vp_height = gl->vp.height;
-   }
-   else if ((gl->flags & GL3_FLAG_KEEP_ASPECT) && !force_full)
-   {
-      gl->vp.full_height = gl->video_height;
-      video_viewport_get_scaled_aspect2(&gl->vp, vp_width, vp_height, false, device_aspect, video_driver_get_aspect_ratio());
-      vp_width           = gl->vp.width;
-      vp_height          = gl->vp.height;
-   }
-   else
-   {
-      gl->vp.x           = gl->vp.y = 0;
-      gl->vp.width       = vp_width;
-      gl->vp.height      = vp_height;
-   }
+   gl->vp.full_width  = vp_width;
+   gl->vp.full_height = vp_height;
+   video_driver_update_viewport(&gl->vp, force_full,
+         (gl->flags & GL3_FLAG_KEEP_ASPECT) ? true : false, false);
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    gl3_set_projection(gl, &gl3_default_ortho, allow_rotate);
@@ -1964,13 +1937,13 @@ static void gl3_set_viewport(gl3_t *gl,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl->out_vp_width  = vp_width;
-      gl->out_vp_height = vp_height;
+      gl->out_vp_width  = gl->vp.width;
+      gl->out_vp_height = gl->vp.height;
    }
 
-   gl->filter_chain_vp.x = gl->vp.x;
-   gl->filter_chain_vp.y = gl->vp.y;
-   gl->filter_chain_vp.width = gl->vp.width;
+   gl->filter_chain_vp.x      = gl->vp.x;
+   gl->filter_chain_vp.y      = gl->vp.y;
+   gl->filter_chain_vp.width  = gl->vp.width;
    gl->filter_chain_vp.height = gl->vp.height;
 }
 

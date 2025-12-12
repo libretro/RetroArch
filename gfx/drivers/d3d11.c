@@ -1717,7 +1717,7 @@ static void d3d11_gfx_set_rotation(void* data, unsigned rotation)
 static void d3d11_update_viewport(d3d11_video_t *d3d11, bool force_full)
 {
    video_driver_update_viewport(&d3d11->vp, force_full,
-         (d3d11->flags & D3D11_ST_FLAG_KEEP_ASPECT) ? true : false);
+         (d3d11->flags & D3D11_ST_FLAG_KEEP_ASPECT) ? true : false, true);
 
    d3d11->frame.viewport.TopLeftX = d3d11->vp.x;
    d3d11->frame.viewport.TopLeftY = d3d11->vp.y;

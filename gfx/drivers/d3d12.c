@@ -1978,7 +1978,7 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
 static void d3d12_update_viewport(d3d12_video_t *d3d12, bool force_full)
 {
    video_driver_update_viewport(&d3d12->vp, force_full,
-         (d3d12->flags & D3D12_ST_FLAG_KEEP_ASPECT) ? true : false);
+         (d3d12->flags & D3D12_ST_FLAG_KEEP_ASPECT) ? true : false, true);
 
    d3d12->frame.viewport.TopLeftX = d3d12->vp.x;
    d3d12->frame.viewport.TopLeftY = d3d12->vp.y;
