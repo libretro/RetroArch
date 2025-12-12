@@ -2480,7 +2480,9 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                (*env)->ExceptionClear(env);
             }
             else
-               for (jsize i = 0; i < trees_length; ++i)
+            {
+               jsize i;
+               for (i = 0; i < trees_length; ++i)
                {
                   const char *tree_chars;
                   char *serialized_path;
@@ -2496,6 +2498,12 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   {
                      (*env)->ExceptionDescribe(env);
                      (*env)->ExceptionClear(env);
+                     (*env)->DeleteLocalRef(env, tree);
+                     if ((*env)->ExceptionOccurred(env))
+                     {
+                        (*env)->ExceptionDescribe(env);
+                        (*env)->ExceptionClear(env);
+                     }
                      continue;
                   }
                   if ((serialized_path = retro_vfs_path_join_saf(tree_chars, "")) != NULL)
@@ -2513,7 +2521,20 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                      (*env)->ExceptionDescribe(env);
                      (*env)->ExceptionClear(env);
                   }
+                  (*env)->DeleteLocalRef(env, tree);
+                  if ((*env)->ExceptionOccurred(env))
+                  {
+                     (*env)->ExceptionDescribe(env);
+                     (*env)->ExceptionClear(env);
+                  }
                }
+            }
+            (*env)->DeleteLocalRef(env, trees);
+            if ((*env)->ExceptionOccurred(env))
+            {
+               (*env)->ExceptionDescribe(env);
+               (*env)->ExceptionClear(env);
+            }
          }
       }
 
