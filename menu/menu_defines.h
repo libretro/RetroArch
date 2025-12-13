@@ -352,6 +352,14 @@ enum xmb_icon_theme
    XMB_ICON_THEME_LAST
 };
 
+enum xmb_current_menu_icon
+{
+   XMB_CURRENT_MENU_ICON_NONE = 0,
+   XMB_CURRENT_MENU_ICON_NORMAL,
+   XMB_CURRENT_MENU_ICON_TITLE,
+   XMB_CURRENT_MENU_ICON_LAST
+};
+
 enum xmb_shader_pipeline
 {
 #ifndef HAVE_PSGL

@@ -2448,6 +2448,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_xmb_thumbnail_scale_factor",         &settings->uints.menu_xmb_thumbnail_scale_factor, true, DEFAULT_XMB_THUMBNAIL_SCALE_FACTOR, false);
    SETTING_UINT("menu_xmb_vertical_fade_factor",           &settings->uints.menu_xmb_vertical_fade_factor, true, DEFAULT_XMB_VERTICAL_FADE_FACTOR, false);
    SETTING_UINT("xmb_alpha_factor",              &settings->uints.menu_xmb_alpha_factor, true, DEFAULT_XMB_ALPHA_FACTOR, false);
+   SETTING_UINT("xmb_current_menu_icon",         &settings->uints.menu_xmb_current_menu_icon, true, DEFAULT_XMB_CURRENT_MENU_ICON, false);
    SETTING_UINT("xmb_layout",                    &settings->uints.menu_xmb_layout, true, DEFAULT_XMB_MENU_LAYOUT, false);
    SETTING_UINT("xmb_theme",                     &settings->uints.menu_xmb_theme, true, DEFAULT_XMB_ICON_THEME, false);
    SETTING_UINT("xmb_menu_color_theme",          &settings->uints.menu_xmb_color_theme, true, DEFAULT_XMB_THEME, false);

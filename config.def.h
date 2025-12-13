@@ -843,7 +843,8 @@
 #define DEFAULT_XMB_VERTICAL_FADE_FACTOR           100
 #define DEFAULT_XMB_SHOW_TITLE_HEADER              true
 #define DEFAULT_XMB_SWITCH_ICONS                   true
-#define DEFAULT_XMB_TITLE_MARGIN                   5
+#define DEFAULT_XMB_CURRENT_MENU_ICON              1
+#define DEFAULT_XMB_TITLE_MARGIN                   3
 #define DEFAULT_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET 0
 #define MAXIMUM_XMB_TITLE_MARGIN                   12
 #define DEFAULT_XMB_ALPHA_FACTOR                   90

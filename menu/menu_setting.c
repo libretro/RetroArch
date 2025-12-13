@@ -4119,6 +4119,28 @@ static size_t setting_get_string_representation_uint_rgui_particle_effect(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_menu_ticker_type(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case TICKER_TYPE_BOUNCE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE),
+                  len);
+         case TICKER_TYPE_LOOP:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP),
+                  len);
+      }
+   }
+   return 0;
+}
+
 #ifdef HAVE_XMB
 static size_t setting_get_string_representation_uint_menu_xmb_animation_move_up_down(
       rarch_setting_t *setting, char *s, size_t len)
@@ -4175,31 +4197,7 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_horizont
    }
    return 0;
 }
-#endif
 
-static size_t setting_get_string_representation_uint_menu_ticker_type(
-      rarch_setting_t *setting, char *s, size_t len)
-{
-   if (setting)
-   {
-      switch (*setting->value.target.unsigned_integer)
-      {
-         case TICKER_TYPE_BOUNCE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE),
-                  len);
-         case TICKER_TYPE_LOOP:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP),
-                  len);
-      }
-   }
-   return 0;
-}
-
-#ifdef HAVE_XMB
 static size_t setting_get_string_representation_uint_xmb_icon_theme(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -4387,6 +4385,73 @@ static size_t setting_get_string_representation_uint_xmb_menu_color_theme(
    }
    return 0;
 }
+
+static size_t setting_get_string_representation_uint_xmb_current_menu_icon(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE), len);
+         case 2:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE), len);
+         case 1:
+         default:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL), len);
+      }
+   }
+   return 0;
+}
+#endif
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+#if defined(HAVE_XMB) && defined(HAVE_SHADERPIPELINE)
+static size_t setting_get_string_representation_uint_xmb_shader_pipeline(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case XMB_SHADER_PIPELINE_WALLPAPER:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED), len);
+         case XMB_SHADER_PIPELINE_RIBBON:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON), len);
+         case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW), len);
+         case XMB_SHADER_PIPELINE_SNOW:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW), len);
+         case XMB_SHADER_PIPELINE_BOKEH:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH), len);
+         case XMB_SHADER_PIPELINE_SNOWFLAKE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE), len);
+      }
+   }
+   return 0;
+}
+#endif
 #endif
 
 #ifdef HAVE_MATERIALUI
@@ -4767,47 +4832,6 @@ static size_t setting_get_string_representation_uint_ozone_font_scale(
 }
 #endif
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-#if defined(HAVE_XMB) && defined(HAVE_SHADERPIPELINE)
-static size_t setting_get_string_representation_uint_xmb_shader_pipeline(
-      rarch_setting_t *setting, char *s, size_t len)
-{
-   if (setting)
-   {
-      switch (*setting->value.target.unsigned_integer)
-      {
-         case XMB_SHADER_PIPELINE_WALLPAPER:
-            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED), len);
-         case XMB_SHADER_PIPELINE_RIBBON:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON), len);
-         case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW), len);
-         case XMB_SHADER_PIPELINE_SNOW:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW), len);
-         case XMB_SHADER_PIPELINE_BOKEH:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH), len);
-         case XMB_SHADER_PIPELINE_SNOWFLAKE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE), len);
-      }
-   }
-   return 0;
-}
-#endif
-#endif
 
 #ifdef HAVE_SCREENSHOTS
 #ifdef HAVE_GFX_WIDGETS
@@ -18968,6 +18992,24 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
             menu_settings_list_current_add_range(list, list_info, 0, 500, 1, true, true);
 
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_xmb_current_menu_icon,
+                  MENU_ENUM_LABEL_XMB_CURRENT_MENU_ICON,
+                  MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+                  DEFAULT_XMB_CURRENT_MENU_ICON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_xmb_current_menu_icon;
+            menu_settings_list_current_add_range(list, list_info, 0, XMB_CURRENT_MENU_ICON_LAST-1, 1, true, true);
+
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_xmb_show_title_header,
@@ -20128,7 +20170,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_ozone_header_icon;
             menu_settings_list_current_add_range(list, list_info, 0, OZONE_HEADER_ICON_LAST-1, 1, true, true);

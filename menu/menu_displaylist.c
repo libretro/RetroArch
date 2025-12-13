@@ -11868,6 +11868,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_XMB_SWITCH_ICONS,                             PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_RGUI_SWITCH_ICONS,                       PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_SWITCH_ICONS,                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_XMB_CURRENT_MENU_ICON,                        PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_HEADER_ICON,                            PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_HEADER_SEPARATOR,                       PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR,                       PARSE_ONLY_BOOL,   true},
