@@ -83,11 +83,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
-   "Descarregar Núcleo"
+   "Fechar núcleo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
-   "Liberar o núcleo carregado."
+   "Fecha o núcleo carregado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
@@ -124,17 +124,13 @@ MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatical
 #ifdef HAVE_LAKKA
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   "Ejetar Disco"
+   "Ejetar disco"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
    "Ejeta o disco da unidade física de CD/DVD."
    )
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "Listas de reprodução"
-   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
    "O conteúdo escaneado que coincida com o banco de dados irá aparecer aqui."
@@ -173,7 +169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY,
-   "Entrar ou criar uma sessão da Netplay."
+   "Entra ou hospeda uma sessão da Netplay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS,
@@ -1224,7 +1220,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   "Altera as configurações de saída de vídeo."
+   "Altera as configurações da saída de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
@@ -1232,7 +1228,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Altera as configurações de entrada/saída de áudio."
+   "Altera as configurações da entrada/saída de áudio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
@@ -1256,7 +1252,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "Altera as configurações de núcleo."
+   "Altera as configurações dos núcleos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
@@ -1360,7 +1356,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
-   "Usuário"
+   "Nome de usuário"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
@@ -1543,10 +1539,6 @@ MSG_HASH(
    "Define as configurações do servidor e da rede."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   "Listas de reprodução"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
    "Altera as configurações de lista de reprodução."
    )
@@ -1556,7 +1548,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Shaders (Manter pressionado)"
+   "Altera as configurações de privacidade, conta e nome de usuário."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
@@ -1942,7 +1934,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   "Altera as configurações de saída de vídeo."
+   "Altera as configurações da saída de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
@@ -2794,7 +2786,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "Altera as configurações de saída de áudio."
+   "Altera as configurações da saída de áudio."
    )
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
@@ -2888,23 +2880,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-   "Nível de volume de áudio (dB)"
+   "Volume (dB)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-   "Volume do áudio (em dB). 0dB é o volume normal, e nenhum ganho é aplicado."
+   "Volume do áudio (em dB). O volume padrão é 0 dB."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
-   "Volume do áudio, expresso em dB. 0 dB é o volume normal, sem ganho aplicado. O ganho pode ser controlado em tempo de execução com Aumentar Volume / Diminuir Volume."
+   "Volume do conteúdo. O volume pode ser alterado usando suas teclas de atalho \"Aumentar volume\" e \"Diminuir volume\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-   "Nível de volume do mixer de áudio (dB)"
+   "Volume do mixer (dB)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   "Volume global do mixer de áudio (em dB). 0dB é o volume normal, e nenhum ganho será aplicado."
+   "Volume do mixer de áudio (em dB). O volume padrão é 0 dB."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -6535,7 +6527,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
-   "Mostrar \"Listas de reprodução\""
+   "Mostrar \"Playlists\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
@@ -7017,7 +7009,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
-   "Mostrar \"Listas de reprodução\""
+   "Mostrar \"Playlists\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
@@ -8011,7 +8003,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
-   "Gerenciar listas de reprodução"
+   "Gerenciar playlists"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
@@ -8125,11 +8117,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
-   "Usuário"
+   "Nome de usuário"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-   "Insira seu nome de usuário aqui. Isto será utilizado para sessões da Netplay, entre outras coisas."
+   "Define seu nome de usuário nas salas de Netplay e em outros lugares."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
@@ -8194,7 +8186,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
-   "Insira seu nome de usuário da conta RetroAchievements."
+   "Nome de usuário da sua conta do RetroAchievements."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
@@ -8202,7 +8194,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "Digite a senha da sua conta do RetroAchievements. Com o tamanho máximo de 255 caracteres."
+   "Senha da sua conta do RetroAchievements. Tamanho máximo: 255 caracteres."
    )
 
 /* Settings > User > Accounts > YouTube */
@@ -8399,10 +8391,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    "Os remapeamentos de entrada são armazenados neste diretório."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   "Lista de reprodução"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
@@ -9123,7 +9111,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Fecha o conteúdo atual. Alterações não salvas serão perdidas."
+   "Fecha o conteúdo atual. As alterações não salvas serão perdidas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -10496,7 +10484,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
-   "Todas as listas de reprodução"
+   "Todas as playlists"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
@@ -12273,10 +12261,6 @@ MSG_HASH(
    "Versão"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   "Listas de reprodução"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
    "Navegador de arquivos"
    )
@@ -12310,7 +12294,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
-   "Todas as listas de reprodução"
+   "Todas as playlists"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE,
@@ -12370,7 +12354,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
-   "Ocultar listas de reprodução"
+   "Ocultar playlists"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_HIDE,
