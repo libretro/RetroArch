@@ -4002,6 +4002,9 @@ bool command_event(enum event_command cmd, void *data)
             ol->next_index                 =
                   (unsigned)((ol->index + 1) % ol->size);
 
+            /* Trigger viewport recalculation - overlay may have viewport override */
+            command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
+
             /* Check orientation, if required */
             if (inp_overlay_auto_rotate)
                if (check_rotation)
