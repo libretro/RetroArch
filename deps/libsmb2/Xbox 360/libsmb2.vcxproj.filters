@@ -1,0 +1,268 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="..\include\Makefile.am">
+      <Filter>include</Filter>
+    </None>
+    <None Include="..\lib\CMakeLists.txt">
+      <Filter>lib</Filter>
+    </None>
+    <None Include="..\COPYING" />
+    <None Include="..\README" />
+    <None Include="..\lib\libsmb2.syms">
+      <Filter>lib</Filter>
+    </None>
+    <None Include="..\lib\Makefile.am">
+      <Filter>lib</Filter>
+    </None>
+    <None Include="..\lib\Makefile.AMIGA">
+      <Filter>lib</Filter>
+    </None>
+    <None Include="..\lib\Makefile.AMIGA_AROS">
+      <Filter>lib</Filter>
+    </None>
+    <None Include="..\lib\Makefile.AMIGA_OS3">
+      <Filter>lib</Filter>
+    </None>
+    <None Include="..\lib\Makefile.PS3_PPU">
+      <Filter>lib</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{028f1ea9-92cf-4908-a035-80459a8cf956}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\smb2">
+      <UniqueIdentifier>{28810bac-fb60-4810-8ce9-1d5c989d4c75}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib">
+      <UniqueIdentifier>{8f3e89d9-a92f-4650-a970-3af5fddd92fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\xbox 360">
+      <UniqueIdentifier>{6c01c6cd-316c-4bff-82ea-f611e60057e9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\smb2\libsmb2.h">
+      <Filter>include\smb2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\smb2\libsmb2-dcerpc.h">
+      <Filter>include\smb2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\smb2\libsmb2-dcerpc-lsa.h">
+      <Filter>include\smb2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\smb2\libsmb2-dcerpc-srvsvc.h">
+      <Filter>include\smb2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\smb2\libsmb2-raw.h">
+      <Filter>include\smb2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\smb2\smb2.h">
+      <Filter>include\smb2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\smb2\smb2-errors.h">
+      <Filter>include\smb2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\libsmb2-private.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\portable-endian.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\slist.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\aes.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\aes128ccm.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\compat.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\hmac-md5.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\md4.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\md5.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\ntlmssp.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\sha.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\sha-private.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\smb2-signing.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\smb3-seal.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\asprintf.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\xbox 360\config.h">
+      <Filter>include\xbox 360</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lib\asn1-ber.h">
+      <Filter>lib</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\lib\aes.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\aes128ccm.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\alloc.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\compat.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\dcerpc-lsa.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\dcerpc-srvsvc.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\errors.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\hmac.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\hmac-md5.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\init.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\libsmb2.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\md4c.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\md5.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\ntlmssp.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\pdu.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\sha224-256.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\sha384-512.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-close.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-create.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-echo.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-error.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-flush.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-ioctl.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-logoff.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-negotiate.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-query-directory.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-query-info.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-read.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-session-setup.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-set-info.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-tree-connect.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-tree-disconnect.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-write.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-data-file-info.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-data-filesystem-info.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-data-reparse-point.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-data-security-descriptor.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-share-enum.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-signing.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb3-seal.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\socket.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\sync.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\timestamps.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\unicode.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\usha.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\asn1-ber.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\sha1.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-lock.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lib\smb2-cmd-notify-change.c">
+      <Filter>lib</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
