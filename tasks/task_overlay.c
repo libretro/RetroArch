@@ -892,6 +892,69 @@ static void task_overlay_deferred_load(retro_task_t *task)
       overlay->center_x    = overlay->x + 0.5f * overlay->w;
       overlay->center_y    = overlay->y + 0.5f * overlay->h;
 
+      /* Parse viewport override (optional) */
+      strlcpy(conf_key + _len, "_viewport", sizeof(conf_key) - _len);
+      RARCH_LOG("[Overlay] Checking for viewport key: %s\n", conf_key);
+      if (config_get_array(conf, conf_key, tmp_str, sizeof(tmp_str)))
+      {
+         char *tok, *save      = NULL;
+         char *elem0           = NULL;
+         char *elem1           = NULL;
+         char *elem2           = NULL;
+         char *elem3           = NULL;
+         unsigned list_size    = 0;
+         char *cfg_vp_cpy      = strdup(tmp_str);
+         RARCH_LOG("[Overlay] Found viewport value: %s\n", tmp_str);
+
+         if ((tok = strtok_r(cfg_vp_cpy, ", ", &save)))
+         {
+            elem0 = strdup(tok);
+            list_size++;
+         }
+         if ((tok = strtok_r(NULL, ", ", &save)))
+         {
+            elem1 = strdup(tok);
+            list_size++;
+         }
+         if ((tok = strtok_r(NULL, ", ", &save)))
+         {
+            elem2 = strdup(tok);
+            list_size++;
+         }
+         if ((tok = strtok_r(NULL, ", ", &save)))
+         {
+            elem3 = strdup(tok);
+            list_size++;
+         }
+         free(cfg_vp_cpy);
+
+         if (list_size >= 4)
+         {
+            overlay->viewport.x  = (float)strtod(elem0, NULL);
+            overlay->viewport.y  = (float)strtod(elem1, NULL);
+            overlay->viewport.w  = (float)strtod(elem2, NULL);
+            overlay->viewport.h  = (float)strtod(elem3, NULL);
+            overlay->flags      |= OVERLAY_HAS_VIEWPORT;
+            RARCH_LOG("[Overlay] Parsed viewport: x=%.3f y=%.3f w=%.3f h=%.3f\n",
+                  overlay->viewport.x, overlay->viewport.y,
+                  overlay->viewport.w, overlay->viewport.h);
+         }
+         else
+            RARCH_WARN("[Overlay] viewport \"%s\" requires four tokens.\n", tmp_str);
+
+         free(elem0);
+         free(elem1);
+         free(elem2);
+         free(elem3);
+      }
+
+      /* Parse viewport_fill option (optional, default false) */
+      strlcpy(conf_key + _len, "_viewport_fill", sizeof(conf_key) - _len);
+      if (config_get_bool(conf, conf_key, &tmp_bool) && tmp_bool)
+         overlay->flags |= OVERLAY_VIEWPORT_FILL;
+      else
+         overlay->flags &= ~OVERLAY_VIEWPORT_FILL;
+
       /* Check whether x/y separation are force disabled
        * for this overlay */
       strlcpy(conf_key + _len, "_block_x_separation", sizeof(conf_key) - _len);

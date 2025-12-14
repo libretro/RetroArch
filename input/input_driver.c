@@ -5438,6 +5438,9 @@ static void input_overlay_loaded(retro_task_t *task,
 
    input_overlay_set_eightway_diagonal_sensitivity();
 
+   /* Trigger viewport recalculation - overlay may have viewport override */
+   command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
+
 #ifdef HAVE_MENU
    /* Update menu entries if this is the main overlay */
    if (!(ol->flags & INPUT_OVERLAY_IS_OSK))
