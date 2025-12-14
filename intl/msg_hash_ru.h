@@ -11560,6 +11560,14 @@ MSG_HASH(
    "Видимость цветовой темы"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Нет"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Нормально"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
    "Шрифт"
    )

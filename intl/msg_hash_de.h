@@ -11288,6 +11288,22 @@ MSG_HASH(
    "Alphafaktor für Farbschema"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Aktuelles Menüsymbol"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "Das aktuelle Menüsymbol kann im horizontalen Menü oder im Headertitel ausgeblendet werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Nein"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "Titel"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
    "Schriftart"
    )

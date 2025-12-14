@@ -11528,6 +11528,10 @@ MSG_HASH(
    "Renk Teması Alfa Etkeni"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Yok"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
    "Yazı Tipi"
    )

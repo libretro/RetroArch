@@ -11452,6 +11452,10 @@ MSG_HASH(
    "Transparència del tema de colors"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Cap"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
    "Tipografia"
    )

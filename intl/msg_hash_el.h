@@ -4652,6 +4652,14 @@ MSG_HASH(
    "Ενεργοποίηση οριζόντιας απεικόνισης για το μενού. Θα επηρεάσει την απόδοση."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Κανείς"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Φυσιολογικά"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Select a different theme for the icon. Changes will take effect after you restart the program."
    )

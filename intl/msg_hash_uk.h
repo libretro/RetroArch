@@ -11568,6 +11568,14 @@ MSG_HASH(
    "Коефіцієнт основи теми"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Немає"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Нормально"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Виберіть інший основний шрифт для використання в меню."
    )

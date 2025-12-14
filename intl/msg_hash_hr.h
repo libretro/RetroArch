@@ -1491,6 +1491,10 @@ MSG_HASH(
 
 /* XMB: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Ništa"
+   )
 
 /* XMB: Settings Options */
 

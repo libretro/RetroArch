@@ -6532,6 +6532,14 @@ MSG_HASH(
    "التحريكات التي تظهر عند فتح قائمة فرعية."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "لاشيء"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "عادي"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "اختر خطا رئيسيا مغايرا ليستعمل في القائمة."
    )

@@ -4492,6 +4492,10 @@ MSG_HASH(
    "Carrega, de forma dinâmica, uma nova imagem de fundo, dependendo do contexto."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Não partilhar"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Selecionar uma fonte principal diferente para ser usada pelo menu."
    )

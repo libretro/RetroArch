@@ -11296,6 +11296,10 @@ MSG_HASH(
    "Factor alfa do tema de cor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Ningún"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
    "Fonte"
    )

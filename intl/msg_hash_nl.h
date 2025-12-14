@@ -5700,6 +5700,14 @@ MSG_HASH(
    "Schakel horizontale animatie in voor het menu. Dit zal een negatieve impact hebben op de prestaties."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Geen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Normaal"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Select a different theme for the icon. Changes will take effect after you restart the program."
    )

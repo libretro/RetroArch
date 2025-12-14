@@ -9880,6 +9880,14 @@ MSG_HASH(
    "Animacja, która wyzwala podczas otwierania podmenu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Brak"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Normalnie"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Wybierz inną główną czcionkę, która ma być używana w menu."
    )
