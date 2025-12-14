@@ -406,10 +406,10 @@ static void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
       unsigned width, height;
 
       texture->desc.BindFlags |= D3D10_BIND_RENDER_TARGET;
-      width                    = texture->desc.Width  >> 5;
-      height                   = texture->desc.Height >> 5;
+      width                    = texture->desc.Width;
+      height                   = texture->desc.Height;
 
-      while (width && height)
+      while ((width > 1) || (height > 1))
       {
          width  >>= 1;
          height >>= 1;
@@ -2378,6 +2378,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
          d3d10->pass[i].rt.desc.BindFlags = D3D10_BIND_RENDER_TARGET;
          d3d10->pass[i].rt.desc.Format    = glslang_format_to_dxgi(
                d3d10->pass[i].semantics.format);
+         d3d10->pass[i].rt.desc.MiscFlags = D3D10_RESOURCE_MISC_GENERATE_MIPS;
          d3d10_release_texture(&d3d10->pass[i].rt);
          d3d10_init_texture(d3d10->device, &d3d10->pass[i].rt);
 
@@ -2720,6 +2721,11 @@ static bool d3d10_gfx_frame(
 #endif /* D3D10_ROLLING_SCANLINE_SIMULATION */
 
             context->lpVtbl->Draw(context, 4, 0);
+
+            /* Generate mipmaps for render target if needed */
+            if (d3d10->pass[i].rt.desc.MiscFlags & D3D10_RESOURCE_MISC_GENERATE_MIPS)
+               context->lpVtbl->GenerateMips(context, d3d10->pass[i].rt.view);
+               
             texture = &d3d10->pass[i].rt;
          }
          else
