@@ -34,6 +34,8 @@
 
 #ifdef NEED_DYNAMIC
 
+#include "../../verbosity.h"
+
 #ifdef _WIN32
 #include <compat/posix_string.h>
 #include <windows.h>
@@ -144,6 +146,13 @@ dylib_t dylib_load(const char *path)
     }
     else
         lib = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
+#elif defined(WEBOS)
+    /* pre-load libstdc++ from RetroArch IPK to prevent mismatched ABI */
+   const char *stdc_path = "lib/libstdc++.so.6";
+   if(!dlopen(stdc_path, RTLD_GLOBAL | RTLD_NOW))
+      RARCH_WARN("libstdc++ not found at %s\n", stdc_path);
+
+   dylib_t lib = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
 #else
    dylib_t lib = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
 #endif
