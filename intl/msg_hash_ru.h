@@ -11560,6 +11560,14 @@ MSG_HASH(
    "Видимость цветовой темы"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Значок текущего меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "Значок текущего меню может быть скрыт, располагаться под горизонтальным меню или в заголовке."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
    "Нет"
    )
