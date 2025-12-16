@@ -11352,12 +11352,24 @@ MSG_HASH(
    "Colore Tema Fattore Alfa"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Icona attuale del menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "L'icona attuale del menu può essere nascosta, sotto il menu orizzontale o nel titolo dell'intestazione."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
    "Nessuno"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
    "Normale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "Titolo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
