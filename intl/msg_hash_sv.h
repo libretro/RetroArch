@@ -3353,6 +3353,10 @@ MSG_HASH(
    "Turboperiod"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "Perioden i bildrutor när turboaktiverade knappar trycks ner."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
    "Halv period"
    )

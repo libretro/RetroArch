@@ -11552,12 +11552,24 @@ MSG_HASH(
    "Hệ số trong suốt của chủ đề màu"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Biểu tượng Menu hiện tại"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "Biểu tượng menu hiện tại có thể được ẩn đi, nằm dưới menu ngang hoặc trong tiêu đề đầu trang."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
    "Không"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
    "Bình thường"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "Tiêu đề"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
