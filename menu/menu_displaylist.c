@@ -11116,6 +11116,23 @@ unsigned menu_displaylist_build_list(
                         false) == 0)
                   count++;
             }
+
+            /* Add action items when cloud sync is enabled */
+            if (settings->bools.cloud_sync_enable)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW,
+                     PARSE_ACTION, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+                     PARSE_ACTION, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+                     PARSE_ACTION, false) == 0)
+                  count++;
+            }
          }
          break;
 #ifdef HAVE_MIST

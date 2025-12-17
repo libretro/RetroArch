@@ -152,6 +152,10 @@ enum event_command
 #ifdef HAVE_CLOUDSYNC
    /* Trigger cloud sync */
    CMD_EVENT_CLOUD_SYNC,
+   /* Resolve cloud sync conflicts by keeping local files */
+   CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   /* Resolve cloud sync conflicts by keeping server files */
+   CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
 #endif
    /* Shutdown the OS */
    CMD_EVENT_SHUTDOWN,
