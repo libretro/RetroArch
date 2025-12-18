@@ -688,6 +688,10 @@ static enum msg_file_type extension_to_file_type(const char *ext)
       )
       return FILE_TYPE_WIA;
    if (
+         string_is_equal(ext_lower, "pbp")
+      )
+      return FILE_TYPE_PBP;
+   if (
          string_is_equal(ext_lower, "lutro")
       )
       return FILE_TYPE_LUTRO;
@@ -744,6 +748,7 @@ static int task_database_iterate_playlist(
          db->type            =  DATABASE_TYPE_SERIAL_LOOKUP;
          break;
       case FILE_TYPE_ISO:
+      case FILE_TYPE_PBP:
          db_state->serial[0] = '\0';
          intfstream_file_get_serial(name, 0, INT64_MAX, db_state->serial, sizeof(db_state->serial),&db_state->size);
          db->type            =  DATABASE_TYPE_SERIAL_LOOKUP_SIZEHINT;
