@@ -1930,6 +1930,7 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
                          | INP_FLAG_NONBLOCKING);
 
       memset(&input_st->turbo_btns, 0, sizeof(turbo_buttons_t));
+      memset(&input_st->hold_btns, 0, sizeof(hold_buttons_t));
       memset(&input_st->analog_requested, 0,
          sizeof(input_st->analog_requested));
       input_st->current_driver           = NULL;
@@ -4261,6 +4262,16 @@ bool command_event(enum event_command cmd, void *data)
             rcheevos_unload();
 #endif
             runloop_event_deinit_core();
+
+            /* Clear turbo and hold button state on core unload */
+            {
+               input_driver_state_t *input_st = input_state_get_ptr();
+               if (input_st)
+               {
+                  memset(&input_st->turbo_btns, 0, sizeof(turbo_buttons_t));
+                  memset(&input_st->hold_btns, 0, sizeof(hold_buttons_t));
+               }
+            }
 
 #ifdef HAVE_RUNAHEAD
             /* If 'runahead_available' is false, then

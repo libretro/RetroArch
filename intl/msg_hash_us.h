@@ -4581,6 +4581,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Turbo Fire"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Hold"
+   )
 
 /* Settings > Latency */
 

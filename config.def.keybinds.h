@@ -275,6 +275,13 @@ static const struct retro_keybind retro_keybinds_1[] = {
       RARCH_TURBO_ENABLE, NO_BTN, NO_BTN, 0,
       true
    },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_HOLD, RETROK_UNKNOWN,
+      RARCH_HOLD_ENABLE, NO_BTN, NO_BTN, 0,
+      true
+   },
    /* Hotkeys */
    {
       NULL, NULL,
@@ -935,6 +942,13 @@ static const struct retro_keybind retro_keybinds_1[] = {
       RARCH_TURBO_ENABLE, NO_BTN, NO_BTN, 0,
       true
    },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_HOLD, RETROK_UNKNOWN,
+      RARCH_HOLD_ENABLE, NO_BTN, NO_BTN, 0,
+      true
+   },
    /* Hotkeys */
    {
       NULL, NULL,
@@ -1593,6 +1607,13 @@ static const struct retro_keybind retro_keybinds_1[] = {
       AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_TURBO, RETROK_UNKNOWN,
       RARCH_TURBO_ENABLE, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_HOLD, RETROK_UNKNOWN,
+      RARCH_HOLD_ENABLE, NO_BTN, NO_BTN, 0,
       true
    },
    /* Hotkeys */
@@ -2267,6 +2288,13 @@ static const struct retro_keybind retro_keybinds_rest[] = {
       AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_TURBO, RETROK_UNKNOWN,
       RARCH_TURBO_ENABLE, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_HOLD, RETROK_UNKNOWN,
+      RARCH_HOLD_ENABLE, NO_BTN, NO_BTN, 0,
       true
    },
    /* Hotkeys */

@@ -1515,10 +1515,39 @@ static int16_t input_state_device(
 
             if (id <= RETRO_DEVICE_ID_JOYPAD_R3)
             {
-               /* Apply turbo button if activated. */
                uint8_t turbo_period     = settings->uints.input_turbo_period;
                uint8_t turbo_duty_cycle = settings->uints.input_turbo_duty_cycle;
                uint8_t turbo_mode       = settings->uints.input_turbo_mode;
+
+               /* Apply hold button logic.
+                * When hold modifier is pressed, tapping buttons toggles their held state.
+                * Held buttons report as pressed even when not physically touched.
+                * Physical presses pass through normally (no modification). */
+
+               /* Handle hold modifier state and toggle logic */
+               if (!input_st->hold_btns.frame_enable[port])
+               {
+                  /* Hold modifier not pressed - clear edge detection state */
+                  input_st->hold_btns.hold_pressed[port] = 0;
+               }
+               else
+               {
+                  /* Hold modifier is pressed - handle toggle on rising edge */
+                  if (!res)
+                     input_st->hold_btns.hold_pressed[port] &= ~(1 << id);
+                  else if (!(input_st->hold_btns.hold_pressed[port] & (1 << id)))
+                  {
+                     /* Rising edge - toggle hold for this button */
+                     input_st->hold_btns.hold_pressed[port] |= (1 << id);
+                     input_st->hold_btns.enable[port] ^= (1 << id);
+                  }
+               }
+
+               /* Apply hold effect: if button is held and not physically pressed */
+               if (!res && (input_st->hold_btns.enable[port] & (1 << id)))
+                  res = 1;
+
+               /* Apply turbo button if activated. */
 
                /* Don't allow classic mode turbo for D-pad unless explicitly allowed. */
                if (     turbo_mode <= INPUT_TURBO_MODE_CLASSIC_TOGGLE
@@ -6091,7 +6120,10 @@ void input_driver_poll(void)
    if (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
    {
       for (i = 0; i < max_users; i++)
+      {
          input_st->turbo_btns.frame_enable[i] = 0;
+         input_st->hold_btns.frame_enable[i]  = 0;
+      }
       return;
    }
 
@@ -6127,6 +6159,27 @@ void input_driver_poll(void)
             && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
             && BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, button_id))
          input_st->turbo_btns.frame_enable[i] = true;
+#endif
+   }
+
+   /* Poll hold button modifier state */
+   for (i = 0; i < max_users; i++)
+   {
+      input_st->hold_btns.frame_enable[i] =
+               (*input_st->libretro_input_binds[i])[RARCH_HOLD_ENABLE].valid ?
+         input_state_wrap(input_st->current_driver, input_st->current_data,
+               joypad, sec_joypad, &joypad_info[i],
+               (*input_st->libretro_input_binds),
+               (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+               (unsigned)i,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_HOLD_ENABLE) : 0;
+
+#ifdef HAVE_OVERLAY
+      if (     (i == 0)
+            && input_st->overlay_ptr
+            && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
+            && BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, RARCH_HOLD_ENABLE))
+         input_st->hold_btns.frame_enable[i] = true;
 #endif
    }
 
