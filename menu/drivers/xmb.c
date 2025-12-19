@@ -1200,6 +1200,14 @@ static void xmb_render_messagebox_internal(
    string_list_deinitialize(&list);
 }
 
+static bool xmb_is_main_menu_explore(void)
+{
+   menu_entry_t entry;
+   MENU_ENTRY_INITIALIZE(entry);
+   menu_entry_get(&entry, 0, 0, NULL, true);
+   return entry.type == FILE_TYPE_RDB;
+}
+
 static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
 {
    settings_t *settings               = config_get_ptr();
@@ -1208,15 +1216,6 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
    const char *path_menu_wallpaper    = settings->paths.path_menu_wallpaper;
    const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
    unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-
-   /* Do not update wallpaper in "Main Menu" playlists and inside playlist items */
-   if (    (xmb->categories_selection_ptr == XMB_SYSTEM_TAB_MAIN && depth > 3)
-        || (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1))
-   {
-      if (!string_is_empty(xmb->bg_file_path))
-         strlcpy(s, xmb->bg_file_path, len);
-      return;
-   }
 
    /* Dynamic wallpaper takes precedence as reset background,
     * then comes 'menu_wallpaper', and then iconset 'bg.png' */
@@ -1236,6 +1235,19 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
    else if (xmb_color_theme == XMB_THEME_WALLPAPER)
       fill_pathname_application_special(s, len,
             APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
+
+   /* Keep previous wallpaper in playlists and explore lists */
+   if (     (xmb->categories_selection_ptr == XMB_SYSTEM_TAB_MAIN && depth > 3)
+         || (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1)
+#ifdef HAVE_LIBRETRODB
+         || (xmb->categories_selection_ptr == xmb->system_tab_end && menu_explore_is_content_list())
+         || (xmb->is_explore_list && !menu_explore_is_content_list() && !xmb_is_main_menu_explore())
+#endif
+      )
+   {
+      if (!string_is_empty(xmb->bg_file_path) && !path_is_valid(s))
+         strlcpy(s, xmb->bg_file_path, len);
+   }
 }
 
 static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
@@ -2235,13 +2247,6 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
    }
 }
 
-static bool xmb_is_main_menu_explore(void)
-{
-   menu_entry_t entry;
-   MENU_ENTRY_INITIALIZE(entry);
-   menu_entry_get(&entry, 0, 0, NULL, true);
-   return entry.type == FILE_TYPE_RDB;
-}
 
 static enum msg_hash_enums xmb_search_enum(const char *label)
 {
@@ -2298,6 +2303,16 @@ static void xmb_set_title(xmb_handle_t *xmb)
 
    while ((scrub_char_ptr = strchr(xmb->title_name, '/')))
       *scrub_char_ptr = '-';
+
+   while ((scrub_char_ptr = strchr(xmb->title_name, ':')))
+      *scrub_char_ptr = '_';
+
+   if (!string_is_empty(xmb->title_name))
+   {
+      int sub = string_find_index_substring_string(xmb->title_name, " (");
+      if (sub > 0)
+         xmb->title_name[sub] = '\0';
+   }
 
    if (!xmb->allow_horizontal_animation)
       return;
@@ -6740,7 +6755,6 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       xmb->assets_missing     = false;
       if (!xmb_context_reset_textures(xmb, iconpath, menu_xmb_theme))
          xmb->assets_missing  = true;
-      xmb_update_dynamic_wallpaper(xmb, true);
    }
    else
    {
@@ -6750,6 +6764,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 
    xmb_context_reset_horizontal_list(xmb);
    xmb_set_title(xmb);
+   xmb_update_dynamic_wallpaper(xmb, true);
 
    menu_screensaver_context_destroy(xmb->screensaver);
 
