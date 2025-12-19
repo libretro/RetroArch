@@ -493,14 +493,10 @@
 #define DEFAULT_USE_METAL_ARG_BUFFERS (!!__builtin_available(macOS 12, iOS 13, tvOS 12, *))
 #endif
 
-/* Enable use of shaders. */
-#ifdef RARCH_CONSOLE
+/* Enable use of shaders */
 #define DEFAULT_SHADER_ENABLE true
-#else
-#define DEFAULT_SHADER_ENABLE false
-#endif
 
-/* Should we enable hdr when its supported*/
+/* Should we enable hdr when its supported */
 #define DEFAULT_VIDEO_HDR_ENABLE false
 
 /* The maximum nunmber of nits the actual display can show - needs to be calibrated */
