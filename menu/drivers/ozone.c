@@ -12516,6 +12516,12 @@ static void ozone_set_header(ozone_handle_t *ozone)
       else if (ozone->depth < 4)
          max_depth = 3;
 
+      if (type == MENU_SETTING_ACTION_CORE_OPTIONS)
+      {
+         max_depth = ozone->depth + 1;
+         path      = ozone->title;
+      }
+
       /* Main Menu & Settings */
       if (     ozone->depth > 1
             && ozone->categories_selection_ptr <= OZONE_SYSTEM_TAB_SETTINGS)
