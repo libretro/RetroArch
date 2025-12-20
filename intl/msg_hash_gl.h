@@ -3316,10 +3316,6 @@ MSG_HASH(
    "Detectar"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Pausa o contido cando o controlador se desconecta"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "Pausa o contido cando calquera controlador estea desconectado. Retomar con Inicio."
    )

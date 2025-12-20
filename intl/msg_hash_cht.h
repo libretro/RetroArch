@@ -3296,10 +3296,6 @@ MSG_HASH(
    "偵測"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "控制器斷開時暫停核心"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "裝置連接控制器斷開時暫停執行中的項目。"
    )

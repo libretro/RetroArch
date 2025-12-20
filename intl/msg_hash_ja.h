@@ -3192,10 +3192,6 @@ MSG_HASH(
    "検知"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "コントローラー切断時にコンテンツを一時停止"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "いずれかのコントローラーが切断されたときにコンテンツを一時停止します。スタートで再開します。"
    )

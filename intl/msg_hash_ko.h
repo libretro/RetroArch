@@ -3424,10 +3424,6 @@ MSG_HASH(
    "자동 감지"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "컨트롤러 연결 해제 시 콘텐츠 일시정지"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "컨트롤러가 연결 해제될 경우 콘텐츠를 일시정지합니다. 시작 버튼을 누르면 일시정지를 해제합니다."
    )

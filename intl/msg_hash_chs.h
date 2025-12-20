@@ -3412,10 +3412,6 @@ MSG_HASH(
    "检测"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "当控制器断开连接时暂停游戏"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "当任何控制器断开连接时暂停内容，按Start恢复。"
    )

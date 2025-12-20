@@ -3408,10 +3408,6 @@ MSG_HASH(
    "Определять"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Пауза при отключении контроллера"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "Приостанавливать контент при отключении любого контроллера. Для продолжения требуется нажать Start."
    )

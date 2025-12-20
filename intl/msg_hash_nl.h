@@ -2632,10 +2632,6 @@ MSG_HASH(
    "Detecteer"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Inhoud pauzeren wanneer de controller de verbinding verbreekt"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "Inhoud pauzeren wanneer een controller wordt losgekoppeld. Hervat met Start."
    )
