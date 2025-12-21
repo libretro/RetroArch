@@ -3412,6 +3412,10 @@ MSG_HASH(
    "Виявити"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
+   "Зупинити гру при відключенні контролера"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "Призупинити вміст, коли будь-який контролер від’єднано. Відновити з «Пуск»."
    )
