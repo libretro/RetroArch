@@ -4232,6 +4232,10 @@ bool command_event(enum event_command cmd, void *data)
             video_driver_state_t
                *video_st                         = video_state_get_ptr();
             rarch_system_info_t *sys_info        = &runloop_st->system;
+            
+            /* Restore unpaused state */
+            runloop_st->paused_hotkey = false;
+            command_event(CMD_EVENT_UNPAUSE, NULL);
 
             /* The platform that uses ram_state_save calls it when the content
              * ends and writes it to a file */
@@ -4743,7 +4747,9 @@ bool command_event(enum event_command cmd, void *data)
             unsigned accessibility_narrator_speech_speed
                                  = settings->uints.accessibility_narrator_speech_speed;
 #endif
-
+            /* Allow pause toggling only when there is an active core. */
+            if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+               break;
 #ifdef HAVE_NETWORKING
             if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
                break;
@@ -4784,6 +4790,9 @@ bool command_event(enum event_command cmd, void *data)
          runloop_pause_checks();
          break;
       case CMD_EVENT_PAUSE:
+         /* Allow pausing only when there is an active core. */
+         if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+            break;
 #ifdef HAVE_NETWORKING
          if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
             break;
