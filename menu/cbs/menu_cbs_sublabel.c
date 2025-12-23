@@ -636,6 +636,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_list_unload,              MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_download_core,                 MENU_ENUM_SUBLABEL_DOWNLOAD_CORE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_update_installed_cores,        MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sync_now,                      MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_resolve_keep_local,            MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_resolve_keep_server,           MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER)
 #if defined(ANDROID)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_installed_cores_pfd,    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD)
 #endif
@@ -4631,6 +4633,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_sync_now);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_resolve_keep_local);
+            break;
+         case MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_resolve_keep_server);
             break;
 #if defined(ANDROID)
          case MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD:

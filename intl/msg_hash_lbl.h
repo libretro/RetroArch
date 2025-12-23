@@ -3023,6 +3023,14 @@ MSG_HASH(
    "cloud_sync_sync_now"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "cloud_sync_resolve_keep_local"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "cloud_sync_resolve_keep_server"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RDB_ENTRY,
    "rdb_entry"
    )
