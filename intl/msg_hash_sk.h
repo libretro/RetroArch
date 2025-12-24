@@ -2777,6 +2777,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Rýchlo streľba"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Držať"
+   )
 
 /* Settings > Latency */
 

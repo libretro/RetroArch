@@ -4469,6 +4469,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Disparo Turbo"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Segurar"
+   )
 
 /* Settings > Latency */
 

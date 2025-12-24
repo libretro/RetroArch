@@ -2477,6 +2477,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
    "خشاب تفنگ"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "تعلیق"
+   )
 
 /* Settings > Latency */
 

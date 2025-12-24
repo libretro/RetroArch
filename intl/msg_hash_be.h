@@ -4289,6 +4289,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Турба-кнопкі"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Утрымлівайце"
+   )
 
 /* Settings > Latency */
 

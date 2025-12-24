@@ -4545,6 +4545,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "터보 입력"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "꾹 누르기"
+   )
 
 /* Settings > Latency */
 

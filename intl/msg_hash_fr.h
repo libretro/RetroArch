@@ -236,6 +236,22 @@ MSG_HASH(
    "Déclencher manuellement la synchronisation avec le cloud."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Résoudre les conflits : Garder copie locale"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Résoudre tous les conflits en envoyant les fichiers locaux sur le serveur."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Résoudre les conflits : Utiliser copie serveur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Résoudre tous les conflits en téléchargeant les fichiers du serveur, remplaçant les copies locales."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Quitter l'application RetroArch. L'enregistrement de la configuration à la sortie est désactivé."
    )
@@ -4476,6 +4492,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Tir turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Maintenir"
    )
 
 /* Settings > Latency */

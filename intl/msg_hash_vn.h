@@ -240,6 +240,22 @@ MSG_HASH(
    "Kích hoạt đồng bộ hóa đám mây thủ công."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Giải quyết xung đột: Giữ nguyên vị trí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Giải quyết mọi xung đột bằng cách tải các tệp cục bộ lên máy chủ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Giải quyết xung đột: Giữ máy chủ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Giải quyết mọi xung đột bằng cách tải xuống các tệp trên máy chủ và thay thế các bản sao cục bộ."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Thoát RetroArch. Lưu thiết lập khi thoát bị tắt."
    )
@@ -4532,6 +4548,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Tự động nhấn nhanh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Nhấn giữ"
    )
 
 /* Settings > Latency */
