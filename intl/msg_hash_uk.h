@@ -240,6 +240,22 @@ MSG_HASH(
    "Синхронізація хмар вручну тригера."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Вирішити конфлікти: зберігати локальні"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Вирішіть всі конфлікти, завантаживши локальні файли на сервер."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Вирішити конфлікти: Сервер Тримати"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Вирішити усі конфлікти, завантаживши файли сервера, замінивши локальні копії."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Вихід з додатка RetroArch. Збереження конфігурації на виході вимкнено."
    )
