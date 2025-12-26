@@ -3348,8 +3348,12 @@ MSG_HASH(
    "Detectar"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
+   "Pausar conteúdo ao desconectar controle"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Pausa o conteúdo quando algum controle é desconectado. Retorna ao apertar \"Start\"."
+   "Pausa o conteúdo quando um controle é desconectado. O botão \"Start\" despausa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
@@ -6132,19 +6136,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-   "Pausar conteúdo quando o menu estiver ativado"
+   "Pausar conteúdo ao abrir menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Pausa o conteúdo se o menu estiver ativo."
+   "Pausa o conteúdo quando o menu é aberto."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   "Pausar o conteúdo quando não estiver ativo"
+   "Pausar conteúdo ao focar outra janela"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   "Pause o jogo quando a janela do RetroArch não está ativa."
+   "Pausa o conteúdo quando o RetroArch não está em primeiro plano."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
@@ -7188,7 +7192,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
-   "Pausar durante a tradução"
+   "Pausar durante tradução"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
