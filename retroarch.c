@@ -4236,6 +4236,9 @@ bool command_event(enum event_command cmd, void *data)
             /* The platform that uses ram_state_save calls it when the content
              * ends and writes it to a file */
             ram_state_to_file();
+            
+            /* Restore unpaused state */
+            command_event(CMD_EVENT_UNPAUSE, NULL);
 
             /* Save auto state */
             if (     runloop_st
@@ -4736,21 +4739,19 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_PAUSE_TOGGLE:
          {
-            bool paused          = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
+            /* Allow pause toggling only when there is an active core. */
+            bool paused = !((runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false) &&
+                            (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING) ? true : false;
 #ifdef HAVE_ACCESSIBILITY
             bool accessibility_enable
                                  = settings->bools.accessibility_enable;
             unsigned accessibility_narrator_speech_speed
                                  = settings->uints.accessibility_narrator_speech_speed;
 #endif
-
 #ifdef HAVE_NETWORKING
             if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
                break;
 #endif
-
-            paused               = !paused;
-
 #ifdef HAVE_ACCESSIBILITY
             if (is_accessibility_enabled(
                   accessibility_enable,
@@ -4788,7 +4789,9 @@ bool command_event(enum event_command cmd, void *data)
          if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
             break;
 #endif
-         runloop_st->flags      |= RUNLOOP_FLAG_PAUSED;
+         /* Allow pausing only when there is an active core. */
+         if ((runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING) ? true : false)
+            runloop_st->flags |=  RUNLOOP_FLAG_PAUSED;
          runloop_pause_checks();
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
