@@ -93,6 +93,30 @@ void input_remapping_deinit(bool save_remap);
 void input_remapping_set_defaults(bool clear_cache);
 
 /**
+ * Used to set the default port mapping values within the `settings` struct.
+ * Only sets port mapping related values, not button/keyboard/analog remaps.
+ *
+ * If settings->bools.input_remap_ports_on_button_press is true, leave all
+ * users/devices disconnected. Users will be mapped to a core port on first
+ * button press.
+ *
+ * user 0 -> core port MAX_USERS (RETRO_DEVICE_NONE)
+ * user 1 -> core port MAX_USERS (RETRO_DEVICE_NONE)
+ * ...
+ * user n -> core port MAX_USERS (RETRO_DEVICE_NONE)
+ *
+ * Else map each user to a core port and set all devices to RETRO_DEVICE_JOYPAD:
+ *
+ * user 0 -> core port 0 (RETRO_DEVICE_JOYPAD)
+ * user 1 -> core port 1 (RETRO_DEVICE_JOYPAD)
+ * ...
+ * user n -> core port n (RETRO_DEVICE_JOYPAD)
+ *
+ * (where n = MAX_USERS - 1)
+ */
+void input_remapping_set_remap_ports_defaults(void);
+
+/**
  * Checks `input_config_bind_map` for the requested `input_bind_map`, and if
  * the bind has been registered, returns its base.
  *
