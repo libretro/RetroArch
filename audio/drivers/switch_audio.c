@@ -324,7 +324,7 @@ static void *switch_audio_init(const char *device,
    swa->latency        = latency;
    swa->last_append    = svcGetSystemTick();
 
-   swa->blocking       = block_frames;
+   swa->blocking       = true;
    swa->is_paused      = true;
 
    RARCH_LOG("[Switch audio] Audio initialized.\n");
