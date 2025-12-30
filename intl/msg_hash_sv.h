@@ -11148,6 +11148,10 @@ MSG_HASH(
    "Välj ett annat bakgrundsfärg tema."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   "Vertikal disposition för minatyrbild"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
    "Visa den vänstra miniatyrbilden under den högra, på den högra sidan av skärmen."
    )
