@@ -39,6 +39,7 @@
 #include "../../gfx/common/wayland/fractional-scale-v1.h"
 #include "../../gfx/common/wayland/idle-inhibit-unstable-v1.h"
 #include "../../gfx/common/wayland/pointer-constraints-unstable-v1.h"
+#include "../../gfx/common/wayland/presentation-time.h"
 #include "../../gfx/common/wayland/relative-pointer-unstable-v1.h"
 #include "../../gfx/common/wayland/single-pixel-buffer-v1.h"
 #include "../../gfx/common/wayland/viewporter.h"
@@ -157,6 +158,7 @@ typedef struct gfx_ctx_wayland_data
    struct wl_surface *surface;
    struct xdg_surface *xdg_surface;
    struct wp_viewport *viewport;
+   struct wp_presentation *presentation;
    struct wp_fractional_scale_v1 *fractional_scale;
    struct xdg_wm_base *xdg_shell;
    struct xdg_toplevel *xdg_toplevel;
@@ -200,6 +202,7 @@ typedef struct gfx_ctx_wayland_data
    input_ctx_wayland_data_t input; /* ptr alignment */
    struct wl_list all_outputs;
    struct wl_list current_outputs;
+   struct wl_list feedbacks;
 
    struct
    {
@@ -212,7 +215,12 @@ typedef struct gfx_ctx_wayland_data
 
    int num_active_touches;
    int swap_interval;
+   int64_t last_ust;
+   int64_t last_sbc;
+   int64_t last_msc;
+   int64_t refresh_interval;
    touch_pos_t active_touch_positions[MAX_TOUCHES]; /* int32_t alignment */
+   clockid_t present_clock_id;
    unsigned width;
    unsigned height;
    unsigned buffer_width;
@@ -235,7 +243,15 @@ typedef struct gfx_ctx_wayland_data
    bool activated;
    bool reported_display_size;
    bool swap_complete;
+   bool present_clock;
+   bool is_presented;
 } gfx_ctx_wayland_data_t;
+
+typedef struct wp_presentation_feedback
+{
+   struct wp_presentation_feedback *feedback;
+   struct wl_list link;
+} wp_presentation_feedback_t;
 
 #ifdef HAVE_XKBCOMMON
 /* FIXME: Move this into a header? */
@@ -250,6 +266,10 @@ void gfx_ctx_wl_show_mouse(void *data, bool state);
 
 void flush_wayland_fd(void *data);
 
+void wl_request_presentation_feedback(gfx_ctx_wayland_data_t *wl);
+
+void wait_for_next_frame(gfx_ctx_wayland_data_t *wl);
+
 extern const struct wl_keyboard_listener keyboard_listener;
 
 extern const struct wl_pointer_listener pointer_listener;
@@ -263,6 +283,8 @@ extern const struct wl_touch_listener touch_listener;
 extern const struct wl_seat_listener seat_listener;
 
 extern const struct wp_fractional_scale_v1_listener wp_fractional_scale_v1_listener;
+
+extern const struct wp_presentation_listener presentation_listener;
 
 extern const struct wl_surface_listener wl_surface_listener;
 
