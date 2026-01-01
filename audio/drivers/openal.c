@@ -349,4 +349,5 @@ audio_driver_t audio_openal = {
    al_device_list_free,
    al_write_avail,
    al_buffer_size,
+   NULL /* write_raw */
 };
