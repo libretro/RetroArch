@@ -1420,8 +1420,11 @@ void audio_driver_load_system_sounds(void)
    list          = dir_list_new(sounds_path, MENU_SOUND_FORMATS, false, false, false, false);
    list_fallback = dir_list_new(sounds_fallback_path, MENU_SOUND_FORMATS, false, false, false, false);
 
-   if (!list)
+   /* If primary list is NULL or empty, try to use fallback */
+   if ((!list || list->size == 0) && list_fallback && list_fallback->size > 0)
    {
+      if (list)
+         string_list_free(list);
       list          = list_fallback;
       list_fallback = NULL;
    }
