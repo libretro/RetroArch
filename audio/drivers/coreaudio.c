@@ -15,6 +15,7 @@
  */
 #include <stdlib.h>
 #include <stdatomic.h>
+#include <math.h>
 
 #include <dispatch/dispatch.h>
 
@@ -25,6 +26,7 @@
 #endif
 
 #include <CoreAudio/CoreAudioTypes.h>
+#include <AudioToolbox/AudioToolbox.h>
 #include <AudioUnit/AudioUnit.h>
 #include <AudioUnit/AUComponent.h>
 
@@ -36,6 +38,9 @@
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
+
+/* Threshold for recreating AudioConverter (0.5% change) */
+#define RATE_CHANGE_THRESHOLD 0.005
 
 typedef struct coreaudio
 {
@@ -53,10 +58,27 @@ typedef struct coreaudio
 #else
    AudioComponentInstance dev;
 #endif
+
+   /* AudioConverter for hardware-accelerated resampling */
+   AudioConverterRef converter;
+   unsigned output_rate;       /* Hardware output rate */
+   double current_ratio;       /* Current resampling ratio (adjusted input rate) */
+
+   /* Temporary buffer for converter output */
+   float *conv_buffer;
+   size_t conv_buffer_frames;
+
    bool dev_alive;
    bool is_paused;
    bool nonblock;
 } coreaudio_t;
+
+/* Context for AudioConverter input callback */
+typedef struct
+{
+   const int16_t *data;
+   size_t frames_left;
+} converter_callback_ctx_t;
 
 /* Lock-free ring buffer operations */
 
@@ -96,6 +118,95 @@ static void rb_read(coreaudio_t *dev, float *data, size_t count)
    atomic_fetch_sub_explicit(&dev->filled, count, memory_order_release);
 }
 
+/* AudioConverter input callback - provides int16 samples */
+static OSStatus converter_input_cb(
+      AudioConverterRef converter,
+      UInt32 *ioNumberDataPackets,
+      AudioBufferList *ioData,
+      AudioStreamPacketDescription **outDataPacketDescription,
+      void *inUserData)
+{
+   converter_callback_ctx_t *ctx = (converter_callback_ctx_t *)inUserData;
+
+   if (ctx->frames_left == 0)
+   {
+      *ioNumberDataPackets = 0;
+      return noErr;
+   }
+
+   UInt32 frames_to_provide = *ioNumberDataPackets;
+   if (frames_to_provide > ctx->frames_left)
+      frames_to_provide = (UInt32)ctx->frames_left;
+
+   ioData->mBuffers[0].mData        = (void *)ctx->data;
+   ioData->mBuffers[0].mDataByteSize = frames_to_provide * 4; /* stereo int16 */
+   ioData->mBuffers[0].mNumberChannels = 2;
+
+   ctx->data        += frames_to_provide * 2; /* advance by samples */
+   ctx->frames_left -= frames_to_provide;
+   *ioNumberDataPackets = frames_to_provide;
+
+   return noErr;
+}
+
+/* Create or update AudioConverter for the given effective input rate */
+static bool coreaudio_update_converter(coreaudio_t *dev, double effective_input_rate)
+{
+   AudioStreamBasicDescription input_desc  = {0};
+   AudioStreamBasicDescription output_desc = {0};
+   OSStatus err;
+
+   /* Check if we need to recreate the converter */
+   if (dev->converter)
+   {
+      double ratio_change = fabs(effective_input_rate - dev->current_ratio) / dev->current_ratio;
+      if (ratio_change < RATE_CHANGE_THRESHOLD)
+         return true; /* No significant change, keep existing converter */
+
+      AudioConverterDispose(dev->converter);
+      dev->converter = NULL;
+   }
+
+   /* Input format: int16 stereo at effective input rate */
+   input_desc.mSampleRate       = effective_input_rate;
+   input_desc.mFormatID         = kAudioFormatLinearPCM;
+   input_desc.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger
+                                | kAudioFormatFlagIsPacked;
+   input_desc.mBytesPerPacket   = 4;
+   input_desc.mFramesPerPacket  = 1;
+   input_desc.mBytesPerFrame    = 4;
+   input_desc.mChannelsPerFrame = 2;
+   input_desc.mBitsPerChannel   = 16;
+
+   /* Output format: float32 stereo at hardware output rate */
+   output_desc.mSampleRate       = dev->output_rate;
+   output_desc.mFormatID         = kAudioFormatLinearPCM;
+   output_desc.mFormatFlags      = kAudioFormatFlagIsFloat
+                                 | kAudioFormatFlagIsPacked;
+   output_desc.mBytesPerPacket   = 8;
+   output_desc.mFramesPerPacket  = 1;
+   output_desc.mBytesPerFrame    = 8;
+   output_desc.mChannelsPerFrame = 2;
+   output_desc.mBitsPerChannel   = 32;
+
+   err = AudioConverterNew(&input_desc, &output_desc, &dev->converter);
+   if (err != noErr)
+   {
+      RARCH_ERR("[CoreAudio] Failed to create AudioConverter: %d\n", (int)err);
+      return false;
+   }
+
+   dev->current_ratio = effective_input_rate;
+
+   /* Set high quality resampling */
+   UInt32 quality = kAudioConverterQuality_High;
+   AudioConverterSetProperty(dev->converter,
+         kAudioConverterSampleRateConverterQuality,
+         sizeof(quality), &quality);
+
+   return true;
+}
+
 static void coreaudio_free(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
@@ -112,6 +223,12 @@ static void coreaudio_free(void *data)
       AudioComponentInstanceDispose(dev->dev);
 #endif
    }
+
+   if (dev->converter)
+      AudioConverterDispose(dev->converter);
+
+   if (dev->conv_buffer)
+      free(dev->conv_buffer);
 
    if (dev->buffer)
       free(dev->buffer);
@@ -214,6 +331,54 @@ static void coreaudio_choose_output_device(coreaudio_t *dev, const char* device)
 }
 #endif
 
+/* Query the actual hardware sample rate */
+static unsigned coreaudio_get_hardware_sample_rate(
+#if !HAS_MACOSX_10_12
+      ComponentInstance dev
+#else
+      AudioComponentInstance dev
+#endif
+      )
+{
+   AudioStreamBasicDescription hw_desc;
+   UInt32 size = sizeof(hw_desc);
+
+#if TARGET_OS_IPHONE
+   /* On iOS, query the output scope of RemoteIO to get hardware rate */
+   if (AudioUnitGetProperty(dev, kAudioUnitProperty_StreamFormat,
+            kAudioUnitScope_Output, 0, &hw_desc, &size) == noErr)
+   {
+      if (hw_desc.mSampleRate > 0)
+         return (unsigned)hw_desc.mSampleRate;
+   }
+#else
+   /* On macOS, query the current output device's nominal sample rate */
+   {
+      AudioDeviceID device_id = 0;
+      UInt32 device_size = sizeof(device_id);
+      AudioObjectPropertyAddress prop;
+      Float64 nominal_rate = 0;
+
+      /* Get the current device from the AudioUnit */
+      if (AudioUnitGetProperty(dev, kAudioOutputUnitProperty_CurrentDevice,
+               kAudioUnitScope_Global, 0, &device_id, &device_size) == noErr
+            && device_id != 0)
+      {
+         prop.mSelector = kAudioDevicePropertyNominalSampleRate;
+         prop.mScope    = kAudioObjectPropertyScopeGlobal;
+         prop.mElement  = kAudioObjectPropertyElementMaster;
+         size = sizeof(nominal_rate);
+
+         if (AudioObjectGetPropertyData(device_id, &prop, 0, NULL,
+                  &size, &nominal_rate) == noErr && nominal_rate > 0)
+            return (unsigned)nominal_rate;
+      }
+   }
+#endif
+
+   return 0; /* Failed to determine, caller should use fallback */
+}
+
 static void *coreaudio_init(const char *device,
       unsigned rate, unsigned latency,
       unsigned block_frames,
@@ -276,6 +441,17 @@ static void *coreaudio_init(const char *device,
 
    dev->dev_alive                = true;
 
+   /* Query actual hardware sample rate to avoid double resampling */
+   {
+      unsigned hw_rate = coreaudio_get_hardware_sample_rate(dev->dev);
+      if (hw_rate > 0 && hw_rate != rate)
+      {
+         RARCH_LOG("[CoreAudio] Hardware sample rate is %u Hz (requested %u Hz), using hardware rate.\n",
+               hw_rate, rate);
+         rate = hw_rate;
+      }
+   }
+
    /* Set audio format */
    stream_desc.mSampleRate       = rate;
    stream_desc.mBitsPerChannel   = sizeof(float) * CHAR_BIT;
@@ -312,6 +488,13 @@ static void *coreaudio_init(const char *device,
    RARCH_LOG("[CoreAudio] Using output sample rate of %.1f Hz.\n",
          (float)real_desc.mSampleRate);
    *new_rate = real_desc.mSampleRate;
+   dev->output_rate = *new_rate;
+
+   /* Allocate converter output buffer (enough for 2048 output frames) */
+   dev->conv_buffer_frames = 2048;
+   dev->conv_buffer = (float *)calloc(dev->conv_buffer_frames * 2, sizeof(float));
+   if (!dev->conv_buffer)
+      goto error;
 
    /* Set channel layout (fails on iOS). */
 #ifndef TARGET_OS_IPHONE
@@ -406,6 +589,95 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
    return written * sizeof(float);
 }
 
+/* Write raw int16 samples with hardware-accelerated resampling */
+static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
+      size_t frames, unsigned input_rate, double rate_adjust)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   double effective_rate;
+   size_t frames_written = 0;
+   converter_callback_ctx_t ctx;
+   AudioBufferList output_buffer;
+   OSStatus err;
+
+   if (!dev || dev->is_paused || frames == 0)
+      return 0;
+
+   /* Calculate effective input rate with rate adjustment.
+    * rate_adjust > 1.0 means we need to speed up (more output for same input),
+    * so we lower the effective input rate to produce more output frames. */
+   effective_rate = (double)input_rate / rate_adjust;
+
+   /* Update converter if needed */
+   if (!coreaudio_update_converter(dev, effective_rate))
+      return -1;
+
+   /* Set up callback context */
+   ctx.data        = samples;
+   ctx.frames_left = frames;
+
+   /* Process in chunks that fit our conv_buffer */
+   while (ctx.frames_left > 0)
+   {
+      UInt32 output_frames = (UInt32)dev->conv_buffer_frames;
+
+      output_buffer.mNumberBuffers = 1;
+      output_buffer.mBuffers[0].mNumberChannels = 2;
+      output_buffer.mBuffers[0].mDataByteSize   = output_frames * 8; /* stereo float */
+      output_buffer.mBuffers[0].mData           = dev->conv_buffer;
+
+      err = AudioConverterFillComplexBuffer(dev->converter,
+            converter_input_cb, &ctx,
+            &output_frames, &output_buffer, NULL);
+
+      if (err != noErr && err != 1)  /* 1 means end of input, which is ok */
+      {
+         RARCH_ERR("[CoreAudio] AudioConverterFillComplexBuffer failed: %d\n", (int)err);
+         break;
+      }
+
+      if (output_frames == 0)
+         break;
+
+      /* Write converted samples to ring buffer */
+      {
+         float *out_ptr     = dev->conv_buffer;
+         size_t out_samples = output_frames * 2; /* stereo */
+
+         while (!dev->is_paused && out_samples > 0)
+         {
+            size_t avail    = rb_write_avail(dev);
+            size_t to_write = (avail < out_samples) ? avail : out_samples;
+
+            if (to_write > 0)
+            {
+               rb_write(dev, out_ptr, to_write);
+               out_ptr       += to_write;
+               out_samples   -= to_write;
+               frames_written += to_write / 2; /* count frames, not samples */
+            }
+
+            if (dev->nonblock)
+               break;
+
+            if (out_samples > 0)
+            {
+               dispatch_time_t timeout = dispatch_time(
+                     DISPATCH_TIME_NOW, 500 * NSEC_PER_MSEC);
+               if (dispatch_semaphore_wait(dev->sema, timeout) != 0)
+                  break;
+            }
+         }
+      }
+
+      /* If we couldn't write all samples in nonblock mode, stop */
+      if (dev->nonblock && ctx.frames_left > 0)
+         break;
+   }
+
+   return (ssize_t)frames_written;
+}
+
 static void coreaudio_set_nonblock_state(void *data, bool state)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
@@ -477,4 +749,5 @@ audio_driver_t audio_coreaudio = {
    coreaudio_device_list_free,
    coreaudio_write_avail,
    coreaudio_buffer_size,
+   coreaudio_write_raw
 };

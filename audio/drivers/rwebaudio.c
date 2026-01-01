@@ -260,4 +260,5 @@ audio_driver_t audio_rwebaudio = {
    NULL,
    rwebaudio_write_avail,
    rwebaudio_buffer_size,
+   NULL /* write_raw */
 };
