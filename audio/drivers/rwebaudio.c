@@ -91,8 +91,8 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
    rwebaudio_static_data    = rwebaudio;
    *new_rate                = RWebAudioSampleRate();
    rwebaudio->tmpbuf_frames = RWEBAUDIO_BUFFER_SIZE_MS * *new_rate / 1000;
-   rwebaudio->tmpbuf_left   = memalign(sizeof(float), rwebaudio->tmpbuf_frames * sizeof(float));
-   rwebaudio->tmpbuf_right  = memalign(sizeof(float), rwebaudio->tmpbuf_frames * sizeof(float));
+   rwebaudio->tmpbuf_left   = memalign(16, rwebaudio->tmpbuf_frames * sizeof(float));
+   rwebaudio->tmpbuf_right  = memalign(16, rwebaudio->tmpbuf_frames * sizeof(float));
    RARCH_LOG("[RWebAudio] Device rate: %d Hz.\n", *new_rate);
    RARCH_LOG("[RWebAudio] Buffer size: %lu bytes.\n", RWebAudioBufferSizeFrames() * 2 * sizeof(float));
    return rwebaudio;

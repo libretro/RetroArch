@@ -6109,6 +6109,8 @@ int rarch_main(int argc, char *argv[], void *data)
 
 #if defined(EMSCRIPTEN)
 
+bool platform_emscripten_finish_deferred_sleep(void);
+
 #ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
 #ifdef HAVE_AUDIOWORKLET
 bool audioworklet_external_block(void);
@@ -6137,11 +6139,12 @@ void emscripten_mainloop(void)
    bool runloop_is_paused                 = (runloop_flags & RUNLOOP_FLAG_PAUSED)     ? true : false;
 
    /* Prevents the program from running in any of the following conditions:
-    * 1. requestAnimationFrame is being used and the window is not visible.
-    * Firefox likes to call requestAnimationFrame at 1 FPS when the window isn't focused,
-    * we want to avoid this.
+    * 1. The window is not visible.
     * 2. The GL context is lost and hasn't been recovered yet. */
    if (platform_emscripten_should_drop_iter())
+      return;
+
+   if (platform_emscripten_finish_deferred_sleep())
       return;
 
 #ifdef HAVE_RWEBAUDIO
@@ -6175,6 +6178,9 @@ void emscripten_mainloop(void)
          if (video_st->current_video_context.swap_buffers)
             video_st->current_video_context.swap_buffers(
                   video_st->context_data);
+#ifdef PROXY_TO_PTHREAD
+         platform_emscripten_wait_for_frame();
+#endif
          return;
       }
    }
@@ -6192,17 +6198,18 @@ void emscripten_mainloop(void)
 
    task_queue_check();
 
+   if (ret == -1)
+   {
+      main_exit(NULL);
+      emscripten_force_exit(0);
+      return;
+   }
+
 #ifdef PROXY_TO_PTHREAD
-   /* sync with requestAnimationFrame on browser thread if vsync is on */
-   /* performance seems better with this wait at the end of the iter */
+   /* Sync with requestAnimationFrame on browser thread if vsync is on. */
+   /* Performance seems better with this wait at the end of the iter. */
    platform_emscripten_wait_for_frame();
 #endif
-
-   if (ret != -1)
-      return;
-
-   main_exit(NULL);
-   emscripten_force_exit(0);
 }
 #endif
 

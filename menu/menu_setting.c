@@ -9030,6 +9030,13 @@ static void general_write_handler(rarch_setting_t *setting)
                      NULL, menu_st->userdata);
          }
          break;
+      case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
+         {
+            video_driver_state_t *video_st       = video_state_get_ptr();
+            video_st->current_video->suppress_screensaver(video_st->data,
+                  settings->bools.ui_suspend_screensaver_enable);
+         }
+         break;
       default:
          /* Special cases */
 
