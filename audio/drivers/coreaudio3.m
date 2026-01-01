@@ -181,6 +181,8 @@ static bool coreaudio3_g_interrupted;
    unsigned _hwRate;
    unsigned _lastInputRate;
    double _lastRateAdjust;
+   float *_convBuffer;
+   size_t _convBufferFrames;
 }
 
 @property (nonatomic, readwrite) BOOL nonBlock;
@@ -288,6 +290,12 @@ static bool coreaudio3_g_interrupted;
 
       _au = au;
 
+      /* Allocate converter output buffer (enough for 2048 output frames) */
+      _convBufferFrames = 2048;
+      _convBuffer = (float *)calloc(_convBufferFrames * 2, sizeof(float));
+      if (!_convBuffer)
+         return nil;
+
       RARCH_LOG("[CoreAudio3] Using buffer size of %u bytes: (latency = %u ms, hw rate = %u Hz, %s).\n",
             (unsigned)self.bufferSizeInBytes, (unsigned)latency, _hwRate,
             _interleaved ? "interleaved" : "non-interleaved");
@@ -303,6 +311,11 @@ static bool coreaudio3_g_interrupted;
    {
       AudioConverterDispose(_converter);
       _converter = NULL;
+   }
+   if (_convBuffer)
+   {
+      free(_convBuffer);
+      _convBuffer = NULL;
    }
 }
 
@@ -398,11 +411,7 @@ static OSStatus coreaudio3_converter_cb(
               rateAdjust:(double)rateAdjust {
    OSStatus err;
    double effectiveRate;
-   UInt32 outputFrames;
-   float *outputBuffer;
-   size_t outputSamples;
-   ssize_t written;
-   AudioBufferList outputBufferList;
+   size_t framesWritten = 0;
    coreaudio3_converter_ctx_t ctx;
 
    if (frames == 0)
@@ -461,41 +470,49 @@ static OSStatus coreaudio3_converter_cb(
       _lastRateAdjust = rateAdjust;
    }
 
-   /* Calculate output size and allocate buffer */
-   outputFrames = (UInt32)ceil((double)frames * _hwRate / effectiveRate) + 16;
-   outputBuffer = (float *)malloc(outputFrames * 2 * sizeof(float));
-   if (!outputBuffer)
-      return -1;
-
-   /* Set up output buffer list for interleaved stereo */
-   outputBufferList.mNumberBuffers = 1;
-   outputBufferList.mBuffers[0].mNumberChannels = 2;
-   outputBufferList.mBuffers[0].mDataByteSize = outputFrames * 2 * sizeof(float);
-   outputBufferList.mBuffers[0].mData = outputBuffer;
-
    /* Set up callback context */
    ctx.data        = samples;
    ctx.frames_left = frames;
 
-   err = AudioConverterFillComplexBuffer(_converter,
-         coreaudio3_converter_cb, &ctx,
-         &outputFrames, &outputBufferList, NULL);
-
-   if (err != noErr && err != 1) /* 1 means end of input */
+   /* Process in chunks that fit our pre-allocated buffer */
+   while (ctx.frames_left > 0)
    {
-      RARCH_ERR("[CoreAudio3]: AudioConverterFillComplexBuffer failed: %d\n", (int)err);
-      free(outputBuffer);
-      return -1;
+      UInt32 outputFrames = (UInt32)_convBufferFrames;
+      AudioBufferList outputBufferList;
+      size_t outputSamples;
+      ssize_t written;
+
+      outputBufferList.mNumberBuffers = 1;
+      outputBufferList.mBuffers[0].mNumberChannels = 2;
+      outputBufferList.mBuffers[0].mDataByteSize = outputFrames * 8; /* stereo float */
+      outputBufferList.mBuffers[0].mData = _convBuffer;
+
+      err = AudioConverterFillComplexBuffer(_converter,
+            coreaudio3_converter_cb, &ctx,
+            &outputFrames, &outputBufferList, NULL);
+
+      if (err != noErr && err != 1) /* 1 means end of input */
+      {
+         RARCH_ERR("[CoreAudio3]: AudioConverterFillComplexBuffer failed: %d\n", (int)err);
+         break;
+      }
+
+      if (outputFrames == 0)
+         break;
+
+      /* Write resampled float data to ring buffer */
+      outputSamples = outputFrames * 2;
+      written = [self writeFloat:_convBuffer samples:outputSamples];
+
+      if (written > 0)
+         framesWritten += written / 2; /* count frames, not samples */
+
+      /* In nonblock mode, stop if we couldn't write everything */
+      if (_nonBlock && ctx.frames_left > 0)
+         break;
    }
 
-   /* Write resampled float data to ring buffer */
-   outputSamples = outputFrames * 2;
-   written = [self writeFloat:outputBuffer samples:outputSamples];
-
-   free(outputBuffer);
-
-   /* Return input frames consumed */
-   return (written > 0) ? (ssize_t)frames : written;
+   return (ssize_t)framesWritten;
 }
 
 @end
