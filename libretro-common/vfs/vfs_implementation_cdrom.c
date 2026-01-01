@@ -139,7 +139,7 @@ int64_t retro_vfs_file_seek_cdrom(
    else
       return -1;
 
-   return 0;
+   return retro_vfs_file_tell_cdrom(stream);
 }
 
 void retro_vfs_file_open_cdrom(
