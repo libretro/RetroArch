@@ -1927,8 +1927,10 @@ bool command_set_shader(command_t *cmd, const char *arg)
 {
    enum  rarch_shader_type type = video_shader_parse_type(arg);
    settings_t  *settings        = config_get_ptr();
+   bool apply_new_shader        = !string_is_empty(arg);
 
-   if (!string_is_empty(arg))
+   configuration_set_bool(settings, settings->bools.video_shader_enable, apply_new_shader);
+   if (apply_new_shader)
    {
       gfx_ctx_flags_t flags;
       flags.flags     = 0;

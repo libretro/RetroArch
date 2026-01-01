@@ -87,7 +87,7 @@
 #include <lists/dir_list.h>
 
 #ifdef EMSCRIPTEN
-#include <emscripten/emscripten.h>
+#include "frontend/drivers/platform_emscripten.h"
 #endif
 
 #ifdef HAVE_LIBNX
@@ -7301,10 +7301,14 @@ int runloop_iterate(void)
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
+#if defined(EMSCRIPTEN) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
+         platform_emscripten_deferred_sleep(10);
+#else
 #if defined(HAVE_COCOATOUCH)
          if (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
 #endif
             retro_sleep(10);
+#endif
          return 1;
       case RUNLOOP_STATE_PAUSE:
 #ifdef HAVE_NETWORKING
@@ -7503,10 +7507,14 @@ end:
 
          if (sleep_ms > 0)
          {
+#if defined(EMSCRIPTEN) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
+            platform_emscripten_deferred_sleep(sleep_ms);
+#else
 #if defined(HAVE_COCOATOUCH)
             if (!(uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
 #endif
                retro_sleep(sleep_ms);
+#endif
          }
 
          return 1;
