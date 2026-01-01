@@ -702,6 +702,9 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
    if (strcmp(state, "Active") != 0)
       return true;
 
+   settings_t *settings = config_get_ptr();
+   bool suspend_screensaver = settings->bools.ui_suspend_screensaver_enable;
+
    rjsonwriter_t *w = rjsonwriter_open_memory();
    rjsonwriter_raw(w, "{", 1);
    rjsonwriter_add_string(w, "clientName");
@@ -710,7 +713,7 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
    rjsonwriter_raw(w, ",", 1);
    rjsonwriter_add_string(w, "ack");
    rjsonwriter_raw(w, ":", 1);
-   rjsonwriter_rawf(w, "%s", "false");
+   rjsonwriter_rawf(w, "%s", suspend_screensaver ? "false" : "true");
    rjsonwriter_raw(w, ",", 1);
    rjsonwriter_add_string(w, "timestamp");
    rjsonwriter_raw(w, ":", 1);
