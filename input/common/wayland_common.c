@@ -1120,7 +1120,11 @@ const struct wl_keyboard_listener keyboard_listener = {
    wl_keyboard_handle_keymap,
    wl_keyboard_handle_enter,
    wl_keyboard_handle_leave,
+#ifdef WEBOS
+   wl_keyboard_handle_key_webos,
+#else
    wl_keyboard_handle_key,
+#endif
    wl_keyboard_handle_modifiers,
    wl_keyboard_handle_repeat_info
 };
