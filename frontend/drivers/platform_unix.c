@@ -1299,6 +1299,110 @@ static enum frontend_architecture frontend_unix_get_arch(void)
    return FRONTEND_ARCH_NONE;
 }
 
+#ifdef WEBOS
+const char *retroarch_get_webos_version(char *s, size_t len,
+                                       int *major, int *minor)
+{
+   static char pretty[128];
+
+   FILE *f = fopen("/usr/lib/os-release", "r");
+   if (!f)
+   {
+      /* fallback to starfish-release */
+      f = fopen("/etc/starfish-release", "r");
+      if (!f)
+         return strlcpy(s, "webOS (unknown)", len), "webOS (unknown)";
+
+      /* Example content:
+         Rockhopper release 3.9.0-62709 (dreadlocks2-dudhwa) */
+      char line[256];
+      if (fgets(line, sizeof(line), f))
+      {
+         char *nl = strchr(line, '\n');
+         if (nl) *nl = '\0';
+         snprintf(pretty, sizeof(pretty), "webOS - %s", line);
+
+         /* Try parse after the word "release", else first digit run in the line */
+         char *ver = strstr(line, "release");
+         if (ver)
+         {
+            ver += strlen("release");
+            while (*ver == ' ') ver++;
+         }
+         else
+         {
+            /* find first digit in the line */
+            ver = line;
+            while (*ver && ((*ver < '0') || (*ver > '9'))) ver++;
+            if (!*ver) ver = NULL;
+         }
+
+         if (ver)
+         {
+            char *endptr = NULL;
+            long maj = strtol(ver, &endptr, 10);
+            if (endptr != ver)
+            {
+               if (major) *major = (int)maj;
+               if (endptr && *endptr == '.' && minor)
+               {
+                  long min = strtol(endptr + 1, NULL, 10);
+                  /* only set minor if a number was present */
+                  const char *p = endptr + 1;
+                  if (p && (*p >= '0' && *p <= '9'))
+                     *minor = (int)min;
+               }
+            }
+         }
+      }
+      fclose(f);
+
+      if (pretty[0] == '\0')
+         strlcpy(pretty, "webOS (unknown)", sizeof(pretty));
+
+      return strlcpy(s, pretty, len), pretty;
+   }
+
+   char line[256];
+   while (fgets(line, sizeof(line), f))
+   {
+      if (strncmp(line, "PRETTY_NAME=", 12) == 0)
+      {
+         char *val = line + 12;
+         char *nl = strchr(val, '\n');
+         if (nl) *nl = '\0';
+         if ((val[0] == '"' || val[0] == '\'')) {
+            size_t l = strlen(val);
+            if (l > 1 && val[l-1] == val[0]) {
+               val[l-1] = '\0';
+               val++;
+            }
+         }
+         strlcpy(pretty, val, sizeof(pretty));
+      }
+      else if (strncmp(line, "VERSION_ID=", 11) == 0)
+      {
+         char *val = line + 11;
+         char *nl = strchr(val, '\n');
+         if (nl) *nl = '\0';
+         char *endptr = NULL;
+         long maj = strtol(val, &endptr, 10);
+         if (major) *major = (int)maj;
+         if (endptr && *endptr == '.' && minor)
+            *minor = (int)strtol(endptr+1, NULL, 10);
+         else if (minor)
+            *minor = 0;
+      }
+   }
+   fclose(f);
+
+   if (pretty[0] == '\0')
+      strlcpy(pretty, "webOS (unknown)", sizeof(pretty));
+
+   return strlcpy(s, pretty, len), pretty;
+}
+#endif
+
 static size_t frontend_unix_get_os(char *s,
       size_t len, int *major, int *minor)
 {
@@ -1326,6 +1430,8 @@ static size_t frontend_unix_get_os(char *s,
    _len = strlcpy(s, "BSD", len);
 #elif defined(__HAIKU__)
    _len = strlcpy(s, "Haiku", len);
+#elif defined(WEBOS)
+   _len = strlcpy(s, retroarch_get_webos_version(s, len, major, minor), len);
 #else
    _len = strlcpy(s, "Linux", len);
 #endif
