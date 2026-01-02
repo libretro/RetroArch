@@ -10,3 +10,7 @@ AppPackages/
 /ReleaseANGLE
 /x64
 /ARM64
+
+# MESA
+!/RetroArch-msvcUWP/MESA/x64/*.dll
+!/RetroArch-msvcUWP/MESA/x64/*.lib
