@@ -45,6 +45,9 @@
 
 #if defined(WEBOS)
 #include <sys/resource.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "input/common/wayland_common_webos.h"
 #endif
 
@@ -5955,6 +5958,30 @@ void main_exit(void *args)
 #endif
 }
 
+#if defined(WEBOS)
+/* make a directory recursively */
+static int mkdir_p(const char *path, mode_t mode)
+{
+    char tmp[PATH_MAX_LENGTH];
+    char *p = NULL;
+    size_t len;
+
+    snprintf(tmp, sizeof(tmp), "%s", path);
+    len = strlen(tmp);
+    if (tmp[len - 1] == '/')
+        tmp[len - 1] = 0;
+
+    for (p = tmp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = 0;
+            mkdir(tmp, mode);
+            *p = '/';
+        }
+    }
+    return mkdir(tmp, mode);
+}
+#endif
+
 /**
  * main_entry:
  *
@@ -5992,6 +6019,26 @@ int rarch_main(int argc, char *argv[], void *data)
 #endif
 
 #if defined(WEBOS)
+   /* compatibility with webOS 1 and 2 */
+   const char *home = getenv("HOME");
+   const char *appId = getenv("APPID");
+   char new_path[PATH_MAX_LENGTH];
+
+   if (home)
+   {
+      if (!appId || !*appId || strcmp(appId, "com.palm.devmode.openssh") == 0)
+         appId = WEBOS_APP_ID;
+
+      snprintf(new_path, sizeof(new_path), "/%s/.config", home);
+      if (access(new_path, F_OK) != 0 && mkdir(new_path, 0775) != 0)
+      {
+         snprintf(new_path, sizeof(new_path), "/media/developer/temp/webosbrew/%s", appId);
+         if (mkdir_p(new_path, 0775) != 0 && errno != EEXIST)
+            RARCH_ERR("FATAL: mkdir_p failed for '%s': %s\n", new_path, strerror(errno));
+         setenv("HOME", new_path, 1);
+      }
+   }
+
    /* compatibility with webOS 3 - 5 */
    if (getenv("EGL_PLATFORM") == NULL)
       setenv("EGL_PLATFORM", "wayland", 0);
