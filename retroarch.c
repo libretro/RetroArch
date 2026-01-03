@@ -7876,11 +7876,30 @@ bool retroarch_main_init(int argc, char *argv[])
    if (verbosity_enabled)
    {
       {
-         char str_output[256];
+         char str_output[384];
          const char *cpu_model  = frontend_driver_get_cpu_model_name();
          size_t _len = strlcpy(str_output,
                "=== Build =======================================\n",
                sizeof(str_output));
+
+#ifdef WEBOS
+         {
+            char osbuf[128];
+            int major = 0, minor = 0;
+            frontend_state_t *frontend_st = frontend_state_get_ptr();
+            if (frontend_st)
+            {
+               frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+               if (frontend && frontend->get_os)
+               {
+                  frontend->get_os(osbuf, sizeof(osbuf), &major, &minor);
+                  _len += snprintf(str_output + _len, sizeof(str_output) - _len,
+                        FILE_PATH_LOG_INFO " Running on: %s\n",
+                        osbuf);
+               }
+            }
+         }
+#endif
 
          if (!string_is_empty(cpu_model))
          {
