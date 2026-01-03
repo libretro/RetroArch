@@ -1980,8 +1980,6 @@ static uintptr_t ozone_entries_icon_get_texture(
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
       case MENU_ENUM_LABEL_CORE_INFORMATION:
       case MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST:
-            if (!string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION)))
-               return 0;
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
       case MENU_ENUM_LABEL_CORE_INFO_ENTRY:
             if (strstr(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED)))

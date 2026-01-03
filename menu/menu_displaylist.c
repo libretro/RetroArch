@@ -609,6 +609,42 @@ static int menu_displaylist_parse_core_info(
    }
    else if (core_info_get_current_core(&core_info) && core_info)
       core_path = core_info->path;
+   else if (info_type == FILE_TYPE_NONE)
+   {
+      core_info_t *core_info_menu = NULL;
+      playlist_t *playlist        = playlist_get_cached();
+
+      core_path = info_path;
+
+      if (playlist)
+      {
+         struct menu_state *menu_st = menu_state_get_ptr();
+         menu_handle_t *menu        = menu_st->driver_data;
+         unsigned idx               = menu->rpl_entry_selection_ptr;
+         const struct playlist_entry *entry = NULL;
+
+         playlist_get_index(playlist, idx, &entry);
+
+         if (entry)
+         {
+            core_path = entry->core_path;
+
+            if (string_is_equal(entry->core_path, FILE_PATH_DETECT))
+            {
+               const char* default_core_path = playlist_get_default_core_path(playlist);
+
+               if (     !string_is_empty(default_core_path)
+                     && !string_is_equal(default_core_path, FILE_PATH_DETECT))
+                  core_path = default_core_path;
+            }
+         }
+      }
+
+      /* Core updater entry - search for corresponding
+       * core info */
+      if (core_info_find(core_path, &core_info_menu))
+         core_info = core_info_menu;
+   }
 
    if (!core_info || !core_info->has_info)
    {
@@ -2650,9 +2686,9 @@ static int menu_displaylist_parse_playlist(
          {
             /* Both core name and core path must be valid */
             if (   !string_is_empty(entry->core_name)
-                && !string_is_equal(entry->core_name, "DETECT")
+                && !string_is_equal(entry->core_name, FILE_PATH_DETECT)
                 && !string_is_empty(entry->core_path)
-                && !string_is_equal(entry->core_path, "DETECT"))
+                && !string_is_equal(entry->core_path, FILE_PATH_DETECT))
             {
                _len += strlcpy(
                      menu_entry_lbl           + _len,
@@ -5261,8 +5297,24 @@ static unsigned menu_displaylist_parse_content_information(
           * core path are valid */
          if (   !string_is_empty(entry->core_name)
              && !string_is_empty(core_path)
-             && !string_is_equal(core_path, "DETECT"))
+             && !string_is_equal(core_path, FILE_PATH_DETECT))
             strlcpy(core_name, entry->core_name, sizeof(core_name));
+         /* Use playlist default core if set */
+         else if (string_is_equal(entry->core_path, FILE_PATH_DETECT)
+               && string_is_equal(entry->core_name, FILE_PATH_DETECT))
+         {
+            const char* default_core_name = playlist_get_default_core_name(playlist);
+            const char* default_core_path = playlist_get_default_core_path(playlist);
+
+            if (     !string_is_empty(default_core_name)
+                  && !string_is_equal(default_core_name, FILE_PATH_DETECT)
+                  && !string_is_empty(default_core_path)
+                  && !string_is_equal(default_core_path, FILE_PATH_DETECT))
+            {
+               strlcpy(core_name, default_core_name, sizeof(core_name));
+               core_path = default_core_path;
+            }
+         }
       }
    }
    else
@@ -5284,6 +5336,23 @@ static unsigned menu_displaylist_parse_content_information(
          if (!string_is_empty(core_info->display_name))
             strlcpy(core_name, core_info->display_name, sizeof(core_name));
       }
+   }
+
+   /* Core name */
+   if (   !string_is_empty(core_name)
+       && !string_is_equal(core_name, FILE_PATH_DETECT))
+   {
+      size_t _len = strlcpy(tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
+            sizeof(tmp));
+      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      strlcpy(tmp + _len, core_name, sizeof(tmp) - _len);
+
+      if (menu_entries_append(info_list, tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_CORE_NAME),
+            MENU_ENUM_LABEL_CORE_INFORMATION, /* Shortcut to core info */
+            0, 0, 0, NULL))
+         count++;
    }
 
 #ifdef HAVE_LIBRETRODB
@@ -5364,22 +5433,6 @@ static unsigned menu_displaylist_parse_content_information(
       if (menu_entries_append(info_list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
             MENU_ENUM_LABEL_CONTENT_INFO_PATH,
-            0, 0, 0, NULL))
-         count++;
-   }
-
-   /* Core name */
-   if (   !string_is_empty(core_name)
-       && !string_is_equal(core_name, "DETECT"))
-   {
-      size_t _len = strlcpy(tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
-            sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
-      strlcpy(tmp + _len, core_name, sizeof(tmp) - _len);
-      if (menu_entries_append(info_list, tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_CORE_NAME),
-            MENU_ENUM_LABEL_CORE_INFORMATION, /* Shortcut to core info */
             0, 0, 0, NULL))
          count++;
    }
@@ -8792,7 +8845,7 @@ unsigned menu_displaylist_build_list(
                   count++;
 
                if (     string_is_empty(current_core_name)
-                     || string_is_equal(current_core_name, "DETECT"))
+                     || string_is_equal(current_core_name, FILE_PATH_DETECT))
                {
                   menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[0].actiondata;
                   if (cbs)
