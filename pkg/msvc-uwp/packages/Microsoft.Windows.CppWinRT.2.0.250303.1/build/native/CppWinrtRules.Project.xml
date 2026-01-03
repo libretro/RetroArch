@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Rule Name="CppWinRT" DisplayName="C++/WinRT" Order="75" PageTemplate="generic" xmlns="http://schemas.microsoft.com/build/2009/properties">
+
+  <Rule.Categories>
+    <Category Name="General" DisplayName="General"/>
+  </Rule.Categories>
+
+  <Rule.DataSource>
+    <DataSource Persistence="ProjectFile" HasConfigurationCondition="false" Label="Globals" />
+  </Rule.DataSource>
+
+  <StringProperty Name="RootNamespace"
+                  DisplayName="Root Namespace"
+                  Description="Specifies the default namespace to be used with new files created in this project."
+                  Category="General" />
+
+  <EnumProperty Name="CppWinRTVerbosity"
+                DisplayName="Verbosity"
+                Description="Sets the importance of C++/WinRT build messages"
+                Category="General">
+    <EnumValue Name="low" DisplayName="low" Description="Enables messages when MSBuild verbosity is set to at least 'detailed'" />
+    <EnumValue Name="normal" DisplayName="normal" Description="Enables messages when MSBuild verbosity is set to at least 'normal'" />
+    <EnumValue Name="high" DisplayName="high" Description="Enables messages when MSBuild verbosity is set to at least 'minimal'" />
+  </EnumProperty>
+
+  <EnumProperty Name="CppWinRTProjectLanguage"
+                DisplayName="Project Language"
+                Description="Sets the C++ dialect for the project.  C++/WinRT provides full projection support, C++/CX permits consuming projection headers."
+                Category="General">
+    <EnumValue Name="C++/WinRT" DisplayName="C++/WinRT" Description="Enables full consuming and producing projection support and Xaml integration" />
+    <EnumValue Name="C++/CX" DisplayName="C++/CX" Description="Enables C++/CX code to generate and use consuming projections" />
+  </EnumProperty>
+
+  <BoolProperty Name="CppWinRTLibs"
+                DisplayName="Umbrella Library"
+                Description="Adds the WindowsApp.lib umbrella library for Windows Runtime imports"
+                Category="General" />
+
+  <BoolProperty Name="CppWinRTModernIDL"
+                DisplayName="Modern IDL"
+                Description="Enables midlrt.exe modern IDL support (disable for custom behavior such as proxy/stub generation)"
+                Category="General" />
+
+  <IntProperty Name="CppWinRTNamespaceMergeDepth"
+               DisplayName="Namespace Merge Depth"
+               Description="Overrides the depth of mdmerge.exe namespace merging (Xaml apps require 1)"
+               Category="General" />
+
+  <BoolProperty Name="CppWinRTRootNamespaceAutoMerge"
+                DisplayName="Use Root Namespace Merge Depth"
+                Description="Use the Root Namespace as the default merge depth"
+                Category="General" />
+
+  <BoolProperty Name="CppWinRTUsePrefixes"
+                DisplayName="Use Prefixes"
+                Description="Uses a dotted prefix namespace convention (versus a nested folder convention)"
+                Category="General" />
+
+  <StringProperty Name="CppWinRTParameters"
+                DisplayName="Additional Parameters"
+                Description="Additional cppwinrt.exe command-line parameters"
+                Category="General" />
+
+  <BoolProperty Name="CppWinRTFastAbi"
+                DisplayName="Fast ABI"
+                Description="Enables Fast ABI feature for both consuming and producing projections"
+                Category="General" />
+
+  <BoolProperty Name="CppWinRTOptimized"
+                DisplayName="Optimized"
+                Description="Enables component projection optimization features (e.g., unified construction)"
+                Category="General" />
+    
+  <BoolProperty Name="CppWinRTGenerateWindowsMetadata"
+                DisplayName="Generate Windows Metadata"
+                Description="Enables or disables the generation of Windows Metadata"
+                Category="General" />
+
+  <BoolProperty Name="CppWinRTEnableDefaultCopyLocalFalse"
+                DisplayName="Enable C++/WinRT Copy Local Defaults"
+                Description="Enables or disables the default for copying binaries to the output folder to be false"
+                Category="General" />
+
+  <BoolProperty Name="CppWinRTEnableLegacyCoroutines"
+                DisplayName="Enable legacy coroutines (C++17)"
+                Description="Enables the /await compiler option (disable this if you want to pass this yourself)"
+                Category="General" />
+
+</Rule>
