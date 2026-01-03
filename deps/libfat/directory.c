@@ -465,7 +465,7 @@ bool _FAT_directory_getVolumeLabel (PARTITION* partition, char *label)
    label[11]='\0';
    end = false;
 
-   /* this entry should be among the first 3 entries in the root directory table, 
+   /* this entry should be among the first 3 entries in the root directory table,
     * if not, then system can have trouble displaying the right volume label */
 
    while(!end)
@@ -517,7 +517,7 @@ bool _FAT_directory_entryFromPosition (PARTITION* partition, DIR_ENTRY* entry)
             && (entryStart.sector == entryEnd.sector)
             && (entryStart.offset == entryEnd.offset))
       {
-         /* Copy the entry data and stop, since this is the 
+         /* Copy the entry data and stop, since this is the
           * last section of the directory entry */
          memcpy (entry->entryData, entryData, DIR_ENTRY_DATA_SIZE);
          finished = true;
@@ -660,7 +660,7 @@ bool _FAT_directory_entryFromPath (PARTITION* partition, DIR_ENTRY* entry, const
          while (pathPosition[0] == DIR_SEPARATOR)
             pathPosition++;
          /* The requested directory was found */
-         if (pathPosition >= pathEnd) 
+         if (pathPosition >= pathEnd)
             found = true;
          else
             found = false;
@@ -953,13 +953,6 @@ bool _FAT_directory_addEntry (PARTITION* partition, DIR_ENTRY* entry, uint32_t d
    for (i = strlen (entry->filename) - 1; (i >= 0) && (entry->filename[i] == ' '); --i)
       entry->filename[i] = '\0';
 
-#if 0
-   /* Remove leading spaces */
-   for (i = 0; entry->filename[i] == ' '; ++i) ;
-   if (i > 0)
-      memmove (entry->filename, entry->filename + i, strlen (entry->filename + i));
-#endif
-
    /* Make sure the filename is not 0 length */
    if (strnlen (entry->filename, NAME_MAX) < 1)
       return false;
@@ -1007,9 +1000,9 @@ bool _FAT_directory_addEntry (PARTITION* partition, DIR_ENTRY* entry, uint32_t d
          /* It's a long filename with an alias */
          entrySize = ((lfnLen + LFN_ENTRY_LENGTH - 1) / LFN_ENTRY_LENGTH) + 1;
 
-         /* Generate full alias for all cases except when 
+         /* Generate full alias for all cases except when
           * the alias is simply an upper case version of the LFN
-          * and there isn't already a file with that name 
+          * and there isn't already a file with that name
           */
          if (strncasecmp (alias, entry->filename, MAX_ALIAS_LENGTH) != 0 ||
                _FAT_directory_entryExists (partition, alias, dirCluster))

@@ -89,6 +89,13 @@ enum override_type
    OVERRIDE_GAME
 };
 
+enum cloud_sync_mode_type
+{
+   CLOUD_SYNC_MODE_AUTOMATIC = 0,
+   CLOUD_SYNC_MODE_MANUAL,
+   CLOUD_SYNC_MODE_LAST
+};
+
 enum settings_glob_flags
 {
    SETTINGS_FLG_MODIFIED              = (1 << 0),
@@ -238,6 +245,7 @@ typedef struct settings
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
       unsigned keymapper_port;
+      unsigned cloud_sync_sync_mode;
       unsigned video_window_opacity;
       unsigned crt_switch_resolution;
       unsigned crt_switch_resolution_super;
@@ -296,6 +304,7 @@ typedef struct settings
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
       unsigned menu_xmb_alpha_factor;
+      unsigned menu_xmb_current_menu_icon;
       unsigned menu_xmb_theme;
       unsigned menu_xmb_color_theme;
       unsigned menu_xmb_thumbnail_scale_factor;
@@ -306,6 +315,7 @@ typedef struct settings
       unsigned menu_materialui_thumbnail_view_landscape;
       unsigned menu_materialui_landscape_layout_optimization;
       unsigned menu_ozone_color_theme;
+      unsigned menu_ozone_header_icon;
       unsigned menu_ozone_header_separator;
       unsigned menu_ozone_font_scale;
       unsigned menu_font_color_red;
@@ -733,6 +743,7 @@ typedef struct settings
       bool input_turbo_enable;
       bool input_turbo_allow_dpad;
       bool input_hotkey_device_merge;
+      bool input_hotkey_follows_player1;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
       bool input_nowinkey_enable;
 #endif
@@ -1033,7 +1044,6 @@ typedef struct settings
       bool network_remote_enable;
       bool network_remote_enable_user[MAX_USERS];
       bool load_dummy_on_core_shutdown;
-      bool check_firmware_before_loading;
       bool core_option_category_enable;
       bool core_info_cache_enable;
       bool core_info_savestate_bypass;

@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -534,14 +548,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "البرنامج الثابت فيرموير"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- ملاحظة: تم تمكين 'ملفات النظام في دليل المحتوى' حاليا."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "البحث في: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -1297,6 +1303,14 @@ MSG_HASH(
    "إذا تم التعطيل، سيتم نقل الملفات إلى مجلد النسخ الاحتياطي قبل الحذف أو الاستبدال."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "تلقائي"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "يدوي"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "خدمة المزامنة السحابية"
    )
@@ -1927,6 +1941,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   "دورة من خلال هذه الخيارات إذا لم تكن الصورة تتركز بشكل صحيح على العرض."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
    "دورة من خلال هذه الخيارات إذا لم تكن الصورة تتركز بشكل صحيح على العرض."
    )
 MSG_HASH(
@@ -6216,10 +6234,6 @@ MSG_HASH(
    "الصورة المصغرة السفلية"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "نوع الصورة المصغرة لعرضها في أسفل يمين قوائم التشغيل."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    "تبديل الصور المصغرة"
    )
@@ -6518,6 +6532,14 @@ MSG_HASH(
    "التحريكات التي تظهر عند فتح قائمة فرعية."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "لاشيء"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "عادي"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "اختر خطا رئيسيا مغايرا ليستعمل في القائمة."
    )
@@ -6722,6 +6744,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    "عامل المقياس المصغرة"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "لاشيء"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
@@ -8691,10 +8717,6 @@ MSG_HASH(
    "الواجهة للليبرترو"
    )
 MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "فتحت لقطة من الخانة [%d]."
-   )
-MSG_HASH(
    MSG_LOADING,
    "جار التحميل"
    )
@@ -8841,10 +8863,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_REWIND_REACHED_END,
    "وصلت إلى نهاية التجديد المؤقت."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "حفظ الحالة إلى فتحة #%d."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,

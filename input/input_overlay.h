@@ -129,7 +129,9 @@ enum OVERLAY_FLAGS
    OVERLAY_BLOCK_X_SEPARATION = (1 << 2),
    OVERLAY_BLOCK_Y_SEPARATION = (1 << 3),
    OVERLAY_AUTO_X_SEPARATION  = (1 << 4),
-   OVERLAY_AUTO_Y_SEPARATION  = (1 << 5)
+   OVERLAY_AUTO_Y_SEPARATION  = (1 << 5),
+   OVERLAY_HAS_VIEWPORT       = (1 << 6),
+   OVERLAY_VIEWPORT_FILL      = (1 << 7)
 };
 
 enum OVERLAY_DESC_FLAGS
@@ -269,6 +271,15 @@ struct overlay
    float x, y, w, h;
    float center_x, center_y;
    float aspect_ratio;
+
+   /* Viewport override - normalized coordinates (0.0-1.0) */
+   struct
+   {
+      float x;
+      float y;
+      float w;
+      float h;
+   } viewport;
 
    struct
    {

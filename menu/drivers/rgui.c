@@ -101,6 +101,7 @@
 #define RGUI_DINGUX_FB_HEIGHT    240
 #endif
 #endif
+#define RGUI_VITA_FB_HEIGHT      272
 
 /* Maximum entry value length in characters
  * when using fixed with layouts
@@ -6112,6 +6113,10 @@ static bool rgui_set_aspect_ratio(
 #elif defined(DINGUX)
    /* Dingux devices use a fixed framebuffer size */
    rgui->frame_buf.height = RGUI_DINGUX_FB_HEIGHT;
+#elif defined(VITA)
+   /* Vita screen does not match 240 */
+   rgui->frame_buf.height = RGUI_VITA_FB_HEIGHT;
+   video_driver_get_viewport_info(&vp);
 #else
    /* If window height is less than RGUI default
     * height of 240, allow the frame buffer to

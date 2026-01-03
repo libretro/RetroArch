@@ -278,7 +278,6 @@ OBJ += \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
        tasks/task_playlist_manager.o \
-       tasks/task_manual_content_scan.o \
        tasks/task_core_backup.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
@@ -1290,6 +1289,14 @@ ifeq ($(HAVE_WAYLAND), 1)
    ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/drivers_context/wayland_vk_ctx.o
    endif
+
+ifeq ($(WEBOS), 1)
+ OBJ += input/common/wayland_common_webos.o
+ OBJ += gfx/common/wayland/webos-foreign.o
+ OBJ += gfx/common/wayland/webos-input-manager.o
+ OBJ += gfx/common/wayland/webos-shell.o
+ OBJ += gfx/common/wayland/webos-surface-group.o
+endif
 
  DEF_FLAGS += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
  LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)

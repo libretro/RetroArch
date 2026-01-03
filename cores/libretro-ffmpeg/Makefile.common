@@ -8,7 +8,7 @@ GL_SOURCE          :=
 
 CPUOPTS            :=
 DEPS_DIR           := $(CORE_DIR)/deps
-LIBRETRO_COMM_DIR  := $(CORE_DIR)/../../libretro-common
+LIBRETRO_COMM_DIR  ?= $(CORE_DIR)/../../libretro-common
 BASE_DIR       	 := $(CORE_DIR)/..
 AVFORMAT_DIR   	 := $(BASE_DIR)/libavformat
 AVCODEC_DIR    	 := $(BASE_DIR)/libavcodec
@@ -155,6 +155,20 @@ else
 endif
 GL_SOURCE += $(LIBRETRO_COMM_DIR)/glsym/rglgen.c
 
+# Required for libretro-common/features_cpu.c
+ifeq ($(platform), unix)
+	SOURCES_C += $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+                 $(LIBRETRO_COMM_DIR)/string/stdstring.c \
+                 $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
+                 $(LIBRETRO_COMM_DIR)/file/file_path.c \
+                 $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+                 $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+                 $(LIBRETRO_COMM_DIR)/time/rtime.c \
+                 $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+                 $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+                 $(LIBRETRO_COMM_DIR)/time/rtime.c
+endif
+
 ifeq ($(HAVE_GL_FFT), 1)
    DEFINES    += -DHAVE_GL_FFT
    FFT_SOURCE += $(CORE_DIR)/ffmpeg_fft.c
@@ -165,7 +179,7 @@ ifeq ($(HAVE_PTHREADS),1)
 LIBS += -lpthread
 endif
 
-SOURCES_C := 	$(GL_SOURCE) \
+SOURCES_C += 	$(GL_SOURCE) \
                 $(DEPS_SOURCE) \
                 $(LIBRETRO_SOURCE) \
                 $(LIBAVUTIL_SOURCE) \

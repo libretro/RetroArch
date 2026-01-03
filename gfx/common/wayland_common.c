@@ -634,6 +634,7 @@ static bool wl_create_toplevel_icon(gfx_ctx_wayland_data_t *wl, struct xdg_tople
    return true;
 }
 
+#ifndef HAVE_LIBDECOR_H
 static void shm_buffer_paint_checkerboard(
       shm_buffer_t *buffer,
       int width, int height, int scale,
@@ -708,6 +709,7 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 
    return true;
 }
+#endif
 
 bool gfx_ctx_wl_init_common(
       const toplevel_listener_t *toplevel_listener, gfx_ctx_wayland_data_t **wwl)
@@ -725,7 +727,7 @@ bool gfx_ctx_wl_init_common(
 
 #ifdef HAVE_LIBDECOR_H
 #ifdef HAVE_DYLIB
-   if ((wl->libdecor = dylib_load("libdecor-0.so")))
+   if ((wl->libdecor = dylib_load("libdecor-0.so.0")))
    {
 #define RA_WAYLAND_SYM(rc,fn,params) wl->fn = (rc (*) params)dylib_proc(wl->libdecor, #fn);
 #include "wayland/libdecor_sym.h"
@@ -942,7 +944,7 @@ bool gfx_ctx_wl_init_common(
 
       /* Make sure splash screen is on screen and sized */
       wl->configured = true;
-      
+
       while (wl->configured)
       wl_display_dispatch(wl->input.dpy);
    }

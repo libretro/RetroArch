@@ -196,7 +196,8 @@ static void linux_poll_illuminance_sensor(void *data)
 linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 {
    RDIR *device = NULL;
-   linux_illuminance_sensor_t *sensor = malloc(sizeof(*sensor));
+   linux_illuminance_sensor_t *sensor = (linux_illuminance_sensor_t *)
+      malloc(sizeof(*sensor));
 
    if (!sensor)
       goto error;
@@ -319,7 +320,7 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    if (!in_illuminance_input)
    {
       RARCH_ERR("Failed to open \"%s\".\n", sensor->path);
-      return 0.0;
+      return -1.0;
    }
 
    /* Read the illuminance value from the file. If that fails... */

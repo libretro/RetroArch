@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -42,7 +56,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   "Mở rộng"
+   "Khám phá"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
@@ -216,6 +230,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Thoát RetroArch. Lưu thiết lập khi thoát được bật."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Đồng bộ ngay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "Kích hoạt đồng bộ hóa đám mây thủ công."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Giải quyết xung đột: Giữ nguyên vị trí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Giải quyết mọi xung đột bằng cách tải các tệp cục bộ lên máy chủ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Giải quyết xung đột: Giữ máy chủ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Giải quyết mọi xung đột bằng cách tải xuống các tệp trên máy chủ và thay thế các bản sao cục bộ."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
@@ -541,11 +579,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "Ghi chú: Tùy chọn 'Tệp hệ thống nằm trong Thư mục trò chơi' hiện đang được bật."
+   "Lưu ý: 'Tệp Hệ thống nằm trong Thư mục Nội dung' đã được bật."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Đang tìm trong: %s"
+   "Đang tìm trong: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -1323,6 +1361,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Khi tắt, các tệp sẽ được chuyển vào thư mục sao lưu trước khi bị ghi đè hoặc xoá."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Chế độ đồng bộ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "Tự động: Đồng bộ khi khởi động RetroArch và khi các core được tắt. Thủ công: Chỉ đồng bộ khi nút Đồng bộ ngay được nhấn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "Tự động"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "Thủ công"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
@@ -2184,6 +2238,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
    "Căn giữa theo chiều dọc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Duyệt qua các tùy chọn này nếu hình ảnh không được căn giữa đúng cách trên màn hình."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -3367,7 +3425,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Tạm dừng trò chơi khi bộ điều khiển ngắt kết nối"
+   "Tạm dừng nội dung khi ngắt kết nối bộ điều khiển"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
@@ -3592,7 +3650,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
-   "Thay đổi ánh xạ điều khiển cụ thể của lõi."
+   "Thay đổi gán nút điều khiển cụ thể của lõi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
@@ -3760,6 +3818,14 @@ MSG_HASH(
    "Chặn tất cả phím tắt từ cả hai loại thiết bị bàn phím và bộ điều khiển nếu một trong hai loại có cài đặt 'Bật phím tắt'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Phím tắt theo Người chơi 1"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "Các phím tắt được gán cho cổng lõi số 1, ngay cả khi cổng đó đã được gán lại cho một người dùng khác.Lưu ý: Các phím tắt trên bàn phím sẽ không hoạt động nếu cổng lõi số 1 được gán cho người chơi có số thứ tự lớn hơn 1 (vì bàn phím luôn được xem là thiết bị điều khiển của Người chơi 1)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "Bật/Tắt Menu (Bộ điều khiển kết hợp)"
    )
@@ -3874,7 +3940,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
-   "Tăng âm"
+   "Tăng âm lượng"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
@@ -4483,6 +4549,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Tự động nhấn nhanh"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Nhấn giữ"
+   )
 
 /* Settings > Latency */
 
@@ -4702,7 +4772,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
-   "Lưu file ánh xạ phím khi thoát"
+   "Lưu tệp gán phím khi thoát"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
@@ -4726,7 +4796,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-   "Tự động tải file ánh xạ"
+   "Tự động tải tệp gán phím"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
@@ -5071,7 +5141,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-   "Gợi ý các core có sẵn ngay cả khi đã có một core được tải."
+   "Cung cấp các lõi có sẵn ngay cả khi một lõi đã được tải thủ công."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -9137,7 +9207,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "Bắt đầu lại trò chơi từ đầu."
+   "Khởi động lại nội dung từ đầu. Nhấn Start trên RetroPad để thực hiện reset cứng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -9447,7 +9517,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
-   "Tải và thay thế ánh xạ điều khiển hiện tại."
+   "Tải và thay thế gán nút điều khiển hiện tại."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
@@ -9479,7 +9549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CONTENT_DIR,
-   "Lưu tệp ánh xạ sẽ áp dụng cho tất cả trò chơi được tải từ cùng thư mục với tệp hiện tại."
+   "Lưu tệp gán phím sẽ áp dụng cho tất cả trò chơi được tải từ cùng thư mục với tệp hiện tại."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
@@ -9511,11 +9581,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
-   "Đặt tất cả tùy chọn ánh xạ về giá trị mặc định."
+   "Đặt tất cả tùy chọn gán nút bấm về giá trị mặc định."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
-   "Cập nhật file gán lại phím"
+   "Cập nhật tệp gán lại phím"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
@@ -10558,7 +10628,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
-   "Xả pin"
+   "Không sạc"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
@@ -11217,7 +11287,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "Loại ảnh thu nhỏ hiển thị ở góc trên bên phải danh sách. Loại ảnh này có thể chuyển đổi bằng cách nhấn RetroPad Y."
+   "Loại hình thu nhỏ hiển thị ở góc trên bên phải của danh sách phát. Có thể thay đổi bằng cần analog phải lên/xuống."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -11225,7 +11295,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "Loại ảnh thu nhỏ hiển thị ở góc dưới bên phải danh sách."
+   "Loại hình thu nhỏ hiển thị ở dưới cùng."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
@@ -11500,6 +11570,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    "Hệ số trong suốt của chủ đề màu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Biểu tượng Menu hiện tại"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "Biểu tượng menu hiện tại có thể được ẩn đi, nằm dưới menu ngang hoặc trong tiêu đề đầu trang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Không"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Bình thường"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "Tiêu đề"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -11892,12 +11982,32 @@ MSG_HASH(
    "Thay đổi kích thước đệm ngang."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
+   "Biểu tượng phần đầu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
+   "Logo phần đầu có thể được ẩn, thay đổi linh hoạt tùy theo cách điều hướng, hoặc cố định theo kiểu “classic invader”."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
    "Ngăn cách tiêu đề"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
    "Chiều rộng thay thế cho ngăn cách tiêu đề và chân trang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Không"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
+   "Động"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
+   "Cố định"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
@@ -14356,11 +14466,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT,
-   "Đã tải Lưu trạng thái từ slot #%d."
+   "Đã tải trạng thái từ khe: %d."
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Đã tải Lưu trạng thái từ slot #-1 (Tự động)."
+   "Đã tải trạng thái từ khe: Tự động."
    )
 MSG_HASH(
    MSG_LOADING,
@@ -14560,11 +14670,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
-   "Đã lưu trạng thái vào khe #%d."
+   "Đã lưu trạng thái vào khe: %d."
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Đã lưu trạng thái vào khe #-1 (Tự động)."
+   "Đã lưu trạng thái vào khe: Tự động."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
@@ -14585,6 +14695,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
    "Quét thư mục hoàn tất."
+   )
+MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "Quét không thành công, không tìm thấy cơ sở dữ liệu."
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,

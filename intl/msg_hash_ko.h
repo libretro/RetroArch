@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -216,6 +230,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "RetroArch 응용 프로그램을 종료합니다. 종료 시 구성 저장이 활성화되어 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "지금 동기화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   "수동으로 클라우드 동기화를 수행합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "충돌 해결: 로컬 파일 유지"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "로컬 파일을 서버에 업로드하여 충돌을 해결합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "충돌 해결: 서버 파일 유지"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "서버에서 파일을 다운로드하여 로컬 사본을 덮어씀으로써 충돌을 해결합니다."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
@@ -541,11 +579,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "- 알림: '콘텐츠 폴더에 시스템 파일 포함'이 활성화되어 있습니다."
+   "참고: '콘텐츠 폴더에 시스템 파일 포함' 설정이 활성화되어 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- 검색 중: %s"
+   "검색 중: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -1331,6 +1369,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "비활성화할 경우, 동기화 대상 파일들을 덮어씌우거나 삭제하지 않고 백업 폴더에 저장합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "동기화 모드"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   "자동: RetroArch가 실행될 때와 코어가 종료될 때 동기화합니다. 수동: '지금 동기화' 버튼을 직접 누를 때에만 동기화합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "자동"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "수동"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
@@ -2196,6 +2250,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
    "세로 중앙 정렬"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "이미지가 디스플레이 중앙에 표시되지 않는다면 이 옵션들을 변경해가며 적용해보세요."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -3776,6 +3834,14 @@ MSG_HASH(
    "두 유형 중 하나에 '단축키 활성화'가 설정된 경우 키보드 및 컨트롤러 장치 유형 모두에서 모든 단축키를 차단합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "플레이어 1이 핫키 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   "핫키 입력을 코어의 1번 포트에 할당합니다. 코어의 1번 포트에 할당된 사용자가 핫키를 사용할 수 있게 됩니다. 주의: 코어의 1번 포트가 1번 사용자가 아닌 다른 사용자에게 할당될 경우 키보드에서 핫키를 사용할 수 없게 됩니다(키보드 입력은 1번 사용자의 입력으로 처리됩니다)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    "메뉴 열기/닫기 (컨트롤러 버튼 조합)"
    )
@@ -4499,6 +4565,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "터보 입력"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "꾹 누르기"
+   )
 
 /* Settings > Latency */
 
@@ -5087,7 +5157,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-   "코어가 이미 불러와져 있더라도 항상 사용 가능한 코어 목록을 표시합니다."
+   "코어를 수동으로 불러온 후에도 사용 가능한 코어 목록을 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -9149,7 +9219,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "콘텐츠를 처음부터 다시 시작합니다."
+   "콘텐츠를 처음부터 다시 시작합니다. RetroPad 시작을 누르면 하드 리셋을 수행합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
@@ -11145,7 +11215,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
-   "오른쪽 상단에 표시될 미리보기의 종류입니다. RetroPad Y 버튼을 누르면 미리보기 종류를 전환할 수 있습니다."
+   "실행목록의 오른쪽 위에 표시할 미리보기의 종류를 설정합니다. 오른쪽 아날로그 위/왼쪽으로 전환할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
@@ -11153,7 +11223,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
-   "오른쪽 아래에 표시할 미리보기의 종류입니다."
+   "실행목록의 오른쪽 아래에 표시할 미리보기의 종류를 설정합니다. 오른쪽 아날로그 아래/오른쪽으로 전환할 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
@@ -11492,6 +11562,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    "색상 테마 알파 요소"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "현재 메뉴 아이콘"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "현재 메뉴의 아이콘을 숨기거나, 수평 메뉴 아래, 또는 타이틀 헤더에 표시할 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "없음"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "보통"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "타이틀"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -11904,12 +11994,32 @@ MSG_HASH(
    "가로 패딩 크기를 조절합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
+   "헤더 아이콘"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
+   "헤더의 로고를 숨기거나, 현재 메뉴에 따라 동적으로 변경하거나, 인베이더 아이콘으로 고정할 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
    "헤더 구분선"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
    "헤더와 푸터 구분선의 대체 너비입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "없음"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
+   "동적"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
+   "고정"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
@@ -14396,11 +14506,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT,
-   "#%d 슬롯에서 상태 불러옴."
+   "%d번 슬롯에서 상태 불러옴."
    )
 MSG_HASH(
    MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "슬롯 #-1(자동)에서 상태 불러옴."
+   "자동 슬롯에서 상태 불러옴."
    )
 MSG_HASH(
    MSG_LOADING,
@@ -14600,11 +14710,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT,
-   "슬롯 #%d에 상태저장."
+   "%d번 슬롯에 상태 저장함."
    )
 MSG_HASH(
    MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "슬롯 #-1(자동)에 상태저장."
+   "자동 슬롯에 상태 저장함."
    )
 MSG_HASH(
    MSG_SAVED_SUCCESSFULLY_TO,
@@ -14625,6 +14735,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCANNING_OF_DIRECTORY_FINISHED,
    "디렉토리 검색 완료."
+   )
+MSG_HASH(
+   MSG_SCANNING_NO_DATABASE,
+   "검색 실패, 데이터베이스를 찾을 수 없음."
    )
 MSG_HASH(
    MSG_SENDING_COMMAND,

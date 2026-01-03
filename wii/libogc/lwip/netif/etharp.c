@@ -758,11 +758,6 @@ err_t etharp_query(struct netif *netif, struct ip_addr *ipaddr, struct pbuf *q)
         	/* ... in the empty queue */
         	pbuf_ref(p);
         	arp_table[i].p = p;
-#if 0 /* multi-packet-queueing disabled, see bug #11400 */
-        } else {
-        	/* ... at tail of non-empty queue */
-          pbuf_queue(arp_table[i].p, p);
-#endif
         }
         LWIP_DEBUGF(ETHARP_DEBUG | DBG_TRACE, ("etharp_query: queued packet %p on ARP entry %"S16_F"\n", (void *)q, (s16_t)i));
         result = ERR_OK;

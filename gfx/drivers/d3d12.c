@@ -708,13 +708,13 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    if (!texture->desc.MipLevels)
       texture->desc.MipLevels          = 1;
 
-   if (   !(texture->desc.Width  >> (texture->desc.MipLevels - 1))
-       && !(texture->desc.Height >> (texture->desc.MipLevels - 1)))
+   /* Calculate mipmap count */
+   if (texture->desc.Width > 1 || texture->desc.Height > 1)
    {
-      unsigned width                   = texture->desc.Width >> 5;
-      unsigned height                  = texture->desc.Height >> 5;
+      unsigned width                   = texture->desc.Width;
+      unsigned height                  = texture->desc.Height;
       texture->desc.MipLevels          = 1;
-      while (width && height)
+      while ((width > 1) || (height > 1))
       {
          width  >>= 1;
          height >>= 1;
@@ -823,33 +823,11 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    texture->size_data.w = 1.0f / texture->desc.Height;
 }
 
-static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
-      d3d12_texture_t* texture, void *userdata)
+static void d3d12_generate_mipmaps(
+      D3D12GraphicsCommandList cmd,
+      d3d12_texture_t* texture,
+      void *userdata)
 {
-   D3D12_TEXTURE_COPY_LOCATION src, dst;
-
-   src.pResource        = texture->upload_buffer;
-   src.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-   src.PlacedFootprint  = texture->layout;
-
-   dst.pResource        = texture->handle;
-   dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-   dst.SubresourceIndex = 0;
-
-   D3D12_RESOURCE_TRANSITION(
-         cmd,
-         texture->handle,
-         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-         D3D12_RESOURCE_STATE_COPY_DEST);
-
-   cmd->lpVtbl->CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
-
-   D3D12_RESOURCE_TRANSITION(
-         cmd,
-         texture->handle,
-         D3D12_RESOURCE_STATE_COPY_DEST,
-         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
    if (texture->desc.MipLevels > 1)
    {
       unsigned       i;
@@ -903,6 +881,36 @@ static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
          }
       }
    }
+}
+
+static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
+      d3d12_texture_t* texture, void *userdata)
+{
+   D3D12_TEXTURE_COPY_LOCATION src, dst;
+
+   src.pResource        = texture->upload_buffer;
+   src.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+   src.PlacedFootprint  = texture->layout;
+
+   dst.pResource        = texture->handle;
+   dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   dst.SubresourceIndex = 0;
+
+   D3D12_RESOURCE_TRANSITION(
+         cmd,
+         texture->handle,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+         D3D12_RESOURCE_STATE_COPY_DEST);
+
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
+
+   D3D12_RESOURCE_TRANSITION(
+         cmd,
+         texture->handle,
+         D3D12_RESOURCE_STATE_COPY_DEST,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+   d3d12_generate_mipmaps(cmd, texture, userdata);
 
    texture->dirty = false;
 }
@@ -1978,7 +1986,7 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
 static void d3d12_update_viewport(d3d12_video_t *d3d12, bool force_full)
 {
    video_driver_update_viewport(&d3d12->vp, force_full,
-         (d3d12->flags & D3D12_ST_FLAG_KEEP_ASPECT) ? true : false);
+         (d3d12->flags & D3D12_ST_FLAG_KEEP_ASPECT) ? true : false, true);
 
    d3d12->frame.viewport.TopLeftX = d3d12->vp.x;
    d3d12->frame.viewport.TopLeftY = d3d12->vp.y;
@@ -2995,13 +3003,7 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
 
       if (SUCCEEDED(d3d12->device->lpVtbl->QueryInterface(d3d12->device, uuidof(ID3D12InfoQueue), (void*)&d3d12->info_queue)))
       {
-#if 0
-         d3d12->info_queue->lpVtbl->SetBreakOnSeverity(d3d12->info_queue, D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-#endif
          d3d12->info_queue->lpVtbl->SetBreakOnSeverity(d3d12->info_queue, D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
-#if 0
-         d3d12->info_queue->lpVtbl->SetBreakOnSeverity(d3d12->info_queue, D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
-#endif
       }
    }
 
@@ -3631,6 +3633,8 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          d3d12->pass[i].rt.desc.Flags      = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
          d3d12->pass[i].rt.srv_heap        = &d3d12->desc.srv_heap;
          d3d12->pass[i].rt.desc.Format = glslang_format_to_dxgi(d3d12->pass[i].semantics.format);
+         /* Initialize MipLevels so mipmaps are created for render target */
+         d3d12->pass[i].rt.desc.MipLevels = 0;
          d3d12_release_texture(&d3d12->pass[i].rt);
          d3d12_init_texture(d3d12->device, &d3d12->pass[i].rt);
 
@@ -4264,6 +4268,9 @@ static bool d3d12_gfx_frame(
                   d3d12->pass[i].rt.handle,
                   D3D12_RESOURCE_STATE_RENDER_TARGET,
                   D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+            /* Generate mipmaps for framebuffer if it has multiple mipmap levels */
+            d3d12_generate_mipmaps(cmd, &d3d12->pass[i].rt, d3d12);
             texture = &d3d12->pass[i].rt;
          }
          else

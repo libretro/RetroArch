@@ -11,7 +11,7 @@ var LibraryRWebCam = {
 
    $RWebCamReady: function(c) {
       try {
-         /* try to start video it was paused */
+         /* try to start video if it was paused */
          if (RWC.contexts[c].videoElement.paused) RWC.contexts[c].videoElement.play();
       } catch (e) {}
       return RWC.contexts[c].cameraRunning && !RWC.contexts[c].videoElement.paused && RWC.contexts[c].videoElement.videoWidth != 0 && RWC.contexts[c].videoElement.videoHeight != 0;
@@ -77,7 +77,7 @@ var LibraryRWebCam = {
       var videoOpts = true;
       if (RWC.contexts[c].idealWidth && RWC.contexts[c].idealHeight) {
          /* save us some cropping/scaling, only honored by some browsers */
-         videoOpts = {width: RWC.contexts[c].idealWidth, height: RWC.contexts[c].idealHeight, aspectRatio: RWC.contexts[c].idealWidth / RWC.contexts[c].idealHeight};
+         videoOpts = {width: RWC.contexts[c].idealWidth, height: RWC.contexts[c].idealHeight, aspectRatio: RWC.contexts[c].idealWidth / RWC.contexts[c].idealHeight, resizeMode: "crop-and-scale"};
       }
 
       navigator.mediaDevices.getUserMedia({audio: false, video: videoOpts}).then(function(stream) {
@@ -257,13 +257,13 @@ var LibraryRWebCam = {
             if (RWC.contexts[c].proxied)
                Module.ctx.texImage2D(Module.ctx.TEXTURE_2D, 0, Module.ctx.RGBA, RWC.contexts[c].width, RWC.contexts[c].height, 0, Module.ctx.RGBA, Module.ctx.UNSIGNED_BYTE, imageSrcGL);
             else
-               Module.ctx.texImage2D(Module.ctx.TEXTURE_2D, 0, Module.ctx.RGB, Module.ctx.RGB, Module.ctx.UNSIGNED_BYTE, imageSrcGL);
+               Module.ctx.texImage2D(Module.ctx.TEXTURE_2D, 0, Module.ctx.RGBA, Module.ctx.RGBA, Module.ctx.UNSIGNED_BYTE, imageSrcGL);
             RWC.contexts[c].glFirstFrame = false;
          } else {
             if (RWC.contexts[c].proxied)
                Module.ctx.texSubImage2D(Module.ctx.TEXTURE_2D, 0, 0, 0, RWC.contexts[c].width, RWC.contexts[c].height, Module.ctx.RGBA, Module.ctx.UNSIGNED_BYTE, imageSrcGL);
             else
-               Module.ctx.texSubImage2D(Module.ctx.TEXTURE_2D, 0, 0, 0, Module.ctx.RGB, Module.ctx.UNSIGNED_BYTE, imageSrcGL);
+               Module.ctx.texSubImage2D(Module.ctx.TEXTURE_2D, 0, 0, 0, Module.ctx.RGBA, Module.ctx.UNSIGNED_BYTE, imageSrcGL);
          }
          _glBindTexture(0x0DE1 /* GL_TEXTURE_2D */, prev);
 

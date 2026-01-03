@@ -912,14 +912,11 @@ static void vita2d_update_viewport(vita_video_t* vita,
       video_mode_data        = vita2d_get_video_mode_data();
    unsigned temp_width       = video_mode_data.width;
    unsigned temp_height      = video_mode_data.height;
-   int x                     = 0;
-   int y                     = 0;
    float device_aspect       = ((float)temp_width) / temp_height;
    float width               = temp_width;
    float height              = temp_height;
    settings_t *settings      = config_get_ptr();
    bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    if (video_scale_integer)
    {
@@ -931,7 +928,6 @@ static void vita2d_update_viewport(vita_video_t* vita,
    }
    else if (vita->keep_aspect)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
       if (    (vita->rotation == ORIENTATION_VERTICAL)
            || (vita->rotation == ORIENTATION_FLIPPED_ROTATED))
       {
@@ -989,7 +985,6 @@ static void vita2d_set_viewport_wrapper(void *data, unsigned vp_width,
    else if (vita->keep_aspect && !force_full)
    {
       float desired_aspect = video_driver_get_aspect_ratio();
-
 #if defined(HAVE_MENU)
       if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {

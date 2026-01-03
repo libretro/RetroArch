@@ -82,6 +82,10 @@
 #include "../steam/steam.h"
 #endif
 
+#ifdef HAVE_COCOATOUCH
+#include "../ui/drivers/cocoa/apple_platform.h"
+#endif
+
 typedef struct menu_input_ctx_bind
 {
    char *s;
@@ -644,8 +648,9 @@ size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime,
    struct menu_state *menu_st  = &menu_driver_state;
 
    /* Trigger an update, if required */
-   if (menu_st->current_time_us - menu_st->datetime_last_time_us >=
-         DATETIME_CHECK_INTERVAL)
+   if (   menu_st->current_time_us - menu_st->datetime_last_time_us >=
+          DATETIME_CHECK_INTERVAL
+       || menu_st->datetime_last_time_us == 0)
    {
       time_t time_;
       struct tm tm_;
@@ -1018,8 +1023,9 @@ size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate,
    enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
 
    /* Trigger an update, if required */
-   if (menu_st->current_time_us - menu_st->powerstate_last_time_us >=
-         POWERSTATE_CHECK_INTERVAL)
+   if (   menu_st->current_time_us - menu_st->powerstate_last_time_us >=
+          POWERSTATE_CHECK_INTERVAL
+       || menu_st->powerstate_last_time_us == 0)
    {
       menu_st->powerstate_last_time_us = menu_st->current_time_us;
       task_push_get_powerstate();
@@ -1062,23 +1068,41 @@ size_t menu_entries_get_title(char *s, size_t len)
       const char *label       = (list->size) ? list->list[list->size - 1].label : NULL;
 
       /* Show playlist entry instead of "Quick Menu" */
-      if (string_is_equal(label, "deferred_rpl_entry_actions"))
+      if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
       {
          playlist_t *playlist  = playlist_get_cached();
          if (playlist)
          {
             const struct playlist_entry *entry = NULL;
             playlist_get_index(playlist, menu->rpl_entry_selection_ptr, &entry);
+
             if (entry)
+            {
+               char entry_path[NAME_MAX_LENGTH];
+
+               strlcpy(entry_path, entry->path, sizeof(entry_path));
+               path_remove_extension(entry_path);
                return strlcpy(s,
-                     !string_is_empty(entry->label) ? entry->label : entry->path,
+                     !string_is_empty(entry->label) ? entry->label : path_basename(entry_path),
                      len);
+            }
          }
       }
       else
       {
          const char *path      = NULL;
          unsigned menu_type    = 0;
+
+         if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
+               && !path_is_empty(RARCH_PATH_CONTENT))
+         {
+            char content_label[NAME_MAX_LENGTH];
+
+            strlcpy(content_label, path_get(RARCH_PATH_CONTENT), sizeof(content_label));
+            path_remove_extension(content_label);
+            return strlcpy(s, path_basename(content_label), len);
+         }
+
          if (list->size)
          {
             path               = list->list[list->size - 1].path;
@@ -4547,6 +4571,12 @@ void menu_input_dialog_end(void)
     * > Required, since input is ignored for 1 frame
     *   after certain events - e.g. closing the OSK */
    menu_st->input_driver_flushing_input       = 2;
+
+#ifdef HAVE_COCOATOUCH
+   /* Dismiss iOS/tvOS native keyboard if it's currently open */
+   if (ios_keyboard_active())
+      ios_keyboard_end();
+#endif
 }
 
 #if defined(_MSC_VER)
@@ -5308,6 +5338,14 @@ unsigned menu_event(
       RETRO_DEVICE_ID_JOYPAD_Y
    };
 
+   /* Check if all menu input is blocked */
+   if (menu_st->flags & MENU_ST_FLAG_BLOCK_ALL_INPUT)
+      return MENU_ACTION_NOOP;
+
+   /* Clear OK if dragged */
+   if (menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)
+      ok_current = ok_trigger = ok_trigger_release = 0;
+
    ok_old                                          = ok_current;
 
    /* Get pointer (mouse + touchscreen) input
@@ -5317,6 +5355,13 @@ unsigned menu_event(
    /* > If pointer input is disabled, do nothing */
    if (!menu_mouse_enable && !menu_pointer_enable)
       menu_input->pointer.type = MENU_POINTER_DISABLED;
+#ifdef HAVE_COCOATOUCH
+   /* > Also disable when keyboard dialog is active to prevent touch events
+    *   from iOS keyboard (e.g., Return button) from being interpreted as
+    *   menu input that could reopen the keyboard */
+   else if (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY)
+      menu_input->pointer.type = MENU_POINTER_DISABLED;
+#endif
    else
    {
       menu_input_pointer_hw_state_t mouse_hw_state       = {0};
@@ -5769,7 +5814,7 @@ unsigned menu_event(
                   || keydown[RETRO_DEVICE_ID_JOYPAD_RIGHT]
                   || keydown[menu_cancel_btn]
                )
-               ok_trigger = false;
+               ok_trigger = 0;
 
             memset(keydown, 0, sizeof(keydown));
          }
@@ -8089,6 +8134,14 @@ int generic_menu_entry_action(
       menu_st->flags &= ~(MENU_ST_FLAG_PENDING_CLOSE_CONTENT
                         | MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH);
       menu_st->pending_env_shutdown_content_path[0] = '\0';
+
+      /* Reload core on launch failure if manually loaded */
+      if (     !path_is_empty(RARCH_PATH_CORE_LAST)
+            && !(menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE))
+      {
+         menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
+         menu_st->flags |= MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH;
+      }
    }
    else if (menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE)
    {
@@ -8174,6 +8227,17 @@ bool menu_input_dialog_start_search(void)
       input_keyboard_start_line(menu,
             &input_st->keyboard_line,
             menu_input_search_cb);
+
+#ifdef HAVE_COCOATOUCH
+   /* Use iOS/tvOS native keyboard instead of custom on-screen keyboard */
+   ios_keyboard_start(
+         (char **)menu_st->input_dialog_keyboard_buffer,
+         &input_st->keyboard_line.size,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
+         menu_input_search_cb,
+         menu);
+#endif
+
    /* While reading keyboard line input, we have to block all hotkeys. */
    input_st->flags                        |= INP_FLAG_KB_MAPPING_BLOCKED;
 
@@ -8193,6 +8257,13 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    menu_handle_t         *menu      = menu_st->driver_data;
    if (!line || !menu)
       return false;
+
+#ifdef HAVE_COCOATOUCH
+   /* Prevent reopening keyboard if it's already active
+    * This can happen when return key events trigger menu OK actions */
+   if (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY)
+      return false;
+#endif
 
 #ifdef HAVE_MIST
    steam_open_osk();
@@ -8228,6 +8299,17 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
       input_keyboard_start_line(menu,
             &input_st->keyboard_line,
             line->cb);
+
+#ifdef HAVE_COCOATOUCH
+   /* Use iOS/tvOS native keyboard instead of custom on-screen keyboard */
+   ios_keyboard_start(
+         (char **)menu_st->input_dialog_keyboard_buffer,
+         &input_st->keyboard_line.size,
+         line->label,
+         line->cb,
+         menu);
+#endif
+
    /* While reading keyboard line input, we have to block all hotkeys. */
    input_st->flags |= INP_FLAG_KB_MAPPING_BLOCKED;
 

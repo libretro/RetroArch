@@ -26,9 +26,6 @@
 #ifdef HAVE_COCOATOUCH
 #import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
 #import "WebServer.h"
-#ifdef HAVE_IOS_SWIFT
-#import "RetroArch-Swift.h"
-#endif
 #if TARGET_OS_TV
 #import <TVServices/TVServices.h>
 #import "../../pkg/apple/RetroArchTopShelfExtension/ContentProvider.h"
@@ -91,9 +88,6 @@ void *glkitview_init(void);
 void cocoa_file_load_with_detect_core(const char *filename);
 
 @interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate
-#ifdef HAVE_IOS_SWIFT
-,EmulatorTouchMouseHandlerDelegate
-#endif
 #if TARGET_OS_IOS
 ,UIDocumentPickerDelegate
 #endif
@@ -126,8 +120,17 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 #endif
 
    runloop_flags = runloop_get_flags();
-   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
+#if !TARGET_OS_TV
+   if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
+#endif
       CFRunLoopWakeUp(CFRunLoopGetMain());
+#if TARGET_OS_IOS
+   else
+      rarch_stop_draw_observer();
+#elif defined(OSX)
+   else if (!(@available(macOS 15.0, *)))
+      CFRunLoopWakeUp(CFRunLoopGetMain());
+#endif
 }
 
 void rarch_start_draw_observer(void)
@@ -135,6 +138,7 @@ void rarch_start_draw_observer(void)
    if (iterate_observer && CFRunLoopObserverIsValid(iterate_observer))
        return;
 
+   RARCH_LOG("[NS] starting draw observer\n");
    if (iterate_observer != NULL)
       CFRelease(iterate_observer);
    iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
@@ -146,6 +150,7 @@ void rarch_stop_draw_observer(void)
 {
     if (!iterate_observer || !CFRunLoopObserverIsValid(iterate_observer))
         return;
+    RARCH_LOG("[NS] stopping draw observer\n");
     CFRunLoopObserverInvalidate(iterate_observer);
     CFRelease(iterate_observer);
     iterate_observer = NULL;
@@ -178,9 +183,15 @@ void rarch_stop_draw_observer(void)
       return;
    }
 
+#if !TARGET_OS_TV
    uint32_t runloop_flags = runloop_get_flags();
-   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
+   if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
+   {
+      /* Fast-forward: observer handles all iterations */
+      rarch_start_draw_observer();
       CFRunLoopWakeUp(CFRunLoopGetMain());
+   }
+#endif
 #endif
 }
 #endif
@@ -201,14 +212,22 @@ void rarch_stop_draw_observer(void)
           * the display server will set the exact rate when needed */
          [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(60, 120, 120)];
       }
+      else
+      {
+         /* iOS 9-14: Use preferredFramesPerSecond as fallback */
+         view.displayLink.preferredFramesPerSecond = 120;
+      }
+#else
+      /* Building with SDK < iOS 15: Use preferredFramesPerSecond */
+      view.displayLink.preferredFramesPerSecond = 120;
 #endif
-      [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+      [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 #elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
       if (@available(macOS 14.0, *))
       {
          view.displayLink = [view displayLinkWithTarget:view selector:@selector(step:)];
          view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 120, 120);
-         [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+         [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
       }
 #endif
    }
@@ -539,28 +558,10 @@ void rarch_stop_draw_observer(void)
     });
 }
 
-#ifdef HAVE_IOS_SWIFT
 -(void)toggleCustomKeyboardUsingSwipe:(id)sender {
-    UISwipeGestureRecognizer *gestureRecognizer = (UISwipeGestureRecognizer*)sender;
-    [self.keyboardController.view setHidden:gestureRecognizer.direction == UISwipeGestureRecognizerDirectionDown];
-    [self updateOverlayAndFocus];
-}
-
--(void)toggleCustomKeyboard {
-    [self.keyboardController.view setHidden:!self.keyboardController.view.isHidden];
-    [self updateOverlayAndFocus];
-}
-
--(void) updateOverlayAndFocus
-{
-    int cmdData = self.keyboardController.view.isHidden ? 0 : 1;
+    enum input_game_focus_cmd_type cmdData = GAME_FOCUS_CMD_TOGGLE;
     command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &cmdData);
-    if (self.keyboardController.view.isHidden)
-        command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-    else
-        command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
 }
-#endif
 
 -(BOOL)prefersHomeIndicatorAutoHidden { return YES; }
 -(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
@@ -651,10 +652,6 @@ void rarch_stop_draw_observer(void)
 - (void)viewWillLayoutSubviews
 {
    [self adjustViewFrameForSafeArea];
-#ifdef HAVE_IOS_SWIFT
-   [self.view bringSubviewToFront:self.keyboardController.view];
-   [self.view bringSubviewToFront:self.helperBarView];
-#endif
 }
 
 /* NOTE: This version runs on iOS6+. */
@@ -712,11 +709,6 @@ void rarch_stop_draw_observer(void)
     swipe.delegate                  = self;
     swipe.direction                 = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
-#ifdef HAVE_IOS_SWIFT
-    if (@available(iOS 13, *))
-        [self setupMouseSupport];
-    if (@available(iOS 13, *))
-        [self setupEmulatorKeyboard];
     UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
     showKeyboardSwipe.numberOfTouchesRequired   = 3;
     showKeyboardSwipe.direction                 = UISwipeGestureRecognizerDirectionUp;
@@ -727,9 +719,6 @@ void rarch_stop_draw_observer(void)
     hideKeyboardSwipe.direction                 = UISwipeGestureRecognizerDirectionDown;
     hideKeyboardSwipe.delegate                  = self;
     [self.view addGestureRecognizer:hideKeyboardSwipe];
-    if (@available(iOS 13, *))
-        [self setupHelperBar];
-#endif
 #elif TARGET_OS_TV
     UISwipeGestureRecognizer *siriSwipeUp    = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
     siriSwipeUp.direction                    = UISwipeGestureRecognizerDirectionUp;
@@ -772,39 +761,6 @@ void rarch_stop_draw_observer(void)
 #endif
 }
 
-#ifdef HAVE_IOS_SWIFT
-
-#pragma mark EmulatorTouchMouseHandlerDelegate
-
--(void)handleMouseClickWithIsLeftClick:(BOOL)isLeftClick isPressed:(BOOL)isPressed
-{
-    cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-    if (!apple)
-        return;
-    NSUInteger buttonIndex = isLeftClick ? 0 : 1;
-    if (isPressed)
-        apple->mouse_buttons |= (1 << buttonIndex);
-    else
-        apple->mouse_buttons &= ~(1 << buttonIndex);
-}
-
--(void)handleMouseMoveWithX:(CGFloat)x y:(CGFloat)y
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-   if (!apple)
-      return;
-   apple->mouse_rel_x = (int16_t)x;
-   apple->mouse_rel_y = (int16_t)y;
-   /* use location position to track pointer */
-   if (@available(iOS 13.4, *))
-   {
-      apple->window_pos_x = 0;
-      apple->window_pos_y = 0;
-   }
-}
-
-#endif
-
 #pragma mark GCDWebServerDelegate
 - (void)webServerDidCompleteBonjourRegistration:(GCDWebServer*)server
 {
@@ -826,22 +782,26 @@ void rarch_stop_draw_observer(void)
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
         [alert addAction:[UIAlertAction actionWithTitle:@"OK"
             style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                rarch_start_draw_observer();
+                struct menu_state *menu_st = menu_state_get_ptr();
+                menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;;
         }]];
         [alert addAction:[UIAlertAction actionWithTitle:@"Don't Show Again"
             style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                rarch_start_draw_observer();
+                struct menu_state *menu_st = menu_state_get_ptr();
+                menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;
                 configuration_set_bool(settings, settings->bools.gcdwebserver_alert, false);
         }]];
 #if TARGET_OS_IOS
         [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [[WebServer sharedInstance] webUploader].delegate = nil;
             [[WebServer sharedInstance] stopServers];
-           rarch_start_draw_observer();
+           struct menu_state *menu_st = menu_state_get_ptr();
+           menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;;
         }]];
 #endif
         [self presentViewController:alert animated:YES completion:^{
-            rarch_stop_draw_observer();
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_st->flags |= MENU_ST_FLAG_BLOCK_ALL_INPUT;
         }];
     });
 #endif

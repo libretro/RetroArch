@@ -458,16 +458,6 @@ static void coreaudio_microphone_device_list_free(const void *driver_context, st
 {
 }
 
-/* Check if microphone is using float format */
-static bool coreaudio_microphone_use_float(const void *driver_context, const void *microphone_context)
-{
-   coreaudio_microphone_t *microphone = (coreaudio_microphone_t *)microphone_context;
-   if (!microphone)
-      return false;
-
-   return microphone->use_float;
-}
-
 /* CoreAudio microphone driver structure */
 microphone_driver_t microphone_coreaudio = {
     coreaudio_microphone_init,

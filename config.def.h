@@ -334,7 +334,6 @@
 #else
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN true
 #endif
-#define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
 
 /* Specifies whether cores are allowed to
  * present core options in category submenus */
@@ -494,14 +493,10 @@
 #define DEFAULT_USE_METAL_ARG_BUFFERS (!!__builtin_available(macOS 12, iOS 13, tvOS 12, *))
 #endif
 
-/* Enable use of shaders. */
-#ifdef RARCH_CONSOLE
+/* Enable use of shaders */
 #define DEFAULT_SHADER_ENABLE true
-#else
-#define DEFAULT_SHADER_ENABLE false
-#endif
 
-/* Should we enable hdr when its supported*/
+/* Should we enable hdr when its supported */
 #define DEFAULT_VIDEO_HDR_ENABLE false
 
 /* The maximum nunmber of nits the actual display can show - needs to be calibrated */
@@ -668,6 +663,7 @@
 /* Ozone colour theme: 1 == Basic Black */
 #define DEFAULT_OZONE_COLOR_THEME 1
 #define DEFAULT_OZONE_PADDING_FACTOR 1.0f
+#define DEFAULT_OZONE_HEADER_ICON 1
 #define DEFAULT_OZONE_HEADER_SEPARATOR 1
 #define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
 #define DEFAULT_OZONE_SCROLL_CONTENT_METADATA false
@@ -843,7 +839,8 @@
 #define DEFAULT_XMB_VERTICAL_FADE_FACTOR           100
 #define DEFAULT_XMB_SHOW_TITLE_HEADER              true
 #define DEFAULT_XMB_SWITCH_ICONS                   true
-#define DEFAULT_XMB_TITLE_MARGIN                   5
+#define DEFAULT_XMB_CURRENT_MENU_ICON              1
+#define DEFAULT_XMB_TITLE_MARGIN                   3
 #define DEFAULT_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET 0
 #define MAXIMUM_XMB_TITLE_MARGIN                   12
 #define DEFAULT_XMB_ALPHA_FACTOR                   90
@@ -871,7 +868,7 @@
 #define DEFAULT_MENU_FOOTER_OPACITY 1.000f
 #define DEFAULT_MENU_HEADER_OPACITY 1.000f
 
-#if defined(HAVE_OPENGLES2) || (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
+#if (defined(HAVE_OPENGLES2) && !defined(EMSCRIPTEN)) || (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
 #define DEFAULT_MENU_SHADER_PIPELINE 1
 #else
 #define DEFAULT_MENU_SHADER_PIPELINE 2
@@ -1528,7 +1525,7 @@
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 #endif
 
-#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_MAIN
+#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_CONTENT
 
 /* Show the indices of playlist entries in
  * a menu-driver-specific fashion */
@@ -1654,6 +1651,7 @@
 #define DEFAULT_INPUT_POLL_TYPE_BEHAVIOR 2
 #define DEFAULT_INPUT_HOTKEY_BLOCK_DELAY 5
 #define DEFAULT_INPUT_HOTKEY_DEVICE_MERGE false
+#define DEFAULT_INPUT_HOTKEY_FOLLOWS_PLAYER1 false
 
 #define DEFAULT_GFX_THUMBNAILS_DEFAULT 3
 
@@ -1849,6 +1847,9 @@
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows/x86_64/latest/"
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows/x86/latest/"
+#elif defined(__aarch64__) || defined(_M_ARM64)
+/* No official MinGW/clang ARM64 buildbot yet – use empty default */
+#define DEFAULT_BUILDBOT_SERVER_URL ""
 #endif
 #endif
 #elif defined(__linux__)

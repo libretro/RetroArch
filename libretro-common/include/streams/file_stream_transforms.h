@@ -89,7 +89,7 @@ int rfclose(RFILE* stream);
 int64_t rftell(RFILE* stream);
 
 /** @see https://en.cppreference.com/w/c/io/fseek */
-int64_t rfseek(RFILE* stream, int64_t offset, int origin);
+int rfseek(RFILE* stream, int64_t offset, int origin);
 
 /** @see https://en.cppreference.com/w/c/io/fread */
 int64_t rfread(void* buffer,

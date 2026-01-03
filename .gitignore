@@ -244,6 +244,14 @@ gfx/common/wayland/xdg-toplevel-icon-v1.h
 gfx/common/wayland/xdg-toplevel-icon-v1.c
 gfx/common/wayland/xdg-toplevel-tag-v1.h
 gfx/common/wayland/xdg-toplevel-tag-v1.c
+gfx/common/wayland/webos-foreign.c
+gfx/common/wayland/webos-foreign.h
+gfx/common/wayland/webos-input-manager.c
+gfx/common/wayland/webos-input-manager.h
+gfx/common/wayland/webos-shell.c
+gfx/common/wayland/webos-shell.h
+gfx/common/wayland/webos-surface-group.c
+gfx/common/wayland/webos-surface-group.h
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip

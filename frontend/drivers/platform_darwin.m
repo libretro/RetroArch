@@ -373,7 +373,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    }
 #endif
    if (portable)
-      strncpy(documents_dir_buf, application_data, sizeof(documents_dir_buf));
+      strlcpy(documents_dir_buf, application_data, sizeof(documents_dir_buf));
    else
    {
       CFSearchPathForDirectoriesInDomains(documents_dir_buf, sizeof(documents_dir_buf));
@@ -385,7 +385,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    path_resolve_realpath(documents_dir_buf, sizeof(documents_dir_buf), true);
    strlcat(documents_dir_buf, "/RetroArch", sizeof(documents_dir_buf));
    /* iOS and tvOS are going to put everything in the documents dir */
-   strncpy(application_data, documents_dir_buf, sizeof(application_data));
+   strlcpy(application_data, documents_dir_buf, sizeof(application_data));
 #endif
 
    /* By the time we are here:
@@ -482,18 +482,6 @@ static int frontend_darwin_get_rating(void)
    char model[PATH_MAX_LENGTH] = {0};
 
    frontend_darwin_get_name(model, sizeof(model));
-
-   /* iPhone 4 */
-#if 0
-   if (strstr(model, "iPhone3"))
-      return -1;
-#endif
-
-   /* iPad 1 */
-#if 0
-   if (strstr(model, "iPad1,1"))
-      return -1;
-#endif
 
    /* iPhone 4S */
    if (strstr(model, "iPhone4,1"))

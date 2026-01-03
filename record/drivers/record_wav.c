@@ -40,13 +40,13 @@ typedef struct
 /** WAV header. */
 typedef struct
 {
-   char riff[4];        /**< "RIFF" header tag. */
+   char riff[5];        /**< "RIFF" header tag. */
    uint32_t riff_size;  /**< RIFF file size.  */
-   char fourcc[4];      /**< "WAVE" tag. */
-   char fmt_tag[4];     /**< "fmt " chunk tag. */
+   char fourcc[5];      /**< "WAVE" tag. */
+   char fmt_tag[5];     /**< "fmt " chunk tag. */
    uint32_t fmt_size;   /**< Size of the following "fmt " chunk. */
    waveformatex_t fmt;  /**< Content of "fmt " chunk. */
-   char data_tag[4];    /**< "data" chunk tag. */
+   char data_tag[5];    /**< "data" chunk tag. */
    uint32_t data_size;  /**< Size of the following "data" chunk. */
 } wav_hdr_t;
 
@@ -64,7 +64,7 @@ typedef struct
 
 static bool wav_write_hdr(record_wav_t *handle, unsigned channels, unsigned samplerate)
 {
-   wav_hdr_t header = { "RIFF", };
+   wav_hdr_t header = { "RIFF", 0, "WAVE", "fmt ", 0, {0}, "data", 0 };
    uint32_t length;
 
    if (!handle || !handle->f)
@@ -74,8 +74,6 @@ static bool wav_write_hdr(record_wav_t *handle, unsigned channels, unsigned samp
    /* set initial size to 4 hours; to be fixed inside record_wav_finalize */
    length              = 4 * 60 * 60 * samplerate * handle->frame;
    header.riff_size    = swap_if_big32(sizeof(wav_hdr_t) - offsetof(wav_hdr_t, fourcc) + length);
-   memcpy(header.fourcc, "WAVE", sizeof(header.fourcc));
-   memcpy(header.fmt_tag, "fmt ", sizeof(header.fmt_tag));
    header.fmt_size     = swap_if_big32(sizeof(header.fmt));
    header.fmt.tag      = swap_if_big16(1);
    header.fmt.channels = swap_if_big16(channels);
@@ -83,7 +81,6 @@ static bool wav_write_hdr(record_wav_t *handle, unsigned channels, unsigned samp
    header.fmt.bps      = swap_if_big16(samplerate * handle->frame);
    header.fmt.block    = swap_if_big16(handle->frame);
    header.fmt.sample   = swap_if_big16(16);
-   memcpy(header.data_tag, "data", sizeof(header.data_tag));
    header.data_size    = swap_if_big32(length);
 
    return fwrite(&header, sizeof(header), 1, handle->f) == 1;
@@ -121,44 +118,43 @@ static bool wav_fix_hdr_and_close(record_wav_t *handle)
 static void *record_wav_new(const struct record_params *params)
 {
    record_wav_t *handle = (record_wav_t*)calloc(1, sizeof(*handle));
-   if (!handle)
-      return NULL;
-
-   do
+   if (handle)
    {
-      handle->f = fopen(params->filename, "wb");
-      if (!handle->f)
+      do
       {
-         RARCH_ERR("[WAV] Cannot create \"%s\": %s.\n",
-               params->filename, strerror(errno));
-         break;
-      }
+         handle->f = fopen(params->filename, "wb");
+         if (!handle->f)
+         {
+            RARCH_ERR("[WAV] Cannot create \"%s\": %s.\n",
+                  params->filename, strerror(errno));
+            break;
+         }
 
-      if (!wav_write_hdr(handle, params->channels, params->samplerate))
-      {
-         RARCH_ERR("[WAV] Cannot write header to \"%s\": %s.\n",
-               params->filename, strerror(errno));
-         break;
-      }
+         if (!wav_write_hdr(handle, params->channels, params->samplerate))
+         {
+            RARCH_ERR("[WAV] Cannot write header to \"%s\": %s.\n",
+                  params->filename, strerror(errno));
+            break;
+         }
 
-      return handle;
-   } while (0);
-
-   free(handle);
+         return handle;
+      } while (0);
+      free(handle);
+   }
    return NULL;
 }
 
 static bool record_wav_push_audio(void *data,
       const struct record_audio_data *audio_data)
 {
-   record_wav_t *handle = (record_wav_t*)data;
    size_t frames, max, bytes;
+   record_wav_t *handle = (record_wav_t*)data;
 
    if (!handle || !audio_data || !handle->f)
       return false;
 
    frames = audio_data->frames;
-   max = (WAV_MAX_LENGTH - handle->length) / handle->frame;
+   max    = (WAV_MAX_LENGTH - handle->length) / handle->frame;
    if (frames > max)
       frames = max;
    bytes = frames * handle->frame;
@@ -180,7 +176,6 @@ static bool record_wav_finalize(void *data)
    record_wav_t *handle = (record_wav_t*)data;
    if (!handle)
       return false;
-
    return wav_fix_hdr_and_close(handle);
 }
 

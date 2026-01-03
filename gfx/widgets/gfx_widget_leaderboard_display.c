@@ -458,7 +458,8 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
          if (i == state->tracker_count)
             state->tracker_info[state->tracker_count++].id = id;
 
-         strncpy(state->tracker_info[i].display, value, sizeof(state->tracker_info[i].display));
+         strlcpy(state->tracker_info[i].display, value,
+               sizeof(state->tracker_info[i].display));
 
          {
             unsigned width = CHEEVO_LBOARD_DISPLAY_PADDING * 2;

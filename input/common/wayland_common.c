@@ -886,7 +886,7 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
          if (null_terminate)
             new_buffer_length  = *total_length + 1;
          else
-            new_buffer_length = *total_length;
+            new_buffer_length  = *total_length;
 
          if (*buffer == NULL)
             output_buffer      = malloc(new_buffer_length);
@@ -1124,7 +1124,11 @@ const struct wl_keyboard_listener keyboard_listener = {
    wl_keyboard_handle_keymap,
    wl_keyboard_handle_enter,
    wl_keyboard_handle_leave,
+#ifdef WEBOS
+   wl_keyboard_handle_key_webos,
+#else
    wl_keyboard_handle_key,
+#endif
    wl_keyboard_handle_modifiers,
    wl_keyboard_handle_repeat_info
 };

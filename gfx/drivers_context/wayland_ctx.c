@@ -46,6 +46,26 @@
 #define EGL_PLATFORM_WAYLAND_KHR 0x31D8
 #endif
 
+#ifdef WEBOS
+extern void gfx_ctx_wl_get_video_size_webos(void*, unsigned*, unsigned*);
+extern void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t*);
+extern void gfx_ctx_wl_update_title_webos(void*);
+extern bool gfx_ctx_wl_init_webos(const toplevel_listener_t*, gfx_ctx_wayland_data_t**);
+extern bool gfx_ctx_wl_set_video_mode_common_size_webos(gfx_ctx_wayland_data_t*, unsigned, unsigned, bool);
+extern bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t*, bool);
+extern bool gfx_ctx_wl_suppress_screensaver_webos(void*, bool);
+extern void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t*, void (*)(void*, unsigned*, unsigned*), bool*, bool*, unsigned*, unsigned*);
+
+#define gfx_ctx_wl_get_video_size_common gfx_ctx_wl_get_video_size_webos
+#define gfx_ctx_wl_destroy_resources_common gfx_ctx_wl_destroy_resources_webos
+#define gfx_ctx_wl_update_title_common gfx_ctx_wl_update_title_webos
+#define gfx_ctx_wl_init_common gfx_ctx_wl_init_webos
+#define gfx_ctx_wl_set_video_mode_common_size gfx_ctx_wl_set_video_mode_common_size_webos
+#define gfx_ctx_wl_set_video_mode_common_fullscreen gfx_ctx_wl_set_video_mode_common_fullscreen_webos
+#define gfx_ctx_wl_suppress_screensaver gfx_ctx_wl_suppress_screensaver_webos
+#define gfx_ctx_wl_check_window_common gfx_ctx_wl_check_window_webos
+#endif
+
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
 /* Shell surface callbacks. */
@@ -155,8 +175,7 @@ static const toplevel_listener_t toplevel_listener = {
    },
 };
 
-static const toplevel_listener_t xdg_toplevel_listener = {
-};
+static const toplevel_listener_t xdg_toplevel_listener = {0};
 
 #ifdef HAVE_EGL
 #define WL_EGL_ATTRIBS_BASE \
@@ -176,7 +195,7 @@ static bool gfx_ctx_wl_egl_init_context(gfx_ctx_wayland_data_t *wl)
    };
 
 #ifdef HAVE_OPENGLES
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3)
    static const EGLint egl_attribs_gles[] = {
       WL_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
@@ -222,7 +241,7 @@ static bool gfx_ctx_wl_egl_init_context(gfx_ctx_wayland_data_t *wl)
          else
 #endif
 #endif
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3)
             attrib_ptr = egl_attribs_gles;
 #endif
 #endif
@@ -596,6 +615,26 @@ static void gfx_ctx_wl_set_flags(void *data, uint32_t flags)
       wl->core_hw_context_enable = true;
 }
 
+static bool gfx_ctx_wl_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return egl_create_surface(&wl->egl, (void*)wl->win);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_wl_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return egl_destroy_surface(&wl->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
@@ -632,4 +671,6 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_bind_hw_render,
    NULL,
    NULL,
+   gfx_ctx_wl_create_surface,
+   gfx_ctx_wl_destroy_surface
 };

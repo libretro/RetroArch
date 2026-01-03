@@ -47,6 +47,10 @@
 #include "../../gfx/common/wayland/xdg-toplevel-icon-v1.h"
 #include "../../gfx/common/wayland/xdg-toplevel-tag-v1.h"
 
+#ifdef WEBOS
+#include "wayland_common_webos.h"
+#endif
+
 #define FRACTIONAL_SCALE_V1_DEN 120
 #define FRACTIONAL_SCALE_MULT(v, scale_num) \
    (((v) * (scale_num) + FRACTIONAL_SCALE_V1_DEN / 2) / FRACTIONAL_SCALE_V1_DEN)
@@ -173,6 +177,15 @@ typedef struct gfx_ctx_wayland_data
    struct wl_shm *shm;
    struct wl_data_device_manager *data_device_manager;
    struct wl_data_device *data_device;
+#ifdef WEBOS
+   struct wl_shell *shell;
+   struct wl_shell_surface *shell_surface;
+   struct wl_webos_shell *webos_shell;
+   struct wl_webos_shell_surface *webos_shell_surface;
+   struct wl_webos_foreign *webos_foreign;
+   struct wl_webos_surface_group_compositor *webos_surface_group_compositor;
+   struct wl_webos_input_manager *webos_input_manager;
+#endif
    data_offer_ctx *current_drag_offer;
 #ifdef HAVE_LIBDECOR_H
    struct libdecor *libdecor_context;
@@ -203,6 +216,9 @@ typedef struct gfx_ctx_wayland_data
    struct wl_list all_outputs;
    struct wl_list current_outputs;
 
+#ifdef WEBOS
+   struct wl_list all_seats;
+#endif
    struct
    {
       struct wl_cursor *default_cursor;
@@ -227,7 +243,9 @@ typedef struct gfx_ctx_wayland_data
    unsigned last_fractional_scale_num;
    unsigned pending_fractional_scale_num;
    unsigned fractional_scale_num;
-
+#ifdef WEBOS
+   uint32_t webos_surface_state;
+#endif
    bool core_hw_context_enable;
    bool fullscreen;
    bool maximized;
@@ -281,5 +299,10 @@ extern const struct wl_buffer_listener shm_buffer_listener;
 extern const struct wl_data_device_listener data_device_listener;
 
 extern const struct wl_data_offer_listener data_offer_listener;
+
+#ifdef WEBOS
+extern void wl_keyboard_handle_key_webos(void *data, struct wl_keyboard *keyboard, uint32_t serial,
+   uint32_t time, uint32_t key, uint32_t state);
+#endif
 
 #endif

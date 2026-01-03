@@ -87,7 +87,7 @@
 #include <lists/dir_list.h>
 
 #ifdef EMSCRIPTEN
-#include <emscripten/emscripten.h>
+#include "frontend/drivers/platform_emscripten.h"
 #endif
 
 #ifdef HAVE_LIBNX
@@ -246,9 +246,6 @@
 #define SHADER_FILE_WATCH_DELAY_MSEC 500
 
 #define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
-
-#define DEFAULT_NETWORK_GAMEPAD_PORT 55400
-#define UDP_FRAME_PACKETS 16
 
 #ifdef HAVE_ZLIB
 #define DEFAULT_EXT "zip"
@@ -3153,37 +3150,29 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       {
          int result = RETRO_SAVESTATE_CONTEXT_NORMAL;
 
-#ifdef HAVE_REWIND
-         if (runloop_st->rewind_st.flags &
-               STATE_MGR_REWIND_ST_FLAG_IS_REWIND_SERIALIZE)
-            result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE;
-         else
-#endif
-         {
 #if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
-            if (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE)
-            {
+         if (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE)
+         {
 #ifdef HAVE_NETWORKING
-               if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-                  result = RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY;
-               else
+            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+               result = RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY;
+            else
 #endif
-               {
+            {
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-                  settings_t *settings = config_get_ptr();
-                  if (      settings->bools.run_ahead_secondary_instance
-                        && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
-                        &&  secondary_core_ensure_exists(runloop_st, settings))
-                     result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY;
-                  else
+               settings_t *settings = config_get_ptr();
+               if (      settings->bools.run_ahead_secondary_instance
+                     && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
+                     &&  secondary_core_ensure_exists(runloop_st, settings))
+                  result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY;
+               else
 #endif
                   result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE;
 #endif
-               }
             }
-#endif
          }
+#endif
 
          if (data)
             *(int*)data = result;
@@ -4302,6 +4291,10 @@ static bool event_init_content(
       /* Single-click playlist return */
       if (settings->bools.input_menu_singleclick_playlists)
          menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+
+      /* Return from empty Quick Menu if core is manually loaded and needs reloading */
+      if (!path_is_empty(RARCH_PATH_CORE_LAST))
+         menu_state_get_ptr()->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
 #endif
       return false;
    }
@@ -5031,7 +5024,7 @@ bool core_options_create_override(bool game_specific)
    RARCH_LOG("[Core] Core options file created: \"%s\".\n", options_path);
    _msg = msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY);
    runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
 
    path_set(RARCH_PATH_CORE_OPTIONS, options_path);
    if (game_specific)
@@ -5206,7 +5199,7 @@ bool core_options_remove_override(bool game_specific)
    {
       const char *_msg = msg_hash_to_str(MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
    }
 
    if (conf)
@@ -5305,6 +5298,8 @@ void core_options_flush(void)
 {
    size_t _len;
    char msg[128];
+   enum message_queue_category category
+                                   = MESSAGE_QUEUE_CATEGORY_INFO;
    runloop_state_t *runloop_st     = &runloop_state;
    core_option_manager_t *coreopts = runloop_st->core_options;
    const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
@@ -5375,7 +5370,6 @@ void core_options_flush(void)
 
    if (ret)
    {
-      /* Log result */
       _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_OPTIONS_FLUSHED),
             sizeof(msg));
       RARCH_LOG(
@@ -5384,19 +5378,19 @@ void core_options_flush(void)
    }
    else
    {
-      /* Log result */
       _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_OPTIONS_FLUSH_FAILED),
             sizeof(msg));
-      RARCH_LOG(
+      RARCH_ERR(
             "[Core] Failed to save core options to \"%s\".\n",
             path_core_options ? path_core_options : "UNKNOWN");
+      category = MESSAGE_QUEUE_CATEGORY_ERROR;
    }
 
    _len += snprintf(msg + _len, sizeof(msg) - _len, " \"%s\"",
          core_options_file);
 
    runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         MESSAGE_QUEUE_ICON_DEFAULT, category);
 }
 
 void runloop_msg_queue_push(
@@ -6167,6 +6161,7 @@ static enum runloop_state_enum runloop_check_state(
          menu_st->selection_ptr  = 0;
          menu_st->flags         &= ~MENU_ST_FLAG_PENDING_QUICK_MENU;
          menu_st->flags         &= ~MENU_ST_FLAG_PENDING_STARTUP_PAGE;
+         return RUNLOOP_STATE_POLLED_AND_SLEEP;
       }
       /* Navigate to initial startup page */
       else if (menu_st->flags & MENU_ST_FLAG_PENDING_STARTUP_PAGE)
@@ -6911,9 +6906,9 @@ static enum runloop_state_enum runloop_check_state(
       {
          check = true;
          state_slot--;
-         /* Wrap to 0 */
+         /* Wrap to Auto */
          if (state_slot < 0)
-            state_slot = 0;
+            state_slot = -1;
       }
 
       if (check)
@@ -6936,10 +6931,17 @@ static enum runloop_state_enum runloop_check_state(
 
             if (state_slot > 0)
                _len += snprintf(path + _len, sizeof(path) - _len, "%d", state_slot);
+            else if (state_slot < 0)
+               _len  = fill_pathname_join_delim(path,
+                     runloop_st->name.savestate, "auto", '.', sizeof(path));
 
             strlcpy(path + _len, FILE_PATH_PNG_EXTENSION, sizeof(path) - _len);
 
-            snprintf(msg, sizeof(msg), "%d", state_slot);
+            if (state_slot < 0)
+               snprintf(msg, sizeof(msg), "%s", "Auto");
+            else
+               snprintf(msg, sizeof(msg), "%d", state_slot);
+
             gfx_widget_state_slot_show(dispwidget_get_ptr(), msg, path);
          }
          else
@@ -7213,7 +7215,7 @@ int runloop_iterate(void)
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_dequeue_next(input_st);
 #endif
-   
+
    if (runloop_st->frame_time.callback)
    {
       /* Updates frame timing if frame timing callback is in use by the core.
@@ -7299,10 +7301,14 @@ int runloop_iterate(void)
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
+#if defined(EMSCRIPTEN) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
+         platform_emscripten_deferred_sleep(10);
+#else
 #if defined(HAVE_COCOATOUCH)
          if (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
 #endif
             retro_sleep(10);
+#endif
          return 1;
       case RUNLOOP_STATE_PAUSE:
 #ifdef HAVE_NETWORKING
@@ -7501,10 +7507,14 @@ end:
 
          if (sleep_ms > 0)
          {
+#if defined(EMSCRIPTEN) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
+            platform_emscripten_deferred_sleep(sleep_ms);
+#else
 #if defined(HAVE_COCOATOUCH)
             if (!(uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
 #endif
                retro_sleep(sleep_ms);
+#endif
          }
 
          return 1;

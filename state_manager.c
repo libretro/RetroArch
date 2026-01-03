@@ -65,26 +65,6 @@
 #include <emmintrin.h>
 #endif
 
-/* Format per frame (pseudocode): */
-#if 0
-size nextstart;
-repeat {
-   uint16 numchanged; /* everything is counted in units of uint16 */
-   if (numchanged)
-   {
-      uint16 numunchanged; /* skip these before handling numchanged */
-      uint16[numchanged] changeddata;
-   }
-   else
-   {
-      uint32 numunchanged;
-      if (!numunchanged)
-         break;
-   }
-}
-size thisstart;
-#endif
-
 /* There's no equivalent in libc, you'd think so ...
  * std::mismatch exists, but it's not optimized at all. */
 static size_t find_change(const uint16_t *a, const uint16_t *b)
@@ -626,9 +606,7 @@ void state_manager_event_init(
 
    state_manager_push_where(rewind_st->state, &state);
 
-   rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_IS_REWIND_SERIALIZE;
    content_serialize_state_rewind(state, rewind_st->size);
-   rewind_st->flags &= ~STATE_MGR_REWIND_ST_FLAG_IS_REWIND_SERIALIZE;
 
    state_manager_push_do(rewind_st->state);
 }
@@ -805,9 +783,7 @@ bool state_manager_check_rewind(
          void *state = NULL;
          state_manager_push_where(rewind_st->state, &state);
 
-         rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_IS_REWIND_SERIALIZE;
          content_serialize_state_rewind(state, rewind_st->size);
-         rewind_st->flags &= ~STATE_MGR_REWIND_ST_FLAG_IS_REWIND_SERIALIZE;
 
          state_manager_push_do(rewind_st->state);
       }

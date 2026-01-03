@@ -93,6 +93,11 @@ static void command_post_state_loaded(void)
      if (frame_time_counter_reset_after_load_state)
         video_st->frame_time_count = 0;
    }
+#if defined(HAVE_GFX_WIDGETS) && defined(HAVE_SCREENSHOTS)
+   {
+      gfx_widget_state_slot_show(dispwidget_get_ptr(), NULL, NULL);
+   }
+#endif
 }
 
 #if defined(HAVE_COMMAND)
@@ -826,7 +831,7 @@ bool command_seek_replay(command_t *cmd, const char *arg)
    {
       _len = strlcpy(reply, "OK ", sizeof(reply));
       _len += snprintf(reply+_len, sizeof(reply)-_len,
-            "%lld", input_st->bsv_movie_state.seek_target_frame);
+            "%" PRId64, input_st->bsv_movie_state.seek_target_frame);
    }
    else
       _len = strlcpy(reply, "NO", sizeof(reply));
@@ -1922,8 +1927,10 @@ bool command_set_shader(command_t *cmd, const char *arg)
 {
    enum  rarch_shader_type type = video_shader_parse_type(arg);
    settings_t  *settings        = config_get_ptr();
+   bool apply_new_shader        = !string_is_empty(arg);
 
-   if (!string_is_empty(arg))
+   configuration_set_bool(settings, settings->bools.video_shader_enable, apply_new_shader);
+   if (apply_new_shader)
    {
       gfx_ctx_flags_t flags;
       flags.flags     = 0;
@@ -2056,7 +2063,7 @@ void command_event_save_current_config(enum override_type type)
          {
             size_t _len;
             char msg[256];
-            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
+            enum message_queue_category msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             msg[0] = '\0';
 
@@ -2094,7 +2101,7 @@ void command_event_save_current_config(enum override_type type)
             size_t _len;
             char msg[256];
             int8_t ret      = config_save_overrides(type, &runloop_st->system, false, NULL);
-            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
+            enum message_queue_category msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             switch (ret)
             {
@@ -2161,7 +2168,7 @@ void command_event_remove_current_config(enum override_type type)
          {
             size_t _len;
             char msg[256];
-            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
+            enum message_queue_category msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             if (config_save_overrides(type, &runloop_st->system, true, NULL))
             {

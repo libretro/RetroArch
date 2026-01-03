@@ -767,23 +767,6 @@ static VC_CONTAINER_FOURCC_T mkv_codecid_to_fourcc(const char *codecid,
    return codecid_to_fourcc_table[i].fourcc;
 }
 
-#if 0
-/** Find the track associated with an MKV track number */
-static VC_CONTAINER_TRACK_T *mkv_reader_find_track( VC_CONTAINER_T *p_ctx, unsigned int mkv_track_num)
-{
-   VC_CONTAINER_TRACK_T *p_track = 0;
-   unsigned int i;
-
-   for(i = 0; i < p_ctx->tracks_num; i++)
-      if(p_ctx->tracks[i]->priv->module->number == mkv_track_num) break;
-
-   if(i < p_ctx->tracks_num) /* We found it */
-      p_track = p_ctx->tracks[i];
-
-   return p_track;
-}
-#endif
-
 /** Base function used to read an MKV/EBML element header.
  * This will read the element header do lots of sanity checking and return the element id
  * and the size of the data contained in the element */
@@ -1700,10 +1683,6 @@ static VC_CONTAINER_STATUS_T mkv_find_next_element(VC_CONTAINER_T *p_ctx,
          return VC_CONTAINER_ERROR_NOT_FOUND;
 
       status = mkv_read_element_data(p_ctx, element, element_size, INT64_C(1) << 30);
-#if 0
-      if(element_size < MKV_MAX_ELEMENT_SIZE) SKIP_BYTES(p_ctx, element_size);
-      else SEEK(p_ctx, STREAM_POSITION(p_ctx) + element_size);
-#endif
    } while (status == VC_CONTAINER_SUCCESS && STREAM_STATUS(p_ctx) == VC_CONTAINER_SUCCESS);
 
    if(STREAM_STATUS(p_ctx) != VC_CONTAINER_SUCCESS)

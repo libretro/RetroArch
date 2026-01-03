@@ -235,8 +235,7 @@ static void lq2x_generic_packets(void *data,
       unsigned y_start       = (height * i) / filt->threads;
       unsigned y_end         = (height * (i + 1)) / filt->threads;
       thr->out_data          = (uint8_t*)output + y_start * LQ2X_SCALE * output_stride;
-      thr->in_data           = (const uint8_t*)input + y_start * input_stride;
-      thr->out_pitch         = output_stride;
+      thr->in_data           = (const uint8_t*)input + y_start * input_stride; thr->out_pitch         = output_stride;
       thr->in_pitch          = input_stride;
       thr->width             = width;
       thr->height            = y_end - y_start;
@@ -248,10 +247,6 @@ static void lq2x_generic_packets(void *data,
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
          packets[i].work     = lq2x_work_cb_rgb565;
-#if 0
-      else if (filt->in_fmt == SOFTFILTER_FMT_RGB4444)
-         packets[i].work = lq2x_work_cb_rgb4444;
-#endif
       else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
          packets[i].work     = lq2x_work_cb_xrgb8888;
       packets[i].thread_data = thr;
