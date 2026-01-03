@@ -2076,12 +2076,11 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       {
          if (input_config_get_device_autoconfigured(controller))
          {
-            /* Port and Device Name: s (#n) */
+            /* Port and Device Name */
             snprintf(entry, sizeof(entry), /* Note: format string below */
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
                   controller + 1,
-                  input_config_get_device_name(controller),
-                  input_config_get_device_name_index(controller));
+                  input_config_get_device_name(controller));
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                   MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))

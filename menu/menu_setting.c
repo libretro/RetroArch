@@ -8037,7 +8037,7 @@ static size_t get_string_representation_input_device_index(
       if (!string_is_empty(device_name))
       {
          unsigned idx = input_config_get_device_name_index(map);
-         size_t _len  = strlcpy(s, device_name, len);
+         size_t _len  = snprintf(s, len, "#%u: %s", map + 1, device_name);
 
          /* If idx is non-zero, it's part of a set */
          if (idx > 0)
@@ -8045,9 +8045,9 @@ static size_t get_string_representation_input_device_index(
       }
       else
          _len = snprintf(s, len,
-               "%s (#%u)",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               map + 1);
+               "#%u: %s",
+               map + 1,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 
    if (string_is_empty(s))
@@ -8102,16 +8102,14 @@ static size_t get_string_representation_input_mouse_index(
    {
       const char *device_name = input_config_get_mouse_display_name(map);
       if (!string_is_empty(device_name))
-         _len  = strlcpy(s, device_name, len);
+         _len = snprintf(s, len, "#%u: %s", map + 1, device_name);
       else if (map > 0)
-      {
-         _len  = strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               len);
-         _len += snprintf(s + _len, len - _len, " (#%u)", map + 1);
-      }
+         _len = snprintf(s, len,
+               "#%u: %s",
+               map + 1,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
       else
-         _len  = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+         _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    }
 
    if (string_is_empty(s))

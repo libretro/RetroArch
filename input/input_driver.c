@@ -5059,7 +5059,10 @@ void input_config_set_mouse_display_name(unsigned port, const char *name)
 
    /* Strip non-ASCII characters */
    if (!string_is_empty(name))
+   {
       string_copy_only_ascii(name_ascii, name);
+      string_trim_whitespace(name_ascii);
+   }
 
    if (!string_is_empty(name_ascii))
       strlcpy(input_st->input_mouse_info[port].display_name, name_ascii,
