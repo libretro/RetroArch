@@ -10408,7 +10408,8 @@ static void ozone_render(void *data,
          if (   (cursor_x_delta >  ozone->pointer_active_delta)
              || (cursor_x_delta < -ozone->pointer_active_delta)
              || (cursor_y_delta >  ozone->pointer_active_delta)
-             || (cursor_y_delta < -ozone->pointer_active_delta))
+             || (cursor_y_delta < -ozone->pointer_active_delta)
+             || (ozone->pointer.flags & MENU_INP_PTR_FLG_PRESSED))
             ozone->flags |=  OZONE_FLAG_CURSOR_MODE;
       }
       /* On touchscreens, just check for any movement */
