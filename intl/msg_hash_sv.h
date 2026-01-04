@@ -12376,10 +12376,6 @@ MSG_HASH(
    "Ansluten"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Enhetsnamn: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Enhetens skärmnamn: %s\nEnhetens konfigurationsnamn: %s\nEnhets-VID/PID: %d/%d"
    )

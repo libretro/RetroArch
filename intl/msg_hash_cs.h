@@ -12372,10 +12372,6 @@ MSG_HASH(
    "Připojeno"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d název zařízení: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Název zařízení na displeji: %s\nNázev konfiguračního zařízení: %s\nVID/PID: %d/%d"
    )

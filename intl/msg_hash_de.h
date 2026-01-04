@@ -12604,10 +12604,6 @@ MSG_HASH(
    "Verbunden"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Gerätename: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Geräte-Anzeigename: %s\nGeräte-Konfigurationsname: %s\nGeräte-VID/PID: %d/%d"
    )

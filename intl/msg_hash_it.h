@@ -12720,10 +12720,6 @@ MSG_HASH(
    "Porta"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Nome dispositivo porta %d: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Nome display dispositivo: %s\nNome configurazione dispositivo: %s\nID dispositivo/PID: %d/%d"
    )

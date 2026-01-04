@@ -1335,6 +1335,10 @@ MSG_HASH(
    "Kun pois käytöstä, tiedostot siirretään varmuuskopio-kansioon, ennen kuin niitä korvataan tai poistetaan."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Synkronointitila"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
    "Automaattinen"
    )
@@ -6726,6 +6730,10 @@ MSG_HASH(
    "Viimeksi pelattu:"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
+   "Toistokerrat:"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
    "sekunti"
    )
@@ -9371,6 +9379,10 @@ MSG_HASH(
    "Otsikkokuva"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
+   "Sisällön logo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
    "Normaali"
    )
@@ -11360,10 +11372,6 @@ MSG_HASH(
    "Portti"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Portti %d Laitteen nimi: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Laitteen näyttönimi: %s\nLaitteen asetusnimi: %s\nLaitteen VID/PID: %d/%d"
    )
@@ -11944,6 +11952,10 @@ MSG_HASH(
    "%.*s on liittynyt syöttölaitteilla %.*s"
    )
 MSG_HASH(
+   MSG_NETPLAY_PLAYERS_INFO,
+   "%d pelaaja(a)"
+   )
+MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
    "Verkkopelin yhteysyritys epäonnistui, koska toinen osapuoli ei käytä RetroArchia tai käyttää vanhaa versiota RetroArchista."
    )
@@ -12127,6 +12139,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_ALL_CORES_SWITCHED_PFD,
    "Kaikki tuetut ytimet vaihdettu play kaupan versioihin"
+   )
+MSG_HASH(
+   MSG_NUM_CORES_UPDATED,
+   "Ytimiä päivitetty: "
+   )
+MSG_HASH(
+   MSG_NUM_CORES_LOCKED,
+   "Ytimiä ohitettu: "
    )
 MSG_HASH(
    MSG_CORE_UPDATE_DISABLED,

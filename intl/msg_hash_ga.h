@@ -13012,10 +13012,6 @@ MSG_HASH(
    "Ar líne"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Ainm Gléas: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Ainm Taispeána Gléis: %s\nAinm Cumraíochta Gléis: %s\nVID/PID Gléis: %d/%d"
    )

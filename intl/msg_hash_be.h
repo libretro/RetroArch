@@ -12536,10 +12536,6 @@ MSG_HASH(
    "Порт"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Порт %d назва прылады: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Імя прылады, якое адлюстроўваецца: %s\nФайл канфігурацыі прылады: %s\nVID/PID прылады: %d/%d"
    )

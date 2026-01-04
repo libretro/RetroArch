@@ -12904,10 +12904,6 @@ MSG_HASH(
    "En ligne"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Nom du périphérique : %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Nom d'affichage de l'appareil : %s\nNom de la configuration de l'appareil : %s\nVID/PID du périphérique : %d/%d"
    )

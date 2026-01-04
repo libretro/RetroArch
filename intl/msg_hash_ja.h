@@ -12108,10 +12108,6 @@ MSG_HASH(
    "ポート"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "ポート %d デバイス名: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "デバイス表示名: %s\nデバイス設定名: %s\nデバイス VID/PID %d/%d"
    )

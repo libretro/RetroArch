@@ -12792,10 +12792,6 @@ MSG_HASH(
    "Porto"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Porto %d Nome do dispositivo: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Nome de visualización do dispositivo: %s\nNome da configuración do dispositivo: %s\nVID/PID do dispositivo: %d/%d"
    )

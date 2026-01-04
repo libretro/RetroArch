@@ -12632,10 +12632,6 @@ MSG_HASH(
    "Csatlakozó"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "%d. csatlakozó, eszköz neve: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Eszköz neve: %s\nEszközkonfiguráció neve: %s\nEszköz gyártó/termék azonosítói: %d/%d"
    )

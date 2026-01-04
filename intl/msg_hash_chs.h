@@ -12940,10 +12940,6 @@ MSG_HASH(
    "端口"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "端口 %d 设备名称: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "设备显示名称: %s\n设备配置名称: %s\n设备VID/PID: %d/%d"
    )

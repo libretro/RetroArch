@@ -13036,10 +13036,6 @@ MSG_HASH(
    "Порт"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Назва пристрою порта %d %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Відображуване ім’я пристрою: %s\nІм’я конфігурації пристрою: %s\nVID/PID пристрою: %d/%d"
    )

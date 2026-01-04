@@ -12948,10 +12948,6 @@ MSG_HASH(
    "Çevrimiçi"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Cihaz Adı: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Cihaz Görünen Adı: %s\nCihaz Yapılandırma Adı: %s\nCihaz VID/PID: %d/%d"
    )

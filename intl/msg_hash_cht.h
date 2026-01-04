@@ -12448,10 +12448,6 @@ MSG_HASH(
    "連接埠"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "連接埠 %d 裝置名稱: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "連接裝置名稱: %s\n隨插即用配置: %s\n供應商編號/產品編號: %d/%d"
    )

@@ -12992,10 +12992,6 @@ MSG_HASH(
    "Cổng"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Cổng %d Tên Thiết Bị: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Tên hiển thị thiết bị: %s\nTên cấu hình thiết bị: %s\nVID/PID của thiết bị: %d/%d"
    )

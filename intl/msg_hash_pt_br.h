@@ -12809,7 +12809,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Dispositivo da porta %d: %s (nº %d)"
+   "Porta %d Nome do Dispositivo: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,

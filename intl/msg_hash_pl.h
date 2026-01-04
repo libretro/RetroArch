@@ -11104,10 +11104,6 @@ MSG_HASH(
    "Dostępny"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Nazwa urządzenia: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Wyświetlana nazwa urządzenia: %s\nNazwa konfiguracji urządzenia: %s\nVID/PID urządzenia: %d/%d"
    )

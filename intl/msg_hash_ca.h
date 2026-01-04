@@ -12832,10 +12832,6 @@ MSG_HASH(
    "En línia"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Nom dispositiu: %s (#%d)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Nom per mostrar del dispositiu: %s\nNom de configuració del dispositiu: %s\n VID/PID del dispositiu: %d/%d"
    )
