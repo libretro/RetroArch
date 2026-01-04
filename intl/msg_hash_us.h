@@ -7993,7 +7993,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "Add new content and remove invalid entries by repeating the 'Manual Scan' operation last used to create or edit the playlist."
+   "Add new content and remove invalid entries by repeating the content scan operation last used to create or edit the playlist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
@@ -8590,11 +8590,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
-   "Manual Scan"
+   "Content Scan"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_LIST,
-   "Configurable scan based on content file names. Does not require content to match the database."
+   "Configurable scan based on content file names and/or database match."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
@@ -8660,31 +8660,31 @@ MSG_HASH(
    "Add to Mixer and Play"
    )
 
-/* Import Content > Manual Scan */
+/* Import Content > Content Scan */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
-   "Content Directory"
+   "Content Location"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DIR,
-   "Select a directory to scan for content."
+   "Select a directory (or file) to scan for content."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "System Name"
+   "Target Playlist"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-   "Specify a 'system name' with which to associate scanned content. Used to name to the generated playlist file and to identify playlist thumbnails."
+   "Name of the generated playlist file, also used to identify playlist thumbnails. Automatic setting will use the same name as the matching database or content directory."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Custom System Name"
+   "Custom Playlist Name"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Manually specify a 'system name' for scanned content. Only used when 'System Name' is set to '<Custom>'."
+   "Custom playlist name for scanned content."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,

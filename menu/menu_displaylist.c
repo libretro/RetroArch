@@ -6801,70 +6801,151 @@ static unsigned menu_displaylist_parse_manual_content_scan_list(
          MENU_SETTING_MANUAL_CONTENT_SCAN_DIR, 0, 0, NULL))
       count++;
 
-   /* System name */
+   /* Scan method - automatic or custom (more entries) */
    if (menu_entries_append(info_list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME),
-         msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME),
-         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-         MENU_SETTING_MANUAL_CONTENT_SCAN_SYSTEM_NAME, 0, 0, NULL))
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_METHOD),
+         msg_hash_to_str(MENU_ENUM_LABEL_SCAN_METHOD),
+         MENU_ENUM_LABEL_SCAN_METHOD,
+         MENU_SETTING_SCAN_METHOD, 0, 0, NULL))
       count++;
 
-   /* Custom system name */
-   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
-         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM, PARSE_ONLY_STRING,
-         false) == 0)
-      count++;
+   if (manual_content_scan_get_scan_method_enum() == MANUAL_CONTENT_SCAN_METHOD_CUSTOM)
+   {
+      /* DB usage - matching strategy */
+      if (menu_entries_append(info_list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_USE_DB),
+            msg_hash_to_str(MENU_ENUM_LABEL_SCAN_USE_DB),
+            MENU_ENUM_LABEL_SCAN_USE_DB,
+            MENU_SETTING_SCAN_USE_DB, 0, 0, NULL))
+         count++;
 
-   /* Core name */
-   if (menu_entries_append(info_list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME),
-         msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME),
-         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-         MENU_SETTING_MANUAL_CONTENT_SCAN_CORE_NAME, 0, 0, NULL))
-      count++;
+      if (manual_content_scan_get_scan_use_db_enum() == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
+          manual_content_scan_get_scan_use_db_enum() == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
+      {         
+         /* Arcade DAT file - only if DAT file is used*/
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE, PARSE_ONLY_PATH,
+               false) == 0)
+            count++;
+      }
+      else if (manual_content_scan_get_scan_use_db_enum() != MANUAL_CONTENT_SCAN_USE_DB_NONE)
+      {
+         /* Database selection */
+         if (menu_entries_append(info_list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT),
+               msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DB_SELECT),
+               MENU_ENUM_LABEL_SCAN_DB_SELECT,
+               MENU_SETTING_SCAN_DB_SELECT, 0, 0, NULL))
+            count++;
+      }
 
-   /* File extensions */
-   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
-         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS, PARSE_ONLY_STRING,
-         false) == 0)
-      count++;
+      /* Target playlist (system name in old terminology) */
+      if (menu_entries_append(info_list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME),
+            msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME),
+            MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
+            MENU_SETTING_MANUAL_CONTENT_SCAN_SYSTEM_NAME, 0, 0, NULL))
+         count++;
 
-   /* Search recursively */
-   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
-         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY, PARSE_ONLY_BOOL,
-         false) == 0)
-      count++;
+      if (manual_content_scan_get_menu_system_name_type() == MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM)
+      {
+         /* Custom target playlist */
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM, PARSE_ONLY_STRING,
+               false) == 0)
+            count++;
+      }
+      if (manual_content_scan_get_menu_system_name_type() == MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM ||
+          manual_content_scan_get_menu_system_name_type() == MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR)
+      {
+         /* DB reference skipping only makes sense if there is a DB used */
+         if (manual_content_scan_get_scan_use_db_enum() == MANUAL_CONTENT_SCAN_USE_DB_STRICT ||
+             manual_content_scan_get_scan_use_db_enum() == MANUAL_CONTENT_SCAN_USE_DB_LOOSE)
+         {
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
+                  MENU_ENUM_LABEL_SCAN_OMIT_DB_REF, PARSE_ONLY_BOOL,
+                  false) == 0)
+               count++;
+         }
+      }
 
-   /* Search inside archive files */
-   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
-         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES, PARSE_ONLY_BOOL,
-         false) == 0)
-      count++;
+      /* Core name */
+      if (menu_entries_append(info_list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME),
+            msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME),
+            MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+            MENU_SETTING_MANUAL_CONTENT_SCAN_CORE_NAME, 0, 0, NULL))
+         count++;
 
-   /* Arcade DAT file */
-   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
-         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE, PARSE_ONLY_PATH,
-         false) == 0)
-      count++;
+      /* File extensions */
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
+            MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_FILE_EXTS, PARSE_ONLY_STRING,
+            false) == 0)
+         count++;
 
-   /* Arcade DAT filter */
-   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
-         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER, PARSE_ONLY_BOOL,
-         false) == 0)
-      count++;
+      /* Search recursively */
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
+            MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY, PARSE_ONLY_BOOL,
+            false) == 0)
+         count++;
 
-   /* Overwrite playlist */
-   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
-         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE, PARSE_ONLY_BOOL,
-         false) == 0)
-      count++;
+      if (*(manual_content_scan_get_search_recursively_ptr()) == false)
+      {
+         /* Scan only one file */
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
+               MENU_ENUM_LABEL_SCAN_SINGLE_FILE, PARSE_ONLY_BOOL,
+               false) == 0)
+            count++;
+      }
 
-   /* Validate existing entries */
-   if (!(*manual_content_scan_get_overwrite_playlist_ptr())
-       && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
-         MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES, PARSE_ONLY_BOOL,
-         false) == 0)
-      count++;
+      /* Search inside archive files */
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
+            MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES, PARSE_ONLY_BOOL,
+            false) == 0)
+         count++;
+
+      /* Arcade DAT filter is merged with DB usage setting */
+
+      /* Hiding validate / overwrite in cases when target playlist can not be determined in advance */
+      if ((manual_content_scan_get_scan_use_db_enum()      == MANUAL_CONTENT_SCAN_USE_DB_STRICT ||
+           manual_content_scan_get_scan_use_db_enum()      == MANUAL_CONTENT_SCAN_USE_DB_LOOSE) &&
+          (manual_content_scan_get_scan_db_select_enum()   == MANUAL_CONTENT_SCAN_SELECT_DB_AUTO ||
+           manual_content_scan_get_scan_db_select_enum()   == MANUAL_CONTENT_SCAN_SELECT_DB_AUTO_FIRST_MATCH ) &&
+           manual_content_scan_get_menu_system_name_type() == MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO)
+      {
+         ;
+      }
+      else
+      {
+         /* Overwrite playlist */
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_OVERWRITE, PARSE_ONLY_BOOL,
+               false) == 0)
+            count++;
+
+         /* Validate existing entries */
+         if (!(*manual_content_scan_get_overwrite_playlist_ptr())
+             && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
+               MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES, PARSE_ONLY_BOOL,
+               false) == 0)
+            count++;
+      }
+   }
+
+   /* Scan without core match and CRC duplicate check only makes sense if there is a DB used */
+   if (manual_content_scan_get_scan_use_db_enum() == MANUAL_CONTENT_SCAN_USE_DB_STRICT ||
+       manual_content_scan_get_scan_use_db_enum() == MANUAL_CONTENT_SCAN_USE_DB_LOOSE)
+   {
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
+               MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH, PARSE_ONLY_BOOL,
+               false) == 0)
+         count++;
+
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
+               MENU_ENUM_LABEL_SCAN_SERIAL_AND_CRC, PARSE_ONLY_BOOL,
+               false) == 0)
+         count++;
+   }
 
    /* Start scan */
    if (menu_entries_append(info_list,
@@ -7919,7 +8000,7 @@ unsigned menu_displaylist_build_list(
 #endif
          break;
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
-#ifdef HAVE_LIBRETRODB
+#if 0
          if (menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                   msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),

@@ -75,8 +75,6 @@ enum database_query_type
 
 typedef struct
 {
-   struct string_list *list;
-   size_t list_ptr;
    enum database_status status;
    enum database_type type;
 } database_info_handle_t;
@@ -145,11 +143,12 @@ database_info_list_t *database_info_list_new(const char *rdb_path,
 void database_info_list_free(database_info_list_t *list);
 
 database_info_handle_t *database_info_dir_init(const char *dir,
-      enum database_type type, retro_task_t *task,
-      bool show_hidden_files);
+      enum database_type type, char* file_exts,
+      bool show_hidden_files, bool recursive, bool include_archive, 
+      struct string_list **content_list);
 
 database_info_handle_t *database_info_file_init(const char *path,
-      enum database_type type, retro_task_t *task);
+      enum database_type type, retro_task_t *task, struct string_list **content_list);
 
 void database_info_free(database_info_handle_t *handle);
 
