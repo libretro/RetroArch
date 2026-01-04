@@ -5668,6 +5668,20 @@ unsigned menu_event(
       onkeyup |= (1 << RETRO_DEVICE_ID_JOYPAD_SELECT)
                | (1 << RETRO_DEVICE_ID_JOYPAD_START);
 
+      /* Process scroll keys on release when conflicting with menu toggle */
+      if (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_CORE_RUNNING)
+      {
+         int i;
+         const struct retro_keybind menu_toggle_bind = input_config_binds[0][RARCH_MENU_TOGGLE];
+
+         for (i = RETRO_DEVICE_ID_JOYPAD_L2; i <= RETRO_DEVICE_ID_JOYPAD_R3; i++)
+         {
+            if (     (menu_toggle_bind.joykey != NO_BTN && menu_toggle_bind.joykey == input_config_binds[0][i].joykey)
+                  || (menu_toggle_bind.key != RETROK_UNKNOWN && menu_toggle_bind.key == input_config_binds[0][i].key))
+               onkeyup |= (1 << i);
+         }
+      }
+
       /* Handle OK on release with specific items */
       if (ok_current || ok_trigger_release)
       {
