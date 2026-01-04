@@ -21,7 +21,6 @@
 */
 
 #include <vfs/vfs_implementation.h>
-#include <vfs/vfs_implementation_cdrom.h>
 #include <file/file_path.h>
 #include <compat/fopen_utf8.h>
 #include <string/stdstring.h>
@@ -140,7 +139,7 @@ int64_t retro_vfs_file_seek_cdrom(
    else
       return -1;
 
-   return retro_vfs_file_tell_cdrom(stream);
+   return 0;
 }
 
 void retro_vfs_file_open_cdrom(

@@ -242,23 +242,11 @@ int64_t retro_vfs_file_seek_internal(
 #endif
 #ifdef ATLEAST_VC2005
       /* VC2005 and up have a special 64-bit fseek */
-      if (_fseeki64(stream->fp, offset, whence) != 0)
-         return -1;
-      if ((val = _ftelli64(stream->fp)) < 0)
-         return -1;
-      return val;
+      return _fseeki64(stream->fp, offset, whence);
 #elif defined(HAVE_64BIT_OFFSETS)
-      if (fseeko(stream->fp, (off_t)offset, whence) != 0)
-         return -1;
-      if ((val = ftello(stream->fp)) < 0)
-         return -1;
-      return val;
+      return fseeko(stream->fp, (off_t)offset, whence);
 #else
-      if (fseek(stream->fp, (long)offset, whence) != 0)
-         return -1;
-      if ((val = ftell(stream->fp)) < 0)
-         return -1;
-      return val;
+      return fseek(stream->fp, (long)offset, whence);
 #endif
    }
 #ifdef HAVE_MMAP
@@ -730,17 +718,11 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 #endif
 #ifdef ATLEAST_VC2005
       /* VC2005 and up have a special 64-bit ftell */
-      if ((val = _ftelli64(stream->fp)) < 0)
-         return -1;
-      return val;
+      return _ftelli64(stream->fp);
 #elif defined(HAVE_64BIT_OFFSETS)
-      if ((val = ftello(stream->fp)) < 0)
-         return -1;
-      return val;
+      return ftello(stream->fp);
 #else
-      if ((val = ftell(stream->fp)) < 0)
-         return -1;
-      return val;
+      return ftell(stream->fp);
 #endif
    }
 #ifdef HAVE_MMAP

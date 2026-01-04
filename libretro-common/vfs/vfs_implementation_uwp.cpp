@@ -113,34 +113,30 @@ int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file* stream, i
 
 int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file* stream)
 {
-    int64_t val;
-
     if (!stream)
         return -1;
 
     if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
         return _ftelli64(stream->fp);
-    if ((val = lseek(stream->fd, 0, SEEK_CUR)) < 0)
+    if (lseek(stream->fd, 0, SEEK_CUR) < 0)
         return -1;
 
-    return val;
+    return 0;
 }
 
 int64_t retro_vfs_file_seek_internal(
     libretro_vfs_implementation_file* stream,
     int64_t offset, int whence)
 {
-    int64_t val;
-
     if (!stream)
         return -1;
 
     if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
         return _fseeki64(stream->fp, offset, whence);
-    if ((val = lseek(stream->fd, (off_t)offset, whence)) < 0)
+    if (lseek(stream->fd, (off_t)offset, whence) < 0)
         return -1;
 
-    return val;
+    return 0;
 }
 
 int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file* stream,
