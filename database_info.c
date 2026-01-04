@@ -29,6 +29,7 @@
 
 #include "core_info.h"
 #include "database_info.h"
+#include "manual_content_scan.h"
 
 int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
@@ -797,8 +798,9 @@ static int dir_entry_compare(const void *left, const void *right)
 }
 
 database_info_handle_t *database_info_dir_init(const char *dir,
-      enum database_type type, retro_task_t *task,
-      bool show_hidden_files)
+      enum database_type type, char *file_exts,
+      bool show_hidden_files, bool recursive, bool include_archive,
+      struct string_list **content_list)
 {
    core_info_list_t *core_info_list = NULL;
    struct string_list       *list   = NULL;
@@ -808,11 +810,13 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    if (!db)
       return NULL;
 
-   core_info_get_list(&core_info_list);
+   /* File list will include all supported files, unless extension list is given */
+   if (string_is_empty(file_exts))
+      core_info_get_list(&core_info_list);
 
-   if (!(list = dir_list_new(dir, core_info_list ? core_info_list->all_ext : NULL,
+   if (!(list = dir_list_new(dir, core_info_list ? core_info_list->all_ext : file_exts,
          false, show_hidden_files,
-         false, true)))
+         include_archive, recursive)))
    {
       free(db);
       return NULL;
@@ -823,14 +827,13 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
    db->status             = DATABASE_STATUS_ITERATE;
    db->type               = type;
-   db->list_ptr           = 0;
-   db->list               = list;
+   *content_list          = list;
 
    return db;
 }
 
 database_info_handle_t *database_info_file_init(const char *path,
-      enum database_type type, retro_task_t *task)
+      enum database_type type, retro_task_t *task, struct string_list **content_list)
 {
    union string_list_elem_attr attr;
    struct string_list        *list  = NULL;
@@ -851,16 +854,15 @@ database_info_handle_t *database_info_file_init(const char *path,
 
    db->status             = DATABASE_STATUS_ITERATE;
    db->type               = type;
-   db->list_ptr           = 0;
-   db->list               = list;
+   *content_list          = list;
 
    return db;
 }
 
 void database_info_free(database_info_handle_t *db)
 {
-   if (db)
-      string_list_free(db->list);
+/*   if (db)
+      string_list_free(db->list);*/
 }
 
 database_info_list_t *database_info_list_new(
