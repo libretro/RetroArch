@@ -660,7 +660,6 @@ static void runloop_update_runtime_log(
    free(runtime_log);
 }
 
-
 void runloop_runtime_log_deinit(
       runloop_state_t *runloop_st,
       bool content_runtime_log,
@@ -4125,11 +4124,9 @@ void runloop_event_deinit_core(void)
    driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
 
 #ifdef HAVE_CONFIGFILE
+   /* Reload the original config */
    if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
-   {
-      /* Reload the original config */
       config_unload_override();
-   }
 #endif
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    runloop_st->runtime_shader_preset_path[0] = '\0';

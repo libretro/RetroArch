@@ -8082,18 +8082,19 @@ bool retroarch_main_init(int argc, char *argv[])
          else
             input_remapping_restore_global_config(true, false);
 
-#ifdef HAVE_CONFIGFILE
-         /* Reload the original config */
-         if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
-            config_unload_override();
-#endif
-
 #ifdef HAVE_DYNAMIC
          /* Ensure that currently loaded core is properly
           * deinitialised */
          if (runloop_st->current_core_type != CORE_TYPE_DUMMY)
             command_event(CMD_EVENT_CORE_DEINIT, NULL);
 #endif
+
+#ifdef HAVE_CONFIGFILE
+         /* Reload the original config */
+         if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
+            config_unload_override();
+#endif
+
          /* Attempt initializing dummy core */
          runloop_st->current_core_type = CORE_TYPE_DUMMY;
          if (!command_event(CMD_EVENT_CORE_INIT, &runloop_st->current_core_type))
@@ -8681,6 +8682,12 @@ bool retroarch_main_quit(void)
        * save state file may be truncated) */
       content_wait_for_save_state_task();
 
+      runloop_runtime_log_deinit(runloop_st,
+            settings->bools.content_runtime_log,
+            settings->bools.content_runtime_log_aggregate,
+            settings->paths.directory_runtime_log,
+            settings->paths.directory_playlist);
+
       if (     (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
             || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
             || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE)
@@ -8694,11 +8701,9 @@ bool retroarch_main_quit(void)
          input_remapping_restore_global_config(true, false);
 
 #ifdef HAVE_CONFIGFILE
+      /* Reload the original config */
       if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
-      {
-         /* Reload the original config */
          config_unload_override();
-      }
 #endif
 
 #ifdef HAVE_MENU
