@@ -30,6 +30,11 @@
 #include <AudioUnit/AudioUnit.h>
 #include <AudioUnit/AUComponent.h>
 
+/* Nb is defined by AES code included earlier in griffin.c amalgamation.
+ * It conflicts with Sparse BLAS headers in Accelerate, so undefine it. */
+#undef Nb
+#include <Accelerate/Accelerate.h>
+
 #include <boolean.h>
 #include <retro_endianness.h>
 #include <string/stdstring.h>
@@ -591,7 +596,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
 
 /* Write raw int16 samples with hardware-accelerated resampling */
 static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
-      size_t frames, unsigned input_rate, double rate_adjust)
+      size_t frames, unsigned input_rate, double rate_adjust, float volume)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
    double effective_rate;
@@ -638,6 +643,11 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
 
       if (output_frames == 0)
          break;
+
+      /* Apply volume to converted samples */
+      if (volume != 1.0f)
+         vDSP_vsmul(dev->conv_buffer, 1, &volume,
+               dev->conv_buffer, 1, (vDSP_Length)(output_frames * 2));
 
       /* Write converted samples to ring buffer */
       {

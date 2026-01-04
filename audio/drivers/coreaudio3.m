@@ -16,6 +16,7 @@
 #import <Foundation/Foundation.h>
 #import <AudioToolbox/AudioToolbox.h>
 #import <AVFoundation/AVFoundation.h>
+#import <Accelerate/Accelerate.h>
 
 #include <stdio.h>
 #include <stdatomic.h>
@@ -197,7 +198,8 @@ static bool coreaudio3_g_interrupted;
 - (ssize_t)writeRawInt16:(const int16_t *)samples
                   frames:(size_t)frames
                inputRate:(unsigned)inputRate
-              rateAdjust:(double)rateAdjust;
+              rateAdjust:(double)rateAdjust
+                  volume:(float)volume;
 - (void)start;
 - (void)stop;
 
@@ -408,7 +410,8 @@ static OSStatus coreaudio3_converter_cb(
 - (ssize_t)writeRawInt16:(const int16_t *)samples
                   frames:(size_t)frames
                inputRate:(unsigned)inputRate
-              rateAdjust:(double)rateAdjust {
+              rateAdjust:(double)rateAdjust
+                  volume:(float)volume {
    OSStatus err;
    double effectiveRate;
    size_t framesWritten = 0;
@@ -500,8 +503,12 @@ static OSStatus coreaudio3_converter_cb(
       if (outputFrames == 0)
          break;
 
-      /* Write resampled float data to ring buffer */
+      /* Apply volume to converted samples */
       outputSamples = outputFrames * 2;
+      if (volume != 1.0f)
+         vDSP_vsmul(_convBuffer, 1, &volume, _convBuffer, 1, (vDSP_Length)outputSamples);
+
+      /* Write resampled float data to ring buffer */
       written = [self writeFloat:_convBuffer samples:outputSamples];
 
       if (written > 0)
@@ -607,7 +614,7 @@ static size_t coreaudio3_buffer_size(void *data)
 }
 
 static ssize_t coreaudio3_write_raw(void *data, const int16_t *samples,
-      size_t frames, unsigned input_rate, double rate_adjust)
+      size_t frames, unsigned input_rate, double rate_adjust, float volume)
 {
    CoreAudio3 *dev = (__bridge CoreAudio3 *)data;
    if (dev == nil)
@@ -616,7 +623,8 @@ static ssize_t coreaudio3_write_raw(void *data, const int16_t *samples,
    return [dev writeRawInt16:samples
                       frames:frames
                    inputRate:input_rate
-                  rateAdjust:rate_adjust];
+                  rateAdjust:rate_adjust
+                      volume:volume];
 }
 
 audio_driver_t audio_coreaudio3 = {

@@ -492,7 +492,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
       /* Note: mute/volume is not applied here - driver must handle or ignore */
       audio_st->current_audio->write_raw(audio_st->context_audio_data,
-            data, frames, input_rate, rate_adjust);
+            data, frames, input_rate, rate_adjust, audio_volume_gain);
       return;
    }
 
