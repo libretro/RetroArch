@@ -384,7 +384,9 @@ struct input_overlay
    const video_overlay_interface_t *iface;
    input_overlay_state_t overlay_state;
    input_overlay_pointer_state_t pointer_state;
+   struct texture_image **images;
 
+   size_t num_images;
    size_t index;
    size_t size;
 
@@ -435,6 +437,7 @@ typedef struct
    char *overlay_path;
    struct overlay *overlays;
    struct overlay *active;
+   struct string_list *image_list;
    size_t size;
    uint16_t overlay_types;
    uint8_t flags;
