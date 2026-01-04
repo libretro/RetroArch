@@ -218,8 +218,8 @@ static void mount_partition(void)
     * and add : to the mount point */
    if (bootDeviceID == BOOT_DEVICE_HDD || bootDeviceID == BOOT_DEVICE_HDD0)
    {
-      size_t _len = strlcpy(cwd, new_cwd, sizeof(cwd));
-      strlcpy(mountPoint + _len, ":", sizeof(mountPoint) - _len);
+      strlcpy(cwd, new_cwd, sizeof(cwd));
+      strlcat(mountPoint, ":", sizeof(mountPoint));
    }
    else
    {
