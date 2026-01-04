@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		07ACC0012026020100CB9D84 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07ACC0002026020100CB9D84 /* Accelerate.framework */; };
+		07ACC0022026020100CB9D84 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07ACC0002026020100CB9D84 /* Accelerate.framework */; };
 		079650002CA9C99300CB9D84 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07964FFF2CA9C99300CB9D84 /* QuartzCore.framework */; };
 		07A960052BFEE67400CB7332 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07A960042BFEE67400CB7332 /* AVFoundation.framework */; };
 		1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
@@ -78,6 +80,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		07ACC0002026020100CB9D84 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		07964FFF2CA9C99300CB9D84 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		07A960042BFEE67400CB7332 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		07C0DEAF2026010100CB9D84 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -110,6 +113,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07ACC0022026020100CB9D84 /* Accelerate.framework in Frameworks */,
 				5008452C1B89300700CE6073 /* libz.dylib in Frameworks */,
 				5008452D1B89300700CE6073 /* CoreAudio.framework in Frameworks */,
 				5008452E1B89300700CE6073 /* AudioUnit.framework in Frameworks */,
@@ -125,6 +129,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				07ACC0012026020100CB9D84 /* Accelerate.framework in Frameworks */,
 				079650002CA9C99300CB9D84 /* QuartzCore.framework in Frameworks */,
 				5061C8A41AE47E510080AE14 /* libz.dylib in Frameworks */,
 				84DD5EA91A89E4BE007336C1 /* CoreAudio.framework in Frameworks */,
@@ -150,6 +155,7 @@
 		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				07ACC0002026020100CB9D84 /* Accelerate.framework */,
 				84DD5EB41A89E737007336C1 /* IOKit.framework */,
 				84DD5EB21A89E6C0007336C1 /* AudioUnit.framework */,
 				07C0DEAF2026010100CB9D84 /* AudioToolbox.framework */,
