@@ -3151,7 +3151,7 @@ void input_overlay_auto_rotate_(
 
 /**
  * input_overlay_poll_lightgun
- * @settings: pointer to settings
+ * @settings : pointer to settings
  * @ol : overlay handle
  * @old_ptr_count : previous poll's non-hitbox pointer count
  *
@@ -3271,8 +3271,10 @@ static void input_overlay_get_mouse_scale(settings_t *settings,
 
 /**
  * input_overlay_poll_mouse
- * @settings: pointer to settings
+ * @settings : pointer to settings
+ * @mouse_st : pointer to overlay mouse state
  * @ol : overlay handle
+ * @ptr_count : this poll's non-hitbox pointer count
  * @old_ptr_count : previous poll's non-hitbox pointer count
  *
  * Updates button state of the overlay mouse.
@@ -3283,15 +3285,16 @@ static void input_overlay_poll_mouse(settings_t *settings,
       const int ptr_count,
       const int old_ptr_count)
 {
-   input_overlay_pointer_state_t *ptr_st      = &ol->pointer_state;
-   const retro_time_t now_usec                = cpu_features_get_time_usec();
-   const retro_time_t hold_usec               = settings->uints.input_overlay_mouse_hold_msec * 1000;
-   const retro_time_t dtap_usec               = settings->uints.input_overlay_mouse_dtap_msec * 1000;
-   int swipe_thres_x                          = 0;
-   int swipe_thres_y                          = 0;
-   const bool hold_to_drag                    = settings->bools.input_overlay_mouse_hold_to_drag;
-   const bool dtap_to_drag                    = settings->bools.input_overlay_mouse_dtap_to_drag;
-   bool want_feedback                         = false;
+   input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
+   const retro_time_t now_usec           = cpu_features_get_time_usec();
+   const retro_time_t hold_usec          = settings->uints.input_overlay_mouse_hold_msec * 1000;
+   const retro_time_t dtap_usec          = settings->uints.input_overlay_mouse_dtap_msec * 1000;
+   const uint8_t alt_2touch              = settings->uints.input_overlay_mouse_alt_two_touch_input;
+   int swipe_thres_x                     = 0;
+   int swipe_thres_y                     = 0;
+   const bool hold_to_drag               = settings->bools.input_overlay_mouse_hold_to_drag;
+   const bool dtap_to_drag               = settings->bools.input_overlay_mouse_dtap_to_drag;
+   bool want_feedback                    = false;
    bool is_swipe, is_brief, is_long;
 
    static retro_time_t start_usec;
@@ -3304,8 +3307,10 @@ static void input_overlay_poll_mouse(settings_t *settings,
    static int y_start;
    static int peak_ptr_count;
    static int old_peak_ptr_count;
-   static bool skip_buttons;
+   static bool check_gestures;
    static bool pending_click;
+   static const uint8_t btns[OVERLAY_MAX_TOUCH + 1] =
+         {0x0, 0x1, 0x2, 0x4};  /* none, lmb, rmb, mmb */
 
    input_overlay_get_mouse_scale(settings,
          (float*)&mouse_st->scale_x, &mouse_st->scale_y,
@@ -3326,6 +3331,11 @@ static void input_overlay_poll_mouse(settings_t *settings,
          /* Pointer added */
          peak_ptr_count = ptr_count;
          start_usec     = now_usec;
+
+         /* Alt 2-touch input. After gesture checks,
+          * use 2nd touch as a button */
+         if (!check_gestures && ptr_count == 2)
+            mouse_st->hold = btns[alt_2touch];
       }
       else
       {
@@ -3343,7 +3353,7 @@ static void input_overlay_poll_mouse(settings_t *settings,
    is_long  = (now_usec - start_usec) > (hold_to_drag ? hold_usec : 250000);
 
    /* Check if new button input should be created */
-   if (!skip_buttons)
+   if (check_gestures)
    {
       if (!is_swipe)
       {
@@ -3351,7 +3361,7 @@ static void input_overlay_poll_mouse(settings_t *settings,
                && is_long && ptr_count && !mouse_st->hold)
          {
             /* Long press */
-            mouse_st->hold = (1 << (ptr_count - 1));
+            mouse_st->hold = btns[ptr_count];
             want_feedback  = true;
          }
          else if (is_brief)
@@ -3361,7 +3371,7 @@ static void input_overlay_poll_mouse(settings_t *settings,
                /* New input. Check for double tap */
                if (     dtap_to_drag
                      && now_usec - last_up_usec < dtap_usec)
-                  mouse_st->hold = (1 << (old_peak_ptr_count - 1));
+                  mouse_st->hold = btns[old_peak_ptr_count];
 
                last_down_usec = now_usec;
             }
@@ -3377,7 +3387,7 @@ static void input_overlay_poll_mouse(settings_t *settings,
                }
                else
                {
-                  mouse_st->click    = (1 << (peak_ptr_count - 1));
+                  mouse_st->click    = btns[peak_ptr_count];
                   click_end_usec     = now_usec + click_dur_usec;
                }
 
@@ -3387,14 +3397,19 @@ static void input_overlay_poll_mouse(settings_t *settings,
       }
       else
       {
-         /* If dragging 2+ fingers, hold RMB or MMB */
+         /* Swiping. Stop gesture checks and possibly hold a button */
          if (ptr_count > 1)
          {
-            mouse_st->hold = (1 << (ptr_count - 1));
-            if (hold_to_drag)
+            if (hold_to_drag && !alt_2touch)
+            {
+               mouse_st->hold = btns[ptr_count];
                want_feedback = true;
+            }
+            else if (alt_2touch && !hold_to_drag
+                  && ptr_count == 2)
+               mouse_st->hold = btns[alt_2touch];
          }
-         skip_buttons = true;
+         check_gestures = false;
       }
    }
 
@@ -3407,9 +3422,9 @@ static void input_overlay_poll_mouse(settings_t *settings,
    }
 
    if (!ptr_count)
-      skip_buttons = false; /* Reset button checks  */
+      check_gestures = true;
    else if (is_long)
-      skip_buttons = true;  /* End of button checks */
+      check_gestures = false;
 
    /* Remove stale clicks */
    if (mouse_st->click && now_usec > click_end_usec)

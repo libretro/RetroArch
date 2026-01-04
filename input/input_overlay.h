@@ -161,6 +161,16 @@ enum overlay_lightgun_action
    OVERLAY_LIGHTGUN_ACTION_END
 };
 
+enum overlay_mouse_button
+{
+   OVERLAY_MOUSE_BTN_NONE = 0,
+   OVERLAY_MOUSE_BTN_LMB,
+   OVERLAY_MOUSE_BTN_RMB,
+   OVERLAY_MOUSE_BTN_MMB,
+
+   OVERLAY_MOUSE_BTN_END
+};
+
 /* Overlay driver acts as a medium between input drivers
  * and video driver.
  *

@@ -355,6 +355,7 @@ typedef struct settings
       unsigned input_overlay_lightgun_four_touch_input;
       unsigned input_overlay_mouse_hold_msec;
       unsigned input_overlay_mouse_dtap_msec;
+      unsigned input_overlay_mouse_alt_two_touch_input;
 #endif
 
       unsigned run_ahead_frames;
