@@ -55,10 +55,13 @@ typedef struct
    char *content_dir;
    char *file_exts;
    char *dat_file_path;
+   char *database_name;
    bool search_recursively;
    bool search_archives;
    bool filter_dat_content;
    bool overwrite_playlist;
+   bool omit_db_ref;
+   int db_usage;
 } playlist_manual_scan_record_t;
 
 enum content_playlist_flags
@@ -106,6 +109,7 @@ typedef struct
    enum playlist_thumbnail_mode *current_meta_thumbnail_mode_val;
    enum playlist_thumbnail_match_mode *current_meta_thumbnail_match_mode_val;
    enum playlist_sort_mode *current_meta_sort_mode_val;
+   unsigned *current_meta_db_usage_val;
    bool *current_meta_bool_val;
    playlist_t *playlist;
 
@@ -1695,7 +1699,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
                                | CNT_PLAYLIST_FLG_OLD_FMT
                                | CNT_PLAYLIST_FLG_COMPRESSED);
 
-   RARCH_LOG("[Playlist] Written to file: \"%s\".\n", playlist->config.path);
+   RARCH_DBG("[Playlist] Runtime written to file: \"%s\".\n", playlist->config.path);
 end:
    intfstream_close(file);
    free(file);
@@ -1898,6 +1902,14 @@ void playlist_write_file(playlist_t *playlist)
          rjsonwriter_raw(writer, "\n", 1);
 
          rjsonwriter_add_spaces(writer, 2);
+         rjsonwriter_add_string(writer, "scan_database_name");
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
+         rjsonwriter_add_string(writer, playlist->scan_record.database_name);
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
+
+         rjsonwriter_add_spaces(writer, 2);
          rjsonwriter_add_string(writer, "scan_search_recursively");
          rjsonwriter_raw(writer, ":", 1);
          rjsonwriter_raw(writer, " ", 1);
@@ -1931,6 +1943,17 @@ void playlist_write_file(playlist_t *playlist)
          rjsonwriter_raw(writer, "\n", 1);
 
          rjsonwriter_add_spaces(writer, 2);
+         rjsonwriter_add_string(writer, "scan_omit_db_ref");
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
+         {
+            bool value = playlist->scan_record.omit_db_ref;
+            rjsonwriter_raw(writer, (value ? "true" : "false"), (value ? 4 : 5));
+         }
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
+
+         rjsonwriter_add_spaces(writer, 2);
          rjsonwriter_add_string(writer, "scan_overwrite_playlist");
          rjsonwriter_raw(writer, ":", 1);
          rjsonwriter_raw(writer, " ", 1);
@@ -1940,6 +1963,15 @@ void playlist_write_file(playlist_t *playlist)
          }
          rjsonwriter_raw(writer, ",", 1);
          rjsonwriter_raw(writer, "\n", 1);
+
+         rjsonwriter_add_spaces(writer, 2);
+         rjsonwriter_add_string(writer, "scan_db_usage");
+         rjsonwriter_raw(writer, ":", 1);
+         rjsonwriter_raw(writer, " ", 1);
+         rjsonwriter_rawf(writer, "%d", (int)playlist->scan_record.db_usage);
+         rjsonwriter_raw(writer, ",", 1);
+         rjsonwriter_raw(writer, "\n", 1);
+
       }
 
       rjsonwriter_add_spaces(writer, 2);
@@ -2149,6 +2181,10 @@ void playlist_free(playlist_t *playlist)
    if (playlist->scan_record.dat_file_path)
       free(playlist->scan_record.dat_file_path);
    playlist->scan_record.dat_file_path = NULL;
+
+   if (playlist->scan_record.database_name)
+      free(playlist->scan_record.database_name);
+   playlist->scan_record.database_name = NULL;
 
    if (playlist->entries)
    {
@@ -2392,6 +2428,8 @@ static bool JSONNumberHandler(void *context, const char *pValue, size_t len)
                *pCtx->current_meta_thumbnail_match_mode_val = (enum playlist_thumbnail_match_mode)strtoul(pValue, NULL, 10);
             else if (pCtx->current_meta_sort_mode_val)
                *pCtx->current_meta_sort_mode_val            = (enum playlist_sort_mode)strtoul(pValue, NULL, 10);
+            else if (pCtx->current_meta_db_usage_val)
+               *pCtx->current_meta_db_usage_val             = (enum playlist_sort_mode)strtoul(pValue, NULL, 10);
          }
       }
    }
@@ -2401,6 +2439,7 @@ static bool JSONNumberHandler(void *context, const char *pValue, size_t len)
    pCtx->current_meta_thumbnail_mode_val       = NULL;
    pCtx->current_meta_thumbnail_match_mode_val = NULL;
    pCtx->current_meta_sort_mode_val            = NULL;
+   pCtx->current_meta_db_usage_val             = NULL;
 
    return true;
 }
@@ -2505,6 +2544,7 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
       pCtx->current_meta_thumbnail_mode_val       = NULL;
       pCtx->current_meta_thumbnail_match_mode_val = NULL;
       pCtx->current_meta_sort_mode_val            = NULL;
+      pCtx->current_meta_db_usage_val             = NULL;
       pCtx->current_meta_bool_val                 = NULL;
       pCtx->flags                                &= ~(JSON_CTX_FLG_IN_ITEMS);
 
@@ -2541,12 +2581,18 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
                pCtx->current_string_val         = &pCtx->playlist->scan_record.file_exts;
             else if (string_is_equal(pValue, "scan_dat_file_path"))
                pCtx->current_string_val         = &pCtx->playlist->scan_record.dat_file_path;
+            else if (string_is_equal(pValue, "scan_database_name"))
+               pCtx->current_string_val         = &pCtx->playlist->scan_record.database_name;
             else if (string_is_equal(pValue, "scan_search_recursively"))
                pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.search_recursively;
             else if (string_is_equal(pValue, "scan_search_archives"))
                pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.search_archives;
             else if (string_is_equal(pValue, "scan_filter_dat_content"))
                pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.filter_dat_content;
+            else if (string_is_equal(pValue, "scan_omit_db_ref"))
+               pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.omit_db_ref;
+            else if (string_is_equal(pValue, "scan_db_usage"))
+               pCtx->current_meta_db_usage_val  = (unsigned int*)&pCtx->playlist->scan_record.db_usage;
             else if (string_is_equal(pValue, "scan_overwrite_playlist"))
                pCtx->current_meta_bool_val      = &pCtx->playlist->scan_record.overwrite_playlist;
             else if (string_is_equal(pValue, "sort_mode"))
@@ -2933,9 +2979,12 @@ playlist_t *playlist_init(const playlist_config_t *config)
    playlist->scan_record.search_recursively = false;
    playlist->scan_record.search_archives    = false;
    playlist->scan_record.filter_dat_content = false;
+   playlist->scan_record.omit_db_ref        = false;
    playlist->scan_record.content_dir        = NULL;
    playlist->scan_record.file_exts          = NULL;
    playlist->scan_record.dat_file_path      = NULL;
+   playlist->scan_record.database_name      = NULL;
+   playlist->scan_record.db_usage           = 4; /*MANUAL_CONTENT_SCAN_USE_DB_NONE*/
 
    /* Cache configuration parameters */
    if (!playlist_config_copy(config, &playlist->config))
@@ -3368,6 +3417,13 @@ const char *playlist_get_scan_dat_file_path(playlist_t *playlist)
    return playlist->scan_record.dat_file_path;
 }
 
+const char *playlist_get_scan_database_name(playlist_t *playlist)
+{
+   if (!playlist)
+      return NULL;
+   return playlist->scan_record.database_name;
+}
+
 bool playlist_get_scan_search_recursively(playlist_t *playlist)
 {
    if (!playlist)
@@ -3389,11 +3445,25 @@ bool playlist_get_scan_filter_dat_content(playlist_t *playlist)
    return playlist->scan_record.filter_dat_content;
 }
 
+bool playlist_get_scan_omit_db_ref(playlist_t *playlist)
+{
+   if (!playlist)
+      return false;
+   return playlist->scan_record.omit_db_ref;
+}
+
 bool playlist_get_scan_overwrite_playlist(playlist_t *playlist)
 {
    if (!playlist)
       return false;
    return playlist->scan_record.overwrite_playlist;
+}
+
+int playlist_get_scan_db_usage(playlist_t *playlist)
+{
+   if (!playlist)
+      return 4;
+   return playlist->scan_record.db_usage;
 }
 
 bool playlist_scan_refresh_enabled(playlist_t *playlist)
@@ -3592,6 +3662,37 @@ void playlist_set_scan_dat_file_path(playlist_t *playlist, const char *dat_file_
       playlist->scan_record.dat_file_path = strdup(dat_file_path);
 }
 
+void playlist_set_scan_database_name(playlist_t *playlist, const char *database_name)
+{
+   bool current_string_empty;
+   bool new_string_empty;
+
+   if (!playlist)
+      return;
+
+   current_string_empty = string_is_empty(playlist->scan_record.database_name);
+   new_string_empty     = string_is_empty(database_name);
+
+   /* Check whether string value has changed
+    * (note that a NULL or empty argument will
+    * unset the playlist value) */
+   if (   ( current_string_empty && !new_string_empty)
+       || (!current_string_empty &&  new_string_empty)
+       || !string_is_equal(playlist->scan_record.database_name, database_name))
+      playlist->flags    |=  CNT_PLAYLIST_FLG_MOD;
+   else
+      return; /* Strings are identical; do nothing */
+
+   if (playlist->scan_record.database_name)
+   {
+      free(playlist->scan_record.database_name);
+      playlist->scan_record.database_name = NULL;
+   }
+
+   if (!new_string_empty)
+      playlist->scan_record.database_name = strdup(database_name);
+}
+
 void playlist_set_scan_search_recursively(playlist_t *playlist, bool search_recursively)
 {
    if (playlist && playlist->scan_record.search_recursively != search_recursively)
@@ -3615,6 +3716,24 @@ void playlist_set_scan_filter_dat_content(playlist_t *playlist, bool filter_dat_
    if (playlist && playlist->scan_record.filter_dat_content != filter_dat_content)
    {
       playlist->scan_record.filter_dat_content = filter_dat_content;
+      playlist->flags    |=  CNT_PLAYLIST_FLG_MOD;
+   }
+}
+
+void playlist_set_scan_omit_db_ref(playlist_t *playlist, bool omit_db_ref)
+{
+   if (playlist && playlist->scan_record.omit_db_ref != omit_db_ref)
+   {
+      playlist->scan_record.omit_db_ref = omit_db_ref;
+      playlist->flags    |=  CNT_PLAYLIST_FLG_MOD;
+   }
+}
+
+void playlist_set_scan_db_usage(playlist_t *playlist, int db_usage)
+{
+   if (playlist && playlist->scan_record.db_usage != db_usage)
+   {
+      playlist->scan_record.db_usage = db_usage;
       playlist->flags    |=  CNT_PLAYLIST_FLG_MOD;
    }
 }
