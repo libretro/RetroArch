@@ -240,8 +240,8 @@ static void deinit_drivers(bool deinit_filesystem, bool deinit_powerOff)
    {
       umount_hdd_partition(mountString);
 
-      deinit_dev9_driver();
       deinit_hdd_driver(false);
+      deinit_dev9_driver();
       deinit_cdfs_driver();
       deinit_mx4sio_driver(true);
       deinit_usb_driver(true);
