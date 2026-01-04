@@ -3990,6 +3990,8 @@ bool command_event(enum event_command cmd, void *data)
             if (!ol)
                return false;
 
+            input_overlay_next_move_touch_masks(ol);
+
             ol->index                      = ol->next_index;
             ol->active                     = &ol->overlays[ol->index];
 
@@ -4000,7 +4002,6 @@ bool command_event(enum event_command cmd, void *data)
             input_overlay_load_active(input_st->overlay_visibility,
                   ol, input_overlay_opacity);
 
-            ol->flags                     |= INPUT_OVERLAY_BLOCKED;
             ol->next_index                 =
                   (unsigned)((ol->index + 1) % ol->size);
 
