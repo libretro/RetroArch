@@ -3377,6 +3377,10 @@ MSG_HASH(
    "Perioden i bildrutor när turboaktiverade knappar trycks ner."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
+   "Antalet bildrutor från Turboperiod som knapparna hålls ner för. Om detta antal är lika med eller större än Turboperiod, kommer knapparna aldrig att släppas."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
    "Halv period"
    )
@@ -3402,7 +3406,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Singel knapp (Intryckt)"
+   "En knapp (intryckt)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
@@ -3431,6 +3435,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
    "Turbo-knapp"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   "Målknapp för turbo i \"En knapp\"-läget."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
@@ -12374,6 +12382,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
    "Ansluten"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "Port %d Enhetsnamn: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,

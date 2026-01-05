@@ -13032,6 +13032,10 @@ MSG_HASH(
    "포트"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "%d번 포트 디바이스명: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "장치 표시 이름: %s\n장치 구성 이름: %s\n장치 VID/PID: %d/%d"
    )
