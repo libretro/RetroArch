@@ -2961,6 +2961,40 @@ void input_overlay_load_active(
 }
 
 /**
+ * input_overlay_next_move_touch_masks
+ * @ol : Overlay handle.
+ * 
+ * Finds similar descs in the next overlay (i.e. same location and type)
+ * and moves touch masks from active overlay to next.
+ */
+void input_overlay_next_move_touch_masks(input_overlay_t *ol)
+{
+   const struct overlay *active = ol->active;
+   const struct overlay *next   = ol->overlays + ol->next_index;
+   size_t i, j;
+
+   for (i = 0; i < active->size; i++)
+   {
+      struct overlay_desc *desc = active->descs + i;
+
+      if (desc->old_touch_mask)
+      {
+         for (j = 0; j < next->size; j++)
+         {
+            struct overlay_desc *desc2 = next->descs + j;
+
+            if (     desc2->type == desc->type
+                  && fabs(desc2->x - desc->x) < 0.01f
+                  && fabs(desc2->y - desc->y) < 0.01f)
+               desc2->old_touch_mask = desc->old_touch_mask;
+         }
+
+         desc->old_touch_mask = 0;
+      }
+   }
+}
+
+/**
  * input_overlay_poll_clear:
  * @ol                    : overlay handle
  *
@@ -3562,6 +3596,7 @@ static void input_poll_overlay(
    input_overlay_state_t old_ol_state;
    int i, j;
    input_overlay_t *ol                      = (input_overlay_t*)ol_data;
+   int blocked_touch_idx                    = -1;
    uint16_t key_mod                         = 0;
    uint16_t ptrdev_touch_mask               = 0;
    uint16_t hitbox_touch_mask               = 0;
@@ -3580,6 +3615,7 @@ static void input_poll_overlay(
    bool osk_state_changed                   = false;
 
    static int old_ptr_count;
+   static int old_blocked_touch_idx;
    static int16_t old_ptrdev_touch_mask;
    static int16_t old_hitbox_touch_mask;
 
@@ -3667,14 +3703,24 @@ static void input_poll_overlay(
          int old_i           = input_st->old_touch_index_lut[i];
          bool hitbox_pressed = false;
 
-         /* Keep each touch pointer dedicated to the same input type
-          * (hitbox or pointing device) from the previous poll */
          if (old_i != -1)
          {
+            /* Keep each touch pointer dedicated to the same input type
+             * (hitbox or pointing device) from the previous poll */
             if (BIT16_GET(old_hitbox_touch_mask, old_i))
                BIT16_SET(hitbox_touch_mask, i);
             else if (BIT16_GET(old_ptrdev_touch_mask, old_i))
                BIT16_SET(ptrdev_touch_mask, i);
+
+            /* Skip blocked touch pointer and freeze any overlay_next
+             * input until the blocked touch is removed */
+            if (old_i == old_blocked_touch_idx)
+            {
+               blocked_touch_idx = i;
+               if (BIT256_GET(old_ol_state.buttons, RARCH_OVERLAY_NEXT))
+                  BIT256_SET(ol_state->buttons, RARCH_OVERLAY_NEXT);
+               continue;
+            }
          }
 
          memset(&polled_data, 0, sizeof(struct input_overlay_state));
@@ -3691,6 +3737,10 @@ static void input_poll_overlay(
 
          if (hitbox_pressed)
          {
+            /* Block touch pointer if overlay_next was pressed */
+            if (BIT256_GET(polled_data.buttons, RARCH_OVERLAY_NEXT))
+               blocked_touch_idx = i;
+
             bits_or_bits(ol_state->buttons.data,
                   polled_data.buttons.data,
                   ARRAY_SIZE(polled_data.buttons.data));
@@ -3839,8 +3889,7 @@ static void input_poll_overlay(
    if (     current_input->keypress_vibrate
          && settings->bools.vibrate_on_keypress
          && ol_state->touch_count
-         && ol_state->touch_count >= old_ol_state.touch_count
-         && !(ol->flags & INPUT_OVERLAY_BLOCKED))
+         && ol_state->touch_count >= old_ol_state.touch_count)
    {
       if (     osk_state_changed
             || bits_any_different(
@@ -3853,6 +3902,7 @@ static void input_poll_overlay(
 
    old_hitbox_touch_mask  = hitbox_touch_mask;
    old_ptrdev_touch_mask  = ptrdev_touch_mask;
+   old_blocked_touch_idx  = blocked_touch_idx;
    ptr_state->device_mask = 0;
 }
 #endif

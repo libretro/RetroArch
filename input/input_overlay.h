@@ -461,6 +461,15 @@ void input_overlay_load_active(
       input_overlay_t *ol, float opacity);
 
 /**
+ * input_overlay_next_move_touch_masks
+ * @ol : Overlay handle.
+ * 
+ * Finds similar descs in the next overlay (i.e. same location and type)
+ * and moves touch masks from active overlay to next.
+ */
+void input_overlay_next_move_touch_masks(input_overlay_t *ol);
+
+/**
  * input_overlay_set_scale_factor:
  * @ol                    : Overlay handle.
  * @layout_desc           : Scale + offset factors.
