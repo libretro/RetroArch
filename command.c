@@ -1035,39 +1035,71 @@ bool command_get_status(command_t *cmd, const char* arg)
 {
    size_t _len;
    char reply[4096];
-   uint8_t flags                  = content_get_flags();
+   uint8_t flags;
+
+   if (!cmd)
+      return false;
+
+   if (!cmd->replier)
+      return false;
+
+   flags = content_get_flags();
 
    if (flags & CONTENT_ST_FLAG_IS_INITED)
    {
       /* add some content info */
       core_info_t *core_info      = NULL;
       runloop_state_t *runloop_st = runloop_state_get_ptr();
+      const char *basename_path   = NULL;
+
+      if (!runloop_st)
+      {
+         _len = strlcpy(reply, "GET_STATUS ERROR", sizeof(reply));
+         cmd->replier(cmd, reply, _len);
+         return false;
+      }
 
       core_info_get_current_core(&core_info);
 
-      _len     = strlcpy(reply, "GET_STATUS ", sizeof(reply));
+      _len = strlcpy(reply, "GET_STATUS ", sizeof(reply));
+
       if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
          _len += strlcpy(reply + _len, "PAUSED", sizeof(reply) - _len);
       else
          _len += strlcpy(reply + _len, "PLAYING", sizeof(reply) - _len);
-      _len    += strlcpy(reply + _len, " ", sizeof(reply) - _len);
-      if (core_info)
+
+      _len += strlcpy(reply + _len, " ", sizeof(reply) - _len);
+
+      if (core_info && core_info->system_id)
          _len += strlcpy(reply + _len, core_info->system_id,
                sizeof(reply) - _len);
-      else
+      else if (runloop_st->system.info.library_name)
          _len += strlcpy(reply + _len, runloop_st->system.info.library_name,
                sizeof(reply) - _len);
-      _len    += strlcpy(reply + _len, ",", sizeof(reply) - _len);
-      _len    += strlcpy(reply + _len,
-            path_basename(path_get(RARCH_PATH_BASENAME)), sizeof(reply) - _len);
-      _len    += snprintf(reply + _len, sizeof(reply) - _len,
+      else
+         _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+
+      _len += strlcpy(reply + _len, ",", sizeof(reply) - _len);
+
+      basename_path = path_get(RARCH_PATH_BASENAME);
+      if (basename_path)
+      {
+         const char *basename = path_basename(basename_path);
+         if (basename)
+            _len += strlcpy(reply + _len, basename, sizeof(reply) - _len);
+         else
+            _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+      }
+      else
+         _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+
+      _len += snprintf(reply + _len, sizeof(reply) - _len,
             ",crc32=%lx\n", (unsigned long)content_get_crc());
    }
    else
-       _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
+      _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
 
    cmd->replier(cmd, reply, _len);
-
    return true;
 }
 
