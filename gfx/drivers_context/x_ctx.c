@@ -1183,5 +1183,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
 
    gfx_ctx_x_bind_hw_render,
    NULL,
-   gfx_ctx_x_make_current
+   gfx_ctx_x_make_current,
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };

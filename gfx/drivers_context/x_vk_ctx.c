@@ -586,5 +586,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_x = {
 
    gfx_ctx_x_vk_bind_hw_render,
    gfx_ctx_x_vk_get_context_data,
-   NULL /* make_current */
+   NULL, /* make_current */
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };

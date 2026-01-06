@@ -1149,7 +1149,6 @@ static void gfx_widgets_draw_task_msg(
    static float msg_queue_task_progress[16] = COLOR_HEX_TO_FLOAT(BG_COLOR_PROGRESS, 1.0f);
    static float msg_queue_task_negative[16] = COLOR_HEX_TO_FLOAT(ICON_COLOR_RED, 1.0f);
    static float msg_queue_task_positive[16] = COLOR_HEX_TO_FLOAT(ICON_COLOR_GREEN, 1.0f);
-   static float msg_queue_task_neutral[16]  = COLOR_HEX_TO_FLOAT(ICON_COLOR_BLUE, 1.0f);
 
    unsigned msg_queue_height                = p_dispwidget->msg_queue_height;
    unsigned text_color;
@@ -1202,7 +1201,7 @@ static void gfx_widgets_draw_task_msg(
       msg_queue_current_background = msg_queue_background;
 
    if (msg_alternative)
-      msg_queue_height *= 1.25f;
+      msg_queue_height *= 1.5f;
 
    rect_x      = p_dispwidget->msg_queue_rect_start_x;
    rect_y      = video_height - msg->offset_y;
@@ -1273,30 +1272,28 @@ static void gfx_widgets_draw_task_msg(
       int texture   = MENU_WIDGETS_ICON_CHECK;
       float *color  = msg_queue_task_positive;
 
-      gfx_display_set_alpha(color, msg->alpha);
-
       if (!(msg->flags & DISPWIDG_FLAG_TASK_FINISHED))
       {
          texture    = MENU_WIDGETS_ICON_HOURGLASS;
-         color      = msg_queue_task_neutral;
+         color      = msg_queue_bar;
          radians    = msg->hourglass_rotation;
-
-         if (msg_alternative)
-         {
-            color   = msg_queue_bar;
-            gfx_display_set_alpha(color, msg->alpha * 0.5f);
-         }
       }
       else if (msg->flags & DISPWIDG_FLAG_POSITIVE)
       {
          texture    = MENU_WIDGETS_ICON_ADD;
          color      = msg_queue_task_positive;
       }
-      else if (msg->flags & DISPWIDG_FLAG_NEGATIVE)
+      else if (   msg->flags & DISPWIDG_FLAG_NEGATIVE
+               || msg->flags & DISPWIDG_FLAG_TASK_ERROR)
       {
          texture    = MENU_WIDGETS_ICON_EXIT;
          color      = msg_queue_task_negative;
       }
+
+      if (msg_alternative)
+         gfx_display_set_alpha(color, msg->alpha * 0.5f);
+      else
+         gfx_display_set_alpha(color, msg->alpha);
 
       gfx_widgets_draw_icon(
             userdata,

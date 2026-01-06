@@ -375,7 +375,7 @@ static chd_error huff_codec_decompress(void *codec, const uint8_t *src, uint32_t
 	free(bitbuf);
 	return result;
 }
- 
+
 
 /***************************************************************************
     CODEC INTERFACES
@@ -514,7 +514,7 @@ static const codec_interface codec_interfaces[] =
 		NULL
 	}
 #endif
-	
+
 };
 
 /***************************************************************************
@@ -757,7 +757,7 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 	uint8_t rawbuf[16];
 	struct huffman_decoder* decoder;
 	enum huffman_error err;
-	uint64_t curoffset;	
+	uint64_t curoffset;
 	int rawmapsize = map_size_v5(header);
 
 	if (!chd_compressed(header))
@@ -931,8 +931,9 @@ static INLINE void map_extract_old(const uint8_t *base, map_entry *entry, uint32
     chd_open_file - open a CHD file for access
 -------------------------------------------------*/
 
-CHD_EXPORT chd_error chd_open_file(FILE *file, int mode, chd_file *parent, chd_file **chd) {
-	core_file *stream = malloc(sizeof(core_file));
+CHD_EXPORT chd_error chd_open_file(FILE *file, int mode, chd_file *parent, chd_file **chd)
+{
+	core_file *stream = (core_file*)malloc(sizeof(core_file));
 	if (!stream)
 		return CHDERR_OUT_OF_MEMORY;
 	stream->argp = file;
@@ -1032,11 +1033,11 @@ CHD_EXPORT chd_error chd_open_core_file(core_file *file, int mode, chd_file *par
 
 #ifdef NEED_CACHE_HUNK
 	/* allocate and init the hunk cache */
-	newchd->cache = (uint8_t *)malloc(newchd->header.hunkbytes);
+	newchd->cache   = (uint8_t *)malloc(newchd->header.hunkbytes);
 	newchd->compare = (uint8_t *)malloc(newchd->header.hunkbytes);
 	if (newchd->cache == NULL || newchd->compare == NULL)
 		EARLY_EXIT(err = CHDERR_OUT_OF_MEMORY);
-	newchd->cachehunk = ~0;
+	newchd->cachehunk   = ~0;
 	newchd->comparehunk = ~0;
 #endif
 
@@ -2089,7 +2090,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 #endif
 						break;
 				}
-				
+
 				if (codec==NULL)
 					return CHDERR_CODEC_ERROR;
 				err = chd->codecintf[rawmap[0]]->decompress(codec, compressed_bytes, blocklen, dest, chd->header.hunkbytes);

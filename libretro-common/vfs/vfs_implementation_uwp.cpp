@@ -20,15 +20,12 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <retro_environment.h>
-
 #include <ppl.h>
 #include <ppltasks.h>
 #include <stdio.h>
 #include <wrl.h>
 #include <wrl/implements.h>
 #include <robuffer.h>
-#include <collection.h>
 #include <functional>
 #include <fileapifromapp.h>
 #include <AclAPI.h>
@@ -50,7 +47,6 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <retro_environment.h>
-#include <uwp/uwp_async.h>
 #include <uwp/std_filesystem_compat.h>
 
 namespace
@@ -72,25 +68,6 @@ namespace
       }
    }
 }
-
-#ifdef VFS_FRONTEND
-struct retro_vfs_file_handle
-#else
-struct libretro_vfs_implementation_file
-#endif
-{
-    int64_t size;
-    uint64_t mappos;
-    uint64_t mapsize;
-    FILE* fp;
-    HANDLE fh;
-    char* buf;
-    char* orig_path;
-    uint8_t* mapped;
-    int fd;
-    unsigned hints;
-    enum vfs_scheme scheme;
-};
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
@@ -345,7 +322,7 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
        goto error;
 
     stream->fh      = file_handle;
-    if ((stream->fd = _open_osfhandle((uint64)stream->fh, flags)) == -1)
+    if ((stream->fd = _open_osfhandle((uintptr_t)stream->fh, flags)) == -1)
         goto error;
 
     {
@@ -390,7 +367,7 @@ error:
     return NULL;
 }
 
-static int uwp_mkdir_impl(std::experimental::filesystem::path dir)
+static int uwp_mkdir_impl(std::filesystem::path dir)
 {
     /*I feel like this should create the directory recursively but the existing implementation does not so this update won't
      *I put in the work but I just commented out the stuff you would need */

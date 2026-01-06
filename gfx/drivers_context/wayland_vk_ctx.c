@@ -312,4 +312,6 @@ const gfx_ctx_driver_t gfx_ctx_vk_wayland = {
    gfx_ctx_wl_bind_hw_render,
    gfx_ctx_wl_get_context_data,
    NULL,
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };

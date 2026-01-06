@@ -632,4 +632,5 @@ audio_driver_t audio_dsound = {
    dsound_device_list_free,
    dsound_write_avail,
    dsound_buffer_size,
+   NULL /* write_raw */
 };

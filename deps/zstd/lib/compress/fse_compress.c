@@ -199,17 +199,6 @@ size_t FSE_buildCTable_wksp(FSE_CTable* ct,
                     total +=  (unsigned)normalizedCounter[s];
     }   }   }   }
 
-#if 0  /* debug : symbol costs */
-    DEBUGLOG(5, "\n --- table statistics : ");
-    {   U32 symbol;
-        for (symbol=0; symbol<=maxSymbolValue; symbol++) {
-            DEBUGLOG(5, "%3u: w=%3i,   maxBits=%u, fracBits=%.2f",
-                symbol, normalizedCounter[symbol],
-                FSE_getMaxNbBits(symbolTT, symbol),
-                (double)FSE_bitCost(symbolTT, tableLog, symbol, 8) / 256);
-    }   }
-#endif
-
     return 0;
 }
 
@@ -505,20 +494,6 @@ size_t FSE_normalizeCount (short* normalizedCounter, unsigned tableLog,
         }
         else normalizedCounter[largest] += (short)stillToDistribute;
     }
-
-#if 0
-    {   /* Print Table (debug) */
-        U32 s;
-        U32 nTotal = 0;
-        for (s=0; s<=maxSymbolValue; s++)
-            RAWLOG(2, "%3i: %4i \n", s, normalizedCounter[s]);
-        for (s=0; s<=maxSymbolValue; s++)
-            nTotal += abs(normalizedCounter[s]);
-        if (nTotal != (1U<<tableLog))
-            RAWLOG(2, "Warning !!! Total == %u != %u !!!", nTotal, 1U<<tableLog);
-        getchar();
-    }
-#endif
 
     return tableLog;
 }

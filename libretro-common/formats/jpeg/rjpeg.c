@@ -123,6 +123,11 @@ struct rjpeg
 
 #endif
 
+/* Auto-detect NEON support */
+#if !defined(RJPEG_NO_SIMD) && !defined(RJPEG_NEON) && (defined(__ARM_NEON__) || defined(HAVE_NEON))
+#define RJPEG_NEON
+#endif
+
 /* ARM NEON */
 #if defined(RJPEG_NO_SIMD) && defined(RJPEG_NEON)
 #undef RJPEG_NEON
@@ -771,7 +776,7 @@ static INLINE uint8_t rjpeg_clamp(int x)
 {
    /* trick to use a single test to catch both cases */
    if ((unsigned int) x > 255)
-      return 255;
+      return (x < 0) ? 0 : 255;
    return (uint8_t) x;
 }
 
@@ -2214,11 +2219,11 @@ static void rjpeg_YCbCr_to_RGB_row(uint8_t *out, const uint8_t *y,
       g >>= 20;
       b >>= 20;
       if ((unsigned) r > 255)
-         r = 255;
+         r = (r < 0) ? 0 : 255;
       if ((unsigned) g > 255)
-         g = 255;
+         g = (g < 0) ? 0 : 255;
       if ((unsigned) b > 255)
-         b = 255;
+         b = (b < 0) ? 0 : 255;
       out[0] = (uint8_t)r;
       out[1] = (uint8_t)g;
       out[2] = (uint8_t)b;
@@ -2358,11 +2363,11 @@ static void rjpeg_YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y,
       g >>= 20;
       b >>= 20;
       if ((unsigned) r > 255)
-         r = 255;
+         r = (r < 0) ? 0 : 255;
       if ((unsigned) g > 255)
-         g = 255;
+         g = (g < 0) ? 0 : 255;
       if ((unsigned) b > 255)
-         b = 255;
+         b = (b < 0) ? 0 : 255;
       out[0] = (uint8_t)r;
       out[1] = (uint8_t)g;
       out[2] = (uint8_t)b;

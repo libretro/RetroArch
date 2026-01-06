@@ -253,6 +253,24 @@ static uint32_t gfx_ctx_uwp_get_flags(void *data)
    return flags;
 }
 
+static bool gfx_ctx_uwp_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   return egl_create_surface(&uwp_egl, uwp_get_corewindow());
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_uwp_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   return egl_destroy_surface(&uwp_egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_uwp = {
    gfx_ctx_uwp_init,
    gfx_ctx_uwp_destroy,
@@ -284,5 +302,7 @@ const gfx_ctx_driver_t gfx_ctx_uwp = {
    NULL, /* set flags */
    gfx_ctx_uwp_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   gfx_ctx_uwp_create_surface,
+   gfx_ctx_uwp_destroy_surface
 };

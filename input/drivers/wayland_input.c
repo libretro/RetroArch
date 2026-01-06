@@ -40,6 +40,9 @@
 
 #include "../common/linux_common.h"
 #include "../common/wayland_common.h"
+#ifdef WEBOS
+#include "../common/wayland_common_webos.h"
+#endif
 
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -248,6 +251,14 @@ static int16_t input_wl_state(
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
+#ifdef WEBOS
+         if ((id && id < RETROK_LAST) && (id == RETROK_BACKSPACE) &&
+             webos_wl_special_keymap[webos_wl_key_back] == WL_KEYBOARD_KEY_STATE_PRESSED)
+         {
+            webos_wl_special_keymap[webos_wl_key_back] = 0;
+            return true;
+         }
+#endif
          return (id && id < RETROK_LAST) && BIT_GET(wl->key_state, rarch_keysym_lut[(enum retro_key)id]);
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:

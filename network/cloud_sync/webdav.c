@@ -128,11 +128,11 @@ static char *webdav_create_ha1_hash(char *user, char *realm, char *pass)
    char *hash = (char*)malloc(33);
 
    MD5_Init(&md5);
-   MD5_Update(&md5, user, strlen(user));
+   MD5_Update(&md5, user, (unsigned long)strlen(user));
    MD5_Update(&md5, ":", 1);
-   MD5_Update(&md5, realm, strlen(realm));
+   MD5_Update(&md5, realm, (unsigned long)strlen(realm));
    MD5_Update(&md5, ":", 1);
-   MD5_Update(&md5, pass, strlen(pass));
+   MD5_Update(&md5, pass, (unsigned long)strlen(pass));
    MD5_Final(digest, &md5);
 
    snprintf(hash, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
@@ -284,9 +284,9 @@ static char *webdav_create_ha1(void)
    MD5_Init(&md5);
    MD5_Update(&md5, webdav_st->ha1hash, 32);
    MD5_Update(&md5, ":", 1);
-   MD5_Update(&md5, webdav_st->nonce, strlen(webdav_st->nonce));
+   MD5_Update(&md5, webdav_st->nonce, (unsigned long)strlen(webdav_st->nonce));
    MD5_Update(&md5, ":", 1);
-   MD5_Update(&md5, webdav_st->cnonce, strlen(webdav_st->cnonce));
+   MD5_Update(&md5, webdav_st->cnonce, (unsigned long)strlen(webdav_st->cnonce));
    MD5_Final(digest, &md5);
 
    snprintf(hash, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
@@ -305,9 +305,9 @@ static char *webdav_create_ha2(const char *method, const char *path)
    char           *hash      = (char*)malloc(33);
 
    MD5_Init(&md5);
-   MD5_Update(&md5, method, strlen(method));
+   MD5_Update(&md5, method, (unsigned long)strlen(method));
    MD5_Update(&md5, ":", 1);
-   MD5_Update(&md5, path, strlen(path));
+   MD5_Update(&md5, path, (unsigned long)strlen(path));
    MD5_Final(digest, &md5);
 
    snprintf(hash, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
@@ -330,15 +330,15 @@ static char *webdav_create_digest_response(const char *method, const char *path)
    MD5_Init(&md5);
    MD5_Update(&md5, ha1, 32);
    MD5_Update(&md5, ":", 1);
-   MD5_Update(&md5, webdav_st->nonce, strlen(webdav_st->nonce));
+   MD5_Update(&md5, webdav_st->nonce, (unsigned long)strlen(webdav_st->nonce));
    if (webdav_st->qop_auth)
    {
       char nonceCount[10];
       snprintf(nonceCount, sizeof(nonceCount), "%08x", webdav_st->nc);
       MD5_Update(&md5, ":", 1);
-      MD5_Update(&md5, nonceCount, strlen(nonceCount));
+      MD5_Update(&md5, nonceCount, (unsigned long)strlen(nonceCount));
       MD5_Update(&md5, ":", 1);
-      MD5_Update(&md5, webdav_st->cnonce, strlen(webdav_st->cnonce));
+      MD5_Update(&md5, webdav_st->cnonce, (unsigned long)strlen(webdav_st->cnonce));
       MD5_Update(&md5, ":", 1);
       MD5_Update(&md5, "auth", STRLEN_CONST("auth"));
    }
@@ -469,8 +469,7 @@ static bool webdav_needs_reauth(http_transfer_data_t *data)
       RARCH_DBG("[webdav] Found WWW-Authenticate: Digest header\n");
       if (webdav_create_digest_auth(data->headers->elems[i].data))
          return true;
-      else
-         RARCH_WARN("[webdav] Failure creating WWW-Authenticate: Digest header\n");
+      RARCH_WARN("[webdav] Failure creating WWW-Authenticate: Digest header\n");
    }
 
    return false;
@@ -624,7 +623,7 @@ static bool webdav_read(const char *path, const char *file,
    fill_pathname_join_special(url, webdav_st->url, path, sizeof(url));
    net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
 
-   webdav_cb_st->cb = cb;
+   webdav_cb_st->cb        = cb;
    webdav_cb_st->user_data = user_data;
    strlcpy(webdav_cb_st->path, path, sizeof(webdav_cb_st->path));
    strlcpy(webdav_cb_st->file, file, sizeof(webdav_cb_st->file));
@@ -672,7 +671,7 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data,
    webdav_mkdir_st->last_slash = strchr(webdav_mkdir_st->last_slash + 1, '/');
    if (webdav_mkdir_st->last_slash)
    {
-      webdav_mkdir_st->post_slash = webdav_mkdir_st->last_slash[1];
+      webdav_mkdir_st->post_slash    = webdav_mkdir_st->last_slash[1];
       webdav_mkdir_st->last_slash[1] = '\0';
       RARCH_DBG("[webdav] MKCOL %s\n", webdav_mkdir_st->url);
       auth_header = webdav_get_auth_header("MKCOL", webdav_mkdir_st->url);
@@ -690,17 +689,17 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data,
 static void webdav_ensure_dir(const char *dir, webdav_mkdir_cb_t cb,
       webdav_cb_state_t *webdav_cb_st)
 {
+   char url[PATH_MAX_LENGTH];
    http_transfer_data_t  data;
    webdav_state_t       *webdav_st       = webdav_state_get_ptr();
    webdav_mkdir_state_t *webdav_mkdir_st = (webdav_mkdir_state_t *)malloc(sizeof(webdav_mkdir_state_t));
-   char                  url[PATH_MAX_LENGTH];
 
    fill_pathname_join_special(url, webdav_st->url, dir, sizeof(url));
    net_http_urlencode_full(webdav_mkdir_st->url, url, sizeof(webdav_mkdir_st->url));
    webdav_mkdir_st->last_slash = strchr(webdav_mkdir_st->url + strlen(webdav_st->url) - 1, '/');
    webdav_mkdir_st->post_slash = webdav_mkdir_st->last_slash[1];
-   webdav_mkdir_st->cb = cb;
-   webdav_mkdir_st->cb_st = webdav_cb_st;
+   webdav_mkdir_st->cb         = cb;
+   webdav_mkdir_st->cb_st      = webdav_cb_st;
 
    /* this is a recursive callback, set it up so it looks like it's still proceeding */
    data.status = 200;
@@ -775,8 +774,8 @@ static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
 static bool webdav_update(const char *path, RFILE *rfile,
       cloud_sync_complete_handler_t cb, void *user_data)
 {
-   webdav_cb_state_t *webdav_cb_st = (webdav_cb_state_t*)calloc(1, sizeof(webdav_cb_state_t));
    char               dir[DIR_MAX_LENGTH];
+   webdav_cb_state_t *webdav_cb_st = (webdav_cb_state_t*)calloc(1, sizeof(webdav_cb_state_t));
 
    /* TODO/FIXME: if !settings->bools.cloud_sync_destructive, should move to deleted/ first */
 

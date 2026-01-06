@@ -1194,7 +1194,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST,
-   "core_updater"
+   "deferred_core_updater_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST,
@@ -3019,6 +3019,18 @@ MSG_HASH(
    "quit_retroarch"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW,
+   "cloud_sync_sync_now"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "cloud_sync_resolve_keep_local"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "cloud_sync_resolve_keep_server"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RDB_ENTRY,
    "rdb_entry"
    )
@@ -3685,6 +3697,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,
    "cloud_sync_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE,
+   "cloud_sync_sync_mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "cloud_sync_sync_mode_automatic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "cloud_sync_sync_mode_manual"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,

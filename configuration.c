@@ -334,6 +334,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_BIND(gun_dpad_right,                RARCH_LIGHTGUN_DPAD_RIGHT,    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT),
 
    DECLARE_BIND(turbo,                         RARCH_TURBO_ENABLE,           MENU_ENUM_LABEL_VALUE_INPUT_TURBO),
+   DECLARE_BIND(hold,                          RARCH_HOLD_ENABLE,            MENU_ENUM_LABEL_VALUE_INPUT_HOLD),
 
    DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,          MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
 #ifdef HAVE_MENU
@@ -1744,7 +1745,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_descriptor_label_show",   &settings->bools.input_descriptor_label_show, true, DEFAULT_INPUT_DESCRIPTOR_LABEL_SHOW, false);
    SETTING_BOOL("input_descriptor_hide_unbound", &settings->bools.input_descriptor_hide_unbound, true, DEFAULT_INPUT_DESCRIPTOR_HIDE_UNBOUND, false);
    SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->bools.load_dummy_on_core_shutdown, true, DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN, false);
-   SETTING_BOOL("check_firmware_before_loading", &settings->bools.check_firmware_before_loading, true, DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING, false);
    SETTING_BOOL("core_option_category_enable",   &settings->bools.core_option_category_enable, true, DEFAULT_CORE_OPTION_CATEGORY_ENABLE, false);
    SETTING_BOOL("core_info_savestate_bypass",    &settings->bools.core_info_savestate_bypass, true, DEFAULT_CORE_INFO_SAVESTATE_BYPASS, false);
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
@@ -2179,6 +2179,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("input_remap_binds_enable",      &settings->bools.input_remap_binds_enable, true, true, false);
    SETTING_BOOL("input_remap_sort_by_controller_enable",      &settings->bools.input_remap_sort_by_controller_enable, true, false, false);
    SETTING_BOOL("input_hotkey_device_merge",     &settings->bools.input_hotkey_device_merge, true, DEFAULT_INPUT_HOTKEY_DEVICE_MERGE, false);
+   SETTING_BOOL("input_hotkey_follows_player1",  &settings->bools.input_hotkey_follows_player1, true, DEFAULT_INPUT_HOTKEY_FOLLOWS_PLAYER1, false);
 #ifdef HAVE_MENU
    SETTING_BOOL("all_users_control_menu",        &settings->bools.input_all_users_control_menu, true, DEFAULT_ALL_USERS_CONTROL_MENU, false);
    SETTING_BOOL("menu_swap_ok_cancel_buttons",   &settings->bools.input_menu_swap_ok_cancel_buttons, true, DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS, false);
@@ -2448,6 +2449,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("menu_xmb_thumbnail_scale_factor",         &settings->uints.menu_xmb_thumbnail_scale_factor, true, DEFAULT_XMB_THUMBNAIL_SCALE_FACTOR, false);
    SETTING_UINT("menu_xmb_vertical_fade_factor",           &settings->uints.menu_xmb_vertical_fade_factor, true, DEFAULT_XMB_VERTICAL_FADE_FACTOR, false);
    SETTING_UINT("xmb_alpha_factor",              &settings->uints.menu_xmb_alpha_factor, true, DEFAULT_XMB_ALPHA_FACTOR, false);
+   SETTING_UINT("xmb_current_menu_icon",         &settings->uints.menu_xmb_current_menu_icon, true, DEFAULT_XMB_CURRENT_MENU_ICON, false);
    SETTING_UINT("xmb_layout",                    &settings->uints.menu_xmb_layout, true, DEFAULT_XMB_MENU_LAYOUT, false);
    SETTING_UINT("xmb_theme",                     &settings->uints.menu_xmb_theme, true, DEFAULT_XMB_ICON_THEME, false);
    SETTING_UINT("xmb_menu_color_theme",          &settings->uints.menu_xmb_color_theme, true, DEFAULT_XMB_THEME, false);
@@ -2465,6 +2467,7 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #ifdef HAVE_OZONE
    SETTING_UINT("ozone_menu_color_theme",        &settings->uints.menu_ozone_color_theme, true, DEFAULT_OZONE_COLOR_THEME, false);
+   SETTING_UINT("ozone_header_icon",             &settings->uints.menu_ozone_header_icon, true, DEFAULT_OZONE_HEADER_ICON, false);
    SETTING_UINT("ozone_header_separator",        &settings->uints.menu_ozone_header_separator, true, DEFAULT_OZONE_HEADER_SEPARATOR, false);
    SETTING_UINT("ozone_font_scale",              &settings->uints.menu_ozone_font_scale, true, DEFAULT_OZONE_FONT_SCALE, false);
 #endif
@@ -2610,6 +2613,9 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    SETTING_UINT("network_remote_base_port",      &settings->uints.network_remote_base_port, true, DEFAULT_NETWORK_REMOTE_BASE_PORT, false);
+#endif
+#ifdef HAVE_CLOUDSYNC
+   SETTING_UINT("cloud_sync_sync_mode",          &settings->uints.cloud_sync_sync_mode, true, CLOUD_SYNC_MODE_AUTOMATIC, false);
 #endif
 
 #ifdef HAVE_LANGEXTRA
@@ -3256,6 +3262,11 @@ void config_set_defaults(void *data)
                settings->paths.directory_overlay,
                FILE_PATH_DEFAULT_OVERLAY,
                sizeof(settings->paths.path_overlay));
+      if (string_is_empty(settings->paths.path_osk_overlay))
+         fill_pathname_join_special(settings->paths.path_osk_overlay,
+               settings->paths.directory_overlay,
+               FILE_PATH_DEFAULT_OSK_OVERLAY,
+               sizeof(settings->paths.path_osk_overlay));
 #endif
    }
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]))
@@ -6621,6 +6632,7 @@ void input_config_reset_autoconfig_binds(unsigned port)
    {
       input_autoconf_binds[port][i].joykey  = NO_BTN;
       input_autoconf_binds[port][i].joyaxis = AXIS_NONE;
+      input_autoconf_binds[port][i].valid   = false;
 
       if (input_autoconf_binds[port][i].joykey_label)
       {
@@ -6762,6 +6774,8 @@ void input_config_parse_joy_axis(char *s,
             bind->joyaxis = AXIS_POS(i_axis);
          else
             bind->joyaxis = AXIS_NEG(i_axis);
+
+         bind->valid = true;
       }
    }
 
@@ -6855,6 +6869,8 @@ void input_config_parse_joy_button(
          }
          else
             bind->joykey = strtoull(tmp, NULL, 0);
+
+         bind->valid = true;
       }
    }
 

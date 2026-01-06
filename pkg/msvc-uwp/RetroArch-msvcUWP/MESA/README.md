@@ -1,5 +1,6 @@
-# MESA PreBuilt Libraries
+# MESA Prebuilt Libraries
 
-The Binaries in this folder are compiled from a custom version of [MESA](https://github.com/aerisarn/mesa-uwp). 
-These are based on this [branch](https://github.com/aerisarn/mesa-uwp/tree/alpha-2-hack-fixes), which is the
-stable branch for MESA integration into Retroarch.
+The binaries in this directory are compiled from a custom MESA fork maintained here:
+https://github.com/SternXD/mesa-uwp
+
+These builds are derived from the `uwp-25.3.3` branch.

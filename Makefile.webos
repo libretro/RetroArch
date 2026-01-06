@@ -1,7 +1,7 @@
 include version.all
 
-ifneq ($(CROSS_COMPILE),arm-webos-linux-gnueabi-)
-    $(error You need webOS toolchain to build this. See https://github.com/webosbrew/native-toolchain)
+ifneq ($(filter $(CROSS_COMPILE),arm-webos-linux-gnueabi- aarch64-webos-linux-gnu-),$(CROSS_COMPILE))
+  $(error You need webOS toolchain to build this. See https://github.com/webosbrew/native-toolchain)
 endif
 
 ifdef SDKTARGETSYSROOT
@@ -24,8 +24,9 @@ SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/downloa
 #########################
 
 APP_PACKAGE_NAME ?= com.retroarch.webos
-PACKAGE_VERSION := $(patsubst "%",%,$(RARCH_VERSION))
+IPK_VERSION := $(shell grep '#define PACKAGE_VERSION' version.all | sed -E 's/.*"([0-9]+\.[0-9]+\.[0-9]+)".*/\1/')
 
+WEBOS = 1
 DEBUG ?= 0
 
 HAVE_CLOUDSYNC = 1
@@ -60,7 +61,7 @@ HAVE_CXX = 1
 HAVE_DR_MP3 = 1
 HAVE_DYNAMIC = 1
 HAVE_DYLIB = 1
-HAVE_EGL = 0
+HAVE_EGL ?= 0
 HAVE_FREETYPE = 1
 HAVE_GDI = 0
 HAVE_GETADDRINFO = 1
@@ -76,11 +77,12 @@ HAVE_GLSLANG_SPIRV_TOOLS_OPT = 0
 HAVE_HID = 1
 HAVE_IBXM = 1
 HAVE_IMAGEVIEWER = 1
+HAVE_XKBCOMMON ?= 0
 HAVE_LANGEXTRA = 1
 HAVE_LIBRETRODB = 1
 HAVE_MENU = 1
 HAVE_MENU_COMMON = 1
-HAVE_NEON = 1
+HAVE_NEON = 0
 HAVE_NETWORKING = 1
 HAVE_IFINFO = 1
 HAVE_NETWORK_CMD = 1
@@ -94,9 +96,9 @@ HAVE_OPENGL = 0
 HAVE_OPENGL1 = 0
 HAVE_OPENGL_CORE = 0
 HAVE_OPENGLES = 1
-HAVE_OPENGLES3 = 0
-HAVE_OPENGLES3_1 = 0
-HAVE_OPENGLES3_2 = 0
+HAVE_OPENGLES3 ?= 0
+HAVE_OPENGLES3_1 ?= 0
+HAVE_OPENGLES3_2 ?= 0
 HAVE_OPENSSL = 0
 HAVE_OVERLAY = 1
 HAVE_PULSE = 1
@@ -129,7 +131,9 @@ HAVE_LIBSHAKE = 1
 HAVE_UPDATE_ASSETS = 1
 HAVE_UPDATE_CORES = 1
 HAVE_UPDATE_CORE_INFO = 1
+HAVE_USERLAND ?= 0
 HAVE_CORE_INFO_CACHE = 1
+HAVE_WAYLAND ?= 0
 
 OS = Linux
 TARGET = retroarch
@@ -140,8 +144,14 @@ DEF_FLAGS += -ffunction-sections -fdata-sections
 DEF_FLAGS += -I. -Ideps -Ideps/stb -DWEBOS=1 -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable
 LIBS := -ldl -lz -lrt -pthread
-ARCHFLAGS := -mcpu=cortex-a9 -mtune=cortex-a53 -mfloat-abi=softfp
+ifeq ($(findstring arm64,$(ARCH)),arm64)
+  ARCHFLAGS := -mcpu=cortex-a53
+else
+  ARCHFLAGS := -mcpu=cortex-a9 -mtune=cortex-a53 -mfloat-abi=softfp
+  HAVE_NEON = 1
+endif
 CFLAGS := $(ARCHFLAGS)
+CFLAGS += -DWEBOS_APP_ID=\"$(APP_PACKAGE_NAME)\"
 CXXFLAGS := $(ARCHFLAGS) -fno-exceptions -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS
 ASFLAGS := $(ARCHFLAGS)
 LDFLAGS := -Wl,-rpath=\$$ORIGIN/lib,--gc-sections
@@ -157,20 +167,45 @@ DEFINES += -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_A
 DEFINES += -DHAVE_NETWORKGAMEPAD
 DEFINES += -DHAVE_FREETYPE
 DEFINES += -DHAVE_UPDATE_CORE_INFO
+EGL_LIBS = -lEGL
+OPENGLES_LIBS = -lGLESv2
+XKBCOMMON_LIBS = -lxkbcommon
+WAYLAND_PROTO_SCRIPT := ./gfx/common/wayland/generate_wayland_protos.sh
+ifeq ($(HAVE_XKBCOMMON), 1)
+  DEFINES += -DHAVE_XKBCOMMON=1
+endif
+ifneq (,$(filter 1,$(HAVE_OPENGLES3) $(HAVE_OPENGLES3_1) $(HAVE_OPENGLES3_2)))
+  DEFINES += -DHAVE_OPENGLES3
+endif
+ifeq ($(HAVE_OPENGLES3_1),1)
+  DEFINES += -DHAVE_OPENGLES3_1
+endif
+ifeq ($(HAVE_OPENGLES3_2),1)
+  DEFINES += -DHAVE_OPENGLES3_2
+endif
+ifeq ($(HAVE_WAYLAND),1)
+  DEFINES += -DHAVE_WAYLAND=1
+  WAYLAND_LIBS = -lwayland-client -lwayland-cursor -lwayland-egl
+endif
+ifeq ($(HAVE_USERLAND),1)
+  DEFINES += -DHAVE_USERLAND
+  WAYLAND_LIBS += -lhelpers
+endif
 
 PKG_CONFIG=pkg-config
 
 SDL2_CFLAGS := $(shell $(PKG_CONFIG) --cflags sdl2)
 SDL2_LIBS := $(shell $(PKG_CONFIG) --libs sdl2)
-OPENGLES_LIBS = -lGLESv2
 PULSE_LIBS = $(shell $(PKG_CONFIG) --libs libpulse)
 FREETYPE_CFLAGS := $(shell $(PKG_CONFIG) --cflags freetype2)
 FREETYPE_LIBS := $(shell $(PKG_CONFIG) --libs freetype2)
 FONTCONFIG_CFLAGS := $(shell $(PKG_CONFIG) --cflags fontconfig)
 FONTCONFIG_LIBS := $(shell $(PKG_CONFIG) --libs fontconfig)
 MMAP_LIBS = -lc
-NEON_CFLAGS = -mfpu=neon
-NEON_ASFLAGS = -mfpu=neon
+ifeq ($(HAVE_NEON),1)
+  NEON_CFLAGS  += -mfpu=neon
+  NEON_ASFLAGS += -mfpu=neon
+endif
 NETWORKING_LIBS = -lc
 
 OBJDIR_BASE := obj-unix
@@ -201,14 +236,17 @@ RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 define APPINFO
 {
     "id": "$(APP_PACKAGE_NAME)",
-    "version": "$(PACKAGE_VERSION)",
+    "version": "$(IPK_VERSION)",
     "vendor": "webosbrew.org",
     "title": "RetroArch",
     "icon": "icon160.png",
     "main": "retroarch",
     "iconColor": "#333333",
     "type": "native",
-    "appDescription": "Emulation frontend"
+    "appDescription": "Emulation frontend",
+    "cloudgame_active": true,
+    "useAllMouseButtons": true,
+    "useAllKeyboardKeys": true
 }
 endef
 export APPINFO
@@ -240,6 +278,12 @@ endif
 -include $(RARCH_OBJ:.o=.d)
 
 SYMBOL_MAP := -Wl,-Map=output.map
+
+prebuild:
+ifeq ($(HAVE_WAYLAND),1)
+	@echo "Generating Wayland protocols..."
+	@$(SHELL) $(WAYLAND_PROTO_SCRIPT)
+endif
 
 $(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
@@ -281,7 +325,7 @@ ifeq ($(ADD_SDL2_LIB), 1)
 	wget -qO - $(SDL2_PREBUILT_ARCHIVE) | tar -C SDL -zxvf -
 endif
 
-ipk: $(TARGET) sdl2
+ipk: prebuild $(TARGET) sdl2
 	rm -rf webos/dist
 	mkdir -p webos/dist/lib
 	echo "$$APPINFO" > webos/dist/appinfo.json
@@ -297,12 +341,12 @@ endif
 	cd webos && ares-package dist
 
 install: ipk
-	ares-install webos/$(APP_PACKAGE_NAME)_$(PACKAGE_VERSION)_$(ARCH).ipk
+	ares-install webos/$(APP_PACKAGE_NAME)_$(IPK_VERSION)_$(ARCH).ipk
 
 launch: install
 	ares-launch $(APP_PACKAGE_NAME)
 
-.PHONY: all clean ipk
+.PHONY: all clean prebuild ipk
 
 print-%:
 	@echo '$*=$($*)'

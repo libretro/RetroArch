@@ -1065,6 +1065,26 @@ static void gfx_ctx_drm_set_flags(void *data, uint32_t flags)
       drm->core_hw_context_enable = true;
 }
 
+static bool gfx_ctx_drm_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   return egl_create_surface(&drm->egl, (EGLNativeWindowType)drm->gbm_surface);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_drm_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   return egl_destroy_surface(&drm->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_init,
    gfx_ctx_drm_destroy,
@@ -1100,5 +1120,7 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_set_flags,
    gfx_ctx_drm_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   gfx_ctx_drm_create_surface,
+   gfx_ctx_drm_destroy_surface
 };

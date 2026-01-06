@@ -214,7 +214,7 @@ static void rwebpad_joypad_update_rumble(unsigned port)
    {
       EM_ASM({
          try {
-            JSEvents?.lastGamepadState?.[$0]?.vibrationActuator?.playEffect?.("dual-rumble", {startDelay: 0, duration: 200, strongMagnitude: $1 / 65536, weakMagnitude: $2 / 65536});
+            JSEvents?.lastGamepadState?.[$0]?.vibrationActuator?.playEffect?.("dual-rumble", {"startDelay": 0, "duration": 200, "strongMagnitude": $1 / 65535, "weakMagnitude": $2 / 65535});
          } catch (e) {}
       }, port, rwebpad_joypad_data->rumble[port].strong, rwebpad_joypad_data->rumble[port].weak);
    }

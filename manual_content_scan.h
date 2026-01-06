@@ -273,6 +273,15 @@ void manual_content_scan_add_content_to_playlist(
       playlist_t *playlist, const char *content_path,
       int content_type, logiqx_dat_t *dat_file);
 
+bool manual_content_scan_get_playlist_content_label(
+      const char *content_path, logiqx_dat_t *dat_file,
+      bool filter_dat_content,
+      char *s, size_t len);
+bool manual_content_scan_get_playlist_content_path(
+      manual_content_scan_task_config_t *task_config,
+      const char *content_path, int content_type,
+      char *s, size_t len);
+
 RETRO_END_DECLS
 
 #endif

@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -1726,6 +1740,10 @@ MSG_HASH(
    "Blader door deze opties als de afbeelding niet goed op het scherm is gecentreerd."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   "Blader door deze opties als de afbeelding niet goed op het scherm is gecentreerd."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Schakel over naar een hoog-resolutiemodel voor gebruik met hoge-resolutie menu's wanneer er geen inhoud wordt geladen."
    )
@@ -2612,10 +2630,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
    "Detecteer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Inhoud pauzeren wanneer de controller de verbinding verbreekt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
@@ -5682,6 +5696,14 @@ MSG_HASH(
    "Schakel horizontale animatie in voor het menu. Dit zal een negatieve impact hebben op de prestaties."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Geen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Normaal"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_THEME,
    "Select a different theme for the icon. Changes will take effect after you restart the program."
    )
@@ -5739,6 +5761,10 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Geen"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
    "Geen"
@@ -6361,10 +6387,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_LIBRETRO_FRONTEND,
    "Front-end voor libretro"
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "State geladen van slot #%d."
    )
 MSG_HASH(
    MSG_LOADING,

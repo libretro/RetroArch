@@ -486,7 +486,7 @@ char *realpath(const char *name, char *resolved)
 
    if (!resolved)
    {
-      rpath = malloc(path_max);
+      rpath = (char*)malloc(path_max);
       if (!rpath)
          return NULL;
    }

@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -1175,6 +1189,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
    "همگام‌سازی ابری تخریبی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "دستی"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
@@ -2459,6 +2477,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
    "خشاب تفنگ"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "تعلیق"
+   )
 
 /* Settings > Latency */
 
@@ -3236,10 +3258,6 @@ MSG_HASH(
    "شروع مجدد"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_CONTENT,
-   "شروع مجدد محتوا از ابتدا."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "بستن محتوا"
    )
@@ -3457,6 +3475,10 @@ MSG_HASH(
 
 /* XMB: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "هیچکدام"
+   )
 
 /* XMB: Settings Options */
 
@@ -3470,6 +3492,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
    "مقیاس قلم"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "هیچکدام"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
@@ -3677,14 +3703,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_START_RECORDING,
    "شروع ضبط شکست خورد."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "وضعیت در شیار #%d ذخیره شد."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "وضعیت در شیار #%d ذخیره شد (خودکار)."
    )
 MSG_HASH(
    MSG_STATE_SLOT,

@@ -39,6 +39,10 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #define VENDOR_ID_AMD 0x1002
 #define VENDOR_ID_NV 0x10DE
 #define VENDOR_ID_INTEL 0x8086
@@ -522,6 +526,9 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 
 static const char *vulkan_device_extensions[]  = {
    "VK_KHR_swapchain",
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   "VK_EXT_full_screen_exclusive"
+#endif
 };
 
 static const char *vulkan_optional_device_extensions[] = {
@@ -885,6 +892,7 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
          break;
       case VULKAN_WSI_WIN32:
          required_extensions[required_extension_count++] = "VK_KHR_win32_surface";
+         required_extensions[required_extension_count++] = "VK_KHR_get_surface_capabilities2";
          break;
       case VULKAN_WSI_XLIB:
          required_extensions[required_extension_count++] = "VK_KHR_xlib_surface";
@@ -1932,6 +1940,23 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    settings_t                    *settings = config_get_ptr();
    bool vsync                              = settings->bools.video_vsync;
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
+   HMONITOR fse_monitor;
+   VkSurfaceFullScreenExclusiveWin32InfoEXT fs_win32 = {
+       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
+       NULL,
+       NULL
+   };
+   /* Allow or disallow exclusive fullscreen based on user setting. */
+   VkSurfaceFullScreenExclusiveInfoEXT fs_info       = {
+       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
+       NULL,
+       video_windowed_fullscreen
+           ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
+           : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
+   };
+#endif
 
    format.format                           = VK_FORMAT_UNDEFINED;
    format.colorSpace                       = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
@@ -2279,6 +2304,16 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    if (old_swapchain != VK_NULL_HANDLE)
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   /* Tie exclusive mode to the window's monitor. */
+   fse_monitor       = MonitorFromWindow(GetActiveWindow(), MONITOR_DEFAULTTONEAREST);
+   fs_win32.hmonitor = fse_monitor;
+   /* Allow or disallow exclusive fullscreen based on user setting. */
+   fs_info.pNext     = &fs_win32;
+   /* Attach fullscreen info to swapchain creation struct. */
+   info.pNext        = &fs_info;
+#endif
+
    if (vkCreateSwapchainKHR(vk->context.device,
             &info, NULL, &vk->swapchain) != VK_SUCCESS)
    {
@@ -2337,6 +2372,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    if (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
       vulkan_emulated_mailbox_init(&vk->mailbox, vk->context.device, vk->swapchain);
 
+   /* This flag needs to be cleared otherwise elsewhere it can be perceived as if there's a new swapchain created everytime its being called */
+   vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
    return true;
 }
 

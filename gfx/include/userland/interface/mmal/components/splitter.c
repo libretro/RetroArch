@@ -73,28 +73,6 @@ static MMAL_STATUS_T splitter_component_destroy(MMAL_COMPONENT_T *component)
 /** Enable processing on a port */
 static MMAL_STATUS_T splitter_port_enable(MMAL_PORT_T *port, MMAL_PORT_BH_CB_T cb)
 {
-#if 0
-   MMAL_COMPONENT_T *component = port->component;
-   uint32_t buffer_num, buffer_size;
-   unsigned int i;
-
-   /* Find the max and apply that to all ports */
-   buffer_num = component->input[0]->buffer_num;
-   buffer_size = component->input[0]->buffer_size;
-   for (i = 0; i < component->output_num; i++)
-   {
-      buffer_num = MMAL_MAX(buffer_num, component->output[i]->buffer_num);
-      buffer_size = MMAL_MAX(buffer_num, component->output[i]->buffer_size);
-   }
-   component->input[0]->buffer_num = buffer_num;
-   component->input[0]->buffer_size = buffer_size;
-   for (i = 0; i < component->output_num; i++)
-   {
-      component->output[i]->buffer_num = buffer_num;
-      component->output[i]->buffer_size = buffer_num;
-   }
-#endif
-
    MMAL_PARAM_UNUSED(cb);
    if (port->buffer_size)
    if (port->type == MMAL_PORT_TYPE_OUTPUT)

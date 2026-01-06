@@ -50,13 +50,6 @@ struct dhcp
   u32_t offered_t0_lease; /* lease period (in seconds) */
   u32_t offered_t1_renew; /* recommended renew time (usually 50% of lease period) */
   u32_t offered_t2_rebind; /* recommended rebind time (usually 66% of lease period)  */
-/** Patch #1308
- *  TODO: See dhcp.c "TODO"s
- */
-#if 0
-  struct ip_addr offered_si_addr;
-  u8_t *boot_file_name;
-#endif
 };
 
 /* MUST be compiled with "pack structs" or equivalent! */

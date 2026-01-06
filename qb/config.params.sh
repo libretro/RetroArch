@@ -158,6 +158,7 @@ HAVE_QT=auto               # Qt companion support
 C89_QT=no
 HAVE_XSHM=no               # XShm video driver support
 HAVE_CHEEVOS=yes           # Retro Achievements
+HAVE_CHEEVOS_RVZ=yes       # Retro Achievements hashing for Wii/GC RVZ files, depends on Zstd
 HAVE_LUA=no                # Lua support (for Retro Achievements)
 HAVE_DISCORD=yes           # Discord Integration
 C89_DISCORD=no

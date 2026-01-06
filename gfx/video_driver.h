@@ -618,6 +618,16 @@ typedef struct gfx_ctx_driver
    /* Optional. Makes driver context (only GL right now)
     * active for this thread. */
    void (*make_current)(bool release);
+
+   /* Optional. Creates and binds a new window surface, destroying the original
+    * window surface if applicable. Returns true on success and false on error.
+    * Currently only for OpenGL. */
+   bool (*create_surface)(void *data);
+
+   /* Optional. Destroys the current window surface. Returns true on success or
+    * or if there is no currently bound window surface and false on error.
+    * Currently only for OpenGL. */
+   bool (*destroy_surface)(void *data);
 } gfx_ctx_driver_t;
 
 typedef struct gfx_ctx_mode
@@ -948,7 +958,8 @@ void video_driver_monitor_reset(void);
 
 void video_driver_set_aspect_ratio(void);
 
-void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect);
+void video_driver_update_viewport(struct video_viewport* vp,
+      bool force_full, bool keep_aspect, bool y_down);
 
 void video_driver_apply_state_changes(void);
 

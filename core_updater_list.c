@@ -582,20 +582,13 @@ static bool core_updater_list_set_core_info(
     *    *installed* cores...) */
    if ((core_info = core_info_get_core_updater_info(local_info_path)))
    {
-      /* display_name + is_experimental */
+      entry->is_experimental    = core_info->is_experimental;
+
+      /* display name */
       if (!string_is_empty(core_info->display_name))
-      {
          entry->display_name    = strdup(core_info->display_name);
-         entry->is_experimental = core_info->is_experimental;
-      }
       else
-      {
-         /* If display name is blank, use core filename and
-          * assume core is experimental (i.e. all 'fit for consumption'
-          * cores must have a valid/complete core info file) */
          entry->display_name    = strdup(filename_str);
-         entry->is_experimental = true;
-      }
 
       /* description */
       if (!string_is_empty(core_info->description))
@@ -612,11 +605,8 @@ static bool core_updater_list_set_core_info(
    }
    else
    {
-      /* If info file is missing, use core filename and
-       * assume core is experimental (i.e. all 'fit for consumption'
-       * cores must have a valid/complete core info file) */
+      /* If info file is missing, use core filename */
       entry->display_name       = strdup(filename_str);
-      entry->is_experimental    = true;
       entry->description        = strldup("", sizeof(""));
    }
 

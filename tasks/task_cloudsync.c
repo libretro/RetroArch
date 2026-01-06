@@ -69,12 +69,18 @@ typedef struct
    bool need_manifest_uploaded;
    bool failures;
    bool conflicts;
+   /* Conflict resolution mode: 0=none, 1=keep_local, 2=keep_server */
+   int conflict_resolution;
    uint32_t uploads;
    uint32_t downloads;
    retro_time_t start_time;
 } task_cloud_sync_state_t;
 
 static slock_t *tcs_running_lock = NULL;
+
+/* Forward declarations for conflict resolution */
+static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_state);
+static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_state);
 
 static void task_cloud_sync_begin_handler(void *user_data, const char *path, bool success, RFILE *file)
 {
@@ -680,19 +686,28 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
 
 static void task_cloud_sync_resolve_conflict(task_cloud_sync_state_t *sync_state)
 {
-   /*
-    * rather than pop up some UI let's just resolve it ourselves!
-    * three options:
-    * 1. rename the server file and replace it
-    * 2. rename the local file and replace it
-    * 3. ignore it
-    * If we ignore it then we need to keep it out of the new local manifest
-    */
    struct item_file *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
-   RARCH_WARN(CSPFX "Conflicting change of %s.\n", CS_FILE_KEY(server_file));
-   task_cloud_sync_add_to_updated_manifest(sync_state, CS_FILE_KEY(server_file), CS_FILE_HASH(server_file), true);
-   /* no need to mark need_manifest_uploaded, nothing changed */
-   sync_state->conflicts = true;
+
+   if (sync_state->conflict_resolution == 1)
+   {
+      /* Keep local: upload local file to server */
+      RARCH_LOG(CSPFX "Conflict on %s, keeping local.\n", CS_FILE_KEY(server_file));
+      task_cloud_sync_upload_current_file(sync_state);
+   }
+   else if (sync_state->conflict_resolution == 2)
+   {
+      /* Keep server: download server file */
+      RARCH_LOG(CSPFX "Conflict on %s, keeping server.\n", CS_FILE_KEY(server_file));
+      task_cloud_sync_fetch_server_file(sync_state);
+   }
+   else
+   {
+      /* Default: ignore the conflict, keep file out of local manifest */
+      RARCH_WARN(CSPFX "Conflicting change of %s.\n", CS_FILE_KEY(server_file));
+      task_cloud_sync_add_to_updated_manifest(sync_state, CS_FILE_KEY(server_file), CS_FILE_HASH(server_file), true);
+      /* no need to mark need_manifest_uploaded, nothing changed */
+      sync_state->conflicts = true;
+   }
 }
 
 static void task_cloud_sync_upload_cb(void *user_data, const char *path, bool success, RFILE *file)
@@ -1333,7 +1348,7 @@ static bool task_cloud_sync_task_finder(retro_task_t *task, void *user_data)
    return task->handler == task_cloud_sync_task_handler;
 }
 
-void task_push_cloud_sync(void)
+static void task_push_cloud_sync_with_mode(int conflict_resolution)
 {
    char task_title[128];
    task_finder_data_t       find_data;
@@ -1364,8 +1379,9 @@ void task_push_cloud_sync(void)
       return;
    }
 
-   sync_state->phase      = CLOUD_SYNC_PHASE_BEGIN;
-   sync_state->start_time = cpu_features_get_time_usec();
+   sync_state->phase               = CLOUD_SYNC_PHASE_BEGIN;
+   sync_state->start_time          = cpu_features_get_time_usec();
+   sync_state->conflict_resolution = conflict_resolution;
 
    strlcpy(task_title, "Cloud Sync in progress", sizeof(task_title));
 
@@ -1375,6 +1391,11 @@ void task_push_cloud_sync(void)
    task->callback = task_cloud_sync_cb;
 
    task_queue_push(task);
+}
+
+void task_push_cloud_sync(void)
+{
+   task_push_cloud_sync_with_mode(0);
 }
 
 void task_push_cloud_sync_update_driver(void)
@@ -1391,4 +1412,16 @@ void task_push_cloud_sync_update_driver(void)
     */
    task_cloud_sync_manifest_filename(manifest_path, sizeof(manifest_path), false);
    filestream_delete(manifest_path);
+}
+
+void task_push_cloud_sync_resolve_keep_local(void)
+{
+   RARCH_LOG(CSPFX "Starting sync with conflict resolution: keep local.\n");
+   task_push_cloud_sync_with_mode(1);
+}
+
+void task_push_cloud_sync_resolve_keep_server(void)
+{
+   RARCH_LOG(CSPFX "Starting sync with conflict resolution: keep server.\n");
+   task_push_cloud_sync_with_mode(2);
 }

@@ -419,6 +419,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    }
 
    [g_ctx setView:g_view];
+   [[g_view window] setColorSpace:[NSColorSpace sRGBColorSpace]];
 #ifdef OSX
    [g_ctx makeCurrentContext];
 #else
@@ -635,5 +636,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_gl_gfx_ctx_set_flags,
    cocoa_gl_gfx_ctx_bind_hw_render,
    NULL, /* get_context_data */
-   NULL  /* make_current */
+   NULL, /* make_current */
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };

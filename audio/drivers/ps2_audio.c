@@ -134,5 +134,6 @@ audio_driver_t audio_ps2 = {
    NULL,
    NULL,
    ps2_audio_write_avail,
-   ps2_audio_buffer_size
+   ps2_audio_buffer_size,
+   NULL /* write_raw */
 };

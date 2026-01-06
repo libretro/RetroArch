@@ -138,7 +138,10 @@ unlock:
 void pipewire_core_deinit(pipewire_core_t *pw)
 {
    if (!pw)
-      return pw_deinit();
+   {
+      pw_deinit();
+      return;
+   }
 
    if (pw->thread_loop)
       pw_thread_loop_stop(pw->thread_loop);

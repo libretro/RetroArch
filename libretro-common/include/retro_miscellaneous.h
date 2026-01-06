@@ -510,6 +510,8 @@ typedef struct
 #  endif
 #elif defined(PS2)
 #  define PRI_SIZET "u"
+#elif defined(__EMSCRIPTEN__)
+#  define PRI_SIZET "zu"
 #else
 #  if (SIZE_MAX == 0xFFFF)
 #    define PRI_SIZET "hu"

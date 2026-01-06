@@ -62,6 +62,8 @@ static struct magic_entry MAGIC_NUMBERS[] = {
    { "Sony - PlayStation 2",        "PLAYSTATION",      0x008008}, /* PS2 DVD */
    { "Sony - PlayStation 2",        "           ",      0x008008}, /* PS2 DVD */
    { "Sony - PlayStation Portable", "PSP GAME",         0x008008},
+   /* CD-i magic number should start with \0 at position 0 but it throws off later strlen() */
+   { "Philips - CD-i",              "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00", 0x000001},
    { NULL,                          NULL,               0}
 };
 
@@ -543,37 +545,37 @@ size_t detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filenam
    {
       case 'E':
          _len += strlcpy(s + _len, "-USA", len - _len);
-         return _len;
+         break;
       case 'J':
          _len += strlcpy(s + _len, "-JPN", len - _len);
-         return _len;
+         break;
       case 'P': /** NYI: P can also be P-UKV, P-AUS **/
       case 'X': /** NYI: X can also be X-UKV, X-EUU **/
          _len += strlcpy(s + _len, "-EUR", len - _len);
-         return _len;
+         break;
       case 'Y':
          _len += strlcpy(s + _len, "-FAH", len - _len);
-         return _len;
+         break;
       case 'D':
          _len += strlcpy(s + _len, "-NOE", len - _len);
-         return _len;
+         break;
       case 'S':
          _len += strlcpy(s + _len, "-ESP", len - _len);
-         return _len;
+         break;
       case 'F':
          _len += strlcpy(s + _len, "-FRA", len - _len);
-         return _len;
+         break;
       case 'I':
          _len += strlcpy(s + _len, "-ITA", len - _len);
-         return _len;
+         break;
       case 'H':
          _len += strlcpy(s + _len, "-HOL", len - _len);
-         return _len;
+         break;
       default:
-    break;
+         return 0;
    }
 
-   return 0;
+   return _len;
 }
 
 int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
@@ -742,12 +744,20 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    /** redump serials are built differently for each region **/
    switch (region_id)
    {
-      case 'U':
+      case 'B':  /* Brazil/multi-region (BKUT) */
+      case 'T':  /* Taiwan/Asia */
+      case 'K':  /* Korea */
+      case 'A':  /* Americas */
+      case 'U':  /* USA */
          if (     raw_game_id[0] == 'M'
                && raw_game_id[1] == 'K'
                && raw_game_id[2] == '-')
          {
-            strlcpy(s, &raw_game_id[3], len);
+            const char *serial_start = &raw_game_id[3];
+            /* Strip leading zeros from serial number */
+            while (*serial_start == '0' && *(serial_start + 1) != '\0')
+               serial_start++;
+            strlcpy(s, serial_start, len);
          }
          else
             strlcpy(s, raw_game_id, len);
@@ -788,12 +798,12 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
 int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
+   int index;
    size_t _len, __len, ___len;
    int total_hyphens;
    int total_hyphens_recalc;
    char pre_game_id[50];
    char raw_game_id[50];
-   int index;
    char lgame_id[20];
    char rgame_id[20];
 
@@ -1157,6 +1167,37 @@ int cue_find_track(const char *cue_path, bool first,
          task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
          is_data = !string_is_equal_noncase(tmp_token, "AUDIO");
          ++track;
+
+         /* Special case: CD-i stores data in AUDIO-labeled tracks */
+         /* Check if track 1 is AUDIO but contains CD-i magic bytes */
+         if (!is_data && track == 1 && last_file[0] != '\0')
+         {
+            intfstream_t *track_fd = NULL;
+            intfstream_info_t track_info;
+            uint8_t magic_buf[12];
+            const uint8_t cdi_magic[] = {0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00};
+
+            track_info.type = INTFSTREAM_FILE;
+            if ((track_fd = (intfstream_t*)intfstream_init(&track_info)))
+            {
+               if (intfstream_open(track_fd, last_file,
+                     RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE))
+               {
+                  if (intfstream_read(track_fd, magic_buf, sizeof(magic_buf)) == sizeof(magic_buf))
+                  {
+                     if (memcmp(magic_buf, cdi_magic, sizeof(cdi_magic)) == 0)
+                     {
+                        is_data = true;  /* CD-i AUDIO track contains data */
+#ifdef DEBUG
+                        RARCH_LOG("[Scanner] Detected CD-i data in AUDIO track 1\n");
+#endif
+                     }
+                  }
+                  intfstream_close(track_fd);
+               }
+               free(track_fd);
+            }
+         }
       }
       else if (string_is_equal_noncase(tmp_token, "INDEX"))
       {
@@ -1373,3 +1414,352 @@ size_t gdi_next_file(intfstream_t *fd, const char *gdi_path,
 
    return 0;
 }
+
+int intfstream_get_serial(intfstream_t *fd, char *s, size_t len, const char *filename)
+{
+   const char *system_name = NULL;
+   if (detect_system(fd, &system_name, filename) >= 1)
+   {
+      size_t system_len = strlen(system_name);
+      if (string_starts_with_size(system_name, "Sony", STRLEN_CONST("Sony")))
+      {
+         if (   STRLEN_CONST("Sony - PlayStation Portable") == system_len
+             && memcmp(system_name, "Sony - PlayStation Portable", system_len) == 0)
+         {
+            if (detect_psp_game(fd, s, len, filename) != 0)
+               return 1;
+         }
+         else if (   STRLEN_CONST("Sony - PlayStation") == system_len
+                  && memcmp(system_name, "Sony - PlayStation", system_len) == 0)
+         {
+            if (detect_ps1_game(fd, s, len, filename) != 0)
+               return 1;
+         }
+         else if (   STRLEN_CONST("Sony - PlayStation 2") == system_len
+                  && memcmp(system_name, "Sony - PlayStation 2", system_len) == 0)
+         {
+            if (detect_ps2_game(fd, s, len, filename) != 0)
+               return 1;
+         }
+      }
+      else if (string_starts_with_size(system_name, "Nintendo", STRLEN_CONST("Nintendo")))
+      {
+         if (   STRLEN_CONST("Nintendo - GameCube") == system_len
+             && memcmp(system_name, "Nintendo - GameCube", system_len) == 0)
+         {
+            if (detect_gc_game(fd, s, len, filename) != 0)
+               return 1;
+         }
+         else if (   STRLEN_CONST("Nintendo - Wii") == system_len
+                  && memcmp(system_name, "Nintendo - Wii", system_len) == 0)
+         {
+            if (detect_wii_game(fd, s, len, filename) != 0)
+               return 1;
+         }
+      }
+      else if (string_starts_with_size(system_name, "Sega", STRLEN_CONST("Sega")))
+      {
+         if (   STRLEN_CONST("Sega - Mega-CD - Sega CD") == system_len
+             && memcmp(system_name, "Sega - Mega-CD - Sega CD", system_len) == 0)
+         {
+            if (detect_scd_game(fd, s, len, filename) != 0)
+               return 1;
+         }
+         else if (   STRLEN_CONST("Sega - Saturn") == system_len
+                  && memcmp(system_name, "Sega - Saturn", system_len) == 0)
+         {
+            if (detect_sat_game(fd, s, len, filename) != 0)
+               return 1;
+         }
+         else if (   STRLEN_CONST("Sega - Dreamcast") == system_len
+                  && memcmp(system_name, "Sega - Dreamcast", system_len) == 0)
+         {
+            if (detect_dc_game(fd, s, len, filename) != 0)
+               return 1;
+         }
+      }
+      /* Philips CD-i has no serial entry on disc, use default fallback to CRC */
+   }
+   return 0;
+}
+
+bool intfstream_file_get_serial(const char *name,
+      uint64_t offset, int64_t size, char *s, size_t len, uint64_t *fsize)
+{
+   int rv;
+   uint8_t *data     = NULL;
+   int64_t file_size = -1;
+   intfstream_t *fd  = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!fd)
+      return 0;
+
+   if (intfstream_seek(fd, 0, SEEK_END) == -1)
+      goto error;
+
+   file_size = intfstream_tell(fd);
+   *fsize = file_size;
+
+   if (intfstream_seek(fd, 0, SEEK_SET) == -1)
+      goto error;
+
+   if (file_size < 0)
+      goto error;
+
+   if (offset != 0 || size < file_size)
+   {
+      if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
+         goto error;
+
+      data = (uint8_t*)malloc(size);
+
+      if (intfstream_read(fd, data, size) != (int64_t) size)
+      {
+         free(data);
+         goto error;
+      }
+
+      intfstream_close(fd);
+      free(fd);
+      if (!(fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE,
+            size)))
+      {
+         free(data);
+         return 0;
+      }
+   }
+
+   rv = intfstream_get_serial(fd, s, len, name);
+   intfstream_close(fd);
+   free(fd);
+   free(data);
+   return rv;
+
+error:
+   intfstream_close(fd);
+   free(fd);
+   return 0;
+}
+
+int task_database_cue_get_serial(const char *name, char *s, size_t len, uint64_t *filesize)
+{
+   char track_path[PATH_MAX_LENGTH];
+   uint64_t offset  = 0;
+   size_t _len      = 0;
+
+   track_path[0]    = '\0';
+
+   if (cue_find_track(name, true, &offset, &_len,
+         track_path, sizeof(track_path)) < 0)
+   {
+#ifdef DEBUG
+      RARCH_LOG("[Scanner] %s\n",
+            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
+#endif
+      return 0;
+   }
+
+   return intfstream_file_get_serial(track_path, offset, _len, s, len, filesize);
+}
+
+int task_database_gdi_get_serial(const char *name, char *s, size_t len, uint64_t *filesize)
+{
+   char track_path[PATH_MAX_LENGTH];
+
+   track_path[0] = '\0';
+
+   if (gdi_find_track(name, true,
+               track_path, sizeof(track_path)) < 0)
+   {
+#ifdef DEBUG
+      RARCH_LOG("[Scanner] %s\n",
+            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
+#endif
+      return 0;
+   }
+
+   return intfstream_file_get_serial(track_path, 0, INT64_MAX, s, len, filesize);
+}
+
+/* Helper function to detect if a CHD file is a CD-i disc
+ * CD-i discs store data in AUDIO-labeled tracks, so we need
+ * to explicitly open track 1 for scanning */
+bool is_chd_file_cdi(const char *path)
+{
+   intfstream_t *fd;
+   uint8_t magic[12];
+   bool is_cdi = false;
+   const uint8_t cdi_magic[] = {0x00, 0xff, 0xff, 0xff, 0xff, 0xff,
+                                 0xff, 0xff, 0xff, 0xff, 0xff, 0x00};
+
+   /* Try to open track 1 explicitly */
+   fd = intfstream_open_chd_track(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE,
+         1);  /* Explicit track number, not CHDSTREAM_TRACK_FIRST_DATA */
+
+   if (!fd)
+      return false;
+
+   /* Read and check CD-i magic bytes at offset 0 */
+   if (intfstream_read(fd, magic, sizeof(magic)) == sizeof(magic))
+      is_cdi = (memcmp(magic, cdi_magic, sizeof(cdi_magic)) == 0);
+
+   intfstream_close(fd);
+   free(fd);
+   return is_cdi;
+}
+
+int task_database_chd_get_serial(const char *name, char *serial, size_t len, uint64_t *filesize)
+{
+   int result;
+   int32_t track;
+   intfstream_t *fd;
+
+   /* CD-i discs store data in AUDIO-labeled tracks, so we must
+    * explicitly open track 1 instead of using CHDSTREAM_TRACK_FIRST_DATA */
+   track = is_chd_file_cdi(name) ? 1 : CHDSTREAM_TRACK_FIRST_DATA;
+
+   fd = intfstream_open_chd_track(
+         name,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE,
+         track);
+   if (!fd)
+      return 0;
+
+   *filesize = intfstream_get_size(fd); /* TODO: get the full CHD size instead */
+   result = intfstream_get_serial(fd, serial, len, name);
+   intfstream_close(fd);
+   free(fd);
+   return result;
+}
+
+bool intfstream_file_get_crc_and_size(const char *name,
+      uint64_t offset, int64_t len, uint32_t *crc, uint64_t *size)
+{
+   bool rv;
+   intfstream_t *fd  = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   uint8_t *data     = NULL;
+   int64_t file_size = -1;
+
+   if (!fd)
+      return 0;
+
+   if (intfstream_seek(fd, 0, SEEK_END) == -1)
+      goto error;
+
+   file_size = intfstream_tell(fd);
+   *size = file_size;
+
+   if (intfstream_seek(fd, 0, SEEK_SET) == -1)
+      goto error;
+
+   if (file_size < 0)
+      goto error;
+
+   if (offset != 0 || len < file_size)
+   {
+      if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
+         goto error;
+
+      data = (uint8_t*)malloc(len);
+
+      if (intfstream_read(fd, data, len) != (int64_t)len)
+         goto error;
+
+      intfstream_close(fd);
+      free(fd);
+      fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE, len);
+
+      if (!fd)
+         goto error;
+   }
+
+   rv = intfstream_get_crc(fd, crc);
+   intfstream_close(fd);
+   free(fd);
+   free(data);
+   return rv;
+
+error:
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   if (data)
+      free(data);
+   return 0;
+}
+
+int task_database_cue_get_crc_and_size(const char *name, uint32_t *crc, uint64_t *size)
+{
+   char track_path[PATH_MAX_LENGTH];
+   uint64_t offset  = 0;
+   size_t _len      = 0;
+
+   track_path[0]    = '\0';
+
+   if (cue_find_track(name, false, &offset, &_len,
+         track_path, sizeof(track_path)) < 0)
+   {
+#ifdef DEBUG
+      RARCH_LOG("[Scanner] %s\n",
+            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
+#endif
+      return 0;
+   }
+   return intfstream_file_get_crc_and_size(track_path, offset, _len, crc, size);
+}
+
+int task_database_gdi_get_crc_and_size(const char *name, uint32_t *crc, uint64_t *size)
+{
+   char track_path[PATH_MAX_LENGTH];
+
+   track_path[0] = '\0';
+
+   if (gdi_find_track(name, true,
+               track_path, sizeof(track_path)) < 0)
+   {
+#ifdef DEBUG
+      RARCH_LOG("[Scanner] %s\n",
+            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
+#endif
+      return 0;
+   }
+   return intfstream_file_get_crc_and_size(track_path, 0, INT64_MAX, crc, size);
+}
+
+bool task_database_chd_get_crc_and_size(const char *name, uint32_t *crc, uint64_t *size)
+{
+   bool found_crc   = false;
+   int32_t track;
+   intfstream_t *fd;
+
+   /* CD-i discs store data in AUDIO-labeled tracks, so we must
+    * explicitly open track 1 instead of using CHDSTREAM_TRACK_PRIMARY */
+   track = is_chd_file_cdi(name) ? 1 : CHDSTREAM_TRACK_PRIMARY;
+
+   fd = intfstream_open_chd_track(
+         name,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE,
+         track);
+   if (!fd)
+      return 0;
+
+   *size = intfstream_get_size(fd);
+   found_crc = intfstream_get_crc(fd, crc);
+   if (fd)
+   {
+      intfstream_close(fd);
+      free(fd);
+   }
+   return found_crc;
+}
+

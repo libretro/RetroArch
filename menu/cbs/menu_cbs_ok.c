@@ -1948,8 +1948,8 @@ static bool menu_content_find_first_core(
             &supported);
 
 #ifdef HAVE_DYNAMIC
-   /* Don't suggest cores if a core is already loaded. */
-   if (     !path_is_empty(RARCH_PATH_CORE)
+   /* Don't suggest cores if a core is manually loaded. */
+   if (     !path_is_empty(RARCH_PATH_CORE_LAST)
          && !config_get_ptr()->bools.core_suggest_always)
       load_content_with_current_core = true;
 #endif
@@ -4077,7 +4077,7 @@ static void menu_input_st_string_cb_override_file_save_as(
       const char *label               = menu_st->input_dialog_kb_label;
       const char *msg_str             = NULL;
       int ret                         = false;
-      uint8_t msg_cat                 = MESSAGE_QUEUE_CATEGORY_INFO;
+      enum message_queue_category msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
       if (!string_is_empty(label))
          setting = menu_setting_find(label);
@@ -7152,11 +7152,11 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
    switch (setting->type)
    {
       case ST_INT:
-         *setting->value.target.integer = (int32_t)(idx + setting->offset_by);
+         *setting->value.target.integer = (int32_t)((idx * setting->step) + setting->offset_by);
          break;
       case ST_UINT:
          {
-            unsigned value = (unsigned)(idx + setting->offset_by);
+            unsigned value = (unsigned)((idx * setting->step) + setting->offset_by);
             *setting->value.target.unsigned_integer = value;
          }
          break;

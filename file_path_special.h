@@ -108,6 +108,7 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_BACKUP_EXTENSION ".bak"
 #if defined(RARCH_MOBILE)
 #define FILE_PATH_DEFAULT_OVERLAY "gamepads/neo-retropad/neo-retropad.cfg"
+#define FILE_PATH_DEFAULT_OSK_OVERLAY "keyboards/US-101/US-101.cfg"
 #endif
 #define FILE_PATH_CORE_INFO_CACHE "core_info.cache"
 #define FILE_PATH_CORE_INFO_CACHE_REFRESH "core_info.refresh"

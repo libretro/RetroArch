@@ -424,5 +424,7 @@ const gfx_ctx_driver_t gfx_ctx_go2_drm = {
    gfx_ctx_go2_drm_set_flags,
    gfx_ctx_go2_drm_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };

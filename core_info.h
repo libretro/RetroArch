@@ -185,8 +185,7 @@ bool core_info_get_list(core_info_list_t **core);
 /* Returns number of installed cores */
 size_t core_info_count(void);
 
-bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info,
-      bool *set_missing_bios);
+bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info);
 
 bool core_info_find(const char *core_path,
       core_info_t **core_info);

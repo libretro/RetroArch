@@ -1,0 +1,66 @@
+﻿<!--
+***********************************************************************************************
+Copyright (C) Microsoft Corporation. All rights reserved.
+***********************************************************************************************
+-->
+<!--Set compiler and linker options for projects requiring C++/WinRT. -->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <PropertyGroup>
+        <!-- Only do this for MSBuild versions below 16.0
+             as it is since done automatically, see https://github.com/microsoft/msbuild/pull/3605-->
+        <MSBuildAllProjects Condition="'$(MSBuildToolsVersion)'  &lt;= '15'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <CanReferenceWinRT>true</CanReferenceWinRT>
+        <CppWinRTPackage Condition="'$(CppWinRTEnabled)' != 'true'">true</CppWinRTPackage>
+        <CppWinRTPackage Condition="'$(CppWinRTPackage)' != 'true'">false</CppWinRTPackage>
+        <XamlLanguage Condition="'$(XamlLanguage)' == ''">CppWinRT</XamlLanguage>
+        <IsNativeLanguage>true</IsNativeLanguage>
+        <!-- This causes VS to add the platform WinMD references for the target SDK -->
+        <WinMDAssembly>true</WinMDAssembly>
+        <!--Set a value to prevent SDK's uap.props from setting it and pointing to the wrong headers-->
+        <CppWinRT_IncludePath>PreventSdkUapPropsAssignment</CppWinRT_IncludePath>
+        <CppWinRTEnableDefaultCopyLocalFalse Condition="'$(CppWinRTEnableDefaultCopyLocalFalse)' == ''">true</CppWinRTEnableDefaultCopyLocalFalse>
+    </PropertyGroup>
+
+    <ItemDefinitionGroup>
+        <ClCompile>
+            <CompileAsWinRT Condition="'$(CppWinRTProjectLanguage)' != 'C++/CX' And '%(ClCompile.CompileAsWinRT)' == ''">false</CompileAsWinRT>
+            <LanguageStandard Condition="'%(ClCompile.LanguageStandard)' == ''">stdcpp17</LanguageStandard>
+        </ClCompile>
+        <Midl Condition="'$(CppWinRTModernIDL)' != 'false'">
+            <EnableWindowsRuntime>true</EnableWindowsRuntime>
+            <MetadataFileName>$(IntDir)Unmerged\%(Filename).winmd</MetadataFileName>
+            <GenerateClientFiles Condition="'%(Midl.GenerateClientFiles)'==''">None</GenerateClientFiles>
+            <GenerateServerFiles Condition="'%(Midl.GenerateServerFiles)'==''">None</GenerateServerFiles>
+            <GenerateStublessProxies Condition="'%(Midl.GenerateStublessProxies)'==''">false</GenerateStublessProxies>
+            <GenerateTypeLibrary Condition="'%(Midl.GenerateTypeLibrary)'==''">false</GenerateTypeLibrary>
+            <HeaderFileName Condition="'%(Midl.HeaderFileName)'==''">nul</HeaderFileName>
+            <DllDataFileName Condition="'%(Midl.DllDataFileName)'==''">nul</DllDataFileName>
+            <InterfaceIdentifierFileName Condition="'%(Midl.InterfaceIdentifierFileName)'==''">nul</InterfaceIdentifierFileName>
+            <ProxyFileName Condition="'%(Midl.ProxyFileName)'==''">nul</ProxyFileName>
+            <TypeLibraryName Condition="'%(Midl.TypeLibraryName)'==''"></TypeLibraryName>
+            <NoMidl Condition="'%(Midl.NoMidl)'==''">true</NoMidl>
+        </Midl>
+        <ProjectReference Condition="'$(XamlLanguage)' != 'C++' and '$(CppWinRTEnableDefaultCopyLocalFalse)' == 'true'">
+            <!-- By default, for a C++/WinRT project,
+                 don't copy project reference output to the output directory
+                 of the current project for projects that are not an exe. -->
+            <Private Condition="'$(ConfigurationType)' != 'Application' and '$(OutputType)'!='winexe' and '$(OutputType)'!='exe' and '$(OutputType)'!='appcontainerexe'">false</Private>
+        </ProjectReference>
+        <Reference Condition="'$(XamlLanguage)' != 'C++' and '$(CppWinRTEnableDefaultCopyLocalFalse)' == 'true'">
+            <!-- By default, for a C++/WinRT project,
+                 don't copy reference output to the output directory
+                 of the current project for projects that are not an exe. -->
+            <Private Condition="'$(ConfigurationType)' != 'Application' and '$(OutputType)'!='winexe' and '$(OutputType)'!='exe' and '$(OutputType)'!='appcontainerexe'">false</Private>
+        </Reference>
+    </ItemDefinitionGroup>
+
+    <ItemGroup>
+        <PropertyPageSchema Include="$(MSBuildThisFileDirectory)\CppWinrtRules.Project.xml"/>
+        <ProjectCapability Include="CppWinRT" />
+    </ItemGroup>
+
+</Project>

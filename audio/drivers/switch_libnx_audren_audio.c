@@ -365,4 +365,5 @@ audio_driver_t audio_switch_libnx_audren = {
    NULL, /* device_list_free */
    libnx_audren_audio_write_avail,
    libnx_audren_audio_buffer_size,
+   NULL  /* write_raw */
 };

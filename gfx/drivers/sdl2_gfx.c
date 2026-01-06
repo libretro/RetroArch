@@ -227,24 +227,12 @@ static void sdl_refresh_renderer(sdl2_video_t *vid)
 static void sdl_refresh_viewport(sdl2_video_t *vid)
 {
    int win_w, win_h;
-   settings_t *settings      = config_get_ptr();
-   bool video_scale_integer  = settings->bools.video_scale_integer;
 
    SDL_GetWindowSize(vid->window, &win_w, &win_h);
 
-   vid->vp.x           = 0;
-   vid->vp.y           = 0;
-   vid->vp.width       = win_w;
-   vid->vp.height      = win_h;
    vid->vp.full_width  = win_w;
    vid->vp.full_height = win_h;
-
-   if (video_scale_integer)
-      video_viewport_get_scaled_integer(&vid->vp,
-            win_w, win_h, video_driver_get_aspect_ratio(),
-            vid->video.force_aspect, true);
-   else if (vid->video.force_aspect)
-      video_viewport_get_scaled_aspect(&vid->vp, win_w, win_h, true);
+   video_driver_update_viewport(&vid->vp, false, vid->video.force_aspect, true);
 
    vid->flags &= ~SDL2_FLAG_SHOULD_RESIZE;
 

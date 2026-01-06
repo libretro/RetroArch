@@ -438,5 +438,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_vk_gfx_ctx_set_flags,
    cocoa_vk_gfx_ctx_bind_hw_render,
    cocoa_vk_gfx_ctx_get_context_data,
-   NULL  /* make_current */
+   NULL, /* make_current */
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };

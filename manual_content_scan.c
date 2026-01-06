@@ -1125,7 +1125,7 @@ error:
  * file path for use in playlists - i.e. handles
  * identification of content *inside* archive files.
  * Returns false if specified content is invalid. */
-static bool manual_content_scan_get_playlist_content_path(
+bool manual_content_scan_get_playlist_content_path(
       manual_content_scan_task_config_t *task_config,
       const char *content_path, int content_type,
       char *s, size_t len)
@@ -1210,7 +1210,7 @@ error:
  *   of content file name in an attempt to find a
  *   valid 'description' string.
  * Returns false if specified content is invalid. */
-static bool manual_content_scan_get_playlist_content_label(
+bool manual_content_scan_get_playlist_content_label(
       const char *content_path, logiqx_dat_t *dat_file,
       bool filter_dat_content,
       char *s, size_t len)

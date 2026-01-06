@@ -115,14 +115,6 @@ static usize_t         fgk_encode_data     (fgk_stream *h,
 #endif
 static INLINE fgk_bit  fgk_get_encoded_bit (fgk_stream *h);
 
-#if 0
-static int             xd3_encode_fgk      (xd3_stream  *stream,
-					    fgk_stream  *sec_stream,
-					    xd3_output  *input,
-					    xd3_output  *output,
-					    xd3_sec_cfg *cfg);
-#endif
-
 /*********************************************************************/
 /* 			       Decoder                               */
 /*********************************************************************/

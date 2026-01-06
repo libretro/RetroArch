@@ -95,6 +95,9 @@ DEFINES += -DRARCH_MOBILE \
 	   -DHAVE_BSV_MOVIE \
 	   -DHAVE_ZLIB \
 	   -DHAVE_NO_BUILTINZLIB \
+	   -DHAVE_ZSTD \
+	   -DZSTD_DISABLE_ASM \
+	   -DHAVE_CHEEVOS_RVZ \
 	   -DHAVE_RPNG \
 	   -DHAVE_RJPEG \
 	   -DHAVE_RBMP \
@@ -183,11 +186,13 @@ LOCAL_C_INCLUDES := \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/7zip
+		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/7zip \
+		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/zstd/lib
 
 INCLUDE_DIRS     := \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/ \
+		    -I$(LOCAL_PATH)/$(DEPS_DIR)/zstd/lib/ \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
 
 ifeq ($(HAVE_CHEEVOS),1)

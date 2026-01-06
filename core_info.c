@@ -176,7 +176,9 @@ static bool CCJSONObjectMemberHandler(void *context,
                         pCtx->current_string_val      = &pCtx->core_info->licenses;
                         pCtx->current_string_list_val = &pCtx->core_info->licenses_list;
                      }
-                     else if (string_is_equal(pValue, "is_experimental"))
+                     break;
+                  case 'i':
+                     if (string_is_equal(pValue, "is_experimental"))
                         pCtx->current_entry_bool_val  = &pCtx->core_info->is_experimental;
                      break;
                   case 'n':
@@ -2261,8 +2263,7 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
 static bool core_info_list_update_missing_firmware_internal(
       core_info_list_t *core_info_list,
       const char *core_path,
-      const char *systemdir,
-      bool *set_missing_bios)
+      const char *systemdir)
 {
    size_t i;
    char path[PATH_MAX_LENGTH];
@@ -2283,8 +2284,6 @@ static bool core_info_list_update_missing_firmware_internal(
       fill_pathname_join(path, systemdir,
             info->firmware[i].path, sizeof(path));
       info->firmware[i].missing = !path_is_valid(path);
-      if (info->firmware[i].missing && !info->firmware[i].optional)
-         *set_missing_bios = true;
    }
 
    return true;
@@ -2402,14 +2401,13 @@ size_t core_info_count(void)
 }
 
 bool core_info_list_update_missing_firmware(
-      core_info_ctx_firmware_t *info, bool *set_missing_bios)
+      core_info_ctx_firmware_t *info)
 {
    core_info_state_t *p_coreinfo          = &core_info_st;
    if (info)
       return core_info_list_update_missing_firmware_internal(
             p_coreinfo->curr_list,
-            info->path, info->directory.system,
-            set_missing_bios);
+            info->path, info->directory.system);
    return false;
 }
 

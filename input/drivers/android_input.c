@@ -435,6 +435,11 @@ static void android_input_poll_main_cmd(void)
 
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
+         {
+            video_driver_state_t *state = video_state_get_ptr();
+            if (state->current_video_context.destroy_surface != NULL)
+               state->current_video_context.destroy_surface(state->context_data);
+         }
 
          android_app->window = NULL;
          scond_broadcast(android_app->cond);
@@ -915,7 +920,17 @@ static INLINE void android_input_poll_event_type_key(
 {
    uint8_t *buf = android_key_state[port];
    int action   = AKeyEvent_getAction(event);
+   int keysym   = keycode;
 
+   /* Handle 'duplicate' inputs that correspond
+    * to the same RETROK_* key */
+   switch (keycode)
+   {
+      case AKEYCODE_DPAD_CENTER:
+         keysym = AKEYCODE_ENTER;
+      default:
+         break;
+   }
    /* some controllers send both the up and down events at once
     * when the button is released for "special" buttons, like menu buttons
     * work around that by only using down events for meta keys (which get
@@ -924,10 +939,10 @@ static INLINE void android_input_poll_event_type_key(
    switch (action)
    {
       case AKEY_EVENT_ACTION_UP:
-         BIT_CLEAR(buf, keycode);
+         BIT_CLEAR(buf, keysym);
          break;
       case AKEY_EVENT_ACTION_DOWN:
-         BIT_SET(buf, keycode);
+         BIT_SET(buf, keysym);
          break;
    }
 
@@ -1086,10 +1101,6 @@ static void handle_hotplug(android_input_t *android,
       /* only use the hack if the device is one of the built-in devices */
       RARCH_LOG("[Android] Special device detected: %s.\n", device_model);
       {
-#if 0
-         RARCH_LOG("[Android] - Pads Mapped: %d\n- Device Name: %s\n- IDS: %d, %d, %d",
-               android->pads_connected, device_name, id, pad_id1, pad_id2);
-#endif
          /* Remove the remote or virtual controller device if it is mapped */
          if (   strstr(android->pad_states[0].name, "SHIELD Remote")
              || strstr(android->pad_states[0].name, "SHIELD Virtual Controller"))
@@ -1622,6 +1633,26 @@ static void android_input_poll_user(android_input_t *android)
    }
 }
 
+static void android_input_reinit(void)
+{
+   struct android_app *android_app = (struct android_app*)g_android;
+   uint32_t runloop_flags = runloop_get_flags();
+
+   if (runloop_flags & RUNLOOP_FLAG_PAUSED)
+   {
+      /* When using OpenGL, pausing the app (e.g. by opening the app switcher)
+       * will result in the EGL window surface being destroyed, but the actual
+       * OpenGL context will be preserved on most devices, so we may be able to
+       * get away with reinitializing only the window surface without having to
+       * do a full video driver reinitialization. */
+      video_driver_state_t *state = video_state_get_ptr();
+      if (state->current_video_context.create_surface == NULL || !state->current_video_context.create_surface(state->context_data))
+         command_event(CMD_EVENT_REINIT, NULL);
+   }
+
+   android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
+}
+
 /* Handle all events.
  */
 static void android_input_poll(void *data)
@@ -1656,10 +1687,7 @@ static void android_input_poll(void *data)
 
       if (android_app->reinitRequested != 0)
       {
-         uint32_t runloop_flags = runloop_get_flags();
-         if (runloop_flags & RUNLOOP_FLAG_PAUSED)
-            command_event(CMD_EVENT_REINIT, NULL);
-         android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
+         android_input_reinit();
          return;
       }
    }
@@ -1680,12 +1708,7 @@ bool android_run_events(void *data)
    }
 
    if (android_app->reinitRequested != 0)
-   {
-      uint32_t runloop_flags = runloop_get_flags();
-      if (runloop_flags & RUNLOOP_FLAG_PAUSED)
-         command_event(CMD_EVENT_REINIT, NULL);
-      android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
-   }
+      android_input_reinit();
 
    return true;
 }

@@ -350,18 +350,6 @@ static VCOS_STATUS_T help_cmd( VCOS_CMD_PARAM_T *param )
 {
     VCOS_CMD_T  *found_entry;
 
-#if 0
-    {
-        int arg_idx;
-
-        vcos_log_trace( "%s: argc = %d", __func__, param->argc );
-        for ( arg_idx = 0; arg_idx < param->argc; arg_idx++ )
-        {
-            vcos_log_trace( "%s:  argv[%d] = '%s'", __func__, arg_idx, param->argv[arg_idx] );
-        }
-    }
-#endif
-
     /* If there is an argument after the word help, then we want to print
      * help for that command.
      */
@@ -449,19 +437,6 @@ static VCOS_STATUS_T execute_cmd( VCOS_CMD_PARAM_T *param, VCOS_CMD_T *cmd_entry
 {
     const char     *cmdStr;
     VCOS_CMD_T     *found_entry;
-
-#if 0
-    {
-        int arg_idx;
-
-        vcos_cmd_printf( param, "%s: argc = %d", __func__, param->argc );
-        for ( arg_idx = 0; arg_idx < param->argc; arg_idx++ )
-        {
-            vcos_cmd_printf( param, " argv[%d] = '%s'", arg_idx, param->argv[arg_idx] );
-        }
-        vcos_cmd_printf( param, "\n" );
-    }
-#endif
 
     if ( param->argc <= 1 )
     {

@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -1141,6 +1155,14 @@ MSG_HASH(
    "Povoliť cloud synchronizáciu"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   "Automaticky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   "Ručne"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "Meno používateľa"
    )
@@ -1639,6 +1661,10 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   "Ak obraz nie je správne vycentrovaný na displeji, môžete prenastaviť tieto možnosti."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
    "Ak obraz nie je správne vycentrovaný na displeji, môžete prenastaviť tieto možnosti."
    )
 MSG_HASH(
@@ -2750,6 +2776,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Rýchlo streľba"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Držať"
    )
 
 /* Settings > Latency */
@@ -5362,6 +5392,14 @@ MSG_HASH(
    "Dynamické pozadie"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Žiadne"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Normálne"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
    "Písmo"
    )
@@ -5494,6 +5532,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    "Mierka zväčšenia miniatúry"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   "Žiadne"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
+   "Dynamické"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
@@ -6405,10 +6451,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_IN_GIGABYTES,
    "v gigabajtoch"
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Načítaný stav zo slotu #%d."
    )
 MSG_HASH(
    MSG_LOADING,

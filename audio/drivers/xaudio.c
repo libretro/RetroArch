@@ -607,4 +607,5 @@ audio_driver_t audio_xa = {
    xa_device_list_free,
    xa_write_avail,
    xa_buffer_size,
+   NULL /* write_raw */
 };

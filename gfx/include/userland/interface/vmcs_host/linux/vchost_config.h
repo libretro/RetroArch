@@ -28,22 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef VCHOST_CONFIG_H
 #define VCHOST_CONFIG_H
 
-#include "interface/vcos/vcos.h"
-
-#if 0
-/* Types that map onto VideoCore's types of the same name. */
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef short int16_t;
-typedef long int32_t;
-typedef unsigned long uint32_t;
-typedef long long int64_t;
-typedef unsigned long long uint64_t;
-
-#ifndef vc_assert
-#define vc_assert(cond) vcos_assert(cond)
-#endif
-#endif
+#include "../../vcos/vcos.h"
 
 /* On this platform we need to be able to release the host-side software resources. */
 extern void vc_os_close(void);

@@ -624,6 +624,7 @@ typedef struct
 #endif
    int osk_ptr;
    turbo_buttons_t turbo_btns; /* int32_t alignment */
+   hold_buttons_t hold_btns;   /* int32_t alignment */
 
    input_mapper_t mapper;          /* uint32_t alignment */
    input_remap_cache_t remapping_cache;

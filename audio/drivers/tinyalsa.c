@@ -2413,4 +2413,5 @@ audio_driver_t audio_tinyalsa = {
 	NULL,                        /* AUDIO_device_list_free  */ /*TODO*/
 	tinyalsa_write_avail,        /* AUDIO_write_avail       */ /*TODO*/
 	tinyalsa_buffer_size,        /* AUDIO_buffer_size       */ /*TODO*/
+	NULL                         /* write_raw               */
 };

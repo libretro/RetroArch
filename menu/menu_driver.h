@@ -58,7 +58,14 @@ RETRO_BEGIN_DECLS
 
 #define SCROLL_INDEX_SIZE          (2 * (26 + 2) + 1)
 
+#ifdef EMSCRIPTEN
+/* This task reads a variable that is set asynchronously, so the first check might fail.
+ * Check more often because it is cheap and to avoid a long period of missing power info. */
+#define POWERSTATE_CHECK_INTERVAL  1000000
+#else
 #define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
+#endif
+
 #define DATETIME_CHECK_INTERVAL    1000000
 #define MENU_DRAW_ENTRY_DELAY      30
 

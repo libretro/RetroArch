@@ -2554,7 +2554,6 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
       char tmp_path[PATH_MAX_LENGTH];
       core_info_ctx_firmware_t firmware_info;
       bool update_missing_firmware    = false;
-      bool set_missing_firmware       = false;
       settings_t *settings            = config_get_ptr();
       uint8_t flags                   = content_get_flags();
       bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
@@ -2590,13 +2589,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
       else
          firmware_info.directory.system = settings->paths.directory_system;
 
-      update_missing_firmware        = core_info_list_update_missing_firmware(
-            &firmware_info, &set_missing_firmware);
-
-      if (set_missing_firmware)
-         runloop_st->missing_bios    = true;
-      else
-         runloop_st->missing_bios    = false;
+      update_missing_firmware = core_info_list_update_missing_firmware(&firmware_info);
 
       if (update_missing_firmware)
       {

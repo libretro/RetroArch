@@ -150,8 +150,3 @@ const MMALOMX_PARAM_TRANSLATION_T mmalomx_param_xlator_misc[] = {
       mmalomx_param_mapping_time),
    MMALOMX_PARAM_TERMINATE()
 };
-
-#if 0
-/* Conversions which are not done here. Should part of the core. */
-MMAL_PARAMETER_SUPPORTED_ENCODINGS
-#endif

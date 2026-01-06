@@ -197,14 +197,6 @@ netif_set_ipaddr(struct netif *netif, struct ip_addr *ipaddr)
   }
 #endif
   ip_addr_set(&(netif->ip_addr), ipaddr);
-#if 0 /* only allowed for Ethernet interfaces TODO: how can we check? */
-  /** For Ethernet network interfaces, we would like to send a
-   *  "gratuitous ARP"; this is an ARP packet sent by a node in order
-   *  to spontaneously cause other nodes to update an entry in their
-   *  ARP cache. From RFC 3220 "IP Mobility Support for IPv4" section 4.6.
-   */
-  etharp_query(netif, ipaddr, NULL);
-#endif
   LWIP_DEBUGF(NETIF_DEBUG | DBG_TRACE | DBG_STATE | 3, ("netif: IP address of interface %c%c set to %"U16_F".%"U16_F".%"U16_F".%"U16_F"\n",
     netif->name[0], netif->name[1],
     ip4_addr1(&netif->ip_addr),
