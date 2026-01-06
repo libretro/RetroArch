@@ -5515,6 +5515,31 @@ static size_t setting_get_string_representation_overlay_lightgun_action(
    }
    return 0;
 }
+
+static size_t setting_get_string_representation_overlay_mouse_btn(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case OVERLAY_MOUSE_BTN_NONE:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_NONE), len);
+         case OVERLAY_MOUSE_BTN_LMB:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT), len);
+         case OVERLAY_MOUSE_BTN_RMB:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT), len);
+         case OVERLAY_MOUSE_BTN_MMB:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE), len);
+      }
+   }
+
+   return 0;
+}
 #endif
 
 /* A protected driver is such that the user cannot set to "null" using the UI.
@@ -18170,6 +18195,23 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0.0, 10.0, 0.1, true, true);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_mouse_alt_two_touch_input,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+               DEFAULT_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_overlay_mouse_btn;
+         menu_settings_list_current_add_range(list, list_info,
+               OVERLAY_MOUSE_BTN_NONE, OVERLAY_MOUSE_BTN_END - 1, 1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
 

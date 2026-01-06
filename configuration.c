@@ -2669,6 +2669,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_overlay_lightgun_four_touch_input",  &settings->uints.input_overlay_lightgun_four_touch_input, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_MULTI_TOUCH_INPUT, false);
    SETTING_UINT("input_overlay_mouse_hold_msec",            &settings->uints.input_overlay_mouse_hold_msec, true, DEFAULT_INPUT_OVERLAY_MOUSE_HOLD_MSEC, false);
    SETTING_UINT("input_overlay_mouse_dtap_msec",            &settings->uints.input_overlay_mouse_dtap_msec, true, DEFAULT_INPUT_OVERLAY_MOUSE_DTAP_MSEC, false);
+   SETTING_UINT("input_overlay_mouse_alt_two_touch_input",  &settings->uints.input_overlay_mouse_alt_two_touch_input, true, DEFAULT_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT, false);
 #endif
 
    *size = count;

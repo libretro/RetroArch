@@ -2143,6 +2143,10 @@ MSG_HASH(
    "input_overlay_mouse_swipe_threshold"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "input_overlay_mouse_alt_two_touch_input"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
    "input_overlay_dpad_diagonal_sensitivity"
    )
