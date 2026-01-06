@@ -11372,6 +11372,10 @@ MSG_HASH(
    "Portti"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "Portti %d Laitteen nimi: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Laitteen näyttönimi: %s\nLaitteen asetusnimi: %s\nLaitteen VID/PID: %d/%d"
    )
