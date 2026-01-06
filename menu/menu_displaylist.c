@@ -245,7 +245,9 @@ static int filebrowser_parse(
    else if (!string_is_empty(path))
    {
       if (   type_default == FILE_TYPE_SHADER_PRESET
-          || type_default == FILE_TYPE_SHADER)
+          || type_default == FILE_TYPE_SHADER
+          || type_default == FILE_TYPE_OVERLAY
+          || type_default == FILE_TYPE_OSK_OVERLAY)
          filter_ext = true;
 
       if (string_is_equal(label,
