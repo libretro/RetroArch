@@ -3018,6 +3018,20 @@ void input_overlay_set_alpha_mod(
    }
 }
 
+static void input_overlay_free_images(input_overlay_t *ol)
+{
+   size_t i;
+
+   if (!ol || !ol->images)
+      return;
+
+   for (i = 0; i < ol->num_images; i++)
+      image_texture_free(ol->images[i]);
+
+   free(ol->images);
+   ol->images = NULL;
+}
+
 static void input_overlay_free_overlays(input_overlay_t *ol)
 {
    size_t i;
@@ -3041,7 +3055,6 @@ void input_overlay_free_overlay(struct overlay *overlay)
 
    for (i = 0; i < overlay->size; i++)
    {
-      image_texture_free(&overlay->descs[i].image);
       if (overlay->descs[i].eightway_config)
          free(overlay->descs[i].eightway_config);
       overlay->descs[i].eightway_config = NULL;
@@ -3053,7 +3066,6 @@ void input_overlay_free_overlay(struct overlay *overlay)
    if (overlay->descs)
       free(overlay->descs);
    overlay->descs       = NULL;
-   image_texture_free(&overlay->image);
 }
 
 /**
@@ -3066,6 +3078,8 @@ static void input_overlay_free(input_overlay_t *ol)
 {
    if (!ol)
       return;
+
+   input_overlay_free_images(ol);
 
    input_overlay_free_overlays(ol);
 
@@ -5415,6 +5429,25 @@ void input_overlay_check_mouse_cursor(void)
    }
 }
 
+static void input_overlay_loaded_move_images(input_overlay_t *ol,
+      struct string_list *image_list)
+{
+   size_t i;
+
+   ol->images = malloc(ol->num_images * sizeof(struct texture_image *));
+
+   if (!ol->images)
+   {
+      for (i = 0; i < ol->num_images; i++)
+         image_texture_free(image_list->elems[i].attr.p);
+      ol->num_images = 0;
+      RARCH_ERR("[Overlay] Couldn't allocate images array.\n");
+   }
+
+   for (i = 0; i < ol->num_images; i++)
+      ol->images[i] = (struct texture_image*)image_list->elems[i].attr.p;
+}
+
 /* task_data = overlay_task_data_t* */
 static void input_overlay_loaded(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
@@ -5436,6 +5469,7 @@ static void input_overlay_loaded(retro_task_t *task,
    ol->size        = data->size;
    ol->active      = data->active;
    ol->path        = data->overlay_path;
+   ol->num_images  = data->image_list->size;
    ol->next_index  = (unsigned)((ol->index + 1) % ol->size);
    ol->flags      |= INPUT_OVERLAY_ALIVE;
    if (data->flags & OVERLAY_LOADER_IS_OSK)
@@ -5443,6 +5477,10 @@ static void input_overlay_loaded(retro_task_t *task,
 #ifdef HAVE_MENU
    overlay_types   = data->overlay_types;
 #endif
+
+   if (ol->num_images > 0)
+      input_overlay_loaded_move_images(ol, data->image_list);
+   string_list_free(data->image_list);
 
    free(data);
 
