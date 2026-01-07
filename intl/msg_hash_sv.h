@@ -5609,6 +5609,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
    "Justera den tillåtna tiden mellan tryckningarna när en dubbeltryckning upptäcks."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Använd andra pekning som en musknapp vid kontroll av markören."
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 

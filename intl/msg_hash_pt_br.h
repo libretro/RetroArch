@@ -5742,6 +5742,14 @@ MSG_HASH(
    "Limite de Deslize"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Entrada Alternativa de 2 Toques"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Usa o segundo toque como um botão do mouse enquanto controla o cursor."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "Ajusta a margem de desvio permitida ao detectar um toque longo ou simples. Expresso como uma porcentagem da menor dimensão da tela."
    )
