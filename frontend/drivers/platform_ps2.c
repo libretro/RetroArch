@@ -61,7 +61,10 @@ static void create_path_names(void)
 {
    char user_path[FILENAME_MAX];
    size_t _len = strlcpy(user_path, cwd, sizeof(user_path));
-   strlcpy(user_path + _len, "/retroarch", sizeof(user_path) - _len);
+   if (!PATH_CHAR_IS_SLASH(user_path[_len - 1])) {
+      _len += strlcpy(user_path + _len, PATH_DEFAULT_SLASH(), sizeof(user_path) - _len);
+   }
+   strlcpy(user_path + _len, "retroarch", sizeof(user_path) - _len);
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], cwd, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
    /* Content in the same folder */
