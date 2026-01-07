@@ -310,6 +310,16 @@ static void common_init_drivers(bool extra_drivers)
    poweroffSetCallback(&poweroffHandler, NULL);
 
    getcwd(cwd, sizeof(cwd));
+
+   // Workaround for PS2SDK issue: https://github.com/ps2dev/ps2sdk/issues/805
+   // PS2SDK's initialization routine does not properly set the CWD for HDD
+   // paths, leading to all slashes being converted to backslashes. Manually
+   // convert them back to slashes to work around the issue until it is
+   // properly fixed in PS2SDK.
+   int bootDeviceID  = getBootDeviceID(cwd);
+   if (bootDeviceID == BOOT_DEVICE_HDD || bootDeviceID == BOOT_DEVICE_HDD0)
+      pathname_conform_slashes_to_os(cwd);
+
 #if !defined(IS_SALAMANDER) && !defined(DEBUG)
    /* If it is not Salamander, we need to go one level
     * up for setting the CWD. */
