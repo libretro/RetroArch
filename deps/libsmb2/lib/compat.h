@@ -115,7 +115,7 @@ typedef unsigned int uintptr_t;
 #define EBADF WSAENOTSOCK
 #endif
 
-#if defined(_XBOX) || defined(__MINGW32__)
+#if defined(_XBOX)
 #define snprintf _snprintf
 int gethostname(char* name, size_t len);
 #endif
@@ -201,7 +201,10 @@ struct pollfd {
 
 #endif
 
+#ifndef _SSIZE_T_DEFINED
+#define _SSIZE_T_DEFINED
 typedef SSIZE_T ssize_t;
+#endif
 
 struct iovec
 {

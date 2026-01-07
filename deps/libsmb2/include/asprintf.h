@@ -13,7 +13,7 @@
 #define inline __inline
 #endif
 
-#ifndef _XBOX
+#if !defined(_XBOX) && !defined(__MINGW32__)
 #ifndef _vscprintf
 /* For some reason, MSVC fails to honour this #ifndef. */
 /* Hence function renamed to _vscprintf_so(). */
@@ -28,6 +28,7 @@ static inline int _vscprintf_so(const char * format, va_list pargs) {
 #endif /* _vscprintf */
 #endif
 
+#if !defined(__MINGW32__)
 #ifndef vasprintf
 static inline int vasprintf(char **strp, const char *fmt, va_list ap) {
 #ifdef _XBOX
@@ -61,5 +62,6 @@ static inline int asprintf(char *strp[], const char *fmt, ...) {
   return r;
 }
 #endif /* asprintf */
+#endif
 
 #endif /* ! _ASPRINTF_H_ */
