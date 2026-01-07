@@ -515,42 +515,47 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
 
    /* Upload descriptors */
    {
-      VkDescriptorSet set;
-      /* Upload UBO */
-      struct vk_buffer_range range;
-      float *mvp_data_ptr          = NULL;
+      VkImageView call_view = call->texture ? call->texture->view : VK_NULL_HANDLE;
 
-      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
-               call->uniform_size, &range))
-         return;
+      /* Check if we can skip descriptor work */
+      if (   call_view != vk->tracker.view
+          || call->sampler != vk->tracker.sampler
+          || call->uniform_size > sizeof(vk->tracker.mvp)
+          || memcmp(call->uniform, &vk->tracker.mvp, call->uniform_size) != 0)
+      {
+         VkDescriptorSet set;
+         struct vk_buffer_range range;
 
-      memcpy(range.data, call->uniform, call->uniform_size);
+         if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+                  call->uniform_size, &range))
+            return;
 
-      set = vulkan_descriptor_manager_alloc(
-            vk->context->device,
-            &vk->chain->descriptor_manager);
+         memcpy(range.data, call->uniform, call->uniform_size);
 
-      vulkan_write_quad_descriptors(
-            vk->context->device,
-            set,
-            range.buffer,
-            range.offset,
-            call->uniform_size,
-            call->texture,
-            call->sampler);
+         set = vulkan_descriptor_manager_alloc(
+               vk->context->device,
+               &vk->chain->descriptor_manager);
 
-      vkCmdBindDescriptorSets(vk->cmd,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            vk->pipelines.layout, 0,
-            1, &set, 0, NULL);
+         vulkan_write_quad_descriptors(
+               vk->context->device,
+               set,
+               range.buffer,
+               range.offset,
+               call->uniform_size,
+               call->texture,
+               call->sampler);
 
-      vk->tracker.view    = VK_NULL_HANDLE;
-      vk->tracker.sampler = VK_NULL_HANDLE;
-      for (
-              mvp_data_ptr = &vk->tracker.mvp.data[0]
-            ; mvp_data_ptr < vk->tracker.mvp.data + 16
-            ; mvp_data_ptr++)
-         *mvp_data_ptr = 0.0f;
+         vkCmdBindDescriptorSets(vk->cmd,
+               VK_PIPELINE_BIND_POINT_GRAPHICS,
+               vk->pipelines.layout, 0,
+               1, &set, 0, NULL);
+
+         /* Update tracker with what we just bound */
+         vk->tracker.view    = call_view;
+         vk->tracker.sampler = call->sampler;
+         if (call->uniform_size <= sizeof(vk->tracker.mvp))
+            memcpy(&vk->tracker.mvp, call->uniform, call->uniform_size);
+      }
    }
 
    /* VBO is already uploaded. */
@@ -4391,19 +4396,12 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
       VkDescriptorSet set;
       struct vk_buffer_range range;
 
-      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
-               sizeof(*quad->mvp), &range))
-         return;
-
       if (
                (memcmp(quad->mvp,
-                  &vk->tracker.mvp, sizeof(*quad->mvp)) == 0)
+                  &vk->tracker.mvp, sizeof(*quad->mvp)) != 0)
             || quad->texture->view != vk->tracker.view
             || quad->sampler != vk->tracker.sampler)
       {
-         /* Upload UBO */
-         struct vk_buffer_range range;
-
          if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
                   sizeof(*quad->mvp), &range))
             return;
@@ -4665,7 +4663,7 @@ static bool vulkan_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   int i, j, k;
+   int j, k;
    VkSubmitInfo submit_info;
    VkClearValue clear_color;
    VkRenderPassBeginInfo rp_info;
@@ -4759,10 +4757,6 @@ static bool vulkan_frame(void *data, const void *frame,
    vk->tracker.scissor.extent.height = 0;
    vk->flags                        &= ~VK_FLAG_TRACKER_USE_SCISSOR;
    vk->tracker.pipeline              = VK_NULL_HANDLE;
-   vk->tracker.view                  = VK_NULL_HANDLE;
-   vk->tracker.sampler               = VK_NULL_HANDLE;
-   for (i = 0; i < 16; i++)
-      vk->tracker.mvp.data[i]        = 0.0f;
 
    waits_for_semaphores              =
           (vk->flags & VK_FLAG_HW_ENABLE)
