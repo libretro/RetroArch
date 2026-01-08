@@ -5794,6 +5794,14 @@ MSG_HASH(
    "Umbral de deslizamiento"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Acción alternativa de dos dedos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Utiliza un segundo toque como un botón del ratón mientras estés controlando el cursor."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "Ajusta el rango de movimiento permitido a la hora de detectar una pulsación larga o un toque. Se representa como un porcentaje de la dimensión más pequeña de la pantalla."
    )

@@ -5822,6 +5822,14 @@ MSG_HASH(
    "Ngưỡng vuốt"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Nhập liệu 2 chạm"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Sử dụng thao tác chạm thứ hai như một nút chuột trong khi điều khiển con trỏ."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "Điều chỉnh phạm vi trôi cho phép khi phát hiện nhấn dài hoặc chạm. Được biểu thị dưới dạng phần trăm của kích thước màn hình nhỏ hơn."
    )
