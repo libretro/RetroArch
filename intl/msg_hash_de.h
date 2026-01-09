@@ -5686,6 +5686,14 @@ MSG_HASH(
    "Wischgesten-Schwellenwert"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Alt. 2-fach-Toucheingabe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Die zweite Berührung als Maustaste verwenden, während der Cursor gesteuert wird."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "Passt den zulässigen Driftbereich an, wann ein langes Drücken oder Tippen erkannt wird. Wird als Prozentsatz der kleineren Bildschirmabmessung ausgedrückt."
    )

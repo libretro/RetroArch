@@ -5834,6 +5834,14 @@ MSG_HASH(
    "스와이프 임계값"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "2점 대체 입력"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "마우스 커서 조작 중 2번째 터치를 마우스 버튼 입력으로 취급합니다."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "길게/짧게 누르기를 인식할 때 허용할 위치의 오차 범위를 조정합니다. 화면의 작은 축 길이의 퍼센트로 표현됩니다."
    )
