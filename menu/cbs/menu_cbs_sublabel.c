@@ -277,6 +277,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_interface_settings_list,  MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ai_service_settings_list,  MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accessibility_settings_list,  MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ai_service_mode,  MENU_ENUM_SUBLABEL_AI_SERVICE_MODE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ai_service_backend,  MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ai_service_pause,  MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ai_service_target_lang,  MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ai_service_source_lang,  MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG)
@@ -5436,6 +5437,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AI_SERVICE_MODE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ai_service_mode);
+            break;
+         case MENU_ENUM_LABEL_AI_SERVICE_BACKEND:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ai_service_backend);
             break;
          case MENU_ENUM_LABEL_AI_SERVICE_PAUSE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ai_service_pause);

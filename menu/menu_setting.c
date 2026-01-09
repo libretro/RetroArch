@@ -99,6 +99,7 @@
 #include "../network/cloud_sync_driver.h"
 #include "../record/record_driver.h"
 #include "../tasks/tasks_internal.h"
+#include "../accessibility.h"
 #include "../config.def.h"
 #include "../ui/ui_companion_driver.h"
 #include "../performance_counters.h"
@@ -21099,6 +21100,23 @@ static bool setting_append_list(
             &setting_get_string_representation_uint_ai_service_mode;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
+
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->arrays.ai_service_backend,
+               sizeof(settings->arrays.ai_service_backend),
+               MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
+               MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+               config_get_default_ai_service_backend(),
+               strdup(config_get_ai_service_backend_options()),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok    = setting_action_ok_uint;
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
          CONFIG_STRING(
                list, list_info,
