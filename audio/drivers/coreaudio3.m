@@ -473,6 +473,10 @@ static OSStatus coreaudio3_converter_cb(
       _lastRateAdjust = rateAdjust;
    }
 
+   /* Reset converter state to clear any "end of stream" condition
+    * from the previous writeRawInt16 call */
+   AudioConverterReset(_converter);
+
    /* Set up callback context */
    ctx.data        = samples;
    ctx.frames_left = frames;

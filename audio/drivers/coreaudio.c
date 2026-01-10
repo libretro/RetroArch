@@ -617,6 +617,10 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
    if (!coreaudio_update_converter(dev, effective_rate))
       return -1;
 
+   /* Reset converter state to clear any "end of stream" condition
+    * from the previous write_raw call */
+   AudioConverterReset(dev->converter);
+
    /* Set up callback context */
    ctx.data        = samples;
    ctx.frames_left = frames;
