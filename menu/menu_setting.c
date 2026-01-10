@@ -149,6 +149,10 @@
 #include "../intl/progress.h"
 #endif
 
+#ifdef HAVE_SMBCLIENT
+#include "../libretro-common/vfs/vfs_implementation_smb.h"
+#endif
+
 #define _3_SECONDS  3000000
 #define _6_SECONDS  6000000
 #define _9_SECONDS  9000000
@@ -340,6 +344,9 @@ enum settings_list_type
    SETTINGS_LIST_MIDI,
 #ifdef HAVE_MIST
    SETTINGS_LIST_STEAM,
+#endif
+#ifdef HAVE_SMBCLIENT
+   SETTINGS_LIST_SMBCLIENT,
 #endif
    SETTINGS_LIST_MANUAL_CONTENT_SCAN
 };
@@ -7995,6 +8002,51 @@ static int setting_action_right_input_mouse_index(
    settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
 }
+
+#ifdef HAVE_SMBCLIENT
+static size_t setting_get_string_representation_smb_auth(
+   rarch_setting_t *setting, char *s, size_t len)
+{
+   int val;
+
+   if (!setting || !setting->value.target.integer)
+      return 0;
+
+   val = *setting->value.target.integer;
+
+   switch (val)
+   {
+      case RETRO_SMB2_SEC_NTLMSSP: /* SMB2_SEC_NTLMSSP */
+         return strlcpy(s, "NTLMSSP", len);
+      case RETRO_SMB2_SEC_KRB5: /* SMB2_SEC_KRB5 */
+         return strlcpy(s, "Kerberos", len);
+      default:
+         return strlcpy(s, "KRB if available, NTLM if not", len);
+   }
+}
+
+static size_t setting_get_string_representation_smb_password(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+
+   if (string_is_empty(setting->value.target.string))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+   else
+   {
+      size_t i;
+      size_t pass_len = strlen(setting->value.target.string);
+
+      for (i = 0; i < pass_len && i < (len - 1); i++)
+         s[i] = '*';
+      s[i] = '\0';
+   }
+
+   return 0;
+}
+#endif
 
 /**
  ******* ACTION OK CALLBACK FUNCTIONS *******
@@ -21597,6 +21649,23 @@ static bool setting_append_list(
                SD_FLAG_NONE);
 #endif
 
+#ifdef HAVE_SMBCLIENT
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_smb_client,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_SMB_CLIENT,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+               DEFAULT_SETTINGS_SHOW_SMB_CLIENT,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
+
          CONFIG_BOOL(
                list, list_info,
                &settings->bools.quick_menu_show_take_screenshot,
@@ -23015,6 +23084,19 @@ static bool setting_append_list(
                parent_group);
 
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS);
+
+#ifdef HAVE_SMBCLIENT
+         if (settings->bools.settings_show_smb_client)
+         {
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+         }
+#endif
 
          START_SUB_GROUP(list, list_info, "Netplay", &group_info, &subgroup_info, parent_group);
 
@@ -24922,6 +25004,141 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
 #endif
+#ifdef HAVE_SMBCLIENT
+      case SETTINGS_LIST_SMBCLIENT:
+         START_GROUP(list, list_info, &group_info,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS),
+            parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+            list, list_info,
+            &settings->bools.smb_client_enable,
+            MENU_ENUM_LABEL_SMB_CLIENT_ENABLE,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+            false,
+            MENU_ENUM_LABEL_VALUE_OFF,
+            MENU_ENUM_LABEL_VALUE_ON,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler,
+            SD_FLAG_NONE);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+         CONFIG_STRING(
+            list, list_info,
+            settings->arrays.smb_client_server_address,
+            sizeof(settings->arrays.smb_client_server_address),
+            MENU_ENUM_LABEL_SMB_CLIENT_SERVER,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+            "",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            NULL,
+            NULL);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+         CONFIG_STRING(
+            list, list_info,
+            settings->arrays.smb_client_share,
+            sizeof(settings->arrays.smb_client_share),
+            MENU_ENUM_LABEL_SMB_CLIENT_SHARE,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+            "",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            NULL,
+            NULL);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+         CONFIG_STRING(
+            list, list_info,
+            settings->arrays.smb_client_subdir,
+            sizeof(settings->arrays.smb_client_subdir),
+            MENU_ENUM_LABEL_SMB_CLIENT_SUBDIR,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+            "",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            NULL,
+            NULL);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+         CONFIG_STRING(
+            list, list_info,
+            settings->arrays.smb_client_username,
+            sizeof(settings->arrays.smb_client_username),
+            MENU_ENUM_LABEL_SMB_CLIENT_USERNAME,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+            "",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            NULL,
+            NULL);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+         CONFIG_STRING(
+            list, list_info,
+            settings->arrays.smb_client_password,
+            sizeof(settings->arrays.smb_client_password),
+            MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+            "",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            NULL,
+            NULL);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].get_string_representation =
+            setting_get_string_representation_smb_password;
+
+         CONFIG_STRING(
+            list, list_info,
+            settings->arrays.smb_client_workgroup,
+            sizeof(settings->arrays.smb_client_workgroup),
+            MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+            "WORKGROUP",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            NULL,
+            NULL);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+         CONFIG_INT(
+            list, list_info,
+            &settings->ints.smb_client_auth_mode,
+            MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+            DEFAULT_SMB_CLIENT_AUTH_MODE,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_smb_auth;
+         menu_settings_list_current_add_range(list, list_info, 0, RETRO_SMB2_SEC_KRB5, 1, true, true);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+#endif
       case SETTINGS_LIST_NONE:
       default:
          break;
@@ -25074,6 +25291,9 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_MIDI,
 #ifdef HAVE_MIST
       SETTINGS_LIST_STEAM,
+#endif
+#ifdef HAVE_SMBCLIENT
+      SETTINGS_LIST_SMBCLIENT,
 #endif
       SETTINGS_LIST_MANUAL_CONTENT_SCAN
    };

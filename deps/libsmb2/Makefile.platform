@@ -1,0 +1,112 @@
+# -*-  mode:c; tab-width:8; c-basic-offset:8; indent-tabs-mode:nil;  -*- 
+#
+#  Copyright (C) 2024 by André Guilherme <andregui17@outlook.com>
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU Lesser General Public License as published by
+#  the Free Software Foundation; either version 2.1 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+.PHONY: gc_all gc_install nds_all nds_install wii_all wii_install 3ds_all 3ds_install wiiu_all wiiu_install switch_all switch_install dc_all dc_install ps2_ee_all ps2_ee_install ps2_ips_all ps2_ips_install ps2_iop_all ps2_iop_install ps4_all ps4_install
+
+gc_all:
+	cmake -S . -B build "-DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/GameCube.cmake" 
+	cmake --build build
+
+gc_install: gc_all
+	cmake --build build --target install
+
+nds_all:
+	cmake -S . -B build "-DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/NDS.cmake" 
+	cmake --build build
+
+nds_install: nds_all
+	cmake --build build --target install
+
+wii_all:
+	cmake -S . -B build "-DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/Wii.cmake" 
+	cmake --build build
+
+wii_install: wii_all
+	cmake --build build --target install
+
+3ds_all:
+	cmake -S . -B build "-DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/3DS.cmake" 
+	cmake --build build
+
+3ds_install: 3ds_all
+	cmake --build build --target install
+
+wiiu_all:
+	cmake -S . -B build "-DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/WiiU.cmake" 
+	cmake --build build
+
+wiiu_install: wiiu_all
+	cmake --build build --target install
+
+switch_all:
+	cmake -S . -B build "-DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/Switch.cmake" 
+	cmake --build build
+
+switch_install: switch_all
+	cmake --build build --target install
+
+dc_all:
+	cmake -S . -B build "-DCMAKE_TOOLCHAIN_FILE=${KOS_CMAKE_TOOLCHAIN}" "-DCMAKE_INSTALL_PREFIX=${KOS_BASE}/addons/" "-DCMAKE_PREFIX_PATH=${KOS_BASE}/addons/"
+	cmake --build build
+
+dc_install: dc_all
+	cmake --build build --target install
+
+ps2_ee_all:
+	cmake -S . -B build  "-DCMAKE_TOOLCHAIN_FILE=${PS2DEV}/share/ps2dev.cmake" "-DCMAKE_INSTALL_PREFIX=${PS2SDK}/ports" "-DCMAKE_PREFIX_PATH=${PS2SDK}/ports"
+	cmake --build build
+
+ps2_ee_install: ps2_ee_all
+	cmake --build build --target install
+
+ps2_rpc_all:
+	cmake -S . -B build -DPS2RPC=1 "-DCMAKE_TOOLCHAIN_FILE=${PS2DEV}/share/ps2dev.cmake" "-DCMAKE_INSTALL_PREFIX=${PS2SDK}/ports" "-DCMAKE_INSTALL_PREFIX=${PS2SDK}/ports"
+	cmake --build build
+
+ps2_rpc_install: ps2_rpc_all
+	cmake --build build --target install
+
+ps2_iop_all:
+	cmake -S . -B build "-DCMAKE_TOOLCHAIN_FILE=${PS2DEV}/share/ps2dev_iop.cmake" "-DCMAKE_INSTALL_PREFIX=${PS2SDK}/ports_iop" "-DCMAKE_INSTALL_PREFIX=${PS2SDK}/ports_iop"
+	cmake --build build
+	
+ps2_iop_install: ps2_iop_all
+	cmake --build build --target install
+
+ps2_irx_all:
+	cmake -S . -B build -DBUILD_IRX=1 "-DCMAKE_TOOLCHAIN_FILE=${PS2DEV}/share/ps2dev_iop.cmake" 
+	cmake --build build
+	
+ps2_irx_install: ps2_irx_all
+	cmake --build build --target install
+
+ps4_all:
+	cmake -S . -B build "-DCMAKE_TOOLCHAIN_FILE=/opt/pacbrew/ps4/openorbis/cmake/ps4.cmake" "-DCMAKE_INSTALL_PREFIX=/opt/pacbrew/ps4/openorbis/" "-DCMAKE_PREFIX_PATH=/opt/pacbrew/ps4/openorbis/"
+	cmake --build build
+
+vita_all:
+	cmake -S . -B build "-DCMAKE_TOOLCHAIN_FILE=${VITASDK}/share/vita.toolchain.cmake" 
+	cmake --build build
+
+vita_install: vita_all
+	cmake --build build --target install
+
+ps4_install: ps4_all
+	cmake --build build --target install
+
+clean:
+	rm -rf build

@@ -4109,6 +4109,22 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
 #endif
+#ifdef HAVE_SMBCLIENT
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+         MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+
+      if (settings->bools.smb_client_enable)
+      {
+         if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS),
+               MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+            count++;
+      }
+#endif
    }
 
    return count;
@@ -8296,7 +8312,20 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
-
+#ifdef HAVE_SMBCLIENT
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->bools.smb_client_enable)
+            {
+               if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE),
+                  msg_hash_to_str(MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE),
+                  MENU_ENUM_LABEL_SMB_CLIENT_BROWSE,
+                  FILE_TYPE_DIRECTORY, 0, 0, NULL))
+                  count++;
+            }
+         }
+#endif
          if (     !settings->bools.kiosk_mode_enable
                &&  settings->bools.settings_show_file_browser)
             menu_entries_append(list,
@@ -9229,6 +9258,9 @@ unsigned menu_displaylist_build_list(
             bool network_remote_enable   = settings->bools.network_remote_enable;
 
             menu_displaylist_build_info_selective_t build_list[] = {
+#ifdef HAVE_SMBCLIENT
+               {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,                PARSE_ACTION,      true},
+#endif
                {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,                PARSE_ONLY_STRING, false},
@@ -12153,6 +12185,55 @@ unsigned menu_displaylist_build_list(
 #endif /* HAVE_CDROM */
          break;
 #endif /* HAVE_LAKKA */
+#ifdef HAVE_SMBCLIENT
+      case DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST:
+         {
+            bool smb_enable = settings->bools.smb_client_enable;
+
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_SMB_CLIENT_ENABLE,    PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_SMB_CLIENT_SERVER,    PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_SHARE,     PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_SUBDIR,    PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_USERNAME,  PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD,  PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP, PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE, PARSE_ONLY_INT, false},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_SMB_CLIENT_SERVER:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_SHARE:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_SUBDIR:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_USERNAME:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE:
+                     if (smb_enable)
+                        build_list[i].checked = true;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,
+                        build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
+#endif
       default:
          break;
    }
@@ -14846,6 +14927,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
 #ifdef HAVE_GAME_AI
          case DISPLAYLIST_OPTIONS_GAME_AI:
+#endif
+#ifdef HAVE_SMBCLIENT
+         case DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST:
+         case DISPLAYLIST_OPTIONS_SMB_CLIENT:
 #endif
          case DISPLAYLIST_OPTIONS_OVERRIDES:
             menu_entries_clear(info->list);
