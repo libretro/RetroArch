@@ -97,6 +97,10 @@
 
 #include "platform_unix.h"
 
+#ifdef WEBOS
+#include <formats/rjson.h>
+#endif
+
 #ifdef ANDROID
 static void frontend_unix_set_sustained_performance_mode(bool on);
 
@@ -1308,57 +1312,56 @@ const char *retroarch_get_webos_version(char *s, size_t len,
    FILE *f = fopen("/usr/lib/os-release", "r");
    if (!f)
    {
-      /* fallback to starfish-release */
-      f = fopen("/etc/starfish-release", "r");
+      /* fallback to nyx os_info.json */
+      f = fopen("/var/run/nyx/os_info.json", "r");
       if (!f)
          return strlcpy(s, "webOS (unknown)", len), "webOS (unknown)";
 
-      /* Example content:
-         Rockhopper release 3.9.0-62709 (dreadlocks2-dudhwa) */
-      char line[256];
-      if (fgets(line, sizeof(line), f))
+      /* read whole file into buffer */
+      char buf[4096];
+      size_t n = fread(buf, 1, sizeof(buf)-1, f);
+      fclose(f);
+      buf[n] = '\0';
+
+      rjson_t *json = rjson_open_string(buf, n);
+      enum rjson_type t;
+      const char *key = NULL, *val = NULL;
+      const char *name_str = NULL, *release_str = NULL;
+
+      while ((t = rjson_next(json)) != RJSON_DONE && t != RJSON_ERROR)
       {
-         char *nl = strchr(line, '\n');
-         if (nl) *nl = '\0';
-         snprintf(pretty, sizeof(pretty), "webOS - %s", line);
-
-         /* Try parse after the word "release", else first digit run in the line */
-         char *ver = strstr(line, "release");
-         if (ver)
+         if (t == RJSON_STRING)
          {
-            ver += strlen("release");
-            while (*ver == ' ') ver++;
-         }
-         else
-         {
-            /* find first digit in the line */
-            ver = line;
-            while (*ver && ((*ver < '0') || (*ver > '9'))) ver++;
-            if (!*ver) ver = NULL;
-         }
-
-         if (ver)
-         {
-            char *endptr = NULL;
-            long maj = strtol(ver, &endptr, 10);
-            if (endptr != ver)
+            key = rjson_get_string(json, NULL);
+            t = rjson_next(json);
+            if (t == RJSON_STRING)
             {
-               if (major) *major = (int)maj;
-               if (endptr && *endptr == '.' && minor)
-               {
-                  long min = strtol(endptr + 1, NULL, 10);
-                  /* only set minor if a number was present */
-                  const char *p = endptr + 1;
-                  if (p && (*p >= '0' && *p <= '9'))
-                     *minor = (int)min;
-               }
+               val = rjson_get_string(json, NULL);
+               if (strcmp(key, "webos_name") == 0)
+                  name_str = val;
+               else if (strcmp(key, "webos_release") == 0)
+                  release_str = val;
             }
          }
       }
-      fclose(f);
+      rjson_free(json);
 
-      if (pretty[0] == '\0')
-         strlcpy(pretty, "webOS (unknown)", sizeof(pretty));
+      if (name_str && release_str)
+         snprintf(pretty, sizeof(pretty), "%s %s", name_str, release_str);
+      else if (name_str)
+         snprintf(pretty, sizeof(pretty), "%s", name_str);
+      else
+         snprintf(pretty, sizeof(pretty), "webOS (unknown)");
+
+      if (release_str) {
+         char *endptr = NULL;
+         long maj = strtol(release_str, &endptr, 10);
+         if (major) *major = (int)maj;
+         if (endptr && *endptr == '.' && minor)
+            *minor = (int)strtol(endptr+1, NULL, 10);
+         else if (minor)
+            *minor = 0;
+      }
 
       return strlcpy(s, pretty, len), pretty;
    }

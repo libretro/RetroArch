@@ -34,9 +34,12 @@
 #include "../input_keymaps.h"
 
 #include "../../gfx/common/wayland/webos-shell.h"
+
+#ifdef HAVE_WEBOS_EXTRA_PROTOS
 #include "../../gfx/common/wayland/webos-foreign.h"
 #include "../../gfx/common/wayland/webos-surface-group.h"
 #include "../../gfx/common/wayland/webos-input-manager.h"
+#endif
 
 #ifdef HAVE_USERLAND
 #include <webos-helpers/libhelpers.h>
@@ -260,6 +263,7 @@ static void wl_registry_handle_global_webos(void *data,
       wl->webos_shell = (struct wl_webos_shell*)wl_registry_bind(reg,
          id, &wl_webos_shell_interface, 1);
    }
+#ifdef HAVE_WEBOS_EXTRA_PROTOS
    else if (string_is_equal(interface, "wl_webos_foreign"))
    {
       wl->webos_foreign = (struct wl_webos_foreign*)wl_registry_bind(reg,
@@ -276,6 +280,7 @@ static void wl_registry_handle_global_webos(void *data,
       wl->webos_input_manager = (struct wl_webos_input_manager*)wl_registry_bind(reg,
          id, &wl_webos_input_manager_interface, 1);
    }
+#endif
 }
 
 static void wl_registry_handle_global_remove_webos(void *data,
@@ -385,12 +390,14 @@ void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t *wl)
    if (wl->surface)
       wl_surface_destroy(wl->surface);
 
+#ifdef HAVE_WEBOS_EXTRA_PROTOS
    if (wl->webos_input_manager)
       wl_webos_input_manager_destroy(wl->webos_input_manager);
    if (wl->webos_surface_group_compositor)
       wl_webos_surface_group_compositor_destroy(wl->webos_surface_group_compositor);
    if (wl->webos_foreign)
       wl_webos_foreign_destroy(wl->webos_foreign);
+#endif
    if (wl->seat)
       wl_seat_destroy(wl->seat);
    if (wl->webos_shell)
