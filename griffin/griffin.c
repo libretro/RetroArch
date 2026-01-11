@@ -1723,3 +1723,10 @@ GAME AI
 #if defined(HAVE_GAME_AI)
 #include "../ai/game_ai.c"
 #endif
+
+/*============================================================
+SMB CLIENT
+============================================================ */
+#ifdef HAVE_SMBCLIENT
+#include "../libretro-common/vfs/vfs_implementation_smb.c"
+#endif

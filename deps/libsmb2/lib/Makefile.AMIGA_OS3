@@ -1,0 +1,59 @@
+CC     = m68k-amigaos-gcc
+AR     = m68k-amigaos-ar
+RANLIB = m68k-amigaos-ranlib
+STRIP  = m68k-amigaos-strip
+
+OPTIMIZE = -O2 -noixemul -fno-common -fomit-frame-pointer
+DEBUG    = -g
+WARNINGS = -Wall -Wno-pointer-sign -Wno-discarded-qualifiers -Werror
+INCLUDES = -I. -I../include -I../include/smb2 -I../include/amiga_os
+DEFINES  = -DHAVE_CONFIG_H "-D_U_=__attribute__((unused))" -DNEED_POLL -DNEED_GETADDRINFO -DNEED_FREEADDRINFO -DNEED_GETLOGIN_R -DHAVE_LINGER -DHAVE_ADDRINFO -D__amigaos3__
+
+CFLAGS  = $(OPTIMIZE) $(DEBUG) $(WARNINGS) $(INCLUDES) $(DEFINES)
+
+STRIPFLAGS = -R.comment
+
+SRCS = aes.c aes128ccm.c alloc.c dcerpc.c dcerpc-lsa.c dcerpc-srvsvc.c \
+       errors.c init.c hmac.c hmac-md5.c libsmb2.c md4c.c \
+       md5.c ntlmssp.c pdu.c sha1.c sha224-256.c sha384-512.c \
+       smb2-cmd-close.c smb2-cmd-create.c smb2-cmd-echo.c smb2-cmd-error.c \
+       smb2-cmd-flush.c smb2-cmd-ioctl.c smb2-cmd-logoff.c \
+       smb2-cmd-negotiate.c smb2-cmd-query-directory.c smb2-cmd-query-info.c \
+       smb2-cmd-read.c smb2-cmd-session-setup.c smb2-cmd-set-info.c \
+       smb2-cmd-tree-connect.c smb2-cmd-tree-disconnect.c smb2-cmd-write.c \
+       smb2-data-file-info.c smb2-data-filesystem-info.c \
+       smb2-data-security-descriptor.c smb2-data-reparse-point.c \
+       smb2-share-enum.c smb3-seal.c smb2-signing.c socket.c sync.c \
+       timestamps.c unicode.c usha.c compat.c
+
+ARCH_000 = -mcpu=68000 -mtune=68000
+OBJS_000 = $(addprefix obj/68000/,$(SRCS:.c=.o))
+
+ARCH_020 = -mcpu=68020 -mtune=68020-60
+OBJS_020 = $(addprefix obj/68020/,$(SRCS:.c=.o))
+
+.PHONY: all
+all: bin/libsmb2.a.000 bin/libsmb2.a.020
+
+obj/68000/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(ARCH_000) $(CFLAGS) -c -o $@ $<
+
+obj/68020/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(ARCH_020) $(CFLAGS) -c -o $@ $<
+
+bin/libsmb2.a.000: $(OBJS_000)
+	@mkdir -p $(dir $@)
+	$(AR) -crv $@ $^
+	$(RANLIB) $@
+
+bin/libsmb2.a.020: $(OBJS_020)
+	@mkdir -p $(dir $@)
+	$(AR) -crv $@ $^
+	$(RANLIB) $@
+
+.PHONY: clean
+clean:
+	rm -rf bin obj
+

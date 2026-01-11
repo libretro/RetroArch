@@ -155,6 +155,9 @@ typedef struct settings
       int input_overlay_lightgun_port;
 #endif
       int input_turbo_bind;
+#ifdef HAVE_SMBCLIENT
+      int smb_client_auth_mode;
+#endif
    } ints;
 
    struct
@@ -544,7 +547,15 @@ typedef struct settings
       char ai_service_url[PATH_MAX_LENGTH];
 
       char translation_service_url[2048]; /* TODO/FIXME - check size */
-   } arrays;
+#ifdef HAVE_SMBCLIENT
+      char smb_client_server_address[256];
+      char smb_client_share[256];
+      char smb_client_subdir[PATH_MAX_LENGTH];
+      char smb_client_username[128];
+      char smb_client_password[128];
+      char smb_client_workgroup[64];
+#endif
+} arrays;
 
    struct
    {
@@ -894,6 +905,9 @@ typedef struct settings
 #ifdef HAVE_MIST
       bool settings_show_steam;
 #endif
+#ifdef HAVE_SMBCLIENT
+      bool settings_show_smb_client;
+#endif
       bool quick_menu_show_resume_content;
       bool quick_menu_show_restart_content;
       bool quick_menu_show_close_content;
@@ -1146,6 +1160,9 @@ typedef struct settings
       bool game_ai_show_debug;
 #endif
 
+#ifdef HAVE_SMBCLIENT
+      bool smb_client_enable;
+#endif
    } bools;
 
    uint8_t flags;

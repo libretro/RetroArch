@@ -13,6 +13,9 @@
     <Filter Include="libretro-common-uwp">
       <UniqueIdentifier>{d41660c5-7f5b-442c-b5d7-03e6e9af8172}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libsmb2">
+      <UniqueIdentifier>{ed0b998b-0d75-404f-948d-068a8cece2fb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />
@@ -51,6 +54,171 @@
     </ClCompile>
     <ClCompile Include="..\..\..\libretro-common\vfs\vfs_implementation_uwp.cpp">
       <Filter>libretro-common-uwp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\aes.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\aes_apple.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\aes_reference.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\aes128ccm.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\alloc.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\asn1-ber.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\compat.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\dcerpc.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\dcerpc-lsa.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\dcerpc-srvsvc.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\errors.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\hmac.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\hmac-md5.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\init.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\krb5-wrapper.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\libsmb2.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\md4c.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\md5.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\ntlmssp.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\pdu.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\sha1.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\sha224-256.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\sha384-512.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-close.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-create.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-echo.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-error.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-flush.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-ioctl.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-lock.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-logoff.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-negotiate.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-notify-change.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-oplock-break.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-query-directory.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-query-info.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-read.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-session-setup.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-set-info.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-tree-connect.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-tree-disconnect.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-cmd-write.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-data-file-info.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-data-filesystem-info.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-data-reparse-point.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-data-security-descriptor.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-share-enum.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb2-signing.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\smb3-seal.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\socket.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\spnego-wrapper.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\sync.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\timestamps.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\unicode.c">
+      <Filter>libsmb2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libsmb2\lib\usha.c">
+      <Filter>libsmb2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
