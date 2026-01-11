@@ -8007,7 +8007,7 @@ static int setting_action_right_input_mouse_index(
 static size_t setting_get_string_representation_smb_auth(
    rarch_setting_t *setting, char *s, size_t len)
 {
-   int val;
+   unsigned val;
 
    if (!setting || !setting->value.target.integer)
       return 0;
@@ -25119,9 +25119,9 @@ static bool setting_append_list(
             NULL);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
-         CONFIG_INT(
+         CONFIG_UINT(
             list, list_info,
-            &settings->ints.smb_client_auth_mode,
+            &settings->uints.smb_client_auth_mode,
             MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE,
             MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
             DEFAULT_SMB_CLIENT_AUTH_MODE,
@@ -25134,6 +25134,36 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_smb_auth;
          menu_settings_list_current_add_range(list, list_info, 0, RETRO_SMB2_SEC_KRB5, 1, true, true);
+
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.smb_client_num_contexts,
+            MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+            DEFAULT_SMB_CLIENT_NUM_CONTEXTS,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+         menu_settings_list_current_add_range(list, list_info, 1, DEFAULT_SMB_CLIENT_MAX_CONTEXTS, 1, true, true);
+
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.smb_client_timeout,
+            MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+            DEFAULT_SMB_CLIENT_TIMEOUT,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+         menu_settings_list_current_add_range(list, list_info, 1, DEFAULT_SMB_CLIENT_MAX_TIMEOUT, 1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

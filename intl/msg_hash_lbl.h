@@ -6778,6 +6778,14 @@ MSG_HASH(
    "smb_client_auth_mode"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "smb_client_num_contexts"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT,
+   "smb_client_timeout"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SMB_CLIENT_BROWSE,
    "smb_client_browse"
    )

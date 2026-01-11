@@ -1454,6 +1454,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_subdir,                  
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_username,                         MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_password,                         MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_workgroup,                        MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_num_contexts,                     MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_timeout,                          MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_browse,                           MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE)
 #endif
 
@@ -5936,6 +5938,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_smb_client_workgroup);
+            break;
+         case MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_smb_client_num_contexts);
+            break;
+         case MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_smb_client_timeout);
             break;
          case MENU_ENUM_LABEL_SMB_CLIENT_BROWSE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_smb_client_browse);
