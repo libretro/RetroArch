@@ -358,7 +358,9 @@ error:
          AudioComponentInstanceDispose(microphone->audio_unit);
          microphone->audio_unit = nil;
       }
-      free(microphone);
+      if (microphone->sample_buffer)
+         fifo_free(microphone->sample_buffer);
+      /* Don't free microphone - it's the driver context, freed by coreaudio_microphone_free */
    }
    return NULL;
 }
@@ -378,8 +380,11 @@ static void coreaudio_microphone_close_mic(void *driver_context, void *microphon
          microphone->audio_unit = nil;
       }
       if (microphone->sample_buffer)
+      {
          fifo_free(microphone->sample_buffer);
-      free(microphone);
+         microphone->sample_buffer = NULL;
+      }
+      /* Don't free microphone - it's the driver context, freed by coreaudio_microphone_free */
    }
    else
    {

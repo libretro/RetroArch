@@ -2163,9 +2163,6 @@ static void mic_driver_microphone_handle_init(retro_microphone_t *microphone,
       unsigned microphone_sample_rate   = settings->uints.microphone_sample_rate;
       microphone->microphone_context    = NULL;
       microphone->flags                 = MICROPHONE_FLAG_ACTIVE;
-      microphone->sample_buffer         = NULL;
-      microphone->sample_buffer_length  = 0;
-
       microphone->requested_params.rate = params ? params->rate : microphone_sample_rate;
       microphone->actual_params.rate    = 0;
       /* We don't set the actual parameters until we actually open the mic.
@@ -2193,13 +2190,6 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone, bo
    {
       mic_driver->close_mic(driver_context, microphone->microphone_context);
       microphone->microphone_context = NULL;
-   }
-
-   if (microphone->sample_buffer)
-   {
-      memalign_free(microphone->sample_buffer);
-      microphone->sample_buffer = NULL;
-      microphone->sample_buffer_length = 0;
    }
 
    if (microphone->outgoing_samples)
@@ -2236,6 +2226,9 @@ bool microphone_driver_init_internal(void *settings_data)
    if (!settings->bools.microphone_enable)
    {
       mic_st->flags &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
+      /* Ensure microphone struct is clean to prevent crashes on deinit
+       * if there was stale data from a previous session */
+      memset(&mic_st->microphone, 0, sizeof(mic_st->microphone));
       return false;
    }
 
@@ -2328,13 +2321,6 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
 
    if (!microphone || !mic_driver || !(mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE))
       return false;
-
-   microphone->sample_buffer_length = max_samples * sizeof(int16_t);
-   microphone->sample_buffer        =
-         (int16_t*)memalign_alloc(64, microphone->sample_buffer_length);
-
-   if (!microphone->sample_buffer)
-      goto error;
 
    microphone->outgoing_samples = fifo_new(max_samples * sizeof(int16_t));
    if (!microphone->outgoing_samples)
