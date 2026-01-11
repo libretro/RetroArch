@@ -7087,6 +7087,19 @@ bool menu_shader_manager_init(void)
    }
 
 end:
+
+   if (!ret)
+   {
+      size_t _len;
+      char msg[NAME_MAX_LENGTH];
+
+      _len = snprintf(msg, sizeof(msg), "Could not read shader preset: \"%s\".",
+            path_basename(path_shader));
+
+      runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   }
+
    video_st->menu_driver_shader = menu_shader;
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
