@@ -952,7 +952,7 @@ enum
    RARCH_LOG("[Lifecycle] Stopping web servers (Bonjour)\n");
    [[WebServer sharedInstance] stopServers];
 #endif
-#ifdef HAVE_NETWORKING
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY) && defined(HAVE_NETPLAYDISCOVERY_NSNET)
    netplay_mdns_suspend();
 #endif
 
