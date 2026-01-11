@@ -6034,8 +6034,9 @@ int rarch_main(int argc, char *argv[], void *data)
       {
          snprintf(new_path, sizeof(new_path), "/media/developer/temp/webosbrew/%s", appId);
          if (mkdir_p(new_path, 0775) != 0 && errno != EEXIST)
-            RARCH_ERR("FATAL: mkdir_p failed for '%s': %s\n", new_path, strerror(errno));
-         setenv("HOME", new_path, 1);
+            RARCH_WARN("[webOS]: Unable to write to '%s': %s\n", new_path, strerror(errno));
+         else
+            setenv("HOME", new_path, 1);
       }
    }
 
