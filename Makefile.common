@@ -1307,6 +1307,10 @@ ifeq ($(HAVE_WAYLAND), 1)
     DEF_FLAGS += $(LIBDECOR_CFLAGS)
  endif
 
+ ifeq ($(HAVE_WAYLAND_BACKPORT),1)
+    DEFINES += -DHAVE_WAYLAND_BACKPORT=1
+    OBJ += gfx/common/wayland_common_backport.o
+ endif
 endif
 
 # XML

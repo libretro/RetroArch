@@ -136,6 +136,7 @@ HAVE_USERLAND ?= 0
 HAVE_WEBOS_EXTRA_PROTOS ?= 0
 HAVE_CORE_INFO_CACHE = 1
 HAVE_WAYLAND ?= 0
+HAVE_WAYLAND_BACKPORT ?= 1
 
 OS = Linux
 TARGET = retroarch
@@ -340,6 +341,9 @@ ipk: prebuild $(TARGET) sdl2
 	echo "$$APPINFO" > webos/dist/appinfo.json
 	cp -t webos/dist -vf $(TARGET) webos/icon160.png
 	cp -t webos/dist/lib -vf $(WEBOS_USR_LIB_DIR)/libstdc++.so.6
+ifeq ($(HAVE_XKBCOMMON), 1)
+	cp -t webos/dist/lib -vf $(WEBOS_USR_LIB_DIR)/libxkbcommon.so.0
+endif
 	cp -t webos/dist/lib -vf $(WEBOS_LIB_DIR)/libatomic.so.1
 ifeq ($(ADD_SDL2_LIB), 1)
 	cp -t webos/dist/lib -vf SDL/lib/libSDL2-2.0.so.0

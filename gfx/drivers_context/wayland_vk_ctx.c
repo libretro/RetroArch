@@ -16,6 +16,10 @@
 
 #include <unistd.h>
 
+#ifdef HAVE_WAYLAND_BACKPORT
+#include "../../gfx/common/wayland_client_backport.h"
+#endif
+
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 
