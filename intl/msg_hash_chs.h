@@ -16224,3 +16224,5 @@ MSG_HASH(
    "显示“游戏 AI”选项"
    )
 #endif
+#ifdef HAVE_SMBCLIENT
+#endif

@@ -15908,3 +15908,5 @@ MSG_HASH(
    "A \"Játékos MI\" lehetőség jelenjen meg."
    )
 #endif
+#ifdef HAVE_SMBCLIENT
+#endif

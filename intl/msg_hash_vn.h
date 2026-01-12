@@ -16288,3 +16288,5 @@ MSG_HASH(
    "Hiển thị tùy chọn 'Game AI'."
    )
 #endif
+#ifdef HAVE_SMBCLIENT
+#endif

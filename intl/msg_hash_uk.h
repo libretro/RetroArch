@@ -16300,3 +16300,5 @@ MSG_HASH(
    "Показувати опцію \"Кінець гри\"."
    )
 #endif
+#ifdef HAVE_SMBCLIENT
+#endif

@@ -1580,3 +1580,5 @@ MSG_HASH(
 
 
 #endif
+#ifdef HAVE_SMBCLIENT
+#endif

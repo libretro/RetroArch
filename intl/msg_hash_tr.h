@@ -16204,3 +16204,5 @@ MSG_HASH(
    "'Oyun YZ' seçeneğini gösterin."
    )
 #endif
+#ifdef HAVE_SMBCLIENT
+#endif

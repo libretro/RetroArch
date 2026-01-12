@@ -15880,3 +15880,5 @@ MSG_HASH(
    "Die Option „Spiel-KI“ anzeigen."
    )
 #endif
+#ifdef HAVE_SMBCLIENT
+#endif

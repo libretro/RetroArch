@@ -16088,3 +16088,5 @@ MSG_HASH(
    "Mostra a opção 'IA do Jogo'."
    )
 #endif
+#ifdef HAVE_SMBCLIENT
+#endif

@@ -15496,3 +15496,5 @@ MSG_HASH(
    "Zobrazit možnost „Herní AI“."
    )
 #endif
+#ifdef HAVE_SMBCLIENT
+#endif

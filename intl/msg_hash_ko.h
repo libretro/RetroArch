@@ -16348,3 +16348,5 @@ MSG_HASH(
    "'게임 AI' 옵션을 표시합니다."
    )
 #endif
+#ifdef HAVE_SMBCLIENT
+#endif

@@ -16300,3 +16300,5 @@ MSG_HASH(
    "Taispeáin an rogha 'Cluiche AI'."
    )
 #endif
+#ifdef HAVE_SMBCLIENT
+#endif

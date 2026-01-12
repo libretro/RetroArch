@@ -15740,3 +15740,5 @@ MSG_HASH(
    "Паказваць опцыю 'Гульнявы ШІ'."
    )
 #endif
+#ifdef HAVE_SMBCLIENT
+#endif
