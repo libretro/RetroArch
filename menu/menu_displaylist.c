@@ -12198,7 +12198,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SMB_CLIENT_USERNAME,  PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD,  PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP, PARSE_ONLY_STRING, false},
-               {MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE, PARSE_ONLY_INT, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE,    PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS, PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT,      PARSE_ONLY_UINT, false},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -12212,6 +12214,8 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD:
                   case MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP:
                   case MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT:
                      if (smb_enable)
                         build_list[i].checked = true;
                      break;

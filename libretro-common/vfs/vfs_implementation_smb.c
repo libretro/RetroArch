@@ -27,13 +27,12 @@
 #include <vfs/vfs_implementation.h>
 #include "../configuration.h"
 #include "../verbosity.h"
+#include "../../config.def.h"
 #include "vfs_implementation_smb.h"
 
 #define SMB_PREFIX "smb://"
-#define MAX_SMB_CONTEXTS 4
-#define MAX_SMB_TIMEOUT 5
 
-static struct smb2_context *smb_context_pool[MAX_SMB_CONTEXTS] = {NULL};
+static struct smb2_context **smb_context_pool = NULL;
 static int next_context_index = 0;
 static bool smb_initialized = false;
 static int max_context_configured = 0;
@@ -48,8 +47,17 @@ static struct smb2_context *get_smb_context()
    if (max_context_configured == 0)
       return NULL;
 
+   if (next_context_index < 0 || next_context_index >= max_context_configured)
+      next_context_index = 0;
+
    idx = next_context_index;
    next_context_index = (next_context_index + 1) % max_context_configured;
+
+   if (!smb_context_pool[idx])
+   {
+      RARCH_ERR("[SMB] Context slot %d is NULL\n", idx);
+      return NULL;
+   }
 
    return smb_context_pool[idx];
 }
@@ -64,7 +72,7 @@ static bool smb_init(void)
    const char *p;
    const char *start;
    size_t len;
-   int i;
+   unsigned i;
    int error_no = 0;
 
    if (smb_initialized)
@@ -89,7 +97,16 @@ static bool smb_init(void)
       return false;
    }
 
-   for (i = 0; i < MAX_SMB_CONTEXTS; i++)
+   unsigned max_smb_contexts = settings->uints.smb_client_num_contexts;
+   smb_context_pool = calloc(max_smb_contexts, sizeof(struct smb2_context *));
+
+   if (!smb_context_pool)
+   {
+      RARCH_ERR("[SMB] Failed to allocate context pool\n");
+      return false;
+   }
+
+   for (i = 0; i < max_smb_contexts; i++)
    {
       struct smb2_context *smb_context = smb2_init_context();
 
@@ -120,10 +137,10 @@ static bool smb_init(void)
          share[0] = '\0';
 
       /* set timeout */
-      smb2_set_timeout(smb_context, MAX_SMB_TIMEOUT);
+      smb2_set_timeout(smb_context, settings->uints.smb_client_timeout);
 
       /* SMB2_SEC_ defines missing on system headers but provided with latest libsmb2 */
-      switch(settings->ints.smb_client_auth_mode)
+      switch(settings->uints.smb_client_auth_mode)
       {
          case RETRO_SMB2_SEC_NTLMSSP:
             smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_NTLMSSP);
@@ -205,6 +222,9 @@ void smb_shutdown()
    {
       smb_close_context(i);
    }
+
+   free(smb_context_pool);
+   smb_context_pool = NULL;
 
    smb_initialized = false;
    next_context_index = 0;
