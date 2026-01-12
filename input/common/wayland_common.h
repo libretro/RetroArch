@@ -20,6 +20,11 @@
 #include <boolean.h>
 
 #include <linux/input.h>
+
+#ifdef HAVE_WAYLAND_BACKPORT
+#include "../../gfx/common/wayland_common_backport.h"
+#endif
+
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 
@@ -49,6 +54,8 @@
 #ifdef WEBOS
 #include "wayland_common_webos.h"
 #endif
+
+#define WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION 3
 
 #define FRACTIONAL_SCALE_V1_DEN 120
 #define FRACTIONAL_SCALE_MULT(v, scale_num) \
