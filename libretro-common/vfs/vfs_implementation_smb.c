@@ -44,7 +44,7 @@ static struct smb2_context *get_smb_context()
    if (!smb_initialized)
       return NULL;
 
-   if (max_context_configured == 0)
+   if (!smb_context_pool || max_context_configured == 0)
       return NULL;
 
    if (next_context_index < 0 || next_context_index >= max_context_configured)
@@ -62,8 +62,24 @@ static struct smb2_context *get_smb_context()
    return smb_context_pool[idx];
 }
 
+void reset(unsigned num_contexts)
+{
+   for (unsigned i = 0; i < num_contexts; i++)
+   {
+      if(smb_context_pool[i])
+         smb2_destroy_context(smb_context_pool[i]);
+   }
+
+   free(smb_context_pool);
+   smb_context_pool = NULL;
+
+   smb_initialized = false;
+   next_context_index = 0;
+   max_context_configured = 0;
+}
+
 /* Initialize SMB context */
-static bool smb_init(void)
+static bool smb_init()
 {
    settings_t *settings;
    char server[256];
@@ -113,6 +129,8 @@ static bool smb_init(void)
       if (!smb_context)
       {
          RARCH_ERR("[SMB] Failed to create context %d\n", i);
+         smb2_destroy_context(smb_context);
+         reset(max_context_configured);
          return false;
       }
 
@@ -183,8 +201,9 @@ static bool smb_init(void)
       {
          RARCH_ERR("[SMB] Failed to connect to %s/%s: %s (errno: %d) with context: %d\n",
                   server, share, smb2_get_error(smb_context), error_no, i);
+
          smb2_destroy_context(smb_context);
-         smb_context = NULL;
+         reset(max_context_configured);
          return false;
       }
 
@@ -208,7 +227,7 @@ void smb_close_context(int index)
    }
 }
 
-/* Shutdown SMB context */
+/* Shutdown SMB context - called on exit */
 void smb_shutdown()
 {
    int i;
@@ -219,16 +238,9 @@ void smb_shutdown()
    RARCH_DBG("[SMB] Shutting down SMB client pool\n");
 
    for (i = 0; i < max_context_configured; i++)
-   {
       smb_close_context(i);
-   }
 
-   free(smb_context_pool);
-   smb_context_pool = NULL;
-
-   smb_initialized = false;
-   next_context_index = 0;
-   max_context_configured = 0;
+   reset(max_context_configured);
 }
 
 /* Build full SMB path from settings */
@@ -366,7 +378,7 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
    int ret;
    struct smb2_context *ctx;
 
-   if (!stream || stream->smb_fh < 0)
+   if (!smb_initialized || !stream || stream->smb_fh < 0)
       return -1;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
@@ -386,7 +398,7 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
    int ret;
    struct smb2_context *ctx;
 
-   if (!stream || stream->smb_fh < 0)
+   if (!smb_initialized || !stream || stream->smb_fh < 0)
       return -1;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
@@ -408,7 +420,7 @@ int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
    struct smb2_context *ctx;
    int64_t ret;
 
-   if (!stream || !stream->smb_ctx)
+   if (!smb_initialized || !stream || !stream->smb_ctx)
       return -1;
 
    /* fd holds the pointer returned by smb2_open(); */
@@ -447,7 +459,7 @@ int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
    struct smb2_context *ctx;
    int64_t ret;
 
-   if (!stream || !stream->smb_ctx)
+   if (!smb_initialized || !stream || !stream->smb_ctx)
       return -1;
 
    if (stream->smb_fh == 0 || stream->smb_fh == (intptr_t)-1)
@@ -549,7 +561,7 @@ struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
    struct smb2dirent *ent;
    static struct smbc_dirent result;
 
-   if (!dh)
+   if (!smb_initialized || !dh)
       return NULL;
 
    if (!dh->ctx || !dh->dir)
@@ -573,7 +585,7 @@ struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
 
 int retro_vfs_closedir_smb(smb_dir_handle* dh)
 {
-   if (!dh)
+   if (!smb_initialized || !dh)
       return -1;
 
    if (!dh->ctx || !dh->dir)
@@ -631,6 +643,9 @@ int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream)
 {
    struct smb2_context *ctx;
    const char *err;
+
+   if (!!smb_initialized)
+      return -1;
 
    if (!stream || stream->smb_fh == 0 || stream->smb_fh == (intptr_t)-1)
       return -1;
