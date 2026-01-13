@@ -460,9 +460,9 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_create_haptic_player(
 {
     if (@available(iOS 14, tvOS 14, macOS 11, *))
     {
-        if (_weakPlayer) [_weakPlayer cancelAndReturnError:nil];
-        if (_strongPlayer) [_strongPlayer cancelAndReturnError:nil];
-
+        /* When controller disconnects, the haptic engine is already stopped
+         * by the system, so don't bother trying to cancel players - just
+         * clear the handlers and release everything. */
         for (CHHapticEngine *eng in self.engines)
         {
             eng.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
