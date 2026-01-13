@@ -304,6 +304,7 @@ typedef struct settings
       unsigned menu_xmb_layout;
       unsigned menu_xmb_shader_pipeline;
       unsigned menu_xmb_alpha_factor;
+      unsigned menu_xmb_current_menu_icon;
       unsigned menu_xmb_theme;
       unsigned menu_xmb_color_theme;
       unsigned menu_xmb_thumbnail_scale_factor;
@@ -354,6 +355,7 @@ typedef struct settings
       unsigned input_overlay_lightgun_four_touch_input;
       unsigned input_overlay_mouse_hold_msec;
       unsigned input_overlay_mouse_dtap_msec;
+      unsigned input_overlay_mouse_alt_two_touch_input;
 #endif
 
       unsigned run_ahead_frames;
@@ -394,6 +396,12 @@ typedef struct settings
 
       unsigned cheevos_appearance_anchor;
       unsigned cheevos_visibility_summary;
+
+#ifdef HAVE_SMBCLIENT
+      unsigned smb_client_auth_mode;
+      unsigned smb_client_num_contexts;
+      unsigned smb_client_timeout;
+#endif
    } uints;
 
    struct
@@ -542,7 +550,15 @@ typedef struct settings
       char ai_service_url[PATH_MAX_LENGTH];
 
       char translation_service_url[2048]; /* TODO/FIXME - check size */
-   } arrays;
+#ifdef HAVE_SMBCLIENT
+      char smb_client_server_address[256];
+      char smb_client_share[256];
+      char smb_client_subdir[PATH_MAX_LENGTH];
+      char smb_client_username[128];
+      char smb_client_password[128];
+      char smb_client_workgroup[64];
+#endif
+} arrays;
 
    struct
    {
@@ -892,6 +908,9 @@ typedef struct settings
 #ifdef HAVE_MIST
       bool settings_show_steam;
 #endif
+#ifdef HAVE_SMBCLIENT
+      bool settings_show_smb_client;
+#endif
       bool quick_menu_show_resume_content;
       bool quick_menu_show_restart_content;
       bool quick_menu_show_close_content;
@@ -1144,6 +1163,9 @@ typedef struct settings
       bool game_ai_show_debug;
 #endif
 
+#ifdef HAVE_SMBCLIENT
+      bool smb_client_enable;
+#endif
    } bools;
 
    uint8_t flags;

@@ -62,6 +62,14 @@ struct turbo_buttons
    bool mode1_enable[MAX_USERS];
 };
 
+/* Hold button support. */
+struct hold_buttons
+{
+   int32_t hold_pressed[MAX_USERS];  /* Edge detection for toggle */
+   uint16_t enable[MAX_USERS];       /* Bitmask of held buttons */
+   bool frame_enable[MAX_USERS];     /* Hold modifier pressed this frame */
+};
+
 struct retro_keybind
 {
    /* Human-readable label for the control. */
@@ -139,6 +147,7 @@ typedef struct rarch_joypad_info rarch_joypad_info_t;
 typedef struct input_driver input_driver_t;
 typedef struct input_keyboard_ctx_wait input_keyboard_ctx_wait_t;
 typedef struct turbo_buttons turbo_buttons_t;
+typedef struct hold_buttons hold_buttons_t;
 typedef struct joypad_connection joypad_connection_t;
 
 #endif /* __INPUT_TYPES__H */

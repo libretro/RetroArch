@@ -59,7 +59,7 @@ struct string_list
  *
  * Searches for an element (@elem) inside the string list.
  *
- * @return Number of elements found, otherwise 0.
+ * @return 1-based index if element could be found, otherwise 0.
  */
 int string_list_find_elem(const struct string_list *list, const char *elem);
 

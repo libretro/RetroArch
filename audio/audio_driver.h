@@ -165,6 +165,24 @@ typedef struct audio_driver
    size_t (*write_avail)(void *data);
 
    size_t (*buffer_size)(void *data);
+
+   /**
+    * Optional. Write raw int16 samples with resampling handled by driver.
+    * If non-NULL, audio_driver will call this instead of doing software
+    * resampling. The driver is responsible for resampling from input_rate
+    * to its output rate, applying the rate_adjust factor for A/V sync,
+    * and applying the volume gain to the output.
+    *
+    * @param data        Driver context
+    * @param samples     Interleaved int16 stereo samples (LRLRLR...)
+    * @param frames      Number of frames (pairs of samples)
+    * @param input_rate  Source sample rate in Hz
+    * @param rate_adjust Rate adjustment multiplier for A/V sync (1.0 = normal)
+    * @param volume      Volume gain to apply (0.0 = muted, 1.0 = full volume)
+    * @return Number of frames written, or -1 on error
+    */
+   ssize_t (*write_raw)(void *data, const int16_t *samples, size_t frames,
+         unsigned input_rate, double rate_adjust, float volume);
 } audio_driver_t;
 
 typedef struct
@@ -247,6 +265,7 @@ typedef struct
    bool mute_enable;
 #ifdef HAVE_AUDIOMIXER
    bool mixer_mute_enable;
+   uint8_t mixer_streams_playing;  /* Count of currently playing mixer streams */
 #endif
 
    /* Sample the flush delta-time when fast forwarding to find the correct ratio. */

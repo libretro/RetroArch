@@ -46,6 +46,26 @@
 #define EGL_PLATFORM_WAYLAND_KHR 0x31D8
 #endif
 
+#ifdef WEBOS
+extern void gfx_ctx_wl_get_video_size_webos(void*, unsigned*, unsigned*);
+extern void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t*);
+extern void gfx_ctx_wl_update_title_webos(void*);
+extern bool gfx_ctx_wl_init_webos(const toplevel_listener_t*, gfx_ctx_wayland_data_t**);
+extern bool gfx_ctx_wl_set_video_mode_common_size_webos(gfx_ctx_wayland_data_t*, unsigned, unsigned, bool);
+extern bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t*, bool);
+extern bool gfx_ctx_wl_suppress_screensaver_webos(void*, bool);
+extern void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t*, void (*)(void*, unsigned*, unsigned*), bool*, bool*, unsigned*, unsigned*);
+
+#define gfx_ctx_wl_get_video_size_common gfx_ctx_wl_get_video_size_webos
+#define gfx_ctx_wl_destroy_resources_common gfx_ctx_wl_destroy_resources_webos
+#define gfx_ctx_wl_update_title_common gfx_ctx_wl_update_title_webos
+#define gfx_ctx_wl_init_common gfx_ctx_wl_init_webos
+#define gfx_ctx_wl_set_video_mode_common_size gfx_ctx_wl_set_video_mode_common_size_webos
+#define gfx_ctx_wl_set_video_mode_common_fullscreen gfx_ctx_wl_set_video_mode_common_fullscreen_webos
+#define gfx_ctx_wl_suppress_screensaver gfx_ctx_wl_suppress_screensaver_webos
+#define gfx_ctx_wl_check_window_common gfx_ctx_wl_check_window_webos
+#endif
+
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
 /* Shell surface callbacks. */

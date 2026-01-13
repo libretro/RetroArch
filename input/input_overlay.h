@@ -129,7 +129,9 @@ enum OVERLAY_FLAGS
    OVERLAY_BLOCK_X_SEPARATION = (1 << 2),
    OVERLAY_BLOCK_Y_SEPARATION = (1 << 3),
    OVERLAY_AUTO_X_SEPARATION  = (1 << 4),
-   OVERLAY_AUTO_Y_SEPARATION  = (1 << 5)
+   OVERLAY_AUTO_Y_SEPARATION  = (1 << 5),
+   OVERLAY_HAS_VIEWPORT       = (1 << 6),
+   OVERLAY_VIEWPORT_FILL      = (1 << 7)
 };
 
 enum OVERLAY_DESC_FLAGS
@@ -157,6 +159,16 @@ enum overlay_lightgun_action
    OVERLAY_LIGHTGUN_ACTION_DPAD_RIGHT,
 
    OVERLAY_LIGHTGUN_ACTION_END
+};
+
+enum overlay_mouse_button
+{
+   OVERLAY_MOUSE_BTN_NONE = 0,
+   OVERLAY_MOUSE_BTN_LMB,
+   OVERLAY_MOUSE_BTN_RMB,
+   OVERLAY_MOUSE_BTN_MMB,
+
+   OVERLAY_MOUSE_BTN_END
 };
 
 /* Overlay driver acts as a medium between input drivers
@@ -270,6 +282,15 @@ struct overlay
    float center_x, center_y;
    float aspect_ratio;
 
+   /* Viewport override - normalized coordinates (0.0-1.0) */
+   struct
+   {
+      float x;
+      float y;
+      float w;
+      float h;
+   } viewport;
+
    struct
    {
       float alpha_mod;
@@ -373,7 +394,9 @@ struct input_overlay
    const video_overlay_interface_t *iface;
    input_overlay_state_t overlay_state;
    input_overlay_pointer_state_t pointer_state;
+   struct texture_image **images;
 
+   size_t num_images;
    size_t index;
    size_t size;
 
@@ -424,6 +447,7 @@ typedef struct
    char *overlay_path;
    struct overlay *overlays;
    struct overlay *active;
+   struct string_list *image_list;
    size_t size;
    uint16_t overlay_types;
    uint8_t flags;
@@ -445,6 +469,15 @@ void input_overlay_auto_rotate_(
 void input_overlay_load_active(
       enum overlay_visibility *visibility,
       input_overlay_t *ol, float opacity);
+
+/**
+ * input_overlay_next_move_touch_masks
+ * @ol : Overlay handle.
+ * 
+ * Finds similar descs in the next overlay (i.e. same location and type)
+ * and moves touch masks from active overlay to next.
+ */
+void input_overlay_next_move_touch_masks(input_overlay_t *ol);
 
 /**
  * input_overlay_set_scale_factor:

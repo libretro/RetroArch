@@ -200,6 +200,22 @@ endif
    LIBS += -L.
 endif
 
+# webOS
+ifneq (,$(or $(findstring webos,$(CROSS_COMPILE)),$(findstring starfish,$(CROSS_COMPILE))))
+   ARCH_X86 = 0
+   ARCH_X86_64 = 0
+   ifneq (,$(findstring arm,$(CROSS_COMPILE)))
+      HAVE_ARMV6 = 1
+      HAVE_NEON = 1
+   else
+      ARCH_AARCH64 = 1
+   endif
+   HAVE_OPENGL = 1
+   GLES = 1
+   GL_LIB := -lGLESv2
+   HAVE_SSA := 0
+endif
+
 ifeq ($(LIBRETRO_SWITCH), 1)
    CFLAGS += -DUPSTREAM_VERSION=\"$(shell cat ../RELEASE)\"
 endif

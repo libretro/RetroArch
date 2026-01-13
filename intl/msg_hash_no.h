@@ -4292,6 +4292,10 @@ MSG_HASH(
    "Last inn et nytt bakgrunnsbilde avhengig av kontekst."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Ingen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
    "Skrifttype"
    )
@@ -5367,4 +5371,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

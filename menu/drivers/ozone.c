@@ -1980,8 +1980,6 @@ static uintptr_t ozone_entries_icon_get_texture(
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
       case MENU_ENUM_LABEL_CORE_INFORMATION:
       case MENU_ENUM_LABEL_DEFERRED_CORE_INFORMATION_LIST:
-            if (!string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION)))
-               return 0;
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
       case MENU_ENUM_LABEL_CORE_INFO_ENTRY:
             if (strstr(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED)))
@@ -10410,7 +10408,8 @@ static void ozone_render(void *data,
          if (   (cursor_x_delta >  ozone->pointer_active_delta)
              || (cursor_x_delta < -ozone->pointer_active_delta)
              || (cursor_y_delta >  ozone->pointer_active_delta)
-             || (cursor_y_delta < -ozone->pointer_active_delta))
+             || (cursor_y_delta < -ozone->pointer_active_delta)
+             || (ozone->pointer.flags & MENU_INP_PTR_FLG_PRESSED))
             ozone->flags |=  OZONE_FLAG_CURSOR_MODE;
       }
       /* On touchscreens, just check for any movement */
@@ -12515,6 +12514,12 @@ static void ozone_set_header(ozone_handle_t *ozone)
          max_depth = 2;
       else if (ozone->depth < 4)
          max_depth = 3;
+
+      if (type == MENU_SETTING_ACTION_CORE_OPTIONS)
+      {
+         max_depth = ozone->depth + 1;
+         path      = ozone->title;
+      }
 
       /* Main Menu & Settings */
       if (     ozone->depth > 1

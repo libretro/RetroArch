@@ -3380,10 +3380,6 @@ MSG_HASH(
    "Észlelés"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Tartalom megállítása kontroller leválasztásakor"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "A tartalom megáll, amikor bármelyik kontroller lecsatlakozik. Folytatás a Start gombbal."
    )
@@ -4504,6 +4500,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Turbó mód"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Tartás"
    )
 
 /* Settings > Latency */
@@ -11416,6 +11416,14 @@ MSG_HASH(
    "A színösszeállítás alfa értéke"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Nincs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Normál"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
    "Betűtípus"
    )
@@ -12622,10 +12630,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "Csatlakozó"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "%d. csatlakozó, eszköz neve: %s (#%d)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -15903,4 +15907,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "A \"Játékos MI\" lehetőség jelenjen meg."
    )
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

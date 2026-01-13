@@ -186,9 +186,6 @@ const ModuleBase = {
 		if (path.endsWith(".js")) return typeof this.mainScriptUrlOrBlob == "string" ? this.mainScriptUrlOrBlob : URL.createObjectURL(this.mainScriptUrlOrBlob);
 		return path;
 	},
-	onRuntimeInitialized: function() {
-		appInitialized();
-	},
 	print: function(text) {
 		console.log("stdout:", text);
 	},
@@ -342,38 +339,9 @@ function startRetroArch() {
 
 	// subsequent relaunches will start automatically
 	ModuleBase.noInitialRun = false;
-	ModuleBase.onRuntimeInitialized = null;
 
 	retroArchRunning = true;
 	Module.callMain(Module.arguments);
-}
-
-// called when the emscripten module has loaded
-async function appInitialized() {
-	console.log("WASM runtime initialized");
-	await fsLoadPromise;
-	console.log("FS initialized");
-
-	// ensure the current core exists even if it's not in the core list
-	await FS.writeFile("/retroarch/cores/" + currentCore + "_libretro.core", new Uint8Array());
-	setProgress("main");
-	setProgressText("main");
-	icnRun.classList.remove("fa-spinner", "fa-spin");
-	icnRun.classList.add("fa-play");
-
-	if (autoStart) {
-		startRetroArch();
-	} else {
-		// Make the Preview image clickable to start RetroArch.
-		webplayerPreview.classList.add("loaded");
-		webplayerPreview.addEventListener("click", function() {
-			startRetroArch();
-		});
-		btnRun.classList.remove("disabled");
-		btnRun.addEventListener("click", function() {
-			startRetroArch();
-		});
-	}
 }
 
 async function downloadScript(src) {
@@ -383,52 +351,63 @@ async function downloadScript(src) {
 	return blob;
 }
 
-function loadCoreFallback(currentCore) {
+async function loadCoreFallback(currentCore) {
 	URL.revokeObjectURL(ModuleBase.mainScriptUrlOrBlob);
 	if (currentCore == defaultCore) {
-		alert("Error: could not load default core!");
+		console.error("Error: couldn't load default core!");
+		alert("Error: couldn't load default core!");
 		return;
 	}
-	loadCore(defaultCore);
+	await loadCore(defaultCore);
 }
 
-function loadCoreFromUrl(url, core, args) {
+async function loadCoreFromUrl(url, core, args) {
 	ModuleBase.arguments = args || ["-v", "--menu"];
 	ModuleBase.preRun = [modulePreRun];
 	ModuleBase.mainScriptUrlOrBlob = url;
 	ModuleBase.canvas = canvas;
 	ModuleBase.corePath = "/home/web_user/retroarch/cores/" + core + "_libretro.core";
-	import(url).then(script => {
-		script.default(Object.assign({}, ModuleBase)).then(mod => {
-			Module = mod;
-		}).catch(err => {
+	try {
+		let script = await import(url);
+		try {
+			Module = await script.default(Object.assign({}, ModuleBase));
+		} catch (err) {
 			console.error("Couldn't instantiate module", err);
-			loadCoreFallback(core);
+			await loadCoreFallback(core);
 			throw err;
-		});
-	}).catch(err => {
+		}
+	} catch (err) {
 		console.error("Couldn't load script", err);
-		loadCoreFallback(core);
+		await loadCoreFallback(core);
 		throw err;
-	});
+	}
 }
 
-function loadCore(core, args) {
+async function loadCore(core, args) {
 	// Make the core the selected core in the UI.
-	const coreTitle = libretroCores[core];
-	if (coreTitle) coreSelectorCurrent.textContent = coreTitle;
+	let coreTitle = libretroCores[core];
+	if (!coreTitle) {
+		try {
+			const coreInfoFile = await FS.readFile("/retroarch/info/" + core + "_libretro.info");
+			coreTitle = new TextDecoder().decode(coreInfoFile).split("\n").find(i => i.startsWith("display_name = ")).slice(16, -1);
+		} catch (e) {}
+	}
+	coreSelectorCurrent.textContent = coreTitle || core;
+
 	const fileExt = (core == "retroarch") ? ".js" : "_libretro.js";
-	downloadScript("./" + core + fileExt).then(blob => {
-		loadCoreFromUrl(URL.createObjectURL(blob), core, args);
-	}).catch(err => {
+	let blob;
+	try {
+		blob = await downloadScript("./" + core + fileExt);
+	} catch (err) {
 		console.error("Couldn't download script", err);
-		loadCoreFallback(core);
+		await loadCoreFallback(core);
 		throw err;
-	});
+	}
+	await loadCoreFromUrl(URL.createObjectURL(blob), core, args);
 }
 
 // exit/exitspawn hook
-function relaunch(core, content) {
+async function relaunch(core, content) {
 	// get the new canvas element
 	canvas = Module.canvas;
 
@@ -448,11 +427,11 @@ function relaunch(core, content) {
 
 	// don't download the core again when restarting
 	if (core == ModuleBase.corePath) {
-		loadCoreFromUrl(ModuleBase.mainScriptUrlOrBlob, currentCore, ["-v", content]);
+		await loadCoreFromUrl(ModuleBase.mainScriptUrlOrBlob, currentCore, ["-v", content]);
 	} else {
 		localStorage.setItem("core", currentCore);
 		URL.revokeObjectURL(ModuleBase.mainScriptUrlOrBlob);
-		loadCore(currentCore, ["-v", content]);
+		await loadCore(currentCore, ["-v", content]);
 	}
 }
 
@@ -533,5 +512,29 @@ document.addEventListener("DOMContentLoaded", async function() {
 
 	// Find which core to load.
 	currentCore = localStorage.getItem("core") || defaultCore;
-	loadCore(currentCore);
+	await loadCore(currentCore);
+	console.log("WASM runtime initialized");
+	await fsLoadPromise;
+	console.log("FS initialized");
+
+	// ensure the current core exists even if it's not in the core list
+	await FS.writeFile("/retroarch/cores/" + currentCore + "_libretro.core", new Uint8Array());
+	setProgress("main");
+	setProgressText("main");
+	icnRun.classList.remove("fa-spinner", "fa-spin");
+	icnRun.classList.add("fa-play");
+
+	if (autoStart) {
+		startRetroArch();
+	} else {
+		// Make the Preview image clickable to start RetroArch.
+		webplayerPreview.classList.add("loaded");
+		webplayerPreview.addEventListener("click", function() {
+			startRetroArch();
+		});
+		btnRun.classList.remove("disabled");
+		btnRun.addEventListener("click", function() {
+			startRetroArch();
+		});
+	}
 });

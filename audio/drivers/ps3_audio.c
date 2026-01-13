@@ -240,5 +240,6 @@ audio_driver_t audio_ps3 = {
    NULL,
    NULL,
    ps3_audio_write_avail,
-   NULL
+   NULL, /* buffer_size */
+   NULL  /* write_raw */
 };

@@ -45,6 +45,10 @@
 
 #if defined(WEBOS)
 #include <sys/resource.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include "input/common/wayland_common_webos.h"
 #endif
 
 #include <stdio.h>
@@ -71,6 +75,9 @@
 #include <libretro.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
+#ifdef HAVE_SMBCLIENT
+#include "libretro-common/vfs/vfs_implementation_smb.h"
+#endif
 
 #include <features/features_cpu.h>
 
@@ -1930,6 +1937,7 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
                          | INP_FLAG_NONBLOCKING);
 
       memset(&input_st->turbo_btns, 0, sizeof(turbo_buttons_t));
+      memset(&input_st->hold_btns, 0, sizeof(hold_buttons_t));
       memset(&input_st->analog_requested, 0,
          sizeof(input_st->analog_requested));
       input_st->current_driver           = NULL;
@@ -3988,6 +3996,8 @@ bool command_event(enum event_command cmd, void *data)
             if (!ol)
                return false;
 
+            input_overlay_next_move_touch_masks(ol);
+
             ol->index                      = ol->next_index;
             ol->active                     = &ol->overlays[ol->index];
 
@@ -3998,9 +4008,11 @@ bool command_event(enum event_command cmd, void *data)
             input_overlay_load_active(input_st->overlay_visibility,
                   ol, input_overlay_opacity);
 
-            ol->flags                     |= INPUT_OVERLAY_BLOCKED;
             ol->next_index                 =
                   (unsigned)((ol->index + 1) % ol->size);
+
+            /* Trigger viewport recalculation - overlay may have viewport override */
+            command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
             /* Check orientation, if required */
             if (inp_overlay_auto_rotate)
@@ -4258,6 +4270,16 @@ bool command_event(enum event_command cmd, void *data)
             rcheevos_unload();
 #endif
             runloop_event_deinit_core();
+
+            /* Clear turbo and hold button state on core unload */
+            {
+               input_driver_state_t *input_st = input_state_get_ptr();
+               if (input_st)
+               {
+                  memset(&input_st->turbo_btns, 0, sizeof(turbo_buttons_t));
+                  memset(&input_st->hold_btns, 0, sizeof(hold_buttons_t));
+               }
+            }
 
 #ifdef HAVE_RUNAHEAD
             /* If 'runahead_available' is false, then
@@ -4637,6 +4659,12 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CLOUDSYNC
       case CMD_EVENT_CLOUD_SYNC:
          task_push_cloud_sync();
+         break;
+      case CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_LOCAL:
+         task_push_cloud_sync_resolve_keep_local();
+         break;
+      case CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_SERVER:
+         task_push_cloud_sync_resolve_keep_server();
          break;
 #endif
       case CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG:
@@ -5930,6 +5958,30 @@ void main_exit(void *args)
 #endif
 }
 
+#if defined(WEBOS)
+/* make a directory recursively */
+static int mkdir_p(const char *path, mode_t mode)
+{
+    char tmp[PATH_MAX_LENGTH];
+    char *p = NULL;
+    size_t len;
+
+    snprintf(tmp, sizeof(tmp), "%s", path);
+    len = strlen(tmp);
+    if (tmp[len - 1] == '/')
+        tmp[len - 1] = 0;
+
+    for (p = tmp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = 0;
+            mkdir(tmp, mode);
+            *p = '/';
+        }
+    }
+    return mkdir(tmp, mode);
+}
+#endif
+
 /**
  * main_entry:
  *
@@ -5967,11 +6019,37 @@ int rarch_main(int argc, char *argv[], void *data)
 #endif
 
 #if defined(WEBOS)
+   /* compatibility with webOS 1 and 2 */
+   const char *home = getenv("HOME");
+   const char *appId = getenv("APPID");
+   char new_path[PATH_MAX_LENGTH];
+
+   if (home)
+   {
+      if (!appId || !*appId || strcmp(appId, "com.palm.devmode.openssh") == 0)
+         appId = WEBOS_APP_ID;
+
+      snprintf(new_path, sizeof(new_path), "/%s/.config", home);
+      if (access(new_path, F_OK) != 0 && mkdir(new_path, 0775) != 0)
+      {
+         snprintf(new_path, sizeof(new_path), "/media/developer/temp/webosbrew/%s", appId);
+         if (mkdir_p(new_path, 0775) != 0 && errno != EEXIST)
+            RARCH_WARN("[webOS]: Unable to write to '%s': %s\n", new_path, strerror(errno));
+         else
+            setenv("HOME", new_path, 1);
+      }
+   }
+
    /* compatibility with webOS 3 - 5 */
    if (getenv("EGL_PLATFORM") == NULL)
       setenv("EGL_PLATFORM", "wayland", 0);
    if (getenv("XDG_RUNTIME_DIR") == NULL)
       setenv("XDG_RUNTIME_DIR", "/tmp/xdg", 0);
+   /* wayland */
+   if (getenv("XKB_CONFIG_ROOT") == NULL)
+      setenv("XKB_CONFIG_ROOT", "/usr/share/X11/xkb", 0);
+   if (getenv("WAYLAND_DISPLAY") == NULL)
+      setenv("WAYLAND_DISPLAY", "wayland-0", 0);
 
    struct rlimit limit = {0, 0};
    setrlimit(RLIMIT_CORE, &limit);
@@ -6089,6 +6167,8 @@ int rarch_main(int argc, char *argv[], void *data)
 
 #if defined(EMSCRIPTEN)
 
+bool platform_emscripten_finish_deferred_sleep(void);
+
 #ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
 #ifdef HAVE_AUDIOWORKLET
 bool audioworklet_external_block(void);
@@ -6117,11 +6197,12 @@ void emscripten_mainloop(void)
    bool runloop_is_paused                 = (runloop_flags & RUNLOOP_FLAG_PAUSED)     ? true : false;
 
    /* Prevents the program from running in any of the following conditions:
-    * 1. requestAnimationFrame is being used and the window is not visible.
-    * Firefox likes to call requestAnimationFrame at 1 FPS when the window isn't focused,
-    * we want to avoid this.
+    * 1. The window is not visible.
     * 2. The GL context is lost and hasn't been recovered yet. */
    if (platform_emscripten_should_drop_iter())
+      return;
+
+   if (platform_emscripten_finish_deferred_sleep())
       return;
 
 #ifdef HAVE_RWEBAUDIO
@@ -6155,6 +6236,9 @@ void emscripten_mainloop(void)
          if (video_st->current_video_context.swap_buffers)
             video_st->current_video_context.swap_buffers(
                   video_st->context_data);
+#ifdef PROXY_TO_PTHREAD
+         platform_emscripten_wait_for_frame();
+#endif
          return;
       }
    }
@@ -6172,17 +6256,18 @@ void emscripten_mainloop(void)
 
    task_queue_check();
 
+   if (ret == -1)
+   {
+      main_exit(NULL);
+      emscripten_force_exit(0);
+      return;
+   }
+
 #ifdef PROXY_TO_PTHREAD
-   /* sync with requestAnimationFrame on browser thread if vsync is on */
-   /* performance seems better with this wait at the end of the iter */
+   /* Sync with requestAnimationFrame on browser thread if vsync is on. */
+   /* Performance seems better with this wait at the end of the iter. */
    platform_emscripten_wait_for_frame();
 #endif
-
-   if (ret != -1)
-      return;
-
-   main_exit(NULL);
-   emscripten_force_exit(0);
 }
 #endif
 
@@ -7843,11 +7928,30 @@ bool retroarch_main_init(int argc, char *argv[])
    if (verbosity_enabled)
    {
       {
-         char str_output[256];
+         char str_output[384];
          const char *cpu_model  = frontend_driver_get_cpu_model_name();
          size_t _len = strlcpy(str_output,
                "=== Build =======================================\n",
                sizeof(str_output));
+
+#ifdef WEBOS
+         {
+            char osbuf[128];
+            int major = 0, minor = 0;
+            frontend_state_t *frontend_st = frontend_state_get_ptr();
+            if (frontend_st)
+            {
+               frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+               if (frontend && frontend->get_os)
+               {
+                  frontend->get_os(osbuf, sizeof(osbuf), &major, &minor);
+                  _len += snprintf(str_output + _len, sizeof(str_output) - _len,
+                        FILE_PATH_LOG_INFO " Running on: %s\n",
+                        osbuf);
+               }
+            }
+         }
+#endif
 
          if (!string_is_empty(cpu_model))
          {
@@ -8030,18 +8134,19 @@ bool retroarch_main_init(int argc, char *argv[])
          else
             input_remapping_restore_global_config(true, false);
 
-#ifdef HAVE_CONFIGFILE
-         /* Reload the original config */
-         if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
-            config_unload_override();
-#endif
-
 #ifdef HAVE_DYNAMIC
          /* Ensure that currently loaded core is properly
           * deinitialised */
          if (runloop_st->current_core_type != CORE_TYPE_DUMMY)
             command_event(CMD_EVENT_CORE_DEINIT, NULL);
 #endif
+
+#ifdef HAVE_CONFIGFILE
+         /* Reload the original config */
+         if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
+            config_unload_override();
+#endif
+
          /* Attempt initializing dummy core */
          runloop_st->current_core_type = CORE_TYPE_DUMMY;
          if (!command_event(CMD_EVENT_CORE_INIT, &runloop_st->current_core_type))
@@ -8629,6 +8734,12 @@ bool retroarch_main_quit(void)
        * save state file may be truncated) */
       content_wait_for_save_state_task();
 
+      runloop_runtime_log_deinit(runloop_st,
+            settings->bools.content_runtime_log,
+            settings->bools.content_runtime_log_aggregate,
+            settings->paths.directory_runtime_log,
+            settings->paths.directory_playlist);
+
       if (     (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE)
             || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE)
             || (runloop_st->flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE)
@@ -8642,11 +8753,9 @@ bool retroarch_main_quit(void)
          input_remapping_restore_global_config(true, false);
 
 #ifdef HAVE_CONFIGFILE
+      /* Reload the original config */
       if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
-      {
-         /* Reload the original config */
          config_unload_override();
-      }
 #endif
 
 #ifdef HAVE_MENU
@@ -8684,6 +8793,14 @@ bool retroarch_main_quit(void)
 
 #ifdef HAVE_GAME_AI
    game_ai_shutdown();
+#endif
+
+#if defined(WEBOS) && defined(HAVE_WAYLAND)
+   shutdown_webos_contexts();
+#endif
+
+#ifdef HAVE_SMBCLIENT
+   smb_shutdown();
 #endif
 
    return true;

@@ -294,6 +294,11 @@ GENERIC_DEFERRED_PUSH(deferred_push_file_browser_select_sideload_core, DISPLAYLI
 GENERIC_DEFERRED_PUSH(deferred_push_core_game_ai_options,             DISPLAYLIST_OPTIONS_GAME_AI)
 #endif
 
+#ifdef HAVE_SMBCLIENT
+GENERIC_DEFERRED_PUSH(deferred_push_smb_client_settings_list,       DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_smb_client_options,             DISPLAYLIST_OPTIONS_SMB_CLIENT)
+#endif
+
 static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
@@ -924,6 +929,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #ifdef HAVE_GAME_AI
       {MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS, deferred_push_core_game_ai_options},
 #endif
+
+#ifdef HAVE_SMBCLIENT
+      {MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST, deferred_push_smb_client_settings_list},
+      {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS, deferred_push_smb_client_options},
+#endif
    };
 
    if (!string_is_equal(label, "null"))
@@ -1395,6 +1405,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #ifdef HAVE_GAME_AI
          case MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_game_ai_options);
+            break;
+#endif
+#ifdef HAVE_SMBCLIENT
+         case MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_smb_client_options);
             break;
 #endif
          default:

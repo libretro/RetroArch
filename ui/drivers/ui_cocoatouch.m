@@ -51,11 +51,17 @@
 #include "../../menu/menu_setting.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "../../network/netplay/netplay_private.h"
+#endif
+
 #import <AVFoundation/AVFoundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 
 #import <MetricKit/MetricKit.h>
 #import <MetricKit/MXMetricManager.h>
+
+#import "../../pkg/apple/WebServer/WebServer.h"
 
 #ifdef HAVE_MFI
 #import <GameController/GameController.h>
@@ -931,11 +937,24 @@ enum
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
+   RARCH_LOG("[Lifecycle] applicationDidEnterBackground - stopping services\n");
 #if TARGET_OS_TV
    update_topshelf();
 #endif
    rarch_stop_draw_observer();
    command_event(CMD_EVENT_SAVE_FILES, NULL);
+
+   /* Stop Bonjour services to prevent XPC crashes when connections are
+    * invalidated while the app is suspended. Web servers will be restarted
+    * when the app becomes active again. Netplay discovery must be
+    * re-initiated by the user. */
+#if !TARGET_OS_SIMULATOR
+   RARCH_LOG("[Lifecycle] Stopping web servers (Bonjour)\n");
+   [[WebServer sharedInstance] stopServers];
+#endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY) && defined(HAVE_NETPLAYDISCOVERY_NSNET)
+   netplay_mdns_suspend();
+#endif
 
    /* Clear any stuck or stale touches when backgrounding */
    cocoa_input_data_t *apple = (cocoa_input_data_t*)input_state_get_ptr()->current_data;
@@ -946,6 +965,11 @@ enum
    }
 }
 
+- (void)applicationDidReceiveMemoryWarning:(UIApplication *)application
+{
+    RARCH_LOG("[Lifecycle] applicationDidReceiveMemoryWarning - XPC connections may be invalidated\n");
+}
+
 - (void)applicationWillTerminate:(UIApplication *)application
 {
    rarch_stop_draw_observer();
@@ -954,6 +978,7 @@ enum
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
+   RARCH_LOG("[Lifecycle] applicationWillResignActive\n");
    self.bgDate = [NSDate date];
    rarch_stop_draw_observer();
 
@@ -968,14 +993,23 @@ enum
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-   NSError *error;
+   NSError *error = nil;
    settings_t *settings            = config_get_ptr();
    bool ui_companion_start_on_boot = settings->bools.ui_companion_start_on_boot;
 
+   RARCH_LOG("[Lifecycle] applicationDidBecomeActive - configuring AVAudioSession\n");
    if (settings->bools.audio_respect_silent_mode)
        [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&error];
    else
        [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:&error];
+   if (error)
+       RARCH_ERR("[Lifecycle] AVAudioSession setCategory error: %s\n", [[error localizedDescription] UTF8String]);
+
+   /* Restart Bonjour services that were stopped when backgrounding */
+#if !TARGET_OS_SIMULATOR
+   RARCH_LOG("[Lifecycle] Restarting web servers (Bonjour)\n");
+   [[WebServer sharedInstance] startServers];
+#endif
 
    if (!ui_companion_start_on_boot)
       [self showGameView];

@@ -1289,6 +1289,16 @@ ifeq ($(HAVE_WAYLAND), 1)
       OBJ += gfx/drivers_context/wayland_vk_ctx.o
    endif
 
+   ifeq ($(WEBOS), 1)
+      OBJ += input/common/wayland_common_webos.o
+      OBJ += gfx/common/wayland/webos-shell.o
+      ifeq ($(HAVE_WEBOS_EXTRA_PROTOS), 1)
+         OBJ += gfx/common/wayland/webos-foreign.o
+         OBJ += gfx/common/wayland/webos-input-manager.o
+         OBJ += gfx/common/wayland/webos-surface-group.o
+      endif
+   endif
+
  DEF_FLAGS += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
  LIBS += $(WAYLAND_LIBS) $(WAYLAND_CURSOR_LIBS)
 
@@ -2698,6 +2708,96 @@ ifeq ($(HAVE_TEST_DRIVERS), 1)
   OBJ += input/drivers/test_input.o
 endif
 
+ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT)))
+   DEFINES += -DHAVE_SMBCLIENT
+
+   ifeq ($(HAVE_SMBCLIENT),1)
+      # system libsmb2
+      ifeq ($(shell pkg-config --exists libsmb2 && echo yes),yes)
+         CFLAGS += $(shell pkg-config --cflags libsmb2)
+         LIBS   += $(shell pkg-config --libs libsmb2)
+      else
+         LIBS   += -lsmb2
+      endif
+   else ifeq ($(HAVE_BUILTINSMBCLIENT),1)
+      # builtin libsmb2
+      ifneq ($(findstring Win32,$(OS)),)
+         CFLAGS += -D_WINDOWS -DWIN32_LEAN_AND_MEAN
+         CFLAGS += -DNEED_RANDOM -DNEED_SRANDOM -DNEED_GETLOGIN_R
+      endif
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libsmb2/include
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libsmb2/include/smb2
+      CFLAGS += "-D_U_=__attribute__((unused))"
+      CFLAGS += -DHAVE_TIME_H -DHAVE_FCNTL_H -DHAVE_UNISTD_H
+      CFLAGS += -DHAVE_STDLIB_H -DSTDC_HEADERS
+      CFLAGS += -DHAVE_STRING_H
+      CFLAGS += -DHAVE_LINGER
+ifeq ($(findstring Win32,$(OS)),)
+      CFLAGS += -DHAVE_SYS_UIO_H
+      CFLAGS += -DHAVE_POLL_H -DHAVE_NETDB_H
+      CFLAGS += -DHAVE_NETINET_TCP_H -DHAVE_NETINET_IN_H
+      CFLAGS += -DHAVE_SYS_SOCKET_H -DHAVE_ARPA_INET_H
+endif
+      OBJ += \
+         deps/libsmb2/lib/aes.o \
+         deps/libsmb2/lib/aes_apple.o \
+         deps/libsmb2/lib/aes128ccm.o \
+         deps/libsmb2/lib/asn1-ber.o \
+         deps/libsmb2/lib/aes_reference.o \
+         deps/libsmb2/lib/alloc.o \
+         deps/libsmb2/lib/compat.o \
+         deps/libsmb2/lib/dcerpc.o \
+         deps/libsmb2/lib/dcerpc-lsa.o \
+         deps/libsmb2/lib/dcerpc-srvsvc.o \
+         deps/libsmb2/lib/errors.o \
+         deps/libsmb2/lib/hmac.o \
+         deps/libsmb2/lib/hmac-md5.o \
+         deps/libsmb2/lib/init.o \
+         deps/libsmb2/lib/krb5-wrapper.o \
+         deps/libsmb2/lib/libsmb2.o \
+         deps/libsmb2/lib/md4c.o \
+         deps/libsmb2/lib/md5.o \
+         deps/libsmb2/lib/ntlmssp.o \
+         deps/libsmb2/lib/pdu.o \
+         deps/libsmb2/lib/sha1.o \
+         deps/libsmb2/lib/sha224-256.o \
+         deps/libsmb2/lib/sha384-512.o \
+         deps/libsmb2/lib/smb2-cmd-close.o \
+         deps/libsmb2/lib/smb2-cmd-create.o \
+         deps/libsmb2/lib/smb2-cmd-echo.o \
+         deps/libsmb2/lib/smb2-cmd-error.o \
+         deps/libsmb2/lib/smb2-cmd-flush.o \
+         deps/libsmb2/lib/smb2-cmd-ioctl.o \
+         deps/libsmb2/lib/smb2-cmd-lock.o \
+         deps/libsmb2/lib/smb2-cmd-logoff.o \
+         deps/libsmb2/lib/smb2-cmd-negotiate.o \
+         deps/libsmb2/lib/smb2-cmd-oplock-break.o \
+         deps/libsmb2/lib/smb2-cmd-notify-change.o \
+         deps/libsmb2/lib/smb2-cmd-query-directory.o \
+         deps/libsmb2/lib/smb2-cmd-query-info.o \
+         deps/libsmb2/lib/smb2-cmd-read.o \
+         deps/libsmb2/lib/smb2-cmd-session-setup.o \
+         deps/libsmb2/lib/smb2-cmd-set-info.o \
+         deps/libsmb2/lib/smb2-cmd-tree-connect.o \
+         deps/libsmb2/lib/smb2-cmd-tree-disconnect.o \
+         deps/libsmb2/lib/smb2-cmd-write.o \
+         deps/libsmb2/lib/smb2-data-file-info.o \
+         deps/libsmb2/lib/smb2-data-filesystem-info.o \
+         deps/libsmb2/lib/smb2-data-security-descriptor.o \
+         deps/libsmb2/lib/smb2-data-reparse-point.o \
+         deps/libsmb2/lib/smb2-share-enum.o \
+         deps/libsmb2/lib/smb2-signing.o \
+         deps/libsmb2/lib/smb3-seal.o \
+         deps/libsmb2/lib/socket.o \
+         deps/libsmb2/lib/spnego-wrapper.o \
+         deps/libsmb2/lib/sync.o \
+         deps/libsmb2/lib/timestamps.o \
+         deps/libsmb2/lib/usha.o \
+         deps/libsmb2/lib/unicode.o
+   endif
+
+   OBJ += $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_smb.o
+endif
 
 #####################################
 ### Android Play Feature Delivery ###

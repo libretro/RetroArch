@@ -95,7 +95,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "Знайдіть основну реалізацію libretro. Де браузер запускається в залежності від вашого базового шляху каталогу. Якщо цього немає, то він запуститься в root.\nЯкщо Core Directory це каталог, меню буде використовувати це як верхню теку. Якщо Core Directory є повним шляхом, то він почнеться в папці[...]"
+   "Знайдіть реалізацію ядра libretro. Звідки запускається браузер, залежить від шляху до основного каталогу. Якщо порожньо, то він почнеться з кореня.\nЯкщо основним каталогом є каталог, меню використовуватиме його як верхню теку. Якщо основний каталог є повним шляхом, він почнет[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -132,7 +132,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
-   "Вийнятии диск з фізичного CD/DVD-пристрою."
+   "Вийняти диск з фізичного CD/DVD-пристрою."
    )
 #endif
 MSG_HASH(
@@ -240,6 +240,22 @@ MSG_HASH(
    "Синхронізація хмар вручну тригера."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Вирішити конфлікти: зберігати локальні"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Вирішіть всі конфлікти, завантаживши локальні файли на сервер."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Вирішити конфлікти: Сервер Тримати"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Вирішити усі конфлікти, завантаживши файли сервера, замінивши локальні копії."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Вихід з додатка RetroArch. Збереження конфігурації на виході вимкнено."
    )
@@ -342,7 +358,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   "Тут будуть відображатися встановлені ядра, які можуть працювати без завантаження вмісту."
+   "Тут з'являться встановлені ядра, які можуть працювати без завантаження контенту."
    )
 
 /* Main Menu > Online Updater */
@@ -591,7 +607,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Запобігти зміні встановлених в даний момент. Може використовуватися для уникнення небажаних оновлень, коли контент вимагає конкретної версії ядра (наприклад,. Аркада ПЗУ набору) або власний формат стану \"збереження\"."
+   "Запобігти зміні встановленого у цей момент ядра. Може використовуватися для запобігання небажаних оновлень, коли для вмісту потрібна певна версія ядра (наприклад, Аркадні набори ПЗУ) або змінюється власний формат стану збереження ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -2205,7 +2221,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "Горизонтальний центрування"
+   "Горизонтальне центрування"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
@@ -2631,7 +2647,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   "Горизонтальне положення вмісту, якщо вікно перегляду ширше, ніж ширина контенту. 0.0 знаходиться далеко, 0.5 - центр, 1.0 знаходиться набагато вірно."
+   "Горизонтальне розташування вмісту, коли видовий екран ширше ширини вмісту. 0,0 - крайній лівий, 0,5 - центральний, 1,0 - крайній правий."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
@@ -2656,11 +2672,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "Горизонтальне положення вмісту, коли вікно перегляду ширше, ніж ширина контенту. 0,0 далеко зліва, 0,5 - центр, 1.0 - набагато правильніше. (портретний орієнтація)"
+   "Горизонтальне розташування вмісту, коли видовий екран ширше ширини вмісту. 0,0 - крайній лівий, 0,5 - центральний, 1,0 - крайній правий. (Портретна Орієнтація)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "Вертикальне положення вмісту, коли вікно перегляду є вищим, ніж висота контенту. 0,0 зверху, 0.5 знаходиться в центрі, 1.0 знаходиться внизу. (портретна орієнтація)"
+   "Вертикальне положення вмісту, коли вікно перегляду є вищим, ніж висота контенту. 0,0 зверху, 0,5 знаходиться в центрі, 1,0 знаходиться внизу. (Портретна Орієнтація)"
    )
 #endif
 MSG_HASH(
@@ -4520,6 +4536,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Турбо Кнопки"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Утримуйте"
    )
 
 /* Settings > Latency */
@@ -11568,6 +11588,26 @@ MSG_HASH(
    "Коефіцієнт основи теми"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Поточний значок меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "Поточний значок меню може бути прихованим, під горизонтальним меню або в заголовку."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Немає"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Нормально"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "Назва"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Виберіть інший основний шрифт для використання в меню."
    )
@@ -12994,10 +13034,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "Порт"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Назва пристрою порта %d %s (#%d)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -16263,4 +16299,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Показувати опцію \"Кінець гри\"."
    )
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

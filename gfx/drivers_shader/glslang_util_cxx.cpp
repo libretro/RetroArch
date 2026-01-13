@@ -33,6 +33,8 @@
 #if defined(HAVE_GLSLANG)
 #include "glslang.hpp"
 #endif
+
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 static std::string build_stage_source(
@@ -247,6 +249,17 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 error:
    string_list_deinitialize(&lines);
 #endif
+
+   {
+      size_t _len;
+      char msg[NAME_MAX_LENGTH];
+
+      _len = snprintf(msg, sizeof(msg), "Failed to compile shader: \"%s\".",
+            path_basename(shader_path));
+
+      runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   }
 
    return false;
 }

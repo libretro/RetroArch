@@ -7,6 +7,7 @@
 //
 
 #import "WebServer.h"
+#import "../../../verbosity.h"
 
 @implementation WebServer
 
@@ -40,6 +41,7 @@
 }
 
 -(void)startServers {
+    RARCH_LOG("[WebServer] Starting servers (WebDAV on 8080, HTTP on 80)\n");
     if ( _webDAVServer.isRunning ) {
         [_webDAVServer stop];
     }
@@ -64,7 +66,9 @@
 }
 
 -(void)stopServers {
+    RARCH_LOG("[WebServer] Stopping servers\n");
     [_webUploader stop];
+    [_webDAVServer stop];
 }
 
 @end

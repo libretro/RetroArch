@@ -149,6 +149,10 @@
 #include "../intl/progress.h"
 #endif
 
+#ifdef HAVE_SMBCLIENT
+#include "../libretro-common/vfs/vfs_implementation_smb.h"
+#endif
+
 #define _3_SECONDS  3000000
 #define _6_SECONDS  6000000
 #define _9_SECONDS  9000000
@@ -340,6 +344,9 @@ enum settings_list_type
    SETTINGS_LIST_MIDI,
 #ifdef HAVE_MIST
    SETTINGS_LIST_STEAM,
+#endif
+#ifdef HAVE_SMBCLIENT
+   SETTINGS_LIST_SMBCLIENT,
 #endif
    SETTINGS_LIST_MANUAL_CONTENT_SCAN
 };
@@ -4119,6 +4126,28 @@ static size_t setting_get_string_representation_uint_rgui_particle_effect(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_menu_ticker_type(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case TICKER_TYPE_BOUNCE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE),
+                  len);
+         case TICKER_TYPE_LOOP:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP),
+                  len);
+      }
+   }
+   return 0;
+}
+
 #ifdef HAVE_XMB
 static size_t setting_get_string_representation_uint_menu_xmb_animation_move_up_down(
       rarch_setting_t *setting, char *s, size_t len)
@@ -4175,31 +4204,7 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_horizont
    }
    return 0;
 }
-#endif
 
-static size_t setting_get_string_representation_uint_menu_ticker_type(
-      rarch_setting_t *setting, char *s, size_t len)
-{
-   if (setting)
-   {
-      switch (*setting->value.target.unsigned_integer)
-      {
-         case TICKER_TYPE_BOUNCE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE),
-                  len);
-         case TICKER_TYPE_LOOP:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP),
-                  len);
-      }
-   }
-   return 0;
-}
-
-#ifdef HAVE_XMB
 static size_t setting_get_string_representation_uint_xmb_icon_theme(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -4387,6 +4392,73 @@ static size_t setting_get_string_representation_uint_xmb_menu_color_theme(
    }
    return 0;
 }
+
+static size_t setting_get_string_representation_uint_xmb_current_menu_icon(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE), len);
+         case 2:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE), len);
+         case 1:
+         default:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL), len);
+      }
+   }
+   return 0;
+}
+#endif
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+#if defined(HAVE_XMB) && defined(HAVE_SHADERPIPELINE)
+static size_t setting_get_string_representation_uint_xmb_shader_pipeline(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case XMB_SHADER_PIPELINE_WALLPAPER:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED), len);
+         case XMB_SHADER_PIPELINE_RIBBON:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON), len);
+         case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW), len);
+         case XMB_SHADER_PIPELINE_SNOW:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW), len);
+         case XMB_SHADER_PIPELINE_BOKEH:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH), len);
+         case XMB_SHADER_PIPELINE_SNOWFLAKE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE), len);
+      }
+   }
+   return 0;
+}
+#endif
 #endif
 
 #ifdef HAVE_MATERIALUI
@@ -4767,47 +4839,6 @@ static size_t setting_get_string_representation_uint_ozone_font_scale(
 }
 #endif
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-#if defined(HAVE_XMB) && defined(HAVE_SHADERPIPELINE)
-static size_t setting_get_string_representation_uint_xmb_shader_pipeline(
-      rarch_setting_t *setting, char *s, size_t len)
-{
-   if (setting)
-   {
-      switch (*setting->value.target.unsigned_integer)
-      {
-         case XMB_SHADER_PIPELINE_WALLPAPER:
-            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED), len);
-         case XMB_SHADER_PIPELINE_RIBBON:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON), len);
-         case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW), len);
-         case XMB_SHADER_PIPELINE_SNOW:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW), len);
-         case XMB_SHADER_PIPELINE_BOKEH:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_BOKEH), len);
-         case XMB_SHADER_PIPELINE_SNOWFLAKE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE), len);
-      }
-   }
-   return 0;
-}
-#endif
-#endif
 
 #ifdef HAVE_SCREENSHOTS
 #ifdef HAVE_GFX_WIDGETS
@@ -5489,6 +5520,31 @@ static size_t setting_get_string_representation_overlay_lightgun_action(
                      MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT), len);
       }
    }
+   return 0;
+}
+
+static size_t setting_get_string_representation_overlay_mouse_btn(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case OVERLAY_MOUSE_BTN_NONE:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_NONE), len);
+         case OVERLAY_MOUSE_BTN_LMB:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT), len);
+         case OVERLAY_MOUSE_BTN_RMB:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT), len);
+         case OVERLAY_MOUSE_BTN_MMB:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE), len);
+      }
+   }
+
    return 0;
 }
 #endif
@@ -7947,6 +8003,51 @@ static int setting_action_right_input_mouse_index(
    return 0;
 }
 
+#ifdef HAVE_SMBCLIENT
+static size_t setting_get_string_representation_smb_auth(
+   rarch_setting_t *setting, char *s, size_t len)
+{
+   unsigned val;
+
+   if (!setting || !setting->value.target.integer)
+      return 0;
+
+   val = *setting->value.target.integer;
+
+   switch (val)
+   {
+      case RETRO_SMB2_SEC_NTLMSSP: /* SMB2_SEC_NTLMSSP */
+         return strlcpy(s, "NTLMSSP", len);
+      case RETRO_SMB2_SEC_KRB5: /* SMB2_SEC_KRB5 */
+         return strlcpy(s, "Kerberos", len);
+      default:
+         return strlcpy(s, "KRB if available, NTLM if not", len);
+   }
+}
+
+static size_t setting_get_string_representation_smb_password(
+      rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+
+   if (string_is_empty(setting->value.target.string))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+   else
+   {
+      size_t i;
+      size_t pass_len = strlen(setting->value.target.string);
+
+      for (i = 0; i < pass_len && i < (len - 1); i++)
+         s[i] = '*';
+      s[i] = '\0';
+   }
+
+   return 0;
+}
+#endif
+
 /**
  ******* ACTION OK CALLBACK FUNCTIONS *******
 **/
@@ -8013,7 +8114,7 @@ static size_t get_string_representation_input_device_index(
       if (!string_is_empty(device_name))
       {
          unsigned idx = input_config_get_device_name_index(map);
-         size_t _len  = strlcpy(s, device_name, len);
+         size_t _len  = snprintf(s, len, "#%u: %s", map + 1, device_name);
 
          /* If idx is non-zero, it's part of a set */
          if (idx > 0)
@@ -8021,9 +8122,9 @@ static size_t get_string_representation_input_device_index(
       }
       else
          _len = snprintf(s, len,
-               "%s (#%u)",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               map + 1);
+               "#%u: %s",
+               map + 1,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 
    if (string_is_empty(s))
@@ -8078,16 +8179,14 @@ static size_t get_string_representation_input_mouse_index(
    {
       const char *device_name = input_config_get_mouse_display_name(map);
       if (!string_is_empty(device_name))
-         _len  = strlcpy(s, device_name, len);
+         _len = snprintf(s, len, "#%u: %s", map + 1, device_name);
       else if (map > 0)
-      {
-         _len  = strlcpy(s,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-               len);
-         _len += snprintf(s + _len, len - _len, " (#%u)", map + 1);
-      }
+         _len = snprintf(s, len,
+               "#%u: %s",
+               map + 1,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
       else
-         _len  = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+         _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    }
 
    if (string_is_empty(s))
@@ -9004,6 +9103,13 @@ static void general_write_handler(rarch_setting_t *setting)
             if (menu_st->driver_ctx->environ_cb)
                menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
                      NULL, menu_st->userdata);
+         }
+         break;
+      case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
+         {
+            video_driver_state_t *video_st       = video_state_get_ptr();
+            video_st->current_video->suppress_screensaver(video_st->data,
+                  settings->bools.ui_suspend_screensaver_enable);
          }
          break;
       default:
@@ -10198,6 +10304,24 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_CLOUD_SYNC);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_LOCAL);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+               MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_SERVER);
 #endif
 
          CONFIG_ACTION(
@@ -11771,6 +11895,9 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
+         (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+         (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
 
          CONFIG_BOOL(
                list, list_info,
@@ -18121,6 +18248,23 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0.0, 10.0, 0.1, true, true);
 
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_mouse_alt_two_touch_input,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+               DEFAULT_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_overlay_mouse_btn;
+         menu_settings_list_current_add_range(list, list_info,
+               OVERLAY_MOUSE_BTN_NONE, OVERLAY_MOUSE_BTN_END - 1, 1, true, true);
+
          END_SUB_GROUP(list, list_info, parent_group);
 
          END_GROUP(list, list_info, parent_group);
@@ -18967,6 +19111,24 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
             (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
             menu_settings_list_current_add_range(list, list_info, 0, 500, 1, true, true);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.menu_xmb_current_menu_icon,
+                  MENU_ENUM_LABEL_XMB_CURRENT_MENU_ICON,
+                  MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+                  DEFAULT_XMB_CURRENT_MENU_ICON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_uint_xmb_current_menu_icon;
+            menu_settings_list_current_add_range(list, list_info, 0, XMB_CURRENT_MENU_ICON_LAST-1, 1, true, true);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -20128,7 +20290,9 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_ok    = &setting_action_ok_uint;
+            (*list)[list_info->index - 1].action_left  = &setting_uint_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
             (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_ozone_header_icon;
             menu_settings_list_current_add_range(list, list_info, 0, OZONE_HEADER_ICON_LAST-1, 1, true, true);
@@ -21475,6 +21639,23 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_SETTINGS_SHOW_STEAM,
                MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
                DEFAULT_SETTINGS_SHOW_STEAM,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+#endif
+
+#ifdef HAVE_SMBCLIENT
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.settings_show_smb_client,
+               MENU_ENUM_LABEL_SETTINGS_SHOW_SMB_CLIENT,
+               MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+               DEFAULT_SETTINGS_SHOW_SMB_CLIENT,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
@@ -22903,6 +23084,19 @@ static bool setting_append_list(
                parent_group);
 
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS);
+
+#ifdef HAVE_SMBCLIENT
+         if (settings->bools.settings_show_smb_client)
+         {
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
+                  MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+         }
+#endif
 
          START_SUB_GROUP(list, list_info, "Netplay", &group_info, &subgroup_info, parent_group);
 
@@ -24810,6 +25004,171 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
 #endif
+#ifdef HAVE_SMBCLIENT
+      case SETTINGS_LIST_SMBCLIENT:
+         START_GROUP(list, list_info, &group_info,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS),
+            parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+         CONFIG_BOOL(
+            list, list_info,
+            &settings->bools.smb_client_enable,
+            MENU_ENUM_LABEL_SMB_CLIENT_ENABLE,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+            false,
+            MENU_ENUM_LABEL_VALUE_OFF,
+            MENU_ENUM_LABEL_VALUE_ON,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler,
+            SD_FLAG_NONE);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
+            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
+
+         CONFIG_STRING(
+            list, list_info,
+            settings->arrays.smb_client_server_address,
+            sizeof(settings->arrays.smb_client_server_address),
+            MENU_ENUM_LABEL_SMB_CLIENT_SERVER,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+            "",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            NULL,
+            NULL);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+         CONFIG_STRING(
+            list, list_info,
+            settings->arrays.smb_client_share,
+            sizeof(settings->arrays.smb_client_share),
+            MENU_ENUM_LABEL_SMB_CLIENT_SHARE,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+            "",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            NULL,
+            NULL);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+         CONFIG_STRING(
+            list, list_info,
+            settings->arrays.smb_client_subdir,
+            sizeof(settings->arrays.smb_client_subdir),
+            MENU_ENUM_LABEL_SMB_CLIENT_SUBDIR,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+            "",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            NULL,
+            NULL);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+         CONFIG_STRING(
+            list, list_info,
+            settings->arrays.smb_client_username,
+            sizeof(settings->arrays.smb_client_username),
+            MENU_ENUM_LABEL_SMB_CLIENT_USERNAME,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+            "",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            NULL,
+            NULL);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+         CONFIG_STRING(
+            list, list_info,
+            settings->arrays.smb_client_password,
+            sizeof(settings->arrays.smb_client_password),
+            MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+            "",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            NULL,
+            NULL);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+         (*list)[list_info->index - 1].get_string_representation =
+            setting_get_string_representation_smb_password;
+
+         CONFIG_STRING(
+            list, list_info,
+            settings->arrays.smb_client_workgroup,
+            sizeof(settings->arrays.smb_client_workgroup),
+            MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+            "WORKGROUP",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            NULL,
+            NULL);
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.smb_client_auth_mode,
+            MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+            DEFAULT_SMB_CLIENT_AUTH_MODE,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_smb_auth;
+         menu_settings_list_current_add_range(list, list_info, 0, RETRO_SMB2_SEC_KRB5, 1, true, true);
+
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.smb_client_num_contexts,
+            MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+            DEFAULT_SMB_CLIENT_NUM_CONTEXTS,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+         menu_settings_list_current_add_range(list, list_info, 1, DEFAULT_SMB_CLIENT_MAX_CONTEXTS, 1, true, true);
+
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.smb_client_timeout,
+            MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+            DEFAULT_SMB_CLIENT_TIMEOUT,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+         menu_settings_list_current_add_range(list, list_info, 1, DEFAULT_SMB_CLIENT_MAX_TIMEOUT, 1, true, true);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+#endif
       case SETTINGS_LIST_NONE:
       default:
          break;
@@ -24962,6 +25321,9 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_MIDI,
 #ifdef HAVE_MIST
       SETTINGS_LIST_STEAM,
+#endif
+#ifdef HAVE_SMBCLIENT
+      SETTINGS_LIST_SMBCLIENT,
 #endif
       SETTINGS_LIST_MANUAL_CONTENT_SCAN
    };

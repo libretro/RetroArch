@@ -5,6 +5,7 @@
 
 #import "content.h"
 #import "../../frontend/frontend_driver.h"
+#import "../../verbosity.h"
 #import "paths.h"
 #import "version.h"
 
@@ -21,6 +22,7 @@
 - (void)unpublish;
 - (void)browse;
 - (void)finishBrowsing:(net_driver_state_t *)net_st;
+- (void)suspend;
 
 @end
 
@@ -39,6 +41,7 @@ static NetplayBonjourMan *nbm_instance;
 
 - (void)publish:(netplay_t *)netplay
 {
+    RARCH_LOG("[Bonjour] Publishing netplay service on port %d\n", netplay->tcp_port);
     self.service = [[NSNetService alloc] initWithDomain:@"" type:@NETPLAY_MDNS_TYPE name:@"" port:netplay->tcp_port];
     [self.service setTXTRecordData:[self TXTdataFromNetplay:netplay]];
     [self.service setDelegate:self];
@@ -47,12 +50,14 @@ static NetplayBonjourMan *nbm_instance;
 
 - (void)unpublish
 {
+    RARCH_LOG("[Bonjour] Unpublishing netplay service\n");
     [self.service stop];
     self.service = nil;
 }
 
 - (void)browse
 {
+    RARCH_LOG("[Bonjour] Starting netplay service discovery\n");
     self.services = [NSMutableArray arrayWithCapacity: 0];
     dispatch_async(dispatch_get_main_queue(), ^{
         self.browser = [[NSNetServiceBrowser alloc] init];
@@ -284,6 +289,24 @@ static NetplayBonjourMan *nbm_instance;
     return [[NSData alloc] initWithBytes:has_password length:strlen(has_password)];
 }
 
+- (void)suspend
+{
+    /* Stop all Bonjour services to prevent XPC crashes when app is suspended.
+     * Publishing service will need to be re-established by netplay code
+     * if hosting is still active when app returns to foreground. */
+    RARCH_LOG("[Bonjour] Suspending all netplay Bonjour services\n");
+    if (self.service)
+    {
+        [self.service stop];
+        self.service = nil;
+    }
+    if (self.browser)
+    {
+        [self.browser stop];
+        self.browser = nil;
+    }
+}
+
 @end
 
 void netplay_mdns_publish(netplay_t *netplay)
@@ -304,4 +327,9 @@ void netplay_mdns_start_discovery(void)
 void netplay_mdns_finish_discovery(net_driver_state_t *net_st)
 {
     [[NetplayBonjourMan shared] finishBrowsing:net_st];
+}
+
+void netplay_mdns_suspend(void)
+{
+    [[NetplayBonjourMan shared] suspend];
 }

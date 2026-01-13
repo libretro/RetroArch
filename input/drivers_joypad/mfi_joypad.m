@@ -420,14 +420,22 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_create_haptic_player(
         if (!strongSelf)
             return;
 
-        /* Engine stopped (backgrounding/interruption) - clear players but keep engine in set */
-        strongSelf->_strongPlayer = nil;
-        strongSelf->_weakPlayer = nil;
+        /* Engine stopped (backgrounding/interruption).
+         * Do NOT set players to nil here - their dealloc will try to
+         * communicate via XPC which causes crashes when the connection
+         * is already torn down. Players will be lazily recreated when
+         * the engine restarts. */
+        RARCH_LOG("[MFI] Haptic engine stopped (reason: %ld), engines will restart on resume\n", (long)reason);
     };
     engine.resetHandler = ^{
         MFIRumbleController *strongSelf = weakSelf;
         if (!strongSelf)
             return;
+
+        /* Clear stale players now that engine is restarting and XPC is valid.
+         * They will be lazily recreated on next rumble request. */
+        strongSelf->_strongPlayer = nil;
+        strongSelf->_weakPlayer = nil;
 
         for (CHHapticEngine *eng in strongSelf.engines)
             [eng startAndReturnError:nil];
@@ -593,13 +601,22 @@ static void apple_gamecontroller_device_haptics_setup(void) IPHONE_RUMBLE_AVAIL
 
     deviceHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason)
     {
-        /* Engine stopped (backgrounding/interruption) - clear players but keep engine */
-        deviceWeakPlayer = nil;
-        deviceStrongPlayer = nil;
+        /* Engine stopped (backgrounding/interruption).
+         * Do NOT set players to nil here - their dealloc will try to
+         * communicate via XPC which causes crashes when the connection
+         * is already torn down. Players will be lazily recreated when
+         * the engine restarts. */
+        RARCH_LOG("[MFI] Device haptic engine stopped (reason: %ld)\n", (long)reason);
     };
     deviceHapticEngine.resetHandler = ^{
         if (!deviceHapticEngine)
             return;
+
+        /* Clear stale players now that engine is restarting and XPC is valid.
+         * They will be lazily recreated on next rumble request. */
+        deviceWeakPlayer = nil;
+        deviceStrongPlayer = nil;
+
         [deviceHapticEngine startAndReturnError:nil];
     };
 }

@@ -203,7 +203,6 @@ typedef struct ctr_video
    bool state_data_exist;
    bool bottom_check_idle;
    bool bottom_is_idle;
-   bool bottom_is_fading;
    char state_date[CTR_STATE_DATE_SIZE];
 } ctr_video_t;
 
@@ -250,7 +249,6 @@ typedef struct
  * externally, otherwise cannot detect current state
  * when reinitialising... */
 static bool ctr_bottom_screen_enabled  = true;
-static int fade_count                  = 256;
 
 /*
  * FORWARD DECLARATIONS
@@ -1166,15 +1164,11 @@ static void ctr_bottom_menu_control(void* data,
       if (ctr->bottom_is_idle)
       {
          ctr->bottom_is_idle    = false;
-         ctr->bottom_is_fading  = false;
-         fade_count             = 256;
          ctr_set_bottom_screen_enable(true,true);
       }
       else if (ctr->bottom_check_idle)
       {
          ctr->bottom_check_idle = false;
-         ctr->bottom_is_fading  = false;
-         fade_count             = 256;
       }
 
       if (ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE)
@@ -1536,34 +1530,6 @@ static void ctr_render_bottom_screen(void *data)
    }
 }
 
-/* graphic function originates from here:
- * https://github.com/smealum/3ds_hb_menu/blob/master/source/gfx.c
- */
-void ctr_fade_bottom_screen(gfxScreen_t screen, gfx3dSide_t side, u32 f)
-{
-#ifndef CONSOLE_LOG
-   int i;
-   u16 fbWidth, fbHeight;
-   u8* fbAdr = gfxGetFramebuffer(screen, side, &fbWidth, &fbHeight);
-
-   for(i = 0; i < fbWidth * fbHeight / 2; i++)
-   {
-      *fbAdr = (*fbAdr * f) >> 8;
-      fbAdr++;
-      *fbAdr = (*fbAdr * f) >> 8;
-      fbAdr++;
-      *fbAdr = (*fbAdr * f) >> 8;
-      fbAdr++;
-      *fbAdr = (*fbAdr * f) >> 8;
-      fbAdr++;
-      *fbAdr = (*fbAdr * f) >> 8;
-      fbAdr++;
-      *fbAdr = (*fbAdr * f) >> 8;
-      fbAdr++;
-   }
-#endif
-}
-
 static void ctr_set_bottom_screen_idle(ctr_video_t * ctr)
 {
    u64 elapsed_tick;
@@ -1574,28 +1540,10 @@ static void ctr_set_bottom_screen_idle(ctr_video_t * ctr)
 
    if ( elapsed_tick > 2000000000 )
    {
-      if (!ctr->bottom_is_fading)
-	  {
-         ctr->bottom_is_fading    = true;
-         ctr->refresh_bottom_menu = true;
-         return;
-      }
-
-      if (fade_count > 0)
-      {
-         fade_count--;
-         ctr_fade_bottom_screen(GFX_BOTTOM, GFX_LEFT, fade_count);
-
-         if (fade_count <= 128)
-         {
-            ctr->bottom_is_idle    = true;
-            ctr->bottom_is_fading  = false;
-            ctr->bottom_check_idle = false;
-            fade_count             = 256;
-            ctr_set_bottom_screen_enable(false,true);
-            return;
-         }
-      }
+      ctr->bottom_is_idle    = true;
+      ctr->bottom_check_idle = false;
+      ctr_set_bottom_screen_enable(false,true);
+      return;
    }
 }
 
@@ -1786,7 +1734,6 @@ static void* ctr_init(const video_info_t* video,
    ctr->prev_bottom_menu           = CTR_BOTTOM_MENU_NOT_AVAILABLE;
    ctr->bottom_check_idle          = false;
    ctr->bottom_is_idle             = false;
-   ctr->bottom_is_fading           = false;
    ctr->idle_timestamp             = 0;
    ctr->state_slot                 = settings->ints.state_slot;
 
@@ -2440,10 +2387,6 @@ static bool ctr_frame(void* data, const void* frame,
       gspPresentBuffer(GFX_BOTTOM, ctr->current_buffer_bottom, bottom, bottom,
             stride, GSP_BGR8_OES);
    }
-   else if (ctr->bottom_is_fading)
-   {
-      gfxScreenSwapBuffers(GFX_BOTTOM,false);
-   }
 #endif
 #else
    topFramebufferInfo.
@@ -2514,7 +2457,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 #endif
    ctr->current_buffer_top     ^= 1;
-   if (ctr->refresh_bottom_menu || ctr->bottom_is_fading)
+   if (ctr->refresh_bottom_menu)
       ctr->current_buffer_bottom  ^= 1;
 
    ctr->p3d_event_pending       = true;

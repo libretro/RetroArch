@@ -1700,10 +1700,6 @@ MSG_HASH(
    "Detectar"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Posar el conteníu cuando'l mandu se desconecte"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
    "Sensibilidá del acelerómetru"
    )
@@ -4655,4 +4651,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

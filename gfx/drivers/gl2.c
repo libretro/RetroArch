@@ -3557,6 +3557,14 @@ static bool gl2_frame(void *data, const void *frame,
             frame_count, &gl->tex_info, &feedback_info,
             video_scale_integer);
 
+#ifdef EMSCRIPTEN
+   /* Workaround for a chromium-specific bug */
+   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+   glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+   glClear(GL_COLOR_BUFFER_BIT);
+   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+#endif
+
    /* Set prev textures. */
    gl2_renderchain_bind_prev_texture(gl,
          chain, &gl->tex_info);
