@@ -2022,7 +2022,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Insere quadro(s) preto(s) entre quadros para maior clareza de movimento. Utilize apenas a opção designada para a sua taxa de atualização de exibição atual. Não é para uso em taxas de atualização que não são múltiplos de 60Hz, como 144Hz, 165Hz, etc. Não combine com o intervalo de troca > 1, sub-frames, Delay de Frame ou Sincronizar para Framerate de Conteúdo Exato. Deixar o sistema com o VRR está certo, apenas não está configurado. Se você notar a retenção de imagens em qual[...]"
+   "Insere quadro(s) preto(s) entre os quadros para melhorar a clareza do movimento. Use apenas a opção designada para a taxa de atualização atual da sua tela. Não deve ser usado em taxas de atualização que não sejam múltiplas de 60Hz, como 144Hz, 165Hz, etc. Não combine com Intervalo de Troca (Swap Interval) > 1, sub-quadros, Atraso de Quadros (Frame Delay) ou Sincronizar com a Taxa de Quadros Exata do Conteúdo. Deixar o VRR do sistema ligado não tem problema, apenas não utilize essa c[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
@@ -2046,7 +2046,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   "Insere quadro(s) preto(s) entre quadros para maior nitidez. Utilize apenas a opção designada para a sua taxa de atualização de exibição atual. Não use em taxas de atualização que não são múltiplos de 60Hz, como 144Hz, 165Hz, etc. Não combine com o intervalo de troca > 1, subquadros, Delay de Frame ou Sincronizar para Framerate de Conteúdo Exato. Deixar o sistema com o VRR está certo, apenas não está configurado. Se você notar a retenção de imagens em qualquer momento, você d[...]"
+   "Insere quadro(s) de shader extra(s) entre os quadros para quaisquer efeitos de shader que foram projetados para rodar mais rápido que a taxa do conteúdo. Use apenas a opção designada para a taxa de atualização atual da sua tela. Não deve ser usado em taxas de atualização que não sejam múltiplas de 60Hz, como 144Hz, 165Hz, etc. Não combine com Intervalo de Troca (Swap Interval) > 1, BFI, Atraso de Quadros (Frame Delay) ou Sincronizar com a Taxa de Quadros Exata do Conteúdo. Deixar o [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -2775,7 +2775,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   "Sincronizar taxa de atualização exata ao conteúdo (G-Sync, FreeSync)"
+   "Sincronizar com a Taxa de Quadros Exata do Conteúdo (G-Sync, FreeSync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
@@ -2783,7 +2783,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
-   "Sincroniza com a Taxa de Quadros Exata do Conteúdo. Essa opção é equivalente a forçar velocidade x1, ainda permitindo avanço rápido. Sem desvios da taxa de atualização solicitada pelo núcleo, sem controle dinâmico da taxa de áudio."
+   "Sincronizar com a Taxa de Quadros Exata do Conteúdo. Essa opção é equivalente a forçar velocidade x1, ainda permitindo avanço rápido. Sem desvios da taxa de atualização solicitada pelo núcleo, sem controle dinâmico da taxa de áudio."
    )
 
 /* Settings > Audio */
@@ -4134,11 +4134,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "Sincronizar taxa de atualização exata ao conteúdo (alternar)"
+   "Sincronizar com a Taxa de Quadros Exata do Conteúdo (Alternar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "Ativa/desativa a sincronização da taxa de atualização exata ao conteúdo."
+   "Alterna a sincronização com a taxa de quadros exata do conteúdo entre ligado/desligado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
@@ -5128,11 +5128,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Controlar taxa de quadros do menu"
+   "Limitar Taxa de Quadros no Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Certifica-se de que a taxa de quadros é controlada enquanto estiver dentro do menu."
+   "Garante que a taxa de quadros seja limitada enquanto estiver dentro do menu."
    )
 
 /* Settings > Frame Throttle > Rewind */
@@ -5825,7 +5825,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-   "Exibir taxa de quadros"
+   "Exibir Taxa de Quadros"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FPS_SHOW,
@@ -5833,11 +5833,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
-   "Intervalo de atualização da taxa de quadros (em quadros)"
+   "Intervalo de Atualização da Taxa de Quadros (Em Quadros)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
-   "A taxa da exibição dos quadros será atualizada no intervalo definido."
+   "A exibição da taxa de quadros será atualizada no intervalo definido em quadros."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
@@ -15314,11 +15314,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VRR_RUNLOOP_ENABLED,
-   "Sincronização da taxa de atualização exata ao conteúdo ativada."
+   "Sincronização com a taxa de quadros exata do conteúdo ativada."
    )
 MSG_HASH(
    MSG_VRR_RUNLOOP_DISABLED,
-   "Sincronização da taxa de atualização exata ao conteúdo desativada."
+   "Sincronização com a taxa de quadros exata do conteúdo desativada."
    )
 MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
