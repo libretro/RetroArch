@@ -450,7 +450,7 @@ int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
 /* return the current byte offset in an open file */
 int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
 {
-   uint64_t cur = 0;
+   int64_t ret;
    struct smb2fh *fh;
    struct smb2_context *ctx;
 
@@ -468,13 +468,13 @@ int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
    if (!ctx)
       return -1;
 
-   if (smb2_lseek(ctx, fh, 0, SEEK_CUR, &cur) == -EINVAL)
+   if ((ret = smb2_lseek(ctx, fh, 0, SEEK_CUR, NULL)) == -EINVAL)
    {
       RARCH_ERR("[SMB] Tell error: %s\n", smb2_get_error(ctx));
       return -1;
    }
 
-   return (int64_t)cur;
+   return ret;
 }
 
 int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
