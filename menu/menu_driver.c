@@ -5718,7 +5718,11 @@ unsigned menu_event(
 
          /* Disc insert resume */
          if (     settings->bools.menu_insert_disk_resume
-               && ok_enum_idx == MENU_ENUM_LABEL_DISK_TRAY_INSERT
+               && (  ok_enum_idx == MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX
+                  || ok_enum_idx == MENU_ENUM_LABEL_DISK_TRAY_INSERT
+                  || ok_enum_idx == MENU_ENUM_LABEL_DISK_TRAY_EJECT
+                  || ok_enum_idx == FILE_TYPE_NONE
+                  )
                && ok_enum_idx == entry.enum_idx)
             ok_trigger = ok_trigger_release;
       }

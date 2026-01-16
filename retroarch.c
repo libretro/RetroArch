@@ -5136,27 +5136,7 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 
             if (disk_control_enabled(&sys_info->disk_control))
-            {
-#if defined(HAVE_MENU)
-               struct menu_state *menu_st = menu_state_get_ptr();
-               /* Get initial disk eject state */
-               bool initial_disk_ejected  = disk_control_get_eject_state(&sys_info->disk_control);
-#endif
-               /* Append disk image */
-               bool success               =
-                  command_event_disk_control_append_image(path);
-
-#if defined(HAVE_MENU)
-               /* Appending a disk image may or may not affect
-                * the disk tray eject status. If status has changed,
-                * must refresh the disk options menu */
-               if (initial_disk_ejected != disk_control_get_eject_state(
-                     &sys_info->disk_control))
-                  menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
-                                                  |  MENU_ST_FLAG_PREVENT_POPULATE;
-#endif
-               return success;
-            }
+               return command_event_disk_control_append_image(path);
             else
             {
                const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);

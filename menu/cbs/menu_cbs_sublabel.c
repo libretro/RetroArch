@@ -1107,6 +1107,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_latency_frames,               
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_latency_frames_range,            MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_tray_eject,                       MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_tray_insert,                      MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_image_append,                     MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_index,                            MENU_ENUM_SUBLABEL_DISK_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_options,                          MENU_ENUM_SUBLABEL_DISK_OPTIONS)
 #ifdef HAVE_XMB
@@ -1629,25 +1630,6 @@ static int action_bind_sublabel_subsystem_load(
       strlcpy(s, buf, len);
 
    return 0;
-}
-
-static int action_bind_sublabel_disk_image_append(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   enum msg_hash_enums enum_idx  = MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND;
-   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
-
-   /* Check whether disk is currently ejected */
-   if (sys_info &&
-       disk_control_get_eject_state(&sys_info->disk_control))
-      enum_idx = MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN;
-
-   strlcpy(s, msg_hash_to_str(enum_idx), len);
-
-   return 1;
 }
 
 static int action_bind_sublabel_remap_kbd_sublabel(

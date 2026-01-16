@@ -5551,9 +5551,13 @@ static unsigned menu_displaylist_parse_disk_options(file_list_t *list)
    /* Check whether disk is currently ejected */
    disk_ejected = disk_control_get_eject_state(&sys_info->disk_control);
 
-   /* Always show a 'DISK_CYCLE_TRAY_STATUS' entry
-    * > These perform the same function, but just have
-    *   different labels/sublabels */
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_INDEX),
+            msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX),
+            MENU_ENUM_LABEL_DISK_INDEX,
+            MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0, NULL))
+      count++;
+
    if (disk_ejected)
    {
       if (menu_entries_append(list,
@@ -5562,22 +5566,16 @@ static unsigned menu_displaylist_parse_disk_options(file_list_t *list)
                MENU_ENUM_LABEL_DISK_TRAY_INSERT,
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0, NULL))
          count++;
-
-      /* Only show disk index if disk is currently ejected */
-      if (menu_entries_append(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_INDEX),
-               msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX),
-               MENU_ENUM_LABEL_DISK_INDEX,
-               MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0, NULL))
-         count++;
    }
    else
+   {
       if (menu_entries_append(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT),
                msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_EJECT),
                MENU_ENUM_LABEL_DISK_TRAY_EJECT,
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0, NULL))
          count++;
+   }
 
    /* If core does not support appending images,
     * can stop here */
@@ -9138,84 +9136,79 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
          menu_entries_clear(list);
          {
+            unsigned i;
+            unsigned num_images           = 0;
+            unsigned current_image        = 0;
+            unsigned num_digits           = 0;
             rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
 
-            if (sys_info)
+            if (!sys_info || !disk_control_enabled(&sys_info->disk_control))
+               break;
+
+            num_images    = disk_control_get_num_images(&sys_info->disk_control);
+            current_image = disk_control_get_image_index(&sys_info->disk_control);
+
+            /* If core supports labels, index value string
+             * should be padded to maximum width (otherwise
+             * labels will be misaligned/ugly) */
+            if (disk_control_image_label_enabled(&sys_info->disk_control))
             {
-               if (disk_control_enabled(&sys_info->disk_control))
+               unsigned digit_counter = num_images;
+               do
                {
-                  unsigned i;
-                  unsigned num_images    =
-                        disk_control_get_num_images(&sys_info->disk_control);
-                  unsigned current_image =
-                        disk_control_get_image_index(&sys_info->disk_control);
-                  unsigned num_digits    = 0;
+                  num_digits++;
+                  digit_counter = digit_counter / 10;
+               } while (digit_counter > 0);
+            }
 
-                  /* If core supports labels, index value string
-                   * should be padded to maximum width (otherwise
-                   * labels will be misaligned/ugly) */
-                  if (disk_control_image_label_enabled(&sys_info->disk_control))
-                  {
-                     unsigned digit_counter = num_images;
-                     do
-                     {
-                        num_digits++;
-                        digit_counter = digit_counter / 10;
-                     } while (digit_counter > 0);
-                  }
+            /* Loop through disk images */
+            for (i = 0; i < num_images; i++)
+            {
+               size_t _len;
+               char current_image_str[PATH_MAX_LENGTH];
+               char image_label[128];
 
-                  /* Loop through disk images */
-                  for (i = 0; i < num_images; i++)
-                  {
-                     size_t _len;
-                     char current_image_str[PATH_MAX_LENGTH];
-                     char image_label[128];
+               current_image_str[0] = '\0';
+               image_label[0]       = '\0';
 
-                     current_image_str[0] = '\0';
-                     image_label[0]       = '\0';
+               /* Get image label, if supported by core */
+               disk_control_get_image_label(
+                     &sys_info->disk_control,
+                     i, image_label, sizeof(image_label));
 
-                     /* Get image label, if supported by core */
-                     disk_control_get_image_label(
-                           &sys_info->disk_control,
-                           i, image_label, sizeof(image_label));
+               _len = snprintf(
+                     current_image_str, sizeof(current_image_str),
+                     "%0*u", num_digits, i + 1);
 
-                     _len = snprintf(
-                           current_image_str, sizeof(current_image_str),
-                           "%0*u", num_digits, i + 1);
+               /* Get string representation of disk index
+                * > Note that displayed index starts at '1',
+                *   not '0' */
+               if (!string_is_empty(image_label))
+               {
+                  _len += strlcpy(current_image_str + _len,
+                        ": ",
+                        sizeof(current_image_str)   - _len);
+                  strlcpy(current_image_str         + _len,
+                        image_label,
+                        sizeof(current_image_str)   - _len);
+               }
 
-                     /* Get string representation of disk index
-                      * > Note that displayed index starts at '1',
-                      *   not '0' */
-                     if (!string_is_empty(image_label))
-                     {
-                        /* Note: 2-space gap is intentional
-                         * (for clarity) */
-                        _len += strlcpy(current_image_str + _len,
-                              ":  ",
-                              sizeof(current_image_str)   - _len);
-                        strlcpy(current_image_str         + _len,
-                              image_label,
-                              sizeof(current_image_str)   - _len);
-                     }
+               /* Add menu entry */
+               if (menu_entries_append(list,
+                        current_image_str,
+                        "",
+                        (enum msg_hash_enums)MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
+                        MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
+                        i, 0, NULL))
+                  count++;
 
-                     /* Add menu entry */
-                     if (menu_entries_append(list,
-                              current_image_str,
-                              "",
-                              MENU_ENUM_LABEL_NO_ITEMS,
-                              MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
-                              i, 0, NULL))
-                        count++;
-
-                     /* Check whether current disk is selected */
-                     if (i == current_image)
-                     {
-                        menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
-                        if (cbs)
-                           cbs->checked            = true;
-                        menu_st->selection_ptr     = i;
-                     }
-                  }
+               /* Check whether current disk is selected */
+               if (i == current_image)
+               {
+                  menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                  if (cbs)
+                     cbs->checked           = true;
+                  menu_st->selection_ptr    = i;
                }
             }
          }
