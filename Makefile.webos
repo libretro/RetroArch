@@ -325,9 +325,13 @@ clean:
 
 sdl2: $(TARGET)
 ifeq ($(ADD_SDL2_LIB), 1)
-	@echo "Downloading SDL2 prebuilt"
-	mkdir -p SDL
-	wget -qO - $(SDL2_PREBUILT_ARCHIVE) | tar -C SDL -zxvf -
+	@if [ ! -f SDL/lib/libSDL2-2.0.so.0 ]; then \
+		echo "Downloading SDL2 prebuilt"; \
+		mkdir -p SDL; \
+		wget -qO - $(SDL2_PREBUILT_ARCHIVE) | tar -C SDL -zxvf -; \
+	else \
+		echo "SDL2 prebuilt already exists, skipping download"; \
+	fi
 endif
 
 ipk: prebuild $(TARGET) sdl2
