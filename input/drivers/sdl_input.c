@@ -506,7 +506,7 @@ static void sdl_input_poll(void *data)
             case SDL_SCANCODE_UP:
                /* navigation only, skip text insertion */
                if (osk_active)
-                  return;
+                  continue;
                break;
             case SDL_SCANCODE_RETURN:
                // remap wheel click to confirm selection in virtual keyboard
