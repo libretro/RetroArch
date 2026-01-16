@@ -596,9 +596,10 @@ static int menu_displaylist_parse_core_info(
 #endif
 
    /* Check whether we are parsing information for a
-    * core updater/manager entry or the currently loaded core */
-   if (   (info_type == FILE_TYPE_DOWNLOAD_CORE)
-       || (info_type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS))
+    * core updater/load/manager entry or the currently loaded core */
+   if (     info_type == FILE_TYPE_DOWNLOAD_CORE
+         || info_type == FILE_TYPE_CORE
+         || info_type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS)
    {
       core_info_t *core_info_menu = NULL;
 
