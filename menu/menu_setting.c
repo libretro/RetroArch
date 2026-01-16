@@ -8096,9 +8096,9 @@ static size_t get_string_representation_split_joycon(
 static size_t get_string_representation_input_device_index(
       rarch_setting_t *setting, char *s, size_t len)
 {
-   size_t _len = 0;
-   settings_t      *settings = config_get_ptr();
-   unsigned map              = 0;
+   settings_t *settings = config_get_ptr();
+   size_t _len          = 0;
+   unsigned map         = 0;
 
    if (!setting || !settings)
       return 0;
@@ -8111,20 +8111,22 @@ static size_t get_string_representation_input_device_index(
             ? input_config_get_device_display_name(map)
             : input_config_get_device_name(map);
 
+      _len = snprintf(s, len,
+            "%s%u: %s",
+            (map + 1 < 10) ? " #" : "#",
+            map + 1,
+            !string_is_empty(device_name)
+                  ? device_name
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+
       if (!string_is_empty(device_name))
       {
          unsigned idx = input_config_get_device_name_index(map);
-         size_t _len  = snprintf(s, len, "#%u: %s", map + 1, device_name);
 
          /* If idx is non-zero, it's part of a set */
          if (idx > 0)
             _len += snprintf(s + _len, len - _len, " (%u)", idx);
       }
-      else
-         _len = snprintf(s, len,
-               "#%u: %s",
-               map + 1,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 
    if (string_is_empty(s))
@@ -8166,9 +8168,9 @@ static size_t setting_get_string_representation_input_device_reserved_device_nam
 static size_t get_string_representation_input_mouse_index(
       rarch_setting_t *setting, char *s, size_t len)
 {
-   size_t _len = 0;
-   settings_t      *settings = config_get_ptr();
-   unsigned map              = 0;
+   settings_t *settings = config_get_ptr();
+   size_t _len          = 0;
+   unsigned map         = 0;
 
    if (!setting || !settings)
       return 0;
@@ -8178,15 +8180,16 @@ static size_t get_string_representation_input_mouse_index(
    if (map < MAX_INPUT_DEVICES)
    {
       const char *device_name = input_config_get_mouse_display_name(map);
-      if (!string_is_empty(device_name))
-         _len = snprintf(s, len, "#%u: %s", map + 1, device_name);
-      else if (map > 0)
-         _len = snprintf(s, len,
-               "#%u: %s",
-               map + 1,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-      else
-         _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+
+      _len = snprintf(s, len,
+            "%s%u: %s",
+            (map + 1 < 10) ? " #" : "#",
+            map + 1,
+            !string_is_empty(device_name)
+                  ? device_name
+                  : (map > 0)
+                        ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+                        : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE));
    }
 
    if (string_is_empty(s))
