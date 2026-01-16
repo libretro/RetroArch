@@ -11874,9 +11874,7 @@ static void materialui_list_insert(void *userdata,
                node->icon_texture_index = MUI_TEXTURE_EJECT;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
-            else if (
-                     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND))
-                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_DISC))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_DISC))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DUMP_DISC))
 #ifdef HAVE_LAKKA
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EJECT_DISC))
@@ -12036,6 +12034,7 @@ static void materialui_list_insert(void *userdata,
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_COPY_BEFORE))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_ADD;
