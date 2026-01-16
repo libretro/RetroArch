@@ -6692,6 +6692,20 @@ static enum runloop_state_enum runloop_check_state(
       return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
 
+   /* Do delayed disk insert when disk is changed without ejecting */
+   if (runloop_st->pending_disk_control_insert)
+   {
+      runloop_st->pending_disk_control_insert--;
+
+      if (!runloop_st->pending_disk_control_insert)
+      {
+         rarch_system_info_t *sys_info = &runloop_st->system;
+
+         if (sys_info)
+            disk_control_set_eject_state(&sys_info->disk_control, false, true);
+      }
+   }
+
    /* Apply any pending fastmotion override parameters */
    if (runloop_st->fastmotion_override.pending)
    {

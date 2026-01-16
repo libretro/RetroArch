@@ -7518,16 +7518,33 @@ static int action_ok_push_dropdown_item_manual_content_scan_core_name(
 static int action_ok_push_dropdown_item_disk_index(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   struct menu_state *menu_st = menu_state_get_ptr();
-   unsigned disk_index        = (unsigned)idx;
+   unsigned disk_index           = (unsigned)idx;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+   settings_t *settings          = config_get_ptr();
+   bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
+   bool disk_ejected             = false;
+
+   if (!settings || !sys_info)
+      return -1;
+
+#ifdef HAVE_AUDIOMIXER
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+#endif
+
+   /* Get disk eject state *before* toggling drive status */
+   if (sys_info)
+      disk_ejected = disk_control_get_eject_state(&sys_info->disk_control);
 
    command_event(CMD_EVENT_DISK_INDEX, &disk_index);
 
-   /* When choosing a disk, menu selection should
-    * automatically be reset to the 'insert disk'
-    * option */
-   menu_entries_pop_stack(NULL, 0, 1);
-   menu_st->selection_ptr = 0;
+   /* If disk is now inserted and user has enabled
+    * 'menu_insert_disk_resume', resume running content */
+   if (!disk_ejected && menu_insert_disk_resume)
+      generic_action_ok_command(CMD_EVENT_RESUME);
+
+   /* In all cases, return to the disk options menu */
+   menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS), 0);
 
    return 0;
 }
@@ -8208,52 +8225,30 @@ static int action_ok_input_description_kbd_dropdown_box_list(
 static int action_ok_disk_cycle_tray_status(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool disk_ejected              = false;
-   bool print_log                 = false;
-   struct menu_state *menu_st     = menu_state_get_ptr();
-   rarch_system_info_t *sys_info  = &runloop_state_get_ptr()->system;
-   settings_t *settings           = config_get_ptr();
-#ifdef HAVE_AUDIOMIXER
-   bool audio_enable_menu         = settings->bools.audio_enable_menu;
-   bool audio_enable_menu_ok      = settings->bools.audio_enable_menu_ok;
-#endif
-   bool menu_insert_disk_resume   = settings->bools.menu_insert_disk_resume;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+   settings_t *settings          = config_get_ptr();
+   bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
+   bool verbosity                = false;
 
-   if (!settings)
+   if (!settings || !sys_info)
       return -1;
 
 #ifdef HAVE_AUDIOMIXER
-   if (audio_enable_menu && audio_enable_menu_ok)
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 #endif
-
-   /* Get disk eject state *before* toggling drive status */
-   if (sys_info)
-      disk_ejected = disk_control_get_eject_state(&sys_info->disk_control);
 
    /* Only want to display a notification if we are
     * going to resume content immediately after
     * inserting a disk (i.e. if quick menu remains
     * open, there is sufficient visual feedback
     * without a notification) */
-   print_log = menu_insert_disk_resume && disk_ejected;
+   verbosity = menu_insert_disk_resume;
 
-   if (!command_event(CMD_EVENT_DISK_EJECT_TOGGLE, &print_log))
+   if (!command_event(CMD_EVENT_DISK_EJECT_TOGGLE, &verbosity))
       return -1;
 
-   /* If we reach this point, then tray toggle
-    * was successful */
-   disk_ejected = !disk_ejected;
-
-   /* If disk is now ejected, menu selection should
-    * automatically increment to the 'current disk
-    * index' option */
-   if (disk_ejected)
-      menu_st->selection_ptr = 1;
-
-   /* If disk is now inserted and user has enabled
-    * 'menu_insert_disk_resume', resume running content */
-   if (!disk_ejected && menu_insert_disk_resume)
+   if (menu_insert_disk_resume)
       generic_action_ok_command(CMD_EVENT_RESUME);
 
    return 0;
@@ -8265,19 +8260,15 @@ static int action_ok_disk_image_append(const char *path,
    rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
    struct menu_state *menu_st    = menu_state_get_ptr();
    menu_handle_t *menu           = menu_st->driver_data;
-   const char *menu_path         = NULL;
    settings_t *settings          = config_get_ptr();
-#ifdef HAVE_AUDIOMIXER
-   bool audio_enable_menu        = settings->bools.audio_enable_menu;
-   bool audio_enable_menu_ok     = settings->bools.audio_enable_menu_ok;
-#endif
    bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
+   const char *menu_path         = NULL;
 
-   if (!menu)
+   if (!menu || !settings || !sys_info)
       return -1;
 
 #ifdef HAVE_AUDIOMIXER
-   if (audio_enable_menu && audio_enable_menu_ok)
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 #endif
 
@@ -8288,9 +8279,9 @@ static int action_ok_disk_image_append(const char *path,
    if (!string_is_empty(menu_path))
    {
       char image_path[PATH_MAX_LENGTH];
-      bool is_dir = (entry_idx == FILE_TYPE_USE_DIRECTORY
-            && string_is_equal(label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY)));
+      bool is_dir = entry_idx == FILE_TYPE_USE_DIRECTORY
+            && string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY));
+
       if (is_dir)
       {
          size_t past_slash;
@@ -8304,21 +8295,16 @@ static int action_ok_disk_image_append(const char *path,
                menu_path, path, sizeof(image_path));
       else
          strlcpy(image_path, menu_path, sizeof(image_path));
+
       /* Append image */
       command_event(CMD_EVENT_DISK_APPEND_IMAGE, image_path);
    }
 
+   if (menu_insert_disk_resume && !disk_control_get_eject_state(&sys_info->disk_control))
+      generic_action_ok_command(CMD_EVENT_RESUME);
+
    /* In all cases, return to the disk options menu */
    menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS), 0);
-
-   /* > If disk tray is open, reset menu selection to
-    *   the 'insert disk' option
-    * > If disk try is closed and user has enabled
-    *   'menu_insert_disk_resume', resume running content */
-   if (sys_info && disk_control_get_eject_state(&sys_info->disk_control))
-      menu_st->selection_ptr = 0;
-   else if (menu_insert_disk_resume)
-      generic_action_ok_command(CMD_EVENT_RESUME);
 
    return 0;
 }
