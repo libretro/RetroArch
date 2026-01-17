@@ -8159,8 +8159,7 @@ static size_t get_string_representation_input_device_index(
             : input_config_get_device_name(map);
 
       _len = snprintf(s, len,
-            "%s%u: %s",
-            (map + 1 < 10) ? " #" : "#",
+            "#%u: %s",
             map + 1,
             !string_is_empty(device_name)
                   ? device_name
@@ -8229,8 +8228,7 @@ static size_t get_string_representation_input_mouse_index(
       const char *device_name = input_config_get_mouse_display_name(map);
 
       _len = snprintf(s, len,
-            "%s%u: %s",
-            (map + 1 < 10) ? " #" : "#",
+            "#%u: %s",
             map + 1,
             !string_is_empty(device_name)
                   ? device_name
