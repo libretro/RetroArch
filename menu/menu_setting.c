@@ -5738,11 +5738,26 @@ static int setting_uint_action_left_crt_switch_resolution_super(
    return 0;
 }
 
+static bool setting_action_input_device_index_prevent(
+      rarch_setting_t *setting, settings_t *settings, unsigned p, unsigned p_new)
+{
+   /* Prevent accidental port 1 device index removal */
+   if (setting->index_offset == 0)
+   {
+      if (     p == setting->index_offset
+            && !string_is_empty(input_config_get_device_name(setting->index_offset))
+            && string_is_empty(input_config_get_device_name(p_new)))
+         return true;
+   }
+   return false;
+}
+
 static int setting_action_left_input_device_index(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    settings_t      *settings = config_get_ptr();
    unsigned *p               = NULL;
+   unsigned p_new            = 0;
 
    if (!setting || !settings)
       return -1;
@@ -5750,9 +5765,14 @@ static int setting_action_left_input_device_index(
    p = &settings->uints.input_joypad_index[setting->index_offset];
 
    if (*p)
-      (*p)--;
+      p_new = *p - 1;
    else
-      *p = MAX_INPUT_DEVICES - 1;
+      p_new = MAX_INPUT_DEVICES - 1;
+
+   if (setting_action_input_device_index_prevent(setting, settings, *p, p_new))
+      return 0;
+
+   *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
@@ -7969,6 +7989,7 @@ static int setting_action_right_input_device_index(
 {
    settings_t      *settings = config_get_ptr();
    unsigned *p               = NULL;
+   unsigned p_new            = 0;
 
    if (!setting || !settings)
       return -1;
@@ -7976,9 +7997,14 @@ static int setting_action_right_input_device_index(
    p = &settings->uints.input_joypad_index[setting->index_offset];
 
    if (*p < MAX_INPUT_DEVICES - 1)
-      (*p)++;
+      p_new = *p + 1;
    else
-      *p = 0;
+      p_new = 0;
+
+   if (setting_action_input_device_index_prevent(setting, settings, *p, p_new))
+      return 0;
+
+   *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
