@@ -61,8 +61,6 @@
 #define VIDEO_SHADER_STOCK_HDR     (GFX_MAX_SHADERS - 8)
 #define VIDEO_SHADER_STOCK_NOBLEND (GFX_MAX_SHADERS - 9)
 
-#define VIDEO_HDR_MAX_CONTRAST 10.0f
-
 #if defined(_XBOX360)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
 #elif defined(HAVE_OPENGLES2)
@@ -696,8 +694,9 @@ typedef struct video_poke_interface
    /* hdr settings */
    void (*set_hdr_max_nits)(void *data, float max_nits);
    void (*set_hdr_paper_white_nits)(void *data, float paper_white_nits);
-   void (*set_hdr_contrast)(void *data, float contrast);
    void (*set_hdr_expand_gamut)(void *data, bool expand_gamut);
+   void (*set_hdr_scanlines)(void *data, bool scanlines);
+   void (*set_hdr_subpixel_layout)(void *data, unsigned subpixel_layout);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen

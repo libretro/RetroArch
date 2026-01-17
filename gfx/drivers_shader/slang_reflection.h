@@ -73,7 +73,7 @@ enum slang_semantic
    /* uint, FrameTimeDelta */
    SLANG_SEMANTIC_FRAME_TIME_DELTA = 5,
    /* uint, OriginalFPS */
-   SLANG_SEMANTIC_ORIGINAL_FPS         = 6,
+   SLANG_SEMANTIC_ORIGINAL_FPS     = 6,
    /* uint, rotation */
    SLANG_SEMANTIC_ROTATION         = 7,
    /* float, OriginalAspect */
@@ -84,10 +84,27 @@ enum slang_semantic
    SLANG_SEMANTIC_TOTAL_SUBFRAMES  = 10,
    /* uint, current sub frame */
    SLANG_SEMANTIC_CURRENT_SUBFRAME = 11,
-   SLANG_NUM_BASE_SEMANTICS,
+   /* float, Enable HDR */
+   SLANG_SEMANTIC_HDR              = 12,
+   /* float, HDR Paper white luminace */
+   SLANG_SEMANTIC_PAPER_WHITE_NITS = 13,
+   /* float, HDR Peak luminace */
+   SLANG_SEMANTIC_MAX_NITS         = 14,
+   /* float, Enable HDR scanlines */
+   SLANG_SEMANTIC_SCANLINES        = 15,
+   /* uint, HDR Scanline Subpixel Layout */
+   SLANG_SEMANTIC_SUBPIXEL_LAYOUT  = 16,
+   /* float, Enable HDR colour boost */
+   SLANG_SEMANTIC_EXPAND_GAMUT     = 17,
+   /* float, Enable HDR Inverse Tonemapper */
+   SLANG_SEMANTIC_INVERSE_TONEMAP  = 18,
+   /* float, Enable HDR10 conversion */
+   SLANG_SEMANTIC_HDR10            = 19,
+   /* float, OriginalAspectRotated */
+   SLANG_NUM_BASE_SEMANTICS        = 20,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER  = 12,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 21,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC          = -1

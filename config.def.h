@@ -505,11 +505,14 @@
 /* The number of nits that paper white is at */
 #define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
 
-/* The contrast setting for hdr used to calculate the display gamma by dividing this value by gamma 2.2  */
-#define DEFAULT_VIDEO_HDR_CONTRAST 5.0f
-
 /* Should we expand the colour gamut when using hdr */
-#define DEFAULT_VIDEO_HDR_EXPAND_GAMUT true
+#define DEFAULT_VIDEO_HDR_EXPAND_GAMUT false
+
+/* Enable a basic HDR scanline implementation which is the main reason for using HDR in RetroArch */
+#define DEFAULT_VIDEO_HDR_SCANLINES true
+
+/* Default to the largely standard RGB layout */
+#define DEFAULT_VIDEO_HDR_SUBPIXEL_LAYOUT 0
 
 /* When presets are saved they will be saved using the #reference
  * directive by default */

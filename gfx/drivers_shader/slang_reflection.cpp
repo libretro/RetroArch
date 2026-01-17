@@ -57,6 +57,14 @@ static const char *semantic_uniform_names[] = {
    "OriginalAspectRotated",
    "TotalSubFrames",
    "CurrentSubFrame",
+   "EnableHDR",
+   "PaperWhiteNits",
+   "MaxNits",
+   "Scanlines",
+   "SubpixelLayout",
+   "ExpandGamut",
+   "InverseTonemap",
+   "HDR10"
 };
 
 static slang_texture_semantic slang_name_to_texture_semantic(
@@ -294,6 +302,38 @@ static bool validate_type_for_semantic(const spirv_cross::SPIRType &type, slang_
             &&  type.columns  == 1;
          /* float */
       case SLANG_SEMANTIC_FLOAT_PARAMETER:
+         return type.basetype == spirv_cross::SPIRType::Float
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+      case SLANG_SEMANTIC_HDR:
+         return type.basetype == spirv_cross::SPIRType::Float
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+      case SLANG_SEMANTIC_PAPER_WHITE_NITS:
+         return type.basetype == spirv_cross::SPIRType::Float
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+      case SLANG_SEMANTIC_MAX_NITS:
+         return type.basetype == spirv_cross::SPIRType::Float
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+      case SLANG_SEMANTIC_SCANLINES:
+         return type.basetype == spirv_cross::SPIRType::Float
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+      case SLANG_SEMANTIC_SUBPIXEL_LAYOUT:
+         return type.basetype == spirv_cross::SPIRType::UInt
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+      case SLANG_SEMANTIC_EXPAND_GAMUT:
+         return type.basetype == spirv_cross::SPIRType::Float
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+      case SLANG_SEMANTIC_INVERSE_TONEMAP:
+         return type.basetype == spirv_cross::SPIRType::Float
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+      case SLANG_SEMANTIC_HDR10:
          return type.basetype == spirv_cross::SPIRType::Float
             &&  type.vecsize  == 1
             &&  type.columns  == 1;
