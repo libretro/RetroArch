@@ -24,12 +24,23 @@ RETRO_BEGIN_DECLS
 typedef struct ALIGN(16)
 {
    math_matrix_4x4   mvp;
-   float             contrast;         /* 2.0f    */
-   float             paper_white_nits; /* 200.0f  */
-   float             max_nits;         /* 1000.0f */
-   float             expand_gamut;     /* 1.0f    */
-   float             inverse_tonemap;  /* 1.0f    */
-   float             hdr10;            /* 1.0f    */
+   struct
+   {
+      float width;
+      float height;
+   } source_size;
+   struct
+   {
+      float width;
+      float height;
+   } output_size;
+   float             paper_white_nits;    /* 200.0f  */
+   float             max_nits;            /* 1000.0f */
+   unsigned          subpixel_layout;     /* 0       */
+   float             scanlines;           /* 1.0f    */
+   float             expand_gamut;        /* 0.0f    */
+   float             inverse_tonemap;     /* 1.0f    */
+   float             hdr10;               /* 1.0f    */
 } dxgi_hdr_uniform_t;
 
 enum dxgi_swapchain_bit_depth

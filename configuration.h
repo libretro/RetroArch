@@ -382,6 +382,8 @@ typedef struct settings
       unsigned video_bfi_dark_frames;
       unsigned video_shader_subframes;
       unsigned video_autoswitch_refresh_rate;
+      unsigned video_hdr_subpixel_layout;
+
       unsigned quit_on_close_content;
 
 #ifdef HAVE_LAKKA
@@ -426,7 +428,6 @@ typedef struct settings
       float video_msg_bgcolor_opacity;
       float video_hdr_max_nits;
       float video_hdr_paper_white_nits;
-      float video_hdr_display_contrast;
 
       float menu_scale_factor;
       float menu_widget_scale_factor;
@@ -688,6 +689,7 @@ typedef struct settings
       bool video_notch_write_over_enable;
       bool video_hdr_enable;
       bool video_hdr_expand_gamut;
+      bool video_hdr_scanlines;
       bool video_use_metal_arg_buffers;
 
       /* Accessibility */

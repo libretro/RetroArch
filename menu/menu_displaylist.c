@@ -10210,14 +10210,24 @@ unsigned menu_displaylist_build_list(
                            MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS,
                            PARSE_ONLY_FLOAT, false) == 0)
                      count++;
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST,
-                           PARSE_ONLY_FLOAT, false) == 0)
-                     count++;
+
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT,
                            PARSE_ONLY_BOOL, false) == 0)
                      count++;
+
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_HDR_SCANLINES,
+                           PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+                     
+                  if(settings->bools.video_hdr_scanlines)
+                  {
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+                  }
                }
             }
          }

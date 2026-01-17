@@ -60,8 +60,9 @@ enum thread_cmd
 
    CMD_POKE_SET_HDR_MAX_NITS,
    CMD_POKE_SET_HDR_PAPER_WHITE_NITS,
-   CMD_POKE_SET_HDR_CONTRAST,
    CMD_POKE_SET_HDR_EXPAND_GAMUT,
+   CMD_POKE_SET_HDR_SCANLINES,
+   CMD_POKE_SET_HDR_SUBPIXEL_LAYOUT,
 
    CMD_DUMMY = INT_MAX
 };
@@ -159,8 +160,9 @@ typedef struct thread_packet
       {
          float max_nits;
          float paper_white_nits;
-         float contrast;
          bool expand_gamut;
+         bool scanlines;
+         unsigned subpixel_layout;
       } hdr;
    } data;
    enum thread_cmd type;

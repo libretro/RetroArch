@@ -47,6 +47,12 @@ static const uint32_t opaque_frag[] =
 #include "../drivers/vulkan_shaders/opaque.frag.inc"
 ;
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+static const uint32_t hdr_frag[] =
+#include "../drivers/vulkan_shaders/hdr.frag.inc"
+;
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
 struct Texture
 {
    vulkan_filter_chain_texture texture;
@@ -259,6 +265,18 @@ class Pass
       void set_rotation(uint32_t rot) { rotation = rot; }
       void set_core_aspect(float coreaspect) { core_aspect = coreaspect; }
       void set_core_aspect_rot(float coreaspectrot) { core_aspect_rot = coreaspectrot; }
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+      void set_enable_hdr(float enable_hdr_) { enable_hdr = enable_hdr_; }
+      void set_paper_white_nits(float paper_white_nits_) { paper_white_nits = paper_white_nits_; }
+      void set_max_nits(float max_nits_) { max_nits = max_nits_; }
+      void set_expand_gamut(float expand_gamut_) { expand_gamut = expand_gamut_; }
+      void set_scanlines(float scanlines_) { scanlines = scanlines_; }
+      void set_subpixel_layout(unsigned subpixel_layout_ ) { subpixel_layout = subpixel_layout_; }
+      void set_inverse_tonemap(float inverse_tonemap_) { inverse_tonemap = inverse_tonemap_; }
+      void set_hdr10(float hdr10_) { hdr10 = hdr10_; }
+#endif /* VULKAN_HDR_SWAPCHAIN */ 
+
       void set_name(const char *name) { pass_name = name; }
       const std::string &get_name() const { return pass_name; }
       glslang_filter_chain_filter get_source_filter() const {
@@ -357,6 +375,17 @@ class Pass
       unsigned pass_number        = 0;
       uint32_t total_subframes    = 1;
       uint32_t current_subframe   = 1;
+      
+#ifdef VULKAN_HDR_SWAPCHAIN
+      float enable_hdr            = 0.0f;
+      float paper_white_nits      = 0.0f;
+      float max_nits              = 10000.0f;
+      float expand_gamut          = 0.0f;
+      float scanlines             = 0.0f;
+      unsigned subpixel_layout    = 0;
+      float inverse_tonemap       = 0.0f;
+      float hdr10                 = 0.0f;
+#endif /* VULKAN_HDR_SWAPCHAIN */ 
 
       size_t ubo_offset           = 0;
       std::string pass_name;
@@ -425,6 +454,17 @@ struct vulkan_filter_chain
       void set_rotation(uint32_t rot);
       void set_core_aspect(float coreaspect);
       void set_core_aspect_rot(float coreaspect);
+#ifdef VULKAN_HDR_SWAPCHAIN
+      void set_enable_hdr(float enable_hdr);
+      void set_paper_white_nits(float paper_white_nits);
+      void set_max_nits(float max_nits);
+      void set_expand_gamut(float expand_gamut);
+      void set_scanlines(float scanlines);
+      void set_subpixel_layout(unsigned subpixel_layout);
+      void set_inverse_tonemap(float inverse_tonemap);
+      void set_hdr10(float hdr10);
+#endif /* VULKAN_HDR_SWAPCHAIN */ 
+
       void set_pass_name(unsigned pass, const char *name);
 
       void add_static_texture(std::unique_ptr<StaticTexture> texture);
@@ -1469,7 +1509,6 @@ void vulkan_filter_chain::set_rotation(uint32_t rot)
       passes[i]->set_rotation(rot);
 }
 
-
 void vulkan_filter_chain::set_core_aspect(float coreaspect)
 {
    unsigned i;
@@ -1483,6 +1522,64 @@ void vulkan_filter_chain::set_core_aspect_rot(float coreaspectrot)
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_core_aspect_rot(coreaspectrot);
 }
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+void vulkan_filter_chain::set_enable_hdr(float enable_hdr)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_enable_hdr(enable_hdr);
+}
+
+void vulkan_filter_chain::set_paper_white_nits(float paper_white_nits)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_paper_white_nits(paper_white_nits);
+}
+
+void vulkan_filter_chain::set_max_nits(float max_nits)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_max_nits(max_nits);
+}
+
+void vulkan_filter_chain::set_expand_gamut(float expand_gamut)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_expand_gamut(expand_gamut);
+}
+
+void vulkan_filter_chain::set_scanlines(float scanlines)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_scanlines(scanlines);
+}
+
+void vulkan_filter_chain::set_subpixel_layout(unsigned subpixel_layout )
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_subpixel_layout(subpixel_layout);
+}
+
+void vulkan_filter_chain::set_inverse_tonemap(float inverse_tonemap)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_inverse_tonemap(inverse_tonemap);
+}
+
+void vulkan_filter_chain::set_hdr10(float hdr10)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_hdr10(hdr10);
+}
+#endif /* VULKAN_HDR_SWAPCHAIN */ 
 
 void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
 {
@@ -2412,6 +2509,30 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
                       core_aspect_rot);
 
+   build_semantic_float(buffer, SLANG_SEMANTIC_HDR,
+                      enable_hdr);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_PAPER_WHITE_NITS,
+                      paper_white_nits);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_MAX_NITS,
+                      max_nits);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_SCANLINES,
+                      scanlines);
+
+   build_semantic_uint(buffer, SLANG_SEMANTIC_SUBPIXEL_LAYOUT,
+                      subpixel_layout);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_EXPAND_GAMUT,
+                      expand_gamut);                      
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_INVERSE_TONEMAP,
+                      inverse_tonemap);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_HDR10,
+                      hdr10);
+
    /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
@@ -2857,9 +2978,21 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    chain->set_shader(0, VK_SHADER_STAGE_VERTEX_BIT,
          opaque_vert,
          sizeof(opaque_vert) / sizeof(uint32_t));
-   chain->set_shader(0, VK_SHADER_STAGE_FRAGMENT_BIT,
-         opaque_frag,
-         sizeof(opaque_frag) / sizeof(uint32_t));
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (info->hdr_enabled)
+   {
+      chain->set_shader(0, VK_SHADER_STAGE_FRAGMENT_BIT,
+            hdr_frag,
+            sizeof(hdr_frag) / sizeof(uint32_t));
+   }
+   else
+#endif /* VULKAN_HDR_SWAPCHAIN */ 
+   {
+      chain->set_shader(0, VK_SHADER_STAGE_FRAGMENT_BIT,
+            opaque_frag,
+            sizeof(opaque_frag) / sizeof(uint32_t));
+   }
 
    if (!chain->init())
       return nullptr;
@@ -3124,10 +3257,23 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             opaque_vert,
             sizeof(opaque_vert) / sizeof(uint32_t));
 
-      chain->set_shader(shader->passes,
-            VK_SHADER_STAGE_FRAGMENT_BIT,
-            opaque_frag,
-            sizeof(opaque_frag) / sizeof(uint32_t));
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+      if (info->hdr_enabled)
+      {
+         chain->set_shader(shader->passes, 
+               VK_SHADER_STAGE_FRAGMENT_BIT,
+               hdr_frag,
+               sizeof(hdr_frag) / sizeof(uint32_t));
+      }
+      else
+#endif /* VULKAN_HDR_SWAPCHAIN */ 
+      {
+         chain->set_shader(shader->passes,
+               VK_SHADER_STAGE_FRAGMENT_BIT,
+               opaque_frag,
+               sizeof(opaque_frag) / sizeof(uint32_t));
+      }
    }
 
    chain->set_shader_preset(std::move(shader));
@@ -3283,6 +3429,64 @@ void vulkan_filter_chain_set_core_aspect_rot(
 {
    chain->set_core_aspect_rot(coreaspectrot);
 }
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+void vulkan_filter_chain_set_enable_hdr(
+      vulkan_filter_chain_t *chain,
+      float enable_hdr)
+{
+   chain->set_enable_hdr(enable_hdr);
+}
+
+void vulkan_filter_chain_set_paper_white_nits(
+      vulkan_filter_chain_t *chain,
+      float paper_white_nits)
+{
+   chain->set_paper_white_nits(paper_white_nits);
+}
+
+void vulkan_filter_chain_set_max_nits(
+      vulkan_filter_chain_t *chain,
+      float max_nits) 
+{
+   chain->set_max_nits(max_nits);
+}
+
+void vulkan_filter_chain_set_expand_gamut(
+      vulkan_filter_chain_t *chain,
+      float expand_gamut)
+{
+   chain->set_expand_gamut(expand_gamut);
+}
+
+void vulkan_filter_chain_set_scanlines(
+      vulkan_filter_chain_t *chain,
+      float scanlines)
+{
+   chain->set_scanlines(scanlines);
+}
+
+void vulkan_filter_chain_set_subpixel_layout(
+      vulkan_filter_chain_t *chain,
+      unsigned subpixel_layout)
+{
+   chain->set_subpixel_layout(subpixel_layout);
+}
+
+void vulkan_filter_chain_set_inverse_tonemap(
+      vulkan_filter_chain_t *chain,
+      float inverse_tonemap)
+{
+   chain->set_inverse_tonemap(inverse_tonemap);
+}
+
+void vulkan_filter_chain_set_hdr10(
+      vulkan_filter_chain_t *chain,
+      float hdr10)
+{
+   chain->set_hdr10(hdr10);
+}
+#endif /* VULKAN_HDR_SWAPCHAIN */ 
 
 void vulkan_filter_chain_set_pass_name(
       vulkan_filter_chain_t *chain,

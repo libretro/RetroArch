@@ -31,8 +31,6 @@
 
 #define VULKAN_DIRTY_DYNAMIC_BIT                0x0001
 
-#define VULKAN_HDR_SWAPCHAIN
-
 #include "vksym.h"
 
 #include <boolean.h>
