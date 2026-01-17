@@ -2213,7 +2213,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    if (string_is_empty(path))
    {
 #ifdef HAVE_DXGI_HDR
-      if (d3d12->flags & D3D11_ST_FLAG_HDR_ENABLE)
+      if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
       {
          d3d12_set_hdr_inverse_tonemap(d3d12, true);
          d3d12_set_hdr10(d3d12, true);
