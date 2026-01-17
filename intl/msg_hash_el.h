@@ -4052,10 +4052,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Φόρτωση Νέου Δίσκου"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Επιλογή τρέχοντος δίσκου από μία λίστα διαθέσιμων εικόνων. Ο δίσκος θα φορτωθεί όταν επιλεχθεί το 'Εισαγωγή Δίσκου'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

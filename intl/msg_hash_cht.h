@@ -3737,16 +3737,8 @@ MSG_HASH(
    "下一個映像檔編號"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "切換至下一個映像檔編號, 操作時虛擬光碟機必須退出托盤。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "上一個映像檔編號"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "切換至上一個映像檔編號, 操作時虛擬光碟機必須退出托盤。"
    )
 
 MSG_HASH(
@@ -9397,41 +9389,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "取出光碟映像檔"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "選擇映像檔編號"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "虛擬光碟機托盤退出並取出載入的映像檔。\n設定選單選項中「當開啟選單時暫停核心」開啟時, 部分核心須等到繼續遊戲後幾秒才載入。"
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "取出光碟映像檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "放入光碟映像檔"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "虛擬光碟機托盤進入並載入選擇的映像檔。\n設定選單選項中「當開啟選單時暫停核心」開啟時, 部分核心須等到繼續遊戲後幾秒才載入。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "載入光碟映像檔"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "載入光碟映像檔直接執行並加入到可使用編號中, 已加入的映像檔編號可以使用快捷鍵切換映像檔。\n注意事項: 此選項為舊功能, 建議使用M3U格式載入映像檔, 可跳過此步驟直接使用快捷鍵切換映像檔。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "載入光碟映像檔並加入到編號中等待執行。\n注意事項: 此選項為舊功能, 建議使用M3U格式載入映像檔, 可跳過此步驟直接使用快捷鍵切換映像檔。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "選擇映像檔編號"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "選擇要放入的光碟映像檔編號, 使用「放入光碟映像檔」執行。"
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

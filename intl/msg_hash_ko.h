@@ -4017,16 +4017,8 @@ MSG_HASH(
    "다음 디스크"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "다음 디스크를 선택합니다. 가상 디스크 트레이가 열려 있어야 합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "이전 디스크"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "이전 디스크를 선택합니다. 가상 디스크 트레이가 열려 있어야 합니다."
    )
 
 MSG_HASH(
@@ -9965,41 +9957,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "디스크 꺼내기"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "디스크 인덱스"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "가상 디스크 트레이를 열고 현재 불러온 디스크를 제거합니다. '메뉴 활성 시 콘텐츠 일시정지'가 활성화 된 경우 일부 코어는 디스크 제어 작업 후 몇 초 동안 변경 사항을 확인하지 못할 수 있습니다."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "디스크 꺼내기"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "디스크 이미지 추가"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "'현재 디스크 인덱스'에 해당하는 디스크를 삽입하고 가상 디스크 트레이를 닫습니다. '메뉴 활성 시 콘텐츠 일시정지'가 활성화 된 경우 일부 코어는 디스크 제어 작업 후 몇 초 동안 변경 사항을 확인하지 못할 수 있습니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "새 디스크 불러오기"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "현재 디스크를 꺼내고 파일 시스템에서 새 디스크를 선택, 삽입하고 가상 디스크 트레이를 닫습니다. \n참고: 이 기능은 레거시 기능입니다. 대신 '디스크 꺼내기/삽입' 및 '현재 디스크 인덱스' 옵션으로 디스크 선택을 할 수 있는 M3U 실행목록을 통한 멀티 디스크 타이틀 사용을 추천합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "가상 트레이를 닫지 않고 파일 시스템에서 새 디스크를 선택, 삽입합니다. \n참고: 이 기능은 레거시 기능입니다. 대신 '현재 디스크 인덱스' 옵션으로 디스크 선택을 할 수 있는 M3U 실행목록을 통한 멀티 디스크 타이틀 사용을 추천합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "디스크 인덱스"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "디스크 인덱스를 변경합니다. 디스크 변경은 트레이를 연 다음 수행해야 합니다.\nRetroArch가 메뉴 표시 중 콘텐츠를 일시정지하도록 설정되어 있는 경우, 일시정지를 해제할 때까지 트레이 열기/닫기 액션이 코어에 전달되지 않을 수도 있습니다. 그런 경우 디스크를 조작할 때마다 게임을 몇 프레임간 실행하는 것을 잊지 말아주세요."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

@@ -3974,7 +3974,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Incrementa l'índex del disc seleccionat actualment. La safata de disc virtual ha d'estar oberta."
+   "Augmenta l'índex del disc seleccionat i fa una inserció retardada si el disc virtual està tancat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3982,7 +3982,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Disminueix l'índex del disc seleccionat actualment. La safata de disc virtual ha d'estar oberta."
+   "Disminueix l'índex del disc seleccionat i fa una inserció retardada si el disc virtual està tancat."
    )
 
 MSG_HASH(
@@ -9889,12 +9889,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Índex del disc actual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Selecciona el disc actual des d'una llista d'imatges disponibles. La safata de disc virtual es pot mantenir tancada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Expulsar disc"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Obre la safata del disc virtual i extreu el disc que s'estava carregant. Si l'opció 'Fes pausa al contingut quan el menú estigui actiu' està activada, alguns nuclis no poden registrar canvis fins que hagin passat uns segons amb el contingut reprès i després de cada acció de control de discs."
+   "Obre la safata del disc virtual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9902,7 +9910,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Insereix un disc i tanca la safata virtual. Si l'opció 'Fes pausa al contingut quan el menú estigui actiu' està activada, alguns nuclis no poden registrar canvis fins que hagin passat uns segons amb el contingut reprès i després de cada acció de control de discs."
+   "Tanca la safata del disc virtual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -9910,20 +9918,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Expulsa el disc actual, selecciona un nou disc des del sistema de fitxers, insereix-lo i tanca la safata virtual del disc.\nNOTA: Aquesta és una característica heretada. Es recomana carregar contingut de diversos discs a les llistes de reproducció M3U, les quals permeten seleccionar discs mitjançant les opcions 'Expulsar disc', 'Introduir disc' i 'Índex del disc actual'."
+   "Selecciona un nou disc del sistema de fitxers i adjunta-ho a la llista d'índexs.\nNOTA: Aquesta és una opció heretada. Es recomana fer servir llistes M3U per títols que fan servir varis discs."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Escull un nou disc des del sistema de fitxers i insereix-lo sense tancar la safata virtual de disc.\nNOTA: Aquesta és una característica heretada. Es recomana carregar títols de diversos discs fent servir les llistes de reproducció M3U, les quals permeten seleccionar discs mitjançant l'opció 'Índex del disc actual'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Índex del disc actual"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Escull el disc d'una llista de disc disponibles. El disc es carregarà en clicar 'Insereix disc'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

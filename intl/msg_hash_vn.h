@@ -4001,16 +4001,8 @@ MSG_HASH(
    "Đĩa tiếp theo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Tăng chỉ mục đĩa hiện đang được chọn. Khay đĩa ảo phải đang mở."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Đĩa trước đó"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Giảm chỉ mục đĩa hiện đang được chọn. Khay đĩa ảo phải đang mở."
    )
 
 MSG_HASH(
@@ -9945,41 +9937,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Đẩy đĩa ra"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Chỉ số đĩa"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Mở khay đĩa ảo và gỡ đĩa hiện đang nạp. Nếu 'Tạm dừng trò chơi khi Menu đang bật' được bật, một số Core có thể không nhận thay đổi trừ khi trò chơi được tiếp tục trong vài giây sau mỗi thao tác điều khiển đĩa."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Đẩy đĩa ra"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Thêm đĩa"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Chèn đĩa tương ứng với 'Chỉ số đĩa hiện tại' và đóng khay đĩa ảo. Nếu 'Tạm dừng trò chơi khi Menu đang hoạt động' được bật, một số Core có thể không nhận thay đổi trừ khi trò chơi được tiếp tục trong vài giây sau mỗi thao tác điều khiển đĩa."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Tải đĩa mới"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Đẩy đĩa hiện tại ra, chọn một đĩa mới từ hệ thống tệp rồi chèn vào và đóng khay đĩa ảo.\nLƯU Ý: Đây là tính năng cũ. Thay vào đó, nên tải các trò chơi nhiều đĩa bằng danh sách phát M3U, cho phép chọn đĩa bằng các tùy chọn 'Đẩy/Chèn đĩa' và 'Chỉ số đĩa hiện tại'."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Chọn một đĩa mới từ hệ thống tệp và chèn vào mà không đóng khay đĩa ảo.\nLƯU Ý: Đây là tính năng cũ. Thay vào đó, nên tải các trò chơi nhiều đĩa bằng danh sách phát M3U, cho phép chọn đĩa bằng tùy chọn 'Chỉ số đĩa hiện tại'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Chỉ số đĩa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Chọn đĩa hiện tại từ danh sách các ảnh đĩa có sẵn. Đĩa sẽ được tải khi chọn 'Chèn đĩa'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

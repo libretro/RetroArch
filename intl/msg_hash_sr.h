@@ -2204,6 +2204,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Izvadi disk"
    )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

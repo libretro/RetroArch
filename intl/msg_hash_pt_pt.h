@@ -4101,6 +4101,10 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Índice do disco"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Ejetar Disco"
    )
@@ -4108,10 +4112,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Adicionar imagem de disco"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Índice do disco"
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

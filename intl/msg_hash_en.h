@@ -1544,22 +1544,7 @@ MSG_HASH(
 
 /* Quick Menu > Disc Control */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Open the virtual disc tray and remove the currently loaded disc. If 'Pause Content When Menu Is Active' is enabled, some cores may not register changes unless content is resumed for a few seconds after each disc control action."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Insert the disc corresponding to 'Current Disc Index' and close the virtual disc tray. If 'Pause Content When Menu Is Active' is enabled, some cores may not register changes unless content is resumed for a few seconds after each disc control action."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Eject current disc, select a new disc from the filesystem then insert it and close the virtual disc tray.\nNOTE: This is a legacy feature. It is instead recommended to load multi-disc titles with M3U playlists, which allow disc selection using the 'Eject/Insert Disc' and 'Current Disc Index' options."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Select a new disc from the filesystem and insert it without closing the virtual disc tray.\nNOTE: This is a legacy feature. It is instead recommended to load multi-disc titles with M3U playlists, which allow disc selection using the 'Current Disc Index' option."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

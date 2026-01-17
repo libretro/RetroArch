@@ -3380,6 +3380,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "خارج کردن لوح"
    )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

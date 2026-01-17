@@ -384,6 +384,7 @@ other than `msg_hash_us.h` will be rejected.
 
 /* Quick Menu > Disc Control */
 
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

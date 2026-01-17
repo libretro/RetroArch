@@ -3941,16 +3941,8 @@ MSG_HASH(
    "Disco seguinte"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Aumenta o índice do disco seleccionado actualmente. A bandexa do disco virtual debe estar aberta."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Disco anterior"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Reduce o índice do disco seleccionado actualmente. A bandexa do disco virtual debe estar aberta."
    )
 
 MSG_HASH(
@@ -9801,41 +9793,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Expulsar Disco"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Índice actual do disco"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Abre a bandexa do disco virtual e elimina o disco cargado actualmente. Se se activa \"Pausa o contido cando o menú está activo\", é posible que algúns núcleos non rexistren os cambios a menos que o contido se retome durante uns segundos despois de cada acción de control do disco."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Expulsar Disco"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Inserir disco"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Insira o disco correspondente ao 'Índice de disco actual' e pecha a bandexa do disco virtual. Se se activa \"Pausa o contido cando o menú está activo\", é posible que algúns núcleos non rexistren os cambios a menos que o contido se retome durante uns segundos despois de cada acción de control do disco."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Cargar disco novo"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Expulsa o disco actual, selecciona un novo disco do sistema de ficheiros, despois insértao e pecha a bandexa do disco virtual.\nNOTA: esta é unha función antiga. En cambio, recoméndase cargar títulos de varios discos a través de listas de reprodución M3U, que permiten a selección de discos mediante as opcións \"Expulsar/Inserir disco\" e \"Índice de disco actual\"."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Seleccione un novo disco do sistema de ficheiros e insírelo sen pechar a bandexa do disco virtual.\nNOTA: Esta é unha función antiga. En cambio, recoméndase cargar títulos de varios discos a través de listas de reprodución M3U, que permiten a selección de discos mediante a opción \"Índice de disco actual\"."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Índice actual do disco"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Escolla o disco actual da lista de imaxes dispoñibles. O disco cargarase cando se seleccione \"Inserir disco\"."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

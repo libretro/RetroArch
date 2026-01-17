@@ -528,6 +528,7 @@ MSG_HASH(
 
 /* Quick Menu > Disc Control */
 
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

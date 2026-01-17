@@ -3946,7 +3946,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Incrémente le numéro du disque sélectionné actuellement. Le plateau du lecteur de disque virtuel doit être ouvert."
+   "Incrémente l'index du disque actuellement sélectionné et retarde l'insertion si le plateau du lecteur de disque virtuel est fermé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3954,7 +3954,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Décrémente le numéro du disque sélectionné actuellement. Le plateau du lecteur de disque virtuel doit être ouvert."
+   "Décrémente l'index du disque actuellement sélectionné et retarde l'insertion si le plateau du lecteur de disque virtuel est fermé."
    )
 
 MSG_HASH(
@@ -9849,12 +9849,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Numéro du disque actuel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Choisir le disque actuel dans la liste des images disque disponibles. Le plateau du lecteur de disque virtuel peut rester fermé."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Éjecter le disque"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Ouvrir le plateau du lecteur de disque virtuel et retirer le disque actuellement chargé. Si 'Mettre en pause le contenu lorsque le menu est actif' est activé, certains cœurs peuvent ne pas enregistrer les changements à moins que le contenu ne soit repris pendant quelques secondes après chaque action liée au contrôle du disque."
+   "Ouvrir le plateau du lecteur de disque virtuel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9862,7 +9870,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Insérer le disque correspondant au 'Numéro du disque actuel' et fermer le plateau du lecteur de disque virtuel. Si 'Mettre en pause le contenu lorsque le menu est actif' est activé, certains cœurs peuvent ne pas enregistrer les changements à moins que le contenu ne soit repris pendant quelques secondes après chaque action liée au contrôle du disque."
+   "Fermer le plateau du lecteur de disque virtuel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -9870,20 +9878,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Éjecte le disque actuel, sélectionne un nouveau disque dans le système de fichiers, puis l'insère et ferme le plateau du lecteur de disque virtuel.\nREMARQUE : C'est une fonctionnalité obsolète. Il est plutôt recommandé de charger des titres multi-disques via des listes de lecture M3U, qui permettent la sélection du disque en utilisant les options 'Éjecter/Insérer le disque' et 'Numéro du disque actuel'."
+   "Sélectionner un nouveau disque à partir du système de fichiers et l'ajouter dans la liste d'index.\nREMARQUE : C'est une fonctionnalité héritée. Il est plutôt recommandé d'utiliser des listes de lecture M3U pour des titres multi-disques."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Sélectionne un nouveau disque dans le système de fichiers puis l'insère sans fermer le plateau du lecteur de disque virtuel.\nREMARQUE : C'est une fonctionnalité obsolète. Il est plutôt recommandé de charger des titres multi-disques via des listes de lecture M3U, qui permettent la sélection du disque en utilisant l'option 'Numéro du disque actuel'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Numéro du disque actuel"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Sélectionne le disque actuel dans la liste des images disponibles. Le disque sera chargé si 'Insérer le disque' est sélectionné."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

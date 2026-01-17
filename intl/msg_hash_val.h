@@ -2892,6 +2892,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Expulsar disc"
    )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

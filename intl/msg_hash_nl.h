@@ -2997,16 +2997,8 @@ MSG_HASH(
    "Volgende Schijf"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Verhoogt de huidige geselecteerde disc-index. De virtuele schijfbalk moet geopend zijn."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Vorige Schijf"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Verlaagt de huidige geselecteerde disc-index. De virtuele schijfbalk moet geopend zijn."
    )
 
 MSG_HASH(
@@ -5364,6 +5356,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Disk Image Toevoegen"
    )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

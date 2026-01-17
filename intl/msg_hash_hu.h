@@ -3977,16 +3977,8 @@ MSG_HASH(
    "Következő lemez"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Kiválasztja a következő lemezt. A virtuális lemeztálca nyitva kell legyen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Előző lemez"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Kiválasztja az előző lemezt. A virtuális lemeztálca nyitva kell legyen."
    )
 
 MSG_HASH(
@@ -9905,41 +9897,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Lemez kiadása"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Aktuális lemez sorszáma"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "A virtuális lemeztálca kinyitása és az aktuális lemez eltávolítása. Ha a \"Tartalom megállítása, amikor a menü aktív\" engedélyezve van, akkor bizonyos magok nem érzékelik a változást, hacsak a tartalom nincs továbbfuttatva pár másodpercig minden lemezművelet után."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Lemez kiadása"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Lemez behelyezése"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Az aktuális lemezsorszámnak megfelelő lemez behelyezése és a virtuális lemeztálca becsukása. Ha a \"Tartalom megállítása, amikor a menü aktív\" engedélyezve van, akkor bizonyos magok nem érzékelik a változást, hacsak a tartalom nincs továbbfuttatva pár másodpercig minden lemezművelet után."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Új lemez betöltése"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "A jelenlegi lemez kiadása, új lemez választása a fájlrendszerből, majd annak behelyezése és a virtuális lemeztálca becsukása. \n Figyelem: ez egy elavult funkció. A többlemezes tartalmakat ajánlott inkább M3U lejátszási listákon keresztül betölteni, amikor is a lemezek közt az \"Lemez kiadása/behelyezése\" és az \"Aktuális lemez sorszáma\" funkciókkal lehet váltogatni."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Új lemez választása a fájlrendszerből, majd annak behelyezése, de a virtuális lemeztálca becsukása nélkül. \n Figyelem: ez egy elavult funkció. A többlemezes tartalmakat ajánlott inkább M3U lejátszási listákon keresztül betölteni, amikor is a lemezek közt az \"Aktuális lemez sorszáma\" funkcióval lehet váltogatni."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Aktuális lemez sorszáma"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Lemez választása az elérhető lemezképek listájából. A kiválasztott lemez a \"Lemez behelyezése\" menüponttal tölthető be."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

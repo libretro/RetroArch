@@ -3986,7 +3986,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Méadaíonn sé innéacs an diosca atá roghnaithe faoi láthair. Ní mór an tráidire diosca fíorúil a bheith oscailte."
+   "Méadaíonn sé innéacs an diosca atá roghnaithe faoi láthair agus déanann sé moill ar chur isteach má tá an tráidire diosca fíorúil dúnta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3994,7 +3994,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Laghdaíonn sé innéacs an diosca atá roghnaithe faoi láthair. Ní mór an tráidire diosca fíorúil a bheith oscailte."
+   "Laghdaíonn sé innéacs an diosca atá roghnaithe faoi láthair agus déanann sé moill ar an iontráil má tá an tráidire diosca fíorúil dúnta."
    )
 
 MSG_HASH(
@@ -9933,12 +9933,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Innéacs an Diosca Reatha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Roghnaigh an diosca reatha ón liosta d’íomhánna atá ar fáil. Is féidir an tráidire diosca fíorúil fanacht dúnta."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Díbirt Diosca"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Oscail an tráidire diosca fíorúil agus bain an diosca atá luchtaithe faoi láthair. Má tá 'Cuir an t-ábhar ar sos nuair a bhíonn an roghchlár gníomhach' cumasaithe, ní fhéadfaidh roinnt croíleacán athruithe a chlárú mura n-atosófar an t-ábhar ar feadh cúpla soicind tar éis gach gníomh rialaithe diosca."
+   "Oscail an tráidire diosca fíorúil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9946,7 +9954,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Cuir isteach an diosca a fhreagraíonn don 'Innéacs Diosca Reatha' agus dún an tráidire diosca fíorúil. Má tá 'Cuir an t-ábhar ar sos nuair a bhíonn an roghchlár gníomhach' cumasaithe, ní fhéadfaidh roinnt croíleacán athruithe a chlárú mura n-atosófar an t-ábhar ar feadh cúpla soicind tar éis gach gníomh rialaithe diosca."
+   "Dún an tráidire diosca fíorúil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -9954,20 +9962,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Díbirt an diosca reatha, roghnaigh diosca nua ón gcóras comhad ansin cuir isteach é agus dún an tráidire diosca fíorúil.\nNÓTA: Is gné oidhreachta í seo. Moltar ina ionad sin teidil ildhiosca a luchtú trí seinmliostaí M3U, a cheadaíonn roghnú diosca ag baint úsáide as na roghanna 'Díbirt/Cuir isteach Diosca' agus 'Innéacs Diosca Reatha'."
+   "Roghnaigh diosca nua ón gcóras comhad agus cuir leis an liosta innéacs é.\nNÓTA: Is gné oidhreachta í seo. Moltar seinmliostaí M3U a úsáid ina ionad sin le haghaidh teidil ildhiosca."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Roghnaigh diosca nua ón gcóras comhad agus cuir isteach é gan an tráidire diosca fíorúil a dhúnadh.\nNÓTA: Is gné oidhreachta í seo. Moltar ina ionad sin teidil ildhiosca a luchtú trí seinmliostaí M3U, a cheadaíonn roghnú diosca ag baint úsáide as an rogha 'Innéacs Diosca Reatha'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Innéacs an Diosca Reatha"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Roghnaigh an diosca reatha ón liosta d’íomhánna atá ar fáil. Luchtófar an diosca nuair a roghnófar 'Cuir Diosca Isteach'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

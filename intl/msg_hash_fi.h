@@ -3405,10 +3405,6 @@ MSG_HASH(
    "Seuraava levy"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Kasvata valitun levyn indeksiä. Virtuaalisen levyaseman on oltava auki."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Edellinen levy"
    )
@@ -8553,41 +8549,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Poista levy asemasta"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Nykyinen levyindeksi"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Avaa virtuaalinen levyasema ja poista nyt ladattu levy. Jos \"Keskeytä sisältö kun valikko on aktiivisena\" on käytössä, jotkin ytimet eivät välttämättä rekisteröi muutoksia, ellei sisältöä jatketa muutamaksi sekunniksi jokaisen levyn hallintatoiminnon jälkeen."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Poista levy asemasta"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Syötä levy asemaan"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Aseta nykyistä levyindeksiä vastaava levy ja sulje virtuaalinen levyasema. Jos \"Keskeytä sisältö kun valikko on aktiivisena\" on käytössä, jotkin ytimet eivät välttämättä rekisteröi muutoksia, ellei sisältöä jatketa muutamaksi sekunniksi jokaisen levyn hallintatoiminnon jälkeen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Lataa uusi levy"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Poista nykyinen levy asemasta, valitse uusi levy tiedostojärjestelmästä, aseta se ja sulje virtuaalinen levyasema.\nHUOM: Tämä on vanhentunut ominaisuus. Sen sijaan on suositeltavaa ladata monilevyinen sisältö M3U-soittolistojen kautta, jotka sallivat levyn valinnan käyttämällä \"Poista/lisää levy asemaan\"- ja \"Nykyinen levyindeksi\"-valintoja."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Valitse uusi levy tiedostojärjestelmästä ja aseta se sulkematta virtuaalista levyasemaa.\nHUOM: Tämä on vanhentunut ominaisuus. Sen sijaan on suositeltavaa ladata monilevyinen sisältö M3U-soittolistojen kautta, jotka sallivat levyn valinnan käyttämällä \"Poista/lisää levy asemaan\"- ja \"Nykyinen levyindeksi\"-valintoja."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Nykyinen levyindeksi"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Valitse nykyinen levy käytettävissä olevien levyjen luettelosta. Levy ladataan, kun \"Syötä levy asemaan\" valitaan."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

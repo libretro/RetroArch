@@ -3985,16 +3985,8 @@ MSG_HASH(
    "下个光盘"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "增加当前选中的磁盘索引。虚拟磁盘托盘必须打开。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "上个光盘"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "解码当前选中的光盘索引。虚拟磁盘托盘必须打开。"
    )
 
 MSG_HASH(
@@ -9941,41 +9933,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "弹出光盘"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "当前光盘编号"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "打开虚拟光驱托盘并移除当前加载的光盘。如果配置为「显示菜单时暂停游戏」，一些核心可能直到游戏继续后几秒钟才会识别到换盘。"
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "弹出光盘"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "插入光盘"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "插入对应当前编号的光盘并关闭虚拟光驱托盘。如果配置为「显示菜单时暂停游戏」，一些核心可能直到游戏继续后几秒钟才会识别到换盘。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "加载新光盘"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "弹出当前光盘，从文件系统中选择新光盘然后插入并关闭虚拟光驱托盘。\n注意：这是一个遗留功能。建议使用 M3U 列表加载多光盘游戏代替这项功能，因为它的光盘选择功能支持「弹出/插入光盘」和「光盘编号」选项。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "从文件系统中选择新光盘并插入，而不关闭虚拟光驱托盘。\n注意：这是一个遗留功能。建议使用 M3U 播放列表加载多光盘游戏代替这项功能，因为它的「光盘编号」选项支持光盘选择功能。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "当前光盘编号"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "从可用镜像中选择当前光盘。选择「插入光盘」后，光盘会被加载。"
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

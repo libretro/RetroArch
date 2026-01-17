@@ -3982,7 +3982,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Aumenta el índice de disco seleccionado. La bandeja de disco virtual debe estar abierta."
+   "Aumenta el número del índice de disco seleccionado y, si la bandeja de disco virtual está cerrada, introduce el disco con un leve retraso."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3990,7 +3990,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Disminuye el índice de disco seleccionado. La bandeja de disco virtual debe estar abierta."
+   "Disminuye el número del índice de disco seleccionado y, si la bandeja de disco virtual está cerrada, introduce el disco con un leve retraso."
    )
 
 MSG_HASH(
@@ -9909,12 +9909,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Índice de disco actual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Selecciona un disco de la lista de imágenes disponibles. La bandeja de disco virtual puede permanecer cerrada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Expulsar disco"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Abre la bandeja de disco virtual y extrae el disco que esté cargado. Si la opción Pausar contenido al activar el menú está activada, algunos núcleos podrían no registrar los cambios hasta que hayan pasado unos segundos tras reanudar el contenido y tras cada acción de control de discos."
+   "Abre la bandeja de disco virtual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9922,7 +9930,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Introduce el disco correspondiente al índice de disco actual y cierra la bandeja de disco virtual. Si la opción Pausar contenido al activar el menú está activada, algunos núcleos podrían no registrar los cambios hasta que hayan pasado unos segundos tras reanudar el contenido y tras cada acción de control de discos."
+   "Cierra la bandeja de disco virtual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -9930,20 +9938,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Expulsa el disco actual, selecciona uno nuevo del sistema de archivos, lo introduce y cierra la bandeja de disco virtual.\nNOTA: Esta es una característica antigua. Se recomienda cargar títulos de varios discos a través de listas de reproducción M3U, las cuales permiten seleccionar discos mediante las opciones «Expulsar disco», «Introducir disco» e «Índice de disco actual»."
+   "Selecciona un disco nuevo del sistema de archivos y lo añade a la lista del índice.\nNOTA: Esta es una característica obsoleta. Se recomienda utilizar listas de reproducción M3U con juegos multidisco."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Selecciona un disco nuevo del sistema de archivos y lo introduce sin cerrar la bandeja de disco virtual.\nNOTA: Esta es una característica antigua. Se recomienda cargar títulos de varios discos a través de listas de reproducción M3U, las cuales permiten seleccionar discos mediante la opción «Índice de disco actual»."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Índice de disco actual"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Selecciona el disco actual a partir de una lista de imágenes disponibles. El disco será cargado cuando se seleccione la opción «Introducir disco»."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

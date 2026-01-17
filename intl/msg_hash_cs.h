@@ -3729,16 +3729,8 @@ MSG_HASH(
    "Další disk"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Zvýší index aktuálně vybraného disku. Zásobník virtuálního disku musí být otevřený."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Předchozí disk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Sníží index aktuálně vybraného disku. Zásobník virtuálního disku musí být otevřený."
    )
 
 MSG_HASH(
@@ -9497,41 +9489,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Vysunout disk"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Aktuální index disku"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Otevřete přihrádku virtuálního disku a vyjměte aktuálně vložený disk. Pokud je povolena funkce \"Pozastavit obsah, když je nabídka aktivní\", některá jádra nemusí zaregistrovat změny, pokud se po každé akci ovládání disku na několik sekund neobnoví obsah."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Vysunout disk"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Vložit disk"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Vložte disk odpovídající 'Aktuálnímu indexu disku' a zavřete přihrádku virtuálního disku. Pokud je povolena funkce 'Pause Content When Menu Is Active' Pozastavit obsah, když je nabídka aktivní, některá jádra nemusí zaregistrovat změny, pokud se po každé akci ovládání disku na několik sekund neobnoví obsah."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Načíst nový disk"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Vysuňte aktuální disk, vyberte nový disk ze systému souborů, vložte jej a zavřete přihrádku virtuálního disku.\nPOZNÁMKA: Jedná se o starší funkci. Místo toho se doporučuje načítat tituly z více disků prostřednictvím seznamů stop M3U, které umožňují výběr disku pomocí možností 'Vysunout/vložit disk' a 'Index aktuálního disku'."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Vyberte nový disk ze systému souborů a vložte jej bez zavření přihrádky virtuálního disku.\nPOZNÁMKA: Jedná se o starší funkci. Místo toho se doporučuje načítat tituly z více disků prostřednictvím seznamů skladeb M3U, které umožňují výběr disku pomocí možnosti 'Current Disc Index'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Aktuální index disku"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Vyberte aktuální disk ze seznamu dostupných snímků. Disk se načte po výběru možnosti 'Vložit disk'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

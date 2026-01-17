@@ -3945,16 +3945,8 @@ MSG_HASH(
    "Sonraki Disk"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Seçili olan disk indeksini artırır. Sanal disk tepsisi açık olmalıdır."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Önceki Disk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Seçili olan disk indeksini azaltır. Sanal disk tepsisi açık olmalıdır."
    )
 
 MSG_HASH(
@@ -9881,41 +9873,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Diski Çıkar"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Mevcut Disk Dizini"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Sanal disk tepsisini açar ve şu anda yüklü olan diski kaldırır. 'Menü Etkinken İçeriği Duraklat' etkinleştirilirse, her disk kontrolü işleminden sonra içerik birkaç saniye devam etmediği sürece bazı çekirdekler değişiklikleri kaydetmeyebilir."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Diski Çıkar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Diski Tak"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "'Mevcut Disk Dizini' kısmına karşılık gelen disk yerleştirir ve sanal disk tepsisini kapatır. 'Menü Etkinken İçeriği Duraklat' etkinleştirilirse, her disk kontrolü işleminden sonra içerik birkaç saniye devam etmediği sürece bazı çekirdekler değişiklikleri kaydetmeyebilir."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Yeni Disk Yükle"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Mevcut diski çıkarın, dosya sisteminden yeni bir disk seçin, sonra takın ve sanal disk tepsisini kapatın.\nNOT: Bu eski bir özellik. Bunun yerine, 'Diski Çıkar/Tak' ve 'Mevcut Disk İndeksi' seçeneklerini kullanarak disk seçimine izin veren M3U çalma listeleri aracılığıyla çok diskli başlıkların yüklenmesi önerilir."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Dosya sisteminden yeni bir disk seçin ve sanal disk tepsisini kapatmadan takın.\nNOT: Bu eski bir özelliktir. Bunun yerine, 'Mevcut Disk Dizini' seçeneğini kullanarak disk seçimine izin veren M3U çalma listeleri aracılığıyla çok diskli başlıkların yüklenmesi önerilir."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Mevcut Disk Dizini"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Kullanılabilir resimler listesinden geçerli diski seçin. 'Disk Ekle' seçildiğinde disk yüklenecektir."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

@@ -3645,6 +3645,10 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Indeks Cakram"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Keluarkan Cakram"
    )
@@ -3656,10 +3660,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Muat Cakram Baru"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Indeks Cakram"
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

@@ -8469,41 +8469,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Wysuń dysk"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Indeks dysku"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Otwórz zasobnik dysków wirtualnych i usuń aktualnie załadowany dysk. Jeśli 'Wstrzymaj zawartość, gdy Menu jest aktywne' jest włączone, niektóre rdzenie mogą nie rejestrować zmian, chyba że zawartość zostanie wznowiona przez kilka sekund po każdej akcji kontroli dysku."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Wysuń dysk"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Włóż dysk"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Wstaw dysk odpowiadający 'bieżącemu indeksowi dysku' i zamknij wirtualną przepustkę dysku. Jeśli 'Wstrzymaj zawartość, gdy Menu jest aktywne' jest włączone, niektóre rdzenie mogą nie rejestrować zmian, chyba że zawartość zostanie wznowiona przez kilka sekund po każdej akcji kontroli dysku."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Załaduj nowy dysk"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Usuń bieżący dysk, wybierz nowy dysk z systemu plików, a następnie wstaw go i zamknij wirtualną tarczę.\nUWAGA: To jest starsza funkcja. Zamiast tego zaleca się wczytywanie wielodyskowych tytułów przez listy odtwarzania M3U, które pozwalają na wybór dysku przy użyciu opcji 'Eject/Insert Disc' i 'Current Disc Index'."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Wybierz nowy dysk z systemu plików i wstaw go bez zamykania wirtualnej tarczy dysku.\nUWAGA: To jest starsza funkcja. Zamiast tego zaleca się wczytywanie wielodyskowych tytułów przez listy odtwarzania M3U, które umożliwiają wybór dysku przy użyciu opcji 'Aktualny indeks dysku'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Indeks dysku"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Wybierz bieżący dysk z listy dostępnych obrazów. Dysk zostanie załadowany po wybraniu 'Włóż dysk'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 

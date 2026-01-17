@@ -3877,16 +3877,8 @@ MSG_HASH(
    "Disco successivo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Incrementa l'indice del disco attualmente selezionato. Il vassoio del disco virtuale deve essere aperto."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Disco precedente"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Diminuisce l'indice del disco attualmente selezionato. Il vassoio del disco virtuale deve essere aperto."
    )
 
 MSG_HASH(
@@ -9761,41 +9753,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Espelli Disco"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Indice disco attuale"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Apri il vassoio del disco virtuale e rimuovi il disco attualmente caricato. Se l'opzione \"Metti in pausa il contenuto quando il menu è attivo\" è abilitata, alcuni core potrebbero non rilevare le modifiche a meno che il contenuto non venga ripreso per alcuni secondi dopo ogni operazione di controllo del disco."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Espelli Disco"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Inserire disco"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Inserisci il disco corrispondente all'“Indice disco attuale” e chiudi il vassoio del disco virtuale.Se l'opzione \"Metti in pausa il contenuto quando il menu è attivo\" è abilitata, alcuni core potrebbero non rilevare le modifiche a meno che il contenuto non venga ripreso per alcuni secondi dopo ogni operazione di controllo del disco."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Carica nuovo disco"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Espellere il disco corrente, selezionare un nuovo disco dal filesystem quindi inserirlo e chiudere il vassoio del disco virtuale.\nNOTA: Questa è una funzione legacy. Si consiglia invece di caricare titoli multi-disco tramite playlist M3U, che consentono la selezione dei dischi usando le opzioni 'Eject/Insert Disc' e 'Current Disc Index'."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Selezionare un nuovo disco dal filesystem e inserirlo senza chiudere il vassoio del disco virtuale.\nNOTA: Questa è una caratteristica legacy. Si consiglia invece di caricare titoli multi-disco tramite playlist M3U, che consentono la selezione dei dischi utilizzando l'opzione 'Indice disco corrente'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Indice disco attuale"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Scegli il disco corrente dall'elenco delle immagini disponibili. Il disco verrà caricato quando viene selezionato 'Inserisci disco'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
