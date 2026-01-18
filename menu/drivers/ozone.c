@@ -1870,11 +1870,13 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHEAT_OPTIONS];
       case MENU_ENUM_LABEL_DISK_OPTIONS:
-      case MENU_ENUM_LABEL_DISK_TRAY_EJECT:
-      case MENU_ENUM_LABEL_DISK_TRAY_INSERT:
-      case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
       case MENU_ENUM_LABEL_DISK_INDEX:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DISK_OPTIONS];
+      case MENU_ENUM_LABEL_DISK_TRAY_EJECT:
+      case MENU_ENUM_LABEL_DISK_TRAY_INSERT:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
+      case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MENU_ADD];
       case MENU_ENUM_LABEL_SHADER_OPTIONS:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS];

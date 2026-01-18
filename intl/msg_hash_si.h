@@ -175,6 +175,7 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 
+
 /* Settings > Video > Synchronization */
 
 
@@ -460,6 +461,7 @@ MSG_HASH(
 
 /* Quick Menu > Disc Control */
 
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -571,4 +573,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

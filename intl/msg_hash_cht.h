@@ -2603,33 +2603,14 @@ MSG_HASH(
    "峰值亮度"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "設定顯示器的峰值亮度(cd/m2), 關於顯示器的峰值亮度可參閱RTings網站。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "白紙亮度"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "設定白紙亮度即可閱讀文章, 且標準動態範圍(SDR)頂部的亮度, 有助於適應環境中的不同照明條件。"
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RGB,
+   "色差端子 (YPbPr)"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "對比度"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "設定伽瑪校正與對比度控制, 取得圖像顏色並增加最亮和最暗部分之間的區別。\n對比度越高明暗差異越大, 對比度越低就越褪色, 協助用戶依愛好調整圖像。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "擴展色域"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "色彩空間轉換為線性空間後, 使用擴展色域來達到HDR10。"
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3737,16 +3718,8 @@ MSG_HASH(
    "下一個映像檔編號"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "切換至下一個映像檔編號, 操作時虛擬光碟機必須退出托盤。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "上一個映像檔編號"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "切換至上一個映像檔編號, 操作時虛擬光碟機必須退出托盤。"
    )
 
 MSG_HASH(
@@ -9397,41 +9370,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "取出光碟映像檔"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "選擇映像檔編號"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "虛擬光碟機托盤退出並取出載入的映像檔。\n設定選單選項中「當開啟選單時暫停核心」開啟時, 部分核心須等到繼續遊戲後幾秒才載入。"
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "取出光碟映像檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "放入光碟映像檔"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "虛擬光碟機托盤進入並載入選擇的映像檔。\n設定選單選項中「當開啟選單時暫停核心」開啟時, 部分核心須等到繼續遊戲後幾秒才載入。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "載入光碟映像檔"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "載入光碟映像檔直接執行並加入到可使用編號中, 已加入的映像檔編號可以使用快捷鍵切換映像檔。\n注意事項: 此選項為舊功能, 建議使用M3U格式載入映像檔, 可跳過此步驟直接使用快捷鍵切換映像檔。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "載入光碟映像檔並加入到編號中等待執行。\n注意事項: 此選項為舊功能, 建議使用M3U格式載入映像檔, 可跳過此步驟直接使用快捷鍵切換映像檔。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "選擇映像檔編號"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "選擇要放入的光碟映像檔編號, 使用「放入光碟映像檔」執行。"
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -15371,4 +15325,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

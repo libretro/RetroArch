@@ -2627,33 +2627,10 @@ MSG_HASH(
    "Maximale Leuchtdichte"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Die Spitzenleuchtdichte (in cd/m2) einstellen, die der Bildschirm wiedergeben kann. Spitzenluminanzwerte findet man z. B. bei RTings."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Papierweißleuchtdichte"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Die Leuchtdichte einstellen, die Papierweiß entsprechen soll, d. h. lesbarer Text oder Leuchtdichte am oberen Ende des SDR-Bereichs (Standard Dynamic Range). Nützlich zum Anpassen an unterschiedliche Lichtverhältnisse der Umgebung."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Kontrast"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Gamma-/Kontraststeuerung für HDR. Nimmt die Farben und erhöht den Gesamtbereich zwischen den hellsten und den dunkelsten Teilen des Bildes. Je höher der HDR-Kontrast ist, desto größer wird dieser Unterschied, und je niedriger der Kontrast ist, desto verwaschener wird das Bild. Hilft das Bild nach dem eigenen Bildschirm und Geschmack einzustellen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Gamut erweitern"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Entscheidet, ob ein erweiterter Farb-Gamut verwendet werden soll, um HDR10 zu erreichen, wenn der Farbraum in den linearen Raum konvertiert wird."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3886,7 +3863,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Erhöht den aktuell ausgewählten Disc-Index. Virtuelles Laufwerk muss geöffnet sein."
+   "Erhöht den aktuell ausgewählten Disc-Index und führt einen verzögerten Einzug durch, wenn das virtuelle Disc-Fach geschlossen wird."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3894,7 +3871,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Verringert den aktuell ausgewählten Disc-Index. Virtuelles Laufwerk muss geöffnet sein."
+   "Verringert den aktuell ausgewählten Disc-Index und führt einen verzögerten Einzug durch, wenn das virtuelle Disc-Fach geschlossen wird."
    )
 
 MSG_HASH(
@@ -9721,12 +9698,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Aktueller Disc-Index"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Die aktuelle Disc aus der Liste der verfügbaren Abbilder auswählen. Das virtuelle Disc-Fach kann geschlossen bleiben."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Disc auswerfen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Virtuelles Disc-Fach öffnen und aktuell geladene Disc entfernen. Wenn 'Inhalt pausieren, wenn das Menü aktiv ist' aktiviert ist, registrieren einige Cores möglicherweise keine Änderungen, es sei denn, der Inhalt wird nach jeder Disc-Steueraktion einige Sekunden lang fortgesetzt."
+   "Virtuelles Disc-Fach öffnen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9734,7 +9719,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Disc einfügen, die dem 'Aktuellen Disc-Index' entspricht, und das virtuelle Laufwerk schließen. Wenn 'Inhalt pausieren, wenn das Menü aktiv ist' aktiviert ist, registrieren einige Cores möglicherweise keine Änderungen, es sei denn, der Inhalt wird nach jeder Disc-Steueraktion einige Sekunden lang fortgesetzt."
+   "Virtuelles Disc-Fach schließen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -9742,20 +9727,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Aktuelle Disc auswerfen, eine neue Disc vom Dateisystem auswählen, einlegen und das virtuelle Disc-Fach schließen.\nHINWEIS: Dies ist eine veraltete Funktion. Es wird stattdessen empfohlen, Multi-Disc-Titel über M3U-Wiedergabelisten zu laden, die die Disc-Auswahl mit den Optionen 'Disc auswerfen/einlegen' und 'Aktueller Disc-Index' ermöglichen."
+   "Eine neue Disc aus dem Dateisystem auswählen und der Indexliste hinzufügen. \nHINWEIS: Dies ist eine veraltete Funktion. Es wird stattdessen empfohlen, für Titel mit mehreren Discs M3U-Wiedergabelisten zu verwenden."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Eine neue Disc vom Dateisystem auswählen und einlegen, ohne das virtuelle Laufwerk zu schließen.\nHINWEIS: Dies ist eine veraltete Funktion. Es wird stattdessen empfohlen, Multi-Disc-Titel über M3U-Wiedergabelisten zu laden, die die Disc-Auswahl mit der Option 'Aktueller Disc-Index ' ermöglichen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Aktueller Disc-Index"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Die aktuelle Disc aus der Liste der verfügbaren Abbilder wählen. Die Disc wird geladen, wenn 'Disc einlegen' ausgewählt wird."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -15878,5 +15852,35 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Die Option „Spiel-KI“ anzeigen."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "SMB-Passwort"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "SMB-Arbeitsgruppe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "Arbeitsgruppen- oder Domänenname."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "Maximale SMB-Verbindungen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Die maximale Anzahl der im Umfeld verwendeten Verbindungen auswählen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "SMB-Zeitüberschreitung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Die Standardzeitüberschreitung in Sekunden auswählen."
    )
 #endif

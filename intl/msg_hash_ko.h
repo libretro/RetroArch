@@ -2727,33 +2727,10 @@ MSG_HASH(
    "최대 휘도"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "디스플레이가 표시할 수 있는 최대 휘도(cd/m2)를 설정합니다. RTINGS 등의 사이트에서 관련 수치를 확인할 수 있습니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "페이퍼 화이트 휘도"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "흰 종이의 휘도(읽을 수 있는 글자 또는 SDR 상태에서의 최대 휘도)를 설정합니다. 주변 환경의 밝기에 맞춰 화면 밝기를 조정하는 데 사용됩니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "명암"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "HDR의 감마/명암을 조절합니다. 어두운 색과 밝은 색 사이의 격차를 증가시킵니다. HDR 명암이 높을수록 해당 격차가 커지며, 낮을수록 화면이 바래집니다. 화면을 사용자가 보기 좋도록 원하는 대로 조정하는 데 도움이 됩니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "색 영역 확장"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "색 영역을 선형으로 변환한 후에 HDR10에 대응하는 확장 색 영역을 사용할지 설정합니다."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -4017,16 +3994,8 @@ MSG_HASH(
    "다음 디스크"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "다음 디스크를 선택합니다. 가상 디스크 트레이가 열려 있어야 합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "이전 디스크"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "이전 디스크를 선택합니다. 가상 디스크 트레이가 열려 있어야 합니다."
    )
 
 MSG_HASH(
@@ -9965,41 +9934,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "디스크 꺼내기"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "디스크 인덱스"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "가상 디스크 트레이를 열고 현재 불러온 디스크를 제거합니다. '메뉴 활성 시 콘텐츠 일시정지'가 활성화 된 경우 일부 코어는 디스크 제어 작업 후 몇 초 동안 변경 사항을 확인하지 못할 수 있습니다."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "디스크 꺼내기"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "디스크 이미지 추가"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "'현재 디스크 인덱스'에 해당하는 디스크를 삽입하고 가상 디스크 트레이를 닫습니다. '메뉴 활성 시 콘텐츠 일시정지'가 활성화 된 경우 일부 코어는 디스크 제어 작업 후 몇 초 동안 변경 사항을 확인하지 못할 수 있습니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "새 디스크 불러오기"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "현재 디스크를 꺼내고 파일 시스템에서 새 디스크를 선택, 삽입하고 가상 디스크 트레이를 닫습니다. \n참고: 이 기능은 레거시 기능입니다. 대신 '디스크 꺼내기/삽입' 및 '현재 디스크 인덱스' 옵션으로 디스크 선택을 할 수 있는 M3U 실행목록을 통한 멀티 디스크 타이틀 사용을 추천합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "가상 트레이를 닫지 않고 파일 시스템에서 새 디스크를 선택, 삽입합니다. \n참고: 이 기능은 레거시 기능입니다. 대신 '현재 디스크 인덱스' 옵션으로 디스크 선택을 할 수 있는 M3U 실행목록을 통한 멀티 디스크 타이틀 사용을 추천합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "디스크 인덱스"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "디스크 인덱스를 변경합니다. 디스크 변경은 트레이를 연 다음 수행해야 합니다.\nRetroArch가 메뉴 표시 중 콘텐츠를 일시정지하도록 설정되어 있는 경우, 일시정지를 해제할 때까지 트레이 열기/닫기 액션이 코어에 전달되지 않을 수도 있습니다. 그런 경우 디스크를 조작할 때마다 게임을 몇 프레임간 실행하는 것을 잊지 말아주세요."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -16346,5 +16296,115 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "'게임 AI' 옵션을 표시합니다."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "SMB 네트워크 설정"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "SMB 네트워크 공유 설정을 변경합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "SMB 클라이언트 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "SMB 네트워크 공유에 접근할 수 있게 합니다. 안정적인 연결을 위해 Wi-Fi 대신 이더넷을 사용하는 것이 권장됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "SMB 서버"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "서버의 IP 주소 또는 호스트명입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "SMB 공유 이름"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "접속할 네트워크 공유의 이름입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "SMB 서브 디렉토리 (선택)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "공유 내의 서브 디렉토리 경로입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "SMB 사용자명"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "인증을 위한 사용자명입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "SMB 비밀번호"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "인증을 위한 비밀번호입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "SMB 워크그룹"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "워크그룹 또는 도메인 이름입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "SMB 인증 모드"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "네트워크에서 사용되는 인증 방식을 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "SMB 최대 연결 수"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "네트워크에서 사용되는 최대 연결 수를 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "SMB 타임아웃"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "기본 타임아웃 시간(초)을 선택합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "SMB 공유 탐색"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "설정된 SMB 공유에서 파일들을 탐색합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "'SMB 클라이언트' 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "'SMB 클라이언트' 설정을 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "SMB 공유"
    )
 #endif

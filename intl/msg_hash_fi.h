@@ -2435,33 +2435,10 @@ MSG_HASH(
    "Luminanssin huippu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Aseta näytön luminanssin (cd/m2) huippu. Tarkista näytön RT -lukemat suurimmalle kirkkaudelle."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Valkoisen paperin luminanssi"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Aseta luminanssi, jolla valkoisella paperiarkilla olisi luettavaa tekstiä, tai SDR -alueen (normaali dynaaminen alue) suurimman kirkkauden. Hyödyllinen ympäristön erilaisiin valaistusolosuhteisiin sopeutumiseen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Kontrasti"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Gamma/kontrasti ohjaus HDR:lle. Lisää värien yleistä vaihteluväliä kirkkaimpien osien ja kuvan tummien osien välillä. Mitä korkeampi HDR-kontrasti on, sitä suurempi tämä ero on, kun taas mitä pienempi kontrasti on, sitä pelkistyneempi kuva on. Auttaa virittämään kuvan käyttäjille ja näiden näytöilleen sopivaksi."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Laajenna gamutia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Kun väriavaruus on muunnettu lineaariseksi, päätä, pitäisikö käyttää laajennettua värivalikoimaa jotta päästäisiin HDR10:een."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3403,10 +3380,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
    "Seuraava levy"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Kasvata valitun levyn indeksiä. Virtuaalisen levyaseman on oltava auki."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -8553,12 +8526,16 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Nykyinen levyindeksi"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Poista levy asemasta"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Avaa virtuaalinen levyasema ja poista nyt ladattu levy. Jos \"Keskeytä sisältö kun valikko on aktiivisena\" on käytössä, jotkin ytimet eivät välttämättä rekisteröi muutoksia, ellei sisältöä jatketa muutamaksi sekunniksi jokaisen levyn hallintatoiminnon jälkeen."
+   "Avaa virtuaalinen levyasema."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -8566,28 +8543,13 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Aseta nykyistä levyindeksiä vastaava levy ja sulje virtuaalinen levyasema. Jos \"Keskeytä sisältö kun valikko on aktiivisena\" on käytössä, jotkin ytimet eivät välttämättä rekisteröi muutoksia, ellei sisältöä jatketa muutamaksi sekunniksi jokaisen levyn hallintatoiminnon jälkeen."
+   "Sulje virtuaalinen levyasema."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Lataa uusi levy"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Poista nykyinen levy asemasta, valitse uusi levy tiedostojärjestelmästä, aseta se ja sulje virtuaalinen levyasema.\nHUOM: Tämä on vanhentunut ominaisuus. Sen sijaan on suositeltavaa ladata monilevyinen sisältö M3U-soittolistojen kautta, jotka sallivat levyn valinnan käyttämällä \"Poista/lisää levy asemaan\"- ja \"Nykyinen levyindeksi\"-valintoja."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Valitse uusi levy tiedostojärjestelmästä ja aseta se sulkematta virtuaalista levyasemaa.\nHUOM: Tämä on vanhentunut ominaisuus. Sen sijaan on suositeltavaa ladata monilevyinen sisältö M3U-soittolistojen kautta, jotka sallivat levyn valinnan käyttämällä \"Poista/lisää levy asemaan\"- ja \"Nykyinen levyindeksi\"-valintoja."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Nykyinen levyindeksi"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Valitse nykyinen levy käytettävissä olevien levyjen luettelosta. Levy ladataan, kun \"Syötä levy asemaan\" valitaan."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -14255,4 +14217,22 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "SMB-yhteyksien enimmäismäärä"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Valitse suurin mahdollinen yhteysmäärä ympäristössäsi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "SMB-aikakatkaisu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Valitse oletusarvoinen aikakatkaisu sekunneissa."
+   )
 #endif

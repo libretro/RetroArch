@@ -2539,33 +2539,10 @@ MSG_HASH(
    "最大輝度"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "ディスプレイの最大輝度 (cd/m2) を設定します。ディスプレイの最大輝度については RTings を参照してください。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "ペーパーホワイト輝度"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "SDR (スタンダードダイナミックレンジ) 範囲の輝度の上限、または文字として読めるようにペーパーホワイトの輝度を設定します。環境の異なる照明条件に調整するのに便利です。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "コントラスト"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "HDR 用のガンマ/コントラストコントロールです。色を取得し、画像の最も明るい部分と最も暗い部分の間の全体的な範囲を広げます。HDR コントラストを高くするほどこの差は大きくなり、逆に低くするほど画像は退色します。ユーザーが自分の好みに合わせて画像を調整し、自分のディスプレイで最も美しく見えるようにするのに役立ちます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "色域を拡張"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "色空間がリニア空間に変換された際に、HDR10 に到達するために拡張色色域を使用するかどうかを決定します。"
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3633,16 +3610,8 @@ MSG_HASH(
    "次のディスク"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "現在選択されているディスク番号を増やします。仮想ディスクトレイが開いている必要があります。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "前のディスク"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "現在選択されているディスク番号を減らします。仮想ディスクトレイが開いている必要があります。"
    )
 
 MSG_HASH(
@@ -9317,41 +9286,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "ディスクの取り出し"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "現在のディスク番号"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "仮想ディスクトレイを開き、現在ロードされているディスクを取り出します。[メニュー表示時にコンテンツを一時停止] が有効の場合、一部のコアはディスクコントロールの操作後、変更が反映されるまでに数秒間かかる場合があります。"
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "ディスクの取り出し"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "ディスクを挿入"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "[現在のディスクイ番号] に対応するディスクを挿入し、仮想ディスクトレイを閉じます。[メニュー表示時にコンテンツを一時停止] が有効の場合、一部のコアでは各ディスク操作アクションの後にコンテンツが数秒間再開されない限り、変更を登録しない場合があります。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "新しいディスクをロード"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "現在のディスクを取り出し、ファイルシステムから新しいディスクを選択して挿入したあと、仮想ディスクトレイを閉じます。\n注意: これは古い機能です。代わりに、M3U プレイリストを介して複数ディスクタイトルをロードすることをお勧めします。これにより、[ディスクの取り出し/挿入] と [現在のディスクインデックス] オプションを使用してディスクの選択が可能[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "ファイルシステムから新しいディスクを選択し、仮想ディスクトレイを閉じることなくディスクを挿入します。\n注意: これは古い機能です。代わりに、M3U プレイリストを介して複数ディスクタイトルをロードすることをお勧めします。[現在のディスクインデックス] オプションを使用してディスクを選択することができます。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "現在のディスク番号"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "利用可能なイメージのリストから現在のディスクを選択します。[ディスクを挿入] を選択するとディスクがロードされます。"
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -15187,4 +15137,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

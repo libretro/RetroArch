@@ -2170,10 +2170,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    "تمكين HDR إذا كانت الشاشة تدعمه."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "التباين"
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -5381,6 +5378,10 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "فهرس القرص الحالي"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "إخراج القرص"
    )
@@ -5392,14 +5393,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "تحميل قرص جديد"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "فهرس القرص الحالي"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "اختر القرص الحالي من قائمة الصور المتاحة. سيتم تحميل القرص عندما يتم تحديد \"إدراج القرص\"."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -9855,4 +9849,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

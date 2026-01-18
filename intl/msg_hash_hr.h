@@ -974,10 +974,7 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Kontrast"
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -1412,6 +1409,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Izbaci disk"
    )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -1663,4 +1661,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

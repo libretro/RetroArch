@@ -232,6 +232,22 @@ MSG_HASH(
    "A felhőbe szinkronizálás kézi indítása."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Ütközések feloldása: a helyi fájl megtartása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Minden ütközés feloldása a helyi fájlok feltöltésével a szerverre."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Ütközések feloldása: a szerver fájljainak megtartása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Minden ütközés feloldása a fájlok letöltésével a szerverről, felülírva a helyi másolatokat."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Kilépés a RetroArch alkalmazásból. Konfiguráció mentése kilépéskor: letiltva."
    )
@@ -2196,6 +2212,10 @@ MSG_HASH(
    "A különféle beállítások közt váltva változik a vízszintes képméret."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   "Függőlegesen középre igazítás"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
    "Ha a kép nincs középen a megjelenítőn, próbáld változtatni az értékeket."
    )
@@ -2671,33 +2691,10 @@ MSG_HASH(
    "Csúcs-luminancia"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "A kijelző által visszaadható csúcs-luminancia (cd/m2). A kijelzők csúcs-luminanciája az RTings-en megtalálható."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Papírfehér luminancia"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "A papírfehér szín fényerejének beállítása. Ez legyen az olvasható szöveg vagy az SDR (Standard Dynamic Range) luminanciájának teteje. Arra jó, hogy a környezet különféle megvilágításához alkalmazkodni lehessen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Kontraszt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "HDR gamma/kontraszt beállítás. A legfényesebb és legsötétebb részek színe közt növeli meg az eltérést. Minél magasabb a HDR kontraszt, annál nagyobb ez az eltérés, minél kisebb, annál fakóbb a kép. Saját ízlés és képernyő szerint állítható, ami a legjobban néz ki."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Kiterjesztett színskála"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "A színtér lineáris térre átalakítása után kiterjesztett színskála használata a HDR10 konverzióhoz."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3380,6 +3377,10 @@ MSG_HASH(
    "Észlelés"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
+   "Tartalom megállítása kontroller leválasztásakor"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "A tartalom megáll, amikor bármelyik kontroller lecsatlakozik. Folytatás a Start gombbal."
    )
@@ -3953,16 +3954,8 @@ MSG_HASH(
    "Következő lemez"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Kiválasztja a következő lemezt. A virtuális lemeztálca nyitva kell legyen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Előző lemez"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Kiválasztja az előző lemezt. A virtuális lemeztálca nyitva kell legyen."
    )
 
 MSG_HASH(
@@ -5756,6 +5749,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "Legyezés határértéke"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Alternatív kétujjas érintés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Kurzormozgatás közben a második érintés egérgombként funkcionál."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
@@ -9873,41 +9874,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Lemez kiadása"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Aktuális lemez sorszáma"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "A virtuális lemeztálca kinyitása és az aktuális lemez eltávolítása. Ha a \"Tartalom megállítása, amikor a menü aktív\" engedélyezve van, akkor bizonyos magok nem érzékelik a változást, hacsak a tartalom nincs továbbfuttatva pár másodpercig minden lemezművelet után."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Lemez kiadása"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Lemez behelyezése"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Az aktuális lemezsorszámnak megfelelő lemez behelyezése és a virtuális lemeztálca becsukása. Ha a \"Tartalom megállítása, amikor a menü aktív\" engedélyezve van, akkor bizonyos magok nem érzékelik a változást, hacsak a tartalom nincs továbbfuttatva pár másodpercig minden lemezművelet után."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Új lemez betöltése"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "A jelenlegi lemez kiadása, új lemez választása a fájlrendszerből, majd annak behelyezése és a virtuális lemeztálca becsukása. \n Figyelem: ez egy elavult funkció. A többlemezes tartalmakat ajánlott inkább M3U lejátszási listákon keresztül betölteni, amikor is a lemezek közt az \"Lemez kiadása/behelyezése\" és az \"Aktuális lemez sorszáma\" funkciókkal lehet váltogatni."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Új lemez választása a fájlrendszerből, majd annak behelyezése, de a virtuális lemeztálca becsukása nélkül. \n Figyelem: ez egy elavult funkció. A többlemezes tartalmakat ajánlott inkább M3U lejátszási listákon keresztül betölteni, amikor is a lemezek közt az \"Aktuális lemez sorszáma\" funkcióval lehet váltogatni."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Aktuális lemez sorszáma"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Lemez választása az elérhető lemezképek listájából. A kiválasztott lemez a \"Lemez behelyezése\" menüponttal tölthető be."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -11416,12 +11398,24 @@ MSG_HASH(
    "A színösszeállítás alfa értéke"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Aktuális menü ikonja"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "Az aktuális menü ikonja elrejthető a vízszintes menü alá vagy a címsorba."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
    "Nincs"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
    "Normál"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "Címsor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -11730,6 +11724,14 @@ MSG_HASH(
    "A vízszintes helykitöltés szorzója."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
+   "Fejléc ikon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
+   "A fejléc ikon elrejthető, lehet dinamikus a navigációtól függően, vagy maradhat mindig a klasszikus űrlény."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
    "Fejlécelválasztó"
    )
@@ -11740,6 +11742,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
    "Nincs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
+   "Rögzített"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
@@ -12630,6 +12636,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "Csatlakozó"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "%d. csatlakozó, eszköz neve: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -15906,5 +15916,115 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "A \"Játékos MI\" lehetőség jelenjen meg."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "SMB hálózati beállítások"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "Az SMB hálózati megosztás beállításai."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "SMB kliens engedélyezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "SMB kliens engedélyezése hálózati megosztáshoz hozzáféréshez. A wifi helyett vezetékes összeköttetés erősen ajánlott a megbízhatóbb kapcsolathoz."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "SMB szerver"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "A kiszolgáló IP címe vagy hostneve."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "SMB megosztás neve"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "Az elérni kívánt hálózati megosztás neve."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "SMB alkönyvtár (opcionális)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "A megosztáson belüli alkönyvtár elérési útvonala."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "SMB felhasználónév"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "Felhasználónév a hitelesítéshez."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "SMB jelszó"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "Jelszó a hitelesítéshez."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "SMB munkacsoport"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "A munkacsoport vagy hálózati tartomány neve."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "SMB hitelesítési mód"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "A környezet által használt hitelesítési mód."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "SMB kapcsolatok maximális száma"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "A környezet által használható maximális kapcsolat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "SMB időtúllépés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Az alapértelmezett időtúllépés másodpercben."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "SMB megosztás böngészése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Fájlok böngészése a beállított SMB megosztáson."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "\"SMB kliens\" látható"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "Az SMB kliens beállítások jelenjenek meg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "SMB megosztás"
    )
 #endif

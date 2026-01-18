@@ -1827,29 +1827,10 @@ MSG_HASH(
    "Luminància màxima"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Establix la luminància màxima (en cd/m²) que pot reproduir el teu monitor. Per esbrinar quina es la luminància màxima del teu monitor, visita el web RTings."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminància de blanc paper"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Establix la luminància amb la qual el blanc d'una fulla de paper tindria un text llegible, o luminància màxima del rang SDR (rang dinàmic estàndar). Serveix per ajustar-se a la variació en la il·luminació del teu entorn."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Controla la gamma/contrast de l'HDR. Agafa els colors i fa un increment del rang d'estos entre les àrees més brillants i les més obscures. A major contrast d'HDR, major diferència, i a un contrast menor, la imatge serà més pàl·lida. Això ajuda l'usuari a ajustar la imatge al seu gust i com esta se visualitza millor a la seua pantalla/monitor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Ampliar gamma"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Una vegada l'espai de color ha sigut convertit a espai linial, esta funció decideix si es deuria usar una gamma de colors més àmplia per ajustar-se al format HDR10."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -2892,6 +2873,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Expulsar disc"
    )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -3291,4 +3273,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

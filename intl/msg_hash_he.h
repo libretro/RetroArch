@@ -1162,10 +1162,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    "אפשר HDR אם המסך תומך בכך."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "ניגודיות"
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -1712,6 +1709,7 @@ MSG_HASH(
 
 /* Quick Menu > Disc Control */
 
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -1911,4 +1909,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

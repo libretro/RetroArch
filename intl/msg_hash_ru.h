@@ -2716,7 +2716,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Установка максимальной яркости (в кд/м2), которую может выдавать дисплей. Значение пиковой яркости дисплея смотрите на ресурсе RTings."
+   "Установите пиковую яркость дисплея (в кд/м2) и не меняйте. Используйте опцию Яркость белого листа для регулировки яркости. Для получения информации о пиковой яркости вашего дисплея посетите RTings.com. На некоторых дисплеях при включении строк развёртки (ниже) может понадобить[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -2724,24 +2724,13 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Устанавливает яркость, при которой становится читаемым текст на белом листе или яркость в конце шкалы SDR (стандартного динамического диапазона). Используется для подстройки под разные условия освещения."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Контраст"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Настройка гаммы/контрастности HDR. Расширяет диапазон между самыми светлыми и самыми тёмными частями изображения. Чем выше контраст HDR, тем сильнее разница и чем ниже контраст, тем более размытым будет изображение. Позволяет достичь наилучшего качества картинки на экране."
+   "После установки пиковой яркости используйте данный параметр в качестве стандартной регулировки яркости. Фактически, это устанавливает яркость белой бумаги для читаемости текста или яркость в верхней части SDR (стандартного динамического диапазона)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Расширенная гамма"
+   "Усиление цвета"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "После преобразования цветового пространства в линейное определяет, нужно ли применять расширенную цветовую гамму для HDR10."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -4002,7 +3991,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Повышает текущий выбранный номер диска. Виртуальный лоток привода должен быть открыт."
+   "Повышает текущий индекс диска и вносит задержку вставки диска при закрытии виртуального лотка привода."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -4010,7 +3999,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Понижает текущий выбранный номер диска. Виртуальный лоток привода должен быть открыт."
+   "Понижает текущий индекс диска и вносит задержку вставки диска при закрытии виртуального лотка привода."
    )
 
 MSG_HASH(
@@ -9945,12 +9934,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Индекс диска"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Выберите текущий диск из списка доступных образов. Виртуальный лоток привода может быть закрыт."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Извлечь диск"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Открыть виртуальный лоток привода и извлечь текущий диск. Если вкл. опция 'Пауза при вызове меню', для некоторых ядер после любых операций с дисками требуется на несколько секунд возобновить контент для регистрации изменений."
+   "Открыть виртуальный лоток привода."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9958,7 +9955,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Загрузить диск из текущего индекса и закрыть лоток виртуального привода. Если включена опция 'Пауза при вызове меню', некоторым ядрам после любых операций с дисками требуется на несколько секунд возобновить контент для регистрации изменений."
+   "Закрыть виртуальный лоток привода."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -9966,20 +9963,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Извлеките текущий диск, выберите новый, вставьте и закройте лоток привода.\nВнимание: данная функция устарела. Игры на нескольких дисках рекомендуется загружать через M3U-плейлисты, которые реализуют выбор диска при помощи опций 'Извлечь диск' и 'Индекс диска'."
+   "Выберите новый диск из файловой системы и добавьте его в списке индекса.\nПримечание: данная функция является устаревшей. Для игр на нескольких дисках рекомендуется использовать M3U-плейлисты."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Выберите новый диск из памяти и вставьте без закрытия лотка.\nПримечание: данная функция неактуальна. Игры на нескольких дисках рекомендуется загружать через M3U-плейлисты, позволяющие переключать диски с помощью опций 'Извлечь диск' и 'Индекс диска'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Индекс диска"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Выберите текущий диск из списка доступных образов. Диск будет загружен при выборе 'Вставить Диск'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -16266,5 +16252,115 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Показывать опцию 'Игровой ИИ'."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "Сетевое окружение"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "Настройки параметров SMB-ресурсов."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "Вкл. SMB-клиент"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Включает сетевой доступ к SMB-ресурсам. Для более стабильного соединения рекомендуется использовать вместо Wi-Fi подключение по Ethernet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "SMB-сервер"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "Имя хоста или IP-адрес сервера."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "Имя сетевой папки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "Имя сетевого ресурса для доступа."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "Подкаталог (опционально)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "Путь к подкаталогу сетевого ресурса."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "Имя пользователя"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "Имя пользователя для аутентификации."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "Пароль"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "Пароль для аутентификации."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "Рабочая группа"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "Имя рабочей группы или домена."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "Режим аутентификация"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "Выбор используемой в окружении аутентификации."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "Максимум соединений"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Максимальное количество соединений, используемых в окружении."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "Таймаут"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Установка количества секунд таймаута по умолчанию."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "Просмотр SMB-ресурса"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Просмотр файлов в преднастроенной сетевой папке."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "Показывать 'SMB-клиент'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "Показывать настройки 'SMB-клиента'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "SMB-ресурс"
    )
 #endif

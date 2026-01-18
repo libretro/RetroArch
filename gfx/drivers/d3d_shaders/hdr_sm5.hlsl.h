@@ -89,6 +89,7 @@ static const float k_crt_green_scanline_max             = 0.70f;
 static const float k_crt_green_scanline_attack          = 0.30f;
 static const float k_crt_blue_scanline_min              = 0.45f;
 static const float k_crt_blue_scanline_max              = 0.70f;       
+
 static const float k_crt_blue_scanline_attack           = 0.30f;
 
 static const float k_crt_red_beam_sharpness             = 1.30f;

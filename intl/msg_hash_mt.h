@@ -111,6 +111,7 @@ other than `msg_hash_us.h` will be rejected.
 /* Settings > Video > HDR */
 
 
+
 /* Settings > Video > Synchronization */
 
 
@@ -384,6 +385,7 @@ other than `msg_hash_us.h` will be rejected.
 
 /* Quick Menu > Disc Control */
 
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -479,4 +481,6 @@ other than `msg_hash_us.h` will be rejected.
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

@@ -155,9 +155,6 @@ typedef struct settings
       int input_overlay_lightgun_port;
 #endif
       int input_turbo_bind;
-#ifdef HAVE_SMBCLIENT
-      int smb_client_auth_mode;
-#endif
    } ints;
 
    struct
@@ -401,6 +398,12 @@ typedef struct settings
 
       unsigned cheevos_appearance_anchor;
       unsigned cheevos_visibility_summary;
+
+#ifdef HAVE_SMBCLIENT
+      unsigned smb_client_auth_mode;
+      unsigned smb_client_num_contexts;
+      unsigned smb_client_timeout;
+#endif
    } uints;
 
    struct

@@ -1931,33 +1931,10 @@ MSG_HASH(
    "Maks luminans"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Angi toppluminansen (i cd/m2) som skjermen din kan reprodusere. Se RTings for den maksimale luminansen til din skjerm."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Papirhvit luminans"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Sett luminansen hvor papirhvit bør være, f.eks lesbar tekst eller luminans på toppen av SDR (Standard dynamic range). Nyttig for justering til ulike lystilstander i dine omgivelser."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Kontrast"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Gamma/kontrastkontroll for HDR. Tar farger og øker totalintervallet mellom de lyseste delene og de mørkeste delene av bildet. Jo høyere HDR kontrast er, jo større blir denne forskjellen, mens jo lavere kontrasten er, jo mer utvaskes bildet blir. Hjelper brukere å justere bildet til deres preferanse og hva de føler ser best ut på sin skjerm."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Utvidet gamut"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Når fargespekteret er konvertert til lineært rom, bestem om vi skal bruke et utvidet fargegamut for å nå HDR10."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3868,6 +3845,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Løs ut platen"
    )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -5371,4 +5349,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

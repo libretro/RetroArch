@@ -148,6 +148,10 @@ OTHER_CFLAGS[sdk=iphonesimulator*] = $(inherited) $(OTHER_CFLAGS_IOS)
 OTHER_CFLAGS[config=Debug] = $(inherited) -DDEBUG=1
 OTHER_CFLAGS[config=Release] = $(inherited) -DNDEBUG -DNS_BLOCK_ASSERTIONS=1
 
+// Keep function symbols for KSCrash symbolication in release builds
+// (debug symbols still go to dSYM files)
+STRIP_STYLE[config=Release] = debugging
+
 SRCBASE  = $(SRCROOT)/../..
 DEPS_DIR = $(SRCBASE)/deps
 

@@ -5738,11 +5738,26 @@ static int setting_uint_action_left_crt_switch_resolution_super(
    return 0;
 }
 
+static bool setting_action_input_device_index_prevent(
+      rarch_setting_t *setting, settings_t *settings, unsigned p, unsigned p_new)
+{
+   /* Prevent accidental port 1 device index removal */
+   if (setting->index_offset == 0)
+   {
+      if (     p == setting->index_offset
+            && !string_is_empty(input_config_get_device_name(setting->index_offset))
+            && string_is_empty(input_config_get_device_name(p_new)))
+         return true;
+   }
+   return false;
+}
+
 static int setting_action_left_input_device_index(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    settings_t      *settings = config_get_ptr();
    unsigned *p               = NULL;
+   unsigned p_new            = 0;
 
    if (!setting || !settings)
       return -1;
@@ -5750,9 +5765,14 @@ static int setting_action_left_input_device_index(
    p = &settings->uints.input_joypad_index[setting->index_offset];
 
    if (*p)
-      (*p)--;
+      p_new = *p - 1;
    else
-      *p = MAX_INPUT_DEVICES - 1;
+      p_new = MAX_INPUT_DEVICES - 1;
+
+   if (setting_action_input_device_index_prevent(setting, settings, *p, p_new))
+      return 0;
+
+   *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
@@ -7969,6 +7989,7 @@ static int setting_action_right_input_device_index(
 {
    settings_t      *settings = config_get_ptr();
    unsigned *p               = NULL;
+   unsigned p_new            = 0;
 
    if (!setting || !settings)
       return -1;
@@ -7976,9 +7997,14 @@ static int setting_action_right_input_device_index(
    p = &settings->uints.input_joypad_index[setting->index_offset];
 
    if (*p < MAX_INPUT_DEVICES - 1)
-      (*p)++;
+      p_new = *p + 1;
    else
-      *p = 0;
+      p_new = 0;
+
+   if (setting_action_input_device_index_prevent(setting, settings, *p, p_new))
+      return 0;
+
+   *p = p_new;
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
@@ -8028,7 +8054,7 @@ static int setting_action_right_input_mouse_index(
 static size_t setting_get_string_representation_smb_auth(
    rarch_setting_t *setting, char *s, size_t len)
 {
-   int val;
+   unsigned val;
 
    if (!setting || !setting->value.target.integer)
       return 0;
@@ -8117,9 +8143,9 @@ static size_t get_string_representation_split_joycon(
 static size_t get_string_representation_input_device_index(
       rarch_setting_t *setting, char *s, size_t len)
 {
-   size_t _len = 0;
-   settings_t      *settings = config_get_ptr();
-   unsigned map              = 0;
+   settings_t *settings = config_get_ptr();
+   size_t _len          = 0;
+   unsigned map         = 0;
 
    if (!setting || !settings)
       return 0;
@@ -8132,20 +8158,21 @@ static size_t get_string_representation_input_device_index(
             ? input_config_get_device_display_name(map)
             : input_config_get_device_name(map);
 
+      _len = snprintf(s, len,
+            "#%u: %s",
+            map + 1,
+            !string_is_empty(device_name)
+                  ? device_name
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+
       if (!string_is_empty(device_name))
       {
          unsigned idx = input_config_get_device_name_index(map);
-         size_t _len  = snprintf(s, len, "#%u: %s", map + 1, device_name);
 
          /* If idx is non-zero, it's part of a set */
          if (idx > 0)
             _len += snprintf(s + _len, len - _len, " (%u)", idx);
       }
-      else
-         _len = snprintf(s, len,
-               "#%u: %s",
-               map + 1,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 
    if (string_is_empty(s))
@@ -8187,9 +8214,9 @@ static size_t setting_get_string_representation_input_device_reserved_device_nam
 static size_t get_string_representation_input_mouse_index(
       rarch_setting_t *setting, char *s, size_t len)
 {
-   size_t _len = 0;
-   settings_t      *settings = config_get_ptr();
-   unsigned map              = 0;
+   settings_t *settings = config_get_ptr();
+   size_t _len          = 0;
+   unsigned map         = 0;
 
    if (!setting || !settings)
       return 0;
@@ -8199,15 +8226,15 @@ static size_t get_string_representation_input_mouse_index(
    if (map < MAX_INPUT_DEVICES)
    {
       const char *device_name = input_config_get_mouse_display_name(map);
-      if (!string_is_empty(device_name))
-         _len = snprintf(s, len, "#%u: %s", map + 1, device_name);
-      else if (map > 0)
-         _len = snprintf(s, len,
-               "#%u: %s",
-               map + 1,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-      else
-         _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+
+      _len = snprintf(s, len,
+            "#%u: %s",
+            map + 1,
+            !string_is_empty(device_name)
+                  ? device_name
+                  : (map > 0)
+                        ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
+                        : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE));
    }
 
    if (string_is_empty(s))
@@ -25180,9 +25207,9 @@ static bool setting_append_list(
             NULL);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
 
-         CONFIG_INT(
+         CONFIG_UINT(
             list, list_info,
-            &settings->ints.smb_client_auth_mode,
+            &settings->uints.smb_client_auth_mode,
             MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE,
             MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
             DEFAULT_SMB_CLIENT_AUTH_MODE,
@@ -25195,6 +25222,36 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_smb_auth;
          menu_settings_list_current_add_range(list, list_info, 0, RETRO_SMB2_SEC_KRB5, 1, true, true);
+
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.smb_client_num_contexts,
+            MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+            DEFAULT_SMB_CLIENT_NUM_CONTEXTS,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+         menu_settings_list_current_add_range(list, list_info, 1, DEFAULT_SMB_CLIENT_MAX_CONTEXTS, 1, true, true);
+
+         CONFIG_UINT(
+            list, list_info,
+            &settings->uints.smb_client_timeout,
+            MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT,
+            MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+            DEFAULT_SMB_CLIENT_TIMEOUT,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
+         menu_settings_list_current_add_range(list, list_info, 1, DEFAULT_SMB_CLIENT_MAX_TIMEOUT, 1, true, true);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

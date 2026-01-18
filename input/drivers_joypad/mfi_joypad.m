@@ -416,29 +416,35 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_create_haptic_player(
 
     __weak MFIRumbleController *weakSelf = self;
     engine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {
-        MFIRumbleController *strongSelf = weakSelf;
-        if (!strongSelf)
-            return;
+        /* Dispatch to main queue - RetroArch has no thread synchronization */
+        dispatch_async(dispatch_get_main_queue(), ^{
+            MFIRumbleController *strongSelf = weakSelf;
+            if (!strongSelf)
+                return;
 
-        /* Engine stopped (backgrounding/interruption).
-         * Do NOT set players to nil here - their dealloc will try to
-         * communicate via XPC which causes crashes when the connection
-         * is already torn down. Players will be lazily recreated when
-         * the engine restarts. */
-        RARCH_LOG("[MFI] Haptic engine stopped (reason: %ld), engines will restart on resume\n", (long)reason);
+            /* Engine stopped (backgrounding/interruption).
+             * Do NOT set players to nil here - their dealloc will try to
+             * communicate via XPC which causes crashes when the connection
+             * is already torn down. Players will be lazily recreated when
+             * the engine restarts. */
+            RARCH_LOG("[MFI] Haptic engine stopped (reason: %ld), engines will restart on resume\n", (long)reason);
+        });
     };
     engine.resetHandler = ^{
-        MFIRumbleController *strongSelf = weakSelf;
-        if (!strongSelf)
-            return;
+        /* Dispatch to main queue - RetroArch has no thread synchronization */
+        dispatch_async(dispatch_get_main_queue(), ^{
+            MFIRumbleController *strongSelf = weakSelf;
+            if (!strongSelf)
+                return;
 
-        /* Clear stale players now that engine is restarting and XPC is valid.
-         * They will be lazily recreated on next rumble request. */
-        strongSelf->_strongPlayer = nil;
-        strongSelf->_weakPlayer = nil;
+            /* Clear stale players now that engine is restarting and XPC is valid.
+             * They will be lazily recreated on next rumble request. */
+            strongSelf->_strongPlayer = nil;
+            strongSelf->_weakPlayer = nil;
 
-        for (CHHapticEngine *eng in strongSelf.engines)
-            [eng startAndReturnError:nil];
+            for (CHHapticEngine *eng in strongSelf.engines)
+                [eng startAndReturnError:nil];
+        });
     };
 
     return apple_gamecontroller_create_haptic_player(engine, intensity);
@@ -460,9 +466,9 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_create_haptic_player(
 {
     if (@available(iOS 14, tvOS 14, macOS 11, *))
     {
-        if (_weakPlayer) [_weakPlayer cancelAndReturnError:nil];
-        if (_strongPlayer) [_strongPlayer cancelAndReturnError:nil];
-
+        /* When controller disconnects, the haptic engine is already stopped
+         * by the system, so don't bother trying to cancel players - just
+         * clear the handlers and release everything. */
         for (CHHapticEngine *eng in self.engines)
         {
             eng.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
@@ -571,8 +577,17 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
         return;
 
     if (mfi_rumblers[pad])
+    {
         [mfi_rumblers[pad] shutdown];
-    mfi_rumblers[pad]    = nil;
+        /* Delay release to let pending XPC messages drain. Releasing
+         * immediately can crash worker threads still processing messages. */
+        MFIRumbleController *rumbler = mfi_rumblers[pad];
+        mfi_rumblers[pad] = nil;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            (void)rumbler; /* prevent release until block executes */
+        });
+    }
 
     if (mfi_controllers[pad] == controller)
     {
@@ -601,23 +616,29 @@ static void apple_gamecontroller_device_haptics_setup(void) IPHONE_RUMBLE_AVAIL
 
     deviceHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason)
     {
-        /* Engine stopped (backgrounding/interruption).
-         * Do NOT set players to nil here - their dealloc will try to
-         * communicate via XPC which causes crashes when the connection
-         * is already torn down. Players will be lazily recreated when
-         * the engine restarts. */
-        RARCH_LOG("[MFI] Device haptic engine stopped (reason: %ld)\n", (long)reason);
+        /* Dispatch to main queue - RetroArch has no thread synchronization */
+        dispatch_async(dispatch_get_main_queue(), ^{
+            /* Engine stopped (backgrounding/interruption).
+             * Do NOT set players to nil here - their dealloc will try to
+             * communicate via XPC which causes crashes when the connection
+             * is already torn down. Players will be lazily recreated when
+             * the engine restarts. */
+            RARCH_LOG("[MFI] Device haptic engine stopped (reason: %ld)\n", (long)reason);
+        });
     };
     deviceHapticEngine.resetHandler = ^{
-        if (!deviceHapticEngine)
-            return;
+        /* Dispatch to main queue - RetroArch has no thread synchronization */
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!deviceHapticEngine)
+                return;
 
-        /* Clear stale players now that engine is restarting and XPC is valid.
-         * They will be lazily recreated on next rumble request. */
-        deviceWeakPlayer = nil;
-        deviceStrongPlayer = nil;
+            /* Clear stale players now that engine is restarting and XPC is valid.
+             * They will be lazily recreated on next rumble request. */
+            deviceWeakPlayer = nil;
+            deviceStrongPlayer = nil;
 
-        [deviceHapticEngine startAndReturnError:nil];
+            [deviceHapticEngine startAndReturnError:nil];
+        });
     };
 }
 

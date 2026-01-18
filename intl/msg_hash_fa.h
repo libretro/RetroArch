@@ -1970,22 +1970,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    "اوج روشنایی"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "تنظیم اوج روشنایی‌ای که صفحه نمایش‌تان می‌تواند بازتولید کند (بر حسب cd/m2). بخش RTings را برای میزان اوج روشنایی صفحه‌تان ببنید."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "کنتراست"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "گسترش گاما"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "به محض تبدیل فضای رنگ به فضای خطی، تصمیم‌گیری شود که آیا از گاموت رنگی گسترش‌یافته برای رسیدن به HDR10 استفاده شود یا خیر."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3380,6 +3365,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "خارج کردن لوح"
    )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -3779,4 +3765,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

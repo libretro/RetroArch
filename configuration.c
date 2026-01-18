@@ -2686,6 +2686,12 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_overlay_mouse_alt_two_touch_input",  &settings->uints.input_overlay_mouse_alt_two_touch_input, true, DEFAULT_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT, false);
 #endif
 
+#ifdef HAVE_SMBCLIENT
+   SETTING_UINT("smb_client_auth_mode",           &settings->uints.smb_client_auth_mode, true, DEFAULT_SMB_CLIENT_AUTH_MODE, false);
+   SETTING_UINT("smb_client_num_contexts",        &settings->uints.smb_client_num_contexts, true, DEFAULT_SMB_CLIENT_NUM_CONTEXTS, false);
+   SETTING_UINT("smb_client_timeout",             &settings->uints.smb_client_timeout, true, DEFAULT_SMB_CLIENT_TIMEOUT, false);
+#endif
+
    *size = count;
 
    return tmp;
@@ -2763,10 +2769,6 @@ static struct config_int_setting *populate_settings_int(
    SETTING_INT("input_overlay_lightgun_port",    &settings->ints.input_overlay_lightgun_port, true, DEFAULT_INPUT_OVERLAY_LIGHTGUN_PORT, false);
 #endif
    SETTING_INT("input_turbo_bind",               &settings->ints.input_turbo_bind, true, DEFAULT_TURBO_BIND, false);
-
-#ifdef HAVE_SMBCLIENT
-   SETTING_INT("smb_client_auth_mode",           &settings->ints.smb_client_auth_mode, true, DEFAULT_SMB_CLIENT_AUTH_MODE, false);
-#endif
 
    *size = count;
 

@@ -2643,7 +2643,6 @@ if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
 {
    blend_attachment.blendEnable = VK_FALSE;
 
-
    /* HDR->SDR tonemapping readback pipeline. */
    module_info.codeSize         = sizeof(hdr_tonemap_frag);
    module_info.pCode            = hdr_tonemap_frag;

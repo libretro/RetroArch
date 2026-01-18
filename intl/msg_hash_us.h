@@ -4071,7 +4071,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Increments the currently selected disc index. Virtual disc tray must be open."
+   "Increments the currently selected disc index and does delayed insert if virtual disc tray is closed."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -4079,7 +4079,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Decrements the currently selected disc index. Virtual disc tray must be open."
+   "Decrements the currently selected disc index and does delayed insert if virtual disc tray is closed."
    )
 
 MSG_HASH(
@@ -10106,12 +10106,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Current Disc Index"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Choose current disc from list of available images. Virtual disc tray can stay closed."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Eject Disc"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Open virtual disc tray and remove currently loaded disc. If 'Pause Content When Menu Is Active' is enabled, some cores may not register changes unless content is resumed for a few seconds after each disc control action."
+   "Open virtual disc tray."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -10119,7 +10127,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Insert disc corresponding to 'Current Disc Index' and close virtual disc tray. If 'Pause Content When Menu Is Active' is enabled, some cores may not register changes unless content is resumed for a few seconds after each disc control action."
+   "Close virtual disc tray."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -10127,19 +10135,12 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Eject current disc, select a new disc from the filesystem then insert it and close the virtual disc tray.\nNOTE: This is a legacy feature. It is instead recommended to load multi-disc titles via M3U playlists, which allow disc selection using the 'Eject/Insert Disc' and 'Current Disc Index' options."
+   "Select a new disc from the filesystem and append it in the index list.\nNOTE: This is a legacy feature. It is instead recommended to use M3U playlists for multi-disc titles."
    )
+/* deprecated */
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Select a new disc from the filesystem and insert it without closing the virtual disc tray.\nNOTE: This is a legacy feature. It is instead recommended to load multi-disc titles via M3U playlists, which allow disc selection using the 'Current Disc Index' option."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Current Disc Index"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Choose current disc from list of available images. Disc will be loaded when 'Insert Disc' is selected."
+   ""
    )
 
 /* Quick Menu > Shaders */
@@ -17141,6 +17142,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    "Select the authentication used in your environment."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "SMB Maximum connections"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Select the maximum connections used in your environment."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "SMB Timeout"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Select the default timeout in seconds."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,

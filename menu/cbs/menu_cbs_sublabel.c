@@ -1108,6 +1108,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_latency_frames,               
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_latency_frames_range,            MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_tray_eject,                       MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_tray_insert,                      MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_image_append,                     MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_index,                            MENU_ENUM_SUBLABEL_DISK_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_disk_options,                          MENU_ENUM_SUBLABEL_DISK_OPTIONS)
 #ifdef HAVE_XMB
@@ -1455,6 +1456,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_subdir,                  
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_username,                         MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_password,                         MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_workgroup,                        MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_num_contexts,                     MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_timeout,                          MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_browse,                           MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE)
 #endif
 
@@ -1628,25 +1631,6 @@ static int action_bind_sublabel_subsystem_load(
       strlcpy(s, buf, len);
 
    return 0;
-}
-
-static int action_bind_sublabel_disk_image_append(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   enum msg_hash_enums enum_idx  = MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND;
-   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
-
-   /* Check whether disk is currently ejected */
-   if (sys_info &&
-       disk_control_get_eject_state(&sys_info->disk_control))
-      enum_idx = MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN;
-
-   strlcpy(s, msg_hash_to_str(enum_idx), len);
-
-   return 1;
 }
 
 static int action_bind_sublabel_remap_kbd_sublabel(
@@ -5940,6 +5924,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_smb_client_workgroup);
+            break;
+         case MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_smb_client_num_contexts);
+            break;
+         case MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_smb_client_timeout);
             break;
          case MENU_ENUM_LABEL_SMB_CLIENT_BROWSE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_smb_client_browse);

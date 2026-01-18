@@ -4213,7 +4213,7 @@ static bool d3d12_gfx_frame(
 #ifdef HAVE_DXGI_HDR   
          settings_t*    settings = config_get_ptr();
          
-         d3d12->pass[i].enable_hdr           = (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) ? 1.0f : 0.0f;
+         d3d12->pass[i].enable_hdr            = (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) ? 1.0f : 0.0f;
 
          if(d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
          {

@@ -2691,29 +2691,10 @@ MSG_HASH(
    "Pic de luminància"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Estableix el pic de luminància (en cd/m2) que pot reproduir la vostra pantalla. Consulteu RTings pel pic de luminància de la vostra pantalla."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminància de blancs"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Estableix la luminància a la que hauria d'estar un paper blanc, per exemple un text llegible, o luminància al cim del rang SDR (Standard Dynamic Range). Útil per ajustar a diferents condicions de llum del vostre entorn."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Control de gamma/contrast per a HDR. Agafa els colors i incrementa el rang general entre les parts més fosques i més brillants de la imatge. Quant més alt és el contrast HDR, més gran es torna la diferència, mentre que quan més baix és el contrast, més desgastada es torna la imatge. Ajuda als usuari a ajustar la imatge al seu gust i al que sembla veure's millor a la seva pantalla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Expandeix l'escala"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Una vegada convertit l'espai de colors a un espai lineal, decideix si s'hauria d'usar una escala de color ampliada per a obtenir HDR10."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3974,7 +3955,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Incrementa l'índex del disc seleccionat actualment. La safata de disc virtual ha d'estar oberta."
+   "Augmenta l'índex del disc seleccionat i fa una inserció retardada si el disc virtual està tancat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3982,7 +3963,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Disminueix l'índex del disc seleccionat actualment. La safata de disc virtual ha d'estar oberta."
+   "Disminueix l'índex del disc seleccionat i fa una inserció retardada si el disc virtual està tancat."
    )
 
 MSG_HASH(
@@ -9889,12 +9870,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Índex del disc actual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Selecciona el disc actual des d'una llista d'imatges disponibles. La safata de disc virtual es pot mantenir tancada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Expulsar disc"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Obre la safata del disc virtual i extreu el disc que s'estava carregant. Si l'opció 'Fes pausa al contingut quan el menú estigui actiu' està activada, alguns nuclis no poden registrar canvis fins que hagin passat uns segons amb el contingut reprès i després de cada acció de control de discs."
+   "Obre la safata del disc virtual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9902,7 +9891,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Insereix un disc i tanca la safata virtual. Si l'opció 'Fes pausa al contingut quan el menú estigui actiu' està activada, alguns nuclis no poden registrar canvis fins que hagin passat uns segons amb el contingut reprès i després de cada acció de control de discs."
+   "Tanca la safata del disc virtual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -9910,20 +9899,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Expulsa el disc actual, selecciona un nou disc des del sistema de fitxers, insereix-lo i tanca la safata virtual del disc.\nNOTA: Aquesta és una característica heretada. Es recomana carregar contingut de diversos discs a les llistes de reproducció M3U, les quals permeten seleccionar discs mitjançant les opcions 'Expulsar disc', 'Introduir disc' i 'Índex del disc actual'."
+   "Selecciona un nou disc del sistema de fitxers i adjunta-ho a la llista d'índexs.\nNOTA: Aquesta és una opció heretada. Es recomana fer servir llistes M3U per títols que fan servir varis discs."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Escull un nou disc des del sistema de fitxers i insereix-lo sense tancar la safata virtual de disc.\nNOTA: Aquesta és una característica heretada. Es recomana carregar títols de diversos discs fent servir les llistes de reproducció M3U, les quals permeten seleccionar discs mitjançant l'opció 'Índex del disc actual'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Índex del disc actual"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Escull el disc d'una llista de disc disponibles. El disc es carregarà en clicar 'Insereix disc'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -16106,5 +16084,115 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Mostra l'opció 'IA del joc'."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "Configuració de xarxa de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "Modifica la configuració de la xarxa compartida SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "Activa el client de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Activa l'accés a la xarxa SMB compartida. Es recomana ethernet per davant de wifi per una connexió més fiable."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "Servidor de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "Adreça IP del servidor o amfitrió."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "Nom del recurs compartit de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "Nom de la xarxa compartida a accedir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "Subdirectori de SMB (opcional)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "Adreça del subdirectori a compartir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "Nom d'usuari de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "Nom d'usuari per l'autenticació."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "Contrasenya de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "Contrasenya per l'autenticació."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "Grup de treball de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "Grup de treball o nom del domini."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "Mode d'autenticació de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "Selecciona l'autenticació que es fa servir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "Connexions màximes de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Selecciona el nombre màxim de connexions possibles."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "Temps límit de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Selecciona el temps límit per defecte en segons."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "Explora el recurs compartit de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Cerca fitxers a la xarxa SMB configurada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "Mostra el client de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "Mostra la configuració de client de SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "Xarxa compartida SMB"
    )
 #endif

@@ -2358,14 +2358,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminosidade de Papel Branco"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Define a luminância a que o \"papel branco\" deve estar, ou seja, texto legível ou luminância máxima da gama SDR (Standard Dynamic Range). Útil para se ajustar a diferentes condições de iluminação no seu ambiente."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Contraste"
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -4101,6 +4094,10 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Índice do disco"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Ejetar Disco"
    )
@@ -4108,10 +4105,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Adicionar imagem de disco"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Índice do disco"
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -6199,4 +6193,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

@@ -2607,33 +2607,10 @@ MSG_HASH(
    "Пікавая яркасць"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Ўстаноўка максімальнай яркасці (у кд/м2), якую можа выдаваць дысплей. Значэнне пікавай яркасці дысплея гледзіце на рэсурсе RTings."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Яркасць белага аркушу"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Усталёўвае яркасць, пры якой тэкст можна добра чытаць на белым аркушы або яркасць у канцы шкалы SDR (стандартнага дынамічнага дыяпазону). Выкарыстоўваецца для падладкі пад розныя ўмовы асвятлення."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Кантраст"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Налада гамы/кантраснасці HDR. Пашырае дыяпазон паміж самымі светлымі і самымі цёмнымі часткамі выявы. Чым вышэй кантраст HDR, тым мацней розніца і чым ніжэй кантраст, тым больш размытай будзе выява. Дазваляе дасягнуць найлепшай якасці карцінкі на экране."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Пашыраная каляровая гама"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Пасля пераўтварэння каляровай прасторы ў лінейнае вызначае, ці трэба ўжываць пашыраную каляровую гаму для HDR10."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3781,16 +3758,8 @@ MSG_HASH(
    "Наступны дыск"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Павялічвае бягучы індэкс дыска. Віртуальны латок дыска мае быць адкрытым."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Папярэдні дыск"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Паніжае бягучы індэкс дыска. Віртуальны латок дыска мае быць адкрытым."
    )
 
 MSG_HASH(
@@ -9617,41 +9586,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Выняць дыск"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Індэкс бягучага дыска"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Адкрыць віртуальны латок прывада і выняць бягучы дыск. Калі ўключаная опцыя 'Паўза пры выкліку меню', некаторым ядрам пасля любых аперацый з дыскамі патрабуецца на некалькі секунд аднавіць кантэнт для рэгістрацыі змен."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Выняць дыск"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Уставіць дыск"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Загрузіць дыск з бягучага азначніка і зачыніць латок віртуальнага прывада. Калі ўключаная опцыя 'Паўза пры выкліку меню', некаторым ядрам пасля любых аперацый з дыскамі патрабуецца на некалькі секунд аднавіць кантэнт для рэгістрацыі змен."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Загрузіць новы дыск"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Выміце бягучы дыск, абярыце з памяці іншы, устаўце і зачыніце латок прывада.\nГэтая функцыя з'яўляецца састарэлай. Гульні на некалькіх дысках рэкамендуецца загружаць праз M3U-плэйлісты, якія дазваляюць мяняць дыскі пры дапамозе опцый 'Выняць дыск' і 'Азначнік дыска'."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Выбраць новы дыск з памяці і ўставіць яго без закрыцця латка.\nУВАГА: гэта функцыя састарэлая. Гульні на некалькіх дысках рэкамендуецца загружаць праз M3U-плэйлісты, якія дазваляюць мяняць дыскі пры дапамозе опцый 'Выняць дыск' і 'Азначнік дыска'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Індэкс бягучага дыска"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Абярыце бягучы дыск са спісу даступных вобразаў. Дыск будзе загружаны пры выбары 'Уставіць Дыск'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -15739,4 +15689,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Паказваць опцыю 'Гульнявы ШІ'."
    )
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

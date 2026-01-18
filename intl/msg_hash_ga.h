@@ -2699,33 +2699,10 @@ MSG_HASH(
    "Lonracht Bhuaice"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Socraigh an gile buaic (i cd/m2) is féidir le do thaispeántas a atáirgeadh. Féach RTings le haghaidh gile buaic do thaispeántais."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Lonrúlacht Bán Páipéir"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Socraigh an gile ag a mbeidh bán páipéir i.e. téacs inléite nó gile ag barr an raoin SDR (Raon Dinimiciúil Caighdeánach). Úsáideach chun coigeartú a dhéanamh do dhálaí soilsithe éagsúla i do thimpeallacht."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Codarsnacht"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Rialú gama/chodarsnachta le haghaidh HDR. Glacann sé na dathanna agus méadaíonn sé an raon foriomlán idir na codanna is gile agus na codanna is dorcha den íomhá. Dá airde an codarsnacht HDR, is ea is mó an difríocht seo, agus dá ísle an codarsnacht, is ea is doiléire a bhíonn an íomhá. Cabhraíonn sé le húsáideoirí an íomhá a choigeartú dá dtaitneamh agus cad is fearr leo a fheiceáil ar a scáileán."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Leathnaigh Gamut"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Nuair a bheidh an spás datha tiontaithe go spás líneach, cinntigh an gceart dúinn gamut datha leathnaithe a úsáid chun HDR10 a bhaint amach."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3986,7 +3963,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Méadaíonn sé innéacs an diosca atá roghnaithe faoi láthair. Ní mór an tráidire diosca fíorúil a bheith oscailte."
+   "Méadaíonn sé innéacs an diosca atá roghnaithe faoi láthair agus déanann sé moill ar chur isteach má tá an tráidire diosca fíorúil dúnta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3994,7 +3971,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Laghdaíonn sé innéacs an diosca atá roghnaithe faoi láthair. Ní mór an tráidire diosca fíorúil a bheith oscailte."
+   "Laghdaíonn sé innéacs an diosca atá roghnaithe faoi láthair agus déanann sé moill ar an iontráil má tá an tráidire diosca fíorúil dúnta."
    )
 
 MSG_HASH(
@@ -9933,12 +9910,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Innéacs an Diosca Reatha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Roghnaigh an diosca reatha ón liosta d’íomhánna atá ar fáil. Is féidir an tráidire diosca fíorúil fanacht dúnta."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Díbirt Diosca"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Oscail an tráidire diosca fíorúil agus bain an diosca atá luchtaithe faoi láthair. Má tá 'Cuir an t-ábhar ar sos nuair a bhíonn an roghchlár gníomhach' cumasaithe, ní fhéadfaidh roinnt croíleacán athruithe a chlárú mura n-atosófar an t-ábhar ar feadh cúpla soicind tar éis gach gníomh rialaithe diosca."
+   "Oscail an tráidire diosca fíorúil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9946,7 +9931,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Cuir isteach an diosca a fhreagraíonn don 'Innéacs Diosca Reatha' agus dún an tráidire diosca fíorúil. Má tá 'Cuir an t-ábhar ar sos nuair a bhíonn an roghchlár gníomhach' cumasaithe, ní fhéadfaidh roinnt croíleacán athruithe a chlárú mura n-atosófar an t-ábhar ar feadh cúpla soicind tar éis gach gníomh rialaithe diosca."
+   "Dún an tráidire diosca fíorúil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -9954,20 +9939,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Díbirt an diosca reatha, roghnaigh diosca nua ón gcóras comhad ansin cuir isteach é agus dún an tráidire diosca fíorúil.\nNÓTA: Is gné oidhreachta í seo. Moltar ina ionad sin teidil ildhiosca a luchtú trí seinmliostaí M3U, a cheadaíonn roghnú diosca ag baint úsáide as na roghanna 'Díbirt/Cuir isteach Diosca' agus 'Innéacs Diosca Reatha'."
+   "Roghnaigh diosca nua ón gcóras comhad agus cuir leis an liosta innéacs é.\nNÓTA: Is gné oidhreachta í seo. Moltar seinmliostaí M3U a úsáid ina ionad sin le haghaidh teidil ildhiosca."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Roghnaigh diosca nua ón gcóras comhad agus cuir isteach é gan an tráidire diosca fíorúil a dhúnadh.\nNÓTA: Is gné oidhreachta í seo. Moltar ina ionad sin teidil ildhiosca a luchtú trí seinmliostaí M3U, a cheadaíonn roghnú diosca ag baint úsáide as an rogha 'Innéacs Diosca Reatha'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Innéacs an Diosca Reatha"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Roghnaigh an diosca reatha ón liosta d’íomhánna atá ar fáil. Luchtófar an diosca nuair a roghnófar 'Cuir Diosca Isteach'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -16298,5 +16272,115 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Taispeáin an rogha 'Cluiche AI'."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "Socruithe Líonra SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "Cumraigh socruithe comhroinnte líonra SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "Cumasaigh Cliant SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Cumasaigh rochtain chomhroinnte líonra SMB. Moltar go láidir Ethernet thar Wi-Fi le haghaidh nasc níos iontaofa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "Freastalaí SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "Seoladh IP nó ainm óstach an fhreastalaí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "Ainm an Comhroinn SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "Ainm an chomhroinnte líonra le rochtain a fháil air."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "Fo-eolaire SMB (roghnach)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "Cosán fo-eolaire ar an gcomhroinnt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "Ainm an Úsáideora SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "Ainm úsáideora le haghaidh fíordheimhnithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "Pasfhocal SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "Pasfhocal le haghaidh fíordheimhnithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "Grúpa Oibre SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "Ainm grúpa oibre nó fearainn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "Mód Fíordheimhnithe SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "Roghnaigh an fíordheimhniú a úsáidtear i do thimpeallacht."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "Uasmhéid naisc SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Roghnaigh an líon uasta naisc a úsáidtear i do thimpeallacht."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "Am Teorannú SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Roghnaigh an t-am scoir réamhshocraithe i soicindí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "Brabhsáil Comhroinn SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Brabhsáil comhaid ar an gcomhroinnt SMB cumraithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "Taispeáin 'Cliant SMB'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "Taispeáin socruithe 'Cliant SMB'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "Comhroinn SMB"
    )
 #endif

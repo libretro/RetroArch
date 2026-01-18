@@ -2555,33 +2555,10 @@ MSG_HASH(
    "Szczytowa luminancja"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Ustaw szczytową luminancję (w cd/m2) wyświetlacza. Zobacz RTings dla szczytowej luminancji wyświetlacza."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Lampa biała papierowa"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Ustawić luminancję, przy której biały papier powinien być czytelny lub luminancję w górnej części zakresu SDR (standardowy zakres dynamiczny). Przydatne do dostosowania do różnych warunków oświetlenia w otoczeniu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Kontrast"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Kontrola gamma/kontrastu dla HDR. Zbiera kolory i zwiększa ogólny zakres pomiędzy najjaśniejszymi częściami i najciemniejszymi częściami obrazu. Im wyższy kontrast HDR jest wyższy, tym większa staje się ta różnica, tym niższa jest kontrast, tym bardziej zrzuca się obraz. Pomaga użytkownikom dostosować obraz do ich upodobań i tego, co mają najlepsze wrażenie na wyświetlaczu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Rozwiń Gamut"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Gdy przestrzeń kolorów zostanie przekonwertowana na przestrzeń liniową, kontroluje czy powinniśmy użyć rozszerzonej gamy, aby dostać się do HDR10."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -8469,41 +8446,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Wysuń dysk"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Indeks dysku"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Otwórz zasobnik dysków wirtualnych i usuń aktualnie załadowany dysk. Jeśli 'Wstrzymaj zawartość, gdy Menu jest aktywne' jest włączone, niektóre rdzenie mogą nie rejestrować zmian, chyba że zawartość zostanie wznowiona przez kilka sekund po każdej akcji kontroli dysku."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Wysuń dysk"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Włóż dysk"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Wstaw dysk odpowiadający 'bieżącemu indeksowi dysku' i zamknij wirtualną przepustkę dysku. Jeśli 'Wstrzymaj zawartość, gdy Menu jest aktywne' jest włączone, niektóre rdzenie mogą nie rejestrować zmian, chyba że zawartość zostanie wznowiona przez kilka sekund po każdej akcji kontroli dysku."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Załaduj nowy dysk"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Usuń bieżący dysk, wybierz nowy dysk z systemu plików, a następnie wstaw go i zamknij wirtualną tarczę.\nUWAGA: To jest starsza funkcja. Zamiast tego zaleca się wczytywanie wielodyskowych tytułów przez listy odtwarzania M3U, które pozwalają na wybór dysku przy użyciu opcji 'Eject/Insert Disc' i 'Current Disc Index'."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Wybierz nowy dysk z systemu plików i wstaw go bez zamykania wirtualnej tarczy dysku.\nUWAGA: To jest starsza funkcja. Zamiast tego zaleca się wczytywanie wielodyskowych tytułów przez listy odtwarzania M3U, które umożliwiają wybór dysku przy użyciu opcji 'Aktualny indeks dysku'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Indeks dysku"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Wybierz bieżący dysk z listy dostępnych obrazów. Dysk zostanie załadowany po wybraniu 'Włóż dysk'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -13835,4 +13793,6 @@ MSG_HASH(
    )
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

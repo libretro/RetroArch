@@ -2715,33 +2715,14 @@ MSG_HASH(
    "Độ sáng tối đa"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Đặt độ sáng tối đa (tính bằng cd/m2) mà màn hình của bạn có thể tái tạo. Xem RTings để biết độ sáng tối đa của màn hình."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Độ sáng trắng chuẩn"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Thiết lập độ sáng trắng chuẩn cần đạt được, tức là văn bản có thể đọc được hoặc độ sáng ở mức cao nhất của dải SDR (Dải động tiêu chuẩn). Hữu ích để điều chỉnh theo các điều kiện ánh sáng khác nhau trong môi trường của bạn."
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RGB,
+   "Tín hiệu RGB (đỏ–lục–lam)"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Tương phản"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Kiểm soát gamma/độ tương phản cho HDR. Lấy màu sắc và tăng phạm vi tổng thể giữa các vùng sáng nhất và tối nhất của hình ảnh. Độ tương phản HDR càng cao, sự chênh lệch này càng lớn, trong khi độ tương phản càng thấp, hình ảnh càng bị nhạt màu. Giúp người dùng tinh chỉnh hình ảnh theo ý thích và cảm thấy hình ảnh hiển thị đẹp nhất trên màn hình."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Mở rộng Gam màu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Sau khi không gian màu được chuyển đổi thành không gian tuyến tính, hãy quyết định xem chúng ta có nên sử dụng gam màu mở rộng để đạt được HDR10 hay không."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -4001,16 +3982,8 @@ MSG_HASH(
    "Đĩa tiếp theo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Tăng chỉ mục đĩa hiện đang được chọn. Khay đĩa ảo phải đang mở."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Đĩa trước đó"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Giảm chỉ mục đĩa hiện đang được chọn. Khay đĩa ảo phải đang mở."
    )
 
 MSG_HASH(
@@ -9945,41 +9918,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Đẩy đĩa ra"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Chỉ số đĩa"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Mở khay đĩa ảo và gỡ đĩa hiện đang nạp. Nếu 'Tạm dừng trò chơi khi Menu đang bật' được bật, một số Core có thể không nhận thay đổi trừ khi trò chơi được tiếp tục trong vài giây sau mỗi thao tác điều khiển đĩa."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Đẩy đĩa ra"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Thêm đĩa"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Chèn đĩa tương ứng với 'Chỉ số đĩa hiện tại' và đóng khay đĩa ảo. Nếu 'Tạm dừng trò chơi khi Menu đang hoạt động' được bật, một số Core có thể không nhận thay đổi trừ khi trò chơi được tiếp tục trong vài giây sau mỗi thao tác điều khiển đĩa."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Tải đĩa mới"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Đẩy đĩa hiện tại ra, chọn một đĩa mới từ hệ thống tệp rồi chèn vào và đóng khay đĩa ảo.\nLƯU Ý: Đây là tính năng cũ. Thay vào đó, nên tải các trò chơi nhiều đĩa bằng danh sách phát M3U, cho phép chọn đĩa bằng các tùy chọn 'Đẩy/Chèn đĩa' và 'Chỉ số đĩa hiện tại'."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Chọn một đĩa mới từ hệ thống tệp và chèn vào mà không đóng khay đĩa ảo.\nLƯU Ý: Đây là tính năng cũ. Thay vào đó, nên tải các trò chơi nhiều đĩa bằng danh sách phát M3U, cho phép chọn đĩa bằng tùy chọn 'Chỉ số đĩa hiện tại'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Chỉ số đĩa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Chọn đĩa hiện tại từ danh sách các ảnh đĩa có sẵn. Đĩa sẽ được tải khi chọn 'Chèn đĩa'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -16286,5 +16240,115 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Hiển thị tùy chọn 'Game AI'."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "Cài đặt mạng SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "Cấu hình các thiết lập chia sẻ mạng SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "Bật máy khách SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Bật quyền truy cập chia sẻ mạng SMB. Khuyến nghị dùng mạng dây (Ethernet) thay vì Wi-Fi để có kết nối ổn định hơn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "Máy chủ SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "Địa chỉ IP hoặc tên máy chủ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "Tên thư mục chia sẻ SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "Tên thư mục mạng dùng để truy cập."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "Thư mục con SMB (tùy chọn)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "Đường dẫn thư mục con trong thư mục chia sẻ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "Tên người dùng SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "Tên đăng nhập dùng để xác thực."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "Mật khẩu SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "Mật khẩu dùng để xác thực."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "Nhóm làm việc SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "Tên Workgroup hoặc Domain."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "Chế độ xác thực SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "Chọn phương thức xác thực phù hợp với môi trường mạng của bạn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "Số lượng kết nối tối đa của SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Chọn số lượng kết nối tối đa được sử dụng trong môi trường của bạn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "Thời gian chờ SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Chọn thời gian chờ mặc định (tính bằng giây)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "Duyệt thư mục chia sẻ SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Duyệt các tệp trong thư mục chia sẻ SMB đã cấu hình."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "Hiển thị “SMB Client”"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "Hiển thị các cài đặt của “SMB Client”."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "Chia sẻ SMB"
    )
 #endif

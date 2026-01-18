@@ -2700,7 +2700,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Establece la luminancia máxima (en cd/m²) que puede reproducir tu monitor. Para averiguar cuál es la luminancia máxima de tu monitor, visita la web RTings."
+   "Establece la luminancia máxima (en cd/m²) que puede reproducir tu monitor. Una vez hayas elegido una configuración, no la cambies. Ajusta el brillo mediante la luminosidad de blanco «papel». Para averiguar cuál es la luminancia máxima de tu monitor, visita la web RTings. En aquellas pantallas que tengan activadas las línea de barrido (más abajo), es posible que necesites aumentar este valor (y el del blanco «papel») para poder aumentar el brillo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -2708,24 +2708,33 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Establece la luminancia con la que el blanco de una hoja de papel tendría un texto legible, o la luminancia máxima del rango SDR (rango dinámico estándar). Sirve para ajustarse a la variación en la iluminación de tu entorno."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Contraste"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Controla el gamma/contraste del HDR. Aumenta el rango general de colores de la imagen entre las áreas más brillantes y las más oscuras. A mayor contraste de HDR, mayor diferencia, mientras que con un contraste menor la imagen se hará más pálida. Este ajuste ayuda a calibrar la imagen a gusto del usuario."
+   "Una vez hayas configurado la luminancia máxima, utiliza esta opción como ajuste de brillo estándar. Técnicamente, establece la luminancia con la que el blanco de una hoja de papel tendría un texto legible, o la luminancia máxima del rango SDR (rango dinámico estándar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Ampliar gama"
+   "Aumento de color"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Cuando el espacio de color es convertido a espacio lineal, esta opción indica si se debería utilizar una gama de colores expandida y compatible con el formato HDR10."
+   "Utiliza el rango completo de colores de tu pantalla para crear una imagen más brillante y saturada. Si deseas ver colores más fieles a los del diseño original de los juegos, desactiva esta opción."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Líneas de barrido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "Activa las líneas de barrido con HDR. Las líneas de barrido son el principal motivo para activar el modo HDR en RetroArch, ya que una implementación correcta de las líneas de barrido apagará buena parte de la imagen, y el HDR recuperará parte del brillo perdido. Si necesitas un control más preciso de tus líneas de barrido, deberías recurrir a los shaders personalizados que incluye RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Disposición subpíxel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Selecciona la disposición subpíxel para tu pantalla (solo afecta a las líneas de barrido). Si no sabes cuál es la disposición subpíxel de tu pantalla, busca la «subpixel layout (disposición subpixel)» de tu pantalla en Rtings.com."
+   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3982,7 +3991,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Aumenta el índice de disco seleccionado. La bandeja de disco virtual debe estar abierta."
+   "Aumenta el número del índice de disco seleccionado y, si la bandeja de disco virtual está cerrada, introduce el disco con un leve retraso."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3990,7 +3999,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Disminuye el índice de disco seleccionado. La bandeja de disco virtual debe estar abierta."
+   "Disminuye el número del índice de disco seleccionado y, si la bandeja de disco virtual está cerrada, introduce el disco con un leve retraso."
    )
 
 MSG_HASH(
@@ -9909,12 +9918,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Índice de disco actual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Selecciona un disco de la lista de imágenes disponibles. La bandeja de disco virtual puede permanecer cerrada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Expulsar disco"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Abre la bandeja de disco virtual y extrae el disco que esté cargado. Si la opción Pausar contenido al activar el menú está activada, algunos núcleos podrían no registrar los cambios hasta que hayan pasado unos segundos tras reanudar el contenido y tras cada acción de control de discos."
+   "Abre la bandeja de disco virtual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9922,7 +9939,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Introduce el disco correspondiente al índice de disco actual y cierra la bandeja de disco virtual. Si la opción Pausar contenido al activar el menú está activada, algunos núcleos podrían no registrar los cambios hasta que hayan pasado unos segundos tras reanudar el contenido y tras cada acción de control de discos."
+   "Cierra la bandeja de disco virtual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -9930,20 +9947,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Expulsa el disco actual, selecciona uno nuevo del sistema de archivos, lo introduce y cierra la bandeja de disco virtual.\nNOTA: Esta es una característica antigua. Se recomienda cargar títulos de varios discos a través de listas de reproducción M3U, las cuales permiten seleccionar discos mediante las opciones «Expulsar disco», «Introducir disco» e «Índice de disco actual»."
+   "Selecciona un disco nuevo del sistema de archivos y lo añade a la lista del índice.\nNOTA: Esta es una característica obsoleta. Se recomienda utilizar listas de reproducción M3U con juegos multidisco."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Selecciona un disco nuevo del sistema de archivos y lo introduce sin cerrar la bandeja de disco virtual.\nNOTA: Esta es una característica antigua. Se recomienda cargar títulos de varios discos a través de listas de reproducción M3U, las cuales permiten seleccionar discos mediante la opción «Índice de disco actual»."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Índice de disco actual"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Selecciona el disco actual a partir de una lista de imágenes disponibles. El disco será cargado cuando se seleccione la opción «Introducir disco»."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -16210,5 +16216,115 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Muestra la opción «IA de juego»."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "Ajustes de red SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "Configura los ajustes de la red compartida SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "Activar cliente SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Activa el acceso a la red compartida SMB. Se recomienda encarecidamente utilizar un cable Ethernet en vez de una señal wifi para tener una conexión más fiable."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "Servidor de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "La dirección IP o el nombre de host del servidor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "Nombre de recurso compartido de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "El nombre del recurso compartido de red al que quieres acceder."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "Subdirectorio SMB (opcional)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "La ruta del subdirectorio del recurso compartido."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "Nombre de usuario de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "El nombre de usuario para la autenticación."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "Contraseña de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "La contraseña para la autenticación."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "Grupo de trabajo de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "El nombre del grupo de trabajo o del dominio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "Modo de autenticación de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "Selecciona el modo de autenticación de tu entorno SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "N.º de conexiones máximas por SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Selecciona el número máximo de conexiones permitidas en tu entorno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "Tiempo de espera de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Selecciona el tiempo de espera predeterminado (en segundos)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "Explorar recurso compartido SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Accede a los archivos del recurso compartido de SMB que hayas configurado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "Mostrar Cliente SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "Muestra los ajustes del cliente SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "Red compartida SMB"
    )
 #endif
