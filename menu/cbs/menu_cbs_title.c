@@ -726,6 +726,9 @@ DEFAULT_TITLE_MACRO(action_get_title_dropdown_playlist_default_core_item, MENU_E
 DEFAULT_TITLE_MACRO(action_get_title_dropdown_playlist_label_display_mode_item, MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE)
 DEFAULT_TITLE_MACRO(action_get_title_dropdown_playlist_sort_mode_item, MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE)
 DEFAULT_TITLE_MACRO(action_get_title_manual_content_scan_list,  MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST)
+DEFAULT_TITLE_MACRO(action_get_title_dropdown_scan_method_item, MENU_ENUM_LABEL_VALUE_SCAN_METHOD)
+DEFAULT_TITLE_MACRO(action_get_title_dropdown_scan_use_db_item, MENU_ENUM_LABEL_VALUE_SCAN_USE_DB)
+DEFAULT_TITLE_MACRO(action_get_title_dropdown_scan_db_select_item, MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT)
 DEFAULT_TITLE_MACRO(action_get_title_dropdown_manual_content_scan_system_name_item, MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME)
 DEFAULT_TITLE_MACRO(action_get_title_dropdown_manual_content_scan_core_name_item, MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME)
 DEFAULT_TITLE_MACRO(action_get_title_dropdown_disk_index, MENU_ENUM_LABEL_VALUE_DISK_INDEX)
@@ -775,6 +778,9 @@ DEFAULT_FILL_TITLE_MACRO(action_get_title_xmb_font,               MENU_ENUM_LABE
 DEFAULT_FILL_TITLE_MACRO(action_get_title_ozone_font,             MENU_ENUM_LABEL_VALUE_OZONE_FONT)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_log_dir,                MENU_ENUM_LABEL_VALUE_LOG_DIR)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_manual_content_scan_dir, MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR)
+DEFAULT_FILL_TITLE_MACRO(action_get_title_scan_method,            MENU_ENUM_LABEL_VALUE_SCAN_METHOD)
+DEFAULT_FILL_TITLE_MACRO(action_get_title_scan_use_db,            MENU_ENUM_LABEL_VALUE_SCAN_USE_DB)
+DEFAULT_FILL_TITLE_MACRO(action_get_title_scan_db_select,         MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT)
 
 DEFAULT_TITLE_COPY_MACRO(action_get_title_help,                   MENU_ENUM_LABEL_VALUE_HELP_LIST)
 DEFAULT_TITLE_COPY_MACRO(action_get_title_input_settings,         MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)
@@ -1320,6 +1326,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
 #endif
       {MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST,
          action_get_title_manual_content_scan_list},
+      {MENU_ENUM_LABEL_SCAN_METHOD,
+         action_get_title_scan_method},
+      {MENU_ENUM_LABEL_SCAN_USE_DB,
+         action_get_title_scan_use_db},
+      {MENU_ENUM_LABEL_SCAN_DB_SELECT,
+         action_get_title_scan_db_select},
       {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,
          action_get_title_manual_content_scan_dir},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING,
@@ -1775,6 +1787,15 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_manual_content_scan_list);
             break;
+         case MENU_ENUM_LABEL_SCAN_METHOD:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_scan_method);
+            break;
+         case MENU_ENUM_LABEL_SCAN_USE_DB:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_scan_use_db);
+            break;
+         case MENU_ENUM_LABEL_SCAN_DB_SELECT:
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_scan_db_select);
+            break;
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_manual_content_scan_dir);
             break;
@@ -1854,6 +1875,9 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE,            action_get_title_thumbnails},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE,             action_get_title_left_thumbnails},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_ICON_THUMBNAIL_MODE,             action_get_title_icon_thumbnails},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_METHOD,                              action_get_title_dropdown_scan_method_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_USE_DB,                              action_get_title_dropdown_scan_use_db_item},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_DB_SELECT,                           action_get_title_dropdown_scan_db_select_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME,          action_get_title_dropdown_manual_content_scan_system_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,            action_get_title_dropdown_manual_content_scan_core_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX,                               action_get_title_dropdown_disk_index},

@@ -3759,6 +3759,18 @@ MSG_HASH(
    "scan_file"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_TARGET_PLAYLIST,
+   "scan_target_playlist"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_SINGLE_FILE,
+   "scan_single_file"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_OMIT_DB_REF,
+   "scan_omit_db_ref"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,
    "netplay_show_only_connectable"
    )
@@ -6561,6 +6573,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,
    "manual_content_scan_dir"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_METHOD,
+   "scan_method"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_METHOD,
+   "deferred_dropdown_box_list_scan_method"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_USE_DB,
+   "scan_use_db"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_USE_DB,
+   "deferred_dropdown_box_list_scan_use_db"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_DB_SELECT,
+   "scan_db_select"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_DB_SELECT,
+   "deferred_dropdown_box_list_scan_db_select"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
