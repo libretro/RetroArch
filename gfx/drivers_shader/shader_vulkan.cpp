@@ -2509,6 +2509,7 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
                       core_aspect_rot);
 
+#ifdef VULKAN_HDR_SWAPCHAIN
    build_semantic_float(buffer, SLANG_SEMANTIC_HDR,
                       enable_hdr);
 
@@ -2532,6 +2533,7 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
 
    build_semantic_float(buffer, SLANG_SEMANTIC_HDR10,
                       hdr10);
+#endif /* VULKAN_HDR_SWAPCHAIN */ 
 
    /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);

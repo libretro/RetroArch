@@ -170,7 +170,7 @@ static bool slang_process_reflection(
             "SubpixelLayout",
             "ExpandGamut",
             "InverseTonemap",
-            "HDR10",
+            "HDR10"
          };
          int size = sizeof(names) / sizeof(*names);
          if (semantic < size)
