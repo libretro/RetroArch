@@ -1791,6 +1791,7 @@ MSG_HASH(
    "Uključi HDR ako ga podržava displej."
    )
 
+
 /* Settings > Video > Synchronization */
 
 

@@ -2715,33 +2715,14 @@ MSG_HASH(
    "Độ sáng tối đa"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Đặt độ sáng tối đa (tính bằng cd/m2) mà màn hình của bạn có thể tái tạo. Xem RTings để biết độ sáng tối đa của màn hình."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Độ sáng trắng chuẩn"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Thiết lập độ sáng trắng chuẩn cần đạt được, tức là văn bản có thể đọc được hoặc độ sáng ở mức cao nhất của dải SDR (Dải động tiêu chuẩn). Hữu ích để điều chỉnh theo các điều kiện ánh sáng khác nhau trong môi trường của bạn."
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RGB,
+   "Tín hiệu RGB (đỏ–lục–lam)"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Tương phản"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Kiểm soát gamma/độ tương phản cho HDR. Lấy màu sắc và tăng phạm vi tổng thể giữa các vùng sáng nhất và tối nhất của hình ảnh. Độ tương phản HDR càng cao, sự chênh lệch này càng lớn, trong khi độ tương phản càng thấp, hình ảnh càng bị nhạt màu. Giúp người dùng tinh chỉnh hình ảnh theo ý thích và cảm thấy hình ảnh hiển thị đẹp nhất trên màn hình."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Mở rộng Gam màu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Sau khi không gian màu được chuyển đổi thành không gian tuyến tính, hãy quyết định xem chúng ta có nên sử dụng gam màu mở rộng để đạt được HDR10 hay không."
-   )
+
 
 /* Settings > Video > Synchronization */
 

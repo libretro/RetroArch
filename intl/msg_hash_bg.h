@@ -911,6 +911,7 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 
+
 /* Settings > Video > Synchronization */
 
 MSG_HASH(

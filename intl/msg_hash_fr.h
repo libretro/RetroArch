@@ -2683,33 +2683,14 @@ MSG_HASH(
    "Pic de luminance"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Définit le pic de luminance (en cd/m2) que votre écran peut reproduire. Voir \"RTings\" pour le pic de luminosité de votre écran."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminance du \"papier blanc\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Définit la luminance à laquelle le \"papier blanc\" doit être, comme du texte lisible ou la luminance en haut de la gamme SDR (Standard Dynamic Range). Utile pour s'adapter à différentes conditions d'éclairage dans votre environnement."
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RGB,
+   "RVB"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Contraste"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Contrôle du gamma/contraste pour le HDR. Prend les couleurs et augmente la portée globale entre les parties les plus claires et les parties les plus sombres de l'image. Plus le contraste HDR est élevé, plus cette différence devient grande, tandis que plus le contraste est bas, plus l'image perd de la netteté. Aide les utilisateurs à affiner l'image à leur goût et ce qu'ils pensent être le mieux sur leur écran."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Étendre le Gamut"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Une fois que l'espace de couleur est converti en espace linéaire, décide si une gamme de couleurs étendue doit être utilisée pour atteindre le HDR10."
-   )
+
 
 /* Settings > Video > Synchronization */
 

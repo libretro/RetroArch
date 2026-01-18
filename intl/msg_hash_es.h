@@ -2700,7 +2700,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Establece la luminancia máxima (en cd/m²) que puede reproducir tu monitor. Para averiguar cuál es la luminancia máxima de tu monitor, visita la web RTings."
+   "Establece la luminancia máxima (en cd/m²) que puede reproducir tu monitor. Una vez hayas elegido una configuración, no la cambies. Ajusta el brillo mediante la luminosidad de blanco «papel». Para averiguar cuál es la luminancia máxima de tu monitor, visita la web RTings. En aquellas pantallas que tengan activadas las línea de barrido (más abajo), es posible que necesites aumentar este valor (y el del blanco «papel») para poder aumentar el brillo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -2708,24 +2708,33 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Establece la luminancia con la que el blanco de una hoja de papel tendría un texto legible, o la luminancia máxima del rango SDR (rango dinámico estándar). Sirve para ajustarse a la variación en la iluminación de tu entorno."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Contraste"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Controla el gamma/contraste del HDR. Aumenta el rango general de colores de la imagen entre las áreas más brillantes y las más oscuras. A mayor contraste de HDR, mayor diferencia, mientras que con un contraste menor la imagen se hará más pálida. Este ajuste ayuda a calibrar la imagen a gusto del usuario."
+   "Una vez hayas configurado la luminancia máxima, utiliza esta opción como ajuste de brillo estándar. Técnicamente, establece la luminancia con la que el blanco de una hoja de papel tendría un texto legible, o la luminancia máxima del rango SDR (rango dinámico estándar)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Ampliar gama"
+   "Aumento de color"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Cuando el espacio de color es convertido a espacio lineal, esta opción indica si se debería utilizar una gama de colores expandida y compatible con el formato HDR10."
+   "Utiliza el rango completo de colores de tu pantalla para crear una imagen más brillante y saturada. Si deseas ver colores más fieles a los del diseño original de los juegos, desactiva esta opción."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Líneas de barrido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "Activa las líneas de barrido con HDR. Las líneas de barrido son el principal motivo para activar el modo HDR en RetroArch, ya que una implementación correcta de las líneas de barrido apagará buena parte de la imagen, y el HDR recuperará parte del brillo perdido. Si necesitas un control más preciso de tus líneas de barrido, deberías recurrir a los shaders personalizados que incluye RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Disposición subpíxel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Selecciona la disposición subpíxel para tu pantalla (solo afecta a las líneas de barrido). Si no sabes cuál es la disposición subpíxel de tu pantalla, busca la «subpixel layout (disposición subpixel)» de tu pantalla en Rtings.com."
+   )
+
 
 /* Settings > Video > Synchronization */
 

@@ -2691,33 +2691,10 @@ MSG_HASH(
    "Csúcs-luminancia"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "A kijelző által visszaadható csúcs-luminancia (cd/m2). A kijelzők csúcs-luminanciája az RTings-en megtalálható."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Papírfehér luminancia"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "A papírfehér szín fényerejének beállítása. Ez legyen az olvasható szöveg vagy az SDR (Standard Dynamic Range) luminanciájának teteje. Arra jó, hogy a környezet különféle megvilágításához alkalmazkodni lehessen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Kontraszt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "HDR gamma/kontraszt beállítás. A legfényesebb és legsötétebb részek színe közt növeli meg az eltérést. Minél magasabb a HDR kontraszt, annál nagyobb ez az eltérés, minél kisebb, annál fakóbb a kép. Saját ízlés és képernyő szerint állítható, ami a legjobban néz ki."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Kiterjesztett színskála"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "A színtér lineáris térre átalakítása után kiterjesztett színskála használata a HDR10 konverzióhoz."
-   )
+
 
 /* Settings > Video > Synchronization */
 

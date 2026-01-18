@@ -2170,10 +2170,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    "تمكين HDR إذا كانت الشاشة تدعمه."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "التباين"
-   )
+
 
 /* Settings > Video > Synchronization */
 

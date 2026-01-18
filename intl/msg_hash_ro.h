@@ -111,6 +111,7 @@ other than `msg_hash_us.h` will be rejected.
 /* Settings > Video > HDR */
 
 
+
 /* Settings > Video > Synchronization */
 
 

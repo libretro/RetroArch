@@ -2679,33 +2679,10 @@ MSG_HASH(
    "Luminancia máxima"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Establece a luminancia máxima (en cd/m2) que pode reproducir a túa pantalla. Consulta os RTings para coñecer a luminancia máxima da túa pantalla."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminancia branca de papel"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Establece a luminancia na que debe ser o branco do papel, é dicir, o texto lexible ou a luminancia na parte superior do rango SDR (rango dinámico estándar). Útil para axustarse ás diferentes condicións de iluminación do seu entorno."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Contraste"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Control de gamma/contraste para HDR. Toma as cores e aumenta o rango global entre as partes máis brillantes e as partes máis escuras da imaxe. Canto maior sexa o contraste HDR, maior será esta diferenza, mentres que canto menor sexa o contraste, máis lavada será a imaxe. Axuda aos usuarios a adaptar a imaxe ao seu gusto e o que cren que se ve mellor na súa pantalla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Expandir Gamut"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Unha vez que o espazo de cor se converta en espazo lineal, decida se debemos usar unha gama de cores ampliada para chegar a HDR10."
-   )
+
 
 /* Settings > Video > Synchronization */
 

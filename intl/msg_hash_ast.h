@@ -1482,14 +1482,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    "Picu d'illuminación"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Configura'l picu d'illuminación (en cd/m2) que la pantalla pue reproducir. Consulta'l RTings pa saber el picu d'illuminación de la pantalla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Contraste"
-   )
+
 
 /* Settings > Video > Synchronization */
 
