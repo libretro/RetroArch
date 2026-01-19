@@ -249,7 +249,7 @@ static bool smb_build_path(char *dest, size_t dest_size, const char *relative_pa
    settings_t *settings = config_get_ptr();
    char temp_path[PATH_MAX_LENGTH];
    const char *p;
-
+   
    if (!settings)
    {
       RARCH_ERR("[SMB] Cannot retrieve settings\n");
@@ -415,8 +415,10 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
 int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
    int64_t offset, int whence)
 {
+   uint64_t newpos = 0;
    struct smb2fh *fh;
    struct smb2_context *ctx;
+   int64_t ret;
 
    if (!smb_initialized || !stream || !stream->smb_ctx)
       return -1;
@@ -438,13 +440,15 @@ int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
    if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END)
       return -1;
 
-   if (smb2_lseek(ctx, fh, offset, whence, NULL) == -EINVAL)
+   /* libsmb2 returns status via ret, and the new offset via out param */
+   ret = smb2_lseek(ctx, fh, offset, whence, &newpos);
+   if (ret < 0)
    {
       RARCH_ERR("[SMB] Seek error: %s\n", smb2_get_error(ctx));
       return -1;
    }
 
-   return 0;
+   return (int64_t)newpos;
 }
 
 /* return the current byte offset in an open file */
@@ -453,6 +457,7 @@ int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
    uint64_t cur = 0;
    struct smb2fh *fh;
    struct smb2_context *ctx;
+   int64_t ret;
 
    if (!smb_initialized || !stream || !stream->smb_ctx)
       return -1;
@@ -468,7 +473,8 @@ int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
    if (!ctx)
       return -1;
 
-   if (smb2_lseek(ctx, fh, 0, SEEK_CUR, &cur) == -EINVAL)
+   ret = smb2_lseek(ctx, fh, 0, SEEK_CUR, &cur);
+   if (ret < 0)
    {
       RARCH_ERR("[SMB] Tell error: %s\n", smb2_get_error(ctx));
       return -1;

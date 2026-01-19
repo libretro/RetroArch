@@ -138,7 +138,10 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file* stream)
 #endif
         return _ftelli64(stream->fp);
     }
-    return lseek(stream->fd, 0, SEEK_CUR);
+    if (lseek(stream->fd, 0, SEEK_CUR) < 0)
+        return -1;
+
+    return 0;
 }
 
 int64_t retro_vfs_file_seek_internal(
@@ -156,7 +159,10 @@ int64_t retro_vfs_file_seek_internal(
 #endif
         return _fseeki64(stream->fp, offset, whence);
     }
-    return lseek(stream->fd, (off_t)offset, whence) == -1 ? -1 : 0;
+    if (lseek(stream->fd, (off_t)offset, whence) < 0)
+        return -1;
+
+    return 0;
 }
 
 int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file* stream,
