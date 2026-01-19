@@ -3611,7 +3611,7 @@ static bool d3d11_gfx_frame(
 #ifdef HAVE_DXGI_HDR   
          settings_t*    settings = config_get_ptr();
          
-         d3d11->pass[i].enable_hdr           = d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE;
+         d3d11->pass[i].enable_hdr              = (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) ? 1.0f : 0.0f;
 
          if(d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
          {
@@ -4493,8 +4493,8 @@ static const video_poke_interface_t d3d11_poke_interface = {
 #else
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL,  /* set_hdr_expand_gamut */
-   NULL,  /* set_hdr_scanlines */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
    NULL  /* d3d11_set_hdr_subpixel_layout */
 #endif
 };

@@ -202,15 +202,18 @@ float GenerateScanline( const uint channel,
                                        scanline_min, scanline_max, scanline_attack, 
                                        0.0); 
 
-   total_light += ScanlineColour( channel, tex_coord, source_size, scanline_size, source_tex_coord_x, 
-                                 narrowed_source_pixel_offset, vertical_convergence, beam_attack, 
-                                 scanline_min, scanline_max, scanline_attack, 
-                                 1.0);
+   if(k_crt_bloom_strength > 0.0f)
+   {
+	   total_light += ScanlineColour( channel, tex_coord, source_size, scanline_size, source_tex_coord_x, 
+									 narrowed_source_pixel_offset, vertical_convergence, beam_attack, 
+									 scanline_min, scanline_max, scanline_attack, 
+									 1.0);
 
-   total_light += ScanlineColour( channel, tex_coord, source_size, scanline_size, source_tex_coord_x, 
-                                 narrowed_source_pixel_offset, vertical_convergence, beam_attack, 
-                                 scanline_min, scanline_max, scanline_attack, 
-                                 -1.0);
+	   total_light += ScanlineColour( channel, tex_coord, source_size, scanline_size, source_tex_coord_x, 
+									 narrowed_source_pixel_offset, vertical_convergence, beam_attack, 
+									 scanline_min, scanline_max, scanline_attack, 
+									 -1.0);
+   }
 
    return total_light;
 } 

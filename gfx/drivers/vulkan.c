@@ -179,7 +179,6 @@ typedef struct vk
    struct vk_image *backbuffer;
 #ifdef VULKAN_HDR_SWAPCHAIN
    VkRenderPass readback_render_pass;
-   /* struct vk_image main_buffer; */
    struct vk_image readback_image;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -231,7 +230,6 @@ typedef struct vk
       VkPipeline font;
       VkPipeline rgb565_to_rgba8888;
 #ifdef VULKAN_HDR_SWAPCHAIN
-      /* VkPipeline hdr; */
       VkPipeline hdr_to_sdr; /* for readback */
 #endif /* VULKAN_HDR_SWAPCHAIN */
       VkDescriptorSetLayout set_layout;
@@ -2419,9 +2417,6 @@ static void vulkan_init_pipeline_layout(
 static void vulkan_init_pipelines(vk_t *vk)
 {
 #ifdef VULKAN_HDR_SWAPCHAIN
-/*    static const uint32_t hdr_frag[] =
- #include "vulkan_shaders/hdr.frag.inc"
-       ;*/
    static const uint32_t hdr_tonemap_frag[] =
 #include "vulkan_shaders/hdr_tonemap.frag.inc"
       ;
@@ -2647,31 +2642,6 @@ static void vulkan_init_pipelines(vk_t *vk)
 if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
 {
    blend_attachment.blendEnable = VK_FALSE;
-
-   /* HDR pipeline. */
-   /*
-   module_info.codeSize         = sizeof(hdr_frag);
-   module_info.pCode            = hdr_frag;
-   shader_stages[1].stage       = VK_SHADER_STAGE_FRAGMENT_BIT;
-   shader_stages[1].pName       = "main";
-   vkCreateShaderModule(vk->context->device,
-         &module_info, NULL, &shader_stages[1].module);
-
-   vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
-         1, &pipe, NULL, &vk->pipelines.hdr);
-   */
-
-   /* Build display hdr pipelines. */
-   /*
-   for (i = 4; i < 6; i++)
-   {
-      input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-      vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
-            1, &pipe, NULL, &vk->display.pipelines[i]);
-   }
-
-   vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
-   */
 
    /* HDR->SDR tonemapping readback pipeline. */
    module_info.codeSize         = sizeof(hdr_tonemap_frag);
@@ -2978,8 +2948,6 @@ static void vulkan_deinit_pipelines(vk_t *vk)
 #ifdef VULKAN_HDR_SWAPCHAIN
 if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
 {
-   /* vkDestroyPipeline(vk->context->device,
-          vk->pipelines.hdr, NULL); */
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.hdr_to_sdr, NULL);
 }
@@ -3477,7 +3445,6 @@ static void vulkan_free(void *data)
       if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
       {
          vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo);
-         /* vulkan_destroy_hdr_buffer(vk->context->device, &vk->main_buffer); */
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->readback_image);
          vulkan_deinit_hdr_readback_render_pass(vk);
          video_driver_unset_hdr_support();
@@ -4947,7 +4914,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    vulkan_filter_chain_set_enable_hdr(
-         (vulkan_filter_chain_t*)filter_chain, vk->context->flags & VK_CTX_FLAG_HDR_ENABLE);
+         (vulkan_filter_chain_t*)filter_chain, (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) ? 1.0f : 0.0f);
 #endif /* VULKAN_HDR_SWAPCHAIN */ 
 
    /* Render offscreen filter chain passes. */
@@ -5046,12 +5013,6 @@ static bool vulkan_frame(void *data, const void *frame,
        }
    }
 #endif
-
-/*
-#ifdef VULKAN_HDR_SWAPCHAIN
-   if (use_main_buffer)
-      backbuffer = &vk->main_buffer;
-#endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Render to backbuffer. */
    if (     (backbuffer->image != VK_NULL_HANDLE)
@@ -5365,7 +5326,6 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_THREADS
          slock_unlock(vk->context->queue_lock);
 #endif
-         /* vulkan_destroy_hdr_buffer(vk->context->device, &vk->main_buffer); */
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->readback_image);
       }
       else
@@ -5383,9 +5343,6 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
       {
-         /* Create intermediary buffer to render filter chain output to */
-         /* vulkan_init_render_target(&vk->main_buffer, video_width, video_height,
-                                      vk->context->swapchain_format, vk->render_pass, vk->context); */
          /* Create image for readback target in bgra8 format */
          vulkan_init_render_target(&vk->readback_image, video_width, video_height,
                                     VK_FORMAT_B8G8R8A8_UNORM, vk->readback_render_pass, vk->context);
