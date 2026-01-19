@@ -1178,7 +1178,7 @@ void video_display_server_destroy(void)
    if (initial_screen_orientation != current_screen_orientation)
       video_display_server_set_screen_orientation(initial_screen_orientation);
 
-   if (current_display_server)
+   if (current_display_server && (current_display_server != &dispserv_null))
       if (video_st->current_display_server_data)
          current_display_server->destroy(video_st->current_display_server_data);
 }
