@@ -286,6 +286,12 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_METHOD:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_METHOD;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_USE_DB:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_USE_DB;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_DB_SELECT:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_DB_SELECT;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
@@ -871,6 +877,33 @@ int generic_action_ok_displaylist_push(
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_METHOD:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_METHOD);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_METHOD;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_USE_DB:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_USE_DB);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_USE_DB;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_DB_SELECT:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_DB_SELECT);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_DB_SELECT;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
@@ -7468,6 +7501,33 @@ static int action_ok_push_dropdown_item_playlist_sort_mode(
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+static int action_ok_push_dropdown_item_scan_method(
+      const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   manual_content_scan_set_menu_scan_method(idx);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_item_scan_use_db(
+      const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   manual_content_scan_set_menu_scan_use_db(idx);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_item_scan_db_select(
+      const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   manual_content_scan_set_menu_scan_db_select(idx, path);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_dropdown_item_manual_content_scan_system_name(
       const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -8170,6 +8230,27 @@ static int action_ok_shader_preset_parameter_dropdown_box_list(
 {
    return generic_dropdown_box_list(idx,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_SHADER_PRESET_PARAMETER);
+}
+
+static int action_ok_scan_method(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_dropdown_box_list(idx,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_METHOD);
+}
+
+static int action_ok_scan_use_db(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_dropdown_box_list(idx,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_USE_DB);
+}
+
+static int action_ok_scan_db_select(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_dropdown_box_list(idx,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_DB_SELECT);
 }
 
 static int action_ok_manual_content_scan_system_name(const char *path,
@@ -9244,6 +9325,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_AUDIO_SETTINGS,                      action_ok_push_audio_settings_list},
          {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,      action_ok_push_audio_synchronization_settings_list},
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,             action_ok_push_manual_content_scan_dir_select},
+         {MENU_ENUM_LABEL_SCAN_METHOD,                         action_ok_scan_method},
+         {MENU_ENUM_LABEL_SCAN_USE_DB,                         action_ok_scan_use_db},
+         {MENU_ENUM_LABEL_SCAN_DB_SELECT,                      action_ok_scan_db_select},
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,     action_ok_manual_content_scan_system_name},
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME,       action_ok_manual_content_scan_core_name},
          {MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES,             action_ok_video_shader_num_passes_dropdown_box_list},
@@ -9658,6 +9742,15 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_SORT_MODE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_playlist_sort_mode);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_SCAN_METHOD:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_scan_method);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_SCAN_USE_DB:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_scan_use_db);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_SCAN_DB_SELECT:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_scan_db_select);
             break;
          case MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_manual_content_scan_system_name);

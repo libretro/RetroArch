@@ -549,6 +549,36 @@ static int action_start_manual_content_scan_dir(
    return 0;
 }
 
+static int action_start_scan_method(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   manual_content_scan_set_menu_scan_method(0);
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return 0;
+}
+
+static int action_start_scan_use_db(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   manual_content_scan_set_menu_scan_use_db(0);
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return 0;
+}
+
+static int action_start_scan_db_select(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   manual_content_scan_set_menu_scan_db_select(0,"");
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return 0;
+}
+
 static int action_start_manual_content_scan_system_name(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -900,6 +930,15 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
             BIND_ACTION_START(cbs, action_start_manual_content_scan_dir);
+            break;
+         case MENU_ENUM_LABEL_SCAN_METHOD:
+            BIND_ACTION_START(cbs, action_start_scan_method);
+            break;
+         case MENU_ENUM_LABEL_SCAN_USE_DB:
+            BIND_ACTION_START(cbs, action_start_scan_use_db);
+            break;
+         case MENU_ENUM_LABEL_SCAN_DB_SELECT:
+            BIND_ACTION_START(cbs, action_start_scan_db_select);
             break;
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
             BIND_ACTION_START(cbs, action_start_manual_content_scan_system_name);

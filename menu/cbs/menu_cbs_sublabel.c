@@ -996,6 +996,12 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_kick,                       
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_ban,                           MENU_ENUM_SUBLABEL_NETPLAY_BAN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_file,                             MENU_ENUM_SUBLABEL_SCAN_FILE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_directory,                        MENU_ENUM_SUBLABEL_SCAN_DIRECTORY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_method,                           MENU_ENUM_SUBLABEL_SCAN_METHOD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_use_db,                           MENU_ENUM_SUBLABEL_SCAN_USE_DB)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_db_select,                        MENU_ENUM_SUBLABEL_SCAN_DB_SELECT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_target_playlist,                  MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_single_file,                      MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_scan_omit_db_ref,                      MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_swap_interval,                   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sort_savefiles_enable,                 MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_sort_savestates_enable,                MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE)
@@ -3749,6 +3755,24 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SCAN_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_scan_directory);
+            break;
+         case MENU_ENUM_LABEL_SCAN_METHOD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_scan_method);
+            break;
+         case MENU_ENUM_LABEL_SCAN_USE_DB:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_scan_use_db);
+            break;
+         case MENU_ENUM_LABEL_SCAN_DB_SELECT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_scan_db_select);
+            break;
+         case MENU_ENUM_LABEL_SCAN_TARGET_PLAYLIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_scan_target_playlist);
+            break;
+         case MENU_ENUM_LABEL_SCAN_SINGLE_FILE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_scan_single_file);
+            break;
+         case MENU_ENUM_LABEL_SCAN_OMIT_DB_REF:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_scan_omit_db_ref);
             break;
          case MENU_ENUM_LABEL_NETPLAY_KICK:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_kick);

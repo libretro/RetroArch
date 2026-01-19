@@ -9032,6 +9032,147 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+      case DISPLAYLIST_DROPDOWN_LIST_SCAN_METHOD:
+         menu_entries_clear(list);
+         {
+            struct string_list *scan_method_list =
+               manual_content_scan_get_menu_scan_method_list();
+
+            if (scan_method_list)
+            {
+               unsigned current = 0;
+               unsigned i;
+
+               /* Get currently selected system name */
+               current = manual_content_scan_get_scan_method_enum();
+
+               /* Loop through names */
+               for (i = 0; i < scan_method_list->size; i++)
+               {
+                  const char *item = scan_method_list->elems[i].data;
+
+                  /* Add menu entry */
+                  if (menu_entries_append(list,
+                           item,
+                           "",
+                           MENU_ENUM_LABEL_NO_ITEMS,
+                           MENU_SETTING_DROPDOWN_ITEM_SCAN_METHOD,
+                           i, 0, NULL))
+                     count++;
+
+                  /* Check whether current entry is checked */
+                  if (current == i)
+                  {
+                     menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     if (cbs)
+                        cbs->checked            = true;
+                     menu_st->selection_ptr     = i;
+                  }
+               }
+
+               /* Clean up */
+               string_list_free(scan_method_list);
+            }
+         }
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_SCAN_USE_DB:
+         menu_entries_clear(list);
+         {
+            struct string_list *scan_use_db_list =
+               manual_content_scan_get_menu_scan_use_db_list();
+
+            if (scan_use_db_list)
+            {
+               unsigned current = 0;
+               unsigned i;
+
+               /* Get currently selected system name */
+               current = manual_content_scan_get_scan_use_db_enum();
+
+               /* Loop through names */
+               for (i = 0; i < scan_use_db_list->size; i++)
+               {
+                  const char *item = scan_use_db_list->elems[i].data;
+
+                  /* Add menu entry */
+                  if (menu_entries_append(list,
+                           item,
+                           "",
+                           MENU_ENUM_LABEL_NO_ITEMS,
+                           MENU_SETTING_DROPDOWN_ITEM_SCAN_USE_DB,
+                           i, 0, NULL))
+                     count++;
+
+                  /* Check whether current entry is checked */
+                  if (current == i)
+                  {
+                     menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     if (cbs)
+                        cbs->checked            = true;
+                     menu_st->selection_ptr     = i;
+                  }
+               }
+
+               /* Clean up */
+               string_list_free(scan_use_db_list);
+            }
+         }
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_SCAN_DB_SELECT:
+         menu_entries_clear(list);
+         {
+            bool show_hidden_files            = settings->bools.show_hidden_files;
+#ifdef HAVE_LIBRETRODB
+            const char *path_content_database = settings->paths.path_content_database;
+            struct string_list *scan_db_select_list =
+               manual_content_scan_get_menu_scan_db_select_list(
+                     path_content_database,
+                     show_hidden_files);
+#else
+            struct string_list *scan_db_select_list =
+               manual_content_scan_get_menu_scan_db_select_list(NULL,
+                     show_hidden_files);
+#endif
+
+            if (scan_db_select_list)
+            {
+               const char *current_system_name = NULL;
+               unsigned i;
+
+               /* Get currently selected system name */
+               manual_content_scan_get_menu_scan_db_select(&current_system_name);
+
+               /* Loop through names */
+               for (i = 0; i < scan_db_select_list->size; i++)
+               {
+                  /* Note: manual_content_scan_get_system_name_list()
+                   * ensures that system_name cannot be empty here */
+                  const char *system_name = scan_db_select_list->elems[i].data;
+
+                  /* Add menu entry */
+                  if (menu_entries_append(list,
+                           system_name,
+                           "",
+                           MENU_ENUM_LABEL_NO_ITEMS,
+                           MENU_SETTING_DROPDOWN_ITEM_SCAN_DB_SELECT,
+                           i, 0, NULL))
+                     count++;
+
+                  /* Check whether current entry is checked */
+                  if (string_is_equal(current_system_name, system_name))
+                  {
+                     menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     if (cbs)
+                        cbs->checked            = true;
+                     menu_st->selection_ptr     = i;
+                  }
+               }
+
+               /* Clean up */
+               string_list_free(scan_db_select_list);
+            }
+         }
+         break;
       case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
          menu_entries_clear(list);
          /* Get system name list */
@@ -14882,6 +15023,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_SORT_MODE:
+         case DISPLAYLIST_DROPDOWN_LIST_SCAN_METHOD:
+         case DISPLAYLIST_DROPDOWN_LIST_SCAN_USE_DB:
+         case DISPLAYLIST_DROPDOWN_LIST_SCAN_DB_SELECT:
          case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
          case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
          case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
@@ -14965,6 +15109,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
                   case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
                   case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_SORT_MODE:
+                  case DISPLAYLIST_DROPDOWN_LIST_SCAN_METHOD:
+                  case DISPLAYLIST_DROPDOWN_LIST_SCAN_USE_DB:
+                  case DISPLAYLIST_DROPDOWN_LIST_SCAN_DB_SELECT:
                   case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
                   case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
                   case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
