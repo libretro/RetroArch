@@ -2730,6 +2730,30 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Усиление цвета"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Использует полный цветовой диапазон дисплея для получения более светлого и насыщенного изображения. Отключите для цветопередачи, приближённой к оригинальной игре."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Строки развёртки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "Включает HDR-строки развёртки. Строки развёртки являются основной причиной для использования HDR, т.к. их точное воспроизведение приводит к затемнению большей части экрана, а HDR помогает частично восстановить потери яркости. Для расширенной настройки строк развёртки исполь[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Структура субпикселей"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Выбор структуры субпикселей дисплея. Влияет только на строки развёртки. Для получения информации о структуре субпикселей вашего дисплея посетите RTings.com."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RBG,
+   "RGB"
+   )
 
 
 /* Settings > Video > Synchronization */

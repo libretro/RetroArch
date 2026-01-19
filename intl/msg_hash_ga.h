@@ -2699,8 +2699,40 @@ MSG_HASH(
    "Lonracht Bhuaice"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Socraigh an gile buaicphointe (i cd/m2) is féidir le do thaispeántas a atáirgeadh. Nuair atá sé socraithe, ná hathraigh é. Bain úsáid as Gile Pháipéir Bhán chun gile a shocrú. Féach RTings.com le haghaidh gile buaicphointe do thaispeántais. Ar roinnt taispeántais a bhfuil línte scanadh orthu (thíos), b’fhéidir go mbeidh ort é seo (agus bán páipéir) a ró-thiomáint chun an gile iomlán a ardú."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Lonrúlacht Bán Páipéir"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Nuair a bheidh an gile buaic socraithe, bain úsáid as seo mar do shocrú gile caighdeánach. Go teicniúil, socraíonn sé seo an gile ag a mbeidh bán páipéir i.e. téacs inléite nó gile ag barr an raoin SDR (Raon Dinimiciúil Caighdeánach)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Borradh Dath"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Úsáideann sé seo raon dathanna iomlán do thaispeántais chun íomhá níos gile, níos sáithithe a chruthú. Chun dathanna atá níos dílse don dearadh cluiche bunaidh a fháil, socraigh seo go AS."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Scanlínte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "Cumasaigh línte scanadh HDR. Is iad na línte scanadh an phríomhchúis le húsáid HDR i RetroArch mar go múchann cur i bhfeidhm cruinn líne scanadh an chuid is mó den scáileán agus go n-aisghabhann HDR cuid den ghile caillte sin. Más gá duit níos mó smachta ar do línte scanadh, féach ar scáthaitheoirí saincheaptha a sholáthraíonn RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Leagan Amach Fo-phicteilín"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Roghnaigh leagan amach fo-phicteil do thaispeántais, ní dhéanann sé seo ach difear do na línte scanadh. Mura bhfuil a fhios agat cad é leagan amach fo-phicteil do thaispeántais, féach ar Rtings.com le haghaidh 'leagan amach fo-phicteil' do thaispeántais"
    )
 
 

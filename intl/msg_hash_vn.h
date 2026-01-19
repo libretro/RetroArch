@@ -2715,8 +2715,40 @@ MSG_HASH(
    "Độ sáng tối đa"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Đặt độ sáng đỉnh (tính bằng cd/m²) mà màn hình của bạn có thể hiển thị. Khi đã đặt thì đừng thay đổi nữa. Hãy dùng Paper White Luminance để chỉnh độ sáng tổng thể. Xem RTings.com để biết độ sáng đỉnh của màn hình bạn. Với một số màn hình khi bật scanlines (bên dưới), bạn có thể cần tăng cao hơn mức này (và cả paper white) để làm hình ảnh tổng thể sáng hơn."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Độ sáng trắng chuẩn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Khi đã đặt độ sáng đỉnh, hãy dùng nó làm mức sáng tiêu chuẩn. Về mặt kỹ thuật, mục này đặt độ sáng tại mức “paper white”, tức là độ sáng của chữ dễ đọc hoặc mức sáng cao nhất trong dải SDR (Standard Dynamic Range)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Tăng cường màu sắc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Dùng toàn bộ dải màu của màn hình để tạo hình ảnh sáng hơn, rực hơn. Muốn màu sắc trung thực với thiết kế gốc của game thì để OFF."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Đường quét"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "Bật đường quét HDR. Đường quét là lý do chính để dùng HDR trong RetroArch, vì việc giả lập scanlines chính xác sẽ tắt phần lớn màn hình, và HDR giúp khôi phục lại một phần độ sáng bị mất. Nếu bạn cần nhiều tùy chỉnh scanlines hơn, hãy dùng shader tùy biến của RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Bố cục điểm ảnh phụ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Chọn bố cục subpixel của màn hình, mục này chỉ ảnh hưởng đến đường quét. Nếu không biết bố cục subpixel của màn hình, hãy xem trên Rtings.com mục “subpixel layout” của mẫu màn hình đó"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RGB,
@@ -3982,8 +4014,16 @@ MSG_HASH(
    "Đĩa tiếp theo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "Tăng số thứ tự đĩa đang chọn và thực hiện nạp đĩa trễ nếu khay đĩa ảo đang đóng."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Đĩa trước đó"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
+   "Giảm số thứ tự đĩa đang chọn và thực hiện nạp đĩa trễ nếu khay đĩa ảo đang đóng."
    )
 
 MSG_HASH(
@@ -9922,16 +9962,32 @@ MSG_HASH(
    "Chỉ số đĩa"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Chọn đĩa hiện tại từ danh sách tập tin có sẵn. Khay đĩa ảo có thể vẫn đóng."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Đẩy đĩa ra"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+   "Mở khay đĩa ảo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Thêm đĩa"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   "Đóng khay đĩa ảo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Tải đĩa mới"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Chọn một đĩa mới từ hệ thống tệp và thêm nó vào cuối danh sách chỉ mục.\nLƯU Ý: Đây là tính năng cũ (legacy). Thay vào đó, nên dùng playlist M3U cho các game nhiều đĩa."
    )
 /* deprecated */
 

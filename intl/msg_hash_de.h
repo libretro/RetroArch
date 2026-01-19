@@ -15856,6 +15856,22 @@ MSG_HASH(
 #endif
 #ifdef HAVE_SMBCLIENT
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "SMB-Server"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "Server-IP-Adresse oder Hostname."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "SMB-Benutzername"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "Benutzername für die Authentifizierung."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
    "SMB-Passwort"
    )
