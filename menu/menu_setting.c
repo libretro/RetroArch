@@ -5594,17 +5594,18 @@ static bool setting_is_protected_driver(rarch_setting_t *setting)
 static int setting_action_left_analog_dpad_mode(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   unsigned        port = 0;
    settings_t *settings = config_get_ptr();
+   unsigned port        = 0;
 
    if (!setting)
       return -1;
 
    port = setting->index_offset;
 
-   configuration_set_uint(settings, settings->uints.input_analog_dpad_mode[port],
-      (settings->uints.input_analog_dpad_mode
-       [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST);
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+   settings->uints.input_analog_dpad_mode[port] =
+      (settings->uints.input_analog_dpad_mode[port] + ANALOG_DPAD_LAST - 1)
+      % ANALOG_DPAD_LAST;
 
    return 0;
 }
@@ -6822,14 +6823,46 @@ static size_t setting_get_string_representation_uint_libretro_device(
 static size_t setting_get_string_representation_uint_analog_dpad_mode(
       rarch_setting_t *setting, char *s, size_t len)
 {
-   const char *modes[5];
-   modes[0] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
-   modes[1] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG);
-   modes[2] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG);
-   modes[3] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED);
-   modes[4] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED);
-   return strlcpy(s, modes[*setting->value.target.unsigned_integer
-         % ANALOG_DPAD_LAST], len);
+   const char *name = NULL;
+
+   if (!setting)
+      return 0;
+
+   switch (*setting->value.target.unsigned_integer)
+   {
+      default:
+      case ANALOG_DPAD_NONE:
+         name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+         break;
+      case ANALOG_DPAD_LSTICK:
+         name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG);
+         break;
+      case ANALOG_DPAD_LSTICK_FORCED:
+         name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED);
+         break;
+      case ANALOG_DPAD_RSTICK:
+         name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG);
+         break;
+      case ANALOG_DPAD_RSTICK_FORCED:
+         name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED);
+         break;
+      case ANALOG_DPAD_LRSTICK:
+         name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG);
+         break;
+      case ANALOG_DPAD_LRSTICK_FORCED:
+         name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED);
+         break;
+      case ANALOG_DPAD_TWINSTICK:
+         name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG);
+         break;
+      case ANALOG_DPAD_TWINSTICK_FORCED:
+         name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED);
+         break;
+   }
+
+   if (!string_is_empty(name))
+      return strlcpy(s, name, len);
+   return 0;
 }
 
 static size_t setting_get_string_representation_uint_input_remap_port(
@@ -7808,16 +7841,6 @@ static int setting_action_start_custom_vp_height(rarch_setting_t *setting)
    return 0;
 }
 
-static int setting_action_start_analog_dpad_mode(rarch_setting_t *setting)
-{
-   if (!setting)
-      return -1;
-
-   *setting->value.target.unsigned_integer = 0;
-
-   return 0;
-}
-
 static int setting_action_start_libretro_device_type(rarch_setting_t *setting)
 {
    retro_ctx_controller_info_t pad;
@@ -7898,8 +7921,8 @@ static int setting_action_start_input_mouse_index(rarch_setting_t *setting)
 static int setting_action_right_analog_dpad_mode(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   unsigned port = 0;
-   settings_t      *settings = config_get_ptr();
+   settings_t *settings = config_get_ptr();
+   unsigned port        = 0;
 
    if (!setting)
       return -1;
@@ -9634,7 +9657,7 @@ static bool setting_append_list_input_player_options(
             &settings->uints.input_analog_dpad_mode[user],
             analog_to_digital[user],
             label_analog_to_digital[user],
-            user,
+            ANALOG_DPAD_LSTICK,
             &group_info,
             &subgroup_info,
             parent_group,
@@ -9645,7 +9668,6 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_left   = &setting_action_left_analog_dpad_mode;
       (*list)[list_info->index - 1].action_right  = &setting_action_right_analog_dpad_mode;
       (*list)[list_info->index - 1].action_select = &setting_action_right_analog_dpad_mode;
-      (*list)[list_info->index - 1].action_start  = &setting_action_start_analog_dpad_mode;
       (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
       (*list)[list_info->index - 1].get_string_representation =
          &setting_get_string_representation_uint_analog_dpad_mode;

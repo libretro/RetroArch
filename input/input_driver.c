@@ -998,6 +998,12 @@ static int16_t input_joypad_analog_axis(
          if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
             return 0;
          break;
+      case ANALOG_DPAD_LRSTICK:
+      case ANALOG_DPAD_TWINSTICK:
+         if (     idx == RETRO_DEVICE_INDEX_ANALOG_LEFT
+               || idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+            return 0;
+         break;
       default:
          break;
    }
@@ -1763,14 +1769,20 @@ static int16_t input_state_device(
                         res = ret;
 
 #ifdef HAVE_OVERLAY
-                        if (   (input_st->overlay_ptr)
-                            && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
-                            && (port == 0)
-                            && (idx != RETRO_DEVICE_INDEX_ANALOG_BUTTON)
-                            && !(((input_analog_dpad_mode == ANALOG_DPAD_LSTICK)
-                            &&   (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT))
-                            || ((input_analog_dpad_mode == ANALOG_DPAD_RSTICK)
-                            &&   (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT))))
+                        if (     (input_st->overlay_ptr)
+                              && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
+                              && (port == 0)
+                              && (idx != RETRO_DEVICE_INDEX_ANALOG_BUTTON)
+                              && !(    (  input_analog_dpad_mode == ANALOG_DPAD_LSTICK
+                                       && idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)
+                                    || (  input_analog_dpad_mode == ANALOG_DPAD_RSTICK
+                                       && idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                                    || (  (  input_analog_dpad_mode == ANALOG_DPAD_LRSTICK
+                                          || input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK)
+                                       && (  idx == RETRO_DEVICE_INDEX_ANALOG_LEFT
+                                          || idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT))
+                                 )
+                           )
                         {
                            input_overlay_state_t *ol_state =
                               &input_st->overlay_ptr->overlay_state;
@@ -1917,6 +1929,8 @@ static int16_t input_state_internal(
       {
          case ANALOG_DPAD_LSTICK:
          case ANALOG_DPAD_RSTICK:
+         case ANALOG_DPAD_LRSTICK:
+         case ANALOG_DPAD_TWINSTICK:
             if (input_driver_analog_requested)
                input_analog_dpad_mode = ANALOG_DPAD_NONE;
             break;
@@ -1925,6 +1939,12 @@ static int16_t input_state_internal(
             break;
          case ANALOG_DPAD_RSTICK_FORCED:
             input_analog_dpad_mode = ANALOG_DPAD_RSTICK;
+            break;
+         case ANALOG_DPAD_LRSTICK_FORCED:
+            input_analog_dpad_mode = ANALOG_DPAD_LRSTICK;
+            break;
+         case ANALOG_DPAD_TWINSTICK_FORCED:
+            input_analog_dpad_mode = ANALOG_DPAD_TWINSTICK;
             break;
          default:
             break;
@@ -2037,7 +2057,7 @@ static int16_t input_state_internal(
          /* Handle Analog to Digital */
          if (     (device == RETRO_DEVICE_JOYPAD)
                && (input_analog_dpad_mode != ANALOG_DPAD_NONE)
-               && (bitmask_enabled || (id >= RETRO_DEVICE_ID_JOYPAD_UP && id <= RETRO_DEVICE_ID_JOYPAD_RIGHT)))
+               && (!port_result))
          {
             int16_t ret_axis;
             uint8_t s;
@@ -2045,8 +2065,8 @@ static int16_t input_state_internal(
 
             for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
             {
-               if (     (s == RETRO_DEVICE_INDEX_ANALOG_LEFT  && input_analog_dpad_mode != ANALOG_DPAD_LSTICK)
-                     || (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT && input_analog_dpad_mode != ANALOG_DPAD_RSTICK))
+               if (     (s == RETRO_DEVICE_INDEX_ANALOG_LEFT  && input_analog_dpad_mode == ANALOG_DPAD_RSTICK)
+                     || (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT && input_analog_dpad_mode == ANALOG_DPAD_LSTICK))
                   continue;
 
                for (a = RETRO_DEVICE_ID_ANALOG_X; a <= RETRO_DEVICE_ID_ANALOG_Y; a++)
@@ -2063,34 +2083,47 @@ static int16_t input_state_internal(
 
                   if (ret_axis)
                   {
+                     int bit = -1;
+
                      if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret_axis / 0x7fff < -joypad_info.axis_threshold)
                      {
-                        if (bitmask_enabled)
-                           port_result |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
-                        else if (id == RETRO_DEVICE_ID_JOYPAD_UP)
-                           port_result = RETRO_DEVICE_ID_JOYPAD_UP;
+                        if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                           bit = RETRO_DEVICE_ID_JOYPAD_X;
+                        else
+                           bit = RETRO_DEVICE_ID_JOYPAD_UP;
                      }
                      else if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret_axis / 0x7fff > joypad_info.axis_threshold)
                      {
-                        if (bitmask_enabled)
-                           port_result |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
-                        else if (id == RETRO_DEVICE_ID_JOYPAD_DOWN)
-                           port_result = RETRO_DEVICE_ID_JOYPAD_DOWN;
+                        if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                           bit = RETRO_DEVICE_ID_JOYPAD_B;
+                        else
+                           bit = RETRO_DEVICE_ID_JOYPAD_DOWN;
                      }
 
                      if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret_axis / 0x7fff < -joypad_info.axis_threshold)
                      {
-                        if (bitmask_enabled)
-                           port_result |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
-                        else if (id == RETRO_DEVICE_ID_JOYPAD_LEFT)
-                           port_result = RETRO_DEVICE_ID_JOYPAD_LEFT;
+                        if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                           bit = RETRO_DEVICE_ID_JOYPAD_Y;
+                        else
+                           bit = RETRO_DEVICE_ID_JOYPAD_LEFT;
                      }
                      else if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret_axis / 0x7fff > joypad_info.axis_threshold)
                      {
+                        if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                           bit = RETRO_DEVICE_ID_JOYPAD_A;
+                        else
+                           bit = RETRO_DEVICE_ID_JOYPAD_RIGHT;
+                     }
+
+                     if (bit > -1)
+                     {
                         if (bitmask_enabled)
-                           port_result |= (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
-                        else if (id == RETRO_DEVICE_ID_JOYPAD_RIGHT)
-                           port_result = RETRO_DEVICE_ID_JOYPAD_RIGHT;
+                           port_result |= (1 << bit);
+                        else if (id == (unsigned)bit)
+                        {
+                           port_result = bit;
+                           result      = 1;
+                        }
                      }
                   }
                }
@@ -3866,6 +3899,60 @@ static void input_poll_overlay(
             BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
          if (analog_y >=  axis_threshold)
             BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
+         break;
+      }
+
+      case ANALOG_DPAD_LRSTICK:
+      {
+         float analog_x, analog_y;
+
+         analog_x = (float)ol_state->analog[0] / 0x7fff;
+         analog_y = (float)ol_state->analog[1] / 0x7fff;
+
+         if (!analog_x)
+            analog_x = (float)ol_state->analog[2] / 0x7fff;
+
+         if (!analog_y)
+            analog_y = (float)ol_state->analog[3] / 0x7fff;
+
+         if (analog_x <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
+         if (analog_x >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+         if (analog_y <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
+         if (analog_y >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
+         break;
+      }
+
+      case ANALOG_DPAD_TWINSTICK:
+      {
+         float analog_x, analog_y;
+
+         analog_x = (float)ol_state->analog[0] / 0x7fff;
+         analog_y = (float)ol_state->analog[1] / 0x7fff;
+
+         if (analog_x <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
+         if (analog_x >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+         if (analog_y <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
+         if (analog_y >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
+
+         analog_x = (float)ol_state->analog[2] / 0x7fff;
+         analog_y = (float)ol_state->analog[3] / 0x7fff;
+
+         if (analog_x <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_Y);
+         if (analog_x >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_A);
+         if (analog_y <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_X);
+         if (analog_y >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_B);
          break;
       }
 
@@ -6194,6 +6281,8 @@ void input_driver_poll(void)
       {
          case ANALOG_DPAD_LSTICK:
          case ANALOG_DPAD_RSTICK:
+         case ANALOG_DPAD_LRSTICK:
+         case ANALOG_DPAD_TWINSTICK:
             {
                unsigned mapped_port      = settings->uints.input_remap_ports[0];
                if (input_st->analog_requested[mapped_port])
@@ -6205,6 +6294,12 @@ void input_driver_poll(void)
             break;
          case ANALOG_DPAD_RSTICK_FORCED:
             input_analog_dpad_mode       = ANALOG_DPAD_RSTICK;
+            break;
+         case ANALOG_DPAD_LRSTICK_FORCED:
+            input_analog_dpad_mode       = ANALOG_DPAD_LRSTICK;
+            break;
+         case ANALOG_DPAD_TWINSTICK_FORCED:
+            input_analog_dpad_mode       = ANALOG_DPAD_TWINSTICK;
             break;
          default:
             break;
@@ -6316,6 +6411,8 @@ void input_driver_poll(void)
          {
             case ANALOG_DPAD_LSTICK:
             case ANALOG_DPAD_RSTICK:
+            case ANALOG_DPAD_LRSTICK:
+            case ANALOG_DPAD_TWINSTICK:
                if (input_st->analog_requested[mapped_port])
                   input_analog_dpad_mode = ANALOG_DPAD_NONE;
                break;
@@ -6324,6 +6421,12 @@ void input_driver_poll(void)
                break;
             case ANALOG_DPAD_RSTICK_FORCED:
                input_analog_dpad_mode    = ANALOG_DPAD_RSTICK;
+               break;
+            case ANALOG_DPAD_LRSTICK_FORCED:
+               input_analog_dpad_mode    = ANALOG_DPAD_LRSTICK;
+               break;
+            case ANALOG_DPAD_TWINSTICK_FORCED:
+               input_analog_dpad_mode    = ANALOG_DPAD_TWINSTICK;
                break;
             default:
                break;
