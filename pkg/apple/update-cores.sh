@@ -244,6 +244,7 @@ appstore_cores=(
     nxengine
     opera
     pcsx_rearmed
+    pd777
     picodrive
     #play
     pocketcdg
