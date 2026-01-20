@@ -3420,6 +3420,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OFF,
    "خاموش"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "سفارشی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "هیچکدام"
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 

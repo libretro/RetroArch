@@ -5157,6 +5157,18 @@ MSG_HASH(
    "<Neurčené>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Vlastné"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Žiadne"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Vlastné>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Ľavý analóg"
    )

@@ -1496,6 +1496,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO,
    "Na"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Dim"
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 

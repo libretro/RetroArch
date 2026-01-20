@@ -1464,6 +1464,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT,
    "Sadržaj"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Ništa"
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 

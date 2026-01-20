@@ -4401,6 +4401,10 @@ MSG_HASH(
    "<Ευρετήριο περιεχομένων>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Κανείς"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Αριστερό Αναλογικό"
    )

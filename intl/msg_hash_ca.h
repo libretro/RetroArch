@@ -2694,6 +2694,18 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminància de blancs"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Augment de color"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Línies d'escaneig"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Disposició del subpíxel"
+   )
 
 
 /* Settings > Video > Synchronization */
@@ -8718,6 +8730,42 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Escanejar"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Mètode d'escaneig"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Automàtica, o personalitzada amb opcions específiques."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Comprobació de la base de dades"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "Base de dades de referència"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "Per fer les cerques més ràpides, les comparacions es poden limitar a una única base de dades o a la primera base de dades que tingui una coincidència."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "Llista de reproducció que s'ha d'actualitzar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Cerca un fitxer concret"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Cerca només en un fitxer en comptes d'una carpeta. Has de tornar a seleccionar la ubicació del contingut després de canviar aquesta opció."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Omet referències de la base de dades a la llista de reproducció"
+   )
 
 /* Import Content > Scan File */
 
@@ -10873,6 +10921,10 @@ MSG_HASH(
    "<Directori de continguts>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<Automàtic>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
    "<Personalitzat>"
    )
@@ -10881,20 +10933,80 @@ MSG_HASH(
    "<No especificat>"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   "Analògic esquerre"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Completament automàtic"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Analògic dret"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Personalitzat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "Estricte"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Lax"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "DAT personalitzat (cerca estricta)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "DAT personalitzat (cerca laxa)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Cap"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<Automàtic/Qualsevol>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<Automàtic/Primera correspondència>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<Automàtic/Nom del sistema>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Personalitzat>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "Analògic esquerre"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Analògic esquerre (forçat)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Analògic dret"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Analògic dret (forçat)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Analògics esquerra + dreta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Analògics esquerra + dreta (forçats)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Doble analògic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Doble analògic (forçat)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

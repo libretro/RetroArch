@@ -8798,6 +8798,54 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Quét"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Phương thức quét"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Tự động hoặc tùy chỉnh với các tùy chọn chi tiết."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Kiểm tra dữ liệu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "Nghiêm ngặt: chỉ thêm các mục trùng khớp với mục trong dữ liệu.Nới lỏng: cũng thêm các tệp có phần mở rộng đúng dù không khớp CRC/số hiệu.DAT tùy chỉnh: đối chiếu bằng tệp XML do người dùng cung cấp thay cho dữ liệu mặc định.Không dùng dữ liệu: bỏ qua dữ liệu, chỉ dựa vào phần mở rộng tệp."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "Đối chiếu dữ liệu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "Có thể giới hạn việc đối chiếu vào một dữ liệu cụ thể, hoặc chỉ dùng dữ liệu đầu tiên khớp để tăng tốc độ quét."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "Danh sách phát sẽ cập nhật"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "Kết quả sẽ được thêm vào danh sách phát này. Nếu chọn Tự động - Bất kỳ, nhiều danh sách phát hệ máy có thể được cập nhật. Tùy chỉnh không dùng tham chiếu dữ liệu sẽ không liên kết các mục với bất kỳ dữ liệu nào trong danh sách phát."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Quét một tệp"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Chỉ quét một tệp thay vì cả thư mục. Cần chọn lại vị trí nội dung sau khi thay đổi mục này."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Bỏ qua tham chiếu dữ liệu trong danh sách phát"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "Khi dùng tên danh sách phát tùy chỉnh, luôn dùng tên danh sách phát để tìm hình thu nhỏ, kể cả khi có khớp dữ liệu."
+   )
 
 /* Import Content > Scan File */
 
@@ -10985,6 +11033,10 @@ MSG_HASH(
    "<Thư mục trò chơi>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<Tự động>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
    "<Tùy chỉnh>"
    )
@@ -10993,20 +11045,80 @@ MSG_HASH(
    "<Không xác định>"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   "Analog Trái"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Hoàn toàn tự động"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Analog Phải"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Tùy chỉnh"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "Nghiêm ngặt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Nới lỏng"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "DAT tùy chỉnh (Nghiêm ngặt)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "DAT tùy chỉnh (Nới lỏng)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Không"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<Tự động/Bất kỳ>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<Tự động/Khớp đầu tiên>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<Tự động/Tên hệ máy>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Tùy chỉnh>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "Analog Trái"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Analog Trái (Bắt buộc)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Analog Phải"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Analog Phải (Bắt buộc)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Cần analog trái + phải"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Cần analog trái + phải (Bắt buộc)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Cả hai cần analog"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Cả hai cần analog (Bắt buộc)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

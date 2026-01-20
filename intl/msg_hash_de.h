@@ -8566,6 +8566,54 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Scannen"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Scanmethode"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Automatisch oder angepasst mit umfangreichen Optionen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Datenbankprüfung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "„Streng“ fügt nur Elemente hinzu, die mit einem Datenbankeintrag übereinstimmen. „Locker“ fügt auch Dateien mit korrekter Erweiterung hinzu, die jedoch keine Übereinstimmung von CRC/Seriennummern aufweisen. „Angepasste DAT“ führt statt anhand von Datenbanken anhand einer vom Benutzer bereitgestellten XML-Datei eine Überprüfung durch. „Keine“ ignoriert Datenbanken und verwendet nur Dateierweiterungen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "Abgleichende Datenbank"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "Die Suche kann auf eine bestimmte Datenbank oder auf die erste passende Datenbank beschränkt werden, um den Scanvorgang zu beschleunigen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "Zu aktualisierende Wiedergabeliste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "Die Ergebnisse werden dieser Wiedergabeliste hinzugefügt. Bei „Auto – Beliebig“ können mehrere Systemwiedergabelisten aktualisiert werden. Bei „Angepasst ohne Datenbankverweis“ werden die Einträge nicht mit einer Datenbank in der Wiedergabeliste verknüpft."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Einzelne Datei scannen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Scannt nur eine Datei statt eines Verzeichnisses. Nach Änderung dieses Eintrags muss der Speicherort des Inhalts erneut ausgewählt werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Datenbankverweise aus Wiedergabeliste überspringen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "Bei benutzerdefinierten Playlistnamen immer den Playlistnamen für die Miniaturbildsuche verwenden, auch wenn eine Übereinstimmung in der Datenbank gefunden wurde."
+   )
 
 /* Import Content > Scan File */
 
@@ -10693,6 +10741,10 @@ MSG_HASH(
    "<Inhaltsverzeichnis>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<Automatisch>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
    "<Benutzerdefiniert>"
    )
@@ -10701,20 +10753,80 @@ MSG_HASH(
    "<Nicht spezifiziert>"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   "Linker Analogstick"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Vollautomatisch"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Rechter Analogstick"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Benutzerdefiniert"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "Streng"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Locker"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "Angepasste DAT (Streng)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "Angepasste DAT (Locker)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Nein"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<Automatisch/Jede>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<Automatisch/Erste Übereinstimmung>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<Automatisch/Systemname>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Benutzerdefiniert>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "Linker Analogstick"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Analog links (Erzwungen)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Rechter Analogstick"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Analog rechts (Erzwungen)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Linker und rechter Analogstick"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Linker und rechter Analogstick (Erzwungen)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Doppelanalogstick"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Doppelanalogstick (Erzwungen)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
@@ -15856,6 +15968,14 @@ MSG_HASH(
 #endif
 #ifdef HAVE_SMBCLIENT
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "SMB-Netzwerkeinstellungen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "SMB-Client aktivieren"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
    "SMB-Server"
    )
@@ -15876,12 +15996,20 @@ MSG_HASH(
    "SMB-Passwort"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "Passwort für die Authentifizierung."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
    "SMB-Arbeitsgruppe"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
    "Arbeitsgruppen- oder Domänenname."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "SMB-Authentifizierungsmodus"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,

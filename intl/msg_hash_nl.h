@@ -5553,6 +5553,14 @@ MSG_HASH(
    "Inhoud"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Aangepast"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Geen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Linkse Analoge Stick"
    )

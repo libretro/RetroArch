@@ -10585,16 +10585,28 @@ MSG_HASH(
    "<Нявызначанае>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Уласная"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Няма"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Ручны ўвод>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Левы аналагавы стык"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Правы аналагавы стык"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Левы аналагавы стык (прымусова)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Правы аналагавы стык"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,

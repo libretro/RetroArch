@@ -2920,6 +2920,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLED,
    "Engegat"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Cap"
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 

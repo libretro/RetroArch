@@ -8698,6 +8698,54 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Escanear"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Método de Busca"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Automático ou personalizado com opções detalhadas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Verificação de Banco de Dados"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "Rígido adicionará apenas itens que correspondem a uma entrada no banco de dados; Flexível adicionará também arquivos com a extensão correta, mas sem correspondência de CRC/serial; DAT Personalizado verifica contra um arquivo XML fornecido pelo usuário em vez dos bancos de dados; Nenhum ignora os bancos de dados e utiliza apenas as extensões de arquivo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "Banco de Dados para Correspondência"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "A correspondência pode ser restrita a um banco de dados específico, ou ao primeiro banco de dados que corresponder, para acelerar a busca."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "Playlist para Atualizar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "Os resultados são adicionados a esta playlist. No caso de Auto - Qualquer, múltiplas playlists de sistema podem ser atualizadas. Personalizado sem referência de banco de dados não vinculará as entradas a nenhum banco de dados na playlist."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Buscar Arquivo Único"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Verifica apenas um arquivo em vez de um diretório. Selecione novamente o local do conteúdo após alterar esta entrada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Pular Referências de Banco de Dados da Playlist"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "No caso de um nome de playlist personalizado, use sempre o nome da playlist para a busca de miniaturas, mesmo que tenha ocorrido uma correspondência no banco de dados."
+   )
 
 /* Import Content > Scan File */
 
@@ -10869,20 +10917,68 @@ MSG_HASH(
    "<Não especificado>"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   "Analógico esquerdo"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Totalmente Automático"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Analógico direito"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Personalizado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "Rígido"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Flexível"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "DAT Personalizado (Rígido)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "DAT Personalizado (Flexível)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Nenhum"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Personalizado>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "Analógico esquerdo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Analógico esquerdo (forçado)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Analógico direito"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Analógico direito (forçado)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Analógicos Esquerdo + Direito"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Analógicos Esquerdo + Direito (Forçado)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Analógicos Twin-Stick"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Analógicos Twin-Stick (Forçado)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

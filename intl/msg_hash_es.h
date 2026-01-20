@@ -8758,6 +8758,54 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Buscar"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Método de búsqueda"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Automática, o personalizada con opciones específicas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Comprobación de la base de datos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "«Estricto» solo añadirá los elementos que tengan una entrada en la base de datos. «Laxo» también añadirá aquellos archivos que tengan la extensión correcta, aunque no coincidan sus CRC/números de serie. «DAT personalizado» hará la comprobación a partir de un archivo XML proporcionado por el usuario en vez de la base de datos interna. «Nada» ignorará las bases de datos y utilizará solo las extensiones de los archivos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "Base de datos de referencia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "Para agilizar la búsqueda, las comparaciones pueden limitarse a una base de datos concreta o a la primera base de datos que tenga una coincidencia."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "Lista de reproducción a actualizar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "Los resultados se añadirán a esta lista de reproducción. En el caso de la opción «Automático/Cualquiera», se pueden actualizar varias listas de reproducción de sistemas. El método personalizado sin base de datos de referencia no vinculará los elementos a ninguna base de datos de las listas de reproducción."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Buscar un archivo concreto"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Examina un archivo en vez de un directorio. Debes volver a seleccionar la ubicación del contenido después de cambiar esta opción."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Omitir referencias en base de datos de la lista de reproducción"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "En el caso de las listas de reproducción con nombres personalizados, se utilizará siempre el nombre de la lista de reproducción para buscar miniaturas aunque haya una coincidencia en la base de datos."
+   )
 
 /* Import Content > Scan File */
 
@@ -10937,6 +10985,10 @@ MSG_HASH(
    "<Directorio de contenidos>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<Automático>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
    "<Personalizado>"
    )
@@ -10945,20 +10997,80 @@ MSG_HASH(
    "<Sin especificar>"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   "Analógico izquierdo"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Completamente automático"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Analógico derecho"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Personalizado"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "Estricto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Laxo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "DAT personalizado (búsqueda estricta)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "DAT personalizado (búsqueda laxa)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "No compartir"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<Automático/Cualquiera>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<Automático/Primera coincidencia>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<Automático/Nombre del sistema>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Personalizado>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "Analógico izquierdo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Analógico izquierdo (forzada)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Analógico derecho"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Analógico derecho (forzada)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Analógicos izdo. + dcho."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Analógicos izdo. + dcho. (forzada)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Doble analógico"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Doble analógico (forzada)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

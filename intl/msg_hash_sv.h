@@ -4467,6 +4467,10 @@ MSG_HASH(
 /* Settings > Core */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+   "Delad kontext för hårdvara"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    "Ge hårdvarurenderade kärnor en egen privat kontext. Undviker att behöva anta att hårdvaran ändrar tillstånd mellan bildrutor."
    )
@@ -7529,12 +7533,20 @@ MSG_HASH(
    "Frekvensen i bildrutor med vilken netplay kommer att verifiera att värden och klienten är synkroniserade. Med de flesta kärnor har detta värde ingen synlig effekt och kan ignoreras. Med icke-bestämbara kärnor avgör detta värde hur ofta netplay-peers kommer att synkroniseras. Med buggiga kärnor kommer det att orsaka allvarliga prestandaproblem om detta värde sätts till något annat än noll. Ställ in på noll för att inte utföra några kontroller. Detta värde används endast på ne[...]"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "Bildrutor för inmatningslatens"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
    "Antalet bildrutor med inmatningslatens som netplay ska använda för att dölja nätverkslatens. Minskar jitter och gör netplay mindre CPU-krävande, men på bekostnad av märkbar fördröjning i inmatningen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
    "Antalet bildrutor med inmatningsfördröjning som netplay ska använda för att dölja nätverksfördröjning.\nNär det här alternativet används i netplay fördröjer det lokal inmatning så att den bildruta som körs ligger närmare de bildrutor som tas emot från nätverket. Detta minskar jitter och gör netplay mindre CPU-intensivt, men till priset av en märkbar fördröjning av inmatningen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "Bildruteintervall för inmatningslatens"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -8521,6 +8533,46 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Sök igenom"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Genomsökningsmetod"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Automatiskt eller anpassad med detaljerade alternativ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Databaskontroll"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "Strikt lägger endast till objekt som matchar en databaspost, Avslappnat lägger även till filer med korrekt filändelse men utan CRC/serienummermatchning, Anpassad DAT kontrollerar mot en XML-fil som tillhandahålls av användaren istället för databaser, Ingen ignorerar databaser och använder endast filändelser."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "Databas att matcha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "Matchning kan begränsas till en specifik databas, eller till den absolut första databasen som matchar, för att snabba upp genomsökningen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "Spellista att uppdatera"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Sök igenom en enda fil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Söker igenom endast en enda fil istället för en katalog. Välj innehållsplats igen efter att detta ändrats."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Hoppa över databasreferenser från spellista"
    )
 
 /* Import Content > Scan File */
@@ -9666,12 +9718,24 @@ MSG_HASH(
    "Aktuellt skivindex"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Välj aktuell skiva från listan över tillgängliga avbildningar. Virtuella skivfacket kommer vara stängt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Mata ut skiva"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+   "Öppna virtuellt skivfack."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Sätt i skiva"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   "Stäng virtuellt skivfack."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -10593,24 +10657,84 @@ MSG_HASH(
    "Innehåll"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<Automatiskt>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
    "<Ospecificerat>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Helt automatiskt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Anpassa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "Strikt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Avslappnat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "Anpassad DAT (Strikt)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "Anpassad DAT (Avslappnad)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Ingen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<Automatiskt/Alla>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<Automatiskt/Första matchning>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<Automatiskt/Systemnamn>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Vänster Analog"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Höger Analog"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Vänster Analog (Tvingad)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Höger Analog"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Höger Analog (Tvingad)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Vänster + höger analoga"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Vänster + höger analoga (tvingad)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Twin-Stick-analoga"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Twin-Stick-analoga (tvingad)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
@@ -15387,6 +15511,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
    "Väljer mellan visningslägena 3D och 2D. I ”3D”-läget är bildpunkterna kvadratiska och en djupeffekt tillämpas när snabbmenyn visas. ”2D\"-läget ger bäst prestanda."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
+   "2D (pixelrutnätseffekt)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,

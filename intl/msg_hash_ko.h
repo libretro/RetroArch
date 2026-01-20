@@ -2727,8 +2727,40 @@ MSG_HASH(
    "최대 휘도"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "디스플레이가 표현할 수 있는 최대 휘도(cd/m2)를 설정합니다. 한 번 설정하고 나면 변경하지 마십시오. 화면의 밝기는 페이퍼 화이트 휘도를 통해 설정해야 합니다. RTings.com 등의 사이트에서 디스플레이의 최대 휘도를 찾을 수 있습니다. 일부 디스플레이에서 스캔라인을 사용하려면(아래 참조) 이 값(과 페이퍼 화이트 휘도)을 더 높게 설정하여 전체적인 밝기를 끌어올려야 할 [...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "페이퍼 화이트 휘도"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "최대 휘도를 설정하고 나면, 이 값으로 일반적인 밝기를 조절합니다. 기술적으로 이 값은 흰 종이가 어느 정도의 휘도로 표시되어야 하는지, 또는 SDR (Standard Dynamic Range) 범위에서의 최대 휘도를 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "색역 확장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "디스플레이의 전체 색역을 사용하여 더욱 밝고 진한 색의 이미지를 표시합니다. 원래 게임이 의도한 디자인에 가까운 색을 원한다면 이 설정을 끄십시오."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "스캔라인"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "HDR 스캔라인을 활성화합니다. 스캔라인은 RetroArch에서 HDR을 사용하는 주 목적 중 하나로, 스캔라인이 화면을 가리면서 줄어드는 밝기를 HDR 설정으로 복원할 수 있습니다. 스캔라인에 대한 세밀한 조정을 원하신다면, RetroArch가 제공하는 커스텀 셰이더들을 살펴보세요."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "서브픽셀 레이아웃"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "디스플레이의 서브픽셀 레이아웃을 선택합니다. 이 설정은 스캔라인에만 영향을 미칩니다. 사용 중인 디스플레이의 서브픽셀 레이아웃이 무엇인지 모른다면, Rtings.com 등의 웹사이트에서 디스플레이의 '서브픽셀 레이아웃'을 확인할 수 있습니다."
    )
 
 
@@ -3994,8 +4026,16 @@ MSG_HASH(
    "다음 디스크"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "현재 선택된 디스크 인덱스를 증가시키고, 가상 디스크 트레이가 닫혀있을 경우 지연 삽입을 수행합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "이전 디스크"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
+   "현재 선택된 디스크 인덱스를 감소시키고, 가상 디스크 트레이가 닫혀있을 경우 지연 삽입을 수행합니다."
    )
 
 MSG_HASH(
@@ -8762,6 +8802,54 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "스캔"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "검색 방식"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "자동 또는 수동, 자세한 옵션을 설정합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "데이터베이스 확인"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "'엄격하게'로 설정하면 데이터베이스 항목과 정확히 일치하는 파일만 추가되고, '느슨하게'로 설정하면 데이터베이스의 항목과 함께 확장자가 일치하는 파일도 모두 추가되고, '사용자 정의 DAT'는 내장 데이터베이스 대신 사용자가 제공한 XML 파일을 사용하며, '없음'은 데이터베이스를 무시하고 확장자가 일치하는 파일을 모두 추가합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "확인할 데이터베이스"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "확인에 사용할 데이터베이스로 특정한 데이터베이스를 선택하거나, 일치하는 항목이 발견되는 첫 번째 데이터베이스만을 사용하게 하여 검색 속도를 높일 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "갱신할 실행목록"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "검색 결과가 이 실행목록에 추가됩니다. '자동/아무데나'를 사용할 경우, 여러 시스템의 실행 목록이 갱신될 수 있습니다. 데이터베이스 없이 '사용자 정의'로 선택할 경우 실행목록의 항목들은 어떤 데이터베이스에도 연결되지 않습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "단일 파일 검색"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "디렉토리 전체가 아닌 한 개의 파일만을 검색합니다. 이 항목을 변경하면 컨텐츠 경로를 다시 지정해야 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "실행목록에 데이터베이스 연동 안 함"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "사용자 정의 실행목록 이름을 사용할 경우, 미리보기 검색에 실행목록의 이름을 사용합니다. 데이터베이스에 일치하는 항목이 있더라도 무시됩니다."
+   )
 
 /* Import Content > Scan File */
 
@@ -9938,16 +10026,32 @@ MSG_HASH(
    "디스크 인덱스"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "사용 가능한 이미지 목록에서 사용할 디스크를 선택합니다. 가상 디스크 트레이를 열지 않습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "디스크 꺼내기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+   "가상 디스크 트레이를 엽니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "디스크 이미지 추가"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   "가상 디스크 트레이를 닫습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "새 디스크 불러오기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "파일시스템에서 새로운 디스크를 선택한 뒤 인덱스 목록에 추가합니다.\n주의: 이 기능은 레거시 기능입니다. 멀티 디스크 타이틀을 실행할 때는 이 기능 대신 M3U 실행목록을 사용하는 것이 권장됩니다."
    )
 /* deprecated */
 
@@ -10957,6 +11061,10 @@ MSG_HASH(
    "<콘텐츠 디렉토리>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<자동>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
    "<사용자 정의>"
    )
@@ -10965,20 +11073,80 @@ MSG_HASH(
    "<지정 안 함>"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   "좌 아날로그"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "완전 자동"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "우 아날로그"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "사용자"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "엄격하게"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "느슨하게"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "사용자 정의 DAT (엄격하게)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "사용자 정의 DAT (느슨하게)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "없음"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<자동/아무데나>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<자동/첫 번째 일치>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<자동/시스템 이름>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<사용자 정의>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "좌 아날로그"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "좌 아날로그 (강제)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "우 아날로그"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "우 아날로그 (강제)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "좌+우 아날로그"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "좌+우 아날로그 (강제)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "트윈스틱 아날로그"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "트윈스틱 아날로그 (강제)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

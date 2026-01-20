@@ -4097,6 +4097,10 @@ MSG_HASH(
    "Innhold"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Ingen"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "Mus 1"
    )
