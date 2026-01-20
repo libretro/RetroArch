@@ -217,6 +217,7 @@ appstore_cores=(
     gw
     handy
     holani
+    jollycv
     kronos
     mednafen_ngp
     mednafen_pce
