@@ -184,6 +184,7 @@ static bool coreaudio3_g_interrupted;
    double _lastRateAdjust;
    float *_convBuffer;
    size_t _convBufferFrames;
+   BOOL _converterNeedsReset;
 }
 
 @property (nonatomic, readwrite) BOOL nonBlock;
@@ -221,6 +222,7 @@ static bool coreaudio3_g_interrupted;
       _lastInputRate = 0;
       _lastRateAdjust = 1.0;
       _interleaved = NO;
+      _converterNeedsReset = NO;
 
       desc.componentType          = kAudioUnitType_Output;
 #if TARGET_OS_IPHONE
@@ -424,7 +426,7 @@ static OSStatus coreaudio3_converter_cb(
    effectiveRate = inputRate / rateAdjust;
    if (_converter == NULL
          || _lastInputRate != inputRate
-         || fabs(_lastRateAdjust - rateAdjust) > 0.0001)
+         || fabs(_lastRateAdjust - rateAdjust) > 0.005)
    {
       AudioStreamBasicDescription inputDesc, outputDesc;
 
@@ -471,11 +473,8 @@ static OSStatus coreaudio3_converter_cb(
 
       _lastInputRate = inputRate;
       _lastRateAdjust = rateAdjust;
+      _converterNeedsReset = NO;
    }
-
-   /* Reset converter state to clear any "end of stream" condition
-    * from the previous writeRawInt16 call */
-   AudioConverterReset(_converter);
 
    /* Set up callback context */
    ctx.data        = samples;
@@ -504,8 +503,20 @@ static OSStatus coreaudio3_converter_cb(
          break;
       }
 
+      /* If converter returned 0 output while we have input, it may be stuck
+       * in "end of stream" state (tvOS 13/14 issue). Reset and retry once. */
       if (outputFrames == 0)
+      {
+         if (ctx.frames_left > 0 && !_converterNeedsReset)
+         {
+            AudioConverterReset(_converter);
+            _converterNeedsReset = YES; /* Mark that we've already reset */
+            continue; /* Retry with reset converter */
+         }
          break;
+      }
+
+      _converterNeedsReset = NO; /* Converter is working, clear retry flag */
 
       /* Apply volume to converted samples */
       outputSamples = outputFrames * 2;

@@ -72,6 +72,7 @@ typedef struct coreaudio
    /* Temporary buffer for converter output */
    float *conv_buffer;
    size_t conv_buffer_frames;
+   bool converter_needs_reset;
 
    bool dev_alive;
    bool is_paused;
@@ -202,6 +203,7 @@ static bool coreaudio_update_converter(coreaudio_t *dev, double effective_input_
    }
 
    dev->current_ratio = effective_input_rate;
+   dev->converter_needs_reset = false;
 
    /* Set high quality resampling */
    UInt32 quality = kAudioConverterQuality_High;
@@ -617,10 +619,6 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
    if (!coreaudio_update_converter(dev, effective_rate))
       return -1;
 
-   /* Reset converter state to clear any "end of stream" condition
-    * from the previous write_raw call */
-   AudioConverterReset(dev->converter);
-
    /* Set up callback context */
    ctx.data        = samples;
    ctx.frames_left = frames;
@@ -645,8 +643,20 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
          break;
       }
 
+      /* If converter returned 0 output while we have input, it may be stuck
+       * in "end of stream" state (tvOS 13/14 issue). Reset and retry once. */
       if (output_frames == 0)
+      {
+         if (ctx.frames_left > 0 && !dev->converter_needs_reset)
+         {
+            AudioConverterReset(dev->converter);
+            dev->converter_needs_reset = true;
+            continue;
+         }
          break;
+      }
+
+      dev->converter_needs_reset = false;
 
       /* Apply volume to converted samples */
       if (volume != 1.0f)
