@@ -1040,7 +1040,7 @@ const char *retro_vfs_file_get_path_impl(
    return stream->orig_path;
 }
 
-int retro_vfs_stat_impl(const char *path, int32_t *size)
+int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 {
    int ret                   = RETRO_VFS_STAT_IS_VALID;
 
@@ -1088,7 +1088,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
          return 0;
 
       if (size)
-         *size                  = (int32_t)stat_buf.st_size;
+         *size                  = (int64_t)stat_buf.st_size;
 
       if (FIO_S_ISDIR(stat_buf.st_mode))
          ret              |= RETRO_VFS_STAT_IS_DIRECTORY;
@@ -1100,14 +1100,15 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
          return 0;
 
       if (size)
-         *size = (int32_t)stat_buf.st_size;
+         *size = (int64_t)stat_buf.st_size;
 
       if ((stat_buf.st_mode & S_IFMT) == S_IFDIR)
          ret  |= RETRO_VFS_STAT_IS_DIRECTORY;
 #elif defined(_WIN32)
       /* Windows */
-      struct _stat stat_buf;
+      struct _stat64 stat_buf;
 #if defined(LEGACY_WIN32)
+      /* 32-bit only */
       char *path_local          = utf8_to_local_string_alloc(path);
       DWORD file_info           = GetFileAttributes(path_local);
 
@@ -1120,7 +1121,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       wchar_t *path_wide        = utf8_to_utf16_string_alloc(path);
       DWORD file_info           = GetFileAttributesW(path_wide);
 
-      _wstat(path_wide, &stat_buf);
+      _wstat64(path_wide, &stat_buf);
 
       if (path_wide)
          free(path_wide);
@@ -1129,7 +1130,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
          return 0;
 
       if (size)
-         *size = (int32_t)stat_buf.st_size;
+         *size = (int64_t)stat_buf.st_size;
 
       if (file_info & FILE_ATTRIBUTE_DIRECTORY)
          ret  |= RETRO_VFS_STAT_IS_DIRECTORY;
@@ -1157,7 +1158,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       free(path_buf);
 
       if (size)
-         *size = (int32_t)stat_buf.st_size;
+         *size = (int64_t)stat_buf.st_size;
 
       if (S_ISDIR(stat_buf.st_mode))
          ret |= RETRO_VFS_STAT_IS_DIRECTORY;
@@ -1165,13 +1166,19 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
          ret |= RETRO_VFS_STAT_IS_CHARACTER_SPECIAL;
 #else
       /* Every other platform */
+#if defined(_LARGEFILE64_SOURCE)
+      struct stat64 stat_buf;
+      if (stat64(path, &stat_buf) < 0)
+         return 0;
+#else
       struct stat stat_buf;
 
       if (stat(path, &stat_buf) < 0)
          return 0;
+#endif
 
       if (size)
-         *size = (int32_t)stat_buf.st_size;
+         *size = (int64_t)stat_buf.st_size;
 
       if (S_ISDIR(stat_buf.st_mode))
          ret |= RETRO_VFS_STAT_IS_DIRECTORY;
@@ -1179,6 +1186,21 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
          ret |= RETRO_VFS_STAT_IS_CHARACTER_SPECIAL;
 #endif
    }
+   return ret;
+}
+
+int retro_vfs_stat_impl(const char *path, int32_t *size)
+{
+   int64_t size64 = 0;
+   int ret = retro_vfs_stat_64_impl(path, size ? &size64 : NULL);
+
+   /* if a file is larger than 2 GB, size64 will hold the correct value
+    * but the cast to int32_t will truncate it.
+    * new code should migrate to retro_vfs_stat_64_t
+   */
+   if (size)
+      *size = (int32_t)size64;
+
    return ret;
 }
 
@@ -1523,7 +1545,7 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
    {
       char full[PATH_MAX_LENGTH];
       const char *name = retro_vfs_dirent_get_name_impl(rdir);
-      int32_t sz = 0;
+      int64_t sz = 0;
       int st = 0;
 
       if (!name)

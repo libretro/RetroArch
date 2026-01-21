@@ -36,6 +36,7 @@
 RETRO_BEGIN_DECLS
 
 #define PATH_REQUIRED_VFS_VERSION 3
+#define STAT64_REQUIRED_VFS_VERSION 4
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
@@ -681,7 +682,7 @@ int path_stat(const char *path);
 
 bool path_is_valid(const char *path);
 
-int32_t path_get_size(const char *path);
+int64_t path_get_size(const char *path);
 
 bool is_path_accessible_using_standard_io(const char *path);
 
