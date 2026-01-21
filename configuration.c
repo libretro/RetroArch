@@ -4600,7 +4600,6 @@ bool config_load_override(void *data)
    char content_path[PATH_MAX_LENGTH];
    char config_directory[DIR_MAX_LENGTH];
    bool should_append                     = false;
-   bool show_notification                 = true;
    rarch_system_info_t *sys_info          = (rarch_system_info_t*)data;
    const char *core_name                  = sys_info
       ? sys_info->info.library_name : NULL;
@@ -4655,16 +4654,12 @@ bool config_load_override(void *data)
 
    /* Prevent "--appendconfig" from being ignored */
    if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
-   {
-      should_append     = true;
-      show_notification = false;
-   }
+      should_append = true;
 
    /* per-core overrides */
    /* Create a new config file from core_path */
    if (path_is_valid(core_path))
    {
-
       RARCH_LOG("[Override] Core-specific overrides found at \"%s\".\n",
             core_path);
 
@@ -4683,8 +4678,7 @@ bool config_load_override(void *data)
       else
          path_set(RARCH_PATH_CONFIG_OVERRIDE, core_path);
 
-      should_append     = true;
-      show_notification = true;
+      should_append = true;
    }
 
    if (has_content)
@@ -4711,8 +4705,7 @@ bool config_load_override(void *data)
          else
             path_set(RARCH_PATH_CONFIG_OVERRIDE, content_path);
 
-         should_append     = true;
-         show_notification = true;
+         should_append = true;
       }
 
       /* per-game overrides */
@@ -4737,8 +4730,7 @@ bool config_load_override(void *data)
          else
             path_set(RARCH_PATH_CONFIG_OVERRIDE, game_path);
 
-         should_append     = true;
-         show_notification = true;
+         should_append = true;
       }
    }
 
@@ -4752,12 +4744,11 @@ bool config_load_override(void *data)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   if (!config_load_file(global_get_ptr(),
-            path_get(RARCH_PATH_CONFIG), settings))
+   if (!config_load_file(global_get_ptr(), path_get(RARCH_PATH_CONFIG), settings))
       return false;
 
-   if (settings->bools.notification_show_config_override_load
-         && show_notification)
+   if (     settings->bools.notification_show_config_override_load
+         && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
    {
       char msg[128];
       size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED), sizeof(msg));
@@ -4795,8 +4786,7 @@ bool config_load_override_file(const char *config_path)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   if (!config_load_file(global_get_ptr(),
-            path_get(RARCH_PATH_CONFIG), settings))
+   if (!config_load_file(global_get_ptr(), path_get(RARCH_PATH_CONFIG), settings))
       return false;
 
    if (settings->bools.notification_show_config_override_load)
