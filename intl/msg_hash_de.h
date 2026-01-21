@@ -15984,6 +15984,14 @@ MSG_HASH(
    "Server-IP-Adresse oder Hostname."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "SMB-Freigabename"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "SMB-Unterverzeichnis (optional)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    "SMB-Benutzername"
    )
@@ -16026,5 +16034,13 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
    "Die Standardzeitüberschreitung in Sekunden auswählen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "SMB-Freigabe durchsuchen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "SMB-Freigabe"
    )
 #endif

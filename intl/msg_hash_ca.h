@@ -2699,6 +2699,10 @@ MSG_HASH(
    "Augment de color"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Fes ser tot el rang de color de la teva pantalla per aconseguir una imatge més brillant i saturada. Si vols obtenir un color més semblant a l'original, desactiva aquesta opció."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
    "Línies d'escaneig"
    )
@@ -8765,6 +8769,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
    "Omet referències de la base de dades a la llista de reproducció"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "Si hi ha un nom de llista de reproducció personalitzat, sempre fes-lo servir en cas de cerca, encara que hi hagi una coincidència a la base de dades."
    )
 
 /* Import Content > Scan File */

@@ -8230,21 +8230,21 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
-   "Chave da transmissão do YouTube"
+   "Chave de transmissão do YouTube"
    )
 
 /* Settings > User > Accounts > Twitch */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
-   "Chave da transmissão do Twitch"
+   "Chave de transmissão do Twitch"
    )
 
 /* Settings > User > Accounts > Facebook Gaming */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
-   "Chave de transmissão dos jogos do Facebook"
+   "Chave de transmissão do Facebook Gaming"
    )
 
 /* Settings > Directory */
