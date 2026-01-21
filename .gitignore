@@ -228,6 +228,8 @@ gfx/common/wayland/xdg-shell.c
 gfx/common/wayland/xdg-shell.h
 gfx/common/wayland/pointer-constraints-unstable-v1.c
 gfx/common/wayland/pointer-constraints-unstable-v1.h
+gfx/common/wayland/presentation-time.h
+gfx/common/wayland/presentation-time.c
 gfx/common/wayland/relative-pointer-unstable-v1.c
 gfx/common/wayland/relative-pointer-unstable-v1.h
 gfx/common/wayland/viewporter.c
