@@ -544,7 +544,7 @@ int retro_vfs_closedir_smb(smb_dir_handle* dh)
    return 0;
 }
 
-int retro_vfs_stat_smb(const char *path, int32_t *size)
+int retro_vfs_stat_smb(const char *path, int64_t *size)
 {
    char rel_path[PATH_MAX_LENGTH];
    struct smb2_stat_64 st;
@@ -572,7 +572,7 @@ int retro_vfs_stat_smb(const char *path, int32_t *size)
       return 0;
 
    if (size)
-      *size = (int32_t)st.smb2_size;
+      *size = (int64_t)st.smb2_size;
 
    return RETRO_VFS_STAT_IS_VALID |
          (st.smb2_type == SMB2_TYPE_DIRECTORY ? RETRO_VFS_STAT_IS_DIRECTORY : 0);

@@ -57,7 +57,7 @@ const char *logiqx_dat_html_code_list[][2] = {
 bool logiqx_dat_path_is_valid(const char *path, uint64_t *file_size)
 {
    const char *file_ext = NULL;
-   int32_t file_size_int;
+   int64_t file_size_int;
 
    if (string_is_empty(path))
       return false;

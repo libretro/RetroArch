@@ -458,7 +458,7 @@ int retro_vfs_file_rename_saf(const char *old_tree, const char *old_path, const 
    return -1;
 }
 
-int retro_vfs_stat_saf(const char *tree, const char *path, int32_t *size)
+int retro_vfs_stat_saf(const char *tree, const char *path, int64_t *size)
 {
    JNIEnv *env;
    jstring tree_object;
@@ -515,7 +515,7 @@ int retro_vfs_stat_saf(const char *tree, const char *path, int32_t *size)
    if ((*env)->ExceptionOccurred(env)) goto error;
 
    if (size != NULL)
-      *size = saf_stat_size > INT32_MAX ? INT32_MAX : (int32_t)saf_stat_size;
+      *size = saf_stat_size > INT64_MAX ? INT64_MAX : (int64_t)saf_stat_size;
 
    (*env)->PopLocalFrame(env, NULL);
    return saf_stat_is_directory ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
