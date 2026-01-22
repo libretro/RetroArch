@@ -2057,7 +2057,7 @@ static int16_t input_state_internal(
          /* Handle Analog to Digital */
          if (     (device == RETRO_DEVICE_JOYPAD)
                && (input_analog_dpad_mode != ANALOG_DPAD_NONE)
-               && (!port_result))
+            )
          {
             int16_t ret_axis;
             uint8_t s;
