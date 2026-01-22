@@ -246,6 +246,8 @@ uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset)
 
 void rcheevos_menu_update_badge_references(const char* badge_name)
 {
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   unsigned i;
    char unlocked_badge_name[8];
    const size_t badge_name_len = strlen(badge_name);
    if (badge_name_len > 6 && badge_name_len < sizeof(unlocked_badge_name) + 5 &&
@@ -256,10 +258,9 @@ void rcheevos_menu_update_badge_references(const char* badge_name)
       badge_name = unlocked_badge_name;
    }
 
-   unsigned i;
-   for (i = 0; i < rcheevos_locals.menuitem_count; ++i)
+   for (i = 0; i < rcheevos_locals->menuitem_count; ++i)
    {
-      rcheevos_menuitem_t* menuitem = &rcheevos_locals.menuitems[i];
+      rcheevos_menuitem_t* menuitem = &rcheevos_locals->menuitems[i];
       if (menuitem->menu_badge_grayscale >= 2 && /* using placeholder */
           strncmp(menuitem->achievement->badge_name, badge_name, badge_name_len) == 0)
       {

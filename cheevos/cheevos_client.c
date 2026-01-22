@@ -34,6 +34,11 @@
 #include "../network/presence.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "cheevos_menu.h"
+#include "../menu/menu_driver.h"
+#endif
+
 #include "../deps/rcheevos/include/rc_api_runtime.h"
 #include "../deps/rcheevos/include/rc_api_user.h"
 
@@ -553,8 +558,11 @@ static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
       {
          if (--queue->outstanding_requests == 0)
          {
-            if (queue->pass == 2) /* all badges successfully loaded */
-               rcheevos_locals.badges_loaded = true;
+            if (queue->pass == 2)
+            {
+               /* all badges successfully loaded */
+               get_rcheevos_locals()->badges_loaded = true;
+            }
 
             done = true; /* destroy queue */
          }
@@ -583,7 +591,7 @@ static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
       }
       rc_client_destroy_achievement_list(queue->list);
 
-      rcheevos_locals.badges_loading = false;
+      get_rcheevos_locals()->badges_loading = false;
 
 #ifdef HAVE_THREADS
       slock_free(queue->lock);

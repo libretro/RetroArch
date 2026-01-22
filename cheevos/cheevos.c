@@ -640,6 +640,15 @@ int rcheevos_get_richpresence(char* s, size_t len)
    return (int)rc_client_get_rich_presence_message(rcheevos_locals.client, s, (size_t)len);
 }
 
+int rcheevos_get_game_badge_url(char* s, size_t len)
+{
+   const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals.client);
+   if (!game || !game->id || !game->badge_name || !game->badge_name[0])
+      return 0;
+
+   return (rc_client_game_get_image_url(game, s, len) == RC_OK);
+}
+
 #ifdef HAVE_GFX_WIDGETS
 
 static void rcheevos_hide_widgets(bool widgets_ready)
@@ -1419,15 +1428,15 @@ static void rcheevos_finalize_game_load(rc_client_t* client)
    settings_t* settings = config_get_ptr();
    bool want_badges     = settings->bools.cheevos_badges_enable;
 #if !defined(HAVE_GFX_WIDGETS)
-   /* Then badges are only needed for xmb and ozone menus */
+   /* Then badges are only needed for xmb, ozone, and rgui menus */
    want_badges          = want_badges &&
       (        string_is_equal(settings->arrays.menu_driver, "xmb")
-            || string_is_equal(settings->arrays.menu_driver, "ozone"));
+            || string_is_equal(settings->arrays.menu_driver, "ozone")
+            || string_is_equal(settings->arrays.menu_driver, "rgui"));
 #endif
    if (want_badges) /* prefetch the game badge */
    {
-      const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-      const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals->client);
+      const rc_client_game_t* game = rc_client_get_game_info(client);
       char badge[32];
 
       badge[0] = 'i';
