@@ -351,7 +351,7 @@ bool command_network_send(const char *cmd_);
 #ifdef HAVE_STDIN_CMD
 command_t* command_stdin_new(void);
 #endif
-#ifdef LAKKA
+#ifdef HAVE_LAKKA
 command_t* command_uds_new(void);
 #endif
 #ifdef EMSCRIPTEN
