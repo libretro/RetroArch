@@ -15988,6 +15988,10 @@ MSG_HASH(
    "SMB-Freigabename"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "Name der Netzwerkfreigabe, auf die zugegriffen werden soll."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
    "SMB-Unterverzeichnis (optional)"
    )
@@ -16038,6 +16042,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
    "SMB-Freigabe durchsuchen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Dateien auf der konfigurierten SMB-Freigabe durchsuchen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "„SMB-Client“ anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "„SMB-Client“-Einstellungen anzeigen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,

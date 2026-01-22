@@ -2710,6 +2710,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
    "Disposició del subpíxel"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Selecciona la disposició dels subpíxels de la teva pantalla (només afecta les línies d'escombrat). Si no saps quina és la disposició dels subpíxels de la teva pantalla, ho pots cercar a Rtings.com"
+   )
 
 
 /* Settings > Video > Synchronization */
