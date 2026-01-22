@@ -49,7 +49,8 @@
         GCDWebServerOption_ServerName : @"RetroArch",
         GCDWebServerOption_BonjourName : @"RetroArch",
         GCDWebServerOption_BonjourType : @"_webdav._tcp",
-        GCDWebServerOption_Port : @(8080)
+        GCDWebServerOption_Port : @(8080),
+        GCDWebServerOption_AutomaticallySuspendInBackground : @NO
     };
     [_webDAVServer startWithOptions:webDAVSeverOptions error:nil];
 
@@ -60,7 +61,8 @@
         GCDWebServerOption_ServerName : @"RetroArch",
         GCDWebServerOption_BonjourName : @"RetroArch",
         GCDWebServerOption_BonjourType : @"_http._tcp",
-        GCDWebServerOption_Port : @(80)
+        GCDWebServerOption_Port : @(80),
+        GCDWebServerOption_AutomaticallySuspendInBackground : @NO
     };
     [_webUploader startWithOptions:webSeverOptions error:nil];
 }
