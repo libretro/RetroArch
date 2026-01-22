@@ -262,7 +262,6 @@ appstore_cores=(
     sameboy
     sameduck
     scummvm
-    skyemu
     smsplus
     snes9x
     snes9x2005
