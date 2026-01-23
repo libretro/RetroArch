@@ -242,12 +242,14 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                }
 
                /* see if real icon is available for next frame */
-               const retro_time_t next_try = state->challenge_info[i].badge_retry;
-               const retro_time_t now = cpu_features_get_time_usec();
-               if (next_try == 0 || now > next_try)
                {
-                  state->challenge_info[i].badge_retry = now + 250000;
-                  state->challenge_info[i].image = rcheevos_get_badge_texture(state->challenge_info[i].badge_name, false, false);
+                  const retro_time_t next_try = state->challenge_info[i].badge_retry;
+                  const retro_time_t now = cpu_features_get_time_usec();
+                  if (next_try == 0 || now > next_try)
+                  {
+                     state->challenge_info[i].badge_retry = now + 250000;
+                     state->challenge_info[i].image = rcheevos_get_badge_texture(state->challenge_info[i].badge_name, false, false);
+                  }
                }
             }
             else
@@ -330,11 +332,13 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                }
 
                /* see if real icon is available for next frame */
-               const retro_time_t next_try = state->challenge_info[i].badge_retry;
-               if (next_try == 0 || now > next_try)
                {
-                  state->progress_tracker.badge_retry = now + 250000;
-                  state->progress_tracker.image = rcheevos_get_badge_texture(state->progress_tracker.badge_name, true, false);
+                  const retro_time_t next_try = state->challenge_info[i].badge_retry;
+                  if (next_try == 0 || now > next_try)
+                  {
+                     state->progress_tracker.badge_retry = now + 250000;
+                     state->progress_tracker.image = rcheevos_get_badge_texture(state->progress_tracker.badge_name, true, false);
+                  }
                }
             }
             else
