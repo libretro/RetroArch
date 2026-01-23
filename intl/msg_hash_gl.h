@@ -2679,8 +2679,40 @@ MSG_HASH(
    "Luminancia máxima"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Configura a luminancia máxima (en cd/m²) co teu monitor pode reproducir. Unha vez configurada, non a cambies. Usa a Luminancia de Branco Papel para axustar o brillo. Consulta RTings.com para coñecer a luminancia máxima do teu monitor. Nalgúns monitores, coa opción de liñas de varrido activada (abaixo), pode ser necesario forzar este valor (e tamén o Branco Papel) para aumentar o brillo xeral."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminancia branca de papel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Unha vez configurada a luminancia máxima, úsaa como o teu axuste estándar de brillo. Tecnicamente, isto define a luminancia á que debería situarse o Branco Papel, é dicir, o brillo do texto lexible ou a luminancia no límite superior do rango SDR (Rango Dinámico Estándar)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Aumento de cor"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Usa toda a gama de cores do teu monitor para crear unha imaxe máis brillante e saturada. Para cores máis fieis ao deseño orixinal do xogo, configura esta opción en DESACTIVADO."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Liñas de escáner"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "Activa as liñas de varrido en HDR. As liñas de varrido son o principal motivo para usar HDR en RetroArch, xa que unha implementación precisa apaga gran parte da pantalla e o HDR recupera parte do brillo perdido. Se necesitas máis control sobre as liñas de varrido, usa os sombreadores personalizados que ofrece RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Disposición de subpíxeles"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Selecciona a disposición de subpíxeles do teu monitor; isto só afecta ás liñas de varrido. Se non sabes cal é a disposición de subpíxeles do teu monitor, consulta en Rtings.com o apartado «subpixel layout» do teu modelo"
    )
 
 
@@ -3918,8 +3950,16 @@ MSG_HASH(
    "Disco seguinte"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "Incrementa o índice do disco seleccionado actualmente e realiza unha inserción retardada se a bandexa virtual do disco está pechada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Disco anterior"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
+   "Decrementa o índice do disco seleccionado actualmente e realiza unha inserción retardada se a bandexa virtual do disco está pechada."
    )
 
 MSG_HASH(
@@ -5709,6 +5749,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "Limiar para pasar o dedo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Entrada táctil Alt 2"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Usa a segunda pulsación táctil como botón do rato mentres controlas o cursor."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
@@ -8610,6 +8658,54 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Buscar"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Método de busca"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Automático ou personalizado con opcións detalladas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Comprobación da base de datos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "Estrito engade só elementos que coincidan cunha entrada da base de datos, Solto engade tamén ficheiros coa extensión correcta pero sen coincidencia CRC/serial, DAT personalizado comproba un ficheiro XML proporcionado polo usuario en lugar das bases de datos, Ningún ignora as bases de datos e só usa as extensións dos ficheiros."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "Base de datos de referencia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "A coincidencia pode restrinxirse a unha base de datos específica ou á primeira base de datos que coincida, para acelerar a exploración."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "Lista de reprodución a actualizar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "Os resultados engádense a esta lista de reprodución. No caso de Auto - Calquera, varias listas de reprodución do sistema poden actualizarse. Personalizado sen base de datos de referencia non vinculará as entradas a ningunha base de datos na lista de reprodución."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Buscar un único ficheiro"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Explora só un ficheiro en vez dun directorio. Selecciona de novo a localización do contido despois de cambiar esta opción."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Omitir referencias de bases de datos na lista de reprodución"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "No caso dun nome de lista de reprodución personalizado, sempre usa ese nome para a procura de miniaturas, mesmo se houbo unha coincidencia na base de datos."
+   )
 
 /* Import Content > Scan File */
 
@@ -9774,16 +9870,32 @@ MSG_HASH(
    "Índice actual do disco"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Escolle o disco actual dunha lista de imaxes dispoñibles. A bandexa virtual do disco pode permanecer pechada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Expulsar Disco"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+   "Abrir a bandexa virtual do disco."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Inserir disco"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   "Pechar a bandexa virtual do disco."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Cargar disco novo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Selecciona un novo disco do sistema de arquivos e engádeo á lista de índices.\nNOTA: Esta é unha función antiga. Recoméndase usar listas de reprodución M3U para títulos de varios discos."
    )
 /* deprecated */
 
@@ -10733,6 +10845,10 @@ MSG_HASH(
    "<Directorio de contido>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<Automático>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
    "<Personalizado>"
    )
@@ -10741,12 +10857,44 @@ MSG_HASH(
    "<Non especificado>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Completamente automático"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    "Personalizado"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "Estrito"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Laxo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "DAT personalizado (Estrito)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "DAT personalizado (laxo)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
    "Ningún"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<Automático/Calquera>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<Automático/Primeira coincidencia>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<Automático/Nome do sistema>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -10767,6 +10915,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Analóxico dereito (forzado)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Analóxicos esquerdo e dereito"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Analóxicos esquerdo + dereito (Forzado)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Dúas pancas Analóxico"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Dúas pancas Analóxico (Forzado)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
@@ -12752,6 +12916,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "Porto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   "Nome do dispositivo do Porto %d: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -15991,4 +16159,20 @@ MSG_HASH(
    )
 #endif
 #ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "Configuración da rede SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "Configura os axustes da carpeta compartida en rede SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "Activar o cliente SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Activa o acceso á carpeta compartida en rede SMB. Recoméndase encarecidamente usar Ethernet en lugar de WiFi para unha conexión máis fiable."
+   )
 #endif

@@ -15972,8 +15972,16 @@ MSG_HASH(
    "SMB-Netzwerkeinstellungen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "SMB-Netzwerkfreigabe-Einstellungen konfigurieren."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    "SMB-Client aktivieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Aktiviert den Zugriff auf die SMB-Netzwerkfreigabe. Für eine zuverlässigere Verbindung wird Ethernet gegenüber WLAN dringend empfohlen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
@@ -15994,6 +16002,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
    "SMB-Unterverzeichnis (optional)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "Unterverzeichnispfad auf der Freigabe."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
@@ -16022,6 +16034,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
    "SMB-Authentifizierungsmodus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "Auswahl der in der Umgebung verwendeten Authentifizierung."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,

@@ -60,7 +60,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "النواة غير المحتوية"
+   "محاكيات دون محتوى"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
@@ -79,19 +79,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   "إعداد نواة"
+   "تحميل محاكي"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "حدد النواة المستخدمة."
+   "حدد محاكي للاستخدام."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
-   "إيقاف تشغيل النواة"
+   "إيقاف تشغيل المحاكي"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
-   "إلغاء تحميل النواة."
+   "تحرير المحاكي المحمل."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
@@ -107,7 +107,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "تصفح للحصول على المحتوى. لتحميل المحتوى، تحتاج إلى \"أساسي\" لاستخدامه، وملفّ محتوى.\nللتحكم في المكان الذي تبدأ فيه القائمة في تصفح المحتوى، قم بتعيين 'دليل مستعرض الملفات'. إذا لم يتم تعيينه، فإنه سيبدأ في الجذر.\nسيقوم المتصفح بتصفية ملحقات آخر مجموعة أساسية في 'تحميل النواة [...]"
+   "تصفح للحصول على المحتوى. لتحميل المحتوى، تحتاج إلى \"محاكي\" لاستخدامه، وملفّ محتوى.\nللتحكم في المكان الذي تبدأ فيه القائمة في تصفح المحتوى، قم بتعيين 'دليل مستعرض الملفات'. إذا لم يتم تعيينه، فإنه سيبدأ في الجذر.\nسيقوم المتصفح بتصفية ملحقات آخر مجموعة أساسية في 'تحميل المحاك[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -248,19 +248,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "تنزيل نواة"
+   "تنزيل محاكي"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "تنزيل و تثبيت نواة من المُحَدّث عبر الإنترنت."
+   "تنزيل و تثبيت محاكي من المُحَدّث عبر الإنترنت."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   "تثبيت أو إستعادة نواة"
+   "تثبيت أو إستعادة محتكي"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   "تثبيت أو إستعادة نواة من مجلد 'التنزيلات'."
+   "تثبيت أو إستعادة محاكي من مجلد 'التنزيلات'."
    )
 MSG_HASH( /* FIXME Maybe add a description? */
    MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
@@ -334,18 +334,18 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "النواة غير المحتوية"
+   "محاكيات دون محتوى"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   "ستظهر هنا النواة المثبتة التي يمكن تشغيلها دون تحميل المحتوى."
+   "ستظهر هنا المحاكيات المثبتة التي يمكن تشغيلها دون تحميل المحتوى."
    )
 
 /* Main Menu > Online Updater */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "مُنَزّل النواة"
+   "مُنَزّل محاكيات"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
@@ -353,15 +353,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   "تحديث جميع النوى المثبتة إلى أحدث إصدار متاح."
+   "تحديث جميع المحاكيات المثبتة إلى أحدث إصدار متاح."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   "تبديل النواة إلى إصدارات متجر Play"
+   "تبديل المحاكيات إلى إصدارات متجر Play"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   "استبدل جميع النواة القديمة والنواة المثبتة يدوياً بأحدث الإصدارات من متجر جوجل بلي حيثما كانت متاحة."
+   "استبدل جميع النواة القديمة والنواة المثبتة يدوياً بأحدث الإصدارات من متجر play حيثما كانت متاحة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
@@ -397,7 +397,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   "تحديث ملفات معلومات النواة"
+   "تحديث ملفات معلومات المحاكي"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
@@ -436,11 +436,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   "المعلومات الأساسية للنواة"
+   "المعلومات الأساسية للمحاكي"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   "عرض المعلومات المتعلقة بالتطبيق/النواة الأساسية."
+   "عرض المعلومات المتعلقة بالتطبيق او المحاكي."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
@@ -487,15 +487,15 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-   "اسم النواة"
+   "اسم المحاكي"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   " علامة النواة"
+   "اسم المحاكي"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
-   "نسخة النواة"
+   "النسخة المحاكي"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
@@ -558,6 +558,10 @@ MSG_HASH(
    "البرنامج الثابت فيرموير"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "البحث في: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    "مفقود، مطلوب:"
    )
@@ -575,7 +579,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "قفل النواة المثبتة"
+   "قفل المحاكي المثبت"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LOCK,
+   "منع تعديل المحاكي المثبت حاليا. يمكن استخدامها لتجنب التحديثات غير المرغوب فيها عندما يتطلب المحتوى إصدار أساسي محدد (مثل مجموعات ROM اﻵركيد) أو تغييرات تنسيق حفظ المحاكي الخاصة بها."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -3143,8 +3151,24 @@ MSG_HASH(
    )
 
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
+   "تثبيت محاكي"
+)
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
+   "إلغاء تثبيت محاكي"
+)
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
+   "إظهار 'إدارة المحاكيات'"
+)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+   "إظهار خيار \"إدارة المحاكيات\" في القائمة الرئيسية."
+)
 
 
 
