@@ -337,9 +337,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_BIND(hold,                          RARCH_HOLD_ENABLE,            MENU_ENUM_LABEL_VALUE_INPUT_HOLD),
 
    DECLARE_META_BIND(2, enable_hotkey,         RARCH_ENABLE_HOTKEY,          MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY),
-#ifdef HAVE_MENU
    DECLARE_META_BIND(1, menu_toggle,           RARCH_MENU_TOGGLE,            MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE),
-#endif
 #ifdef HAVE_LAKKA
    DECLARE_META_BIND(2, exit_emulator,         RARCH_QUIT_KEY,               MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY),
 #else
