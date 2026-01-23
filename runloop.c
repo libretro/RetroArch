@@ -7187,21 +7187,21 @@ int runloop_iterate(void)
    runloop_state_t *runloop_st            = &runloop_state;
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
    retro_time_t current_time              = cpu_features_get_time_usec();
-#ifdef HAVE_MENU
 #ifdef HAVE_NETWORKING
    bool netplay_is_enabled                = netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
    bool netplay_allow_timeskip            = netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL);
    bool netplay_allow_pause               = netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
-   bool menu_pause_libretro               = settings->bools.menu_pause_libretro && netplay_allow_pause;
 #else
    bool netplay_allow_timeskip            = false;
    bool netplay_allow_pause               = false;
-   bool menu_pause_libretro               = settings->bools.menu_pause_libretro;
 #endif
+#ifdef HAVE_MENU
+   bool menu_pause_libretro               = settings->bools.menu_pause_libretro && netplay_allow_pause;
    bool core_paused                       =
             (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
          || (menu_pause_libretro && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
 #else
+   bool menu_pause_libretro               = settings->bools.menu_pause_libretro;
    bool core_paused                       = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
 #endif
    float slowmotion_ratio                 = settings->floats.slowmotion_ratio;
