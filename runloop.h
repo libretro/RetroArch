@@ -301,6 +301,7 @@ struct runloop
    } name;
 
    bool perfcnt_enable;
+   bool paused_hotkey;
 };
 
 typedef struct runloop runloop_state_t;

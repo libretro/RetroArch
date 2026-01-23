@@ -5536,7 +5536,6 @@ static bool display_menu_libretro(
    }
 
 static void runloop_pause_toggle(
-      bool *runloop_paused_hotkey,
       bool pause_pressed, bool old_pause_pressed,
       bool focused, bool old_focus)
 {
@@ -5548,7 +5547,7 @@ static void runloop_pause_toggle(
       {
          /* Keep track of hotkey triggered pause to
           * distinguish it from menu triggered pause */
-         *runloop_paused_hotkey = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+         runloop_st->paused_hotkey = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
          command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
       }
       else if (!old_focus)
@@ -5584,7 +5583,6 @@ static enum runloop_state_enum runloop_check_state(
    gfx_display_t            *p_disp    = disp_get_ptr();
    runloop_state_t *runloop_st         = &runloop_state;
    static bool old_focus               = true;
-   static bool runloop_paused_hotkey   = false;
    struct retro_callbacks *cbs         = &runloop_st->retro_ctx;
    bool is_focused                     = false;
    bool is_alive                       = false;
@@ -5666,10 +5664,10 @@ static enum runloop_state_enum runloop_check_state(
       {
          BIT256_CLEAR_ALL(current_bits);
          if (      runloop_paused
-               && !runloop_paused_hotkey
+               && !runloop_st->paused_hotkey
                &&  menu_pause_libretro)
             BIT256_SET(current_bits, RARCH_PAUSE_TOGGLE);
-         else if (runloop_paused_hotkey)
+         else if (runloop_st->paused_hotkey)
          {
             /* Restore pause if pause is triggered with both hotkey and menu,
              * and restore cached video frame to continue properly to
@@ -6515,7 +6513,7 @@ static enum runloop_state_enum runloop_check_state(
       bool pause_pressed            = BIT256_GET(current_bits, RARCH_PAUSE_TOGGLE);
 
       /* Decide pause hotkey */
-      runloop_pause_toggle(&runloop_paused_hotkey,
+      runloop_pause_toggle(
             pause_pressed, old_pause_pressed,
             focused, old_focus);
 
@@ -6592,7 +6590,7 @@ static enum runloop_state_enum runloop_check_state(
       }
 
       /* Decide pause hotkey */
-      runloop_pause_toggle(&runloop_paused_hotkey,
+      runloop_pause_toggle(
             pause_pressed, old_pause_pressed,
             focused, old_focus);
 
