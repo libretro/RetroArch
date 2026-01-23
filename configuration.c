@@ -3292,7 +3292,6 @@ void config_set_defaults(void *data)
             sizeof(settings->paths.directory_osk_overlay));
 #endif
 
-#ifdef HAVE_MENU
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]))
    {
       configuration_set_string(settings,
@@ -3315,7 +3314,7 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->paths.directory_menu_content,
             g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]);
-#endif
+
    if (!string_is_empty(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]))
       configuration_set_string(settings,
             settings->paths.directory_autoconfig,
