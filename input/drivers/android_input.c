@@ -18,6 +18,7 @@
 
 #include <unistd.h>
 #include <dlfcn.h>
+#include <math.h>
 
 #include <android/keycodes.h>
 
@@ -59,9 +60,15 @@ enum {
     AMOTION_EVENT_BUTTON_TERTIARY = 1 << 2,
     AMOTION_EVENT_BUTTON_BACK = 1 << 3,
     AMOTION_EVENT_BUTTON_FORWARD = 1 << 4,
+    AMOTION_EVENT_BUTTON_STYLUS_PRIMARY = 1 << 5,
+    AMOTION_EVENT_BUTTON_STYLUS_SECONDARY = 1 << 6,
     AMOTION_EVENT_AXIS_VSCROLL = 9,
     AMOTION_EVENT_ACTION_HOVER_MOVE = 7,
-    AINPUT_SOURCE_STYLUS = 0x00004000
+    AMOTION_EVENT_ACTION_HOVER_ENTER = 9,
+    AMOTION_EVENT_ACTION_HOVER_EXIT = 10,
+    AINPUT_SOURCE_STYLUS = 0x00004000,
+    AMOTION_EVENT_TOOL_TYPE_FINGER = 1,
+    AMOTION_EVENT_TOOL_TYPE_STYLUS = 2
 };
 #endif
 /* If using an NDK lower than 16b then add missing definition */
@@ -92,6 +99,39 @@ enum {
 /* First ports are used to keep track of gamepad states.
  * Last port is used for keyboard state */
 static uint8_t android_key_state[DEFAULT_MAX_PADS + 1][MAX_KEYS];
+
+/* Hover guard: Prevents phantom touchscreen events after
+ * S Pen hover transitions */
+static bool     g_hover_guard_active = false;
+static int64_t  g_hover_guard_until_ms = 0;
+static float    g_hover_guard_x = 0.0f, g_hover_guard_y = 0.0f;
+
+/* Hover guard helper functions */
+static void hover_guard_arm(float x, float y, int64_t now_ms, int guard_ms)
+{
+   g_hover_guard_active = true;
+   g_hover_guard_until_ms = now_ms + guard_ms;
+   g_hover_guard_x = x;
+   g_hover_guard_y = y;
+#ifdef DEBUG_ANDROID_INPUT
+   RARCH_LOG("[RA Input] Hover guard ARMED at (%.1f,%.1f) for %dms\n",
+             x, y, guard_ms);
+#endif
+}
+
+static bool hover_guard_drop(float x, float y, int64_t now_ms, float eps_px)
+{
+   if (!g_hover_guard_active)
+      return false;
+   if (now_ms > g_hover_guard_until_ms)
+   {
+      g_hover_guard_active = false;
+      return false;
+   }
+   return (fabsf(x - g_hover_guard_x) <= eps_px &&
+           fabsf(y - g_hover_guard_y) <= eps_px);
+}
+
 
 #define ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds, id) (BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[(binds)[(id)].key]))
 
@@ -145,6 +185,10 @@ typedef struct state_device
 typedef struct android_input
 {
    int64_t quick_tap_time;
+   bool    stylus_proximity_active;
+   int64_t stylus_proximity_until_ns;
+   bool    stylus_side_button_active;  /* Track side button state */
+   size_t  stylus_side_button_ptr;     /* Track which pointer index */
    state_device_t pad_states[MAX_USERS];        /* int alignment */
    int mouse_x, mouse_y;
    int16_t mouse_x_viewport_screen, mouse_y_viewport_screen;
@@ -160,6 +204,17 @@ typedef struct android_input
    struct input_pointer pointer[MAX_TOUCH];     /* int16_t alignment */
    char device_model[256];
 } android_input_t;
+
+static void android_stylus_proximity_check_expire(android_input_t *android)
+{
+   if (android->stylus_proximity_active)
+   {
+      retro_time_t now = cpu_features_get_time_usec();
+      /* Convert both to milliseconds for comparison: now(µs)/1000 vs proximity(ns)/1000000 */
+      if (now / 1000 > android->stylus_proximity_until_ns / 1000000)
+         android->stylus_proximity_active = false;
+   }
+}
 
 static void frontend_android_get_version_sdk(int32_t *sdk);
 static void frontend_android_get_name(char *s, size_t len);
@@ -187,6 +242,20 @@ extern int32_t AMotionEvent_getButtonState(const AInputEvent* motion_event);
 static typeof(AMotionEvent_getButtonState) *p_AMotionEvent_getButtonState;
 
 #define AMotionEvent_getButtonState (*p_AMotionEvent_getButtonState)
+
+/* Tool type support for stylus detection */
+extern int32_t AMotionEvent_getToolType(const AInputEvent* motion_event, size_t pointer_index);
+
+static typeof(AMotionEvent_getToolType) *p_AMotionEvent_getToolType;
+
+#define AMotionEvent_getToolType (*p_AMotionEvent_getToolType)
+
+/* Pressure and distance support for stylus contact detection */
+extern float AMotionEvent_getPressure(const AInputEvent* motion_event, size_t pointer_index);
+
+static typeof(AMotionEvent_getPressure) *p_AMotionEvent_getPressure;
+
+#define AMotionEvent_getPressure (*p_AMotionEvent_getPressure)
 
 #ifdef HAVE_DYLIB
 static void *libandroid_handle;
@@ -577,6 +646,10 @@ static bool android_input_init_handle(void)
 
    p_AMotionEvent_getButtonState    = dlsym(RTLD_DEFAULT,
                "AMotionEvent_getButtonState");
+   p_AMotionEvent_getToolType       = dlsym(RTLD_DEFAULT,
+               "AMotionEvent_getToolType");
+   p_AMotionEvent_getPressure       = dlsym(RTLD_DEFAULT,
+               "AMotionEvent_getPressure");
 #endif
 
    pad_id1 = -1;
@@ -598,6 +671,10 @@ static void *android_input_init(const char *joypad_driver)
    android->mouse_activated = false;
    android->pads_connected = 0;
    android->quick_tap_time = 0;
+   android->stylus_proximity_active = false;
+   android->stylus_proximity_until_ns = 0;
+   android->stylus_side_button_active = false;
+   android->stylus_side_button_ptr = 0;
 
    input_keymaps_init_keyboard_lut(rarch_key_map_android);
 
@@ -630,6 +707,19 @@ static void *android_input_init(const char *joypad_driver)
 
 static int android_check_quick_tap(android_input_t *android)
 {
+   /* Abort quick tap detection if a stylus hover transition is currently
+    * being processed. When the hover guard is active, phantom
+    * touchscreen events may follow a stylus hover exit, which should
+    * never promote to a mouse click. Clearing quick_tap_time here
+    * prevents any pending tap from accidentally firing while the
+    * hover guard suppresses input. */
+   if (g_hover_guard_active)
+   {
+      /* Cancel any pending quick tap and skip click promotion */
+      android->quick_tap_time = 0;
+      return 0;
+   }
+
    /* Check if the touch screen has been been quick tapped
     * and then not touched again for 200ms
     * If so then return true and deactivate quick tap timer */
@@ -699,8 +789,8 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
          x = AMotionEvent_getX(event, motion_ptr);
          y = AMotionEvent_getY(event, motion_ptr);
 
-         x_delta = (x_delta - android->mouse_x_prev);
-         y_delta = (y_delta - android->mouse_y_prev);
+         x_delta = (x - android->mouse_x_prev);
+         y_delta = (y - android->mouse_y_prev);
 
          android->mouse_x_prev = x;
          android->mouse_y_prev = y;
@@ -733,19 +823,376 @@ static INLINE void android_input_poll_event_type_motion(
       android_input_t *android, AInputEvent *event,
       int port, int source)
 {
-   int getaction     = AMotionEvent_getAction(event);
-   int action        = getaction  & AMOTION_EVENT_ACTION_MASK;
-   size_t motion_ptr = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   bool keyup        = (
-            action == AMOTION_EVENT_ACTION_UP
-         || action == AMOTION_EVENT_ACTION_CANCEL
-         || action == AMOTION_EVENT_ACTION_POINTER_UP);
+   /* C89: All variable declarations at function start */
+   int getaction, action;
+   size_t motion_ptr;
+   int64_t event_time_ms;
+   float x, y;
+   int32_t tool_type;
+   bool is_stylus, is_finger, is_hover_action;
+   settings_t *settings;
+   bool require_contact, tip_down, side_primary, side_secondary, stylus_pressed;
+   float pressure, distance;
+   int buttons;
+   bool keyup;
+   
+   /* Initialize variables */
+   getaction = AMotionEvent_getAction(event);
+   action = getaction & AMOTION_EVENT_ACTION_MASK;
+   motion_ptr = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+   event_time_ms = AMotionEvent_getEventTime(event) / 1000000;
+   x = AMotionEvent_getX(event, motion_ptr);
+   y = AMotionEvent_getY(event, motion_ptr);
+   
+   /* ToolType-first classification */
+   tool_type = 0;
+   if (p_AMotionEvent_getToolType && motion_ptr < AMotionEvent_getPointerCount(event))
+      tool_type = AMotionEvent_getToolType(event, motion_ptr);
+
+   is_stylus = (tool_type == AMOTION_EVENT_TOOL_TYPE_STYLUS);
+   is_finger = (tool_type == AMOTION_EVENT_TOOL_TYPE_FINGER);
+   
+   /* Fallback: if toolType is unavailable or unknown (neither stylus nor finger),
+    * fall back to classifying by input source bits. */
+   if (!is_stylus && !is_finger)
+   {
+      is_stylus = ((source & AINPUT_SOURCE_STYLUS) == AINPUT_SOURCE_STYLUS);
+      is_finger = ((source & AINPUT_SOURCE_TOUCHSCREEN) == AINPUT_SOURCE_TOUCHSCREEN);
+   }
+   
+   is_hover_action = (action == AMOTION_EVENT_ACTION_HOVER_MOVE ||
+                      action == AMOTION_EVENT_ACTION_HOVER_ENTER ||
+                      action == AMOTION_EVENT_ACTION_HOVER_EXIT);
+
+#ifdef DEBUG_ANDROID_INPUT
+   /* Comprehensive logging for debugging */
+   RARCH_LOG("[RA Input] act=%d src=0x%x tool=%d dev=%d btn=0x%x dropped=%d\n",
+             action, source, tool_type, AInputEvent_getDeviceId(event),
+             p_AMotionEvent_getButtonState ?
+             AMotionEvent_getButtonState(event) : 0, 0);
+#endif
+
+   /* ===== STYLUS EVENT PROCESSING ===== */
+   if (is_stylus)
+   {
+      settings = config_get_ptr();
+      if (!settings)
+         return;
+      
+      /* Check if stylus support is globally disabled */
+      if (!settings->bools.input_stylus_enable)
+      {
+#ifdef DEBUG_ANDROID_INPUT
+         RARCH_LOG("[RA Input] Stylus support disabled - ignoring stylus event\n");
+#endif
+         return; /* Treat stylus events as if they never happened */
+      }
+      
+      /* Get stylus settings once for all cases */
+      require_contact = settings->bools.input_stylus_require_contact_for_click;
+
+      switch (action)
+      {
+         case AMOTION_EVENT_ACTION_HOVER_ENTER:
+         case AMOTION_EVENT_ACTION_HOVER_MOVE:
+         case AMOTION_EVENT_ACTION_HOVER_EXIT:
+            /* Hover events: Update cursor position only, NEVER trigger clicks */
+#ifdef DEBUG_ANDROID_INPUT
+            RARCH_LOG("[RA Input] Stylus hover (act=%d) - arming hover guard\n", action);
+#endif
+            hover_guard_arm(x, y, event_time_ms, 100); /* 100ms guard window */
+            
+            /* Set stylus proximity flag and cancel any pending quick-tap */
+            android->stylus_proximity_active = true;
+            android->stylus_proximity_until_ns = AMotionEvent_getEventTime(event) + 120000000; /* 120ms in ns */
+            android->quick_tap_time = 0;
+            
+            /* S-Pen hover: NO cursor movement - normal stylus behavior
+             * Hover is used ONLY for proximity detection (phantom click prevention) 
+             * and side button functionality. Cursor moves only on contact. */
+            
+            /* Handle side button during hover - side button works regardless of contact requirement setting */
+            {
+               buttons = p_AMotionEvent_getButtonState ?
+                  AMotionEvent_getButtonState(event) : 0;
+               side_primary   = (buttons & AMOTION_EVENT_BUTTON_STYLUS_PRIMARY)   != 0;
+               side_secondary = (buttons & AMOTION_EVENT_BUTTON_STYLUS_SECONDARY) != 0;
+               bool side_pressed = side_primary || side_secondary;
+            
+#ifdef DEBUG_ANDROID_INPUT
+            if (buttons != 0)
+               RARCH_LOG("[Stylus Btn] state=0x%x primary=%d secondary=%d\n",
+                         buttons, !!side_primary, !!side_secondary);
+#endif
+               
+               /* Side button pressed - start drag operation */
+               if (side_pressed && !android->stylus_side_button_active)
+               {
+                  /* Start new pointer down */
+                  struct video_viewport vp = {0};
+                  
+                  video_driver_translate_coord_viewport_confined_wrap(
+                        &vp, x, y,
+                        &android->pointer[motion_ptr].confined_x,
+                        &android->pointer[motion_ptr].confined_y,
+                        &android->pointer[motion_ptr].full_x,
+                        &android->pointer[motion_ptr].full_y);
+                  
+                  video_driver_translate_coord_viewport_wrap(
+                        &vp, x, y,
+                        &android->pointer[motion_ptr].x,
+                        &android->pointer[motion_ptr].y,
+                        &android->pointer[motion_ptr].full_x,
+                        &android->pointer[motion_ptr].full_y);
+                  
+                  if (android->pointer_count < (int)motion_ptr + 1)
+                     android->pointer_count = (int)motion_ptr + 1;
+                  
+                  android->stylus_side_button_active = true;
+                  android->stylus_side_button_ptr = motion_ptr;
+                  
+#ifdef DEBUG_ANDROID_INPUT
+                  RARCH_LOG("[Stylus] POINTER DOWN @ (%.1f, %.1f) idx=%zu cnt=%d (side button start)\n",
+                            x, y, motion_ptr, android->pointer_count);
+#endif
+                  return;
+               }
+               /* Side button held - continue drag (update coordinates) */
+               else if (side_pressed && android->stylus_side_button_active)
+               {
+                  /* Update existing pointer coordinates */
+                  struct video_viewport vp = {0};
+                  size_t ptr_idx = android->stylus_side_button_ptr;
+                  
+                  video_driver_translate_coord_viewport_confined_wrap(
+                        &vp, x, y,
+                        &android->pointer[ptr_idx].confined_x,
+                        &android->pointer[ptr_idx].confined_y,
+                        &android->pointer[ptr_idx].full_x,
+                        &android->pointer[ptr_idx].full_y);
+                  
+                  video_driver_translate_coord_viewport_wrap(
+                        &vp, x, y,
+                        &android->pointer[ptr_idx].x,
+                        &android->pointer[ptr_idx].y,
+                        &android->pointer[ptr_idx].full_x,
+                        &android->pointer[ptr_idx].full_y);
+                  
+#ifdef DEBUG_ANDROID_INPUT
+                  RARCH_LOG("[Stylus] POINTER MOVE @ (%.1f, %.1f) idx=%zu (side button drag)\n",
+                            x, y, ptr_idx);
+#endif
+                  return;
+               }
+               /* Side button released - end drag operation */
+               else if (!side_pressed && android->stylus_side_button_active)
+               {
+                  /* End pointer operation */
+                  size_t ptr_idx = android->stylus_side_button_ptr;
+                  
+                  if (ptr_idx < MAX_TOUCH - 1)
+                  {
+                     memmove(android->pointer + ptr_idx,
+                             android->pointer + ptr_idx + 1,
+                             (MAX_TOUCH - ptr_idx - 1) * sizeof(android->pointer[0]));
+                  }
+                  if (android->pointer_count > 0)
+                     android->pointer_count--;
+                  
+                  android->stylus_side_button_active = false;
+                  
+#ifdef DEBUG_ANDROID_INPUT
+                  RARCH_LOG("[Stylus] POINTER UP   idx=%zu cnt=%d (side button end)\n", 
+                            ptr_idx, android->pointer_count);
+#endif
+                  return;
+               }
+            }
+            
+            return; /* Standard hover - no clicks allowed */
+            
+         case AMOTION_EVENT_ACTION_DOWN:
+         case AMOTION_EVENT_ACTION_MOVE:
+         case AMOTION_EVENT_ACTION_UP:
+            /* Clear guard and proximity on real contact down */
+            if (action == AMOTION_EVENT_ACTION_DOWN)
+            {
+               g_hover_guard_active = false;
+               android->stylus_proximity_active = false;
+            }
+
+            /* Implement proper contact detection with settings support */
+            require_contact = 
+               settings->bools.input_stylus_require_contact_for_click;
+            pressure = p_AMotionEvent_getPressure ?
+               AMotionEvent_getPressure(event, motion_ptr) : 1.0f;
+            distance = 0.0f;
+            if (p_AMotionEvent_getAxisValue &&
+                motion_ptr < AMotionEvent_getPointerCount(event))
+               distance = AMotionEvent_getAxisValue(event,
+                  AMOTION_EVENT_AXIS_DISTANCE, motion_ptr);
+            
+            /* Determine if stylus tip is actually touching the screen */
+            tip_down = (action != AMOTION_EVENT_ACTION_UP) &&
+                       (pressure >= 0.0f) &&  /* Accept any pressure including 0 */
+                       (distance <= 1.0f);     /* More lenient distance check */
+            
+            /* Get button state */
+            buttons = p_AMotionEvent_getButtonState ?
+               AMotionEvent_getButtonState(event) : 0;
+            side_primary = (buttons & AMOTION_EVENT_BUTTON_STYLUS_PRIMARY) != 0;
+            side_secondary = 
+               (buttons & AMOTION_EVENT_BUTTON_STYLUS_SECONDARY) != 0;
+            
+            /* Apply contact requirement setting */
+            stylus_pressed = require_contact
+                ? tip_down  /* Only tip contact counts when setting enabled */
+                : (tip_down || side_primary); /* Tip contact OR side button when disabled */
+            
+#ifdef DEBUG_ANDROID_INPUT
+            RARCH_LOG("[RA Input] S Pen contact - req_contact:%s tip_down:%s "
+                      "side1:%s pressed:%s p=%.3f d=%.3f\n",
+                      require_contact ? "Y" : "N", tip_down ? "Y" : "N",
+                      side_primary ? "Y" : "N", stylus_pressed ? "Y" : "N",
+                      pressure, distance);
+#endif
+               
+            /* STYLUS POINTER: Mimic native touchscreen behavior for menu consistency
+             * Native touchscreen ONLY updates coordinates on contact, NOT during hover
+             * This prevents menu jumping between hover and tap states */
+            if (action == AMOTION_EVENT_ACTION_DOWN || action == AMOTION_EVENT_ACTION_MOVE)
+            {
+               if (stylus_pressed)  /* ONLY update coordinates on actual contact, like native touchscreen */
+               {
+                  struct video_viewport vp = {0};
+                  
+                  /* Translate coords exactly like the finger touch path */
+                  video_driver_translate_coord_viewport_confined_wrap(
+                        &vp, x, y,
+                        &android->pointer[motion_ptr].confined_x,
+                        &android->pointer[motion_ptr].confined_y,
+                        &android->pointer[motion_ptr].full_x,
+                        &android->pointer[motion_ptr].full_y);
+                  
+                  video_driver_translate_coord_viewport_wrap(
+                        &vp, x, y,
+                        &android->pointer[motion_ptr].x,
+                        &android->pointer[motion_ptr].y,
+                        &android->pointer[motion_ptr].full_x,
+                        &android->pointer[motion_ptr].full_y);
+                  
+                  /* S-Pen Menu Coordination: Activate mouse mode for menu consistency */
+                  if (!android->mouse_activated)
+                  {
+                     RARCH_LOG("[Android Input] S-Pen activated menu mouse mode.\n");
+                     android->mouse_activated = true;
+                  }
+                  
+                  /* Update mouse coordinates only on contact - matches native touchscreen behavior */
+                  android->mouse_x_viewport = android->pointer[motion_ptr].x;
+                  android->mouse_y_viewport = android->pointer[motion_ptr].y;
+                  
+                  /* S-Pen Semantic Pointer System for libretro cores:
+                   * Index 0: Current cursor position (always available during hover/contact)
+                   * Index 1: Tip contact coordinates (only active during tip press)
+                   * Index 2: Barrel button coordinates (only active during barrel press)
+                   * This gives cores semantic meaning rather than arbitrary indices */
+                  
+                  /* Always provide cursor position at index 0 */
+                  android->pointer[0] = android->pointer[motion_ptr];
+                  android->pointer_count = 1;
+                  
+                  /* Index 1: Tip contact - only active when stylus tip is pressed */
+                  if (tip_down) {
+                     android->pointer[1] = android->pointer[motion_ptr];
+                     android->pointer_count = 2;
+                  }
+                  
+                  /* Index 2: Barrel button - only active when barrel button is pressed */
+                  if (side_primary) {
+                     android->pointer[2] = android->pointer[motion_ptr];
+                     android->pointer_count = 3;
+                  }
+                  
+                  /* S-Pen uses ONLY pointer system - no mouse button states to avoid conflicts */
+                  /* Core access: RETRO_DEVICE_POINTER[0-2] with semantic meaning for each index */
+                  /* Menu interaction handled via pointer->mouse translation in menu system */
+                  
+#ifdef DEBUG_ANDROID_INPUT
+                  if (action == AMOTION_EVENT_ACTION_DOWN)
+                     RARCH_LOG("[Stylus] POINTER DOWN @ (%.1f, %.1f) tip=%d[idx1] barrel=%d[idx2] cnt=%d\n",
+                               x, y, tip_down, side_primary, android->pointer_count);
+#endif
+               }
+               else
+               {
+                  /* Hovering: Like native touchscreen, DON'T update coordinates during hover
+                   * This prevents menu jumping and matches user expectations */
+                  android->pointer_count = 0;
+                  /* No mouse button states set - S-Pen uses only pointer system */
+                  
+#ifdef DEBUG_ANDROID_INPUT
+                  RARCH_LOG("[Stylus] HOVER (no coord update) @ (%.1f, %.1f) p=%.3f d=%.3f\n",
+                            x, y, pressure, distance);
+#endif
+               }
+               return;  /* Early return - no shared processing */
+            }
+            
+            if (action == AMOTION_EVENT_ACTION_UP)
+            {
+               /* S-Pen UP: Clear all virtual pointers - no mouse button states to clear */
+               android->pointer_count = 0;
+               /* S-Pen uses only pointer system for core input */
+               
+#ifdef DEBUG_ANDROID_INPUT
+               RARCH_LOG("[Stylus] POINTER UP - cleared all virtual pointers\n");
+#endif
+               return;  /* Early return - no shared processing */
+            }
+            
+            /* Important: do NOT set android->mouse_activated/mouse_l/mouse_r for stylus */
+            return;
+            
+         default:
+            break;
+      }
+   }
+   /* ===== FINGER/TOUCH EVENT PROCESSING ===== */
+   else if (is_finger || !is_stylus)
+   {
+      /* Check hover guard - drop phantom touches near recent stylus hover */
+      if ((action == AMOTION_EVENT_ACTION_DOWN || action == AMOTION_EVENT_ACTION_MOVE) &&
+          hover_guard_drop(x, y, event_time_ms, 12.0f))
+      {
+#ifdef DEBUG_ANDROID_INPUT
+         RARCH_LOG("[RA Input] DROPPED phantom touch near stylus hover (x=%.1f y=%.1f)\n", x, y);
+#endif
+         return; /* Consume/ignore phantom touch event */
+      }
+      /* Continue with normal finger/touch processing below... */
+   }
+   
+   /* Block ALL hover events from touchscreen processing to prevent phantom clicks */
+   if (is_hover_action)
+   {
+#ifdef DEBUG_ANDROID_INPUT
+      RARCH_LOG("[Android Input] Blocking hover event from touchscreen processing - action:%d source:0x%X\n", action, source);
+#endif
+      return;
+   }
+
+   keyup = (action == AMOTION_EVENT_ACTION_UP ||
+            action == AMOTION_EVENT_ACTION_CANCEL ||
+            action == AMOTION_EVENT_ACTION_POINTER_UP);
 
    /* If source is mouse then calculate button state
     * and mouse deltas and don't process as touchscreen event.
-    * NOTE: AINPUT_SOURCE_* defines have multiple bits set so do full check */
-   if (    (source & AINPUT_SOURCE_MOUSE) == AINPUT_SOURCE_MOUSE
+    * NOTE: AINPUT_SOURCE_* defines have multiple bits set so do full check 
+    * Stylus events are now handled above in the toolType-first section */
+   if (((source & AINPUT_SOURCE_MOUSE) == AINPUT_SOURCE_MOUSE
         || (source & AINPUT_SOURCE_MOUSE_RELATIVE) == AINPUT_SOURCE_MOUSE_RELATIVE)
+       && !is_stylus)
    {
       if (!android->mouse_activated)
       {
@@ -757,6 +1204,7 @@ static INLINE void android_input_poll_event_type_motion(
       {
          int btn              = (int)AMotionEvent_getButtonState(event);
 
+         /* Regular mouse button mapping (stylus events handled above) */
          android->mouse_l     = (btn & AMOTION_EVENT_BUTTON_PRIMARY);
          android->mouse_r     = (btn & AMOTION_EVENT_BUTTON_SECONDARY);
          android->mouse_m     = (btn & AMOTION_EVENT_BUTTON_TERTIARY);
@@ -780,7 +1228,7 @@ static INLINE void android_input_poll_event_type_motion(
       }
 
       android_mouse_calculate_deltas(android,event,motion_ptr,source);
-
+      /* If stylus is active, don't interfere with its mouse state */
       return;
    }
 
@@ -1775,7 +2223,32 @@ static int16_t android_input_state(
             switch (id)
             {
                case RETRO_DEVICE_ID_MOUSE_LEFT:
-                  return android->mouse_l || android_check_quick_tap(android);
+                  /* S Pen bypasses timeout for immediate response */
+                  if (android->mouse_activated)
+                  {
+#ifdef DEBUG_ANDROID_INPUT
+                     RARCH_LOG("[Mouse Query] mouse_l=%d activated=%d\n", 
+                               android->mouse_l, android->mouse_activated);
+#endif
+                     return android->mouse_l;
+                  }
+                  else
+                  {
+                     /* Only finger taps should participate in quick-tap emulation.
+                        Suppress when stylus is in proximity or hover-guard is active. */
+                     bool allow_quick_tap;
+                     android_stylus_proximity_check_expire(android);
+                     allow_quick_tap = !android->stylus_proximity_active
+                                       && !g_hover_guard_active;
+                     
+                     if (allow_quick_tap)
+                        return android_check_quick_tap(android);
+                     else
+                     {
+                        android->quick_tap_time = 0; /* cancel any pending quick tap when stylus nearby */
+                        return 0;
+                     }
+                  }
                case RETRO_DEVICE_ID_MOUSE_RIGHT:
                   return android->mouse_r;
                case RETRO_DEVICE_ID_MOUSE_MIDDLE:
@@ -1844,7 +2317,26 @@ static int16_t android_input_state(
                case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
                   return android->mouse_r || android->pointer_count == 2;
                case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-                  return android->mouse_l || android_check_quick_tap(android) || android->pointer_count == 1;
+                  /* S Pen bypasses timeout for immediate response */
+                  if (android->mouse_activated)
+                     return android->mouse_l || android->pointer_count == 1;
+                  else
+                  {
+                     /* Only finger taps should participate in quick-tap emulation.
+                        Suppress when stylus is in proximity or hover-guard is active. */
+                     bool allow_quick_tap;
+                     android_stylus_proximity_check_expire(android);
+                     allow_quick_tap = !android->stylus_proximity_active
+                                       && !g_hover_guard_active;
+                     
+                     if (allow_quick_tap)
+                        return android_check_quick_tap(android) || android->pointer_count == 1;
+                     else
+                     {
+                        android->quick_tap_time = 0; /* cancel any pending quick tap when stylus nearby */
+                        return android->pointer_count == 1;
+                     }
+                  }
                case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
                   return input_driver_pointer_is_offscreen(android->pointer[idx].x, android->pointer[idx].y);
             }
@@ -1864,6 +2356,12 @@ static int16_t android_input_state(
                   return android->pointer[idx].full_y;
                return android->pointer[idx].confined_y;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
+#ifdef DEBUG_ANDROID_INPUT
+               RARCH_LOG("[PtrQuery] count=%d x0=%d y0=%d\n",
+                         android->pointer_count,
+                         android->pointer_count > 0 ? android->pointer[0].confined_x : 0,
+                         android->pointer_count > 0 ? android->pointer[0].confined_y : 0);
+#endif
                /* On mobile platforms, touches outside screen / core viewport are not reported. */
                if (device == RARCH_DEVICE_POINTER_SCREEN)
                   return (idx < android->pointer_count) &&
