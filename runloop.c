@@ -5800,18 +5800,17 @@ static enum runloop_state_enum runloop_check_state(
    /* Check reset hotkey */
    if (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
    {
-      bool trig_reset_key, reset_press_twice;
       static bool reset_key     = false;
       static bool old_reset_key = false;
+      bool trig_reset_key;
+
       reset_key                 = BIT256_GET(current_bits, RARCH_RESET);
       trig_reset_key            = reset_key && !old_reset_key;
-
       old_reset_key             = reset_key;
-      reset_press_twice         = settings->bools.quit_press_twice;
 
       /* Check double press if enabled */
       if (     trig_reset_key
-            && reset_press_twice)
+            && settings->bools.confirm_reset)
       {
          static retro_time_t reset_key_time   = 0;
          retro_time_t cur_time                = current_time;
@@ -5838,18 +5837,17 @@ static enum runloop_state_enum runloop_check_state(
    /* Check close content hotkey */
    if (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
    {
-      bool trig_close_key, close_press_twice;
       static bool close_key     = false;
       static bool old_close_key = false;
+      bool trig_close_key;
+
       close_key                 = BIT256_GET(current_bits, RARCH_CLOSE_CONTENT_KEY);
       trig_close_key            = close_key && !old_close_key;
-
       old_close_key             = close_key;
-      close_press_twice         = settings->bools.quit_press_twice;
 
       /* Check double press if enabled */
       if (     trig_close_key
-            && close_press_twice)
+            && settings->bools.confirm_close)
       {
          static retro_time_t close_key_time   = 0;
          retro_time_t cur_time                = current_time;
@@ -5875,26 +5873,28 @@ static enum runloop_state_enum runloop_check_state(
 
    /* Check quit hotkey */
    {
-      bool trig_quit_key, quit_press_twice;
       static bool quit_key     = false;
       static bool old_quit_key = false;
       static bool runloop_exec = false;
+      bool trig_quit_key;
+
       quit_key                 = BIT256_GET(current_bits, RARCH_QUIT_KEY);
       trig_quit_key            = quit_key && !old_quit_key;
+
       /* Check for quit gamepad combo */
-      if (    !trig_quit_key
-          && ((quit_gamepad_combo != INPUT_COMBO_NONE)
-          && input_driver_button_combo(
-             quit_gamepad_combo,
-             current_time,
-             &current_bits)))
-        trig_quit_key = true;
+      if (     !trig_quit_key
+            && quit_gamepad_combo != INPUT_COMBO_NONE
+            && input_driver_button_combo(
+                  quit_gamepad_combo,
+                  current_time,
+                  &current_bits))
+         trig_quit_key = true;
+
       old_quit_key             = quit_key;
-      quit_press_twice         = settings->bools.quit_press_twice;
 
       /* Check double press if enabled */
       if (     trig_quit_key
-            && quit_press_twice)
+            && settings->bools.confirm_quit)
       {
          static retro_time_t quit_key_time   = 0;
          retro_time_t cur_time               = current_time;

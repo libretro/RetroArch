@@ -1816,7 +1816,9 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("savefiles_in_content_dir",      &settings->bools.savefiles_in_content_dir, true, DEFAULT_SAVEFILES_IN_CONTENT_DIR, false);
    SETTING_BOOL("systemfiles_in_content_dir",    &settings->bools.systemfiles_in_content_dir, true, DEFAULT_SYSTEMFILES_IN_CONTENT_DIR, false);
    SETTING_BOOL("screenshots_in_content_dir",    &settings->bools.screenshots_in_content_dir, true, DEFAULT_SCREENSHOTS_IN_CONTENT_DIR, false);
-   SETTING_BOOL("quit_press_twice",              &settings->bools.quit_press_twice, true, DEFAULT_QUIT_PRESS_TWICE, false);
+   SETTING_BOOL("confirm_quit",                  &settings->bools.confirm_quit, true, DEFAULT_CONFIRM_QUIT, false);
+   SETTING_BOOL("confirm_close",                 &settings->bools.confirm_close, true, DEFAULT_CONFIRM_CLOSE, false);
+   SETTING_BOOL("confirm_reset",                 &settings->bools.confirm_reset, true, DEFAULT_CONFIRM_RESET, false);
    SETTING_BOOL("config_save_on_exit",           &settings->bools.config_save_on_exit, true, DEFAULT_CONFIG_SAVE_ON_EXIT, false);
    SETTING_BOOL("remap_save_on_exit",            &settings->bools.remap_save_on_exit, true, DEFAULT_REMAP_SAVE_ON_EXIT, false);
    SETTING_BOOL("show_hidden_files",             &settings->bools.show_hidden_files, true, DEFAULT_SHOW_HIDDEN_FILES, false);
@@ -4551,6 +4553,20 @@ static bool config_load_file(global_t *global,
          settings->ints.content_favorites_size = (int)settings->uints.content_history_size;
    }
 
+   /* Migrate "quit_press_twice" to "confirm_quit" */
+   {
+      const char *tmp_key = "quit_press_twice";
+      struct config_entry_list *tmp = config_get_entry(conf, tmp_key);
+      if (tmp)
+      {
+         configuration_set_bool(settings,
+               settings->bools.confirm_quit,
+               string_is_equal(tmp->value, "true") ? true : false);
+         RARCH_LOG("[Config] Migrated \"%s\" to \"confirm_quit\" = \"%s\".\n",
+               tmp->key, tmp->value);
+      }
+   }
+
    if (conf)
       config_file_free(conf);
    if (bool_settings)
@@ -5680,6 +5696,14 @@ bool config_save_file(const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
       input_config_save_keybinds_user(conf, i);
+
+   /* Remove unused "quit_press_twice" after migrating to "confirm_quit" */
+   {
+      const char *tmp_key = "quit_press_twice";
+      struct config_entry_list *tmp = config_get_entry(conf, tmp_key);
+      if (tmp)
+         config_unset(conf, tmp->key);
+   }
 
    ret = config_file_write(conf, path, true);
    config_file_free(conf);

@@ -1123,7 +1123,9 @@ typedef struct settings
       bool playlist_use_filename;
       bool playlist_allow_non_png;
 
-      bool quit_press_twice;
+      bool confirm_quit;
+      bool confirm_close;
+      bool confirm_reset;
       bool vibrate_on_keypress;
       bool enable_device_vibration;
       bool ozone_collapse_sidebar;

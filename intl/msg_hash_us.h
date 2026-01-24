@@ -3730,13 +3730,30 @@ MSG_HASH(
    "Workaround for controllers disconnecting and reconnecting. Impedes 2 players with the identical controllers."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Confirm Quit/Close/Reset"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Confirm Quit"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Require the Quit/Close/Reset hotkey to be pressed twice."
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Require the Quit hotkey to be pressed twice."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Confirm Close Content"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Require the Close Content hotkey to be pressed twice."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Confirm Reset Content"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Require the Reset Content hotkey to be pressed twice."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

@@ -15503,10 +15503,42 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->bools.quit_press_twice,
-                  MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
-                  MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-                  DEFAULT_QUIT_PRESS_TWICE,
+                  &settings->bools.confirm_quit,
+                  MENU_ENUM_LABEL_CONFIRM_QUIT,
+                  MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+                  DEFAULT_CONFIRM_QUIT,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.confirm_close,
+                  MENU_ENUM_LABEL_CONFIRM_CLOSE,
+                  MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+                  DEFAULT_CONFIRM_CLOSE,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.confirm_reset,
+                  MENU_ENUM_LABEL_CONFIRM_RESET,
+                  MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+                  DEFAULT_CONFIRM_RESET,
                   MENU_ENUM_LABEL_VALUE_OFF,
                   MENU_ENUM_LABEL_VALUE_ON,
                   &group_info,
