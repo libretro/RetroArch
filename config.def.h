@@ -978,10 +978,11 @@
 #define DEFAULT_ALL_USERS_CONTROL_MENU false
 #endif
 
-#define DEFAULT_QUIT_PRESS_TWICE true
+#define DEFAULT_CONFIRM_QUIT true
+#define DEFAULT_CONFIRM_CLOSE true
+#define DEFAULT_CONFIRM_RESET true
 
 #define DEFAULT_LOG_TO_FILE false
-
 #define DEFAULT_LOG_TO_FILE_TIMESTAMP false
 
 /* Crop overscanned frames. */

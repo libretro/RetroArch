@@ -622,7 +622,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_input_disable_info_button,     
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_input_disable_search_button,   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_input_disable_left_analog_in_menu,  MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_input_disable_right_analog_in_menu, MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quit_press_twice,              MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_confirm_quit,                  MENU_ENUM_SUBLABEL_CONFIRM_QUIT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_confirm_close,                 MENU_ENUM_SUBLABEL_CONFIRM_CLOSE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_confirm_reset,                 MENU_ENUM_SUBLABEL_CONFIRM_RESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_onscreen_notifications_enable, MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_crop_overscan,           MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_filter,                  MENU_ENUM_SUBLABEL_VIDEO_FILTER)
@@ -4735,8 +4737,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_input_disable_right_analog_in_menu);
             break;
-         case MENU_ENUM_LABEL_QUIT_PRESS_TWICE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quit_press_twice);
+         case MENU_ENUM_LABEL_CONFIRM_QUIT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_confirm_quit);
+            break;
+         case MENU_ENUM_LABEL_CONFIRM_CLOSE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_confirm_close);
+            break;
+         case MENU_ENUM_LABEL_CONFIRM_RESET:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_confirm_reset);
             break;
          case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_max_timing_skew);
