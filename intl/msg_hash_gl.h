@@ -3519,7 +3519,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Modo de mantemento. A secuencia de presión-liberación para o botón predeterminado escollido está activa mentres o botón Turbo se manteña premido.\nA asignación do Turbo pode facerse en Configuración/Entrada/Controis do Porto X.\nPara emular a función de disparo automático da era dos microordenadores, asigna o mesmo botón de disparo da Panca de mando á función Bind e ao botón."
+   "Modo de mantemento. A secuencia de presión-liberación para o botón predeterminado escollido está activa mentres o botón Turbo se manteña premido.\nA asignación do Turbo pode facerse en Configuración/Entrada/Controis do Porto X.\nPara emular a función de disparo automático da era dos microordenadores, asigna o mesmo botón de disparo da Panca de mando á función Turbo e ao botón."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
@@ -3910,7 +3910,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "Carga o estado gardado do espazo seleccionado actualmente."
+   "Carga o estado gardado da rañura seleccionada actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
@@ -3918,23 +3918,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
-   "Garda o estado no slot seleccionado actualmente."
+   "Garda o estado na rañura seleccionada actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "Gardar na seguinte ranura de estado"
+   "Gardar na seguinte rañura de estado"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "Incrementa o índice de ranura de estado de gardar seleccionado actualmente."
+   "Incrementa o índice de rañura de estado de gardar seleccionado actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "Gardar na anterior ranura de estado"
+   "Gardar na anterior rañura de estado"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "Reduce o índice de ranura de estado de gardar seleccionado actualmente."
+   "Reduce o índice de rañura de estado de gardar seleccionado actualmente."
    )
 
 MSG_HASH(
@@ -4050,7 +4050,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
-   "Reproduce o ficheiro gardado dende a ranura escollida actualmente."
+   "Reproduce o ficheiro gardado dende a rañura escollida actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
@@ -4058,7 +4058,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
-   "Reproduce o ficheiro gardado dende a ranura escollida actualmente."
+   "Reproduce o ficheiro gardado dende a rañura escollida actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
@@ -4094,19 +4094,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
-   "Próxima ranura de repetición"
+   "Próxima rañura de repetición"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
-   "Aumenta o índice da ranura de reprodución seleccionado actualmente."
+   "Aumenta o índice da rañura de reprodución seleccionado actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
-   "Ranura de repetición anterior"
+   "Rañura de repetición anterior"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
-   "Reduce o índice da ranura de reprodución seleccionado actualmente."
+   "Reduce o índice da rañura de reprodución seleccionado actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
@@ -8523,7 +8523,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
-   "Engade esta pista de audio a un espazo de emisión de audio dispoñible.\nSe non hai espazos dispoñibles actualmente, ignorarase."
+   "Engade esta pista de son a unha rañura de emisión de son dispoñible.\nSe non hai rañuras dispoñibles actualmente, ignorarase."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
@@ -8531,7 +8531,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
-   "Engade esta pista de audio a un espazo de emisión de audio dispoñible e reproduceo.\nSe non hai espazos dispoñibles neste momento, ignorarase."
+   "Engade esta pista de son a unha rañura de emisión de son dispoñible e reproducea.\nSe non hai rañuras dispoñibles neste momento, ignorarase."
    )
 
 /* Netplay */
@@ -9160,11 +9160,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-   "Slot estatal"
+   "Rañura de estado"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STATE_SLOT,
-   "Cambia o espazo de estado seleccionado actualmente."
+   "Cambia a rañura de estado seleccionado actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_STATE,
@@ -9172,11 +9172,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_STATE,
-   "Garda un estado no slot seleccionado actualmente."
+   "Garda un estado na rañura seleccionada actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SAVE_STATE,
-   "Gardar un estado no espazo seleccionado actualmente. Nota: os estados gardados normalmente non son portátiles e poden non funcionar con outras versións deste núcleo."
+   "Gardar un estado na rañura seleccionada actualmente. Nota: os estados gardados normalmente non son portátiles e poden non funcionar con outras versións deste núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_STATE,
@@ -9184,11 +9184,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_STATE,
-   "Carga un estado gardado desde o slot seleccionado actualmente."
+   "Carga un estado gardado desde a rañura seleccionada actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_STATE,
-   "Cargar un estado gardado desde o espazo seleccionado actualmente. Nota: pode non funcionar se o estado foi gardado con outra versión do núcleo."
+   "Cargar un estado gardado desde a rañura seleccionada actualmente. Nota: pode non funcionar se o estado foi gardado con outra versión do núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
@@ -9208,11 +9208,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
-   "Slot de repetición"
+   "Rañura de repetición"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_SLOT,
-   "Cambia o espazo de estado seleccionado actualmente."
+   "Cambia a rañura de estado seleccionada actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
@@ -9220,7 +9220,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAY_REPLAY,
-   "Reproduce o ficheiro gardado dende a ranura escollida actualmente."
+   "Reproduce o ficheiro gardado dende a rañura escollida actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
@@ -9228,7 +9228,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_REPLAY,
-   "Reproduce o ficheiro gardado dende a ranura escollida actualmente."
+   "Reproduce o ficheiro gardado dende a rañura escollida actualmente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
@@ -13599,7 +13599,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
-   "Non hai slots para xogadores gratuítos"
+   "Non hai rañuras para xogadores gratuítos"
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
@@ -13676,7 +13676,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONNECTION_SLOT,
-   "Ranura de conexión"
+   "Rañura de conexión"
    )
 MSG_HASH(
    MSG_FETCHING_CORE_LIST,
@@ -14232,11 +14232,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FOUND_LAST_STATE_SLOT,
-   "Atopouse o último slot de estado"
+   "Atopouse a última rañura de estado"
    )
 MSG_HASH(
    MSG_FOUND_LAST_REPLAY_SLOT,
-   "Atopouse o último slot de repetición"
+   "Atopouse a última rañura de repetición"
    )
 MSG_HASH(
    MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
@@ -14668,11 +14668,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_STATE_SLOT,
-   "Rango de estado"
+   "Rañura de estado"
    )
 MSG_HASH(
    MSG_REPLAY_SLOT,
-   "Ranura de repetición"
+   "Rañura de repetición"
    )
 MSG_HASH(
    MSG_TAKING_SCREENSHOT,
@@ -16174,5 +16174,97 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    "Activa o acceso á carpeta compartida en rede SMB. Recoméndase encarecidamente usar Ethernet en lugar de WiFi para unha conexión máis fiable."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "Servidor SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "Enderezo IP ou nome do servidor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "Nome do recurso compartido SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "Nome do recurso de rede ao que acceder."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "Subdirectorio SMB (opcional)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "Ruta do subdirectorio no recurso compartido."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "Nome de usuario SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "Nome de usuario para a autenticación."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "Contrasinal SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "Contrasinal para a autenticación."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "Grupo de traballo SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "Nome do grupo de traballo ou do dominio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "Modo de autenticación SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "Selecciona a autenticación usada no teu contorno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "Número máximo de conexións SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Selecciona o número máximo de conexións usadas no teu contorno."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "Tempo de espera SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Selecciona o tempo de espera predeterminado en segundos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "Explorar recurso compartido SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Explorar ficheiros no recurso compartido SMB configurado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "Amosar «Cliente SMB»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "Amosar a configuración do «Cliente SMB»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "Recurso compartido SMB"
    )
 #endif

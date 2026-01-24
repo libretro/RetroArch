@@ -1300,7 +1300,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   "Настройки по умолчанию для файлов конфигураций."
+   "Настройка стандартных параметров для файлов конфигурации."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
@@ -1556,7 +1556,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   "Управление питанием"
+   "Энергопотребление"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
@@ -1568,7 +1568,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Настройки достижений."
+   "Настройки RetroAchievements."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
@@ -1576,7 +1576,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   "Настройки сервера и сети."
+   "Настройки сервера и сетевого окружения."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
@@ -1600,7 +1600,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   "Настройка каталогов расположения файлов."
+   "Настройки путей к расположению файлов."
    )
 
 /* Core option category placeholders for icons */
@@ -2750,10 +2750,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    "Выбор структуры субпикселей дисплея. Влияет только на строки развёртки. Для получения информации о структуре субпикселей вашего дисплея посетите RTings.com."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RBG,
-   "RGB"
-   )
 
 
 /* Settings > Video > Synchronization */
@@ -2840,7 +2836,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   "Синхронизация с частотой кадров контента (G-Sync, Freesync)"
+   "Синхронизация с точной частотой контента (G-Sync, Freesync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
@@ -3422,7 +3418,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   "Всегда включать режим 'Игрового фокуса' при запуске и возобновлении контента. При выборе значения 'Определять' настройка будет вкл. только если в текущем ядре реализована поддержка обратного вызова клавиатуры фронтендом."
+   "Всегда включать режим 'Игрового фокуса' при запуске и возобновлении контента. При выборе значения 'Определять' настройка будет активна только если текущее ядро поддерживает обратный вызов клавиатуры фронтендом."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -3450,7 +3446,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "Значение отклонения оси при котором будет фиксироваться нажатие кнопки, если исп. 'Аналого-цифровой режим'."
+   "Отклонение оси для фиксирования нажатия кнопки при использовании 'Аналого-цифрового режима'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
@@ -3523,7 +3519,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
-   "При отключении действие всех турбо-кнопок остановлено."
+   "При отключении действие всех турбо-кнопок будет остановлено."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
@@ -3539,7 +3535,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
-   "Количество кадров в периоде турборежима, когда кнопки остаются нажатыми. Если это значение больше или равно периоду турбо, кнопки будут нажаты постоянно."
+   "Количество кадров в периоде турбо, в течение которых кнопки остаются нажатыми. Если значение больше или равняется периоду турбо, кнопки будут нажаты постоянно."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
@@ -3619,7 +3615,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   "Тактильная отдача/вибрация"
+   "Сенсорный отклик/вибрация"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3667,11 +3663,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Исправление потери связи на Android"
+   "Исправление рассоединения на Android"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Решение проблемы с отключением и переподключением контроллеров. Препятствует назначению одинаковых контроллеров для обоих игроков."
+   "Решение проблемы с переподключением контроллеров. Препятствует назначению одинакового контроллера для двух игроков. Не включайте, если используются идентичные контроллеры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
@@ -3690,7 +3686,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
-   "Вибрация устройства (для ядер с поддержкой)"
+   "Вибромотор устройства (для ядер с поддержкой)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
@@ -3924,7 +3920,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
-   "Обратная перемотка контента при удержании кнопки. Должна быть включена 'Поддержка перемотки'."
+   "Обратная перемотка контента при удержании кнопки. Требуется включение 'Обратной перемотки'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -5181,7 +5177,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
-   "Настройки счётчика времени кадра. Активно только при включении опции 'Рендеринг в отдельном потоке'."
+   "Настройки счётчика времени кадра. Действует только при откл. опции 'Рендеринг в отдельном потоке'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
@@ -5224,7 +5220,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
-   "Поддержка перемотки"
+   "Вкл. обратную перемотку"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_ENABLE,
@@ -5413,7 +5409,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "Настройки уведомлений."
+   "Настройки экранных уведомлений."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
@@ -7098,7 +7094,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
-   "Показывать 'Управление питанием'"
+   "Показывать 'Энергопотребление'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
@@ -7166,11 +7162,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
-   "Фоновое изображение"
+   "Изображение фона"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Выбор изображения в качестве фона меню. Изображения, установленные динамически или вручную имеют приоритет над 'Цветовой темой'."
+   "Выбор файла для установки в качестве фона меню. Динамические или установленные вручную изображения имеют приоритет над 'Цветовой темой'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
@@ -8351,7 +8347,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   "Ресурсы"
+   "Ресурсы меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
@@ -11567,10 +11563,6 @@ MSG_HASH(
    "Вулканическая красная"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK,
-   "Gruvbox тёмная"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_LIGHT,
    "Gruvbox светлая"
    )
@@ -11779,7 +11771,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "Выбор цветовой темы заднего фона."
+   "Выбор цветовой темы оформления меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
@@ -11902,7 +11894,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "Фоновое изображение"
+   "Изображение фона"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
@@ -12141,10 +12133,6 @@ MSG_HASH(
    "Базовая чёрная"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
-   "Gruvbox тёмная"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
    "Solarized тёмная"
    )
@@ -12222,7 +12210,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "Выбор цветовой темы заднего фона."
+   "Выбор цветовой темы оформления меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
@@ -12250,11 +12238,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-   "Дополнительная миниатюра в режиме списка"
+   "Доп. миниатюра в режиме списка"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-   "Включает отображение дополнительной миниатюры при просмотре плейлистов в режиме списка. Применяется только в том случае, если ширины экрана достаточно для отображения двух миниатюр."
+   "Включает отображение дополнительной миниатюры при просмотре плейлистов в режиме списка. Применяется только когда ширины экрана достаточно для отображения двух миниатюр."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
@@ -12309,19 +12297,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK,
-   "Material UI тёмная"
+   "Material UI (тёмная)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK,
-   "Ozone тёмная"
+   "Ozone (тёмная)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK,
-   "Gruvbox тёмная"
+   "Gruvbox (тёмная)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
-   "Solarized тёмная"
+   "Solarized (тёмная)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE,
@@ -15400,7 +15388,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "Внимание: отсутствуют ресурсы, воспользуйтесь Онлайн-обновлением."
+   "Внимание: отсутствуют ресурсы меню, воспользуйтесь онлайн-обновлением."
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
