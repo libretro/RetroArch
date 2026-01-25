@@ -810,13 +810,16 @@ void x11_update_title(void *data)
 {
    size_t _len;
    char title[128];
+   Atom XA_NET_WM_NAME;
+   Atom XA_UTF8_STRING;
    title[0]                         = '\0';
    _len                             = video_driver_get_window_title(title, sizeof(title));
-   Atom XA_NET_WM_NAME              = XInternAtom(g_x11_dpy, "_NET_WM_NAME", False);
-   Atom XA_UTF8_STRING              = XInternAtom(g_x11_dpy, "UTF8_STRING", False);
 
    if (title[0])
    {
+      Atom XA_NET_WM_NAME              = XInternAtom(g_x11_dpy, "_NET_WM_NAME", False);
+      Atom XA_UTF8_STRING              = XInternAtom(g_x11_dpy, "UTF8_STRING", False);
+
       if (XA_NET_WM_NAME != None && XA_UTF8_STRING != None)
       {
          XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_NAME, XA_UTF8_STRING,
