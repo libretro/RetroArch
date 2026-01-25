@@ -317,7 +317,7 @@ smb2_cmd_negotiate_reply_async(struct smb2_context *smb2,
         return pdu;
 }
 
-#define IOV_OFFSET (rep->security_buffer_offset - SMB2_HEADER_SIZE - \
+#define IOV_OFFSET_NEGOTIATE (rep->security_buffer_offset - SMB2_HEADER_SIZE - \
                     (SMB2_NEGOTIATE_REPLY_SIZE & 0xfffe))
 
 static int
@@ -444,7 +444,7 @@ smb2_process_negotiate_fixed(struct smb2_context *smb2,
                 return smb2->spl - SMB2_HEADER_SIZE -
                         (SMB2_NEGOTIATE_REPLY_SIZE & 0xfffe);
         } else {
-                return IOV_OFFSET + rep->security_buffer_length;
+                return IOV_OFFSET_NEGOTIATE + rep->security_buffer_length;
         }
 }
 
@@ -456,7 +456,7 @@ smb2_process_negotiate_variable(struct smb2_context *smb2,
         struct smb2_iovec *iov = &smb2->in.iov[smb2->in.niov - 1];
         int offset;
 
-        rep->security_buffer = &iov->buf[IOV_OFFSET];
+        rep->security_buffer = &iov->buf[IOV_OFFSET_NEGOTIATE];
 
         if (rep->dialect_revision < SMB2_VERSION_0311 ||
             !rep->negotiate_context_count) {
@@ -478,7 +478,7 @@ smb2_process_negotiate_variable(struct smb2_context *smb2,
         return 0;
 }
 
-#define IOVREQ_OFFSET (req->security_buffer_offset - SMB2_HEADER_SIZE - \
+#define IOVREQ_OFFSET_NEGOTIATE (req->security_buffer_offset - SMB2_HEADER_SIZE - \
                     (SMB2_NEGOTIATE_REQUEST_SIZE & 0xfffe))
 
 int

@@ -43,7 +43,10 @@ typedef SOCKET t_socket;
 #define SMB2_INVALID_SOCKET INVALID_SOCKET
 #define SMB2_VALID_SOCKET(sock)	((sock) != SMB2_INVALID_SOCKET)
 #else
+#ifndef T_SOCKET_DEFINED
+#define T_SOCKET_DEFINED
 typedef int t_socket;
+#endif
 #define SMB2_VALID_SOCKET(sock)	((sock) >= 0)
 #define SMB2_INVALID_SOCKET		-1
 #endif

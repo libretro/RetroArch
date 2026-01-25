@@ -20,7 +20,11 @@
 #endif
 
 #if !defined(__PS2__) && !defined(PICO_PLATFORM)
+#ifndef UWORD32_DEFINED
+#define UWORD32_DEFINED
 typedef uint32_t UWORD32;
+#endif
+
 #endif
 
 #ifdef __cplusplus

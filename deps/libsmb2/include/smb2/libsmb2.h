@@ -124,7 +124,10 @@ struct smb2dirent {
 #if defined(_WINDOWS) || defined(_XBOX)
 typedef SOCKET t_socket;
 #else
+#ifndef T_SOCKET_DEFINED
+#define T_SOCKET_DEFINED
 typedef int t_socket;
+#endif
 #endif
 
 /*

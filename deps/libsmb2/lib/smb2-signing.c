@@ -60,7 +60,10 @@
 #include "smb2-signing.h"
 
 #define EBC 1
+
+#ifndef CBC
 #define CBC 1
+#endif
 
 #include "aes.h"
 #include "sha.h"
