@@ -39,7 +39,11 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_AUTO_EXTENSION ".auto"
 #define FILE_PATH_BSV_EXTENSION ".replay"
 #define FILE_PATH_OPT_EXTENSION ".opt"
+#ifdef DJGPP
+#define FILE_PATH_CORE_INFO_EXTENSION ".inf"
+#else
 #define FILE_PATH_CORE_INFO_EXTENSION ".info"
+#endif
 #define FILE_PATH_CONFIG_EXTENSION ".cfg"
 #define FILE_PATH_REMAP_EXTENSION ".rmp"
 #define FILE_PATH_RTC_EXTENSION ".rtc"
@@ -91,8 +95,13 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_CONTENT_MUSIC_HISTORY "content_music_history.lpl"
 #define FILE_PATH_CONTENT_VIDEO_HISTORY "content_video_history.lpl"
 #define FILE_PATH_CORE_OPTIONS_CONFIG "retroarch-core-options.cfg"
+#ifdef DJGPP
+#define FILE_PATH_MAIN_CONFIG "retrodos.cfg"
+#define FILE_PATH_SALAMANDER_CONFIG "retrosal.cfg"
+#else
 #define FILE_PATH_MAIN_CONFIG "retroarch.cfg"
 #define FILE_PATH_SALAMANDER_CONFIG "retroarch-salamander.cfg"
+#endif
 #define FILE_PATH_BACKGROUND_IMAGE "bg.png"
 #define FILE_PATH_TTF_FONT "font.ttf"
 #define FILE_PATH_RUNTIME_EXTENSION ".lrtl"
