@@ -59,6 +59,20 @@ LOCAL_MODULE := retroarch-activity
 LOCAL_SRC_FILES  +=	$(RARCH_DIR)/griffin/griffin.c \
 							$(RARCH_DIR)/griffin/griffin_cpp.cpp
 
+ifeq ($(HAVE_BUILTINSMBCLIENT),1)
+   DEFINES += -DHAVE_BUILTINSMBCLIENT
+   DEFINES += "-D_U_=__attribute__((unused))"
+   DEFINES += -DHAVE_TIME_H -DHAVE_FCNTL_H -DHAVE_UNISTD_H
+   DEFINES += -DHAVE_STDLIB_H -DSTDC_HEADERS
+   DEFINES += -DHAVE_STRING_H
+   DEFINES += -DHAVE_LINGER
+   DEFINES += -DHAVE_SYS_UIO_H
+   DEFINES += -DHAVE_POLL_H -DHAVE_NETDB_H
+   DEFINES += -DHAVE_NETINET_TCP_H -DHAVE_NETINET_IN_H
+   DEFINES += -DHAVE_SYS_SOCKET_H -DHAVE_ARPA_INET_H
+   DEFINES += -DHAVE_SMBCLIENT
+endif
+
 ifeq ($(HAVE_LOGGER), 1)
    DEFINES += -DHAVE_LOGGER
 endif
@@ -204,6 +218,12 @@ ifeq ($(HAVE_CHEEVOS),1)
 INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include
 endif
 
+ifeq ($(HAVE_BUILTINSMBCLIENT),1)
+   INCLUDE_DIRS += \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libsmb2/include \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libsmb2/include/smb2
+endif
+
 LOCAL_CFLAGS     += $(INCLUDE_DIRS)
 LOCAL_CPPFLAGS   += $(INCLUDE_DIRS)
 LOCAL_CXXFLAGS   += $(INCLUDE_DIRS)
@@ -220,79 +240,6 @@ LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang \
 
 LOCAL_CFLAGS    += -Wno-sign-compare -Wno-unused-variable -Wno-parentheses
 LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_glslang.cpp
-endif
-
-ifeq ($(HAVE_BUILTINSMBCLIENT),1)
-   LOCAL_CFLAGS += "-D_U_=__attribute__((unused))"
-   LOCAL_CFLAGS += -DHAVE_TIME_H -DHAVE_FCNTL_H -DHAVE_UNISTD_H
-   LOCAL_CFLAGS += -DHAVE_STDLIB_H -DSTDC_HEADERS
-   LOCAL_CFLAGS += -DHAVE_STRING_H
-   LOCAL_CFLAGS += -DHAVE_LINGER
-   LOCAL_CFLAGS += -DHAVE_SYS_UIO_H
-   LOCAL_CFLAGS += -DHAVE_POLL_H -DHAVE_NETDB_H
-   LOCAL_CFLAGS += -DHAVE_NETINET_TCP_H -DHAVE_NETINET_IN_H
-   LOCAL_CFLAGS += -DHAVE_SYS_SOCKET_H -DHAVE_ARPA_INET_H
-
-   LOCAL_SRC_FILES += \
-      $(DEPS_DIR)/libsmb2/lib/aes.c \
-      $(DEPS_DIR)/libsmb2/lib/aes_apple.c \
-      $(DEPS_DIR)/libsmb2/lib/aes128ccm.c \
-      $(DEPS_DIR)/libsmb2/lib/asn1-ber.c \
-      $(DEPS_DIR)/libsmb2/lib/aes_reference.c \
-      $(DEPS_DIR)/libsmb2/lib/alloc.c \
-      $(DEPS_DIR)/libsmb2/lib/compat.c \
-      $(DEPS_DIR)/libsmb2/lib/dcerpc.c \
-      $(DEPS_DIR)/libsmb2/lib/dcerpc-lsa.c \
-      $(DEPS_DIR)/libsmb2/lib/dcerpc-srvsvc.c \
-      $(DEPS_DIR)/libsmb2/lib/errors.c \
-      $(DEPS_DIR)/libsmb2/lib/hmac.c \
-      $(DEPS_DIR)/libsmb2/lib/hmac-md5.c \
-      $(DEPS_DIR)/libsmb2/lib/init.c \
-      $(DEPS_DIR)/libsmb2/lib/krb5-wrapper.c \
-      $(DEPS_DIR)/libsmb2/lib/libsmb2.c \
-      $(DEPS_DIR)/libsmb2/lib/md4c.c \
-      $(DEPS_DIR)/libsmb2/lib/md5.c \
-      $(DEPS_DIR)/libsmb2/lib/ntlmssp.c \
-      $(DEPS_DIR)/libsmb2/lib/pdu.c \
-      $(DEPS_DIR)/libsmb2/lib/sha1.c \
-      $(DEPS_DIR)/libsmb2/lib/sha224-256.c \
-      $(DEPS_DIR)/libsmb2/lib/sha384-512.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-close.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-create.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-echo.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-error.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-flush.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-ioctl.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-lock.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-logoff.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-negotiate.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-oplock-break.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-notify-change.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-query-directory.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-query-info.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-read.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-session-setup.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-set-info.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-tree-connect.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-tree-disconnect.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-cmd-write.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-data-file-info.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-data-filesystem-info.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-data-security-descriptor.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-data-reparse-point.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-share-enum.c \
-      $(DEPS_DIR)/libsmb2/lib/smb2-signing.c \
-      $(DEPS_DIR)/libsmb2/lib/smb3-seal.c \
-      $(DEPS_DIR)/libsmb2/lib/socket.c \
-      $(DEPS_DIR)/libsmb2/lib/spnego-wrapper.c \
-      $(DEPS_DIR)/libsmb2/lib/sync.c \
-      $(DEPS_DIR)/libsmb2/lib/timestamps.c \
-      $(DEPS_DIR)/libsmb2/lib/usha.c \
-      $(DEPS_DIR)/libsmb2/lib/unicode.c
-
-   LOCAL_C_INCLUDES += \
-      $(LOCAL_PATH)/$(DEPS_DIR)/libsmb2/include \
-      $(LOCAL_PATH)/$(DEPS_DIR)/libsmb2/include/smb2
 endif
 
 LOCAL_LDLIBS += -lOpenSLES -lz
