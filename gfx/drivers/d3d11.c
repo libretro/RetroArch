@@ -3988,7 +3988,13 @@ static bool d3d11_gfx_frame(
       }
 
       {
-         d3d11->hdr.ubo_values.scanlines           = false;
+         const float prev_iscanlines                = d3d11->hdr.ubo_values.scanlines;
+         const float prev_inverse_tonemap           = d3d11->hdr.ubo_values.inverse_tonemap;
+         const float prev_hdr10                     = d3d11->hdr.ubo_values.hdr10;
+
+         d3d11->hdr.ubo_values.scanlines           = 0.0f;
+         d3d11->hdr.ubo_values.inverse_tonemap     = 1.0f;
+         d3d11->hdr.ubo_values.hdr10               = 1.0f;
 
          D3D11_MAPPED_SUBRESOURCE mapped_ubo;
 
@@ -3999,6 +4005,10 @@ static bool d3d11_gfx_frame(
             *ubo                    = d3d11->hdr.ubo_values;
          }
          d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
+
+         d3d11->hdr.ubo_values.scanlines        = prev_iscanlines;
+         d3d11->hdr.ubo_values.inverse_tonemap  = prev_inverse_tonemap;
+         d3d11->hdr.ubo_values.hdr10            = prev_hdr10;
       } 
 
       context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->hdr.ubo);

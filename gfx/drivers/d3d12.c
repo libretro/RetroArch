@@ -4631,7 +4631,13 @@ static bool d3d12_gfx_frame(
             d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
             
       {
-         d3d12->hdr.ubo_values.scanlines           = false;
+         const float prev_iscanlines                = d3d12->hdr.ubo_values.scanlines;
+         const float prev_inverse_tonemap           = d3d12->hdr.ubo_values.inverse_tonemap;
+         const float prev_hdr10                     = d3d12->hdr.ubo_values.hdr10;
+
+         d3d12->hdr.ubo_values.scanlines           = 0.0f;
+         d3d12->hdr.ubo_values.inverse_tonemap     = 1.0f;
+         d3d12->hdr.ubo_values.hdr10               = 1.0f;
 
          {
             dxgi_hdr_uniform_t* mapped_ubo;
@@ -4646,6 +4652,11 @@ static bool d3d12_gfx_frame(
          cmd->lpVtbl->SetGraphicsRootConstantBufferView(
                cmd, ROOT_ID_UBO,
                d3d12->hdr.ubo_post_view.BufferLocation);
+
+
+         d3d12->hdr.ubo_values.scanlines           = prev_iscanlines;
+         d3d12->hdr.ubo_values.inverse_tonemap     = prev_inverse_tonemap;
+         d3d12->hdr.ubo_values.hdr10               = prev_hdr10;
       } 
 
       cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
