@@ -272,33 +272,64 @@ static void gfx_set_dwm(void)
       g_plat_win32_flags |= PLAT_WIN32_FLAG_DWM_COMPOSITION_DISABLED;
 }
 
+/* Windows OS detection.
+ *
+ * Some Windows releases cannot be identified by NT or build number alone.
+ * XP x64, Server 2003, and 2003 R2 - All are NT 5.2 and build number 3790.
+ * Vista, 7, Server 2008, and 2008 R2 - Overlapping NT 6.0/6.1 and/or build.
+ * Because of this, these OSes need extra checks: read the Windows registry 
+ * ProductType: "WinNT" is client (XP x64/Vista/7), otherwise it's server. */
+static bool win32_is_server_from_registry(void)
+{
+   static int cached = -1;
+
+   if (cached < 0)
+   {
+      HKEY hkey;
+      char product_type[32] = {0};
+      DWORD reg_type        = 0;
+      DWORD size            = 0;
+
+      cached = 0;
+
+      size = (DWORD)sizeof(product_type);
+      if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
+            "SYSTEM\\CurrentControlSet\\Control\\ProductOptions",
+            0, KEY_QUERY_VALUE, &hkey) == ERROR_SUCCESS)
+      {
+         if (RegQueryValueExA(hkey, "ProductType",
+               NULL, &reg_type, (LPBYTE)product_type, &size) == ERROR_SUCCESS)
+         {
+            if (!string_is_equal(product_type, "WinNT"))
+               cached = 1;
+         }
+
+         RegCloseKey(hkey);
+      }
+   }
+
+   return cached == 1;
+}
+
 static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 {
-   size_t _len            = 0;
-   char build_str[11]     = {0};
-   bool server            = false;
-   const char *arch       = "";
+   size_t _len              = 0;
+   char build_str[16]       = {0};
+   bool server              = false;
+   const char *arch         = "";
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Windows 2000 and later */
-   SYSTEM_INFO si         = {{0}};
-   OSVERSIONINFOEX vi     = {0};
-#ifndef _MSC_VER
-   /* Vista and later, MSYS2/MINGW64 build */
-   const char win_ver_reg_key[]    = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
-   const DWORD reg_read_flags      = RRF_RT_REG_SZ; /* Only read strings (REG_SZ) */
-   const int ProductName_2nd_digit = 9; /* second digit in the string 'Windows 10' */
-   char str_ProductName[64]        = {0};
-   char str_DisplayVersion[64]     = {0};
-   char str_LCUVer[64]             = {0};
-   DWORD key_type                  = 0; /* null pointer */
-   DWORD data_size                 = 0;
-   long reg_read_result;
-   bool read_success               = TRUE;
-   /* end Vista and later; still within Windows 2000 and later block */
-#endif
+   SYSTEM_INFO si           = {{0}};
+   OSVERSIONINFOEX vi       = {0};
+   bool have_version        = false;
+
+   /* Feature version (Windows 10+) */
+   char display_version[64] = {0};
+   char release_id[32]      = {0};
 
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+   vi.szCSDVersion[0]     = '\0';
 
    GetSystemInfo(&si);
    switch (si.wProcessorArchitecture)
@@ -316,72 +347,46 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          break;
    }
 
-#ifndef _MSC_VER
-   /* Vista and later, MSYS2/MINGW64 build
-    * Check for Win11 by looking for a specific Registry value.
-    * The behavior of GetVersionEx is changed under Win11 and no longer provides
-    * relevant data. If the specific Registry value is present, read version data
-    * directly from registry and skip remainder of function.
-    * Each read is paired for string values; the first gets the size of the
-    * string (read into data_size); the second passes data_size back as an
-    * argument and reads the actual string. */
-   reg_read_result = RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "LCUVer",
-         reg_read_flags, &key_type, 0, &data_size);
-
-   if (reg_read_result == ERROR_SUCCESS)
+   /* Prefer 'RtlGetVersion' over 'GetVersionEx' (unaffected by manifest).
+    * Windows 8.1 onwards will intentionally report an older OS version with
+    * GetVersionEx if the application does not declare support for the OS
+    * in the manifest, which can vary by toolchain/compiler. So instead use 
+    * RtlGetVersion, available from NT 5.0 (Windows 2000+). GetVersionEx is
+    * used solely on Win9x/pre-NT 5.0, and retained as a fallback on 5.0+ */
    {
-      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "LCUVer",
-            reg_read_flags, &key_type, str_LCUVer, &data_size) != ERROR_SUCCESS)
-         read_success = FALSE;
+      typedef LONG (WINAPI *RtlGetVersionFn)(OSVERSIONINFOEXW*);
+      HMODULE ntdll_handle        = GetModuleHandleA("ntdll.dll");
+      RtlGetVersionFn rtl_version = ntdll_handle ?
+            (RtlGetVersionFn)GetProcAddress(ntdll_handle, "RtlGetVersion") : NULL;
 
-      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "ProductName",
-            reg_read_flags, &key_type, 0, &data_size) != ERROR_SUCCESS)
-         read_success = FALSE;
-
-      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "ProductName",
-            reg_read_flags, &key_type, str_ProductName, &data_size) != ERROR_SUCCESS)
-         read_success = FALSE;
-
-      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "DisplayVersion",
-            reg_read_flags, &key_type, 0, &data_size) != ERROR_SUCCESS)
-         read_success = FALSE;
-
-      if (RegGetValue(HKEY_LOCAL_MACHINE, win_ver_reg_key, "DisplayVersion",
-            reg_read_flags, &key_type, str_DisplayVersion, &data_size) != ERROR_SUCCESS)
-         read_success = FALSE;
-
-      if (read_success)
+      if (rtl_version)
       {
-         str_ProductName[ProductName_2nd_digit] = '1';
-         /* Even the version in the Registry still says Windows 10 and requires
-          * string manipulation. */
+         OSVERSIONINFOEXW vi_w;
+         memset(&vi_w, 0, sizeof(vi_w));
+         vi_w.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXW);
 
-          _len = strlcpy(s, str_ProductName, len);
-
-         if (!string_is_empty(arch))
+         if (rtl_version(&vi_w) == 0)
          {
-            _len += strlcpy(s + _len, " ",  len - _len);
-            _len += strlcpy(s + _len, arch, len - _len);
+            vi.dwMajorVersion = vi_w.dwMajorVersion;
+            vi.dwMinorVersion = vi_w.dwMinorVersion;
+            vi.dwBuildNumber  = vi_w.dwBuildNumber;
+            vi.dwPlatformId   = vi_w.dwPlatformId;
+            vi.wProductType   = vi_w.wProductType;
+            vi.wSuiteMask     = vi_w.wSuiteMask;
+
+            if (vi_w.szCSDVersion[0])
+               WideCharToMultiByte(CP_UTF8, 0, vi_w.szCSDVersion, -1,
+                     vi.szCSDVersion, sizeof(vi.szCSDVersion), NULL, NULL);
+
+            have_version = true;
          }
-         _len = strlcpy(s + _len, " ", len - _len);
-         _len = strlcpy(s + _len, str_DisplayVersion, len - _len);
-         _len = strlcpy(s + _len, " (", len - _len);
-         _len = strlcpy(s + _len, str_LCUVer, len - _len);
-         _len = strlcpy(s + _len, ")", len - _len);
-
-         *major = 10;
-         *minor = 0;
-
-         return _len;
       }
    }
-   /* End registry-check-and-read code; still within 2000-and-later block */
-#endif
 
-   /* GetVersionEx call changed in Win2K and later */
-   GetVersionEx((OSVERSIONINFO*)&vi);
+   if (!have_version)
+      GetVersionEx((OSVERSIONINFO*)&vi);
 
-   server = vi.wProductType != VER_NT_WORKSTATION;
+   server = (vi.wProductType != VER_NT_WORKSTATION);
 
 #else
    OSVERSIONINFO vi = {0};
@@ -392,62 +397,119 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 #endif
 
    if (major)
-      *major = vi.dwMajorVersion;
-
+      *major = (int)vi.dwMajorVersion;
    if (minor)
-      *minor = vi.dwMinorVersion;
+      *minor = (int)vi.dwMinorVersion;
 
    if (vi.dwMajorVersion == 4 && vi.dwMinorVersion == 0)
-      snprintf(build_str, sizeof(build_str), "%lu", (DWORD)(LOWORD(vi.dwBuildNumber))); /* Windows 95 build number is in the low-order word only */
+      snprintf(build_str, sizeof(build_str), "%lu",
+            (DWORD)(LOWORD(vi.dwBuildNumber))); /* Windows 95 build number is in the low-order word only */
    else
-      snprintf(build_str, sizeof(build_str), "%lu", vi.dwBuildNumber);
+      snprintf(build_str, sizeof(build_str), "%lu", (DWORD)vi.dwBuildNumber);
 
+/* Use 0x0500, not 0x0600+, or MinGW 10.2.0 wont show feature version */
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   /* Read Windows 10/11/Server feature version (e.g. "25H2") from registry.
+    * Used solely for display; not relied upon for version detection. Note:
+    * Windows Insider Preview builds may show channel labels (e.g. "Dev") */
+   {
+      const char win_ver_reg_key[] = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
+      DWORD data_size              = 0;
+
+      data_size = (DWORD)sizeof(display_version);
+      if (RegGetValueA(HKEY_LOCAL_MACHINE, win_ver_reg_key, "DisplayVersion",
+            RRF_RT_REG_SZ, NULL, display_version, &data_size) != ERROR_SUCCESS)
+         display_version[0] = '\0';
+
+      /* ReleaseId is for older Win10 versions (e.g. 1511, 1607) */
+      data_size = (DWORD)sizeof(release_id);
+      if (RegGetValueA(HKEY_LOCAL_MACHINE, win_ver_reg_key, "ReleaseId",
+            RRF_RT_REG_SZ, NULL, release_id, &data_size) != ERROR_SUCCESS)
+         release_id[0] = '\0';
+
+      /* The first Win10 release doesn't provide DisplayVersion/ReleaseId,
+       * so use build number to insert version label */
+      if (!server && vi.dwMajorVersion == 10 && vi.dwBuildNumber == 10240
+            && string_is_empty(display_version) && string_is_empty(release_id))
+      {
+         strlcpy(release_id, "1507", sizeof(release_id));
+      }
+   }
+#endif
+
+   /* Detect Windows version from build number, NT version, or platform ID.
+    * Windows 10, 11, and modern Windows Server all report NT 10.0, so each
+    * is identified by using build numbers. Older NT-based Windows versions
+    * mostly have unique major/minor versions; a few share versions between
+    * client/server and require extra checks (e.g. ProductType, SM_SERVERR2).
+    * Non-NT Windows (95/98/ME) are identified via the platform ID. */
    switch (vi.dwMajorVersion)
    {
       case 10:
-         if (atoi(build_str) >= 21996)
-            _len = strlcpy(s, "Windows 11", len);
-         else if (server)
-            _len = strlcpy(s, "Windows Server 2016", len);
+         if (server)
+         {
+            if (vi.dwBuildNumber >= 26040)
+               _len = strlcpy(s, "Windows Server 2025", len);
+            else if (vi.dwBuildNumber >= 20201)
+               _len = strlcpy(s, "Windows Server 2022", len);
+            else if (vi.dwBuildNumber >= 17623)
+               _len = strlcpy(s, "Windows Server 2019", len);
+            /* Early Server 2016 preview builds shared build numbers with
+             * Windows 10 previews, so 10074 is used as a safe cutoff here */
+            else if (vi.dwBuildNumber >= 10074)
+               _len = strlcpy(s, "Windows Server 2016", len);
+            else
+               _len = strlcpy(s, "Windows Server", len);
+         }
          else
-            _len = strlcpy(s, "Windows 10", len);
+         {
+            /* Detect Windows 11 starting from an early leaked preview build */
+            if (vi.dwBuildNumber >= 21996)
+               _len = strlcpy(s, "Windows 11", len);
+            else
+               _len = strlcpy(s, "Windows 10", len);
+         }
          break;
+
       case 6:
          switch (vi.dwMinorVersion)
          {
             case 3:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2012 R2", len);
-               else
-                  _len = strlcpy(s, "Windows 8.1", len);
+               _len = strlcpy(s, server ? "Windows Server 2012 R2" : "Windows 8.1", len);
                break;
             case 2:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2012", len);
-               else
-                  _len = strlcpy(s, "Windows 8", len);
+               _len = strlcpy(s, server ? "Windows Server 2012" : "Windows 8", len);
                break;
             case 1:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2008 R2", len);
-               else
-                  _len = strlcpy(s, "Windows 7", len);
+               {
+                  bool is_server = server;
+                  if (!is_server)
+                     is_server = win32_is_server_from_registry();
+                  _len = strlcpy(s, is_server ? "Windows Server 2008 R2" : "Windows 7", len);
+               }
                break;
             case 0:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2008", len);
-               else
-                  _len = strlcpy(s, "Windows Vista", len);
+               {
+                  bool is_server = server;
+                  if (!is_server)
+                     is_server = win32_is_server_from_registry();
+                  _len = strlcpy(s, is_server ? "Windows Server 2008" : "Windows Vista", len);
+               }
                break;
             default:
+               _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
+                     (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
                break;
          }
          break;
+
       case 5:
+         /* Note: All OSes below do not report x86/x64, as they lack a reliable
+          * architecture-reporting API. But most are only x86 anyway */
          switch (vi.dwMinorVersion)
          {
             case 2:
-               if (server)
+               if (server || win32_is_server_from_registry())
                {
                   _len = strlcpy(s, "Windows Server 2003", len);
                   if (GetSystemMetrics(SM_SERVERR2))
@@ -455,9 +517,9 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
                }
                else
                {
-                  /* Yes, XP Pro x64 is a higher version number than XP x86 */
-                  if (string_is_equal(arch, "x64"))
-                     _len = strlcpy(s, "Windows XP", len);
+                  /* XP "x64 Edition" is NT 5.2 (XP is 5.1) and only ever had one
+                   * edition, making it safe to use the full product name here */
+                  _len = strlcpy(s, "Windows XP Professional x64 Edition", len);
                }
                break;
             case 1:
@@ -466,8 +528,13 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
             case 0:
                _len = strlcpy(s, "Windows 2000", len);
                break;
+            default:
+               _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
+                     (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
+               break;
          }
          break;
+
       case 4:
          switch (vi.dwMinorVersion)
          {
@@ -480,25 +547,59 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
                   _len = strlcpy(s, "Unknown", len);
                break;
             case 90:
-               _len = strlcpy(s, "Windows ME", len);
+               /* Apparently it's not "ME". Official naming always uses "Me" */
+               _len = strlcpy(s, "Windows Me", len);
                break;
             case 10:
+            {
+               DWORD win98_build;
+               win98_build = (DWORD)(LOWORD(vi.dwBuildNumber));
                _len = strlcpy(s, "Windows 98", len);
+               /* 98/98 SE are both Win9x 4.10, so detect SE by build number */
+               if (win98_build >= 2222)
+                  _len += strlcpy(s + _len, " Second Edition", len - _len);
+               break;
+            }
+            default:
+               if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
+                  _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
+                        (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
+               else
+                  _len = snprintf(s, len, "Windows 9x version %lu.%lu",
+                        (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
                break;
          }
          break;
+
       default:
-         _len = snprintf(s, len, "Windows %i.%i", *major, *minor);
+         /* Fallback for completely unknown or future Windows versions */
+         _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
+               (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
          break;
    }
 
+/* OS display formatting */
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   if (!string_is_empty(display_version))
+   {
+      _len += strlcpy(s + _len, " (", len - _len);
+      _len += strlcpy(s + _len, display_version, len - _len);
+      _len += strlcpy(s + _len, ")", len - _len);
+   }
+   else if (!string_is_empty(release_id))
+   {
+      _len += strlcpy(s + _len, " (", len - _len);
+      _len += strlcpy(s + _len, release_id, len - _len);
+      _len += strlcpy(s + _len, ")", len - _len);
+   }
+#endif
    if (!string_is_empty(arch))
    {
       _len += strlcpy(s + _len, " ",  len - _len);
       _len += strlcpy(s + _len, arch, len - _len);
    }
 
-   _len += strlcpy(s + _len, " Build ", len - _len);
+   _len += strlcpy(s + _len, " - Build ", len - _len);
    _len += strlcpy(s + _len, build_str, len - _len);
 
    if (!string_is_empty(vi.szCSDVersion))
@@ -506,6 +607,7 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
       _len += strlcpy(s + _len, " ", len - _len);
       strlcpy(s + _len, vi.szCSDVersion, len - _len);
    }
+
    return _len;
 }
 
