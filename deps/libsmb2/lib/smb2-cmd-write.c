@@ -243,7 +243,7 @@ smb2_process_write_fixed(struct smb2_context *smb2,
         return 0;
 }
 
-#define IOVREQ_OFFSET (req->write_channel_info_length ? (req->write_channel_info_offset - SMB2_HEADER_SIZE - \
+#define IOVREQ_OFFSET_WRITE (req->write_channel_info_length ? (req->write_channel_info_offset - SMB2_HEADER_SIZE - \
                         (SMB2_WRITE_REQUEST_SIZE & 0xfffe)):0)
 
 int
@@ -291,10 +291,10 @@ smb2_process_write_request_fixed(struct smb2_context *smb2,
         }
 
         if (req->length) {
-                return IOVREQ_OFFSET + PAD_TO_64BIT(req->write_channel_info_length) + req->length;
+                return IOVREQ_OFFSET_WRITE + PAD_TO_64BIT(req->write_channel_info_length) + req->length;
         }
         else if (req->write_channel_info_length) {
-                return IOVREQ_OFFSET + req->write_channel_info_length;
+                return IOVREQ_OFFSET_WRITE + req->write_channel_info_length;
         }
         else {
                 return 0;
@@ -307,7 +307,7 @@ smb2_process_write_request_variable(struct smb2_context *smb2,
 {
         struct smb2_write_request *req = (struct smb2_write_request*)pdu->payload;
         struct smb2_iovec *iov = &smb2->in.iov[smb2->in.niov - 1];
-        struct smb2_iovec vec = { &iov->buf[IOVREQ_OFFSET],
+        struct smb2_iovec vec = { &iov->buf[IOVREQ_OFFSET_WRITE],
                                 iov->len,
                                 NULL };
 

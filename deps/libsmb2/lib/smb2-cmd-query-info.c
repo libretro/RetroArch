@@ -359,7 +359,7 @@ smb2_cmd_query_info_reply_async(struct smb2_context *smb2,
         return pdu;
 }
 
-#define IOV_OFFSET (rep->output_buffer_offset - SMB2_HEADER_SIZE - \
+#define IOV_OFFSET_QUERY (rep->output_buffer_offset - SMB2_HEADER_SIZE - \
                     (SMB2_QUERY_INFO_REPLY_SIZE & 0xfffe))
 
 int
@@ -431,7 +431,7 @@ smb2_process_query_info_fixed(struct smb2_context *smb2,
         /* Return the amount of data that the output buffer will take up.
          * Including any padding before the output buffer itself.
          */
-        return IOV_OFFSET + rep->output_buffer_length;
+        return IOV_OFFSET_QUERY + rep->output_buffer_length;
 }
 
 int smb2_process_query_info_variable(struct smb2_context *smb2,
@@ -439,8 +439,8 @@ int smb2_process_query_info_variable(struct smb2_context *smb2,
 {
         struct smb2_query_info_reply *rep = pdu->payload;
         struct smb2_iovec *iov = &smb2->in.iov[smb2->in.niov - 1];
-        struct smb2_iovec vec = {&iov->buf[IOV_OFFSET],
-                                 iov->len - IOV_OFFSET,
+        struct smb2_iovec vec = {&iov->buf[IOV_OFFSET_QUERY],
+                                 iov->len - IOV_OFFSET_QUERY,
                                  NULL};
         void *ptr = NULL;
 
@@ -685,7 +685,7 @@ int smb2_process_query_info_variable(struct smb2_context *smb2,
         return 0;
 }
 
-#define IOVREQ_OFFSET (req->input_buffer_offset - SMB2_HEADER_SIZE - \
+#define IOVREQ_OFFSET_QUERY (req->input_buffer_offset - SMB2_HEADER_SIZE - \
                     (SMB2_QUERY_INFO_REQUEST_SIZE & 0xfffe))
 
 int
@@ -735,7 +735,7 @@ smb2_process_query_info_request_fixed(struct smb2_context *smb2,
                 return -1;
         }
 
-        return IOVREQ_OFFSET + req->input_buffer_length;
+        return IOVREQ_OFFSET_QUERY + req->input_buffer_length;
 }
 
 int
@@ -744,8 +744,8 @@ smb2_process_query_info_request_variable(struct smb2_context *smb2,
 {
         struct smb2_query_info_request *req = pdu->payload;
         struct smb2_iovec *iov = &smb2->in.iov[smb2->in.niov - 1];
-        struct smb2_iovec vec = {&iov->buf[IOVREQ_OFFSET],
-                                 iov->len - IOVREQ_OFFSET,
+        struct smb2_iovec vec = {&iov->buf[IOVREQ_OFFSET_QUERY],
+                                 iov->len - IOVREQ_OFFSET_QUERY,
                                  NULL};
         req->input = (uint8_t *)vec.buf;
         return 0;

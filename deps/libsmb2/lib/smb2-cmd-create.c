@@ -297,7 +297,7 @@ smb2_cmd_create_reply_async(struct smb2_context *smb2,
         return pdu;
 }
 
-#define IOV_OFFSET (rep->create_context_offset - SMB2_HEADER_SIZE - \
+#define IOV_OFFSET_CREATE (rep->create_context_offset - SMB2_HEADER_SIZE - \
                     (SMB2_CREATE_REPLY_SIZE & 0xfffe))
 
 int
@@ -355,7 +355,7 @@ smb2_process_create_fixed(struct smb2_context *smb2,
         /* Return the amount of data that the security buffer will take up.
          * Including any padding before the security buffer itself.
          */
-        return IOV_OFFSET + rep->create_context_length;
+        return IOV_OFFSET_CREATE + rep->create_context_length;
 }
 
 int
@@ -366,8 +366,8 @@ smb2_process_create_variable(struct smb2_context *smb2,
         struct smb2_iovec *iov = &smb2->in.iov[smb2->in.niov - 1];
         struct smb2_iovec vec;
 
-        vec.buf = iov->buf + IOV_OFFSET;
-        vec.len = iov->len - IOV_OFFSET;
+        vec.buf = iov->buf + IOV_OFFSET_CREATE;
+        vec.len = iov->len - IOV_OFFSET_CREATE;
 
         rep->create_context = NULL;
         if (rep->create_context_length) {
@@ -377,7 +377,7 @@ smb2_process_create_variable(struct smb2_context *smb2,
         return 0;
 }
 
-#define IOVREQ_OFFSET (req->name_offset - SMB2_HEADER_SIZE - \
+#define IOVREQ_OFFSET_CREATE (req->name_offset - SMB2_HEADER_SIZE - \
                     (SMB2_CREATE_REQUEST_SIZE & 0xfffe))
 
 int
@@ -452,7 +452,7 @@ smb2_process_create_request_fixed(struct smb2_context *smb2,
         /* Return the amount of data that the name will take up.
          * Including any padding before the name itself, and between name and create contexts
          */
-        remaining = IOVREQ_OFFSET;
+        remaining = IOVREQ_OFFSET_CREATE;
         if (req->create_context_offset > req->name_offset) {
                 remaining += PAD_TO_64BIT(req->create_context_offset - req->name_offset);
         } else {
