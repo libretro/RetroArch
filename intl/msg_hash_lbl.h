@@ -3891,6 +3891,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_SSH_ENABLE,
    "ssh_enable"
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_SAFESHUTDOWN_ENABLE,
+   "safeshutdown_enable"
+   )
+#endif
 #endif
 
 #ifdef HAVE_LAKKA_SWITCH

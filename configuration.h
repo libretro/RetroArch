@@ -1095,15 +1095,20 @@ typedef struct settings
       bool savestates_in_content_dir;
       bool screenshots_in_content_dir;
       bool systemfiles_in_content_dir;
-      bool ssh_enable;
 #ifdef HAVE_LAKKA_SWITCH
       bool switch_oc;
       bool switch_cec;
       bool bluetooth_ertm_disable;
 #endif
+#ifdef HAVE_LAKKA
+      bool ssh_enable;
       bool samba_enable;
       bool bluetooth_enable;
+#ifdef HAVE_RETROFLAG
+      bool safeshutdown_enable;
+#endif
       bool localap_enable;
+#endif
 
       bool video_window_show_decorations;
       bool video_window_save_positions;

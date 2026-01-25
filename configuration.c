@@ -3066,6 +3066,10 @@ void config_set_defaults(void *data)
          settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
    configuration_set_bool(settings, settings->bools.localap_enable, false);
    load_timezone(settings->arrays.timezone, TIMEZONE_LENGTH);
+#ifdef HAVE_RETROFLAG
+   configuration_set_bool(settings,
+         settings->bools.safeshutdown_enable, filestream_exists(LAKKA_SAFESHUTDOWN_PATH));
+#endif
 #endif
 
 #if __APPLE__
@@ -4430,6 +4434,10 @@ static bool config_load_file(global_t *global,
          settings->bools.samba_enable, filestream_exists(LAKKA_SAMBA_PATH));
    configuration_set_bool(settings,
          settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
+#ifdef HAVE_RETROFLAG
+   configuration_set_bool(settings,
+         settings->bools.safeshutdown_enable, filestream_exists(LAKKA_SAFESHUTDOWN_PATH));
+#endif
 #endif
 
    if (    !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL)
@@ -5692,6 +5700,14 @@ bool config_save_file(const char *path)
                RETRO_VFS_FILE_ACCESS_HINT_NONE));
    else
       filestream_delete(LAKKA_BLUETOOTH_PATH);
+#ifdef HAVE_RETROFLAG
+   if (settings->bools.safeshutdown_enable)
+      filestream_close(filestream_open(LAKKA_SAFESHUTDOWN_PATH,
+               RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE));
+   else
+      filestream_delete(LAKKA_SAFESHUTDOWN_PATH);
+#endif
 #endif
 
    for (i = 0; i < MAX_USERS; i++)

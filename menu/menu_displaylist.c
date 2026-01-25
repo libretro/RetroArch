@@ -10513,6 +10513,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SAMBA_ENABLE,                                          PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_BLUETOOTH_ENABLE,                                      PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_LOCALAP_ENABLE,                                        PARSE_ONLY_BOOL},
+#ifdef HAVE_RETROFLAG
+               {MENU_ENUM_LABEL_SAFESHUTDOWN_ENABLE,                                   PARSE_ONLY_BOOL},
+#endif
                {MENU_ENUM_LABEL_TIMEZONE,                                              PARSE_ONLY_STRING_OPTIONS},
             };
 

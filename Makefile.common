@@ -1087,15 +1087,39 @@ endif
 
 ifeq ($(HAVE_LAKKA), 1)
    DEFINES += -DHAVE_LAKKA
+   ifeq ($(HAVE_RETROFLAG), 1)
+      DEFINES += -DHAVE_RETROFLAG
+      ifeq ($(HAVE_RETROFLAG_RPI5), 1)
+         DEFINES += -DHAVE_RETROFLAG_RPI5
+      endif
+   else
+      ifeq ($(HAVE_RETROFLAG_RPI5), 1)
+         DEFINES += -DHAVE_RETROFLAG
+         DEFINES += -DHAVE_RETROFLAG_RPI5
+      endif
+   endif
    ifneq ($(HAVE_LAKKA_PROJECT),)
       DEFINES += -DHAVE_LAKKA_PROJECT=\"${HAVE_LAKKA_PROJECT}\"
    else
-      $(error You asked for Lakka, but you did not specify a target device name in HAVE_LAKKA_PROJECT)
+      $(error You asked for Lakka, but you did not specify a target device name in HAVE_LAKKA_PROJECT.)
    endif
    ifneq ($(HAVE_LAKKA_SERVER),)
       DEFINES += -DHAVE_LAKKA_SERVER=\"${HAVE_LAKKA_SERVER}\"
    else
-      $(error You asked for Lakka, but you did not specify update server in HAVE_LAKKA_SERVER)
+      $(error You asked for Lakka, but you did not specify update server in HAVE_LAKKA_SERVER.)
+   endif
+else
+   ifeq ($(HAVE_RETROFLAG), 1)
+      $(error You enabled Retroflag specific codepaths with HAVE_RETROFLAG, but not Lakka! Add HAVE_LAKKA=1 to continue.)
+   endif
+   ifeq ($(HAVE_RETROFLAG_RPI5), 1)
+      $(error You enabled Retroflag specific codepaths with HAVE_RETROFLAG_RPI5, but not Lakka! Add HAVE_LAKKA=1 to continue.)
+   endif
+   ifneq ($(HAVE_LAKKA_PROJECT),)
+      $(error You set Lakka project with HAVE_LAKKA_PROJECT, but did not enable Lakka! Add HAVE_LAKKA=1 to continue.)
+   endif
+   ifneq ($(HAVE_LAKKA_SERVER),)
+      $(error You set Lakka update server with HAVE_LAKKA_SERVER, but did not enable Lakka! Add HAVE_LAKKA=1 to continue.)
    endif
 endif
 
