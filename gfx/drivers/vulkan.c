@@ -4579,7 +4579,14 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
    VkRenderPassBeginInfo rp_info;
    VkClearValue clear_color;
 
-   vk->hdr.ubo_values.mvp           = vk->mvp_no_rot;
+   //const bool prev_scanlines                = vk->hdr.ubo_values.scanlines;
+   const float prev_inverse_tonemap           = vk->hdr.ubo_values.inverse_tonemap;
+   const float prev_hdr10                     = vk->hdr.ubo_values.hdr10;
+
+   vk->hdr.ubo_values.mvp                 = vk->mvp_no_rot;
+   //vk->hdr.ubo_values.scanlines           = false;
+   vk->hdr.ubo_values.inverse_tonemap     = 1.0f;
+   vk->hdr.ubo_values.hdr10               = 1.0f;  
 
    rp_info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
    rp_info.pNext                    = NULL;
@@ -4627,7 +4634,7 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
             0,
             ubo->buffer,
             0,
-            ubo->size);
+            ubo->size);           
 
       image_info.sampler              = vk->samplers.nearest;
       image_info.imageView            = source_image->view;
@@ -4698,6 +4705,9 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
    vkCmdDraw(vk->cmd, 6, 1, 0, 0);
 
    vkCmdEndRenderPass(vk->cmd);
+
+   vk->hdr.ubo_values.inverse_tonemap     = prev_inverse_tonemap;
+   vk->hdr.ubo_values.hdr10               = prev_hdr10;  
 }
 
 static bool vulkan_frame(void *data, const void *frame,
@@ -5160,8 +5170,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* Copy over back buffer to swap chain render targets */
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) && 
-          (vk->flags & VK_FLAG_MENU_ENABLE) &&
-          (!filter_chain || !vulkan_filter_chain_emits_hdr10(filter_chain)))
+          (vk->flags & VK_FLAG_MENU_ENABLE))
       {
          backbuffer = &vk->backbuffers[swapchain_index];
          /* Prepare source buffer for reading */
@@ -5192,8 +5201,7 @@ static bool vulkan_frame(void *data, const void *frame,
          VkImageLayout backbuffer_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 #ifdef VULKAN_HDR_SWAPCHAIN
          struct vk_image* readback_source = backbuffer;
-         if((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
-            (!filter_chain || !vulkan_filter_chain_emits_hdr10(filter_chain)))
+         if((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE))
          {
             if (vk->flags & VK_FLAG_MENU_ENABLE)
             {
