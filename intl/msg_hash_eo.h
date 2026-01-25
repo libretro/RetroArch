@@ -558,6 +558,7 @@ MSG_HASH(
    "Enable hotkeys"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 

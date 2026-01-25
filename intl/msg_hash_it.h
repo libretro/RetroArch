@@ -3513,14 +3513,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Workaround per i controller che si disconnettono e si riconnettono. Impedisci 2 giocatori con i controller identici."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Conferma uscita/Chiudi/Resetta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "È necessario premere due volte il tasto di scelta rapida per uscire/chiudere/resettare."
-   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

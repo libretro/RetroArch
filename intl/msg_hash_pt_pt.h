@@ -2646,6 +2646,7 @@ MSG_HASH(
    "Ativar tecla de atalho"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 

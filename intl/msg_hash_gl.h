@@ -3609,14 +3609,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Solución alternativa para os controladores que se desconectan e se reconectan. Impide a 2 xogadores cos controladores idénticos."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Confirmar Saír/Pechar/Restablecer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Require que se prema dúas veces a tecla de atallo Saír/Pechar/Restablecer."
-   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

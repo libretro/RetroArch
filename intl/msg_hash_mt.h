@@ -150,6 +150,7 @@ other than `msg_hash_us.h` will be rejected.
 #endif
 
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 

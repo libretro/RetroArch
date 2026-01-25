@@ -2718,6 +2718,7 @@ MSG_HASH(
    "Tijdelijke oplossing voor het loskoppelen van Android"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(

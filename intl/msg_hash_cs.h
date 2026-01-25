@@ -3414,6 +3414,7 @@ MSG_HASH(
    "Řešení pro odpojování a opětovné připojování ovladačů. Impeduje 2 hráče se stejnými ovladači."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(

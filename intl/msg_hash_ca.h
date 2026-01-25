@@ -3633,14 +3633,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Solució temporal per la desconnexió intermitent dels controladors. Evita que hi hagi 2 jugadors amb controladors idèntics."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Confirma que vols Sortir/Tancar/Reiniciar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Requereix que la drecera de tecla per Sortir/Tancar/Reiniciar s'hagi de clicar dues vegades."
-   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

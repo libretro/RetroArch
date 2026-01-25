@@ -2683,12 +2683,52 @@ MSG_HASH(
    "Pic de luminance"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Définir le pic de luminance (en cd/m2) que votre écran peut reproduire. Une fois définie ne plus la modifier. Utiliser Luminance du \"papier blanc\" pour définir la luminosité. Voir sur RTings.com pour connaître le pic de luminance de votre écran. Sur certains affichages avec des lignes de balayage actives (ci-dessous), vous devrez peut-être surcharger ceci (et le papier blanc) pour augmenter la luminosité globale."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminance du \"papier blanc\""
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Une fois le pic de luminance défini, utiliser ceci comme réglage de luminosité standard. Techniquement cela définit la luminosité à laquelle le papier blanc doit être comme le texte lisible ou la luminance en haut de la plage SDR (Standard Dynamic Range)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Boost de couleur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Utilise la gamme complète de couleurs de votre écran pour créer une image plus brillante et plus saturée. Pour les couleurs plus fidèles au design original du jeu, réglez cette option sur OFF."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Lignes de balayage"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "Activer les lignes de balayage HDR. Les lignes de balayage sont la raison principale pour l'utilisation de HDR dans RetroArch car une implémentation précise de lignes de balayage éteint la plupart de l'écran et HDR récupère une partie de cette perte de luminosité. Si vous avez besoin de plus de contrôle sur vos lignes de balayage, consultez les shaders personnalisés fournis par RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Disposition sous-pixel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Sélectionner les dispositions sous-pixel de vos affichages, cela n'affecte que les lignes de balayage. Si vous n'avez aucune idée de votre disposition sous-pixel, elle est affichée sur Rtings.com pour la 'Disposition sous-pixel' de votre écran"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RGB,
    "RVB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RBG,
+   "RBV"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_BGR,
+   "BVR"
    )
 
 
@@ -3586,13 +3626,30 @@ MSG_HASH(
    "Solution pour les manettes qui se déconnectent et se reconnectent. Empêche 2 joueurs d'avoir les mêmes manettes."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Confirmer Quitter/Fermer/Réinitialiser"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Confirmer avant de quitter"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Requiert le double appui de la touche de raccourci Quitter/Fermer/Réinitialiser."
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Nécessite que la touche de raccourci Quitter soit pressée deux fois."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Confirmer la fermeture du contenu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Nécessite que la touche de raccourci Fermer le contenu soit pressée deux fois."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Confirmer le redémarrage du contenu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Nécessite que la touche de raccourci Réinitialiser le contenu soit pressée deux fois."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -8690,6 +8747,54 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Analyser"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Méthode d'analyse"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Automatique ou personnalisé avec des options détaillées."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Vérification de la base de données"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "Strict n'ajoutera que les éléments qui correspondent à une entrée de la base de données, Lâche ajoutera également des fichiers avec une extension correcte, mais aucune correspondance CRC/série, DAT personnalisé vérifie les fichiers XML fournis par l'utilisateur au lieu de bases de données, Aucun(e) ignore les bases de données et n'utilise que les extensions de fichiers."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "Base de données à faire correspondre"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "Les correspondances peuvent être limitées à une base de données spécifique, ou à la toute première base de données correspondante, pour accélérer l'analyse."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "Liste de lecture à mettre à jour"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "Les résultats sont ajoutés à cette liste de lecture. Dans le cas de Auto - Toute, plusieurs listes de lecture système peuvent être mises à jour. Personnalisé sans référence en base de données ne liera pas les entrées à une base de données dans la liste de lecture."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Analyser un fichier unique"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Analyser un seul fichier au lieu d'un dossier. Resélectionnez l'emplacement du contenu après avoir modifié cette entrée."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Ignorer les références en base de données de la liste de lecture"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "Dans le cas d'un nom de liste de lecture personnalisé, utilisez toujours le nom de la liste de lecture pour la recherche de miniatures, même s'il y a eu une correspondance dans la base de données."
+   )
 
 /* Import Content > Scan File */
 
@@ -10849,6 +10954,10 @@ MSG_HASH(
    "<Dossier du contenu>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<Automatique>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
    "<Personnalisé>"
    )
@@ -10857,12 +10966,40 @@ MSG_HASH(
    "<Non spécifié>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Entièrement automatique"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    "Personnalisé"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Lâche"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "DAT personnalisé (strict)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "DAT personnalisé (lâche)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
    "Ne pas partager"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<Automatique/tout>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<Automatique/premier résultat>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<Automatique/nom du système>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -10883,6 +11020,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Analogique droite (Forcé)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Analogiques gauche + droite"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Analogiques gauche + droite (forcé)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Twin-stick analogiques"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Twin-stick analogiques (forcé)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,

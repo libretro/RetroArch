@@ -3653,14 +3653,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Réiteach sealadach ar rialtóirí ag dícheangal agus ag athcheangal. Cuireann sé bac ar 2 imreoir leis na rialtóirí céanna."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Deimhnigh Scoir/Dún/Athshocraigh"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Éilítear go mbrúitear an eochair the Scoir/Dún/Athshocraigh faoi dhó."
-   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

@@ -3602,13 +3602,30 @@ MSG_HASH(
    "Solução alternativa para controladores que desconectam e reconectam. Impede que 2 jogadores usem controladores idênticos."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Confirmar Sair/Fechar/Reiniciar"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Confirmar sair"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Exigir que a tecla de atalho de Sair/Fechar/Reiniciar seja pressionada duas vezes."
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Exige que atalho para \"Sair\" seja pressionado duas vezes."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Confirmar fechar conteúdo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Exige que o atalho para \"Fechar contéudo\" seja pressionado duas vezes."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Confirmar reiniciar conteúdo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Exige que o atalho para \"Reiniciar contéudo\" seja pressionado duas vezes."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

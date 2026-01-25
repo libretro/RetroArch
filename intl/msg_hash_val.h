@@ -2194,6 +2194,7 @@ MSG_HASH(
    "Canvia els ajustos de control del menú."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(

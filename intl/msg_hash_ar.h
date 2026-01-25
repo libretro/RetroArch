@@ -2642,6 +2642,7 @@ MSG_HASH(
    "منفذ %u ربط"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(

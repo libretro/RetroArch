@@ -2438,6 +2438,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Valkoisen paperin luminanssi"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Värien tehostus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Alipikselin asettelu"
+   )
 
 
 /* Settings > Video > Synchronization */
@@ -3121,6 +3129,31 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Android-yhteyden katkaisun kiertotapa"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Vahvista lopetus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Vaadi Lopeta-pikanäppäintä painettavan kahdesti."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Vahvista sisällön sulkeminen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Vaadi Sulje sisältö -pikanäppäintä painettavan kahdesti."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Vahvista sisällön nollaus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Vaadi Nollaa sisältö -pikanäppäintä painettavan kahdesti."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

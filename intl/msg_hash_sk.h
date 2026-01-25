@@ -2434,6 +2434,7 @@ MSG_HASH(
    "Klávesové skratky"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(

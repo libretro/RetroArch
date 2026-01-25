@@ -2446,6 +2446,7 @@ MSG_HASH(
    "Ενεργοποίηση πλήκτρων εντολών"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(

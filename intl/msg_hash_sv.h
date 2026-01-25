@@ -3518,13 +3518,30 @@ MSG_HASH(
    "Lösning för kontroller som kopplas bort och återansluts. Förhindrar 2 spelare med identiska kontroller."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Bekräfta avsluta/stänga/återställ"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Bekräfta avslutning"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Kräv att snabbtangent för avsluta/stänga/återställ trycks två gånger."
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Kräv att snabbtangenten för avslutning trycks ner två gånger."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Bekräfta stängning av innehåll"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Kräv att snabbtangenten för stäng innehåll trycks ner två gånger."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Bekräfta omstart av innehåll"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Kräv att snabbtangenten för omstart av innehåll trycks ner två gånger."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -3720,11 +3737,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
-   "Återställ innehåll"
+   "Starta om innehåll"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RESET,
-   "Startar om innehåll från början."
+   "Startar om aktuellt innehåll från början."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,

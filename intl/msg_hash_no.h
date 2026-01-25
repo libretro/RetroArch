@@ -2138,6 +2138,7 @@ MSG_HASH(
    "Android frakoblings løsning"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(

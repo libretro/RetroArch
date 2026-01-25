@@ -2302,6 +2302,7 @@ MSG_HASH(
    "کنترل‌های درگاه %u"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(

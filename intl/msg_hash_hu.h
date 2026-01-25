@@ -3613,14 +3613,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Kerülő megoldás a le- és visszacsatlakozó kontrollerekre. Ha két játékos ugyanolyan kontrollert használ, ez gondot okozhat."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Kilépés/bezárás/újraindítás megerősítése"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "A Kilépés/Bezárás/Újraindítás gyorsgombok két lenyomást igényelnek."
-   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

@@ -3334,6 +3334,7 @@ MSG_HASH(
    "コントローラーの切断と再接続を回避するための回避策です。同じ型番のコントローラーを使用する 2 人のプレイヤーに影響を与えます。"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(

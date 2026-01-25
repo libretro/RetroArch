@@ -566,6 +566,7 @@ MSG_HASH(
    "Libretro uses a virtual gamepad abstraction known as the 'RetroPad' to communicate from front-ends (like RetroArch) to cores and vice versa. This menu determines how the virtual RetroPad is mapped to the physical input devices and which virtual input ports these devices occupy.\nIf a physical input device is recognised and autoconfigured correctly, users probably do not need to use this menu at all, and for core-specific input changes, should use the Quick Menu's 'Controls' submenu instead."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 

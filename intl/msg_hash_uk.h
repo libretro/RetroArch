@@ -3633,14 +3633,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Обхідний шлях для відключення та повторного підключення контролерів. Заважає 2 гравцям з однаковими контролерами."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Підтвердити Вихід/Закрити/Скинути"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Вимагати подвійного натискання гарячої клавіші для Вихід/Закрити/Скинути."
-   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

@@ -3589,14 +3589,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Bağlantıyı kesen ve yeniden bağlanan kontrolcüler için geçici çözüm. Aynı kontrolcüye sahip 2 oyuncuyu engeller."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Çıkış/Kapat/Sıfırla Onaylaması"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Çıkış/Kapat/Sıfırla için kısayol tuşuna iki kez basılması gerekiyor."
-   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

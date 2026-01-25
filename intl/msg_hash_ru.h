@@ -3670,13 +3670,30 @@ MSG_HASH(
    "Решение проблемы с переподключением контроллеров. Препятствует назначению одинакового контроллера для двух игроков. Не включайте, если используются идентичные контроллеры."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Подтверждать выход/сброс/закрытие контента"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Подтверждать выход"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Запрашивать повторное нажатие горячей клавиши для выхода/сброса/закрытия контента."
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Запрашивать повторное нажатие горячей клавиши 'Выход'."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Подтверждать закрытие контента"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Запрашивать повторное нажатие горячей клавиши 'Закрыть контент'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Подтверждать сброс контента"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Запрашивать повторное нажатие горячей клавиши 'Сброс контента'."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -11563,6 +11580,10 @@ MSG_HASH(
    "Вулканическая красная"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK,
+   "Gruvbox (тёмная)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_LIGHT,
    "Gruvbox светлая"
    )
@@ -12131,6 +12152,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    "Базовая чёрная"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
+   "Gruvbox (тёмная)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,

@@ -3674,13 +3674,30 @@ MSG_HASH(
    "Giải pháp khắc phục tình trạng bộ điều khiển bị ngắt kết nối và kết nối lại. Cản trở 2 người chơi có cùng bộ điều khiển."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Xác nhận Thoát/Đóng/Đặt lại"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Xác nhận Thoát"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Yêu cầu phải nhấn phím nóng Thoát/Đóng/Đặt lại hai lần."
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Yêu cầu nhấn phím tắt Thoát hai lần."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Xác nhận đóng Trò chơi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Yêu cầu nhấn phím tắt Đóng trò chơi hai lần."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Xác nhận đặt lại Trò chơi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Yêu cầu nhấn phím tắt Đặt lại trò chơi hai lần."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

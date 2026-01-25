@@ -2634,6 +2634,22 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Farbverstärkung"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Nutzt den vollen Farbraum des Bildschirms, um ein helleres und farbintensiveres Bild zu erzeugen. Für eine farbgetreuere Darstellung des Originalspiels diese Option auf AUS stellen."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "HDR-Scanlines aktivieren. Scanlines sind der Hauptgrund für die Verwendung von HDR in RetroArch, da eine präzise Scanline-Implementierung den größten Teil des Bildschirms abdunkelt und HDR einen Teil der verlorenen Helligkeit wiederherstellt. Für eine detailliertere Steuerung der Scanlines können die von RetroArch bereitgestellten benutzerdefinierten Shader verwendet werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Subpixel-Layout"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Subpixel-Layout des Bildschirms auswählen. Dies wirkt sich nur auf Scanlines aus. Falls das „Subpixel-Layout“ des Bildschirms nicht bekannt ist, können entsprechende Informationen auf Rtings.com gefunden werden"
+   )
 
 
 /* Settings > Video > Synchronization */
@@ -3530,13 +3546,30 @@ MSG_HASH(
    "Problembehebung für Controller, die die Verbindung trennen und wiederherstellen. Betrifft 2 Spieler mit den gleichen Controllern."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Beenden/Schließen/Zurücksetzen bestätigen"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Beenden bestätigen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Verlangt, dass der Hotkey Beenden/Schließen/Zurücksetzen zweimal gedrückt wird."
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Die Taste zum Beenden muss zweimal gedrückt werden."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Inhalt schließen bestätigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Die Taste zum Schießen des Inhalts muss zweimal gedrückt werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Inhalt zurücksetzen bestätigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Die Taste zum Zurücksetzen des Inhalts muss zweimal gedrückt werden."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

@@ -3650,13 +3650,30 @@ MSG_HASH(
    "Solución temporal para la desconexión intermitente de los mandos. Impide que existan dos jugadores con mandos idénticos."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Confirmar salir/cerrar/reiniciar"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Confirmar el cierre de RetroArch"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Obliga a pulsar la tecla rápida de Salir/Cerrar/Reiniciar dos veces."
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Obliga a pulsar la tecla rápida de Salir dos veces."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Confirmar el cierre de contenidos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Obliga a pulsar la tecla rápida de Cerrar contenido dos veces."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Confirmar el reinicio de contenidos"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Obliga a pulsar la tecla rápida de Reiniciar contenido dos veces."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 

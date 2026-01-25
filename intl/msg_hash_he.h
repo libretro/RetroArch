@@ -1366,6 +1366,7 @@ MSG_HASH(
    "מקשי קיצור"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 
