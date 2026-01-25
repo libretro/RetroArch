@@ -251,7 +251,6 @@ typedef struct vk
    {
       vulkan_hdr_uniform_t ubo_values;
       struct vk_buffer     ubo;
-      struct vk_buffer     ubo_post;
       float                max_output_nits;
       float                min_output_nits;
       float                max_cll;
@@ -3478,7 +3477,6 @@ static void vulkan_free(void *data)
       if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
       {
          vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo);
-         vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo_post);
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->main_buffer);
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->readback_image);
          vulkan_deinit_hdr_readback_render_pass(vk);
@@ -3811,8 +3809,7 @@ static void *vulkan_init(const video_info_t *video,
    vulkan_set_viewport(vk, temp_width, temp_height, false, true);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   vk->hdr.ubo                  = vulkan_create_buffer(vk->context, sizeof(vulkan_hdr_uniform_t), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-   vk->hdr.ubo_post             = vulkan_create_buffer(vk->context, sizeof(vulkan_hdr_uniform_t), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+   vk->hdr.ubo                            = vulkan_create_buffer(vk->context, sizeof(vulkan_hdr_uniform_t), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
    vk->hdr.ubo_values.mvp                 = vk->mvp_no_rot;
    vk->hdr.ubo_values.max_nits            = settings->floats.video_hdr_max_nits;
@@ -3822,7 +3819,6 @@ static void *vulkan_init(const video_info_t *video,
 
    vk->hdr.ubo_values.inverse_tonemap     = 1.0f;     /* Use this to turn on/off the inverse tonemap */
    vk->hdr.ubo_values.hdr10               = 1.0f;     /* Use this to turn on/off the hdr10 */
-
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    vulkan_init_hw_render(vk);
@@ -5086,8 +5082,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) && 
-          (vk->flags & VK_FLAG_MENU_ENABLE) &&
-          (!filter_chain || !vulkan_filter_chain_emits_hdr10(filter_chain)))
+          (vk->flags & VK_FLAG_MENU_ENABLE))
       {
          vkCmdEndRenderPass(vk->cmd);
 
