@@ -3607,7 +3607,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
-   "Exige que atalho para \"Sair\" seja pressionado duas vezes."
+   "Exige que o atalho para \"Sair\" seja pressionado duas vezes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
