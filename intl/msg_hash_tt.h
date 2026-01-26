@@ -678,9 +678,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Башлау"
    )
-
-/* Unused (Only Exist in Translation Files) */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Ярдәм"
@@ -690,16 +687,6 @@ MSG_HASH(
    "Чистарту"
    )
 
-/* Unused (Needs Confirmation) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
-   "Cорау"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
-   "Чыгу"
-   )
 
 /* Discord Status */
 

@@ -1506,13 +1506,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Начало"
    )
-
-/* Unused (Only Exist in Translation Files) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
-   "Нетплей"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Помощ"
@@ -1522,34 +1515,11 @@ MSG_HASH(
    "Описание"
    )
 
-/* Unused (Needs Confirmation) */
-
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Изтегления"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
-   "Информация"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
-   "Изход"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
-   "Превъртете нагоре"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
-   "Превключване на менюто"
-   )
 
 /* Discord Status */
 
 
 /* Notifications */
-
 
 
 /* Lakka */

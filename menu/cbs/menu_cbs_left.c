@@ -336,24 +336,6 @@ static int action_left_shader_filter_default(unsigned type, const char *label,
 }
 #endif
 
-#ifdef HAVE_CHEATS
-static int action_left_cheat_num_passes(unsigned type, const char *label,
-      bool wraparound)
-{
-   unsigned new_size          = 0;
-   struct menu_state *menu_st = menu_state_get_ptr();
-   unsigned cheat_size        = cheat_manager_get_size();
-
-   if (cheat_size)
-      new_size         = cheat_size - 1;
-   menu_st->flags     |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
-                       | MENU_ST_FLAG_PREVENT_POPULATE;
-   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
-
-   return 0;
-}
-#endif
-
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_left_shader_num_passes(unsigned type, const char *label,
       bool wraparound)
@@ -1191,11 +1173,6 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_LEFT(cbs, action_left_shader_num_passes);
-#endif
-               break;
-            case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
-#ifdef HAVE_CHEATS
-               BIND_ACTION_LEFT(cbs, action_left_cheat_num_passes);
 #endif
                break;
             case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
