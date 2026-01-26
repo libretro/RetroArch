@@ -370,22 +370,6 @@ static int action_start_shader_num_passes(
 }
 #endif
 
-#ifdef HAVE_CHEATS
-static int action_start_cheat_num_passes(
-      const char *path, const char *label,
-      unsigned type, size_t idx, size_t entry_idx)
-{
-   if (cheat_manager_get_size())
-   {
-      struct menu_state *menu_st  = menu_state_get_ptr();
-      menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
-      cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
-   }
-
-   return 0;
-}
-#endif
-
 static int action_start_core_setting(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -899,11 +883,6 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
          case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             BIND_ACTION_START(cbs, action_start_shader_num_passes);
-#endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_START(cbs, action_start_cheat_num_passes);
 #endif
             break;
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:

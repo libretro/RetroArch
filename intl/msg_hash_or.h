@@ -830,9 +830,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "ଉପଭୋକ୍ତା"
    )
-
-/* Unused (Only Exist in Translation Files) */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "ସହାୟତା"
@@ -842,18 +839,11 @@ MSG_HASH(
    "ଵର୍ଣ୍ଣନା"
    )
 
-/* Unused (Needs Confirmation) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
-   "ସୂଚନା"
-   )
 
 /* Discord Status */
 
 
 /* Notifications */
-
 
 MSG_HASH(
    MSG_VIDEO_REFRESH_RATE_CHANGED,
