@@ -534,11 +534,6 @@ static void frontend_ps3_exitspawn(char *s, size_t len, char *args)
 #endif
 }
 
-static int frontend_ps3_get_rating(void)
-{
-   return 10;
-}
-
 enum frontend_architecture frontend_ps3_get_arch(void)
 {
    return FRONTEND_ARCH_PPC;
@@ -665,7 +660,6 @@ frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_ps3_get_rating,      /* get_rating */
    NULL,                         /* load_content */
    frontend_ps3_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */

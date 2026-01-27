@@ -496,104 +496,6 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
       path_mkdir(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]);
 }
 
-static int frontend_darwin_get_rating(void)
-{
-   char model[PATH_MAX_LENGTH] = {0};
-
-   frontend_darwin_get_name(model, sizeof(model));
-
-   /* iPhone 4S */
-   if (strstr(model, "iPhone4,1"))
-      return 8;
-
-   /* iPad 2/iPad Mini 1 */
-   if (strstr(model, "iPad2"))
-      return 9;
-
-   /* iPhone 5/5C */
-   if (strstr(model, "iPhone5"))
-      return 13;
-
-   /* iPhone 5S */
-   if (strstr(model, "iPhone6,1") || strstr(model, "iPhone6,2"))
-      return 14;
-
-   /* iPad Mini 2/3 */
-   if (     strstr(model, "iPad4,4")
-         || strstr(model, "iPad4,5")
-         || strstr(model, "iPad4,6")
-         || strstr(model, "iPad4,7")
-         || strstr(model, "iPad4,8")
-         || strstr(model, "iPad4,9")
-      )
-      return 15;
-
-   /* iPad Air */
-   if (     strstr(model, "iPad4,1")
-         || strstr(model, "iPad4,2")
-         || strstr(model, "iPad4,3")
-      )
-      return 16;
-
-   /* iPhone 6, iPhone 6 Plus */
-   if (strstr(model, "iPhone7"))
-      return 17;
-
-   /* iPad Air 2 */
-   if (strstr(model, "iPad5,3") || strstr(model, "iPad5,4"))
-      return 18;
-
-   /* iPad Pro (12.9 Inch) */
-   if (strstr(model, "iPad6,7") || strstr(model, "iPad6,8"))
-     return 19;
-
-   /* iPad Pro (9.7 Inch) */
-   if (strstr(model, "iPad6,3") || strstr(model, "iPad6,4"))
-     return 19;
-
-   /* iPad 5th Generation */
-   if (strstr(model, "iPad6,11") || strstr(model, "iPad6,12"))
-     return 19;
-
-   /* iPad Pro (12.9 Inch 2nd Generation) */
-   if (strstr(model, "iPad7,1") || strstr(model, "iPad7,2"))
-     return 19;
-
-   /* iPad Pro (10.5 Inch) */
-   if (strstr(model, "iPad7,3") || strstr(model, "iPad7,4"))
-     return 19;
-
-   /* iPad Pro 6th Generation) */
-   if (strstr(model, "iPad7,5") || strstr(model, "iPad7,6"))
-     return 19;
-
-   /* iPad Pro (11 Inch) */
-   if (     strstr(model, "iPad8,1")
-         || strstr(model, "iPad8,2")
-         || strstr(model, "iPad8,3")
-         || strstr(model, "iPad8,4")
-      )
-      return 19;
-
-   /* iPad Pro (12.9 3rd Generation) */
-    if (   strstr(model, "iPad8,5")
-        || strstr(model, "iPad8,6")
-        || strstr(model, "iPad8,7")
-        || strstr(model, "iPad8,8")
-       )
-       return 19;
-
-   /* iPad Air 3rd Generation) */
-    if (   strstr(model, "iPad11,3")
-        || strstr(model, "iPad11,4"))
-       return 19;
-
-   /* TODO/FIXME -
-      - more ratings for more systems
-      - determine rating more intelligently*/
-   return -1;
-}
-
 static enum frontend_powerstate frontend_darwin_get_powerstate(
       int *seconds, int *percent)
 {
@@ -1172,7 +1074,6 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* shutdown */
    frontend_darwin_get_name,        /* get_name */
    frontend_darwin_get_os,          /* get_os               */
-   frontend_darwin_get_rating,      /* get_rating           */
    frontend_darwin_content_loaded,  /* content_loaded       */
    frontend_darwin_get_arch,        /* get_architecture     */
    frontend_darwin_get_powerstate,  /* get_powerstate       */

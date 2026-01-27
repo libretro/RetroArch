@@ -1923,12 +1923,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
-         if (sys_info)
-         {
-            sys_info->performance_level = *(const unsigned*)data;
-            RARCH_LOG("[Environ] SET_PERFORMANCE_LEVEL: %u.\n",
-                  sys_info->performance_level);
-         }
+         RARCH_DBG("[Environ] SET_PERFORMANCE_LEVEL: %u (Deprecated).\n",
+               *(const unsigned*)data);
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:

@@ -481,33 +481,6 @@ static void frontend_ctr_init(void* data)
 #endif
 }
 
-static int frontend_ctr_get_rating(void)
-{
-   u8 device_model = 0xFF;
-
-   /*(0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL)*/
-   CFGU_GetSystemModel(&device_model);
-
-   switch (device_model)
-   {
-      case 0:
-      case 1:
-      case 3:
-         /*Old 3/2DS*/
-         return 3;
-      case 2:
-      case 4:
-      case 5:
-         /*New 3/2DS*/
-         return 6;
-      default:
-         /*Unknown Device Or Check Failed*/
-         break;
-   }
-
-   return -1;
-}
-
 enum frontend_architecture frontend_ctr_get_arch(void)
 {
    return FRONTEND_ARCH_ARM;
@@ -642,7 +615,6 @@ frontend_ctx_driver_t frontend_ctx_ctr =
    frontend_ctr_shutdown,        /* shutdown                       */
    frontend_ctr_get_name,        /* get_name                       */
    frontend_ctr_get_os,          /* get_os                         */
-   frontend_ctr_get_rating,      /* get_rating                     */
    NULL,                         /* load_content                   */
    frontend_ctr_get_arch,        /* get_architecture               */
    frontend_ctr_get_powerstate,  /* get_powerstate                 */

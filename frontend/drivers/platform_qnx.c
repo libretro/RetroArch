@@ -43,13 +43,6 @@ static void frontend_qnx_shutdown(bool unused)
    bps_shutdown();
 }
 
-static int frontend_qnx_get_rating(void)
-{
-   /* TODO/FIXME - look at unique identifier per device and
-    * determine rating for some */
-   return -1;
-}
-
 static void frontend_qnx_get_env_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
@@ -181,7 +174,6 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    frontend_qnx_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_qnx_get_rating,
    NULL,                         /* load_content */
    frontend_qnx_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
