@@ -210,7 +210,7 @@ smb2_cmd_session_setup_reply_async(struct smb2_context *smb2,
         return pdu;
 }
 
-#define IOV_OFFSET (rep->security_buffer_offset - SMB2_HEADER_SIZE - \
+#define IOV_OFFSET_SESSION (rep->security_buffer_offset - SMB2_HEADER_SIZE - \
                     (SMB2_SESSION_SETUP_REPLY_SIZE & 0xfffe))
 
 int
@@ -267,7 +267,7 @@ smb2_process_session_setup_fixed(struct smb2_context *smb2,
         /* Return the amount of data that the security buffer will take up.
          * Including any padding before the security buffer itself.
          */
-        return IOV_OFFSET + rep->security_buffer_length;
+        return IOV_OFFSET_SESSION + rep->security_buffer_length;
 }
 
 int
@@ -277,7 +277,7 @@ smb2_process_session_setup_variable(struct smb2_context *smb2,
         struct smb2_session_setup_reply *rep = pdu->payload;
         struct smb2_iovec *iov = &smb2->in.iov[smb2->in.niov - 1];
 
-        rep->security_buffer = &iov->buf[IOV_OFFSET];
+        rep->security_buffer = &iov->buf[IOV_OFFSET_SESSION];
 
         return 0;
 }

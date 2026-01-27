@@ -2691,8 +2691,16 @@ MSG_HASH(
    "Pic de luminància"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Configura la luminància màxima (en cd/m2) que el teu monitor pot reproduir. Un cop hagis escollit un valor, no el canviïs. Ajusta la brillantor mitjançant la lluminositat del blanc. Per saber el quina és la luminància màxima del teu monitor, visita RTings. En els monitors que tinguin activades les línies d'escombrat, cal que augmentis aquest valor, per augmentar la brillantor."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminància de blancs"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Quan hagis fixat la luminància màxima, es farà aquest valor per configurar la brillantor estàndard. Tècnicament, estableix la luminància amb el blanc d'un full de paper amb text llegible, o la luminància màxima del rang SDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
@@ -2705,6 +2713,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
    "Línies d'escaneig"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "Activa les línies d'escombrat HDR. Les línies d'escombrat son la raó principal a RetroArch per activar HDR, perquè una implementació correcta de les línies d'escombrat apagarà gran  part de la imatge i el HDR recuperarà la brillantor perduda. Si et cal un control més precís de les línies d'escombrat, has de fer servir shaders personalitzats que inclou RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
@@ -3632,6 +3644,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Solució temporal per la desconnexió intermitent dels controladors. Evita que hi hagi 2 jugadors amb controladors idèntics."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Confirma la sortida"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Es requereix que la drecera per Sortir es cliqui dues vegades."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Confirma el tancament del contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Es requereix que la drecera per tancar el contingut es cliqui dues vegades."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Confirma el reinici del contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Es requereix que la drecera per reiniciar el contingut es cliqui dues vegades."
    )
 
 
@@ -8744,6 +8780,10 @@ MSG_HASH(
    "Comprobació de la base de dades"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "L'opció Estricte només afegirà els elements que tinguin una entrada a la base de dades. L'opció Lax també afegirà aquells fitxers que tinguin l'extensió correcta, encara que no coincideixin els números de sèrie. L'opció DAT personalitzat farà la comprovació en un fitxer XML de l'usuari en compte de fer-ho a la base de dades interna. L'opció Res, ignorarà les bases de dades i només farà servir les extensions dels fitxers."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
    "Base de dades de referència"
    )
@@ -8754,6 +8794,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
    "Llista de reproducció que s'ha d'actualitzar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "Els resultats s'afegiran a la llista de reproducció. En cas que seleccionis l'opció Automàtic-Qualsevol, s'actualitzaran diverses llistes de reproducció. L'opció personalitzada sense base de dades associada no vincularà elements a cap base de dades."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,

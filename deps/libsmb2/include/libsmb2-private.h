@@ -34,7 +34,9 @@ extern "C" {
 #endif /* __APPLE__ */
 #endif /* HAVE_LIBKRB5 */
 
+#ifndef MIN
 #define MIN(a,b) (((a)<(b))?(a):(b))
+#endif
 
 #ifndef discard_const
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))

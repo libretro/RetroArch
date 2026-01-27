@@ -20,8 +20,8 @@
  * Still in the public domain.
  */
 
-#ifndef MD5_H
-#define MD5_H
+#ifndef SMB2_MD5_H
+#define SMB2_MD5_H
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -43,7 +43,11 @@
 #endif
 
 #if !defined(PS2_IOP_PLATFORM)
+#ifndef UWORD32_DEFINED
+#define UWORD32_DEFINED
 typedef uint32_t UWORD32;
+#endif
+
 #endif
 
 #ifdef __cplusplus

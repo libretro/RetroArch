@@ -318,7 +318,7 @@ smb2_process_read_variable(struct smb2_context *smb2,
         return 0;
 }
 
-#define IOVREQ_OFFSET ((req->read_channel_info_offset)?(req->read_channel_info_offset - SMB2_HEADER_SIZE - \
+#define IOVREQ_OFFSET_READ ((req->read_channel_info_offset)?(req->read_channel_info_offset - SMB2_HEADER_SIZE - \
         (SMB2_READ_REQUEST_SIZE & 0xfffe)):0)
 int
 smb2_process_read_request_fixed(struct smb2_context *smb2,
@@ -375,7 +375,7 @@ smb2_process_read_request_fixed(struct smb2_context *smb2,
                 return -1;
         }
 
-        return IOVREQ_OFFSET + req->read_channel_info_length;
+        return IOVREQ_OFFSET_READ + req->read_channel_info_length;
 }
 
 int

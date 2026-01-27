@@ -4436,33 +4436,6 @@ static bool d3d12_gfx_frame(
    d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(
          d3d12->chain.handle);
 
-#ifdef HAVE_DXGI_HDR
-   if ((d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) && use_back_buffer)
-   {
-      D3D12_RESOURCE_TRANSITION(
-            cmd,
-            d3d12->chain.back_buffer.handle,
-            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-            D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-      cmd->lpVtbl->OMSetRenderTargets(
-            cmd, 1,
-            &d3d12->chain.back_buffer.rt_view,
-            FALSE, NULL);
-      /* TODO/FIXME - fix this warning that shows up with Debug logging
-       * EXECUTIONWARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE
-       * We need to set clear value during resource creation to NULL for
-       * D3D12_RESOURCE_DIMENSION_BUFFER, yet we get spammed with this
-       * warning
-       */
-      cmd->lpVtbl->ClearRenderTargetView(
-            cmd,
-            d3d12->chain.back_buffer.rt_view,
-            d3d12->chain.clearcolor,
-            0, NULL);
-   }
-   else
-#endif
    {
       D3D12_RESOURCE_TRANSITION(
             cmd,

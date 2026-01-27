@@ -208,6 +208,7 @@ appstore_cores=(
     gearboy
     gearcoleco
     geargrafx
+    gearlynx
     gearsystem
     genesis_plus_gx
     genesis_plus_gx_wide

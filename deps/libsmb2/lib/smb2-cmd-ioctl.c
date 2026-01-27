@@ -244,7 +244,7 @@ smb2_cmd_ioctl_reply_async(struct smb2_context *smb2,
         return pdu;
 }
 
-#define IOV_OFFSET (rep->output_offset - SMB2_HEADER_SIZE - \
+#define IOV_OFFSET_IOCTL (rep->output_offset - SMB2_HEADER_SIZE - \
                     (SMB2_IOCTL_REPLY_SIZE & 0xfffe))
 
 int
@@ -298,7 +298,7 @@ smb2_process_ioctl_fixed(struct smb2_context *smb2,
          * note: input_count should be 0, but there are exceptions, see
          * MS-SMB 3.3.5.15.8 (passthrough)
          */
-        return IOV_OFFSET + PAD_TO_64BIT(rep->input_count) + rep->output_count;
+        return IOV_OFFSET_IOCTL + PAD_TO_64BIT(rep->input_count) + rep->output_count;
 }
 
 int
@@ -310,12 +310,12 @@ smb2_process_ioctl_variable(struct smb2_context *smb2,
         struct smb2_iovec vec;
         void *ptr;
 
-        if (rep->output_count > iov->len - IOV_OFFSET) {
+        if (rep->output_count > iov->len - IOV_OFFSET_IOCTL) {
                 return -EINVAL;
         }
 
-        vec.buf = &iov->buf[IOV_OFFSET];
-        vec.len = iov->len - IOV_OFFSET;
+        vec.buf = &iov->buf[IOV_OFFSET_IOCTL];
+        vec.len = iov->len - IOV_OFFSET_IOCTL;
 
         switch (rep->ctl_code) {
         case SMB2_FSCTL_GET_REPARSE_POINT:
@@ -333,7 +333,7 @@ smb2_process_ioctl_variable(struct smb2_context *smb2,
                 if (ptr == NULL) {
                         return -ENOMEM;
                 }
-                memcpy(ptr, &iov->buf[IOV_OFFSET], iov->len - IOV_OFFSET);
+                memcpy(ptr, &iov->buf[IOV_OFFSET_IOCTL], iov->len - IOV_OFFSET_IOCTL);
         }
 
         rep->output = ptr;
@@ -341,7 +341,7 @@ smb2_process_ioctl_variable(struct smb2_context *smb2,
         return 0;
 }
 
-#define IOVREQ_OFFSET (req->input_offset - SMB2_HEADER_SIZE - \
+#define IOVREQ_OFFSET_IOCTL (req->input_offset - SMB2_HEADER_SIZE - \
                     (SMB2_IOCTL_REQUEST_SIZE & 0xfffe))
 
 int
@@ -395,7 +395,7 @@ smb2_process_ioctl_request_fixed(struct smb2_context *smb2,
         /* Return the amount of data that the input buffer will take up.
          * Including any padding before the input buffer itself.
          */
-        return IOVREQ_OFFSET + req->input_count;
+        return IOVREQ_OFFSET_IOCTL + req->input_count;
 }
 
 int
@@ -408,12 +408,12 @@ smb2_process_ioctl_request_variable(struct smb2_context *smb2,
         void *ptr = NULL;
         struct smb2_ioctl_validate_negotiate_info *info;
 
-        if (req->input_count > iov->len - IOVREQ_OFFSET) {
+        if (req->input_count > iov->len - IOVREQ_OFFSET_IOCTL) {
                 return -EINVAL;
         }
 
-        vec.buf = &iov->buf[IOVREQ_OFFSET];
-        vec.len = iov->len - IOVREQ_OFFSET;
+        vec.buf = &iov->buf[IOVREQ_OFFSET_IOCTL];
+        vec.len = iov->len - IOVREQ_OFFSET_IOCTL;
 
         switch (req->ctl_code) {
         case SMB2_FSCTL_VALIDATE_NEGOTIATE_INFO:
