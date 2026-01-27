@@ -271,12 +271,6 @@ static void frontend_orbis_exitspawn(char *s, size_t len, char *args)
    frontend_orbis_exec(s, should_load_game);
 }
 
-static int frontend_orbis_get_rating(void)
-{
-   /* TODO/FIXME - needs a different rating */
-   return 6;
-}
-
 enum frontend_architecture frontend_orbis_get_arch(void)
 {
    return FRONTEND_ARCH_X86_64;
@@ -340,7 +334,6 @@ frontend_ctx_driver_t frontend_ctx_orbis = {
    frontend_orbis_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_orbis_get_rating,
    NULL,                         /* content_loaded */
    frontend_orbis_get_arch,
    NULL,

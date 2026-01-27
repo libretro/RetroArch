@@ -89,7 +89,6 @@ typedef struct frontend_ctx_driver
    void (*shutdown)(bool);
    void (*get_name)(char *, size_t);
    size_t (*get_os)(char *, size_t, int *major, int *minor);
-   int  (*get_rating)(void);
    void (*content_loaded)(void);
    enum frontend_architecture (*get_architecture)(void);
    enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);

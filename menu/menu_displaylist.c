@@ -2193,24 +2193,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
                count++;
          }
 
-#if 0
-         /* RetroRating Level */
-         if (frontend->get_rating)
-         {
-            _len  = strlcpy(entry,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL),
-                  sizeof(entry));
-            _len += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
-            snprintf(entry + _len, sizeof(entry) - _len, "%d",
-                  frontend->get_rating());
-            if (menu_entries_append(list, entry, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
-                  0, 0, NULL))
-               count++;
-         }
-#endif
-
          /* Memory */
          {
             uint64_t memory_total = frontend_driver_get_total_memory();
