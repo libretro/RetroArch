@@ -4763,6 +4763,16 @@ static bool vulkan_frame(void *data, const void *frame,
    if (!filter_chain && vk->filter_chain_default)
       filter_chain = vk->filter_chain_default;
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+   struct video_shader* shader_preset = vulkan_filter_chain_get_preset(
+      filter_chain);
+   VkFormat back_buffer_format = (shader_preset && shader_preset->passes)
+         ? vulkan_filter_chain_get_pass_rt_format(filter_chain, shader_preset->passes - 1)
+         : vk->context->swapchain_format;
+   bool use_main_buffer           = vulkan_is_hdr10_format(back_buffer_format) && 
+      (filter_chain && !vulkan_filter_chain_emits_hdr10(filter_chain));     /* this is used when presets use scale_type in their last pass */
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
    /* Bookkeeping on start of frame. */
    struct vk_per_frame *chain                    = &vk->swapchain[frame_index];
    struct vk_image *backbuffer                   = &vk->backbuffers[swapchain_index];
@@ -5053,6 +5063,11 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 #endif
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (use_main_buffer)
+      backbuffer = &vk->main_buffer;
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
    /* Render to backbuffer. */
    if (     (backbuffer->image != VK_NULL_HANDLE)
          && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
@@ -5081,10 +5096,42 @@ static bool vulkan_frame(void *data, const void *frame,
             &vk->vk_vp, vk->mvp.data);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
+      bool end_pass = true;
+      bool end_main_pass = true;   
+
+      /* Copy over back buffer to swap chain render targets */
+      if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) && 
+          use_main_buffer)
+      {      
+         if(end_pass) 
+         { 
+            vkCmdEndRenderPass(vk->cmd); 
+            end_pass = false; 
+         }
+
+         backbuffer = &vk->backbuffers[swapchain_index];
+         /* Prepare source buffer for reading */
+         VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->main_buffer.image,
+               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+               VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+         vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->render_pass, &vk->main_buffer, backbuffer, vk, &vk->hdr.ubo);     
+         
+         VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->main_buffer.image,
+               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+               0, VK_ACCESS_TRANSFER_WRITE_BIT,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+         end_main_pass = false;
+      }
+
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) && 
           (vk->flags & VK_FLAG_MENU_ENABLE))
       {
-         vkCmdEndRenderPass(vk->cmd);
+         if(end_pass) vkCmdEndRenderPass(vk->cmd);
 
          backbuffer = &vk->main_buffer;
 
@@ -5160,7 +5207,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
       /* End the render pass. We're done rendering to backbuffer now. */
-      vkCmdEndRenderPass(vk->cmd);
+      if(end_main_pass) vkCmdEndRenderPass(vk->cmd);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* Copy over back buffer to swap chain render targets */
