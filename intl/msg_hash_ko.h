@@ -3685,6 +3685,30 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "연결이 끊겼다가 돌아오는 컨트롤러를 위한 우회 방안입니다. 같은 종류의 컨트롤러를 2명의 플레이어로 인식하지 않게 합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "두 번 눌러 종료"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "종료 핫키를 두 번 눌러야 작동하게 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "두 번 눌러 콘텐츠 종료"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "콘텐츠 종료 핫키를 두 번 눌러야 작동하게 합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "두 번 눌러 다시 시작"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "다시 시작 핫키를 두 번 눌러야 작동하게 합니다."
+   )
 
 
 /* Settings > Input > Haptic Feedback/Vibration */
