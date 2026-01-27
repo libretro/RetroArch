@@ -467,8 +467,7 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
             /* Detect Windows 11 starting from an early leaked preview build */
             if (vi.dwBuildNumber >= 21996)
                _len = strlcpy(s, "Windows 11", len);
-            /* Detect Windows 10 from the first NT 10.0-based preview build */
-            else if (vi.dwBuildNumber >= 9888)
+            else if (vi.dwBuildNumber >= 10240)
                _len = strlcpy(s, "Windows 10", len);
             else
                _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
