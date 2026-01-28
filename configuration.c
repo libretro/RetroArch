@@ -5988,15 +5988,7 @@ int8_t config_save_overrides(enum override_type type,
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_joypad_index[i]);
          }
 
-         if (settings->uints.input_analog_dpad_mode[i]
-               != overrides->uints.input_analog_dpad_mode[i])
-         {
-            strlcpy(cfg + _len, "_analog_dpad_mode", sizeof(cfg) - _len);
-            config_set_int(conf, cfg, overrides->uints.input_analog_dpad_mode[i]);
-            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_analog_dpad_mode[i]);
-         }
-
-        if (settings->uints.input_device_reservation_type[i]
+         if (settings->uints.input_device_reservation_type[i]
                != overrides->uints.input_device_reservation_type[i])
          {
             strlcpy(cfg + _len, "_device_reservation_type", sizeof(cfg) - _len);
