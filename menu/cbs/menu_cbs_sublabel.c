@@ -391,6 +391,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_samba_enable,                  MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_enable,              MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE )
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_localap_enable,                MENU_ENUM_SUBLABEL_LOCALAP_ENABLE )
+#ifdef HAVE_RETROFLAG
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_safeshutdown_enable,           MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE)
+#endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_timezone,                      MENU_ENUM_SUBLABEL_TIMEZONE)
 #endif
 #ifdef HAVE_LAKKA_SWITCH
@@ -5532,6 +5535,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_LOCALAP_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_localap_enable);
             break;
+#ifdef HAVE_RETROFLAG
+         case MENU_ENUM_LABEL_SAFESHUTDOWN_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_safeshutdown_enable);
+            break;
+#endif
          case MENU_ENUM_LABEL_TIMEZONE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_timezone);
             break;

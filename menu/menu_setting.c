@@ -9487,6 +9487,29 @@ static void samba_enable_toggle_change_handler(rarch_setting_t *setting)
          *setting->value.target.boolean);
 }
 
+#ifdef HAVE_RETROFLAG
+static void safeshutdown_enable_toggle_change_handler(rarch_setting_t *setting)
+{
+   systemd_service_toggle(LAKKA_SAFESHUTDOWN_PATH,
+#ifdef HAVE_RETROFLAG_RPI5
+         (char*)"retroflag_picase_safeshutdown_pi5.service",
+#else
+         (char*)"retroflag_picase_safeshutdown.service",
+#endif
+         *setting->value.target.boolean);
+#ifndef HAVE_RETROFLAG_RPI5
+   if(*setting->value.target.boolean)
+   {
+      system("/usr/bin/retroflag_picase_install_gpio-poweroff_overlay.sh enable");
+   }
+   else
+   {
+      system("/usr/bin/retroflag_picase_install_gpio-poweroff_overlay.sh disable");
+   }
+#endif
+}
+#endif
+
 #ifdef HAVE_BLUETOOTH
 static void bluetooth_enable_toggle_change_handler(
       rarch_setting_t *setting)
@@ -23917,6 +23940,24 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].change_handler = localap_enable_toggle_change_handler;
+#endif
+
+#ifdef HAVE_RETROFLAG
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.safeshutdown_enable,
+                  MENU_ENUM_LABEL_SAFESHUTDOWN_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+                  true,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            (*list)[list_info->index - 1].change_handler = safeshutdown_enable_toggle_change_handler;
 #endif
 
             CONFIG_STRING_OPTIONS(
