@@ -98,6 +98,24 @@ OTHER_CFLAGS = $(inherited) -DWANT_SUBCODE=1
 OTHER_CFLAGS = $(inherited) -D_7ZIP_ST
 OTHER_CFLAGS = $(inherited) -D__LIBRETRO__
 
+OTHER_CFLAGS = $(inherited) "-D_U_=__attribute__((unused))"
+OTHER_CFLAGS = $(inherited) -DHAVE_TIME_H
+OTHER_CFLAGS = $(inherited) -DHAVE_FCNTL_H
+OTHER_CFLAGS = $(inherited) -DHAVE_UNISTD_H
+OTHER_CFLAGS = $(inherited) -DHAVE_STDLIB_H
+OTHER_CFLAGS = $(inherited) -DSTDC_HEADERS
+OTHER_CFLAGS = $(inherited) -DHAVE_STRING_H
+OTHER_CFLAGS = $(inherited) -DHAVE_LINGER
+OTHER_CFLAGS = $(inherited) -DHAVE_SYS_UIO_H
+OTHER_CFLAGS = $(inherited) -DHAVE_POLL_H
+OTHER_CFLAGS = $(inherited) -DHAVE_NETDB_H
+OTHER_CFLAGS = $(inherited) -DHAVE_NETINET_TCP_H
+OTHER_CFLAGS = $(inherited) -DHAVE_NETINET_IN_H
+OTHER_CFLAGS = $(inherited) -DHAVE_SYS_SOCKET_H
+OTHER_CFLAGS = $(inherited) -DHAVE_ARPA_INET_H
+OTHER_CFLAGS = $(inherited) -DHAVE_BUILTINSMBCLIENT
+OTHER_CFLAGS = $(inherited) -DHAVE_SMBCLIENT
+
 OTHER_CFLAGS[arch=x86_64] = $(inherited) -DHAVE_SSE
 OTHER_CFLAGS[arch=arm64*] = $(inherited) -D__ARM_NEON__ -DHAVE_NEON
 
@@ -164,6 +182,8 @@ HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang/glslang/glslang/MachineIn
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang/glslang/glslang/Public
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libFLAC/include
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libsmb2/include
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libsmb2/include/smb2
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/rcheevos/include
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/stb
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/zstd/lib
