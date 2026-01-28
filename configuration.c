@@ -5996,17 +5996,6 @@ int8_t config_save_overrides(enum override_type type,
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_device_reservation_type[i]);
          }
 
-         /* TODO: is this whole section really necessary? Does the loop above not do this? */
-         if (!string_is_equal(settings->arrays.input_reserved_devices[i], overrides->arrays.input_reserved_devices[i]))
-         {
-            strlcpy(cfg + _len, "_device_reservation_type", sizeof(cfg) - _len);
-
-            config_set_string(conf, cfg,
-                  overrides->arrays.input_reserved_devices[i]);
-            RARCH_DBG("[Override] %s = \"%s\"\n",
-                  cfg, overrides->arrays.input_reserved_devices[i]);
-         }
-
          for (j = 0; j < RARCH_BIND_LIST_END; j++)
          {
             const struct retro_keybind *override_bind = &input_override_binds[i][j];
