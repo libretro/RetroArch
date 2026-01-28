@@ -3206,7 +3206,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
       {
          vulkan_set_hdr_inverse_tonemap(vk, vk->filter_chain_default, true);
          vulkan_set_hdr10(vk, vk->filter_chain_default, true);
-         vulkan_filter_chain_set_subpixel_layout(vk->filter_chain_default, 0.0f);
+         vulkan_filter_chain_set_scanlines(vk->filter_chain_default, 0.0f);
          settings->bools.video_hdr_scanlines = false;
          vk->flags |= VK_FLAG_SHOULD_RESIZE;
       }
@@ -4770,6 +4770,7 @@ static bool vulkan_frame(void *data, const void *frame,
          ? vulkan_filter_chain_get_pass_rt_format(filter_chain, shader_preset->passes - 1)
          : vk->context->swapchain_format;
    bool use_main_buffer           = vulkan_is_hdr10_format(back_buffer_format) && 
+      (shader_preset && shader_preset->passes) &&
       (filter_chain && !vulkan_filter_chain_emits_hdr10(filter_chain));     /* this is used when presets use scale_type in their last pass */
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
