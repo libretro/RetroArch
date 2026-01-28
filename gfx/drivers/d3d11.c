@@ -3305,6 +3305,7 @@ static bool d3d11_gfx_frame(
    bool d3d11_hdr_enable          = (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) ? true : false;
    bool video_hdr_enable          = video_info->hdr_enable;
    DXGI_FORMAT back_buffer_format = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : d3d11->chain_formats[d3d11->chain_bit_depth];
+   bool use_back_buffer           = back_buffer_format != d3d11->chain_formats[d3d11->chain_bit_depth];     /* this is used when presets use scale_type in their last pass */
 #endif
 
    if (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
@@ -3735,15 +3736,30 @@ static bool d3d11_gfx_frame(
       }
    }
 
-   context->lpVtbl->OMSetRenderTargets(context, 1, &rtv, NULL);
-   context->lpVtbl->ClearRenderTargetView(context, rtv, d3d11->clearcolor);
+
+#ifdef HAVE_DXGI_HDR
+   if ((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
+         && use_back_buffer)
+   {
+      context->lpVtbl->OMSetRenderTargets(context, 1,
+            &d3d11->back_buffer.rt_view, NULL);
+      context->lpVtbl->ClearRenderTargetView(context,
+             d3d11->back_buffer.rt_view, d3d11->clearcolor);
+   }
+   else
+#endif
+   {
+      context->lpVtbl->OMSetRenderTargets(context, 1, &rtv, NULL);
+      context->lpVtbl->ClearRenderTargetView(context, rtv, d3d11->clearcolor);
+   }
 
    context->lpVtbl->RSSetViewports(context, 1, &d3d11->frame.viewport);
 
    if (texture)
    {
 #ifdef HAVE_DXGI_HDR
-      if (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
+      if((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
+         && !use_back_buffer)
       {
          d3d11_shader_t *shader = &d3d11->shaders[VIDEO_SHADER_STOCK_HDR];
          context->lpVtbl->IASetInputLayout(context, shader->layout);
@@ -3823,6 +3839,61 @@ static bool d3d11_gfx_frame(
    context->lpVtbl->Draw(context, 4, 0);
 
 #ifdef HAVE_DXGI_HDR
+   /* Copy over back buffer to swap chain render targets */
+   if ((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
+         && use_back_buffer)
+   {
+      ID3D11ShaderResourceView* nullSRV[1] = {NULL};
+      context->lpVtbl->OMSetRenderTargets(context, 1, &rtv, NULL);
+      context->lpVtbl->ClearRenderTargetView(context, rtv, d3d11->clearcolor);
+      context->lpVtbl->RSSetViewports(context, 1, &d3d11->viewport);
+      context->lpVtbl->RSSetScissorRects(context, 1, &d3d11->scissor);
+
+      {
+         d3d11_shader_t *shader = &d3d11->shaders[VIDEO_SHADER_STOCK_HDR];
+         context->lpVtbl->IASetInputLayout(context, shader->layout);
+         context->lpVtbl->VSSetShader(context, shader->vs, NULL, 0);
+         context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
+         context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
+      }
+
+      {
+         const float prev_iscanlines                = d3d11->hdr.ubo_values.scanlines;
+         const float prev_inverse_tonemap           = d3d11->hdr.ubo_values.inverse_tonemap;
+         const float prev_hdr10                     = d3d11->hdr.ubo_values.hdr10;
+
+         d3d11->hdr.ubo_values.scanlines           = 0.0f;
+         d3d11->hdr.ubo_values.inverse_tonemap     = 1.0f;
+         d3d11->hdr.ubo_values.hdr10               = 1.0f;
+
+         D3D11_MAPPED_SUBRESOURCE mapped_ubo;
+
+         d3d11->context->lpVtbl->Map(
+               d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
+         {
+            dxgi_hdr_uniform_t *ubo = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
+            *ubo                    = d3d11->hdr.ubo_values;
+         }
+         d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
+
+         d3d11->hdr.ubo_values.scanlines        = prev_iscanlines;
+         d3d11->hdr.ubo_values.inverse_tonemap  = prev_inverse_tonemap;
+         d3d11->hdr.ubo_values.hdr10            = prev_hdr10;
+      } 
+
+      context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->hdr.ubo);
+      context->lpVtbl->PSSetConstantBuffers(context, 0, 1, &d3d11->hdr.ubo);
+
+      context->lpVtbl->PSSetShaderResources(
+            context, 0, 1,
+            &d3d11->back_buffer.view);
+
+      context->lpVtbl->Draw(context, 4, 0);
+
+      context->lpVtbl->PSSetShaderResources(
+            context, 0, 1, nullSRV);
+   }
+
    if((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) && 
       (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE))
    {

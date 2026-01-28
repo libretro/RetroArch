@@ -3832,6 +3832,7 @@ static bool d3d12_gfx_frame(
    bool d3d12_hdr_enable          = false;
    bool video_hdr_enable          = video_info->hdr_enable;
    DXGI_FORMAT back_buffer_format = d3d12->shader_preset && d3d12->shader_preset->passes ? glslang_format_to_dxgi(d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format) : d3d12->chain.formats[d3d12->chain.bit_depth];
+   bool use_back_buffer           = back_buffer_format != d3d12->chain.formats[d3d12->chain.bit_depth];     /* this is used when presets use scale_type in their last pass */
 #endif
    D3D12GraphicsCommandList cmd   = d3d12->queue.cmd;
 
@@ -4383,7 +4384,8 @@ static bool d3d12_gfx_frame(
             d3d12->desc.rootSignature);
 
 #ifdef HAVE_DXGI_HDR
-      if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+      if((d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+         && !use_back_buffer)
       {
          cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_NOBLEND_HDR]);
 
@@ -4481,6 +4483,70 @@ static bool d3d12_gfx_frame(
    }
 
    cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
+
+#ifdef HAVE_DXGI_HDR
+   /* Copy over back buffer to swap chain render targets */
+   if ((d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) && use_back_buffer)
+   {
+      D3D12_RESOURCE_TRANSITION(
+            cmd,
+            d3d12->chain.renderTargets[d3d12->chain.frame_index],
+            D3D12_RESOURCE_STATE_PRESENT,
+            D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+      D3D12_RESOURCE_TRANSITION(
+            cmd,
+            d3d12->chain.back_buffer.handle,
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+      cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_HDR]);
+
+      cmd->lpVtbl->OMSetRenderTargets(
+            cmd, 1, &d3d12->chain.desc_handles[d3d12->chain.frame_index],
+            FALSE, NULL);
+      cmd->lpVtbl->ClearRenderTargetView(
+            cmd, d3d12->chain.desc_handles[d3d12->chain.frame_index],
+            d3d12->chain.clearcolor, 0, NULL);
+      
+      cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
+      cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
+
+      cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
+            d3d12->chain.back_buffer.gpu_descriptor[0]);
+      cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
+            d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
+
+      {
+         const float prev_iscanlines                = d3d12->hdr.ubo_values.scanlines;
+         const float prev_inverse_tonemap           = d3d12->hdr.ubo_values.inverse_tonemap;
+         const float prev_hdr10                     = d3d12->hdr.ubo_values.hdr10;
+
+         d3d12->hdr.ubo_values.scanlines           = 0.0f;
+         d3d12->hdr.ubo_values.inverse_tonemap     = 1.0f;
+         d3d12->hdr.ubo_values.hdr10               = 1.0f;
+
+         {
+            dxgi_hdr_uniform_t* mapped_ubo;
+            D3D12_RANGE read_range;
+            read_range.Begin            = 0;
+            read_range.End              = 0;
+            D3D12Map(d3d12->hdr.ubo_post, 0, &read_range, (void**)&mapped_ubo);
+            *mapped_ubo = d3d12->hdr.ubo_values;
+            D3D12Unmap(d3d12->hdr.ubo_post, 0, NULL);
+         }
+
+         cmd->lpVtbl->SetGraphicsRootConstantBufferView(
+               cmd, ROOT_ID_UBO,
+               d3d12->hdr.ubo_post_view.BufferLocation);
+
+         d3d12->hdr.ubo_values.scanlines           = prev_iscanlines;
+         d3d12->hdr.ubo_values.inverse_tonemap     = prev_inverse_tonemap;
+         d3d12->hdr.ubo_values.hdr10               = prev_hdr10;
+      }
+
+      cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
+   }
+#endif
 
    cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
    cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
