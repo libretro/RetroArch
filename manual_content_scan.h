@@ -49,6 +49,7 @@ enum manual_content_scan_system_name_type
 {
    MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR = 0,
    MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO,
    MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE
 };
 
@@ -121,6 +122,10 @@ typedef struct
    bool filter_dat_content;
    bool overwrite_playlist;
    bool validate_entries;
+   bool omit_db_reference;
+   bool target_is_single_determined_playlist;
+   enum manual_content_scan_db_usage db_usage;
+   enum manual_content_scan_db_selection db_selection;
 } manual_content_scan_task_config_t;
 
 /*****************/
