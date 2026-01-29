@@ -220,8 +220,8 @@ void gfx_widgets_msg_queue_push(
          else if (category == MESSAGE_QUEUE_CATEGORY_SUCCESS)
             msg_widget->flags                  |=  DISPWIDG_FLAG_CATEGORY_SUCCESS;
 
-         if (prio > 1 && category != MESSAGE_QUEUE_CATEGORY_ERROR)
-            msg_widget->flags                  |= DISPWIDG_FLAG_SMALL;
+         /* Default to small single line size and grow when necessary */
+         msg_widget->flags                     |= DISPWIDG_FLAG_SMALL;
 
          if (task)
          {
@@ -262,11 +262,9 @@ void gfx_widgets_msg_queue_push(
             /* Compute rect width, wrap if necessary */
             /* Single line text > two lines text > two lines
              * text with expanded width */
-            char *msg                           = NULL;
+            char *msg_new                       = NULL;
             size_t msg_len                      = 0;
-            unsigned width                      = menu_is_alive
-                  ? p_dispwidget->msg_queue_default_rect_width_menu_alive
-                  : p_dispwidget->msg_queue_default_rect_width;
+            unsigned width                      = p_dispwidget->msg_queue_default_rect_width;
             unsigned text_width                 = font_driver_get_message_width(
                   p_dispwidget->gfx_widget_fonts.msg_queue.font,
                   title,
@@ -275,9 +273,9 @@ void gfx_widgets_msg_queue_push(
             msg_widget->text_height             = p_dispwidget->gfx_widget_fonts.msg_queue.line_height;
             /* 1 byte uses for inserting '\n' */
             msg_len                             = len + 1 + 1;
-            if (!(msg = (char *)malloc(msg_len)))
+            if (!(msg_new = (char *)malloc(msg_len)))
                return;
-            msg[0] = '\0';
+            msg_new[0] = '\0';
 
             /* Text is too wide, split it into two lines */
             if (text_width > width)
@@ -290,7 +288,7 @@ void gfx_widgets_msg_queue_push(
                if ((text_width - (text_width >> 2)) < width)
                   width = text_width - (text_width >> 2);
 
-               word_wrap(msg, msg_len, title, len,
+               word_wrap(msg_new, msg_len, title, len,
                      (int)((len * width) / text_width),
                      100, 2);
 
@@ -311,16 +309,27 @@ void gfx_widgets_msg_queue_push(
                }
 
                msg_widget->text_height *= 2;
-               msg_widget->msg_len      = strlen(msg);
+               msg_widget->msg_len      = strlen(msg_new);
             }
             else
             {
                width                    = text_width;
-               msg_widget->msg_len      = strlcpy(msg, title, msg_len);
+               msg_widget->msg_len      = strlcpy(msg_new, title, msg_len);
             }
 
-            msg_widget->msg             = msg;
+            msg_widget->msg             = strdup(msg_new);
             msg_widget->width           = width + (p_dispwidget->simple_widget_padding / 2);
+
+            free(msg_new);
+            msg_new = NULL;
+         }
+
+         /* Use big size only when needed */
+         if (strstr(msg_widget->msg, "\n"))
+         {
+            msg_widget->flags &= ~DISPWIDG_FLAG_SMALL;
+            if (msg_widget->text_height == p_dispwidget->gfx_widget_fonts.msg_queue.line_height)
+               msg_widget->text_height *= 2;
          }
 
          fifo_write(&p_dispwidget->msg_queue,
@@ -365,7 +374,7 @@ void gfx_widgets_msg_queue_push(
 
                entry.easing_enum    = EASING_OUT_QUAD;
                entry.tag            = (uintptr_t)msg_widget;
-               entry.duration       = MSG_QUEUE_ANIMATION_DURATION*2;
+               entry.duration       = MSG_QUEUE_ANIMATION_DURATION * 2;
                entry.target_value   = p_dispwidget->msg_queue_height / 2.0f;
                entry.subject        = &msg_widget->msg_transition_animation;
                entry.cb             = msg_widget_msg_transition_animation_done;
@@ -851,10 +860,10 @@ static void gfx_widgets_layout(
    p_dispwidget->simple_widget_padding            = p_dispwidget->gfx_widget_fonts.regular.line_height * (2.0f / 3.0f) + 0.5f;
    p_dispwidget->simple_widget_height             = p_dispwidget->gfx_widget_fonts.regular.line_height + p_dispwidget->simple_widget_padding;
 
-   p_dispwidget->msg_queue_height                 = p_dispwidget->gfx_widget_fonts.msg_queue.line_height * 2.5f * (BASE_FONT_SIZE / MSG_QUEUE_FONT_SIZE);
+   p_dispwidget->msg_queue_height                 = p_dispwidget->gfx_widget_fonts.msg_queue.line_height * 2.4f * (BASE_FONT_SIZE / MSG_QUEUE_FONT_SIZE);
    p_dispwidget->msg_queue_padding                = (unsigned)(((float)p_dispwidget->gfx_widget_fonts.msg_queue.line_height * (2.0f / 3.0f)) + 0.5f);
    p_dispwidget->msg_queue_spacing                = p_dispwidget->msg_queue_height / 4.0f;
-   p_dispwidget->msg_queue_rect_start_x           = ceil((p_dispwidget->msg_queue_padding * 2.0f) - (p_dispwidget->simple_widget_padding * 0.15f));
+   p_dispwidget->msg_queue_rect_start_x           = ceil(p_dispwidget->msg_queue_padding - (p_dispwidget->simple_widget_padding * 0.10f));
 
    if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS)
       p_dispwidget->msg_queue_regular_padding_x   = p_dispwidget->simple_widget_padding / 2;
@@ -883,8 +892,6 @@ static void gfx_widgets_layout(
    if (!p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_HOURGLASS])
       p_dispwidget->msg_queue_task_text_start_x  -= p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 2.0f;
 
-   p_dispwidget->msg_queue_default_rect_width_menu_alive
-                                                  = p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 40.0f;
    p_dispwidget->msg_queue_default_rect_width     = p_dispwidget->last_video_width
          - p_dispwidget->msg_queue_regular_text_start - (2 * p_dispwidget->simple_widget_padding);
 
@@ -1137,7 +1144,7 @@ static int gfx_widgets_draw_indicator(
 
 static void gfx_widgets_draw_task_msg(
       dispgfx_widget_t *p_dispwidget,
-      gfx_display_t            *p_disp,
+      gfx_display_t *p_disp,
       gfx_display_ctx_driver_t *dispctx,
       disp_widget_msg_t *msg,
       void *userdata,
@@ -1303,7 +1310,7 @@ static void gfx_widgets_draw_task_msg(
             msg_queue_height / 2.5f,
             msg_queue_height / 2.5f,
             p_dispwidget->gfx_widgets_icons_textures[texture],
-            rect_x + (msg_queue_height / 9.0f) + (msg_queue_height / MSG_QUEUE_FONT_SIZE),
+            rect_x + (msg_queue_height / 12.0f) + (msg_queue_height / MSG_QUEUE_FONT_SIZE),
             rect_y + (msg_queue_height / MSG_QUEUE_FONT_SIZE),
             radians,
             cosine,
@@ -1315,7 +1322,7 @@ static void gfx_widgets_draw_task_msg(
 
    /* Text */
    text_y_base = rect_y
-      + (msg_queue_height / 4.0f)
+      + (msg_queue_height / 4.25f)
       + p_dispwidget->gfx_widget_fonts.msg_queue.line_centre_offset;
 
    if (draw_msg_new)
@@ -1360,7 +1367,7 @@ static void gfx_widgets_draw_task_msg(
    text_color = COLOR_TEXT_ALPHA(TEXT_COLOR_INFO, (unsigned)(msg->alpha/2*255.0f));
    gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.msg_queue,
       task_percentage,
-      rect_x + rect_width - p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 2,
+      rect_x + rect_width - p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 3,
       text_y_base,
       video_width, video_height,
       text_color,
@@ -1474,7 +1481,7 @@ static void gfx_widgets_draw_regular_msg(
    if (msg->flags & DISPWIDG_FLAG_SMALL)
       text_y_base = video_height
          - msg->offset_y
-         + p_dispwidget->msg_queue_height / 4.0f
+         + p_dispwidget->msg_queue_height / 4.25f
          + p_dispwidget->gfx_widget_fonts.msg_queue.line_centre_offset;
    else
       text_y_base = video_height
