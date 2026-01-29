@@ -454,10 +454,6 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST;
       case ACTION_OK_DL_WIFI_NETWORKS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_WIFI_NETWORKS_LIST;
-      case ACTION_OK_DL_NETPLAY:
-         return MENU_ENUM_LABEL_DEFERRED_NETPLAY;
-      case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
-         return MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST;
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
          return MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST;
 #ifdef HAVE_LAKKA_SWITCH
@@ -1538,12 +1534,6 @@ int generic_action_ok_displaylist_push(
          info_label         = tmp;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
-      case ACTION_OK_DL_RDB_ENTRY_SUBMENU:
-         info.directory_ptr = idx;
-         info_label         = label;
-         info_path          = path;
-         dl_type            = DISPLAYLIST_GENERIC;
-         break;
       case ACTION_OK_DL_CONFIGURATIONS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -1852,8 +1842,6 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST:
       case ACTION_OK_DL_WIFI_SETTINGS_LIST:
       case ACTION_OK_DL_WIFI_NETWORKS_LIST:
-      case ACTION_OK_DL_NETPLAY:
-      case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
 #ifdef HAVE_LAKKA_SWITCH
       case ACTION_OK_DL_LAKKA_SWITCH_OPTIONS_LIST:
@@ -6507,43 +6495,6 @@ static int action_ok_delete_entry(const char *path,
    return 0;
 }
 
-static int action_ok_rdb_entry_submenu(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char new_str[PATH_MAX_LENGTH];
-   char new_label[PATH_MAX_LENGTH];
-   char *tok, *save = NULL;
-   size_t _len      = 0;
-   char *label_cpy  = NULL;
-
-   if (!label)
-      return -1;
-
-   new_label[0]     =  '\0';
-   label_cpy        = strdup(label);
-
-   /* element 0: label */
-   if ((tok = strtok_r(label_cpy, "|", &save)))
-      fill_pathname_join_delim(new_label,
-            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
-            tok, '_', sizeof(new_label));
-   /* element 1: value */
-   if ((tok = strtok_r(NULL, "|", &save)))
-      _len += strlcpy(new_str + _len, tok, sizeof(new_str) - _len);
-   /* element 2: database path */
-   if ((tok = strtok_r(NULL, "|", &save)))
-   {
-      _len += strlcpy(new_str + _len, "|", sizeof(new_str) - _len);
-      strlcpy(new_str + _len, tok, sizeof(new_str) - _len);
-   }
-   free(label_cpy);
-   return generic_action_ok_displaylist_push(
-         new_str, NULL,
-         new_label, type,
-         idx, entry_idx,
-         ACTION_OK_DL_RDB_ENTRY_SUBMENU);
-}
-
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_browse_url_start, ACTION_OK_DL_BROWSE_URL_START)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_goto_favorites, ACTION_OK_DL_FAVORITES_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_goto_images, ACTION_OK_DL_IMAGES_LIST)
@@ -6615,7 +6566,6 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_lakka_services, ACTION_OK_DL_LAKKA_SERVI
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_lakka_switch_options, ACTION_OK_DL_LAKKA_SWITCH_OPTIONS_LIST)
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_user_list, ACTION_OK_DL_USER_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_netplay_sublist, ACTION_OK_DL_NETPLAY)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_directory_list, ACTION_OK_DL_DIRECTORY_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_privacy_list, ACTION_OK_DL_PRIVACY_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_midi_list, ACTION_OK_DL_MIDI_SETTINGS_LIST)
@@ -8108,13 +8058,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    return ret;
 }
 
-DEFAULT_ACTION_OK_HELP(action_ok_help_audio_video_troubleshooting, MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING, MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING)
 DEFAULT_ACTION_OK_HELP(action_ok_help, MENU_ENUM_LABEL_HELP, MENU_DIALOG_WELCOME)
-DEFAULT_ACTION_OK_HELP(action_ok_help_controls, MENU_ENUM_LABEL_HELP_CONTROLS, MENU_DIALOG_HELP_CONTROLS)
-DEFAULT_ACTION_OK_HELP(action_ok_help_what_is_a_core, MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE, MENU_DIALOG_HELP_WHAT_IS_A_CORE)
-DEFAULT_ACTION_OK_HELP(action_ok_help_scanning_content, MENU_ENUM_LABEL_HELP_SCANNING_CONTENT, MENU_DIALOG_HELP_SCANNING_CONTENT)
-DEFAULT_ACTION_OK_HELP(action_ok_help_change_virtual_gamepad, MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD, MENU_DIALOG_HELP_CHANGE_VIRTUAL_GAMEPAD)
-DEFAULT_ACTION_OK_HELP(action_ok_help_load_content, MENU_ENUM_LABEL_HELP_LOADING_CONTENT, MENU_DIALOG_HELP_LOADING_CONTENT)
 
 static int generic_dropdown_box_list(size_t idx, unsigned lbl)
 {
@@ -9079,36 +9023,6 @@ static int action_ok_smb_browse(const char *path,
 }
 #endif
 
-static int is_rdb_entry(enum msg_hash_enums enum_idx)
-{
-   switch (enum_idx)
-   {
-      case MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER:
-      case MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER:
-      case MENU_ENUM_LABEL_RDB_ENTRY_ORIGIN:
-      case MENU_ENUM_LABEL_RDB_ENTRY_FRANCHISE:
-      case MENU_ENUM_LABEL_RDB_ENTRY_ENHANCEMENT_HW:
-      case MENU_ENUM_LABEL_RDB_ENTRY_ESRB_RATING:
-      case MENU_ENUM_LABEL_RDB_ENTRY_BBFC_RATING:
-      case MENU_ENUM_LABEL_RDB_ENTRY_ELSPA_RATING:
-      case MENU_ENUM_LABEL_RDB_ENTRY_PEGI_RATING:
-      case MENU_ENUM_LABEL_RDB_ENTRY_CERO_RATING:
-      case MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING:
-      case MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
-      case MENU_ENUM_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
-      case MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH:
-      case MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_YEAR:
-      case MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS:
-      case MENU_ENUM_LABEL_RDB_ENTRY_GENRE:
-      case MENU_ENUM_LABEL_RDB_ENTRY_REGION:
-         break;
-      default:
-         return -1;
-   }
-
-   return 0;
-}
-
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
@@ -9118,12 +9032,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 
       if (str)
       {
-         if (is_rdb_entry(cbs->enum_idx) == 0)
-         {
-            BIND_ACTION_OK(cbs, action_ok_rdb_entry_submenu);
-            return 0;
-         }
-
          if (string_ends_with_size(str, "input_binds_list",
                   strlen(str),
                   STRLEN_CONST("input_binds_list")))
@@ -9283,12 +9191,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SAVE_MAIN_CONFIG,                    action_ok_save_main_config},
          {MENU_ENUM_LABEL_SAVE_AS_CONFIG,                      action_ok_save_as_config},
          {MENU_ENUM_LABEL_HELP,                                action_ok_help},
-         {MENU_ENUM_LABEL_HELP_CONTROLS,                       action_ok_help_controls},
-         {MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE,                 action_ok_help_what_is_a_core},
-         {MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,         action_ok_help_change_virtual_gamepad},
-         {MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,    action_ok_help_audio_video_troubleshooting},
-         {MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,               action_ok_help_scanning_content},
-         {MENU_ENUM_LABEL_HELP_LOADING_CONTENT,                action_ok_help_load_content},
 #ifdef HAVE_CHEATS
          {MENU_ENUM_LABEL_CHEAT_FILE_LOAD,                     action_ok_cheat_file},
          {MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND,              action_ok_cheat_file_append},
@@ -9404,12 +9306,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SYSTEM_INFORMATION,                  action_ok_push_default},
          {MENU_ENUM_LABEL_NETWORK_INFORMATION,                 action_ok_push_default},
          {MENU_ENUM_LABEL_ACHIEVEMENT_LIST,                    action_ok_push_default},
-         {MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE,           action_ok_push_default},
          {MENU_ENUM_LABEL_DISK_OPTIONS,                        action_ok_push_default},
          {MENU_ENUM_LABEL_SETTINGS,                            action_ok_push_default},
          {MENU_ENUM_LABEL_FRONTEND_COUNTERS,                   action_ok_push_default},
          {MENU_ENUM_LABEL_CORE_COUNTERS,                       action_ok_push_default},
-         {MENU_ENUM_LABEL_MANAGEMENT,                          action_ok_push_default},
          {MENU_ENUM_LABEL_ONLINE_UPDATER,                      action_ok_push_default},
          {MENU_ENUM_LABEL_NETPLAY,                             action_ok_push_default},
          {MENU_ENUM_LABEL_LOAD_CONTENT_LIST,                   action_ok_push_default},
@@ -9508,7 +9408,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_LAKKA_SWITCH
          {MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,                action_ok_lakka_switch_options},
 #endif
-         {MENU_ENUM_LABEL_NETPLAY_SETTINGS,                    action_ok_netplay_sublist},
          {MENU_ENUM_LABEL_USER_SETTINGS,                       action_ok_user_list},
          {MENU_ENUM_LABEL_DIRECTORY_SETTINGS,                  action_ok_directory_list},
          {MENU_ENUM_LABEL_PRIVACY_SETTINGS,                    action_ok_privacy_list},

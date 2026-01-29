@@ -39,7 +39,6 @@ static void frontend_dos_init(void *data)
 
 /* TODO/FIXME - implement */
 static void frontend_dos_shutdown(bool unused) { }
-static int frontend_dos_get_rating(void) { return -1; }
 
 enum frontend_architecture frontend_dos_get_arch(void)
 {
@@ -168,7 +167,6 @@ frontend_ctx_driver_t frontend_ctx_dos = {
 	frontend_dos_shutdown,        /* shutdown */
 	NULL,                         /* get_name */
 	NULL,                         /* get_os */
-	frontend_dos_get_rating,      /* get_rating */
 	NULL,                         /* content_loaded   */
 	frontend_dos_get_arch,        /* get_architecture */
 	NULL,                         /* get_powerstate */
