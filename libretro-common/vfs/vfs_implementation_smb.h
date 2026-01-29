@@ -15,6 +15,20 @@ extern "C" {
 #define RETRO_SMB2_SEC_NTLMSSP 1
 #define RETRO_SMB2_SEC_KRB5 2
 
+struct smb_settings {
+   const char *server_address;
+   const char *share;
+   const char *username;
+   const char *password;
+   const char *workgroup;
+   unsigned    timeout;
+   unsigned    num_contexts;
+   unsigned    auth_mode;
+   const char *subdir;
+};
+
+typedef struct smb_settings smb_settings_t;
+
 struct smbc_dirent {
    char name[256];
    int  type;     /* file vs directory */
@@ -25,6 +39,8 @@ typedef struct {
    struct smb2_context *ctx;
    struct smb2dir *dir;
 } smb_dir_handle;
+
+bool smb_init_cfg(const struct smb_settings *new_cfg);
 
 /* File operations */
 bool    retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,

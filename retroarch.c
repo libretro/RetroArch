@@ -356,6 +356,27 @@ static void retro_frame_null(const void *data, unsigned width,
       unsigned height, size_t pitch) { }
 void retro_input_poll_null(void) { }
 
+#ifdef HAVE_SMBCLIENT
+static struct smb_settings smb_global_cfg;
+
+void retroarch_smb_init(void)
+{
+   settings_t *settings = config_get_ptr();
+
+   smb_global_cfg.server_address = settings->arrays.smb_client_server_address;
+   smb_global_cfg.share = settings->arrays.smb_client_share;
+   smb_global_cfg.username = settings->arrays.smb_client_username;
+   smb_global_cfg.password = settings->arrays.smb_client_password;
+   smb_global_cfg.workgroup = settings->arrays.smb_client_workgroup;
+   smb_global_cfg.timeout = settings->uints.smb_client_timeout;
+   smb_global_cfg.num_contexts = settings->uints.smb_client_num_contexts;
+   smb_global_cfg.auth_mode = settings->uints.smb_client_auth_mode;
+   smb_global_cfg.subdir = settings->arrays.smb_client_subdir;
+
+   smb_init_cfg(&smb_global_cfg);
+}
+#endif
+
 static location_driver_t location_null = {
    NULL,
    NULL,
@@ -6104,6 +6125,10 @@ int rarch_main(int argc, char *argv[], void *data)
    }
 
    settings = config_get_ptr();
+
+#ifdef HAVE_SMBCLIENT
+   retroarch_smb_init();
+#endif
 
    ui_companion_driver_init_first(
 #ifdef HAVE_QT

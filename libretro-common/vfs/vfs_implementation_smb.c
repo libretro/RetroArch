@@ -25,9 +25,6 @@
 #include <string/stdstring.h>
 #include <net/net_compat.h>
 #include <vfs/vfs_implementation.h>
-#include "../configuration.h"
-#include "../verbosity.h"
-#include "../../config.def.h"
 #include "vfs_implementation_smb.h"
 
 #define SMB_PREFIX "smb://"
@@ -36,6 +33,7 @@ static struct smb2_context **smb_context_pool = NULL;
 static int next_context_index = 0;
 static bool smb_initialized = false;
 static int max_context_configured = 0;
+static const struct smb_settings *smb_cfg = NULL;
 
 static struct smb2_context *get_smb_context()
 {
@@ -54,10 +52,7 @@ static struct smb2_context *get_smb_context()
    next_context_index = (next_context_index + 1) % max_context_configured;
 
    if (!smb_context_pool[idx])
-   {
-      RARCH_ERR("[SMB] Context slot %d is NULL\n", idx);
       return NULL;
-   }
 
    return smb_context_pool[idx];
 }
@@ -78,10 +73,15 @@ void reset(unsigned num_contexts)
    max_context_configured = 0;
 }
 
+bool smb_init_cfg(const struct smb_settings *new_cfg)
+{
+   smb_cfg = new_cfg;
+   return true;
+}
+
 /* Initialize SMB context */
 static bool smb_init()
 {
-   settings_t *settings;
    char server[256];
    char share[256];
    char *username = NULL;
@@ -94,33 +94,17 @@ static bool smb_init()
    if (smb_initialized)
       return true;
 
-   RARCH_DBG("[SMB] Initializing SMB client context\n");
-
    if (!network_init())
-      RARCH_ERR("[SMB]: Network initialization failed");
-
-   settings = config_get_ptr();
-   if (!settings)
-   {
-      RARCH_ERR("[SMB] Cannot retrieve settings for authentication\n");
       return false;
-   }
 
-   /* Parse server from settings */
-   if (string_is_empty(settings->arrays.smb_client_server_address))
-   {
-      RARCH_ERR("[SMB] Server address not configured\n");
+   if (!smb_cfg || string_is_empty(smb_cfg->server_address))
       return false;
-   }
 
-   unsigned max_smb_contexts = settings->uints.smb_client_num_contexts;
+   unsigned max_smb_contexts = smb_cfg->num_contexts;
    smb_context_pool = calloc(max_smb_contexts, sizeof(struct smb2_context *));
 
    if (!smb_context_pool)
-   {
-      RARCH_ERR("[SMB] Failed to allocate context pool\n");
       return false;
-   }
 
    for (i = 0; i < max_smb_contexts; i++)
    {
@@ -128,37 +112,36 @@ static bool smb_init()
 
       if (!smb_context)
       {
-         RARCH_ERR("[SMB] Failed to create context %d\n", i);
          smb2_destroy_context(smb_context);
          reset(max_context_configured);
          return false;
       }
 
-      strlcpy(server, settings->arrays.smb_client_server_address, sizeof(server));
+      strlcpy(server, smb_cfg->server_address, sizeof(server));
 
       /* Set credentials */
-      if (!string_is_empty(settings->arrays.smb_client_username))
+      if (!string_is_empty(smb_cfg->username))
       {
-         username = settings->arrays.smb_client_username;
+         username = (char*)smb_cfg->username;
          smb2_set_user(smb_context, username);
       }
 
-      if (!string_is_empty(settings->arrays.smb_client_password))
-         smb2_set_password(smb_context, settings->arrays.smb_client_password);
+      if (!string_is_empty(smb_cfg->password))
+         smb2_set_password(smb_context, smb_cfg->password);
 
-      if (!string_is_empty(settings->arrays.smb_client_workgroup))
-         smb2_set_domain(smb_context, settings->arrays.smb_client_workgroup);
+      if (!string_is_empty(smb_cfg->workgroup))
+         smb2_set_domain(smb_context, smb_cfg->workgroup);
 
-      if (!string_is_empty(settings->arrays.smb_client_share))
-         strlcpy(share, settings->arrays.smb_client_share, sizeof(share));
+      if (!string_is_empty(smb_cfg->share))
+         strlcpy(share, smb_cfg->share, sizeof(share));
       else
          share[0] = '\0';
 
       /* set timeout */
-      smb2_set_timeout(smb_context, settings->uints.smb_client_timeout);
+      smb2_set_timeout(smb_context, smb_cfg->timeout);
 
       /* SMB2_SEC_ defines missing on system headers but provided with latest libsmb2 */
-      switch(settings->uints.smb_client_auth_mode)
+      switch(smb_cfg->auth_mode)
       {
          case RETRO_SMB2_SEC_NTLMSSP:
             smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_NTLMSSP);
@@ -185,10 +168,7 @@ static bool smb_init()
             smb_context = smb2_init_context();
 
             if (!smb_context)
-            {
-               RARCH_ERR("[SMB] Failed to create recreate context %d\n", i);
                return false;
-            }
 
             /* if that fails, try SMB2_SEC_KRB5 in fallthrough */
             smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_NTLMSSP);
@@ -199,9 +179,6 @@ static bool smb_init()
       /* Connect to share */
       if ((error_no = smb2_connect_share(smb_context, server, share, username)) < 0)
       {
-         RARCH_ERR("[SMB] Failed to connect to %s/%s: %s (errno: %d) with context: %d\n",
-                  server, share, smb2_get_error(smb_context), error_no, i);
-
          smb2_destroy_context(smb_context);
          reset(max_context_configured);
          return false;
@@ -212,7 +189,6 @@ static bool smb_init()
    }
 
    smb_initialized = true;
-   RARCH_DBG("[SMB] SMB client pool initialized successfully with %d contexts\n", max_context_configured + 1);
 
    return true;
 }
@@ -235,8 +211,6 @@ void smb_shutdown()
    if(!smb_initialized || max_context_configured == 0)
       return;
 
-   RARCH_DBG("[SMB] Shutting down SMB client pool\n");
-
    for (i = 0; i < max_context_configured; i++)
       smb_close_context(i);
 
@@ -246,15 +220,8 @@ void smb_shutdown()
 /* Build full SMB path from settings */
 static bool smb_build_path(char *dest, size_t dest_size, const char *relative_path)
 {
-   settings_t *settings = config_get_ptr();
    char temp_path[PATH_MAX_LENGTH];
    const char *p;
-   
-   if (!settings)
-   {
-      RARCH_ERR("[SMB] Cannot retrieve settings\n");
-      return false;
-   }
 
    /* If already has smb:// prefix, extract just the path component */
    if (string_starts_with(relative_path, SMB_PREFIX))
@@ -277,10 +244,10 @@ static bool smb_build_path(char *dest, size_t dest_size, const char *relative_pa
    temp_path[0] = '\0';
 
    /* Add base folder if specified */
-   if (!string_is_empty(settings->arrays.smb_client_subdir))
+   if (!string_is_empty(smb_cfg->subdir))
    {
-      strlcpy(temp_path, settings->arrays.smb_client_subdir, sizeof(temp_path));
-      if (temp_path[strlen(temp_path) - 1] != '/')
+      strlcpy(temp_path, smb_cfg->subdir, sizeof(temp_path));
+      if (temp_path[0] != '\0' && temp_path[strlen(temp_path) - 1] != '/')
          strlcat(temp_path, "/", sizeof(temp_path));
    }
 
@@ -293,7 +260,6 @@ static bool smb_build_path(char *dest, size_t dest_size, const char *relative_pa
    }
 
    strlcpy(dest, temp_path, dest_size);
-   RARCH_DBG("[SMB] Built path: %s\n", dest);
 
    return true;
 }
@@ -314,31 +280,22 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    stream->smb_ctx = (intptr_t)0;
 
    if (!smb_init())
-   {
-      RARCH_ERR("[SMB] Failed to initialize SMB context\n");
       return false;
-   }
 
    smb_context = get_smb_context();
    if (!smb_context)
-   {
-      RARCH_ERR("[SMB] Failed to get SMB context from pool\n");
       return false;
-   }
 
    if (!smb_build_path(full_path, sizeof(full_path), path))
       return false;
 
    /* Strip leading slash ONLY for non-empty subpaths */
    if (full_path[0] == '/' && full_path[1] != '\0')
-      strlcpy(full_path, full_path + 1, sizeof(full_path));
+      memmove(full_path, full_path + 1, strlen(full_path));
 
    /* Do not treat empty string as a file path */
    if (full_path[0] == '\0')
-   {
-      RARCH_ERR("[SMB] Refusing to open empty file path\n");
       return false;
-   }
 
    /* Convert mode to SMB flags safely */
    if (mode & RETRO_VFS_FILE_ACCESS_READ)
@@ -359,16 +316,11 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
 
    fh = smb2_open(smb_context, full_path, flags);
    if (!fh)
-   {
-      RARCH_ERR("[SMB] Failed to open '%s': %s\n",
-                full_path, smb2_get_error(smb_context));
       return false;
-   }
 
    stream->smb_fh = (intptr_t)(uintptr_t)fh;
    stream->smb_ctx = (intptr_t)(uintptr_t)smb_context;
    stream->scheme = VFS_SCHEME_SMB; /* ensure SMB dispatch on IO calls */
-   RARCH_DBG("[SMB] Opened file: %s (fd: %p)\n", full_path, fh);
    return true;
 }
 
@@ -386,8 +338,6 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
        return -1;
 
    ret = smb2_read(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh, s, len);
-   if (ret < 0)
-      RARCH_ERR("[SMB] Read error: %s\n", smb2_get_error((struct smb2_context *)(uintptr_t)stream->smb_ctx));
 
    return ret;
 }
@@ -406,8 +356,6 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
        return -1;
 
    ret = smb2_write(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh, (void*)s, len);
-   if (ret < 0)
-      RARCH_ERR("[SMB] Write error: %s\n", smb2_get_error((struct smb2_context *)(uintptr_t)stream->smb_ctx));
 
    return ret;
 }
@@ -443,10 +391,7 @@ int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
    /* libsmb2 returns status via ret, and the new offset via out param */
    ret = smb2_lseek(ctx, fh, offset, whence, &newpos);
    if (ret < 0)
-   {
-      RARCH_ERR("[SMB] Seek error: %s\n", smb2_get_error(ctx));
       return -1;
-   }
 
    return (int64_t)newpos;
 }
@@ -475,10 +420,7 @@ int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
 
    ret = smb2_lseek(ctx, fh, 0, SEEK_CUR, &cur);
    if (ret < 0)
-   {
-      RARCH_ERR("[SMB] Tell error: %s\n", smb2_get_error(ctx));
       return -1;
-   }
 
    return (int64_t)cur;
 }
@@ -500,8 +442,6 @@ int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
       return -1;
 
    ret = smb2_close(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh);
-   if (ret < 0)
-      RARCH_WARN("[SMB] Error closing: %s\n", smb2_get_error((struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx));
 
    stream->smb_fh = (intptr_t)-1;
    stream->smb_ctx = (intptr_t)0;
@@ -527,21 +467,15 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
    /* If we have a leading slash AND a non-empty remainder, strip it.
     * Do NOT convert empty string to "." — root listing worked with "" */
    if (full_path[0] == '/' && full_path[1] != '\0')
-      strlcpy(full_path, full_path + 1, sizeof(full_path));
+      memmove(full_path, full_path + 1, strlen(full_path));
 
    smb_context = get_smb_context();
    if (!smb_context)
-   {
-      RARCH_ERR("[SMB] retro_vfs_opendir_smb: invalid context\n");
       return NULL;
-   }
 
    dir = smb2_opendir(smb_context, full_path);
    if (!dir)
-   {
-      RARCH_ERR("[SMB] opendir '%s' failed: %s\n", full_path, smb2_get_error(smb_context));
       return NULL;
-   }
 
    handle = (smb_dir_handle*)malloc(sizeof(smb_dir_handle));
    if (!handle)
@@ -565,10 +499,7 @@ struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
       return NULL;
 
    if (!dh->ctx || !dh->dir)
-   {
-      RARCH_ERR("[SMB] retro_vfs_readdir_smb: invalid handle\n");
       return NULL;
-   }
 
    ent = smb2_readdir(dh->ctx, dh->dir);
    if (!ent)
@@ -589,10 +520,7 @@ int retro_vfs_closedir_smb(smb_dir_handle* dh)
       return -1;
 
    if (!dh->ctx || !dh->dir)
-   {
-      RARCH_ERR("[SMB] retro_vfs_closedir_smb: invalid handle\n");
       return -1;
-   }
 
    smb2_closedir(dh->ctx, dh->dir);
    free(dh);
@@ -617,20 +545,14 @@ int retro_vfs_stat_smb(const char *path, int32_t *size)
 
    /* Strip leading slash safely (preserve NULL terminator) */
    if (rel_path[0] == '/' && rel_path[1] != '\0')
-      strlcpy(rel_path, rel_path + 1, sizeof(rel_path));
+      memmove(rel_path, rel_path + 1, strlen(rel_path));
 
    smb_context = get_smb_context();
    if (!smb_context)
-   {
-      RARCH_ERR("[SMB] retro_vfs_readdir_smb: invalid context\n");
       return 0;
-   }
 
    if (smb2_stat(smb_context, rel_path, &st) < 0)
-   {
-      RARCH_ERR("[SMB] stat '%s' failed: %s\n", rel_path, smb2_get_error(smb_context));
       return 0;
-   }
 
    if (size)
       *size = (int32_t)st.smb2_size;
@@ -659,10 +581,7 @@ int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream)
 
    err = smb2_get_error(ctx);
    if (err && err[0] != '\0')
-   {
-      RARCH_ERR("[SMB] Last error: %s\n", err);
       return -1;
-   }
 
    return 0;
 }
