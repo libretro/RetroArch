@@ -16084,6 +16084,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Roghnaigh do chrios ama chun an dáta agus an t-am a choigeartú de réir do shuíomh."
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Taispeánann sé liosta de na criosanna ama atá ar fáil. Tar éis crios ama a roghnú, déantar an t-am agus an dáta a choigeartú don chrios ama roghnaithe. Glactar leis go bhfuil clog an chórais/chrua-earraí socraithe go UTC."

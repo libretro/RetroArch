@@ -14848,6 +14848,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "タイムゾーンを選択して、日付と時刻を現在地に合わせます。"
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "利用可能なタイムゾーンの一覧を表示します。タイムゾーンを選択したあと、日付と時刻は選択したタイムゾーンに合わせて調整されます。システム/ハードウェアの時計が UTC に設定されていることを前提としています。"

@@ -16132,6 +16132,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "시간대를 설정하여 날짜와 시간을 현재 위치에 맞게 조정합니다."
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "사용 가능한 시간대 목록을 표시합니다. 시간대를 선택하면, 시간과 날짜가 선택한 시간대에 맞춰 조정됩니다. 시스템/하드웨어 시간이 UTC에 맞춰져 있다고 가정합니다."
