@@ -1637,6 +1637,11 @@
  * resuming content */
 #define DEFAULT_INPUT_AUTO_GAME_FOCUS AUTO_GAME_FOCUS_OFF
 
+/* Make simultaneous buttons easier to hit on Android */
+#if defined(ANDROID)
+#define DEFAULT_INPUT_BLOCK_TIMEOUT 1
+#endif
+
 /* Show the input descriptors set by the core instead
  * of the default ones. */
 #define DEFAULT_INPUT_DESCRIPTOR_LABEL_SHOW true
