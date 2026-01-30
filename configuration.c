@@ -2582,7 +2582,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_rumble_gain",             &settings->uints.input_rumble_gain, true, DEFAULT_RUMBLE_GAIN, false);
    SETTING_UINT("input_auto_game_focus",         &settings->uints.input_auto_game_focus, true, DEFAULT_INPUT_AUTO_GAME_FOCUS, false);
 #ifdef ANDROID
-   SETTING_UINT("input_block_timeout",           &settings->uints.input_block_timeout, true, 0, false);
+   SETTING_UINT("input_block_timeout",           &settings->uints.input_block_timeout, true, DEFAULT_INPUT_BLOCK_TIMEOUT, false);
 #endif
    SETTING_UINT("keyboard_gamepad_mapping_type", &settings->uints.input_keyboard_gamepad_mapping_type, true, 1, false);
 

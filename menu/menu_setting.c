@@ -16903,7 +16903,7 @@ static bool setting_append_list(
             &settings->uints.input_block_timeout,
             MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,
             MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
-            0,
+            DEFAULT_INPUT_BLOCK_TIMEOUT,
             &group_info,
             &subgroup_info,
             parent_group,
