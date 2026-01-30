@@ -2531,36 +2531,52 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
-   "影像水平位置"
+   "視窗錨點 X 軸偏移"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
-   "影像水平位置"
+   "視窗錨點 X 軸偏移"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "影像垂直位置"
+   "視窗錨點 Y 軸偏移"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
-   "影像垂直位置"
+   "視窗錨點 Y 軸偏移"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "當視窗寬度大於內容寬度時，內容的水平位置。0.0 為最左側，0.5 為置中，1.0 為最右側。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "當視窗高度大於內容高度時，內容的垂直位置。0.0 為最上方，0.5 為置中，1.0 為最下方。"
    )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "影像水平位置"
+   "視窗錨點 X 軸偏移 (豎屏)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "影像水平位置"
+   "視窗錨點 X 軸偏移 (豎屏)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "影像垂直位置"
+   "視窗錨點 Y 軸偏移 (豎屏)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "影像垂直位置"
+   "視窗錨點 Y 軸偏移 (豎屏)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "當視窗寬度大於內容寬度時，內容的水平位置。0.0 為最左側，0.5 為置中，1.0 為最右側。（豎屏）"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "當視窗高度大於內容高度時，內容的垂直位置。0.0 為最上方，0.5 為置中，1.0 為最下方。（豎屏）"
    )
 #endif
 MSG_HASH(

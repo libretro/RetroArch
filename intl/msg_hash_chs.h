@@ -2615,52 +2615,52 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
-   "视口锚点偏置 X"
+   "视口锚点 X 轴偏置"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
-   "视口锚点偏置 X"
+   "视口锚点 X 轴偏置"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "视口锚点偏置 Y"
+   "视口锚点 Y 轴偏置"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
-   "视口锚点偏置 Y"
+   "视口锚点 Y 轴偏置"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   "当视口宽度大于内容宽度时内容的水平位置。0.0表示最左侧，0.5表示居中，1.0表示最右侧。"
+   "当视口宽度大于内容宽度时，内容的水平位置。0.0 为最左侧，0.5 为居中，1.0 为最右侧。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "内容在视口中的垂直位置（当视口高度大于内容高度时）0.0 为顶部，0.5 为居中，1.0 为底部。"
+   "当视口高度大于内容高度时，内容的垂直位置。0.0 为最上方，0.5 为居中，1.0 为最下方。"
    )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "视口锚点偏移 X（竖屏方向）"
+   "视口锚点 X 轴偏置 (竖屏方向)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "视口锚点偏移 X（竖屏方向）"
+   "视口锚点 X 轴偏置 (竖屏方向)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "视口锚点偏移 Y（竖屏方向）"
+   "视口锚点 Y 轴偏置 (竖屏方向)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "视口锚点偏移 Y（竖屏方向）"
+   "视口锚点 Y 轴偏置 (竖屏方向)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "当视口宽度大于内容宽度时，控制内容的水平位置。0.0 为最左，0.5 为居中，1.0 为最右。（竖屏方向）"
+   "当视口宽度大于内容宽度时，内容的水平位置。0.0 为最左侧，0.5 为居中，1.0 为最右侧。(竖屏方向)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "当视口高度大于内容高度时，控制内容的垂直位置。0.0 为顶部，0.5 为居中，1.0 为底部。（竖屏方向）"
+   "当视口高度大于内容高度时，内容的垂直位置。0.0 为最上方，0.5 为居中，1.0 为最下方。(竖屏方向)"
    )
 #endif
 MSG_HASH(
