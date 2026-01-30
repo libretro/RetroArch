@@ -176,6 +176,7 @@ get_all_cores
 appstore_cores=(
     2048
     a5200
+    amiarcadia
     anarch
     ardens
     atari800
@@ -244,6 +245,7 @@ appstore_cores=(
     np2kai
     numero
     nxengine
+    o2em
     opera
     pcsx_rearmed
     pd777
@@ -275,6 +277,7 @@ appstore_cores=(
     theodore
     tic80
     tyrquake
+    uzem
     vba_next
     vbam
     vecx
