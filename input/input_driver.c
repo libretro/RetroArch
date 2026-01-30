@@ -5859,6 +5859,26 @@ static bool input_keys_pressed_other_sources(
    return false;
 }
 
+#define CHECK_GAME_FOCUS_ENABLE_HOTKEY_COMBO(i) \
+   if (     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) \
+         && (  (i == RARCH_ENABLE_HOTKEY) \
+            || (i != RARCH_ENABLE_HOTKEY && !block_hotkey[RARCH_ENABLE_HOTKEY])) \
+      ) \
+   { \
+      if (input_state_wrap( \
+            input_st->current_driver, \
+            input_st->current_data, \
+            input_st->primary_joypad, \
+            sec_joypad, \
+            joypad_info, \
+            binds, \
+            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false, \
+            port, RETRO_DEVICE_JOYPAD, 0, \
+            i)) \
+         block_hotkey[i] = false; \
+   } \
+
+
 /**
  * input_keys_pressed:
  *
@@ -5884,6 +5904,7 @@ static void input_keys_pressed(
    int32_t ret                    = 0;
    input_driver_state_t *input_st = &input_driver_st;
    bool block_hotkey[RARCH_BIND_LIST_END];
+   bool enable_hotkey_pressed     = false;
    bool any_pressed               = false;
    bool libretro_hotkey_set       =
             binds_norm->joykey  != NO_BTN
@@ -5915,6 +5936,7 @@ static void input_keys_pressed(
             port, RETRO_DEVICE_JOYPAD, 0,
             RARCH_ENABLE_HOTKEY))
       {
+         enable_hotkey_pressed = true;
          if (input_st->input_hotkey_block_counter < input_hotkey_block_delay)
             input_st->input_hotkey_block_counter++;
          else
@@ -6016,6 +6038,7 @@ static void input_keys_pressed(
    /* Ignore hotkey block delay when menu toggle and hotkey enabler share the same key */
    if (     !any_pressed
          && !(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+         && !(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED)
          && binds[port][RARCH_MENU_TOGGLE].key == binds[port][RARCH_ENABLE_HOTKEY].key)
    {
       i = RARCH_MENU_TOGGLE;
@@ -6049,7 +6072,12 @@ static void input_keys_pressed(
    {
       /* Block everything when hotkey bind exists for both device types */
       for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+      {
          block_hotkey[i] = true;
+
+         /* Don't block controller hotkey enabler with Game Focus */
+         CHECK_GAME_FOCUS_ENABLE_HOTKEY_COMBO(i);
+      }
    }
    else if (input_st->flags & INP_FLAG_BLOCK_HOTKEY
          && (!libretro_hotkey_set || !keyboard_hotkey_set))
@@ -6150,6 +6178,9 @@ static void input_keys_pressed(
                }
             }
          }
+
+         /* Don't block controller hotkey enabler with Game Focus */
+         CHECK_GAME_FOCUS_ENABLE_HOTKEY_COMBO(i);
       }
    }
    else
@@ -6206,7 +6237,13 @@ static void input_keys_pressed(
             continue;
          }
          else if (i != RARCH_ENABLE_HOTKEY)
+         {
             input_st->flags |= INP_FLAG_MENU_PRESS_CANCEL;
+
+            /* Game Focus toggle is always allowed, so it must clear menu cancel */
+            if (i == RARCH_GAME_FOCUS_TOGGLE)
+               input_st->flags &= ~INP_FLAG_MENU_PRESS_CANCEL;
+         }
 
          BIT256_SET_PTR(p_new_state, i);
       }
@@ -6237,7 +6274,7 @@ static void input_keys_pressed(
    if ((input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE) && !any_pressed)
       input_st->flags &= ~INP_FLAG_WAIT_INPUT_RELEASE;
 
-   if (input_st->flags & INP_FLAG_BLOCK_HOTKEY)
+   if (input_st->flags & INP_FLAG_BLOCK_HOTKEY && !enable_hotkey_pressed)
       input_st->input_hotkey_block_counter = 0;
 }
 
