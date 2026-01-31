@@ -385,7 +385,7 @@ typedef struct gfx_ctx_vulkan_data
    struct vulkan_emulated_mailbox mailbox;
    uint8_t flags;
    enum vulkan_wsi_type wsi_type;
-   bool enabled_fse;
+   bool fse_supported;
 } gfx_ctx_vulkan_data_t;
 
 struct vulkan_display_surface_info
