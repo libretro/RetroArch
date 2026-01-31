@@ -829,12 +829,12 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
           return false;
       }
 
-      vk->enabled_fse = false;
+      vk->fse_supported = false;
       for (unsigned i = 0; i < enabled_device_extension_count; i++)
       {
          if (!strcmp(enabled_device_extensions[i], "VK_EXT_full_screen_exclusive"))
          {
-            vk->enabled_fse = true;
+            vk->fse_supported = true;
             break;
          }
       }
@@ -1978,7 +1978,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    settings_t                    *settings = config_get_ptr();
    bool vsync                              = settings->bools.video_vsync;
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
-   bool enabled_fse;
+   bool fse_supported;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
    HMONITOR hmonitor;
@@ -2343,7 +2343,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-   if (vk->enabled_fse)
+   if (vk->fse_supported)
    {
       hmonitor                = MonitorFromWindow(GetActiveWindow(), MONITOR_DEFAULTTONEAREST);
       fse_win32_info.hmonitor = hmonitor;
