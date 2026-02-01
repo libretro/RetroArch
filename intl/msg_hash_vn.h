@@ -16460,7 +16460,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
-   "Bật quyền truy cập chia sẻ mạng SMB. Khuyến nghị dùng mạng dây (Ethernet) thay vì Wi-Fi để có kết nối ổn định hơn."
+   "Cho phép truy cập chia sẻ mạng SMB. Khuyến khích sử dụng Ethernet qua Wi-Fi để có kết nối đáng tin cậy hơn. Lưu ý: việc thay đổi các cài đặt này yêu cầu khởi động lại RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,

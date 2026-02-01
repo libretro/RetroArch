@@ -16279,10 +16279,6 @@ MSG_HASH(
    "Activa el client de SMB"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
-   "Activa l'accés a la xarxa SMB compartida. Es recomana ethernet per davant de wifi per una connexió més fiable."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
    "Servidor de SMB"
    )

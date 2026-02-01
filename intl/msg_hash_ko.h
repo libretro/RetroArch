@@ -16515,10 +16515,6 @@ MSG_HASH(
    "SMB 클라이언트 사용"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
-   "SMB 네트워크 공유에 접근할 수 있게 합니다. 안정적인 연결을 위해 Wi-Fi 대신 이더넷을 사용하는 것이 권장됩니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
    "SMB 서버"
    )

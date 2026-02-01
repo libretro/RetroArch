@@ -16352,7 +16352,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
-   "Activer l'accès au partage en réseau SMB. Ethernet est fortement recommandé par rapport au Wi-Fi pour une connexion plus fiable."
+   "Activer l'accès au partage réseau SMB. Ethernet est fortement recommandé par rapport au Wi-Fi pour une connexion plus fiable. Remarque : modifier ces réglages nécessite un redémarrage de RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,

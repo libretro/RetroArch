@@ -16044,7 +16044,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
-   "Aktiviert den Zugriff auf die SMB-Netzwerkfreigabe. Für eine zuverlässigere Verbindung wird Ethernet gegenüber WLAN dringend empfohlen."
+   "SMB-Netzwerkfreigabe aktivieren. Für eine zuverlässigere Verbindung wird Ethernet gegenüber WLAN dringend empfohlen. Hinweis: Um diese Einstellungen zu ändern, muss RetroArch neu gestartet werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,

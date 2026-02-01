@@ -15728,7 +15728,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
-   "Aktivera nätverksåtkomst för SMB-utdelning. Ethernet rekommenderas starkt istället för Wi-Fi för en mer tillförlitlig anslutning."
+   "Aktivera nätverksåtkomst för SMB-utdelning. Ethernet rekommenderas starkt över Wi-Fi för en mer tillförlitlig anslutning. Observera: ändring av dessa inställningar kräver en omstart av RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
