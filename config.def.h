@@ -506,7 +506,7 @@
 #define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
 
 /* Should we expand the colour gamut when using hdr */
-#define DEFAULT_VIDEO_HDR_EXPAND_GAMUT false
+#define DEFAULT_VIDEO_HDR_EXPAND_GAMUT 0
 
 /* Enable a basic HDR scanline implementation which is the main reason for using HDR in RetroArch */
 #define DEFAULT_VIDEO_HDR_SCANLINES true

@@ -166,7 +166,7 @@ void vulkan_filter_chain_set_max_nits(vulkan_filter_chain_t *chain,
       float max_nits) ;
 
 void vulkan_filter_chain_set_expand_gamut(vulkan_filter_chain_t *chain,
-      float expand_gamut);
+      unsigned expand_gamut);
 
 void vulkan_filter_chain_set_scanlines(vulkan_filter_chain_t *chain,
       float scanlines);

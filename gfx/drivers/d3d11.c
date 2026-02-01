@@ -412,7 +412,7 @@ typedef struct
       float                      enable_hdr;
       float                      paper_white_nits;
       float                      max_nits;
-      float                      expand_gamut;
+      unsigned                   expand_gamut;
       float                      scanlines;
       unsigned                   subpixel_layout;
       float                      inverse_tonemap;
@@ -1635,13 +1635,13 @@ static void d3d11_set_hdr_paper_white_nits(void* data, float paper_white_nits)
    }
 }
 
-static void d3d11_set_hdr_expand_gamut(void* data, bool expand_gamut)
+static void d3d11_set_hdr_expand_gamut(void* data, unsigned expand_gamut)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_ubo;
    dxgi_hdr_uniform_t *ubo                = NULL;
    d3d11_video_t* d3d11                   = (d3d11_video_t*)data;
 
-   d3d11->hdr.ubo_values.expand_gamut     = expand_gamut ? 1.0f : 0.0f;
+   d3d11->hdr.ubo_values.expand_gamut     = expand_gamut;
 
    d3d11->context->lpVtbl->Map(
          d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo);
@@ -1653,7 +1653,7 @@ static void d3d11_set_hdr_expand_gamut(void* data, bool expand_gamut)
    {
       for (unsigned i = 0; i < d3d11->shader_preset->passes; i++)
       {
-         d3d11->pass[i].expand_gamut     = expand_gamut ? 1.0f : 0.0f;
+         d3d11->pass[i].expand_gamut     = expand_gamut;
       }
    }
 }
@@ -2703,7 +2703,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
       d3d11->hdr.ubo_values.subpixel_layout    =
          settings->uints.video_hdr_subpixel_layout;
       d3d11->hdr.ubo_values.expand_gamut    =
-         settings->bools.video_hdr_expand_gamut;
+         settings->uints.video_hdr_expand_gamut;
       d3d11->hdr.ubo_values.inverse_tonemap = 1.0f;  /* Use this to turn on/off the inverse tonemap */
       d3d11->hdr.ubo_values.hdr10           = 1.0f;  /* Use this to turn on/off the hdr10 */
 
@@ -3619,7 +3619,7 @@ static bool d3d11_gfx_frame(
             d3d11->pass[i].max_nits             = settings->floats.video_hdr_max_nits;
             d3d11->pass[i].scanlines            = settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
             d3d11->pass[i].subpixel_layout      = settings->uints.video_hdr_subpixel_layout;
-            d3d11->pass[i].expand_gamut         = settings->bools.video_hdr_expand_gamut ? 1.0f : 0.0f;
+            d3d11->pass[i].expand_gamut         = settings->uints.video_hdr_expand_gamut;
          }
 #endif /* HAVE_DXGI_HDR */ 
 

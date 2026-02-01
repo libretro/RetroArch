@@ -270,7 +270,7 @@ class Pass
       void set_enable_hdr(float enable_hdr_) { enable_hdr = enable_hdr_; }
       void set_paper_white_nits(float paper_white_nits_) { paper_white_nits = paper_white_nits_; }
       void set_max_nits(float max_nits_) { max_nits = max_nits_; }
-      void set_expand_gamut(float expand_gamut_) { expand_gamut = expand_gamut_; }
+      void set_expand_gamut(unsigned expand_gamut_) { expand_gamut = expand_gamut_; }
       void set_scanlines(float scanlines_) { scanlines = scanlines_; }
       void set_subpixel_layout(unsigned subpixel_layout_ ) { subpixel_layout = subpixel_layout_; }
       void set_inverse_tonemap(float inverse_tonemap_) { inverse_tonemap = inverse_tonemap_; }
@@ -380,7 +380,7 @@ class Pass
       float enable_hdr            = 0.0f;
       float paper_white_nits      = 0.0f;
       float max_nits              = 10000.0f;
-      float expand_gamut          = 0.0f;
+      unsigned expand_gamut       = 0;
       float scanlines             = 0.0f;
       unsigned subpixel_layout    = 0;
       float inverse_tonemap       = 0.0f;
@@ -458,7 +458,7 @@ struct vulkan_filter_chain
       void set_enable_hdr(float enable_hdr);
       void set_paper_white_nits(float paper_white_nits);
       void set_max_nits(float max_nits);
-      void set_expand_gamut(float expand_gamut);
+      void set_expand_gamut(unsigned expand_gamut);
       void set_scanlines(float scanlines);
       void set_subpixel_layout(unsigned subpixel_layout);
       void set_inverse_tonemap(float inverse_tonemap);
@@ -1545,7 +1545,7 @@ void vulkan_filter_chain::set_max_nits(float max_nits)
       passes[i]->set_max_nits(max_nits);
 }
 
-void vulkan_filter_chain::set_expand_gamut(float expand_gamut)
+void vulkan_filter_chain::set_expand_gamut(unsigned expand_gamut)
 {
    unsigned i;
    for (i = 0; i < passes.size(); i++)
@@ -2525,7 +2525,7 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_uint(buffer, SLANG_SEMANTIC_SUBPIXEL_LAYOUT,
                       subpixel_layout);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_EXPAND_GAMUT,
+   build_semantic_uint(buffer, SLANG_SEMANTIC_EXPAND_GAMUT,
                       expand_gamut);                      
 
    build_semantic_float(buffer, SLANG_SEMANTIC_INVERSE_TONEMAP,
@@ -3456,7 +3456,7 @@ void vulkan_filter_chain_set_max_nits(
 
 void vulkan_filter_chain_set_expand_gamut(
       vulkan_filter_chain_t *chain,
-      float expand_gamut)
+      unsigned expand_gamut)
 {
    chain->set_expand_gamut(expand_gamut);
 }

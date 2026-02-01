@@ -326,7 +326,7 @@ static bool validate_type_for_semantic(const spirv_cross::SPIRType &type, slang_
             &&  type.vecsize  == 1
             &&  type.columns  == 1;
       case SLANG_SEMANTIC_EXPAND_GAMUT:
-         return type.basetype == spirv_cross::SPIRType::Float
+         return type.basetype == spirv_cross::SPIRType::UInt
             &&  type.vecsize  == 1
             &&  type.columns  == 1;
       case SLANG_SEMANTIC_INVERSE_TONEMAP:
