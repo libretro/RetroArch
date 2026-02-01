@@ -512,6 +512,7 @@ typedef struct settings
       char midi_driver[32];
       char midi_input[32];
       char midi_output[32];
+      char ai_service_backend[32];
 #ifdef HAVE_LAKKA
       char cpu_main_gov[32];
       char cpu_menu_gov[32];

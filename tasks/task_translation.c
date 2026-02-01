@@ -50,6 +50,146 @@
 
 #include "tasks_internal.h"
 
+#ifdef HAVE_TRANSLATE_APPLE
+#include "../ui/drivers/cocoa/translation_driver_apple.h"
+#endif
+
+/* ============================================================
+ * AI SERVICE BACKEND CONFIGURATION
+ * ============================================================ */
+
+const char *config_get_ai_service_backend_options(void)
+{
+#ifdef HAVE_TRANSLATE_APPLE
+   return "http|apple";
+#else
+   return "http";
+#endif
+}
+
+const char *config_get_default_ai_service_backend(void)
+{
+   return "http";
+}
+
+/* ============================================================
+ * TRANSLATION DRIVER INTERFACE
+ * ============================================================
+ * Abstraction layer for translation backends (HTTP, local, etc.)
+ */
+
+typedef struct translation_response
+{
+   /* Decoded image data (BMP/PNG file bytes, NOT base64) */
+   void *image_data;
+   size_t image_size;
+
+   /* Decoded audio data (WAV bytes, NOT base64) */
+   void *sound_data;
+   size_t sound_size;
+
+   /* Text for accessibility/TTS */
+   char *text;
+
+   /* Error message (NULL on success) */
+   char *error;
+
+   /* Auto-translate: if true, trigger another translation */
+   bool auto_translate;
+
+   /* Key presses to simulate (space/comma separated) */
+   char *key_presses;
+} translation_response_t;
+
+typedef void (*translation_response_cb_t)(
+      translation_response_t *response,
+      void *userdata);
+
+typedef struct translation_driver
+{
+   /* Human-readable identifier */
+   const char *ident;
+
+   /* Initialize the driver */
+   bool (*init)(void);
+
+   /* Free driver resources */
+   void (*free)(void);
+
+   /* Perform translation (async - results via callback)
+    *
+    * bgr24_data: Frame data in BGR24 format
+    * width/height: Frame dimensions
+    * source_lang: Source language code or NULL for auto-detect
+    * target_lang: Target language code
+    * mode: 0=image, 1=speech, 2=narrator, 3=image+speech
+    * game_label: "system__gamename" identifier
+    * paused: Current pause state
+    * callback: Function to call with results
+    * userdata: Passed to callback
+    */
+   bool (*translate)(
+         const uint8_t *bgr24_data,
+         unsigned width,
+         unsigned height,
+         const char *source_lang,
+         const char *target_lang,
+         unsigned mode,
+         const char *game_label,
+         bool paused,
+         translation_response_cb_t callback,
+         void *userdata);
+} translation_driver_t;
+
+/* Driver declarations */
+static translation_driver_t http_translation_driver;
+#ifdef HAVE_TRANSLATE_APPLE
+static translation_driver_t apple_translation_driver;
+#endif
+
+static translation_driver_t *translation_drivers[] = {
+   &http_translation_driver,
+#ifdef HAVE_TRANSLATE_APPLE
+   &apple_translation_driver,
+#endif
+   NULL
+};
+
+static translation_driver_t *translation_driver_find(const char *ident)
+{
+   int i;
+   for (i = 0; translation_drivers[i]; i++)
+   {
+      if (string_is_equal(translation_drivers[i]->ident, ident))
+         return translation_drivers[i];
+   }
+   return NULL;
+}
+
+/* ============================================================
+ * GENERIC RESPONSE HANDLER
+ * ============================================================
+ * Processes translation results from any backend.
+ * Handles: image overlay, audio playback, key presses, TTS
+ */
+
+#ifdef HAVE_ACCESSIBILITY
+bool is_narrator_running(bool accessibility_enable)
+{
+   access_state_t *access_st = access_state_get_ptr();
+   if (is_accessibility_enabled(
+            accessibility_enable,
+            access_st->enabled))
+   {
+      frontend_ctx_driver_t *frontend =
+         frontend_state_get_ptr()->current_frontend_ctx;
+      if (frontend && frontend->is_narrator_running)
+         return frontend->is_narrator_running();
+   }
+   return true;
+}
+#endif
+
 static void task_auto_translate_handler(retro_task_t *task)
 {
    int               *mode_ptr = (int*)task->user_data;
@@ -132,27 +272,14 @@ static void ai_service_call_auto_translate_task(access_state_t *access_st,
    }
 }
 
-static void handle_translation_cb(
-      retro_task_t *task, void *task_data,
-      void *user_data, const char *error)
+static void handle_translation_response(
+      translation_response_t *response,
+      void *user_data)
 {
    uint8_t* raw_output_data          = NULL;
-   char *raw_image_file_data         = NULL;
    struct scaler_ctx* scaler         = NULL;
-   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
-   int new_image_size                = 0;
-#ifdef HAVE_AUDIOMIXER
-   int new_sound_size                = 0;
-#endif
    void* raw_image_data              = NULL;
    void* raw_image_data_alpha        = NULL;
-   void* raw_sound_data              = NULL;
-   rjson_t *json                     = NULL;
-   int json_current_key              = 0;
-   char *err_str                     = NULL;
-   char *txt_str                     = NULL;
-   char *auto_str                    = NULL;
-   char *key_str                     = NULL;
    settings_t* settings              = config_get_ptr();
    uint32_t runloop_flags            = runloop_get_flags();
 #ifdef HAVE_ACCESSIBILITY
@@ -173,7 +300,13 @@ static void handle_translation_cb(
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable         = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+#endif
+
+   if (!response)
+      goto finish;
+
 #ifdef HAVE_GFX_WIDGETS
+#ifdef HAVE_ACCESSIBILITY
    /* When auto mode is on, we turn off the overlay
     * once we have the result for the next call.*/
    if (p_dispwidget->ai_service_overlay_state != 0
@@ -182,93 +315,11 @@ static void handle_translation_cb(
 #endif
 #endif
 
-#ifdef DEBUG
-   if (access_st->ai_service_auto != 2)
-      RARCH_LOG("[Translation] RESULT FROM AI SERVICE...\n");
-#endif
-
-   if (!data || error || !data->data)
-      goto finish;
-
-   if (!(json = rjson_open_buffer(data->data, data->len)))
-      goto finish;
-
-   /* Parse JSON body for the image and sound data */
-   for (;;)
+   if (response->error)
    {
-      static const char *keys[] = { "image", "sound", "text", "error", "auto", "press" };
-      const char *str           = NULL;
-      size_t str_len            = 0;
-      enum rjson_type json_type = rjson_next(json);
-
-      if (json_type == RJSON_DONE || json_type == RJSON_ERROR)
-         break;
-      if (json_type != RJSON_STRING)
-         continue;
-      if (rjson_get_context_type(json) != RJSON_OBJECT)
-         continue;
-      str                       = rjson_get_string(json, &str_len);
-
-      if ((rjson_get_context_count(json) & 1) == 1)
-      {
-         int i;
-         json_current_key = -1;
-
-         for (i = 0; i < (int)ARRAY_SIZE(keys); i++)
-         {
-            if (string_is_equal(str, keys[i]))
-            {
-               json_current_key = i;
-               break;
-            }
-         }
-      }
-      else
-      {
-         switch (json_current_key)
-         {
-            case 0: /* image */
-               raw_image_file_data = (char*)unbase64(str,
-                    (int)str_len, &new_image_size);
-               break;
-#ifdef HAVE_AUDIOMIXER
-            case 1: /* sound */
-               raw_sound_data = (void*)unbase64(str,
-                    (int)str_len, &new_sound_size);
-               break;
-#endif
-            case 2: /* text */
-               txt_str = strdup(str);
-               break;
-            case 3: /* error */
-               err_str = strdup(str);
-               break;
-            case 4: /* auto */
-               auto_str = strdup(str);
-               break;
-            case 5: /* press */
-               key_str = strdup(str);
-               break;
-         }
-         json_current_key = -1;
-      }
-   }
-
-   if (string_is_equal(err_str, "No text found."))
-   {
-#ifdef DEBUG
-      RARCH_LOG("[Translation] No text found.\n");
-#endif
-      if (txt_str)
-      {
-         free(txt_str);
-         txt_str = NULL;
-      }
-
-      txt_str = (char*)malloc(15);
-      strlcpy(txt_str, err_str, 15);
+      RARCH_ERR("[Translation] %s\n", response->error);
 #ifdef HAVE_GFX_WIDGETS
-      if (gfx_widgets_paused)
+      if (string_is_equal(response->error, "No text found.") && gfx_widgets_paused)
       {
          /* In this case we have to unpause and then repause for a frame */
          p_dispwidget->ai_service_overlay_state = 2;
@@ -277,18 +328,11 @@ static void handle_translation_cb(
 #endif
    }
 
-   if (     !raw_image_file_data
-         && !raw_sound_data
-         && !txt_str
-         && !key_str
-         && (access_st->ai_service_auto != 2))
+   /* Handle image overlay */
+   if (response->image_data && response->image_size > 0)
    {
-      error = "Invalid JSON body.";
-      goto finish;
-   }
-
-   if (raw_image_file_data)
-   {
+      char *raw_image_file_data = (char*)response->image_data;
+      int new_image_size        = (int)response->image_size;
       unsigned image_width, image_height;
       /* Get the video frame dimensions reference */
       const void *dummy_data = video_st->frame_cache_data;
@@ -317,8 +361,7 @@ static void handle_translation_cb(
             image_type = IMAGE_TYPE_PNG;
          else
          {
-            /* TODO/FIXME - localize */
-            RARCH_LOG("[Translation] Invalid image type returned from server.\n");
+            RARCH_LOG("[Translation] Invalid image type.\n");
             goto finish;
          }
 
@@ -328,7 +371,7 @@ static void handle_translation_cb(
          {
             /* TODO/FIXME - localize */
             const char *_msg = "Video driver not supported.";
-            RARCH_LOG("[Translation] Video driver not supported for AI Service.");
+            RARCH_LOG("[Translation] %s\n", _msg);
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
@@ -369,13 +412,16 @@ static void handle_translation_cb(
                      raw_image_file_data + 54       * sizeof(uint8_t),
                      image_width * image_height * 3 * sizeof(uint8_t));
          }
-         /* PNG coming back from the url */
          else if (raw_image_file_data[1] == 'P'
                && raw_image_file_data[2] == 'N'
                && raw_image_file_data[3] == 'G')
          {
+            /* PNG file */
             int retval   = 0;
-            rpng_t *rpng = NULL;
+            rpng_t *rpng = rpng_alloc();
+            if (!rpng)
+               goto finish;
+
             image_width  =
                   ((uint32_t) ((uint8_t)raw_image_file_data[16]) << 24)
                 + ((uint32_t) ((uint8_t)raw_image_file_data[17]) << 16)
@@ -386,12 +432,6 @@ static void handle_translation_cb(
                 + ((uint32_t) ((uint8_t)raw_image_file_data[21]) << 16)
                 + ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 8)
                 + ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 0);
-
-            if (!(rpng = rpng_alloc()))
-            {
-               error = "Can't allocate memory.";
-               goto finish;
-            }
 
             rpng_set_buf_ptr(rpng, raw_image_file_data, (size_t)new_image_size);
             rpng_start(rpng);
@@ -428,7 +468,7 @@ static void handle_translation_cb(
          }
          else
          {
-            RARCH_LOG("[Translation] Output from URL not a valid file type, or is not supported.\n");
+            RARCH_LOG("[Translation] Unsupported image format.\n");
             goto finish;
          }
 
@@ -486,7 +526,7 @@ static void handle_translation_cb(
    }
 
 #ifdef HAVE_AUDIOMIXER
-   if (raw_sound_data)
+   if (response->sound_data && response->sound_size > 0)
    {
       audio_mixer_stream_params_t params;
 
@@ -496,31 +536,25 @@ static void handle_translation_cb(
       params.stream_type          = AUDIO_STREAM_TYPE_SYSTEM; /* user->stream_type; */
       params.type                 = AUDIO_MIXER_TYPE_WAV;
       params.state                = AUDIO_STREAM_STATE_PLAYING;
-      params.buf                  = raw_sound_data;
-      params.bufsize              = new_sound_size;
+      params.buf                  = response->sound_data;
+      params.bufsize              = response->sound_size;
       params.cb                   = NULL;
       params.basename             = NULL;
 
       audio_driver_mixer_add_stream(&params);
-
-      if (raw_sound_data)
-      {
-         free(raw_sound_data);
-         raw_sound_data = NULL;
-      }
    }
 #endif
 
-   if (key_str)
+   if (response->key_presses)
    {
       size_t i;
       char key[8];
-      size_t _len   = strlen(key_str);
+      size_t _len   = strlen(response->key_presses);
       size_t start  = 0;
 
       for (i = 1; i < _len; i++)
       {
-         char t = key_str[i];
+         char t = response->key_presses[i];
          if (i == _len - 1 || t == ' ' || t == ',')
          {
             if (i == _len - 1 && t != ' ' && t!= ',')
@@ -532,7 +566,7 @@ static void handle_translation_cb(
                continue;
             }
 
-            strncpy(key, key_str + start, i-start);
+            strncpy(key, response->key_presses + start, i-start);
             key[i-start] = '\0';
 
 #ifdef HAVE_ACCESSIBILITY
@@ -584,53 +618,33 @@ static void handle_translation_cb(
    }
 
 #ifdef HAVE_ACCESSIBILITY
-   if (     txt_str
+   if (   response->text
          && is_accessibility_enabled(
             accessibility_enable, access_st->enabled))
       accessibility_speak_priority(
             accessibility_enable,
             accessibility_narrator_speech_speed,
-            txt_str, 10);
+            response->text, 10);
 #endif
 
 finish:
-   if (error)
-      RARCH_ERR("[Translation] %s: %s.\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), error);
-
-   if (user_data)
-      free(user_data);
-
-   if (json)
-      rjson_free(json);
-   if (raw_image_file_data)
-      free(raw_image_file_data);
    if (raw_image_data_alpha)
        free(raw_image_data_alpha);
    if (raw_image_data)
       free(raw_image_data);
    if (scaler)
       free(scaler);
-   if (err_str)
-      free(err_str);
-   if (txt_str)
-      free(txt_str);
    if (raw_output_data)
       free(raw_output_data);
 
-   if (auto_str)
+   /* Handle auto-translate */
+   if (response->auto_translate)
    {
-      if (string_is_equal(auto_str, "auto"))
-      {
-         bool was_paused = (runloop_flags & RUNLOOP_FLAG_PAUSED) ? true : false;
-         if (     (access_st->ai_service_auto != 0)
-               && !ai_service_pause)
-            ai_service_call_auto_translate_task(access_st, ai_service_mode,
-                  &was_paused);
-      }
-      free(auto_str);
+      bool was_paused = (runloop_flags & RUNLOOP_FLAG_PAUSED) ? true : false;
+      if (access_st->ai_service_auto != 0 && !ai_service_pause)
+         ai_service_call_auto_translate_task(access_st, ai_service_mode,
+               &was_paused);
    }
-   if (key_str)
-      free(key_str);
 }
 
 static const char *ai_service_get_str(enum translation_lang id)
@@ -783,24 +797,12 @@ bool run_translation_service(settings_t *settings, bool paused)
    const void *data                  = NULL;
    uint8_t *bit24_image              = NULL;
    uint8_t *bit24_image_prev         = NULL;
-   struct scaler_ctx *scaler         = (struct scaler_ctx*)
-      calloc(1, sizeof(struct scaler_ctx));
-   bool error                        = false;
-
-   uint8_t *bmp_buffer               = NULL;
-   uint64_t buffer_bytes             = 0;
-   char *bmp64_buffer                = NULL;
-   rjsonwriter_t *jsonwriter         = NULL;
-   const char *json_buffer           = NULL;
-   int bmp64_len                     = 0;
-   bool TRANSLATE_USE_BMP            = false;
+   struct scaler_ctx *scaler         = NULL;
+   bool success                      = false;
    char *sys_lbl                     = NULL;
    core_info_t *core_info            = NULL;
    video_driver_state_t *video_st    = video_state_get_ptr();
    access_state_t *access_st         = access_state_get_ptr();
-#ifdef HAVE_ACCESSIBILITY
-   input_driver_state_t *input_st    = input_state_get_ptr();
-#endif
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
    /* For the case when ai service pause is disabled. */
@@ -812,6 +814,8 @@ bool run_translation_service(settings_t *settings, bool paused)
    }
 #endif
 
+   if (!(scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx))))
+      goto finish;
 
    /* get the core info here so we can pass long the game name */
    core_info_get_current_core(&core_info);
@@ -848,9 +852,6 @@ bool run_translation_service(settings_t *settings, bool paused)
          sys_lbl[sys_id_len + 2 + lbl_len] = '\0';
       }
    }
-
-   if (!scaler)
-      goto finish;
 
    data       = video_st->frame_cache_data;
    width      = video_st->frame_cache_width;
@@ -931,10 +932,246 @@ bool run_translation_service(settings_t *settings, bool paused)
    scaler_ctx_gen_reset(scaler);
 
    if (!bit24_image)
+      goto finish;
+
+   /* Dispatch to the appropriate backend */
    {
-      error = true;
+      translation_driver_t *driver = translation_driver_find(
+            settings->arrays.ai_service_backend);
+      if (!driver || (driver->init && !driver->init()))
+         driver = &http_translation_driver; /* fallback */
+
+      if (driver->translate)
+      {
+         unsigned ai_service_source_lang = settings->uints.ai_service_source_lang;
+         unsigned ai_service_target_lang = settings->uints.ai_service_target_lang;
+         unsigned ai_service_mode        = settings->uints.ai_service_mode;
+         const char *source_lang         = NULL;
+         const char *target_lang         = NULL;
+
+         if (ai_service_source_lang != TRANSLATION_LANG_DONT_CARE)
+            source_lang = ai_service_get_str(
+                  (enum translation_lang)ai_service_source_lang);
+
+         if (ai_service_target_lang != TRANSLATION_LANG_DONT_CARE)
+            target_lang = ai_service_get_str(
+                  (enum translation_lang)ai_service_target_lang);
+
+         success = driver->translate(
+               bit24_image, width, height,
+               source_lang, target_lang,
+               ai_service_mode,
+               sys_lbl, paused,
+               handle_translation_response, NULL);
+      }
+   }
+
+finish:
+   if (bit24_image_prev)
+      free(bit24_image_prev);
+   if (bit24_image)
+      free(bit24_image);
+   if (scaler)
+      free(scaler);
+   if (sys_lbl)
+      free(sys_lbl);
+   return success;
+}
+
+/* ============================================================
+ * HTTP TRANSLATION DRIVER
+ * ============================================================
+ * Handles server-based translation via HTTP POST with JSON.
+ */
+
+/* Context passed through HTTP task for callback */
+typedef struct
+{
+   translation_response_cb_t callback;
+   void *userdata;
+} http_translate_ctx_t;
+
+static void handle_translation_cb(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
+   http_translate_ctx_t *ctx      = (http_translate_ctx_t*)user_data;
+   rjson_t *json                  = NULL;
+   int json_current_key           = 0;
+   translation_response_t response;
+   int new_image_size             = 0;
+   int new_sound_size             = 0;
+   char *err_str                  = NULL;
+   char *auto_str                 = NULL;
+   access_state_t *access_st      = access_state_get_ptr();
+
+   /* Initialize response */
+   memset(&response, 0, sizeof(response));
+
+#ifdef DEBUG
+   if (access_st->ai_service_auto != 2)
+      RARCH_LOG("[Translation] HTTP: Response received\n");
+#endif
+
+   if (!data || error || !data->data)
+   {
+      if (error)
+         RARCH_ERR("[Translation] HTTP error: %s\n", error);
       goto finish;
    }
+
+   if (!(json = rjson_open_buffer(data->data, data->len)))
+      goto finish;
+
+   /* Parse JSON body for the image and sound data */
+   for (;;)
+   {
+      static const char *keys[] = {
+         "image", "sound", "text", "error", "auto", "press"
+      };
+      const char *str           = NULL;
+      size_t str_len            = 0;
+      enum rjson_type json_type = rjson_next(json);
+
+      if (json_type == RJSON_DONE || json_type == RJSON_ERROR)
+         break;
+      if (json_type != RJSON_STRING)
+         continue;
+      if (rjson_get_context_type(json) != RJSON_OBJECT)
+         continue;
+      str = rjson_get_string(json, &str_len);
+
+      if ((rjson_get_context_count(json) & 1) == 1)
+      {
+         int i;
+         json_current_key = -1;
+         for (i = 0; i < (int)ARRAY_SIZE(keys); i++)
+         {
+            if (string_is_equal(str, keys[i]))
+            {
+               json_current_key = i;
+               break;
+            }
+         }
+      }
+      else
+      {
+         switch (json_current_key)
+         {
+            case 0: /* image - base64 encoded */
+               response.image_data = unbase64(str, (int)str_len, &new_image_size);
+               response.image_size = new_image_size;
+               break;
+            case 1: /* sound - base64 encoded */
+               response.sound_data = unbase64(str, (int)str_len, &new_sound_size);
+               response.sound_size = new_sound_size;
+               break;
+            case 2: /* text */
+               response.text = strdup(str);
+               break;
+            case 3: /* error */
+               err_str = strdup(str);
+               break;
+            case 4: /* auto */
+               auto_str = strdup(str);
+               break;
+            case 5: /* press */
+               response.key_presses = strdup(str);
+               break;
+         }
+         json_current_key = -1;
+      }
+   }
+
+   /* Handle "No text found" as a special error */
+   if (string_is_equal(err_str, "No text found."))
+      response.error = err_str;
+   else if (err_str)
+   {
+      response.error = err_str;
+      err_str = NULL; /* Transfer ownership */
+   }
+
+   /* Check for auto-translate flag */
+   if (auto_str && string_is_equal(auto_str, "auto"))
+      response.auto_translate = true;
+
+   /* Validate we have something to process */
+   if (   !response.image_data
+       && !response.sound_data
+       && !response.text
+       && !response.key_presses
+       && !response.error
+       && access_st->ai_service_auto != 2)
+   {
+      RARCH_ERR("[Translation] Invalid JSON body.\n");
+      goto finish;
+   }
+
+   /* Hand off to caller's response handler */
+   if (ctx && ctx->callback)
+      ctx->callback(&response, ctx->userdata);
+
+finish:
+   if (ctx)
+      free(ctx);
+   if (json)
+      rjson_free(json);
+   if (auto_str)
+      free(auto_str);
+   /* Note: response fields are freed by caller or handle_translation_response
+    * except for these which we own: */
+   if (response.image_data)
+      free(response.image_data);
+   if (response.sound_data)
+      free(response.sound_data);
+   if (response.text)
+      free(response.text);
+   if (response.error && response.error != err_str)
+      free(response.error);
+   if (err_str)
+      free(err_str);
+   if (response.key_presses)
+      free(response.key_presses);
+}
+
+/* ============================================================
+ * HTTP TRANSLATION BACKEND
+ * ============================================================
+ * Sends frame data to a remote translation service via HTTP POST.
+ */
+
+static bool http_translate(
+      const uint8_t *bit24_image,
+      unsigned width,
+      unsigned height,
+      const char *source_lang,
+      const char *target_lang,
+      unsigned mode,
+      const char *sys_lbl,
+      bool paused,
+      translation_response_cb_t callback,
+      void *userdata)
+{
+   uint8_t *bmp_buffer               = NULL;
+   size_t pitch;
+   uint64_t buffer_bytes             = 0;
+   char *bmp64_buffer                = NULL;
+   rjsonwriter_t *jsonwriter         = NULL;
+   const char *json_buffer           = NULL;
+   http_translate_ctx_t *ctx         = NULL;
+   int bmp64_len                     = 0;
+   bool TRANSLATE_USE_BMP            = false;
+   bool success                      = false;
+   settings_t *settings              = config_get_ptr();
+   video_driver_state_t *video_st    = video_state_get_ptr();
+#ifdef HAVE_ACCESSIBILITY
+   input_driver_state_t *input_st    = input_state_get_ptr();
+#endif
+#ifdef DEBUG
+   access_state_t *access_st         = access_state_get_ptr();
+#endif
 
    if (TRANSLATE_USE_BMP)
    {
@@ -1027,11 +1264,10 @@ bool run_translation_service(settings_t *settings, bool paused)
       if (access_st->ai_service_auto != 2)
          RARCH_LOG("[Translation] Request size: %d\n", bmp64_len);
 #endif
+
       {
          char new_ai_service_url[PATH_MAX_LENGTH];
          char separator                  = '?';
-         unsigned ai_service_source_lang = settings->uints.ai_service_source_lang;
-         unsigned ai_service_target_lang = settings->uints.ai_service_target_lang;
          const char *ai_service_url      = settings->arrays.ai_service_url;
          size_t _len                     = strlcpy(new_ai_service_url,
                ai_service_url, sizeof(new_ai_service_url));
@@ -1041,48 +1277,35 @@ bool run_translation_service(settings_t *settings, bool paused)
             separator = '&';
 
          /* source lang */
-         if (ai_service_source_lang != TRANSLATION_LANG_DONT_CARE)
+         if (!string_is_empty(source_lang))
          {
-            const char *lang_source = ai_service_get_str(
-                  (enum translation_lang)ai_service_source_lang);
-
-            if (!string_is_empty(lang_source))
-            {
-               new_ai_service_url[  _len] = separator;
-               new_ai_service_url[++_len] = '\0';
-               _len += strlcpy(new_ai_service_url + _len,
-                     "source_lang=",
-                     sizeof(new_ai_service_url)   - _len);
-               _len += strlcpy(new_ai_service_url + _len,
-                     lang_source,
-                     sizeof(new_ai_service_url)   - _len);
-               separator                  = '&';
-            }
+            new_ai_service_url[  _len] = separator;
+            new_ai_service_url[++_len] = '\0';
+            _len += strlcpy(new_ai_service_url + _len,
+                  "source_lang=",
+                  sizeof(new_ai_service_url)   - _len);
+            _len += strlcpy(new_ai_service_url + _len,
+                  source_lang,
+                  sizeof(new_ai_service_url)   - _len);
+            separator = '&';
          }
 
          /* target lang */
-         if (ai_service_target_lang != TRANSLATION_LANG_DONT_CARE)
+         if (!string_is_empty(target_lang))
          {
-            const char *lang_target = ai_service_get_str(
-                  (enum translation_lang)ai_service_target_lang);
-
-            if (!string_is_empty(lang_target))
-            {
-               new_ai_service_url[  _len] = separator;
-               new_ai_service_url[++_len] = '\0';
-               _len += strlcpy(new_ai_service_url + _len,
-                     "target_lang=",
-                     sizeof(new_ai_service_url)   - _len);
-               _len += strlcpy(new_ai_service_url + _len,
-                     lang_target,
-                     sizeof(new_ai_service_url)   - _len);
-               separator                  = '&';
-            }
+            new_ai_service_url[  _len] = separator;
+            new_ai_service_url[++_len] = '\0';
+            _len += strlcpy(new_ai_service_url + _len,
+                  "target_lang=",
+                  sizeof(new_ai_service_url)   - _len);
+            _len += strlcpy(new_ai_service_url + _len,
+                  target_lang,
+                  sizeof(new_ai_service_url)   - _len);
+            separator = '&';
          }
 
          /* mode */
          {
-            unsigned ai_service_mode   = settings->uints.ai_service_mode;
             /*"image" is included for backwards compatibility with
              * vgtranslate < 1.04 */
 
@@ -1092,7 +1315,7 @@ bool run_translation_service(settings_t *settings, bool paused)
                   "output=",
                   sizeof(new_ai_service_url)            - _len);
 
-            switch (ai_service_mode)
+            switch (mode)
             {
                case 2:
                   strlcpy(new_ai_service_url       + _len,
@@ -1104,9 +1327,9 @@ bool run_translation_service(settings_t *settings, bool paused)
                   _len += strlcpy(new_ai_service_url    + _len,
                         "sound,wav",
                         sizeof(new_ai_service_url)      - _len);
-                  if (ai_service_mode == 1)
+                  if (mode == 1)
                      break;
-                  /* fall-through intentional for ai_service_mode == 3 */
+                  /* fall-through intentional for mode == 3 */
                case 0:
                   _len += strlcpy(new_ai_service_url    + _len,
                         "image,png",
@@ -1129,48 +1352,125 @@ bool run_translation_service(settings_t *settings, bool paused)
          if (access_st->ai_service_auto != 2)
             RARCH_LOG("[Translation] SENDING... %s\n", new_ai_service_url);
 #endif
-         task_push_http_post_transfer(new_ai_service_url,
-               json_buffer, true, NULL, handle_translation_cb, NULL);
+         /* Allocate context to pass callback through task system */
+         ctx = (http_translate_ctx_t*)malloc(sizeof(*ctx));
+         if (ctx)
+         {
+            ctx->callback = callback;
+            ctx->userdata = userdata;
+            task_push_http_post_transfer(new_ai_service_url,
+                  json_buffer, true, NULL, handle_translation_cb, ctx);
+            success = true;
+         }
       }
-
-      error = false;
    }
 
 finish:
-   if (bit24_image_prev)
-      free(bit24_image_prev);
-   if (bit24_image)
-      free(bit24_image);
-
-   if (scaler)
-      free(scaler);
-
    if (bmp_buffer)
       free(bmp_buffer);
-
    if (bmp64_buffer)
       free(bmp64_buffer);
-   if (sys_lbl)
-      free(sys_lbl);
-   sys_lbl = NULL;
    if (jsonwriter)
       rjsonwriter_free(jsonwriter);
-   return !error;
+   return success;
 }
 
-#ifdef HAVE_ACCESSIBILITY
-bool is_narrator_running(bool accessibility_enable)
+static translation_driver_t http_translation_driver = {
+   "http",
+   NULL,  /* init */
+   NULL,  /* free */
+   http_translate
+};
+
+/* ============================================================
+ * APPLE TRANSLATION DRIVER (Vision OCR)
+ * ============================================================
+ * On-device OCR using Apple's Vision framework.
+ * Available on macOS 10.15+ and iOS 13+.
+ */
+
+#ifdef HAVE_TRANSLATE_APPLE
+
+/* Log function callable from Swift */
+void apple_translate_log(const char *message)
 {
-   access_state_t *access_st = access_state_get_ptr();
-   if (is_accessibility_enabled(
-            accessibility_enable,
-            access_st->enabled))
+   RARCH_LOG("%s\n", message);
+}
+
+/* Context for async Apple translation callback */
+static struct
+{
+   translation_response_cb_t callback;
+   void *userdata;
+} apple_translate_ctx;
+
+/* Callback for async Apple translation */
+static void handle_apple_translation_cb(
+      char *text,
+      void *image_data,
+      size_t image_size,
+      void *sound_data,
+      size_t sound_size,
+      const char *error,
+      void *userdata)
+{
+   if (text || image_data || sound_data)
    {
-      frontend_ctx_driver_t *frontend =
-         frontend_state_get_ptr()->current_frontend_ctx;
-      if (frontend && frontend->is_narrator_running)
-         return frontend->is_narrator_running();
+      translation_response_t response;
+      memset(&response, 0, sizeof(response));
+      response.text          = text;
+      response.image_data    = image_data;
+      response.image_size    = image_size;
+      response.sound_data    = sound_data;
+      response.sound_size    = sound_size;
+      response.auto_translate = true;
+      if (apple_translate_ctx.callback)
+         apple_translate_ctx.callback(&response, apple_translate_ctx.userdata);
+      if (text)
+         apple_translate_free_string(text);
+      if (image_data)
+         apple_translate_free_data(image_data);
+      if (sound_data)
+         apple_translate_free_data(sound_data);
    }
+   else
+      RARCH_ERR("[Translation] Apple translation failed: %s\n",
+            error ? error : "unknown error");
+}
+
+static bool apple_translate(
+      const uint8_t *bgr24_data,
+      unsigned width,
+      unsigned height,
+      const char *source_lang,
+      const char *target_lang,
+      unsigned mode,
+      const char *game_label,
+      bool paused,
+      translation_response_cb_t callback,
+      void *userdata)
+{
+   (void)game_label;
+   (void)paused;
+
+   apple_translate_ctx.callback = callback;
+   apple_translate_ctx.userdata = userdata;
+
+   /* Async: callback will be invoked on main thread when done */
+   apple_translate_image(
+         bgr24_data, width, height, width * 3,
+         source_lang, target_lang,
+         mode,
+         handle_apple_translation_cb, NULL);
+
    return true;
 }
-#endif
+
+static translation_driver_t apple_translation_driver = {
+   "apple",
+   apple_translate_init,
+   NULL,
+   apple_translate
+};
+
+#endif /* HAVE_TRANSLATE_APPLE */
