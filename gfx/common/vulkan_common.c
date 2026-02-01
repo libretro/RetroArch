@@ -396,6 +396,15 @@ static bool vulkan_find_instance_extensions(
    memcpy((void*)(enabled + count), exts, num_exts * sizeof(*exts));
    count += num_exts;
 
+
+   for (i = 0; i < num_exts; i++)
+   {
+      if (vulkan_find_extensions(&exts[i], 1, properties, property_count))
+         RARCH_DBG("[Vulkan] Instance extension supported: %s.\n", exts[i]);
+      else
+         RARCH_DBG("[Vulkan] Instance extension NOT supported: %s.\n", exts[i]);
+   }
+
    for (i = 0; i < num_optional_exts; i++)
       if (vulkan_find_extensions(&optional_exts[i], 1, properties, property_count))
          enabled[count++] = optional_exts[i];
@@ -443,9 +452,31 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
    memcpy((void*)(enabled + count), exts, num_exts * sizeof(*exts));
    count += num_exts;
 
+   for (i = 0; i < num_exts; i++)
+   {
+      if (vulkan_find_extensions(&exts[i], 1, properties, property_count))
+      {
+         RARCH_DBG("[Vulkan] Device extension supported: %s.\n", exts[i]);
+         enabled[count++] = exts[i];
+      }
+      else
+      {
+         RARCH_DBG("[Vulkan] Device extension NOT supported: %s.\n", exts[i]);
+      }
+   }
+
    for (i = 0; i < num_optional_exts; i++)
+   {
       if (vulkan_find_extensions(&optional_exts[i], 1, properties, property_count))
+      {
+         RARCH_DBG("[Vulkan] Optional device extension supported: %s.\n", optional_exts[i]);
          enabled[count++] = optional_exts[i];
+      }
+      else
+      {
+         RARCH_DBG("[Vulkan] Optional device extension NOT supported: %s.\n", optional_exts[i]);
+      }
+   }
 
 end:
    free(properties);
@@ -525,14 +556,12 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 }
 
 static const char *vulkan_device_extensions[]  = {
-   "VK_KHR_swapchain",
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-   "VK_EXT_full_screen_exclusive"
-#endif
+   "VK_KHR_swapchain"
 };
 
 static const char *vulkan_optional_device_extensions[] = {
    "VK_KHR_sampler_mirror_clamp_to_edge",
+   "VK_EXT_full_screen_exclusive"
 };
 
 static VkDevice vulkan_context_create_device_wrapper(
@@ -800,6 +829,16 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
           return false;
       }
 
+      vk->fse_supported = false;
+      for (unsigned i = 0; i < enabled_device_extension_count; i++)
+      {
+         if (!strcmp(enabled_device_extensions[i], "VK_EXT_full_screen_exclusive"))
+         {
+            vk->fse_supported = true;
+            break;
+         }
+      }
+
       queue_info.queueFamilyIndex         = vk->context.graphics_queue_index;
       queue_info.queueCount               = 1;
       queue_info.pQueuePriorities         = &one;
@@ -892,7 +931,6 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
          break;
       case VULKAN_WSI_WIN32:
          required_extensions[required_extension_count++] = "VK_KHR_win32_surface";
-         required_extensions[required_extension_count++] = "VK_KHR_get_surface_capabilities2";
          break;
       case VULKAN_WSI_XLIB:
          required_extensions[required_extension_count++] = "VK_KHR_xlib_surface";
@@ -1940,21 +1978,21 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    settings_t                    *settings = config_get_ptr();
    bool vsync                              = settings->bools.video_vsync;
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
+   bool fse_supported;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
-   HMONITOR fse_monitor;
-   VkSurfaceFullScreenExclusiveWin32InfoEXT fs_win32 = {
-       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
-       NULL,
-       NULL
+   HMONITOR hmonitor;
+   VkSurfaceFullScreenExclusiveInfoEXT fse_info = {
+      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
+      NULL,
+      video_windowed_fullscreen
+         ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
+         : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
    };
-   /* Allow or disallow exclusive fullscreen based on user setting. */
-   VkSurfaceFullScreenExclusiveInfoEXT fs_info       = {
-       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
-       NULL,
-       video_windowed_fullscreen
-           ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
-           : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
+   VkSurfaceFullScreenExclusiveWin32InfoEXT fse_win32_info = {
+      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
+      NULL,
+      NULL
    };
 #endif
 
@@ -2305,13 +2343,13 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-   /* Tie exclusive mode to the window's monitor. */
-   fse_monitor       = MonitorFromWindow(GetActiveWindow(), MONITOR_DEFAULTTONEAREST);
-   fs_win32.hmonitor = fse_monitor;
-   /* Allow or disallow exclusive fullscreen based on user setting. */
-   fs_info.pNext     = &fs_win32;
-   /* Attach fullscreen info to swapchain creation struct. */
-   info.pNext        = &fs_info;
+   if (vk->fse_supported)
+   {
+      hmonitor                = MonitorFromWindow(GetActiveWindow(), MONITOR_DEFAULTTONEAREST);
+      fse_win32_info.hmonitor = hmonitor;
+      fse_info.pNext          = &fse_win32_info;
+      info.pNext              = &fse_info;
+   }
 #endif
 
    if (vkCreateSwapchainKHR(vk->context.device,
