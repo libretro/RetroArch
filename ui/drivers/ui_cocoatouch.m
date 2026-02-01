@@ -535,6 +535,7 @@ enum
 @property (nonatomic, copy) void(^keyboardCompletionCallback)(const char *);
 @property (nonatomic, assign) char **keyboardBufferPtr;
 @property (nonatomic, assign) size_t *keyboardSizePtr;
+@property (nonatomic, assign) size_t *keyboardPtrPtr;
 @property (nonatomic, assign) char *keyboardAllocatedBuffer;
 @end
 
@@ -1211,8 +1212,13 @@ enum
    const char *utf8Text = [newText UTF8String];
    if (utf8Text)
    {
+      size_t newLen;
       strlcpy(self.keyboardAllocatedBuffer, utf8Text, 512);
-      *self.keyboardSizePtr = strlen(self.keyboardAllocatedBuffer);
+      newLen = strlen(self.keyboardAllocatedBuffer);
+      *self.keyboardSizePtr = newLen;
+      /* Keep ptr in sync with size to prevent buffer overrun when appending */
+      if (self.keyboardPtrPtr)
+         *self.keyboardPtrPtr = newLen;
    }
 
    return YES;
@@ -1228,8 +1234,12 @@ enum
          const char *finalText = [textField.text UTF8String];
          if (finalText)
          {
+            size_t finalLen;
             strlcpy(self.keyboardAllocatedBuffer, finalText, 512);
-            *self.keyboardSizePtr = strlen(self.keyboardAllocatedBuffer);
+            finalLen = strlen(self.keyboardAllocatedBuffer);
+            *self.keyboardSizePtr = finalLen;
+            if (self.keyboardPtrPtr)
+               *self.keyboardPtrPtr = finalLen;
          }
       }
 
@@ -1251,6 +1261,7 @@ enum
       /* Clear our references after callback completes */
       self.keyboardBufferPtr = NULL;
       self.keyboardSizePtr = NULL;
+      self.keyboardPtrPtr = NULL;
       self.keyboardAllocatedBuffer = NULL;
 
       return NO;  /* Return NO to prevent UIKit from processing the return key event further */
@@ -1279,6 +1290,7 @@ enum
          /* Clear our references after callback completes */
          self.keyboardBufferPtr = NULL;
          self.keyboardSizePtr = NULL;
+         self.keyboardPtrPtr = NULL;
          self.keyboardAllocatedBuffer = NULL;
       }
    }
@@ -1308,9 +1320,11 @@ ui_companion_driver_t ui_companion_cocoatouch = {
 };
 
 /* C interface for iOS/tvOS native keyboard support */
-bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, const char *label,
+bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
+                       const char *label,
                        input_keyboard_line_complete_t callback, void *userdata)
 {
+   size_t len;
    RetroArch_iOS *app = [RetroArch_iOS get];
    if (!app || !app.keyboardTextField || !buffer_ptr || !size_ptr)
       return false;
@@ -1328,11 +1342,15 @@ bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, const char *label,
 
    /* Update the keyboard_line buffer pointer to point to our allocated buffer */
    *buffer_ptr = allocated_buffer;
-   *size_ptr = strlen(allocated_buffer);
+   len = strlen(allocated_buffer);
+   *size_ptr = len;
+   if (ptr_ptr)
+      *ptr_ptr = len;
 
    /* Store pointers so we can update them as user types */
    app.keyboardBufferPtr = buffer_ptr;
    app.keyboardSizePtr = size_ptr;
+   app.keyboardPtrPtr = ptr_ptr;
    app.keyboardAllocatedBuffer = allocated_buffer;
 
    /* Set up the text field with initial text from the buffer */
