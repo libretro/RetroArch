@@ -77,6 +77,7 @@
 #endif
 
 #include "verbosity.h"
+#include "file_path_special.h"
 
 #ifdef HAVE_QT
 #include "ui/ui_companion_driver.h"
@@ -491,9 +492,15 @@ void rarch_log_file_init(
       time_t cur_time = time(NULL);
 
       rtime_localtime(&cur_time, &tm_);
+#ifdef DJGPP
+      strftime(timestamped_log_file_name,
+            sizeof(timestamped_log_file_name),
+            "RA%d%H%M.log", &tm_);
+#else
       strftime(timestamped_log_file_name,
             sizeof(timestamped_log_file_name),
             "retroarch__%Y_%m_%d__%H_%M_%S.log", &tm_);
+#endif
    }
 
    /* If nothing has changed, do nothing */
@@ -549,7 +556,7 @@ void rarch_log_file_init(
             log_dir,
             log_to_file_timestamp
             ? timestamped_log_file_name
-            : "retroarch.log",
+            : FILE_PATH_DEFAULT_EVENT_LOG,
             sizeof(log_file_path));
    }
    else

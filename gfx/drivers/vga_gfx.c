@@ -488,6 +488,15 @@ static void vga_gfx_get_poke_interface(void *data,
 void vga_gfx_set_viewport(void *data, unsigned vp_width,
       unsigned vp_height, bool force_full, bool allow_rotate) { }
 
+static void vga_gfx_viewport_info(void *data, struct video_viewport *vp)
+{
+
+   vp->x = vp->y = 0;
+
+   vp->width  = vp->full_width  = VGA_WIDTH;
+   vp->height = vp->full_height = VGA_HEIGHT;
+}
+
 video_driver_t video_vga = {
    vga_gfx_init,
    vga_gfx_frame,
@@ -501,7 +510,7 @@ video_driver_t video_vga = {
    "vga",
    vga_gfx_set_viewport,
    NULL, /* set_rotation */
-   NULL, /* viewport_info */
+   vga_gfx_viewport_info,
    NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY

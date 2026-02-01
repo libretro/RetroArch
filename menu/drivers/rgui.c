@@ -102,6 +102,8 @@
 #endif
 #endif
 #define RGUI_VITA_FB_HEIGHT      272
+#define RGUI_DOS_FB_HEIGHT       200
+#define RGUI_DOS_FB_WIDTH        320
 
 /* Maximum entry value length in characters
  * when using fixed with layouts
@@ -6078,19 +6080,18 @@ static bool rgui_set_aspect_ratio(
 #elif defined(DINGUX)
    /* Dingux devices use a fixed framebuffer size */
    unsigned max_frame_buf_width = RGUI_DINGUX_FB_WIDTH;
+#elif defined(DJGPP)
+   unsigned max_frame_buf_width = RGUI_DOS_FB_WIDTH;
 #else
-   struct video_viewport vp;
    unsigned max_frame_buf_width = RGUI_MAX_FB_WIDTH;
 #endif
+   struct video_viewport vp;
 #if defined(DINGUX)
    unsigned aspect_ratio        = RGUI_DINGUX_ASPECT_RATIO;
    unsigned aspect_ratio_lock   = RGUI_ASPECT_RATIO_LOCK_NONE;
 #else
    unsigned aspect_ratio        = settings->uints.menu_rgui_aspect_ratio;
    unsigned aspect_ratio_lock   = settings->uints.menu_rgui_aspect_ratio_lock;
-#endif
-#ifdef DJGPP
-   const char *driver_ident    = video_driver_get_ident();
 #endif
 
    rgui_framebuffer_free(&rgui->frame_buf);
@@ -6116,6 +6117,9 @@ static bool rgui_set_aspect_ratio(
 #elif defined(VITA)
    /* Vita screen does not match 240 */
    rgui->frame_buf.height = RGUI_VITA_FB_HEIGHT;
+   video_driver_get_viewport_info(&vp);
+#elif defined(DJGPP)
+   rgui->frame_buf.height = RGUI_DOS_FB_HEIGHT;
    video_driver_get_viewport_info(&vp);
 #else
    /* If window height is less than RGUI default
@@ -6247,16 +6251,22 @@ static bool rgui_set_aspect_ratio(
             /* Use 4:3 as base, and adjust width according to core geometry */
             video_driver_state_t *video_st = video_state_get_ptr();
 
+#if defined(DJGPP)
+            rgui->frame_buf.width = RGUI_DOS_FB_WIDTH;
+#else
             if (rgui->frame_buf.height == 240)
                rgui->frame_buf.width = 320;
             else
                rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(
                      (4.0f / 3.0f) * (float)rgui->frame_buf.height);
+#endif
             base_term_width = rgui->frame_buf.width;
 
+#if !defined(DJGPP)
             if (video_st && video_st->av_info.geometry.aspect_ratio > 0)
                rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(
                      rgui->frame_buf.height * video_st->av_info.geometry.aspect_ratio);
+#endif
          }
          break;
       default:
@@ -6269,14 +6279,6 @@ static bool rgui_set_aspect_ratio(
          base_term_width = rgui->frame_buf.width;
          break;
    }
-
-#ifdef DJGPP
-   if (string_is_equal(driver_ident, "vga"))
-   {
-      rgui->frame_buf.width = 320;
-      rgui->frame_buf.height = 200;
-   }
-#endif
 
    /* Ensure frame buffer/terminal width is sane
     * - Must be less than max_frame_buf_width
@@ -6291,7 +6293,7 @@ static bool rgui_set_aspect_ratio(
    base_term_width = (base_term_width > rgui->frame_buf.width)
          ? rgui->frame_buf.width
          : base_term_width;
-#if !(defined(GEKKO) || defined(DINGUX))
+#if !(defined(GEKKO) || defined(DINGUX) || defined(DJGPP))
    if (vp.full_width < rgui->frame_buf.width)
    {
       rgui->frame_buf.width = (vp.full_width > RGUI_MIN_FB_WIDTH)
