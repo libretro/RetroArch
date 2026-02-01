@@ -357,7 +357,14 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
 {
    NSUInteger i;
    int delta_x = 0;
-   const struct font_glyph* glyph_q = _font_driver->get_glyph(_font_data, '?');
+   const struct font_glyph* glyph_q;
+
+   /* Validate font data before use - can become invalid during
+    * video context reset or if font was freed while in use */
+   if (!_font_driver || !_font_data)
+      return 0;
+
+   glyph_q = _font_driver->get_glyph(_font_data, '?');
 
    for (i = 0; i < length; i++)
    {
@@ -376,7 +383,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
 
 - (const struct font_glyph *)getGlyph:(uint32_t)code
 {
-   const struct font_glyph *glyph = _font_driver->get_glyph(_font_data, code);
+   const struct font_glyph *glyph;
+   if (!_font_driver || !_font_data)
+      return NULL;
+   glyph = _font_driver->get_glyph(_font_data, code);
    if (glyph)
       [self updateGlyph:glyph];
    return glyph;
@@ -428,15 +438,28 @@ static INLINE void write_quad6(SpriteVertex *pv,
             aligned:(unsigned)aligned
 {
    const struct font_glyph* glyph_q;
-   const char  *msg_end = msg + length;
-   int                x = (int)roundf(posX * _driver.viewport->full_width);
-   int                y = (int)roundf((1.0f - posY) * _driver.viewport->full_height);
-   int          delta_x = 0;
-   int          delta_y = 0;
-   float inv_tex_size_x = 1.0f / _texture.width;
-   float inv_tex_size_y = 1.0f / _texture.height;
-   float inv_win_width  = 1.0f / _driver.viewport->full_width;
-   float inv_win_height = 1.0f / _driver.viewport->full_height;
+   const char  *msg_end;
+   int                x;
+   int                y;
+   int          delta_x;
+   int          delta_y;
+   float inv_tex_size_x;
+   float inv_tex_size_y;
+   float inv_win_width;
+   float inv_win_height;
+
+   if (!_font_driver || !_font_data)
+      return;
+
+   msg_end          = msg + length;
+   x                = (int)roundf(posX * _driver.viewport->full_width);
+   y                = (int)roundf((1.0f - posY) * _driver.viewport->full_height);
+   delta_x          = 0;
+   delta_y          = 0;
+   inv_tex_size_x   = 1.0f / _texture.width;
+   inv_tex_size_y   = 1.0f / _texture.height;
+   inv_win_width    = 1.0f / _driver.viewport->full_width;
+   inv_win_height   = 1.0f / _driver.viewport->full_height;
 
    switch (aligned)
    {
@@ -526,6 +549,10 @@ static INLINE void write_quad6(SpriteVertex *pv,
    int lines = 0;
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
+
+   if (!_font_driver || !_font_data)
+      return;
+
    _font_driver->get_line_metrics(_font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
 
