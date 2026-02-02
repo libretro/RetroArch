@@ -2668,6 +2668,8 @@ if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
    /* HDR pipeline. */
    blend_attachment.blendEnable = VK_TRUE;
 
+   blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+   blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 
    /* HDR pipeline. */
    module_info.codeSize         = sizeof(hdr_frag);
@@ -4695,25 +4697,37 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
    {
       struct vk_buffer_range range;
 
-      vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo, 6 * sizeof(struct vk_vertex), &range);
-
+      if (vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo, 6 * sizeof(struct vk_vertex), &range))
       {
-         struct vk_vertex  *pv = (struct vk_vertex*)range.data;
-         struct vk_color   color;
+         struct vk_vertex *pv = (struct vk_vertex*)range.data;
+         int i;
 
-         color.r = 1.0f;
-         color.g = 1.0f;
-         color.b = 1.0f;
-         color.a = 1.0f;
+         /* Explicitly define the quad vertices to avoid macro issues.
+            Triangle 1: TL, BL, TR
+            Triangle 2: TR, BL, BR */
+            
+         pv[0].x = 0.0f; pv[0].y = 0.0f; pv[0].tex_x = 0.0f; pv[0].tex_y = 0.0f;
+         pv[1].x = 0.0f; pv[1].y = 1.0f; pv[1].tex_x = 0.0f; pv[1].tex_y = 1.0f;
+         pv[2].x = 1.0f; pv[2].y = 0.0f; pv[2].tex_x = 1.0f; pv[2].tex_y = 0.0f;
 
-         VULKAN_WRITE_QUAD_VBO(pv, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, &color);
+         pv[3].x = 1.0f; pv[3].y = 0.0f; pv[3].tex_x = 1.0f; pv[3].tex_y = 0.0f;
+         pv[4].x = 0.0f; pv[4].y = 1.0f; pv[4].tex_x = 0.0f; pv[4].tex_y = 1.0f;
+         pv[5].x = 1.0f; pv[5].y = 1.0f; pv[5].tex_x = 1.0f; pv[5].tex_y = 1.0f;
+
+         for (i = 0; i < 6; i++)
+         {
+            pv[i].color.r = 1.0f;
+            pv[i].color.g = 1.0f;
+            pv[i].color.b = 1.0f;
+            pv[i].color.a = 1.0f;
+         }
+
+         vkCmdBindVertexBuffers(vk->cmd, 0, 1,
+               &range.buffer, &range.offset);
+         
+         vkCmdDraw(vk->cmd, 6, 1, 0, 0);
       }
-
-      vkCmdBindVertexBuffers(vk->cmd, 0, 1,
-            &range.buffer, &range.offset);
    }
-
-   vkCmdDraw(vk->cmd, 6, 1, 0, 0);
 
    vkCmdEndRenderPass(vk->cmd);
 
