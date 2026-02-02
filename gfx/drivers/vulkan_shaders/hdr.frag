@@ -56,14 +56,14 @@ const float k_crt_green_horizontal_convergence   = 0.0;
 const float k_crt_blue_horizontal_convergence    = 0.0;
 
 const float k_crt_red_scanline_min               = 0.45;
-const float k_crt_red_scanline_max               = 0.70;
-const float k_crt_red_scanline_attack            = 0.30;
+const float k_crt_red_scanline_max               = 0.90;
+const float k_crt_red_scanline_attack            = 0.60;
 const float k_crt_green_scanline_min             = 0.45;
-const float k_crt_green_scanline_max             = 0.70;
-const float k_crt_green_scanline_attack          = 0.30;
+const float k_crt_green_scanline_max             = 0.90;
+const float k_crt_green_scanline_attack          = 0.60;
 const float k_crt_blue_scanline_min              = 0.45;
-const float k_crt_blue_scanline_max              = 0.70;       
-const float k_crt_blue_scanline_attack           = 0.30;
+const float k_crt_blue_scanline_max              = 0.90;       
+const float k_crt_blue_scanline_attack           = 0.60;
 
 const float k_crt_red_beam_sharpness             = 1.30;
 const float k_crt_red_beam_attack                = 1.00;
@@ -88,24 +88,111 @@ const mat4 kCubicBezier = mat4(
      0.0,  0.0,  0.0,  1.0
 );
 
-vec4 Sample(vec2 texcoord)
+vec3 Sample(vec2 texcoord)
 {
    vec4 sdr = texture(Source, texcoord);
-   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.2));
-   return vec4(sdr_linear, sdr.a);
+   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.22));
+   return sdr_linear;
 }
 
 vec4 Sample(vec4 colour, vec2 texcoord)
 {
    vec4 sdr = colour * texture(Source, texcoord);
-   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.2));
+   vec3 sdr_linear = pow(abs(sdr.rgb), vec3(2.22));
    return vec4(sdr_linear, sdr.a);
+}
+
+vec3 To2020(const vec3 sdr_linear)
+{
+   vec3 rec2020;
+   
+   uint gamut = global.ExpandGamut;
+   
+   if(gamut == 0u)
+   {
+      rec2020 = sdr_linear * k709to2020;
+   }
+   else if(gamut == 1u)
+   {
+      rec2020 = sdr_linear * kExpanded709to2020;
+   }
+   else if(gamut == 2u)
+   {
+      rec2020 = sdr_linear * k709to2020;
+      rec2020 = rec2020 * k2020toP3;
+   }
+   else
+   {
+      rec2020 = sdr_linear;
+   }
+
+   rec2020 = max(rec2020, vec3(0.0f));
+
+   return rec2020;
+}
+
+vec4 To2020(const vec4 sdr_linear)
+{
+   vec3 rec2020;
+   
+   uint gamut = global.ExpandGamut;
+
+   if(gamut == 0u)
+   {
+      rec2020 = sdr_linear.rgb * k709to2020;
+   }
+   else if(gamut == 1u)
+   {
+      rec2020 = sdr_linear.rgb * kExpanded709to2020;
+   }
+   else if(gamut == 2u)
+   {
+      rec2020 = sdr_linear.rgb * k709to2020;
+      rec2020 = rec2020 * k2020toP3;
+   }
+   else
+   {
+      rec2020 = sdr_linear.rgb;
+   }
+
+   rec2020 = max(rec2020, vec3(0.0f));
+
+   return vec4(rec2020, sdr_linear.a);
+}
+
+vec3 HDR(const vec3 sdr_linear)
+{
+   return InverseTonemap(sdr_linear);
 }
 
 vec4 HDR(const vec4 sdr_linear)
 {
    vec3 hdr_linear = InverseTonemap(sdr_linear.rgb);
    return vec4(hdr_linear, sdr_linear.a);
+}
+
+vec3 LinearToSignal(const vec3 linear_colour)
+{
+    // Always Encode to Gamma 2.4
+    return pow(max(linear_colour.rgb, vec3(0.0f)), vec3(1.0f / 2.4f));
+}
+
+vec3 HDR10(const vec3 hdr_linear)
+{
+   vec3 pq_input  = hdr_linear * vec3(global.PaperWhiteNits / kMaxNitsFor2084);
+         
+   vec3 hdr10 = LinearToST2084(max(pq_input, vec3(0.0f)));
+
+   return hdr10;
+}
+
+vec4 HDR10(const vec4 hdr_linear)
+{
+   vec3 pq_input  = hdr_linear.rgb * vec3(global.PaperWhiteNits / kMaxNitsFor2084);
+         
+   vec3 hdr10 = LinearToST2084(max(pq_input, vec3(0.0f)));
+
+   return vec4(hdr10, hdr_linear.a);
 }
 
 float Bezier(const float t0, const vec4 control_points)
@@ -148,13 +235,13 @@ float ScanlineColour(const uint channel,
    vec2 tex_coord_0                 = vec2(source_tex_coord_x, source_tex_coord_y);
    vec2 tex_coord_1                 = vec2(source_tex_coord_x + (1.0 / source_size.x), source_tex_coord_y);
 
-   float hdr_channel_0              = HDR(Sample(tex_coord_0))[channel];
-   float hdr_channel_1              = HDR(Sample(tex_coord_1))[channel];
+   float hdr_channel_0              = LinearToSignal(HDR(To2020(Sample(tex_coord_0))))[channel];
+   float hdr_channel_1              = LinearToSignal(HDR(To2020(Sample(tex_coord_1))))[channel];
 
    float horiz_interp               = Bezier(narrowed_source_pixel_offset, BeamControlPoints(beam_attack, hdr_channel_0 > hdr_channel_1));  
    float hdr_channel                = mix(hdr_channel_0, hdr_channel_1, horiz_interp);
 
-   float physics_signal             = pow(max(hdr_channel, 0.0), 1.0 / 2.2);
+   float physics_signal             = hdr_channel;
 
    float signal_strength            = clamp(physics_signal, 0.0, 2.5); 
 
@@ -268,7 +355,9 @@ vec3 Scanlines(vec2 texcoord)
       scanline_colour =  scanline_channel_0 * kColourMask[channel_0];
    }
 
-   return LinearToHDR10(scanline_colour);
+   vec3 linear_colour = pow(max(scanline_colour, vec3(0.0f)), vec3(2.4f));
+
+   return HDR10(linear_colour);
 }
 
 void main()
@@ -281,16 +370,16 @@ void main()
       }
       else
       {
-         FragColor = LinearToHDR10(HDR(Sample(kDefaultColor, vTexCoord)));
+         FragColor = HDR10(HDR(To2020(Sample(kDefaultColor, vTexCoord))));
       }
    }
    else if(global.InverseTonemap > 0.0)
    {
-      FragColor = HDR(Sample(kDefaultColor, vTexCoord));
+      FragColor = HDR(To2020(Sample(kDefaultColor, vTexCoord)));
    }
    else if(global.HDR10 > 0.0)
    {
-      FragColor = LinearToHDR10(Sample(kDefaultColor, vTexCoord));
+      FragColor = HDR10(To2020(Sample(kDefaultColor, vTexCoord)));
    }
    else
    {

@@ -1059,7 +1059,7 @@ static void thread_set_hdr_paper_white_nits(void *data, float paper_white_nits)
    }
 }
 
-static void thread_set_hdr_expand_gamut(void *data, bool expand_gamut)
+static void thread_set_hdr_expand_gamut(void *data, unsigned expand_gamut)
 {
    thread_video_t *thr = (thread_video_t*)data;
 

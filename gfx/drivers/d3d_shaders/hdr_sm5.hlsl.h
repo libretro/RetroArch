@@ -10,7 +10,7 @@ SRC(
    float max_nits;           /* 1000.0f  */
    uint subpixel_layout;     /* 0        */
    float scanlines;          /* 1.0f     */
-   float expand_gamut;       /* 0.0f     */
+   uint  expand_gamut;       /* 0        */
    float inverse_tonemap;
    float hdr10;
 };
@@ -82,14 +82,14 @@ static const float k_crt_green_horizontal_convergence   = 0.0f;
 static const float k_crt_blue_horizontal_convergence    = 0.0f;
 
 static const float k_crt_red_scanline_min               = 0.45f;
-static const float k_crt_red_scanline_max               = 0.70f;
-static const float k_crt_red_scanline_attack            = 0.30f;
+static const float k_crt_red_scanline_max               = 0.90f;
+static const float k_crt_red_scanline_attack            = 0.60f;
 static const float k_crt_green_scanline_min             = 0.45f;
-static const float k_crt_green_scanline_max             = 0.70f;
-static const float k_crt_green_scanline_attack          = 0.30f;
+static const float k_crt_green_scanline_max             = 0.90f;
+static const float k_crt_green_scanline_attack          = 0.60f;
 static const float k_crt_blue_scanline_min              = 0.45f;
-static const float k_crt_blue_scanline_max              = 0.70f;       
-static const float k_crt_blue_scanline_attack           = 0.30f;
+static const float k_crt_blue_scanline_max              = 0.90f;       
+static const float k_crt_blue_scanline_attack           = 0.60f;
 
 static const float k_crt_red_beam_sharpness             = 1.30f;
 static const float k_crt_red_beam_attack                = 1.00f;
@@ -111,6 +111,13 @@ static const float3x3 k709to2020 =
    { 0.0163916f, 0.0880132f, 0.8955950f }
 };
 
+static const float3x3 k2020toP3 = 
+{
+   { 1.343578f, -0.282180f, -0.061399f },
+   {-0.065297f,  1.075788f, -0.010490f },
+   { 0.002822f, -0.019598f,  1.016777f }
+};
+
 static const float4 kFallOffControlPoints    = float4(0.0f, 0.0f, 0.0f, 1.0f);
 static const float4 kAttackControlPoints     = float4(0.0f, 1.0f, 1.0f, 1.0f);
 
@@ -122,9 +129,9 @@ static const float4x4 kCubicBezier = float4x4( 1.0f,  0.0f,  0.0f,  0.0f,
 /* START Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
 static const float3x3 kExpanded709to2020 =
 {
-   { 0.6274040f, 0.3292820f, 0.0433136f },
-   { 0.0457456, 0.941777, 0.0124772 },
-   { -0.00121055, 0.0176041, 0.983607 }
+   { 0.6274040,  0.3292820, 0.0433136 },
+   { 0.0457456,  0.941777,  0.0124772 },
+   {-0.00121055, 0.0176041, 0.983607 }
 };
 
 float3 LinearToST2084(float3 normalizedLinearValue)
@@ -149,22 +156,81 @@ float3 InverseTonemap(const float3 sdr_linear, const float max_nits, const float
    return sdr_linear * (tonemapped_val / input_val);
 }
 
-float4 Sample(float2 texcoord)
+float3 Sample(float2 texcoord)
 {
    const float4 sdr = t0.Sample(s0, texcoord);
 
-   const float3 sdr_linear = pow(abs(sdr.rgb), 2.2f);
+   const float3 sdr_linear = pow(abs(sdr.rgb), 2.22f);
 
-   return float4(sdr_linear, sdr.a);
+   return sdr_linear;
 }
 
 float4 Sample(float4 colour, float2 texcoord)
 {
    const float4 sdr = colour * t0.Sample(s0, texcoord);
 
-   const float3 sdr_linear = pow(abs(sdr.rgb), 2.2f);
+   const float3 sdr_linear = pow(abs(sdr.rgb), 2.22f);
 
    return float4(sdr_linear, sdr.a);
+}
+
+float3 To2020(const float3 sdr_linear)
+{
+   float3 rec2020;
+   
+   if(global.expand_gamut == 0)
+   {
+      rec2020 = mul(k709to2020, sdr_linear);
+   }
+   else if(global.expand_gamut == 1)
+   {
+      rec2020 = mul( kExpanded709to2020, sdr_linear);
+   }
+   else if(global.expand_gamut == 2)
+   {
+      rec2020 = mul(k709to2020, sdr_linear);
+      rec2020 = mul(k2020toP3, rec2020);
+   }
+   else
+   {
+      rec2020 = sdr_linear;
+   }
+
+   rec2020 = max(rec2020, float3(0.0f, 0.0f, 0.0f));
+
+   return rec2020;
+}
+
+float4 To2020(const float4 sdr_linear)
+{
+   float3 rec2020;
+   
+   if(global.expand_gamut == 0)
+   {
+      rec2020 = mul(k709to2020, sdr_linear.rgb);
+   }
+   else if(global.expand_gamut == 1)
+   {
+      rec2020 = mul( kExpanded709to2020, sdr_linear.rgb);
+   }
+   else if(global.expand_gamut == 2)
+   {
+      rec2020 = mul(k709to2020, sdr_linear.rgb);
+      rec2020 = mul(k2020toP3, rec2020);
+   }
+   else
+   {
+      rec2020 = sdr_linear.rgb;
+   }
+
+   rec2020 = max(rec2020, float3(0.0f, 0.0f, 0.0f));
+
+   return float4(rec2020, sdr_linear.a);
+}
+
+float3 HDR(const float3 sdr_linear)
+{
+   return InverseTonemap(sdr_linear, global.max_nits, global.paper_white_nits);
 }
 
 float4 HDR(const float4 sdr_linear)
@@ -174,34 +240,26 @@ float4 HDR(const float4 sdr_linear)
    return float4(hdr_linear, sdr_linear.a);
 }
 
+float3 LinearToSignal(const float3 linear_colour)
+{
+    // Always Encode to Gamma 2.4
+    return pow(max(linear_colour.rgb, float3(0.0f, 0.0f, 0.0f)), 1.0f / 2.4f);
+}
+
 float3 HDR10(const float3 hdr_linear)
 {
-   float3 rec2020 = mul(k709to2020, hdr_linear);
-   
-   if(global.expand_gamut > 0.0f)
-   {
-      rec2020 = mul( kExpanded709to2020, hdr_linear);
-   }
-
-   const float3 linearColour  = rec2020 * (global.paper_white_nits / kMaxNitsFor2084);
+   const float3 pq_input  = hdr_linear * (global.paper_white_nits / kMaxNitsFor2084);
          
-   const float3 hdr10 = LinearToST2084(max(linearColour, 0.0f));
+   const float3 hdr10 = LinearToST2084(max(pq_input, 0.0f));
 
    return hdr10;
 }
 
 float4 HDR10(const float4 hdr_linear)
 {
-   float3 rec2020 = mul(k709to2020, hdr_linear.rgb);
-   
-   if(global.expand_gamut > 0.0f)
-   {
-      rec2020 = mul( kExpanded709to2020, hdr_linear.rgb);
-   }
-
-   const float3 linearColour  = rec2020 * (global.paper_white_nits / kMaxNitsFor2084);
+   const float3 pq_input  = hdr_linear.rgb * (global.paper_white_nits / kMaxNitsFor2084);
          
-   const float3 hdr10 = LinearToST2084(max(linearColour, 0.0f));
+   const float3 hdr10 = LinearToST2084(max(pq_input, 0.0f));
 
    return float4(hdr10, hdr_linear.a);
 }
@@ -248,13 +306,13 @@ float ScanlineColour(const uint channel,
    const float2 tex_coord_0               = float2(source_tex_coord_x, source_tex_coord_y);
    const float2 tex_coord_1               = float2(source_tex_coord_x + (1.0f / source_size.x), source_tex_coord_y);
 
-   const float hdr_channel_0              = HDR(Sample(tex_coord_0))[channel];
-   const float hdr_channel_1              = HDR(Sample(tex_coord_1))[channel];
+   const float hdr_channel_0              = LinearToSignal(HDR(To2020(Sample(tex_coord_0))))[channel];
+   const float hdr_channel_1              = LinearToSignal(HDR(To2020(Sample(tex_coord_1))))[channel];
 
    const float horiz_interp               = Bezier(narrowed_source_pixel_offset, BeamControlPoints(beam_attack, hdr_channel_0 > hdr_channel_1));  
    const float hdr_channel                = lerp(hdr_channel_0, hdr_channel_1, horiz_interp);
 
-   const float physics_signal             = pow(max(hdr_channel, 0.0f), 1.0f / 2.2f);
+   const float physics_signal             = hdr_channel;
 
    const float signal_strength            = clamp(physics_signal, 0.0f, 2.5f); 
 
@@ -368,7 +426,9 @@ float3 Scanlines(float2 texcoord)
       scanline_colour =  scanline_channel_0 * kColourMask[channel_0];
    }
 
-   return HDR10(scanline_colour);
+   float3 linear_colour = pow(max(scanline_colour, float3(0.0f, 0.0f, 0.0f)), 2.4f);
+
+   return HDR10(linear_colour);
 }
 
 float4 PSMain(PSInput input) : SV_TARGET
@@ -381,16 +441,16 @@ float4 PSMain(PSInput input) : SV_TARGET
       }
       else
       {
-         return HDR10(HDR(Sample(input.color, input.texcoord)));
+         return HDR10(HDR(To2020(Sample(input.color, input.texcoord))));
       }
    }
    else if(global.inverse_tonemap > 0.0f)
    {
-      return HDR(Sample(input.color, input.texcoord));
+      return HDR(To2020(Sample(input.color, input.texcoord)));
    }
    else if(global.hdr10 > 0.0f)
    {
-      return HDR10(Sample(input.color, input.texcoord));
+      return HDR10(To2020(Sample(input.color, input.texcoord)));
    }
    else
    {

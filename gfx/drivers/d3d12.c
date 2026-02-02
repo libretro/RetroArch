@@ -1887,17 +1887,17 @@ static void d3d12_set_hdr_paper_white_nits(void* data, float paper_white_nits)
    }
 }
 
-static void d3d12_set_hdr_expand_gamut(void* data, bool expand_gamut)
+static void d3d12_set_hdr_expand_gamut(void* data, unsigned expand_gamut)
 {
    d3d12_video_t *d3d12                   = (d3d12_video_t*)data;
 
-   d3d12->hdr.ubo_values.expand_gamut     = expand_gamut ? 1.0f : 0.0f;
+   d3d12->hdr.ubo_values.expand_gamut     = expand_gamut;
    
    if(d3d12->shader_preset)
    {
       for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
       {
-         d3d12->pass[i].expand_gamut     = expand_gamut ? 1.0f : 0.0f;
+         d3d12->pass[i].expand_gamut     = expand_gamut;
       }
    }
 }
@@ -3505,7 +3505,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
 
    d3d12->hdr.ubo_values.subpixel_layout     = settings->uints.video_hdr_subpixel_layout;
    d3d12->hdr.ubo_values.scanlines           = settings->bools.video_hdr_scanlines;
-   d3d12->hdr.ubo_values.expand_gamut        = settings->bools.video_hdr_expand_gamut;
+   d3d12->hdr.ubo_values.expand_gamut        = settings->uints.video_hdr_expand_gamut;
 
    d3d12->hdr.ubo_values.inverse_tonemap     = 1.0f;     /* Use this to turn on/off the inverse tonemap */
    d3d12->hdr.ubo_values.hdr10               = 1.0f;     /* Use this to turn on/off the hdr10 */
@@ -4185,7 +4185,7 @@ static bool d3d12_gfx_frame(
             d3d12->pass[i].max_nits             = settings->floats.video_hdr_max_nits;
             d3d12->pass[i].scanlines            = settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
             d3d12->pass[i].subpixel_layout      = settings->uints.video_hdr_subpixel_layout;
-            d3d12->pass[i].expand_gamut         = settings->bools.video_hdr_expand_gamut ? 1.0f : 0.0f;
+            d3d12->pass[i].expand_gamut         = settings->uints.video_hdr_expand_gamut;
          }
 #endif /* HAVE_DXGI_HDR */ 
 

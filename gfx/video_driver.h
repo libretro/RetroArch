@@ -695,7 +695,7 @@ typedef struct video_poke_interface
    /* hdr settings */
    void (*set_hdr_max_nits)(void *data, float max_nits);
    void (*set_hdr_paper_white_nits)(void *data, float paper_white_nits);
-   void (*set_hdr_expand_gamut)(void *data, bool expand_gamut);
+   void (*set_hdr_expand_gamut)(void *data, unsigned expand_gamut);
    void (*set_hdr_scanlines)(void *data, bool scanlines);
    void (*set_hdr_subpixel_layout)(void *data, unsigned subpixel_layout);
 } video_poke_interface_t;

@@ -160,7 +160,7 @@ typedef struct thread_packet
       {
          float max_nits;
          float paper_white_nits;
-         bool expand_gamut;
+         unsigned expand_gamut;
          bool scanlines;
          unsigned subpixel_layout;
       } hdr;

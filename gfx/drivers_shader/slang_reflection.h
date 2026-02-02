@@ -94,7 +94,7 @@ enum slang_semantic
    SLANG_SEMANTIC_SCANLINES        = 15,
    /* uint, HDR Scanline Subpixel Layout */
    SLANG_SEMANTIC_SUBPIXEL_LAYOUT  = 16,
-   /* float, Enable HDR colour boost */
+   /* uint, Enable HDR colour boost */
    SLANG_SEMANTIC_EXPAND_GAMUT     = 17,
    /* float, Enable HDR Inverse Tonemapper */
    SLANG_SEMANTIC_INVERSE_TONEMAP  = 18,
