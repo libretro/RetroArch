@@ -7077,6 +7077,14 @@ MSG_HASH(
    "Visa översättningen som ett textöverlägg (Bildläge), spela upp som text-till-tal (Tal) eller använd en systemberättare som NVDA (Berättare)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+   "Bakände för AI-tjänst"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
+   "Välj vilken översättningsbakände att använda. HTTP använder en fjärrserver på den konfigurerade webbadressen. Apple använder OCR-enhet och översättning (macOS/iOS)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "AI-tjänst URL"
    )

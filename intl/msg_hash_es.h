@@ -1372,7 +1372,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
-   "Servicio de sincronización en la nube"
+   "Back-end de sincronización en la nube"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
@@ -7267,6 +7267,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
    "Muestra las traducciones como una imagen superpuesta (Modo Imagen), audio directo (Voz) o utiliza un narrador del sistema, como NVDA (Narración)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+   "Back-end de servicio de IA"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
+   "Selecciona el back-end de traducción a utilizar. HTTP utilizará un servidor remoto localizable en la dirección URL configurada. Apple utilizará el reconocimiento de texto OCR y traducción internas del dispositivo (para macOS/iOS)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,

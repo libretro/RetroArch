@@ -16467,6 +16467,10 @@ MSG_HASH(
    "Cumasaigh Cliant SMB"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Cumasaigh rochtain chomhroinnte líonra SMB. Moltar go láidir Ethernet thar Wi-Fi le haghaidh nasc níos iontaofa. Tabhair faoi deara: ní mór RetroArch a atosú chun na socruithe seo a athrú."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
    "Freastalaí SMB"
    )
