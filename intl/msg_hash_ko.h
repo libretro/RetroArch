@@ -2743,10 +2743,6 @@ MSG_HASH(
    "색역 확장"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "디스플레이의 전체 색역을 사용하여 더욱 밝고 진한 색의 이미지를 표시합니다. 원래 게임이 의도한 디자인에 가까운 색을 원한다면 이 설정을 끄십시오."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
    "스캔라인"
    )

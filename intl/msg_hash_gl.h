@@ -2695,10 +2695,6 @@ MSG_HASH(
    "Aumento de cor"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Usa toda a gama de cores do teu monitor para crear unha imaxe máis brillante e saturada. Para cores máis fieis ao deseño orixinal do xogo, configura esta opción en DESACTIVADO."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
    "Liñas de escáner"
    )
