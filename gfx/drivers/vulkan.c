@@ -2663,55 +2663,55 @@ static void vulkan_init_pipelines(vk_t *vk)
    vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
-{
-   /* HDR pipeline. */
-   blend_attachment.blendEnable = VK_TRUE;
-
-   blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-   blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-
-   /* HDR pipeline. */
-   module_info.codeSize         = sizeof(hdr_frag);
-   module_info.pCode            = hdr_frag;
-   shader_stages[1].stage       = VK_SHADER_STAGE_FRAGMENT_BIT;
-   shader_stages[1].pName       = "main";
-   vkCreateShaderModule(vk->context->device,
-         &module_info, NULL, &shader_stages[1].module);
-
-   pipe.renderPass             = vk->render_pass;
-   vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
-         1, &pipe, NULL, &vk->pipelines.hdr);
-
-   /* Build display hdr pipelines. */
-   for (i = 4; i < 6; i++)
+   if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
    {
-      input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+      /* HDR pipeline. */
+      blend_attachment.blendEnable = VK_TRUE;
+
+      blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+      blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+
+      /* HDR pipeline. */
+      module_info.codeSize         = sizeof(hdr_frag);
+      module_info.pCode            = hdr_frag;
+      shader_stages[1].stage       = VK_SHADER_STAGE_FRAGMENT_BIT;
+      shader_stages[1].pName       = "main";
+      vkCreateShaderModule(vk->context->device,
+            &module_info, NULL, &shader_stages[1].module);
+
+      pipe.renderPass             = vk->render_pass;
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
-            1, &pipe, NULL, &vk->display.pipelines[i]);
+            1, &pipe, NULL, &vk->pipelines.hdr);
+
+      /* Build display hdr pipelines. */
+      for (i = 4; i < 6; i++)
+      {
+         input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+         vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+               1, &pipe, NULL, &vk->display.pipelines[i]);
+      }
+
+      vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
+
+      /* HDR->SDR tonemapping readback pipeline. */
+      blend_attachment.blendEnable = VK_FALSE;
+
+      module_info.codeSize         = sizeof(hdr_tonemap_frag);
+      module_info.pCode            = hdr_tonemap_frag;
+      shader_stages[1].stage       = VK_SHADER_STAGE_FRAGMENT_BIT;
+      shader_stages[1].pName       = "main";
+      vkCreateShaderModule(vk->context->device,
+            &module_info, NULL, &shader_stages[1].module);
+
+      pipe.renderPass = vk->readback_render_pass;
+      vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+            1, &pipe, NULL, &vk->pipelines.hdr_to_sdr);
+
+      vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
+
+      pipe.renderPass = vk->sdr_render_pass;
+      blend_attachment.blendEnable = VK_TRUE;
    }
-
-   vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
-
-   /* HDR->SDR tonemapping readback pipeline. */
-   blend_attachment.blendEnable = VK_FALSE;
-
-   module_info.codeSize         = sizeof(hdr_tonemap_frag);
-   module_info.pCode            = hdr_tonemap_frag;
-   shader_stages[1].stage       = VK_SHADER_STAGE_FRAGMENT_BIT;
-   shader_stages[1].pName       = "main";
-   vkCreateShaderModule(vk->context->device,
-         &module_info, NULL, &shader_stages[1].module);
-
-   pipe.renderPass = vk->readback_render_pass;
-   vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
-         1, &pipe, NULL, &vk->pipelines.hdr_to_sdr);
-
-   vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
-
-   pipe.renderPass = vk->render_pass;
-   blend_attachment.blendEnable = VK_TRUE;
-}
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
