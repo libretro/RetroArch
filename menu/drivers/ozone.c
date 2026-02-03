@@ -8077,11 +8077,9 @@ static bool ozone_scan_available(ozone_handle_t *ozone, size_t current_selection
    switch (last_entry.enum_idx)
    {
       case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
-      case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
       case MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY:
          return true;
       default:
@@ -8121,7 +8119,6 @@ static bool ozone_manage_available(ozone_handle_t *ozone, size_t current_selecti
       case MENU_ENUM_LABEL_GOTO_MUSIC:
       case MENU_ENUM_LABEL_GOTO_VIDEO:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
