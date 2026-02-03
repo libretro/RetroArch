@@ -854,7 +854,6 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
          case MENU_ENUM_LABEL_RESTART_CONTENT:
             BIND_ACTION_START(cbs, action_start_restart_content);
             break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
