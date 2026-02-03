@@ -1020,8 +1020,8 @@ static float ozone_border_1_hacking_the_kernel[16] = COLOR_HEX_TO_FLOAT(0x00E000
 static float ozone_border_0_twilight_zone[16]      = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
 static float ozone_border_1_twilight_zone[16]      = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f);
 
-static float ozone_border_0_dracula[16]            = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
-static float ozone_border_1_dracula[16]            = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f);
+static float ozone_border_0_dracula[16]            = COLOR_HEX_TO_FLOAT(0xBD93F9, 1.0f);
+static float ozone_border_1_dracula[16]            = COLOR_HEX_TO_FLOAT(0xFF79C6, 1.0f);
 
 static float ozone_border_0_selenium[16]           = COLOR_HEX_TO_FLOAT(0x91a666, 1.0f);
 static float ozone_border_1_selenium[16]           = COLOR_HEX_TO_FLOAT(0x566646, 1.0f);
@@ -1328,7 +1328,6 @@ static ozone_theme_t ozone_theme_dracula = {
 
    "dracula"                                             /* name */
 };
-
 
 static ozone_theme_t ozone_theme_solarized_dark = {
    /* Background color */
