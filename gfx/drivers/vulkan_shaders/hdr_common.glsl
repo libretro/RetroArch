@@ -63,6 +63,12 @@ const mat3 k2020to709 = mat3 (
    -0.1245505f, 1.1328999f, -0.0083494f,
    -0.0181508f, -0.1005789f, 1.1187297f);
 
+/* Color rotation matrix to rotate DCI-P3 color primaries into Rec.2020 */
+const mat3 kP3to2020 = mat3 (
+    0.753833f,  0.198597f,  0.047570f,
+    0.045744f,  0.941777f,  0.012479f,
+   -0.001210f,  0.017602f,  0.983609f);
+
 /* Color rotation matrix to rotate Rec.2020 color primaries into DCI-P3 */
 const mat3 k2020toP3 = mat3 (
     1.343578f, -0.282180f, -0.061399f,

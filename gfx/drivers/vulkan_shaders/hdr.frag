@@ -118,8 +118,7 @@ vec3 To2020(const vec3 sdr_linear)
    }
    else if(gamut == 2u)
    {
-      rec2020 = sdr_linear * k709to2020;
-      rec2020 = rec2020 * k2020toP3;
+      rec2020 = sdr_linear * kP3to2020;
    }
    else
    {
@@ -147,8 +146,7 @@ vec4 To2020(const vec4 sdr_linear)
    }
    else if(gamut == 2u)
    {
-      rec2020 = sdr_linear.rgb * k709to2020;
-      rec2020 = rec2020 * k2020toP3;
+      rec2020 = sdr_linear.rgb * kP3to2020;
    }
    else
    {

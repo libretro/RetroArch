@@ -111,6 +111,13 @@ static const float3x3 k709to2020 =
    { 0.0163916f, 0.0880132f, 0.8955950f }
 };
 
+static const float3x3 kP3to2020 =
+{
+   { 0.753833f,  0.198597f,  0.047570f },
+   { 0.045744f,  0.941777f,  0.012479f },
+   {-0.001210f,  0.017602f,  0.983609f }
+};
+
 static const float3x3 k2020toP3 = 
 {
    { 1.343578f, -0.282180f, -0.061399f },
@@ -184,12 +191,11 @@ float3 To2020(const float3 sdr_linear)
    }
    else if(global.expand_gamut == 1)
    {
-      rec2020 = mul( kExpanded709to2020, sdr_linear);
+      rec2020 = mul(kExpanded709to2020, sdr_linear);
    }
    else if(global.expand_gamut == 2)
    {
-      rec2020 = mul(k709to2020, sdr_linear);
-      rec2020 = mul(k2020toP3, rec2020);
+      rec2020 = mul(kP3to2020, sdr_linear);
    }
    else
    {
@@ -211,12 +217,11 @@ float4 To2020(const float4 sdr_linear)
    }
    else if(global.expand_gamut == 1)
    {
-      rec2020 = mul( kExpanded709to2020, sdr_linear.rgb);
+      rec2020 = mul(kExpanded709to2020, sdr_linear.rgb);
    }
    else if(global.expand_gamut == 2)
    {
-      rec2020 = mul(k709to2020, sdr_linear.rgb);
-      rec2020 = mul(k2020toP3, rec2020);
+      rec2020 = mul(kP3to2020, sdr_linear.rgb);
    }
    else
    {
