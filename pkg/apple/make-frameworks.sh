@@ -111,3 +111,18 @@ if [ -n "$MOLTENVK_LEGACY_XCFRAMEWORK_PATH" -a -d "${MOLTENVK_LEGACY_XCFRAMEWORK
     codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${OUTDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework/MoltenVK-${MOLTENVK_LEGACY_VERSION}"
     codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${OUTDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework"
 fi
+
+# Copy Vulkan ICD file for loader discovery (macOS only)
+# This allows the Vulkan loader to find MoltenVK when using validation layers
+# Only include current MoltenVK - legacy version is for old OS support, not validation
+if [ "$PLATFORM_FAMILY_NAME" = "macOS" ] ; then
+    RESOURCES_DIR="$(dirname "$OUTDIR")/Resources"
+    ICD_DIR="$RESOURCES_DIR/vulkan/icd.d"
+    mkdir -p "$ICD_DIR"
+
+    if [ -f "${OUTDIR}/MoltenVK.framework/Versions/A/Resources/MoltenVK_icd.json" ] ; then
+        sed 's|\.\./MoltenVK|../../../Frameworks/MoltenVK.framework/Versions/A/MoltenVK|' \
+            "${OUTDIR}/MoltenVK.framework/Versions/A/Resources/MoltenVK_icd.json" \
+            > "$ICD_DIR/MoltenVK_icd.json"
+    fi
+fi

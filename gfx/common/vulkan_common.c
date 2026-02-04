@@ -47,6 +47,19 @@
 #define VENDOR_ID_NV 0x10DE
 #define VENDOR_ID_INTEL 0x8086
 
+#ifdef __APPLE__
+#if VK_HEADER_VERSION < 216
+/* Portability enumeration extension for MoltenVK through Vulkan loader.
+ * These may not be defined in older Vulkan headers. */
+#ifndef VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME
+#define VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME "VK_KHR_portability_enumeration"
+#endif
+#ifndef VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR
+#define VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR 0x00000001
+#endif
+#endif
+#endif
+
 #if defined(_WIN32) || defined(__APPLE__)
 #define VULKAN_EMULATE_MAILBOX
 #endif
@@ -561,7 +574,8 @@ static const char *vulkan_device_extensions[]  = {
 
 static const char *vulkan_optional_device_extensions[] = {
    "VK_KHR_sampler_mirror_clamp_to_edge",
-   "VK_EXT_full_screen_exclusive"
+   "VK_EXT_full_screen_exclusive",
+   "VK_KHR_portability_subset"
 };
 
 static VkDevice vulkan_context_create_device_wrapper(
@@ -894,6 +908,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 #endif
 
 static const char *vulkan_optional_instance_extensions[] = {
+#ifdef __APPLE__
+   VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+#endif
 #ifdef VULKAN_HDR_SWAPCHAIN
    VULKAN_COLORSPACE_EXTENSION_NAME
 #endif
@@ -979,6 +996,18 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       if (string_is_equal(instance_extensions[i], VULKAN_COLORSPACE_EXTENSION_NAME))
       {
          vk->context.flags |= VK_CTX_FLAG_HDR_SUPPORT;
+         break;
+      }
+   }
+#endif
+
+#ifdef __APPLE__
+   /* Check if portability enumeration was enabled (needed for Vulkan loader to find MoltenVK) */
+   for (i = 0; i < info.enabledExtensionCount; i++)
+   {
+      if (string_is_equal(instance_extensions[i], VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME))
+      {
+         info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
          break;
       }
    }
@@ -2451,7 +2480,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          int use_mab                      = settings->bools.video_use_metal_arg_buffers;
          setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", use_mab ? "1" : "0", 1);
       }
-      if (__builtin_available(macOS 10.15, iOS 13, tvOS 12, *))
+      /* Try Vulkan loader first (enables validation layers if installed).
+       * Falls back to MoltenVK directly if loader not available. */
+      vulkan_library = dylib_load("libvulkan.dylib");
+      if (!vulkan_library && __builtin_available(macOS 10.15, iOS 13, tvOS 12, *))
          vulkan_library = dylib_load("MoltenVK");
       if (!vulkan_library)
          vulkan_library = dylib_load("MoltenVK-v1.2.7.framework");

@@ -149,6 +149,12 @@ OTHER_CFLAGS[sdk=iphonesimulator*] = $(inherited) $(OTHER_CFLAGS_IOS)
 OTHER_CFLAGS[config=Debug] = $(inherited) -DDEBUG=1
 OTHER_CFLAGS[config=Release] = $(inherited) -DNDEBUG -DNS_BLOCK_ASSERTIONS=1
 
+// Vulkan validation layer support for macOS debug builds
+// Requires: brew install vulkan-loader vulkan-validationlayers
+//OTHER_CFLAGS[sdk=macosx*][config=Debug] = $(inherited) -DVULKAN_DEBUG
+LD_RUNPATH_SEARCH_PATHS[sdk=macosx*][config=Debug] = $(inherited) /opt/homebrew/opt/vulkan-loader/lib /usr/local/opt/vulkan-loader/lib
+LD_RUNPATH_SEARCH_PATHS[sdk=macosx*][config=Debug] = $(inherited) /opt/homebrew/opt/vulkan-validationlayers/lib /usr/local/opt/vulkan-validationlayers/lib
+
 // Keep function symbols for KSCrash symbolication in release builds
 // (debug symbols still go to dSYM files)
 STRIP_STYLE[config=Release] = debugging
