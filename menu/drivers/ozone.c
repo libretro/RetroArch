@@ -8707,7 +8707,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                && (ozone->show_thumbnail_bar))
          {
             /* Allow launch if already using "imageviewer" core */
-            if (string_is_equal(runloop_state_get_ptr()->system.info.library_name, "image display"))
+            if (string_is_equal(runloop_state_get_ptr()->system.info.library_name, "Image Viewer"))
                break;
 
             if (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
