@@ -1484,10 +1484,18 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       default:
          {
             struct vk_draw_triangles call;
-            unsigned
-               disp_pipeline  =
-                 ((draw->prim_type == GFX_DISPLAY_PRIM_TRIANGLESTRIP) << 1)
-               | (((vk->flags & VK_FLAG_DISPLAY_BLEND) > 0) << 0);
+            unsigned disp_pipeline;
+#ifdef VULKAN_HDR_SWAPCHAIN
+            /* Use HDR pipeline when HDR is enabled, but not when rendering
+             * to the SDR offscreen buffer for menu/overlay compositing */
+            if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
+                !(vk->flags & VK_FLAG_SDR_OFFSCREEN))
+               disp_pipeline = 4; /* HDR display pipeline */
+            else
+#endif
+               disp_pipeline =
+                   ((draw->prim_type == GFX_DISPLAY_PRIM_TRIANGLESTRIP) << 1)
+                 | (((vk->flags & VK_FLAG_DISPLAY_BLEND) > 0) << 0);
             call.pipeline     = vk->display.pipelines[disp_pipeline];
             call.texture      = texture;
             call.sampler      = (texture->flags & VK_TEX_FLAG_MIPMAP)
@@ -5160,12 +5168,14 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
-          ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)) &&
+          ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)
+           || !string_is_empty(msg) || widgets_active) &&
           (vk->offscreen_buffer.image != VK_NULL_HANDLE))
       {
          if(end_pass) vkCmdEndRenderPass(vk->cmd);
 
          backbuffer = &vk->offscreen_buffer;
+         vk->flags |= VK_FLAG_SDR_OFFSCREEN;
 
          rp_info.renderPass   = vk->sdr_render_pass;
          rp_info.framebuffer  = backbuffer->framebuffer;
@@ -5256,7 +5266,8 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* Copy over back buffer to swap chain render targets */
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
-          ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)) &&
+          ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)
+           || !string_is_empty(msg) || widgets_active) &&
           (vk->offscreen_buffer.image != VK_NULL_HANDLE))
       {
          backbuffer = &vk->backbuffers[swapchain_index];
@@ -5276,6 +5287,7 @@ static bool vulkan_frame(void *data, const void *frame,
                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
          vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->keep_render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo);
+         vk->flags &= ~VK_FLAG_SDR_OFFSCREEN;
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
    }
@@ -6273,7 +6285,16 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
       call.uniform      = &vk->mvp;
       call.vbo          = &range;
       call.texture      = &vk->overlay.images[i];
-      call.pipeline     = vk->display.pipelines[3]; /* Strip with blend */
+#ifdef VULKAN_HDR_SWAPCHAIN
+      /* Use HDR pipeline when HDR is enabled, but not when rendering
+       * to the SDR offscreen buffer for menu/overlay compositing */
+      if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
+          !(vk->flags & VK_FLAG_SDR_OFFSCREEN))
+         call.pipeline     = vk->display.pipelines[4];
+      else
+#else
+         call.pipeline     = vk->display.pipelines[3]; /* Strip with blend */
+#endif
       call.sampler      = (call.texture->flags & VK_TEX_FLAG_MIPMAP)
          ? vk->samplers.mipmap_linear : vk->samplers.linear;
       vulkan_draw_triangles(vk, &call);
