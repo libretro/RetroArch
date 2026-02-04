@@ -1,5 +1,55 @@
 # Future
+- 3DS: Remove bottom screen fade out animation
+- ANDROID: Fix Enter key not working on keyboards
+- ANDROID: Enable ZSTD compression usage
+- ANDROID: Preserve OpenGL context when app is paused
+- ANDROID: Fix double launch issue when changing games from external launcher
+- APPLE: Use coreaudio3 resampling
+- APPLE: Add coreaudio3 driver to iOS/TVOS
+- COMMAND: Fix null pointer exception in COMMAND_GET_STATUS
+- CHEEVOS: Update to rcheevos 12.2
+- CLOUDSYNC: Conflict resolution options
 - EMSCRIPTEN: Added dice to core selection dropdown
+- EMSCRIPTEN: Numerous bugfixes
+- INPUT: Fix illuminance sensor on Linux
+- INPUT: Fix raw mouse position after window state changes
+- INPUT/UDEV: Fix multi-touch detection
+- INPUT/MFI: Controller disconnection fix
+- IOS: Fix external keyboards
+- MACOS: Fix OpenGL color on wide gamut displays
+- MENU: Do hard reset when pushing RetroPad Start on Restart menu item
+- MENU: Remove "Missing firmware check" option
+- MENU: Show keyboard overlay selection even if it is not loaded
+- MENU: Core info link improvements
+- MENU/OZONE: Add dynamic header icon option
+- MENU/OZONE: Fix occasional left mouse click selection error
+- MENU/XMB: Current menu icon refactor
+- MENU/XMB: Left thumbnail and handheld mode fixes
+- OVERLAY: Allow overlays to position the viewport
+- OVERLAY: Hold button function
+- OVERLAY: Allow interaction during next overlay swap
+- OVERLAY: Alternative 2-touch option
+- PS2: Improve driver usage
+- PS2: Fix booting from internal HDD
+- SCAN: Fix 3DS content scanning skipping all files
+- SCAN: Fix CHD scanning skipping some files
+- SCAN: Improve Saturn content recognition
+- SCAN: Improve Philips CD-i content recognition
+- SCAN: Improve scan performance by caching playlist updates
+- SCAN: Interpret M3U files during scanning
+- SHADER: Display on-screen error when preset load fails
+- VIDEO/GL: Fix some issues with GLSL shaders when using GLCore driver
+- VIDEO/SDL2: Add shared context
+- VITA: Enable cloudsync feature
+- VFS: Add Samba share browse and load content (Windows file shares)
+- WEBOS: Enable mouse use, include developer dir
+- WEBOS: Enable ffmpeg core
+- WEBOS: Add Wayland support
+- WEBOS: Allow user to decide about the screensaver
+- WEBOS: WebOS 1 and 2 compatibility
+- WEBOS: Magic remote improvements
+- XBOX: Fix menu and achievement sounds
+- XBOX: Update UWP Mesa
 
 # 1.22.1
 - ANDROID: OnNewIntent handler to allow launchers start new content without closing first
