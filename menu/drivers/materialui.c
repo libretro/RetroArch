@@ -1857,6 +1857,53 @@ static const materialui_theme_t *materialui_get_theme(enum materialui_color_them
       0.95f     /* screen_fade_opacity */
    };
 
+   static const materialui_theme_t materialui_theme_dracula = {
+      /* Text (& small inline icon) colours */
+      0xF8F8F2, /* on_sys_bar */
+      0xFF79C6, /* on_header */
+      0xF8F8F2, /* list_text */
+      0xF8F8F2, /* list_text_highlighted */
+      0xF8F8F2, /* list_hint_text */
+      0xF8F8F2, /* list_hint_text_highlighted */
+      0x6272A4, /* status_bar_text */
+      /* Background colours */
+      0x1E2029, /* sys_bar_background */
+      0x1E2029, /* title_bar_background */
+      0x282A36, /* list_background */
+      0x44475A, /* list_highlighted_background */
+      0x1E2029, /* nav_bar_background */
+      0x282A36, /* surface_background */
+      0x282A36, /* thumbnail_background */
+      0x282A36, /* side_bar_background */
+      0x282A36, /* status_bar_background */
+      /* List icon colours */
+      0xF8F8F2, /* list_icon */
+      0x50FA7B, /* list_switch_on */
+      0x6272A4, /* list_switch_on_background */
+      0xFF5555, /* list_switch_off */
+      0x6272A4, /* list_switch_off_background */
+      /* Navigation bar icon colours */
+      0xFF79C6, /* nav_bar_icon_active */
+      0xF8F8F2, /* nav_bar_icon_passive */
+      0x1E2029, /* nav_bar_icon_disabled */
+      /* Screensaver */
+      0x282A36, /* screensaver_tint */
+      /* Misc. colours */
+      0x44475A, /* header_shadow */
+      0x44475A, /* landscape_border_shadow */
+      0x44475A, /* status_bar_shadow */
+      0x44475A, /* selection_marker_shadow */
+      0x44475A, /* scrollbar */
+      0x1E2029, /* divider */
+      0x282A36, /* screen_fade */
+      0x282A36, /* missing_thumbnail_icon */
+      0.0f,     /* header_shadow_opacity */
+      0.0f,     /* landscape_border_shadow_opacity */
+      0.0f,     /* status_bar_shadow_opacity */
+      0.0f,     /* selection_marker_shadow_opacity */
+      0.95f     /* screen_fade_opacity */
+   };
+
    switch (color_theme)
    {
       case MATERIALUI_THEME_BLUE:
@@ -1907,6 +1954,8 @@ static const materialui_theme_t *materialui_get_theme(enum materialui_color_them
          return &materialui_theme_gray_dark;
       case MATERIALUI_THEME_GRAY_LIGHT:
          return &materialui_theme_gray_light;
+      case MATERIALUI_THEME_DRACULA:
+         return &materialui_theme_dracula;
       default:
          break;
    }

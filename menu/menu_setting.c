@@ -4612,6 +4612,10 @@ static size_t setting_get_string_representation_uint_materialui_menu_color_theme
             return strlcpy(s,
                   msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT), len);
+         case MATERIALUI_THEME_DRACULA:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DRACULA), len);
          default:
             break;
       }
