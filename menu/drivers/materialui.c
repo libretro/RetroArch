@@ -11703,6 +11703,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OVERRIDE_UNLOAD))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_DISABLE_KIOSK_MODE))
+                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG))
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_UNDO_SAVE_STATE;
@@ -11725,7 +11726,6 @@ static void materialui_list_insert(void *userdata,
             }
             else if (
                      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS))
-                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG))
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS_LIST))
                   )
             {
