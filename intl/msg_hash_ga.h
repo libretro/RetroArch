@@ -2715,6 +2715,22 @@ MSG_HASH(
    "Borradh Dath"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Úsáideann sé raon dathanna iomlán do thaispeántais chun íomhá níos gile, níos sáithithe a chruthú. Chun dathanna atá níos dílse don dearadh cluiche bunaidh a fháil, socraigh é seo go CRUINN."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
+   "CRUINN"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "LEATHNAITHE"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "LEATHAN"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
    "Scanlínte"
    )
@@ -7271,6 +7287,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
    "Taispeáin an t-aistriúchán mar fhorleagan téacs (Mód Íomhá), seinn mar Téacs-Go-Caint (Caint), nó bain úsáid as insteoir córais cosúil le NVDA (Insteoir)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+   "Cúltaca Seirbhíse AI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
+   "Roghnaigh cén cúltaca aistriúcháin le húsáid. Úsáideann HTTP freastalaí cianda ag an URL cumraithe. Úsáideann Apple OCR agus aistriúchán ar an ngléas (macOS/iOS)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
