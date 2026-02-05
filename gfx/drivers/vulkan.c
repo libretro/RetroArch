@@ -2668,7 +2668,7 @@ static void vulkan_init_pipelines(vk_t *vk)
       /* HDR pipeline. */
       blend_attachment.blendEnable = VK_TRUE;
 
-      blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+      blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
       blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 
       /* HDR pipeline. */
