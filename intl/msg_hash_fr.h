@@ -2699,6 +2699,22 @@ MSG_HASH(
    "Boost de couleur"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Utilise la gamme complète de couleurs de votre écran pour créer une image plus brillante et plus saturée. Pour les couleurs plus fidèles au design original du jeu, réglez cette option sur PRÉCISE."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
+   "PRÉCISE"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "ÉTENDUE"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "LARGE"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
    "Lignes de balayage"
    )
