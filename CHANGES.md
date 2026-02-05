@@ -1,5 +1,74 @@
 # Future
+- 3DS: Remove bottom screen fade out animation
+- ANDROID: Fix Enter key not working on keyboards
+- ANDROID: Enable ZSTD compression usage
+- ANDROID: Preserve OpenGL context when app is paused
+- ANDROID: Fix double launch issue when changing games from external launcher
+- APPLE: Use coreaudio3 resampling
+- APPLE: Add coreaudio3 driver to iOS/TVOS
+- APPLE: Add jollycv, skyemu, gearlynx, amiarcadia, o2em, uzem cores to App Store builds
+- APPLE: Add Apple on-device OCR / translation to AI service
+- COMMAND: Fix null pointer exception in COMMAND_GET_STATUS
+- COMMAND: Only allow pause when there is a core running
+- CHEEVOS: Update to rcheevos 12.2.1
+- CHEEVOS: Download badges on demand only
+- CLOUDSYNC: Conflict resolution options
 - EMSCRIPTEN: Added dice to core selection dropdown
+- EMSCRIPTEN: Numerous bugfixes
+- INPUT: Fix illuminance sensor on Linux
+- INPUT: Fix raw mouse position after window state changes
+- INPUT: New analog-to-digital types: both stick, twin-stick (for pressing face buttons with analog stick).
+- INPUT: Fix for setups which have Game Focus and Hotkey Enable on the same key
+- INPUT/ANDROID: Default for input block timeout is now 1 instead of 0
+- INPUT/MFI: Controller disconnection fix
+- INPUT/SDL: Fix controller vid/pid detection on Windows
+- INPUT/UDEV: Fix multi-touch detection
+- IOS: Fix external keyboards
+- IOS: Add pd777 core
+- LAKKA: RetroFlag specific options for safe shutdown and reset
+- MACOS: Fix OpenGL color on wide gamut displays
+- MENU: Do hard reset when pushing RetroPad Start on Restart menu item
+- MENU: Remove "Missing firmware check" option
+- MENU: Show keyboard overlay selection even if it is not loaded
+- MENU: Core info link improvements
+- MENU: Disc control improvements: allow change without eject, insert is auto-delayed to allow core to detect disc change, save file name not changed when manual disc append is used
+- MENU: Fixes for building without menu
+- MENU: Widget default size adjusted
+- MENU: Use RetroPad Y inside shader menu to toggle background opacity or reset shader passes
+- MENU/GLUI: Add Dracula color theme
+- MENU/OZONE: Add dynamic header icon option
+- MENU/OZONE: Fix occasional left mouse click selection error
+- MENU/XMB: Current menu icon refactor
+- MENU/XMB: Left thumbnail and handheld mode fixes
+- OVERLAY: Allow overlays to position the viewport
+- OVERLAY: Hold button function
+- OVERLAY: Allow interaction during next overlay swap
+- OVERLAY: Alternative 2-touch option
+- PS2: Improve driver usage
+- PS2: Fix booting from internal HDD
+- SCAN: Fix 3DS content scanning skipping all files
+- SCAN: Fix CHD scanning skipping some files
+- SCAN: Improve Saturn content recognition
+- SCAN: Improve Philips CD-i content recognition
+- SCAN: Improve scan performance by caching playlist updates
+- SCAN: Interpret M3U files during scanning
+- SHADER: Display on-screen error when preset load fails
+- VIDEO/GL: Fix some issues with GLSL shaders when using GLCore driver
+- VIDEO/SDL2: Add shared context
+- VIDEO/D3D11/D3D12/VULKAN: Major HDR update. Inverse tone mapping uses RGB maxing instead of luminance, better full-spectrum remapping of SDR space to HDR, Contrast option remove. Performance improved. HDR menu settings exposed to shaders, fast HDR single-pass scanline simulation added.
+- VIDEO/D3D11/D3D12/VULKAN: multi-mode HDR Expand Gamut selection
+- VIDEO/VULKAN: VK_EXT_full_screen_exclusive is now optional
+- VITA: Enable cloudsync feature
+- VFS: Add Samba share browse and load content (Windows file shares)
+- WEBOS: Enable mouse use, include developer dir
+- WEBOS: Enable ffmpeg core
+- WEBOS: Add Wayland support
+- WEBOS: Allow user to decide about the screensaver
+- WEBOS: WebOS 1 and 2 compatibility
+- WEBOS: Magic remote improvements
+- WIN32: Fix Windows version detection
+- XBOX: Fix menu and achievement sounds
+- XBOX: Update UWP Mesa
 
 # 1.22.1
 - ANDROID: OnNewIntent handler to allow launchers start new content without closing first
