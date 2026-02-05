@@ -519,6 +519,9 @@ enum retro_language
 /* Video ram lets a frontend peek into a game systems video RAM (VRAM). */
 #define RETRO_MEMORY_VIDEO_RAM   3
 
+/* ROM lets a frontend peek into a game systems ROM. */
+#define RETRO_MEMORY_ROM   4
+
 /** @} */
 
 /* Keysyms used for ID in input state callback when polling RETRO_KEYBOARD. */
