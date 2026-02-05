@@ -226,6 +226,7 @@
 
 #ifdef HAVE_LAKKA
 #include "lakka.h"
+#include <systemd/sd-daemon.h>
 #endif
 
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
@@ -6143,6 +6144,9 @@ int rarch_main(int argc, char *argv[], void *data)
 #ifdef HAVE_CLOUDSYNC
    if (settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC)
       task_push_cloud_sync();
+#endif
+#ifdef HAVE_LAKKA
+   sd_notify(0, "READY=1");
 #endif
 #if !defined(HAVE_MAIN) || defined(HAVE_QT)
    for (;;)
