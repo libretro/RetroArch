@@ -2186,7 +2186,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Добавлять вырез камеры для Android/iOS"
+   "Включать вырез камеры на Android/iOS"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
