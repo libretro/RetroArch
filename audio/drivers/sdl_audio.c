@@ -319,7 +319,6 @@ static int sdl_microphone_read(void *driver_context, void *mic_context, void *sv
    uint8_t *s = (uint8_t*)sv;
    sdl_microphone_t        *sdl = (sdl_microphone_t*)driver_context;
    sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
-   uint8_t *s = (uint8_t *)sv;
 
    if (!sdl || !mic || !s)
       return -1;
