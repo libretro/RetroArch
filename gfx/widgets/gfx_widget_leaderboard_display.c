@@ -635,6 +635,17 @@ void gfx_widget_set_cheevos_set_loading(bool value)
 }
 
 
+static bool gfx_widget_leaderboard_display_visible(void)
+{
+   gfx_widget_leaderboard_display_state_t *state =
+      &p_w_leaderboard_display_st;
+   return state->tracker_count != 0
+      || state->challenge_count != 0
+      || state->progress_tracker.show_until != 0
+      || state->loading
+      || state->disconnected;
+}
+
 const gfx_widget_t gfx_widget_leaderboard_display = {
    &gfx_widget_leaderboard_display_init,
    &gfx_widget_leaderboard_display_free,
@@ -642,5 +653,6 @@ const gfx_widget_t gfx_widget_leaderboard_display = {
    &gfx_widget_leaderboard_display_context_destroy,
    NULL, /* layout */
    NULL, /* iterate */
-   &gfx_widget_leaderboard_display_frame
+   &gfx_widget_leaderboard_display_frame,
+   &gfx_widget_leaderboard_display_visible
 };

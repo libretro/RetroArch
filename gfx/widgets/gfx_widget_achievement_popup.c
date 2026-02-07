@@ -632,6 +632,13 @@ void gfx_widgets_push_achievement(const char* title, const char* subtitle, const
 #endif
 }
 
+static bool gfx_widget_achievement_popup_visible(void)
+{
+   gfx_widget_achievement_popup_state_t *state = &p_w_achievement_popup_st;
+   return state->queue_read_index >= 0
+      && state->queue[state->queue_read_index].title;
+}
+
 const gfx_widget_t gfx_widget_achievement_popup = {
    &gfx_widget_achievement_popup_init,
    &gfx_widget_achievement_popup_free,
@@ -639,5 +646,6 @@ const gfx_widget_t gfx_widget_achievement_popup = {
    &gfx_widget_achievement_popup_context_destroy,
    NULL, /* layout */
    NULL, /* iterate */
-   &gfx_widget_achievement_popup_frame
+   &gfx_widget_achievement_popup_frame,
+   &gfx_widget_achievement_popup_visible
 };

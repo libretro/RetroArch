@@ -334,6 +334,12 @@ static void gfx_widget_progress_message_free(void)
 
 /* Widget definition */
 
+static bool gfx_widget_progress_message_visible(void)
+{
+   gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
+   return state->active;
+}
+
 const gfx_widget_t gfx_widget_progress_message = {
    NULL, /* init */
    gfx_widget_progress_message_free,
@@ -341,5 +347,6 @@ const gfx_widget_t gfx_widget_progress_message = {
    NULL, /* context_destroy */
    gfx_widget_progress_message_layout,
    NULL, /* iterate */
-   gfx_widget_progress_message_frame
+   gfx_widget_progress_message_frame,
+   gfx_widget_progress_message_visible
 };

@@ -1543,6 +1543,54 @@ static void gfx_widgets_draw_regular_msg(
    }
 }
 
+bool gfx_widgets_visible(void *data)
+{
+   size_t i;
+   video_frame_info_t *video_info = (video_frame_info_t*)data;
+   dispgfx_widget_t *p_dispwidget = (dispgfx_widget_t*)video_info->widgets_userdata;
+   bool fps_show                  = video_info->fps_show;
+   bool framecount_show           = video_info->framecount_show;
+   bool memory_show               = video_info->memory_show;
+   bool core_status_msg_show      = video_info->core_status_msg_show;
+   bool widgets_is_paused         = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_PAUSED) ? true : false;
+   bool widgets_is_fastforwarding  = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_FAST_FORWARD) ? true : false;
+   bool widgets_is_rewinding      = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_REWINDING) ? true : false;
+   bool runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
+   bool notifications_hidden      = video_info->notifications_hidden || video_info->msg_queue_delay;
+
+#ifdef HAVE_MENU
+   if ((video_info->menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE))
+      return false;
+#endif
+
+   if (notifications_hidden)
+      return false;
+
+#ifdef HAVE_TRANSLATE
+   if (p_dispwidget->ai_service_overlay_state > 0)
+      return true;
+#endif
+
+   if (fps_show || framecount_show || memory_show || core_status_msg_show)
+      return true;
+
+   if (widgets_is_paused || widgets_is_fastforwarding
+         || widgets_is_rewinding || runloop_is_slowmotion)
+      return true;
+
+   for (i = 0; i < ARRAY_SIZE(widgets); i++)
+   {
+      const gfx_widget_t* widget = widgets[i];
+      if (widget->visible && widget->visible())
+         return true;
+   }
+
+   if (p_dispwidget->current_msgs_size)
+      return true;
+
+   return false;
+}
+
 void gfx_widgets_frame(void *data)
 {
    size_t i;
