@@ -238,7 +238,8 @@ enum vk_flags
    VK_FLAG_READBACK_PENDING    = (1 << 12),
    VK_FLAG_READBACK_STREAMED   = (1 << 13),
    VK_FLAG_OVERLAY_ENABLE      = (1 << 14),
-   VK_FLAG_OVERLAY_FULLSCREEN  = (1 << 15)
+   VK_FLAG_OVERLAY_FULLSCREEN  = (1 << 15),
+   VK_FLAG_SDR_OFFSCREEN       = (1 << 16)  /* Rendering to SDR offscreen buffer */
 };
 
 
