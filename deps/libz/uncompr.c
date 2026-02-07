@@ -23,7 +23,7 @@
    */
 int uncompress (
       unsigned char *dest,
-      uint32_t *destLen,
+      uLongf *destLen,
       const unsigned char *source,
       uint32_t sourceLen)
 {
@@ -52,7 +52,7 @@ int uncompress (
    if (err != Z_STREAM_END)
    {
       inflateEnd(&stream);
-      if (   err == Z_NEED_DICT || 
+      if (   err == Z_NEED_DICT ||
             (err == Z_BUF_ERROR && stream.avail_in == 0))
          return Z_DATA_ERROR;
       return err;

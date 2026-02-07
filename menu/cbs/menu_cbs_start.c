@@ -31,6 +31,7 @@
 
 #include "../../configuration.h"
 #include "../../file_path_special.h"
+#include "../../tasks/task_content.h"
 #include "../../core.h"
 #include "../../core_info.h"
 #include "../../core_option_manager.h"
@@ -548,6 +549,36 @@ static int action_start_manual_content_scan_dir(
    return 0;
 }
 
+static int action_start_scan_method(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   manual_content_scan_set_menu_scan_method(0);
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return 0;
+}
+
+static int action_start_scan_use_db(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   manual_content_scan_set_menu_scan_use_db(0);
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return 0;
+}
+
+static int action_start_scan_db_select(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   manual_content_scan_set_menu_scan_db_select(0,"");
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return 0;
+}
+
 static int action_start_manual_content_scan_system_name(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -624,6 +655,26 @@ static int action_start_load_core(
    return ret;
 }
 
+static int action_start_restart_content(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   const char *core_path      = path_get(RARCH_PATH_CORE);
+   const char *content_path   = path_get(RARCH_PATH_CONTENT);
+   content_ctx_info_t content_info;
+
+   content_info.argc          = 0;
+   content_info.argv          = NULL;
+   content_info.args          = NULL;
+   content_info.environ_get   = NULL;
+
+   return task_push_load_content_with_new_core_from_menu(
+         core_path, content_path,
+         &content_info,
+         CORE_TYPE_PLAIN,
+         NULL, NULL);
+}
+
 #ifdef HAVE_BLUETOOTH
 static int action_start_bluetooth(const char *path, const char *label,
          unsigned menu_type, size_t idx, size_t entry_idx)
@@ -633,6 +684,22 @@ static int action_start_bluetooth(const char *path, const char *label,
    return 0;
 }
 #endif
+
+static int action_start_core_load(
+      const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+   char core_path[PATH_MAX_LENGTH];
+
+   fill_pathname_join_special(core_path,
+         settings->paths.directory_libretro,
+         path,
+         sizeof(core_path));
+
+   return action_ok_push_core_information_list(
+         core_path, label, type, idx, entry_idx);
+}
 
 #ifdef HAVE_NETWORKING
 static int action_start_core_updater_entry(
@@ -784,7 +851,9 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
          case MENU_ENUM_LABEL_CORE_LIST_UNLOAD:
             BIND_ACTION_START(cbs, action_start_load_core);
             break;
-         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER:
+         case MENU_ENUM_LABEL_RESTART_CONTENT:
+            BIND_ACTION_START(cbs, action_start_restart_content);
+            break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
@@ -860,6 +929,15 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
             BIND_ACTION_START(cbs, action_start_manual_content_scan_dir);
+            break;
+         case MENU_ENUM_LABEL_SCAN_METHOD:
+            BIND_ACTION_START(cbs, action_start_scan_method);
+            break;
+         case MENU_ENUM_LABEL_SCAN_USE_DB:
+            BIND_ACTION_START(cbs, action_start_scan_use_db);
+            break;
+         case MENU_ENUM_LABEL_SCAN_DB_SELECT:
+            BIND_ACTION_START(cbs, action_start_scan_db_select);
             break;
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
             BIND_ACTION_START(cbs, action_start_manual_content_scan_system_name);
@@ -945,6 +1023,9 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
       {
          case FILE_TYPE_PLAYLIST_COLLECTION:
             BIND_ACTION_START(cbs, action_ok_push_playlist_manager_settings);
+            break;
+         case FILE_TYPE_CORE:
+            BIND_ACTION_START(cbs, action_start_core_load);
             break;
 #ifdef HAVE_NETWORKING
          case FILE_TYPE_DOWNLOAD_CORE:

@@ -99,7 +99,8 @@ audio_driver_t audio_null = {
    NULL,
    NULL,
    NULL, /* write_avail */
-   NULL  /* buffer_size */
+   NULL, /* buffer_size */
+   NULL  /* write_raw */
 };
 
 audio_driver_t *audio_drivers[] = {
@@ -455,6 +456,45 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          (audio_st->mute_enable || audio_st->flags & AUDIO_FLAG_MUTED)
                ? 0.0f
                : audio_st->volume_gain;
+
+   /* Fast path: if driver handles resampling and no DSP/mixer is active,
+    * bypass software resampling entirely. */
+   if (audio_st->current_audio->write_raw
+#ifdef HAVE_DSP_FILTER
+         && !audio_st->dsp
+#endif
+#ifdef HAVE_AUDIOMIXER
+         && audio_st->mixer_streams_playing == 0
+#endif
+      )
+   {
+      size_t frames                  = samples >> 1;
+      double rate_adjust             = 1.0;
+      unsigned input_rate            = (unsigned)audio_st->input;
+
+      /* Rate control for A/V sync */
+      if (audio_st->flags & AUDIO_FLAG_CONTROL)
+      {
+         unsigned write_idx          =
+               audio_st->free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
+         int avail                   = (int)audio_st->current_audio->write_avail(
+               audio_st->context_audio_data);
+         int half_size               = (int)(audio_st->buffer_size / 2);
+         int delta_mid               = avail - half_size;
+         double direction            = (double)delta_mid / half_size;
+
+         audio_st->free_samples_buf[write_idx] = avail;
+         rate_adjust                 = 1.0 + audio_st->rate_control_delta * direction;
+      }
+
+      if (is_slowmotion)
+         rate_adjust                *= slowmotion_ratio;
+
+      /* Note: mute/volume is not applied here - driver must handle or ignore */
+      audio_st->current_audio->write_raw(audio_st->context_audio_data,
+            data, frames, input_rate, rate_adjust, audio_volume_gain);
+      return;
+   }
 
    src_data.data_out                 = NULL;
    src_data.output_frames            = 0;
@@ -1121,6 +1161,8 @@ static void audio_mixer_play_stop_cb(
             audio_driver_st.mixer_streams[i].stop_cb = NULL;
             audio_driver_st.mixer_streams[i].handle  = NULL;
             audio_driver_st.mixer_streams[i].voice   = NULL;
+            if (audio_driver_st.mixer_streams_playing > 0)
+               audio_driver_st.mixer_streams_playing--;
          }
          break;
       case AUDIO_MIXER_SOUND_STOPPED:
@@ -1143,6 +1185,8 @@ static void audio_mixer_menu_stop_cb(
             unsigned i                              = (unsigned)idx;
             audio_driver_st.mixer_streams[i].state   = AUDIO_STREAM_STATE_STOPPED;
             audio_driver_st.mixer_streams[i].volume  = 0.0f;
+            if (audio_driver_st.mixer_streams_playing > 0)
+               audio_driver_st.mixer_streams_playing--;
          }
          break;
       case AUDIO_MIXER_SOUND_STOPPED:
@@ -1180,6 +1224,8 @@ static void audio_mixer_play_stop_sequential_cb(
             audio_driver_st.mixer_streams[i].stop_cb        = NULL;
             audio_driver_st.mixer_streams[i].handle         = NULL;
             audio_driver_st.mixer_streams[i].voice          = NULL;
+            if (audio_driver_st.mixer_streams_playing > 0)
+               audio_driver_st.mixer_streams_playing--;
 
             i++;
 
@@ -1330,6 +1376,11 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_driver_st.mixer_streams[free_slot].volume      = params->volume;
    audio_driver_st.mixer_streams[free_slot].stop_cb     = stop_cb;
 
+   if (   params->state == AUDIO_STREAM_STATE_PLAYING
+       || params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED
+       || params->state == AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL)
+      audio_driver_st.mixer_streams_playing++;
+
    return true;
 }
 
@@ -1357,6 +1408,7 @@ static void audio_driver_mixer_play_stream_internal(
                audio_driver_st.resampler_quality,
                audio_driver_st.mixer_streams[i].stop_cb);
          audio_driver_st.mixer_streams[i].state = (enum audio_mixer_state)type;
+         audio_driver_st.mixer_streams_playing++;
          break;
       case AUDIO_STREAM_STATE_PLAYING:
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
@@ -1420,8 +1472,11 @@ void audio_driver_load_system_sounds(void)
    list          = dir_list_new(sounds_path, MENU_SOUND_FORMATS, false, false, false, false);
    list_fallback = dir_list_new(sounds_fallback_path, MENU_SOUND_FORMATS, false, false, false, false);
 
-   if (!list)
+   /* If primary list is NULL or empty, try to use fallback */
+   if ((!list || list->size == 0) && list_fallback && list_fallback->size > 0)
    {
+      if (list)
+         string_list_free(list);
       list          = list_fallback;
       list_fallback = NULL;
    }
@@ -1588,6 +1643,8 @@ void audio_driver_mixer_stop_stream(unsigned i)
                audio_mixer_stop(voice);
             audio_driver_st.mixer_streams[i].state   = AUDIO_STREAM_STATE_STOPPED;
             audio_driver_st.mixer_streams[i].volume  = 1.0f;
+            if (audio_driver_st.mixer_streams_playing > 0)
+               audio_driver_st.mixer_streams_playing--;
          }
          break;
       case AUDIO_STREAM_STATE_STOPPED:
@@ -2106,9 +2163,6 @@ static void mic_driver_microphone_handle_init(retro_microphone_t *microphone,
       unsigned microphone_sample_rate   = settings->uints.microphone_sample_rate;
       microphone->microphone_context    = NULL;
       microphone->flags                 = MICROPHONE_FLAG_ACTIVE;
-      microphone->sample_buffer         = NULL;
-      microphone->sample_buffer_length  = 0;
-
       microphone->requested_params.rate = params ? params->rate : microphone_sample_rate;
       microphone->actual_params.rate    = 0;
       /* We don't set the actual parameters until we actually open the mic.
@@ -2136,13 +2190,6 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone, bo
    {
       mic_driver->close_mic(driver_context, microphone->microphone_context);
       microphone->microphone_context = NULL;
-   }
-
-   if (microphone->sample_buffer)
-   {
-      memalign_free(microphone->sample_buffer);
-      microphone->sample_buffer = NULL;
-      microphone->sample_buffer_length = 0;
    }
 
    if (microphone->outgoing_samples)
@@ -2179,6 +2226,9 @@ bool microphone_driver_init_internal(void *settings_data)
    if (!settings->bools.microphone_enable)
    {
       mic_st->flags &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
+      /* Ensure microphone struct is clean to prevent crashes on deinit
+       * if there was stale data from a previous session */
+      memset(&mic_st->microphone, 0, sizeof(mic_st->microphone));
       return false;
    }
 
@@ -2271,13 +2321,6 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
 
    if (!microphone || !mic_driver || !(mic_st->flags & MICROPHONE_DRIVER_FLAG_ACTIVE))
       return false;
-
-   microphone->sample_buffer_length = max_samples * sizeof(int16_t);
-   microphone->sample_buffer        =
-         (int16_t*)memalign_alloc(64, microphone->sample_buffer_length);
-
-   if (!microphone->sample_buffer)
-      goto error;
 
    microphone->outgoing_samples = fifo_new(max_samples * sizeof(int16_t));
    if (!microphone->outgoing_samples)

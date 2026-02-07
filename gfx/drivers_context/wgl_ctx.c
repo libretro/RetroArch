@@ -843,6 +843,24 @@ static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 static void gfx_ctx_wgl_get_video_output_prev(void *data) { }
 static void gfx_ctx_wgl_get_video_output_next(void *data) { }
 
+static bool gfx_ctx_wgl_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   return egl_create_surface(&win32_egl, win32_get_window());
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_wgl_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   return egl_destroy_surface(&win32_egl);
+#else
+   return false;
+#endif
+}
+
 /* TODO: maybe create an uwp_mesa_common.c? */
 #ifdef __WINRT__
 
@@ -917,5 +935,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_set_flags,
    gfx_ctx_wgl_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   gfx_ctx_wgl_create_surface,
+   gfx_ctx_wgl_destroy_surface
 };

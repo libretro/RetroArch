@@ -68,6 +68,7 @@ typedef struct sdl_input
 enum sdl_webos_special_key
 {
    sdl_webos_spkey_back,
+   sdl_webos_spkey_return,
    sdl_webos_spkey_size,
 };
 
@@ -100,11 +101,18 @@ static bool sdl_key_pressed(int key)
       return false;
 
 #ifdef WEBOS
-   if (   (key == RETROK_BACKSPACE )
-       && sdl_webos_special_keymap[sdl_webos_spkey_back])
+   if ((key == RETROK_BACKSPACE)
+      && sdl_webos_special_keymap[sdl_webos_spkey_back])
    {
       /* Reset to unpressed state */
       sdl_webos_special_keymap[sdl_webos_spkey_back] = 0;
+      return true;
+   }
+   if ((key == RETROK_LCTRL)
+      && sdl_webos_special_keymap[sdl_webos_spkey_return])
+   {
+      /* Reset to unpressed state */
+      sdl_webos_special_keymap[sdl_webos_spkey_return] = 0;
       return true;
    }
    if (key == RETROK_F1 && keymap[SDL_WEBOS_SCANCODE_EXIT])
@@ -229,20 +237,16 @@ static int16_t sdl_input_state(
                       return 1;
                   }
                   break;
-               case RETRO_DEVICE_ID_MOUSE_X:
-                  return sdl->mouse_abs_x;
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  return sdl->mouse_abs_y;
 #else
                case RETRO_DEVICE_ID_MOUSE_WHEELUP:
                   return sdl->mouse_wu;
                case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
                   return sdl->mouse_wd;
+#endif
                case RETRO_DEVICE_ID_MOUSE_X:
                   return sdl->mouse_x;
                case RETRO_DEVICE_ID_MOUSE_Y:
                   return sdl->mouse_y;
-#endif
                case RETRO_DEVICE_ID_MOUSE_MIDDLE:
                   return sdl->mouse_m;
                case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
@@ -470,6 +474,9 @@ static void sdl_input_poll(void *data)
          unsigned code = input_keymaps_translate_keysym_to_rk(
                event.key.keysym.sym);
 #ifdef WEBOS
+         input_driver_state_t *input_st = input_state_get_ptr();
+         bool osk_active = input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+
          switch ((int) event.key.keysym.scancode)
          {
             case SDL_WEBOS_SCANCODE_BACK:
@@ -492,6 +499,23 @@ static void sdl_input_poll(void *data)
                break;
             case SDL_WEBOS_SCANCODE_EXIT:
                code = RETROK_F1;
+               break;
+            case SDL_SCANCODE_RIGHT:
+            case SDL_SCANCODE_LEFT:
+            case SDL_SCANCODE_DOWN:
+            case SDL_SCANCODE_UP:
+               /* navigation only, skip text insertion */
+               if (osk_active)
+                  continue;
+               break;
+            case SDL_SCANCODE_RETURN:
+               // remap wheel click to confirm selection in virtual keyboard
+               if (osk_active)
+               {
+                  if (event.type == SDL_KEYDOWN)
+                     sdl_webos_special_keymap[sdl_webos_spkey_return] = 1;
+                  continue;
+               }
                break;
             default:
                break;

@@ -453,20 +453,6 @@ static void dhcp_handle_ack(struct netif *netif)
   /* (y)our internet address */
   ip_addr_set(&dhcp->offered_ip_addr, &dhcp->msg_in->yiaddr);
 
-/**
- * Patch #1308
- * TODO: we must check if the file field is not overloaded by DHCP options!
- */
-#if 0
-  /* boot server address */
-  ip_addr_set(&dhcp->offered_si_addr, &dhcp->msg_in->siaddr);
-  /* boot file name */
-  if (dhcp->msg_in->file[0]) {
-    dhcp->boot_file_name = mem_malloc(strlen(dhcp->msg_in->file) + 1);
-    strcpy(dhcp->boot_file_name, dhcp->msg_in->file);
-  }
-#endif
-
   /* subnet mask */
   option_ptr = dhcp_get_option_ptr(dhcp, DHCP_OPTION_SUBNET_MASK);
   /* subnet mask given? */
@@ -836,15 +822,6 @@ err_t dhcp_renew(struct netif *netif)
     /* TODO: use netif->mtu in some way */
     dhcp_option_short(dhcp, 576);
 
-#if 0
-    dhcp_option(dhcp, DHCP_OPTION_REQUESTED_IP, 4);
-    dhcp_option_long(dhcp, ntohl(dhcp->offered_ip_addr.addr));
-#endif
-
-#if 0
-    dhcp_option(dhcp, DHCP_OPTION_SERVER_ID, 4);
-    dhcp_option_long(dhcp, ntohl(dhcp->server_ip_addr.addr));
-#endif
     /* append DHCP message trailer */
     dhcp_option_trailer(dhcp);
 
@@ -890,14 +867,6 @@ static err_t dhcp_rebind(struct netif *netif)
 
     dhcp_option(dhcp, DHCP_OPTION_MAX_MSG_SIZE, DHCP_OPTION_MAX_MSG_SIZE_LEN);
     dhcp_option_short(dhcp, 576);
-
-#if 0
-    dhcp_option(dhcp, DHCP_OPTION_REQUESTED_IP, 4);
-    dhcp_option_long(dhcp, ntohl(dhcp->offered_ip_addr.addr));
-
-    dhcp_option(dhcp, DHCP_OPTION_SERVER_ID, 4);
-    dhcp_option_long(dhcp, ntohl(dhcp->server_ip_addr.addr));
-#endif
 
     dhcp_option_trailer(dhcp);
 
@@ -1411,25 +1380,6 @@ static u8_t dhcp_get_option_byte(u8_t *ptr)
   LWIP_DEBUGF(DHCP_DEBUG, ("option byte value=%"U16_F"\n", (u16_t)(*ptr)));
   return *ptr;
 }
-
-/**
- * Return the 16-bit value of DHCP option data.
- *
- * @param client DHCP client.
- * @param ptr pointer obtained by dhcp_get_option_ptr().
- *
- * @return byte value at the given address.
- */
-#if 0
-static u16_t dhcp_get_option_short(u8_t *ptr)
-{
-  u16_t value;
-  value = *ptr++ << 8;
-  value |= *ptr;
-  LWIP_DEBUGF(DHCP_DEBUG, ("option short value=%"U16_F"\n", value));
-  return value;
-}
-#endif
 
 /**
  * Return the 32-bit value of DHCP option data.

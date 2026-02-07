@@ -315,7 +315,8 @@ static void sdl_microphone_set_nonblock_state(void *driver_context, bool state)
 
 static int sdl_microphone_read(void *driver_context, void *mic_context, void *sv, size_t len)
 {
-   int ret = 0;
+   int ret    = 0;
+   uint8_t *s = (uint8_t*)sv;
    sdl_microphone_t        *sdl = (sdl_microphone_t*)driver_context;
    sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
    uint8_t *s = (uint8_t *)sv;
@@ -746,5 +747,6 @@ audio_driver_t audio_sdl = {
    sdl_audio_list_new,
    sdl_audio_list_free,
    sdl_audio_write_avail,
-   NULL
+   NULL, /* buffer_size */
+   NULL  /* write_raw */
 };

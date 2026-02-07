@@ -93,6 +93,11 @@ static void command_post_state_loaded(void)
      if (frame_time_counter_reset_after_load_state)
         video_st->frame_time_count = 0;
    }
+#if defined(HAVE_GFX_WIDGETS) && defined(HAVE_SCREENSHOTS)
+   {
+      gfx_widget_state_slot_show(dispwidget_get_ptr(), NULL, NULL);
+   }
+#endif
 }
 
 #if defined(HAVE_COMMAND)
@@ -1030,39 +1035,71 @@ bool command_get_status(command_t *cmd, const char* arg)
 {
    size_t _len;
    char reply[4096];
-   uint8_t flags                  = content_get_flags();
+   uint8_t flags;
+
+   if (!cmd)
+      return false;
+
+   if (!cmd->replier)
+      return false;
+
+   flags = content_get_flags();
 
    if (flags & CONTENT_ST_FLAG_IS_INITED)
    {
       /* add some content info */
       core_info_t *core_info      = NULL;
       runloop_state_t *runloop_st = runloop_state_get_ptr();
+      const char *basename_path   = NULL;
+
+      if (!runloop_st)
+      {
+         _len = strlcpy(reply, "GET_STATUS ERROR", sizeof(reply));
+         cmd->replier(cmd, reply, _len);
+         return false;
+      }
 
       core_info_get_current_core(&core_info);
 
-      _len     = strlcpy(reply, "GET_STATUS ", sizeof(reply));
+      _len = strlcpy(reply, "GET_STATUS ", sizeof(reply));
+
       if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
          _len += strlcpy(reply + _len, "PAUSED", sizeof(reply) - _len);
       else
          _len += strlcpy(reply + _len, "PLAYING", sizeof(reply) - _len);
-      _len    += strlcpy(reply + _len, " ", sizeof(reply) - _len);
-      if (core_info)
+
+      _len += strlcpy(reply + _len, " ", sizeof(reply) - _len);
+
+      if (core_info && core_info->system_id)
          _len += strlcpy(reply + _len, core_info->system_id,
                sizeof(reply) - _len);
-      else
+      else if (runloop_st->system.info.library_name)
          _len += strlcpy(reply + _len, runloop_st->system.info.library_name,
                sizeof(reply) - _len);
-      _len    += strlcpy(reply + _len, ",", sizeof(reply) - _len);
-      _len    += strlcpy(reply + _len,
-            path_basename(path_get(RARCH_PATH_BASENAME)), sizeof(reply) - _len);
-      _len    += snprintf(reply + _len, sizeof(reply) - _len,
+      else
+         _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+
+      _len += strlcpy(reply + _len, ",", sizeof(reply) - _len);
+
+      basename_path = path_get(RARCH_PATH_BASENAME);
+      if (basename_path)
+      {
+         const char *basename = path_basename(basename_path);
+         if (basename)
+            _len += strlcpy(reply + _len, basename, sizeof(reply) - _len);
+         else
+            _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+      }
+      else
+         _len += strlcpy(reply + _len, "UNKNOWN", sizeof(reply) - _len);
+
+      _len += snprintf(reply + _len, sizeof(reply) - _len,
             ",crc32=%lx\n", (unsigned long)content_get_crc());
    }
    else
-       _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
+      _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
 
    cmd->replier(cmd, reply, _len);
-
    return true;
 }
 
@@ -1922,8 +1959,10 @@ bool command_set_shader(command_t *cmd, const char *arg)
 {
    enum  rarch_shader_type type = video_shader_parse_type(arg);
    settings_t  *settings        = config_get_ptr();
+   bool apply_new_shader        = !string_is_empty(arg);
 
-   if (!string_is_empty(arg))
+   configuration_set_bool(settings, settings->bools.video_shader_enable, apply_new_shader);
+   if (apply_new_shader)
    {
       gfx_ctx_flags_t flags;
       flags.flags     = 0;
@@ -2056,7 +2095,7 @@ void command_event_save_current_config(enum override_type type)
          {
             size_t _len;
             char msg[256];
-            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
+            enum message_queue_category msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             msg[0] = '\0';
 
@@ -2081,7 +2120,7 @@ void command_event_save_current_config(enum override_type type)
 
             /* command_event_save_config() does its own logging */
             if (msg_cat == MESSAGE_QUEUE_CATEGORY_ERROR)
-               RARCH_ERR("[Overrides] %s\n", msg);
+               RARCH_ERR("[Override] %s\n", msg);
 
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
@@ -2094,7 +2133,7 @@ void command_event_save_current_config(enum override_type type)
             size_t _len;
             char msg[256];
             int8_t ret      = config_save_overrides(type, &runloop_st->system, false, NULL);
-            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
+            enum message_queue_category msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             switch (ret)
             {
@@ -2120,14 +2159,14 @@ void command_event_save_current_config(enum override_type type)
             switch (msg_cat)
             {
                case MESSAGE_QUEUE_CATEGORY_ERROR:
-                  RARCH_ERR("[Overrides] %s\n", msg);
+                  RARCH_ERR("[Override] %s\n", msg);
                   break;
                case MESSAGE_QUEUE_CATEGORY_WARNING:
-                  RARCH_WARN("[Overrides] %s\n", msg);
+                  RARCH_WARN("[Override] %s\n", msg);
                   break;
                case MESSAGE_QUEUE_CATEGORY_SUCCESS:
                default:
-                  RARCH_LOG("[Overrides] %s\n", msg);
+                  RARCH_LOG("[Override] %s\n", msg);
                   break;
             }
 
@@ -2161,7 +2200,7 @@ void command_event_remove_current_config(enum override_type type)
          {
             size_t _len;
             char msg[256];
-            uint8_t msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
+            enum message_queue_category msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
 
             if (config_save_overrides(type, &runloop_st->system, true, NULL))
             {
@@ -2175,9 +2214,9 @@ void command_event_remove_current_config(enum override_type type)
             }
 
             if (msg_cat == MESSAGE_QUEUE_CATEGORY_ERROR)
-               RARCH_ERR("[Overrides] %s\n", msg);
+               RARCH_ERR("[Override] %s\n", msg);
             else
-               RARCH_LOG("[Overrides] %s\n", msg);
+               RARCH_LOG("[Override] %s\n", msg);
 
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, msg_cat);
@@ -2329,17 +2368,6 @@ bool command_event_disk_control_append_image(
    if (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
       autosave_deinit();
 #endif
-
-   /* TODO/FIXME: Need to figure out what to do with subsystems case. */
-   if (path_is_empty(RARCH_PATH_SUBSYSTEM))
-   {
-      /* Update paths for our new image.
-       * If we actually use append_image, we assume that we
-       * started out in a single disk case, and that this way
-       * of doing it makes the most sense. */
-      path_set(RARCH_PATH_NAMES, path);
-      runloop_path_fill_names();
-   }
 
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
 

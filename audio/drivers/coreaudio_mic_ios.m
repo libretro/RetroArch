@@ -358,7 +358,9 @@ error:
          AudioComponentInstanceDispose(microphone->audio_unit);
          microphone->audio_unit = nil;
       }
-      free(microphone);
+      if (microphone->sample_buffer)
+         fifo_free(microphone->sample_buffer);
+      /* Don't free microphone - it's the driver context, freed by coreaudio_microphone_free */
    }
    return NULL;
 }
@@ -378,8 +380,11 @@ static void coreaudio_microphone_close_mic(void *driver_context, void *microphon
          microphone->audio_unit = nil;
       }
       if (microphone->sample_buffer)
+      {
          fifo_free(microphone->sample_buffer);
-      free(microphone);
+         microphone->sample_buffer = NULL;
+      }
+      /* Don't free microphone - it's the driver context, freed by coreaudio_microphone_free */
    }
    else
    {
@@ -456,16 +461,6 @@ static struct string_list *coreaudio_microphone_device_list_new(const void *driv
 /* Free device list (not implemented for CoreAudio) */
 static void coreaudio_microphone_device_list_free(const void *driver_context, struct string_list *devices)
 {
-}
-
-/* Check if microphone is using float format */
-static bool coreaudio_microphone_use_float(const void *driver_context, const void *microphone_context)
-{
-   coreaudio_microphone_t *microphone = (coreaudio_microphone_t *)microphone_context;
-   if (!microphone)
-      return false;
-
-   return microphone->use_float;
 }
 
 /* CoreAudio microphone driver structure */

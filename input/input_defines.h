@@ -34,6 +34,7 @@
 #define RARCH_FIRST_META_KEY           RARCH_CUSTOM_BIND_LIST_END
 
 #define RARCH_UNMAPPED                 1024
+#define RARCH_NO_BIND                  "---"
 
 /* Specialized _MOUSE that targets the full screen regardless of viewport.
  */
@@ -117,6 +118,8 @@ enum
 
    /* Turbo */
    RARCH_TURBO_ENABLE = RARCH_FIRST_MISC_CUSTOM_BIND,
+   /* Hold */
+   RARCH_HOLD_ENABLE,
 
    RARCH_CUSTOM_BIND_LIST_END,
 
@@ -204,6 +207,10 @@ enum analog_dpad_mode
    ANALOG_DPAD_RSTICK,
    ANALOG_DPAD_LSTICK_FORCED,
    ANALOG_DPAD_RSTICK_FORCED,
+   ANALOG_DPAD_LRSTICK,
+   ANALOG_DPAD_TWINSTICK,
+   ANALOG_DPAD_LRSTICK_FORCED,
+   ANALOG_DPAD_TWINSTICK_FORCED,
    ANALOG_DPAD_LAST
 };
 

@@ -327,7 +327,29 @@ build-retroarch-linux-i686:
     - "cd gfx/video_filters && make -j$NUMPROC build=release && make -j$NUMPROC build=release strip && cd -"
     - "cp -f gfx/video_filters/*.so ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
-  
+
+build-retroarch-webos-armv7a:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-webos:latest
+  stage: build
+  variables:
+    MEDIA_PATH: .media
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+    - . /developer/arm-webos-linux-gnueabi_sdk-buildroot/environment-setup
+  artifacts:
+    paths:
+    - retroarch
+    - ${MEDIA_PATH}
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - make -f Makefile.webos retroarch -j$NUMPROC
+    - arm-webos-linux-gnueabi-strip --strip-unneeded retroarch
+    - mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio
+    - mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video
+    - cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio
+    - cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video
+
 .build-retroarch-macos-xcode:
   # Metal/Universal x86_64 arm64 is default
   tags:
@@ -629,7 +651,7 @@ build-retroarch-android-playstore-plus:
       mv .retroarch-precompiled/ retroarch-precompiled/
 
 build-static-retroarch-libnx-aarch64:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:v4-10-0
   stage: prepare-for-static-cores
   before_script:
     - export NUMPROC=$(($(nproc)/3))
@@ -649,7 +671,7 @@ build-static-retroarch-libnx-aarch64:
     - "mv .retroarch-precompiled/ retroarch-precompiled/"
 
 build-static-retroarch-dummy-libnx-aarch64:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:v4-10-0
   stage: build
   variables:
     MEDIA_PATH: .media

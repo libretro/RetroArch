@@ -11,6 +11,7 @@ HAVE_CHEEVOS := 1
 HAVE_FILE_LOGGER := 1
 HAVE_GFX_WIDGETS := 1
 HAVE_SAF := 1
+HAVE_BUILTINSMBCLIENT := 1
 
 INCFLAGS    :=
 DEFINES     :=
@@ -58,6 +59,20 @@ LOCAL_MODULE := retroarch-activity
 LOCAL_SRC_FILES  +=	$(RARCH_DIR)/griffin/griffin.c \
 							$(RARCH_DIR)/griffin/griffin_cpp.cpp
 
+ifeq ($(HAVE_BUILTINSMBCLIENT),1)
+   DEFINES += -DHAVE_BUILTINSMBCLIENT
+   DEFINES += "-D_U_=__attribute__((unused))"
+   DEFINES += -DHAVE_TIME_H -DHAVE_FCNTL_H -DHAVE_UNISTD_H
+   DEFINES += -DHAVE_STDLIB_H -DSTDC_HEADERS
+   DEFINES += -DHAVE_STRING_H
+   DEFINES += -DHAVE_LINGER
+   DEFINES += -DHAVE_SYS_UIO_H
+   DEFINES += -DHAVE_POLL_H -DHAVE_NETDB_H
+   DEFINES += -DHAVE_NETINET_TCP_H -DHAVE_NETINET_IN_H
+   DEFINES += -DHAVE_SYS_SOCKET_H -DHAVE_ARPA_INET_H
+   DEFINES += -DHAVE_SMBCLIENT
+endif
+
 ifeq ($(HAVE_LOGGER), 1)
    DEFINES += -DHAVE_LOGGER
 endif
@@ -95,6 +110,9 @@ DEFINES += -DRARCH_MOBILE \
 	   -DHAVE_BSV_MOVIE \
 	   -DHAVE_ZLIB \
 	   -DHAVE_NO_BUILTINZLIB \
+	   -DHAVE_ZSTD \
+	   -DZSTD_DISABLE_ASM \
+	   -DHAVE_CHEEVOS_RVZ \
 	   -DHAVE_RPNG \
 	   -DHAVE_RJPEG \
 	   -DHAVE_RBMP \
@@ -168,6 +186,10 @@ ifeq ($(HAVE_SAF),1)
    DEFINES += -DHAVE_SAF
 endif
 
+ifeq ($(HAVE_BUILTINSMBCLIENT),1)
+   DEFINES += -DHAVE_SMBCLIENT
+endif
+
 DEFINES += -DFLAC_PACKAGE_VERSION="\"retroarch\"" \
 	   -DHAVE_LROUND \
 	   -DFLAC__HAS_OGG=0
@@ -183,15 +205,23 @@ LOCAL_C_INCLUDES := \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/7zip
+		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/7zip \
+		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/zstd/lib
 
 INCLUDE_DIRS     := \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/ \
+		    -I$(LOCAL_PATH)/$(DEPS_DIR)/zstd/lib/ \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
 
 ifeq ($(HAVE_CHEEVOS),1)
 INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include
+endif
+
+ifeq ($(HAVE_BUILTINSMBCLIENT),1)
+   INCLUDE_DIRS += \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libsmb2/include \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libsmb2/include/smb2
 endif
 
 LOCAL_CFLAGS     += $(INCLUDE_DIRS)

@@ -1310,7 +1310,6 @@ DATA RUNLOOP
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
 #include "../tasks/task_playlist_manager.c"
-#include "../tasks/task_manual_content_scan.c"
 #include "../tasks/task_core_backup.c"
 #ifdef HAVE_TRANSLATE
 #include "../tasks/task_translation.c"
@@ -1318,8 +1317,8 @@ DATA RUNLOOP
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"
 #endif
-#ifdef HAVE_LIBRETRODB
 #include "../tasks/task_database.c"
+#ifdef HAVE_LIBRETRODB
 #include "../tasks/task_database_cue.c"
 #endif
 #if defined(HAVE_NETWORKING) && defined(HAVE_MENU)
@@ -1723,4 +1722,69 @@ GAME AI
 ============================================================ */
 #if defined(HAVE_GAME_AI)
 #include "../ai/game_ai.c"
+#endif
+
+/*============================================================
+SMB CLIENT
+============================================================ */
+#ifdef HAVE_BUILTINSMBCLIENT
+#include "../deps/libsmb2/lib/aes.c"
+#include "../deps/libsmb2/lib/aes_apple.c"
+#include "../deps/libsmb2/lib/aes128ccm.c"
+#include "../deps/libsmb2/lib/asn1-ber.c"
+#include "../deps/libsmb2/lib/aes_reference.c"
+#include "../deps/libsmb2/lib/alloc.c"
+#include "../deps/libsmb2/lib/compat.c"
+#include "../deps/libsmb2/lib/dcerpc.c"
+#include "../deps/libsmb2/lib/dcerpc-lsa.c"
+#include "../deps/libsmb2/lib/dcerpc-srvsvc.c"
+#include "../deps/libsmb2/lib/errors.c"
+#include "../deps/libsmb2/lib/hmac.c"
+#include "../deps/libsmb2/lib/hmac-md5.c"
+#include "../deps/libsmb2/lib/init.c"
+#include "../deps/libsmb2/lib/krb5-wrapper.c"
+#include "../deps/libsmb2/lib/libsmb2.c"
+#include "../deps/libsmb2/lib/md4c.c"
+#include "../deps/libsmb2/lib/md5.c"
+#include "../deps/libsmb2/lib/ntlmssp.c"
+#include "../deps/libsmb2/lib/pdu.c"
+#include "../deps/libsmb2/lib/sha1.c"
+#include "../deps/libsmb2/lib/sha224-256.c"
+#include "../deps/libsmb2/lib/sha384-512.c"
+#include "../deps/libsmb2/lib/smb2-cmd-close.c"
+#include "../deps/libsmb2/lib/smb2-cmd-create.c"
+#include "../deps/libsmb2/lib/smb2-cmd-echo.c"
+#include "../deps/libsmb2/lib/smb2-cmd-error.c"
+#include "../deps/libsmb2/lib/smb2-cmd-flush.c"
+#include "../deps/libsmb2/lib/smb2-cmd-ioctl.c"
+#include "../deps/libsmb2/lib/smb2-cmd-lock.c"
+#include "../deps/libsmb2/lib/smb2-cmd-logoff.c"
+#include "../deps/libsmb2/lib/smb2-cmd-negotiate.c"
+#include "../deps/libsmb2/lib/smb2-cmd-oplock-break.c"
+#include "../deps/libsmb2/lib/smb2-cmd-notify-change.c"
+#include "../deps/libsmb2/lib/smb2-cmd-query-directory.c"
+#include "../deps/libsmb2/lib/smb2-cmd-query-info.c"
+#include "../deps/libsmb2/lib/smb2-cmd-read.c"
+#include "../deps/libsmb2/lib/smb2-cmd-session-setup.c"
+#include "../deps/libsmb2/lib/smb2-cmd-set-info.c"
+#include "../deps/libsmb2/lib/smb2-cmd-tree-connect.c"
+#include "../deps/libsmb2/lib/smb2-cmd-tree-disconnect.c"
+#include "../deps/libsmb2/lib/smb2-cmd-write.c"
+#include "../deps/libsmb2/lib/smb2-data-file-info.c"
+#include "../deps/libsmb2/lib/smb2-data-filesystem-info.c"
+#include "../deps/libsmb2/lib/smb2-data-security-descriptor.c"
+#include "../deps/libsmb2/lib/smb2-data-reparse-point.c"
+#include "../deps/libsmb2/lib/smb2-share-enum.c"
+#include "../deps/libsmb2/lib/smb2-signing.c"
+#include "../deps/libsmb2/lib/smb3-seal.c"
+#include "../deps/libsmb2/lib/socket.c"
+#include "../deps/libsmb2/lib/spnego-wrapper.c"
+#include "../deps/libsmb2/lib/sync.c"
+#include "../deps/libsmb2/lib/timestamps.c"
+#include "../deps/libsmb2/lib/usha.c"
+#include "../deps/libsmb2/lib/unicode.c"
+#endif
+
+#ifdef HAVE_SMBCLIENT
+#include "../libretro-common/vfs/vfs_implementation_smb.c"
 #endif

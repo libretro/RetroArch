@@ -755,3 +755,15 @@ if [ "$HAVE_CXX11" = 'yes' ]; then
       check_platform Win32 SR2 'CRT modeswitching is' true
    fi
 fi
+
+# First try system libsmb2
+check_pkgconf SMBCLIENT libsmb2 0.0
+check_enabled NETWORKING SMBCLIENT libsmb2 'SMB client support is' false
+
+if [ "$HAVE_SMBCLIENT" = "yes" ]; then
+    echo "SMB support enabled (system libsmb2)"
+elif [ "$HAVE_BUILTINSMBCLIENT" = "yes" ] || [ "$HAVE_BUILTINSMBCLIENT" = "auto" ]; then
+    HAVE_BUILTINSMBCLIENT=yes
+    echo "SMB support - building bundled libsmb2"
+    add_dirs INCLUDE ./deps/libsmb2/include
+fi

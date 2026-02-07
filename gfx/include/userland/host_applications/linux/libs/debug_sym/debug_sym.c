@@ -586,15 +586,6 @@ static int AccessVideoCoreMemory( VC_MEM_ACCESS_HANDLE_T vcHandle,
     }
     vcMemAddr = TO_VC_MEM_ADDR(ALIAS_NORMAL( vcMemAddr ));
 
-    #if 0
-    if ( (vcMemAddr < vcHandle->vcMemBase) ||
-         (vcMemAddr > vcHandle->vcMemEnd) )
-    {
-        ERR( "Memory address 0x%08x is outside range 0x%08x-0x%08x", vcMemAddr,
-             vcHandle->vcMemBase, vcHandle->vcMemEnd );
-        return 0;
-    }
-    #endif
     if (( vcMemAddr + numBytes - 1) > vcHandle->vcMemEnd )
     {
         ERR( "Memory address 0x%08x + numBytes 0x%08zx is > memory end 0x%08x",

@@ -2088,20 +2088,12 @@ XXH32_endian_align(const xxh_u8* input, size_t len, xxh_u32 seed, XXH_alignment 
 /*! @ingroup xxh32_family */
 XXH_PUBLIC_API XXH32_hash_t XXH32 (const void* input, size_t len, XXH32_hash_t seed)
 {
-#if 0
-    /* Simple version, good for code maintenance, but unfortunately slow for small inputs */
-    XXH32_state_t state;
-    XXH32_reset(&state, seed);
-    XXH32_update(&state, (const xxh_u8*)input, len);
-    return XXH32_digest(&state);
-#else
     if (XXH_FORCE_ALIGN_CHECK) {
         if ((((size_t)input) & 3) == 0) {   /* Input is 4-bytes aligned, leverage the speed benefit */
             return XXH32_endian_align((const xxh_u8*)input, len, seed, XXH_aligned);
     }   }
 
     return XXH32_endian_align((const xxh_u8*)input, len, seed, XXH_unaligned);
-#endif
 }
 
 
@@ -2504,21 +2496,12 @@ XXH64_endian_align(const xxh_u8* input, size_t len, xxh_u64 seed, XXH_alignment 
 /*! @ingroup xxh64_family */
 XXH_PUBLIC_API XXH64_hash_t XXH64 (const void* input, size_t len, XXH64_hash_t seed)
 {
-#if 0
-    /* Simple version, good for code maintenance, but unfortunately slow for small inputs */
-    XXH64_state_t state;
-    XXH64_reset(&state, seed);
-    XXH64_update(&state, (const xxh_u8*)input, len);
-    return XXH64_digest(&state);
-#else
     if (XXH_FORCE_ALIGN_CHECK) {
         if ((((size_t)input) & 7)==0) {  /* Input is aligned, let's leverage the speed advantage */
             return XXH64_endian_align((const xxh_u8*)input, len, seed, XXH_aligned);
     }   }
 
     return XXH64_endian_align((const xxh_u8*)input, len, seed, XXH_unaligned);
-
-#endif
 }
 
 /*******   Hash Streaming   *******/

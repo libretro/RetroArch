@@ -149,6 +149,14 @@ enum event_command
    CMD_EVENT_VIDEO_SET_ASPECT_RATIO,
    /* Restarts RetroArch. */
    CMD_EVENT_RESTART_RETROARCH,
+#ifdef HAVE_CLOUDSYNC
+   /* Trigger cloud sync */
+   CMD_EVENT_CLOUD_SYNC,
+   /* Resolve cloud sync conflicts by keeping local files */
+   CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   /* Resolve cloud sync conflicts by keeping server files */
+   CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+#endif
    /* Shutdown the OS */
    CMD_EVENT_SHUTDOWN,
    /* Reboot the OS */
@@ -343,7 +351,7 @@ bool command_network_send(const char *cmd_);
 #ifdef HAVE_STDIN_CMD
 command_t* command_stdin_new(void);
 #endif
-#ifdef LAKKA
+#ifdef HAVE_LAKKA
 command_t* command_uds_new(void);
 #endif
 #ifdef EMSCRIPTEN

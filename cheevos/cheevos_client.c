@@ -34,6 +34,11 @@
 #include "../network/presence.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "cheevos_menu.h"
+#include "../menu/menu_driver.h"
+#endif
+
 #include "../deps/rcheevos/include/rc_api_runtime.h"
 #include "../deps/rcheevos/include/rc_api_user.h"
 
@@ -405,6 +410,12 @@ static void rcheevos_client_download_task_callback(retro_task_t* task,
    {
       CHEEVOS_LOG(RCHEEVOS_TAG "Error writing %s\n", callback_data->badge_fullpath);
    }
+#ifdef HAVE_MENU
+   else
+   {
+      rcheevos_menu_update_badge_references(callback_data->badge_name);
+   }
+#endif
 
    if (callback_data->queue)
    {
@@ -490,7 +501,15 @@ static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
 #endif
       /* if the game is no longer loaded, stop processing the queue */
       if (queue->game != rc_client_get_game_info(queue->client))
-         queue->pass = 2;
+         queue->pass = 3;
+
+#ifdef HAVE_MENU
+      if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+      {
+         /* menu is no longer open, stop processing the queue so we don't interrupt emulation */
+         queue->pass = 3;
+      }
+#endif
 
       while (queue->pass < 2)
       {
@@ -514,19 +533,19 @@ static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
          if (!achievement->badge_name[0])
             continue;
 
-         if (queue->pass == 0)
+         if (queue->pass == 1)
          {
-            /* First pass - get all unlocked badges */
+            /* Second pass - get all unlocked badges */
             url        = achievement->badge_url;
             next_badge = achievement->badge_name;
          }
-         /* Second pass - don't need locked badge for
+         /* First pass - don't need locked badge for
           * achievement player has already unlocked */
          else if (achievement->unlock_time)
             continue;
          else
          {
-            /* Second pass - get locked badge */
+            /* First pass - get locked badge */
             url = achievement->badge_locked_url;
             snprintf(badge_name, sizeof(badge_name), "%s_lock", achievement->badge_name);
             next_badge = badge_name;
@@ -538,7 +557,15 @@ static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
       if (!next_badge)
       {
          if (--queue->outstanding_requests == 0)
-            done = true;
+         {
+            if (queue->pass == 2)
+            {
+               /* all badges successfully loaded */
+               get_rcheevos_locals()->badges_loaded = true;
+            }
+
+            done = true; /* destroy queue */
+         }
       }
 
 #ifdef HAVE_THREADS
@@ -564,6 +591,8 @@ static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
       }
       rc_client_destroy_achievement_list(queue->list);
 
+      get_rcheevos_locals()->badges_loading = false;
+
 #ifdef HAVE_THREADS
       slock_free(queue->lock);
 #endif
@@ -578,18 +607,6 @@ void rcheevos_client_download_placeholder_badge(void)
 
    if (rc_client_achievement_get_image_url(NULL, RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED, url, sizeof(url)) == RC_OK)
       rcheevos_client_download_badge(NULL, url, "00000");
-}
-
-void rcheevos_client_download_game_badge(const rc_client_game_t* game)
-{
-   char url[256] = "";
-   char badge_name[16];
-
-   if (game && rc_client_game_get_image_url(game, url, sizeof(url)) == RC_OK)
-   {
-      snprintf(badge_name, sizeof(badge_name), "i%s", game->badge_name);
-      rcheevos_client_download_badge(NULL, url, badge_name);
-   }
 }
 
 void rcheevos_client_download_achievement_badges(rc_client_t* client)

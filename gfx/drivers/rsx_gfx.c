@@ -1140,35 +1140,14 @@ static void rsx_set_projection(rsx_t *rsx,
 static void rsx_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
-	int i;
+   int i;
    rsx_viewport_t vp;
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
-   settings_t *settings      = config_get_ptr();
    rsx_t *rsx                = (rsx_t*)data;
-   bool video_scale_integer  = settings->bools.video_scale_integer;
 
-   if (video_scale_integer && !force_full)
-   {
-      video_viewport_get_scaled_integer(&rsx->vp,
-            vp_width, vp_height,
-            video_driver_get_aspect_ratio(), rsx->keep_aspect,
-            true);
-      vp_width               = rsx->vp.width;
-      vp_height              = rsx->vp.height;
-   }
-   else if (rsx->keep_aspect && !force_full)
-   {
-      video_viewport_get_scaled_aspect(&rsx->vp, vp_width, vp_height, true);
-      vp_width               = rsx->vp.width;
-      vp_height              = rsx->vp.height;
-   }
-   else
-   {
-      rsx->vp.x               = 0;
-      rsx->vp.y               = 0;
-      rsx->vp.width           = vp_width;
-      rsx->vp.height          = vp_height;
-   }
+   rsx->vp.full_width         = vp_width;
+   rsx->vp.full_height        = vp_height;
+   video_driver_update_viewport(&rsx->vp, force_full, rsx->keep_aspect, true);
 
    vp.min                     = 0.0f;
    vp.max                     = 1.0f;
@@ -1191,13 +1170,6 @@ static void rsx_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
    rsxSetScissor(rsx->context, vp.x, vp.y, vp.w, vp.h);
 
    rsx_set_projection(rsx, &ortho, allow_rotate);
-
-   /* Set last backbuffer viewport. */
-   if (!force_full)
-   {
-      rsx->vp.width           = vp_width;
-      rsx->vp.height          = vp_height;
-   }
 }
 
 static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
@@ -1597,81 +1569,11 @@ static void* rsx_init(const video_info_t* video,
 
 static void rsx_update_viewport(rsx_t* rsx)
 {
-   int x                     = 0;
-   int y                     = 0;
-   unsigned vp_width         = rsx->width;
-   unsigned vp_height        = rsx->height;
-   float device_aspect       = ((float)vp_width) / vp_height;
-   settings_t *settings      = config_get_ptr();
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+   rsx->vp.full_width  = rsx->width;
+   rsx->vp.full_height = rsx->height;
+   video_driver_update_viewport(&rsx->vp, false, rsx->keep_aspect, true);
 
-   if (video_scale_integer)
-   {
-      video_viewport_get_scaled_integer(&rsx->vp, vp_width, vp_height,
-            video_driver_get_aspect_ratio(), rsx->keep_aspect,
-            true);
-      vp_width               = rsx->vp.width;
-      vp_height              = rsx->vp.height;
-   }
-   else if (rsx->keep_aspect)
-   {
-      float desired_aspect   = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_vp_custom;
-         /* RSX/libgcm has top-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = custom_vp->y;
-         vp_width                    = custom_vp->width;
-         vp_height                   = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if ((fabsf(device_aspect - desired_aspect) < 0.0001f))
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            float viewport_bias = settings->floats.video_vp_bias_x;
-            delta           = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x               = (int)roundf(vp_width * ((0.5f - delta) * (viewport_bias * 2.0f)));
-            vp_width        = (unsigned)roundf(2.0f * vp_width * delta);
-         }
-         else
-         {
-            float viewport_bias = 1.0 - settings->floats.video_vp_bias_y;
-            delta           = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y               = (int)roundf(vp_height * ((0.5f - delta) * (viewport_bias * 2.0f)));
-            vp_height       = (unsigned)roundf(2.0f * vp_height * delta);
-         }
-      }
-
-      rsx->vp.x             = x;
-      rsx->vp.y             = y;
-      rsx->vp.width         = vp_width;
-      rsx->vp.height        = vp_height;
-   }
-   else
-   {
-      rsx->vp.x             = 0;
-      rsx->vp.y             = 0;
-      rsx->vp.width         = vp_width;
-      rsx->vp.height        = vp_height;
-   }
-
-   rsx->should_resize       = false;
+   rsx->should_resize  = false;
 }
 
 static unsigned rsx_wrap_type_to_enum(enum gfx_wrap_type type)
@@ -2530,8 +2432,9 @@ static const video_poke_interface_t rsx_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void rsx_get_poke_interface(void* data,

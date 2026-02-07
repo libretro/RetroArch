@@ -319,19 +319,9 @@ static void* ui_application_cocoa_initialize(void)
 
 static void ui_application_cocoa_process_events(void)
 {
-    for (;;)
-    {
-        NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
-        if (!event)
-            break;
-#ifndef HAVE_COCOA_METAL
-        [event retain];
-#endif
-        [NSApp sendEvent: event];
-#ifndef HAVE_COCOA_METAL
-        [event retain];
-#endif
-    }
+   /* Intentionally empty. The CFRunLoopObserver (kCFRunLoopBeforeWaiting)
+    * fires after the run loop has already processed pending events, so
+    * manual event polling here is unnecessary and just adds overhead. */
 }
 
 static ui_application_t ui_application_cocoa = {

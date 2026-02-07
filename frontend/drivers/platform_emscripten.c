@@ -54,6 +54,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../cheat_manager.h"
 #include "../../audio/audio_driver.h"
+#include "../../gfx/common/gl_common.h"
 
 #ifdef HAVE_EXTRA_WASMFS
 #include <emscripten/wasmfs.h>
@@ -75,6 +76,7 @@
 void emscripten_mainloop(void);
 
 /* javascript library functions */
+void PlatformEmscriptenKeepThreadAlive(void);
 void PlatformEmscriptenWatchCanvasSizeAndDpr(double *dpr);
 void PlatformEmscriptenCanvasListenersInit(void);
 void PlatformEmscriptenWatchWindowVisibility(void);
@@ -84,7 +86,7 @@ void PlatformEmscriptenWatchFullscreen(void);
 void PlatformEmscriptenGLContextEventInit(void);
 void PlatformEmscriptenSetCanvasSize(int width, int height);
 void PlatformEmscriptenSetWakeLock(bool state);
-uint32_t PlatformEmscriptenGetSystemInfo(void);
+void PlatformEmscriptenGetSystemInfo(unsigned *browser, unsigned *os);
 void PlatformEmscriptenFree(void);
 
 typedef struct
@@ -101,6 +103,8 @@ typedef struct
    enum platform_emscripten_browser browser;
    enum platform_emscripten_os os;
    enum frontend_fork fork_mode;
+   int main_loop_blockers;
+   int deferred_sleep_ms;
    int raf_interval;
    int canvas_width;
    int canvas_height;
@@ -437,7 +441,19 @@ bool platform_emscripten_is_window_hidden(void)
 
 bool platform_emscripten_should_drop_iter(void)
 {
-   return (emscripten_platform_data->gl_context_lost || (emscripten_platform_data->window_hidden && emscripten_platform_data->raf_interval));
+#if defined(PROXY_TO_PTHREAD) || defined(EMSCRIPTEN_ASYNCIFY)
+   /* If possible, sleep while hidden to mimimize CPU usage. */
+   if (emscripten_platform_data->window_hidden)
+      retro_sleep(100);
+#endif
+   return emscripten_platform_data->window_hidden || emscripten_platform_data->gl_context_lost;
+}
+
+static void platform_emscripten_pop_main_loop_blocker(void)
+{
+   emscripten_platform_data->main_loop_blockers--;
+   if (emscripten_platform_data->main_loop_blockers < 0)
+      emscripten_platform_data->main_loop_blockers = 0;
 }
 
 #ifdef PROXY_TO_PTHREAD
@@ -450,13 +466,18 @@ static void set_raf_interval(void *data)
 void platform_emscripten_wait_for_frame(void)
 {
    if (emscripten_platform_data->raf_interval)
+   {
+      /* Firefox needs glFinish explicitly called here. */
+      gl_finish();
       emscripten_condvar_waitinf(&emscripten_platform_data->raf_cond, &emscripten_platform_data->raf_lock);
+   }
 }
 
 #else
 
 void platform_emscripten_enter_fake_block(int ms)
 {
+   emscripten_platform_data->main_loop_blockers++;
    if (ms == 0)
       emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
    else
@@ -465,14 +486,46 @@ void platform_emscripten_enter_fake_block(int ms)
 
 void platform_emscripten_exit_fake_block(void)
 {
-   command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+   platform_emscripten_pop_main_loop_blocker();
+   platform_emscripten_set_main_loop_interval(emscripten_platform_data->raf_interval);
 }
 
 #endif
 
+void platform_emscripten_deferred_sleep(int ms)
+{
+   if (emscripten_platform_data->deferred_sleep_ms == 0 && ms > 0)
+      emscripten_platform_data->main_loop_blockers++;
+   else if (emscripten_platform_data->deferred_sleep_ms > 0 && ms < 0 && emscripten_platform_data->deferred_sleep_ms <= -ms)
+      platform_emscripten_pop_main_loop_blocker();
+
+   emscripten_platform_data->deferred_sleep_ms += ms;
+
+   if (emscripten_platform_data->deferred_sleep_ms > 0)
+   {
+      emscripten_set_main_loop_timing(EM_TIMING_SETTIMEOUT, emscripten_platform_data->deferred_sleep_ms);
+   } else {
+      emscripten_platform_data->deferred_sleep_ms = 0;
+      platform_emscripten_set_main_loop_interval(emscripten_platform_data->raf_interval);
+   }
+}
+
+bool platform_emscripten_finish_deferred_sleep(void)
+{
+   if (!emscripten_platform_data->deferred_sleep_ms)
+      return false;
+
+   emscripten_platform_data->deferred_sleep_ms = 0;
+   platform_emscripten_pop_main_loop_blocker();
+   platform_emscripten_set_main_loop_interval(emscripten_platform_data->raf_interval);
+   return true;
+}
+
 void platform_emscripten_set_main_loop_interval(int interval)
 {
    emscripten_platform_data->raf_interval = interval;
+   if (emscripten_platform_data->main_loop_blockers > 0)
+      return;
 #ifdef PROXY_TO_PTHREAD
    if (interval != 0)
       platform_emscripten_run_on_browser_thread_sync(set_raf_interval, (void *)interval);
@@ -715,8 +768,8 @@ static void frontend_emscripten_exec_browser(void *path)
       Module.canvas.replaceWith(newCanvas);
       Module.canvas = newCanvas;
 #endif
-      if (typeof Module.retroArchExit == "function")
-         setTimeout(Module.retroArchExit, 0, $0 && UTF8ToString($0), $1 && UTF8ToString($1));
+      if (typeof Module["retroArchExit"] == "function")
+         setTimeout(Module["retroArchExit"], 0, $0 && UTF8ToString($0), $1 && UTF8ToString($1));
       else
          out("[INFO] Exiting, but Module.retroArchExit was not provided");
    }, core, content);
@@ -889,12 +942,14 @@ static int thread_main(int argc, char *argv[])
 
    PlatformEmscriptenGLContextEventInit();
    emscripten_set_main_loop(emscripten_mainloop, 0, 0);
+   emscripten_pause_main_loop();
 #ifdef PROXY_TO_PTHREAD
    emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
 #else
    emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
 #endif
    rarch_main(argc, argv, NULL);
+   emscripten_resume_main_loop();
 
    return 0;
 }
@@ -908,6 +963,7 @@ static void *main_pthread(void* arg)
 {
    emscripten_set_thread_name(pthread_self(), "Application main thread");
    emscripten_platform_data->program_thread_id = pthread_self();
+   PlatformEmscriptenKeepThreadAlive();
    thread_main(_main_argc, _main_argv);
    return NULL;
 }
@@ -921,7 +977,7 @@ static void raf_signaler(void)
 int main(int argc, char *argv[])
 {
    int ret = 0;
-   uint32_t system_info;
+   unsigned host_browser, host_os;
 #ifdef PROXY_TO_PTHREAD
    pthread_attr_t attr;
    pthread_t thread;
@@ -929,9 +985,9 @@ int main(int argc, char *argv[])
    /* this never gets freed */
    emscripten_platform_data = (emscripten_platform_data_t *)calloc(1, sizeof(emscripten_platform_data_t));
 
-   system_info = PlatformEmscriptenGetSystemInfo();
-   emscripten_platform_data->browser = system_info & 0xFFFF;
-   emscripten_platform_data->os      = system_info >> 16;
+   PlatformEmscriptenGetSystemInfo(&host_browser, &host_os);
+   emscripten_platform_data->browser = host_browser;
+   emscripten_platform_data->os      = host_os;
 
    emscripten_platform_data->enable_set_canvas_size = !!getenv("ENABLE_SET_CANVAS_SIZE");
    emscripten_platform_data->disable_detect_enter_fullscreen = !!getenv("DISABLE_DETECT_ENTER_FULLSCREEN");
@@ -968,6 +1024,7 @@ int main(int argc, char *argv[])
       }
    });
 
+   PlatformEmscriptenKeepThreadAlive();
    PlatformEmscriptenWatchCanvasSizeAndDpr(&emscripten_platform_data->device_pixel_ratio_temp);
    PlatformEmscriptenCanvasListenersInit();
    PlatformEmscriptenWatchWindowVisibility();

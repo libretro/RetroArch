@@ -406,10 +406,10 @@ static void d3d10_init_texture(D3D10Device device, d3d10_texture_t* texture)
       unsigned width, height;
 
       texture->desc.BindFlags |= D3D10_BIND_RENDER_TARGET;
-      width                    = texture->desc.Width  >> 5;
-      height                   = texture->desc.Height >> 5;
+      width                    = texture->desc.Width;
+      height                   = texture->desc.Height;
 
-      while (width && height)
+      while ((width > 1) || (height > 1))
       {
          width  >>= 1;
          height >>= 1;
@@ -1453,7 +1453,7 @@ static void d3d10_gfx_set_rotation(void* data, unsigned rotation)
 static void d3d10_update_viewport(d3d10_video_t *d3d10, bool force_full)
 {
    video_driver_update_viewport(&d3d10->vp, force_full,
-         (d3d10->flags & D3D10_ST_FLAG_KEEP_ASPECT) ? true : false);
+         (d3d10->flags & D3D10_ST_FLAG_KEEP_ASPECT) ? true : false, true);
 
    d3d10->frame.viewport.TopLeftX  = d3d10->vp.x;
    d3d10->frame.viewport.TopLeftY  = d3d10->vp.y;
@@ -2378,6 +2378,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
          d3d10->pass[i].rt.desc.BindFlags = D3D10_BIND_RENDER_TARGET;
          d3d10->pass[i].rt.desc.Format    = glslang_format_to_dxgi(
                d3d10->pass[i].semantics.format);
+         d3d10->pass[i].rt.desc.MiscFlags = D3D10_RESOURCE_MISC_GENERATE_MIPS;
          d3d10_release_texture(&d3d10->pass[i].rt);
          d3d10_init_texture(d3d10->device, &d3d10->pass[i].rt);
 
@@ -2720,6 +2721,11 @@ static bool d3d10_gfx_frame(
 #endif /* D3D10_ROLLING_SCANLINE_SIMULATION */
 
             context->lpVtbl->Draw(context, 4, 0);
+
+            /* Generate mipmaps for render target if needed */
+            if (d3d10->pass[i].rt.desc.MiscFlags & D3D10_RESOURCE_MISC_GENERATE_MIPS)
+               context->lpVtbl->GenerateMips(context, d3d10->pass[i].rt.view);
+               
             texture = &d3d10->pass[i].rt;
          }
          else
@@ -3270,8 +3276,9 @@ static const video_poke_interface_t d3d10_poke_interface = {
 #endif
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void d3d10_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

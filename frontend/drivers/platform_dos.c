@@ -58,7 +58,7 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
    if ((slash = strrchr(base_path, '/')))
       *slash = '\0';
    slash = strrchr(base_path, '/');
-   if (slash && strcasecmp(slash, "/cores"))
+   if (slash && strcasecmp(slash, "/cores") == 0)
       *slash = '\0';
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], base_path,

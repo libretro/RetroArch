@@ -59,7 +59,7 @@ static void tremolocore_init(struct tremolo_core *core,float depth,int samplerat
    const double offset = 1. - depth / 2.;
    core->index     = 0;
    core->maxindex  = samplerate / freq;
-   core->wavetable = malloc(core->maxindex   * sizeof(float));
+   core->wavetable = (float*)malloc(core->maxindex   * sizeof(float));
    memset(core->wavetable, 0, core->maxindex * sizeof(float));
    for (i = 0; i < core->maxindex; i++)
    {

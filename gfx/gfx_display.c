@@ -23,6 +23,10 @@
 #include "../steam/steam.h"
 #endif
 
+#ifdef HAVE_COCOATOUCH
+#include "../ui/drivers/cocoa/apple_platform.h"
+#endif
+
 /* Standard reference DPI value, used when determining
  * DPI-aware scaling factors */
 #define REFERENCE_DPI 96.0f
@@ -997,6 +1001,10 @@ void gfx_display_draw_keyboard(
 
 #ifdef HAVE_MIST
    if (steam_has_osk_open())
+      return;
+#endif
+#ifdef HAVE_COCOATOUCH
+   if (ios_keyboard_active())
       return;
 #endif
 

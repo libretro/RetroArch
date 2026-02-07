@@ -253,12 +253,6 @@ static void *phosphor2x_generic_create(const struct softfilter_config *config,
    filt->scanrange_low  = 0.5;
    filt->scanrange_high = 0.65;
 
-#if 0
-   /* Initialize lookup tables: */
-   phosphorBloom = (scaleTimes .*
-         linspace(0, 1, 255) .^ (1/2.2)) + scaleAdd;
-   /* Not exactly sure of order of operations here ... */
-#endif
    for (i = 0; i < 256; i++)
    {
       filt->phosphor_bloom_8888[i] =
@@ -446,10 +440,6 @@ static void phosphor2x_generic_packets(void *data,
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
          packets[i].work     = phosphor2x_work_cb_rgb565;
-#if 0
-      else if (filt->in_fmt == SOFTFILTER_FMT_RGB4444)
-         packets[i].work     = phosphor2x_work_cb_rgb4444;
-#endif
       if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
          packets[i].work     = phosphor2x_work_cb_xrgb8888;
       packets[i].thread_data = thr;

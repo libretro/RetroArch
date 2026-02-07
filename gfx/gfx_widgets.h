@@ -235,7 +235,6 @@ typedef struct dispgfx_widget
    unsigned msg_queue_icon_size_y;
    unsigned msg_queue_icon_offset_y;
    unsigned msg_queue_scissor_start_x;
-   unsigned msg_queue_default_rect_width_menu_alive;
    unsigned msg_queue_default_rect_width;
    unsigned msg_queue_regular_padding_x;
    unsigned msg_queue_regular_text_start;

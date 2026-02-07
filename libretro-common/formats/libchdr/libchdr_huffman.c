@@ -405,23 +405,8 @@ int huffman_build_tree(struct huffman_decoder* decoder, uint32_t totaldata, uint
 				decoder->huffnode[curcode].weight = 1;
 		}
 
-#if 0
-        fprintf(stderr, "Pre-sort:\n");
-        for (int i = 0; i < listitems; i++) {
-            fprintf(stderr, "weight: %d code: %d\n", list[i]->m_weight, list[i]->m_bits);
-        }
-#endif
-
 	/* sort the list by weight, largest weight first */
 	qsort(&list[0], listitems, sizeof(list[0]), huffman_tree_node_compare);
-
-#if 0
-        fprintf(stderr, "Post-sort:\n");
-        for (int i = 0; i < listitems; i++) {
-            fprintf(stderr, "weight: %d code: %d\n", list[i]->m_weight, list[i]->m_bits);
-        }
-        fprintf(stderr, "===================\n");
-#endif
 
 	/* now build the tree */
 	nextalloc = decoder->numcodes;

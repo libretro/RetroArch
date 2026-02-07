@@ -1302,36 +1302,10 @@ static void gl1_set_viewport(gl1_t *gl1,
       unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
-   settings_t *settings     = config_get_ptr();
-   float device_aspect      = (float)vp_width / vp_height;
-
-   if (gl1->ctx_driver->translate_aspect)
-      device_aspect         = gl1->ctx_driver->translate_aspect(
-            gl1->ctx_data, vp_width, vp_height);
-
-   if (settings->bools.video_scale_integer && !force_full)
-   {
-      video_viewport_get_scaled_integer(&gl1->vp,
-            vp_width, vp_height,
-            video_driver_get_aspect_ratio(),
-            gl1->flags & GL1_FLAG_KEEP_ASPECT, false);
-      vp_width              = gl1->vp.width;
-      vp_height             = gl1->vp.height;
-   }
-   else if ((gl1->flags & GL1_FLAG_KEEP_ASPECT) && !force_full)
-   {
-      gl1->vp.full_height = gl1->video_height;
-      video_viewport_get_scaled_aspect2(&gl1->vp, vp_width, vp_height,
-            false, device_aspect, video_driver_get_aspect_ratio());
-      vp_width              = gl1->vp.width;
-      vp_height             = gl1->vp.height;
-   }
-   else
-   {
-      gl1->vp.x             = gl1->vp.y = 0;
-      gl1->vp.width         = vp_width;
-      gl1->vp.height        = vp_height;
-   }
+   gl1->vp.full_width  = vp_width;
+   gl1->vp.full_height = vp_height;
+   video_driver_update_viewport(&gl1->vp, force_full,
+         (gl1->flags & GL1_FLAG_KEEP_ASPECT) ? true : false, false);
 
    glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
    gl1_set_projection(gl1, &gl1_default_ortho, allow_rotate);
@@ -1339,8 +1313,8 @@ static void gl1_set_viewport(gl1_t *gl1,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl1->out_vp_width  = vp_width;
-      gl1->out_vp_height = vp_height;
+      gl1->out_vp_width  = gl1->vp.width;
+      gl1->out_vp_height = gl1->vp.height;
    }
 }
 
@@ -2312,8 +2286,9 @@ static const video_poke_interface_t gl1_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void gl1_get_poke_interface(void *data,

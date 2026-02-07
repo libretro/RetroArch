@@ -386,6 +386,26 @@ static float gfx_ctx_mali_fbdev_get_refresh_rate(void *data)
    return mali->refresh_rate;
 }
 
+static bool gfx_ctx_mali_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
+   return egl_create_surface(&mali->egl, &mali->native_window);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_mali_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
+   return egl_destroy_surface(&mali->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_init,
    gfx_ctx_mali_fbdev_destroy,
@@ -421,5 +441,7 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_set_flags,
    gfx_ctx_mali_fbdev_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   gfx_ctx_mali_create_surface,
+   gfx_ctx_mali_destroy_surface
 };

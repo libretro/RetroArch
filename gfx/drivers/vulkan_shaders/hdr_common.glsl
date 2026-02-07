@@ -1,95 +1,55 @@
 layout(std140, set = 0, binding = 0) uniform UBO
 {
-	mat4 MVP;
-   float contrast;         /* 2.0f;      */ 
-   float paper_white_nits; /* 200.0f;    */
-   float max_nits;         /* 1000.0f;   */
-   float expand_gamut;     /* 1.0f;      */ 
-   float inverse_tonemap;
-   float hdr10;
-} settings;
+   mat4 MVP;
+   vec4 SourceSize;
+   vec4 OutputSize;
+   float PaperWhiteNits;
+   float MaxNits;
+   uint SubpixelLayout;
+   float Scanlines;
+   uint ExpandGamut;
+   float InverseTonemap;
+   float HDR10;
+} global;
 
 /* Tonemapping: conversion from HDR to SDR (and vice-versa) */
-const float kMaxNitsFor2084  = 10000.0f;
-const float kEpsilon         = 0.0001f;
-const float kLumaChannelRatio = 0.25f;
+const float kMaxNitsFor2084   = 10000.0;
+const float kEpsilon          = 0.0001;
 
 /* Rec BT.709 luma coefficients - https://en.wikipedia.org/wiki/Luma_(video) */
 const vec3 k709LumaCoeff = vec3(0.2126f, 0.7152f, 0.0722f);
 /* Expanded Rec BT.709 luma coefficients - obtained by linear transformation + normalization */
 const vec3 kExpanded709LumaCoeff = vec3(0.215796f, 0.702694f, 0.120968f);
 
-vec3 InverseTonemap(vec3 sdr)
+vec3 InverseTonemap(const vec3 sdr_linear)
 {
-   /* Display Gamma - needs to be determined by calibration screen */
-   sdr = pow(abs(sdr), vec3(settings.contrast / 2.2f));
-   float luma = dot(sdr, k709LumaCoeff);
+   float input_val = max(sdr_linear.r, max(sdr_linear.g, sdr_linear.b));
 
-   /* Apply inverse tonemap to luma and color channels separately.
-    * SDR values in the range 0..0.5 are mapped to the range 0..1 with a simple inverse reinhard tonemap.
-    * SDR values higher than 0.5 are mapped to the range 1..infinity with an inverse reinhard scaled according to settings.
-    */
-   float maxValue             = (settings.max_nits / settings.paper_white_nits) + kEpsilon;
-   float elbow                = maxValue / (maxValue - 1.0f);                          
-   float offset               = 1.0f - ((0.5f * elbow) / (elbow - 0.5f));              
+   if (input_val < kEpsilon) return sdr_linear;
 
-   float hdrLumaInvTonemap    = offset + ((luma * elbow) / (elbow - luma));
-   float sdrLumaInvTonemap    = luma / (1.0f + kEpsilon - luma);
+   float peak_ratio = global.MaxNits / global.PaperWhiteNits;
 
-   float lumaInvTonemap       = (luma > 0.5f) ? hdrLumaInvTonemap : sdrLumaInvTonemap;
-   vec3 perLuma               = sdr / (luma + kEpsilon) * lumaInvTonemap;
+   float numerator = input_val;
+   float denominator = 1.0 - input_val * (1.0 - (1.0 / peak_ratio));
+   float tonemapped_val = numerator / max(denominator, kEpsilon);
 
-   vec3 hdrInvTonemap         = offset + ((sdr * elbow) / (elbow - sdr));         
-   vec3 sdrInvTonemap         = sdr / ((1.0f + kEpsilon) - sdr);
-
-   vec3 perChannel            = vec3(sdr.x > 0.5f ? hdrInvTonemap.x : sdrInvTonemap.x,
-                                     sdr.y > 0.5f ? hdrInvTonemap.y : sdrInvTonemap.y,
-                                     sdr.z > 0.5f ? hdrInvTonemap.z : sdrInvTonemap.z);
-
-   return mix(perLuma, perChannel, vec3(kLumaChannelRatio));
+   return sdr_linear * (tonemapped_val / input_val);
 }
 
-vec3 Tonemap(vec3 hdr)
+vec3 Tonemap(const vec3 hdr_linear)
 {
-   float luma = dot(hdr, k709LumaCoeff);
-   if (settings.expand_gamut > 0.0f)
-         luma = dot(hdr, kExpanded709LumaCoeff);
+    float input_val = max(hdr_linear.r, max(hdr_linear.g, hdr_linear.b));
 
-   float maxValue             = (settings.max_nits / settings.paper_white_nits) + kEpsilon;
-   float elbow                = maxValue / (maxValue - 1.0f);                          
-   float offset               = 1.0f - ((0.5f * elbow) / (elbow - 0.5f));     
+    if (input_val < kEpsilon) return hdr_linear;
 
-   /* Tonemap luma and individual channels separately, and combine them afterwards*/
-   float hdrLumaTonemap       = elbow * (offset - luma) / (offset - luma - elbow + kEpsilon);
-   float sdrLumaTonemap       = luma / (luma + 1.0f);
-   float lumaTonemap          = luma >= 1.0f ? hdrLumaTonemap : sdrLumaTonemap;
-   vec3 perLuma               = hdr / (luma + kEpsilon) * lumaTonemap;
+    float peak_ratio = global.MaxNits / global.PaperWhiteNits;
+    
+    float k = 1.0 - (1.0 / peak_ratio);
 
-   vec3 hdrTonemap            = elbow * (offset - hdr) / (offset - hdr - elbow + kEpsilon);
-   vec3 sdrTonemap            = hdr / (hdr + 1.0f);
-   vec3 perChannel            = vec3(hdr.x > 1.0f ? hdrTonemap.x : sdrTonemap.x,
-                                     hdr.y > 1.0f ? hdrTonemap.y : sdrTonemap.y,
-                                     hdr.z > 1.0f ? hdrTonemap.z : sdrTonemap.z);
-
-   vec3 tonemap = clamp(mix(perLuma, perChannel, vec3(kLumaChannelRatio)), 0.0f, 1.0f);
-   /* Display Gamma - needs to be determined by calibration screen */
-   return pow(tonemap, vec3(2.2f / settings.contrast));
+    return hdr_linear / (1.0 + input_val * k);
 }
 
 /* Colorspace conversions */
-/* START Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
-
-vec3 LinearToST2084(vec3 normalizedLinearValue)
-{
-   vec3 ST2084 = pow((0.8359375f + 18.8515625f * pow(abs(normalizedLinearValue), vec3(0.1593017578f))) / (1.0f + 18.6875f * pow(abs(normalizedLinearValue), vec3(0.1593017578f))), vec3(78.84375f));
-   return ST2084;  /* Don't clamp between [0..1], so we can still perform operations on scene values higher than 10,000 nits */
-}
-
-vec3 ST2084ToLinear(vec3 ST2084)
-{
-   vec3 normalizedLinear = pow(abs(max(pow(abs(ST2084), vec3(1.0f / 78.84375f)) - 0.8359375f, 0.0f) / (18.8515625f - 18.6875f * pow(abs(ST2084), vec3(1.0f / 78.84375f)))), vec3(1.0f / 0.1593017578f));
-   return normalizedLinear;
-}
 
 /* Color rotation matrix to rotate Rec.709 color primaries into Rec.2020 */
 const mat3 k709to2020 = mat3 (
@@ -103,6 +63,19 @@ const mat3 k2020to709 = mat3 (
    -0.1245505f, 1.1328999f, -0.0083494f,
    -0.0181508f, -0.1005789f, 1.1187297f);
 
+/* Color rotation matrix to rotate DCI-P3 color primaries into Rec.2020 */
+const mat3 kP3to2020 = mat3 (
+    0.753833f,  0.198597f,  0.047570f,
+    0.045744f,  0.941777f,  0.012479f,
+   -0.001210f,  0.017602f,  0.983609f);
+
+/* Color rotation matrix to rotate Rec.2020 color primaries into DCI-P3 */
+const mat3 k2020toP3 = mat3 (
+    1.343578f, -0.282180f, -0.061399f,
+   -0.065297f,  1.075788f, -0.010490f,
+    0.002822f, -0.019598f,  1.016777f);
+
+/* START Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
 /* Rotation matrix describing a custom color space which is bigger than Rec.709, but a little smaller than P3-D65.
  * This enhances colors, especially in the SDR range, by being a little more saturated. This can be used instead
  * of from709to2020.
@@ -118,6 +91,19 @@ const mat3 k2020toExpanded709 = mat3 (
    -0.0794803f,   1.0898f,  -0.0103244f,
     0.00343516f, -0.020207f, 1.01677f);
 
+vec3 LinearToST2084(vec3 normalizedLinearValue)
+{
+   vec3 ST2084 = pow((0.8359375f + 18.8515625f * pow(abs(normalizedLinearValue), vec3(0.1593017578f))) / (1.0f + 18.6875f * pow(abs(normalizedLinearValue), vec3(0.1593017578f))), vec3(78.84375f));
+   return ST2084;  /* Don't clamp between [0..1], so we can still perform operations on scene values higher than 10,000 nits */
+}
+
+vec3 ST2084ToLinear(vec3 ST2084)
+{
+   vec3 normalizedLinear = pow(abs(max(pow(abs(ST2084), vec3(1.0f / 78.84375f)) - 0.8359375f, 0.0f) / (18.8515625f - 18.6875f * pow(abs(ST2084), vec3(1.0f / 78.84375f)))), vec3(1.0f / 0.1593017578f));
+   return normalizedLinear;
+}
+/* END Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
+
 /* Per spec, the max nits for ST.2084 is 10,000 nits. We need to establish what the value of 1.0f means
  * by normalizing the values using the defined nits for paper white. According to SDR specs, paper white
  * is 80 nits, but that is paper white in a cinema with a dark environment, and is perceived as grey on
@@ -125,39 +111,24 @@ const mat3 k2020toExpanded709 = mat3 (
  * that the consumer perceives as white in his living room, e.g. 200 nits. As reference, PC monitors is
  * normally in the range 200-300 nits, SDR TVs 150-250 nits.
  */
-vec3 NormalizeHDRSceneValue(vec3 hdrSceneValue)
-{
-    return hdrSceneValue * settings.paper_white_nits / kMaxNitsFor2084;
-}
 
 /*  Calc the value that the HDR scene has to use to output a certain brightness */
 vec3 CalcHDRSceneValue(vec3 nits)
 {
-    return nits * kMaxNitsFor2084 / settings.paper_white_nits;
+    return nits * kMaxNitsFor2084 / global.PaperWhiteNits;
 }
-
-/* Converts a linear HDR value in the Rec.709 colorspace to a non-linear HDR10 value in the BT. 2020 colorspace */
-vec3 ConvertLinearToHDR10(vec3 hdr)
-{
-   vec3 rec2020 = hdr * k709to2020;
-   if (settings.expand_gamut > 0.0f)
-      rec2020   = hdr * kExpanded709to2020;
-
-   vec3 linearColour = NormalizeHDRSceneValue(rec2020);
-   return LinearToST2084(linearColour);
-}
-
-/* END Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
 
 /* Converts a non-linear HDR10 value in the BT. 2020 colorspace to a linear HDR value in the Rec. 709 colorspace */
-vec3 ConvertHDR10ToLinear(vec3 hdr10)
+vec3 HDR10ToLinear(vec3 hdr10)
 {
    vec3 normalizedLinear = ST2084ToLinear(hdr10);
    vec3 rec2020 = CalcHDRSceneValue(normalizedLinear);
 
    vec3 hdr = rec2020 * k2020to709;
-   if (settings.expand_gamut > 0.0f)
+   if (global.ExpandGamut == 1u)
+   {
       hdr   = rec2020 * k2020toExpanded709;
+   }
 
    return hdr;
 }

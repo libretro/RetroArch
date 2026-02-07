@@ -199,9 +199,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    Context *_context;
 
    Uniforms _uniforms;
-   id<MTLBuffer> _vert;
-   unsigned _capacity;
-   unsigned _offset;
+   BufferRange _range;
    unsigned _vertices;
 }
 
@@ -212,6 +210,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
 
 - (int)getWidthForMessage:(const char *)msg length:(NSUInteger)length scale:(float)scale;
 - (const struct font_glyph *)getGlyph:(uint32_t)code;
+- (bool)getLineMetrics:(struct font_line_metrics **)metrics;
 @end
 
 @implementation MetalRaster
@@ -278,9 +277,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
 
       _texture  = [_buffer newTextureWithDescriptor:td offset:0 bytesPerRow:_stride];
 
-      _capacity = 12000;
-      _vert     = [_context.device newBufferWithLength:sizeof(SpriteVertex) *
-               _capacity options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
       if (![self _initializeState])
          return nil;
    }
@@ -317,6 +313,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       psd.vertexDescriptor           = vd;
       psd.vertexFunction             = [_context.library newFunctionWithName:@"sprite_vertex"];
       psd.fragmentFunction           = [_context.library newFunctionWithName:@"sprite_fragment_a8"];
+
+      if (!psd.vertexFunction || !psd.fragmentFunction)
+         return NO;
 
       _state                         = [_context.device newRenderPipelineStateWithDescriptor:psd error:&err];
       if (err != nil)
@@ -358,7 +357,14 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
 {
    NSUInteger i;
    int delta_x = 0;
-   const struct font_glyph* glyph_q = _font_driver->get_glyph(_font_data, '?');
+   const struct font_glyph* glyph_q;
+
+   /* Validate font data before use - can become invalid during
+    * video context reset or if font was freed while in use */
+   if (!_font_driver || !_font_data)
+      return 0;
+
+   glyph_q = _font_driver->get_glyph(_font_data, '?');
 
    for (i = 0; i < length; i++)
    {
@@ -377,10 +383,23 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
 
 - (const struct font_glyph *)getGlyph:(uint32_t)code
 {
-   const struct font_glyph *glyph = _font_driver->get_glyph((void *)_font_driver, code);
+   const struct font_glyph *glyph;
+   if (!_font_driver || !_font_data)
+      return NULL;
+   glyph = _font_driver->get_glyph(_font_data, code);
    if (glyph)
       [self updateGlyph:glyph];
    return glyph;
+}
+
+- (bool)getLineMetrics:(struct font_line_metrics **)metrics
+{
+   if (_font_driver && _font_data)
+   {
+      _font_driver->get_line_metrics(_font_data, metrics);
+      return true;
+   }
+   return false;
 }
 
 static INLINE void write_quad6(SpriteVertex *pv,
@@ -419,15 +438,28 @@ static INLINE void write_quad6(SpriteVertex *pv,
             aligned:(unsigned)aligned
 {
    const struct font_glyph* glyph_q;
-   const char  *msg_end = msg + length;
-   int                x = (int)roundf(posX * _driver.viewport->full_width);
-   int                y = (int)roundf((1.0f - posY) * _driver.viewport->full_height);
-   int          delta_x = 0;
-   int          delta_y = 0;
-   float inv_tex_size_x = 1.0f / _texture.width;
-   float inv_tex_size_y = 1.0f / _texture.height;
-   float inv_win_width  = 1.0f / _driver.viewport->full_width;
-   float inv_win_height = 1.0f / _driver.viewport->full_height;
+   const char  *msg_end;
+   int                x;
+   int                y;
+   int          delta_x;
+   int          delta_y;
+   float inv_tex_size_x;
+   float inv_tex_size_y;
+   float inv_win_width;
+   float inv_win_height;
+
+   if (!_font_driver || !_font_data)
+      return;
+
+   msg_end          = msg + length;
+   x                = (int)roundf(posX * _driver.viewport->full_width);
+   y                = (int)roundf((1.0f - posY) * _driver.viewport->full_height);
+   delta_x          = 0;
+   delta_y          = 0;
+   inv_tex_size_x   = 1.0f / _texture.width;
+   inv_tex_size_y   = 1.0f / _texture.height;
+   inv_win_width    = 1.0f / _driver.viewport->full_width;
+   inv_win_height   = 1.0f / _driver.viewport->full_height;
 
    switch (aligned)
    {
@@ -443,8 +475,8 @@ static INLINE void write_quad6(SpriteVertex *pv,
          break;
    }
 
-   SpriteVertex *v = (SpriteVertex *)_vert.contents;
-   v              += _offset + _vertices;
+   SpriteVertex *v = (SpriteVertex *)_range.data;
+   v              += _vertices;
    glyph_q         = _font_driver->get_glyph(_font_data, '?');
 
    while (msg < msg_end)
@@ -488,10 +520,8 @@ static INLINE void write_quad6(SpriteVertex *pv,
 
 - (void)_flush
 {
-   NSUInteger start = _offset * sizeof(SpriteVertex);
-#if !defined(HAVE_COCOATOUCH)
-   [_vert didModifyRange:NSMakeRange(start, sizeof(SpriteVertex) * _vertices)];
-#endif
+   if (_vertices == 0)
+      return;
 
    id<MTLRenderCommandEncoder> rce = _context.rce;
    [rce pushDebugGroup:@"render fonts"];
@@ -499,13 +529,12 @@ static INLINE void write_quad6(SpriteVertex *pv,
    [_context resetRenderViewport:kFullscreenViewport];
    [rce setRenderPipelineState:_state];
    [rce setVertexBytes:&_uniforms length:sizeof(Uniforms) atIndex:BufferIndexUniforms];
-   [rce setVertexBuffer:_vert offset:start atIndex:BufferIndexPositions];
+   [rce setVertexBuffer:_range.buffer offset:_range.offset atIndex:BufferIndexPositions];
    [rce setFragmentTexture:_texture atIndex:TextureIndexColor];
    [rce setFragmentSamplerState:_sampler atIndex:SamplerIndexDraw];
    [rce drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:_vertices];
    [rce popDebugGroup];
 
-   _offset += _vertices;
    _vertices = 0;
 }
 
@@ -520,6 +549,10 @@ static INLINE void write_quad6(SpriteVertex *pv,
    int lines = 0;
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
+
+   if (!_font_driver || !_font_data)
+      return;
+
    _font_driver->get_line_metrics(_font_data, &line_metrics);
    line_height = line_metrics->height * scale / height;
 
@@ -603,12 +636,15 @@ static INLINE void write_quad6(SpriteVertex *pv,
 
    @autoreleasepool
    {
-      size_t max_glyphs        = strlen(msg);
+      size_t max_glyphs = strlen(msg);
       if (drop_x || drop_y)
          max_glyphs *= 2;
 
-      if (max_glyphs * 6 + _offset > _capacity)
-         _offset = 0;
+      NSUInteger needed = max_glyphs * 6 * sizeof(SpriteVertex);
+      if (![_context allocRange:&_range length:needed])
+         return;
+
+      _vertices = 0;
 
       if (drop_x || drop_y)
       {
@@ -688,6 +724,15 @@ static const struct font_glyph *metal_raster_font_get_glyph(
    return [r getGlyph:code];
 }
 
+static bool metal_get_line_metrics(void *data,
+      struct font_line_metrics **metrics)
+{
+   MetalRaster *r = (__bridge MetalRaster *)data;
+   if (r)
+      return [r getLineMetrics:metrics];
+   return false;
+}
+
 font_renderer_t metal_raster_font = {
    metal_raster_font_init,
    metal_raster_font_free,
@@ -697,7 +742,7 @@ font_renderer_t metal_raster_font = {
    NULL, /* bind_block  */
    NULL, /* flush_block */
    metal_raster_font_get_message_width,
-   NULL  /* get_line_metrics */
+   metal_get_line_metrics
 };
 
 /*
@@ -880,6 +925,11 @@ font_renderer_t metal_raster_font = {
       psd.vertexFunction             = [_library newFunctionWithName:@"basic_vertex_proj_tex"];
       psd.fragmentFunction           = [_library newFunctionWithName:@"basic_fragment_proj_tex"];
 
+      if (!psd.vertexFunction || !psd.fragmentFunction)
+      {
+         RARCH_ERR("[Metal] Failed to load main pipeline shader functions.\n");
+         return NO;
+      }
 
       _t_pipelineState = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
       if (err != nil)
@@ -916,7 +966,7 @@ font_renderer_t metal_raster_font = {
    _viewport->full_height  = height;
    video_driver_set_size(_viewport->full_width, _viewport->full_height);
    _layer.drawableSize     = CGSizeMake(width, height);
-   video_driver_update_viewport(_viewport, forceFull, _keepAspect);
+   video_driver_update_viewport(_viewport, forceFull, _keepAspect, YES);
    _context.viewport       = _viewport; /* Update matrix */
    _viewportMVP.outputSize = simd_make_float2(_viewport->full_width, _viewport->full_height);
 }
@@ -963,12 +1013,17 @@ font_renderer_t metal_raster_font = {
       }
 #endif
 
-      if (statistics_show)
+      /* Only show statistics when menu is not visible and content is running */
+      if (statistics_show && frame && width && height)
       {
-         struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
+         bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+         if (!menu_is_alive)
+         {
+            struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
 
-         if (osd_params)
-            font_driver_render_msg(data, video_info->stat_text, osd_params, NULL);
+            if (osd_params)
+               font_driver_render_msg(data, video_info->stat_text, osd_params, NULL);
+         }
       }
 
 #ifdef HAVE_GFX_WIDGETS
@@ -1033,7 +1088,7 @@ font_renderer_t metal_raster_font = {
 - (void)_beginFrame
 {
    video_viewport_t vp = *_viewport;
-   video_driver_update_viewport(_viewport, NO, _keepAspect);
+   video_driver_update_viewport(_viewport, NO, _keepAspect, YES);
 
    if (memcmp(&vp, _viewport, sizeof(vp)) != 0)
       _context.viewport = _viewport;
@@ -2028,6 +2083,13 @@ typedef struct MTLALIGN(16)
    return YES;
 }
 
+- (void)clearShader
+{
+   [self _freeVideoShader:_shader];
+   _shader = nil;
+   RARCH_LOG("[Metal] Shader cleared, using stock.\n");
+}
+
 @end
 
 @implementation Overlay
@@ -2262,43 +2324,60 @@ static bool metal_ctx_get_metrics(
 }
 #endif
 
-/* Temporary workaround for metal not being able to poll flags during init */
+/* Metal context data for swap_buffers */
+static void *metal_ctx_data = NULL;
+
+static void metal_ctx_swap_buffers(void *data)
+{
+   MetalDriver *md = (__bridge MetalDriver *)metal_ctx_data;
+   if (md)
+      [md.context swapBuffers];
+}
+
+static void metal_ctx_swap_interval(void *data, int interval)
+{
+   /* No-op: displaySyncEnabled is already set by metal_set_nonblock_state,
+    * and swap_interval is stored in metal_swap_interval for frame duplication. */
+   (void)data;
+   (void)interval;
+}
+
 static gfx_ctx_driver_t metal_fake_context = {
-       NULL,
-       NULL,
-       NULL,
-       NULL,
-       NULL,
-       NULL,
-       NULL,
-       NULL, /* get_refresh_rate */
-       NULL, /* get_video_output_size */
-       NULL, /* get_video_output_prev */
-       NULL, /* get_video_output_next */
+       NULL,                    /* init */
+       NULL,                    /* destroy */
+       NULL,                    /* get_api */
+       NULL,                    /* bind_api */
+       metal_ctx_swap_interval, /* swap_interval */
+       NULL,                    /* set_video_mode */
+       NULL,                    /* get_video_size */
+       NULL,                    /* get_refresh_rate */
+       NULL,                    /* get_video_output_size */
+       NULL,                    /* get_video_output_prev */
+       NULL,                    /* get_video_output_next */
 #ifdef HAVE_COCOATOUCH
        metal_ctx_get_metrics,
 #else
        NULL,
 #endif
-       NULL, /* translate_aspect */
-       NULL, /* update_title */
-       NULL,
-       NULL, /* set_resize */
-       NULL,
-       NULL,
-       false,
-       NULL,
-       NULL,
-       NULL,
-       NULL, /* image_buffer_init */
-       NULL, /* image_buffer_write */
-       NULL, /* show_mouse */
+       NULL,                    /* translate_aspect */
+       NULL,                    /* update_title */
+       NULL,                    /* check_window */
+       NULL,                    /* set_resize */
+       NULL,                    /* has_focus */
+       NULL,                    /* suppress_screensaver */
+       false,                   /* has_windowed */
+       metal_ctx_swap_buffers,  /* swap_buffers */
+       NULL,                    /* input_driver */
+       NULL,                    /* get_proc_address */
+       NULL,                    /* image_buffer_init */
+       NULL,                    /* image_buffer_write */
+       NULL,                    /* show_mouse */
        "metal",
+       NULL,                    /* get_flags */
+       NULL,                    /* set_flags */
        NULL,
-       NULL,
-       NULL,
-       NULL, /* get_context_data */
-       NULL  /* make_current */
+       NULL,                    /* get_context_data */
+       NULL                     /* make_current */
 };
 
 static bool metal_set_shader(void *data,
@@ -2318,6 +2397,9 @@ static void *metal_init(
    if (md == nil)
       return NULL;
 
+   /* Store reference for context swap_buffers calls */
+   metal_ctx_data = (__bridge void *)md;
+
    metal_fake_context.get_flags = metal_get_flags;
    video_context_driver_set(&metal_fake_context);
 
@@ -2328,21 +2410,87 @@ static void *metal_init(
    return (__bridge_retained void *)md;
 }
 
+/* Flag to prevent recursive shader_subframes calls */
+static bool metal_subframe_lock = false;
+
+/* Flag and value for swap_interval emulation (like Vulkan) */
+static bool metal_swap_interval_lock = false;
+static unsigned metal_swap_interval = 1;
+
 static bool metal_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
       unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   int j;
    MetalDriver *md = (__bridge MetalDriver *)data;
-   return [md renderFrame:frame
-                     data:data
-                    width:frame_width
-                   height:frame_height
-               frameCount:frame_count
-                    pitch:pitch
-                      msg:msg
-                     info:video_info];
+
+   if (![md renderFrame:frame
+                   data:data
+                  width:frame_width
+                 height:frame_height
+             frameCount:frame_count
+                  pitch:pitch
+                    msg:msg
+                   info:video_info])
+      return false;
+
+   /* Call swap_buffers to acquire next drawable. This moves the blocking
+    * acquisition to AFTER presenting (like Vulkan), instead of BEFORE
+    * rendering. This is critical for proper 120Hz on ProMotion displays. */
+   if (metal_fake_context.swap_buffers)
+      metal_fake_context.swap_buffers(NULL);
+
+   /* Frame duping for shader_subframes - present multiple times per core frame
+    * to match high refresh rate displays (e.g., 60fps core on 120Hz display).
+    * This follows the same pattern as the Vulkan driver. */
+   if (      (video_info->shader_subframes > 1)
+         &&  !metal_subframe_lock
+         &&  !video_info->input_driver_nonblock_state
+         &&  !video_info->runloop_is_slowmotion
+         &&  !video_info->runloop_is_paused
+         &&  !(video_info->menu_st_flags & MENU_ST_FLAG_ALIVE))
+   {
+      metal_subframe_lock = true;
+      for (j = 1; j < (int)video_info->shader_subframes; j++)
+      {
+         /* Re-render and present with NULL frame data (reuse previous frame) */
+         if (!metal_frame(data, NULL, 0, 0, frame_count, 0, msg, video_info))
+         {
+            metal_subframe_lock = false;
+            return false;
+         }
+      }
+      metal_subframe_lock = false;
+   }
+
+   /* Metal doesn't directly support swap_interval > 1, so we fake it by
+    * duplicating frames. When display runs at 120Hz but core runs at 60fps,
+    * swap_interval = 2, meaning we present each frame twice to fill the gap.
+    * This matches Vulkan's behavior in vulkan.c:vulkan_frame(). */
+   if (      (metal_swap_interval > 1)
+         &&  !(video_info->shader_subframes > 1)
+         &&  !video_info->black_frame_insertion
+         &&  !metal_swap_interval_lock
+         &&  !video_info->input_driver_nonblock_state
+         &&  !video_info->runloop_is_slowmotion
+         &&  !video_info->runloop_is_paused
+         &&  !(video_info->menu_st_flags & MENU_ST_FLAG_ALIVE))
+   {
+      metal_swap_interval_lock = true;
+      for (j = 1; j < (int)metal_swap_interval; j++)
+      {
+         if (!metal_frame(data, NULL, 0, 0, frame_count, 0, msg, video_info))
+         {
+            metal_swap_interval_lock = false;
+            return false;
+         }
+      }
+      metal_swap_interval_lock = false;
+   }
+
+   return true;
 }
 
 static void metal_set_nonblock_state(void *data, bool non_block,
@@ -2350,6 +2498,7 @@ static void metal_set_nonblock_state(void *data, bool non_block,
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    md.context.displaySyncEnabled = !non_block;
+   metal_swap_interval = swap_interval;
 }
 
 static bool metal_alive(void *data) { return true; }
@@ -2375,9 +2524,11 @@ static bool metal_set_shader(void *data,
          path = NULL;
       }
 
-      /* TODO/FIXME - actually return to stock shader */
       if (string_is_empty(path))
+      {
+         [md.frameView clearShader];
          return true;
+      }
 
       if ([md.frameView setShaderFromPath:[NSString stringWithUTF8String:path]])
          return true;
@@ -2389,6 +2540,7 @@ static bool metal_set_shader(void *data,
 static void metal_free(void *data)
 {
    MetalDriver *md = (__bridge_transfer MetalDriver *)data;
+   metal_ctx_data = NULL;
    md = nil;
 }
 
@@ -2451,8 +2603,29 @@ static void metal_set_video_mode(void *data,
              fullscreen ? "YES" : "NO");
 }
 
-/* TODO/FIXME - implement */
-static float metal_get_refresh_rate(void *data) { return 0.0f; }
+static float metal_get_refresh_rate(void *data)
+{
+#ifdef OSX
+   CGDirectDisplayID mainDisplayID = CGMainDisplayID();
+   CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
+   double currentRate = CGDisplayModeGetRefreshRate(currentMode);
+   CFRelease(currentMode);
+   return currentRate;
+#else
+   CADisplayLink *displayLink = [CocoaView get].displayLink;
+   if (displayLink)
+   {
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
+      if (@available(iOS 15.0, tvOS 15.0, *))
+         return displayLink.preferredFrameRateRange.preferred;
+#endif
+      return displayLink.preferredFramesPerSecond;
+   }
+   if (@available(iOS 10.3, tvOS 10.2, *))
+      return [UIScreen mainScreen].maximumFramesPerSecond;
+   return 60.0f;
+#endif
+}
 
 static void metal_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
@@ -2479,8 +2652,12 @@ static void metal_set_texture_frame(void *data, const void *frame,
       float alpha)
 {
    MetalDriver *md         = (__bridge MetalDriver *)data;
-   settings_t *settings    = config_get_ptr();
-   bool menu_linear_filter = settings->bools.menu_linear_filter;
+   settings_t *settings;
+   bool menu_linear_filter;
+   if (!md)
+      return;
+   settings                = config_get_ptr();
+   menu_linear_filter      = settings->bools.menu_linear_filter;
 
    [md.menu updateWidth:width
                  height:height

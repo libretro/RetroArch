@@ -198,7 +198,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
          else
             affinity -= 10;
       }
-            
+
       /* Store the selected alternative as last digit of affinity. */
       if (affinity > 0)
          affinity += i;
@@ -354,7 +354,7 @@ static bool input_autoconfigure_scan_config_files_external(
       }
       string_list_free(config_file_list);
       config_file_list = NULL;
-      RARCH_DBG("[Autoconf] Config files scanned: driver %s, pad name %s (%04x/%04x), phys %s, affinity %d\n",
+      RARCH_DBG("[Autoconf] Config files scanned: driver \"%s\", pad name \"%s\" (%04x/%04x), phys %s, affinity %d.\n",
                 autoconfig_handle->device_info.joypad_driver,
                 autoconfig_handle->device_info.name,
                 autoconfig_handle->device_info.vid, autoconfig_handle->device_info.pid,
@@ -436,8 +436,12 @@ static bool input_autoconfigure_scan_config_files_internal(
  * - if there is no reservation, do not change anything
  *      (not even the assignment to first free player port)
  */
-static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
-      int product_id, const char *device_name, const char *device_display_name)
+static void reallocate_port_if_needed(
+      unsigned detected_port,
+      unsigned int vendor_id,
+      unsigned int product_id,
+      const char *device_name,
+      const char *device_display_name)
 {
    int player;
    char settings_value[NAME_MAX_LENGTH];
@@ -489,7 +493,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
       if (!string_is_empty(settings_value))
       {
          RARCH_DBG("[Autoconf] Examining reserved device for player %d "
-                   "type %d: %s against %04x:%04x.\n",
+                   "type %d: \"%s\" against \"%04x:%04x\".\n",
                    player+1,
                    settings->uints.input_device_reservation_type[player],
                    settings_value, vendor_id, product_id);

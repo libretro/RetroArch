@@ -267,12 +267,6 @@ static bool fpga_frame(void *data, const void *frame,
             }
          }
       }
-#if 0
-      else
-      {
-         /* TODO/FIXME: handle 32-bit core output */
-      }
-#endif
    }
 
    return true;
@@ -381,8 +375,9 @@ static const video_poke_interface_t fpga_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void fpga_get_poke_interface(void *data,

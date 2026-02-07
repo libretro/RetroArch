@@ -17,6 +17,7 @@
 #include <libretro.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
+#include <rthreads/rthreads.h>
 
 #include "../midi_driver.h"
 #include "../../verbosity.h"
@@ -51,7 +52,145 @@ typedef struct
     MIDIEndpointRef input_endpoint;  /* Selected input endpoint */
     MIDIEndpointRef output_endpoint; /* Selected output endpoint */
     coremidi_queue_t input_queue;    /* Queue for incoming MIDI events */
+    slock_t *queue_lock;             /* Mutex for queue synchronization */
+    volatile bool is_shutting_down;  /* Flag to prevent callbacks during shutdown */
 } coremidi_t;
+
+/* Global list of active driver instances for notification handling */
+#define MAX_MIDI_INSTANCES 8
+static coremidi_t *active_instances[MAX_MIDI_INSTANCES];
+static slock_t *instances_lock = NULL;
+
+/* Clear the queue (must be called with lock held) */
+static void coremidi_queue_clear(coremidi_queue_t *q)
+{
+    q->read_index = 0;
+    q->write_index = 0;
+}
+
+/* Register a driver instance in the global list */
+static bool register_instance(coremidi_t *d)
+{
+    int i;
+    if (!instances_lock)
+        return false;
+
+    slock_lock(instances_lock);
+    for (i = 0; i < MAX_MIDI_INSTANCES; i++)
+    {
+        if (!active_instances[i])
+        {
+            active_instances[i] = d;
+            slock_unlock(instances_lock);
+            return true;
+        }
+    }
+    slock_unlock(instances_lock);
+
+    RARCH_ERR("[MIDI] Too many MIDI instances (max %d).\n", MAX_MIDI_INSTANCES);
+    return false;
+}
+
+/* Unregister a driver instance from the global list */
+static void unregister_instance(coremidi_t *d)
+{
+    int i;
+    if (!instances_lock || !d)
+        return;
+
+    slock_lock(instances_lock);
+    for (i = 0; i < MAX_MIDI_INSTANCES; i++)
+    {
+        if (active_instances[i] == d)
+        {
+            active_instances[i] = NULL;
+            break;
+        }
+    }
+    slock_unlock(instances_lock);
+}
+
+/* MIDI notification callback for device changes */
+static void midi_notify_callback(const MIDINotification *message, void *refCon)
+{
+    int i;
+
+    if (!instances_lock)
+        return;
+
+    switch (message->messageID)
+    {
+        case kMIDIMsgObjectRemoved:
+        {
+            const MIDIObjectAddRemoveNotification *notify =
+                (const MIDIObjectAddRemoveNotification *)message;
+
+            /* Check all active instances for matching endpoints */
+            slock_lock(instances_lock);
+            for (i = 0; i < MAX_MIDI_INSTANCES; i++)
+            {
+                coremidi_t *d = active_instances[i];
+                if (!d || d->is_shutting_down)
+                    continue;
+
+                /* Check if this instance's endpoints were removed */
+                if (notify->child == d->input_endpoint)
+                {
+                    RARCH_LOG("[MIDI] Input endpoint removed, clearing.\n");
+                    d->input_endpoint = 0;
+                    if (d->queue_lock)
+                    {
+                        slock_lock(d->queue_lock);
+                        coremidi_queue_clear(&d->input_queue);
+                        slock_unlock(d->queue_lock);
+                    }
+                }
+                if (notify->child == d->output_endpoint)
+                {
+                    RARCH_LOG("[MIDI] Output endpoint removed, clearing.\n");
+                    d->output_endpoint = 0;
+                }
+            }
+            slock_unlock(instances_lock);
+            break;
+        }
+        case kMIDIMsgSetupChanged:
+            RARCH_LOG("[MIDI] MIDI setup changed.\n");
+            break;
+        default:
+            break;
+    }
+}
+
+/* Validate that an endpoint still exists in the system */
+static bool coremidi_validate_endpoint(MIDIEndpointRef endpoint, bool is_source)
+{
+    ItemCount i, count;
+
+    if (!endpoint)
+        return false;
+
+    if (is_source)
+    {
+        count = MIDIGetNumberOfSources();
+        for (i = 0; i < count; i++)
+        {
+            if (MIDIGetSource(i) == endpoint)
+                return true;
+        }
+    }
+    else
+    {
+        count = MIDIGetNumberOfDestinations();
+        for (i = 0; i < count; i++)
+        {
+            if (MIDIGetDestination(i) == endpoint)
+                return true;
+        }
+    }
+
+    return false;
+}
 
 /* Write to the queue */
 static bool coremidi_queue_write(coremidi_queue_t *q, const midi_event_t *ev)
@@ -77,12 +216,22 @@ static bool coremidi_queue_write(coremidi_queue_t *q, const midi_event_t *ev)
 
 /* MIDIReadProc callback function */
 static void midi_read_callback(const MIDIPacketList *pktlist,
-   void *readProcRefCon, void *srcConnRefCon) 
+   void *readProcRefCon, void *srcConnRefCon)
 {
     uint32_t i;
     midi_event_t event;
     coremidi_t *d = (coremidi_t *)readProcRefCon;
-    const MIDIPacket *packet = &pktlist->packet[0];
+    const MIDIPacket *packet;
+
+    /* CRITICAL: Check shutdown flag immediately to prevent use-after-free */
+    if (!d || d->is_shutting_down)
+        return;
+
+    /* Early validation */
+    if (!d->queue_lock)
+        return;
+
+    packet = &pktlist->packet[0];
 
     for (i = 0; i < pktlist->numPackets; i++)
     {
@@ -100,8 +249,10 @@ static void midi_read_callback(const MIDIPacketList *pktlist,
             event.data_size  = msg_size;
             event.delta_time = (uint32_t)timestamp;
 
-            /* Add to queue */
+            /* Add to queue with lock protection */
+            slock_lock(d->queue_lock);
             coremidi_queue_write(&d->input_queue, &event);
+            slock_unlock(d->queue_lock);
 
             data   += msg_size;
             length -= msg_size;
@@ -117,11 +268,22 @@ static void *coremidi_init(const char *input, const char *output)
     OSStatus err;
     coremidi_t *d;
 
-    /* Create persistent client on first call */
+    /* Initialize global instance lock on first call */
+    if (!instances_lock)
+    {
+        instances_lock = slock_new();
+        if (!instances_lock)
+        {
+            RARCH_ERR("[MIDI] Failed to create instances lock.\n");
+            return NULL;
+        }
+    }
+
+    /* Create persistent shared client on first call */
     if (!shared_midi_client)
     {
         err = MIDIClientCreate(CFSTR("RetroArch MIDI Client"),
-                       NULL, NULL, &shared_midi_client);
+                       midi_notify_callback, NULL, &shared_midi_client);
         if (err != noErr)
         {
             RARCH_ERR("[MIDI] MIDIClientCreate failed: %d.\n", err);
@@ -137,8 +299,28 @@ static void *coremidi_init(const char *input, const char *output)
         return NULL;
     }
 
+    /* Initialize synchronization primitives */
+    d->queue_lock = slock_new();
+    if (!d->queue_lock)
+    {
+        RARCH_ERR("[MIDI] Failed to create queue lock.\n");
+        free(d);
+        return NULL;
+    }
+
+    d->is_shutting_down = false;
+
     /* Store reference to shared client */
     d->client = shared_midi_client;
+
+    /* Register this instance in the global list */
+    if (!register_instance(d))
+    {
+        RARCH_ERR("[MIDI] Failed to register MIDI instance.\n");
+        slock_free(d->queue_lock);
+        free(d);
+        return NULL;
+    }
 
     /* Create input port if specified */
     if (input)
@@ -148,6 +330,8 @@ static void *coremidi_init(const char *input, const char *output)
         if (err != noErr)
         {
             RARCH_ERR("[MIDI] MIDIInputPortCreate failed: %d.\n", err);
+            unregister_instance(d);
+            slock_free(d->queue_lock);
             free(d);
             return NULL;
         }
@@ -164,6 +348,8 @@ static void *coremidi_init(const char *input, const char *output)
             RARCH_ERR("[MIDI] MIDIOutputPortCreate failed: %d.\n", err);
             if (d->input_port)
                 MIDIPortDispose(d->input_port);
+            unregister_instance(d);
+            slock_free(d->queue_lock);
             free(d);
             return NULL;
         }
@@ -261,6 +447,14 @@ static bool coremidi_set_input(void *p, const char *input)
         RARCH_LOG("[MIDI] Disconnecting current input endpoint.\n");
         MIDIPortDisconnectSource(d->input_port, d->input_endpoint);
         d->input_endpoint = 0;
+
+        /* Clear the input queue when disconnecting */
+        if (d->queue_lock)
+        {
+            slock_lock(d->queue_lock);
+            coremidi_queue_clear(&d->input_queue);
+            slock_unlock(d->queue_lock);
+        }
     }
 
     /* If input is NULL or "Off", just return success */
@@ -365,7 +559,7 @@ static bool coremidi_queue_read(coremidi_queue_t *q, midi_event_t *ev)
 /* Read a MIDI event */
 static bool coremidi_read(void *p, midi_event_t *event)
 {
-    int result;
+    bool result;
     coremidi_t *d = (coremidi_t *)p;
 
     if (!d || !event)
@@ -380,7 +574,21 @@ static bool coremidi_read(void *p, midi_event_t *event)
         return false;
     }
 
+    /* Validate endpoint still exists */
+    if (!coremidi_validate_endpoint(d->input_endpoint, true))
+    {
+        RARCH_WARN("[MIDI] Input endpoint no longer valid.\n");
+        d->input_endpoint = 0;
+        return false;
+    }
+
+    if (!d->queue_lock)
+        return false;
+
+    slock_lock(d->queue_lock);
     result = coremidi_queue_read(&d->input_queue, event);
+    slock_unlock(d->queue_lock);
+
 #if DEBUG
     RARCH_LOG("[MIDI] Input queue read result: %d.\n", result);
 #endif
@@ -401,6 +609,14 @@ static bool coremidi_write(void *p, const midi_event_t *event)
     if (!d->output_port || !d->output_endpoint)
     {
         RARCH_WARN("[MIDI] Output not configured.\n");
+        return false;
+    }
+
+    /* Validate endpoint still exists */
+    if (!coremidi_validate_endpoint(d->output_endpoint, false))
+    {
+        RARCH_WARN("[MIDI] Output endpoint no longer valid.\n");
+        d->output_endpoint = 0;
         return false;
     }
 
@@ -466,7 +682,12 @@ static void coremidi_free(void *p)
         return;
     }
 
-    /* Clean up MIDI resources */
+    /* CRITICAL: Set shutdown flag and unregister from global list FIRST.
+     * This prevents callbacks from accessing this instance. */
+    d->is_shutting_down = true;
+    unregister_instance(d);
+
+    /* Now safe to tear down MIDI resources */
     if (d->input_port)
     {
         RARCH_LOG("[MIDI] Disconnecting and disposing input port...\n");
@@ -481,9 +702,15 @@ static void coremidi_free(void *p)
         MIDIPortDispose(d->output_port);
     }
 
+    /* Note: Don't dispose shared_midi_client, it's persistent */
 
-    /* Free the driver instance */
+    /* Free synchronization primitives */
+    if (d->queue_lock)
+        slock_free(d->queue_lock);
+
+    /* Finally, free the driver instance */
     free(d);
+    RARCH_LOG("[MIDI] CoreMIDI driver freed.\n");
 }
 
 /* CoreMIDI driver API */

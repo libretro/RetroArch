@@ -93,6 +93,11 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    bool ret                      = false;
 
 #if defined(HAVE_RPNG)
+   const uint8_t* input          = (const uint8_t*)state->frame + ((int)state->height - 1) * state->pitch;
+
+   if (!input)
+      return ret;
+
    if (state->flags & SS_TASK_FLAG_BGR24)
       scaler->in_fmt             = SCALER_FMT_BGR24;
    else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
@@ -193,7 +198,13 @@ static void task_screenshot_handler(retro_task_t *task)
       const char *_msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
       runloop_msg_queue_push(_msg, strlen(_msg), 1,
             (state->flags & SS_TASK_FLAG_IS_PAUSED) ? 1 : 180, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+
+#if defined(HAVE_GFX_WIDGETS)
+      /* Do not show empty widget success on error */
+      if (state)
+         state->flags |= SS_TASK_FLAG_SILENCE;
+#endif
    }
 
    if (task->title)

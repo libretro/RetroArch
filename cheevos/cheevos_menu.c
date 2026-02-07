@@ -244,6 +244,31 @@ uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset)
    return 0;
 }
 
+void rcheevos_menu_update_badge_references(const char* badge_name)
+{
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   unsigned i;
+   char unlocked_badge_name[8];
+   const size_t badge_name_len = strlen(badge_name);
+   if (badge_name_len > 6 && badge_name_len < sizeof(unlocked_badge_name) + 5 &&
+       strcmp(&badge_name[badge_name_len - 5], "_lock") == 0)
+   {
+      memcpy(unlocked_badge_name, badge_name, badge_name_len - 5);
+      unlocked_badge_name[badge_name_len - 5] = '\0';
+      badge_name = unlocked_badge_name;
+   }
+
+   for (i = 0; i < rcheevos_locals->menuitem_count; ++i)
+   {
+      rcheevos_menuitem_t* menuitem = &rcheevos_locals->menuitems[i];
+      if (menuitem->menu_badge_grayscale >= 2 && /* using placeholder */
+          strncmp(menuitem->achievement->badge_name, badge_name, badge_name_len) == 0)
+      {
+          rcheevos_menu_update_badge(menuitem, false);
+      }
+   }
+}
+
 void rcheevos_menu_populate_hardcore_pause_submenu(void* data, bool cheevos_hardcore_mode_enable)
 {
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
@@ -332,6 +357,11 @@ void rcheevos_menu_populate(void* data, bool cheevos_enable,
                MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
                MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS, 0, 0, NULL);
       }
+
+      if (!rcheevos_locals->badges_loaded && !rcheevos_locals->badges_loading) {
+         rcheevos_locals->badges_loading = true;
+         rcheevos_client_download_achievement_badges(rcheevos_locals->client);
+      }
    }
 
    for (i = 0; i < list->num_buckets; i++)
@@ -396,7 +426,7 @@ void rcheevos_menu_populate(void* data, bool cheevos_enable,
             break;
          }
 
-         rcheevos_menu_update_badge(menuitem, true);
+         rcheevos_menu_update_badge(menuitem, false);
       }
    }
 
@@ -518,6 +548,31 @@ void rcheevos_menu_populate(void* data, bool cheevos_enable,
 
 #endif /* HAVE_MENU */
 
+static void rcheevos_client_download_subset_badge(const char* badge_name)
+{
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+
+   const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals->client);
+   if (game && strcmp(game->badge_name, &badge_name[1]) == 0)
+   {
+      rcheevos_client_download_badge_from_url(game->badge_url, badge_name);
+   }
+   else
+   {
+      rc_client_subset_list_t* subset_list = rc_client_create_subset_list(rcheevos_locals->client);
+      uint32_t i;
+      for (i = 0; i < subset_list->num_subsets; ++i)
+      {
+         if (strcmp(subset_list->subsets[i]->badge_name, &badge_name[1]) == 0)
+         {
+            rcheevos_client_download_badge_from_url(subset_list->subsets[i]->badge_url, badge_name);
+            break;
+         }
+      }
+      rc_client_destroy_subset_list(subset_list);
+   }
+}
+
 static void rcheevos_client_download_achievement_badge(const char* badge_name, bool locked)
 {
    /* have to find the achievement associated to badge_name, then fetch either badge_url
@@ -591,18 +646,10 @@ uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool downlo
    {
       if (download_if_missing)
       {
-         const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-
          if (badge[0] == 'i')
-         {
-            const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals->client);
-            if (game && strcmp(game->badge_name, &badge[1]) == 0)
-               rcheevos_client_download_badge_from_url(game->badge_url, badge);
-         }
+            rcheevos_client_download_subset_badge(badge);
          else
-         {
             rcheevos_client_download_achievement_badge(badge, locked);
-         }
       }
       return 0;
    }

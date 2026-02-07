@@ -14,6 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdlib.h>
+#include <stdatomic.h>
+#include <math.h>
+
+#include <dispatch/dispatch.h>
 
 #if TARGET_OS_IPHONE
 #include <AudioToolbox/AudioToolbox.h>
@@ -22,12 +26,16 @@
 #endif
 
 #include <CoreAudio/CoreAudioTypes.h>
+#include <AudioToolbox/AudioToolbox.h>
 #include <AudioUnit/AudioUnit.h>
 #include <AudioUnit/AUComponent.h>
 
+/* Nb is defined by AES code included earlier in griffin.c amalgamation.
+ * It conflicts with Sparse BLAS headers in Accelerate, so undefine it. */
+#undef Nb
+#include <Accelerate/Accelerate.h>
+
 #include <boolean.h>
-#include <queues/fifo_queue.h>
-#include <rthreads/rthreads.h>
 #include <retro_endianness.h>
 #include <string/stdstring.h>
 
@@ -36,21 +44,175 @@
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
+/* Threshold for recreating AudioConverter (0.5% change) */
+#define RATE_CHANGE_THRESHOLD 0.005
+
 typedef struct coreaudio
 {
-   slock_t *lock;
-   scond_t *cond;
+   dispatch_semaphore_t sema;
+
+   /* Lock-free ring buffer */
+   float *buffer;
+   size_t capacity;           /* Power of 2 for fast masking */
+   size_t write_ptr;          /* Only touched by main thread */
+   size_t read_ptr;           /* Only touched by audio callback */
+   atomic_size_t filled;      /* Samples currently in buffer */
+
 #if !HAS_MACOSX_10_12
    ComponentInstance dev;
 #else
    AudioComponentInstance dev;
 #endif
-   fifo_buffer_t *buffer;
-   size_t buffer_size;
+
+   /* AudioConverter for hardware-accelerated resampling */
+   AudioConverterRef converter;
+   unsigned output_rate;       /* Hardware output rate */
+   double current_ratio;       /* Current resampling ratio (adjusted input rate) */
+
+   /* Temporary buffer for converter output */
+   float *conv_buffer;
+   size_t conv_buffer_frames;
+   bool converter_needs_reset;
+
    bool dev_alive;
    bool is_paused;
    bool nonblock;
 } coreaudio_t;
+
+/* Context for AudioConverter input callback */
+typedef struct
+{
+   const int16_t *data;
+   size_t frames_left;
+} converter_callback_ctx_t;
+
+/* Lock-free ring buffer operations */
+
+static inline size_t rb_write_avail(coreaudio_t *dev)
+{
+   return dev->capacity - atomic_load_explicit(&dev->filled, memory_order_acquire);
+}
+
+static inline size_t rb_read_avail(coreaudio_t *dev)
+{
+   return atomic_load_explicit(&dev->filled, memory_order_acquire);
+}
+
+static void rb_write(coreaudio_t *dev, const float *data, size_t count)
+{
+   size_t first = dev->capacity - dev->write_ptr;
+   if (first > count)
+      first = count;
+
+   memcpy(dev->buffer + dev->write_ptr, data, first * sizeof(float));
+   memcpy(dev->buffer, data + first, (count - first) * sizeof(float));
+
+   dev->write_ptr = (dev->write_ptr + count) & (dev->capacity - 1);
+   atomic_fetch_add_explicit(&dev->filled, count, memory_order_release);
+}
+
+static void rb_read(coreaudio_t *dev, float *data, size_t count)
+{
+   size_t first = dev->capacity - dev->read_ptr;
+   if (first > count)
+      first = count;
+
+   memcpy(data, dev->buffer + dev->read_ptr, first * sizeof(float));
+   memcpy(data + first, dev->buffer, (count - first) * sizeof(float));
+
+   dev->read_ptr = (dev->read_ptr + count) & (dev->capacity - 1);
+   atomic_fetch_sub_explicit(&dev->filled, count, memory_order_release);
+}
+
+/* AudioConverter input callback - provides int16 samples */
+static OSStatus converter_input_cb(
+      AudioConverterRef converter,
+      UInt32 *ioNumberDataPackets,
+      AudioBufferList *ioData,
+      AudioStreamPacketDescription **outDataPacketDescription,
+      void *inUserData)
+{
+   converter_callback_ctx_t *ctx = (converter_callback_ctx_t *)inUserData;
+
+   if (ctx->frames_left == 0)
+   {
+      *ioNumberDataPackets = 0;
+      return noErr;
+   }
+
+   UInt32 frames_to_provide = *ioNumberDataPackets;
+   if (frames_to_provide > ctx->frames_left)
+      frames_to_provide = (UInt32)ctx->frames_left;
+
+   ioData->mBuffers[0].mData        = (void *)ctx->data;
+   ioData->mBuffers[0].mDataByteSize = frames_to_provide * 4; /* stereo int16 */
+   ioData->mBuffers[0].mNumberChannels = 2;
+
+   ctx->data        += frames_to_provide * 2; /* advance by samples */
+   ctx->frames_left -= frames_to_provide;
+   *ioNumberDataPackets = frames_to_provide;
+
+   return noErr;
+}
+
+/* Create or update AudioConverter for the given effective input rate */
+static bool coreaudio_update_converter(coreaudio_t *dev, double effective_input_rate)
+{
+   AudioStreamBasicDescription input_desc  = {0};
+   AudioStreamBasicDescription output_desc = {0};
+   OSStatus err;
+
+   /* Check if we need to recreate the converter */
+   if (dev->converter)
+   {
+      double ratio_change = fabs(effective_input_rate - dev->current_ratio) / dev->current_ratio;
+      if (ratio_change < RATE_CHANGE_THRESHOLD)
+         return true; /* No significant change, keep existing converter */
+
+      AudioConverterDispose(dev->converter);
+      dev->converter = NULL;
+   }
+
+   /* Input format: int16 stereo at effective input rate */
+   input_desc.mSampleRate       = effective_input_rate;
+   input_desc.mFormatID         = kAudioFormatLinearPCM;
+   input_desc.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger
+                                | kAudioFormatFlagIsPacked;
+   input_desc.mBytesPerPacket   = 4;
+   input_desc.mFramesPerPacket  = 1;
+   input_desc.mBytesPerFrame    = 4;
+   input_desc.mChannelsPerFrame = 2;
+   input_desc.mBitsPerChannel   = 16;
+
+   /* Output format: float32 stereo at hardware output rate */
+   output_desc.mSampleRate       = dev->output_rate;
+   output_desc.mFormatID         = kAudioFormatLinearPCM;
+   output_desc.mFormatFlags      = kAudioFormatFlagIsFloat
+                                 | kAudioFormatFlagIsPacked;
+   output_desc.mBytesPerPacket   = 8;
+   output_desc.mFramesPerPacket  = 1;
+   output_desc.mBytesPerFrame    = 8;
+   output_desc.mChannelsPerFrame = 2;
+   output_desc.mBitsPerChannel   = 32;
+
+   err = AudioConverterNew(&input_desc, &output_desc, &dev->converter);
+   if (err != noErr)
+   {
+      RARCH_ERR("[CoreAudio] Failed to create AudioConverter: %d\n", (int)err);
+      return false;
+   }
+
+   dev->current_ratio = effective_input_rate;
+   dev->converter_needs_reset = false;
+
+   /* Set high quality resampling */
+   UInt32 quality = kAudioConverterQuality_High;
+   AudioConverterSetProperty(dev->converter,
+         kAudioConverterSampleRateConverterQuality,
+         sizeof(quality), &quality);
+
+   return true;
+}
 
 static void coreaudio_free(void *data)
 {
@@ -69,11 +231,17 @@ static void coreaudio_free(void *data)
 #endif
    }
 
-   if (dev->buffer)
-      fifo_free(dev->buffer);
+   if (dev->converter)
+      AudioConverterDispose(dev->converter);
 
-   slock_free(dev->lock);
-   scond_free(dev->cond);
+   if (dev->conv_buffer)
+      free(dev->conv_buffer);
+
+   if (dev->buffer)
+      free(dev->buffer);
+
+   if (dev->sema)
+      dispatch_release(dev->sema);
 
    free(dev);
 }
@@ -83,9 +251,10 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
       const AudioTimeStamp *time_stamp, UInt32 bus_number,
       UInt32 number_frames, AudioBufferList *io_data)
 {
-   unsigned write_avail;
-   void     *outbuf = NULL;
    coreaudio_t *dev = (coreaudio_t*)userdata;
+   float *outbuf;
+   size_t frames_needed;
+   size_t avail;
 
    (void)time_stamp;
    (void)bus_number;
@@ -94,21 +263,24 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
    if (!io_data || io_data->mNumberBuffers != 1)
       return noErr;
 
-   write_avail = io_data->mBuffers[0].mDataByteSize;
-   outbuf      = io_data->mBuffers[0].mData;
+   outbuf        = (float *)io_data->mBuffers[0].mData;
+   frames_needed = io_data->mBuffers[0].mDataByteSize / sizeof(float);
+   avail         = rb_read_avail(dev);
 
-   slock_lock(dev->lock);
-
-   if (FIFO_READ_AVAIL(dev->buffer) < write_avail)
+   if (avail < frames_needed)
    {
+      /* Underrun: read what we have, fill rest with silence */
       *action_flags = kAudioUnitRenderAction_OutputIsSilence;
-      /* Seems to be needed. */
-      memset(outbuf, 0, write_avail);
+      if (avail > 0)
+         rb_read(dev, outbuf, avail);
+      memset(outbuf + avail, 0, (frames_needed - avail) * sizeof(float));
    }
    else
-      fifo_read(dev->buffer, outbuf, write_avail);
-   slock_unlock(dev->lock);
-   scond_signal(dev->cond);
+      rb_read(dev, outbuf, frames_needed);
+
+   /* Wake writer if it might be waiting */
+   dispatch_semaphore_signal(dev->sema);
+
    return noErr;
 }
 
@@ -166,12 +338,60 @@ static void coreaudio_choose_output_device(coreaudio_t *dev, const char* device)
 }
 #endif
 
+/* Query the actual hardware sample rate */
+static unsigned coreaudio_get_hardware_sample_rate(
+#if !HAS_MACOSX_10_12
+      ComponentInstance dev
+#else
+      AudioComponentInstance dev
+#endif
+      )
+{
+   AudioStreamBasicDescription hw_desc;
+   UInt32 size = sizeof(hw_desc);
+
+#if TARGET_OS_IPHONE
+   /* On iOS, query the output scope of RemoteIO to get hardware rate */
+   if (AudioUnitGetProperty(dev, kAudioUnitProperty_StreamFormat,
+            kAudioUnitScope_Output, 0, &hw_desc, &size) == noErr)
+   {
+      if (hw_desc.mSampleRate > 0)
+         return (unsigned)hw_desc.mSampleRate;
+   }
+#else
+   /* On macOS, query the current output device's nominal sample rate */
+   {
+      AudioDeviceID device_id = 0;
+      UInt32 device_size = sizeof(device_id);
+      AudioObjectPropertyAddress prop;
+      Float64 nominal_rate = 0;
+
+      /* Get the current device from the AudioUnit */
+      if (AudioUnitGetProperty(dev, kAudioOutputUnitProperty_CurrentDevice,
+               kAudioUnitScope_Global, 0, &device_id, &device_size) == noErr
+            && device_id != 0)
+      {
+         prop.mSelector = kAudioDevicePropertyNominalSampleRate;
+         prop.mScope    = kAudioObjectPropertyScopeGlobal;
+         prop.mElement  = kAudioObjectPropertyElementMaster;
+         size = sizeof(nominal_rate);
+
+         if (AudioObjectGetPropertyData(device_id, &prop, 0, NULL,
+                  &size, &nominal_rate) == noErr && nominal_rate > 0)
+            return (unsigned)nominal_rate;
+      }
+   }
+#endif
+
+   return 0; /* Failed to determine, caller should use fallback */
+}
+
 static void *coreaudio_init(const char *device,
       unsigned rate, unsigned latency,
       unsigned block_frames,
       unsigned *new_rate)
 {
-   size_t fifo_size;
+   size_t buffer_samples;
    UInt32 i_size;
    AudioStreamBasicDescription real_desc;
 #if !HAS_MACOSX_10_12
@@ -194,8 +414,7 @@ static void *coreaudio_init(const char *device,
    if (!dev)
       return NULL;
 
-   dev->lock = slock_new();
-   dev->cond = scond_new();
+   dev->sema = dispatch_semaphore_create(0);
 
    /* Create AudioComponent */
    desc.componentType         = kAudioUnitType_Output;
@@ -228,6 +447,17 @@ static void *coreaudio_init(const char *device,
 #endif
 
    dev->dev_alive                = true;
+
+   /* Query actual hardware sample rate to avoid double resampling */
+   {
+      unsigned hw_rate = coreaudio_get_hardware_sample_rate(dev->dev);
+      if (hw_rate > 0 && hw_rate != rate)
+      {
+         RARCH_LOG("[CoreAudio] Hardware sample rate is %u Hz (requested %u Hz), using hardware rate.\n",
+               hw_rate, rate);
+         rate = hw_rate;
+      }
+   }
 
    /* Set audio format */
    stream_desc.mSampleRate       = rate;
@@ -265,6 +495,13 @@ static void *coreaudio_init(const char *device,
    RARCH_LOG("[CoreAudio] Using output sample rate of %.1f Hz.\n",
          (float)real_desc.mSampleRate);
    *new_rate = real_desc.mSampleRate;
+   dev->output_rate = *new_rate;
+
+   /* Allocate converter output buffer (enough for 2048 output frames) */
+   dev->conv_buffer_frames = 2048;
+   dev->conv_buffer = (float *)calloc(dev->conv_buffer_frames * 2, sizeof(float));
+   if (!dev->conv_buffer)
+      goto error;
 
    /* Set channel layout (fails on iOS). */
 #ifndef TARGET_OS_IPHONE
@@ -285,15 +522,31 @@ static void *coreaudio_init(const char *device,
    if (AudioUnitInitialize(dev->dev) != noErr)
       goto error;
 
-   fifo_size         = (latency * (*new_rate)) / 1000;
-   fifo_size        *= 2 * sizeof(float);
-   dev->buffer_size  = fifo_size;
+   /* Enforce minimum latency to prevent buffer issues */
+   if (latency < 8)
+      latency = 8;
 
-   if (!(dev->buffer = fifo_new(fifo_size)))
+   /* Calculate buffer size in samples (stereo) */
+   buffer_samples   = (latency * (*new_rate)) / 1000;
+   buffer_samples  *= 2;  /* stereo */
+
+   /* Round up to next power of 2 for fast modulo via masking */
+   dev->capacity = 1;
+   while (dev->capacity < buffer_samples)
+      dev->capacity <<= 1;
+
+   dev->buffer = (float *)calloc(dev->capacity, sizeof(float));
+   if (!dev->buffer)
       goto error;
 
-   RARCH_LOG("[CoreAudio] Using buffer size of %u bytes: (latency = %u ms).\n",
-         (unsigned)fifo_size, latency);
+   atomic_init(&dev->filled, 0);
+   dev->write_ptr = 0;
+   dev->read_ptr  = 0;
+
+   RARCH_LOG("[CoreAudio] Buffer: %u samples (%u bytes, %.1f ms).\n",
+         (unsigned)dev->capacity,
+         (unsigned)(dev->capacity * sizeof(float)),
+         (float)dev->capacity * 1000.0f / (*new_rate) / 2.0f);
 
    if (AudioOutputUnitStart(dev->dev) != noErr)
       goto error;
@@ -309,45 +562,144 @@ error:
 static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
 {
    coreaudio_t *dev   = (coreaudio_t*)data;
-   const uint8_t *buf = (const uint8_t*)buf_;
-   size_t _len        = 0;
+   const float *buf   = (const float *)buf_;
+   size_t samples     = len / sizeof(float);
+   size_t written     = 0;
 
-   while (!dev->is_paused && len > 0)
+   while (!dev->is_paused && samples > 0)
    {
-      size_t write_avail;
+      size_t avail    = rb_write_avail(dev);
+      size_t to_write = (avail < samples) ? avail : samples;
 
-      slock_lock(dev->lock);
-
-      write_avail = FIFO_WRITE_AVAIL(dev->buffer);
-      if (write_avail > len)
-         write_avail = len;
-
-      fifo_write(dev->buffer, buf, write_avail);
-      buf     += write_avail;
-      _len    += write_avail;
-      len     -= write_avail;
+      if (to_write > 0)
+      {
+         rb_write(dev, buf, to_write);
+         buf     += to_write;
+         written += to_write;
+         samples -= to_write;
+      }
 
       if (dev->nonblock)
-      {
-         slock_unlock(dev->lock);
          break;
-      }
 
-#if TARGET_OS_IOS
-      if (write_avail == 0 && !scond_wait_timeout(
-               dev->cond, dev->lock, 300000))
+      if (samples > 0)
       {
-         slock_unlock(dev->lock);
-         break;
+         /* Buffer full, wait for audio callback to drain some.
+          * Use a timeout as a safety net in case audio stalls. */
+         dispatch_time_t timeout = dispatch_time(
+               DISPATCH_TIME_NOW, 500 * NSEC_PER_MSEC);
+         if (dispatch_semaphore_wait(dev->sema, timeout) != 0)
+            break; /* Timeout - audio might be stalled */
       }
-#else
-      if (write_avail == 0)
-         scond_wait(dev->cond, dev->lock);
-#endif
-      slock_unlock(dev->lock);
    }
 
-   return _len;
+   return written * sizeof(float);
+}
+
+/* Write raw int16 samples with hardware-accelerated resampling */
+static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
+      size_t frames, unsigned input_rate, double rate_adjust, float volume)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   double effective_rate;
+   size_t frames_written = 0;
+   converter_callback_ctx_t ctx;
+   AudioBufferList output_buffer;
+   OSStatus err;
+
+   if (!dev || dev->is_paused || frames == 0)
+      return 0;
+
+   /* Calculate effective input rate with rate adjustment.
+    * rate_adjust > 1.0 means we need to speed up (more output for same input),
+    * so we lower the effective input rate to produce more output frames. */
+   effective_rate = (double)input_rate / rate_adjust;
+
+   /* Update converter if needed */
+   if (!coreaudio_update_converter(dev, effective_rate))
+      return -1;
+
+   /* Set up callback context */
+   ctx.data        = samples;
+   ctx.frames_left = frames;
+
+   /* Process in chunks that fit our conv_buffer */
+   while (ctx.frames_left > 0)
+   {
+      UInt32 output_frames = (UInt32)dev->conv_buffer_frames;
+
+      output_buffer.mNumberBuffers = 1;
+      output_buffer.mBuffers[0].mNumberChannels = 2;
+      output_buffer.mBuffers[0].mDataByteSize   = output_frames * 8; /* stereo float */
+      output_buffer.mBuffers[0].mData           = dev->conv_buffer;
+
+      err = AudioConverterFillComplexBuffer(dev->converter,
+            converter_input_cb, &ctx,
+            &output_frames, &output_buffer, NULL);
+
+      if (err != noErr && err != 1)  /* 1 means end of input, which is ok */
+      {
+         RARCH_ERR("[CoreAudio] AudioConverterFillComplexBuffer failed: %d\n", (int)err);
+         break;
+      }
+
+      /* If converter returned 0 output while we have input, it may be stuck
+       * in "end of stream" state (tvOS 13/14 issue). Reset and retry once. */
+      if (output_frames == 0)
+      {
+         if (ctx.frames_left > 0 && !dev->converter_needs_reset)
+         {
+            AudioConverterReset(dev->converter);
+            dev->converter_needs_reset = true;
+            continue;
+         }
+         break;
+      }
+
+      dev->converter_needs_reset = false;
+
+      /* Apply volume to converted samples */
+      if (volume != 1.0f)
+         vDSP_vsmul(dev->conv_buffer, 1, &volume,
+               dev->conv_buffer, 1, (vDSP_Length)(output_frames * 2));
+
+      /* Write converted samples to ring buffer */
+      {
+         float *out_ptr     = dev->conv_buffer;
+         size_t out_samples = output_frames * 2; /* stereo */
+
+         while (!dev->is_paused && out_samples > 0)
+         {
+            size_t avail    = rb_write_avail(dev);
+            size_t to_write = (avail < out_samples) ? avail : out_samples;
+
+            if (to_write > 0)
+            {
+               rb_write(dev, out_ptr, to_write);
+               out_ptr       += to_write;
+               out_samples   -= to_write;
+               frames_written += to_write / 2; /* count frames, not samples */
+            }
+
+            if (dev->nonblock)
+               break;
+
+            if (out_samples > 0)
+            {
+               dispatch_time_t timeout = dispatch_time(
+                     DISPATCH_TIME_NOW, 500 * NSEC_PER_MSEC);
+               if (dispatch_semaphore_wait(dev->sema, timeout) != 0)
+                  break;
+            }
+         }
+      }
+
+      /* If we couldn't write all samples in nonblock mode, stop */
+      if (dev->nonblock && ctx.frames_left > 0)
+         break;
+   }
+
+   return (ssize_t)frames_written;
 }
 
 static void coreaudio_set_nonblock_state(void *data, bool state)
@@ -393,20 +745,14 @@ static bool coreaudio_use_float(void *data) { return true; }
 
 static size_t coreaudio_write_avail(void *data)
 {
-   size_t avail;
    coreaudio_t *dev = (coreaudio_t*)data;
-
-   slock_lock(dev->lock);
-   avail = FIFO_WRITE_AVAIL(dev->buffer);
-   slock_unlock(dev->lock);
-
-   return avail;
+   return rb_write_avail(dev) * sizeof(float);
 }
 
 static size_t coreaudio_buffer_size(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
-   return dev->buffer_size;
+   return dev->capacity * sizeof(float);
 }
 
 /* TODO/FIXME - implement */
@@ -427,4 +773,5 @@ audio_driver_t audio_coreaudio = {
    coreaudio_device_list_free,
    coreaudio_write_avail,
    coreaudio_buffer_size,
+   coreaudio_write_raw
 };

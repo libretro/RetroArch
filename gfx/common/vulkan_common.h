@@ -31,8 +31,6 @@
 
 #define VULKAN_DIRTY_DYNAMIC_BIT                0x0001
 
-#define VULKAN_HDR_SWAPCHAIN
-
 #include "vksym.h"
 
 #include <boolean.h>
@@ -387,6 +385,7 @@ typedef struct gfx_ctx_vulkan_data
    struct vulkan_emulated_mailbox mailbox;
    uint8_t flags;
    enum vulkan_wsi_type wsi_type;
+   bool fse_supported;
 } gfx_ctx_vulkan_data_t;
 
 struct vulkan_display_surface_info

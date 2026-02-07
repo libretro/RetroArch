@@ -135,13 +135,8 @@ static void sdl_pad_connect(unsigned id)
 #ifdef HAVE_SDL2
    guid       = SDL_JoystickGetGUID(pad->joypad);
    guid_ptr   = (uint16_t*)guid.data;
-#ifdef __linux
    vendor     = guid_ptr[2];
    product    = guid_ptr[4];
-#elif _WIN32
-   vendor     = guid_ptr[0];
-   product    = guid_ptr[1];
-#endif
 #ifdef WEBOS
    if (vendor == 0x9999 && product == 0x9999)
    {
@@ -563,7 +558,7 @@ static bool sdl_joypad_set_sensor_state(unsigned pad, enum retro_sensor_action a
       case RETRO_SENSOR_GYROSCOPE_ENABLE:
          if (SDL_GameControllerHasSensor(joypad->controller, SDL_SENSOR_GYRO))
             return !SDL_GameControllerSetSensorEnabled(joypad->controller, SDL_SENSOR_GYRO,
-                  action == RETRO_SENSOR_GYROSCOPE_ENABLE);
+                  (SDL_bool)(action == RETRO_SENSOR_GYROSCOPE_ENABLE));
          else
             return false;
 
@@ -571,7 +566,7 @@ static bool sdl_joypad_set_sensor_state(unsigned pad, enum retro_sensor_action a
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
          if (SDL_GameControllerHasSensor(joypad->controller, SDL_SENSOR_ACCEL))
             return !SDL_GameControllerSetSensorEnabled(joypad->controller, SDL_SENSOR_ACCEL,
-                  action == RETRO_SENSOR_ACCELEROMETER_ENABLE);
+                  (SDL_bool)(action == RETRO_SENSOR_ACCELEROMETER_ENABLE));
          else
             return false;
 #endif

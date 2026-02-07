@@ -30,16 +30,48 @@ import android.provider.DocumentsContract;
 import android.provider.DocumentsContract.Document;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.FileNotFoundException;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.IOException;
 
 public final class VfsImplementationSaf
 {
    private static final String[] QUERY_ARGS_MIME_TYPE = {
       Document.COLUMN_MIME_TYPE,
    };
+
+   private static String normalizePath(String path) {
+      try
+      {
+         return new File("/" + path).getCanonicalPath();
+      }
+      catch (IOException e)
+      {
+         return "/";
+      }
+   }
+
+   private static String getPathParent(String path) {
+      try
+      {
+         return new File("/" + path).getCanonicalFile().getParent();
+      }
+      catch (IOException e)
+      {
+         return null;
+      }
+   }
+
+   private static String getPathFileName(String path) {
+      try
+      {
+         return new File("/" + path).getCanonicalFile().getName();
+      }
+      catch (IOException e)
+      {
+         return null;
+      }
+   }
 
    /**
     * Open a Storage Access Framework file, returning its file descriptor if successful or -1 if not.
@@ -55,21 +87,12 @@ public final class VfsImplementationSaf
    {
       if (Build.VERSION.SDK_INT < 21)
          return -1;
+      path = normalizePath(path);
       boolean createdFile = false;
       while (true)
       {
          final Uri treeUri = Uri.parse(tree);
-         final Path filePath;
-         try
-         {
-            filePath = Paths.get("/" + path).normalize();
-         }
-         catch (InvalidPathException e)
-         {
-            return -1;
-         }
-         final String filePathString = filePath.toString();
-         final Uri fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, filePathString.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + filePathString);
+         final Uri fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
          final String mode;
          if (!write)
             mode = "r";
@@ -93,17 +116,16 @@ public final class VfsImplementationSaf
          }
          catch (FileNotFoundException | IllegalArgumentException e)
          {
-            if (createdFile || !write)
+            if (createdFile || !write || !truncate)
                return -1;
             createdFile = true;
-            final Path parentPath = filePath.getParent();
+            final String parentPath = getPathParent(path);
             if (parentPath == null)
                return -1;
-            final String parentPathString = parentPath.toString();
-            final Uri parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentPathString.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + parentPathString);
+            final Uri parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentPath.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + parentPath);
             try
             {
-               DocumentsContract.createDocument(content, parentUri, "application/octet-stream", filePath.getFileName().toString());
+               DocumentsContract.createDocument(content, parentUri, "application/octet-stream", getPathFileName(path));
             }
             catch (FileNotFoundException | IllegalArgumentException f)
             {
@@ -124,14 +146,7 @@ public final class VfsImplementationSaf
       if (Build.VERSION.SDK_INT < 21)
          return false;
       final Uri treeUri = Uri.parse(tree);
-      try
-      {
-         path = Paths.get("/" + path).normalize().toString();
-      }
-      catch (InvalidPathException e)
-      {
-         return false;
-      }
+      path = normalizePath(path);
       path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
       final Uri fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path);
       try
@@ -172,14 +187,7 @@ public final class VfsImplementationSaf
          if (Build.VERSION.SDK_INT < 21)
             return;
          final Uri treeUri = Uri.parse(tree);
-         try
-         {
-            path = Paths.get("/" + path).normalize().toString();
-         }
-         catch (InvalidPathException e)
-         {
-            return;
-         }
+         path = normalizePath(path);
          path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
          final Uri fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path);
          final Cursor cursor;
@@ -244,15 +252,7 @@ public final class VfsImplementationSaf
       if (Build.VERSION.SDK_INT < 21)
          return -1;
       final Uri treeUri = Uri.parse(tree);
-      final Path directoryPath;
-      try
-      {
-         directoryPath = Paths.get("/" + path).normalize();
-      }
-      catch (InvalidPathException e)
-      {
-         return -1;
-      }
+      path = normalizePath(path);
       path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
       final Uri directoryUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path);
       Cursor cursor = null;
@@ -274,14 +274,13 @@ public final class VfsImplementationSaf
             cursor.close();
          }
       }
-      final Path parentPath = directoryPath.getParent();
+      final String parentPath = getPathParent(path);
       if (parentPath == null)
          return -1;
-      final String parentPathString = parentPath.toString();
-      final Uri parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentPathString.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + parentPathString);
+      final Uri parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentPath.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + parentPath);
       try
       {
-         if (DocumentsContract.createDocument(content, parentUri, Document.MIME_TYPE_DIR, directoryPath.getFileName().toString()) == null)
+         if (DocumentsContract.createDocument(content, parentUri, Document.MIME_TYPE_DIR, getPathFileName(path)) == null)
             return -1;
       }
       catch (FileNotFoundException | IllegalArgumentException e)
@@ -314,14 +313,7 @@ public final class VfsImplementationSaf
          if (Build.VERSION.SDK_INT < 21)
             return;
          final Uri treeUri = Uri.parse(tree);
-         try
-         {
-            path = Paths.get("/" + path).normalize().toString();
-         }
-         catch (InvalidPathException e)
-         {
-            return;
-         }
+         path = normalizePath(path);
          path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
          prefixLength = path.length();
          final Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, path);

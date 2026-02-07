@@ -1208,34 +1208,18 @@ static void d3d8_calculate_rect(void *data,
       bool allow_rotate)
 {
    struct video_viewport vp;
-   float device_aspect       = (float)*width / *height;
    d3d8_video_t *d3d         = (d3d8_video_t*)data;
-   settings_t *settings      = config_get_ptr();
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    video_driver_get_size(width, height);
 
-   vp.x           = 0;
-   vp.y           = 0;
-   vp.width       = *width;
-   vp.height      = *height;
    vp.full_width  = *width;
    vp.full_height = *height;
+   video_driver_update_viewport(&vp, force_full, d3d->keep_aspect, true);
 
-   if (video_scale_integer && !force_full)
-      video_viewport_get_scaled_integer(&vp,
-            *width,
-            *height,
-            video_driver_get_aspect_ratio(),
-            d3d->keep_aspect,
-            true);
-   else if (d3d->keep_aspect && !force_full)
-      video_viewport_get_scaled_aspect(&vp, *width, *height, true);
-   *x                          = vp.x;
-   *y                          = vp.y;
-   *width                      = vp.width;
-   *height                     = vp.height;
+   *x      = vp.x;
+   *y      = vp.y;
+   *width  = vp.width;
+   *height = vp.height;
 }
 
 static void d3d8_set_viewport(void *data,
@@ -2190,8 +2174,9 @@ static const video_poke_interface_t d3d_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void d3d8_get_poke_interface(void *data,

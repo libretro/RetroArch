@@ -51,13 +51,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SVP_CREATED_WD_TIMER  (1 << 4)
 
 /* Hard-coded camera parameters */
-#if 0
-#define SVP_CAMERA_WIDTH         1920
-#define SVP_CAMERA_HEIGHT        1080
-#else
 #define SVP_CAMERA_WIDTH         1280
 #define SVP_CAMERA_HEIGHT         720
-#endif
 #define SVP_CAMERA_FRAMERATE       30
 #define SVP_CAMERA_DURATION_MS  10000
 
