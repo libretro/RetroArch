@@ -77,6 +77,7 @@
 #endif
 
 #include "verbosity.h"
+#include "file_path_special.h"
 
 #ifdef HAVE_QT
 #include "ui/ui_companion_driver.h"
@@ -547,9 +548,13 @@ void rarch_log_file_init(
       /* Get log file path */
       fill_pathname_join_special(log_file_path,
             log_dir,
+#ifdef DJGPP
+            false
+#else
             log_to_file_timestamp
+#endif
             ? timestamped_log_file_name
-            : "retroarch.log",
+            : FILE_PATH_DEFAULT_EVENT_LOG,
             sizeof(log_file_path));
    }
    else
