@@ -316,14 +316,6 @@ MSG_HASH(
    "Sustitúi tolos nucleos heredaos ya instalaos manualmente poles últimes versiones de la Play Store si tán disponibles."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   "Anovador de miniatures"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "Baxa'l paquete de miniatures completu del sistema seleicionáu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
    "Anovador de miniatures de les llistes"
    )
@@ -560,10 +552,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    "Indentificador del paquete"
    )
-MSG_HASH( /* FIXME Maybe add a description? */
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
-   "Nivel de RetroRating"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    "Fonte d'enerxía"
@@ -583,250 +571,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
    "DPI de la pantalla"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
-   "Compatibilidá con LibretroDB"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   "Compatibilidá coles superposiciones"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-   "Compatibilidá cola interfaz de comandos"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-   "Compatibilidá cola interfaz de comandos de rede"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
-   "Compatibilidá con Cocoa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
-   "Compatibilidá con PNG (RPNG)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
-   "Compatibilidá con JPEG (RJPEG)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
-   "Compatibilidá con BMP (RBMP)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
-   "Compatibilidá con TGA (RTGA)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
-   "Compatibilidá con SDL 1.2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
-   "Compatibilidá con SDL 2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
-   "Compatibilidá con Direct3D 8"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
-   "Compatibilidá con Direct3D 9"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
-   "Compatibilidá con Direct3D 10"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
-   "Compatibilidá con Direct3D 11"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
-   "Compatibilidá con Direct3D 12"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
-   "Compatibilidá con GDI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
-   "Compatibilidá con Vulkan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
-   "Compatibilidá con Metal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
-   "Compatibilidá con OpenGL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
-   "Compatibilidá con OpenGL ES"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
-   "Compatibilidá cola función multifilu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
-   "Compatibilidá con KMS/EGL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
-   "Compatibilidá con udev"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
-   "Compatibilidá con OpenVG"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
-   "Compatibilidá con EGL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
-   "Compatibilidá con X11"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
-   "Compatibilidá con Wayland"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
-   "Compatibilidá con XVideo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
-   "Compatibilidá con ALSA"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
-   "Compatibilidá con OSS"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
-   "Compatibilidá con OpenAL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
-   "Compatibilidá con OpenSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
-   "Compatibilidá con RSound"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
-   "Compatibilidá con RoarAudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
-   "Compatibilidá con JACK"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
-   "Compatibilidá con PulseAudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
-   "Compatibilidá con PipeWire"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
-   "Compatibilidá con CoreAudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
-   "Compatibilidá con CoreAudio V3"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
-   "Compatibilidá con DirectSound"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
-   "Compatibilidá con WASAPI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
-   "Compatibilidá con XAudio2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
-   "Compatibilidá con zlib"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
-   "Compatibilidá con 7zip"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
-   "Compatibilidá con Zstandard"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
-   "Compatibilidá coles biblioteques dinámiques"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-   "Carga dinámica en tiempu d'execución de la biblioteca libretro"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
-   "Compatibilidá con Cg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
-   "Compatibilidá con GLSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
-   "Compatibilidá con HLSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
-   "Compatibilidá coles imáxenes SDL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
-   "Compatibilidá con FFmpeg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
-   "Compatibilidá con mpv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
-   "Compatibilidá con CoreText"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
-   "Compatibilidá con FreeType"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
-   "Compatibilidá con STB TrueType"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   "Compatibilidá col xuegu en llinia (P2P)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
-   "Compatibilidá con Video4Linux2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
-   "Compatibilidá con SSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
-   "Compatibilidá con libusb"
    )
 
 /* Main Menu > Information > Database Manager */
@@ -967,11 +711,6 @@ MSG_HASH(
    )
 
 /* Main Menu > Help */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
-   "Controles básicos del menú"
-   )
 
 /* Main Menu > Help > Basic Menu Controls */
 
@@ -1836,10 +1575,6 @@ MSG_HASH(
    "Dalgunos nucleos tienen una función d'apagáu, la carga d'un nucleu maniquín impide que RetroArch cole."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-   "Comprobar el firmware que falte enantes de cargar"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
    "Atroxar na cache los ficheros d'información de los núcleos"
    )
@@ -2391,6 +2126,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
    "Soníu de desbloquéu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
+   "Descripción"
    )
 
 /* Settings > Achievements > Appearance */
@@ -4167,24 +3906,8 @@ MSG_HASH(
    "Nomatu: %s"
    )
 
-/* Unused (Only Exist in Translation Files) */
+/* Footer legend */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
-   "Nomatu (LAN): %s"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Opacidá del pié"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "Opacidá de la testera"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
-   "Xuegu en llinia"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Ayuda"
@@ -4193,77 +3916,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Borrar"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Descripción"
-   )
 
-/* Unused (Needs Confirmation) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "Base de datos - Peñera: publicador"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
-   "Base de datos - Peñera: orixe"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
-   "Base de datos - Peñera: franquicia"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
-   "Base de datos - Peñera: Clasificación d'ESRB"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
-   "Base de datos - Peñera: Clasificación d'ELSPA"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
-   "Base de datos - Peñera: Clasificación de PEGI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
-   "Base de datos - Peñera: Clasificación de CERO"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
-   "Base de datos - Peñera: Clasificación de BBFC"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIG,
-   "Configuración"
-   )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Descargues"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
-   "Conteníu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
-   "Información"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
-   "Colar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
-   "Desplazase p'arriba"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
-   "Amosar/esconder el tecláu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
-   "Amosar/esconder el menú"
-   )
 
 /* Discord Status */
 
@@ -4470,14 +4123,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Hebo un error al zarrar la bandexa de discos virtual."
-   )
-MSG_HASH(
-   MSG_DEVICE_CONFIGURED_IN_PORT,
-   "configuróse nel puertu"
-   )
-MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED,
-   "nun se configuró"
    )
 MSG_HASH(
    MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,

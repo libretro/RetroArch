@@ -364,14 +364,6 @@ MSG_HASH(
    "Zastąp wszystkie starsze i zainstalowane ręcznie rdzenie najnowszymi wersjami ze Sklepu Play, o ile są dostępne."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   "Aktualizator miniatur"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "Pobierz kompletny pakiet miniatur dla wybranego systemu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
    "Aktualizator miniatur playlist"
    )
@@ -668,10 +660,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    "System operacyjny Frontend"
    )
-MSG_HASH( /* FIXME Maybe add a description? */
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
-   "Poziom oceny Retro"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    "Źródło zasilania"
@@ -691,261 +679,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
    "Wyświetl DPI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
-   "Obsługa LibretroDB"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   "Obsługa nakładek"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-   "Obsługa interfejsu poleceń"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-   "Obsługa sieciowego interfejsu poleceń"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-   "Obsługa kontrolera sieci"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
-   "Wsparcie Cocoa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
-   "Obsługa PNG (RPNG)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
-   "Obsługa JPEG (RJPEG)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
-   "Obsługa BMP (RBMP)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
-   "Obsługa TGA (RTGA)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
-   "Wsparcie SDL1.2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
-   "Wsparcie SDL2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
-   "Wsparcie Direct3D 8"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
-   "Wsparcie Direct3D 9"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
-   "Wsparcie Direct3D 10"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
-   "Wsparcie Direct3D 11"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
-   "Wsparcie Direct3D 12"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
-   "Wsparcie GDI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
-   "Wsparcie Vulkan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
-   "Wsparcie Metal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
-   "Wsparcie OpenGL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
-   "Wsparcie OpenGL ES"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
-   "Wsparcie wątkowości"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
-   "Wsparcie KMS/EGL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
-   "Wsparcie udev"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
-   "Wsparcie OpenVG"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
-   "Wsparcie EGL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
-   "Wsparcie X11"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
-   "Wsparcie Wayland"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
-   "Wsparcie XVideo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
-   "Obsługa ALSA"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
-   "Obsługa OSS"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
-   "Obsługa OpenAL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
-   "Obsługa OpenSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
-   "Obsługa RSound"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
-   "Obsługa RoarAudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
-   "Obsługa JACK"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
-   "Obsługa PulseAudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
-   "Obsługa PipeWire"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
-   "Obsługa CoreAudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
-   "Obsługa CoreAudio V3"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
-   "Obsługa DirectSound"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
-   "Obsługa WASAPI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
-   "Obsługa XAudio2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
-   "Obsługa Zlib"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
-   "Obsługa 7zip"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
-   "Wsparcie Zstandard"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
-   "Obsługa dynamicznej biblioteki"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-   "Dynamiczne ładowanie biblioteki libretro w czasie wykonywania"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
-   "Obsługa Cg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
-   "Obsługa GLSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
-   "Obsługa HLSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
-   "Obsługa obrazów SDL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
-   "Obsługa FFmpeg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
-   "obsługa MPV"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
-   "Obsługa CoreText"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
-   "Obsługa FreeType"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
-   "Obsługa STB TrueType"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   "Obsługa gry sieciowej (peer-to-peer)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
-   "Obsługa Video4Linux2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
-   "Wsparcie SSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
-   "Obsługa libusb"
-   )
-
-/* Main Menu > Information > Database Manager */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
-   "Wybór bazy danych"
    )
 
 /* Main Menu > Information > Database Manager > Information */
@@ -1155,11 +888,6 @@ MSG_HASH(
    )
 
 /* Main Menu > Help */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
-   "Podstawowe elementy sterujące menu"
-   )
 
 /* Main Menu > Help > Basic Menu Controls */
 
@@ -2656,10 +2384,6 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
-   "Zmień ustawienia resamplera dźwięku."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Synchronizacja"
    )
@@ -3928,14 +3652,6 @@ MSG_HASH(
    "Uruchom rdzeń automatycznie"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-   "Sprawdź brakujące oprogramowanie sprzętowe przed ładowaniem"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
-   "Sprawdź czy jest obecne całe wymagane oprogramowanie sprzętowe przed próbą załadowania zawartości."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
    "Podstawowe kategorie opcji"
    )
@@ -4349,7 +4065,7 @@ MSG_HASH(
    "Przewijanie"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    "Zmień ustawienia przewijania."
    )
 MSG_HASH(
@@ -4867,33 +4583,6 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
-
-/* Settings > On-Screen Display > Video Layout */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
-   "Włącz układ wideo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
-   "Układy wideo są używane do ramek i innych elementów graficznych."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
-   "Ścieżka układu wideo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "Wybierz układ wideo z przeglądarki plików."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
-   "Wybrany widok"
-   )
-MSG_HASH( /* FIXME Unused */
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
-   "Wybierz widok wewnątrz załadowanego układu."
-   )
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
@@ -5450,14 +5139,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
    "Pokaż możliwość aktualizacji rdzeni (i plików podstawowych informacji) w opcji \"Aktualizacje online\"."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-   "Pokaż starsze 'Aktualizacje miniatur'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-   "Pokaż wpis do pobierania starych pakietów miniatur w opcji \"Aktualizacje online\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
@@ -8040,16 +7721,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
    "Bieżący plik opcji w użyciu."
-   )
-
-/* - Legacy (unused) */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
-   "Utwórz plik opcji gry"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
-   "Zapisz plik opcji gry"
    )
 
 /* Quick Menu > Controls */
@@ -10999,10 +10670,6 @@ MSG_HASH(
    "Lista punktów klienta"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
-   "Turbo/Martwa strefa"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
    "Retro osiągnięcia"
    )
@@ -11187,87 +10854,8 @@ MSG_HASH(
    "Nie udało się zlokalizować dopasowanej treści przez CRC lub nazwę pliku"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_START_GONG,
-   "Startowy gong"
-   )
-
-/* Unused (Only Exist in Translation Files) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
-   "Pseudonim (LAN): %s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
    "Włącz System BGM"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
-   "Włącz nagrywanie"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_PATH,
-   "Zapisz wyjścia jako..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
-   "Zapisz nagrania w katalogu wyjściowym"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
-   "Zobacz mecz #"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
-   "Wybierz dopasowanie do wyświetlenia."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
-   "Zobacz listę %u dopasowań"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,
-   "Utwórz kod z tego dopasowania"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
-   "Usuń to dopasowanie"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Nieprzezroczystość stopki"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Zmodyfikuj krycie grafiki stopki."
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "Nieprzezroczystość nagłówka"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "Zmodyfikuj krycie grafiki nagłówka."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
-   "Włącz grę online"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
-   "Rozpocznij zawartość"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
-   "Ścieżka historii treści"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-   "Identyfikator wyświetlania wyjścia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-   "Wybierz port wyjściowy podłączony do wyświetlacza CRT."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
@@ -11278,251 +10866,8 @@ MSG_HASH(
    "Wyczyść"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
-   "Rozwiązywanie problemów audio/wideo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
-   "Zmiana nakładki kontrolera wirtualnego"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
-   "Ładowanie zawartości"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
-   "Skanowanie w poszukiwaniu treści"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
-   "Co to jest rdzeń?"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANAGEMENT,
-   "Ustawienia bazy danych"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
-   "Opóźnij klatki gry online"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
-   "Zeskanuj sieć lokalną"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
-   "Wyszukaj i połącz się z hostami gry sieciowej w sieci lokalnej."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
-   "Włącz klienta gry online"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
-   "Widz gry online włączone"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
    "Opis"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
-   "Ogranicz maksymalną prędkość działania"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_START_SEARCH,
-   "Rozpocznij wyszukiwanie nowego cheat-kodu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
-   "Rozpocznij wyszukiwanie nowego cheat-a. Liczba bitów może zostać zmieniona."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
-   "Kontynuuj wyszukiwanie"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_CONTINUE_SEARCH,
-   "Kontynuuj wyszukiwanie nowego chet-a."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
-   "Lista osiągnięć (Hardcore)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
-   "Szczegóły cheat-u"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_DETAILS,
-   "Zarządza ustawieniami szczegółów cheat-a."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
-   "Rozpocznij lub kontynuuj wyszukiwanie kodu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
-   "Rozpocznij lub kontynuuj wyszukiwanie kodu chet-a."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
-   "Oszukane przepustki"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
-   "Zwiększ lub zmniejsz ilość kodów."
-   )
-
-/* Unused (Needs Confirmation) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X,
-   "Lewy analog X"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y,
-   "Lewy analog Y"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X,
-   "Prawo analog X"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
-   "Prawo analog Y"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
-   "Rozpocznij lub kontynuuj wyszukiwanie cheat-u"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
-   "Baza danych kursora"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "Baza danych - Filtr: Developer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "Baza danych - Filtr: Wydawca"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
-   "Baza danych - Filtr: Pochodzenie"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
-   "Baza danych - Filtr: Franczyza"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
-   "Baza danych - Filtr: Ocena ESRB"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
-   "Baza danych - Filtr: Ocena ELSPA"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
-   "Baza danych - Filtr: Ocena PEGI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
-   "Baza danych - Filtr: Ocena CERO"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
-   "Baza danych - Filtr: Ocena BBFC"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
-   "Baza danych - Filtr: Maks. Liczba użytkowników"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
-   "Baza danych - Filtr: Problem z magazynem Edge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
-   "Baza danych - Filtr: Ocena magazynu Edge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_GENRE,
-   "Baza danych - Filtr: Gatunek"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_REGION,
-   "Baza danych - Filtr: Region"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
-   "Informacje o bazie danych"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIG,
-   "Konfiguracja"
-   )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Pobrania"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
-   "Ustawienia gry online"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT,
-   "Obsługa Slangu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT,
-   "Obsługa renderowania na teksturę OpenGL/Direct3D (wieloprzebiegowe shadery)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
-   "Zawartość"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_DIR,
-   "Zwykle ustawiane przez programistów, którzy pakują aplikacje libretro/RetroArch, aby wskazywały na zasoby."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
-   "Zapytać"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
-   "Podstawowe elementy sterujące menu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM,
-   "Potwierdź/OK"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
-   "Informacje"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
-   "Wyjdź"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
-   "Przewiń do góry"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
-   "Domyślne"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
-   "Przełącz klawiaturę"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
-   "Przełącz menu"
    )
 
 /* Discord Status */
@@ -12756,10 +12101,6 @@ MSG_HASH(
    "Podłącz urządzenie z prawidłowego portu."
    )
 MSG_HASH(
-   MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
-   "Odłączanie urządzenia od portu"
-   )
-MSG_HASH(
    MSG_VALUE_REBOOTING,
    "Ponowne uruchamianie..."
    )
@@ -12788,24 +12129,8 @@ MSG_HASH(
    "Auto-ładowanie stanu z \"%s\" powiodło się."
    )
 MSG_HASH(
-   MSG_DEVICE_CONFIGURED_IN_PORT,
-   "skonfigurowane w porcie"
-   )
-MSG_HASH(
-   MSG_DEVICE_DISCONNECTED_FROM_PORT,
-   "rozłączono z portem"
-   )
-MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED,
-   "nie skonfigurowane"
-   )
-MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_NR,
    "%s (%u/%u) nie skonfigurowany"
-   )
-MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
-   "nieskonfigurowane, korzystające z trybu awaryjnego"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,

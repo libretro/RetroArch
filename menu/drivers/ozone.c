@@ -1881,8 +1881,6 @@ static uintptr_t ozone_entries_icon_get_texture(
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SHADER_OPTIONS];
       case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENT_LIST];
-      case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ACHIEVEMENT_LIST];
       case MENU_ENUM_LABEL_STATE_SLOT:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_ENUM_LABEL_REPLAY_SLOT:
@@ -2042,12 +2040,6 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
       case MENU_ENUM_LABEL_HELP_LIST:
-      case MENU_ENUM_LABEL_HELP_CONTROLS:
-      case MENU_ENUM_LABEL_HELP_LOADING_CONTENT:
-      case MENU_ENUM_LABEL_HELP_SCANNING_CONTENT:
-      case MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE:
-      case MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
-      case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_HELP];
       case MENU_ENUM_LABEL_QUIT_RETROARCH:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_EXIT];
@@ -2160,7 +2152,6 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_DELETE_PLAYLIST:
       case MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST:
       case MENU_ENUM_LABEL_VIDEO_FILTER_REMOVE:
-      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_CORE:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT:

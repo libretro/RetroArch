@@ -54,10 +54,6 @@ MSG_HASH(
    "achievement_list"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE,
-   "achievement_list_hardcore"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_ADD_CONTENT_LIST,
    "add_content"
    )
@@ -269,10 +265,6 @@ MSG_HASH(
    "audio_filter_dir"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_TURBO_DEADZONE_LIST,
-   "turbo_deadzone_list"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_LATENCY,
    "audio_latency"
    )
@@ -311,10 +303,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_SETTINGS,
    "audio_settings"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_AUDIO_RESAMPLER_SETTINGS,
-   "audio_resampler_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
@@ -567,14 +555,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
    "cheat_file_save_as"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_NUM_PASSES,
-   "cheat_num_passes"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,
-   "cheevos_description"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_ENABLE,
@@ -911,14 +891,6 @@ MSG_HASH(
    "system_information_cpu_cores"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CURSOR_MANAGER,
-   "cursor_manager"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CURSOR_MANAGER_LIST,
-   "cursor_manager_list"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CUSTOM_BIND,
    "custom_bind"
    )
@@ -1139,10 +1111,6 @@ MSG_HASH(
    "deferred_audio_settings_list"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_AUDIO_RESAMPLER_SETTINGS_LIST,
-   "deferred_audio_resampler_settings_list"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST,
    "deferred_audio_mixer_settings_list"
    )
@@ -1210,10 +1178,6 @@ MSG_HASH(
    "deferred_core_manager_steam_list"
    )
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST,
-   "deferred_cursor_manager_list"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST,
    "deferred_database_manager_list"
@@ -1573,10 +1537,6 @@ MSG_HASH(
    "switch_installed_cores_pfd"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CONTENT_DIR,
-   "content_directory"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_MENU_SCALE_FACTOR,
    "menu_scale_factor"
    )
@@ -1595,10 +1555,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DRIVER_SETTINGS,
    "driver_settings"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE,
-   "check_for_missing_firmware"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE,
@@ -1707,14 +1663,6 @@ MSG_HASH(
    "netplay_ping_show"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_FRAME_THROTTLE_ENABLE,
-   "fastforward_ratio_throttle_enable"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,
-   "frame_throttle_settings"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_FRONTEND_COUNTERS,
    "frontend_counters"
    )
@@ -1759,48 +1707,12 @@ MSG_HASH(
    "core_options_flush"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
-   "game_specific_options_create"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE,
-   "game_specific_options_in_use"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP,
    "help"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHEEVOS_DESCRIPTION,
-   "help_cheevos_description"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
-   "help_audio_video_troubleshooting"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,
-   "help_change_virtual_gamepad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CONTROLS,
-   "help_controls"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_LIST,
    "help_list"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_LOADING_CONTENT,
-   "help_loading_content"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,
-   "help_scanning_content"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE,
-   "help_what_is_a_core"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,
@@ -1862,9 +1774,9 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 MSG_HASH(
-        MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
-        "input_android_physical_keyboard"
-)
+   MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "input_android_physical_keyboard"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SENSORS_ENABLE,
@@ -2357,10 +2269,6 @@ MSG_HASH(
    "main_menu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_MANAGEMENT,
-   "database_settings"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME,
    "rgui_menu_color_theme"
    )
@@ -2411,14 +2319,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
    "materialui_thumbnail_view_landscape"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "materialui_menu_footer_opacity"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "materialui_menu_header_opacity"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_DRIVER,
@@ -2519,10 +2419,6 @@ MSG_HASH(
    "menu_netplay_disconnect"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_ENABLE,
-   "netplay_enable"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
    "menu_netplay_enable_client"
    )
@@ -2547,10 +2443,6 @@ MSG_HASH(
    "netplay_ip_address"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_MODE,
-   "netplay_mode"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL,
    "netplay_nat_traversal"
    )
@@ -2563,10 +2455,6 @@ MSG_HASH(
    "netplay_password"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_SETTINGS,
-   "menu_netplay_settings"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,
    "netplay_public_announce"
    )
@@ -2577,10 +2465,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,
    "netplay_spectate_password"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE,
-   "netplay_spectator_mode_enable"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR,
@@ -2613,10 +2497,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_MAX_PING,
    "netplay_max_ping"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,
-   "Search for and connect to netplay hosts on the local network."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
@@ -3077,78 +2957,6 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER,
-   "deferred_cursor_manager_list_rdb_entry_developer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER,
-   "deferred_cursor_manager_list_rdb_entry_publisher"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN,
-   "deferred_cursor_manager_list_rdb_entry_origin"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE,
-   "deferred_cursor_manager_list_rdb_entry_franchise"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING,
-   "deferred_cursor_manager_list_rdb_entry_edge_magazine_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
-   "deferred_cursor_manager_list_rdb_entry_edge_magazine_issue"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
-   "deferred_cursor_manager_list_rdb_entry_famitsu_magazine_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW,
-   "deferred_cursor_manager_list_rdb_entry_enhancement_hw"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH,
-   "deferred_cursor_manager_list_rdb_entry_releasemonth"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR,
-   "deferred_cursor_manager_list_rdb_entry_releaseyear"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING,
-   "deferred_cursor_manager_list_rdb_entry_esrb_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING,
-   "deferred_cursor_manager_list_rdb_entry_elspa_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING,
-   "deferred_cursor_manager_list_rdb_entry_pegi_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING,
-   "deferred_cursor_manager_list_rdb_entry_cero_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING,
-   "deferred_cursor_manager_list_rdb_entry_bbfc_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS,
-   "deferred_cursor_manager_list_rdb_entry_max_users"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_GENRE,
-   "deferred_cursor_manager_list_rdb_entry_genre"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_REGION,
-   "deferred_cursor_manager_list_rdb_entry_region"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER,
    "rdb_entry_developer"
    )
@@ -3301,10 +3109,6 @@ MSG_HASH(
    "rdb_entry_sha1"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_RDB_ENTRY_START_CONTENT,
-   "rdb_entry_start_content"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_RDB_ENTRY_TGDB_RATING,
    "rdb_entry_tgdb_rating"
    )
@@ -3363,18 +3167,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MIDI_DRIVER,
    "midi_driver"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RECORD_ENABLE,
-   "record_enable"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RECORD_PATH,
-   "record_path"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RECORD_USE_OUTPUT_DIRECTORY,
-   "record_use_output_directory"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST,
@@ -3445,12 +3237,8 @@ MSG_HASH(
    "retro_achievements_settings"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_INPUT_META_REWIND,
-   "input_meta_rewind"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_REWIND_ENABLE,
-   "rewind_enable"
+   MENU_ENUM_LABEL_CHEAT_SETTINGS,
+   "cheat_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE,
@@ -3459,6 +3247,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_LOAD,
    "cheat_apply_after_load"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REWIND_ENABLE,
+   "rewind_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_REWIND_SETTINGS,
+   "rewind_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_REWIND_GRANULARITY,
@@ -3471,10 +3267,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP,
    "rewind_buffer_size_step"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_REWIND_SETTINGS,
-   "rewind_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS,
@@ -3491,10 +3283,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    "menu_throttle_framerate"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SETTINGS,
-   "cheat_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
@@ -3930,10 +3718,6 @@ MSG_HASH(
    "menu_start_net_retropad"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_START_GONG,
-   "menu_start_gong"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
    "menu_start_video_processor"
    )
@@ -4032,11 +3816,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
    "thumbnails_directory"
-   )
-/* Thumbnailpack removal - next entry is deprecated */
-MSG_HASH(
-   MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
-   "thumbnails_updater_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
@@ -4833,18 +4612,6 @@ MSG_HASH(
    "video_force_resolution"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_LAYOUT_ENABLE,
-   "video_layout_enable"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_LAYOUT_PATH,
-   "video_layout_path"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_LAYOUT_SELECTED_VIEW,
-   "video_layout_selected_view"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_WIFI_DRIVER,
    "wifi_driver"
    )
@@ -4961,14 +4728,6 @@ MSG_HASH(
    "connect_device_from_a_valid_port"
    )
 MSG_HASH(
-   MSG_DEVICE_CONFIGURED_IN_PORT,
-   "configured in port"
-   )
-MSG_HASH(
-   MSG_DISCONNECTING_DEVICE_FROM_PORT,
-   "disconnecting_device_from_port"
-   )
-MSG_HASH(
    MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    "disconnect_device_from_a_valid_port"
    )
@@ -4979,22 +4738,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_FOUND_LAST_STATE_SLOT,
    "found_last_state_slot"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_SELECTION,
-   "database_selection"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST,
-   "database_cursor_list"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "database_cursor_list_entry_developer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "database_cursor_list_entry_publisher"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OFF, "off"
@@ -5035,58 +4778,6 @@ MSG_HASH(
    "overlay_settings"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
-   "database_cursor_list_entry_origin"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
-   "database_cursor_list_entry_franchise"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
-   "database_cursor_list_entry_esrb_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
-   "database_cursor_list_entry_elspa_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
-   "database_cursor_list_entry_pegi_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
-   "database_cursor_list_entry_cero_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
-   "database_cursor_list_entry_bbfc_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
-   "database_cursor_list_entry_max_users"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
-   "database_cursor_list_releasedate_by_month"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
-   "database_cursor_list_releasedate_by_year"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
-   "database_cursor_list_edge_magazine_issue"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
-   "database_cursor_list_edge_magazine_rating"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
-   "database_info"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_SHADER_PIPELINE_RIBBON,
    "shader_pipeline_ribbon"
    )
@@ -5121,10 +4812,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
    "disable_right_analog_in_menu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
-   "quit_press_twice"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
@@ -5197,10 +4884,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_SHOW_CORE_UPDATER,
    "menu_show_core_updater"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-   "menu_show_legacy_thumbnail_updater"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_MENU_SCROLL_FAST,
@@ -6027,18 +5710,6 @@ MSG_HASH(
    "cheat_add_matches"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_VIEW_MATCHES,
-   "cheat_view_matches"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_CREATE_OPTION,
-   "cheat_create_option"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_DELETE_OPTION,
-   "cheat_delete_option"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP,
    "cheat_add_new_top"
    )
@@ -6057,10 +5728,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_BIG_ENDIAN,
    "cheat_big_endian"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_MATCH_IDX,
-   "cheat_match_idx"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_MATCH,
@@ -6085,10 +5752,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "crt_switch_resolution_use_custom_refresh_rate"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-   "crt_switch_resolution_output_display_id"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY,

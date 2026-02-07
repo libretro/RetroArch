@@ -384,14 +384,6 @@ MSG_HASH(
    "Thay thế tất cả các Core cũ và được cài đặt thủ công bằng các phiên bản mới nhất từ ​​Cửa hàng Play, nếu có."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   "Trình cập nhật ảnh thu nhỏ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "Tải xuống gói ảnh thu nhỏ đã hoàn thành cho hệ thống đã chọn."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
    "Trình cập nhật danh sách phát thu nhỏ"
    )
@@ -704,10 +696,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    "Phiên bản OS"
    )
-MSG_HASH( /* FIXME Maybe add a description? */
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
-   "Cấp độ đánh giá Retro"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    "Nguồn năng lượng"
@@ -727,261 +715,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
    "Hiển thị DPI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
-   "Hỗ trợ LibretroDB"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   "Hỗ trợ lớp phủ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-   "Hỗ trợ giao diện lệnh"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-   "Hỗ trợ giao diện lệnh qua mạng"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-   "Hỗ trợ trình điểu khiển mạng"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
-   "Hỗ trợ Cocoa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
-   "Hỗ trợ PNG (RPNG)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
-   "Hỗ trợ JPEG (RJPEG)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
-   "Hỗ trợ BMP (RBMP)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
-   "Hỗ trợ TGA (RTGA)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
-   "Hỗ trợ SDL 1.2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
-   "Hỗ trợ SDL 2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
-   "Hỗ trợ Direct3D 8"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
-   "Hỗ trợ Direct3D 9"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
-   "Hỗ trợ Direct3D 10"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
-   "Hỗ trợ Direct3D 11"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
-   "Hỗ trợ Direct3D 12"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
-   "Hỗ trợ GDI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
-   "Hỗ trợ Vulkan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
-   "Hỗ trợ Metal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
-   "Hỗ trợ OpenGL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
-   "Hỗ trợ OpenGL ES"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
-   "Hỗ trợ phân luồng"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
-   "Hỗ trợ KMS/EGL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
-   "Hỗ trợ udev"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
-   "Hỗ trợ OpenVG"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
-   "Hỗ trợ EGL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
-   "Hỗ trợ X11"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
-   "Hỗ trợ Wayland"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
-   "Hỗ trợ XVideo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
-   "Hỗ trợ ALSA"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
-   "Hỗ trợ OSS"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
-   "Hỗ trợ OpenAL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
-   "Hỗ trợ OpenSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
-   "Hỗ trợ RSound"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
-   "Hỗ trợ RoarAudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
-   "Hỗ trợ JACK"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
-   "Hỗ trợ PulseAudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
-   "Hỗ trợ PipeWire"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
-   "Hỗ trợ CoreAudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
-   "Hỗ trợ CoreAudio V3"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
-   "Hỗ trợ DirectSound"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
-   "Hỗ trợ WASAPI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
-   "Hỗ trợ XAudio2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
-   "Hỗ trợ zlib"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
-   "Hỗ trợ 7zip"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
-   "Hỗ trợ Zstandard"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
-   "Hỗ trợ thư viện động"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-   "Tải Runtime động của Thư viện libretro"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
-   "Hỗ trợ Cg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
-   "Hỗ trợ GLSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
-   "Hỗ trợ HLSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
-   "Hỗ trợ hình ảnh SDL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
-   "Hỗ trợ FFmpeg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
-   "Hỗ trợ mpv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
-   "Hỗ trợ CoreText"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
-   "Hỗ trợ FreeType"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
-   "Hỗ trợ STB TrueType"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   "Hỗ trợ Trò chơi trực tuyến (Người chơi trực tiếp)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
-   "Hỗ trợ Video4Linux2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
-   "Hỗ trợ SSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
-   "hỗ trợ libusb"
-   )
-
-/* Main Menu > Information > Database Manager */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
-   "Lựa chọn cơ sở dữ liệu"
    )
 
 /* Main Menu > Information > Database Manager > Information */
@@ -1203,11 +936,6 @@ MSG_HASH(
    )
 
 /* Main Menu > Help */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
-   "Hướng dẫn điều khiển Menu cơ bản"
-   )
 
 /* Main Menu > Help > Basic Menu Controls */
 
@@ -2888,14 +2616,6 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
-   "Bộ lấy mẫu lại"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
-   "Thay đổi cài đặt bộ lấy mẫu âm thanh."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Đồng bộ âm thanh"
    )
@@ -3714,7 +3434,6 @@ MSG_HASH(
    "Yêu cầu nhấn phím tắt Đặt lại trò chơi hai lần."
    )
 
-
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3956,7 +3675,7 @@ MSG_HASH(
    "Tua lùi"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
    "Tua lùi trò chơi hiện tại khi giữ phím. Phải bật 'Hỗ trợ tua lùi'."
    )
 MSG_HASH(
@@ -4696,18 +4415,6 @@ MSG_HASH(
    "Tự động chạy Core"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-   "Kiểm tra Firmware thiếu trước khi tải"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
-   "Kiểm tra xem tất cả phần mềm hệ thống cần thiết có đầy đủ trước khi thử tải trò chơi."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
-   "Một số core có thể cần firmware hoặc file BIOS. Nếu bật tùy chọn này, RetroArch sẽ không cho phép khởi động core nếu thiếu bất kỳ firmware bắt buộc nào."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
    "Danh mục Tùy chọn Core"
    )
@@ -5205,7 +4912,7 @@ MSG_HASH(
    "Tua lùi"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    "Thay đổi cài đặt tua lùi."
    )
 MSG_HASH(
@@ -5880,33 +5587,6 @@ MSG_HASH(
    "Điều chỉnh phạm vi trôi cho phép khi phát hiện nhấn dài hoặc chạm. Được biểu thị dưới dạng phần trăm của kích thước màn hình nhỏ hơn."
    )
 
-/* Settings > On-Screen Display > Video Layout */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
-   "Bật bố cục video"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
-   "Bố cục video được sử dụng cho viền và các tác phẩm nghệ thuật khác."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
-   "Đường dẫn bố cục video"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "Chọn một bố cục video từ Trình duyệt tệp."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
-   "Chế độ xem đã chọn"
-   )
-MSG_HASH( /* FIXME Unused */
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
-   "Chọn chế độ xem trong bố cục đã tải."
-   )
-
 /* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
@@ -6538,14 +6218,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
    "Hiển thị khả năng cập nhật core (và file thông tin core) trong tùy chọn 'Cập nhật Trực tuyến'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-   "Hiển thị 'Trình cập nhật Hình thu nhỏ cũ'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-   "Hiển thị mục tải gói hình thu nhỏ cũ trong tùy chọn 'Cập nhật Trực tuyến'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
@@ -9588,16 +9260,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
    "Buộc ghi các thiết lập hiện tại vào file tùy chọn đang dùng. Đảm bảo tùy chọn được giữ lại trong trường hợp lỗi nhân gây tắt không đúng của frontend."
-   )
-
-/* - Legacy (unused) */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
-   "Tạo file tùy chọn trò chơi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
-   "Lưu file tùy chọn trò chơi"
    )
 
 /* Quick Menu > Controls */
@@ -13071,10 +12733,6 @@ MSG_HASH(
    "Điểm cuối của danh sách tài khoản"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
-   "Tự động nhấn / Vùng chết"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
    "Thành tựu Retro"
    )
@@ -13291,91 +12949,12 @@ MSG_HASH(
    "Không thể tìm trò chơi phù hợp theo CRC hoặc tên tệp"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_START_GONG,
-   "Bắt đầu Gong"
-   )
-
-/* Unused (Only Exist in Translation Files) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
-   "Biệt danh (LAN): %s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATUS,
    "Trạng thái"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
    "Hệ thống BGM"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
-   "Hỗ trợ ghi hình"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_PATH,
-   "Lưu bản ghi đầu ra dưới tên..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
-   "Lưu các bản ghi trong thư mục đầu ra"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
-   "Xem trận đấu #"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
-   "Chọn mục để xem."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
-   "Xem danh sách %u mục"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,
-   "Tạo mã từ mục này"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
-   "Xóa mục này"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Độ mờ chân trang"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Thay đổi độ mờ của hình chân trang."
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "Độ mờ đầu trang"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "Thay đổi độ mờ của hình đầu trang."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
-   "Trò chơi trực tuyến"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
-   "Bắt đầu trò chơi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
-   "Đường dẫn lịch sử trò chơi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-   "ID hiển thị đầu ra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-   "Chọn cổng xuất kết nối với màn hình CRT."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
@@ -13386,259 +12965,8 @@ MSG_HASH(
    "Xóa"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
-   "Khắc phục sự cố âm thanh/video"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
-   "Thay đổi lớp phủ Tay cầm ảo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
-   "Đang tải trò chơi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
-   "Quét trò chơi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
-   "Core là gì?"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANAGEMENT,
-   "Thiết lập cơ sở dữ liệu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
-   "Độ trễ khung hình Trò chơi trực tuyến"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
-   "Quét mạng cục bộ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
-   "Tìm kiếm và kết nối với các máy chủ Trò chơi trực tuyến trên mạng cục bộ."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
-   "Trò chơi trực tuyến - Máy khách"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
-   "Chế độ quan sát Trò chơi trực tuyến"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
    "Miêu tả"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
-   "Giới hạn tốc độ chạy tối đa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_START_SEARCH,
-   "Bắt đầu tìm mã gian lận mới"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
-   "Bắt đầu tìm một mã gian lận mới. Số bit có thể thay đổi."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
-   "Tiếp tục tìm kiếm"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_CONTINUE_SEARCH,
-   "Tiếp tục tìm một mã gian lận mới."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
-   "Thành tích (Chế độ Thử thách)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
-   "Chi tiết Cheat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_DETAILS,
-   "Quản lý thiết lập chi tiết Cheat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
-   "Bắt đầu hoặc Tiếp tục Tìm Cheat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
-   "Bắt đầu hoặc tiếp tục tìm kiếm mã Cheat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
-   "Vòng Cheat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
-   "Tăng hoặc giảm số lượng mã Cheat."
-   )
-
-/* Unused (Needs Confirmation) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X,
-   "Analog Trái X"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y,
-   "Analog Trái Y"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X,
-   "Analog Phải X"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
-   "Analog Phải Y"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
-   "Bắt đầu hoặc Tiếp tục Tìm Cheat"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
-   "Danh sách con trỏ cơ sở dữ liệu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "Cơ sở dữ liệu - Lọc: Nhà phát triển"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "Cơ sở dữ liệu - Lọc: Nhà phát hành"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
-   "Cơ sở dữ liệu - Lọc: Xuất xứ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
-   "Cơ sở dữ liệu - Lọc: Nhượng quyền"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
-   "Cơ sở dữ liệu - Lọc: Đánh giá ESRB"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
-   "Cơ sở dữ liệu - Lọc: Đánh giá ELSPA"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
-   "Cơ sở dữ liệu - Lọc: Đánh giá PEGI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
-   "Cơ sở dữ liệu - Lọc: Đánh giá CERO"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
-   "Cơ sở dữ liệu - Lọc: Đánh giá BBFC"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
-   "Cơ sở dữ liệu - Bộ lọc: Số lượng người dùng tối đa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
-   "Cơ sở dữ liệu - Bộ lọc: Ngày phát hành theo tháng"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
-   "Cơ sở dữ liệu - Bộ lọc: Ngày phát hành theo năm"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
-   "Cơ sở dữ liệu - Bộ lọc: Số phát hành tạp chí Edge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
-   "Cơ sở dữ liệu - Bộ lọc: Đánh giá tạp chí Edge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_GENRE,
-   "Cơ sở dữ liệu - Bộ lọc: Thể loại"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_REGION,
-   "Cơ sở dữ liệu - Bộ lọc: Vùng"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
-   "Thông tin cơ sở dữ liệu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIG,
-   "Cấu hình"
-   )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Tải về"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
-   "Thiết lập Trò chơi trực tuyến"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT,
-   "Hỗ trợ tiếng lóng"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT,
-   "Hỗ trợ kết xuất OpenGL/Direct3D vào texture (shader nhiều lần)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
-   "Chọn trò chơi"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_DIR,
-   "Thường được các nhà phát triển cài sẵn khi đóng gói ứng dụng libretro/RetroArch để trỏ tới tài nguyên."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
-   "Hỏi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
-   "Menu điều khiển cơ bản"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM,
-   "Xác nhận/OK"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
-   "Thông tin"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
-   "Thoát"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
-   "Cuộn lên"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
-   "Mặc định"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
-   "Bật/tắt bàn phím"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
-   "Bật/tắt Menu"
    )
 
 /* Discord Status */
@@ -15036,10 +14364,6 @@ MSG_HASH(
    "Kết nối thiết bị từ một cổng hợp lệ."
    )
 MSG_HASH(
-   MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
-   "Đang ngắt kết nối thiết bị từ cổng"
-   )
-MSG_HASH(
    MSG_VALUE_REBOOTING,
    "Đang khởi động lại..."
    )
@@ -15076,32 +14400,16 @@ MSG_HASH(
    "Tự động tải trạng thái lưu từ \"%s\" thành công."
    )
 MSG_HASH(
-   MSG_DEVICE_CONFIGURED_IN_PORT,
-   "được cấu hình ở cổng"
-   )
-MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT_NR,
    "%s được cấu hình ở cổng %u"
-   )
-MSG_HASH(
-   MSG_DEVICE_DISCONNECTED_FROM_PORT,
-   "ngắt kết nối khỏi cổng"
    )
 MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
    "%s ngắt kết nối khỏi cổng %u"
    )
 MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED,
-   "chưa cấu hình"
-   )
-MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_NR,
    "%s (%u/%u) chưa cấu hình"
-   )
-MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
-   "chưa cấu hình, sử dụng dự phòng"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,

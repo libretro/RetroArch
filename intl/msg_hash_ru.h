@@ -384,14 +384,6 @@ MSG_HASH(
    "Заменить устаревшие и установленные вручную ядра на последние доступные версии с Play Store."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
-   "Скачать пакеты миниатюр"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "Скачать полный набор миниатюр для выбранной системы."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
    "Обновление миниатюр плейлистов"
    )
@@ -704,10 +696,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    "Операционная система"
    )
-MSG_HASH( /* FIXME Maybe add a description? */
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL,
-   "Оценка RetroRating"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    "Источник питания"
@@ -727,261 +715,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
    "DPI дисплея"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT,
-   "Поддержка LibretroDB"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT,
-   "Поддержка оверлеев"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT,
-   "Поддержка командного интерфейса"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT,
-   "Поддержка сетевого командного интерфейса"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT,
-   "Поддержка сетевого контроллера"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT,
-   "Поддержка Cocoa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT,
-   "Поддержка PNG (RPNG)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT,
-   "Поддержка JPEG (RJPEG)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT,
-   "Поддержка BMP (RBMP)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT,
-   "Поддержка TGA (RTGA)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT,
-   "Поддержка SDL 1.2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT,
-   "Поддержка SDL 2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
-   "Поддержка Direct3D 8"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
-   "Поддержка Direct3D 9"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
-   "Поддержка Direct3D 10"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
-   "Поддержка Direct3D 11"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
-   "Поддержка Direct3D 12"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
-   "Поддержка GDI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
-   "Поддержка Vulkan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_METAL_SUPPORT,
-   "Поддержка Metal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT,
-   "Поддержка OpenGL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT,
-   "Поддержка OpenGL ES"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT,
-   "Поддержка многопоточности"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT,
-   "Поддержка KMS/EGL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT,
-   "Поддержка udev"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT,
-   "Поддержка OpenVG"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT,
-   "Поддержка EGL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT,
-   "Поддержка X11"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT,
-   "Поддержка Wayland"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT,
-   "Поддержка XVideo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT,
-   "Поддержка ALSA"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT,
-   "Поддержка OSS"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT,
-   "Поддержка OpenAL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT,
-   "Поддержка OpenSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT,
-   "Поддержка RSound"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT,
-   "Поддержка RoarAudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT,
-   "Поддержка JACK"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
-   "Поддержка PulseAudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
-   "Поддержка PipeWire"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
-   "Поддержка CoreAudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO3_SUPPORT,
-   "Поддержка CoreAudio V3"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT,
-   "Поддержка DirectSound"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WASAPI_SUPPORT,
-   "Поддержка WASAPI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT,
-   "Поддержка XAudio2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT,
-   "Поддержка zlib"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT,
-   "Поддержка 7zip"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZSTD_SUPPORT,
-   "Поддержка Zstandard"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT,
-   "Поддержка динамических библиотек"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT,
-   "Динамическая загрузка библиотеки libretro"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT,
-   "Поддержка Cg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT,
-   "Поддержка GLSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT,
-   "Поддержка HLSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT,
-   "Поддержка SDL Image"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT,
-   "Поддержка FFmpeg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MPV_SUPPORT,
-   "Поддержка mpv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT,
-   "Поддержка CoreText"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT,
-   "Поддержка FreeType"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT,
-   "Поддержка STB TrueType"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT,
-   "Поддержка Netplay (peer-to-peer)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
-   "Поддержка Video4Linux2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
-   "Поддержка SSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
-   "Поддержка libusb"
-   )
-
-/* Main Menu > Information > Database Manager */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION,
-   "Выбор базы данных"
    )
 
 /* Main Menu > Information > Database Manager > Information */
@@ -1203,11 +936,6 @@ MSG_HASH(
    )
 
 /* Main Menu > Help */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
-   "Базовое управление меню"
-   )
 
 /* Main Menu > Help > Basic Menu Controls */
 
@@ -2884,14 +2612,6 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
-   "Ресемплер"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_SETTINGS,
-   "Настроить параметры ресемплера звука."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    "Синхронизация"
    )
@@ -3710,7 +3430,6 @@ MSG_HASH(
    "Запрашивать повторное нажатие горячей клавиши 'Сброс контента'."
    )
 
-
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3952,7 +3671,7 @@ MSG_HASH(
    "Обратная перемотка"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
    "Обратная перемотка контента при удержании кнопки. Требуется включение 'Обратной перемотки'."
    )
 MSG_HASH(
@@ -4692,18 +4411,6 @@ MSG_HASH(
    "Автоматически запускать ядро"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
-   "Проверять наличие биосов перед загрузкой"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
-   "Перед загрузкой контента проверять наличие всех требуемых микропрограмм."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE,
-   "Для запуска некоторых ядер требуются файлы прошивок или bios. Если опция включена, RetroArch блокирует запуск ядра при отсутствии необходимых системных файлов."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
    "Категории опций ядра"
    )
@@ -5201,7 +4908,7 @@ MSG_HASH(
    "Обратная перемотка"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
    "Настройки обратной перемотки."
    )
 MSG_HASH(
@@ -5872,33 +5579,6 @@ MSG_HASH(
    "Допустимое отклонение при определении долгого или одиночного нажатия. Выражается в процентах меньшего размера экрана."
    )
 
-/* Settings > On-Screen Display > Video Layout */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
-   "Включить макеты экрана"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
-   "Макеты используются для отображения рамок и прочих элементов оформления."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
-   "Путь к макету экрана"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "Выбор макета экрана в браузере файлов."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
-   "Выбранный вид"
-   )
-MSG_HASH( /* FIXME Unused */
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
-   "Выберите вид в загруженном макете."
-   )
-
 /* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
@@ -6530,14 +6210,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
    "Показывать опции для скачивания ядер и информационных файлов в 'Онлайн-обновлениях'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-   "Показывать 'Скачать пакеты миниатюр'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER,
-   "Показывать опцию для скачивания пакетов миниатюр в 'Онлайн-обновлениях'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
@@ -9584,16 +9256,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
    "Принудительно записать настройки в текущий файл опций. Обеспечивает сохранение опций при некорректном закрытии фронтенда из-за сбоя ядра."
-   )
-
-/* - Legacy (unused) */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
-   "Создать файл параметров игры"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
-   "Сохранить файл параметров игры"
    )
 
 /* Quick Menu > Controls */
@@ -13027,10 +12689,6 @@ MSG_HASH(
    "Конечная точка списка аккаунтов"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
-   "Турбо/Мёртвая зона"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS,
    "Достижения"
    )
@@ -13247,87 +12905,12 @@ MSG_HASH(
    "Не удалось обнаружить контент, подходящий по CRC или имени файла"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_START_GONG,
-   "Запуск Gong"
-   )
-
-/* Unused (Only Exist in Translation Files) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
-   "Никнейм (LAN): %s"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATUS,
    "Статус"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
    "Фоновый звук системы"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
-   "Поддержка записи"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_PATH,
-   "Сохранить запись как..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY,
-   "Сохранить записи в выходном каталоге"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH_IDX,
-   "Просмотр совпадения #"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX,
-   "Выбор совпадения для просмотра."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
-   "Просмотр списка %u совпадений"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_CREATE_OPTION,
-   "Создать код из совпадения"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
-   "Удалить совпадение"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Видимость нижней полосы"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY,
-   "Настройка непрозрачности нижнего колонтитула."
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY,
-   "Видимость заголовка"
-   )
-MSG_HASH( /* FIXME Still exists in a comment about being removed */
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY,
-   "Настройка непрозрачности полосы заголовка."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
-   "Запустить контент"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
-   "Путь к истории контента"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-   "Дисплей для вывода"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_OUTPUT_DISPLAY_ID,
-   "Выбрать порт вывода, подключенный к ЭЛТ-дисплею."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
@@ -13338,259 +12921,8 @@ MSG_HASH(
    "Очистить"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
-   "Устранение проблем с аудио/видео"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD,
-   "Изменение оверлея экранного геймпада"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT,
-   "Загрузка контента"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
-   "Поиск контента"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
-   "Что такое ядро?"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANAGEMENT,
-   "Настройки баз данных"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
-   "Задержка кадров Netplay"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
-   "Сканировать локальную сеть"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
-   "Поиск и подключение к локальным хостам сетевой игры."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
-   "Включить клиент Netplay"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
-   "Включить режим зрителя в Netplay"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
    "Описание"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE,
-   "Ограничить максимальную скорость работы"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_START_SEARCH,
-   "Поиск нового чит-кода"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_START_SEARCH,
-   "Запустить поиск нового чит-кода. Количество бит может быть изменено."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_CONTINUE_SEARCH,
-   "Продолжить поиск"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_CONTINUE_SEARCH,
-   "Продолжить поиск нового чит-кода."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
-   "Достижения (хардкор)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
-   "Подробности чит-кода"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_DETAILS,
-   "Настройка параметров чит-кода."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
-   "Начать/продолжить поиск чит-кода"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
-   "Запустить или продолжить поиск чит-кода."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
-   "Число чит-кодов"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES,
-   "Увеличить или уменьшить число чит-кодов."
-   )
-
-/* Unused (Needs Confirmation) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X,
-   "Левый аналоговый стик - ось X"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y,
-   "Левый аналоговый стик - ось Y"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X,
-   "Правый аналоговый стик - ось X"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y,
-   "Правый аналоговый стик - ось Y"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
-   "Начать/продолжить поиск чит-кода"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
-   "Список указателей баз данных"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "База данных - фильтр: разработчик"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "База данных - фильтр: издатель"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
-   "База данных - фильтр: страна"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
-   "База данных - фильтр: франшиза"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
-   "База данных - фильтр: рейтинг ESRB"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
-   "База данных - фильтр: рейтинг ELSPA"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
-   "База данных - фильтр: рейтинг PEGI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
-   "База данных - фильтр: рейтинг CERO"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
-   "База данных - фильтр: рейтинг BBFC"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
-   "База данных - фильтр: макс. игроков"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
-   "База данных - фильтр: по месяцу выпуска"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
-   "База данных - фильтр: по году выпуска"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
-   "База данных - фильтр: выпуск журнала Edge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
-   "База данных - фильтр: оценка журнала Edge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_GENRE,
-   "База данных - фильтр: жанр"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_REGION,
-   "База данных - фильтр: регион"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
-   "Информация в базе данных"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIG,
-   "Конфигурация"
-   )
-MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
-   "Загрузки"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
-   "Настройки Netplay"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT,
-   "Поддержка Slang"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT,
-   "Поддержка рендеринга в текстуру для OpenGL/Direct3D (совмещение шейдеров)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_DIR,
-   "Контент"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_DIR,
-   "Путь к ресурсам обычно устанавливается разработчиками приложений libretro/RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
-   "Спрашивать"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
-   "Базовые элементы управления меню"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM,
-   "Подтвердить/OK"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
-   "Подсказка"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
-   "Выход"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
-   "Прокрутить вверх"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
-   "По умолчанию"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
-   "Переключить клавиатуру"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
-   "Переключить меню"
    )
 
 /* Discord Status */
@@ -14988,10 +14320,6 @@ MSG_HASH(
    "Подключить устройство к действительному порту."
    )
 MSG_HASH(
-   MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT,
-   "Отключение устройства от порта"
-   )
-MSG_HASH(
    MSG_VALUE_REBOOTING,
    "Перезагрузка..."
    )
@@ -15028,32 +14356,16 @@ MSG_HASH(
    "Загружено автосохранение из \"%s\"."
    )
 MSG_HASH(
-   MSG_DEVICE_CONFIGURED_IN_PORT,
-   "подключен к порту"
-   )
-MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT_NR,
    "%s подключен в порт %u"
-   )
-MSG_HASH(
-   MSG_DEVICE_DISCONNECTED_FROM_PORT,
-   "отключен от порта"
    )
 MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
    "%s отключен от порта %u"
    )
 MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED,
-   "не настроен"
-   )
-MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_NR,
    "%s (%u/%u) не настроен"
-   )
-MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED_FALLBACK,
-   "не настроен, используется резерв"
    )
 MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,

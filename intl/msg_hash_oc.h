@@ -670,10 +670,6 @@ MSG_HASH(
 /* Unused (Only Exist in Translation Files) */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
-   "Jòc en ret"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Ajuda"
    )

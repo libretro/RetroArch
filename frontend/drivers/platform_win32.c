@@ -1345,7 +1345,6 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                           /* shutdown                  */
    NULL,                           /* get_name                  */
    frontend_win32_get_os,
-   NULL,                           /* get_rating                */
    NULL,                           /* content_loaded            */
    frontend_win32_get_arch,        /* get_architecture          */
    frontend_win32_get_powerstate,

@@ -1192,21 +1192,6 @@ error:
 }
 #endif
 
-static int frontend_unix_get_rating(void)
-{
-#ifdef ANDROID
-   char device_model[PROP_VALUE_MAX] = {0};
-   system_property_get("getprop", "ro.product.model", device_model);
-   if (g_platform_android_flags & PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE)
-      return 6;
-   else if (strstr(device_model, "GT-I9505"))
-      return 12;
-   else if (strstr(device_model, "SHIELD"))
-      return 13;
-#endif
-   return -1;
-}
-
 static enum frontend_powerstate frontend_unix_get_powerstate(
       int *seconds, int *percent)
 {
@@ -3368,7 +3353,6 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    NULL,                         /* get_name */
 #endif
    frontend_unix_get_os,
-   frontend_unix_get_rating,           /* get_rating */
    NULL,                               /* content_loaded */
    frontend_unix_get_arch,             /* get_architecture */
    frontend_unix_get_powerstate,

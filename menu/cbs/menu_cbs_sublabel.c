@@ -382,7 +382,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_latency_settings_list,         MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_settings_list,       MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_wifi_settings_list,            MENU_ENUM_SUBLABEL_WIFI_SETTINGS)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_lan_scan_settings_list,MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_help_list,                     MENU_ENUM_SUBLABEL_HELP_LIST)
 #ifdef HAVE_LAKKA
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_services_settings_list,        MENU_ENUM_SUBLABEL_SERVICES_SETTINGS)
@@ -436,7 +435,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_fast_forward_key,      ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_fast_forward_hold_key, MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_slowmotion_key,        MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_slowmotion_hold_key,   MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_rewind_hotkey,         MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_rewind,                MENU_ENUM_SUBLABEL_INPUT_META_REWIND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_pause_toggle,          MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_frameadvance,          MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE)
 
@@ -778,12 +777,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run_ahead_hide_warnings,       MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_run_ahead_frames,              MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_preempt_frames,                MENU_ENUM_SUBLABEL_PREEMPT_FRAMES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_block_timeout,           MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rewind,                        MENU_ENUM_SUBLABEL_REWIND_ENABLE)
 #ifdef HAVE_CHEATS
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_apply_after_toggle,      MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_apply_after_load,        MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_idx,                     MENU_ENUM_SUBLABEL_CHEAT_IDX)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_match_idx,               MENU_ENUM_SUBLABEL_CHEAT_MATCH_IDX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_big_endian,              MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_start_or_cont,           MENU_ENUM_SUBLABEL_CHEAT_START_OR_CONT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_start_or_restart,        MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART)
@@ -798,25 +795,21 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_repeat_count,            MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_repeat_add_to_address,   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_repeat_add_to_value,     MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_add_matches,             MENU_ENUM_SUBLABEL_CHEAT_ADD_MATCHES)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_view_matches,            MENU_ENUM_SUBLABEL_CHEAT_VIEW_MATCHES)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_create_option,           MENU_ENUM_SUBLABEL_CHEAT_CREATE_OPTION)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_delete_option,           MENU_ENUM_SUBLABEL_CHEAT_DELETE_OPTION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_add_new_top,             MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_add_new_bottom,          MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_reload_cheats,           MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_address_bit_position,    MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_delete_all,              MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_cheat_details,      MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_DETAILS)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_cheat_search,       MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_cheat_options,            MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_cheats,        MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheatfile_directory,           MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_apply_changes,           MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_num_passes,              MENU_ENUM_SUBLABEL_CHEAT_NUM_PASSES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_file_load,               MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_file_load_append,        MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_file_save_as,            MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS)
 #endif
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rewind_enable,                 MENU_ENUM_SUBLABEL_REWIND_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rewind_settings,               MENU_ENUM_SUBLABEL_REWIND_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rewind_granularity,            MENU_ENUM_SUBLABEL_REWIND_GRANULARITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rewind_buffer_size,            MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rewind_buffer_size_step,       MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP)
@@ -1069,7 +1062,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_halt_replay,                        
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_slot,                           MENU_ENUM_SUBLABEL_REPLAY_SLOT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accounts_retro_achievements,           MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_accounts_list,                         MENU_ENUM_SUBLABEL_ACCOUNTS_LIST)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_rewind,                     MENU_ENUM_SUBLABEL_INPUT_META_REWIND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_restart_content,                       MENU_ENUM_SUBLABEL_RESTART_CONTENT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_override_file_info,                    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_override_file_load,                    MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD)
@@ -1112,7 +1104,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_system_directory,                   
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rgui_browser_directory,                MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_use_last_start_directory,              MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_suggest_always,                   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_dir,                           MENU_ENUM_SUBLABEL_CONTENT_DIR)
 DEFAULT_SUBLABEL_MACRO(action_bind_dynamic_wallpapers_directory,                   MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_thumbnails_directory,                           MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_rgui_config_directory,                          MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY)
@@ -1244,8 +1235,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_explore_tab,                   
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_contentless_cores_tab,            MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_main_menu_enable_settings,             MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rgui_show_start_screen,                MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_header_opacity,                   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_HEADER_OPACITY)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_footer_opacity,                   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_FOOTER_OPACITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_assets_directory,                 MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_remapping_directory,             MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_directory,                        MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH)
@@ -2379,7 +2368,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_slowmotion_hold_key);
                return 0;
             case RARCH_REWIND:
-               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_rewind_hotkey);
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_rewind);
                return 0;
             case RARCH_PAUSE_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_pause_toggle);
@@ -2727,31 +2716,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CONTENT_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu);
             break;
-         case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_file_save_as);
-#endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_file_load);
-#endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_file_load_append);
-#endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_apply_changes);
-#endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_num_passes);
-#endif
-            break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_parameters);
             break;
@@ -2903,12 +2867,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_remapping_directory);
-            break;
-         case MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_footer_opacity);
-            break;
-         case MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_header_opacity);
             break;
          case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rgui_show_start_screen);
@@ -3434,9 +3392,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_dynamic_wallpapers_directory);
             break;
-         case MENU_ENUM_LABEL_CONTENT_DIR:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_dir);
-            break;
          case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rgui_browser_directory);
             break;
@@ -3536,11 +3491,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_OVERRIDE_UNLOAD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_override_unload);
             break;
-         case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_cheat_options);
-#endif
-            break;
          case MENU_ENUM_LABEL_SHADER_OPTIONS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_shader_options);
             break;
@@ -3582,19 +3532,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_RESTART_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_restart_content);
-            break;
-         case MENU_ENUM_LABEL_REWIND_SETTINGS:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_rewind);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_DETAILS_SETTINGS:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_cheat_details);
-#endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_cheat_search);
-#endif
             break;
          case MENU_ENUM_LABEL_ACCOUNTS_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_accounts_list);
@@ -4240,13 +4177,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_libretro_log_level);
             break;
-         case MENU_ENUM_LABEL_REWIND_ENABLE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rewind);
+         case MENU_ENUM_LABEL_REWIND_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rewind_settings);
             break;
-         case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_apply_after_toggle);
-#endif
+         case MENU_ENUM_LABEL_REWIND_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rewind_enable);
             break;
          case MENU_ENUM_LABEL_REWIND_GRANULARITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rewind_granularity);
@@ -4257,14 +4192,39 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rewind_buffer_size_step);
             break;
+         case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
+#ifdef HAVE_CHEATS
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_cheat_options);
+#endif
+            break;
+         case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
+#ifdef HAVE_CHEATS
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_file_save_as);
+#endif
+            break;
+         case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
+#ifdef HAVE_CHEATS
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_file_load);
+#endif
+            break;
+         case MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND:
+#ifdef HAVE_CHEATS
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_file_load_append);
+#endif
+            break;
+         case MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES:
+#ifdef HAVE_CHEATS
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_apply_changes);
+#endif
+            break;
+         case MENU_ENUM_LABEL_CHEAT_APPLY_AFTER_TOGGLE:
+#ifdef HAVE_CHEATS
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_apply_after_toggle);
+#endif
+            break;
          case MENU_ENUM_LABEL_CHEAT_IDX:
 #ifdef HAVE_CHEATS
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_idx);
-#endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_MATCH_IDX:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_match_idx);
 #endif
             break;
          case MENU_ENUM_LABEL_CHEAT_BIG_ENDIAN:
@@ -4335,21 +4295,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CHEAT_ADD_MATCHES:
 #ifdef HAVE_CHEATS
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_add_matches);
-#endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_VIEW_MATCHES:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_view_matches);
-#endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_CREATE_OPTION:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_create_option);
-#endif
-            break;
-         case MENU_ENUM_LABEL_CHEAT_DELETE_OPTION:
-#ifdef HAVE_CHEATS
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheat_delete_option);
 #endif
             break;
          case MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP:
@@ -5514,9 +5459,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_WIFI_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_wifi_settings_list);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_lan_scan_settings_list);
             break;
          case MENU_ENUM_LABEL_HELP_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_help_list);
