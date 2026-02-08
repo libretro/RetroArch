@@ -85,9 +85,6 @@ static bool smb_init()
    char server[256];
    char share[256];
    char *username = NULL;
-   const char *p;
-   const char *start;
-   size_t len;
    unsigned i;
    int error_no = 0;
 
@@ -112,7 +109,6 @@ static bool smb_init()
 
       if (!smb_context)
       {
-         smb2_destroy_context(smb_context);
          reset(max_context_configured);
          return false;
       }
@@ -153,22 +149,38 @@ static bool smb_init()
             break;
          case RETRO_SMB2_SEC_UNDEFINED:
          default:
-            /* first try SMB2_SEC_KRB5 */
-            smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_KRB5);
-            smb2_set_authentication(smb_context, RETRO_SMB2_SEC_KRB5);
-
-            if (smb2_connect_share(smb_context, server, share, username) == 0)
+            /* Only probe auth mode on the first context */
+            if (i == 0)
             {
-               smb_initialized = true;
-               return true;
+               /* first try SMB2_SEC_KRB5 */
+               smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_KRB5);
+               smb2_set_authentication(smb_context, RETRO_SMB2_SEC_KRB5);
+
+               if (smb2_connect_share(smb_context, server, share, username) == 0)
+               {
+                  /* KRB5 worked — use it for all remaining contexts */
+                  smb_context_pool[i] = smb_context;
+                  max_context_configured = i + 1;
+                  continue;
+               }
+
+               /* reset to we can use it again */
+               smb2_destroy_context(smb_context);
+               smb_context = smb2_init_context();
+
+               if (!smb_context)
+               {
+                  reset(max_context_configured);
+                  return false;
+               }
+
+               smb2_set_user(smb_context, username);
+               if (!string_is_empty(smb_cfg->password))
+                  smb2_set_password(smb_context, smb_cfg->password);
+               if (!string_is_empty(smb_cfg->workgroup))
+                  smb2_set_domain(smb_context, smb_cfg->workgroup);
+               smb2_set_timeout(smb_context, smb_cfg->timeout);
             }
-
-            /* reset to we can use it again */
-            smb2_destroy_context(smb_context);
-            smb_context = smb2_init_context();
-
-            if (!smb_context)
-               return false;
 
             /* if that fails, try SMB2_SEC_KRB5 in fallthrough */
             smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_NTLMSSP);
@@ -185,7 +197,7 @@ static bool smb_init()
       }
 
       smb_context_pool[i] = smb_context;
-      max_context_configured = i;
+      max_context_configured = i + 1;
    }
 
    smb_initialized = true;
@@ -195,6 +207,9 @@ static bool smb_init()
 
 void smb_close_context(int index)
 {
+   if (index < 0 || index >= max_context_configured)
+      return;
+
    if (smb_context_pool[index])
    {
       smb2_disconnect_share(smb_context_pool[index]);
@@ -464,9 +479,11 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
    if (!smb_build_path(full_path, sizeof(full_path), path))
       return NULL;
 
-   /* If we have a leading slash AND a non-empty remainder, strip it.
-    * Do NOT convert empty string to "." — root listing worked with "" */
-   if (full_path[0] == '/' && full_path[1] != '\0')
+   /* Root-of-share: bare "/" should become "" for libsmb2 opendir */
+   if (full_path[0] == '/' && full_path[1] == '\0')
+      full_path[0] = '\0';
+   /* Strip leading slash for non-root subpaths */
+   else if (full_path[0] == '/' && full_path[1] != '\0')
       memmove(full_path, full_path + 1, strlen(full_path));
 
    smb_context = get_smb_context();
@@ -539,9 +556,9 @@ int retro_vfs_stat_smb(const char *path, int32_t *size)
    if (!smb_build_path(rel_path, sizeof(rel_path), path))
       return 0;
 
-   /* Root-of-share => "." */
-   if (rel_path[0] == '\0')
-      strlcpy(rel_path, ".", sizeof(rel_path));
+   /* Root-of-share: normalize "/" to "" for libsmb2 */
+   if (rel_path[0] == '/' && rel_path[1] == '\0')
+      rel_path[0] = '\0';
 
    /* Strip leading slash safely (preserve NULL terminator) */
    if (rel_path[0] == '/' && rel_path[1] != '\0')
@@ -566,7 +583,7 @@ int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream)
    struct smb2_context *ctx;
    const char *err;
 
-   if (!!smb_initialized)
+   if (!smb_initialized)
       return -1;
 
    if (!stream || stream->smb_fh == 0 || stream->smb_fh == (intptr_t)-1)
