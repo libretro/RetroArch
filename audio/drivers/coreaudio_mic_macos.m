@@ -31,9 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <pthread.h> /* For mutexes */
-
-#define COREAUDIO_MIC_BUFFER_DURATION_S 0.01f /* Buffer duration in seconds (e.g., 0.01f for 10ms) */
+#include <rthreads/rthreads.h>
 
 typedef struct coreaudio_macos_microphone
 {
@@ -41,13 +39,19 @@ typedef struct coreaudio_macos_microphone
    fifo_buffer_t *fifo;
    AudioStreamBasicDescription format;
    atomic_bool is_running;
-   atomic_bool is_initialized; /* For AudioUnitInitialize state */
+   atomic_bool is_initialized;
    bool nonblock;
    int sample_rate;
-   int channels;                /* Number of audio channels */
    bool use_float;
-   char *device_name;            /* Store selected device name (from string_list) */
-   AudioDeviceID selected_device_id; /* Store selected device ID */
+   char *device_name;
+   AudioDeviceID selected_device_id;
+   slock_t *fifo_lock;
+   scond_t *fifo_cond;
+   void *callback_buffer;
+   size_t callback_buffer_size;
+   unsigned drop_count;
+   bool using_default_device;
+   atomic_bool device_changed;
 } coreaudio_macos_microphone_t;
 
 /* Forward declarations */
@@ -56,14 +60,14 @@ void coreaudio_macos_microphone_free(void *data);
 static int coreaudio_macos_microphone_read(void *driver_data, void *mic_data, void *buf, size_t samples);
 static void coreaudio_macos_microphone_set_nonblock_state(void *data, bool state);
 
-/* Implementation of nonblock state setting */
+/* set_nonblock_state receives the driver context from init(), which is a
+ * placeholder (void*)1 on macOS.  The nonblock flag lives in each mic
+ * instance instead, so we cannot dereference the pointer here.
+ * In practice this callback is never invoked for the microphone driver. */
 static void coreaudio_macos_microphone_set_nonblock_state(void *data, bool state)
 {
-   coreaudio_macos_microphone_t *mic = (coreaudio_macos_microphone_t*)data;
-   if (!mic)
-      return;
-
-   mic->nonblock = state;
+   (void)data;
+   (void)state;
 }
 
 static struct string_list *coreaudio_macos_microphone_device_list_new(const void *data);
@@ -75,8 +79,105 @@ static bool coreaudio_macos_microphone_stop_mic(void *data, void *mic_data);
 static bool coreaudio_macos_microphone_mic_use_float(const void *data, const void *mic_data);
 static void coreaudio_macos_microphone_set_format(coreaudio_macos_microphone_t *mic, bool use_float);
 static AudioDeviceID get_macos_device_id_for_uid_or_name(const char *uid_or_name);
+static void coreaudio_macos_handle_device_change(coreaudio_macos_microphone_t *mic);
 
-/* AudioUnit render callback - optimized for low CPU usage */
+/* Listener for default input device changes (called on an arbitrary thread) */
+static OSStatus coreaudio_macos_default_device_listener(
+      AudioObjectID inObjectID,
+      UInt32 inNumberAddresses,
+      const AudioObjectPropertyAddress inAddresses[],
+      void *inClientData)
+{
+   coreaudio_macos_microphone_t *mic =
+      (coreaudio_macos_microphone_t *)inClientData;
+   (void)inObjectID;
+   (void)inNumberAddresses;
+   (void)inAddresses;
+   if (mic)
+      atomic_store_explicit(&mic->device_changed, true, memory_order_release);
+   return noErr;
+}
+
+/* Reconnect to the new default input device without changing the reported
+ * sample rate.  The AUHAL's internal converter handles any rate difference
+ * between the new hardware and our output-scope format. */
+static void coreaudio_macos_handle_device_change(
+      coreaudio_macos_microphone_t *mic)
+{
+   AudioObjectPropertyAddress prop = {
+      kAudioHardwarePropertyDefaultInputDevice,
+      kAudioObjectPropertyScopeGlobal,
+      kAudioObjectPropertyElementMaster
+   };
+   AudioDeviceID new_device = kAudioObjectUnknown;
+   UInt32 prop_size         = sizeof(AudioDeviceID);
+   OSStatus status;
+   bool was_running;
+
+   status = AudioObjectGetPropertyData(kAudioObjectSystemObject,
+         &prop, 0, NULL, &prop_size, &new_device);
+   if (status != noErr || new_device == kAudioObjectUnknown
+         || new_device == mic->selected_device_id)
+      return;
+
+   RARCH_LOG("[CoreAudio macOS Mic] Default input device changed to %u, reconnecting\n",
+             (unsigned)new_device);
+
+   was_running = atomic_load(&mic->is_running);
+
+   if (was_running)
+      AudioOutputUnitStop(mic->audio_unit);
+   atomic_store(&mic->is_running, false);
+
+   if (atomic_load(&mic->is_initialized))
+   {
+      AudioUnitUninitialize(mic->audio_unit);
+      atomic_store(&mic->is_initialized, false);
+   }
+
+   mic->selected_device_id = new_device;
+   status = AudioUnitSetProperty(mic->audio_unit,
+         kAudioOutputUnitProperty_CurrentDevice,
+         kAudioUnitScope_Global, 0,
+         &new_device, sizeof(AudioDeviceID));
+   if (status != noErr)
+   {
+      RARCH_ERR("[CoreAudio macOS Mic] Failed to set new device: %d\n",
+                (int)status);
+      return;
+   }
+
+   /* Re-apply our format — keep the same rate we originally reported */
+   AudioUnitSetProperty(mic->audio_unit,
+         kAudioUnitProperty_StreamFormat,
+         kAudioUnitScope_Output, 1,
+         &mic->format, sizeof(AudioStreamBasicDescription));
+
+   status = AudioUnitInitialize(mic->audio_unit);
+   if (status != noErr)
+   {
+      RARCH_ERR("[CoreAudio macOS Mic] Failed to reinitialize: %d\n",
+                (int)status);
+      return;
+   }
+   atomic_store(&mic->is_initialized, true);
+
+   slock_lock(mic->fifo_lock);
+   fifo_clear(mic->fifo);
+   slock_unlock(mic->fifo_lock);
+
+   if (was_running)
+   {
+      status = AudioOutputUnitStart(mic->audio_unit);
+      if (status == noErr)
+         atomic_store(&mic->is_running, true);
+      else
+         RARCH_ERR("[CoreAudio macOS Mic] Failed to restart: %d\n",
+                   (int)status);
+   }
+}
+
+/* AudioUnit render callback — runs on the real-time audio thread. */
 static OSStatus coreaudio_macos_input_callback(void *inRefCon,
                                              AudioUnitRenderActionFlags *ioActionFlags,
                                              const AudioTimeStamp *inTimeStamp,
@@ -85,100 +186,101 @@ static OSStatus coreaudio_macos_input_callback(void *inRefCon,
                                              AudioBufferList *ioData)
 {
     coreaudio_macos_microphone_t *mic = (coreaudio_macos_microphone_t*)inRefCon;
+    AudioBufferList buffer_list;
+    OSStatus status;
+    size_t bytes_needed;
+    size_t actual_bytes;
+
     if (!mic || !atomic_load_explicit(&mic->is_running, memory_order_relaxed))
         return noErr;
 
-    /* Calculate buffer size needed for this callback */
-    size_t bytes_needed = inNumberFrames * mic->format.mBytesPerFrame;
+    bytes_needed = inNumberFrames * mic->format.mBytesPerFrame;
     if (bytes_needed == 0)
         return noErr;
 
-    /* Use a temporary buffer for AudioUnitRender - zero-initialized to avoid random data */
-    void *temp_buffer = calloc(1, bytes_needed);
-    if (!temp_buffer)
-    {
-        RARCH_ERR("[CoreAudio macOS Mic] Failed to allocate temporary buffer\n");
-        return kAudio_MemFullError;
-    }
+    /* Use pre-allocated buffer; drop this chunk if it doesn't fit rather
+     * than allocating on the real-time thread. */
+    if (bytes_needed > mic->callback_buffer_size)
+        return noErr;
 
-    /* Set up buffer list for rendering */
-    AudioBufferList buffer_list;
-    buffer_list.mNumberBuffers = 1;
-    buffer_list.mBuffers[0].mDataByteSize = (UInt32)bytes_needed;
-    buffer_list.mBuffers[0].mData = temp_buffer;
+    memset(mic->callback_buffer, 0, bytes_needed);
+
+    buffer_list.mNumberBuffers              = 1;
+    buffer_list.mBuffers[0].mDataByteSize   = (UInt32)bytes_needed;
+    buffer_list.mBuffers[0].mData           = mic->callback_buffer;
     buffer_list.mBuffers[0].mNumberChannels = mic->format.mChannelsPerFrame;
 
-    /* Render audio from INPUT BUS (bus 1) */
-    OSStatus status = AudioUnitRender(mic->audio_unit,
-                                     ioActionFlags,
-                                     inTimeStamp,
-                                     1, /* Input bus is always 1 for HAL AudioUnits */
-                                     inNumberFrames,
-                                     &buffer_list);
+    status = AudioUnitRender(mic->audio_unit, ioActionFlags,
+          inTimeStamp, 1, inNumberFrames, &buffer_list);
 
-    /* Handle both complete success and partial success cases */
-    if (status == noErr || status == kAudioUnitErr_NoConnection)
+    if (status == noErr
+          && buffer_list.mBuffers[0].mData
+          && buffer_list.mBuffers[0].mDataByteSize > 0)
     {
-        /* Only write to FIFO if we got valid data */
-        if (buffer_list.mBuffers[0].mData && buffer_list.mBuffers[0].mDataByteSize > 0)
-        {
-            /* Ensure we don't write more than what was actually rendered */
-            size_t actual_bytes = MIN(bytes_needed, buffer_list.mBuffers[0].mDataByteSize);
+        actual_bytes = MIN(bytes_needed,
+              buffer_list.mBuffers[0].mDataByteSize);
 
-            /* Write all audio data to FIFO - no silence detection to reduce CPU overhead */
-            {
-                /* Check if there's enough space in the FIFO */
-                size_t avail = FIFO_WRITE_AVAIL(mic->fifo);
-                if (avail >= actual_bytes)
-                {
-                    fifo_write(mic->fifo, buffer_list.mBuffers[0].mData, actual_bytes);
-                }
-                else
-                {
-                    /* FIFO is full, drop this data to prevent overflow */
-                    static unsigned drop_count = 0;
-                    if (drop_count++ % 1000 == 0)
-                        RARCH_WARN("[CoreAudio macOS Mic] FIFO full, dropping %u bytes\n", (unsigned)actual_bytes);
-                }
-            }
+        /* Use trylock so we never block the real-time thread. */
+        if (slock_try_lock(mic->fifo_lock))
+        {
+            if (FIFO_WRITE_AVAIL(mic->fifo) >= actual_bytes)
+                fifo_write(mic->fifo, buffer_list.mBuffers[0].mData,
+                      actual_bytes);
+            else if (mic->drop_count++ % 1000 == 0)
+                RARCH_WARN("[CoreAudio macOS Mic] FIFO full, dropping %u bytes\n",
+                           (unsigned)actual_bytes);
+            scond_signal(mic->fifo_cond);
+            slock_unlock(mic->fifo_lock);
         }
     }
-    else
-    {
-        RARCH_ERR("[CoreAudio macOS Mic] Failed to render audio: %d\n", (int)status);
-    }
+    else if (status != noErr)
+        RARCH_ERR("[CoreAudio macOS Mic] Failed to render audio: %d\n",
+                  (int)status);
 
-    /* Clean up temporary buffer */
-    free(temp_buffer);
-    return status;
+    /* Always return noErr — returning errors may cause CoreAudio to
+     * stop invoking the callback entirely. */
+    return noErr;
 }
 
 static int coreaudio_macos_microphone_read(void *driver_data, void *mic_data, void *buf, size_t samples)
 {
    coreaudio_macos_microphone_t *microphone = (coreaudio_macos_microphone_t *)mic_data;
+   size_t avail, read_amt;
 
-    size_t avail, read_amt;
+   if (!microphone || !buf)
+   {
+      RARCH_ERR("[CoreAudio] Invalid parameters in read\n");
+      return -1;
+   }
 
-    if (!microphone || !buf) {
-        RARCH_ERR("[CoreAudio] Invalid parameters in read\n");
-        return -1;
-    }
+   /* Handle pending device change before taking the FIFO lock. */
+   if (atomic_load_explicit(&microphone->device_changed, memory_order_acquire))
+   {
+      atomic_store_explicit(&microphone->device_changed, false,
+            memory_order_relaxed);
+      coreaudio_macos_handle_device_change(microphone);
+   }
 
-    avail = FIFO_READ_AVAIL(microphone->fifo);
-    read_amt = MIN(avail, samples);
+   slock_lock(microphone->fifo_lock);
 
-    if (microphone->nonblock && read_amt == 0) {
-        return 0; /// Return immediately in non-blocking mode
-    }
+   avail    = FIFO_READ_AVAIL(microphone->fifo);
+   read_amt = MIN(avail, samples);
 
-    if (read_amt > 0) {
-        fifo_read(microphone->fifo, buf, read_amt);
-#if DEBUG
-        RARCH_LOG("[CoreAudio] Read %zu bytes from microphone\n", read_amt);
-#endif
-    }
+   /* In blocking mode, wait briefly for the callback to provide data. */
+   if (read_amt == 0 && !microphone->nonblock)
+   {
+      scond_wait_timeout(microphone->fifo_cond,
+            microphone->fifo_lock, 10000); /* 10 ms */
+      avail    = FIFO_READ_AVAIL(microphone->fifo);
+      read_amt = MIN(avail, samples);
+   }
 
-    return (int)read_amt;
+   if (read_amt > 0)
+      fifo_read(microphone->fifo, buf, read_amt);
+
+   slock_unlock(microphone->fifo_lock);
+
+   return (int)read_amt;
 }
 
 static void coreaudio_macos_microphone_set_format(coreaudio_macos_microphone_t *mic, bool use_float)
@@ -393,6 +495,9 @@ static void *coreaudio_macos_microphone_open_mic(void *data, const char *device,
 
    atomic_init(&mic->is_running, false);
    atomic_init(&mic->is_initialized, false);
+   atomic_init(&mic->device_changed, false);
+   mic->fifo_lock = slock_new();
+   mic->fifo_cond = scond_new();
    mic->sample_rate = rate;
    RARCH_LOG("[CoreAudio macOS Mic] Setting mic->sample_rate to %u Hz\n", mic->sample_rate);
    if (device && strlen(device) > 0 && strcmp(device, "default") != 0)
@@ -404,6 +509,7 @@ static void *coreaudio_macos_microphone_open_mic(void *data, const char *device,
    else
    {
       mic->device_name = strdup("default");
+      mic->using_default_device = true;
 
       /* Get the actual system default input device instead of using kAudioObjectUnknown */
       AudioObjectPropertyAddress prop_addr = {
@@ -439,325 +545,237 @@ static void *coreaudio_macos_microphone_open_mic(void *data, const char *device,
    if (!comp)
    {
       RARCH_ERR("[CoreAudio macOS Mic] Failed to find HALOutput AudioComponent.\n");
-      if (mic->device_name) free(mic->device_name);
-
-      free(mic);
-      return NULL;
+      goto error;
    }
 
-   // Log information about the found AudioComponent
-   CFStringRef compNameRef = NULL;
-   OSStatus nameStatus = AudioComponentCopyName(comp, &compNameRef);
-   if (nameStatus == noErr && compNameRef)
-   {
-       char compNameCStr[256] = {0};
-       Boolean cstrResult = CFStringGetCString(compNameRef, compNameCStr, sizeof(compNameCStr), kCFStringEncodingUTF8);
-       if (cstrResult)
-          RARCH_LOG("[CoreAudio macOS Mic] Found AudioComponent with name: %s (pointer: %p)\n", compNameCStr, (void*)comp);
-       else
-          RARCH_WARN("[CoreAudio macOS Mic] Found AudioComponent (pointer: %p), but failed to convert its name to CString.\n", (void*)comp);
-       CFRelease(compNameRef);
-   }
-   else
-   {
-       RARCH_WARN("[CoreAudio macOS Mic] Found AudioComponent (pointer: %p), but could not get its name. Status: %d\n", (void*)comp, (int)nameStatus);
-   }
-
-   RARCH_LOG("[CoreAudio macOS Mic] Attempting to create AudioUnit instance from found component %p...\n", (void*)comp);
    status = AudioComponentInstanceNew(comp, &mic->audio_unit);
    if (status != noErr || !mic->audio_unit)
    {
       RARCH_ERR("[CoreAudio macOS Mic] Failed to create AudioUnit instance: %d\n", (int)status);
-      if (mic->device_name) free(mic->device_name);
-      free(mic);
-      return NULL;
+      goto error;
    }
    RARCH_LOG("[CoreAudio macOS Mic] AudioUnit instance created: %p\n", mic->audio_unit);
 
-   /* Set the specific audio device if one was requested (not default) */
-   if (mic->selected_device_id != kAudioObjectUnknown)
+   /* 2. Enable input on the AudioUnit */
    {
-      RARCH_LOG("[CoreAudio macOS Mic] Setting AudioUnit to use selected device ID: %u\n", (unsigned int)mic->selected_device_id);
+      UInt32 enable_io  = 1;
+      UInt32 disable_io = 0;
+
       status = AudioUnitSetProperty(mic->audio_unit,
-                              kAudioOutputUnitProperty_CurrentDevice,
-                              kAudioUnitScope_Global,
-                              0, /* Global scope uses element 0 */
-                              &mic->selected_device_id,
-                              sizeof(AudioDeviceID));
+            kAudioOutputUnitProperty_EnableIO,
+            kAudioUnitScope_Input, 1,
+            &enable_io, sizeof(enable_io));
       if (status != noErr)
       {
-         RARCH_WARN("[CoreAudio macOS Mic] Failed to set device ID on AudioUnit: %d. Will fall back to system default.\n", (int)status);
+         RARCH_ERR("[CoreAudio macOS Mic] Failed to enable input on AudioUnit: %d\n", (int)status);
+         goto error;
       }
-      else
-      {
-         RARCH_LOG("[CoreAudio macOS Mic] Successfully set device ID %u on AudioUnit\n", (unsigned int)mic->selected_device_id);
-      }
-   }
-   else
-   {
-      RARCH_LOG("[CoreAudio macOS Mic] Using system default audio input device\n");
+
+      /* Disable output — we only need input */
+      AudioUnitSetProperty(mic->audio_unit,
+            kAudioOutputUnitProperty_EnableIO,
+            kAudioUnitScope_Output, 0,
+            &disable_io, sizeof(disable_io));
    }
 
-   /* 2. Enable input on the AudioUnit - CRITICAL STEP */
-   UInt32 enable_io = 1;
-
-   /* Enable input on input bus */
-   status = AudioUnitSetProperty(mic->audio_unit,
-                            kAudioOutputUnitProperty_EnableIO,
-                            kAudioUnitScope_Input,
-                            1, /* Input element/bus */
-                            &enable_io,
-                            sizeof(enable_io));
-   if (status != noErr)
-   {
-      RARCH_ERR("[CoreAudio macOS Mic] Failed to enable input on AudioUnit: %d\n", (int)status);
-      AudioComponentInstanceDispose(mic->audio_unit);
-      if (mic->device_name) free(mic->device_name);
-
-      free(mic);
-      return NULL;
-   }
-   RARCH_LOG("[CoreAudio macOS Mic] Successfully enabled input on AudioUnit\n");
-
-   /* Disable output on output bus since we only need input */
-   UInt32 disable_io = 0;
-   status = AudioUnitSetProperty(mic->audio_unit,
-                            kAudioOutputUnitProperty_EnableIO,
-                            kAudioUnitScope_Output,
-                            0, /* Output element/bus */
-                            &disable_io,
-                            sizeof(disable_io));
-   if (status != noErr)
-   {
-      RARCH_WARN("[CoreAudio macOS Mic] Failed to disable output on AudioUnit: %d. This may be OK.\n", (int)status);
-      /* Not fatal, some audio devices might not even support output */
-   }
-   else
-   {
-      RARCH_LOG("[CoreAudio macOS Mic] Successfully disabled output on AudioUnit\n");
-   }
-
-   /* 3. Set the current device if a specific one was selected */
+   /* 3. Set the current device */
    if (mic->selected_device_id != kAudioObjectUnknown)
    {
-      RARCH_LOG("[CoreAudio macOS Mic] Attempting to set current device to AudioDeviceID: %u\n", (unsigned int)mic->selected_device_id);
       status = AudioUnitSetProperty(mic->audio_unit,
-                                  kAudioOutputUnitProperty_CurrentDevice,
-                                  kAudioUnitScope_Global, /* Some docs say Input scope, some Global. Global is often for HALOutput device selection. */
-                                  0, /* Element 0 for global properties */
-                                  &mic->selected_device_id,
-                                  sizeof(mic->selected_device_id));
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global, 0,
+            &mic->selected_device_id,
+            sizeof(mic->selected_device_id));
       if (status != noErr)
       {
-         RARCH_ERR("[CoreAudio macOS Mic] Failed to set current device on AudioUnit (ID: %u). Error: %d. Will use system default.\n", (unsigned int)mic->selected_device_id, (int)status);
-         /* Proceed with system default if setting specific device fails */
-         mic->selected_device_id = kAudioObjectUnknown; /* Fallback to default indication */
+         RARCH_WARN("[CoreAudio macOS Mic] Failed to set device %u: %d, using system default.\n",
+                    (unsigned)mic->selected_device_id, (int)status);
+         mic->selected_device_id = kAudioObjectUnknown;
       }
-      else
+   }
+
+   /* Query the effective device */
+   {
+      AudioDeviceID actual_device = kAudioObjectUnknown;
+      UInt32 actual_size          = sizeof(AudioDeviceID);
+      if (AudioUnitGetProperty(mic->audio_unit,
+               kAudioOutputUnitProperty_CurrentDevice,
+               kAudioUnitScope_Global, 0,
+               &actual_device, &actual_size) == noErr)
+         mic->selected_device_id = actual_device;
+   }
+
+   /* 4. Set stream format */
+   coreaudio_macos_microphone_set_format(mic, false);
+
+   /* Get the device's native format and adopt its sample rate */
+   {
+      AudioStreamBasicDescription device_format = {0};
+      UInt32 fmt_size = sizeof(device_format);
+      OSStatus fmt_status = AudioUnitGetProperty(mic->audio_unit,
+            kAudioUnitProperty_StreamFormat,
+            kAudioUnitScope_Input, 1,
+            &device_format, &fmt_size);
+      if (fmt_status == noErr)
       {
-         RARCH_LOG("[CoreAudio macOS Mic] Successfully set current device to AudioDeviceID: %u\n", (unsigned int)mic->selected_device_id);
+         RARCH_LOG("[CoreAudio macOS Mic] Device native format - SR: %.0f, CH: %u\n",
+                   device_format.mSampleRate,
+                   (unsigned)device_format.mChannelsPerFrame);
+         mic->format.mSampleRate     = device_format.mSampleRate;
+         mic->format.mBytesPerFrame  = mic->format.mChannelsPerFrame
+                                     * (mic->format.mBitsPerChannel / 8);
+         mic->format.mBytesPerPacket = mic->format.mBytesPerFrame;
       }
    }
-   else
-   {
-      RARCH_LOG("[CoreAudio macOS Mic] Using system default input device.\n");
-   }
 
-   /* Query and log the actual current device the AudioUnit is using */
-   AudioDeviceID actual_device_id_check = kAudioObjectUnknown;
-   UInt32 actual_device_prop_size = sizeof(AudioDeviceID);
-   OSStatus query_status = AudioUnitGetProperty(mic->audio_unit,
-                                             kAudioOutputUnitProperty_CurrentDevice,
-                                             kAudioUnitScope_Global,
-                                             0, /* Element 0 for global properties */
-                                             &actual_device_id_check,
-                                             &actual_device_prop_size);
-
-   if (query_status == noErr)
    {
-      RARCH_LOG("[CoreAudio macOS Mic] Queried AudioUnit's effective current device ID: %u\n", (unsigned int)actual_device_id_check);
-      if (mic->selected_device_id != kAudioObjectUnknown && mic->selected_device_id != actual_device_id_check)
+      OSStatus fmt_set = AudioUnitSetProperty(mic->audio_unit,
+            kAudioUnitProperty_StreamFormat,
+            kAudioUnitScope_Output, 1,
+            &mic->format, sizeof(AudioStreamBasicDescription));
+      if (fmt_set != noErr)
       {
-         RARCH_WARN("[CoreAudio macOS Mic] AudioUnit's effective device ID (%u) differs from initially set/intended ID (%u)!\n",
-                    (unsigned int)actual_device_id_check, (unsigned int)mic->selected_device_id);
+         RARCH_ERR("[CoreAudio macOS Mic] Failed to set client stream format: %d\n", (int)fmt_set);
+         goto error;
       }
-      /* Update mic->selected_device_id to reflect the actual one, especially if it was default or fallback */
-      mic->selected_device_id = actual_device_id_check;
    }
-   else
-   {
-      RARCH_ERR("[CoreAudio macOS Mic] Failed to query AudioUnit's current device ID. Error: %d. This could be problematic.\n", (int)query_status);
-      /* Not necessarily fatal here, as subsequent operations might still use a default, but it's a bad sign. */
-   }
-
-    /* 4. Set stream format */
-    coreaudio_macos_microphone_set_format(mic, false /* use int16 for better compatibility */);
-
-    RARCH_LOG("[CoreAudio macOS Mic] After format setup - mic->format.mSampleRate = %.0f Hz\n", mic->format.mSampleRate);
-
-    /* First get the device's native format from the INPUT scope, INPUT bus (bus 1) */
-    AudioStreamBasicDescription device_format = {0};
-    UInt32 prop_size = sizeof(device_format);
-    OSStatus format_status = AudioUnitGetProperty(mic->audio_unit,
-                            kAudioUnitProperty_StreamFormat,
-                            kAudioUnitScope_Input,
-                            1, /* Bus 1 (Input bus) - this represents data FROM the input device */
-                            &device_format,
-                            &prop_size);
-    if (format_status != noErr) {
-        RARCH_WARN("[CoreAudio macOS Mic] Could not get device native format from input bus: %d. Using default format.\n", (int)format_status);
-    } else {
-       RARCH_LOG("[CoreAudio macOS Mic] Device native format (input bus) - Sample rate: %.0f, Channels: %u, Bits: %u\n",
-                device_format.mSampleRate,
-                (unsigned)device_format.mChannelsPerFrame,
-                (unsigned)device_format.mBitsPerChannel);
-
-       /* Use the device's native sample rate but ALWAYS use mono for better compatibility */
-       mic->format.mSampleRate = device_format.mSampleRate;
-       mic->format.mChannelsPerFrame = 1; /* Always force mono regardless of device capabilities */
-
-       /* Update mic->channels to match what we're actually using */
-       mic->channels = device_format.mChannelsPerFrame;
-
-       /* Re-calculate format bytes per frame to match the channel count */
-       mic->format.mBytesPerFrame = mic->format.mChannelsPerFrame * (mic->format.mBitsPerChannel / 8);
-       mic->format.mFramesPerPacket = 1;
-       mic->format.mBytesPerPacket = mic->format.mBytesPerFrame * mic->format.mFramesPerPacket;
-
-       RARCH_LOG("[CoreAudio macOS Mic] Updated format - SR: %.0f, CH: %u, BitsPerCh: %u, BytesPerFrame: %u\n",
-                mic->format.mSampleRate,
-                (unsigned)mic->format.mChannelsPerFrame,
-                (unsigned)mic->format.mBitsPerChannel,
-                (unsigned)mic->format.mBytesPerFrame);
-    }
-
-    RARCH_LOG("[CoreAudio macOS Mic] Setting client format on OUTPUT scope of INPUT bus\n");
-    OSStatus set_format_status = AudioUnitSetProperty(mic->audio_unit,
-                               kAudioUnitProperty_StreamFormat,
-                               kAudioUnitScope_Output, /* Output scope - what we receive */
-                               1, /* Bus 1 (Input bus) - where we receive input data */
-                               &mic->format,
-                               sizeof(AudioStreamBasicDescription));
-    if (set_format_status != noErr)
-    {
-       RARCH_ERR("[CoreAudio macOS Mic] Failed to set client stream format: %d\n", (int)set_format_status);
-       AudioComponentInstanceDispose(mic->audio_unit);
-       if (mic->device_name) free(mic->device_name);
-
-       free(mic);
-       return NULL;
-    }
 
    /* Set up input callback */
-   AURenderCallbackStruct callback_struct;
-   callback_struct.inputProc       = coreaudio_macos_input_callback;
-   callback_struct.inputProcRefCon = mic;
-
-   status = AudioUnitSetProperty(mic->audio_unit,
-                              kAudioOutputUnitProperty_SetInputCallback,
-                              kAudioUnitScope_Global,
-                              0,
-                              &callback_struct,
-                              sizeof(callback_struct));
-   if (status != noErr)
    {
-      RARCH_ERR("[CoreAudio macOS Mic] Failed to set INPUT callback: %d\n", (int)status);
-      AudioComponentInstanceDispose(mic->audio_unit);
-      if (mic->device_name) free(mic->device_name);
-
-      free(mic);
-      return NULL;
+      AURenderCallbackStruct cb;
+      cb.inputProc       = coreaudio_macos_input_callback;
+      cb.inputProcRefCon = mic;
+      status = AudioUnitSetProperty(mic->audio_unit,
+            kAudioOutputUnitProperty_SetInputCallback,
+            kAudioUnitScope_Global, 0,
+            &cb, sizeof(cb));
+      if (status != noErr)
+      {
+         RARCH_ERR("[CoreAudio macOS Mic] Failed to set input callback: %d\n", (int)status);
+         goto error;
+      }
    }
 
-   RARCH_LOG("[CoreAudio macOS Mic] Initializing AudioUnit %p\n", mic->audio_unit);
+   /* Set buffer frame size for lower latency */
+   {
+      UInt32 buffer_frame_size = 256;
+      AudioUnitSetProperty(mic->audio_unit,
+            kAudioDevicePropertyBufferFrameSize,
+            kAudioUnitScope_Global, 0,
+            &buffer_frame_size, sizeof(buffer_frame_size));
+   }
 
-   /* Set a smaller buffer frame size for lower latency */
-    UInt32 buffer_frame_size = 256; /* Small buffer for lower latency */
-    status = AudioUnitSetProperty(mic->audio_unit,
-                               kAudioDevicePropertyBufferFrameSize,
-                               kAudioUnitScope_Global,
-                               0,
-                               &buffer_frame_size,
-                               sizeof(buffer_frame_size));
-    if (status != noErr)
-    {
-        RARCH_WARN("[CoreAudio macOS Mic] Failed to set buffer frame size to %u: %d\n",
-                   (unsigned)buffer_frame_size, (int)status);
-        /* Non-fatal, continue with default buffer size */
-    }
-    else
-    {
-        RARCH_LOG("[CoreAudio macOS Mic] Set buffer frame size to %u frames for lower latency\n",
-                 (unsigned)buffer_frame_size);
-    }
-
-    status = AudioUnitInitialize(mic->audio_unit);
-    if (status != noErr)
-    {
-        RARCH_ERR("[CoreAudio macOS Mic] Failed to initialize AudioUnit: %d\n", (int)status);
-        AudioComponentInstanceDispose(mic->audio_unit);
-        if (mic->device_name) free(mic->device_name);
-        free(mic);
-        return NULL;
-    }
+   /* Initialize AudioUnit */
+   status = AudioUnitInitialize(mic->audio_unit);
+   if (status != noErr)
+   {
+      RARCH_ERR("[CoreAudio macOS Mic] Failed to initialize AudioUnit: %d\n", (int)status);
+      goto error;
+   }
    atomic_store(&mic->is_initialized, true);
-   RARCH_LOG("[CoreAudio macOS Mic] AudioUnit successfully initialized.\n");
 
-    /* Initialize FIFO buffer */
-    size_t fifo_size = mic->format.mSampleRate * mic->format.mBytesPerFrame * COREAUDIO_MIC_BUFFER_DURATION_S;
-    RARCH_LOG("[CoreAudio macOS Mic] Creating FIFO buffer of size %u bytes (%.1f ms at %.0f Hz)\n",
-             (unsigned)fifo_size,
-             (float)fifo_size * 1000.0f / (mic->format.mSampleRate * mic->format.mBytesPerFrame),
-             mic->format.mSampleRate);
+   /* Allocate callback buffer based on max frames per slice */
+   {
+      UInt32 max_frames     = 4096; /* sensible default */
+      UInt32 max_frames_sz  = sizeof(max_frames);
+      AudioUnitGetProperty(mic->audio_unit,
+            kAudioUnitProperty_MaximumFramesPerSlice,
+            kAudioUnitScope_Global, 0,
+            &max_frames, &max_frames_sz);
+      mic->callback_buffer_size = max_frames * mic->format.mBytesPerFrame;
+      mic->callback_buffer      = calloc(1, mic->callback_buffer_size);
+      if (!mic->callback_buffer)
+      {
+         RARCH_ERR("[CoreAudio macOS Mic] Failed to allocate callback buffer\n");
+         goto error;
+      }
+   }
 
-    /* Create and initialize FIFO buffer */
-    mic->fifo = fifo_new(fifo_size);
-    if (!mic->fifo)
-    {
-       RARCH_ERR("[CoreAudio macOS Mic] Failed to allocate FIFO buffer\n");
-       AudioUnitUninitialize(mic->audio_unit);
-       AudioComponentInstanceDispose(mic->audio_unit);
-       if (mic->device_name) free(mic->device_name);
+   /* Initialize FIFO — size based on latency parameter */
+   {
+      size_t fifo_size = (size_t)latency * mic->format.mSampleRate
+                       * mic->format.mBytesPerFrame / 1000;
+      if (fifo_size == 0)
+         fifo_size = (size_t)(mic->format.mSampleRate
+                   * mic->format.mBytesPerFrame / 10); /* 100ms fallback */
+      mic->fifo = fifo_new(fifo_size);
+      if (!mic->fifo)
+      {
+         RARCH_ERR("[CoreAudio macOS Mic] Failed to allocate FIFO buffer\n");
+         goto error;
+      }
+      fifo_clear(mic->fifo);
+      RARCH_LOG("[CoreAudio macOS Mic] FIFO buffer: %u bytes (%.0f ms)\n",
+                (unsigned)fifo_size,
+                (float)fifo_size * 1000.0f
+                / (mic->format.mSampleRate * mic->format.mBytesPerFrame));
+   }
 
-       free(mic);
-       return NULL;
-    }
+   /* Register for default-device-change notifications */
+   if (mic->using_default_device)
+   {
+      AudioObjectPropertyAddress prop = {
+         kAudioHardwarePropertyDefaultInputDevice,
+         kAudioObjectPropertyScopeGlobal,
+         kAudioObjectPropertyElementMaster
+      };
+      AudioObjectAddPropertyListener(kAudioObjectSystemObject,
+            &prop, coreaudio_macos_default_device_listener, mic);
+   }
 
-    /* Explicitly clear the FIFO buffer to ensure no random data */
-    fifo_clear(mic->fifo);
-    RARCH_LOG("[CoreAudio macOS Mic] FIFO buffer initialized and cleared\n");
-
-    /* Allocate AudioBufferList for AudioUnitRender in the callback */
-
-    /* We don't need to pre-allocate buffer list or calculate max frames per slice
-     * since we're using temporary buffers in the callback like the iOS version */
-
-    RARCH_LOG("[CoreAudio macOS Mic] COMPLETE CONFIG - Sample rate: %.0f Hz, Format: %s, Channels: %u\n",
+   RARCH_LOG("[CoreAudio macOS Mic] Ready — SR: %.0f Hz, %s, device '%s'\n",
              mic->format.mSampleRate,
              mic->use_float ? "Float" : "Int16",
-             (unsigned)mic->format.mChannelsPerFrame);
+             mic->device_name ? mic->device_name : "default");
 
-    if (new_rate)
-       *new_rate = (unsigned)mic->format.mSampleRate; /* Reflect actual rate used */
+   if (new_rate)
+      *new_rate = (unsigned)mic->format.mSampleRate;
 
-    RARCH_LOG("[CoreAudio macOS Mic] Microphone instance %p fully configured and initialized for device '%s'. Ready to start.\n", mic, mic->device_name ? mic->device_name : "default");
-    return mic;
+   return mic;
+
+error:
+   if (mic->audio_unit)
+   {
+      if (atomic_load(&mic->is_initialized))
+         AudioUnitUninitialize(mic->audio_unit);
+      AudioComponentInstanceDispose(mic->audio_unit);
+   }
+   if (mic->callback_buffer)
+      free(mic->callback_buffer);
+   if (mic->fifo)
+      fifo_free(mic->fifo);
+   if (mic->device_name)
+      free(mic->device_name);
+   slock_free(mic->fifo_lock);
+   scond_free(mic->fifo_cond);
+   free(mic);
+   return NULL;
 }
 
 static void coreaudio_macos_microphone_close_mic(void *data, void *mic_data)
 {
-   RARCH_LOG("[CoreAudio macOS Mic] close_mic called. Mic context: %p\n", mic_data);
    coreaudio_macos_microphone_t *mic = (coreaudio_macos_microphone_t *)mic_data;
    if (!mic)
       return;
 
-   coreaudio_macos_microphone_stop_mic(data, mic_data); /* Ensure it's stopped */
+   /* Unregister device-change listener before teardown */
+   if (mic->using_default_device)
+   {
+      AudioObjectPropertyAddress prop = {
+         kAudioHardwarePropertyDefaultInputDevice,
+         kAudioObjectPropertyScopeGlobal,
+         kAudioObjectPropertyElementMaster
+      };
+      AudioObjectRemovePropertyListener(kAudioObjectSystemObject,
+            &prop, coreaudio_macos_default_device_listener, mic);
+   }
+
+   coreaudio_macos_microphone_stop_mic(data, mic_data);
 
    if (mic->audio_unit)
    {
       if (atomic_load(&mic->is_initialized))
       {
-         RARCH_LOG("[CoreAudio macOS Mic] Uninitializing AudioUnit %p\n", mic->audio_unit);
          AudioUnitUninitialize(mic->audio_unit);
          atomic_store(&mic->is_initialized, false);
       }
@@ -765,9 +783,11 @@ static void coreaudio_macos_microphone_close_mic(void *data, void *mic_data)
       mic->audio_unit = NULL;
    }
 
-   /* No buffer list cleanup needed since we're using temporary buffers */
-
-
+   if (mic->callback_buffer)
+   {
+      free(mic->callback_buffer);
+      mic->callback_buffer = NULL;
+   }
 
    if (mic->fifo)
    {
@@ -780,6 +800,10 @@ static void coreaudio_macos_microphone_close_mic(void *data, void *mic_data)
       free(mic->device_name);
       mic->device_name = NULL;
    }
+
+   slock_free(mic->fifo_lock);
+   scond_free(mic->fifo_cond);
+
    free(mic);
    RARCH_LOG("[CoreAudio macOS Mic] Microphone instance %p freed.\n", mic_data);
 }
@@ -830,17 +854,14 @@ static bool coreaudio_macos_microphone_start_mic(void *data, void *mic_data)
       RARCH_LOG("[CoreAudio macOS Mic] Default input device ID: %u\n", (unsigned)default_input_device);
    }
 
-   /* Make sure FIFO is completely cleared before starting */
-   if (mic->fifo)
-   {
-       fifo_clear(mic->fifo);
-       RARCH_LOG("[CoreAudio macOS Mic] FIFO buffer cleared before starting\n");
-   }
-   else
+   if (!mic->fifo)
    {
        RARCH_ERR("[CoreAudio macOS Mic] No FIFO buffer available\n");
        return false;
    }
+   slock_lock(mic->fifo_lock);
+   fifo_clear(mic->fifo);
+   slock_unlock(mic->fifo_lock);
 
    OSStatus status = AudioOutputUnitStart(mic->audio_unit);
    if (status == noErr)
@@ -876,7 +897,9 @@ static bool coreaudio_macos_microphone_stop_mic(void *data, void *mic_data)
       atomic_store(&mic->is_running, false);
       if (mic->fifo)
       {
+         slock_lock(mic->fifo_lock);
          fifo_clear(mic->fifo);
+         slock_unlock(mic->fifo_lock);
       }
       return true;
    }
