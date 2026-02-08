@@ -2381,11 +2381,15 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    }
 #endif
 
-   if (vkCreateSwapchainKHR(vk->context.device,
-            &info, NULL, &vk->swapchain) != VK_SUCCESS)
    {
-      RARCH_ERR("[Vulkan] Failed to create swapchain.\n");
-      return false;
+      VkResult res = vkCreateSwapchainKHR(vk->context.device,
+               &info, NULL, &vk->swapchain);
+      if (res != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan] Failed to create swapchain (err = %d).\n",
+               (int)res);
+         return false;
+      }
    }
 
    vk->context.swapchain_width        = swapchain_size.width;
@@ -2752,7 +2756,8 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 
    if (err != VK_SUCCESS || result != VK_SUCCESS)
    {
-      RARCH_LOG("[Vulkan] QueuePresent failed, destroying swapchain.\n");
+      RARCH_LOG("[Vulkan] QueuePresent failed (err = %d, result = %d), destroying swapchain.\n",
+            (int)err, (int)result);
       vulkan_destroy_swapchain(vk);
    }
 
