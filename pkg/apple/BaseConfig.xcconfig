@@ -4,17 +4,21 @@
 //
 //
 
+// Define builtin glslang by default (overridden by deps.xcconfig when present)
+GLSLANG_BUILTIN_FLAG = -DGLSLANG_OSINCLUDE_UNIX -DHAVE_BUILTINGLSLANG -DWANT_GLSLANG
+GLSLANG_BUILTIN_HEADER_SEARCH_PATHS = $(DEPS_DIR)/glslang $(DEPS_DIR)/glslang/glslang/SPIRV $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix $(DEPS_DIR)/glslang/glslang/glslang/Public
+// Define HAVE_BUILTINMBEDTLS by default (overridden by deps.xcconfig when present)
+MBEDTLS_BUILTIN_FLAG = -DHAVE_BUILTINMBEDTLS
+
+OTHER_CFLAGS = $(inherited) $(GLSLANG_BUILTIN_FLAG)
+OTHER_CFLAGS = $(inherited) $(MBEDTLS_BUILTIN_FLAG)
+
 OTHER_CFLAGS = $(inherited) -DFLAC__HAS_OGG=0
-OTHER_CFLAGS = $(inherited) -DGLSLANG_OSINCLUDE_UNIX
 OTHER_CFLAGS = $(inherited) -DHAVE_7ZIP
 OTHER_CFLAGS = $(inherited) -DHAVE_ACCESSIBILITY
 OTHER_CFLAGS = $(inherited) -DHAVE_AL
 OTHER_CFLAGS = $(inherited) -DHAVE_AUDIOMIXER
 OTHER_CFLAGS = $(inherited) -DHAVE_BSV_MOVIE
-OTHER_CFLAGS = $(inherited) -DHAVE_BUILTINGLSLANG
-// Define HAVE_BUILTINMBEDTLS by default (overridden by deps.xcconfig when present)
-MBEDTLS_BUILTIN_FLAG = -DHAVE_BUILTINMBEDTLS
-OTHER_CFLAGS = $(inherited) $(MBEDTLS_BUILTIN_FLAG)
 OTHER_CFLAGS = $(inherited) -DHAVE_CC_RESAMPLER
 OTHER_CFLAGS = $(inherited) -DHAVE_CHD
 OTHER_CFLAGS = $(inherited) -DHAVE_CHEATS
@@ -93,7 +97,6 @@ OTHER_CFLAGS = $(inherited) -DHAVE_ZSTD
 OTHER_CFLAGS = $(inherited) -DINLINE=inline
 OTHER_CFLAGS = $(inherited) -DRARCH_INTERNAL
 OTHER_CFLAGS = $(inherited) -DRC_DISABLE_LUA
-OTHER_CFLAGS = $(inherited) -DWANT_GLSLANG
 OTHER_CFLAGS = $(inherited) -DWANT_RAW_DATA_SECTOR=1
 OTHER_CFLAGS = $(inherited) -DWANT_SUBCODE=1
 OTHER_CFLAGS = $(inherited) -D_7ZIP_ST
@@ -165,11 +168,7 @@ DEPS_DIR = $(SRCBASE)/deps
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/7zip
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/SPIRV-Cross
-HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang
-HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang/glslang/SPIRV
-HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent
-HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix
-HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/glslang/glslang/glslang/Public
+HEADER_SEARCH_PATHS = $(inherited) $(GLSLANG_BUILTIN_HEADER_SEARCH_PATHS)
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libFLAC/include
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/rcheevos/include
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/stb
