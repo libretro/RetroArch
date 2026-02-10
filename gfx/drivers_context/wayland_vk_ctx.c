@@ -191,12 +191,24 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height, fullscreen))
       goto error;
 
+   /* Set buffer scale before creating the Vulkan WSI surface.
+    * Fixes incorrect size/offset on HiDPI/fullscreen. */
+   if (!wl->fractional_scale &&
+       wl_compositor_get_version(wl->compositor) >=
+       WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION)
+      wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+
    if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
          wl->input.dpy, wl->surface,
          wl->buffer_width,
          wl->buffer_height,
          wl->swap_interval))
       goto error;
+
+   /* Fullscreen is compositor-sized on Wayland.
+    * Do not ignore configure events in fullscreen. */
+   if (fullscreen)
+      wl->ignore_configuration = false;
 
    if (!gfx_ctx_wl_set_video_mode_common_fullscreen(wl, fullscreen))
       goto error;

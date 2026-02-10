@@ -403,6 +403,13 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    EGLint *attr              = egl_fill_attribs(
          (gfx_ctx_wayland_data_t*)data, egl_attribs);
 
+   /* Set buffer scale before creating wl_egl_window.
+    * Fixes incorrect size/offset on HiDPI/fullscreen. */
+   if (!wl->fractional_scale &&
+       wl_compositor_get_version(wl->compositor) >=
+       WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION)
+      wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+
    wl->win = wl_egl_window_create(wl->surface,
       wl->buffer_width,
       wl->buffer_height);
@@ -418,6 +425,11 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       goto error;
    egl_set_swap_interval(&wl->egl, wl->egl.interval);
 #endif
+
+   /* Fullscreen is compositor-sized on Wayland.
+    * Do not ignore configure events in fullscreen. */
+   if (fullscreen)
+      wl->ignore_configuration = false;
 
    if (!gfx_ctx_wl_set_video_mode_common_fullscreen(wl, fullscreen))
       goto error;
