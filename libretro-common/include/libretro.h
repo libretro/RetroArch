@@ -4479,15 +4479,18 @@ enum retro_sensor_action
 /* Id values for SENSOR types. */
 
 /**
- * Returns the device's acceleration along its local X axis minus the effect of gravity, in m/s^2.
+ * Returns the device's acceleration along its local X axis, in g (standard gravity, 9.80665 m/s^2).
+ * Includes the effect of gravity;
+ * a device at rest on a table will have values close to 0, 0, 1.
  *
- * Positive values mean that the device is accelerating to the right.
+ * Positive values mean that the device is accelerating to the right,
  * assuming the user is looking at it head-on.
  */
 #define RETRO_SENSOR_ACCELEROMETER_X 0
 
 /**
- * Returns the device's acceleration along its local Y axis minus the effect of gravity, in m/s^2.
+ * Returns the device's acceleration along its local Y axis, in g (standard gravity, 9.80665 m/s^2).
+ * Includes the effect of gravity.
  *
  * Positive values mean that the device is accelerating upwards,
  * assuming the user is looking at it head-on.
@@ -4495,7 +4498,8 @@ enum retro_sensor_action
 #define RETRO_SENSOR_ACCELEROMETER_Y 1
 
 /**
- * Returns the the device's acceleration along its local Z axis minus the effect of gravity, in m/s^2.
+ * Returns the device's acceleration along its local Z axis, in g (standard gravity, 9.80665 m/s^2).
+ * Includes the effect of gravity.
  *
  * Positive values indicate forward acceleration towards the user,
  * assuming the user is looking at the device head-on.

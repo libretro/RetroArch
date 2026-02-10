@@ -2056,11 +2056,11 @@ static float android_input_get_sensor_input(void *data,
       switch (id)
       {
          case RETRO_SENSOR_ACCELEROMETER_X:
-            return android->accelerometer_state.x;
+            return android->accelerometer_state.x / 9.80665f;
          case RETRO_SENSOR_ACCELEROMETER_Y:
-            return android->accelerometer_state.y;
+            return android->accelerometer_state.y / 9.80665f;
          case RETRO_SENSOR_ACCELEROMETER_Z:
-            return android->accelerometer_state.z;
+            return android->accelerometer_state.z / 9.80665f;
          case RETRO_SENSOR_GYROSCOPE_X:
             return android->gyroscope_state.x;
          case RETRO_SENSOR_GYROSCOPE_Y:

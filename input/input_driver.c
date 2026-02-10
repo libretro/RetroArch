@@ -4699,9 +4699,11 @@ void input_mapper_reset(void *data)
 bool input_set_sensor_state(unsigned port,
       enum retro_sensor_action action, unsigned rate)
 {
-   bool input_sensors_enable   = config_get_ptr()->bools.input_sensors_enable;
+   settings_t *settings        = config_get_ptr();
+   bool input_sensors_enable   = settings->bools.input_sensors_enable;
+   unsigned joy_idx            = settings->uints.input_joypad_index[port];
    return input_driver_set_sensor(
-      port, input_sensors_enable, action, rate);
+      joy_idx, input_sensors_enable, action, rate);
 }
 
 const char *joypad_driver_name(unsigned i)
@@ -4746,12 +4748,13 @@ float input_get_sensor_state(unsigned port, unsigned id)
 {
    settings_t *settings      = config_get_ptr();
    bool input_sensors_enable = settings->bools.input_sensors_enable;
+   unsigned joy_idx          = settings->uints.input_joypad_index[port];
    float sensitivity         = 1.0f;
    if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z)
       sensitivity = settings->floats.input_sensor_accelerometer_sensitivity;
    else if (id >= RETRO_SENSOR_GYROSCOPE_X && id <= RETRO_SENSOR_GYROSCOPE_Z)
       sensitivity = settings->floats.input_sensor_gyroscope_sensitivity;
-   return input_driver_get_sensor(port, input_sensors_enable, id) * sensitivity;
+   return input_driver_get_sensor(joy_idx, input_sensors_enable, id) * sensitivity;
 }
 
 /**
