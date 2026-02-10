@@ -1194,7 +1194,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST,
-   "core_updater"
+   "deferred_core_updater_list"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST,
@@ -2143,6 +2143,10 @@ MSG_HASH(
    "input_overlay_mouse_swipe_threshold"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "input_overlay_mouse_alt_two_touch_input"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
    "input_overlay_dpad_diagonal_sensitivity"
    )
@@ -3023,6 +3027,14 @@ MSG_HASH(
    "cloud_sync_sync_now"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "cloud_sync_resolve_keep_local"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "cloud_sync_resolve_keep_server"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_RDB_ENTRY,
    "rdb_entry"
    )
@@ -3747,6 +3759,18 @@ MSG_HASH(
    "scan_file"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_TARGET_PLAYLIST,
+   "scan_target_playlist"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_SINGLE_FILE,
+   "scan_single_file"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_OMIT_DB_REF,
+   "scan_omit_db_ref"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,
    "netplay_show_only_connectable"
    )
@@ -3867,6 +3891,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_SSH_ENABLE,
    "ssh_enable"
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_SAFESHUTDOWN_ENABLE,
+   "safeshutdown_enable"
+   )
+#endif
 #endif
 
 #ifdef HAVE_LAKKA_SWITCH
@@ -6551,6 +6581,30 @@ MSG_HASH(
    "manual_content_scan_dir"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_METHOD,
+   "scan_method"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_METHOD,
+   "deferred_dropdown_box_list_scan_method"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_USE_DB,
+   "scan_use_db"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_USE_DB,
+   "deferred_dropdown_box_list_scan_use_db"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SCAN_DB_SELECT,
+   "scan_db_select"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_DB_SELECT,
+   "deferred_dropdown_box_list_scan_db_select"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    "manual_content_scan_system_name"
    )
@@ -6718,5 +6772,63 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_GAME_AI_SHOW_DEBUG,
    "game_ai_show_debug"
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "settings_show_smb_client"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
+   "smb_client_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST,
+   "deferred_smb_client_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_ENABLE,
+   "smb_client_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_SERVER,
+   "smb_client_server"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_SHARE,
+   "smb_client_share"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_SUBDIR,
+  "smb_client_subdir"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_USERNAME,
+   "smb_client_username"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD,
+   "smb_client_password"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP,
+   "smb_client_workgroup"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE,
+   "smb_client_auth_mode"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "smb_client_num_contexts"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT,
+   "smb_client_timeout"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SMB_CLIENT_BROWSE,
+   "smb_client_browse"
    )
 #endif

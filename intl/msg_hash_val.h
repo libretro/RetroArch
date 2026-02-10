@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -1813,29 +1827,10 @@ MSG_HASH(
    "Luminància màxima"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Establix la luminància màxima (en cd/m²) que pot reproduir el teu monitor. Per esbrinar quina es la luminància màxima del teu monitor, visita el web RTings."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminància de blanc paper"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Establix la luminància amb la qual el blanc d'una fulla de paper tindria un text llegible, o luminància màxima del rang SDR (rang dinàmic estàndar). Serveix per ajustar-se a la variació en la il·luminació del teu entorn."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Controla la gamma/contrast de l'HDR. Agafa els colors i fa un increment del rang d'estos entre les àrees més brillants i les més obscures. A major contrast d'HDR, major diferència, i a un contrast menor, la imatge serà més pàl·lida. Això ajuda l'usuari a ajustar la imatge al seu gust i com esta se visualitza millor a la seua pantalla/monitor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Ampliar gamma"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Una vegada l'espai de color ha sigut convertit a espai linial, esta funció decideix si es deuria usar una gamma de colors més àmplia per ajustar-se al format HDR10."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -2186,10 +2181,6 @@ MSG_HASH(
    "Detecta"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Posa en pausa el contingut quan es desconnecte el comandament"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "Posa en pausa el contingut quan qualssevol controlador es desconnecte."
    )
@@ -2202,6 +2193,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
    "Canvia els ajustos de control del menú."
    )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -2882,6 +2874,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Expulsar disc"
    )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -2927,6 +2920,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLED,
    "Engegat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Cap"
    )
 
 /* RGUI: Settings > User Interface > Appearance */
@@ -3005,6 +3002,10 @@ MSG_HASH(
 
 /* XMB: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Cap"
+   )
 
 /* XMB: Settings Options */
 
@@ -3255,6 +3256,24 @@ MSG_HASH(
 #ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif
 #endif
@@ -3277,4 +3296,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

@@ -172,6 +172,11 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
    RELEASE(g_hw_ctx);
    [GLContextClass clearCurrentContext];
 #else
+   /* Clean up GLKView's framebuffer resources while context is still valid.
+    * Failing to do this causes crashes in glPushGroupMarkerEXT when GLKit
+    * tries to delete framebuffers after the context has been destroyed. */
+   if (glk_view)
+      [glk_view deleteDrawable];
    [EAGLContext setCurrentContext:nil];
 #endif
    g_hw_ctx = nil;

@@ -1721,6 +1721,69 @@ static size_t menu_action_setting_disp_set_label_manual_content_scan_dir(
    return 0;
 }
 
+static size_t menu_action_setting_disp_set_label_scan_method(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *tmp = NULL;
+
+   *w = 19;
+
+   if (!string_is_empty(path))
+      strlcpy(s2, path, len2);
+
+   if (manual_content_scan_get_menu_scan_method(&tmp))
+      return strlcpy(s, tmp, len);
+   *s = '\0';
+   return 0;
+}
+
+static size_t menu_action_setting_disp_set_label_scan_use_db(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *tmp = NULL;
+
+   *w = 19;
+
+   if (!string_is_empty(path))
+      strlcpy(s2, path, len2);
+
+   if (manual_content_scan_get_menu_scan_use_db(&tmp))
+      return strlcpy(s, tmp, len);
+   *s = '\0';
+   return 0;
+}
+
+static size_t menu_action_setting_disp_set_label_scan_db_select(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *tmp = NULL;
+
+   *w = 19;
+
+   if (!string_is_empty(path))
+      strlcpy(s2, path, len2);
+
+   if (manual_content_scan_get_menu_scan_db_select(&tmp))
+      return strlcpy(s, tmp, len);
+   *s = '\0';
+   return 0;
+}
+
 static size_t menu_action_setting_disp_set_label_manual_content_scan_system_name(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -2035,6 +2098,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          #ifdef HAVE_GAME_AI
          case MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS:
          #endif
+         #ifdef HAVE_SMBCLIENT
+         case MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS:
+         #endif
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_more);
             break;
@@ -2061,6 +2127,18 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_manual_content_scan_dir);
+            break;
+         case MENU_ENUM_LABEL_SCAN_METHOD:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_scan_method);
+            break;
+         case MENU_ENUM_LABEL_SCAN_USE_DB:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_scan_use_db);
+            break;
+         case MENU_ENUM_LABEL_SCAN_DB_SELECT:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_scan_db_select);
             break;
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
             BIND_ACTION_GET_VALUE(cbs,

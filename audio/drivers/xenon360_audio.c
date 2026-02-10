@@ -141,5 +141,6 @@ audio_driver_t audio_xenon360 = {
    NULL,
    NULL,
    xenon360_write_avail,
-   NULL
+   NULL, /* buffer_size */
+   NULL  /* write_raw */
 };

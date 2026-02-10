@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -2517,36 +2531,52 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
-   "影像水平位置"
+   "視窗錨點 X 軸偏移"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
-   "影像水平位置"
+   "視窗錨點 X 軸偏移"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "影像垂直位置"
+   "視窗錨點 Y 軸偏移"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
-   "影像垂直位置"
+   "視窗錨點 Y 軸偏移"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   "當視窗寬度大於內容寬度時，內容的水平位置。0.0 為最左側，0.5 為置中，1.0 為最右側。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "當視窗高度大於內容高度時，內容的垂直位置。0.0 為最上方，0.5 為置中，1.0 為最下方。"
    )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "影像水平位置"
+   "視窗錨點 X 軸偏移 (豎屏)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "影像水平位置"
+   "視窗錨點 X 軸偏移 (豎屏)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "影像垂直位置"
+   "視窗錨點 Y 軸偏移 (豎屏)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "影像垂直位置"
+   "視窗錨點 Y 軸偏移 (豎屏)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "當視窗寬度大於內容寬度時，內容的水平位置。0.0 為最左側，0.5 為置中，1.0 為最右側。（豎屏）"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "當視窗高度大於內容高度時，內容的垂直位置。0.0 為最上方，0.5 為置中，1.0 為最下方。（豎屏）"
    )
 #endif
 MSG_HASH(
@@ -2589,33 +2619,14 @@ MSG_HASH(
    "峰值亮度"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "設定顯示器的峰值亮度(cd/m2), 關於顯示器的峰值亮度可參閱RTings網站。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "白紙亮度"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "設定白紙亮度即可閱讀文章, 且標準動態範圍(SDR)頂部的亮度, 有助於適應環境中的不同照明條件。"
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RGB,
+   "色差端子 (YPbPr)"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "對比度"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "設定伽瑪校正與對比度控制, 取得圖像顏色並增加最亮和最暗部分之間的區別。\n對比度越高明暗差異越大, 對比度越低就越褪色, 協助用戶依愛好調整圖像。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "擴展色域"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "色彩空間轉換為線性空間後, 使用擴展色域來達到HDR10。"
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3282,10 +3293,6 @@ MSG_HASH(
    "偵測"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "控制器斷開時暫停核心"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "裝置連接控制器斷開時暫停執行中的項目。"
    )
@@ -3442,6 +3449,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "控制器斷開解決方法 (Android)"
    )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -3727,16 +3735,8 @@ MSG_HASH(
    "下一個映像檔編號"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "切換至下一個映像檔編號, 操作時虛擬光碟機必須退出托盤。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "上一個映像檔編號"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "切換至上一個映像檔編號, 操作時虛擬光碟機必須退出托盤。"
    )
 
 MSG_HASH(
@@ -4186,6 +4186,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "連發設定"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "保留"
    )
 
 /* Settings > Latency */
@@ -9383,41 +9387,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "取出光碟映像檔"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "選擇映像檔編號"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "虛擬光碟機托盤退出並取出載入的映像檔。\n設定選單選項中「當開啟選單時暫停核心」開啟時, 部分核心須等到繼續遊戲後幾秒才載入。"
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "取出光碟映像檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "放入光碟映像檔"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "虛擬光碟機托盤進入並載入選擇的映像檔。\n設定選單選項中「當開啟選單時暫停核心」開啟時, 部分核心須等到繼續遊戲後幾秒才載入。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "載入光碟映像檔"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "載入光碟映像檔直接執行並加入到可使用編號中, 已加入的映像檔編號可以使用快捷鍵切換映像檔。\n注意事項: 此選項為舊功能, 建議使用M3U格式載入映像檔, 可跳過此步驟直接使用快捷鍵切換映像檔。"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "載入光碟映像檔並加入到編號中等待執行。\n注意事項: 此選項為舊功能, 建議使用M3U格式載入映像檔, 可跳過此步驟直接使用快捷鍵切換映像檔。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "選擇映像檔編號"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "選擇要放入的光碟映像檔編號, 使用「放入光碟映像檔」執行。"
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -10385,16 +10370,28 @@ MSG_HASH(
    "<未指定>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "自訂"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "無"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<自訂名稱>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "左類比搖桿"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "右類比搖桿"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "左類比搖桿 (強制)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "右類比搖桿"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
@@ -11062,6 +11059,14 @@ MSG_HASH(
    "色彩主題亮度"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "無"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "正常"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
    "選單字型"
    )
@@ -11710,6 +11715,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
    "亮灰色"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DRACULA,
+   "德古拉紫"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
@@ -12424,10 +12433,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "連接埠"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "連接埠 %d 裝置名稱: %s (#%d)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -15111,6 +15116,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "選擇時區自動設定日期和時間。"
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "顯示可使用的時區選項, 依選擇的時區自動設定日期和時間。\n此為假設系統和硬體的時間與世界協調時間一致。"
@@ -15353,4 +15376,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

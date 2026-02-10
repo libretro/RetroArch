@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -2657,33 +2671,10 @@ MSG_HASH(
    "Tepe Parlaklığı"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Ekranınızın yeniden üretebileceği tepe parlaklığını (cd/m2 olarak) ayarlayın. Ekranınızın en yüksek parlaklığı için RT'lere bakın."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Beyaz Kağıt Parlaklığı"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Kağıdın beyaz olması gereken parlaklığı, yani okunabilir metin veya SDR (Standart Dinamik Aralık) aralığının en üstünde parlaklık ayarlayın. Bulunduğunuz ortamdaki farklı aydınlatma koşullarına uyum sağlamak için kullanışlıdır."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Kontrast"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "HDR için gama/kontrast kontrolü. Renkleri alır ve görüntünün en parlak kısımları ile en karanlık kısımları arasındaki genel aralığı artırır. HDR Kontrastı ne kadar yüksek olursa, bu fark o kadar büyük olur, kontrast ne kadar düşükse görüntü o kadar soluk olur. Kullanıcıların görüntüyü kendi beğenilerine ve ekranlarında en iyi hissettiklerini ayarlamalarına yardımcı olur."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Renk Sınırını Genişlet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Renk alanı doğrusal alana dönüştürüldüğünde, HDR10'a ulaşmak için genişletilmiş bir renk gamı ​​kullanmamız gerekip gerekmediğine karar verin."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3366,10 +3357,6 @@ MSG_HASH(
    "Algıla"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Kontrolcü Bağlantısı Kesildiğinde İçeriği Duraklat"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "Herhangi bir kontrolcünün bağlantısı kesildiğinde içeriği duraklatın. Başlat ile devam edin."
    )
@@ -3602,14 +3589,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Bağlantıyı kesen ve yeniden bağlanan kontrolcüler için geçici çözüm. Aynı kontrolcüye sahip 2 oyuncuyu engeller."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Çıkış/Kapat/Sıfırla Onaylaması"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Çıkış/Kapat/Sıfırla için kısayol tuşuna iki kez basılması gerekiyor."
-   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -3935,16 +3915,8 @@ MSG_HASH(
    "Sonraki Disk"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Seçili olan disk indeksini artırır. Sanal disk tepsisi açık olmalıdır."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Önceki Disk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Seçili olan disk indeksini azaltır. Sanal disk tepsisi açık olmalıdır."
    )
 
 MSG_HASH(
@@ -4482,6 +4454,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Turbo Ateş"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Bekleme"
    )
 
 /* Settings > Latency */
@@ -9867,41 +9843,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Diski Çıkar"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Mevcut Disk Dizini"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Sanal disk tepsisini açar ve şu anda yüklü olan diski kaldırır. 'Menü Etkinken İçeriği Duraklat' etkinleştirilirse, her disk kontrolü işleminden sonra içerik birkaç saniye devam etmediği sürece bazı çekirdekler değişiklikleri kaydetmeyebilir."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Diski Çıkar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Diski Tak"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "'Mevcut Disk Dizini' kısmına karşılık gelen disk yerleştirir ve sanal disk tepsisini kapatır. 'Menü Etkinken İçeriği Duraklat' etkinleştirilirse, her disk kontrolü işleminden sonra içerik birkaç saniye devam etmediği sürece bazı çekirdekler değişiklikleri kaydetmeyebilir."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Yeni Disk Yükle"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Mevcut diski çıkarın, dosya sisteminden yeni bir disk seçin, sonra takın ve sanal disk tepsisini kapatın.\nNOT: Bu eski bir özellik. Bunun yerine, 'Diski Çıkar/Tak' ve 'Mevcut Disk İndeksi' seçeneklerini kullanarak disk seçimine izin veren M3U çalma listeleri aracılığıyla çok diskli başlıkların yüklenmesi önerilir."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Dosya sisteminden yeni bir disk seçin ve sanal disk tepsisini kapatmadan takın.\nNOT: Bu eski bir özelliktir. Bunun yerine, 'Mevcut Disk Dizini' seçeneğini kullanarak disk seçimine izin veren M3U çalma listeleri aracılığıyla çok diskli başlıkların yüklenmesi önerilir."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Mevcut Disk Dizini"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Kullanılabilir resimler listesinden geçerli diski seçin. 'Disk Ekle' seçildiğinde disk yüklenecektir."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -10885,16 +10842,28 @@ MSG_HASH(
    "<Belirtilmemiş>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Özel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Yok"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Özel>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Sol Analog"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Sağ Analog"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Sol Analog (Zorunlu)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Sağ Analog"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
@@ -11512,6 +11481,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    "Renk Teması Alfa Etkeni"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Yok"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -12218,6 +12191,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
    "Açık Boz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DRACULA,
+   "Drakula"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
@@ -12928,10 +12905,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE,
    "Çevrimiçi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Cihaz Adı: %s (#%d)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -15831,6 +15804,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Konumunuza göre tarih ve saati ayarlamak için saat dilimini seçin."
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Kullanılabilir saat dilimlerinin bir listesini görüntüler. Bir saat dilimi seçtikten sonra, saat ve tarih seçilen saat dilimine göre ayarlanır. Sistem/donanım saatinin UTC olarak ayarlandığını varsayar."
@@ -16189,4 +16180,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "'Oyun YZ' seçeneğini gösterin."
    )
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

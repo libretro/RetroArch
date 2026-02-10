@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -220,6 +234,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
    "Cloud-Synchronisierung manuell auslösen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Konflikte lösen: Lokal behalten"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Alle Konflikte durch Hochladen lokaler Dateien auf den Server lösen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Konflikte lösen: Server behalten"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Alle Konflikte durch Herunterladen von Serverdateien und das Ersetzen lokaler Kopien lösen."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
@@ -2598,7 +2628,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Die Spitzenleuchtdichte (in cd/m2) einstellen, die der Bildschirm wiedergeben kann. Spitzenluminanzwerte findet man z. B. bei RTings."
+   "Die maximale Leuchtdichte (in cd/m²) festlegen, die der Bildschirm darstellen kann. Dieser Wert sollte nach der Einstellung nicht mehr geändert werden. Die Papierweiß-Leuchtdichte dient zur Anpassung der Helligkeit. Die maximale Leuchtdichte des Bildschirms ist auf RTings.com zu finden. Bei einigen Bildschirmen mit Scanlines (siehe unten) kann es erforderlich sein, die Leuchtdichte (und die Papierweiß-Leuchtdichte) zu erhöhen, um die Gesamthelligkeit zu steigern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -2606,24 +2636,41 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Die Leuchtdichte einstellen, die Papierweiß entsprechen soll, d. h. lesbarer Text oder Leuchtdichte am oberen Ende des SDR-Bereichs (Standard Dynamic Range). Nützlich zum Anpassen an unterschiedliche Lichtverhältnisse der Umgebung."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Kontrast"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Gamma-/Kontraststeuerung für HDR. Nimmt die Farben und erhöht den Gesamtbereich zwischen den hellsten und den dunkelsten Teilen des Bildes. Je höher der HDR-Kontrast ist, desto größer wird dieser Unterschied, und je niedriger der Kontrast ist, desto verwaschener wird das Bild. Hilft das Bild nach dem eigenen Bildschirm und Geschmack einzustellen."
+   "Sobald die maximale Leuchtdichte eingestellt ist, diese als Standardhelligkeitseinstellung verwenden. Technisch gesehen legt dies die Leuchtdichte fest, bei der Papierweiß gut lesbar sein sollte - also die Leuchtdichte am oberen Ende des SDR-Bereichs (Standard Dynamic Range)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Gamut erweitern"
+   "Farbverstärkung"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Entscheidet, ob ein erweiterter Farb-Gamut verwendet werden soll, um HDR10 zu erreichen, wenn der Farbraum in den linearen Raum konvertiert wird."
+   "Nutzt den gesamten Farbbereich Ihres Bildschirms, um ein helleres, satteres Bild zu erzeugen. Für Farben, die dem ursprünglichen Spieldesign besser entsprechen, diese Option auf „PRÄZISE” einstellen."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
+   "PRÄZISE"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "ERWEITERT"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "WEIT"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "HDR-Scanlines aktivieren. Scanlines sind der Hauptgrund für die Verwendung von HDR in RetroArch, da eine präzise Scanline-Implementierung den größten Teil des Bildschirms abdunkelt und HDR einen Teil der verlorenen Helligkeit wiederherstellt. Für eine detailliertere Steuerung der Scanlines können die von RetroArch bereitgestellten benutzerdefinierten Shader verwendet werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Subpixel-Layout"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Subpixel-Layout des Bildschirms auswählen. Dies wirkt sich nur auf Scanlines aus. Falls das „Subpixel-Layout“ des Bildschirms nicht bekannt ist, können entsprechende Informationen auf Rtings.com gefunden werden"
+   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3287,7 +3334,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Inhalt pausieren, wenn Controller getrennt wird"
+   "Inhalt beim Trennen des Controllers pausieren"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
@@ -3519,13 +3566,30 @@ MSG_HASH(
    "Problembehebung für Controller, die die Verbindung trennen und wiederherstellen. Betrifft 2 Spieler mit den gleichen Controllern."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Beenden/Schließen/Zurücksetzen bestätigen"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Beenden bestätigen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Verlangt, dass der Hotkey Beenden/Schließen/Zurücksetzen zweimal gedrückt wird."
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Die Taste zum Beenden muss zweimal gedrückt werden."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Inhalt schließen bestätigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Die Taste zum Schießen des Inhalts muss zweimal gedrückt werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Inhalt zurücksetzen bestätigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Die Taste zum Zurücksetzen des Inhalts muss zweimal gedrückt werden."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -3856,7 +3920,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Erhöht den aktuell ausgewählten Disc-Index. Virtuelles Laufwerk muss geöffnet sein."
+   "Erhöht den aktuell ausgewählten Disc-Index und führt einen verzögerten Einzug durch, wenn das virtuelle Disc-Fach geschlossen wird."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3864,7 +3928,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Verringert den aktuell ausgewählten Disc-Index. Virtuelles Laufwerk muss geöffnet sein."
+   "Verringert den aktuell ausgewählten Disc-Index und führt einen verzögerten Einzug durch, wenn das virtuelle Disc-Fach geschlossen wird."
    )
 
 MSG_HASH(
@@ -4402,6 +4466,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Turbofeuer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Halten"
    )
 
 /* Settings > Latency */
@@ -5650,6 +5718,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "Wischgesten-Schwellenwert"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Alt. 2-fach-Toucheingabe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Die zweite Berührung als Maustaste verwenden, während der Cursor gesteuert wird."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
@@ -7087,6 +7163,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
    "Übersetzung als Text-Overlay (Bildmodus), als Text-To-Speech (Sprachmodus) abspielen oder einen System-Erzähler wie NVDA (Erzählermodus) verwenden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+   "KI-Dienst-Backend"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
+   "Das zu verwendenden Übersetzungs-Backends auswählen. HTTP verwendet einen Remote-Server unter der konfigurierten URL. Apple verwendet geräteinterne OCR und Übersetzung (macOS/iOS)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -8547,6 +8631,54 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Scannen"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Scanmethode"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Automatisch oder angepasst mit umfangreichen Optionen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Datenbankprüfung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "„Streng“ fügt nur Elemente hinzu, die mit einem Datenbankeintrag übereinstimmen. „Locker“ fügt auch Dateien mit korrekter Erweiterung hinzu, die jedoch keine Übereinstimmung von CRC/Seriennummern aufweisen. „Angepasste DAT“ führt statt anhand von Datenbanken anhand einer vom Benutzer bereitgestellten XML-Datei eine Überprüfung durch. „Keine“ ignoriert Datenbanken und verwendet nur Dateierweiterungen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "Abgleichende Datenbank"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "Die Suche kann auf eine bestimmte Datenbank oder auf die erste passende Datenbank beschränkt werden, um den Scanvorgang zu beschleunigen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "Zu aktualisierende Wiedergabeliste"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "Die Ergebnisse werden dieser Wiedergabeliste hinzugefügt. Bei „Auto – Beliebig“ können mehrere Systemwiedergabelisten aktualisiert werden. Bei „Angepasst ohne Datenbankverweis“ werden die Einträge nicht mit einer Datenbank in der Wiedergabeliste verknüpft."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Einzelne Datei scannen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Scannt nur eine Datei statt eines Verzeichnisses. Nach Änderung dieses Eintrags muss der Speicherort des Inhalts erneut ausgewählt werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Datenbankverweise aus Wiedergabeliste überspringen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "Bei benutzerdefinierten Playlistnamen immer den Playlistnamen für die Miniaturbildsuche verwenden, auch wenn eine Übereinstimmung in der Datenbank gefunden wurde."
+   )
 
 /* Import Content > Scan File */
 
@@ -9679,12 +9811,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Aktueller Disc-Index"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Die aktuelle Disc aus der Liste der verfügbaren Abbilder auswählen. Das virtuelle Disc-Fach kann geschlossen bleiben."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Disc auswerfen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Virtuelles Disc-Fach öffnen und aktuell geladene Disc entfernen. Wenn 'Inhalt pausieren, wenn das Menü aktiv ist' aktiviert ist, registrieren einige Cores möglicherweise keine Änderungen, es sei denn, der Inhalt wird nach jeder Disc-Steueraktion einige Sekunden lang fortgesetzt."
+   "Virtuelles Disc-Fach öffnen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9692,7 +9832,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Disc einfügen, die dem 'Aktuellen Disc-Index' entspricht, und das virtuelle Laufwerk schließen. Wenn 'Inhalt pausieren, wenn das Menü aktiv ist' aktiviert ist, registrieren einige Cores möglicherweise keine Änderungen, es sei denn, der Inhalt wird nach jeder Disc-Steueraktion einige Sekunden lang fortgesetzt."
+   "Virtuelles Disc-Fach schließen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -9700,20 +9840,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Aktuelle Disc auswerfen, eine neue Disc vom Dateisystem auswählen, einlegen und das virtuelle Disc-Fach schließen.\nHINWEIS: Dies ist eine veraltete Funktion. Es wird stattdessen empfohlen, Multi-Disc-Titel über M3U-Wiedergabelisten zu laden, die die Disc-Auswahl mit den Optionen 'Disc auswerfen/einlegen' und 'Aktueller Disc-Index' ermöglichen."
+   "Eine neue Disc aus dem Dateisystem auswählen und der Indexliste hinzufügen. \nHINWEIS: Dies ist eine veraltete Funktion. Es wird stattdessen empfohlen, für Titel mit mehreren Discs M3U-Wiedergabelisten zu verwenden."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Eine neue Disc vom Dateisystem auswählen und einlegen, ohne das virtuelle Laufwerk zu schließen.\nHINWEIS: Dies ist eine veraltete Funktion. Es wird stattdessen empfohlen, Multi-Disc-Titel über M3U-Wiedergabelisten zu laden, die die Disc-Auswahl mit der Option 'Aktueller Disc-Index ' ermöglichen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Aktueller Disc-Index"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Die aktuelle Disc aus der Liste der verfügbaren Abbilder wählen. Die Disc wird geladen, wenn 'Disc einlegen' ausgewählt wird."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -10677,6 +10806,10 @@ MSG_HASH(
    "<Inhaltsverzeichnis>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<Automatisch>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
    "<Benutzerdefiniert>"
    )
@@ -10685,20 +10818,80 @@ MSG_HASH(
    "<Nicht spezifiziert>"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   "Linker Analogstick"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Vollautomatisch"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Rechter Analogstick"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Benutzerdefiniert"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "Streng"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Locker"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "Angepasste DAT (Streng)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "Angepasste DAT (Locker)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Nein"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<Automatisch/Jede>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<Automatisch/Erste Übereinstimmung>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<Automatisch/Systemname>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Benutzerdefiniert>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "Linker Analogstick"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Analog links (Erzwungen)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Rechter Analogstick"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Analog rechts (Erzwungen)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Linker und rechter Analogstick"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Linker und rechter Analogstick (Erzwungen)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Doppelanalogstick"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Doppelanalogstick (Erzwungen)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
@@ -11272,6 +11465,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    "Alphafaktor für Farbschema"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Aktuelles Menüsymbol"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "Das aktuelle Menüsymbol kann im horizontalen Menü oder im Headertitel ausgeblendet werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Nein"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "Titel"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -12555,7 +12764,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Gerätename: %s (#%d)"
+   "Gerätename Port %d: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -15471,6 +15680,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Zeitzone wählen, um Datum und Zeit an Ihren Standort anzupassen."
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Zeigt eine Liste der verfügbaren Zeitzonen an. Nach Auswahl einer Zeitzone werden Zeit und Datum an die gewählte Zeitzone angepasst. Es wird davon ausgegangen, dass die System-/Hardware-Uhr auf UTC eingestellt ist."
@@ -15820,5 +16047,115 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Die Option „Spiel-KI“ anzeigen."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "SMB-Netzwerkeinstellungen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "SMB-Netzwerkfreigabe-Einstellungen konfigurieren."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "SMB-Client aktivieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "SMB-Netzwerkfreigabe aktivieren. Für eine zuverlässigere Verbindung wird Ethernet gegenüber WLAN dringend empfohlen. Hinweis: Um diese Einstellungen zu ändern, muss RetroArch neu gestartet werden."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "SMB-Server"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "Server-IP-Adresse oder Hostname."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "SMB-Freigabename"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "Name der Netzwerkfreigabe, auf die zugegriffen werden soll."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "SMB-Unterverzeichnis (optional)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "Unterverzeichnispfad auf der Freigabe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "SMB-Benutzername"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "Benutzername für die Authentifizierung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "SMB-Passwort"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "Passwort für die Authentifizierung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "SMB-Arbeitsgruppe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "Arbeitsgruppen- oder Domänenname."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "SMB-Authentifizierungsmodus"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "Auswahl der in der Umgebung verwendeten Authentifizierung."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "Maximale SMB-Verbindungen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Die maximale Anzahl der im Umfeld verwendeten Verbindungen auswählen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "SMB-Zeitüberschreitung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Die Standardzeitüberschreitung in Sekunden auswählen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "SMB-Freigabe durchsuchen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Dateien auf der konfigurierten SMB-Freigabe durchsuchen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "„SMB-Client“ anzeigen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "„SMB-Client“-Einstellungen anzeigen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "SMB-Freigabe"
    )
 #endif

@@ -231,4 +231,5 @@ audio_driver_t audio_rsound = {
    NULL,
    rs_write_avail,
    rs_buffer_size,
+   NULL /* write_raw */
 };

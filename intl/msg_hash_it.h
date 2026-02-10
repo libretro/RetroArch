@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -2609,33 +2623,10 @@ MSG_HASH(
    "Luminosità massima"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Imposta la luminosità massima (in cd/m2) che lo schermo può riprodurre. Vedi RTings per la luminosità massima che può avere il tuo schermo."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Luminanza Bianco libro"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Impostare la luminanza alla quale la carta bianca dovrebbe essere cioè testo o luminanza leggibile nella parte superiore dell'intervallo SDR (Standard Dynamic Range). Utile per la regolazione in diverse condizioni di illuminazione nel vostro ambiente."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Contrasto"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Controllo gamma/contrasto per HDR. Prende i colori e aumenta la gamma complessiva tra le parti più luminose e le parti più scure dell'immagine. Il più alto contrasto HDR è, più grande è questa differenza, mentre più basso è il contrasto, più lavato l'immagine diventa. Aiuta gli utenti a sintonizzare l'immagine a loro piacimento e ciò che sentono sembra meglio sul loro display."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Espandere il Gamut"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Una volta convertito lo spazio di colore in spazio lineare, decidere se utilizzare una gamma di colori espansa per arrivare a HDR10."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3294,10 +3285,6 @@ MSG_HASH(
    "Rileva"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Contenuto in pausa quando il controller si scollega"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "Metti in pausa il contenuto quando un controller è disconnesso. Riprendi con Avvia."
    )
@@ -3526,14 +3513,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Workaround per i controller che si disconnettono e si riconnettono. Impedisci 2 giocatori con i controller identici."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Conferma uscita/Chiudi/Resetta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "È necessario premere due volte il tasto di scelta rapida per uscire/chiudere/resettare."
-   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -3867,16 +3847,8 @@ MSG_HASH(
    "Disco successivo"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Incrementa l'indice del disco attualmente selezionato. Il vassoio del disco virtuale deve essere aperto."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Disco precedente"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Diminuisce l'indice del disco attualmente selezionato. Il vassoio del disco virtuale deve essere aperto."
    )
 
 MSG_HASH(
@@ -4414,6 +4386,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Modalità Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Tieni"
    )
 
 /* Settings > Latency */
@@ -9747,41 +9723,22 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Espelli Disco"
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Indice disco attuale"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Apri il vassoio del disco virtuale e rimuovi il disco attualmente caricato. Se l'opzione \"Metti in pausa il contenuto quando il menu è attivo\" è abilitata, alcuni core potrebbero non rilevare le modifiche a meno che il contenuto non venga ripreso per alcuni secondi dopo ogni operazione di controllo del disco."
+   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   "Espelli Disco"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Inserire disco"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Inserisci il disco corrispondente all'“Indice disco attuale” e chiudi il vassoio del disco virtuale.Se l'opzione \"Metti in pausa il contenuto quando il menu è attivo\" è abilitata, alcuni core potrebbero non rilevare le modifiche a meno che il contenuto non venga ripreso per alcuni secondi dopo ogni operazione di controllo del disco."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Carica nuovo disco"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Espellere il disco corrente, selezionare un nuovo disco dal filesystem quindi inserirlo e chiudere il vassoio del disco virtuale.\nNOTA: Questa è una funzione legacy. Si consiglia invece di caricare titoli multi-disco tramite playlist M3U, che consentono la selezione dei dischi usando le opzioni 'Eject/Insert Disc' e 'Current Disc Index'."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Selezionare un nuovo disco dal filesystem e inserirlo senza chiudere il vassoio del disco virtuale.\nNOTA: Questa è una caratteristica legacy. Si consiglia invece di caricare titoli multi-disco tramite playlist M3U, che consentono la selezione dei dischi utilizzando l'opzione 'Indice disco corrente'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Indice disco attuale"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Scegli il disco corrente dall'elenco delle immagini disponibili. Il disco verrà caricato quando viene selezionato 'Inserisci disco'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -10749,16 +10706,28 @@ MSG_HASH(
    "<Non specificato>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Personalizzato"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Nessuno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Personalizzato>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Analogico sinistro"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Analogico Destro"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Analogico Sinistro (forzato)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Analogico Destro"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
@@ -11336,6 +11305,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    "Colore Tema Fattore Alfa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Icona attuale del menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "L'icona attuale del menu può essere nascosta, sotto il menu orizzontale o nel titolo dell'intestazione."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Nessuno"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Normale"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "Titolo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -12684,10 +12673,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "Porta"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Nome dispositivo porta %d: %s (#%d)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -15607,6 +15592,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Seleziona il tuo fuso orario per regolare la data e l'ora alla tua posizione."
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Visualizza un elenco di fusi orari disponibili. Dopo aver selezionato un fuso orario, l'ora e la data vengono regolate al fuso orario selezionato. Suppone, che l'orologio di sistema/hardware sia impostato su UTC."
@@ -15953,4 +15956,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Mostra l'opzione 'IA Gioco'."
    )
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

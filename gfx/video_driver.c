@@ -59,6 +59,7 @@
 #include "../frontend/frontend_driver.h"
 #include "../record/record_driver.h"
 #include "../ui/ui_companion_driver.h"
+#include "../input/input_overlay.h"
 #include "../driver.h"
 #include "../file_path_special.h"
 #include "../list_special.h"
@@ -1177,7 +1178,7 @@ void video_display_server_destroy(void)
    if (initial_screen_orientation != current_screen_orientation)
       video_display_server_set_screen_orientation(initial_screen_orientation);
 
-   if (current_display_server)
+   if (current_display_server && (current_display_server != &dispserv_null))
       if (video_st->current_display_server_data)
          current_display_server->destroy(video_st->current_display_server_data);
 }
@@ -2200,7 +2201,7 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
 }
 
 void video_driver_update_viewport(
-      struct video_viewport* vp, bool force_full, bool keep_aspect)
+      struct video_viewport* vp, bool force_full, bool keep_aspect, bool y_down)
 {
    settings_t *settings            = config_get_ptr();
    bool video_scale_integer        = settings->bools.video_scale_integer;
@@ -2212,14 +2213,78 @@ void video_driver_update_viewport(
    vp->width                       = vp->full_width;
    vp->height                      = vp->full_height;
 
+#ifdef HAVE_OVERLAY
+   /* Check if active overlay specifies viewport override.
+    * Only apply to game viewport, not UI elements (force_full=true) */
+   if (!force_full)
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+      if (input_st && input_st->overlay_ptr && input_st->overlay_ptr->active)
+      {
+         const struct overlay *ol = input_st->overlay_ptr->active;
+         if (ol->flags & OVERLAY_HAS_VIEWPORT)
+         {
+            /* Calculate overlay's viewport bounds in pixels */
+            int ol_x      = (int)(ol->viewport.x * vp->full_width);
+            int ol_y      = (int)(ol->viewport.y * vp->full_height);
+            unsigned ol_w = (unsigned)(ol->viewport.w * vp->full_width);
+            unsigned ol_h = (unsigned)(ol->viewport.h * vp->full_height);
+            RARCH_LOG("[Overlay] Applying viewport override!\n");
+
+            if (ol->flags & OVERLAY_VIEWPORT_FILL)
+            {
+               /* Fill mode: stretch to fill overlay viewport exactly */
+               vp->x      = ol_x;
+               vp->y      = ol_y;
+               vp->width  = ol_w;
+               vp->height = ol_h;
+            }
+            else
+            {
+               /* Fit mode: preserve aspect ratio within overlay viewport */
+               float game_aspect = video_driver_get_aspect_ratio();
+               float ol_aspect   = (float)ol_w / (float)ol_h;
+
+               if (game_aspect > ol_aspect)
+               {
+                  /* Game is wider - pillarbox (bars top/bottom) */
+                  vp->width  = ol_w;
+                  vp->height = (unsigned)(ol_w / game_aspect);
+                  vp->x      = ol_x;
+                  vp->y      = ol_y + (int)(ol_h - vp->height) / 2;
+               }
+               else
+               {
+                  /* Game is taller - letterbox (bars left/right) */
+                  vp->height = ol_h;
+                  vp->width  = (unsigned)(ol_h * game_aspect);
+                  vp->x      = ol_x + (int)(ol_w - vp->width) / 2;
+                  vp->y      = ol_y;
+               }
+            }
+            return;  /* Skip all other viewport calculations */
+         }
+      }
+   }
+#endif
+
    if (video_scale_integer && !force_full)
       video_viewport_get_scaled_integer(
             vp,
             vp->full_width,
             vp->full_height,
-            video_driver_aspect_ratio, keep_aspect, true);
+            video_driver_aspect_ratio, keep_aspect, y_down);
    else if (keep_aspect && !force_full)
-      video_viewport_get_scaled_aspect(vp, vp->full_width, vp->full_height, true);
+   {
+      /* Calculate device_aspect, using translate_aspect if available
+       * (e.g. for SD TV detection on Raspberry Pi) */
+      float device_aspect = (float)vp->full_width / vp->full_height;
+      if (video_st->current_video_context.translate_aspect)
+         device_aspect = video_st->current_video_context.translate_aspect(
+               video_st->context_data, vp->full_width, vp->full_height);
+      video_viewport_get_scaled_aspect2(vp, vp->full_width, vp->full_height,
+            y_down, device_aspect, video_driver_aspect_ratio);
+   }
 }
 
 void video_driver_restore_cached(void *settings_data)

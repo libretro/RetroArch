@@ -245,7 +245,9 @@ static int filebrowser_parse(
    else if (!string_is_empty(path))
    {
       if (   type_default == FILE_TYPE_SHADER_PRESET
-          || type_default == FILE_TYPE_SHADER)
+          || type_default == FILE_TYPE_SHADER
+          || type_default == FILE_TYPE_OVERLAY
+          || type_default == FILE_TYPE_OSK_OVERLAY)
          filter_ext = true;
 
       if (string_is_equal(label,
@@ -594,9 +596,10 @@ static int menu_displaylist_parse_core_info(
 #endif
 
    /* Check whether we are parsing information for a
-    * core updater/manager entry or the currently loaded core */
-   if (   (info_type == FILE_TYPE_DOWNLOAD_CORE)
-       || (info_type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS))
+    * core updater/load/manager entry or the currently loaded core */
+   if (     info_type == FILE_TYPE_DOWNLOAD_CORE
+         || info_type == FILE_TYPE_CORE
+         || info_type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS)
    {
       core_info_t *core_info_menu = NULL;
 
@@ -609,6 +612,42 @@ static int menu_displaylist_parse_core_info(
    }
    else if (core_info_get_current_core(&core_info) && core_info)
       core_path = core_info->path;
+   else if (info_type == FILE_TYPE_NONE)
+   {
+      core_info_t *core_info_menu = NULL;
+      playlist_t *playlist        = playlist_get_cached();
+
+      core_path = info_path;
+
+      if (playlist)
+      {
+         struct menu_state *menu_st = menu_state_get_ptr();
+         menu_handle_t *menu        = menu_st->driver_data;
+         unsigned idx               = menu->rpl_entry_selection_ptr;
+         const struct playlist_entry *entry = NULL;
+
+         playlist_get_index(playlist, idx, &entry);
+
+         if (entry)
+         {
+            core_path = entry->core_path;
+
+            if (string_is_equal(entry->core_path, FILE_PATH_DETECT))
+            {
+               const char* default_core_path = playlist_get_default_core_path(playlist);
+
+               if (     !string_is_empty(default_core_path)
+                     && !string_is_equal(default_core_path, FILE_PATH_DETECT))
+                  core_path = default_core_path;
+            }
+         }
+      }
+
+      /* Core updater entry - search for corresponding
+       * core info */
+      if (core_info_find(core_path, &core_info_menu))
+         core_info = core_info_menu;
+   }
 
    if (!core_info || !core_info->has_info)
    {
@@ -2040,12 +2079,11 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       {
          if (input_config_get_device_autoconfigured(controller))
          {
-            /* Port and Device Name: s (#n) */
+            /* Port and Device Name */
             snprintf(entry, sizeof(entry), /* Note: format string below */
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
                   controller + 1,
-                  input_config_get_device_name(controller),
-                  input_config_get_device_name_index(controller));
+                  input_config_get_device_name(controller));
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                   MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -2650,9 +2688,9 @@ static int menu_displaylist_parse_playlist(
          {
             /* Both core name and core path must be valid */
             if (   !string_is_empty(entry->core_name)
-                && !string_is_equal(entry->core_name, "DETECT")
+                && !string_is_equal(entry->core_name, FILE_PATH_DETECT)
                 && !string_is_empty(entry->core_path)
-                && !string_is_equal(entry->core_path, "DETECT"))
+                && !string_is_equal(entry->core_path, FILE_PATH_DETECT))
             {
                _len += strlcpy(
                      menu_entry_lbl           + _len,
@@ -4072,6 +4110,22 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
 #endif
+#ifdef HAVE_SMBCLIENT
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+         MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+
+      if (settings->bools.smb_client_enable)
+      {
+         if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS),
+               MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+            count++;
+      }
+#endif
    }
 
    return count;
@@ -5261,8 +5315,24 @@ static unsigned menu_displaylist_parse_content_information(
           * core path are valid */
          if (   !string_is_empty(entry->core_name)
              && !string_is_empty(core_path)
-             && !string_is_equal(core_path, "DETECT"))
+             && !string_is_equal(core_path, FILE_PATH_DETECT))
             strlcpy(core_name, entry->core_name, sizeof(core_name));
+         /* Use playlist default core if set */
+         else if (string_is_equal(entry->core_path, FILE_PATH_DETECT)
+               && string_is_equal(entry->core_name, FILE_PATH_DETECT))
+         {
+            const char* default_core_name = playlist_get_default_core_name(playlist);
+            const char* default_core_path = playlist_get_default_core_path(playlist);
+
+            if (     !string_is_empty(default_core_name)
+                  && !string_is_equal(default_core_name, FILE_PATH_DETECT)
+                  && !string_is_empty(default_core_path)
+                  && !string_is_equal(default_core_path, FILE_PATH_DETECT))
+            {
+               strlcpy(core_name, default_core_name, sizeof(core_name));
+               core_path = default_core_path;
+            }
+         }
       }
    }
    else
@@ -5284,6 +5354,23 @@ static unsigned menu_displaylist_parse_content_information(
          if (!string_is_empty(core_info->display_name))
             strlcpy(core_name, core_info->display_name, sizeof(core_name));
       }
+   }
+
+   /* Core name */
+   if (   !string_is_empty(core_name)
+       && !string_is_equal(core_name, FILE_PATH_DETECT))
+   {
+      size_t _len = strlcpy(tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
+            sizeof(tmp));
+      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      strlcpy(tmp + _len, core_name, sizeof(tmp) - _len);
+
+      if (menu_entries_append(info_list, tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_CORE_NAME),
+            MENU_ENUM_LABEL_CORE_INFORMATION, /* Shortcut to core info */
+            0, 0, 0, NULL))
+         count++;
    }
 
 #ifdef HAVE_LIBRETRODB
@@ -5364,22 +5451,6 @@ static unsigned menu_displaylist_parse_content_information(
       if (menu_entries_append(info_list, tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_PATH),
             MENU_ENUM_LABEL_CONTENT_INFO_PATH,
-            0, 0, 0, NULL))
-         count++;
-   }
-
-   /* Core name */
-   if (   !string_is_empty(core_name)
-       && !string_is_equal(core_name, "DETECT"))
-   {
-      size_t _len = strlcpy(tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
-            sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
-      strlcpy(tmp + _len, core_name, sizeof(tmp) - _len);
-      if (menu_entries_append(info_list, tmp,
-            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_CORE_NAME),
-            MENU_ENUM_LABEL_CORE_INFORMATION, /* Shortcut to core info */
             0, 0, 0, NULL))
          count++;
    }
@@ -5481,9 +5552,13 @@ static unsigned menu_displaylist_parse_disk_options(file_list_t *list)
    /* Check whether disk is currently ejected */
    disk_ejected = disk_control_get_eject_state(&sys_info->disk_control);
 
-   /* Always show a 'DISK_CYCLE_TRAY_STATUS' entry
-    * > These perform the same function, but just have
-    *   different labels/sublabels */
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_INDEX),
+            msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX),
+            MENU_ENUM_LABEL_DISK_INDEX,
+            MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0, NULL))
+      count++;
+
    if (disk_ejected)
    {
       if (menu_entries_append(list,
@@ -5492,22 +5567,16 @@ static unsigned menu_displaylist_parse_disk_options(file_list_t *list)
                MENU_ENUM_LABEL_DISK_TRAY_INSERT,
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0, NULL))
          count++;
-
-      /* Only show disk index if disk is currently ejected */
-      if (menu_entries_append(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_INDEX),
-               msg_hash_to_str(MENU_ENUM_LABEL_DISK_INDEX),
-               MENU_ENUM_LABEL_DISK_INDEX,
-               MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0, NULL))
-         count++;
    }
    else
+   {
       if (menu_entries_append(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT),
                msg_hash_to_str(MENU_ENUM_LABEL_DISK_TRAY_EJECT),
                MENU_ENUM_LABEL_DISK_TRAY_EJECT,
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0, NULL))
          count++;
+   }
 
    /* If core does not support appending images,
     * can stop here */
@@ -8242,7 +8311,20 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
                      MENU_SETTING_ACTION, 0, 0, NULL))
                count++;
-
+#ifdef HAVE_SMBCLIENT
+         {
+            settings_t *settings = config_get_ptr();
+            if (settings->bools.smb_client_enable)
+            {
+               if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE),
+                  msg_hash_to_str(MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE),
+                  MENU_ENUM_LABEL_SMB_CLIENT_BROWSE,
+                  FILE_TYPE_DIRECTORY, 0, 0, NULL))
+                  count++;
+            }
+         }
+#endif
          if (     !settings->bools.kiosk_mode_enable
                &&  settings->bools.settings_show_file_browser)
             menu_entries_append(list,
@@ -8307,7 +8389,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,                 PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS,                 PARSE_ONLY_UINT,  true},
                {MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,                   PARSE_ONLY_BOOL,  true},
-               {MENU_ENUM_LABEL_QUIT_PRESS_TWICE,                      PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_CONFIRM_QUIT,                          PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_CONFIRM_CLOSE,                         PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_CONFIRM_RESET,                         PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,                    PARSE_ONLY_UINT,  true},
                {MENU_ENUM_LABEL_INPUT_BIND_HOLD,                       PARSE_ONLY_UINT,  true},
                {MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,               PARSE_ONLY_BOOL,  true},
@@ -8321,8 +8405,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,           PARSE_ONLY_FLOAT, true},
                {MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,                 PARSE_ONLY_FLOAT, true},
                {MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,              PARSE_ONLY_FLOAT, true},
-               {MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,PARSE_ONLY_FLOAT, true  },
-               {MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,    PARSE_ONLY_FLOAT, true  },
+               {MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,PARSE_ONLY_FLOAT, true},
+               {MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,    PARSE_ONLY_FLOAT, true},
 #if defined(GEKKO)
                {MENU_ENUM_LABEL_INPUT_MOUSE_SCALE,                     PARSE_ONLY_UINT,  true},
 #endif
@@ -8431,6 +8515,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_AI_SERVICE_ENABLE,        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_AI_SERVICE_MODE,          PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_AI_SERVICE_URL,           PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_AI_SERVICE_BACKEND,       PARSE_ONLY_STRING_OPTIONS, false},
                {MENU_ENUM_LABEL_AI_SERVICE_PAUSE,         PARSE_ONLY_BOOL,   false},
                {MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG,   PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_AI_SERVICE_TARGET_LANG,   PARSE_ONLY_UINT,   false},
@@ -8441,6 +8526,7 @@ unsigned menu_displaylist_build_list(
                switch (build_list[i].enum_idx)
                {
                   case MENU_ENUM_LABEL_AI_SERVICE_MODE:
+                  case MENU_ENUM_LABEL_AI_SERVICE_BACKEND:
                   case MENU_ENUM_LABEL_AI_SERVICE_URL:
                   case MENU_ENUM_LABEL_AI_SERVICE_PAUSE:
                   case MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG:
@@ -8792,7 +8878,7 @@ unsigned menu_displaylist_build_list(
                   count++;
 
                if (     string_is_empty(current_core_name)
-                     || string_is_equal(current_core_name, "DETECT"))
+                     || string_is_equal(current_core_name, FILE_PATH_DETECT))
                {
                   menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[0].actiondata;
                   if (cbs)
@@ -8950,6 +9036,147 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+      case DISPLAYLIST_DROPDOWN_LIST_SCAN_METHOD:
+         menu_entries_clear(list);
+         {
+            struct string_list *scan_method_list =
+               manual_content_scan_get_menu_scan_method_list();
+
+            if (scan_method_list)
+            {
+               unsigned current = 0;
+               unsigned i;
+
+               /* Get currently selected system name */
+               current = manual_content_scan_get_scan_method_enum();
+
+               /* Loop through names */
+               for (i = 0; i < scan_method_list->size; i++)
+               {
+                  const char *item = scan_method_list->elems[i].data;
+
+                  /* Add menu entry */
+                  if (menu_entries_append(list,
+                           item,
+                           "",
+                           MENU_ENUM_LABEL_NO_ITEMS,
+                           MENU_SETTING_DROPDOWN_ITEM_SCAN_METHOD,
+                           i, 0, NULL))
+                     count++;
+
+                  /* Check whether current entry is checked */
+                  if (current == i)
+                  {
+                     menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     if (cbs)
+                        cbs->checked            = true;
+                     menu_st->selection_ptr     = i;
+                  }
+               }
+
+               /* Clean up */
+               string_list_free(scan_method_list);
+            }
+         }
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_SCAN_USE_DB:
+         menu_entries_clear(list);
+         {
+            struct string_list *scan_use_db_list =
+               manual_content_scan_get_menu_scan_use_db_list();
+
+            if (scan_use_db_list)
+            {
+               unsigned current = 0;
+               unsigned i;
+
+               /* Get currently selected system name */
+               current = manual_content_scan_get_scan_use_db_enum();
+
+               /* Loop through names */
+               for (i = 0; i < scan_use_db_list->size; i++)
+               {
+                  const char *item = scan_use_db_list->elems[i].data;
+
+                  /* Add menu entry */
+                  if (menu_entries_append(list,
+                           item,
+                           "",
+                           MENU_ENUM_LABEL_NO_ITEMS,
+                           MENU_SETTING_DROPDOWN_ITEM_SCAN_USE_DB,
+                           i, 0, NULL))
+                     count++;
+
+                  /* Check whether current entry is checked */
+                  if (current == i)
+                  {
+                     menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     if (cbs)
+                        cbs->checked            = true;
+                     menu_st->selection_ptr     = i;
+                  }
+               }
+
+               /* Clean up */
+               string_list_free(scan_use_db_list);
+            }
+         }
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_SCAN_DB_SELECT:
+         menu_entries_clear(list);
+         {
+            bool show_hidden_files            = settings->bools.show_hidden_files;
+#ifdef HAVE_LIBRETRODB
+            const char *path_content_database = settings->paths.path_content_database;
+            struct string_list *scan_db_select_list =
+               manual_content_scan_get_menu_scan_db_select_list(
+                     path_content_database,
+                     show_hidden_files);
+#else
+            struct string_list *scan_db_select_list =
+               manual_content_scan_get_menu_scan_db_select_list(NULL,
+                     show_hidden_files);
+#endif
+
+            if (scan_db_select_list)
+            {
+               const char *current_system_name = NULL;
+               unsigned i;
+
+               /* Get currently selected system name */
+               manual_content_scan_get_menu_scan_db_select(&current_system_name);
+
+               /* Loop through names */
+               for (i = 0; i < scan_db_select_list->size; i++)
+               {
+                  /* Note: manual_content_scan_get_system_name_list()
+                   * ensures that system_name cannot be empty here */
+                  const char *system_name = scan_db_select_list->elems[i].data;
+
+                  /* Add menu entry */
+                  if (menu_entries_append(list,
+                           system_name,
+                           "",
+                           MENU_ENUM_LABEL_NO_ITEMS,
+                           MENU_SETTING_DROPDOWN_ITEM_SCAN_DB_SELECT,
+                           i, 0, NULL))
+                     count++;
+
+                  /* Check whether current entry is checked */
+                  if (string_is_equal(current_system_name, system_name))
+                  {
+                     menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                     if (cbs)
+                        cbs->checked            = true;
+                     menu_st->selection_ptr     = i;
+                  }
+               }
+
+               /* Clean up */
+               string_list_free(scan_db_select_list);
+            }
+         }
+         break;
       case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
          menu_entries_clear(list);
          /* Get system name list */
@@ -9055,84 +9282,79 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
          menu_entries_clear(list);
          {
+            unsigned i;
+            unsigned num_images           = 0;
+            unsigned current_image        = 0;
+            unsigned num_digits           = 0;
             rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
 
-            if (sys_info)
+            if (!sys_info || !disk_control_enabled(&sys_info->disk_control))
+               break;
+
+            num_images    = disk_control_get_num_images(&sys_info->disk_control);
+            current_image = disk_control_get_image_index(&sys_info->disk_control);
+
+            /* If core supports labels, index value string
+             * should be padded to maximum width (otherwise
+             * labels will be misaligned/ugly) */
+            if (disk_control_image_label_enabled(&sys_info->disk_control))
             {
-               if (disk_control_enabled(&sys_info->disk_control))
+               unsigned digit_counter = num_images;
+               do
                {
-                  unsigned i;
-                  unsigned num_images    =
-                        disk_control_get_num_images(&sys_info->disk_control);
-                  unsigned current_image =
-                        disk_control_get_image_index(&sys_info->disk_control);
-                  unsigned num_digits    = 0;
+                  num_digits++;
+                  digit_counter = digit_counter / 10;
+               } while (digit_counter > 0);
+            }
 
-                  /* If core supports labels, index value string
-                   * should be padded to maximum width (otherwise
-                   * labels will be misaligned/ugly) */
-                  if (disk_control_image_label_enabled(&sys_info->disk_control))
-                  {
-                     unsigned digit_counter = num_images;
-                     do
-                     {
-                        num_digits++;
-                        digit_counter = digit_counter / 10;
-                     } while (digit_counter > 0);
-                  }
+            /* Loop through disk images */
+            for (i = 0; i < num_images; i++)
+            {
+               size_t _len;
+               char current_image_str[PATH_MAX_LENGTH];
+               char image_label[128];
 
-                  /* Loop through disk images */
-                  for (i = 0; i < num_images; i++)
-                  {
-                     size_t _len;
-                     char current_image_str[PATH_MAX_LENGTH];
-                     char image_label[128];
+               current_image_str[0] = '\0';
+               image_label[0]       = '\0';
 
-                     current_image_str[0] = '\0';
-                     image_label[0]       = '\0';
+               /* Get image label, if supported by core */
+               disk_control_get_image_label(
+                     &sys_info->disk_control,
+                     i, image_label, sizeof(image_label));
 
-                     /* Get image label, if supported by core */
-                     disk_control_get_image_label(
-                           &sys_info->disk_control,
-                           i, image_label, sizeof(image_label));
+               _len = snprintf(
+                     current_image_str, sizeof(current_image_str),
+                     "%0*u", num_digits, i + 1);
 
-                     _len = snprintf(
-                           current_image_str, sizeof(current_image_str),
-                           "%0*u", num_digits, i + 1);
+               /* Get string representation of disk index
+                * > Note that displayed index starts at '1',
+                *   not '0' */
+               if (!string_is_empty(image_label))
+               {
+                  _len += strlcpy(current_image_str + _len,
+                        ": ",
+                        sizeof(current_image_str)   - _len);
+                  strlcpy(current_image_str         + _len,
+                        image_label,
+                        sizeof(current_image_str)   - _len);
+               }
 
-                     /* Get string representation of disk index
-                      * > Note that displayed index starts at '1',
-                      *   not '0' */
-                     if (!string_is_empty(image_label))
-                     {
-                        /* Note: 2-space gap is intentional
-                         * (for clarity) */
-                        _len += strlcpy(current_image_str + _len,
-                              ":  ",
-                              sizeof(current_image_str)   - _len);
-                        strlcpy(current_image_str         + _len,
-                              image_label,
-                              sizeof(current_image_str)   - _len);
-                     }
+               /* Add menu entry */
+               if (menu_entries_append(list,
+                        current_image_str,
+                        "",
+                        (enum msg_hash_enums)MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
+                        MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
+                        i, 0, NULL))
+                  count++;
 
-                     /* Add menu entry */
-                     if (menu_entries_append(list,
-                              current_image_str,
-                              "",
-                              MENU_ENUM_LABEL_NO_ITEMS,
-                              MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
-                              i, 0, NULL))
-                        count++;
-
-                     /* Check whether current disk is selected */
-                     if (i == current_image)
-                     {
-                        menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
-                        if (cbs)
-                           cbs->checked            = true;
-                        menu_st->selection_ptr     = i;
-                     }
-                  }
+               /* Check whether current disk is selected */
+               if (i == current_image)
+               {
+                  menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
+                  if (cbs)
+                     cbs->checked           = true;
+                  menu_st->selection_ptr    = i;
                }
             }
          }
@@ -9175,6 +9397,9 @@ unsigned menu_displaylist_build_list(
             bool network_remote_enable   = settings->bools.network_remote_enable;
 
             menu_displaylist_build_info_selective_t build_list[] = {
+#ifdef HAVE_SMBCLIENT
+               {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,                PARSE_ACTION,      true},
+#endif
                {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,                PARSE_ONLY_STRING, false},
@@ -9690,6 +9915,7 @@ unsigned menu_displaylist_build_list(
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_MENU_SETTINGS,                                         PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,                                   PARSE_ACTION,      true},
+               {MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,                                   PARSE_ACTION,      true},
                {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,                       PARSE_ACTION,      true},
 #if defined(HAVE_OVERLAY)
                {MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,                             PARSE_ACTION,      true},
@@ -9698,12 +9924,12 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_PAUSE_LIBRETRO,                                        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_PAUSE_NONACTIVE,                                       PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,                                   PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_QUIT_ON_CLOSE_CONTENT,                                 PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_SAVESTATE_RESUME,                                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_INSERT_DISK_RESUME,                               PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,                                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_REMEMBER_SELECTION,                               PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_STARTUP_PAGE,                                     PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_QUIT_ON_CLOSE_CONTENT,                                 PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS,                                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,                                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,                              PARSE_ONLY_STRING, false},
@@ -10130,14 +10356,24 @@ unsigned menu_displaylist_build_list(
                            MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS,
                            PARSE_ONLY_FLOAT, false) == 0)
                      count++;
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                           MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST,
-                           PARSE_ONLY_FLOAT, false) == 0)
-                     count++;
+
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_HDR_SCANLINES,
                            PARSE_ONLY_BOOL, false) == 0)
                      count++;
+                     
+                  if(settings->bools.video_hdr_scanlines)
+                  {
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+                  }
                }
             }
          }
@@ -10280,6 +10516,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SAMBA_ENABLE,                                          PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_BLUETOOTH_ENABLE,                                      PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_LOCALAP_ENABLE,                                        PARSE_ONLY_BOOL},
+#ifdef HAVE_RETROFLAG
+               {MENU_ENUM_LABEL_SAFESHUTDOWN_ENABLE,                                   PARSE_ONLY_BOOL},
+#endif
                {MENU_ENUM_LABEL_TIMEZONE,                                              PARSE_ONLY_STRING_OPTIONS},
             };
 
@@ -10445,7 +10684,7 @@ unsigned menu_displaylist_build_list(
 
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,                      PARSE_ONLY_BOOL,  true  },
-               {MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED,                PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED,                PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_OVERLAY_PRESET,                            PARSE_ONLY_PATH,  false },
                {MENU_ENUM_LABEL_OVERLAY_OPACITY,                           PARSE_ONLY_FLOAT, false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_BEHIND_MENU,                 PARSE_ONLY_BOOL,  false },
@@ -10488,6 +10727,7 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE:
+                  case MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
                   case MENU_ENUM_LABEL_OVERLAY_PRESET:
                   case MENU_ENUM_LABEL_OVERLAY_OPACITY:
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_POINTER_ENABLE:
@@ -10537,14 +10777,7 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS:
-                     /* Show keyboard menu if the main overlay has
-                      * an osk_toggle or if the OSK hotkey is set */
-                     if (input_overlay_enable &&
-                         (BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_OSK_TOGGLE)
-                          || input_config_binds[0][RARCH_OSK].joykey  != NO_BTN
-                          || input_config_binds[0][RARCH_OSK].joyaxis != AXIS_NONE
-                          || input_config_binds[0][RARCH_OSK].key     != RETROK_UNKNOWN
-                          || input_config_binds[0][RARCH_OSK].mbutton != NO_BTN))
+                     if (input_overlay_enable)
                         build_list[i].checked = true;
                      break;
                   default:
@@ -10632,6 +10865,10 @@ unsigned menu_displaylist_build_list(
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
                   PARSE_ONLY_FLOAT, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+                  PARSE_ONLY_UINT, false) == 0)
             count++;
          break;
 #endif
@@ -11120,6 +11357,23 @@ unsigned menu_displaylist_build_list(
                       MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
+                  count++;
+            }
+
+            /* Add action items when cloud sync is enabled */
+            if (settings->bools.cloud_sync_enable)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_NOW,
+                     PARSE_ACTION, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+                     PARSE_ACTION, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+                     PARSE_ACTION, false) == 0)
                   count++;
             }
          }
@@ -11874,6 +12128,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_XMB_SWITCH_ICONS,                             PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_RGUI_SWITCH_ICONS,                       PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_SWITCH_ICONS,                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_XMB_CURRENT_MENU_ICON,                        PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_HEADER_ICON,                            PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_HEADER_SEPARATOR,                       PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_COLLAPSE_SIDEBAR,                       PARSE_ONLY_BOOL,   true},
@@ -12083,6 +12338,59 @@ unsigned menu_displaylist_build_list(
 #endif /* HAVE_CDROM */
          break;
 #endif /* HAVE_LAKKA */
+#ifdef HAVE_SMBCLIENT
+      case DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST:
+         {
+            bool smb_enable = settings->bools.smb_client_enable;
+
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_SMB_CLIENT_ENABLE,    PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_SMB_CLIENT_SERVER,    PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_SHARE,     PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_SUBDIR,    PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_USERNAME,  PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD,  PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP, PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE,    PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS, PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT,      PARSE_ONLY_UINT, false},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               switch (build_list[i].enum_idx)
+               {
+                  case MENU_ENUM_LABEL_SMB_CLIENT_SERVER:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_SHARE:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_SUBDIR:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_USERNAME:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT:
+                     if (smb_enable)
+                        build_list[i].checked = true;
+                     break;
+                  default:
+                     break;
+               }
+            }
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (!build_list[i].checked && !include_everything)
+                  continue;
+
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,
+                        build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
+#endif
       default:
          break;
    }
@@ -14723,6 +15031,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_SORT_MODE:
+         case DISPLAYLIST_DROPDOWN_LIST_SCAN_METHOD:
+         case DISPLAYLIST_DROPDOWN_LIST_SCAN_USE_DB:
+         case DISPLAYLIST_DROPDOWN_LIST_SCAN_DB_SELECT:
          case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
          case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
          case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
@@ -14777,6 +15088,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_GAME_AI
          case DISPLAYLIST_OPTIONS_GAME_AI:
 #endif
+#ifdef HAVE_SMBCLIENT
+         case DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST:
+         case DISPLAYLIST_OPTIONS_SMB_CLIENT:
+#endif
          case DISPLAYLIST_OPTIONS_OVERRIDES:
             menu_entries_clear(info->list);
             count = menu_displaylist_build_list(info->list,
@@ -14802,6 +15117,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
                   case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE:
                   case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_SORT_MODE:
+                  case DISPLAYLIST_DROPDOWN_LIST_SCAN_METHOD:
+                  case DISPLAYLIST_DROPDOWN_LIST_SCAN_USE_DB:
+                  case DISPLAYLIST_DROPDOWN_LIST_SCAN_DB_SELECT:
                   case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
                   case DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
                   case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:

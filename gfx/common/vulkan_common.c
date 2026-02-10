@@ -47,6 +47,19 @@
 #define VENDOR_ID_NV 0x10DE
 #define VENDOR_ID_INTEL 0x8086
 
+#ifdef __APPLE__
+#if VK_HEADER_VERSION < 216
+/* Portability enumeration extension for MoltenVK through Vulkan loader.
+ * These may not be defined in older Vulkan headers. */
+#ifndef VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME
+#define VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME "VK_KHR_portability_enumeration"
+#endif
+#ifndef VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR
+#define VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR 0x00000001
+#endif
+#endif
+#endif
+
 #if defined(_WIN32) || defined(__APPLE__)
 #define VULKAN_EMULATE_MAILBOX
 #endif
@@ -396,6 +409,15 @@ static bool vulkan_find_instance_extensions(
    memcpy((void*)(enabled + count), exts, num_exts * sizeof(*exts));
    count += num_exts;
 
+
+   for (i = 0; i < num_exts; i++)
+   {
+      if (vulkan_find_extensions(&exts[i], 1, properties, property_count))
+         RARCH_DBG("[Vulkan] Instance extension supported: %s.\n", exts[i]);
+      else
+         RARCH_DBG("[Vulkan] Instance extension NOT supported: %s.\n", exts[i]);
+   }
+
    for (i = 0; i < num_optional_exts; i++)
       if (vulkan_find_extensions(&optional_exts[i], 1, properties, property_count))
          enabled[count++] = optional_exts[i];
@@ -443,9 +465,31 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu,
    memcpy((void*)(enabled + count), exts, num_exts * sizeof(*exts));
    count += num_exts;
 
+   for (i = 0; i < num_exts; i++)
+   {
+      if (vulkan_find_extensions(&exts[i], 1, properties, property_count))
+      {
+         RARCH_DBG("[Vulkan] Device extension supported: %s.\n", exts[i]);
+         enabled[count++] = exts[i];
+      }
+      else
+      {
+         RARCH_DBG("[Vulkan] Device extension NOT supported: %s.\n", exts[i]);
+      }
+   }
+
    for (i = 0; i < num_optional_exts; i++)
+   {
       if (vulkan_find_extensions(&optional_exts[i], 1, properties, property_count))
+      {
+         RARCH_DBG("[Vulkan] Optional device extension supported: %s.\n", optional_exts[i]);
          enabled[count++] = optional_exts[i];
+      }
+      else
+      {
+         RARCH_DBG("[Vulkan] Optional device extension NOT supported: %s.\n", optional_exts[i]);
+      }
+   }
 
 end:
    free(properties);
@@ -525,14 +569,13 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 }
 
 static const char *vulkan_device_extensions[]  = {
-   "VK_KHR_swapchain",
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-   "VK_EXT_full_screen_exclusive"
-#endif
+   "VK_KHR_swapchain"
 };
 
 static const char *vulkan_optional_device_extensions[] = {
    "VK_KHR_sampler_mirror_clamp_to_edge",
+   "VK_EXT_full_screen_exclusive",
+   "VK_KHR_portability_subset"
 };
 
 static VkDevice vulkan_context_create_device_wrapper(
@@ -800,6 +843,16 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
           return false;
       }
 
+      vk->fse_supported = false;
+      for (unsigned i = 0; i < enabled_device_extension_count; i++)
+      {
+         if (!strcmp(enabled_device_extensions[i], "VK_EXT_full_screen_exclusive"))
+         {
+            vk->fse_supported = true;
+            break;
+         }
+      }
+
       queue_info.queueFamilyIndex         = vk->context.graphics_queue_index;
       queue_info.queueCount               = 1;
       queue_info.pQueuePriorities         = &one;
@@ -855,6 +908,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 #endif
 
 static const char *vulkan_optional_instance_extensions[] = {
+#ifdef __APPLE__
+   VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+#endif
 #ifdef VULKAN_HDR_SWAPCHAIN
    VULKAN_COLORSPACE_EXTENSION_NAME
 #endif
@@ -892,7 +948,6 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
          break;
       case VULKAN_WSI_WIN32:
          required_extensions[required_extension_count++] = "VK_KHR_win32_surface";
-         required_extensions[required_extension_count++] = "VK_KHR_get_surface_capabilities2";
          break;
       case VULKAN_WSI_XLIB:
          required_extensions[required_extension_count++] = "VK_KHR_xlib_surface";
@@ -941,6 +996,18 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       if (string_is_equal(instance_extensions[i], VULKAN_COLORSPACE_EXTENSION_NAME))
       {
          vk->context.flags |= VK_CTX_FLAG_HDR_SUPPORT;
+         break;
+      }
+   }
+#endif
+
+#ifdef __APPLE__
+   /* Check if portability enumeration was enabled (needed for Vulkan loader to find MoltenVK) */
+   for (i = 0; i < info.enabledExtensionCount; i++)
+   {
+      if (string_is_equal(instance_extensions[i], VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME))
+      {
+         info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
          break;
       }
    }
@@ -1940,21 +2007,21 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    settings_t                    *settings = config_get_ptr();
    bool vsync                              = settings->bools.video_vsync;
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
+   bool fse_supported;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
-   HMONITOR fse_monitor;
-   VkSurfaceFullScreenExclusiveWin32InfoEXT fs_win32 = {
-       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
-       NULL,
-       NULL
+   HMONITOR hmonitor;
+   VkSurfaceFullScreenExclusiveInfoEXT fse_info = {
+      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
+      NULL,
+      video_windowed_fullscreen
+         ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
+         : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
    };
-   /* Allow or disallow exclusive fullscreen based on user setting. */
-   VkSurfaceFullScreenExclusiveInfoEXT fs_info       = {
-       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
-       NULL,
-       video_windowed_fullscreen
-           ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
-           : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
+   VkSurfaceFullScreenExclusiveWin32InfoEXT fse_win32_info = {
+      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
+      NULL,
+      NULL
    };
 #endif
 
@@ -2305,20 +2372,24 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-   /* Tie exclusive mode to the window's monitor. */
-   fse_monitor       = MonitorFromWindow(GetActiveWindow(), MONITOR_DEFAULTTONEAREST);
-   fs_win32.hmonitor = fse_monitor;
-   /* Allow or disallow exclusive fullscreen based on user setting. */
-   fs_info.pNext     = &fs_win32;
-   /* Attach fullscreen info to swapchain creation struct. */
-   info.pNext        = &fs_info;
+   if (vk->fse_supported)
+   {
+      hmonitor                = MonitorFromWindow(GetActiveWindow(), MONITOR_DEFAULTTONEAREST);
+      fse_win32_info.hmonitor = hmonitor;
+      fse_info.pNext          = &fse_win32_info;
+      info.pNext              = &fse_info;
+   }
 #endif
 
-   if (vkCreateSwapchainKHR(vk->context.device,
-            &info, NULL, &vk->swapchain) != VK_SUCCESS)
    {
-      RARCH_ERR("[Vulkan] Failed to create swapchain.\n");
-      return false;
+      VkResult res = vkCreateSwapchainKHR(vk->context.device,
+               &info, NULL, &vk->swapchain);
+      if (res != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan] Failed to create swapchain (err = %d).\n",
+               (int)res);
+         return false;
+      }
    }
 
    vk->context.swapchain_width        = swapchain_size.width;
@@ -2413,7 +2484,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          int use_mab                      = settings->bools.video_use_metal_arg_buffers;
          setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", use_mab ? "1" : "0", 1);
       }
-      if (__builtin_available(macOS 10.15, iOS 13, tvOS 12, *))
+      /* Try Vulkan loader first (enables validation layers if installed).
+       * Falls back to MoltenVK directly if loader not available. */
+      vulkan_library = dylib_load("libvulkan.dylib");
+      if (!vulkan_library && __builtin_available(macOS 10.15, iOS 13, tvOS 12, *))
          vulkan_library = dylib_load("MoltenVK");
       if (!vulkan_library)
          vulkan_library = dylib_load("MoltenVK-v1.2.7.framework");
@@ -2682,7 +2756,8 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 
    if (err != VK_SUCCESS || result != VK_SUCCESS)
    {
-      RARCH_LOG("[Vulkan] QueuePresent failed, destroying swapchain.\n");
+      RARCH_LOG("[Vulkan] QueuePresent failed (err = %d, result = %d), destroying swapchain.\n",
+            (int)err, (int)result);
       vulkan_destroy_swapchain(vk);
    }
 

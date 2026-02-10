@@ -242,39 +242,13 @@ static INLINE void psp_set_tex_coords (psp1_sprite_t* framecoords,
    }
 }
 
-static void psp_update_viewport(psp1_video_t* psp,
-      video_frame_info_t *video_info)
+static void psp_update_viewport(psp1_video_t* psp)
 {
-   int x                     = 0;
-   int y                     = 0;
-   float device_aspect       = ((float)SCEGU_SCR_WIDTH) / SCEGU_SCR_HEIGHT;
-   float width               = SCEGU_SCR_WIDTH;
-   float height              = SCEGU_SCR_HEIGHT;
-   settings_t *settings      = config_get_ptr();
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+   psp->vp.full_width  = SCEGU_SCR_WIDTH;
+   psp->vp.full_height = SCEGU_SCR_HEIGHT;
+   video_driver_update_viewport(&psp->vp, false, psp->keep_aspect, true);
 
-   if (video_scale_integer)
-   {
-      video_viewport_get_scaled_integer(&psp->vp, SCEGU_SCR_WIDTH,
-            SCEGU_SCR_HEIGHT, video_driver_get_aspect_ratio(), psp->keep_aspect, true);
-      width  = psp->vp.width;
-      height = psp->vp.height;
-   }
-   else if (psp->keep_aspect)
-   {
-      video_viewport_get_scaled_aspect(&psp->vp, width, height, true);
-      width  = psp->vp.width;
-      height = psp->vp.height;
-   }
-   else
-   {
-      psp->vp.x      = 0;
-      psp->vp.y      = 0;
-      psp->vp.width  = width;
-      psp->vp.height = height;
-   }
-
+   /* Ensure even dimensions */
    psp->vp.width  += psp->vp.width  & 0x1;
    psp->vp.height += psp->vp.height & 0x1;
 
@@ -282,7 +256,6 @@ static void psp_update_viewport(psp1_video_t* psp,
          psp->vp.y, psp->vp.width, psp->vp.height, psp->rotation);
 
    psp->should_resize = false;
-
 }
 
 
@@ -542,7 +515,7 @@ static bool psp_frame(void *data, const void *frame,
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
 
    if (psp->should_resize)
-      psp_update_viewport(psp, video_info);
+      psp_update_viewport(psp);
 
    psp_set_tex_coords(psp->frame_coords, width, height);
 
@@ -753,8 +726,9 @@ static const video_poke_interface_t psp_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void psp_get_poke_interface(void *data,

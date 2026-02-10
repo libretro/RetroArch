@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -214,6 +228,22 @@ MSG_HASH(
    "Starta molnsynkronisering manuellt."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Lös konflikter: Behåll lokal"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Lös alla konflikter genom att ladda upp lokala filer till servern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Lös konflikter: Behåll server"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Lös alla konflikter genom att ladda ner serverfiler, ersätter lokala kopior."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut är inaktiverat."
    )
@@ -253,7 +283,7 @@ MSG_HASH( /* FIXME Maybe add a description? */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FAVORITES,
-   "Start katalog"
+   "Startkatalog"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
@@ -1976,7 +2006,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "VARNING: Snabbt flimmer kan orsaka bildbeständighet på vissa skärmar. Använd på egen risk // Simulerar en grundläggande rullande scanline över flera underrutor genom att dela upp skärmen vertikalt och rendera varje del av skärmen beroende på hur många underrutor det finns."
+   "VARNING: Snabbt flimmer kan orsaka bildbeständighet på vissa skärmar. Använd på egen risk // Simulerar en grundläggande rullande skanningslinje över flera underrutor genom att dela upp skärmen vertikalt och rendera varje del av skärmen beroende på hur många underrutor det finns."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
@@ -1988,15 +2018,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
-   "Rullande skanlinjesimulering"
+   "Rullande skanningslinjesimulering"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "VARNING: Snabbt flimmer kan orsaka bildbeständighet på vissa skärmar. Använd på egen risk // Simulerar en grundläggande rullande scanline över flera underrutor genom att dela upp skärmen vertikalt och rendera varje del av skärmen beroende på hur många underrutor det finns."
+   "VARNING: Snabbt flimmer kan orsaka bildbeständighet på vissa skärmar. Använd på egen risk // Simulerar en grundläggande rullande skanningslinje över flera underrutor genom att dela upp skärmen vertikalt och rendera varje del av skärmen beroende på hur många underrutor det finns."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
-   "Simulerar en grundläggande rullande scanline över flera subframes genom att dela upp skärmen vertikalt och rendera varje del av skärmen enligt hur många subframes det finns från toppen av skärmen och nedåt."
+   "Simulerar en grundläggande rullande skanningslinje över flera subframes genom att dela upp skärmen vertikalt och rendera varje del av skärmen enligt hur många subframes det finns från toppen av skärmen och nedåt."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -2124,6 +2154,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
    "Bläddra igenom dessa alternativ för att justera de horisontella inställningarna och ändra bildstorleken."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   "Vertikal centrering"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -2558,7 +2592,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Ställ in den högsta ljusstyrka (i cd/m2) som bildskärmen kan reproducera. Se bruksanvisning för bildskärmens högsta ljusstyrka."
+   "Ställ in den maximala luminansen (i cd/m2) som din skärm kan återge. När du har ställt in den ska du inte ändra den. Använd Paper White Luminance för att ställa in ljusstyrkan. Se RTings.com för din skärms maximala luminans. På vissa skärmar med skanningslinjer aktiverade (nedan) kan du behöva överdriva detta (och pappervit) för att höja den totala ljusstyrkan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -2566,24 +2600,45 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Ställ in ljusstyrka vid vilken vitt papper ska vara, nämligen läsbar text eller ljusstyrka överst i SDR (Standard Dynamic Range). Användbar för att anpassa till olika ljusförhållanden i din miljö."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Kontrast"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Gamma/kontrastkontroll för HDR. Tar färgerna och ökar det totala intervallet mellan de ljusaste och mörkaste delarna av bilden. Ju högre HDR-kontrasten är, desto större blir denna skillnad, medan ju lägre kontrasten är, desto mer urtvättad blir bilden. Hjälper användarna att ställa in bilden efter deras smak och vad de tycker ser bäst ut på deras display."
+   "När maximal luminans har ställts in använder du denna som standardinställning för ljusstyrka. Tekniskt sett ställer detta in den luminans som papperets vita yta ska ha, dvs. läsbar text eller luminans i toppen av SDR-intervallet (Standard Dynamic Range)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Expandera Gamma"
+   "Färgförstärkning"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "När färgrymden har konverterats till linjär rymd, bestäm om ett utökat färgomfång ska användas för att komma till HDR10."
+   "Använder skärmens hela färgskala för att skapa en ljusare och mer mättad bild. För färger som är mer trogna den ursprungliga speldesignen, ange detta till NOGGRANN."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
+   "NOGGRANN"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "EXPANDERAD"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "BRED"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Skanningslinjer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "Aktivera HDR-skanningslinjer. Skanningslinjer är den främsta anledningen till att använda HDR i RetroArch, eftersom en korrekt implementering av skanningslinjer stänger av större delen av skärmen och HDR återställer en del av den förlorade ljusstyrkan. Om du behöver mer kontroll över dina skanningslinjer kan du använda de anpassade skuggare som RetroArch tillhandahåller."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Subpixel-layout"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Välj din skärms subpixel-layout, detta påverkar endast skanningslinjer. Om du inte vet vad din skärms subpixel-layout är, se Rtings.com för din skärms ”subpixel-layout”"
+   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3247,7 +3302,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Pausa Innehåll när spelkontroll kopplas från"
+   "Pausa innehåll vid frånkoppling av styrenhet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
@@ -3339,6 +3394,14 @@ MSG_HASH(
    "Turboperiod"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "Perioden i bildrutor när turboaktiverade knappar trycks ner."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
+   "Antalet bildrutor från Turboperiod som knapparna hålls ner för. Om detta antal är lika med eller större än Turboperiod, kommer knapparna aldrig att släppas."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
    "Halv period"
    )
@@ -3364,7 +3427,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Singel knapp (Intryckt)"
+   "En knapp (intryckt)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
@@ -3393,6 +3456,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
    "Turbo-knapp"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   "Målknapp för turbo i \"En knapp\"-läget."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
@@ -3463,13 +3530,30 @@ MSG_HASH(
    "Lösning för kontroller som kopplas bort och återansluts. Förhindrar 2 spelare med identiska kontroller."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Bekräfta avsluta/stänga/återställ"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Bekräfta avslutning"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Kräv att snabbtangent för avsluta/stänga/återställ trycks två gånger."
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Kräv att snabbtangenten för avslutning trycks ner två gånger."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Bekräfta stängning av innehåll"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Kräv att snabbtangenten för stäng innehåll trycks ner två gånger."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Bekräfta omstart av innehåll"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Kräv att snabbtangenten för omstart av innehåll trycks ner två gånger."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -3665,11 +3749,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
-   "Återställ innehåll"
+   "Starta om innehåll"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RESET,
-   "Startar om innehåll från början."
+   "Startar om aktuellt innehåll från början."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
@@ -3800,7 +3884,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Ökar det aktuellt valda skivindexet. Virtuellt skivfack måste vara öppet."
+   "Ökar det aktuella valda skivindexet och gör en fördröjd insättning om den virtuella skivfacket är stängt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3808,7 +3892,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Minskar det aktuellt valda skivindexet. Virtuellt skivfack måste vara öppet."
+   "Minskar det aktuella valda skivindexet och gör en fördröjd insättning om den virtuella skivfacket är stängt."
    )
 
 MSG_HASH(
@@ -4086,7 +4170,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
-   "Växlar aktuell Netplay session mellan lägena 'Spela' och 'Åskådare'."
+   "Växlar aktuell Netplay-session mellan 'Spela' och 'Åskådare'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
@@ -4347,6 +4431,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Turbo-avfyrning"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Håll in"
+   )
 
 /* Settings > Latency */
 
@@ -4407,6 +4495,10 @@ MSG_HASH(
 
 /* Settings > Core */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+   "Delad kontext för hårdvara"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    "Ge hårdvarurenderade kärnor en egen privat kontext. Undviker att behöva anta att hårdvaran ändrar tillstånd mellan bildrutor."
@@ -5558,6 +5650,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
    "Justera den tillåtna tiden mellan tryckningarna när en dubbeltryckning upptäcks."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Använd andra pekning som en musknapp vid kontroll av markören."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -6993,6 +7089,14 @@ MSG_HASH(
    "Visa översättningen som ett textöverlägg (Bildläge), spela upp som text-till-tal (Tal) eller använd en systemberättare som NVDA (Berättare)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+   "Bakände för AI-tjänst"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
+   "Välj vilken översättningsbakände att använda. HTTP använder en fjärrserver på den konfigurerade webbadressen. Apple använder OCR-enhet och översättning (macOS/iOS)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "AI-tjänst URL"
    )
@@ -7395,7 +7499,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
-   "Netplay Åskådarläge"
+   "Åskådarläge för Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
@@ -7466,12 +7570,20 @@ MSG_HASH(
    "Frekvensen i bildrutor med vilken netplay kommer att verifiera att värden och klienten är synkroniserade. Med de flesta kärnor har detta värde ingen synlig effekt och kan ignoreras. Med icke-bestämbara kärnor avgör detta värde hur ofta netplay-peers kommer att synkroniseras. Med buggiga kärnor kommer det att orsaka allvarliga prestandaproblem om detta värde sätts till något annat än noll. Ställ in på noll för att inte utföra några kontroller. Detta värde används endast på ne[...]"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   "Bildrutor för inmatningslatens"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
    "Antalet bildrutor med inmatningslatens som netplay ska använda för att dölja nätverkslatens. Minskar jitter och gör netplay mindre CPU-krävande, men på bekostnad av märkbar fördröjning i inmatningen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
    "Antalet bildrutor med inmatningsfördröjning som netplay ska använda för att dölja nätverksfördröjning.\nNär det här alternativet används i netplay fördröjer det lokal inmatning så att den bildruta som körs ligger närmare de bildrutor som tas emot från nätverket. Detta minskar jitter och gör netplay mindre CPU-intensivt, men till priset av en märkbar fördröjning av inmatningen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   "Bildruteintervall för inmatningslatens"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
@@ -8052,7 +8164,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Start katalog"
+   "Startkatalog"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -8458,6 +8570,46 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Sök igenom"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Genomsökningsmetod"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Automatiskt eller anpassad med detaljerade alternativ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Databaskontroll"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "Strikt lägger endast till objekt som matchar en databaspost, Avslappnat lägger även till filer med korrekt filändelse men utan CRC/serienummermatchning, Anpassad DAT kontrollerar mot en XML-fil som tillhandahålls av användaren istället för databaser, Ingen ignorerar databaser och använder endast filändelser."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "Databas att matcha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "Matchning kan begränsas till en specifik databas, eller till den absolut första databasen som matchar, för att snabba upp genomsökningen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "Spellista att uppdatera"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Sök igenom en enda fil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Söker igenom endast en enda fil istället för en katalog. Välj innehållsplats igen efter att detta ändrats."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Hoppa över databasreferenser från spellista"
    )
 
 /* Import Content > Scan File */
@@ -9599,12 +9751,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Aktuellt skivindex"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Välj aktuell skiva från listan över tillgängliga avbildningar. Virtuella skivfacket kommer vara stängt."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Mata ut skiva"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Öppna virtuellt skivfack och ta bort den laddade skivan. Om 'Pausa innehåll när menyn är aktiv' är aktiverat kanske vissa kärnor inte registrera ändringar om inte innehållet återupptas i några sekunder efter varje skivkontrollsåtgärd."
+   "Öppna virtuellt skivfack."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9612,28 +9772,13 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Mata in skiva som matchar 'Nuvarande skivindex' och stäng virtuellt diskfack. Om 'Pausa innehåll när menyn är aktiv' är aktiverat kanske vissa kärnor inte registrera ändringar om inte innehållet återupptas i några sekunder efter varje skivkontrollsåtgärd."
+   "Stäng virtuellt skivfack."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Läs in ny skiva"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Mata ut aktuell skiva, välj en ny skiva från filsystemet, och mata sedan in den och stäng det virtuella skivfacket.\nOBS: Detta är en äldre funktion. Det rekommenderas istället att läsa in flerskivstitlar via M3U-spellistor vilket tillåter val av skiva med alternativen 'Mata ut/in skiva' och 'Aktuellt skivindex'."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Välj en ny skiva från filsystemet och mata in utan att stänga det virtuella skivfacket.\nOBS: Detta är en äldre funktion. Det rekommenderas istället att läsa in flerskivstitlar via M3U-spellistor vilket tillåter val av skiva med alternativen 'Mata ut/in skiva' och 'Aktuellt skivindex'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Aktuellt skivindex"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Välj aktuell skiva från listan över tillgängliga avbilder. Skivan läses in när ”Mata in skiva” väljs."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -10549,24 +10694,84 @@ MSG_HASH(
    "Innehåll"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<Automatiskt>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
    "<Ospecificerat>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Helt automatiskt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Anpassa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "Strikt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Avslappnat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "Anpassad DAT (Strikt)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "Anpassad DAT (Avslappnad)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Ingen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<Automatiskt/Alla>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<Automatiskt/Första matchning>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<Automatiskt/Systemnamn>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Vänster Analog"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Höger Analog"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Vänster Analog (Tvingad)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Höger Analog"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Höger Analog (Tvingad)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Vänster + höger analoga"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Vänster + höger analoga (tvingad)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Twin-Stick-analoga"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Twin-Stick-analoga (tvingad)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
@@ -11026,6 +11231,22 @@ MSG_HASH(
    "Alfafaktor för färgtema"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Aktuell menyikon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "Aktuell menyikon kan döljas, under den horisontella menyn eller i sidhuvudets titel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Ingen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "Titel"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
    "Typsnitt"
    )
@@ -11088,6 +11309,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
    "Välj ett annat bakgrundsfärg tema."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   "Vertikal disposition för minatyrbild"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
@@ -12315,7 +12540,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Enhetsnamn: %s (#%d)"
+   "Port %d Enhetsnamn: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -12546,7 +12771,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
-   "Netplay åskådare"
+   "Netplay-åskådare"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
@@ -15155,6 +15380,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Välj din tidszon för att justera datum och tid till din plats."
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Visar en lista över tillgängliga tidszoner. Efter att du valt en tidszon justeras tid och datum till den valda tidszonen. Det antar, att system/hårdvaruklockan är inställd på UTC."
@@ -15325,6 +15568,10 @@ MSG_HASH(
    "Väljer mellan visningslägena 3D och 2D. I ”3D”-läget är bildpunkterna kvadratiska och en djupeffekt tillämpas när snabbmenyn visas. ”2D\"-läget ger bäst prestanda."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
+   "2D (pixelrutnätseffekt)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
    "2D (hög upplösning)"
    )
@@ -15484,5 +15731,115 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Visa alternativet 'Spel-AI'."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "Nätverksinställningar för SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "Konfigurera inställningar för SMB-nätverksdelning."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "Aktivera SMB-klient"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Aktivera nätverksåtkomst för SMB-utdelning. Ethernet rekommenderas starkt över Wi-Fi för en mer tillförlitlig anslutning. Observera: ändring av dessa inställningar kräver en omstart av RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "SMB-server"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "Serverns IP-adress eller värdnamn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "SMB-utdelningsnamn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "Namn på nätverksutdelningen att komma åt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "SMB-underkatalog (valfritt)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "Sökväg till underkatalog på utdelningen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "SMB-användarnamn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "Användarnamn för autentisering."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "SMB-lösenord"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "Lösenord för autentisering."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "SMB-arbetsgrupp"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "Arbetsgrupp eller domännamn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "Autentiseringsläge för SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "Välj den autentisering som används i din miljö."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "Maximalt antal anslutningar för SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Välj maximala antalet anslutningar som används i din miljö."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "Tidsgräns för SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Välj standardtidsgräns i sekunder."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "Bläddra i SMB-utdelning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Bläddra efter filer på konfigurerad SMB-utdelning."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "Visa \"SMB-klient\""
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "Visa inställningar för \"SMB-klient\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "SMB-utdelning"
    )
 #endif

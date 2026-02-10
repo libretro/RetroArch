@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -212,6 +226,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
    "Выйсці з праграмы RetroArch. Захаванне канфігурацыі пры выхадзе ўключана."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   "Сінхранізаваць зараз"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
@@ -1307,6 +1325,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Калі адключана, файлы будуць перасунутыя ў тэчку рэзервовай копіі перад іх перазапісам ці выдаленнем."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   "Рэжым сінхранізацыі"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
@@ -2593,33 +2615,10 @@ MSG_HASH(
    "Пікавая яркасць"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Ўстаноўка максімальнай яркасці (у кд/м2), якую можа выдаваць дысплей. Значэнне пікавай яркасці дысплея гледзіце на рэсурсе RTings."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Яркасць белага аркушу"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Усталёўвае яркасць, пры якой тэкст можна добра чытаць на белым аркушы або яркасць у канцы шкалы SDR (стандартнага дынамічнага дыяпазону). Выкарыстоўваецца для падладкі пад розныя ўмовы асвятлення."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Кантраст"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Налада гамы/кантраснасці HDR. Пашырае дыяпазон паміж самымі светлымі і самымі цёмнымі часткамі выявы. Чым вышэй кантраст HDR, тым мацней розніца і чым ніжэй кантраст, тым больш размытай будзе выява. Дазваляе дасягнуць найлепшай якасці карцінкі на экране."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Пашыраная каляровая гама"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Пасля пераўтварэння каляровай прасторы ў лінейнае вызначае, ці трэба ўжываць пашыраную каляровую гаму для HDR10."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3298,10 +3297,6 @@ MSG_HASH(
    "Выявіць"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Прыпыненне змесціва пры адлучэнні кантролера"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
    "Прыпыняць змесціва пры адлучэнні любога кантролера. Узнаўляць пры націсканні на Start."
    )
@@ -3478,6 +3473,31 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Рашэнне праблемы з адлучэннем ды паўторным падлучэннем кантролераў. Перашкаджае прызначэнню аднолькавых кантролераў для абодвух гульцоў."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Пацвярджэнне выхаду"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Патрабаваць двайное націсканне гарачай клавішы выхаду."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Пацвярджэнне закрыцця змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Патрабаваць двайное націсканне гарачай клавішы закрыцця змесціва."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Пацвярджэнне скідання змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Патрабаваць двайное націсканне гарачай клавішы скідання змесціва."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -3771,16 +3791,8 @@ MSG_HASH(
    "Наступны дыск"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Павялічвае бягучы індэкс дыска. Віртуальны латок дыска мае быць адкрытым."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Папярэдні дыск"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Паніжае бягучы індэкс дыска. Віртуальны латок дыска мае быць адкрытым."
    )
 
 MSG_HASH(
@@ -4278,6 +4290,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Турба-кнопкі"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Утрымлівайце"
    )
 
 /* Settings > Latency */
@@ -9603,12 +9619,16 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Індэкс бягучага дыска"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Выняць дыск"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Адкрыць віртуальны латок прывада і выняць бягучы дыск. Калі ўключаная опцыя 'Паўза пры выкліку меню', некаторым ядрам пасля любых аперацый з дыскамі патрабуецца на некалькі секунд аднавіць кантэнт для рэгістрацыі змен."
+   "Адчыніць латок віртуальнага прывада."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9616,28 +9636,13 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Загрузіць дыск з бягучага азначніка і зачыніць латок віртуальнага прывада. Калі ўключаная опцыя 'Паўза пры выкліку меню', некаторым ядрам пасля любых аперацый з дыскамі патрабуецца на некалькі секунд аднавіць кантэнт для рэгістрацыі змен."
+   "Зачыніць латок віртуальнага прывада."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Загрузіць новы дыск"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Выміце бягучы дыск, абярыце з памяці іншы, устаўце і зачыніце латок прывада.\nГэтая функцыя з'яўляецца састарэлай. Гульні на некалькіх дысках рэкамендуецца загружаць праз M3U-плэйлісты, якія дазваляюць мяняць дыскі пры дапамозе опцый 'Выняць дыск' і 'Азначнік дыска'."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Выбраць новы дыск з памяці і ўставіць яго без закрыцця латка.\nУВАГА: гэта функцыя састарэлая. Гульні на некалькіх дысках рэкамендуецца загружаць праз M3U-плэйлісты, якія дазваляюць мяняць дыскі пры дапамозе опцый 'Выняць дыск' і 'Азначнік дыска'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Індэкс бягучага дыска"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Абярыце бягучы дыск са спісу даступных вобразаў. Дыск будзе загружаны пры выбары 'Уставіць Дыск'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -9696,6 +9701,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
    "Дадаць набор налад па-за бягучымі загружанымі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   "Кіраванне наборамі налад"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
@@ -9761,6 +9770,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
    "Захоўваць прасэты шэйдараў у выглядзе спасылкі на арыгінальны прасэт з наборам параметраў, змененых карыстальнікам."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Захаваць бягучы набор налад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   "Захаваць бягучы набор налад шэйдара."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
+   "Захаваць набор налад як"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -9946,6 +9967,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
    "Пакінуць хардкорны рэжым дасягненняў адключаным для бягучага сеансу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   "Адключана аднаўленне дасягненняў у рэжыме хардкора"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
@@ -10621,16 +10646,28 @@ MSG_HASH(
    "<Нявызначанае>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Уласная"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Няма"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Ручны ўвод>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Левы аналагавы стык"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Правы аналагавы стык"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Левы аналагавы стык (прымусова)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Правы аналагавы стык"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
@@ -11228,6 +11265,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    "Празрыстасць каляровай тэмы"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Няма"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Звычайна"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -12512,10 +12557,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "Порт"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Порт %d назва прылады: %s (#%d)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -15379,6 +15420,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Абярыце часавы пояс для падладкі даты і часу пад ваша месцазнаходжанне."
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Адлюстроўвае спіс даступных часавых паясоў. Пасля выбару часавога пояса час і дата карэктуюцца ў адпаведнасці з абраным часавым поясам. Мяркуецца, што сістэмныя/апаратныя гадзіны ўсталёўваюцца па UTC."
@@ -15721,4 +15780,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Паказваць опцыю 'Гульнявы ШІ'."
    )
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

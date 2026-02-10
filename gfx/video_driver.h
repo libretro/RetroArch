@@ -51,17 +51,16 @@
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
-#define VIDEO_SHADER_STOCK_BLEND   (GFX_MAX_SHADERS - 1)
-#define VIDEO_SHADER_MENU          (GFX_MAX_SHADERS - 2)
-#define VIDEO_SHADER_MENU_2        (GFX_MAX_SHADERS - 3)
-#define VIDEO_SHADER_MENU_3        (GFX_MAX_SHADERS - 4)
-#define VIDEO_SHADER_MENU_4        (GFX_MAX_SHADERS - 5)
-#define VIDEO_SHADER_MENU_5        (GFX_MAX_SHADERS - 6)
-#define VIDEO_SHADER_MENU_6        (GFX_MAX_SHADERS - 7)
-#define VIDEO_SHADER_STOCK_HDR     (GFX_MAX_SHADERS - 8)
-#define VIDEO_SHADER_STOCK_NOBLEND (GFX_MAX_SHADERS - 9)
-
-#define VIDEO_HDR_MAX_CONTRAST 10.0f
+#define VIDEO_SHADER_STOCK_BLEND          (GFX_MAX_SHADERS - 1)
+#define VIDEO_SHADER_MENU                 (GFX_MAX_SHADERS - 2)
+#define VIDEO_SHADER_MENU_2               (GFX_MAX_SHADERS - 3)
+#define VIDEO_SHADER_MENU_3               (GFX_MAX_SHADERS - 4)
+#define VIDEO_SHADER_MENU_4               (GFX_MAX_SHADERS - 5)
+#define VIDEO_SHADER_MENU_5               (GFX_MAX_SHADERS - 6)
+#define VIDEO_SHADER_MENU_6               (GFX_MAX_SHADERS - 7)
+#define VIDEO_SHADER_STOCK_HDR            (GFX_MAX_SHADERS - 8)
+#define VIDEO_SHADER_STOCK_NOBLEND_HDR    (GFX_MAX_SHADERS - 9)
+#define VIDEO_SHADER_STOCK_NOBLEND        (GFX_MAX_SHADERS - 10)
 
 #if defined(_XBOX360)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
@@ -696,8 +695,9 @@ typedef struct video_poke_interface
    /* hdr settings */
    void (*set_hdr_max_nits)(void *data, float max_nits);
    void (*set_hdr_paper_white_nits)(void *data, float paper_white_nits);
-   void (*set_hdr_contrast)(void *data, float contrast);
-   void (*set_hdr_expand_gamut)(void *data, bool expand_gamut);
+   void (*set_hdr_expand_gamut)(void *data, unsigned expand_gamut);
+   void (*set_hdr_scanlines)(void *data, bool scanlines);
+   void (*set_hdr_subpixel_layout)(void *data, unsigned subpixel_layout);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen
@@ -958,7 +958,8 @@ void video_driver_monitor_reset(void);
 
 void video_driver_set_aspect_ratio(void);
 
-void video_driver_update_viewport(struct video_viewport* vp, bool force_full, bool keep_aspect);
+void video_driver_update_viewport(struct video_viewport* vp,
+      bool force_full, bool keep_aspect, bool y_down);
 
 void video_driver_apply_state_changes(void);
 

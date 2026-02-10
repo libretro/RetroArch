@@ -14,8 +14,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sys: [MINGW64, UCRT64,CLANG64]
-    runs-on: windows-latest
+        include:
+          # Existing x64 builds
+          - sys: MINGW64
+            runner: windows-latest
+          - sys: UCRT64
+            runner: windows-latest
+          - sys: CLANG64
+            runner: windows-latest
+
+          # New ARM64 build (native Windows on ARM)
+          - sys: CLANGARM64
+            runner: windows-11-arm
+
+    runs-on: ${{ matrix.runner }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,7 +38,9 @@ jobs:
         with:
           msystem: ${{ matrix.sys }}
           update: true
-          install: base-devel git
+          install: >-
+            base-devel
+            git
           pacboy: >-
             gettext:p
             gobject-introspection:p
@@ -57,17 +72,18 @@ jobs:
       - name: Configure and build RetroArch
         shell: msys2 {0}
         run: |
-          echo "Building RetroArch in ${{ matrix.sys }} environment"
+          echo "Building RetroArch in ${{ matrix.sys }} on ${{ matrix.runner }}"
           ./configure
-          make -j$(nproc) info all
+          make -j"$(nproc)" info all
 
       - name: Collect DLLs and binaries
         shell: msys2 {0}
         run: |
           echo "Collecting DLLs and binaries"
+          rm -rf dist
           mkdir -p dist
           cp retroarch.exe dist/
-          ldd retroarch.exe|grep $MINGW_PREFIX |awk '{print $3}'|xargs -I {} cp {} dist/
+          ldd retroarch.exe | grep "$MINGW_PREFIX" | awk '{print $3}' | xargs -I {} cp {} dist/ || true
 
       - name: Archive build artifacts
         if: success()

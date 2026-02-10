@@ -648,8 +648,9 @@ size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime,
    struct menu_state *menu_st  = &menu_driver_state;
 
    /* Trigger an update, if required */
-   if (menu_st->current_time_us - menu_st->datetime_last_time_us >=
-         DATETIME_CHECK_INTERVAL)
+   if (   menu_st->current_time_us - menu_st->datetime_last_time_us >=
+          DATETIME_CHECK_INTERVAL
+       || menu_st->datetime_last_time_us == 0)
    {
       time_t time_;
       struct tm tm_;
@@ -1022,8 +1023,9 @@ size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate,
    enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
 
    /* Trigger an update, if required */
-   if (menu_st->current_time_us - menu_st->powerstate_last_time_us >=
-         POWERSTATE_CHECK_INTERVAL)
+   if (   menu_st->current_time_us - menu_st->powerstate_last_time_us >=
+          POWERSTATE_CHECK_INTERVAL
+       || menu_st->powerstate_last_time_us == 0)
    {
       menu_st->powerstate_last_time_us = menu_st->current_time_us;
       task_push_get_powerstate();
@@ -2783,6 +2785,7 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
       menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
       video_shader_resolve_parameters(shader);
       shader->flags              |= SHDR_FLAG_MODIFIED;
+      command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
    }
 
    return 0;
@@ -5666,6 +5669,20 @@ unsigned menu_event(
       onkeyup |= (1 << RETRO_DEVICE_ID_JOYPAD_SELECT)
                | (1 << RETRO_DEVICE_ID_JOYPAD_START);
 
+      /* Process scroll keys on release when conflicting with menu toggle */
+      if (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_CORE_RUNNING)
+      {
+         int i;
+         const struct retro_keybind menu_toggle_bind = input_config_binds[0][RARCH_MENU_TOGGLE];
+
+         for (i = RETRO_DEVICE_ID_JOYPAD_L2; i <= RETRO_DEVICE_ID_JOYPAD_R3; i++)
+         {
+            if (     (menu_toggle_bind.joykey != NO_BTN && menu_toggle_bind.joykey == input_config_binds[0][i].joykey)
+                  || (menu_toggle_bind.key != RETROK_UNKNOWN && menu_toggle_bind.key == input_config_binds[0][i].key))
+               onkeyup |= (1 << i);
+         }
+      }
+
       /* Handle OK on release with specific items */
       if (ok_current || ok_trigger_release)
       {
@@ -5702,7 +5719,9 @@ unsigned menu_event(
 
          /* Disc insert resume */
          if (     settings->bools.menu_insert_disk_resume
-               && ok_enum_idx == MENU_ENUM_LABEL_DISK_TRAY_INSERT
+               && (  ok_enum_idx == MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX
+                  || ok_enum_idx == MENU_ENUM_LABEL_DISK_TRAY_INSERT
+                  || ok_enum_idx == MENU_ENUM_LABEL_DISK_TRAY_EJECT)
                && ok_enum_idx == entry.enum_idx)
             ok_trigger = ok_trigger_release;
       }
@@ -7071,6 +7090,19 @@ bool menu_shader_manager_init(void)
    }
 
 end:
+
+   if (!ret)
+   {
+      size_t _len;
+      char msg[NAME_MAX_LENGTH];
+
+      _len = snprintf(msg, sizeof(msg), "Could not read shader preset: \"%s\".",
+            path_basename(path_shader));
+
+      runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   }
+
    video_st->menu_driver_shader = menu_shader;
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
@@ -8231,6 +8263,7 @@ bool menu_input_dialog_start_search(void)
    ios_keyboard_start(
          (char **)menu_st->input_dialog_keyboard_buffer,
          &input_st->keyboard_line.size,
+         &input_st->keyboard_line.ptr,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          menu_input_search_cb,
          menu);
@@ -8303,6 +8336,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    ios_keyboard_start(
          (char **)menu_st->input_dialog_keyboard_buffer,
          &input_st->keyboard_line.size,
+         &input_st->keyboard_line.ptr,
          line->label,
          line->cb,
          menu);

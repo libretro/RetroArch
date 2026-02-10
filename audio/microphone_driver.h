@@ -136,16 +136,6 @@ struct retro_microphone
    void *microphone_context;
 
    /**
-    * Pointer to the data that will be copied to cores.
-    */
-   int16_t* sample_buffer;
-
-   /**
-    * Length of \c sample_buffer in bytes, \em not samples.
-    */
-   size_t sample_buffer_length;
-
-   /**
     * Bit flags that describe the state of this microphone.
     *
     * @see microphone_state_flags

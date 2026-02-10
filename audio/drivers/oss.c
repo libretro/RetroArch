@@ -222,4 +222,5 @@ audio_driver_t audio_oss = {
    NULL,
    oss_write_avail,
    oss_buffer_size,
+   NULL /* write_raw */
 };

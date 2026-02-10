@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -81,7 +95,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "Знайдіть основну реалізацію libretro. Де браузер запускається в залежності від вашого базового шляху каталогу. Якщо цього немає, то він запуститься в root.\nЯкщо Core Directory це каталог, меню буде використовувати це як верхню теку. Якщо Core Directory є повним шляхом, то він почнеться в папці[...]"
+   "Знайдіть реалізацію ядра libretro. Звідки запускається браузер, залежить від шляху до основного каталогу. Якщо порожньо, то він почнеться з кореня.\nЯкщо основним каталогом є каталог, меню використовуватиме його як верхню теку. Якщо основний каталог є повним шляхом, він почнет[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -118,7 +132,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_EJECT_DISC,
-   "Вийнятии диск з фізичного CD/DVD-пристрою."
+   "Вийняти диск з фізичного CD/DVD-пристрою."
    )
 #endif
 MSG_HASH(
@@ -226,6 +240,22 @@ MSG_HASH(
    "Синхронізація хмар вручну тригера."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Вирішити конфлікти: зберігати локальні"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Вирішіть всі конфлікти, завантаживши локальні файли на сервер."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Вирішити конфлікти: Сервер Тримати"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Вирішити усі конфлікти, завантаживши файли сервера, замінивши локальні копії."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "Вихід з додатка RetroArch. Збереження конфігурації на виході вимкнено."
    )
@@ -328,7 +358,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   "Тут будуть відображатися встановлені ядра, які можуть працювати без завантаження вмісту."
+   "Тут з'являться встановлені ядра, які можуть працювати без завантаження контенту."
    )
 
 /* Main Menu > Online Updater */
@@ -577,7 +607,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Запобігти зміні встановлених в даний момент. Може використовуватися для уникнення небажаних оновлень, коли контент вимагає конкретної версії ядра (наприклад,. Аркада ПЗУ набору) або власний формат стану \"збереження\"."
+   "Запобігти зміні встановленого у цей момент ядра. Може використовуватися для запобігання небажаних оновлень, коли для вмісту потрібна певна версія ядра (наприклад, Аркадні набори ПЗУ) або змінюється власний формат стану збереження ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -2191,7 +2221,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "Горизонтальний центрування"
+   "Горизонтальне центрування"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
@@ -2204,6 +2234,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
    "Перемикання між цими варіантами, щоб змінити горизонтальні налаштування для зміни розміру зображення."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   "Вертикальний центр"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -2613,7 +2647,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   "Горизонтальне положення вмісту, якщо вікно перегляду ширше, ніж ширина контенту. 0.0 знаходиться далеко, 0.5 - центр, 1.0 знаходиться набагато вірно."
+   "Горизонтальне розташування вмісту, коли видовий екран ширше ширини вмісту. 0,0 - крайній лівий, 0,5 - центральний, 1,0 - крайній правий."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
@@ -2638,11 +2672,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "Горизонтальне положення вмісту, коли вікно перегляду ширше, ніж ширина контенту. 0,0 далеко зліва, 0,5 - центр, 1.0 - набагато правильніше. (портретний орієнтація)"
+   "Горизонтальне розташування вмісту, коли видовий екран ширше ширини вмісту. 0,0 - крайній лівий, 0,5 - центральний, 1,0 - крайній правий. (Портретна Орієнтація)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "Вертикальне положення вмісту, коли вікно перегляду є вищим, ніж висота контенту. 0,0 зверху, 0.5 знаходиться в центрі, 1.0 знаходиться внизу. (портретна орієнтація)"
+   "Вертикальне положення вмісту, коли вікно перегляду є вищим, ніж висота контенту. 0,0 зверху, 0,5 знаходиться в центрі, 1,0 знаходиться внизу. (Портретна Орієнтація)"
    )
 #endif
 MSG_HASH(
@@ -2685,33 +2719,30 @@ MSG_HASH(
    "Пікова яскравість"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Встановити максимальну яскравість (в кд/м2), яка підтримується дисплеєм. Значення пікової яскравості можна дізнатися на сайті RTings."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Яскравість білого паперу"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Встановити яскравість білого паперу, за якої текст на ньому буде добре читатися або яскравість в кінці шкали SDR (стандартного динамічного діапазону). Корисне для підлаштування під різні умови освітлення."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Контраст"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Налаштування гами/контрастності HDR. Розширює діапазон між найсвітлішими і найтемнішими частинами зображення. Чим вищий контраст HDR, тим сильніша різниця і чим нижчий контраст, тим більш розмитим буде зображення. Дозволяє досягти найкращої якості зображення на екрані."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Розширена колірна гама"
+   "Посилення кольору"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Після перетворення колірного простору на лінійний визначає, чи потрібно застосовувати розширену колірну гаму для HDR10."
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
+   "ТОЧНИЙ"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "РОЗШИРЕНИЙ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "ШИРОКИЙ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
+   "СУПЕР"
+   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3623,13 +3654,10 @@ MSG_HASH(
    "Обхідний шлях для відключення та повторного підключення контролерів. Заважає 2 гравцям з однаковими контролерами."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Підтвердити Вихід/Закрити/Скинути"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Підтвердіть закриття вмісту"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Вимагати подвійного натискання гарячої клавіші для Вихід/Закрити/Скинути."
-   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -3963,16 +3991,8 @@ MSG_HASH(
    "Наступний диск"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Збільшує поточний вибраний індекс диска. Лоток віртуального диска має бути відкритим."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Попередній диск"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Зменшує поточний вибраний індекс диска. Лоток віртуального диска має бути відкритим."
    )
 
 MSG_HASH(
@@ -4502,6 +4522,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Турбо Кнопки"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Утримуйте"
    )
 
 /* Settings > Latency */
@@ -8675,6 +8699,22 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Сканування товару"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Метод сканування"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Перевірка бази даних"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Сканувати один файл"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Пропустити посилання на базу даних зі списку відтворення"
+   )
 
 /* Import Content > Scan File */
 
@@ -9839,12 +9879,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Номер поточного диска"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Виберіть поточний диск зі списку доступних образів. Лоток для віртуальних дисків може залишатися закритим."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Вийняти диск"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Відкрити віртуальний дисковий лоток і прибрати вже завантажений диск. Якщо 'зупинити вміст, коли активовано меню деякі ядра не можуть реєструвати зміни поки вміст не буде відновлено через кілька секунд після кожного контролю диску."
+   "Відкрити віртуальний дисковий лоток."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9852,28 +9900,13 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Вставляти диск, відповідний до 'поточного індексу диска' та закривати віртуальний дисковий лоток на диску. Якщо 'зупинити вміст, коли активовано меню деякі ядра не можуть реєструвати зміни поки вміст не буде відновлено через кілька секунд після кожного контролю диску."
+   "Закрити віртуальний дисковий лоток."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Завантажити новий диск"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Витягніть поточний диск, виберіть новий диск із файлової системи, вставте його та закрийте лоток для віртуального диска.\nПРИМІТКА: це застаріла функція. Замість цього рекомендується завантажувати багатодискові заголовки через списки відтворення M3U, які дозволяють вибир[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Виберіть новий диск із файлової системи та вставте його, не закриваючи лоток віртуального диска.\nПРИМІТКА: це застаріла функція. Замість цього рекомендується завантажувати багатодискові заголовки через списки відтворення M3U, які дозволяють вибрати диск за допомогою пар[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Номер поточного диска"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Виберіть поточний диск зі списку доступних зображень. Диск буде завантажено, коли буде обрано \"Вставити диск\"."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -10857,16 +10890,32 @@ MSG_HASH(
    "<Не вказано>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Повністю автоматично"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Користувацька"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Немає"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Користувацька>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
    "Лівий аналог"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Правий аналог"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Лівий стік (Примусово)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Правий аналог"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
@@ -11550,6 +11599,26 @@ MSG_HASH(
    "Коефіцієнт основи теми"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Поточний значок меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "Поточний значок меню може бути прихованим, під горизонтальним меню або в заголовку."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Немає"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Нормально"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "Назва"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_FONT,
    "Виберіть інший основний шрифт для використання в меню."
    )
@@ -11948,6 +12017,14 @@ MSG_HASH(
    "Масштабувати розмір горизонтального відступу."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
+   "Значок заголовка"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
+   "Логотип заголовка може бути прихованим, динамічним в залежності від навігації або виправлено класичним загарбником."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
    "Роздільник Заголовка"
    )
@@ -11962,6 +12039,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
    "Динамічний"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
+   "Виправлена"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
@@ -12242,6 +12323,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
    "Сіре світло"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DRACULA,
+   "Дракула"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
@@ -12964,10 +13049,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT,
    "Порт"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Назва пристрою порта %d %s (#%d)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -15887,6 +15968,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Виберіть свій часовий пояс, щоб налаштувати дату та час відповідно до вашого місцезнаходження."
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Відображає список доступних часових поясів. Вибравши часовий пояс, час та дату, налаштовано на обрану часову пояс. Системні/апаратний годинник встановлено на UTC."
@@ -16232,5 +16331,19 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Показувати опцію \"Кінець гри\"."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "Увімкнути SMB-клієнт"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "SMB-сервер"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "IP-адреса сервера або назва хоста."
    )
 #endif

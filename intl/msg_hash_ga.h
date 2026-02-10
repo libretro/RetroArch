@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -216,6 +230,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
    "Spreag sioncrónú scamall de láimh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Réitigh Coimhlintí: Fan Áitiúil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Réitigh gach coimhlint trí chomhaid áitiúla a uaslódáil chuig an bhfreastalaí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Réiteach Coimhlintí: Coinnigh an Freastalaí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Réitigh gach coimhlint trí chomhaid an fhreastalaí a íoslódáil, agus cóipeanna áitiúla a athsholáthar."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
@@ -2670,7 +2700,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Socraigh an gile buaic (i cd/m2) is féidir le do thaispeántas a atáirgeadh. Féach RTings le haghaidh gile buaic do thaispeántais."
+   "Socraigh an gile buaicphointe (i cd/m2) is féidir le do thaispeántas a atáirgeadh. Nuair atá sé socraithe, ná hathraigh é. Bain úsáid as Gile Pháipéir Bhán chun gile a shocrú. Féach RTings.com le haghaidh gile buaicphointe do thaispeántais. Ar roinnt taispeántais a bhfuil línte scanadh orthu (thíos), b’fhéidir go mbeidh ort é seo (agus bán páipéir) a ró-thiomáint chun an gile iomlán a ardú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -2678,24 +2708,45 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Socraigh an gile ag a mbeidh bán páipéir i.e. téacs inléite nó gile ag barr an raoin SDR (Raon Dinimiciúil Caighdeánach). Úsáideach chun coigeartú a dhéanamh do dhálaí soilsithe éagsúla i do thimpeallacht."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "Codarsnacht"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Rialú gama/chodarsnachta le haghaidh HDR. Glacann sé na dathanna agus méadaíonn sé an raon foriomlán idir na codanna is gile agus na codanna is dorcha den íomhá. Dá airde an codarsnacht HDR, is ea is mó an difríocht seo, agus dá ísle an codarsnacht, is ea is doiléire a bhíonn an íomhá. Cabhraíonn sé le húsáideoirí an íomhá a choigeartú dá dtaitneamh agus cad is fearr leo a fheiceáil ar a scáileán."
+   "Nuair a bheidh an gile buaic socraithe, bain úsáid as seo mar do shocrú gile caighdeánach. Go teicniúil, socraíonn sé seo an gile ag a mbeidh bán páipéir i.e. téacs inléite nó gile ag barr an raoin SDR (Raon Dinimiciúil Caighdeánach)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Leathnaigh Gamut"
+   "Borradh Dath"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Nuair a bheidh an spás datha tiontaithe go spás líneach, cinntigh an gceart dúinn gamut datha leathnaithe a úsáid chun HDR10 a bhaint amach."
+   "Úsáideann sé raon dathanna iomlán do thaispeántais chun íomhá níos gile, níos sáithithe a chruthú. Chun dathanna atá níos dílse don dearadh cluiche bunaidh a fháil, socraigh é seo go CRUINN."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
+   "CRUINN"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "LEATHNAITHE"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "LEATHAN"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Scanlínte"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "Cumasaigh línte scanadh HDR. Is iad na línte scanadh an phríomhchúis le húsáid HDR i RetroArch mar go múchann cur i bhfeidhm cruinn líne scanadh an chuid is mó den scáileán agus go n-aisghabhann HDR cuid den ghile caillte sin. Más gá duit níos mó smachta ar do línte scanadh, féach ar scáthaitheoirí saincheaptha a sholáthraíonn RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Leagan Amach Fo-phicteilín"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Roghnaigh leagan amach fo-phicteil do thaispeántais, ní dhéanann sé seo ach difear do na línte scanadh. Mura bhfuil a fhios agat cad é leagan amach fo-phicteil do thaispeántais, féach ar Rtings.com le haghaidh 'leagan amach fo-phicteil' do thaispeántais"
+   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3379,7 +3430,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Cuir an t-ábhar ar sos nuair a dhícheanglaíonn an rialtóir"
+   "Cuir Ábhar ar Sos nuair a Dhícheanglaítear an Rialaitheoir"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
@@ -3615,13 +3666,30 @@ MSG_HASH(
    "Réiteach sealadach ar rialtóirí ag dícheangal agus ag athcheangal. Cuireann sé bac ar 2 imreoir leis na rialtóirí céanna."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Deimhnigh Scoir/Dún/Athshocraigh"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Deimhnigh Scoir"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Éilítear go mbrúitear an eochair the Scoir/Dún/Athshocraigh faoi dhó."
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Éilítear go mbrúitear an eochair the \"Quit\" faoi dhó."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Deimhnigh Dúnadh an Ábhair"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Éilítear go mbrúfar an eochair the Dún Ábhar faoi dhó."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Deimhnigh Athshocrú Ábhar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Éilítear go mbrúfar an eochair the Athshocraigh Ábhar faoi dhó."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -3956,7 +4024,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Méadaíonn sé innéacs an diosca atá roghnaithe faoi láthair. Ní mór an tráidire diosca fíorúil a bheith oscailte."
+   "Méadaíonn sé innéacs an diosca atá roghnaithe faoi láthair agus déanann sé moill ar chur isteach má tá an tráidire diosca fíorúil dúnta."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3964,7 +4032,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Laghdaíonn sé innéacs an diosca atá roghnaithe faoi láthair. Ní mór an tráidire diosca fíorúil a bheith oscailte."
+   "Laghdaíonn sé innéacs an diosca atá roghnaithe faoi láthair agus déanann sé moill ar an iontráil má tá an tráidire diosca fíorúil dúnta."
    )
 
 MSG_HASH(
@@ -4502,6 +4570,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Tine Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Coinnigh"
    )
 
 /* Settings > Latency */
@@ -5766,6 +5838,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "Tairseach Svaipeála"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Ionchur Alt 2-Tadhall"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Úsáid an dara teagmháil mar chnaipe luiche agus an cúrsóir á rialú agat."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
@@ -7207,6 +7287,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
    "Taispeáin an t-aistriúchán mar fhorleagan téacs (Mód Íomhá), seinn mar Téacs-Go-Caint (Caint), nó bain úsáid as insteoir córais cosúil le NVDA (Insteoir)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+   "Cúltaca Seirbhíse AI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
+   "Roghnaigh cén cúltaca aistriúcháin le húsáid. Úsáideann HTTP freastalaí cianda ag an URL cumraithe. Úsáideann Apple OCR agus aistriúchán ar an ngléas (macOS/iOS)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -8719,6 +8807,54 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Scanadh"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Modh Scanadh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Uathoibríoch nó saincheaptha le roghanna mionsonraithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Seiceáil Bunachar Sonraí"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "Ní chuirfidh Strict ach míreanna leis a mheaitseálann iontráil bunachar sonraí, cuirfidh Loose comhaid leis an síneadh ceart ach gan aon mheaitseáil CRC/sraitheach leis, déanfaidh Custom DAT seiceálacha i gcoinne comhaid XML arna soláthar ag an úsáideoir in ionad bunachair shonraí, ní dhéanann None neamhaird ar bhunachair shonraí agus ní úsáideann sé ach síntí comhad."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "Bunachar Sonraí le Meaitseáil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "Is féidir meaitseáil a shrianadh do bhunachar sonraí amháin, nó don chéad bhunachar sonraí a mheaitseálann, chun scanadh a bhrostú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "Seinmliosta le Nuashonrú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "Cuirtear torthaí leis an seinmliosta seo. I gcás Uathoibríoch - Aon cheann, féadfar seinmliostaí córais iolracha a nuashonrú. Ní nascfaidh Saincheaptha gan tagairt do bhunachar sonraí na hiontrálacha le haon bhunachar sonraí sa seinmliosta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Scanadh Comhad Aonair"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Ní dhéanann sé ach comhad amháin a scanadh in ionad eolaire. Athroghnaigh suíomh an ábhair tar éis an iontráil seo a athrú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Léim thar Thagairtí Bunachar Sonraí ón Seinmliosta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "I gcás ainm seinmliosta saincheaptha, bain úsáid as ainm an seinmliosta i gcónaí le haghaidh cuardaigh mionsamhlacha, fiú má bhí meaitseáil bhunachar sonraí ann."
+   )
 
 /* Import Content > Scan File */
 
@@ -9891,12 +10027,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Innéacs an Diosca Reatha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Roghnaigh an diosca reatha ón liosta d’íomhánna atá ar fáil. Is féidir an tráidire diosca fíorúil fanacht dúnta."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Díbirt Diosca"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Oscail an tráidire diosca fíorúil agus bain an diosca atá luchtaithe faoi láthair. Má tá 'Cuir an t-ábhar ar sos nuair a bhíonn an roghchlár gníomhach' cumasaithe, ní fhéadfaidh roinnt croíleacán athruithe a chlárú mura n-atosófar an t-ábhar ar feadh cúpla soicind tar éis gach gníomh rialaithe diosca."
+   "Oscail an tráidire diosca fíorúil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9904,7 +10048,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Cuir isteach an diosca a fhreagraíonn don 'Innéacs Diosca Reatha' agus dún an tráidire diosca fíorúil. Má tá 'Cuir an t-ábhar ar sos nuair a bhíonn an roghchlár gníomhach' cumasaithe, ní fhéadfaidh roinnt croíleacán athruithe a chlárú mura n-atosófar an t-ábhar ar feadh cúpla soicind tar éis gach gníomh rialaithe diosca."
+   "Dún an tráidire diosca fíorúil."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -9912,20 +10056,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Díbirt an diosca reatha, roghnaigh diosca nua ón gcóras comhad ansin cuir isteach é agus dún an tráidire diosca fíorúil.\nNÓTA: Is gné oidhreachta í seo. Moltar ina ionad sin teidil ildhiosca a luchtú trí seinmliostaí M3U, a cheadaíonn roghnú diosca ag baint úsáide as na roghanna 'Díbirt/Cuir isteach Diosca' agus 'Innéacs Diosca Reatha'."
+   "Roghnaigh diosca nua ón gcóras comhad agus cuir leis an liosta innéacs é.\nNÓTA: Is gné oidhreachta í seo. Moltar seinmliostaí M3U a úsáid ina ionad sin le haghaidh teidil ildhiosca."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Roghnaigh diosca nua ón gcóras comhad agus cuir isteach é gan an tráidire diosca fíorúil a dhúnadh.\nNÓTA: Is gné oidhreachta í seo. Moltar ina ionad sin teidil ildhiosca a luchtú trí seinmliostaí M3U, a cheadaíonn roghnú diosca ag baint úsáide as an rogha 'Innéacs Diosca Reatha'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Innéacs an Diosca Reatha"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Roghnaigh an diosca reatha ón liosta d’íomhánna atá ar fáil. Luchtófar an diosca nuair a roghnófar 'Cuir Diosca Isteach'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -10925,6 +11058,10 @@ MSG_HASH(
    "<Eolaire Ábhair>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<Uathoibríoch>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
    "<Saincheaptha>"
    )
@@ -10933,20 +11070,80 @@ MSG_HASH(
    "<Gan Sonrú>"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   "Analógach chlé"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Lán-Uathoibríoch"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Analógach dheis"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Saincheaptha"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "Dian"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Scaoilte"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "DAT Saincheaptha (Docht)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "DAT Saincheaptha (Scaoilte)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Dada"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<Uathoibríoch/Aon>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<Uathoibríoch/An chéad mheaitseáil>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<Ainm uathoibríoch/córais>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Saincheaptha>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "Analógach chlé"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Analógach chlé (Éignithe)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Analógach dheis"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Analógach dheis (Éignithe)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Analógacha Clé + Deas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Analógacha Clé + Deas (Éignithe)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Analógacha Dúbailte-Bata"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Analógacha Dúbailte-Bata (Éignithe)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
@@ -11552,6 +11749,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    "Fachtóir Alfa Téama Dath"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Deilbhín an Roghchláir Reatha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "Is féidir deilbhín an roghchláir reatha a cheilt, faoin roghchlár cothrománach nó sa teideal ceanntásca."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Dada"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
+   "Gnáth"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "Teideal"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -12959,7 +13176,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Ainm Gléas: %s (#%d)"
+   "Port %d Ainm Gléas: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -15887,6 +16104,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Roghnaigh do chrios ama chun an dáta agus an t-am a choigeartú de réir do shuíomh."
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Taispeánann sé liosta de na criosanna ama atá ar fáil. Tar éis crios ama a roghnú, déantar an t-am agus an dáta a choigeartú don chrios ama roghnaithe. Glactar leis go bhfuil clog an chórais/chrua-earraí socraithe go UTC."
@@ -16236,5 +16471,115 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Taispeáin an rogha 'Cluiche AI'."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "Socruithe Líonra SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "Cumraigh socruithe comhroinnte líonra SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "Cumasaigh Cliant SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Cumasaigh rochtain chomhroinnte líonra SMB. Moltar go láidir Ethernet thar Wi-Fi le haghaidh nasc níos iontaofa. Tabhair faoi deara: ní mór RetroArch a atosú chun na socruithe seo a athrú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "Freastalaí SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "Seoladh IP nó ainm óstach an fhreastalaí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "Ainm an Comhroinn SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "Ainm an chomhroinnte líonra le rochtain a fháil air."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "Fo-eolaire SMB (roghnach)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "Cosán fo-eolaire ar an gcomhroinnt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "Ainm an Úsáideora SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "Ainm úsáideora le haghaidh fíordheimhnithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "Pasfhocal SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "Pasfhocal le haghaidh fíordheimhnithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "Grúpa Oibre SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "Ainm grúpa oibre nó fearainn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "Mód Fíordheimhnithe SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "Roghnaigh an fíordheimhniú a úsáidtear i do thimpeallacht."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "Uasmhéid naisc SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Roghnaigh an líon uasta naisc a úsáidtear i do thimpeallacht."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "Am Teorannú SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Roghnaigh an t-am scoir réamhshocraithe i soicindí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "Brabhsáil Comhroinn SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Brabhsáil comhaid ar an gcomhroinnt SMB cumraithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "Taispeáin 'Cliant SMB'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "Taispeáin socruithe 'Cliant SMB'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "Comhroinn SMB"
    )
 #endif

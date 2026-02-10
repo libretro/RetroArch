@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -1956,22 +1970,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    "اوج روشنایی"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "تنظیم اوج روشنایی‌ای که صفحه نمایش‌تان می‌تواند بازتولید کند (بر حسب cd/m2). بخش RTings را برای میزان اوج روشنایی صفحه‌تان ببنید."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
-   "کنتراست"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "گسترش گاما"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "به محض تبدیل فضای رنگ به فضای خطی، تصمیم‌گیری شود که آیا از گاموت رنگی گسترش‌یافته برای رسیدن به HDR10 استفاده شود یا خیر."
-   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -2303,6 +2302,7 @@ MSG_HASH(
    "کنترل‌های درگاه %u"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -2462,6 +2462,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
    "خشاب تفنگ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "تعلیق"
    )
 
 /* Settings > Latency */
@@ -3362,6 +3366,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "خارج کردن لوح"
    )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -3416,6 +3421,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OFF,
    "خاموش"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "سفارشی"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "هیچکدام"
+   )
 
 /* RGUI: Settings > User Interface > Appearance */
 
@@ -3457,6 +3470,10 @@ MSG_HASH(
 
 /* XMB: Settings > User Interface > Appearance */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "هیچکدام"
+   )
 
 /* XMB: Settings Options */
 
@@ -3715,6 +3732,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
    "بلوتوث"
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif
 #endif
@@ -3757,4 +3792,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

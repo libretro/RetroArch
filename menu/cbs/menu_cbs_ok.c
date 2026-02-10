@@ -35,6 +35,9 @@
 #ifdef HAVE_CDROM
 #include <vfs/vfs_implementation_cdrom.h>
 #endif
+#ifdef HAVE_SMBCLIENT
+#include "../vfs/vfs_implementation_smb.h"
+#endif
 
 #ifdef HAVE_DISCORD
 #include "../../network/discord.h"
@@ -283,6 +286,12 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_METHOD:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_METHOD;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_USE_DB:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_USE_DB;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_DB_SELECT:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_DB_SELECT;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME:
@@ -403,6 +412,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST;
       case ACTION_OK_DL_AI_SERVICE_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST;
+#ifdef HAVE_SMBCLIENT
+      case ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST;
+#endif
       case ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST;
       case ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST:
@@ -864,6 +877,33 @@ int generic_action_ok_displaylist_push(
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_METHOD:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_METHOD);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_METHOD;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_USE_DB:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_USE_DB);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_USE_DB;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_DB_SELECT:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_DB_SELECT);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SCAN_DB_SELECT;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
@@ -1790,6 +1830,9 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_QUICK_MENU_OVERRIDE_OPTIONS_LIST:
       case ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST:
       case ACTION_OK_DL_AI_SERVICE_SETTINGS_LIST:
+#ifdef HAVE_SMBCLIENT
+      case ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST:
+#endif
       case ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST:
       case ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST:
       case ACTION_OK_DL_CPU_PERFPOWER_SETTINGS_LIST:
@@ -6632,6 +6675,9 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_synchronization_settings_list
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_mixer_settings_list, ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST)
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_ai_service_settings_list, ACTION_OK_DL_AI_SERVICE_SETTINGS_LIST)
+#ifdef HAVE_SMBCLIENT
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_smb_client_settings_list, ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST)
+#endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accessibility_settings_list, ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_settings_list, ACTION_OK_DL_INPUT_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_menu_settings_list, ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST)
@@ -7455,6 +7501,33 @@ static int action_ok_push_dropdown_item_playlist_sort_mode(
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+static int action_ok_push_dropdown_item_scan_method(
+      const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   manual_content_scan_set_menu_scan_method(idx);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_item_scan_use_db(
+      const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   manual_content_scan_set_menu_scan_use_db(idx);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+static int action_ok_push_dropdown_item_scan_db_select(
+      const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   manual_content_scan_set_menu_scan_db_select(idx, path);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_dropdown_item_manual_content_scan_system_name(
       const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -7505,16 +7578,33 @@ static int action_ok_push_dropdown_item_manual_content_scan_core_name(
 static int action_ok_push_dropdown_item_disk_index(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   struct menu_state *menu_st = menu_state_get_ptr();
-   unsigned disk_index        = (unsigned)idx;
+   unsigned disk_index           = (unsigned)idx;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+   settings_t *settings          = config_get_ptr();
+   bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
+   bool disk_ejected             = false;
+
+   if (!settings || !sys_info)
+      return -1;
+
+#ifdef HAVE_AUDIOMIXER
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
+      audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
+#endif
+
+   /* Get disk eject state *before* toggling drive status */
+   if (sys_info)
+      disk_ejected = disk_control_get_eject_state(&sys_info->disk_control);
 
    command_event(CMD_EVENT_DISK_INDEX, &disk_index);
 
-   /* When choosing a disk, menu selection should
-    * automatically be reset to the 'insert disk'
-    * option */
-   menu_entries_pop_stack(NULL, 0, 1);
-   menu_st->selection_ptr = 0;
+   /* If disk is now inserted and user has enabled
+    * 'menu_insert_disk_resume', resume running content */
+   if (!disk_ejected && menu_insert_disk_resume)
+      generic_action_ok_command(CMD_EVENT_RESUME);
+
+   /* In all cases, return to the disk options menu */
+   menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS), 0);
 
    return 0;
 }
@@ -8142,6 +8232,27 @@ static int action_ok_shader_preset_parameter_dropdown_box_list(
          ACTION_OK_DL_DROPDOWN_BOX_LIST_SHADER_PRESET_PARAMETER);
 }
 
+static int action_ok_scan_method(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_dropdown_box_list(idx,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_METHOD);
+}
+
+static int action_ok_scan_use_db(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_dropdown_box_list(idx,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_USE_DB);
+}
+
+static int action_ok_scan_db_select(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_dropdown_box_list(idx,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_SCAN_DB_SELECT);
+}
+
 static int action_ok_manual_content_scan_system_name(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -8195,52 +8306,30 @@ static int action_ok_input_description_kbd_dropdown_box_list(
 static int action_ok_disk_cycle_tray_status(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   bool disk_ejected              = false;
-   bool print_log                 = false;
-   struct menu_state *menu_st     = menu_state_get_ptr();
-   rarch_system_info_t *sys_info  = &runloop_state_get_ptr()->system;
-   settings_t *settings           = config_get_ptr();
-#ifdef HAVE_AUDIOMIXER
-   bool audio_enable_menu         = settings->bools.audio_enable_menu;
-   bool audio_enable_menu_ok      = settings->bools.audio_enable_menu_ok;
-#endif
-   bool menu_insert_disk_resume   = settings->bools.menu_insert_disk_resume;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+   settings_t *settings          = config_get_ptr();
+   bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
+   bool verbosity                = false;
 
-   if (!settings)
+   if (!settings || !sys_info)
       return -1;
 
 #ifdef HAVE_AUDIOMIXER
-   if (audio_enable_menu && audio_enable_menu_ok)
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 #endif
-
-   /* Get disk eject state *before* toggling drive status */
-   if (sys_info)
-      disk_ejected = disk_control_get_eject_state(&sys_info->disk_control);
 
    /* Only want to display a notification if we are
     * going to resume content immediately after
     * inserting a disk (i.e. if quick menu remains
     * open, there is sufficient visual feedback
     * without a notification) */
-   print_log = menu_insert_disk_resume && disk_ejected;
+   verbosity = menu_insert_disk_resume;
 
-   if (!command_event(CMD_EVENT_DISK_EJECT_TOGGLE, &print_log))
+   if (!command_event(CMD_EVENT_DISK_EJECT_TOGGLE, &verbosity))
       return -1;
 
-   /* If we reach this point, then tray toggle
-    * was successful */
-   disk_ejected = !disk_ejected;
-
-   /* If disk is now ejected, menu selection should
-    * automatically increment to the 'current disk
-    * index' option */
-   if (disk_ejected)
-      menu_st->selection_ptr = 1;
-
-   /* If disk is now inserted and user has enabled
-    * 'menu_insert_disk_resume', resume running content */
-   if (!disk_ejected && menu_insert_disk_resume)
+   if (menu_insert_disk_resume)
       generic_action_ok_command(CMD_EVENT_RESUME);
 
    return 0;
@@ -8252,19 +8341,15 @@ static int action_ok_disk_image_append(const char *path,
    rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
    struct menu_state *menu_st    = menu_state_get_ptr();
    menu_handle_t *menu           = menu_st->driver_data;
-   const char *menu_path         = NULL;
    settings_t *settings          = config_get_ptr();
-#ifdef HAVE_AUDIOMIXER
-   bool audio_enable_menu        = settings->bools.audio_enable_menu;
-   bool audio_enable_menu_ok     = settings->bools.audio_enable_menu_ok;
-#endif
    bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
+   const char *menu_path         = NULL;
 
-   if (!menu)
+   if (!menu || !settings || !sys_info)
       return -1;
 
 #ifdef HAVE_AUDIOMIXER
-   if (audio_enable_menu && audio_enable_menu_ok)
+   if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 #endif
 
@@ -8275,9 +8360,9 @@ static int action_ok_disk_image_append(const char *path,
    if (!string_is_empty(menu_path))
    {
       char image_path[PATH_MAX_LENGTH];
-      bool is_dir = (entry_idx == FILE_TYPE_USE_DIRECTORY
-            && string_is_equal(label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY)));
+      bool is_dir = entry_idx == FILE_TYPE_USE_DIRECTORY
+            && string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY));
+
       if (is_dir)
       {
          size_t past_slash;
@@ -8291,21 +8376,16 @@ static int action_ok_disk_image_append(const char *path,
                menu_path, path, sizeof(image_path));
       else
          strlcpy(image_path, menu_path, sizeof(image_path));
+
       /* Append image */
       command_event(CMD_EVENT_DISK_APPEND_IMAGE, image_path);
    }
 
+   if (menu_insert_disk_resume && !disk_control_get_eject_state(&sys_info->disk_control))
+      generic_action_ok_command(CMD_EVENT_RESUME);
+
    /* In all cases, return to the disk options menu */
    menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS), 0);
-
-   /* > If disk tray is open, reset menu selection to
-    *   the 'insert disk' option
-    * > If disk try is closed and user has enabled
-    *   'menu_insert_disk_resume', resume running content */
-   if (sys_info && disk_control_get_eject_state(&sys_info->disk_control))
-      menu_st->selection_ptr = 0;
-   else if (menu_insert_disk_resume)
-      generic_action_ok_command(CMD_EVENT_RESUME);
 
    return 0;
 }
@@ -8944,6 +9024,61 @@ static int action_ok_core_steam_uninstall(
 }
 #endif
 
+#ifdef HAVE_SMBCLIENT
+static int action_ok_smb_browse(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+   char smb_path[PATH_MAX_LENGTH];
+
+   if (!settings->bools.smb_client_enable)
+   {
+      runloop_msg_queue_push(
+            "SMB is not enabled. Enable it in Network Settings.",
+            0, 100, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_INFO);
+      return -1;
+   }
+
+   if (string_is_empty(settings->arrays.smb_client_server_address))
+   {
+      runloop_msg_queue_push(
+            "SMB server address not configured.",
+            0, 100, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_ERROR);
+      return -1;
+   }
+
+   /* Build base SMB path */
+   snprintf(smb_path, sizeof(smb_path), "smb://%s",
+            settings->arrays.smb_client_server_address);
+
+   if (!string_is_empty(settings->arrays.smb_client_share))
+   {
+      strlcat(smb_path, "/", sizeof(smb_path));
+      strlcat(smb_path, settings->arrays.smb_client_share, sizeof(smb_path));
+   }
+
+   if (!string_is_empty(settings->arrays.smb_client_subdir))
+   {
+      if (settings->arrays.smb_client_subdir[0] != '/')
+         strlcat(smb_path, "/", sizeof(smb_path));
+      strlcat(smb_path, settings->arrays.smb_client_subdir, sizeof(smb_path));
+   }
+
+   return generic_action_ok_displaylist_push(
+      smb_path,
+      smb_path,
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE),
+      FILE_TYPE_DIRECTORY,
+      idx,
+      entry_idx,
+      ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
+}
+#endif
+
 static int is_rdb_entry(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
@@ -9190,6 +9325,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_AUDIO_SETTINGS,                      action_ok_push_audio_settings_list},
          {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,      action_ok_push_audio_synchronization_settings_list},
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,             action_ok_push_manual_content_scan_dir_select},
+         {MENU_ENUM_LABEL_SCAN_METHOD,                         action_ok_scan_method},
+         {MENU_ENUM_LABEL_SCAN_USE_DB,                         action_ok_scan_use_db},
+         {MENU_ENUM_LABEL_SCAN_DB_SELECT,                      action_ok_scan_db_select},
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,     action_ok_manual_content_scan_system_name},
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME,       action_ok_manual_content_scan_core_name},
          {MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES,             action_ok_video_shader_num_passes_dropdown_box_list},
@@ -9208,6 +9346,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,                 action_ok_netplay_enable_host},
          {MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,               action_ok_netplay_enable_client},
          {MENU_ENUM_LABEL_NETPLAY_DISCONNECT,                  action_ok_netplay_disconnect},
+#endif
+#ifdef HAVE_SMBCLIENT
+         {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,                 action_ok_push_smb_client_settings_list},
+         {MENU_ENUM_LABEL_SMB_CLIENT_BROWSE,                   action_ok_smb_browse},
 #endif
          {MENU_ENUM_LABEL_CORE_DELETE,                         action_ok_core_delete},
          {MENU_ENUM_LABEL_CORE_CREATE_BACKUP,                  action_ok_core_create_backup},
@@ -9600,6 +9742,15 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_SORT_MODE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_playlist_sort_mode);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_SCAN_METHOD:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_scan_method);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_SCAN_USE_DB:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_scan_use_db);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_SCAN_DB_SELECT:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_scan_db_select);
             break;
          case MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_manual_content_scan_system_name);

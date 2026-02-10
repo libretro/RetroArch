@@ -538,11 +538,11 @@ size_t fill_pathname_parent_dir(char *s,
  * @ext                : extension of output filename
  * @len                : buffer size of output filename
  *
- * Creates a 'dated' filename prefixed by 'RetroArch', and
+ * Creates a 'dated' filename prefixed by 'retroarch', and
  * concatenates extension (@ext) to it.
  *
  * E.g.:
- * s = "RetroArch-{month}{day}-{Hours}{Minutes}.{@ext}"
+ * s = "retroarch-{year}{month}{day}-{Hour}{Minute}{Second}.{@ext}"
  **/
 size_t fill_dated_filename(char *s,
       const char *ext, size_t len)
@@ -552,7 +552,7 @@ size_t fill_dated_filename(char *s,
    time_t cur_time = time(NULL);
    rtime_localtime(&cur_time, &tm_);
    _len  = strftime(s, len,
-         "RetroArch-%m%d-%H%M%S", &tm_);
+         "retroarch-%y%m%d-%H%M%S", &tm_);
    _len += strlcpy(s + _len, ext, len - _len);
    return _len;
 }

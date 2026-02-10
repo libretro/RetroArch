@@ -16,6 +16,10 @@
 
 #include <unistd.h>
 
+#ifdef HAVE_WAYLAND_BACKPORT
+#include "../../gfx/common/wayland_common_backport.h"
+#endif
+
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 
@@ -44,6 +48,26 @@
 
 #ifndef EGL_PLATFORM_WAYLAND_KHR
 #define EGL_PLATFORM_WAYLAND_KHR 0x31D8
+#endif
+
+#ifdef WEBOS
+extern void gfx_ctx_wl_get_video_size_webos(void*, unsigned*, unsigned*);
+extern void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t*);
+extern void gfx_ctx_wl_update_title_webos(void*);
+extern bool gfx_ctx_wl_init_webos(const toplevel_listener_t*, gfx_ctx_wayland_data_t**);
+extern bool gfx_ctx_wl_set_video_mode_common_size_webos(gfx_ctx_wayland_data_t*, unsigned, unsigned, bool);
+extern bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t*, bool);
+extern bool gfx_ctx_wl_suppress_screensaver_webos(void*, bool);
+extern void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t*, void (*)(void*, unsigned*, unsigned*), bool*, bool*, unsigned*, unsigned*);
+
+#define gfx_ctx_wl_get_video_size_common gfx_ctx_wl_get_video_size_webos
+#define gfx_ctx_wl_destroy_resources_common gfx_ctx_wl_destroy_resources_webos
+#define gfx_ctx_wl_update_title_common gfx_ctx_wl_update_title_webos
+#define gfx_ctx_wl_init_common gfx_ctx_wl_init_webos
+#define gfx_ctx_wl_set_video_mode_common_size gfx_ctx_wl_set_video_mode_common_size_webos
+#define gfx_ctx_wl_set_video_mode_common_fullscreen gfx_ctx_wl_set_video_mode_common_fullscreen_webos
+#define gfx_ctx_wl_suppress_screensaver gfx_ctx_wl_suppress_screensaver_webos
+#define gfx_ctx_wl_check_window_common gfx_ctx_wl_check_window_webos
 #endif
 
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
@@ -103,10 +127,10 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    gfx_ctx_wayland_data_t *wl    = (gfx_ctx_wayland_data_t*)data;
    wl->last_buffer_scale         = wl->buffer_scale;
    wl->last_fractional_scale_num = wl->fractional_scale_num;
-   if (!wl->fractional_scale)
-      wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
-
-   wl->ignore_configuration = false;
+   if (!wl->fractional_scale &&
+       wl_compositor_get_version(wl->compositor) >=
+       WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION)
+      wl->ignore_configuration = false;
 #ifdef HAVE_EGL
    wl_egl_window_resize(wl->win, width, height, 0, 0);
 #endif

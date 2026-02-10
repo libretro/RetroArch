@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -224,6 +238,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
    "Activa manual la sincronització al núvol."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Resol el conflicte: Manté el versió local"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   "Resol tots els conflictes pujant els fitxers locals al servidor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Resol el conflicte: Manté la versió online"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   "Resol tots els conflictes descarregant els fitxers del servidor i reemplaça els fitxers locals."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
@@ -2662,7 +2692,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
-   "Estableix el pic de luminància (en cd/m2) que pot reproduir la vostra pantalla. Consulteu RTings pel pic de luminància de la vostra pantalla."
+   "Configura la luminància màxima (en cd/m2) que el teu monitor pot reproduir. Un cop hagis escollit un valor, no el canviïs. Ajusta la brillantor mitjançant la lluminositat del blanc. Per saber el quina és la luminància màxima del teu monitor, visita RTings. En els monitors que tinguin activades les línies d'escombrat, cal que augmentis aquest valor, per augmentar la brillantor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -2670,20 +2700,45 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Estableix la luminància a la que hauria d'estar un paper blanc, per exemple un text llegible, o luminància al cim del rang SDR (Standard Dynamic Range). Útil per ajustar a diferents condicions de llum del vostre entorn."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
-   "Control de gamma/contrast per a HDR. Agafa els colors i incrementa el rang general entre les parts més fosques i més brillants de la imatge. Quant més alt és el contrast HDR, més gran es torna la diferència, mentre que quan més baix és el contrast, més desgastada es torna la imatge. Ajuda als usuari a ajustar la imatge al seu gust i al que sembla veure's millor a la seva pantalla."
+   "Quan hagis fixat la luminància màxima, es farà aquest valor per configurar la brillantor estàndard. Tècnicament, estableix la luminància amb el blanc d'un full de paper amb text llegible, o la luminància màxima del rang SDR."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Expandeix l'escala"
+   "Augment de color"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
-   "Una vegada convertit l'espai de colors a un espai lineal, decideix si s'hauria d'usar una escala de color ampliada per a obtenir HDR10."
+   "Utilitza el rang complet de color del monitor per crear-ne un de més brillant i saturat. Per colors més fidels al joc original, selecciona PRECÍS."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
+   "PRECÍS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "AMPLIAT"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "PANORÀMICA"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Línies d'escaneig"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "Activa les línies d'escombrat HDR. Les línies d'escombrat son la raó principal a RetroArch per activar HDR, perquè una implementació correcta de les línies d'escombrat apagarà gran  part de la imatge i el HDR recuperarà la brillantor perduda. Si et cal un control més precís de les línies d'escombrat, has de fer servir shaders personalitzats que inclou RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Disposició del subpíxel"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Selecciona la disposició dels subpíxels de la teva pantalla (només afecta les línies d'escombrat). Si no saps quina és la disposició dels subpíxels de la teva pantalla, ho pots cercar a Rtings.com"
+   )
+
 
 /* Settings > Video > Synchronization */
 
@@ -3367,7 +3422,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Posa en pausa el contingut quan es desconnecti el comandament"
+   "Posa en pausa el contingut si es desconnecta el comandament"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
@@ -3603,13 +3658,30 @@ MSG_HASH(
    "Solució temporal per la desconnexió intermitent dels controladors. Evita que hi hagi 2 jugadors amb controladors idèntics."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
-   "Confirma que vols Sortir/Tancar/Reiniciar"
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Confirma la sortida"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_PRESS_TWICE,
-   "Requereix que la drecera de tecla per Sortir/Tancar/Reiniciar s'hagi de clicar dues vegades."
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "Es requereix que la drecera per Sortir es cliqui dues vegades."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Confirma el tancament del contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "Es requereix que la drecera per tancar el contingut es cliqui dues vegades."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Confirma el reinici del contingut"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "Es requereix que la drecera per reiniciar el contingut es cliqui dues vegades."
+   )
+
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -3944,7 +4016,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Incrementa l'índex del disc seleccionat actualment. La safata de disc virtual ha d'estar oberta."
+   "Augmenta l'índex del disc seleccionat i fa una inserció retardada si el disc virtual està tancat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3952,7 +4024,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Disminueix l'índex del disc seleccionat actualment. La safata de disc virtual ha d'estar oberta."
+   "Disminueix l'índex del disc seleccionat i fa una inserció retardada si el disc virtual està tancat."
    )
 
 MSG_HASH(
@@ -4490,6 +4562,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Disparador de turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   "Mantingueu premut"
    )
 
 /* Settings > Latency */
@@ -5746,6 +5822,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "Llindar de lliscament"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Entrada de 2 dits"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   "Fes servir un segon dit com a botó del ratolí mentre es mou el cursor."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
@@ -7183,6 +7267,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
    "Mostra les traduccions com una imatge superposada (Mode Imatge), àudio directe (Veu) o utilitza una veu del sistema, com NVDA (Narració)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+   "Servei IA de fons"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
+   "Selecciona quin servei de traducció s'utilitza. HTTP fa servir un servidor remot en l'adreça web configurada. Apple fa servir traducció i reconeixement òptic de caràcters en el dispositiu (macOS /iOS)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -8695,6 +8787,54 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Escanejar"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Mètode d'escaneig"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Automàtica, o personalitzada amb opcions específiques."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Comprobació de la base de dades"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "L'opció Estricte només afegirà els elements que tinguin una entrada a la base de dades. L'opció Lax també afegirà aquells fitxers que tinguin l'extensió correcta, encara que no coincideixin els números de sèrie. L'opció DAT personalitzat farà la comprovació en un fitxer XML de l'usuari en compte de fer-ho a la base de dades interna. L'opció Res, ignorarà les bases de dades i només farà servir les extensions dels fitxers."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "Base de dades de referència"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "Per fer les cerques més ràpides, les comparacions es poden limitar a una única base de dades o a la primera base de dades que tingui una coincidència."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "Llista de reproducció que s'ha d'actualitzar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "Els resultats s'afegiran a la llista de reproducció. En cas que seleccionis l'opció Automàtic-Qualsevol, s'actualitzaran diverses llistes de reproducció. L'opció personalitzada sense base de dades associada no vincularà elements a cap base de dades."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Cerca un fitxer concret"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Cerca només en un fitxer en comptes d'una carpeta. Has de tornar a seleccionar la ubicació del contingut després de canviar aquesta opció."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Omet referències de la base de dades a la llista de reproducció"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "Si hi ha un nom de llista de reproducció personalitzat, sempre fes-lo servir en cas de cerca, encara que hi hagi una coincidència a la base de dades."
+   )
 
 /* Import Content > Scan File */
 
@@ -9847,12 +9987,20 @@ MSG_HASH(
 /* Quick Menu > Disc Control */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   "Índex del disc actual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Selecciona el disc actual des d'una llista d'imatges disponibles. La safata de disc virtual es pot mantenir tancada."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Expulsar disc"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Obre la safata del disc virtual i extreu el disc que s'estava carregant. Si l'opció 'Fes pausa al contingut quan el menú estigui actiu' està activada, alguns nuclis no poden registrar canvis fins que hagin passat uns segons amb el contingut reprès i després de cada acció de control de discs."
+   "Obre la safata del disc virtual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
@@ -9860,7 +10008,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Insereix un disc i tanca la safata virtual. Si l'opció 'Fes pausa al contingut quan el menú estigui actiu' està activada, alguns nuclis no poden registrar canvis fins que hagin passat uns segons amb el contingut reprès i després de cada acció de control de discs."
+   "Tanca la safata del disc virtual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -9868,20 +10016,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
-   "Expulsa el disc actual, selecciona un nou disc des del sistema de fitxers, insereix-lo i tanca la safata virtual del disc.\nNOTA: Aquesta és una característica heretada. Es recomana carregar contingut de diversos discs a les llistes de reproducció M3U, les quals permeten seleccionar discs mitjançant les opcions 'Expulsar disc', 'Introduir disc' i 'Índex del disc actual'."
+   "Selecciona un nou disc del sistema de fitxers i adjunta-ho a la llista d'índexs.\nNOTA: Aquesta és una opció heretada. Es recomana fer servir llistes M3U per títols que fan servir varis discs."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND_TRAY_OPEN,
-   "Escull un nou disc des del sistema de fitxers i insereix-lo sense tancar la safata virtual de disc.\nNOTA: Aquesta és una característica heretada. Es recomana carregar títols de diversos discs fent servir les llistes de reproducció M3U, les quals permeten seleccionar discs mitjançant l'opció 'Índex del disc actual'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Índex del disc actual"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Escull el disc d'una llista de disc disponibles. El disc es carregarà en clicar 'Insereix disc'."
-   )
+/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -10853,6 +10990,10 @@ MSG_HASH(
    "<Directori de continguts>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<Automàtic>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
    "<Personalitzat>"
    )
@@ -10861,20 +11002,80 @@ MSG_HASH(
    "<No especificat>"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   "Analògic esquerre"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Completament automàtic"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Analògic dret"
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   "Personalitzat"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "Estricte"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Lax"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "DAT personalitzat (cerca estricta)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "DAT personalitzat (cerca laxa)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   "Cap"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<Automàtic/Qualsevol>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<Automàtic/Primera correspondència>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<Automàtic/Nom del sistema>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
+   "<Personalitzat>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "Analògic esquerre"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
    "Analògic esquerre (forçat)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Analògic dret"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Analògic dret (forçat)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Analògics esquerra + dreta"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Analògics esquerra + dreta (forçats)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Doble analògic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Doble analògic (forçat)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
@@ -11436,6 +11637,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    "Transparència del tema de colors"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   "Icona de menú actual"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   "La icona de menú actual es pot amagar, sota el menú horitzontal o sota el títol d'encapçalament."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   "Cap"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   "Títol"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
@@ -12078,6 +12295,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
    "Gris clar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DRACULA,
+   "Dràcula"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
@@ -12783,7 +13004,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Nom dispositiu: %s (#%d)"
+   "Port %d Nom del dispositiu: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
@@ -15699,6 +15920,24 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Seleccioneu la zona horària per ajustar la data i l’hora a la vostra ubicació."
    )
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TIMEZONE,
    "Mostra una llista de fusos horaris disponibles. Després de selecciona un fus horari, l'hora i la data s'ajusten a aquest. Es dona per suposat que el rellotge del sistema o del maquinari està posat a UTC."
@@ -16048,5 +16287,115 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
    "Mostra l'opció 'IA del joc'."
+   )
+#endif
+#ifdef HAVE_SMBCLIENT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   "Configuració de xarxa de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   "Modifica la configuració de la xarxa compartida SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   "Activa el client de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Activa l'accés a la xarxa compartida SMB. Es recomana una connexió Ethernet per sobre de Wifi per una connexió més fiable. Nota: Si fas canvis en aquesta configuració, cal reiniciar RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   "Servidor de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   "Adreça IP del servidor o amfitrió."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   "Nom del recurs compartit de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   "Nom de la xarxa compartida a accedir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   "Subdirectori de SMB (opcional)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   "Adreça del subdirectori a compartir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   "Nom d'usuari de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   "Nom d'usuari per l'autenticació."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   "Contrasenya de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   "Contrasenya per l'autenticació."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+   "Grup de treball de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+   "Grup de treball o nom del domini."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   "Mode d'autenticació de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   "Selecciona l'autenticació que es fa servir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   "Connexions màximes de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   "Selecciona el nombre màxim de connexions possibles."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   "Temps límit de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   "Selecciona el temps límit per defecte en segons."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   "Explora el recurs compartit de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   "Cerca fitxers a la xarxa SMB configurada."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+   "Mostra el client de SMB"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+   "Mostra la configuració de client de SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   "Xarxa compartida SMB"
    )
 #endif

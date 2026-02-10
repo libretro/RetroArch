@@ -545,41 +545,19 @@ static void *switch_init(const video_info_t *video,
     return sw;
 }
 
-static void switch_update_viewport(switch_video_t *sw,
-            video_frame_info_t *video_info)
+static void switch_update_viewport(switch_video_t *sw)
 {
-    settings_t *settings = config_get_ptr();
-    float desired_aspect = 0.0f;
-    float width          = sw->vp.full_width;
-    float height         = sw->vp.full_height;
-
+    /* Handle o_size mode (original size) specially */
     if (sw->o_size)
     {
-        width         = sw->o_width;
-        height        = sw->o_height;
-        sw->vp.x      = (int)(((float)sw->vp.full_width - width)) / 2;
-        sw->vp.y      = (int)(((float)sw->vp.full_height - height)) / 2;
-
-        sw->vp.width  = width;
-        sw->vp.height = height;
-
+        sw->vp.x      = (int)(((float)sw->vp.full_width - sw->o_width)) / 2;
+        sw->vp.y      = (int)(((float)sw->vp.full_height - sw->o_height)) / 2;
+        sw->vp.width  = sw->o_width;
+        sw->vp.height = sw->o_height;
         return;
     }
 
-    desired_aspect = video_driver_get_aspect_ratio();
-
-    /* TODO/FIXME: Does nx use top-left or bottom-left origin?  I'm assuming top left. */
-    if (settings->bools.video_scale_integer)
-       video_viewport_get_scaled_integer(&sw->vp, sw->vp.full_width, sw->vp.full_height,
-             desired_aspect, sw->keep_aspect, true);
-    else if (sw->keep_aspect)
-       video_viewport_get_scaled_aspect(&sw->vp, width, height, true);
-    else
-    {
-        sw->vp.x      = sw->vp.y = 0;
-        sw->vp.width  = width;
-        sw->vp.height = height;
-    }
+    video_driver_update_viewport(&sw->vp, false, sw->keep_aspect, true);
 }
 
 static void switch_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -647,7 +625,7 @@ static bool switch_frame(void *data, const void *frame,
          || (width  != sw->last_width)
          || (height != sw->last_height))
    {
-      switch_update_viewport(sw, video_info);
+      switch_update_viewport(sw);
 
       /* Sanity check */
       sw->vp.width  = MIN(sw->vp.width, sw->vp.full_width);
@@ -959,8 +937,9 @@ static const video_poke_interface_t switch_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void switch_get_poke_interface(void *data,
