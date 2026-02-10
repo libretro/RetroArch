@@ -130,7 +130,8 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    if (!wl->fractional_scale &&
        wl_compositor_get_version(wl->compositor) >=
        WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION)
-      wl->ignore_configuration = false;
+      wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+   wl->ignore_configuration = false;
 #ifdef HAVE_EGL
    wl_egl_window_resize(wl->win, width, height, 0, 0);
 #endif
