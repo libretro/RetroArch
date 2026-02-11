@@ -584,12 +584,19 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
 
       if (samples > 0)
       {
-         /* Buffer full, wait for audio callback to drain some.
-          * Use a timeout as a safety net in case audio stalls. */
-         dispatch_time_t timeout = dispatch_time(
-               DISPATCH_TIME_NOW, 500 * NSEC_PER_MSEC);
-         if (dispatch_semaphore_wait(dev->sema, timeout) != 0)
-            break; /* Timeout - audio might be stalled */
+         /* If the audio unit has stopped (e.g. audio session interrupted
+          * by a phone call), bail out - the callback will never drain. */
+         UInt32 running = 0;
+         UInt32 size    = sizeof(running);
+         if (AudioUnitGetProperty(dev->dev,
+                  kAudioOutputUnitProperty_IsRunning,
+                  kAudioUnitScope_Global, 0,
+                  &running, &size) == noErr && !running)
+            break;
+         /* Brief timeout as safety net for the race where the unit
+          * stops during the wait; we'll re-check on the next iteration. */
+         dispatch_semaphore_wait(dev->sema,
+               dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC));
       }
    }
 
@@ -686,10 +693,15 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
 
             if (out_samples > 0)
             {
-               dispatch_time_t timeout = dispatch_time(
-                     DISPATCH_TIME_NOW, 500 * NSEC_PER_MSEC);
-               if (dispatch_semaphore_wait(dev->sema, timeout) != 0)
+               UInt32 running = 0;
+               UInt32 sz      = sizeof(running);
+               if (AudioUnitGetProperty(dev->dev,
+                        kAudioOutputUnitProperty_IsRunning,
+                        kAudioUnitScope_Global, 0,
+                        &running, &sz) == noErr && !running)
                   break;
+               dispatch_semaphore_wait(dev->sema,
+                     dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC));
             }
          }
       }

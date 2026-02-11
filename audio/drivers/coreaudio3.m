@@ -169,8 +169,6 @@ static void rb_read_data_interleaved(ringbuffer_h r,
 
 #pragma mark - CoreAudio3
 
-static bool coreaudio3_g_interrupted;
-
 @interface CoreAudio3 : NSObject {
    ringbuffer_t _rb;
    dispatch_semaphore_t _sema;
@@ -350,7 +348,7 @@ static bool coreaudio3_g_interrupted;
 
 - (ssize_t)writeFloat:(const float *)data samples:(size_t)samples {
    size_t _len = 0;
-   while (!coreaudio3_g_interrupted && samples > 0)
+   while (samples > 0)
    {
       size_t write_avail = rb_avail(&_rb);
       if (write_avail > samples)
@@ -365,7 +363,17 @@ static bool coreaudio3_g_interrupted;
          break;
 
       if (write_avail == 0)
-         dispatch_semaphore_wait(_sema, DISPATCH_TIME_FOREVER);
+      {
+         /* If the audio unit has stopped (e.g. audio session interrupted
+          * by a phone call), bail out immediately - the callback that
+          * drains the buffer will never fire. */
+         if (!_au.running)
+            break;
+         /* Brief timeout as a safety net: if the audio unit stops
+          * during the wait, we'll re-check _au.running promptly. */
+         dispatch_semaphore_wait(_sema,
+               dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC));
+      }
    }
 
    return _len;
