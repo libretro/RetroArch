@@ -2691,8 +2691,56 @@ MSG_HASH(
    "Csúcs-luminancia"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "A csúcsfényerő (cd/m2 egységben), amit a kijelző meg tud jeleníteni. Egyszer kell beállítani, utána a Papírfehér fényerővel lehet a fényességet szabályozni. A csúcsfényerőt az RTings.com oldalról lehet megtudni. Néhány kijelzőn, ha a scanline-ok be vannak kapcsolva, ezt és a papírfehér fényerőt feljebb kell állítani az összfényerő felhúzásához."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Papírfehér luminancia"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Miután a csúcsfényerő be van állítva, ez használható a szokásos fényerő beállításhoz. Műszakilag ez azt a fényerőt jelenti, amit egy fehér papír képvisel, pl. olvasható szöveghez vagy az SDR (Standard Dynamic Range) legnagyobb fényerejéhez."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   "Színfeltöltés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "A kijelző teljes színskálájának használata egy fényesebb, telítetteb képhez. Az eredeti játékhoz hűbb színekhez a PONTOS beállítás javasolt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
+   "PONTOS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   "KITERJESZTETT"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   "SZÉLES"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
+   "SZUPER"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   "Scanline-ok"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   "HDR scanline-ok engedélyezése. Ez a fő indok a HDR használatára RetroArch alatt, mivel egy pontos scanline megvalósítás a képernyő nagy részét kikapcsolja és a HDR visszaad valamennyit az így elvesztett fényerőből. Ha ennél pontosabb scanline beállításokra van szükség, azt a RetroArch egyedi shaderei közt lehet megtalálni."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "Subpixel elrendezés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   "A kijelző subpixel elrendezése. Ez csak a scanline-okra van hatással. Kétség esetén a subpixel elrendezés az RTings.com oldalon megtalálható."
    )
 
 
@@ -3613,6 +3661,30 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Kerülő megoldás a le- és visszacsatlakozó kontrollerekre. Ha két játékos ugyanolyan kontrollert használ, ez gondot okozhat."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   "Kilépés megerősítése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   "A Kilépés gyorsgombot kétszer kell megnyomni."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   "Tartalom bezárásának megerősítése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   "A Tartalom bezárása gyorsgombot kétszer kell megnyomni."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   "Tartalom újraindításának megerősítése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   "A Tartalom újraindítása gyorsgombot kétszer kell megnyomni."
+   )
 
 
 /* Settings > Input > Haptic Feedback/Vibration */
@@ -3947,8 +4019,16 @@ MSG_HASH(
    "Következő lemez"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   "A jelenleg kiválasztott lemez sorszámát megnöveli és ha a virtuális tálca zárva van, késlelteti a behelyezést."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
    "Előző lemez"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
+   "A jelenleg kiválasztott lemez sorszámát csökkenti és ha a virtuális tálca zárva van, késlelteti a behelyezést."
    )
 
 MSG_HASH(
@@ -7193,6 +7273,14 @@ MSG_HASH(
    "Fordítás megjelenítése szövegrátétként (Kép mód), felolvasása (Beszéd mód), vagy a rendszer narrátorának használata (Narrátor)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+   "AI szolgáltatás megvalósítása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
+   "A fordítás végrehajtási módja. HTTP esetén a beállított távoli szervert használja. Apple esetén a készüléken található OCR és fordítási szolgáltatást (macOS/iOS)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "Az AI szolgáltatás URL-je"
    )
@@ -8703,6 +8791,54 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    "Beolvasás"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   "Beolvasás módja"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   "Automatikus vagy egyedi, részletes beállításokkal."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   "Adatbázis ellenőrzése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   "Szigorú esetben csak az adatbázisban fellelt tételek kerülnek be. Engedékeny esetben azok a fájlok is, amiknek a kiterjesztése megfelelő, de nem található hozzájuk CRC vagy sorszám alapján találat, Egyedi DAT esetén a megadott XML fájlban történik a keresés, Nincs esetben egyáltalán nincs adatbázis ellenőrzés, csak a fájl kiterjesztése számít."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   "A kereséshez használt adatbázis"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   "A találatok szűkíthetők egy konkrét adatbázisra, vagy arra, amelyben az első találat van, hogy a beolvasás gyorsabb legyen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   "A frissítendő játéklista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   "Az eredmények ebbe a játéklistába kerülnek. Automatikus - bármely esetben több játéklista is frissülhet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   "Egy fájl beolvasása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   "Egy könyvtár helyett csak egy fájl beolvasása. Változtatás után újra ki kell választani a beolvasás helyét."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   "Adatbázis hivatkozás kihagyása a játéklistából"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   "Egyedi játéklista név esetén mindig ez a név legyen használva a bélyegkép kereséséhez, még ha volt is adatbázis találat."
+   )
 
 /* Import Content > Scan File */
 
@@ -9871,16 +10007,32 @@ MSG_HASH(
    "Aktuális lemez sorszáma"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INDEX,
+   "Az aktuális lemez kiválasztása az elérhető lemezek listájából. A virtuális lemeztálca maradhat csukva."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Lemez kiadása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+   "Virtuális lemeztálca kinyitása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    "Lemez behelyezése"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   "Virtuális lemeztálca bezárása."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Új lemez betöltése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
+   "Új lemez kiválasztása a fájlrendszerből és hozzáadás a listához. \nFigyelem: ez egy régi funkció, ajánlott inkább M3U fájlokat használni a többlemezes címekhez."
    )
 /* deprecated */
 
@@ -10862,6 +11014,10 @@ MSG_HASH(
    "<Tartalom könyvtára>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   "<Automatikus>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
    "<Egyedi>"
    )
@@ -10870,12 +11026,44 @@ MSG_HASH(
    "<Nincs megadva>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   "Teljesen automatikus"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    "Egyedi"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   "Szigorú"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   "Engedékeny"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   "Egyedi DAT (szigorú)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   "Egyedi DAT (engedékeny)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
    "Nincs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   "<Automatikus/bármelyik>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   "<Automatikus/az első találat>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   "<Automatikus/a rendszer neve>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
@@ -10896,6 +11084,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
    "Jobb analóg kar (mindenképpen)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   "Bal + jobb analóg"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
