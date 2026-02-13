@@ -4,6 +4,7 @@
 - ANDROID: Enable ZSTD compression usage
 - ANDROID: Preserve OpenGL context when app is paused
 - ANDROID: Fix double launch issue when changing games from external launcher
+- AUDIO/MICROPHONE: Fix resampling, apple drivers
 - APPLE: Use coreaudio3 resampling
 - APPLE: Add coreaudio3 driver to iOS/TVOS
 - APPLE: Add jollycv, skyemu, gearlynx, amiarcadia, o2em, uzem cores to App Store builds
@@ -15,6 +16,7 @@
 - CLOUDSYNC: Conflict resolution options
 - EMSCRIPTEN: Added dice to core selection dropdown
 - EMSCRIPTEN: Numerous bugfixes
+- FFMPEG: new features for save state, variable strength seek, audio/subtitle stream controls
 - INPUT: Fix illuminance sensor on Linux
 - INPUT: Fix raw mouse position after window state changes
 - INPUT: New analog-to-digital types: both stick, twin-stick (for pressing face buttons with analog stick).
@@ -26,6 +28,8 @@
 - IOS: Fix external keyboards
 - IOS: Add pd777 core
 - LAKKA: RetroFlag specific options for safe shutdown and reset
+- LIBRETRO: ROM memory type added
+- LIBRETRO: Sensor interface clarifications
 - MACOS: Fix OpenGL color on wide gamut displays
 - MENU: Do hard reset when pushing RetroPad Start on Restart menu item
 - MENU: Remove "Missing firmware check" option
@@ -58,6 +62,7 @@
 - VIDEO/D3D11/D3D12/VULKAN: Major HDR update. Inverse tone mapping uses RGB maxing instead of luminance, better full-spectrum remapping of SDR space to HDR, Contrast option remove. Performance improved. HDR menu settings exposed to shaders, fast HDR single-pass scanline simulation added.
 - VIDEO/D3D11/D3D12/VULKAN: multi-mode HDR Expand Gamut selection
 - VIDEO/VULKAN: VK_EXT_full_screen_exclusive is now optional
+- VIDEO/WAYLAND: Fix fullscreen window offset/incorrect sizing
 - VITA: Enable cloudsync feature
 - VFS: Add Samba share browse and load content (Windows file shares)
 - WEBOS: Enable mouse use, include developer dir
