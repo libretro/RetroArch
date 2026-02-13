@@ -769,6 +769,30 @@ static const rgui_theme_t rgui_theme_opaque_dracula = {
    0xFF525F88  /* particle_color */
 };
 
+static const rgui_theme_t rgui_theme_evergarden = {
+   0xFFCBE3B3, /* hover_color */
+   0xFFDDEEDD, /* normal_color */
+   0xFF96B4AA, /* title_color */
+   0xC0112222, /* bg_dark_color */
+   0xC0112222, /* bg_light_color */
+   0xC0374145, /* border_dark_color */
+   0xC0374145, /* border_light_color */
+   0xFF171C1F, /* shadow_color */
+   0xC06F8788  /* particle_color */
+};
+
+static const rgui_theme_t rgui_theme_opaque_evergarden = {
+   0xFFCBE3B3, /* hover_color */
+   0xFFDDEEDD, /* normal_color */
+   0xFF96B4AA, /* title_color */
+   0xFF112222, /* bg_dark_color */
+   0xFF112222, /* bg_light_color */
+   0xFF374145, /* border_dark_color */
+   0xFF374145, /* border_light_color */
+   0xFF171C1F, /* shadow_color */
+   0xFF6F8788  /* particle_color */
+};
+
 static const rgui_theme_t rgui_theme_fairyfloss = {
    0xFFFFF352, /* hover_color */
    0xFFF8F8F2, /* normal_color */
@@ -2970,6 +2994,10 @@ static const rgui_theme_t *rgui_get_theme(rgui_t *rgui)
          return transparent
                ? &rgui_theme_dracula
                : &rgui_theme_opaque_dracula;
+      case RGUI_THEME_EVERGARDEN:
+         return transparent
+               ? &rgui_theme_evergarden
+               : &rgui_theme_opaque_evergarden;
       case RGUI_THEME_FAIRYFLOSS:
          return transparent
                ? &rgui_theme_fairyfloss
