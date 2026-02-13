@@ -4049,7 +4049,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
 #if defined(HAVE_GFX_WIDGETS)
       if (      p_dispwidget->active
             && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-         video_st->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+         video_st->flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
 #endif
    }
 
@@ -6471,7 +6471,7 @@ static enum runloop_state_enum runloop_check_state(
 #if defined(HAVE_GFX_WIDGETS)
          if (widgets_active)
          {
-            if (rewinding)
+            if (rewinding && settings->bools.notification_show_fast_forward)
                video_st->flags |=  VIDEO_FLAG_WIDGETS_REWINDING;
             else
                video_st->flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
@@ -6479,7 +6479,7 @@ static enum runloop_state_enum runloop_check_state(
          else
 #endif
          {
-            if (rewinding)
+            if (rewinding && settings->bools.notification_show_fast_forward)
                runloop_msg_queue_push(s, strlen(s), 0, t, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
@@ -6792,12 +6792,12 @@ static enum runloop_state_enum runloop_check_state(
          if (settings->bools.notification_show_fast_forward)
          {
             if (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-               video_st->flags |=  VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+               video_st->flags |=  VIDEO_FLAG_WIDGETS_FASTMOTION;
             else
-               video_st->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+               video_st->flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
          }
          else
-            video_st->flags    &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+            video_st->flags    &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
       }
       else
 #endif
@@ -6815,7 +6815,7 @@ static enum runloop_state_enum runloop_check_state(
    }
 #if defined(HAVE_GFX_WIDGETS)
    else
-      video_st->flags &= ~VIDEO_FLAG_WIDGETS_FAST_FORWARD;
+      video_st->flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -6892,6 +6892,21 @@ static enum runloop_state_enum runloop_check_state(
          old_slowmotion_button_state                  = new_slowmotion_button_state;
          old_slowmotion_hold_button_state             = new_slowmotion_hold_button_state;
       }
+
+#if defined(HAVE_GFX_WIDGETS)
+      if (widgets_active)
+      {
+         if (settings->bools.notification_show_fast_forward)
+         {
+            if (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
+               video_st->flags |=  VIDEO_FLAG_WIDGETS_SLOWMOTION;
+            else
+               video_st->flags &= ~VIDEO_FLAG_WIDGETS_SLOWMOTION;
+         }
+         else
+            video_st->flags    &= ~VIDEO_FLAG_WIDGETS_SLOWMOTION;
+      }
+#endif
    }
 
    /* Check save state slot hotkeys */

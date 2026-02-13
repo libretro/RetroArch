@@ -1559,9 +1559,9 @@ void gfx_widgets_frame(void *data)
    unsigned video_width             = video_info->width;
    unsigned video_height            = video_info->height;
    bool widgets_is_paused           = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_PAUSED) ? true : false;
-   bool widgets_is_fastforwarding   = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_FAST_FORWARD) ? true : false;
+   bool widgets_is_fastmotion       = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_FASTMOTION) ? true : false;
+   bool widgets_is_slowmotion       = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_SLOWMOTION) ? true : false;
    bool widgets_is_rewinding        = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_REWINDING) ? true : false;
-   bool runloop_is_slowmotion       = video_info->runloop_is_slowmotion;
 #ifdef HAVE_MENU
    bool menu_screensaver_active     = (video_info->menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE) ? true : false;
 #endif
@@ -1764,7 +1764,7 @@ void gfx_widgets_frame(void *data)
             top_right_x_advance,
             MSG_PAUSED);
 
-   if (widgets_is_fastforwarding)
+   if (widgets_is_fastmotion)
       top_right_x_advance -= gfx_widgets_draw_indicator(
             p_dispwidget,
             p_disp,
@@ -1792,7 +1792,7 @@ void gfx_widgets_frame(void *data)
             top_right_x_advance,
             MSG_REWINDING);
 
-   if (runloop_is_slowmotion)
+   if (widgets_is_slowmotion)
    {
       top_right_x_advance -= gfx_widgets_draw_indicator(
             p_dispwidget,
