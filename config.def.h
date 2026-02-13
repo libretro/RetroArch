@@ -1012,8 +1012,14 @@
  * rather than raw game output. */
 #define DEFAULT_POST_FILTER_RECORD false
 
+/* Screenshots named automatically. */
+#define DEFAULT_AUTO_SCREENSHOT_FILENAME true
+
 /* Screenshots post-shaded GPU output if available. */
-#define DEFAULT_GPU_SCREENSHOT true
+#define DEFAULT_GPU_SCREENSHOT false
+
+/* Record post-shaded GPU output instead of raw game footage if available. */
+#define DEFAULT_GPU_RECORD false
 
 /* Watch shader files for changes and auto-apply as necessary. */
 #define DEFAULT_VIDEO_SHADER_WATCH_FILES false
@@ -1021,12 +1027,6 @@
 /* Initialise file browser with last used directory
  * when selecting shader presets/passes via the menu */
 #define DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR false
-
-/* Screenshots named automatically. */
-#define DEFAULT_AUTO_SCREENSHOT_FILENAME true
-
-/* Record post-shaded GPU output instead of raw game footage if available. */
-#define DEFAULT_GPU_RECORD false
 
 /* OSD-messages. */
 #define DEFAULT_FONT_ENABLE true
