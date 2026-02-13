@@ -16202,13 +16202,6 @@ static bool setting_append_list(
 
             END_SUB_GROUP(list, list_info, parent_group);
 
-            START_SUB_GROUP(
-                  list,
-                  list_info,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST),
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
 
             CONFIG_FLOAT(
                   list, list_info,
@@ -16334,8 +16327,6 @@ static bool setting_append_list(
                   &subgroup_info,
                   parent_group);
 
-
-            END_SUB_GROUP(list, list_info, parent_group);
 
             START_SUB_GROUP(list, list_info, "Binds", &group_info, &subgroup_info, parent_group);
 

@@ -425,8 +425,6 @@ static void frontend_ps2_exitspawn(char *s, size_t len, char *args)
    frontend_ps2_exec(s, should_load_content);
 }
 
-static int frontend_ps2_get_rating(void) { return 4; }
-
 enum frontend_architecture frontend_ps2_get_arch(void)
 {
    return FRONTEND_ARCH_MIPS;
@@ -556,7 +554,6 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_ps2_get_rating,      /* get_rating */
    NULL,                         /* load_content */
    frontend_ps2_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */

@@ -3499,7 +3499,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS:
          return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
       case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
-      case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
          return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENT_LIST];
       case MENU_ENUM_LABEL_SAVESTATE_LIST:
       case MENU_ENUM_LABEL_SAVE_STATE:
@@ -3677,12 +3676,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
          return xmb->textures.list[XMB_TEXTURE_CURSOR];
       case MENU_ENUM_LABEL_HELP_LIST:
-      case MENU_ENUM_LABEL_HELP_CONTROLS:
-      case MENU_ENUM_LABEL_HELP_LOADING_CONTENT:
-      case MENU_ENUM_LABEL_HELP_SCANNING_CONTENT:
-      case MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE:
-      case MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
-      case MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
          return xmb->textures.list[XMB_TEXTURE_HELP];
       case MENU_ENUM_LABEL_QUIT_RETROARCH:
          return xmb->textures.list[XMB_TEXTURE_EXIT];

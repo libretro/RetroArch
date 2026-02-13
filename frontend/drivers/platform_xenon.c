@@ -51,11 +51,6 @@ static void frontend_xenon_shutdown(bool unused)
    (void)unused;
 }
 
-static int frontend_xenon_get_rating(void)
-{
-   return -1;
-}
-
 static void frontend_xenon_get_env(int *argc, char *argv[],
       void *data, void *params_data) { }
 
@@ -75,7 +70,6 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    frontend_xenon_shutdown,      /* shutdown  */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_xenon_get_rating,    /* get_rating   */
    NULL,                         /* load_content */
    frontend_xenon_get_arch,      /* get_arch       */
    NULL,                         /* get_powerstate */

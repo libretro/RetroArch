@@ -184,7 +184,6 @@ typedef struct rarch_system_info
    } ports;
    unsigned rotation;
    unsigned core_requested_rotation;
-   unsigned performance_level;
    char valid_extensions[256];
    bool load_no_content;
    bool supports_vfs;

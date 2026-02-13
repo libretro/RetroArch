@@ -340,15 +340,6 @@ static void frontend_xdk_exitspawn(char *s, size_t len, char *args)
    frontend_xdk_exec(s, should_load_content);
 }
 
-static int frontend_xdk_get_rating(void)
-{
-#if defined(_XBOX360)
-   return 11;
-#elif defined(_XBOX1)
-   return 7;
-#endif
-}
-
 enum frontend_architecture frontend_xdk_get_arch(void)
 {
 #if defined(_XBOX360)
@@ -421,7 +412,6 @@ frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_xdk_get_rating,
    NULL,                         /* content_loaded */
    frontend_xdk_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
