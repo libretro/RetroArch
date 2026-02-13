@@ -519,6 +519,10 @@ static bool take_screenshot_raw(
    unsigned width   = video_st->frame_cache_width;
    unsigned height  = video_st->frame_cache_height;
    size_t pitch     = video_st->frame_cache_pitch;
+
+   if (!data || !width || !height || !pitch)
+      return false;
+
    /* Negative pitch is needed as screenshot takes bottom-up,
     * but we use top-down.
     */
