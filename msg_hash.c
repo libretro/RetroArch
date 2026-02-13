@@ -54,6 +54,11 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
    return ret;
 }
 
+int msg_hash_get_error_msg_enum(enum retro_error err, char *s, size_t len)
+{
+   return msg_hash_get_error_msg_us_enum(err, s, len);
+}
+
 const char *get_user_language_iso639_1(bool limit)
 {
    switch (uint_user_language)

@@ -716,6 +716,78 @@ enum retro_mod
 };
 
 /**
+ * Error code ranges and specific errors that may be reported by cores.
+ * Explicitly listed errors within a range may have localized error
+ * messages maintained by the frontend. The first item in the range
+ * acts as a generic error indication for that kind of error.
+ *
+ * Frontend codes not in the list may be sent, but not encouraged as 
+ * later updates may extend the mapping.
+ * Lower 16 bits are reserved for the core and can be freely defined.
+ * @see RETRO_ENVIRONMENT_SET_ERROR_CODE
+ */
+enum retro_error
+{
+   RETROE_NONE           = 0x00000000,
+
+   /* A problem with the content not covered by more specific codes */
+   RETROE_UNSUPPORTED_CONTENT                      = 0x01000000,
+   /* The format is recognized, but internal contents are not appropriate for the core */
+   RETROE_UNSUPPORTED_CONTENT_ISO_FORMAT_ERROR     = 0x01010000,
+   RETROE_UNSUPPORTED_CONTENT_CHD_FORMAT_ERROR     = 0x01020000,
+   RETROE_UNSUPPORTED_CONTENT_CUE_FORMAT_ERROR     = 0x01030000,
+   RETROE_UNSUPPORTED_CONTENT_BIN_FORMAT_ERROR     = 0x01040000,
+   RETROE_UNSUPPORTED_CONTENT_ZIP_FORMAT_ERROR     = 0x01050000,
+   RETROE_UNSUPPORTED_CONTENT_7Z_FORMAT_ERROR      = 0x01060000,
+   /* The format is not recognized. */
+   RETROE_UNSUPPORTED_CONTENT_FORMAT               = 0x01100000,
+   RETROE_UNSUPPORTED_CONTENT_RANGE_END            = 0x01FFFFFF,
+   /* A problem with firmware / BIOS not covered by more specific codes. */
+   RETROE_MISSING_BIOS                             = 0x02000000,
+   /* Content would need region specific BIOS that is not found */
+   RETROE_MISSING_BIOS_REGION_PAL                  = 0x02010000,
+   RETROE_MISSING_BIOS_REGION_NTSC                 = 0x02020000,
+   RETROE_MISSING_BIOS_REGION_WORLD                = 0x02030000,
+   /* Content would need country specific BIOS that is not found */
+   RETROE_MISSING_BIOS_REGION_USA                  = 0x02100000,
+   RETROE_MISSING_BIOS_REGION_JAPAN                = 0x02110000,
+   RETROE_MISSING_BIOS_REGION_EUROPE               = 0x02120000,
+   RETROE_MISSING_BIOS_REGION_BRAZIL               = 0x02130000,
+   /* Content would need other country specific BIOS that is not found */
+   RETROE_MISSING_BIOS_REGION_COUNTRY              = 0x02200000,
+   /* Content would need system files from online updater */
+   RETROE_MISSING_SYSTEM_FILES                     = 0x02300000,
+   RETROE_MISSING_BIOS_RANGE_END                   = 0x02FFFFFF,
+   /* A problem with the available display rendering from the frontend,
+    * not covered by more specific codes. */
+   RETROE_HARDWARE_RENDERING                       = 0x03000000,
+   /* Specific API not available in general or with the required version */
+   RETROE_HARDWARE_RENDERING_VULKAN_NOT_AVAILABLE  = 0x03010000,
+   RETROE_HARDWARE_RENDERING_VULKAN_VERSION_ERROR  = 0x03020000,
+   RETROE_HARDWARE_RENDERING_OPENGL_NOT_AVAILABLE  = 0x03030000,
+   RETROE_HARDWARE_RENDERING_OPENGL_VERSION_ERROR  = 0x03040000,
+   RETROE_HARDWARE_RENDERING_DX11_NOT_AVAILABLE    = 0x03050000,
+   RETROE_HARDWARE_RENDERING_DX12_NOT_AVAILABLE    = 0x03060000,
+   /* Specific pixel format not available */
+   RETROE_HARDWARE_RENDERING_PXFMT_XRGB8888_UNSUPP = 0x03110000,
+   RETROE_HARDWARE_RENDERING_PXFMT_RGB565_UNSUPP   = 0x03120000,
+   RETROE_HARDWARE_RENDERING_RANGE_END             = 0x03FFFFFF,
+   /* The action from the frontend is not supported by the core */
+   RETROE_UNSUPPORTED_ACTION                       = 0x04000000,
+   /* (Un)serialization (save state, netplay) not available */
+   RETROE_UNSUPPORTED_ACTION_SERIALIZE             = 0x04010000,
+   RETROE_UNSUPPORTED_ACTION_UNSERIALIZE           = 0x04020000,
+   /* Unserialization is available but the actual file is not compatible */
+   RETROE_UNSUPPORTED_ACTION_UNSERIALIZE_FORMAT    = 0x04030000,
+   /* The currently selected core option combination is not valid */
+   RETROE_UNSUPPORTED_ACTION_CORE_OPTION_COMBI     = 0x04040000,
+   RETROE_UNSUPPORTED_ACTION_RANGE_END             = 0x04FFFFFF,
+
+   RETROE_DUMMY         = INT_MAX     /* Ensure sizeof(enum) == sizeof(int) */
+};
+#define RETROE_MASK_CORE     0x0000FFFF
+#define RETROE_MASK_FRONTEND 0xFFFF0000
+/**
  * @defgroup RETRO_ENVIRONMENT Environment Callbacks
  * @{
  */
@@ -2589,6 +2661,16 @@ enum retro_mod
  * regardless of the value returned in \c data.
 */
 #define RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE (81 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Informs the frontend of an error occurrence during the current operation.
+ * Contains a code and an optional (short) message to be displayed.
+ *
+ * @param[out] data <tt>retro_error_message *</tt>.
+ * @return \c true if the environment call is available.
+ * @see retro_error
+ */
+#define RETRO_ENVIRONMENT_SET_ERROR_CODE 82
 
 /**@}*/
 
@@ -7398,6 +7480,20 @@ struct retro_device_power
     * so do not assume that this will be 100 in the \c RETRO_POWERSTATE_CHARGED state.
     */
    int8_t percent;
+};
+
+struct retro_error_message
+{
+   /**
+    * An error code and an optional message for sending feedback to the frontend.
+    */
+   enum retro_error code;
+
+   /**
+    * A short message for the user to be displayed by the frontend. Optional.
+    */
+   const char* message;
+
 };
 
 /** @} */

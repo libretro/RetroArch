@@ -17194,6 +17194,138 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "stopped."
    )
+MSG_HASH(
+   MSG_RETROE_UNKNOWN,
+   "Unknown error code received from core."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_CONTENT,
+   "This core does not support this kind of content."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_CONTENT_ISO_FORMAT_ERROR,
+   "This core does not support the specific ISO format of this content."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_CONTENT_CHD_FORMAT_ERROR,
+   "This core does not support the specific CHD format of this content."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_CONTENT_CUE_FORMAT_ERROR,
+   "This core does not support the specific CUE format of this content."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_CONTENT_BIN_FORMAT_ERROR,
+   "This core does not support the specific BIN format of this content."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_CONTENT_ZIP_FORMAT_ERROR,
+   "This core does not support the specific ZIP format of this content."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_CONTENT_7Z_FORMAT_ERROR,
+   "This core does not support the specific 7Z format of this content."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_CONTENT_FORMAT,
+   "This core does not support the specific format of this content."
+   )
+MSG_HASH(
+   MSG_RETROE_MISSING_BIOS,
+   "Necessary BIOS file(s) to run this content are not present."
+   )
+MSG_HASH(
+   MSG_RETROE_MISSING_BIOS_REGION_PAL,
+   "Necessary PAL region BIOS file(s) to run this content are not present."
+   )
+MSG_HASH(
+   MSG_RETROE_MISSING_BIOS_REGION_NTSC,
+   "Necessary NTSC region BIOS file(s) to run this content are not present."
+   )
+MSG_HASH(
+   MSG_RETROE_MISSING_BIOS_REGION_WORLD,
+   "Necessary world region BIOS file(s) to run this content are not present."
+   )
+MSG_HASH(
+   MSG_RETROE_MISSING_BIOS_REGION_USA,
+   "Necessary USA region BIOS file(s) to run this content are not present."
+   )
+MSG_HASH(
+   MSG_RETROE_MISSING_BIOS_REGION_JAPAN,
+   "Necessary Japan region BIOS file(s) to run this content are not present."
+   )
+MSG_HASH(
+   MSG_RETROE_MISSING_BIOS_REGION_EUROPE,
+   "Necessary Europe region BIOS file(s) to run this content are not present."
+   )
+MSG_HASH(
+   MSG_RETROE_MISSING_BIOS_REGION_BRAZIL,
+   "Necessary Brazil region BIOS file(s) to run this content are not present."
+   )
+MSG_HASH(
+   MSG_RETROE_MISSING_BIOS_REGION_COUNTRY,
+   "Necessary country specific BIOS file(s) to run this content are not present."
+   )
+MSG_HASH(
+   MSG_RETROE_MISSING_SYSTEM_FILES,
+   "Necessary system file(s) to run this content are not present, they may be retrieved with the online updater."
+   )
+MSG_HASH(
+   MSG_RETROE_HARDWARE_RENDERING,
+   "This core would require a hardware rendering feature that is not available."
+   )
+MSG_HASH(
+   MSG_RETROE_HARDWARE_RENDERING_VULKAN_NOT_AVAILABLE,
+   "This core would require Vulkan rendering that is not available."
+   )
+MSG_HASH(
+   MSG_RETROE_HARDWARE_RENDERING_VULKAN_VERSION_ERROR,
+   "This core would require a Vulkan rendering version that is not available."
+   )
+MSG_HASH(
+   MSG_RETROE_HARDWARE_RENDERING_OPENGL_NOT_AVAILABLE,
+   "This core would require OpenGL rendering that is not available."
+   )
+MSG_HASH(
+   MSG_RETROE_HARDWARE_RENDERING_OPENGL_VERSION_ERROR,
+   "This core would require an OpenGL rendering version that is not available."
+   )
+MSG_HASH(
+   MSG_RETROE_HARDWARE_RENDERING_DX11_NOT_AVAILABLE,
+   "This core would require DirectX 11 rendering that is not available."
+   )
+MSG_HASH(
+   MSG_RETROE_HARDWARE_RENDERING_DX12_NOT_AVAILABLE,
+   "This core would require DirectX 12 rendering that is not available."
+   )
+MSG_HASH(
+   MSG_RETROE_HARDWARE_RENDERING_PXFMT_XRGB8888_UNSUPP,
+   "This core would require pixel format XRGB8888 that is not available."
+   )
+MSG_HASH(
+   MSG_RETROE_HARDWARE_RENDERING_PXFMT_RGB565_UNSUPP,
+   "This core would require pixel format RGB565 that is not available."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_ACTION,
+   "This core does not support this action."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_ACTION_SERIALIZE,
+   "This core does not support serialization (save states)."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_ACTION_UNSERIALIZE,
+   "This core does not support unserialization (save state loading)."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_ACTION_UNSERIALIZE_FORMAT,
+   "Error encountered with save state format."
+   )
+MSG_HASH(
+   MSG_RETROE_UNSUPPORTED_ACTION_CORE_OPTION_COMBI,
+   "This combination of core options is invalid."
+   )
 #ifdef HAVE_GAME_AI
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION,

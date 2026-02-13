@@ -396,6 +396,8 @@ static bool input_test_file_read(const char* file_path)
             (int)rjson_get_source_line(parser),
             (int)rjson_get_source_column(parser),
             (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
+      if (last_test_step > MAX_TEST_STEPS)
+         last_test_step = 0;
    }
 
    /* Free parser */
@@ -414,6 +416,12 @@ end:
    {
       NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,"[Remote RetroPad] Too long test input json, maximum size: %d\n",MAX_TEST_STEPS);
    }
+   if (last_test_step == 0)
+   {
+      NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,"[Remote RetroPad]: no steps in input json\n");
+      success = false;
+   }
+
    for (current_test_step = 0; current_test_step < last_test_step; current_test_step++)
    {
       NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG,
@@ -627,7 +635,14 @@ unsigned NETRETROPAD_CORE_PREFIX(retro_api_version)(void)
 }
 
 void NETRETROPAD_CORE_PREFIX(retro_set_controller_port_device)(
-      unsigned port, unsigned device) { }
+      unsigned port, unsigned device)
+{
+   const char msg[] = "Input device type change is not supported!";
+   struct retro_error_message e;
+   e.code = RETROE_UNSUPPORTED_ACTION | ((port & 0xFF) << 8) | (device & 0xFF);
+   e.message = msg;
+   NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_ERROR_CODE, &e);
+}
 
 void NETRETROPAD_CORE_PREFIX(retro_get_system_info)(
       struct retro_system_info *info)
@@ -1468,13 +1483,16 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 
 bool NETRETROPAD_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
+   bool load_result = true;
+
    netretropad_check_variables();
    open_UDP_socket();
 
    /* If a .ratst file is given (only possible via command line),
     * initialize test sequence. */
    if (info)
-      input_test_file_read(info->path);
+      load_result = input_test_file_read(info->path);
+
    if (last_test_step > MAX_TEST_STEPS)
       current_test_step = last_test_step;
    else
@@ -1485,7 +1503,25 @@ bool NETRETROPAD_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info
       NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE, &message);
    }
 
-   return true;
+   if (!load_result)
+   {
+      const char msg[] = "Invalid test input file!";
+      struct retro_error_message e;
+      e.code = RETROE_UNSUPPORTED_CONTENT_FORMAT;
+      e.message = msg;
+      NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_ERROR_CODE, &e);
+   }
+
+   if (false)
+   {
+      const char msg[] = "Simulated load error - BIOS!";
+      struct retro_error_message e;
+      e.code = RETROE_MISSING_BIOS | 0x4321;
+      e.message = msg;
+      NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_ERROR_CODE, &e);
+      load_result = false;
+   }
+   return load_result;
 }
 
 void NETRETROPAD_CORE_PREFIX(retro_unload_game)(void) { }
@@ -1494,9 +1530,23 @@ bool NETRETROPAD_CORE_PREFIX(retro_load_game_special)(unsigned type,
       const struct retro_game_info *info, size_t num) { return false; }
 size_t NETRETROPAD_CORE_PREFIX(retro_serialize_size)(void) { return 0; }
 bool NETRETROPAD_CORE_PREFIX(retro_serialize)(void *data,
-      size_t len) { return false; }
+      size_t len) 
+{ 
+   struct retro_error_message e;
+   e.code = RETROE_UNSUPPORTED_ACTION_SERIALIZE;
+   e.message = NULL;
+   NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_ERROR_CODE, &e);
+   return false;
+}
 bool NETRETROPAD_CORE_PREFIX(retro_unserialize)(const void *data,
-      size_t len) { return false; }
+      size_t len) 
+{
+   struct retro_error_message e;
+   e.code = RETROE_UNSUPPORTED_ACTION_UNSERIALIZE;
+   e.message = NULL;
+   NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_ERROR_CODE, &e);
+   return false;
+}
 size_t NETRETROPAD_CORE_PREFIX(retro_get_memory_size)(
       unsigned id) { return 0; }
 void NETRETROPAD_CORE_PREFIX(retro_cheat_reset)(void) { }
