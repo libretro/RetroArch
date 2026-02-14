@@ -335,6 +335,15 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
          snprintf(subtitle, sizeof(subtitle), "%s (%lu)", cheevo->title, (unsigned long)cheevo->points);
 
          gfx_widgets_push_achievement(title, subtitle, cheevo->badge_name);
+
+         /* if all badges haven't been loaded, preload the next one assuming it will be the next needed */
+         if (!rcheevos_locals.badges_loaded)
+         {
+            const rc_client_achievement_t* next_locked_achievement =
+               rc_client_get_next_achievement_info(rcheevos_locals.client, cheevo, RC_CLIENT_ACHIEVEMENT_BUCKET_LOCKED);
+            if (next_locked_achievement)
+               rcheevos_client_download_badge_from_url(next_locked_achievement->badge_url, next_locked_achievement->badge_name);
+         }
       }
       else
 #endif
@@ -1436,12 +1445,18 @@ static void rcheevos_finalize_game_load(rc_client_t* client)
 #endif
    if (want_badges) /* prefetch the game badge */
    {
+      const rc_client_achievement_t* first_locked_achievement = NULL;
       const rc_client_game_t* game = rc_client_get_game_info(client);
       char badge[32];
 
       badge[0] = 'i';
       strlcpy(&badge[1], game->badge_name, sizeof(badge) - 1);
       rcheevos_client_download_badge_from_url(game->badge_url, badge);
+
+      /* predownload the first badge the player hasn't earned, assuming it will be the next to unlock */
+      first_locked_achievement = rc_client_get_next_achievement_info(client, NULL, RC_CLIENT_ACHIEVEMENT_BUCKET_LOCKED);
+      if (first_locked_achievement)
+         rcheevos_client_download_badge_from_url(first_locked_achievement->badge_url, first_locked_achievement->badge_name);
    }
 
    if (!rc_client_is_processing_required(client))

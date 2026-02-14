@@ -327,7 +327,7 @@ void rcheevos_client_server_call(const rc_api_request_t* request,
       rcheevos_log_post_url(request->url, request->post_data);
 
 #ifdef CHEEVOS_JSON_OVERRIDE
-      if (strstr(request->post_data, "r=patch"))
+      if (strstr(request->post_data, "r=patch") || strstr(request->post_data, "r=achievementsets"))
       {
          rcheevos_client_http_load_response(request, callback, callback_data);
          return;
@@ -335,7 +335,7 @@ void rcheevos_client_server_call(const rc_api_request_t* request,
 #endif
 
 #ifdef CHEEVOS_SAVE_JSON
-      if (strstr(request->post_data, "r=patch"))
+      if (strstr(request->post_data, "r=patch") || strstr(request->post_data, "r=achievementsets"))
       {
          task_push_http_post_transfer_with_user_agent(request->url,
             request->post_data, true, "POST", rcheevos_locals->user_agent_core,
