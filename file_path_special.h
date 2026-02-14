@@ -105,7 +105,11 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_BACKGROUND_IMAGE "bg.png"
 #define FILE_PATH_TTF_FONT "font.ttf"
 #define FILE_PATH_RUNTIME_EXTENSION ".lrtl"
+#ifdef DJGPP
+#define FILE_PATH_DEFAULT_EVENT_LOG "retrodos.log"
+#else
 #define FILE_PATH_DEFAULT_EVENT_LOG "retroarch.log"
+#endif
 #define FILE_PATH_EVENT_LOG_EXTENSION ".log"
 #define FILE_PATH_DISK_CONTROL_INDEX_EXTENSION ".ldci"
 #define FILE_PATH_CORE_BACKUP_EXTENSION ".lcbk"
