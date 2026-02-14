@@ -3249,16 +3249,8 @@ MSG_HASH(
    "Выкарыстоўваць аднолькавае кіраванне як для меню, так і для гульняў. Ужываецца да клавіятуры."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Замена кнопак кіравання меню Згода ды Скасаванне"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Змяняе месцамі кнопкі OK/Адмена. Пры адключэнні дзейнічае японская раскладка, пры ўключэнні - заходняя."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Замена кнопак прагорткі меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3273,16 +3265,8 @@ MSG_HASH(
    "Дазволіць любым карыстальнікам кіраваць меню. Калі выключана, толькі Карыстальнік 1 здольны кіраваць меню."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Паскарэнне прагорткі меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "Максімальная хуткасць курсора пры ўтрыманні пракруткі."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Затрымка прагорткі меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3418,10 +3402,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Перамотка назад"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Перамотка назад бягучага змесціва пры ўтрыманні кнопкі. Мае быць уключана 'Падтрымка перамоткі назад'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -4589,10 +4569,6 @@ MSG_HASH(
    "Перамотка назад"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "Змяніць налады перамоткі назад."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Лічыльнік часу кадра"
    )
@@ -5425,14 +5401,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Адлюстроўваць экраннае паведамленне пры захаванні ды загрузцы станаў."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Апавяшчэнні пра перамотку наперад"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Адлюстроўваць на экране індыкатар пры перамотцы змесціва наперад."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -6764,10 +6732,6 @@ MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
    "Пачынаць сеанс з актывацыяй усіх дасягненняў (нават з раней раскрытымі)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Апісанне"
    )
 
 /* Settings > Achievements > Appearance */
@@ -9309,7 +9273,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Загрузіць новы дыск"
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 

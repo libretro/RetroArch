@@ -49,9 +49,6 @@ other than `msg_hash_us.h` will be rejected.
 /* Main Menu > Information > System Information */
 
 
-/* Main Menu > Information > Database Manager */
-
-
 /* Main Menu > Information > Database Manager > Information */
 
 
@@ -59,7 +56,6 @@ other than `msg_hash_us.h` will be rejected.
 
 
 /* Main Menu > Help */
-
 
 /* Main Menu > Help > Basic Menu Controls */
 
@@ -232,9 +228,6 @@ other than `msg_hash_us.h` will be rejected.
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
-/* Settings > On-Screen Display > Video Layout */
-
-
 /* Settings > On-Screen Display > On-Screen Notifications */
 
 
@@ -358,8 +351,6 @@ other than `msg_hash_us.h` will be rejected.
 /* Quick Menu > Options > Manage Core Options */
 
 
-/* - Legacy (unused) */
-
 /* Quick Menu > Controls */
 
 
@@ -386,7 +377,6 @@ other than `msg_hash_us.h` will be rejected.
 
 /* Quick Menu > Disc Control */
 
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -437,12 +427,6 @@ other than `msg_hash_us.h` will be rejected.
 
 
 /* Unsorted */
-
-
-/* Unused (Only Exist in Translation Files) */
-
-
-/* Unused (Needs Confirmation) */
 
 
 /* Discord Status */

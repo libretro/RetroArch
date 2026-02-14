@@ -2288,9 +2288,6 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
-/* Settings > On-Screen Display > Video Layout */
-
-
 /* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
@@ -3558,8 +3555,6 @@ MSG_HASH(
 /* Quick Menu > Options > Manage Core Options */
 
 
-/* - Legacy (unused) */
-
 /* Quick Menu > Controls */
 
 
@@ -3610,7 +3605,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Løs ut platen"
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -4486,16 +4480,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
    "Kompatibelt innhold funnet"
    )
-
-/* Unused (Only Exist in Translation Files) */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Hjelp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Beskrivelse"
    )
 
 /* Discord Status */

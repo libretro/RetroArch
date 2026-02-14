@@ -3378,6 +3378,7 @@ MSG_HASH(
    "Підтвердіть закриття вмісту"
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3408,16 +3409,8 @@ MSG_HASH(
    "Використовуйте одне і те ж керування для меню і гри. Застосовується до клавіатури."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Поміняти місцями кнопки ОК та Скасувати"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Поміняти місцями кнопки ОК та Скасувати. Вимкнено — це японське розташування кнопок, увімкнено — це західне."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Поміняти кнопки прокрутки меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3448,16 +3441,8 @@ MSG_HASH(
    "Повернення до головного меню з вкладок/бічної панелі після натискання кнопки «Назад»."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Прискорення прокрутки меню"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "Максимальна швидкість курсору при проведенні напряму."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Затримка Прокрутки Меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3617,10 +3602,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Перемотати назад"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Перемотує поточний вміст, поки утримується клавіша. 'Підтримка перемотування' має бути увімкнена."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -4836,10 +4817,6 @@ MSG_HASH(
    "Перемотати назад"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "Зміна налаштувань перемотування."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Кількість кадрів"
    )
@@ -5648,14 +5625,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Відображати екранне повідомлення при збереженні і завантаженні стану."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Швидкі сповіщення"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Виводити на екрані індикатор під час швидкого переходу на екран."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -9568,7 +9537,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Завантажити новий диск"
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -12824,9 +12792,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
    "Не вдалося знайти відповідний вміст або імені файлу CRC"
    )
-
-/* Unused (Only Exist in Translation Files) */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATUS,
    "Стан"
@@ -12842,10 +12807,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Очистити"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Опис"
    )
 
 /* Discord Status */

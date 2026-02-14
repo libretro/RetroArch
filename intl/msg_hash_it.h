@@ -3234,6 +3234,7 @@ MSG_HASH(
    "Workaround per i controller che si disconnettono e si riconnettono. Impedisci 2 giocatori con i controller identici."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3264,16 +3265,8 @@ MSG_HASH(
    "Utilizzare gli stessi controlli per il menu e per il gioco. Si applica alla tastiera."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Menu: Scambia pulsanti OK e Annulla"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Scambia i pulsanti OK / Annulla. Disabilitato è l'orientamento per gli utenti giapponesi, abilitato è l'orientamento per gli utenti occidentali."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Scambia i tasti di scorrimento del menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3304,16 +3297,8 @@ MSG_HASH(
    "Ritorna al menu principale dalle schede/barra laterale quando premi Indietro."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Accelerazione Scorrimento del Menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "Velocità massima del cursore quando si mantiene una direzione da scorrere."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Ritardo Di Scorrimento Menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3473,10 +3458,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Riavvolgimento (rewind)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Riavvolge il contenuto attuale quando si tiene premuto il tasto. 'Supporto al riavvolgimento' deve essere abilitato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -4692,10 +4673,6 @@ MSG_HASH(
    "Riavvolgimento (rewind)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "Modifica le impostazioni di riavvolgimento."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Contatore di tempo dei fotogrammi"
    )
@@ -5528,14 +5505,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Visualizza un messaggio sullo schermo durante il salvataggio e il caricamento dei salvataggi rapidi."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Notifiche Rapide"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Visualizza un indicatore sullo schermo quando il contenuto viene inoltrato velocemente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -9400,7 +9369,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Carica nuovo disco"
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -12459,10 +12427,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Cancella"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Descrizione"
    )
 
 /* Discord Status */

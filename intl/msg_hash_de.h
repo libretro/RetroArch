@@ -3314,6 +3314,7 @@ MSG_HASH(
    "Die Taste zum Zurücksetzen des Inhalts muss zweimal gedrückt werden."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3345,7 +3346,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Vertausche OK- und Zurück-Tasten im Menü"
+   "Tasten „OK“ und „Abbrechen“ tauschen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3353,7 +3354,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Vertausche Scroll-Tasten im Menü"
+   "Scrolltasten tauschen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3385,7 +3386,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Menü Scroll-Beschleunigung"
+   "Scrollbeschleunigung"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
@@ -3393,7 +3394,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Menü Scroll-Verzögerung"
+   "Scrollverzögerung"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3553,10 +3554,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Zurückspulen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Spult den aktuellen Inhalt zurück, solange Taste gedrückt wird. 'Zurückspulen-Unterstützung' muss aktiviert sein."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
@@ -4780,10 +4777,6 @@ MSG_HASH(
    "Zurückspulen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "Einstellungen für die Rückspul-Funktion ändern."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Frame-Zeit-Zähler"
    )
@@ -5620,14 +5613,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Zeigt auf dem Bildschirm eine Nachricht beim Speichern und Laden von Savestates an."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Benachrichtigungen beim Vorspulen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Eine Bildschirmanzeige anzeigen, wenn Inhalte vorgespult werden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -8138,7 +8123,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
-   "Inhalt"
+   "Inhalts-Icons"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE,
@@ -9508,7 +9493,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
    "Eine neue Disc aus dem Dateisystem auswählen und der Indexliste hinzufügen. \nHINWEIS: Dies ist eine veraltete Funktion. Es wird stattdessen empfohlen, für Titel mit mehreren Discs M3U-Wiedergabelisten zu verwenden."
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -12544,9 +12528,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
    "Fehler beim Auffinden passender Inhalte mittels CRC oder Dateiname"
    )
-
-/* Unused (Only Exist in Translation Files) */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
    "Aktiviere System-BGM"
@@ -12558,10 +12539,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Leeren"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Beschreibung"
    )
 
 /* Discord Status */

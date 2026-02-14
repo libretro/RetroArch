@@ -2393,20 +2393,12 @@ MSG_HASH(
    "استخدم نفس الضوابط لكل من القائمة واللعبة. ينطبق على لوحة المفاتيح."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "مبادلة القائمة بالأزرار موافق وإلغاء الأزرار"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "مبادلة الأزرار لOK/الإلغاء. تعطيل هو اتجاه الزر الياباني، مفعل هو الاتجاه الغربي."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
    "قائمة التحكم في جميع المستخدمين"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "تسريع تمرير القائمة"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
@@ -3455,14 +3447,6 @@ MSG_HASH(
    "عرض رسالة على الشاشة عند التشغيل تلقائياً آخر قرص مستعمل من محتوى الأقراص المتعددة المحملة عبر قوائم تشغيل M3U"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "إشعارات التقدم السريع"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "عرض مؤشر على الشاشة عند إعادة توجيه المحتوى بسرعة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
    "إشعارات لقطة الشاشة"
    )
@@ -3844,10 +3828,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
    "لقطة شاشة تلقائية"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "الوصف"
    )
 
 /* Settings > Achievements > Appearance */
@@ -4819,8 +4799,6 @@ MSG_HASH(
 /* Quick Menu > Options > Manage Core Options */
 
 
-/* - Legacy (unused) */
-
 /* Quick Menu > Controls */
 
 
@@ -5135,7 +5113,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "تحميل قرص جديد"
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 

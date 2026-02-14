@@ -3326,6 +3326,7 @@ MSG_HASH(
    "Solución alternativa para os controladores que se desconectan e se reconectan. Impide a 2 xogadores cos controladores idénticos."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3356,16 +3357,8 @@ MSG_HASH(
    "Usa os mesmos controis tanto para o menú como para o xogo. Aplícase ao teclado."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Botóns Intercambiar menú Aceptar e Cancelar"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Cambiar os botóns para Aceptar/Cancelar. Desactivada é a orientación do botón xaponés, activada é a orientación occidental."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Botóns de desprazamento de cambio de menú"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3396,16 +3389,8 @@ MSG_HASH(
    "Volver ao menú principal desde lapelas/barra lateral ao premer Volver."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Aceleración de desprazamento do menú"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "Velocidade máxima do cursor ao manter unha dirección para desprazarse."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Retraso de desprazamento do menú"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3565,10 +3550,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Rebobinar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Rebobina o contido actual mentres se mantén premida a tecla. A 'Soporte para rebobinar' debe estar activada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -4796,10 +4777,6 @@ MSG_HASH(
    "Rebobinar"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "Cambiar a configuración de rebobinado."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Contador de tempo de fotogramas"
    )
@@ -5632,14 +5609,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
    "Gardar notificacións estatais"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Notificacións de avance rápido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Mostra un indicador en pantalla cando avance rápido contido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -9548,7 +9517,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
    "Selecciona un novo disco do sistema de arquivos e engádeo á lista de índices.\nNOTA: Esta é unha función antiga. Recoméndase usar listas de reprodución M3U para títulos de varios discos."
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -12688,9 +12656,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
    "Produciuse un erro ao localizar o contido coincidente por CRC ou polo nome de ficheiro"
    )
-
-/* Unused (Only Exist in Translation Files) */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATUS,
    "Estado"
@@ -12706,10 +12671,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Limpar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Descrición"
    )
 
 /* Discord Status */

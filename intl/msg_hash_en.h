@@ -113,9 +113,6 @@ MSG_HASH(
    "Front-End OS"
    )
 
-/* Main Menu > Information > Database Manager */
-
-
 /* Main Menu > Information > Database Manager > Information */
 
 MSG_HASH(
@@ -131,7 +128,6 @@ MSG_HASH(
 
 
 /* Main Menu > Help */
-
 
 /* Main Menu > Help > Basic Menu Controls */
 
@@ -557,10 +553,6 @@ MSG_HASH(
 /* Settings > Input > Menu Controls */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Menu Swap Okay and Cancel Buttons"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Swap buttons for Okay/Cancel. When disabled, the Japanese button orientation is on by default, when this is enabled, it is the western orientation instead."
    )
@@ -870,9 +862,6 @@ MSG_HASH(
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
-
-
-/* Settings > On-Screen Display > Video Layout */
 
 
 /* Settings > On-Screen Display > On-Screen Notifications */
@@ -1474,8 +1463,6 @@ MSG_HASH(
    "Force current settings to be written to active options file. Ensures options are preserved in the event that a core bug causes improper shutdown of the front-end."
    )
 
-/* - Legacy (unused) */
-
 /* Quick Menu > Controls */
 
 
@@ -1522,7 +1509,6 @@ MSG_HASH(
 
 /* Quick Menu > Disc Control */
 
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -1866,7 +1852,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    "Maximum Frame Latency"
    )
-
 
 /* Discord Status */
 

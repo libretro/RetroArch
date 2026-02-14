@@ -2396,9 +2396,6 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
-/* Settings > On-Screen Display > Video Layout */
-
-
 /* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
@@ -3082,8 +3079,6 @@ MSG_HASH(
 /* Quick Menu > Options > Manage Core Options */
 
 
-/* - Legacy (unused) */
-
 /* Quick Menu > Controls */
 
 
@@ -3122,7 +3117,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "خارج کردن لوح"
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -3386,11 +3380,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "راهنما"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "درباره"
-   )
-
 
 /* Discord Status */
 

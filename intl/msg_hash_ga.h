@@ -3410,6 +3410,7 @@ MSG_HASH(
    "Éilítear go mbrúfar an eochair the Athshocraigh Ábhar faoi dhó."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3441,7 +3442,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Cnaipí Malartaithe Roghchláir Ceart go leor agus Cealaigh"
+   "Malartaigh na cnaipí Ceart go leor agus Cealaigh"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3449,7 +3450,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Cnaipí Scrollaigh Malartaithe Roghchláir"
+   "Malartaigh Cnaipí Scrollaigh"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3481,7 +3482,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Luasghéarú Scrollaigh Roghchláir"
+   "Luasghéarú Scrollaigh"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
@@ -3489,7 +3490,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Moill Scrollaigh Roghchláir"
+   "Moill Scrollaithe"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3649,10 +3650,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Athchasadh"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Athchasann sé an t-ábhar reatha agus an eochair á coinneáil síos. Ní mór 'Tacaíocht Athchasála' a bheith cumasaithe."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -4888,10 +4885,6 @@ MSG_HASH(
    "Athchasadh"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "Athraigh socruithe athchasála."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Áireamhán Ama Fráma"
    )
@@ -5736,14 +5729,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Taispeáin teachtaireacht ar an scáileán agus stáit shábhála á sábháil agus á lódáil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Fógraí Tapa Ar Aghaidh"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Taispeáin táscaire ar an scáileán agus ábhar á bhogadh ar aghaidh go tapa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -9720,7 +9705,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
    "Roghnaigh diosca nua ón gcóras comhad agus cuir leis an liosta innéacs é.\nNÓTA: Is gné oidhreachta í seo. Moltar seinmliostaí M3U a úsáid ina ionad sin le haghaidh teidil ildhiosca."
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -12971,10 +12955,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Glan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Cur síos"
    )
 
 /* Discord Status */

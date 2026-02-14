@@ -3382,6 +3382,7 @@ MSG_HASH(
    "Nécessite que la touche de raccourci Réinitialiser le contenu soit pressée deux fois."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3413,7 +3414,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Inverser les touches OK/Annuler dans le menu"
+   "Inverser les touches OK et Annuler"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3421,7 +3422,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Permuter les touches de défilement dans le menu"
+   "Inverser les touches de défilement"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3453,7 +3454,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Accélération au défilement du menu"
+   "Accélération au défilement"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
@@ -3461,7 +3462,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Délai de défilement du menu"
+   "Délai de défilement"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3621,10 +3622,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Rembobiner"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Rembobine le contenu actuel lorsque la touche est maintenue enfoncée. 'Prise en charge du rembobinage' doit être activé."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -4860,10 +4857,6 @@ MSG_HASH(
    "Rembobinage"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "Modifier les réglages de rembobinage."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Compteur de temps par images"
    )
@@ -5704,14 +5697,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Affiche un message à l'écran lors de l'enregistrement et du chargement des sauvegardes instantanées."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Notifications d'avance rapide"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Afficher un indicateur à l'écran lors de l'avance rapide du contenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -9648,7 +9633,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
    "Sélectionner un nouveau disque à partir du système de fichiers et l'ajouter dans la liste d'index.\nREMARQUE : C'est une fonctionnalité héritée. Il est plutôt recommandé d'utiliser des listes de lecture M3U pour des titres multi-disques."
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 

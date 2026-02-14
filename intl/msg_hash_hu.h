@@ -3406,6 +3406,7 @@ MSG_HASH(
    "A Tartalom újraindítása gyorsgombot kétszer kell megnyomni."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3436,16 +3437,8 @@ MSG_HASH(
    "A játék és a menü ugyanazt az irányítást használja (billentyűzet esetén)."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Az OK és Mégse gombok felcserélése a menüben"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Az OK és Mégse gombok felcserélése. A kikapcsolt állapot a Japánban szokásos gombkiosztás, a bekapcsolt a Nyugaton szokásos."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "A görgetőgombok felcserélése a menüben"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3476,16 +3469,8 @@ MSG_HASH(
    "Visszatérés a főmenübe a fülekből/oldalsávból a Vissza gomb lenyomásával."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Menügörgetés gyorsítása"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "A kurzor maximális sebessége, egy irányt lenyomva tartva görgetéskor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Menügörgetés késleltetése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3645,10 +3630,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Visszatekerés"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Visszatekeri az aktuális tartalmat, amíg a gomb le van nyomva. A \"Visszatekerés támogatása\" be kell legyen kapcsolva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -4880,10 +4861,6 @@ MSG_HASH(
    "Visszatekerés"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "A visszatekerés beállításai."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Képkocka idejének mérése"
    )
@@ -5720,14 +5697,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Üzenet megjelenítése játékállás mentésekor és betöltésekor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Értesítés a gyorsításról"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Képernyőn megjelenő jelzés tartalom gyorsításakor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -9696,7 +9665,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
    "Új lemez kiválasztása a fájlrendszerből és hozzáadás a listához. \nFigyelem: ez egy régi funkció, ajánlott inkább M3U fájlokat használni a többlemezes címekhez."
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -12639,10 +12607,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Törlés"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Leírás"
    )
 
 /* Discord Status */

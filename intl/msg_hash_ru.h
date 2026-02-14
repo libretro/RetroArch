@@ -3430,6 +3430,7 @@ MSG_HASH(
    "Запрашивать повторное нажатие горячей клавиши 'Сброс контента'."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3461,7 +3462,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Поменять кнопки OK и Отмена"
+   "Поменять кнопки ОК и Отмена"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3469,7 +3470,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Поменять кнопки прокрутки меню"
+   "Поменять кнопки прокрутки"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3489,7 +3490,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
-   "Пропускать меню запуска при открытии записей плейлиста. Для доступа к меню запуска нажмите D-Pad, удерживая OK."
+   "Пропускать меню запуска при открытии записей плейлиста. Для доступа к меню нажмите D-Pad, удерживая OK."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
@@ -3501,15 +3502,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Ускорение прокрутки меню"
+   "Ускорение прокрутки"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-   "Максимальная скорость курсора при удержании прокрутки."
+   "Максимальная скорость курсора при удержании направления прокрутки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Задержка прокрутки меню"
+   "Задержка прокрутки"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3672,7 +3673,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Обратная перемотка контента при удержании кнопки. Требуется включение 'Обратной перемотки'."
+   "Отматывает текущий контент при удержании кнопки. Требуется включение 'Обратной перемотки'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -5757,13 +5758,13 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Отображать сообщение при создании или загрузке быстрых сохранений."
    )
-MSG_HASH(
+MSG_HASH( /* FIXME: Rename config key and msg hash */
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Уведомление об ускоренной перемотке"
+   "Уведомления об изменении скорости"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Отображать индикатор при ускоренной перемотке контента."
+   "Отображать индикатор при включении ускорения, замедления или обратной перемотки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -9736,7 +9737,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
    "Выберите новый диск из файловой системы и добавьте его в списке индекса.\nПримечание: данная функция является устаревшей. Для игр на нескольких дисках рекомендуется использовать M3U-плейлисты."
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -12919,10 +12919,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Очистить"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Описание"
    )
 
 /* Discord Status */

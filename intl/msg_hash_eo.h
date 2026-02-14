@@ -225,9 +225,6 @@ MSG_HASH(
    "RetroArch versio"
    )
 
-/* Main Menu > Information > Database Manager */
-
-
 /* Main Menu > Information > Database Manager > Information */
 
 MSG_HASH(
@@ -239,7 +236,6 @@ MSG_HASH(
 
 
 /* Main Menu > Help */
-
 
 /* Main Menu > Help > Basic Menu Controls */
 
@@ -684,9 +680,6 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
-/* Settings > On-Screen Display > Video Layout */
-
-
 /* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
@@ -972,7 +965,6 @@ MSG_HASH(
 
 /* Quick Menu > Disc Control */
 
-/* deprecated */
 
 /* Quick Menu > Shaders */
 

@@ -2217,10 +2217,6 @@ MSG_HASH(
    "Gunakan kendali yang sama untuk menu dan permainan. Berlaku untuk papan ketik."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Menu Tukar Tombol OK dan Batal"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Tukar tombol untuk OK/Batal. Dinonaktifkan adalah orientasi tombol Jepang, diaktifkan adalah orientasi barat."
    )
@@ -2472,10 +2468,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    "Gerak Mundur"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "Ubah pengaturan gerak mundur."
-   )
 
 /* Settings > Frame Throttle > Rewind */
 
@@ -2603,9 +2595,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
    "Ambang Batas Geser"
    )
-
-/* Settings > On-Screen Display > Video Layout */
-
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
@@ -3342,8 +3331,6 @@ MSG_HASH(
 /* Quick Menu > Options > Manage Core Options */
 
 
-/* - Legacy (unused) */
-
 /* Quick Menu > Controls */
 
 
@@ -3398,7 +3385,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Muat Cakram Baru"
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -3789,10 +3775,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Bantuan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Deskripsi"
    )
 
 /* Discord Status */

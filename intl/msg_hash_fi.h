@@ -2905,16 +2905,8 @@ MSG_HASH(
    "Käytä samoja kontrolleja sekä valikossa että pelissä. Koskee näppäimistöä."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Vaihda valikon OK- ja Peruuta-painikkeiden sijaintia"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Vaihda painikkeita OK/Peruuta. Poistettu käytöstä on japanilaisten painikkeiden orientaatio, käytössä on länsimainen orientaatio."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Vaihda valikon vierityspainikkeita"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -2929,16 +2921,8 @@ MSG_HASH(
    "Salli kaikkien käyttäjien hallita valikkoa. Jos poistettu käytöstä, vain käyttäjä 1 voi hallita valikkoa."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Valikon vierityksen kiihdytys"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "Kursorin suurin nopeus, kun painetaan vierittämisen suuntaa."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Valikon vierityksen viive"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -4025,10 +4009,6 @@ MSG_HASH(
    "Takaisinkelaus"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "Muuta takaisinkelauksen asetuksia."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Kuva-aikalaskuri"
    )
@@ -4677,14 +4657,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "Näytä näytöllä viesti, kun palautetaan automaattisesti käynnistyksen yhteydessä viimeksi käytetty monilevyisen sisällön M3U-soittolistojen kautta ladattu levy."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Pikakelauksen ilmoitukset"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Näyttää ruudulla ilmaisimen kun pikakelataan sisältöä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -8249,7 +8221,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Lataa uusi levy"
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -11168,10 +11139,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Tyhjennä"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Kuvaus"
    )
 
 /* Discord Status */

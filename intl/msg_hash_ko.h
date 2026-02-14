@@ -3446,6 +3446,7 @@ MSG_HASH(
    "다시 시작 핫키를 두 번 눌러야 작동하게 합니다."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3485,7 +3486,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "메뉴 스크롤 버튼 반전"
+   "스크롤 버튼 반전"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3517,7 +3518,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "메뉴 스크롤 가속"
+   "스크롤 가속"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
@@ -3525,7 +3526,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "메뉴 스크롤 지연 시간"
+   "스크롤 지연 시간"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3685,10 +3686,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "뒤로 감기"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "키를 누르고 있는 동안 현재 콘텐츠를 뒤로 되돌립니다. '뒤로 감기 사용'이 반드시 활성화 되어야합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -4924,10 +4921,6 @@ MSG_HASH(
    "뒤로 감기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "뒤로 감기 설정을 변경합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "프레임 타임 카운터"
    )
@@ -5772,14 +5765,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "상태저장을 하거나 불러올 때 화면에 메시지를 표시합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "빨리 감기 알림"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "콘텐츠를 빨리 감기할 때 화면 표시기를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -7006,7 +6991,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
-   "사용할 번역 백엔드를 선택하세요. HTTP를 사용하는 경우 구성된 URL의 원격 서버를 사용합니다. 애플은 기기 내 OCR 및 번역(macOS/iOS)을 사용합니다."
+   "사용할 번역 백엔드를 선택합니다. HTTP는 지정된 URL의 원격 서버를 사용합니다. Apple은 온디바이스 OCR 및 번역(macOS/iOS)을 사용합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -9756,7 +9741,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
    "파일시스템에서 새로운 디스크를 선택한 뒤 인덱스 목록에 추가합니다.\n주의: 이 기능은 레거시 기능입니다. 멀티 디스크 타이틀을 실행할 때는 이 기능 대신 M3U 실행목록을 사용하는 것이 권장됩니다."
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -13004,10 +12988,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "초기화"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "설명"
-   )
 
 /* Discord Status */
 
@@ -15852,7 +15832,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
-   "SMB 네트워크 공유 액세스를 활성화합니다. 보다 안정적인 연결을 위해 Wi-Fi보다는 이더넷 사용을 강력히 권장합니다. 참고: 이 설정을 변경하려면 레트로아크를 다시 시작해야 합니다."
+   "SMB 네트워크 공유 액세스를 활성화합니다. 보다 안정적인 연결을 위해 Wi-Fi보다는 이더넷 사용을 강력히 권장합니다. 참고: 이 설정을 변경하려면 RetroArch를 다시 시작해야 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,

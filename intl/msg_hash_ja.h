@@ -3089,16 +3089,8 @@ MSG_HASH(
    "キーボードでメニューを操作する際に、Enter/Backspace の代わりにレトロパッドの A/B ボタンに割り当てられたキーボードキーで決定/キャンセルを行います。PageUp/PageDown などの割り当ても、レトロパッドの割り当てに準じて変更されます。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "決定/キャンセルボタンの入れ替え"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "決定/キャンセルボタンを入れ替えます。無効にすると日本式 (右側ボタンを決定/下側ボタンをキャンセル) に、有効にすると西洋式 (右側ボタンをキャンセル/下側ボタンを決定) になります。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "メニュースクロールボタンの入れ替え"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3113,16 +3105,8 @@ MSG_HASH(
    "どのユーザーでもメニューを操作できるようにします。無効にすると、ユーザー 1 のみがメニューを操作できます。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "メニュースクロール加速度"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "一定方向にスクロールし続けたときのカーソルの最大速度です。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "メニュースクロール遅延"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3246,10 +3230,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "巻き戻し"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "キーが押されている間、現在のコンテンツを巻き戻します。[巻き戻し対応] を有効にする必要があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -4381,10 +4361,6 @@ MSG_HASH(
    "巻き戻し"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "巻き戻しの設定を変更します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "フレームタイムカウンター"
    )
@@ -5201,14 +5177,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "ステートセーブの保存とロード時に OSD メッセージを表示します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "早送り時の通知"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "コンテンツの早送り時に OSD インジケータを表示します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -8969,7 +8937,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "新しいディスクをロード"
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -11872,10 +11839,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "クリア"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "説明"
    )
 
 /* Discord Status */

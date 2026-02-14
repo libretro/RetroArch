@@ -2985,16 +2985,8 @@ MSG_HASH(
    "Używaj tych samych elementów sterujących zarówno w menu, jak iw grze. Dotyczy klawiatury."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Menu zamiany przycisków OK i Anuluj"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Zamień przyciski na OK/Anuluj. Wyłączone to japońska orientacja przycisku, włączona to orientacja zachodnia."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Zmień przyciski przewijania menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3017,16 +3009,8 @@ MSG_HASH(
    "Wróć do menu głównego z zakładek/paska bocznego po naciśnięciu Wstecz."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Przyspieszenie przewijania menu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "Maksymalna prędkość kursora podczas przytrzymywania kierunku przewijania."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Opóźnienie przewijania menu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -4065,10 +4049,6 @@ MSG_HASH(
    "Przewijanie"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "Zmień ustawienia przewijania."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Licznik czasu klatki"
    )
@@ -4745,14 +4725,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
    "Wyświetlaj komunikat na ekranie podczas wstawiania i wyrzucania dysków."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Powiadomienie o przyspieszeniu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Wyświetlaj wskaźnik ekranowy podczas przyspieszenia zawartości."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -8133,7 +8105,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    "Załaduj nowy dysk"
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -10864,10 +10835,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Wyczyść"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Opis"
    )
 
 /* Discord Status */

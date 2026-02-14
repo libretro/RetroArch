@@ -449,9 +449,6 @@ MSG_HASH(
    "DPI zaslona"
    )
 
-/* Main Menu > Information > Database Manager */
-
-
 /* Main Menu > Information > Database Manager > Information */
 
 MSG_HASH(
@@ -567,7 +564,6 @@ MSG_HASH(
    )
 
 /* Main Menu > Help */
-
 
 /* Main Menu > Help > Basic Menu Controls */
 
@@ -972,9 +968,6 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
-/* Settings > On-Screen Display > Video Layout */
-
-
 /* Settings > On-Screen Display > On-Screen Notifications */
 
 
@@ -1186,8 +1179,6 @@ MSG_HASH(
 /* Quick Menu > Options > Manage Core Options */
 
 
-/* - Legacy (unused) */
-
 /* Quick Menu > Controls */
 
 
@@ -1222,7 +1213,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    "Izbaci disk"
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -1410,16 +1400,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Pomoć"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Opis"
-   )
-
 
 /* Discord Status */
 
 
 /* Notifications */
+
 
 
 /* Lakka */

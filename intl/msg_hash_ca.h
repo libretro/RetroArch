@@ -3402,6 +3402,7 @@ MSG_HASH(
    "Es requereix que la drecera per reiniciar el contingut es cliqui dues vegades."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3433,7 +3434,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "El menú inverteix els botons d'OK i Cancel·la"
+   "Inverteix els botons d'OK i Cancel·la"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3441,7 +3442,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Intercanvia els botons de desplaçament dels menús"
+   "Intercanvia els botons de desplaçament"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3473,7 +3474,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Acceleració del desplaçament del menú"
+   "Acceleració del desplaçament"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
@@ -3481,7 +3482,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Retard del desplaçament del menú"
+   "Retard del desplaçament"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3641,10 +3642,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Rebobina"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Rebobina el contingut actual mentre es polsa la tecla. Ha d'estar activat 'Suporta rebobinat'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -4876,10 +4873,6 @@ MSG_HASH(
    "Rebobina"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "Canvia la configuració del rebobinat."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    "Comptador de duració dels fotogrames"
    )
@@ -5720,14 +5713,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Mostra un missatge en pantalla en desar i carregar desats ràpids."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Notificacions d’avanç ràpid"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Mostra un indicador en pantalla quan s’avança ràpidament."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -9680,7 +9665,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
    "Selecciona un nou disc del sistema de fitxers i adjunta-ho a la llista d'índexs.\nNOTA: Aquesta és una opció heretada. Es recomana fer servir llistes M3U per títols que fan servir varis discs."
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -12803,10 +12787,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Netejar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Descripció"
    )
 
 /* Discord Status */

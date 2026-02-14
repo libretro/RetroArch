@@ -3434,6 +3434,7 @@ MSG_HASH(
    "Yêu cầu nhấn phím tắt Đặt lại trò chơi hai lần."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3465,7 +3466,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Menu hoán đổi nút OK và Hủy"
+   "Hoán đổi nút OK và Hủy"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3473,7 +3474,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Nút cuộn hoán đổi menu"
+   "Hoán đổi nút cuộn"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3505,7 +3506,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Tăng tốc cuộn menu"
+   "Tăng tốc cuộn"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
@@ -3513,7 +3514,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Độ trễ cuộn menu"
+   "Độ trễ cuộn"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3676,7 +3677,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
-   "Tua lùi trò chơi hiện tại khi giữ phím. Phải bật 'Hỗ trợ tua lùi'."
+   "Tua lùi trò chơi hiện tại khi giữ phím. Phải bật chức năng 'Hỗ trợ Tua lùi'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -5765,13 +5766,13 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Hiển thị thông báo trên màn hình khi lưu hoặc nạp trạng thái lưu."
    )
-MSG_HASH(
+MSG_HASH( /* FIXME: Rename config key and msg hash */
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Thông báo tua nhanh"
+   "Thông báo giới hạn khung hình"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Hiển thị chỉ báo trên màn hình khi tua nhanh trò chơi."
+   "Hiển thị chỉ báo trên màn hình khi đang tua nhanh, tua chậm hoặc tua lùi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -9740,7 +9741,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
    "Chọn một đĩa mới từ hệ thống tệp và thêm nó vào cuối danh sách chỉ mục.\nLƯU Ý: Đây là tính năng cũ (legacy). Thay vào đó, nên dùng playlist M3U cho các game nhiều đĩa."
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -12963,10 +12963,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Xóa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Miêu tả"
    )
 
 /* Discord Status */

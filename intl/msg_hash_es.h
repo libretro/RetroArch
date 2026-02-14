@@ -3410,6 +3410,7 @@ MSG_HASH(
    "Obliga a pulsar la tecla rápida de Reiniciar contenido dos veces."
    )
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 MSG_HASH(
@@ -3441,7 +3442,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Menú: cambiar botones para Confirmar y Cancelar"
+   "Intercambiar botones para Confirmar y Cancelar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3449,7 +3450,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Intercambiar botones de desplazamiento en menús"
+   "Intercambiar botones de desplazamiento"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3481,7 +3482,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Aceleración de desplazamiento del menú"
+   "Aceleración de desplazamiento"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
@@ -3489,7 +3490,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Retraso para desplazar el menú"
+   "Retraso de desplazamiento"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -5733,13 +5734,13 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Muestra un mensaje en pantalla al guardar y cargar guardados rápidos."
    )
-MSG_HASH(
+MSG_HASH( /* FIXME: Rename config key and msg hash */
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Notificaciones de avance rápido"
+   "Notificaciones del regulador de fotogramas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
-   "Muestra un mensaje en pantalla al avanzar rápidamente un contenido."
+   "Muestra un indicador en pantalla cuando se activen el avance rápido, la cámara lenta o la función de rebobinado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -9700,7 +9701,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
    "Selecciona un disco nuevo del sistema de archivos y lo añade a la lista del índice.\nNOTA: Esta es una característica obsoleta. Se recomienda utilizar listas de reproducción M3U con juegos multidisco."
    )
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -12895,10 +12895,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    "Borrar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Descripción"
    )
 
 /* Discord Status */

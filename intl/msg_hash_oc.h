@@ -173,9 +173,6 @@ MSG_HASH(
 /* Main Menu > Information > System Information */
 
 
-/* Main Menu > Information > Database Manager */
-
-
 /* Main Menu > Information > Database Manager > Information */
 
 MSG_HASH(
@@ -203,7 +200,6 @@ MSG_HASH(
 
 
 /* Main Menu > Help */
-
 
 /* Main Menu > Help > Basic Menu Controls */
 
@@ -400,9 +396,6 @@ MSG_HASH(
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
-/* Settings > On-Screen Display > Video Layout */
-
-
 /* Settings > On-Screen Display > On-Screen Notifications */
 
 
@@ -550,8 +543,6 @@ MSG_HASH(
 /* Quick Menu > Options > Manage Core Options */
 
 
-/* - Legacy (unused) */
-
 /* Quick Menu > Controls */
 
 
@@ -582,7 +573,6 @@ MSG_HASH(
 
 /* Quick Menu > Disc Control */
 
-/* deprecated */
 
 /* Quick Menu > Shaders */
 
@@ -666,20 +656,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Lançar"
    )
-
-/* Unused (Only Exist in Translation Files) */
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Ajuda"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Descripcion"
-   )
-
-/* Unused (Needs Confirmation) */
-
 
 /* Discord Status */
 
