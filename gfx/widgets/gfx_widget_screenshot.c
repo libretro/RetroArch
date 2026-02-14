@@ -453,6 +453,12 @@ static bool gfx_widget_screenshot_init(
    return false;
 }
 
+static bool gfx_widget_screenshot_visible(void)
+{
+   gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
+   return state->loaded || state->alpha > 0.0f;
+}
+
 const gfx_widget_t gfx_widget_screenshot = {
    gfx_widget_screenshot_init,
    gfx_widget_screenshot_free,
@@ -460,5 +466,6 @@ const gfx_widget_t gfx_widget_screenshot = {
    gfx_widget_screenshot_context_destroy,
    NULL, /* layout */
    gfx_widget_screenshot_iterate,
-   gfx_widget_screenshot_frame
+   gfx_widget_screenshot_frame,
+   gfx_widget_screenshot_visible
 };

@@ -5159,8 +5159,19 @@ static bool vulkan_frame(void *data, const void *frame,
          end_main_pass = false;
       }
 
+      const bool message_visible = !string_is_empty(msg);
+
+#ifdef HAVE_GFX_WIDGETS
+      const bool widgets_visible = gfx_widgets_visible(video_info);
+#endif
+
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
-          ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)) &&
+          ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)
+         || message_visible
+#ifdef HAVE_GFX_WIDGETS       
+         || widgets_visible
+#endif
+         ) &&
           (vk->offscreen_buffer.image != VK_NULL_HANDLE))
       {
          if(end_pass) vkCmdEndRenderPass(vk->cmd);
@@ -5242,7 +5253,7 @@ static bool vulkan_frame(void *data, const void *frame,
          vulkan_render_overlay(vk, video_width, video_height);
 #endif
 
-      if (!string_is_empty(msg))
+      if (message_visible)
           font_driver_render_msg(vk, msg, NULL, NULL);
 
 #ifdef HAVE_GFX_WIDGETS
@@ -5256,7 +5267,12 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* Copy over back buffer to swap chain render targets */
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
-          ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)) &&
+          ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)
+         || message_visible
+#ifdef HAVE_GFX_WIDGETS       
+         || widgets_visible
+#endif
+         ) &&
           (vk->offscreen_buffer.image != VK_NULL_HANDLE))
       {
          backbuffer = &vk->backbuffers[swapchain_index];

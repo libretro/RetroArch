@@ -4642,9 +4642,21 @@ static bool d3d12_gfx_frame(
    cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
    cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
 
+#ifdef HAVE_GFX_WIDGETS
+   const bool widgets_visible        = gfx_widgets_visible(video_info);
+#endif
+
+   const bool message_visible         = ((statistics_show) && (osd_params)) || (msg && *msg);
+
 #ifdef HAVE_DXGI_HDR
    if ((d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) &&
-       ((d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE) || (d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE)))
+       (    (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE) 
+         || (d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE) 
+         || message_visible
+#ifdef HAVE_GFX_WIDGETS       
+         || widgets_visible
+#endif
+      ))
    {
       d3d12->chain.current_rt_format = d3d12->chain.back_buffer.desc.Format;
 
@@ -4762,7 +4774,13 @@ static bool d3d12_gfx_frame(
 #ifdef HAVE_DXGI_HDR
    /* Copy over back buffer to swap chain render targets */
    if ((d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) && 
-       ((d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE) || (d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE)))
+       (    (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE) 
+         || (d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE) 
+         || message_visible
+#ifdef HAVE_GFX_WIDGETS       
+         || widgets_visible
+#endif
+      ))
    {
       D3D12_RESOURCE_TRANSITION(
             cmd,

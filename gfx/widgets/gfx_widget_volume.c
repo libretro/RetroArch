@@ -376,6 +376,12 @@ static void gfx_widget_volume_free(void)
    state->alpha = 0.0f;
 }
 
+static bool gfx_widget_volume_visible(void)
+{
+   gfx_widget_volume_state_t *state = &p_w_volume_st;
+   return state->alpha > 0.0f;
+}
+
 const gfx_widget_t gfx_widget_volume = {
    NULL, /* init */
    gfx_widget_volume_free,
@@ -383,5 +389,6 @@ const gfx_widget_t gfx_widget_volume = {
    gfx_widget_volume_context_destroy,
    gfx_widget_volume_layout,
    NULL, /* iterate */
-   gfx_widget_volume_frame
+   gfx_widget_volume_frame,
+   gfx_widget_volume_visible
 };
