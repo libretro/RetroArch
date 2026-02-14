@@ -1553,7 +1553,7 @@ bool gfx_widgets_visible(void *data)
    bool memory_show               = video_info->memory_show;
    bool core_status_msg_show      = video_info->core_status_msg_show;
    bool widgets_is_paused         = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_PAUSED) ? true : false;
-   bool widgets_is_fastforwarding  = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_FAST_FORWARD) ? true : false;
+   bool widgets_is_fastforwarding  = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_FASTMOTION) ? true : false;
    bool widgets_is_rewinding      = (video_info->video_st_flags & VIDEO_FLAG_WIDGETS_REWINDING) ? true : false;
    bool runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
    bool notifications_hidden      = video_info->notifications_hidden || video_info->msg_queue_delay;
