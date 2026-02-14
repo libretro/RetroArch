@@ -3075,6 +3075,9 @@ void input_overlay_set_alpha_mod(
    if (!ol)
       return;
 
+   if (ol->flags & INPUT_OVERLAY_GAMEPAD_HIDDEN)
+      mod = 0.0f;
+
    for (i = 0; i < ol->active->load_images_size; i++)
    {
       if (input_overlay_get_visibility(visibility, i)
@@ -3776,6 +3779,7 @@ static void input_poll_overlay(
          /* Check hitboxes only if this touch pointer
           * is not controlling a pointing device */
          if (   ol->flags & INPUT_OVERLAY_ENABLE
+             && !(ol->flags & INPUT_OVERLAY_GAMEPAD_HIDDEN)
              && !BIT16_GET(ptrdev_touch_mask, i))
             hitbox_pressed = input_overlay_poll(
                   ol, &polled_data, i, old_i,
@@ -5561,7 +5565,8 @@ static bool input_overlay_want_hidden(void)
    if (settings->bools.input_overlay_hide_in_menu)
       hide = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
 #endif
-   if (settings->bools.input_overlay_hide_when_gamepad_connected)
+   if (settings->bools.input_overlay_hide_when_gamepad_connected
+         && !settings->bools.input_overlay_pointer_enable)
       hide = hide || (input_config_get_device_name(0) != NULL);
 
    return hide;
@@ -5660,6 +5665,16 @@ static void input_overlay_loaded(retro_task_t *task,
    /* Cache or free if hidden */
    if (!enable_overlay)
       input_overlay_unload();
+
+   /* Soft-hide when gamepad connected but pointer input enabled */
+   {
+      settings_t *settings = config_get_ptr();
+      if (enable_overlay
+            && settings->bools.input_overlay_hide_when_gamepad_connected
+            && settings->bools.input_overlay_pointer_enable
+            && input_config_get_device_name(0) != NULL)
+         ol->flags |= INPUT_OVERLAY_GAMEPAD_HIDDEN;
+   }
 
    input_overlay_set_eightway_diagonal_sensitivity();
 

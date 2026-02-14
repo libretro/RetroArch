@@ -375,7 +375,22 @@ static bool task_overlay_load_desc(
       for (; tmp; tmp = strtok_r(NULL, "|", &save))
       {
          if (!string_is_equal(tmp, "nul"))
-            BIT256_SET(desc->button_mask, input_config_translate_str_to_bind_id(tmp));
+         {
+            unsigned bind_id = input_config_translate_str_to_bind_id(tmp);
+            /* Retry without "_enable" suffix for overlay compat */
+            if (bind_id == RARCH_BIND_LIST_END)
+            {
+               size_t len = strlen(tmp);
+               if (len > 7 && string_is_equal(tmp + len - 7, "_enable"))
+               {
+                  char stripped[64];
+                  strlcpy(stripped, tmp, len - 7 + 1 < sizeof(stripped)
+                        ? len - 7 + 1 : sizeof(stripped));
+                  bind_id = input_config_translate_str_to_bind_id(stripped);
+               }
+            }
+            BIT256_SET(desc->button_mask, bind_id);
+         }
       }
 
       if (BIT256_GET(desc->button_mask, RARCH_OVERLAY_NEXT))

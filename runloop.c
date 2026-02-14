@@ -5727,15 +5727,26 @@ static enum runloop_state_enum runloop_check_state(
          static bool last_controller_connected = false;
          bool controller_connected             = (input_config_get_device_name(0) != NULL);
 
-         if (controller_connected != last_controller_connected)
+         /* When pointer input is enabled, soft-hide instead of
+          * unloading so mouse/lightgun input remains functional.
+          * Level-triggered: enforce flag state every frame. */
+         if (   settings->bools.input_overlay_pointer_enable
+             && input_st->overlay_ptr)
+         {
+            if (controller_connected)
+               input_st->overlay_ptr->flags |=  INPUT_OVERLAY_GAMEPAD_HIDDEN;
+            else
+               input_st->overlay_ptr->flags &= ~INPUT_OVERLAY_GAMEPAD_HIDDEN;
+         }
+         else if (controller_connected != last_controller_connected)
          {
             if (controller_connected)
                input_overlay_unload();
             else
                input_overlay_init();
-
-            last_controller_connected = controller_connected;
          }
+
+         last_controller_connected = controller_connected;
       }
 
       /* Check next overlay hotkey */
