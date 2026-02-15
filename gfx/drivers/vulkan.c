@@ -2628,7 +2628,7 @@ static void vulkan_init_pipelines(vk_t *vk)
    blend_attachment.colorBlendOp        = VK_BLEND_OP_ADD;
    blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
    blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-   blend_attachment.alphaBlendOp        = VK_BLEND_OP_ADD;
+   blend_attachment.alphaBlendOp        = VK_BLEND_OP_MAX;
 
    /* Glyph pipeline */
    module_info.codeSize                 = sizeof(font_frag);
