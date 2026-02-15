@@ -1352,14 +1352,18 @@ static void gfx_display_vk_draw_pipeline(
       default:
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         ca                               = &p_disp->dispca;
-         draw->coords                     = (struct video_coords*)&ca->coords;
-         draw->backend_data               = ubo_scratch_data;
-         draw->backend_data_size          = 2 * sizeof(float);
+         {
+            float alpha                   = draw->color ? draw->color[3] : 1.0f;
+            ca                            = &p_disp->dispca;
+            draw->coords                  = (struct video_coords*)&ca->coords;
+            draw->backend_data            = ubo_scratch_data;
+            draw->backend_data_size       = 3 * sizeof(float);
 
-         /* Match UBO layout in shader. */
-         memcpy(ubo_scratch_data, &t, sizeof(t));
-         memcpy(ubo_scratch_data + sizeof(float), &yflip, sizeof(yflip));
+            /* Match UBO layout in shader. */
+            memcpy(ubo_scratch_data, &t, sizeof(t));
+            memcpy(ubo_scratch_data + sizeof(float), &yflip, sizeof(yflip));
+            memcpy(ubo_scratch_data + 2 * sizeof(float), &alpha, sizeof(alpha));
+         }
          break;
 
       /* Snow simple */
@@ -5049,6 +5053,12 @@ static bool vulkan_frame(void *data, const void *frame,
             tex = &vk->swapchain[vk->last_valid_index].texture_optimal;
          else if (tex->image)
             vulkan_transition_texture(vk, vk->cmd, tex);
+
+         /* If the texture hasn't been uploaded yet (e.g. after
+          * reinit from HDR toggle with no cached frame),
+          * fall back to the default black texture. */
+         if (tex->layout == VK_IMAGE_LAYOUT_UNDEFINED)
+            tex = &vk->default_texture;
 
          input.image  = tex->image;
          input.view   = tex->view;

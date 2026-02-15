@@ -247,6 +247,7 @@ typedef struct ALIGN(16)
       float height;
    } OutputSize;
    float time;
+   float alpha;
 } d3d12_uniform_t;
 
 typedef struct
@@ -1199,7 +1200,8 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
    cmd->lpVtbl->IASetPrimitiveTopology(cmd,
          D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-   d3d12->ubo_values.time += 0.01f;
+   d3d12->ubo_values.time  += 0.01f;
+   d3d12->ubo_values.alpha  = draw->color ? draw->color[3] : 1.0f;
 
    {
       D3D12_RANGE read_range;
@@ -3528,6 +3530,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12->ubo_values.mvp               = d3d12->mvp_no_rot;
    d3d12->ubo_values.OutputSize.width  = d3d12->chain.viewport.Width;
    d3d12->ubo_values.OutputSize.height = d3d12->chain.viewport.Height;
+   d3d12->ubo_values.alpha             = 1.0f;
 
    {
       math_matrix_4x4* mvp;

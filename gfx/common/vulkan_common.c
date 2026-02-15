@@ -911,6 +911,9 @@ static const char *vulkan_optional_instance_extensions[] = {
 #ifdef __APPLE__
    VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
 #endif
+#ifdef _WIN32
+   "VK_KHR_get_surface_capabilities2",
+#endif
 #ifdef VULKAN_HDR_SWAPCHAIN
    VULKAN_COLORSPACE_EXTENSION_NAME
 #endif
