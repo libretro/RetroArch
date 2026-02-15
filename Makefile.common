@@ -2370,6 +2370,9 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ += tasks/task_cloudsync.o \
              network/cloud_sync/webdav.o \
              network/cloud_sync_driver.o
+      ifeq ($(HAVE_SSL), 1)
+         OBJ += network/cloud_sync/google_drive.o
+      endif
    endif
 
    ifeq ($(HAVE_BUILTINBEARSSL), 1)

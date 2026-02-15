@@ -1715,6 +1715,9 @@ CLOUD SYNC
 #include "../tasks/task_cloudsync.c"
 #include "../network/cloud_sync_driver.c"
 #include "../network/cloud_sync/webdav.c"
+#ifdef HAVE_SSL
+#include "../network/cloud_sync/google_drive.c"
+#endif
 #endif
 
 /*============================================================
