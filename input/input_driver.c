@@ -4783,7 +4783,7 @@ float input_get_sensor_state(unsigned port, unsigned id)
          remapped_port,
          input_sensors_enable,
          remapped_input_sensor_id)
-      *invert*((float)pow(2,sensitivity));
+      *invert*sensitivity;
    
 }
 
