@@ -1805,10 +1805,6 @@ MSG_HASH(
    "Introduce uno o varios fotogramas adicionales para cualquier efecto de shaders pensado para una velocidad de actualización superior a la del contenido. Utiliza únicamente la opción designada para la frecuencia de actualización actual de tu monitor. No se debe utilizar con frecuencias que no sean múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. No combinar con un intervalo de intercambio de VSync superior a 1, con inserción de fotogramas negros, con el retraso de fotogramas o con Sincroniza[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "Capturar pantalla mediante la GPU"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "Simulación de escalonamiento de líneas de barrido"
    )
@@ -1819,10 +1815,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    "Simula de forma básica el escalonamiento de las líneas de barrido a lo largo de varios subfotogramas dividendo la pantalla en partes verticales y renderizando cada una de las mismas en función de los subfotogramas que existan, de arriba a abajo."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Si es posible, las capturas de pantalla mostrarán la imagen con los shaders aplicados por la GPU."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -4557,7 +4549,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "Organizar archivos guardados por carpetas con el nombre del núcleo"
+   "Archivos de guardado: organizar por carpetas con el nombre del núcleo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
@@ -4565,7 +4557,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Organizar guardados rápidos por carpetas con el nombre del núcleo"
+   "Guardados rápidos: organizar por carpetas con el nombre del núcleo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
@@ -4573,7 +4565,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Organizar archivos guardados por carpetas con el nombre del directorio del contenido"
+   "Archivos de guardado: organizar por carpetas con el nombre del directorio del contenido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -4581,7 +4573,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Organizar guardados rápidos por carpetas con el nombre del directorio del contenido"
+   "Guardados rápidos: organizar por carpetas con el nombre del directorio del contenido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
@@ -4589,7 +4581,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "No sobrescribir la SaveRAM al cargar un guardado rápido"
+   "Archivos de guardado: no sobrescribir la SaveRAM al cargar un guardado rápido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
@@ -4597,7 +4589,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "Intervalo entre autoguardados de la SaveRAM"
+   "Archivos de guardado: intervalo de autoguardados de la SaveRAM"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -4609,7 +4601,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
-   "Intervalo de puntos de control de repetición"
+   "Repeticiones: intervalo de puntos de control"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
@@ -4625,7 +4617,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
-   "Deserializar puntos de control de repetición"
+   "Repeticiones: deserializar puntos de control"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
@@ -4633,7 +4625,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Aumentar automáticamente el índice de guardados rápidos"
+   "Guardados rápidos: aumentar el n.º del índice automáticamente"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
@@ -4641,7 +4633,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   "Aumentar automáticamente el índice de repeticiones"
+   "Repeticiones: aumentar el n.º del índice automáticamente"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
@@ -4649,31 +4641,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Máximo de guardados rápidos automáticos a conservar"
+   "Guardados rápidos: máximo de incrementos automáticos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Limita el número de guardados rápidos que se crearán al activar la opción «Aumentar automáticamente el índice de guardados rápidos». Si se crea un nuevo guardado rápido y se supera el límite, se borrará el archivo que se tenga el valor más bajo del índice. Un valor de 0 permitirá crear un número ilimitado de guardados rápidos."
+   "Limita el número de guardados rápidos que se crearán al activar la opción «Aumentar el n.º del índice automáticamente». Si se crea un nuevo guardado rápido y se supera el límite, se borrará el archivo que se tenga el valor más bajo del índice. Un valor de 0 permitirá crear un número ilimitado de guardados rápidos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
-   "Máximo de repeticiones automáticas a conservar"
+   "Repeticiones: máximo de incrementos automáticos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
-   "Limita el número de repeticiones que se crearán al activar la opción «Aumentar automáticamente el índice de repeticiones». Si se crea una nueva repetición y se supera el límite, se borrará el archivo que se tenga el valor más bajo del índice. Un valor de 0 permitirá crear un número ilimitado de repeticiones."
+   "Limita el número de repeticiones que se crearán al activar la opción «Aumentar el n.º del índice automáticamente». Si se crea una nueva repetición y se supera el límite, se borrará el archivo que se tenga el valor más bajo del índice. Un valor de 0 permitirá crear un número ilimitado de repeticiones."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Guardado rápido automático"
+   "Guardados rápidos: guardar automáticamente"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Hace un guardado rápido de forma automática al cerrar un contenido. El guardado rápido se cargará automáticamente si la opción «Cargar guardado rápido automáticamente» está activada."
+   "Hace un guardado rápido de forma automática al cerrar un contenido. El guardado rápido se cargará automáticamente si la opción «Cargar automáticamente» está activada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Cargar guardado rápido automáticamente"
+   "Guardados rápidos: cargar automáticamente"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -4681,15 +4673,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Miniaturas de guardados rápidos"
+   "Guardados rápidos: miniaturas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Muestra miniaturas de los guardados rápidos en el menú."
+   "Muestra miniaturas de los guardados rápidos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "Compresión de SaveRAM"
+   "Archivos de guardado: compresión"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
@@ -4697,23 +4689,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Compresión de guardados rápidos"
+   "Guardados rápidos: compresión"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Escribe los guardados rápidos en un archivo comprimido. Reduce drásticamente el tamaño del archivo a costa de aumentar los tiempos de guardado y carga."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Organizar capturas de pantalla por carpetas con el nombre del directorio del contenido"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Organiza las capturas de pantalla mediante carpetas que llevarán el nombre del directorio donde se encuentre el contenido."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "Escribir archivos de guardado en el directorio del contenido"
+   "Archivos de guardado: guardar en el directorio del contenido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
@@ -4721,7 +4705,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Escribir guardados rápidos en el directorio del contenido"
+   "Guardados rápidos: guardar en el directorio del contenido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4736,12 +4720,28 @@ MSG_HASH(
    "Utiliza el directorio de contenidos como directorio del sistema/para BIOS."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Capturas de pantalla: organizar por carpetas con el nombre del directorio del contenido"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Organiza las capturas de pantalla mediante carpetas que llevarán el nombre del directorio donde se encuentre el contenido."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "Escribir capturas de pantalla en el directorio del contenido"
+   "Capturas de pantalla: guardar en el directorio del contenido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Utiliza el directorio de contenidos como directorio de capturas de pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   "Capturas de pantalla: capturar mediante la GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Si es posible, las capturas de pantalla mostrarán la imagen con los shaders aplicados por la GPU."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,

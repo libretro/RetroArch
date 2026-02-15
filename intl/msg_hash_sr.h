@@ -1181,14 +1181,6 @@ MSG_HASH(
    "Ubacivanje crnog frejma"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "GPU slika ekrana"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Koristi šejderovan materijal grafičke karte pri slikanju ekrana, ako je moguće."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Bilinearni filter"
    )
@@ -1715,6 +1707,10 @@ MSG_HASH(
 
 /* Settings > Saving */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Koristi šejderovan materijal grafičke karte pri slikanju ekrana, ako je moguće."
+   )
 
 /* Settings > Logging */
 

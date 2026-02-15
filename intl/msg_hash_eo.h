@@ -372,10 +372,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Audio Sync Enable"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "GPU Screenshot Enable"
-   )
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
 #endif

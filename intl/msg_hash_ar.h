@@ -1597,14 +1597,6 @@ MSG_HASH(
    "تحذير: الوميض السريع قد يسبب أثرًا دائمًا على بعض الشاشات. استخدم هذا الخيار على مسؤوليتك. إدراج إطار أسود بين الفريمات يقلل بشكل كبير من ضبابية الحركة ويحاكي عرض CRT، لكن يقلل من سطوع الشاشة."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "لقطة شاشة GPU"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "لقطات الشاشة التقط المادة المظللة لوحدة GPU إذا كانت متاحة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "تصفية ثنائية الأسلوب"
    )
@@ -2932,108 +2924,48 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "ترتيب الحفظ في المجلدات حسب اسم النواة"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "فرز الملفات المحفوظة في المجلدات المسماة باسم النواة المستخدمة."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "ترتيب الحفظ في المجلدات حسب اسم النواة"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "ترتيب حفظ الحالات في المجلدات المسماة باسم النواة المستخدمة."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "ترتيب الحفظ في المجلدات حسب اسم النواة"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "فرز الملفات المحفوظة في المجلدات المسماة باسم الدليل الذي يقع فيه المحتوى."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "ترتيب الحفظ في المجلدات حسب اسم النواة"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "فرز الملفات المحفوظة في المجلدات المسماة باسم الدليل الذي يقع فيه المحتوى."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "عدم الكتابة فوق حفظ عند تحميل حفظ الحالة"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "حجب حفظ من الكتابة فوقها عند تحميل الحفظ. قد يؤدي ذلك إلى ألعاب الشوائب."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "حفظ الفاصل الزمني التلقائي"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "حفظ الفهرس التلقائي للدولة"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "عند إجراء حفظ الحالة، يتم حفظ فهرس الحالة تلقائياً قبل حفظه. عند تحميل المحتوى، سيتم تعيين الفهرس إلى أعلى فهرس موجود."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "حفظ تلقائي للحالة"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "تحميل حالة الحفظ التلقائي تلقائيا عند بدء التشغيل."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "حفظ الصور المصغرة للدولة"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "إظهار الصور المصغرة للحالات المحفوظة داخل القائمة."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "حفظ ضغط ذاكرة الوصول العشوائي"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "حفظ ضغط ذاكرة الوصول العشوائي"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "كتابة حفظ ملفات الحالة في تنسيق مؤرشف. يقلل بشكل كبير حجم الملف على حساب زيادة أوقات التوفير/التحميل."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "ترتيب الحفظ في المجلدات حسب اسم النواة"
+   MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "ملفات النظام في دليل المحتوى"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
    "فرز الملفات المحفوظة في المجلدات المسماة باسم الدليل الذي يقع فيه المحتوى."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "كتابة حفظ إلى دليل المحتوى"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "كتابة حفظ إلى دليل المحتوى"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "ملفات النظام في دليل المحتوى"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "كتابة لقطات الشاشة إلى دليل المحتوى"
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "لقطات الشاشة التقط المادة المظللة لوحدة GPU إذا كانت متاحة."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,

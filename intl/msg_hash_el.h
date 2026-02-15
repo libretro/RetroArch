@@ -1605,10 +1605,6 @@ MSG_HASH(
    "Εισαγωγή Μαύρων Καρέ"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "Ενεργοποίηση Στιγμιότυπου Οθόνης Κάρτας Γραφικών"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Διγραμμικό Φιλτράρισμα"
    )
@@ -2579,18 +2575,6 @@ MSG_HASH(
 
 /* Settings > Saving */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Απενεργοποίηση αντικατάστασης SaveRAM κατά την φάση φόρτωσης κατάστασης αποθήκευσης"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "Διάστημα Αυτόματης Αποθήκευσης SaveRAM"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Αυτόματη Αποθήκευση Κατάστασης"
-   )
 
 /* Settings > Logging */
 

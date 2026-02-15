@@ -1809,10 +1809,6 @@ MSG_HASH(
    "Cuireann sé fráma(í) scáthaithe breise isteach idir frámaí le haghaidh aon éifeachtaí scáthaithe féideartha atá deartha chun rith níos tapúla ná ráta an ábhair. Ná húsáid ach an rogha atá ainmnithe do ráta athnuachana reatha an taispeána. Ní le húsáid ag rátaí athnuachana nach ilchodacha de 60Hz iad amhail 144Hz, 165Hz, etc. Ná cuir le chéile é le Eatramh Malartaithe > 1, BFI, Moill Fráma, nó Sioncrónaigh le Ráta Fráma Ábhair Beacht. Tá sé ceart go leor VRR [...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "Scáileán GPU"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "Insamhalta scanlíne rollta"
    )
@@ -1823,10 +1819,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    "Insamhlaíonn sé líne scanadh rollta bhunúsach thar ilfhofhrámaí tríd an scáileán a roinnt go hingearach agus gach cuid den scáileán a rindreáil de réir líon na bhfofhrámaí atá ann ó bharr an scáileáin anuas."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Gabhann scáileáin ábhar scáthaithe GPU más féidir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -3652,6 +3644,10 @@ MSG_HASH(
    "Athchasadh"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+   "Athchasann sé an t-ábhar reatha agus an eochair á coinneáil síos. Ní mór 'Tacaíocht Athchasála' a bheith cumasaithe."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Sos"
    )
@@ -4552,48 +4548,24 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "Sórtáil Sábhálacha i bhFillteáin de réir Ainm Croí"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "Sórtáil comhaid shábháilte i bhfillteáin ainmnithe i ndiaidh an chroí a úsáideadh."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Sórtáil Stáit Shábháilte i bhFillteáin de réir Ainm Croí"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "Sórtáil stáit sábhála i bhfillteáin ainmnithe i ndiaidh an chroí a úsáideadh."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Sórtáil Sábhálacha i bhFillteáin de réir Eolaire Ábhair"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "Sórtáil comhaid shábháilte i bhfillteáin ainmnithe i ndiaidh an eolaire ina bhfuil an t-ábhar suite."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Sórtáil Stáit Shábháilte i bhFillteáin de réir Eolaire Ábhair"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Sórtáil stáit sábhála i bhfillteáin ainmnithe i ndiaidh an eolaire ina bhfuil an t-ábhar suite."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Ná scríobh thar SaveRAM agus an stát sábhála á luchtú"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "Bac a chur ar SaveRAM ó bheith róscríobhta agus stáit sábhála á luchtú. D’fhéadfadh sé seo cluichí lochtacha a chruthú."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "Eatramh Uathshábháilte SábháilRAM"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -4602,10 +4574,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Uath-shábháiltear an SRAM neamh-luaineach ag eatramh rialta. Tá sé seo díchumasaithe de réir réamhshocraithe mura socraítear a mhalairt. Tomhaistear an t-eatramh i soicindí. Díchumasaíonn luach 0 an t-uath-shábháil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
-   "Eatramh Seiceála Athsheinm"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
@@ -4620,104 +4588,32 @@ MSG_HASH(
    "Cibé acu ar cheart seicphointí atá stóráilte in athsheinm a dhíshraithiú le linn athsheinm rialta."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
-   "Athsheinm Seicphointe Díshraithiú"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    "Cibé acu ar cheart seicphointí atá stóráilte in athsheinm a dhíshraithiú le linn athsheinm rialta. Ba chóir é seo a shocrú go fíor do fhormhór na gcroíleacán, ach d’fhéadfadh go mbeadh iompar salach ag cuid acu agus ábhar á dhíshraithiú."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Méadaigh Innéacs an Stáit Sábháilte go Huathoibríoch"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Sula ndéantar staid sábhála, méadaítear innéacs an staid sábhála go huathoibríoch. Agus ábhar á luchtú, socrófar an t-innéacs go dtí an t-innéacs is airde atá ann cheana."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   "Méadaigh Innéacs Athsheinm go Huathoibríoch"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    "Sula ndéantar athsheinm, méadaítear innéacs an athsheinm go huathoibríoch. Agus ábhar á luchtú, socrófar an t-innéacs go dtí an t-innéacs is airde atá ann cheana."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Uasmhéid Uathmhéadaithe Sábháilte Stáit le Coinneáil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Cuir teorainn le líon na stát sábhála a chruthófar nuair a bheidh 'Innéacs Stáit Sábhála Méadaithe go Hiomparúil' cumasaithe. Má sháraítear an teorainn agus stát nua á shábháil, scriosfar an stát atá ann cheana leis an innéacs is ísle. Ciallaíonn luach '0' go dtaifeadfar líon neamhtheoranta stát."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
-   "Uasmhéid Athsheinm Uathmhéadaithe le Coinneáil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
-   "Cuir teorainn le líon na n-athsheinm a chruthófar nuair a bhíonn 'Méadaigh Innéacs Athsheinm go Hiomparúil' cumasaithe. Má sháraítear an teorainn agus athsheinm nua á thaifeadadh, scriosfar an t-athsheinm atá ann cheana leis an innéacs is ísle. Ciallaíonn luach '0' go dtaifeadfar athsheinm gan teorainn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Stát Sábháil Uathoibríoch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Cruthaigh staid sábhála go huathoibríoch nuair a dhúntar ábhar. Luchtófar an staid sábhála seo ag am tosaithe má tá 'Stádas Luchtaithe Uathoibríoch' cumasaithe."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Stádas Luchtaithe Uathoibríoch"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Luchtaigh an staid uath-shábhála go huathoibríoch ag an am tosaithe."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Sábháil Mionsamhlacha Stáit"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Taispeáin mionsamhlacha de stáit sábhála sa roghchlár."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "Comhbhrú SaveRAM"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    "Scríobh comhaid SaveRAM neamh-luaineacha i bhformáid chartlannaithe. Laghdaíonn sé méid an chomhaid go suntasach ar chostas méadú (neamhbhríoch) ar amanna sábhála/lódála. \nNí bhaineann sé seo ach le croíthe a chuireann ar chumas sábháil tríd an gcomhéadan SaveRAM caighdeánach libretro."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Sábháil Comhbhrú Stáit"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Scríobh comhaid stáit sábhála i bhformáid chartlannaithe. Laghdaíonn sé seo méid an chomhaid go mór ar chostas amanna sábhála/lódála méadaithe."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Sórtáil Scáileáin i bhFillteáin de réir Eolaire Ábhair"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Sórtáil scáileáin i bhfillteáin ainmnithe i ndiaidh an eolaire ina bhfuil an t-ábhar suite."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "Scríobh Sábhálacha chuig Eolaire Ábhair"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Úsáid eolaire ábhair mar eolaire comhad sábhála."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Scríobh Stáit Sábháilte chuig Eolaire Ábhair"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4732,12 +4628,16 @@ MSG_HASH(
    "Úsáid an t-eolaire ábhair mar eolaire Córais/BIOS."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "Scríobh Scáileáin chuig Eolaire Ábhair"
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Sórtáil scáileáin i bhfillteáin ainmnithe i ndiaidh an eolaire ina bhfuil an t-ábhar suite."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Úsáid eolaire ábhair mar eolaire scáileáin."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Gabhann scáileáin ábhar scáthaithe GPU más féidir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -4883,6 +4783,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    "Athchasadh"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
+   "Athraigh socruithe athchasála."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
@@ -5729,6 +5633,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Taispeáin teachtaireacht ar an scáileán agus stáit shábhála á sábháil agus á lódáil."
+   )
+MSG_HASH( /* FIXME: Rename config key and msg hash */
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Fógraí Luasghéaraithe Fráma"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Taispeáin táscaire ar an scáileán nuair a bhíonn mearghluaiseacht, mallghluaiseacht nó siarchasadh gníomhach."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,

@@ -1793,10 +1793,6 @@ MSG_HASH(
    "Egy vagy több plusz képkocka beszúrása olyan shader effektekhez, amelyek a tartalom frissítésénél gyorsabban kell fussanak. Csak a képernyő aktuális frissítési gyakoriságának megfelelő érték használható. Nem alkalmazható, ha ez nem 60 Hz többszöröse (pl. 144 Hz, 165 Hz). Nem kombinálható az 1-nél nagyobb váltóperiódussal, a fekete képkocka beszúrással, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazításával."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "GPU képernyőkép"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "Gördülő elektronsugár szimulálása"
    )
@@ -1807,10 +1803,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    "Egyszerű gördülő elektronsugár szimuláció több alképkockán keresztül, a képernyőt az alképkockák számának megfelelően függőlegesen felosztva és fentről lefelé sorrendben megjelenítve."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "A képernyőkép tartalmazza a GPU shader effektet, ha elérhető."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -3437,8 +3429,16 @@ MSG_HASH(
    "A játék és a menü ugyanazt az irányítást használja (billentyűzet esetén)."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   "Az OK és Mégse gombok felcserélése"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    "Az OK és Mégse gombok felcserélése. A kikapcsolt állapot a Japánban szokásos gombkiosztás, a bekapcsolt a Nyugaton szokásos."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   "A görgetőgombok felcserélése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
@@ -3469,8 +3469,16 @@ MSG_HASH(
    "Visszatérés a főmenübe a fülekből/oldalsávból a Vissza gomb lenyomásával."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   "Görgetés gyorsítása"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    "A kurzor maximális sebessége, egy irányt lenyomva tartva görgetéskor."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   "Görgetés késleltetése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
@@ -3630,6 +3638,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Visszatekerés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+   "Visszatekeri az aktuális tartalmat, amíg a gomb le van nyomva. A \"Visszatekerés támogatása\" be kell legyen kapcsolva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
@@ -4545,7 +4557,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Mentések mappákba rendezése a tartalom könyvtára szerint"
+   "Mentések rendezése mappákba a tartalom könyvtára szerint"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -4553,7 +4565,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Játékállások mappákba rendezése a tartalom könyvtára szerint"
+   "Játékállások rendezése mappákba a tartalom könyvtára szerint"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
@@ -4561,7 +4573,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "A SaveRAM ne legyen felülírva játékállás betöltésekor"
+   "A SaveRAM mentés ne legyen felülírva játékállás betöltésekor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
@@ -4605,7 +4617,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "A játékállás sorszámának automatikus léptetése"
+   "Játékállás sorszámának automatikus léptetése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
@@ -4613,7 +4625,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   "A visszajátszás sorszámának automatikus léptetése"
+   "Visszajátszás sorszámának automatikus léptetése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
@@ -4621,7 +4633,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Legfeljebb ennyi automatikusan léptetett állást tartson meg"
+   "Legfeljebb ennyi automatikusan léptetett játékállást tartson meg"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
@@ -4629,11 +4641,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
-   "Legfeljebb ennyi automatikusan léptetett újrajátszást tartson meg"
+   "Legfeljebb ennyi automatikusan léptetett visszajátszást tartson meg"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
-   "Korlátozza a mentett újrajátszások számát automatikusan léptetett módban. A korlát elérésekor a legalacsonyabb sorszámú újrajátszás törlődik. 0-s értéknél bármennyi játékállást megőriz."
+   "Korlátozza a mentett újrajátszások számát automatikusan léptetett módban. A korlát elérésekor a legalacsonyabb sorszámú újrajátszás törlődik. 0-s értéknél bármennyi újrajátszást megőriz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -4645,7 +4657,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Automatikus játékállás betöltés"
+   "Játékállás automatikus betöltése"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -4669,23 +4681,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Tömörített játékállások"
+   "Játékállás tömörítés"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "A játékállások tárolása tömörített formátumban. Jelentősen csökkenti a fájlméretet, lassabb mentés/töltés árán."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Képernyőképek mappákba rendezése a tartalom könyvtára szerint"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "A képernyőképeket olyan mappákba rendezi, amelyeket a tartalom könyvtára alapján nevez el."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "Mentések elhelyezése a tartalom könyvtárába"
+   "Mentések írása a tartalom könyvtárába"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
@@ -4708,12 +4712,28 @@ MSG_HASH(
    "Rendszer / BIOS fájlok használata a tartalom könyvtárából."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Képernyőképek mappákba rendezése a tartalom könyvtára szerint"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "A képernyőképeket olyan mappákba rendezi, amelyeket a tartalom könyvtára alapján nevez el."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Képernyőképek mentése a tartalom könyvtárába"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Képernyőmentések tárolása a tartalom könyvtárába."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   "Képernyőkép a GPU használatával"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "A képernyőkép tartalmazza a GPU shader effektet, ha elérhető."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -4859,6 +4879,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    "Visszatekerés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
+   "A visszatekerés beállításai."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
@@ -5697,6 +5721,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Üzenet megjelenítése játékállás mentésekor és betöltésekor."
+   )
+MSG_HASH( /* FIXME: Rename config key and msg hash */
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
+   "A képsebesség korlátozás értesítései"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Értesítés megjelenítése a képernyőn, amikor az előretekerés, lassítás, vagy visszatekerés aktív."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -10720,6 +10752,18 @@ MSG_HASH(
    "Bal + jobb analóg"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   "Bal + jobb analóg kar (mindenképpen)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   "Duplakaros analóg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   "Duplakaros analóg (mindenképpen)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    "%s billentyű"
    )
@@ -15421,6 +15465,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    "SMB kliens engedélyezése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   "Hozzáférés az SMB hálózati megosztásokhoz. Megbízható kapcsolathoz az Ethernet sokkal inkább ajánlott, mint a Wi-Fi. Újraindítást igényel."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,

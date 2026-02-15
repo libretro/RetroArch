@@ -1345,14 +1345,6 @@ MSG_HASH(
    "Vloženie Čierneho Rámu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "GPU Snímok obrazovky"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Snímka obrazovky zachytená z tieňového materiálu GPU, ak je k dispozícii."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Bilineárne Filtrovanie"
    )
@@ -2612,16 +2604,8 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Automaticky uložiť stav"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Uložiť miniatúru stavu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "Kompresia SaveRAM"
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Snímka obrazovky zachytená z tieňového materiálu GPU, ak je k dispozícii."
    )
 
 /* Settings > Logging */

@@ -1433,10 +1433,6 @@ MSG_HASH(
    "درج فریم سیاه"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "نماگرفت پردازندهٔ گرافیکی"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "پالایهٔ دوخطی"
    )

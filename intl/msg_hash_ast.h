@@ -1619,14 +1619,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Carga automáticamente'l puntu de guardáu automáticu nel aniciu."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "Compresión de los ficheros SaveRAM"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Compresión de los puntos de guardáu"
-   )
 
 /* Settings > Logging */
 

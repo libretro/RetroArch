@@ -1773,14 +1773,6 @@ MSG_HASH(
    "設定值必須與螢幕預設更新率相同, 在每幀之間插入著色器補幀, 提高每秒顯示影格數符合螢幕更新率。\n請勿與「垂直同步切換間隔」設定大於<1> 「插入黑幀」 「幀數延遲」 「準確同步執行幀率」同時使用。\n不適用於非60Hz倍數的更新率, 例如144Hz、165Hz等。\n允許系統可變更新率開啟, 但不是那個設定。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "圖形處理器截圖"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "支援時截圖包含著色器效果。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "雙線性過濾"
    )
@@ -4148,48 +4140,24 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "記憶存檔建立核心資料夾"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "記憶存檔依核心名稱建立資料夾儲存和載入。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "即時存檔建立核心資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "即時存檔依核心名稱建立資料夾儲存和載入。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "記憶存檔建立位置資料夾"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "記憶存檔依載入位置資料夾名稱建立資料夾儲存和載入。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "即時存檔建立位置資料夾"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "即時存檔依載入位置資料夾名稱建立資料夾儲存和載入。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "存檔記憶體載入時不覆蓋"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "載入即時存檔時不覆蓋存檔記憶體(SaveRAM), 可能會導致發生錯誤, 僅限支援SRM格式的核心使用。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "存檔記憶體自動儲存間隔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -4200,10 +4168,6 @@ MSG_HASH(
    "設定秒數自動將存檔記憶體轉存成記憶存檔, 僅限支援SRM格式的核心使用。\n關閉時執行項目關閉或結束時建立, 如果應用程式意外中止將不建立記憶存檔。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
-   "操作重播自動儲存間隔"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
    "設定錄製操作重播時自動儲存成檔案的時間(秒)。"
    )
@@ -4212,96 +4176,28 @@ MSG_HASH(
    "設定錄製操作重播時自動儲存成檔案的時間(秒), 預設值為<關>不使用。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "自動增加即時存檔編號"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "開啟時儲存即時存檔後自動跳至下一個編號, 執行項目時自動設定為現有編號的最大編號。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   "自動增加操作重播編號"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    "開啟時錄製操作重播後自動跳至下一個編號, 執行項目時自動設定為現有編號的最大編號。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "即時存檔保留數量"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "設定<0>時全部保留, 當達自訂上限時會刪除最低編號檔案, 維持在保留數量加一個使用中的存檔。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
-   "操作重播保留數量"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
-   "設定<0>時全部保留, 當達自訂上限時會刪除最低編號檔案, 維持在保留數量加一個使用中的編號。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "自動儲存即時存檔"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "關閉內容時自動儲存即時存檔。這個即時存檔會在啟動時被載入，除非「自動載入即時存檔」是停用的。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "自動載入即時存檔"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "「執行」時自動載入即時存檔, 載入的編號為自動(.state.auto)。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "即時存檔附加截圖"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "使用儲存即時存檔時額外儲存截圖, 並在快捷選單中顯示縮圖。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "存檔記憶體使用壓縮格式"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    "使用壓縮格式儲存記憶存檔, 減少檔案的大小但儲存和載入的速度變慢, 僅限支援SRM格式的核心使用。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "即時存檔使用壓縮格式"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "使用壓縮格式儲存即時存檔, 減少檔案的大小但儲存和載入的速度變慢。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "螢幕截圖建立位置資料夾"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "使用載入位置資料夾名稱建立資料夾儲存螢幕截圖。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "遊戲資料夾儲存記憶存檔"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "使用載入位置資料夾儲存和載入記憶存檔。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "遊戲資料夾儲存即時存檔"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4316,12 +4212,16 @@ MSG_HASH(
    "使用載入位置資料夾讀取系統和BIOS檔案。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "遊戲資料夾儲存螢幕截圖"
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "使用載入位置資料夾名稱建立資料夾儲存螢幕截圖。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "使用載入位置資料夾儲存螢幕截圖。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "支援時截圖包含著色器效果。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,

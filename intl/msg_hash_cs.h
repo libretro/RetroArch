@@ -1697,10 +1697,6 @@ MSG_HASH(
    "Vkládá mezi snímky další snímky shaderu pro případné efekty shaderu, které jsou navrženy tak, aby běžely rychleji než rychlost obsahu. Použijte pouze možnost určenou pro aktuální obnovovací frekvenci displeje. Není určeno pro použití při obnovovacích frekvencích, které nejsou násobkem 60 Hz, například 144 Hz, 165 Hz atd. Nekombinujte s funkcemi Interval výměny > 1, BFI, zpoždění snímku nebo Sync do přesné snímkové frekvence obsahu. Ponechání zapnutého [...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "GPU snímek obrazovky"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "Simulace valivé skenovací linie"
    )
@@ -1711,10 +1707,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    "Simuluje základní klouzavý skenovací řádek ve více dílčích snímcích vertikálním rozdělením obrazovky a vykreslením každé části obrazovky podle toho, kolik dílčích snímků je od horního okraje obrazovky do dolního okraje."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Snímky obrazovky zachycují stínovaný materiál GPU, pokud je k dispozici."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -4180,48 +4172,24 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "Řazení uložených souborů do složek podle názvu jádra"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "Uložené soubory roztřiďte do složek pojmenovaných podle použitého jádra."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Třídění uložených stavů do složek podle názvu jádra"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "Třídit uložené pozice do složek pojmenovaných podle použitého jádra."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Řazení uložených souborů do složek podle adresáře obsahu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "Třídit ukládání souborů do složek pojmenovaných podle adresáře, ve kterém se obsah nachází."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Třídění uložených stavů do složek podle adresáře obsahu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Třídit ukládání stavů do složek pojmenovaných podle adresáře, ve kterém se obsah nachází."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Nepřepisovat uloženou Ram při načítání uložené pozice"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "Blokování přepisování paměti Uložené Ram při načítání stavů uložení. Může potenciálně vést k chybám ve hrách."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "Interval automatického ukládání paměti uložené ram"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -4232,10 +4200,6 @@ MSG_HASH(
    "Automaticky ukládá nevolatilní paměť SRAM v pravidelných intervalech. Ve výchozím nastavení je tato funkce vypnuta, pokud není nastaveno jinak. Interval se měří v sekundách. Hodnota 0 automatické ukládání vypne."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
-   "Interval kontrolního bodu záznamu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
    "Automatická záložka pozice hry během nahrávání záznamu v pravidelném intervalu (v sekundách)."
    )
@@ -4244,96 +4208,28 @@ MSG_HASH(
    "Automatické ukládání pozice hry během nahrávání záznamu v pravidelných intervalech. Ve výchozím nastavení je tato funkce vypnuta, pokud není nastaveno jinak. Interval se měří v sekundách. Hodnota 0 vypne nahrávání kontrolních bodů."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Automatické zvyšování indexu uložení pozic"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Před vytvořením uložené pozice se automaticky zvýší index uložené pozice. Při načítání obsahu se index nastaví na nejvyšší existující index."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   "Automatické zvyšování indexu záznamu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    "Před provedením záznamu se automaticky zvýší index záznamu. Při načítání obsahu se index nastaví na nejvyšší existující index."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Maximální auto-navýšení zachová uložené pozice"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Omezí počet uložených pozic, které budou vytvořeny, když je povolena možnost 'Automaticky zvyšovat index uložených pozic'. Pokud je limit při ukládání nové pozice překročen, stávající pozice s nejnižším indexem bude odstraněna. Hodnota '0' znamená, že bude zaznamenáno neomezené množství pozic."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
-   "Maximální počet záznamu s automatickým navýšením pro zachování"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
-   "Omezit počet záznamu, které budou vytvořeny, když je povolena možnost \"Automaticky zvyšovat index záznamu\". Pokud je limit při nahrávání nového záznamu překročen, stávající záznam s nejnižším indexem bude odstraněn. Hodnota \"0\" znamená, že bude zaznamenáno neomezené množství záznamu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Automaticky uložit pozici"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Automatické vytvoření stavu uložení při zavření obsahu. Tento stav uložení se načte při spuštění, pokud je povolena volba „Automatické načítání pozice“."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Automaticky načíst pozici uložení"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Automatické načtení pozice automatického ukládání při spuštění."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Náhledy uložené pozice"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Zobrazení náhledu stavů uložení v menu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "Komprese uložené Ram"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    "Zápis nevolatilních souborů Uložené Ram v archivovaném formátu. Dramaticky snižuje velikost souboru na úkor (zanedbatelně) prodloužené doby ukládání/načítání.\nPouze pro jádra, která umožňují ukládání přes standardní rozhraní libretro Uložené Ram."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Komprese uložené pozice"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Zápis souborů uložených pozic v archivovaném formátu. Dramaticky snižuje velikost souboru na úkor prodloužení doby ukládání/načítání."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Třídění snímků obrazovky do složek podle adresáře obsahu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Snímky obrazovky můžete řadit do složek pojmenovaných podle adresáře, ve kterém se obsah nachází."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "Zapsat uložené do adresáře obsahu"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Použijte adresář s obsahem jako adresář pro uložení souboru."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Zapsat uložené pozice do adresáře obsahu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4348,12 +4244,16 @@ MSG_HASH(
    "Použijte adresář s obsahem jako adresář System/BIOS."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "Zapsat snímky obrazovky do adresáře obsahu"
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Snímky obrazovky můžete řadit do složek pojmenovaných podle adresáře, ve kterém se obsah nachází."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Použijte adresář s obsahem jako adresář se snímky obrazovky."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Snímky obrazovky zachycují stínovaný materiál GPU, pokud je k dispozici."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,

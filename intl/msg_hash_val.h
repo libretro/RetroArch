@@ -1181,14 +1181,6 @@ MSG_HASH(
    "Inserir fotogrames negres"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "Captura de pantalla mitjançant la GPU"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "La imatge de captures de pantalla se voran amb els shaders aplicats per la GPU, si es possible."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Filtrat bilineal"
    )
@@ -2203,6 +2195,10 @@ MSG_HASH(
 
 /* Settings > Saving */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "La imatge de captures de pantalla se voran amb els shaders aplicats per la GPU, si es possible."
+   )
 
 /* Settings > Logging */
 

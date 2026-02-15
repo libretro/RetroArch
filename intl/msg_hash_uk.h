@@ -1817,10 +1817,6 @@ MSG_HASH(
    "Вставляє додатковий(і) кадр(и) шейдерів між кадрами для будь-яких можливих шейдерних ефектів, які мають працювати швидше за частоту оновлення вмісту. Використовуйте лише той параметр, який призначено для поточної частоти оновлення екрана. Не використовується при частоті [...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "Зняток екрану силами GPU"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "Моделювання рухомої розгортки"
    )
@@ -1831,10 +1827,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    "Імітує базовий рухомий рядок розгортки на кількох під кадрів, розділяючи екран вертикально вгору та відтворюючи кожну частину екрана відповідно до кількості під кадрів, починаючи з верхньої частини sc."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Зберігати знятки після обробки відеокартою, якщо можливо."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -4488,48 +4480,24 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "Сортування збереження в загальних назвах"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "Сортування збереження файлів у теки, що називаються після використання двигуна."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Сортування збереження в загальних назвах"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "Сортування збереження держав у папках з іменем після використання двигуна."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Сортування збереження в теках за текою"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "Сортування збереження файлів у теки, названі на честь каталогу, в якій вміст знаходиться."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Сортування збереження Штатів в теках за текою"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Сортування розділів збереження в теках за іменем каталогу, в якому знаходиться вміст."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Не перезаписати збережену пам'ять під час завантаження стану збереження"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "Блокувати рятувати оперативну пам'ять від перезапису під час завантаження держав. Можуть призвести до ганебних ігор."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "Інтервал збереження автозбереження"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -4538,10 +4506,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Автозбереження немінної пам'яті на регулярному проміжку. Воно вимкнено за замовчуванням, якщо не встановлювати інакше. Інтервал вимірюється в секундах. Значення 0 вимикає автозбереження."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
-   "Інтервал Контрольної Точки Повтору"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
@@ -4556,104 +4520,32 @@ MSG_HASH(
    "Чи слід десеріалізувати контрольні точки, що зберігаються у повторах, під час звичайного відтворення."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
-   "Десеріалізація контрольної точки повтору"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    "Чи десеріалізувати контрольні точки, що зберігаються у повторах, під час звичайного відтворення. Слід встановити значення «true» для більшості ядер, але деякі можуть демонструвати нестабільну поведінку під час десеріалізації контенту."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Автоматично збільшувати збереження стану"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Перед створенням стану збереження, індекс станів автоматично збільшується. При завантаженні вмісту буде встановлений індекс з найвищим існуючим індексом."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   "Автоматичний індекс повтору"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    "Перед відтворенням повторів індекс буде автоматично збільшено. При завантаженні вмісту буде встановлено індекс з найвищим існуючим індексом."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Максимальна автоматична економія збереження для збереження"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Обмежити кількість збережених станів, які будуть створюватися при наявності \"Збільшення державного індексу\" автоматично. Якщо перевищено ліміт при збереженні нового стану, існуючий стан з найнижчим індексом буде видалено. Значення '0' означає, що необмежені держави буду[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
-   "Максимум автозбільшення повторів, щоб залишити"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
-   "Обмеження кількості повторів, які будуть створені при включенні \"Індексу відтворення повтору\" Перевищення ліміту при записуванні нового повтору, існуюча повтор з найнижчим індексом буде видалено. Значення '0' означає необмежені повторення буде записано."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Автозбереження стану"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Автоматично відтворювати стан збереження при закритті вмісту. При ввімкнені автозавантаження - збережений стану."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Автоматичний стан завантаження"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Автоматично завантажувати стан автозбереження при запуску."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Зберегти мініатюри стану"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Показувати мініатюри збереження в меню."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "Стиснення економії Озу"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    "Записати неактивні файли SaveRAM у архівованому форматі. Крім того, зменшує розмір файлів за рахунок (негативний) збільшує економію/завантажувальний час.\nзастосовується лише до ядра, які дозволяють зберігати в стандартному інтерфейсі libretro SaveRAM."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Зберегти стиснення стану"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Запис файлів станів в архівованому форматі. Драматично зменшує розмір файлів за рахунок збільшення економії/завантаження."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Сортувати скріншоти в теках за текою вмісту"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Сортувати знімки екрану в теках з ім'ям в каталозі, в якому знаходиться вміст."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "Запис збережених до теки вмісту"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Використовувати каталог вмісту для збереження каталогу."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Записати дані області в теку вмісту"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4668,12 +4560,16 @@ MSG_HASH(
    "Використовувати каталог вмісту як System/BIOS каталог."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "Записати скріншоти в теку вмісту"
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Сортувати знімки екрану в теках з ім'ям в каталозі, в якому знаходиться вміст."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Використовувати каталог вмісту для каталогу як знімок екран."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Зберігати знятки після обробки відеокартою, якщо можливо."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,

@@ -1269,14 +1269,6 @@ MSG_HASH(
    "Sett inn en svart ramme"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "GPU skjermbilde"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Tar skjermbilde av GPU-skyggelagt materiale hvis det er tilgjengelig."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Bilineær filtrering"
    )
@@ -2139,6 +2131,10 @@ MSG_HASH(
 
 /* Settings > Saving */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Tar skjermbilde av GPU-skyggelagt materiale hvis det er tilgjengelig."
+   )
 
 /* Settings > Logging */
 

@@ -1741,10 +1741,6 @@ MSG_HASH(
    "Infogar extra shader-ram(ar) mellan bildrutorna för eventuella shader-effekter som är utformade för att köras snabbare än innehållshastigheten. Använd endast det alternativ som är avsett för din aktuella bildskärmsuppdateringsfrekvens. Används inte vid uppdateringsfrekvenser som inte är multiplar av 60 Hz, t. ex. 144 Hz, 165 Hz osv. Kombinera inte med Swap Interval > 1, BFI, Frame Delay eller Sync to Exact Content Framerate. Att låta systemets VRR vara på är ok, men inte den inst[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "GPU-skärmdump"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "Rullande skanningslinjesimulering"
    )
@@ -1755,10 +1751,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    "Simulerar en grundläggande rullande skanningslinje över flera subframes genom att dela upp skärmen vertikalt och rendera varje del av skärmen enligt hur många subframes det finns från toppen av skärmen och nedåt."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Skärmdumpar fångar GPU-skuggat material om det finns."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -4408,48 +4400,24 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "Sortera sparningar i mappar efter kärnnamn"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "Sortera sparade filer i mappar med namn efter använd kärna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Sortera sparade tillstånd i mappar efter kärnnamn"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "Sortera sparade tillstånd i mappar med namn efter den använda kärnan."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Sortera sparningar i mappar efter innehållskatalog"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "Sortera sparade filer i mappar med namn efter katalogen som innehållet finns i."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Sortera sparade tillstånd i mappar efter innehållskatalog"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Sortera sparade tillstånd i mappar med namn efter den katalog där innehållet finns."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Skriv inte över SaveRAM vid inläsning av sparat tillstånd"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "Blockera SaveRAM från att skrivas över när sparade tillstånd läses in. Kan potentiellt innebära buggiga spel."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "Intervall för autosparande av SaveRAM"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -4458,10 +4426,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Autosparar det icke-flyktiga SRAM-minnet med jämna mellanrum. Detta är inaktiverat som standard om inget annat anges. Intervallet mäts i sekunder. Ett värde på 0 inaktiverar autosparning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
-   "Kontrollpunktsintervall för återuppspelning"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
@@ -4476,100 +4440,32 @@ MSG_HASH(
    "Huruvida kontrollpunkter som lagrats i återuppspelningar ska avserialiseras under normal uppspelning."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
-   "Avserialisera kontrollpunkter för återuppspelning"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    "Om kontrollpunkter som lagrats i återuppspelningar ska avserialiseras under normal uppspelning. Bör ställas in på true för de flesta kärnor, men vissa kan uppvisa ojämnt beteende vid avserialisering av innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Öka sparat tillstånd-index automatiskt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Innan ett sparat tillstånd skapas, ökas sparat tillstånd-index automatiskt. När innehåll laddas in kommer indexet att sättas till det högsta befintliga indexet."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   "Öka återuppspelningsindex automatiskt"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    "Innan en återuppspelning görs ökas återuppspelningsindexet automatiskt. När innehåll läses in kommer indexet att ställas in på det högsta befintliga indexet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Automatiskt ökande sparade tillstånd med maximalt antal att behålla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Begränsa antalet sparade tillstånd som kommer att skapas när 'Öka tillståndsindex automatiskt' är aktiverat. Om gränsen överskrids vid sparande av ett nytt tillstånd kommer det befintliga tillståndet med lägst index att raderas. Ett värde av '0' innebär att obegränsade tillstånd kommer att sparas."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
-   "Begränsa antalet uppspelningar som skapas när ”Increment Replay Index Automatically” är aktiverat. Om gränsen överskrids vid inspelning av en ny uppspelning raderas den befintliga uppspelningen med lägst index. Ett värde på ”0” innebär att obegränsat antal repriser spelas in."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Autospara tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Spara automatiskt när innehållet stängs. Detta sparade tillstånd läses in vid start om ”Läs in tillstånd automatiskt” är aktiverat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Läs in tillstånd automatiskt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Läser automatiskt in det automatiskt sparade tillståndet vid uppstart."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Miniatyrer för sparade tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Visa miniatyrer av sparade tillstånd i menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "Kompression för SaveRAM"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    "Skriv icke-flyktiga SaveRAM-filer i ett arkiverat format. Minskar filstorleken dramatiskt på bekostnad av (försumbart) ökade spar-/inläsningstider.\nGäller endast kärnor som möjliggör sparande via standardgränssnittet libretro SaveRAM."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Komprimera sparade tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Lagrar dina sparade tillståndsfiler i ett arkiverat format. Minskar dramatiskt filstorleken på bekostnad av längre spar- och inläsningstider."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Sortera skärmbilder i mappar efter innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Sortera skärmbilder i mappar med namn efter katalogen som innehållet finns i."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "Skriv sparningar till innehållskatalogen"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Använd innehållskatalog som katalog för sparade filer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Skriv sparade tillstånd till innehållskatalog"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4584,12 +4480,16 @@ MSG_HASH(
    "Använd innehållskatalog som katalog för system/BIOS."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "Skriv skärmbilder till innehållskatalogen"
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Sortera skärmbilder i mappar med namn efter katalogen som innehållet finns i."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Använd innehållskatalog som katalog för skärmbilder."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Skärmdumpar fångar GPU-skuggat material om det finns."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,

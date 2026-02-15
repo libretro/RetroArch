@@ -1797,10 +1797,6 @@ MSG_HASH(
    "Insereix fotogrames d'ombreig extra entre fotogrames per a qualsevol efecte d'ombreig que estigui designat per a executar-se més ràpid que la freqüència del contingut. Useu només l'opció designada per a la freqüència d'actualització actual de la pantalla. No ho feu servir per a freqüències d'actualització que no siguin múltiples de 60 Hz, com ara 144 Hz, 165 Hz, etc. No ho combineu amb intervals d'intercanvi > 1, BFI, retard dels fotogrames ni amb la sincronització a la velocitat d[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "Captura de pantalla de la GPU"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "Simulació de la línia d'escaneig en moviment"
    )
@@ -1811,10 +1807,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    "Simula una línia d'escaneig en moviment bàsica sobre múltiples subfotogrames dividint la pantalla en vertical i renderitzant cada part d'acord amb quants subfotogrames hi ha des del capdamunt cap avall."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Les captures de pantalla prendran la GPU amb el material d'ombreig si es troba disponible."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -3644,6 +3636,10 @@ MSG_HASH(
    "Rebobina"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND,
+   "Rebobina el contingut actual mentre es polsa la tecla. Ha d'estar activat 'Suporta rebobinat'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Fer pausa"
    )
@@ -4544,48 +4540,24 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "Endreça els fitxers desats per carpetes amb el nom del nucli"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "Endreça els fitxers desats en carpetes que continguin el nom del nucli."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Ordena els estats desats en carpetes amb el nom del nucli"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "Ordena els estats desats en carpetes amb el nom del nucli utilitzat."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Endreça els fitxers desats per carpetes amb el nom del contingut"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "Endreça els fitxers de desat mitjançant carpetes amb els noms on es troba el contingut."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Endreça els estats desats en carpetes amb el nom del contingut"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Endreça els desats ràpids mitjançant carpetes amb el nom on es troba el contingut."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "No sobreescriguis la SaveRAM en carregar un desat ràpid"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "Evita que se sobreescrigui la memòria SaveRAM en carregar un desat ràpid. Pot provocar errors en alguns jocs."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "Interval entre desats automàtics de la SaveRAM"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -4594,10 +4566,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Desa automàticament la memòria no volàtil SRAM de manera regular. L'interval es mesura en segons. Si assignes un valor de 0, el desat es desactiva."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
-   "Interval de punts de control de repetició"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
@@ -4612,104 +4580,32 @@ MSG_HASH(
    "Indica si cal desserialitzar els punts de control emmagatzemats en les repeticions durant la reproducció."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
-   "Desserialitza els punts de control de repetició"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    "Indica si cal desserialitzar els punts de control emmagatzemats en les repeticions durant la reproducció. La majoria de nuclis han de tenir activada aquesta opció, però alguns poden mostrar comportaments estranys en desserialitzar el contingut."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Augmenta automàticament l'índex de l'estat desat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Abans de desar un estat, l'índex augmenta automàticament. En carregar el contingut, l'índex s'assignarà al valor més alt possible."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   "Augmenta automàticament l'índex de repeticions"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    "Abans de fer una repetició, l'índex augmenta automàticament. En carregar el contingut, l'índex s'assignarà al valor més alt possible."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Màxim de desats ràpids autoincrementats a mantenir"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Limita el nombre de desats ràpids que es crearan quan s’habiliti l’opció «Incrementa l’índex de desat ràpid automàticament». Si se sobrepassa el límit quan es crea un nou desat ràpid s’esborrarà el desat ràpid amb l'índex més baix. Un valor de «0» significa que es crearan desats ràpids sense límit."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
-   "Nombre màxim de repeticions automàtiques a conservar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
-   "Limita el nombre de repeticions que es crearan quan s’habiliti l’opció «Incrementa l’índex de repeticions automàticament». Si se sobrepassa el límit quan es crea una nova repetició s’esborrarà la repetició amb l'índex més baix. Un valor de «0» significa que es crearan repeticions sense límit."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Desat ràpid automàtic"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Desa un estat automàticament quan es tanca el contingut. L'estat desat es carrega en carregar el contingut si l'opció 'Carrega l'estat automàticament' està activada."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Carrega estat automàticament"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Carrega automàticament el desat ràpid automàtic a l’inici."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Miniatures de desats ràpids"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Mostra miniatures dels estats desats al menú."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "Compressió de SaveRAM"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    "Escriu els fitxers de SaveRAM no volàtil en un format d’arxiu comprimit. Redueix dràsticament la mida de fitxer a canvi d’incrementar (de forma insignificant) els temps de desar i carregar.\nNomés s’aplica als nuclis que permeten desar mitjançant la interfície estàndard de libretro per a SaveRAM."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Compressió dels estats desats"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Escriu els fitxers d’estat desat en un format d’arxiu comprimit. Redueix dràsticament la mida de fitxer a canvi d’incrementar els temps de desar i carregar."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Organitza les captures de pantalla en carpetes per directori de contingut"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Organitza les captures de pantalla en carpetes que prenen el nom del directori on hi ha el contingut."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "Desa les partides al directori del contingut"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Fes servir la carpeta de continguts com a carpeta per desar fitxers."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Desa els estats al directori del contingut"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4724,12 +4620,16 @@ MSG_HASH(
    "Fes servir la carpeta de contingut com a carpeta pel Sistema/BIOS."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "Desa les captures al directori del contingut"
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Organitza les captures de pantalla en carpetes que prenen el nom del directori on hi ha el contingut."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Fes servir la carpeta de contingut com a carpeta de captures de pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Les captures de pantalla prendran la GPU amb el material d'ombreig si es troba disponible."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
@@ -4871,6 +4771,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    "Rebobina"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
+   "Canvia la configuració del rebobinat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
@@ -5713,6 +5617,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
    "Mostra un missatge en pantalla en desar i carregar desats ràpids."
+   )
+MSG_HASH( /* FIXME: Rename config key and msg hash */
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Notificacions del regulador de fotogrames"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Mostra un indicador en pantalla quan s'activi l'avançament ràpid, la càmera lenta o la funció de rebobinat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,

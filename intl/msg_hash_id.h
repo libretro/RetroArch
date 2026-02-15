@@ -1289,14 +1289,6 @@ MSG_HASH(
    "Sisipan Bingkai Hitam - Bingkai Gelap"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "Cuplikan Layar GPU"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Cuplikan layar menangkap materi berbayang GPU jika tersedia."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Penyaringan Bilinear"
    )
@@ -2440,12 +2432,8 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "Pemampatan SaveRAM"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Pemampatan Save State"
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Cuplikan layar menangkap materi berbayang GPU jika tersedia."
    )
 
 /* Settings > Logging */

@@ -1813,10 +1813,6 @@ MSG_HASH(
    "Вставляет промежуточные кадры для всех шейдерных эффектов с частотой выше частоты контента. Используйте значение только для вашей частоты обновления экрана. Не исп. с частотой не кратной 60 Гц (144, 165 и др.). Не вкл. с интервалом обновления >1, вставкой чёрного кадра, задержкой [...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "Скриншоты с GPU"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "Симуляция плавающей строки развёртки"
    )
@@ -1827,10 +1823,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
    "Имитирует простую плавающую строку развёртки поверх нескольких подкадров путём деления экрана по вертикали и отрисовки каждой его части исходя из количества подкадров от верха до низа экрана."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Если поддерживается, делать скриншоты изображения после обработки GPU."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
@@ -4576,48 +4568,24 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "Помещать сохранения в папки по имени ядра"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "Сортировать файлы сохранений по папкам, названным по имени используемого ядра."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Помещать быстрые сохранения в папки по имени ядра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "Сортировать файлы сохранений состояния по папкам, названным по имени используемого ядра."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Помещать сохранения в папки по каталогу контента"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "Сортировать файлы сохранений по папкам, названным по имени каталога в котором расположен контент."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Помещать быстрые сохранения в папки по каталогу контента"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Сортировать файлы сохранений состояния по папкам, названным по имени каталога в котором расположен контент."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Не переписывать SaveRAM при загрузке быстрых сохранений"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "Блокировать перезапись SaveRAM при загрузке быстрых сохранений. Может приводить к ошибкам в играх."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "Интервал автосохранения SaveRAM"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -4626,10 +4594,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Автоматически сохраняет энергонезависимую SRAM с заданным интервалом. По умолчанию выключено. Интервал измеряется в секундах. Значение 0 отключает автосохранение."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
-   "Интервал контрольной точки повтора"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
@@ -4644,104 +4608,32 @@ MSG_HASH(
    "Производит десериализацию контрольных точек в повторах при стандартном воспроизведении."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
-   "Десериализация контрольных точек повторов"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    "Производит десериализацию контрольных точек в повторах при стандартном воспроизведении. Должно быть включено для большинства ядер, но может влиять на стабильность отдельных ядер при десериализации контента."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Автоматически повышать слот сохранения"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Автоматически повышать номер слота перед созданием быстрого сохранения. При загрузке контента будет выбран доступный слот с наибольшим индексом."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   "Автоматически повышать слот записи"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    "Автоматически повышать номер слота перед созданием новой записи прохождения. При загрузке контента будет выбран доступный слот с наибольшим индексом."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Максимум автосохранений при повышении слота"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Ограничение на количество быстрых сохранений, создаваемых при включении опции 'Автоматически повышать слот сохранения'. При превышении заданного значения новое сохранение удалит существующее с наименьшим индексом. Значение '0' отключает ограничение."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
-   "Максимум записей при повышении слота"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
-   "Ограничение на количество записей, создаваемых при включении опции 'Автоматически повышать слот записи'. При превышении заданного значения новая запись прохождения удалит существующую с наименьшим индексом. Значение '0' отключает ограничение."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Автосохранение состояния"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Автоматически сохранять состояние при закрытии контента. Данное сохранение будет загружено при запуске, если включена опция 'Автозагрузка сохранения'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Автозагрузка сохранения"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Автоматически загружать автосохранение при запуске контента."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Миниатюры сохранений"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Отображать в быстром меню миниатюры скриншотов сохранений."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "Сжатие файлов SaveRAM"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    "Записывать файлы энергонезависимых сохранений SaveRAM в сжатом формате. Существенно уменьшает размер файлов, незначительно увеличивая время загрузки/сохранения. Действует только для ядер, реализующих сохранение через станд. интерфейс SaveRAM libretro."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Сжатие быстрых сохранений"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Записывать файлы сохранений состояния в сжатом формате. Существенно уменьшает размер файла, но увеличивает время загрузки/сохранения."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Помещать скриншоты в папки по каталогу контента"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Сортировать скриншоты по папкам, названным по имени каталога в котором расположен контент."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "Запись сохранений в каталог контента"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Использовать каталог контента для сохранений."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Запись быстрых сохранений в каталог контента"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4756,12 +4648,16 @@ MSG_HASH(
    "Использовать каталог контента в качестве каталога хранения BIOS."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "Запись скриншотов в каталог контента"
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Сортировать скриншоты по папкам, названным по имени каталога в котором расположен контент."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Использовать каталог контента для скриншотов."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Если поддерживается, делать скриншоты изображения после обработки GPU."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,

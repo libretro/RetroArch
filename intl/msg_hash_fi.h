@@ -1689,14 +1689,6 @@ MSG_HASH(
    "Mustan ruudun lisäys"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "Näytönohjaimen kuvakaappaus"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Kuvakaappaukset ottavat näytönohjaimen varjostaman kuvamateriaalin, jos saatavilla."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Bilineaarinen suodatus"
    )
@@ -3724,136 +3716,48 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "Lajittele tallennukset kansioihin ytimen nimen mukaan"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "Lajittele tallennustiedostot kansioihin, jotka on nimetty käytetyn ytimen mukaan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Lajittele tilatallennukset kansioihin ytimen nimen mukaan"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "Lajittele tilatallennukset kansioihin, jotka on nimetty käytetyn ytimen mukaan."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Lajittele tallennukset kansioihin sisältökansioiden perusteella"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "Lajittele tallennustiedostot kansioihin, jotka on nimetty kansion mukaan, jossa sisältö sijaitsee."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Lajittele tilatallennukset kansioihin sisältökansioiden perusteella"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Lajittele tilatallennukset kansioihin, jotka on nimetty kansion mukaan, jossa sisältö sijaitsee."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Älä ylikirjoita SaveRAM:ia ladattaessa tilatallennusta"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "Estää SaveRAM:in ylikirjoituksen ladattaessa tilatallennusta. Saattaa mahdollisesti aiheuttaa viallisia pelejä."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "SaveRAM-automaattitallennuksen aikaväli"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
    "Automaattisesti tallenna haihtumaton SaveRAM säännöllisin väliajoin (sekunneissa)."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Kasvata tilatallennuksen indeksiä automaattisesti"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Ennen tilatallennuksen luomista, tallennuksen indeksiä nostetaan. Sisällön lataamisen yhteydessä indeksi asetetaan korkeimpaan olemassa olevaan indeksiin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   "Kasvata uusinnan indeksiä automaattisesti"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Automaattisten tilatallennusten yläraja"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Rajoita tilatallennuksien määrää, jotka luodaan automaattisesti, kun \"Kasvata tilatallennuksen indeksiä automaattisesti\" on käytössä. Jos raja ylittyy, kun uutta tilaa tallennetaan, poistetaan olemassa oleva pelitila tallennus, jossa on alin indeksi. Arvo ’0’ tarkoittaa sitä, että pelitila tallennuksia tehdään rajattomasti."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
-   "Automaattisten uusintojen yläraja"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
-   "Rajoita uusintojen määrää, jotka luodaan automaattisesti, kun \"Kasvata uusintojen indeksiä automaattisesti\" on käytössä. Jos raja ylittyy, kun uutta uusintaan tallennetaan, poistetaan olemassa oleva uusinta, jossa on alin indeksi. Arvo ’0’ tarkoittaa sitä, että uusintoja tehdään rajattomasti."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Tilan automaattinen tallennus"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Tilan automaattinen lataaminen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Lataa tilatallennus automaattisesti käynnistyksen yhteydessä."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Tilatallenteiden esikatselukuvat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Näytä tilatallennusten esikatselukuvat valikossa."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "SaveRAM-pakkaus"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    "Tallenna haihtumattomat SaveRAM-tiedostot arkistoidussa tiedostomuodossa. Pienentää huomattavasti tiedoston kokoa, lisäten (hiukan) tallennus-/latausaikoja.\nKoskee vain ytimiä, jotka mahdollistavat tallentamisen standardin libretro SaveRAM -liittymän kautta."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Tilatallenteiden pakkaus"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Tallenna tilatallennukset arkistoidussa muodossa. Pienentää tiedostojen kokoa, mutta lisää hieman tallennus ja lataus aikoja."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Lajittele kuvankaappaukset kansioihin sisältökansioiden perusteella"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Lajittele kuvakaappaukset kansioihin, jotka on nimetty kansion mukaan, jossa sisältö sijaitsee."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "Tallenna tallennukset sisältönkansioon"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Käytä sisältökansiota tiedostotallennusten kansiona."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Tallenna tilatallennukset sisältökansioon"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -3868,12 +3772,16 @@ MSG_HASH(
    "Käytä sisältökansiota järjstelmätiedostojen kansiona."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "Tallenna kuvankaappaukset sisältökansioon"
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Lajittele kuvakaappaukset kansioihin, jotka on nimetty kansion mukaan, jossa sisältö sijaitsee."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Käytä sisältökansiota kuvankaappausten kansiona."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   "Kuvakaappaukset ottavat näytönohjaimen varjostaman kuvamateriaalin, jos saatavilla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
