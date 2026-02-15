@@ -120,7 +120,7 @@ int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
      *       signature          BIT STRING
      *  }
      */
-    if( ( ret = mbedtls_asn1_get_tag( &p, end, &len,
+    if( ( mbedtls_asn1_get_tag( &p, end, &len,
             MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE ) ) != 0 )
     {
         mbedtls_x509_csr_free( csr );
@@ -158,13 +158,13 @@ int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
         return( ret );
     }
 
-    csr->version++;
-
-    if( csr->version != 1 )
+    if( csr->version != 0 )
     {
         mbedtls_x509_csr_free( csr );
         return( MBEDTLS_ERR_X509_UNKNOWN_VERSION );
     }
+
+    csr->version++;
 
     /*
      *  subject               Name
@@ -226,7 +226,7 @@ int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
         return( ret );
     }
 
-    if( ( ret = mbedtls_x509_get_sig_alg( &csr->sig_oid, &sig_params,
+    if( (mbedtls_x509_get_sig_alg( &csr->sig_oid, &sig_params,
                                   &csr->sig_md, &csr->sig_pk,
                                   &csr->sig_opts ) ) != 0 )
     {
@@ -247,7 +247,7 @@ int mbedtls_x509_csr_parse_der( mbedtls_x509_csr *csr,
                 MBEDTLS_ERR_ASN1_LENGTH_MISMATCH );
     }
 
-    return( 0 );
+    return 0;
 }
 
 /*

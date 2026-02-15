@@ -267,6 +267,7 @@ struct runloop
 #endif
 
    uint32_t flags;
+   uint8_t pending_disk_control_insert;
    int8_t run_frames_and_pause;
 
    char runtime_content_path_basename[PATH_MAX_LENGTH];
@@ -299,8 +300,8 @@ struct runloop
       char label    [PATH_MAX_LENGTH*2];
    } name;
 
-   bool missing_bios;
    bool perfcnt_enable;
+   bool paused_hotkey;
 };
 
 typedef struct runloop runloop_state_t;
@@ -394,14 +395,8 @@ float runloop_get_fastforward_ratio(
       struct retro_fastforwarding_override *fastmotion_override);
 
 void runloop_set_video_swap_interval(
-      bool vrr_runloop_enable,
-      bool crt_switching_active,
-      unsigned swap_interval_config,
-      unsigned black_frame_insertion,
-      unsigned shader_subframes,
-      float audio_max_timing_skew,
-      float video_refresh_rate,
-      double input_fps);
+      settings_t *settings);
+
 unsigned runloop_get_video_swap_interval(
       unsigned swap_interval_config);
 
@@ -431,7 +426,7 @@ bool runloop_get_current_savestate_path(char *path, size_t len);
 
 bool runloop_get_savestate_path(char *path, size_t len, int slot);
 
-bool runloop_get_replay_path(char *path, size_t len, unsigned slot);
+bool runloop_get_replay_path(char *path, size_t len, int slot);
 
 void runloop_state_free(runloop_state_t *runloop_st);
 

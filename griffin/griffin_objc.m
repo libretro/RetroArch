@@ -32,6 +32,7 @@
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 
 #include "../ui/drivers/cocoa/cocoa_common.m"
+#include "../ui/drivers/cocoa/RetroArchPlaylistManager.m"
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/cocoa_gl_ctx.m"
 #endif
@@ -61,8 +62,20 @@
 #include "../audio/drivers/coreaudio3.m"
 #endif
 
+#if defined(HAVE_COREAUDIO) && defined(HAVE_MICROPHONE)
+#if defined(OSX)
+#include "../audio/drivers/coreaudio_mic_macos.m"
+#else
+#include "../audio/drivers/coreaudio_mic_ios.m"
+#endif
+#endif
+
 #ifdef HAVE_CORELOCATION
 #include "../location/drivers/corelocation.m"
+#endif
+
+#ifdef HAVE_AVF
+#include "../camera/drivers/avfoundation.m"
 #endif
 
 #if defined(HAVE_DISCORD)
@@ -80,4 +93,8 @@
 
 #if defined(HAVE_CLOUDSYNC) && defined(HAVE_ICLOUD)
 #include "../network/cloud_sync/icloud.m"
+#endif
+
+#if defined(HAVE_CLOUDSYNC) && defined(HAVE_ICLOUD_DRIVE)
+#include "../network/cloud_sync/icloud_drive.m"
 #endif

@@ -85,9 +85,6 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN), len);
              break;
-          case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
-             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHECK_FOR_MISSING_FIRMWARE), len);
-             break;
           case MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS), len);
              break;
@@ -310,6 +307,9 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
           case MENU_ENUM_LABEL_REPLAY_CHECKPOINT_INTERVAL:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL), len);
              break;
+          case MENU_ENUM_LABEL_REPLAY_CHECKPOINT_DESERIALIZE:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE), len);
+             break;
           case MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE), len);
              break;
@@ -462,6 +462,12 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
              break;
           case MENU_ENUM_LABEL_CHEAT_START_OR_CONT:
              strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT), len);
+             break;
+          case MENU_ENUM_LABEL_SAVE_STATE:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_SAVE_STATE), len);
+             break;
+          case MENU_ENUM_LABEL_LOAD_STATE:
+             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_LOAD_STATE), len);
              break;
 #ifdef HAVE_LAKKA
           case MENU_ENUM_LABEL_TIMEZONE:

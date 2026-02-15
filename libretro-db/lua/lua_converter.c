@@ -71,7 +71,7 @@ int main(int argc, char ** argv)
    lua_State *L;
    const char *db_file;
    const char *lua_file;
-   RFILE *dst;
+   intfstream_t *dst;
    int rv = 0;
 
    if (argc < 3)
@@ -92,7 +92,7 @@ int main(int argc, char ** argv)
 
    call_init(L, argc - 2, (const char **) argv + 2);
 
-   dst = filestream_open(db_file,
+   dst = intfstream_open_file(db_file,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
@@ -111,6 +111,6 @@ int main(int argc, char ** argv)
 
 clean:
    lua_close(L);
-   filestream_close(dst);
+   intfstream_close(dst);
    return rv;
 }

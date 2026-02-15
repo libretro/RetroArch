@@ -355,7 +355,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
    if (filestream_read(state->archive_file, magic_buf, SEVENZIP_MAGIC_LEN) != SEVENZIP_MAGIC_LEN)
       goto error;
 
-   if (string_is_not_equal_fast(magic_buf, SEVENZIP_MAGIC, SEVENZIP_MAGIC_LEN))
+   if (memcmp(magic_buf, SEVENZIP_MAGIC, SEVENZIP_MAGIC_LEN) != 0)
       goto error;
 
    sevenzip_context = (struct sevenzip_context_t*)sevenzip_stream_new();
@@ -493,6 +493,7 @@ static int sevenzip_parse_file_iterate_step(void *context,
       return ret;
 
    userdata->crc                 = checksum;
+   userdata->size                = size;
 
    if (file_cb && !file_cb(userdata->current_file_path, valid_exts,
             cdata, cmode,

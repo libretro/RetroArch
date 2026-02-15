@@ -30,16 +30,31 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../common/vga_defines.h"
-
 #include "../font_driver.h"
 
 #include "../../driver.h"
 #include "../../verbosity.h"
 
-/*
- * FONT DRIVER
- */
+#define VGA_WIDTH 320
+#define VGA_HEIGHT 200
+
+typedef struct vga
+{
+   unsigned char *vga_menu_frame;
+   unsigned char *vga_frame;
+
+   unsigned vga_menu_width;
+   unsigned vga_menu_height;
+   unsigned vga_menu_pitch;
+   unsigned vga_menu_bits;
+   unsigned vga_video_width;
+   unsigned vga_video_height;
+   unsigned vga_video_pitch;
+   unsigned vga_video_bits;
+
+   bool color;
+   bool vga_rgb32;
+} vga_t;
 
 typedef struct
 {
@@ -463,14 +478,24 @@ static const video_poke_interface_t vga_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void vga_gfx_get_poke_interface(void *data,
       const video_poke_interface_t **iface) { *iface = &vga_poke_interface; }
 void vga_gfx_set_viewport(void *data, unsigned vp_width,
       unsigned vp_height, bool force_full, bool allow_rotate) { }
+
+static void vga_gfx_viewport_info(void *data, struct video_viewport *vp)
+{
+
+   vp->x = vp->y = 0;
+
+   vp->width  = vp->full_width  = VGA_WIDTH;
+   vp->height = vp->full_height = VGA_HEIGHT;
+}
 
 video_driver_t video_vga = {
    vga_gfx_init,
@@ -485,7 +510,7 @@ video_driver_t video_vga = {
    "vga",
    vga_gfx_set_viewport,
    NULL, /* set_rotation */
-   NULL, /* viewport_info */
+   vga_gfx_viewport_info,
    NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY

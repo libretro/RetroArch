@@ -21,6 +21,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#define WIN32_LEAN_AND_MEAN
 #include <dinput.h>
 
 /* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */

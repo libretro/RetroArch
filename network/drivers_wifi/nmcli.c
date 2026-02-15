@@ -60,37 +60,34 @@ static void nmcli_stop(void *data) { }
 
 static bool nmcli_enable(void* data, bool enabled)
 {
-   /* semantics here are broken: nmcli_enable(..., false) is called
-    * on startup which is probably not what we want. */
+   int ret = 0;
 
-#if 0
    if (enabled)
-      pclose(popen("nmcli radio wifi on", "r"));
+      ret = system("nmcli radio wifi on");
    else
-      pclose(popen("nmcli radio wifi off", "r"));
-#endif
+      ret = system("nmcli radio wifi off");
 
-   return true;
+   return WIFEXITED(ret) && WEXITSTATUS(ret) == 0;
 }
 
 static bool nmcli_connection_info(void *data, wifi_network_info_t *netinfo)
 {
    FILE *cmd_file = NULL;
    char line[512];
+   bool connected = false;
 
-   if (!netinfo)
-      return false;
+   cmd_file = popen("nmcli --terse --fields NAME,TYPE connection show --active | awk -F: '$2 ~ /^(wifi|802-11-wireless)$/ { print $1 }'", "r");
 
-   cmd_file = popen("nmcli -f NAME c show --active | tail -n+2", "r");
-
-   if (fgets(line, sizeof(line), cmd_file))
+   connected = fgets(line, sizeof(line), cmd_file) != NULL;
+   pclose(cmd_file);
+   if (netinfo)
    {
+      string_trim_whitespace(line);
       strlcpy(netinfo->ssid, line, sizeof(netinfo->ssid));
-      netinfo->connected = true;
-      return true;
+      netinfo->connected = connected;
    }
 
-   return false;
+   return connected;
 }
 
 static void nmcli_scan(void *data)
@@ -98,32 +95,43 @@ static void nmcli_scan(void *data)
    char line[512];
    nmcli_t *nmcli = (nmcli_t*)data;
    FILE *cmd_file = NULL;
+   char cmd[256];
+   int ret = 0;
+   bool has_profile = false;
 
    nmcli->scan.scan_time = time(NULL);
 
    if (nmcli->scan.net_list)
       RBUF_FREE(nmcli->scan.net_list);
 
-   cmd_file = popen("nmcli -f IN-USE,SSID dev wifi | tail -n+2", "r");
-   while (fgets(line, 512, cmd_file))
+   cmd_file = popen("nmcli --terse --fields IN-USE,SSID dev wifi", "r");
+   while (fgets(line, sizeof(line), cmd_file))
    {
       wifi_network_info_t entry;
       memset(&entry, 0, sizeof(entry));
 
+      entry.connected = line[0] == '*';
+
+      line[0] = ' '; /* skip the '*' */
+      line[1] = ' '; /* skip the ':' */
       string_trim_whitespace_right(line);
       string_trim_whitespace_left(line);
-      if (!line || line[0] == '\0')
+
+      if (line[0] == '\0')
          continue;
 
-      if (line[0] == '*')
-      {
-         entry.connected = true;
-         line[0]         = ' ';
-         string_trim_whitespace_right(line);
-         string_trim_whitespace_left(line);
-      }
-
       strlcpy(entry.ssid, line, sizeof(entry.ssid));
+
+      /* Check if there is a profile for this ssid */
+      snprintf(cmd, sizeof(cmd),
+            "nmcli --terse --fields NAME,TYPE connection show | grep '^%s:'",
+            entry.ssid);
+      ret = system(cmd);
+      has_profile = WIFEXITED(ret) && WEXITSTATUS(ret) == 0;
+      /* If there is a profile attached to that ssid, we assume it contains a
+       * password. If the password is wrong save_password will be set to false
+       * after a failing attempt to connect. */
+      entry.saved_password = has_profile;
 
       RBUF_PUSH(nmcli->scan.net_list, entry);
    }
@@ -140,9 +148,9 @@ static bool nmcli_ssid_is_online(void *data, unsigned idx)
 {
    nmcli_t *nmcli = (nmcli_t*)data;
 
-   if (!nmcli->scan.net_list || idx >= RBUF_LEN(nmcli->scan.net_list))
-      return false;
-   return nmcli->scan.net_list[idx].connected;
+   return nmcli->scan.net_list &&
+      idx < RBUF_LEN(nmcli->scan.net_list) &&
+      nmcli->scan.net_list[idx].connected;
 }
 
 static bool nmcli_connect_ssid(void *data,
@@ -150,34 +158,60 @@ static bool nmcli_connect_ssid(void *data,
 {
    nmcli_t *nmcli = (nmcli_t*)data;
    char cmd[256];
-   int ret, i;
+   int ret = 0;
+   unsigned int i = 0;
+   bool saved_password = false;
+   bool connected = false;
 
    if (!nmcli || !netinfo)
       return false;
 
-   snprintf(cmd, sizeof(cmd),
-         "nmcli dev wifi connect \"%s\" password \"%s\" 2>&1",
-         netinfo->ssid, netinfo->passphrase);
-   if ((ret = pclose(popen(cmd, "r"))) == 0)
+   if (netinfo->saved_password)
+      snprintf(cmd, sizeof(cmd), "nmcli connection up '%s'", netinfo->ssid);
+   else
+      /* This assumes the password and ssid don't contain single quotes */
+      snprintf(cmd, sizeof(cmd),
+            "nmcli dev wifi connect '%s' password '%s'",
+            netinfo->ssid, netinfo->passphrase);
+
+   ret = system(cmd);
+   connected = WIFEXITED(ret) && WEXITSTATUS(ret) == 0;
+
+   for (i = 0; i < RBUF_LEN(nmcli->scan.net_list); i++)
    {
-      for (i = 0; i < RBUF_LEN(nmcli->scan.net_list); i++)
-      {
-         wifi_network_info_t* entry = &nmcli->scan.net_list[i];
-         entry->connected = strcmp(entry->ssid, netinfo->ssid) == 0;
-      }
+      wifi_network_info_t *entry = &nmcli->scan.net_list[i];
+      entry->connected = connected && strcmp(entry->ssid, netinfo->ssid) == 0;
+      if (strcmp(entry->ssid, netinfo->ssid) == 0)
+         /* If the connect attempt fails, it usually means the password is
+          * wrong. The user can now try another one. */
+         entry->saved_password = connected;
    }
 
-   return true;
+   return connected;
 }
 
 static bool nmcli_disconnect_ssid(void *data,
       const wifi_network_info_t *netinfo)
 {
+   nmcli_t *nmcli = (nmcli_t*)data;
    char cmd[256];
-   snprintf(cmd, sizeof(cmd), "nmcli c down \"%s\"", netinfo->ssid);
-   pclose(popen(cmd, "r"));
+   int ret = 0;
+   unsigned int i = 0;
+   bool disconnected = false;
 
-   return true;
+   snprintf(cmd, sizeof(cmd), "nmcli connection down '%s'", netinfo->ssid);
+   ret = system(cmd);
+
+   disconnected = WIFEXITED(ret) && WEXITSTATUS(ret) == 0;
+
+   for (i = 0; i < RBUF_LEN(nmcli->scan.net_list); i++)
+   {
+      wifi_network_info_t *entry = &nmcli->scan.net_list[i];
+      if (strcmp(entry->ssid, netinfo->ssid) == 0)
+         entry->connected = !disconnected;
+   }
+
+   return disconnected;
 }
 
 static void nmcli_tether_start_stop(void *a, bool b, char *c) { }

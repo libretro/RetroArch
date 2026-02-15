@@ -15,6 +15,8 @@
  */
 
 #include <stdlib.h>
+#include <unistd.h>
+#include <malloc.h>
 
 #include <gccore.h>
 #include <rthreads/rthreads.h>
@@ -143,7 +145,7 @@ static void wiiusb_hid_device_add_autodetect(unsigned idx,
       const char *device_name, const char *driver_name,
       uint16_t dev_vid, uint16_t dev_pid)
 {
-   input_autoconfigure_connect(device_name, NULL, "hid",
+   input_autoconfigure_connect(device_name, NULL, NULL, "hid",
          idx, dev_vid, dev_pid);
 }
 
@@ -279,13 +281,13 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
    if (!hid)
    {
       free(adapter);
-      RARCH_ERR("Allocation of adapter failed.\n");
+      RARCH_ERR("[wiiusb] Allocation of adapter failed.\n");
       return -1;
    }
 
    if (USB_OpenDevice(dev->device_id, dev->vid, dev->pid, &adapter->handle) < 0)
    {
-      RARCH_ERR("Error opening device 0x%p (VID/PID: %04x:%04x).\n",
+      RARCH_ERR("[wiiusb] Error opening device 0x%p (VID/PID: %04x:%04x).\n",
            dev->device_id, dev->vid, dev->pid);
       free(adapter);
       return -1;
@@ -299,7 +301,7 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
 
    if (adapter->endpoint_in == 0)
    {
-      RARCH_ERR("Could not find HID config for device.\n");
+      RARCH_ERR("[wiiusb] Could not find HID config for device.\n");
       goto error;
    }
 
@@ -309,7 +311,7 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
 
    if (!adapter->send_control_buffer)
    {
-      RARCH_ERR("Error creating send control buffer.\n");
+      RARCH_ERR("[wiiusb] Error creating send control buffer.\n");
       goto error;
    }
 
@@ -324,7 +326,7 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
 
    if (!pad_connection_has_interface(hid->connections, adapter->slot))
    {
-      RARCH_ERR(" Interface not found.\n");
+      RARCH_ERR("[wiiusb] Interface not found.\n");
       goto error;
    }
 
@@ -336,9 +338,9 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
    /*  Get the name from the interface */
    device_name = wiiusb_hid_joypad_name(hid, adapter->slot);
 
-   RARCH_LOG("Interface found: [%s].\n", device_name);
+   RARCH_LOG("[wiiusb] Interface found: \"%s\".\n", device_name);
 
-   RARCH_LOG("Device 0x%p attached (VID/PID: %04x:%04x).\n",
+   RARCH_LOG("[wiiusb] Device 0x%p attached (VID/PID: %04x:%04x).\n",
          adapter->device_id, desc.idVendor, desc.idProduct);
 
    wiiusb_hid_device_add_autodetect(adapter->slot,
@@ -624,7 +626,7 @@ static void *wiiusb_hid_init(void)
 
    if (!hid->poll_thread)
    {
-      RARCH_ERR("Error initializing poll thread.\n");
+      RARCH_ERR("[wiiusb] Error initializing poll thread.\n");
       goto error;
    }
 

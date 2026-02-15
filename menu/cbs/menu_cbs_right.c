@@ -126,18 +126,58 @@ static int action_right_cheat(unsigned type, const char *label,
    return generic_action_cheat_toggle(idx, type, label,
          wraparound);
 }
+#endif
 
-static int action_right_cheat_num_passes(unsigned type, const char *label,
+static int action_right_input_desc(unsigned type, const char *label,
       bool wraparound)
 {
-   struct menu_state *menu_st = menu_state_get_ptr();
-   unsigned new_size          = cheat_manager_get_size() + 1;
-   menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
-                              |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
-   cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
+   settings_t *settings          = config_get_ptr();
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+
+   if (settings && sys_info)
+   {
+      unsigned bind_idx;
+      unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
+      unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
+      unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
+      unsigned remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
+
+      for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
+      {
+         if (input_config_bind_order[bind_idx] == remap_idx)
+            break;
+      }
+
+      /* If pressed from unmapped bind, start from the top */
+      if (label)
+      {
+         struct menu_state *menu_st = menu_state_get_ptr();
+         menu_entry_t entry;
+         MENU_ENTRY_INITIALIZE(entry);
+         entry.flags |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+         menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+         if (string_is_equal(entry.value, RARCH_NO_BIND))
+            bind_idx = RARCH_UNMAPPED;
+      }
+
+      if (bind_idx < RARCH_ANALOG_BIND_LIST_END - 1)
+      {
+         bind_idx++;
+         bind_idx = input_config_bind_order[bind_idx];
+         settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
+
+         /* Skip empty descs */
+         if (string_is_empty(sys_info->input_desc_btn[mapped_port][bind_idx]))
+            return action_right_input_desc(type, NULL, wraparound);
+      }
+      else if (bind_idx == RARCH_ANALOG_BIND_LIST_END - 1)
+         settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
+      else
+         settings->uints.input_remap_ids[user_idx][btn_idx] = input_config_bind_order[0];
+   }
+
    return 0;
 }
-#endif
 
 static int action_right_input_desc_kbd(unsigned type, const char *label,
       bool wraparound)
@@ -152,8 +192,7 @@ static int action_right_input_desc_kbd(unsigned type, const char *label,
    user_idx = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) / RARCH_ANALOG_BIND_LIST_END;
    btn_idx  = (type - MENU_SETTINGS_INPUT_DESC_KBD_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
 
-   remap_id =
-      settings->uints.input_keymapper_ids[user_idx][btn_idx];
+   remap_id = settings->uints.input_keymapper_ids[user_idx][btn_idx];
 
    for (key_id = 0; key_id < RARCH_MAX_KEYS; key_id++)
    {
@@ -167,49 +206,6 @@ static int action_right_input_desc_kbd(unsigned type, const char *label,
       key_id = 0;
 
    settings->uints.input_keymapper_ids[user_idx][btn_idx] = key_descriptors[key_id].key;
-
-   return 0;
-}
-
-static int action_right_input_desc(unsigned type, const char *label,
-   bool wraparound)
-{
-   settings_t *settings                  = config_get_ptr();
-   rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
-   if (settings && sys_info)
-   {
-      unsigned bind_idx;
-      unsigned user_idx    = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) / (RARCH_FIRST_CUSTOM_BIND + 8);
-      unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - (RARCH_FIRST_CUSTOM_BIND + 8) * user_idx;
-      unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
-      unsigned remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
-      for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
-      {
-         if (input_config_bind_order[bind_idx] == remap_idx)
-            break;
-      }
-
-      if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
-         settings->uints.input_remap_ids[user_idx][btn_idx]++;
-      else
-      {
-         if (bind_idx < RARCH_ANALOG_BIND_LIST_END - 1)
-         {
-            bind_idx++;
-            bind_idx = input_config_bind_order[bind_idx];
-         }
-         else if (bind_idx == RARCH_ANALOG_BIND_LIST_END - 1)
-            bind_idx = RARCH_UNMAPPED;
-         else
-            bind_idx = input_config_bind_order[0];
-
-         settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
-      }
-
-      /* Empty is always last, so right jumps to first */
-      if (string_is_empty(sys_info->input_desc_btn[mapped_port][remap_idx]))
-         settings->uints.input_remap_ids[user_idx][btn_idx] = input_config_bind_order[0];
-   }
 
    return 0;
 }
@@ -657,6 +653,182 @@ static int playlist_sort_mode_right(unsigned type, const char *label,
    return 0;
 }
 
+static int scan_method_right(
+      unsigned type, const char *label,
+      bool wraparound)
+{
+   struct string_list *scan_method_list                            =
+      manual_content_scan_get_menu_scan_method_list();
+
+   const char *current_scan_method                                 = NULL;
+   enum manual_content_scan_system_name_type next_system_name_type =
+         MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE;
+   const char *next_scan_method                                    = NULL;
+   unsigned current_index                                          = 0;
+   unsigned next_index                                             = 0;
+   unsigned i;
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   if (!scan_method_list)
+      return -1;
+
+   if (manual_content_scan_get_menu_scan_method(&current_scan_method))
+   {
+      /* Get index of currently selected system name */
+      for (i = 0; i < scan_method_list->size; i++)
+      {
+         const char *scan_method = scan_method_list->elems[i].data;
+
+         if (string_is_equal(current_scan_method, scan_method))
+         {
+            current_index = i;
+            break;
+         }
+      }
+
+      /* Increment index */
+      next_index = current_index + 1;
+      if (next_index >= scan_method_list->size)
+      {
+         next_index = 0;
+         if (!wraparound && scan_method_list->size > 0)
+            next_index = (unsigned)(scan_method_list->size - 1);
+      }
+
+   }
+
+   /* Set system name */
+   manual_content_scan_set_menu_scan_method(next_index);
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   /* Clean up */
+   string_list_free(scan_method_list);
+
+   return 0;
+}
+
+static int scan_use_db_right(
+      unsigned type, const char *label,
+      bool wraparound)
+{
+   struct string_list *scan_use_db_list                            =
+      manual_content_scan_get_menu_scan_use_db_list();
+
+   const char *current_scan_use_db                                 = NULL;
+   const char *next_scan_use_db                                    = NULL;
+   unsigned current_index                                          = 0;
+   unsigned next_index                                             = 0;
+   unsigned i;
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   if (!scan_use_db_list)
+      return -1;
+
+   if (manual_content_scan_get_menu_scan_use_db(&current_scan_use_db))
+   {
+      /* Get index of currently selected system name */
+      for (i = 0; i < scan_use_db_list->size; i++)
+      {
+         const char *scan_use_db = scan_use_db_list->elems[i].data;
+
+         if (string_is_equal(current_scan_use_db, scan_use_db))
+         {
+            current_index = i;
+            break;
+         }
+      }
+
+      next_index = current_index + 1;
+      if (next_index >= scan_use_db_list->size)
+      {
+         next_index = 0;
+         if (!wraparound && scan_use_db_list->size > 0)
+            next_index = (unsigned)(scan_use_db_list->size - 1);
+      }
+   }
+
+   /* Set system name */
+   manual_content_scan_set_menu_scan_use_db(next_index);
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   /* Clean up */
+   string_list_free(scan_use_db_list);
+
+   return 0;
+}
+
+static int manual_content_scan_db_select_right(unsigned type, const char *label,
+      bool wraparound)
+{
+   settings_t            *settings   = config_get_ptr();
+   bool            show_hidden_files = settings->bools.show_hidden_files;
+#ifdef HAVE_LIBRETRODB
+   const char *path_content_database = settings->paths.path_content_database;
+   struct string_list *system_name_list                            =
+      manual_content_scan_get_menu_scan_db_select_list(
+            path_content_database,
+            show_hidden_files);
+#else
+   struct string_list *system_name_list                            =
+      manual_content_scan_get_menu_scan_db_select_list(NULL,
+            show_hidden_files);
+#endif
+   const char *current_system_name                                 = NULL;
+   enum manual_content_scan_db_selection next_db_select =
+         MANUAL_CONTENT_SCAN_SELECT_DB_AUTO;
+   const char *next_system_name                                    = NULL;
+   unsigned current_index                                          = 0;
+   unsigned next_index                                             = 0;
+   unsigned i;
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   if (!system_name_list)
+      return -1;
+
+   /* Get currently selected system name */
+   if (manual_content_scan_get_menu_scan_db_select(&current_system_name))
+   {
+      /* Get index of currently selected system name */
+      for (i = 0; i < system_name_list->size; i++)
+      {
+         const char *system_name = system_name_list->elems[i].data;
+
+         if (string_is_equal(current_system_name, system_name))
+         {
+            current_index = i;
+            break;
+         }
+      }
+
+      /* Increment index */
+      next_index = current_index + 1;
+      if (next_index >= system_name_list->size)
+      {
+         next_index = 0;
+         if (!wraparound && system_name_list->size > 0)
+            next_index = (unsigned)(system_name_list->size - 1);
+      }
+   }
+
+   /* Get new system name parameters */
+   if (next_index == (unsigned)MANUAL_CONTENT_SCAN_SELECT_DB_AUTO)
+      next_db_select = MANUAL_CONTENT_SCAN_SELECT_DB_AUTO;
+   else if (next_index == (unsigned)MANUAL_CONTENT_SCAN_SELECT_DB_AUTO_FIRST_MATCH)
+      next_db_select = MANUAL_CONTENT_SCAN_SELECT_DB_AUTO_FIRST_MATCH;
+   else
+      next_db_select = MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC;
+
+   next_system_name = system_name_list->elems[next_index].data;
+
+   /* Set system name */
+   manual_content_scan_set_menu_scan_db_select(
+         next_db_select, next_system_name);
+   menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+
+   /* Clean up */
+   string_list_free(system_name_list);
+
+   return 0;
+}
+
 static int manual_content_scan_system_name_right(unsigned type, const char *label,
       bool wraparound)
 {
@@ -960,7 +1132,6 @@ static int action_right_state_slot(unsigned type, const char *label,
 static int action_right_replay_slot(unsigned type, const char *label,
       bool wraparound)
 {
-   struct menu_state *menu_st     = menu_state_get_ptr();
    settings_t           *settings = config_get_ptr();
 
    settings->ints.replay_slot++;
@@ -1029,6 +1200,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_PLAIN:
          case FILE_TYPE_DIRECTORY:
+         case FILE_TYPE_PATH:
          case FILE_TYPE_PARENT_DIRECTORY:
          case FILE_TYPE_CARCHIVE:
          case FILE_TYPE_IN_CARCHIVE:
@@ -1162,11 +1334,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                BIND_ACTION_RIGHT(cbs, action_right_shader_num_passes);
 #endif
                break;
-            case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
-#ifdef HAVE_CHEATS
-               BIND_ACTION_RIGHT(cbs, action_right_cheat_num_passes);
-#endif
-               break;
             case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
                BIND_ACTION_RIGHT(cbs, action_right_video_resolution);
                break;
@@ -1211,6 +1378,15 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SORT_MODE:
                BIND_ACTION_RIGHT(cbs, playlist_sort_mode_right);
+               break;
+            case MENU_ENUM_LABEL_SCAN_METHOD:
+               BIND_ACTION_RIGHT(cbs, scan_method_right);
+               break;
+            case MENU_ENUM_LABEL_SCAN_USE_DB:
+               BIND_ACTION_RIGHT(cbs, scan_use_db_right);
+               break;
+            case MENU_ENUM_LABEL_SCAN_DB_SELECT:
+               BIND_ACTION_RIGHT(cbs, manual_content_scan_db_select_right);
                break;
             case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME:
                BIND_ACTION_RIGHT(cbs, manual_content_scan_system_name_right);

@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #ifdef CXX_BUILD
@@ -93,11 +94,38 @@ typedef struct
    unsigned mouse_cnt;
    uint8_t kb_keys[SC_LAST];
    uint8_t flags;
+   bool last_focus;
 } winraw_input_t;
 
 /* TODO/FIXME - static globals */
 static winraw_mouse_t *g_mice        = NULL;
 static bool winraw_focus             = false;
+
+/* Sync internal mouse coordinates with the OS cursor position.
+ * Used after events such as window mode, size, and focus changes */
+static bool winraw_sync_mouse_to_cursor(winraw_input_t *wr)
+{
+   HWND wnd;
+   POINT p;
+   unsigned i;
+
+   if (!wr || !wr->mouse_cnt)
+      return false;
+
+   wnd = (HWND)video_driver_window_get();
+   if (!wnd || !GetCursorPos(&p))
+      return false;
+
+   ScreenToClient(wnd, &p);
+
+   for (i = 0; i < wr->mouse_cnt; ++i)
+   {
+      g_mice[i].x = (LONG)p.x;
+      g_mice[i].y = (LONG)p.y;
+   }
+
+   return true;
+}
 
 #define WINRAW_KEYBOARD_PRESSED(wr, key) (wr->kb_keys[rarch_keysym_lut[(enum retro_key)(key)]])
 
@@ -158,7 +186,7 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 
       input_config_set_mouse_display_name(i, name);
 
-      RARCH_LOG("[WinRaw]: Mouse #%u: \"%s\".\n", i + 1, name);
+      RARCH_LOG("[WinRaw] Mouse #%u: \"%s\".\n", i + 1, name);
    }
 }
 
@@ -289,24 +317,31 @@ static bool winraw_mouse_button_pressed(
 static void winraw_init_mouse_xy_mapping(winraw_input_t *wr)
 {
    struct video_viewport viewport;
+   int mouse_x;
+   int mouse_y;
+   unsigned i;
 
-   if (video_driver_get_viewport_info(&viewport))
+   if (!video_driver_get_viewport_info(&viewport))
+      return;
+
+   /* Default fallback: center of the viewport */
+   mouse_x = viewport.x + viewport.width  / 2;
+   mouse_y = viewport.y + viewport.height / 2;
+
+   /* Sync to OS cursor position; fall back to center if it fails */
+   if (!winraw_sync_mouse_to_cursor(wr))
    {
-      unsigned i;
-      int center_x               = viewport.x + viewport.width / 2;
-      int center_y               = viewport.y + viewport.height / 2;
-
-      for (i = 0; i < wr->mouse_cnt; ++i)
+      for (i = 0; i < wr->mouse_cnt; i++)
       {
-         g_mice[i].x             = center_x;
-         g_mice[i].y             = center_y;
+         g_mice[i].x      = mouse_x;
+         g_mice[i].y      = mouse_y;
       }
-
-      wr->view_abs_ratio_x       = (double)viewport.full_width  / 65535.0f;
-      wr->view_abs_ratio_y       = (double)viewport.full_height / 65535.0f;
-
-      wr->flags                 |= WRAW_INP_FLG_MOUSE_XY_MAPPING_READY;
    }
+
+   wr->view_abs_ratio_x   = (double)viewport.full_width  / 65535.0;
+   wr->view_abs_ratio_y   = (double)viewport.full_height / 65535.0;
+
+   wr->flags             |= WRAW_INP_FLG_MOUSE_XY_MAPPING_READY;
 }
 
 static void winraw_update_mouse_state(winraw_input_t *wr,
@@ -327,8 +362,6 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       }
       else
       {
-         int bottom      = wr->prev_rect.bottom;
-         int right       = wr->prev_rect.right;
          wr->active_rect = wr->prev_rect;
          winraw_init_mouse_xy_mapping(wr);
          wr->rect_delay  = 0;
@@ -374,9 +407,9 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
          InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
 
          if (!GetCursorPos(&crs_pos))
-            RARCH_DBG("[WinRaw]: GetCursorPos failed with error %lu.\n", GetLastError());
+            RARCH_DBG("[WinRaw] GetCursorPos failed with error %lu.\n", GetLastError());
          else if (!ScreenToClient((HWND)video_driver_window_get(), &crs_pos))
-            RARCH_DBG("[WinRaw]: ScreenToClient failed with error %lu.\n", GetLastError());
+            RARCH_DBG("[WinRaw] ScreenToClient failed with error %lu.\n", GetLastError());
       }
       else
       {
@@ -636,8 +669,18 @@ static void winraw_poll(void *data)
    unsigned i;
    winraw_input_t *wr     = (winraw_input_t*)data;
 
+   /* Sync coordinates when window regains focus */
+   if (winraw_focus && !wr->last_focus)
+      winraw_sync_mouse_to_cursor(wr);
+
+   wr->last_focus = winraw_focus;
+
    for (i = 0; i < wr->mouse_cnt; ++i)
    {
+      /* Clear buttons when not focused */
+      if (!winraw_focus)
+         g_mice[i].flags = 0;
+
       wr->mice[i].x       = g_mice[i].x;
       wr->mice[i].y       = g_mice[i].y;
       wr->mice[i].dlt_x   = InterlockedExchange(&g_mice[i].dlt_x, 0);

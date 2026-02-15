@@ -107,7 +107,7 @@ static void *psp_joypad_init(void *data)
    for (i = 0; i < players_count; i++)
       input_autoconfigure_connect(
             psp_joypad_name(i),
-            NULL,
+            NULL, NULL,
             psp_joypad.ident,
             i,
             0,
@@ -259,7 +259,7 @@ static void psp_joypad_poll(void)
                curr_ctrl_info.port[player + 1] != SCE_CTRL_TYPE_UNPAIRED)
             input_autoconfigure_connect(
                   psp_joypad_name(player),
-                  NULL,
+                  NULL, NULL,
                   psp_joypad.ident,
                   player,
                   0,

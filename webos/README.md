@@ -10,5 +10,5 @@ make -f Makefile.webos -j$(getconf _NPROCESSORS_ONLN) ipk
 make -f Makefile.webos launch
 
 # Start installed application via SSH
-XDG_RUNTIME_DIR=/tmp/xdg /usr/bin/jailer -t native_devmode -i com.retroarch -p /media/developer/apps/usr/palm/applications/com.retroarch /media/developer/apps/usr/palm/applications/com.retroarch/retroarch --verbose --verbose
+XDG_RUNTIME_DIR=/tmp/xdg /usr/bin/jailer -t native_devmode -i com.retroarch.webos -p /media/developer/apps/usr/palm/applications/com.retroarch.webos /media/developer/apps/usr/palm/applications/com.retroarch.webos/retroarch --verbose --verbose
 ```

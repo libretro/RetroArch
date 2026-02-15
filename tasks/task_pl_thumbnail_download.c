@@ -114,11 +114,6 @@ static bool gfx_thumbnail_get_sub_directory(
       case 3:
          *sub_directory = "Named_Boxarts";
          return true;
-#if 0
-      case 4:
-         *sub_directory = "Named_Logos";
-         return true;
-#endif
       case 0:
       default:
          break;
@@ -312,10 +307,10 @@ void cb_http_task_download_pl_thumbnail(
 finish:
 
    if (!string_is_empty(err))
-      RARCH_ERR("[Thumbnail]: Download \"%s\" failed: %s\n",
+      RARCH_ERR("[Thumbnail] Download \"%s\" failed: %s\n",
             (transf ? transf->path : "unknown"), err);
    else
-      RARCH_LOG("[Thumbnail]: Download \"%s\".\n",
+      RARCH_LOG("[Thumbnail] Download \"%s\".\n",
             (transf ? transf->path : "unknown"));
 
    if (transf)
@@ -851,8 +846,8 @@ static bool task_pl_entry_thumbnail_finder(retro_task_t *task, void *user_data)
    {
       pl_thumb_handle_t *pl_thumb = NULL;
       if ((pl_thumb = (pl_thumb_handle_t*)task->state))
-         return (entry_id->idx == pl_thumb->list_index) &&
-            string_is_equal(entry_id->playlist_path, pl_thumb->playlist_path);
+         return (entry_id->idx == pl_thumb->list_index)
+            &&   string_is_equal(entry_id->playlist_path, pl_thumb->playlist_path);
    }
    return false;
 }

@@ -57,6 +57,10 @@
 
 #ifdef ANDROID
 #include <sys/system_properties.h>
+#ifdef HAVE_SAF
+#include <vfs/vfs_implementation_saf.h>
+#include "../../menu/menu_cbs.h"
+#endif
 #endif
 
 #if defined(DINGUX)
@@ -92,6 +96,10 @@
 #endif
 
 #include "platform_unix.h"
+
+#ifdef WEBOS
+#include <formats/rjson.h>
+#endif
 
 #ifdef ANDROID
 static void frontend_unix_set_sustained_performance_mode(bool on);
@@ -163,14 +171,14 @@ int system_property_get(const char *command,
    FILE *pipe;
    char buffer[BUFSIZ];
    char cmd[NAME_MAX_LENGTH];
-   int length                   = 0;
-   char *curpos                 = NULL;
-   size_t buf_pos               = strlcpy(cmd, command, sizeof(cmd));
+   char *pos                  = NULL;
+   size_t __len               = 0;
+   size_t _len                = strlcpy(cmd, command, sizeof(cmd));
 
-   cmd[  buf_pos]               = ' ';
-   cmd[++buf_pos]               = '\0';
+   cmd[  _len]                = ' ';
+   cmd[++_len]                = '\0';
 
-   strlcpy(cmd + buf_pos, args, sizeof(cmd) - buf_pos);
+   strlcpy(cmd + _len, args, sizeof(cmd) - _len);
 
    if (!(pipe = popen(cmd, "r")))
    {
@@ -178,26 +186,24 @@ int system_property_get(const char *command,
       return 0;
    }
 
-   curpos = value;
+   pos = value;
 
    while (!feof(pipe))
    {
       if (fgets(buffer, sizeof(buffer), pipe))
       {
-         size_t curlen = strlen(buffer);
+         size_t _len = strlen(buffer);
 
-         memcpy(curpos, buffer, curlen);
+         memcpy(pos, buffer, _len);
 
-         curpos    += curlen;
-         length    += curlen;
+         pos   += _len;
+         __len += _len;
       }
    }
 
-   *curpos = '\0';
-
+   *pos = '\0';
    pclose(pipe);
-
-   return length;
+   return __len;
 }
 
 #ifdef ANDROID
@@ -435,7 +441,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
 
    if (!android_app)
    {
-      RARCH_ERR("Failed to initialize android_app\n");
+      RARCH_ERR("Failed to initialize android_app.\n");
       return NULL;
    }
    android_app->activity = activity;
@@ -500,7 +506,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
          | AWINDOW_FLAG_FULLSCREEN, 0);
 
    if (pthread_key_create(&thread_key, jni_thread_destruct))
-      RARCH_ERR("Error initializing pthread_key\n");
+      RARCH_ERR("Error initializing pthread_key.\n");
 
    activity->instance = android_app_create(activity,
          savedState, savedStateSize);
@@ -610,6 +616,64 @@ static void frontend_android_shutdown(bool unused)
    exit(0);
 }
 
+#ifdef HAVE_SAF
+void android_show_saf_tree_picker(void)
+{
+   JNIEnv *env;
+
+   if (!g_android || !g_android->have_saf)
+      return;
+
+   env = jni_thread_getenv();
+   if (!env)
+      return;
+
+   CALL_VOID_METHOD(env, g_android->activity->clazz, g_android->requestOpenDocumentTree);
+}
+#endif
+
+/*
+ * Class:     com_retroarch_browser_retroactivity_RetroActivityCommon
+ * Method:    safTreeAdded
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCommon_safTreeAdded
+      (JNIEnv *env, jobject this_obj, jstring tree_obj)
+{
+#ifdef HAVE_SAF
+   const char *tree;
+   char *serialized_path;
+
+   tree = (*env)->GetStringUTFChars(env, tree_obj, NULL);
+   if ((*env)->ExceptionOccurred(env))
+   {
+      (*env)->ExceptionDescribe(env);
+      (*env)->ExceptionClear(env);
+      return;
+   }
+
+   if ((serialized_path = retro_vfs_path_join_saf(tree, "")) != NULL)
+   {
+      generic_action_ok_displaylist_push(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+            serialized_path,
+            msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
+            MENU_SETTING_ACTION,
+            0,
+            0,
+            ACTION_OK_DL_CONTENT_LIST);
+      free(serialized_path);
+   }
+
+   (*env)->ReleaseStringUTFChars(env, tree_obj, tree);
+   if ((*env)->ExceptionOccurred(env))
+   {
+      (*env)->ExceptionDescribe(env);
+      (*env)->ExceptionClear(env);
+   }
+#endif
+}
+
 #elif !defined(DINGUX)
 static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
 {
@@ -702,7 +766,6 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
       else if (string_is_equal(key, "remaining capacity"))
       {
          char *endptr = NULL;
-
          if (endptr && *endptr == ' ')
             remaining = (int)strtol(val, &endptr, 10);
       }
@@ -1129,21 +1192,6 @@ error:
 }
 #endif
 
-static int frontend_unix_get_rating(void)
-{
-#ifdef ANDROID
-   char device_model[PROP_VALUE_MAX] = {0};
-   system_property_get("getprop", "ro.product.model", device_model);
-   if (g_platform_android_flags & PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE)
-      return 6;
-   else if (strstr(device_model, "GT-I9505"))
-      return 12;
-   else if (strstr(device_model, "SHIELD"))
-      return 13;
-#endif
-   return -1;
-}
-
 static enum frontend_powerstate frontend_unix_get_powerstate(
       int *seconds, int *percent)
 {
@@ -1240,6 +1288,109 @@ static enum frontend_architecture frontend_unix_get_arch(void)
    return FRONTEND_ARCH_NONE;
 }
 
+#ifdef WEBOS
+const char *retroarch_get_webos_version(char *s, size_t len,
+                                       int *major, int *minor)
+{
+   static char pretty[128];
+
+   FILE *f = fopen("/usr/lib/os-release", "r");
+   if (!f)
+   {
+      /* fallback to nyx os_info.json */
+      f = fopen("/var/run/nyx/os_info.json", "r");
+      if (!f)
+         return strlcpy(s, "webOS (unknown)", len), "webOS (unknown)";
+
+      /* read whole file into buffer */
+      char buf[4096];
+      size_t n = fread(buf, 1, sizeof(buf)-1, f);
+      fclose(f);
+      buf[n] = '\0';
+
+      rjson_t *json = rjson_open_string(buf, n);
+      enum rjson_type t;
+      const char *key = NULL, *val = NULL;
+      const char *name_str = NULL, *release_str = NULL;
+
+      while ((t = rjson_next(json)) != RJSON_DONE && t != RJSON_ERROR)
+      {
+         if (t == RJSON_STRING)
+         {
+            key = rjson_get_string(json, NULL);
+            t = rjson_next(json);
+            if (t == RJSON_STRING)
+            {
+               val = rjson_get_string(json, NULL);
+               if (strcmp(key, "webos_name") == 0)
+                  name_str = val;
+               else if (strcmp(key, "webos_release") == 0)
+                  release_str = val;
+            }
+         }
+      }
+      rjson_free(json);
+
+      if (name_str && release_str)
+         snprintf(pretty, sizeof(pretty), "%s %s", name_str, release_str);
+      else if (name_str)
+         snprintf(pretty, sizeof(pretty), "%s", name_str);
+      else
+         snprintf(pretty, sizeof(pretty), "webOS (unknown)");
+
+      if (release_str) {
+         char *endptr = NULL;
+         long maj = strtol(release_str, &endptr, 10);
+         if (major) *major = (int)maj;
+         if (endptr && *endptr == '.' && minor)
+            *minor = (int)strtol(endptr+1, NULL, 10);
+         else if (minor)
+            *minor = 0;
+      }
+
+      return strlcpy(s, pretty, len), pretty;
+   }
+
+   char line[256];
+   while (fgets(line, sizeof(line), f))
+   {
+      if (strncmp(line, "PRETTY_NAME=", 12) == 0)
+      {
+         char *val = line + 12;
+         char *nl = strchr(val, '\n');
+         if (nl) *nl = '\0';
+         if ((val[0] == '"' || val[0] == '\'')) {
+            size_t l = strlen(val);
+            if (l > 1 && val[l-1] == val[0]) {
+               val[l-1] = '\0';
+               val++;
+            }
+         }
+         strlcpy(pretty, val, sizeof(pretty));
+      }
+      else if (strncmp(line, "VERSION_ID=", 11) == 0)
+      {
+         char *val = line + 11;
+         char *nl = strchr(val, '\n');
+         if (nl) *nl = '\0';
+         char *endptr = NULL;
+         long maj = strtol(val, &endptr, 10);
+         if (major) *major = (int)maj;
+         if (endptr && *endptr == '.' && minor)
+            *minor = (int)strtol(endptr+1, NULL, 10);
+         else if (minor)
+            *minor = 0;
+      }
+   }
+   fclose(f);
+
+   if (pretty[0] == '\0')
+      strlcpy(pretty, "webOS (unknown)", sizeof(pretty));
+
+   return strlcpy(s, pretty, len), pretty;
+}
+#endif
+
 static size_t frontend_unix_get_os(char *s,
       size_t len, int *major, int *minor)
 {
@@ -1267,6 +1418,8 @@ static size_t frontend_unix_get_os(char *s,
    _len = strlcpy(s, "BSD", len);
 #elif defined(__HAIKU__)
    _len = strlcpy(s, "Haiku", len);
+#elif defined(WEBOS)
+   _len = strlcpy(s, retroarch_get_webos_version(s, len, major, minor), len);
 #else
    _len = strlcpy(s, "Linux", len);
 #endif
@@ -1380,7 +1533,7 @@ static void frontend_unix_get_env(int *argc,
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       __android_log_print(ANDROID_LOG_INFO,
-         "RetroArch", "[ENV]: config file: [%s]\n", config_path);
+         "RetroArch", "[ENV] Config file: \"%s\".\n", config_path);
       if (args && *config_path)
          args->config_path = config_path;
    }
@@ -1398,7 +1551,7 @@ static void frontend_unix_get_env(int *argc,
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       __android_log_print(ANDROID_LOG_INFO,
-         "RetroArch", "[ENV]: current IME: [%s]\n", android_app->current_ime);
+         "RetroArch", "[ENV] Current IME: \"%s\".\n", android_app->current_ime);
    }
 
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
@@ -1412,7 +1565,7 @@ static void frontend_unix_get_env(int *argc,
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       __android_log_print(ANDROID_LOG_INFO,
-         "RetroArch", "[ENV]: used: [%s].\n", used ? "true" : "false");
+         "RetroArch", "[ENV] Used: \"%s\".\n", used ? "true" : "false");
    }
 
    /* LIBRETRO. */
@@ -1430,7 +1583,7 @@ static void frontend_unix_get_env(int *argc,
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       __android_log_print(ANDROID_LOG_INFO,
-         "RetroArch", "[ENV]: libretro path: [%s]\n", core_path);
+         "RetroArch", "[ENV] Libretro path: \"%s\".\n", core_path);
       if (args && *core_path)
          args->libretro_path = core_path;
    }
@@ -1453,7 +1606,7 @@ static void frontend_unix_get_env(int *argc,
       if (!string_is_empty(path))
       {
          __android_log_print(ANDROID_LOG_INFO,
-            "RetroArch", "[ENV]: auto-start game [%s]\n", path);
+            "RetroArch", "[ENV] Auto-start game \"%s\".\n", path);
          if (args && *path)
             args->content_path = path;
       }
@@ -1478,7 +1631,7 @@ static void frontend_unix_get_env(int *argc,
       if (!string_is_empty(internal_storage_path))
       {
          __android_log_print(ANDROID_LOG_INFO,
-            "RetroArch", "[ENV]: android internal storage location: [%s]\n",
+            "RetroArch", "[ENV] Android internal storage location: \"%s\".\n",
             internal_storage_path);
       }
    }
@@ -1500,7 +1653,7 @@ static void frontend_unix_get_env(int *argc,
       if (!string_is_empty(apk_dir))
       {
          __android_log_print(ANDROID_LOG_INFO,
-            "RetroArch", "[ENV]: APK location [%s]\n", apk_dir);
+            "RetroArch", "[ENV] APK location \"%s\".\n", apk_dir);
       }
    }
 
@@ -1522,7 +1675,7 @@ static void frontend_unix_get_env(int *argc,
       if (!string_is_empty(internal_storage_app_path))
       {
          __android_log_print(ANDROID_LOG_INFO,
-            "RetroArch", "[ENV]: android external files location [%s]\n",
+            "RetroArch", "[ENV] Android external files location \"%s\".\n",
             internal_storage_app_path);
       }
    }
@@ -1542,7 +1695,7 @@ static void frontend_unix_get_env(int *argc,
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       __android_log_print(ANDROID_LOG_INFO,
-         "RetroArch", "[ENV]: app dir: [%s]\n", app_dir);
+         "RetroArch", "[ENV] App dir: \"%s\".\n", app_dir);
 
       /* set paths depending on the ability to write
        * to internal_storage_path */
@@ -1564,7 +1717,7 @@ static void frontend_unix_get_env(int *argc,
       if (!string_is_empty(app_dir))
       {
          __android_log_print(ANDROID_LOG_INFO,
-            "RetroArch", "[ENV]: application location: [%s]\n", app_dir);
+            "RetroArch", "[ENV] Application location: \"%s\".\n", app_dir);
          if (args && *app_dir)
          {
 
@@ -1669,16 +1822,16 @@ static void frontend_unix_get_env(int *argc,
                   sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
             __android_log_print(ANDROID_LOG_INFO,
-               "RetroArch", "[ENV]: default savefile folder: [%s]",
+               "RetroArch", "[ENV] Default savefile folder: \"%s\".",
                g_defaults.dirs[DEFAULT_DIR_SRAM]);
             __android_log_print(ANDROID_LOG_INFO,
-               "RetroArch", "[ENV]: default savestate folder: [%s]",
+               "RetroArch", "[ENV] Default savestate folder: \"%s\".",
                g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
             __android_log_print(ANDROID_LOG_INFO,
-               "RetroArch", "[ENV]: default system folder: [%s]",
+               "RetroArch", "[ENV] Default system folder: \"%s\".",
                g_defaults.dirs[DEFAULT_DIR_SYSTEM]);
             __android_log_print(ANDROID_LOG_INFO,
-               "RetroArch", "[ENV]: default screenshot folder: [%s]",
+               "RetroArch", "[ENV] Default screenshot folder: \"%s\".",
                g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]);
          }
       }
@@ -1699,14 +1852,6 @@ static void frontend_unix_get_env(int *argc,
       g_defaults.menu_materialui_menu_color_theme_enable = true;
       g_defaults.menu_materialui_menu_color_theme        = MATERIALUI_THEME_NVIDIA_SHIELD;
 #endif
-#endif
-
-#if 0
-      /* Set the OK/cancel menu buttons to the default
-       * ones used for Shield */
-      g_defaults.menu_controls_set = true;
-      g_defaults.menu_controls_menu_btn_ok     = RETRO_DEVICE_ID_JOYPAD_B;
-      g_defaults.menu_controls_menu_btn_cancel = RETRO_DEVICE_ID_JOYPAD_A;
 #endif
    }
    else if (strstr(device_model, "JSS15J"))
@@ -1976,6 +2121,11 @@ static void android_app_destroy(struct android_app *android_app)
       CALL_VOID_METHOD(env, android_app->activity->clazz,
             android_app->onRetroArchExit);
 
+#ifdef HAVE_SAF
+   if (android_app->have_saf)
+      retro_vfs_deinit_saf();
+#endif
+
    if (android_app->inputQueue)
       AInputQueue_detachLooper(android_app->inputQueue);
 
@@ -1996,7 +2146,7 @@ static bool frontend_unix_set_gamemode(bool on)
    if (gamemode_status < 0)
    {
       if (on)
-         RARCH_WARN("[GameMode]: GameMode cannot be enabled on this system (\"%s.\") "
+         RARCH_WARN("[GameMode] GameMode cannot be enabled on this system (\"%s.\") "
                "https://github.com/FeralInteractive/gamemode needs to be installed.\n",
                gamemode_error_string());
 
@@ -2010,7 +2160,7 @@ static bool frontend_unix_set_gamemode(bool on)
    {
       if (gamemode_request_start() != 0)
       {
-         RARCH_WARN("[GameMode]: Failed to enter GameMode: %s.\n", gamemode_error_string());
+         RARCH_WARN("[GameMode] Failed to enter GameMode: %s.\n", gamemode_error_string());
          return false;
       }
    }
@@ -2018,7 +2168,7 @@ static bool frontend_unix_set_gamemode(bool on)
    {
       if (gamemode_request_end() != 0)
       {
-         RARCH_WARN("[GameMode]: Failed to exit GameMode: %s.\n", gamemode_error_string());
+         RARCH_WARN("[GameMode] Failed to exit GameMode: %s.\n", gamemode_error_string());
          return false;
       }
    }
@@ -2138,6 +2288,18 @@ static void frontend_unix_init(void *data)
    GET_METHOD_ID(env, android_app->accessibilitySpeak, class,
          "accessibilitySpeak", "(Ljava/lang/String;)V");
 
+   CALL_BOOLEAN_METHOD(env, android_app->is_play_store_build, android_app->activity->clazz, android_app->isPlayStoreBuild)
+
+#ifdef HAVE_SAF
+   GET_METHOD_ID(env, android_app->requestOpenDocumentTree, class,
+         "requestOpenDocumentTree", "()V");
+
+   GET_METHOD_ID(env, android_app->getPersistedSafTrees, class,
+         "getPersistedSafTrees", "()[Ljava/lang/String;");
+
+   android_app->have_saf = retro_vfs_init_saf(jni_thread_getenv, android_app->activity->clazz);
+#endif
+
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
@@ -2187,53 +2349,73 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    CALL_OBJ_METHOD(env, obj, g_android->activity->clazz,
          g_android->getIntent);
 
-   if (g_android->getVolumeCount)
+   if (!g_android->is_play_store_build && g_android->getVolumeCount)
    {
       CALL_INT_METHOD(env, output,
          g_android->activity->clazz, g_android->getVolumeCount);
       volume_count = output;
    }
 
-   if (!string_is_empty(internal_storage_path))
+   if (!g_android->is_play_store_build)
    {
-      if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
+      if (!string_is_empty(internal_storage_path))
       {
-         char user_data_path[PATH_MAX_LENGTH];
-         fill_pathname_join_special(user_data_path,
-               internal_storage_path, "RetroArch",
-               sizeof(user_data_path));
+         if (storage_permissions == INTERNAL_STORAGE_WRITABLE)
+         {
+            char user_data_path[PATH_MAX_LENGTH];
+            fill_pathname_join_special(user_data_path,
+                  internal_storage_path, "RetroArch",
+                  sizeof(user_data_path));
+
+            menu_entries_append(list,
+                  user_data_path,
+                  msg_hash_to_str(MSG_INTERNAL_STORAGE),
+                  enum_idx,
+                  FILE_TYPE_DIRECTORY, 0, 0, NULL);
+         }
 
          menu_entries_append(list,
-               user_data_path,
+               internal_storage_path,
                msg_hash_to_str(MSG_INTERNAL_STORAGE),
+               enum_idx,
+               FILE_TYPE_DIRECTORY, 0, 0, NULL);
+      }
+      else
+         menu_entries_append(list,
+               "/storage/emulated/0",
+               msg_hash_to_str(MSG_REMOVABLE_STORAGE),
+               enum_idx,
+               FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   }
+
+   if (!g_android->is_play_store_build)
+      menu_entries_append(list,
+            "/storage",
+            msg_hash_to_str(MSG_REMOVABLE_STORAGE),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   if (!string_is_empty(internal_storage_app_path))
+   {
+      if (g_android->is_play_store_build)
+      {
+         char user_data_app_path[PATH_MAX_LENGTH];
+         fill_pathname_join_special(user_data_app_path,
+               internal_storage_app_path, "RetroArch",
+               sizeof(user_data_app_path));
+
+         menu_entries_append(list,
+               user_data_app_path,
+               msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
                enum_idx,
                FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
 
       menu_entries_append(list,
-            internal_storage_path,
-            msg_hash_to_str(MSG_INTERNAL_STORAGE),
-            enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   }
-   else
-      menu_entries_append(list,
-            "/storage/emulated/0",
-            msg_hash_to_str(MSG_REMOVABLE_STORAGE),
-            enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0, NULL);
-
-   menu_entries_append(list,
-         "/storage",
-         msg_hash_to_str(MSG_REMOVABLE_STORAGE),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   if (!string_is_empty(internal_storage_app_path))
-      menu_entries_append(list,
             internal_storage_app_path,
             msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   }
    if (!string_is_empty(app_dir))
       menu_entries_append(list,
             app_dir,
@@ -2269,9 +2451,15 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   enum_idx,
                   FILE_TYPE_DIRECTORY, 0, 0, NULL);
       }
-
    }
+
 #elif defined(WEBOS)
+   if (path_is_directory("/media/developer/temp"))
+      menu_entries_append(list, "/media/developer/temp",
+         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+
    if (path_is_directory("/media/internal"))
       menu_entries_append(list, "/media/internal",
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
@@ -2352,10 +2540,105 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    }
 #endif
 
-   menu_entries_append(list, "/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+#ifdef ANDROID
+   if (!g_android->is_play_store_build)
+#else
+   if (1)
+#endif
+   {
+      menu_entries_append(list, "/",
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   }
+
+#if defined(ANDROID) && defined(HAVE_SAF)
+   if (g_android->have_saf)
+   {
+      JNIEnv *env = jni_thread_getenv();
+
+      if (env != NULL)
+      {
+         jarray trees = (*env)->CallObjectMethod(env, g_android->activity->clazz, g_android->getPersistedSafTrees);
+         if ((*env)->ExceptionOccurred(env))
+         {
+            (*env)->ExceptionDescribe(env);
+            (*env)->ExceptionClear(env);
+         }
+         else
+         {
+            jsize trees_length = (*env)->GetArrayLength(env, trees);
+            if ((*env)->ExceptionOccurred(env))
+            {
+               (*env)->ExceptionDescribe(env);
+               (*env)->ExceptionClear(env);
+            }
+            else
+            {
+               jsize i;
+               for (i = 0; i < trees_length; ++i)
+               {
+                  const char *tree_chars;
+                  char *serialized_path;
+                  jstring tree = (*env)->GetObjectArrayElement(env, trees, i);
+                  if ((*env)->ExceptionOccurred(env))
+                  {
+                     (*env)->ExceptionDescribe(env);
+                     (*env)->ExceptionClear(env);
+                     continue;
+                  }
+                  tree_chars = (*env)->GetStringUTFChars(env, tree, NULL);
+                  if ((*env)->ExceptionOccurred(env))
+                  {
+                     (*env)->ExceptionDescribe(env);
+                     (*env)->ExceptionClear(env);
+                     (*env)->DeleteLocalRef(env, tree);
+                     if ((*env)->ExceptionOccurred(env))
+                     {
+                        (*env)->ExceptionDescribe(env);
+                        (*env)->ExceptionClear(env);
+                     }
+                     continue;
+                  }
+                  if ((serialized_path = retro_vfs_path_join_saf(tree_chars, "")) != NULL)
+                  {
+                     menu_entries_append(list,
+                           serialized_path,
+                           msg_hash_to_str(MSG_REMOVABLE_STORAGE),
+                           enum_idx,
+                           FILE_TYPE_DIRECTORY, 0, 0, NULL);
+                     free(serialized_path);
+                  }
+                  (*env)->ReleaseStringUTFChars(env, tree, tree_chars);
+                  if ((*env)->ExceptionOccurred(env))
+                  {
+                     (*env)->ExceptionDescribe(env);
+                     (*env)->ExceptionClear(env);
+                  }
+                  (*env)->DeleteLocalRef(env, tree);
+                  if ((*env)->ExceptionOccurred(env))
+                  {
+                     (*env)->ExceptionDescribe(env);
+                     (*env)->ExceptionClear(env);
+                  }
+               }
+            }
+            (*env)->DeleteLocalRef(env, trees);
+            if ((*env)->ExceptionOccurred(env))
+            {
+               (*env)->ExceptionDescribe(env);
+               (*env)->ExceptionClear(env);
+            }
+         }
+      }
+
+      menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
+            MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
+            MENU_SETTING_ACTION, 0, 0, NULL);
+   }
+#endif
 #endif
 
    return 0;
@@ -2634,7 +2917,7 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
 
    if (uname(&buffer) != 0)
    {
-      RARCH_WARN("watch_path_for_changes: Failed to get current kernel version.\n");
+      RARCH_WARN("[watch_path_for_changes] Failed to get current kernel version.\n");
       return;
    }
 
@@ -2644,21 +2927,21 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
    /* check if we are actually running on a high enough kernel version as well */
    if (major < 2)
    {
-      RARCH_WARN("watch_path_for_changes: inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
+      RARCH_WARN("[watch_path_for_changes] inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
       return;
    }
    else if (major == 2)
    {
       if (minor < 6)
       {
-         RARCH_WARN("watch_path_for_changes: inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
+         RARCH_WARN("[watch_path_for_changes] inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
          return;
       }
       else if (minor == 6)
       {
          if (krel < 13)
          {
-            RARCH_WARN("watch_path_for_changes: inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
+            RARCH_WARN("[watch_path_for_changes] inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
             return;
          }
          else
@@ -2680,13 +2963,13 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list, int f
 
    if (fd < 0)
    {
-      RARCH_WARN("watch_path_for_changes: Could not initialize inotify.\n");
+      RARCH_WARN("[watch_path_for_changes] Could not initialize inotify.\n");
       return;
    }
 
    if (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK))
    {
-      RARCH_WARN("watch_path_for_changes: Could not set socket to non-blocking.\n");
+      RARCH_WARN("[watch_path_for_changes] Could not set socket to non-blocking.\n");
       return;
    }
 
@@ -3070,7 +3353,6 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    NULL,                         /* get_name */
 #endif
    frontend_unix_get_os,
-   frontend_unix_get_rating,           /* get_rating */
    NULL,                               /* content_loaded */
    frontend_unix_get_arch,             /* get_architecture */
    frontend_unix_get_powerstate,

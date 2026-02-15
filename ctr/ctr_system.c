@@ -257,7 +257,7 @@ void __attribute__((noreturn)) __ctru_exit(int rc)
 {
    __libc_fini_array();
    __appExit();
-   asm ("mov sp, %[saved_stack] \n\t" : : [saved_stack] "r"  (__saved_stack) : "sp");
+   asm ("mov sp, %[saved_stack] \n\t" : : [saved_stack] "r" (__saved_stack));
    __libctru_exit(rc);
 }
 

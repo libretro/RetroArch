@@ -463,12 +463,16 @@ static void frontend_gx_process_args(int *argc, char *argv[])
    /* A big hack: sometimes Salamander doesn't save the new core
     * it loads on first boot, so we make sure
     * active core path is set here. */
-   if (path_is_empty(RARCH_PATH_CORE) && *argc >= 1 && strrchr(argv[0], '/'))
+   if (path_is_empty(RARCH_PATH_CORE) && *argc >= 1)
    {
-      char path[PATH_MAX_LENGTH] = {0};
-      strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
-      if (path_is_valid(path))
-         path_set(RARCH_PATH_CORE, path);
+      char *last_slash = strrchr(argv[0], '/');
+      if (last_slash)
+      {
+         char path[PATH_MAX_LENGTH];
+         strlcpy(path, last_slash + 1, sizeof(path));
+         if (path_is_valid(path))
+            path_set(RARCH_PATH_CORE, path);
+      }
    }
 #endif
 }
@@ -496,15 +500,6 @@ static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
    return true;
 }
 #endif
-
-static int frontend_gx_get_rating(void)
-{
-#ifdef HW_RVL
-   return 8;
-#else
-   return 6;
-#endif
-}
 
 static enum frontend_architecture frontend_gx_get_arch(void)
 {
@@ -585,7 +580,6 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_shutdown,            /* shutdown */
    NULL,                            /* get_name */
    NULL,                            /* get_os */
-   frontend_gx_get_rating,          /* get_rating */
    NULL,                            /* load_content */
    frontend_gx_get_arch,            /* get_architecture */
    NULL,                            /* get_powerstate */

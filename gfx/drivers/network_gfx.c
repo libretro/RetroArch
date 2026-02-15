@@ -124,7 +124,7 @@ static void *network_gfx_init(const video_info_t *video,
    strlcpy(network->address, xstr(NETWORK_VIDEO_HOST), sizeof(network->address));
    network->port = NETWORK_VIDEO_PORT;
 
-   RARCH_LOG("[Network]: Connecting to host %s:%d\n", network->address, network->port);
+   RARCH_LOG("[Network] Connecting to host %s:%d...\n", network->address, network->port);
 try_connect:
    fd = socket_init((void**)&addr, network->port, network->address, SOCKET_TYPE_STREAM, 0);
 
@@ -146,15 +146,15 @@ try_connect:
    network->fd = fd;
 
    if (network->fd >= 0)
-      RARCH_LOG("[Network]: Connected to host.\n");
+      RARCH_LOG("[Network] Connected to host.\n");
    else
    {
-      RARCH_LOG("[Network]: Could not connect to host, retrying...\n");
+      RARCH_LOG("[Network] Could not connect to host, retrying...\n");
       retro_sleep(1000);
       goto try_connect;
    }
 
-   RARCH_LOG("[Network]: Init complete.\n");
+   RARCH_LOG("[Network] Init complete.\n");
 
    return network;
 }
@@ -458,8 +458,9 @@ static const video_poke_interface_t network_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void network_gfx_get_poke_interface(void *data,

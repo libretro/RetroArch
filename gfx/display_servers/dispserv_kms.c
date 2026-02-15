@@ -66,7 +66,7 @@ static bool kms_display_server_set_resolution(void *data,
       curr_width       = g_drm_mode->hdisplay;
       curr_height      = g_drm_mode->vdisplay;
    }
-   RARCH_DBG("[DRM]: Display server set resolution - incoming: %d x %d, %f Hz\n",width, height, hz);
+   RARCH_DBG("[DRM] Display server set resolution - incoming: %d x %d, %f Hz.\n",width, height, hz);
 
    if (width == 0)
       width = curr_width;
@@ -74,11 +74,11 @@ static bool kms_display_server_set_resolution(void *data,
       height = curr_height;
    if (hz == 0)
       hz = curr_refreshrate;
-   
+
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);
 
-   RARCH_DBG("[DRM]: Display server set resolution - actual: %d x %d, %f Hz\n",width, height, hz);
+   RARCH_DBG("[DRM] Display server set resolution - actual: %d x %d, %f Hz.\n",width, height, hz);
 
    retval = video_driver_set_video_mode(width, height, true);
 
@@ -177,7 +177,8 @@ static void *kms_display_server_get_resolution_list(
    return conf;
 }
 
-/* TODO: screen orientation has support in DRM via planes, although not really exposed via xf86drm */
+/* TODO/FIXME: screen orientation has support in DRM via planes,
+ * although not really exposed via xf86drm */
 #if 0
 static void kms_display_server_set_screen_orientation(void *data,
       enum rotation rotation)

@@ -23,6 +23,10 @@
 #include "../steam/steam.h"
 #endif
 
+#ifdef HAVE_COCOATOUCH
+#include "../ui/drivers/cocoa/apple_platform.h"
+#endif
+
 /* Standard reference DPI value, used when determining
  * DPI-aware scaling factors */
 #define REFERENCE_DPI 96.0f
@@ -999,6 +1003,10 @@ void gfx_display_draw_keyboard(
    if (steam_has_osk_open())
       return;
 #endif
+#ifdef HAVE_COCOATOUCH
+   if (ios_keyboard_active())
+      return;
+#endif
 
    gfx_display_draw_quad(
          p_disp,
@@ -1218,7 +1226,7 @@ bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       if (     (type != GFX_VIDEO_DRIVER_GENERIC)
             && (!string_is_equal(video_driver, ident)))
          continue;
-      RARCH_LOG("[Display]: Found display driver: \"%s\".\n", ident);
+      RARCH_LOG("[Display] Found display driver: \"%s\".\n", ident);
       p_disp->dispctx = dispctx;
       return true;
    }

@@ -78,7 +78,7 @@ static void *gfx_ctx_khr_display_init(void *video_driver)
 
    if (!vulkan_context_init(&khr->vk, VULKAN_WSI_DISPLAY))
    {
-      RARCH_ERR("[Vulkan]: Failed to create Vulkan context.\n");
+      RARCH_ERR("[Vulkan] Failed to create Vulkan context.\n");
       goto error;
    }
 
@@ -119,7 +119,7 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
    if (!vulkan_create_swapchain(&khr->vk, khr->width, khr->height,
             khr->swap_interval))
    {
-      RARCH_ERR("[Vulkan]: Failed to update swapchain.\n");
+      RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       return false;
    }
 
@@ -155,7 +155,7 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
    if (!vulkan_surface_create(&khr->vk, VULKAN_WSI_DISPLAY, &info, NULL,
             0, 0, khr->swap_interval))
    {
-      RARCH_ERR("[Vulkan]: Failed to create KHR_display surface.\n");
+      RARCH_ERR("[Vulkan] Failed to create KHR_display surface.\n");
       gfx_ctx_khr_display_destroy(data);
       return false;
    }
@@ -301,5 +301,7 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    gfx_ctx_khr_display_set_flags,
    NULL,
    gfx_ctx_khr_display_get_context_data,
-   NULL                                         /* make_current */
+   NULL,                                        /* make_current */
+   NULL,                                        /* create_surface */
+   NULL                                         /* destroy_surface */
 };

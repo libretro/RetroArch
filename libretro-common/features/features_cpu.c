@@ -108,6 +108,10 @@
 #include <3ds/services/cfgu.h>
 #endif
 
+#if defined(WEBOS)
+#include <sys/stat.h>
+#endif
+
 /* iOS/OSX specific. Lacks clock_gettime(), so implement it. */
 #ifdef __MACH__
 #include <sys/time.h>
@@ -269,7 +273,8 @@ retro_time_t cpu_features_get_time_usec(void)
 #endif
 
 #if defined(CPU_X86) && !defined(__MACH__)
-void x86_cpuid(int func, int flags[4])
+#include <limits.h>
+void x86_cpuid(int func, int32_t flags[4])
 {
    /* On Android, we compile RetroArch with PIC, and we
     * are not allowed to clobber the ebx register. */
@@ -288,8 +293,8 @@ void x86_cpuid(int func, int flags[4])
          "xchg %%" REG_b ", %%" REG_S "\n"
          : "=a"(flags[0]), "=S"(flags[1]), "=c"(flags[2]), "=d"(flags[3])
          : "a"(func));
-#elif defined(_MSC_VER)
-   __cpuid(flags, func);
+#elif defined(_MSC_VER) && INT_MAX == 2147483647
+   __cpuid((int*)flags, func);
 #else
 #ifndef NDEBUG
    printf("Unknown compiler. Cannot check CPUID with inline assembly.\n");
@@ -651,7 +656,7 @@ uint64_t cpu_features_get(void)
    cpu |= RETRO_SIMD_MMX | RETRO_SIMD_SSE | RETRO_SIMD_MMXEXT;
 #elif defined(CPU_X86)
    unsigned max_flag   = 0;
-   int flags[4];
+   int32_t flags[4];
    int vendor_shuffle[3];
    char vendor[13];
    x86_cpuid(0, flags);
@@ -757,20 +762,6 @@ uint64_t cpu_features_get(void)
 #endif
 #endif
    }
-
-#if 0
-    check_arm_cpu_feature("swp");
-    check_arm_cpu_feature("half");
-    check_arm_cpu_feature("thumb");
-    check_arm_cpu_feature("fastmult");
-    check_arm_cpu_feature("vfp");
-    check_arm_cpu_feature("edsp");
-    check_arm_cpu_feature("thumbee");
-    check_arm_cpu_feature("tls");
-    check_arm_cpu_feature("idiva");
-    check_arm_cpu_feature("idivt");
-#endif
-
 #elif defined(__ARM_NEON__)
    cpu |= RETRO_SIMD_NEON;
 #if defined(__arm__)
@@ -863,14 +854,74 @@ end:
          if ((model_name = strstr(line + 10, ": ")))
          {
             model_name += 2;
-            strncpy(s, model_name, len);
-            s[len - 1] = '\0';
+            strlcpy(s, model_name, len);
          }
 
          break;
       }
 
       filestream_close(fp);
+
+#if defined(WEBOS)
+      struct stat st;
+      if (stat("/usr/bin/lscpu", &st) == 0)
+      {
+         FILE *pipe = popen("/usr/bin/lscpu", "r");
+         if (pipe)
+         {
+            char buf[256];
+
+            while (fgets(buf, sizeof(buf), pipe))
+            {
+               if (strncmp(buf, "Model name:", 11) == 0)
+               {
+                  const char *p = strchr(buf, ':');
+                  if (p)
+                  {
+                     p++; // skip ':'
+                     while (*p == ' ' || *p == '\t') p++;
+                     size_t len2 = strcspn(p, "\r\n");
+
+                     if (len2 > 0)
+                     {
+                        char *tmp = malloc(len2 + 1);
+                        if (tmp)
+                        {
+                           memcpy(tmp, p, len2);
+                           tmp[len2] = '\0';
+
+                           if (s[0] != '\0')
+                           {
+                              size_t oldlen = strlen(s);
+                              char *combined = malloc(oldlen + len2 + 4);
+                              if (combined)
+                              {
+                                 memcpy(combined, s, oldlen);
+                                 combined[oldlen] = ' ';
+                                 combined[oldlen + 1] = '(';
+                                 memcpy(combined + oldlen + 2, tmp, len2);
+                                 combined[oldlen + 2 + len2] = ')';
+                                 combined[oldlen + 2 + len2 + 1] = '\0';
+
+                                 strlcpy(s, combined, len);
+                                 free(combined);
+                              }
+                           }
+                           else
+                           {
+                              strlcpy(s, tmp, len);
+                           }
+                           free(tmp);
+                        }
+                     }
+                  }
+                  break;
+               }
+            }
+            pclose(pipe);
+         }
+      }
+#endif
    }
 #endif
 }

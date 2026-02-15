@@ -6,6 +6,20 @@
 #pragma warning(disable:4566)
 #endif
 
+/*
+##### NOTE FOR TRANSLATORS ####
+
+PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
+
+Translations are handled using the localization platform Crowdin:
+https://crowdin.com/project/retroarch
+
+Translations from Crowdin are applied automatically and will overwrite
+any changes made to the other localization files.
+As a result, any submissions directly altering `msg_hash_*.h` files
+other than `msg_hash_us.h` will be rejected.
+*/
+
 /* Top-Level Menu */
 
 MSG_HASH(
@@ -159,9 +173,6 @@ MSG_HASH(
 /* Main Menu > Information > System Information */
 
 
-/* Main Menu > Information > Database Manager */
-
-
 /* Main Menu > Information > Database Manager > Information */
 
 MSG_HASH(
@@ -189,7 +200,6 @@ MSG_HASH(
 
 
 /* Main Menu > Help */
-
 
 /* Main Menu > Help > Basic Menu Controls */
 
@@ -265,6 +275,7 @@ MSG_HASH(
 /* Settings > Video > HDR */
 
 
+
 /* Settings > Video > Synchronization */
 
 
@@ -303,6 +314,7 @@ MSG_HASH(
 #endif
 
 
+
 /* Settings > Input > Haptic Feedback/Vibration */
 
 
@@ -310,7 +322,6 @@ MSG_HASH(
 
 
 /* Settings > Input > Hotkeys */
-
 
 
 
@@ -383,9 +394,6 @@ MSG_HASH(
 
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
-
-
-/* Settings > On-Screen Display > Video Layout */
 
 
 /* Settings > On-Screen Display > On-Screen Notifications */
@@ -535,8 +543,6 @@ MSG_HASH(
 /* Quick Menu > Options > Manage Core Options */
 
 
-/* - Legacy (unused) */
-
 /* Quick Menu > Controls */
 
 
@@ -570,13 +576,6 @@ MSG_HASH(
 
 /* Quick Menu > Shaders */
 
-
-/* Quick Menu > Shaders > Save */
-
-
-
-
-/* Quick Menu > Shaders > Remove */
 
 
 /* Quick Menu > Shaders > Shader Parameters */
@@ -657,24 +656,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BROWSE_START,
    "Lançar"
    )
-
-/* Unused (Only Exist in Translation Files) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
-   "Jòc en ret"
-   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP,
    "Ajuda"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
-   "Descripcion"
-   )
-
-/* Unused (Needs Confirmation) */
-
 
 /* Discord Status */
 
@@ -695,6 +680,24 @@ MSG_HASH(
 #ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "Retroflag Safe Shutdown"
+#else
+   "Retroflag Safe Shutdown (Reboot required)"
+#endif
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#ifdef HAVE_RETROFLAG_RPI5
+   "For use with compatible Retroflag case."
+#else
+   "For use with compatible Retroflag case. Reboot is required when changing."
+#endif
+   )
+#endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif
 #endif
@@ -717,4 +720,6 @@ MSG_HASH(
 
 
 
+#endif
+#ifdef HAVE_SMBCLIENT
 #endif

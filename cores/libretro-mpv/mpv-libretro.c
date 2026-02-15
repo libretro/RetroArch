@@ -97,7 +97,7 @@ static void process_mpv_events(mpv_event_id event_block)
 		{
 			struct mpv_event_log_message *msg =
 				(struct mpv_event_log_message *)mp_event->data;
-			log_cb(RETRO_LOG_INFO, "mpv: [%s] %s: %s",
+			log_cb(RETRO_LOG_INFO, "mpv: [%s] %s: %s\n",
 					msg->prefix, msg->level, msg->text);
 		}
 		else if(mp_event->event_id == MPV_EVENT_END_FILE)
@@ -151,7 +151,7 @@ void CORE_PREFIX(retro_init)(void)
 	if(mpv_client_api_version() != MPV_CLIENT_API_VERSION)
 	{
 		log_cb(RETRO_LOG_WARN, "libmpv version mismatch. Please update or "
-				"recompile mpv-libretro after updating libmpv.");
+				"recompile mpv-libretro after updating libmpv.\n");
 	}
 
 	return;

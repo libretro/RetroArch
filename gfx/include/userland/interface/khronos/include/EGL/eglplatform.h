@@ -197,8 +197,4 @@ EGLAPI void EGLAPIENTRY BEGL_GetDefaultDriverInterfaces(BEGL_DriverInterfaces *i
 
 #endif /* ABSTRACT_PLATFORM */
 
-#if 0
-#include "interface/khronos/common/khrn_client_mangle.h"
-#endif
-
 #endif /* __eglplatform_h */

@@ -44,11 +44,11 @@ static bool load_xinput_dll(void)
 
    if (!g_xinput_dll)
    {
-      RARCH_ERR("[XInput]: Failed to load XInput. Ensure DirectX and controller drivers are up to date.\n");
+      RARCH_ERR("[XInput] Failed to load XInput. Ensure DirectX and controller drivers are up to date.\n");
       return false;
    }
 
-   RARCH_LOG("[XInput]: Found XInput v%s.\n", version);
+   RARCH_LOG("[XInput] Found XInput v%s.\n", version);
    return true;
 }
 #endif

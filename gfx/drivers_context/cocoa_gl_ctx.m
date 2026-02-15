@@ -101,14 +101,14 @@ static uint32_t cocoa_gl_gfx_ctx_get_flags(void *data)
          break;
       case GFX_CTX_OPENGL_API:
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
-         else if (string_is_equal(video_driver_get_ident(), "glcore"))
-         {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
-         }
          else
          {
+            if (string_is_equal(video_driver_get_ident(), "glcore"))
+            {
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+               BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+            }
 #ifdef HAVE_GLSL
             BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
@@ -172,6 +172,11 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
    RELEASE(g_hw_ctx);
    [GLContextClass clearCurrentContext];
 #else
+   /* Clean up GLKView's framebuffer resources while context is still valid.
+    * Failing to do this causes crashes in glPushGroupMarkerEXT when GLKit
+    * tries to delete framebuffers after the context has been destroyed. */
+   if (glk_view)
+      [glk_view deleteDrawable];
    [EAGLContext setCurrentContext:nil];
 #endif
    g_hw_ctx = nil;
@@ -226,10 +231,10 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
 static void cocoa_gl_gfx_ctx_get_video_size(void *data,
       unsigned* width, unsigned* height)
 {
-   float screenscale               = cocoa_screen_get_native_scale();
    CGRect size                     = glk_view.bounds;
-   *width                          = CGRectGetWidth(size)  * screenscale;
-   *height                         = CGRectGetHeight(size) * screenscale;
+   float viewScale                 = [glk_view contentScaleFactor];
+   *width                          = CGRectGetWidth(size)  * viewScale;
+   *height                         = CGRectGetHeight(size) * viewScale;
 }
 #endif
 
@@ -242,7 +247,10 @@ static float cocoa_gl_gfx_ctx_get_refresh_rate(void *data)
     CFRelease(currentMode);
     return currentRate;
 #else
-    return [UIScreen mainScreen].maximumFramesPerSecond;
+    if (@available(iOS 10.3, tvOS 10.2, *))
+       return [UIScreen mainScreen].maximumFramesPerSecond;
+    else
+       return 60;
 #endif
 }
 
@@ -324,7 +332,7 @@ static void cocoa_gl_gfx_ctx_swap_buffers(void *data)
       return;
    if (glk_view)
       [glk_view display];
-   cocoa_ctx->fast_forward_skips = 
+   cocoa_ctx->fast_forward_skips =
       (cocoa_ctx->flags & COCOA_CTX_FLAG_IS_SYNCING) ? 0 : 3;
 #endif
 }
@@ -350,12 +358,12 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
 #endif
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-   static bool 
+   static bool
       has_went_fullscreen      = false;
    cocoa_ctx->width            = width;
    cocoa_ctx->height           = height;
 
-   /* NOTE: setWantsBestResolutionOpenGLSurface only 
+   /* NOTE: setWantsBestResolutionOpenGLSurface only
     * available on MacOS X 10.7 and up.
     * Deprecated as of MacOS X 10.14. */
 #if MAC_OS_X_VERSION_10_7
@@ -416,6 +424,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    }
 
    [g_ctx setView:g_view];
+   [[g_view window] setColorSpace:[NSColorSpace sRGBColorSpace]];
 #ifdef OSX
    [g_ctx makeCurrentContext];
 #else
@@ -506,7 +515,7 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
 
    glk_view.context = g_ctx;
 
-   /* TODO: Maybe iOS users should be able to 
+   /* TODO: Maybe iOS users should be able to
     * show/hide the status bar here? */
    return true;
 }
@@ -522,12 +531,12 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
 #ifndef OSX
    cocoa_ctx->flags |= COCOA_CTX_FLAG_IS_SYNCING;
 #endif
-    
+
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_COCOA_METAL)
-         /* The Metal build supports both the OpenGL 
+         /* The Metal build supports both the OpenGL
           * and Metal video drivers */
          [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
 #endif
@@ -536,7 +545,7 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
       default:
          break;
    }
-    
+
    return cocoa_ctx;
 }
 #endif
@@ -547,6 +556,43 @@ static bool cocoa_gl_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
    return true;
 }
 #endif
+
+static void cocoa_gl_gfx_ctx_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+{
+#if TARGET_OS_IPHONE
+   /* iOS/tvOS: Return physical screen resolution, not window size */
+   UIScreen *screen = [UIScreen mainScreen];
+   CGRect nativeBounds = screen.nativeBounds;
+   *width  = (unsigned)nativeBounds.size.width;
+   *height = (unsigned)nativeBounds.size.height;
+
+   if (desc && desc_len > 0)
+   {
+      float scale = cocoa_screen_get_native_scale();
+      if (scale >= 3.0f)
+         strlcpy(desc, "Super Retina", desc_len);
+      else if (scale >= 2.0f)
+         strlcpy(desc, "Retina", desc_len);
+      else
+         strlcpy(desc, "Standard", desc_len);
+   }
+#else
+   /* macOS: Return display resolution */
+   CGDirectDisplayID display = CGMainDisplayID();
+   *width  = (unsigned)CGDisplayPixelsWide(display);
+   *height = (unsigned)CGDisplayPixelsHigh(display);
+
+   if (desc && desc_len > 0)
+   {
+      float scale = cocoa_screen_get_backing_scale_factor();
+      if (scale >= 2.0f)
+         strlcpy(desc, "Retina", desc_len);
+      else
+         strlcpy(desc, "Standard", desc_len);
+   }
+#endif
+}
 
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_gl_gfx_ctx_init,
@@ -561,7 +607,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_gl_gfx_ctx_get_video_size,
 #endif
    cocoa_gl_gfx_ctx_get_refresh_rate,
-   NULL, /* get_video_output_size */
+   cocoa_gl_gfx_ctx_get_video_output_size,
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    cocoa_get_metrics,
@@ -580,7 +626,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_has_focus,
    cocoa_gl_gfx_ctx_suppress_screensaver,
 #if defined(HAVE_COCOATOUCH)
-   false,
+   true,
 #else
    true,
 #endif
@@ -595,5 +641,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_gl_gfx_ctx_set_flags,
    cocoa_gl_gfx_ctx_bind_hw_render,
    NULL, /* get_context_data */
-   NULL  /* make_current */
+   NULL, /* make_current */
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };

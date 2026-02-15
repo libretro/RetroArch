@@ -231,7 +231,7 @@ static int rbmp_bitcount(unsigned int a)
 
 static int rbmp_shiftsigned(int v, int shift, int bits)
 {
-   int result;
+   int ret;
    int z = bits;
 
    if (shift < 0)
@@ -239,14 +239,14 @@ static int rbmp_shiftsigned(int v, int shift, int bits)
    else
       v >>= shift;
 
-   result = v;
+   ret = v;
 
    while (z < 8)
    {
-      result += v >> z;
-      z      += bits;
+      ret += v >> z;
+      z   += bits;
    }
-   return result;
+   return ret;
 }
 
 static unsigned char *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
@@ -346,21 +346,6 @@ static unsigned char *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
             switch (compress)
             {
                case 0:
-#if 0
-                  if (bpp == 32)
-                  {
-                     mr = 0xffu << 16;
-                     mg = 0xffu <<  8;
-                     mb = 0xffu <<  0;
-                     ma = 0xffu << 24;
-                  }
-                  else
-                  {
-                     mr = 31u << 10;
-                     mg = 31u <<  5;
-                     mb = 31u <<  0;
-                  }
-#endif
                   break;
                case 3:
                   mr = (uint32_t)RBMP_GET32LE(s);
@@ -373,9 +358,6 @@ static unsigned char *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
                      return 0;
                   break;
                default:
-#if 0
-                  mr = mg = mb = 0;
-#endif
                   break;
             }
 

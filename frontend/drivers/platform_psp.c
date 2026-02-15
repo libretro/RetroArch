@@ -428,15 +428,6 @@ static void frontend_psp_exitspawn(char *s, size_t len, char *args)
    frontend_psp_exec(s, should_load_content);
 }
 
-static int frontend_psp_get_rating(void)
-{
-#ifdef VITA
-   return 6; /* Go with a conservative figure for now. */
-#else
-   return 4;
-#endif
-}
-
 static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
@@ -566,11 +557,6 @@ enum retro_language psp_get_retro_lang_from_langid(int langid)
       return RETRO_LANGUAGE_PORTUGUESE_BRAZIL;
    case SCE_SYSTEM_PARAM_LANG_TURKISH:
       return RETRO_LANGUAGE_TURKISH;
-#if 0
-   /* TODO/FIXME - this doesn't seem to actually exist */
-   case SCE_SYSTEM_PARAM_LANG_SLOVAK:
-      return RETRO_LANGUAGE_SLOVAK;
-#endif
    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US:
    case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB:
    default:
@@ -611,7 +597,6 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_shutdown,        /* shutdown         */
    NULL,                         /* get_name         */
    NULL,                         /* get_os           */
-   frontend_psp_get_rating,      /* get_rating       */
    NULL,                         /* content_loaded   */
    frontend_psp_get_arch,        /* get_architecture */
    frontend_psp_get_powerstate,

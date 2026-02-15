@@ -191,10 +191,13 @@ void* linearMemAlign(size_t len, size_t alignment)
 		sLinearPool.Deallocate(chunk);
 		return nullptr;
 	}
-	if (rbtree_insert(&sAddrMap, &node->node));
+	if (!rbtree_insert(&sAddrMap, &node->node)) {
+		sLinearPool.Deallocate(chunk);
+		return nullptr;
+	}
 
-   if (sLinearPool_maxaddr < (u32)sLinearPool.last->base)
-      sLinearPool_maxaddr = (u32)sLinearPool.last->base;
+	if (sLinearPool_maxaddr < (u32)sLinearPool.last->base)
+		sLinearPool_maxaddr = (u32)sLinearPool.last->base;
 
 	return chunk.addr;
 }

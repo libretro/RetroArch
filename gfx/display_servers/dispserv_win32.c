@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define WIN32_LEAN_AND_MEAN
+
 /* VC6 needs objbase included before initguid, but nothing else does */
 #include <objbase.h>
 #include <initguid.h>
@@ -150,7 +152,6 @@ static bool win32_display_server_set_window_opacity(
 {
 #ifdef HAVE_WINDOW_TRANSP
    HWND              hwnd = win32_get_window();
-   dispserv_win32_t *serv = (dispserv_win32_t*)data;
    /* Set window transparency on Windows 2000 and above */
    if (opacity < 100)
    {

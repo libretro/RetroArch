@@ -49,7 +49,6 @@ static frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   NULL,                         /* get_rating */
    NULL,                         /* load_content */
    NULL,                         /* get_architecture */
    NULL,                         /* get_powerstate */
@@ -180,7 +179,7 @@ size_t frontend_driver_get_core_extension(char *s, size_t len)
 #ifdef HAVE_DYNAMIC
 #ifdef _WIN32
    return strlcpy(s, "dll", len);
-#elif defined(IOS) || (defined(OSX) && defined(HAVE_APPLE_STORE))
+#elif (defined(IOS) && defined(HAVE_FRAMEWORKS)) || (defined(OSX) && defined(HAVE_APPLE_STORE))
    return strlcpy(s, "framework", len);
 #elif defined(__APPLE__) || defined(__MACH__)
    return strlcpy(s, "dylib" ,len);
@@ -212,6 +211,9 @@ size_t frontend_driver_get_core_extension(char *s, size_t len)
    if (envIsHomebrew())
       return strlcpy(s, "3dsx", len);
    return strlcpy(s, "cia", len);
+#elif defined(EMSCRIPTEN)
+   /* may not contain the core */
+   return strlcpy(s, "core", len);
 #else
    return 0;
 #endif

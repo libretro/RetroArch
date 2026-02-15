@@ -30,6 +30,13 @@ else
     DRY_RUN=
 fi
 
+if [ "$1" = "-d" -o "$1" = "--dsym" ] ; then
+    DOWNLOAD_DSYM=1
+    shift
+else
+    DOWNLOAD_DSYM=
+fi
+
 URL_BASE="https://buildbot.libretro.com/nightly/apple"
 
 if [ "$PLATFORM_FAMILY_NAME" = "tvOS" -o "$1" = "tvos" -o "$1" = "--tvos" ] ; then
@@ -96,10 +103,44 @@ function update_dylib() {
         if [ "${#URL_PLATFORMS[@]}" != 1 ] ; then
             lipo -create -output "$dylib" "$dylib".*
         fi
+
+        # Download dSYM if requested
+        if [ -n "$DOWNLOAD_DSYM" ] ; then
+            for urlp in "${URL_PLATFORMS[@]}" ; do
+                debug curl $CURL_DEBUG -o "$dylib".dSYM.zip "$URL_BASE"/"$urlp"/latest/dSYM/"$dylib".dSYM.zip
+                curl $CURL_DEBUG -o "$dylib".dSYM.zip "$URL_BASE"/"$urlp"/latest/dSYM/"$dylib".dSYM.zip
+                if [ -f "$dylib".dSYM.zip ] ; then
+                    debug unzip $UNZIP_DEBUG "$dylib".dSYM.zip
+                    unzip $UNZIP_DEBUG "$dylib".dSYM.zip
+                    rm -f "$dylib".dSYM.zip
+
+                    # macos app store needs universal binaries - merge dSYMs
+                    if [ "${#URL_PLATFORMS[@]}" != 1 ] ; then
+                        mv "$dylib".dSYM "$dylib".dSYM.$(basename "$urlp")
+                    fi
+                fi
+            done
+            if [ "${#URL_PLATFORMS[@]}" != 1 ] ; then
+                # Merge dSYMs for universal binary if we have multiple architectures
+                if ls "$dylib".dSYM.* >/dev/null 2>&1 ; then
+                    lipo -create -output "$dylib".dSYM.tmp $(find . -name "$dylib".dSYM.*/Contents/Resources/DWARF/"$dylib" -o -name "$dylib".dSYM.*/Contents/Resources/DWARF/$(basename "$dylib" .dylib))
+                    # Reconstruct dSYM bundle structure
+                    mkdir -p "$dylib".dSYM/Contents/Resources/DWARF
+                    mv "$dylib".dSYM.tmp "$dylib".dSYM/Contents/Resources/DWARF/$(basename "$dylib" .dylib)
+                    rm -rf "$dylib".dSYM.*
+                fi
+            fi
+        fi
+
         popd >/dev/null
         if [ -f "$dylib".tmp/"$dylib" ] ; then
             printf "${GREEN}Download ${dylib} success!${NC}\n"
             mv "$dylib".tmp/"$dylib" "$dylib"
+            # Move dSYM if it exists (only when --dsym flag was used)
+            if [ -n "$DOWNLOAD_DSYM" ] && [ -d "$dylib".tmp/"$dylib".dSYM ] ; then
+                rm -rf "$dylib".dSYM
+                mv "$dylib".tmp/"$dylib".dSYM "$dylib".dSYM
+            fi
         fi
         rm -rf "$dylib".tmp
     ) &
@@ -132,6 +173,135 @@ function find_dylib() {
 
 get_all_cores
 
+appstore_cores=(
+    2048
+    a5200
+    amiarcadia
+    anarch
+    ardens
+    atari800
+    b2
+    #blastem
+    bluemsx
+    bsnes
+    bsnes-jg
+    bsnes_hd_beta
+    cap32
+    clownmdemu
+    crocods
+    desmume
+    dice
+    dinothawr
+    dirksimple
+    dosbox_pure
+    DoubleCherryGB
+    doukutsu_rs
+    easyrpg
+    ep128emu_core
+    fbneo
+    fceumm
+    #flycast
+    freechaf
+    freeintv
+    fuse
+    gam4980
+    gambatte
+    gearboy
+    gearcoleco
+    geargrafx
+    gearlynx
+    gearsystem
+    genesis_plus_gx
+    genesis_plus_gx_wide
+    geolith
+    gme
+    gpsp
+    gw
+    handy
+    holani
+    jollycv
+    kronos
+    mednafen_ngp
+    mednafen_pce
+    mednafen_pce_fast
+    mednafen_pcfx
+    mednafen_psx
+    mednafen_psx_hw
+    mednafen_saturn
+    mednafen_supergrafx
+    mednafen_vb
+    mednafen_wswan
+    melondsds
+    mesen
+    mesen-s
+    mgba
+    mojozork
+    mrboom
+    mu
+    mupen64plus_next
+    neocd
+    nestopia
+    noods
+    np2kai
+    numero
+    nxengine
+    o2em
+    opera
+    pcsx_rearmed
+    pd777
+    picodrive
+    #play
+    pocketcdg
+    pokemini
+    potator
+    ppsspp
+    prboom
+    prosystem
+    puae
+    px68k
+    quicknes
+    race
+    reminiscence
+    sameboy
+    sameduck
+    scummvm
+    skyemu
+    smsplus
+    snes9x
+    snes9x2005
+    snes9x2010
+    stella
+    stella2014
+    stella2023
+    tgbdual
+    theodore
+    tic80
+    tyrquake
+    uzem
+    vba_next
+    vbam
+    vecx
+    vice_x128
+    vice_x64
+    vice_x64sc
+    vice_xcbm2
+    vice_xcbm5x0
+    vice_xpet
+    vice_xplus4
+    vice_xscpu64
+    vice_xvic
+    vircon32
+    virtualjaguar
+    virtualxt
+    vitaquake2
+    vitaquake2-rogue
+    vitaquake2-xatrix
+    vitaquake2-zaero
+    wasm4
+    xrick
+    yabause
+)
+
 if [ -z "$1" ] ; then
     if find . -maxdepth 1 -iname \*_libretro\*.dylib | grep -q ^. ; then
         dylibs=( *_libretro*.dylib )
@@ -141,115 +311,8 @@ else
         if [ "$1" = "all" ] ; then
             dylibs=(${allcores[*]})
         elif [ "$1" = "appstore" ] ; then
-            exports=(
-                2048
-                a5200
-                anarch
-                ardens
-                atari800
-                b2
-                #blastem
-                bluemsx
-                bsnes
-                bsnes-jg
-                bsnes_hd_beta
-                cap32
-                crocods
-                desmume
-                dinothawr
-                dirksimple
-                dosbox_pure
-                DoubleCherryGB
-                doukutsu_rs
-                easyrpg
-                ep128emu_core
-                fbneo
-                fceumm
-                #flycast
-                freechaf
-                freeintv
-                fuse
-                gambatte
-                gearboy
-                gearsystem
-                genesis_plus_gx
-                genesis_plus_gx_wide
-                geolith
-                gme
-                gpsp
-                gw
-                handy
-                holani
-                kronos
-                mednafen_ngp
-                mednafen_pce
-                mednafen_pce_fast
-                mednafen_pcfx
-                mednafen_psx
-                mednafen_psx_hw
-                mednafen_saturn
-                mednafen_supergrafx
-                mednafen_vb
-                mednafen_wswan
-                melondsds
-                mesen
-                mesen-s
-                mgba
-                mojozork
-                mrboom
-                mu
-                mupen64plus_next
-                neocd
-                nestopia
-                noods
-                np2kai
-                numero
-                nxengine
-                opera
-                pcsx_rearmed
-                picodrive
-                #play
-                pocketcdg
-                pokemini
-                potator
-                ppsspp
-                prboom
-                prosystem
-                puae
-                px68k
-                quicknes
-                race
-                sameboy
-                scummvm
-                smsplus
-                snes9x
-                snes9x2005
-                snes9x2010
-                stella
-                stella2014
-                stella2023
-                tgbdual
-                theodore
-                tic80
-                tyrquake
-                vba_next
-                vbam
-                vecx
-                vice_x128
-                vice_x64
-                vice_x64sc
-                vice_xcbm2
-                vice_xcbm5x0
-                vice_xpet
-                vice_xplus4
-                vice_xscpu64
-                vice_xvic
-                vircon32
-                virtualxt
-                wasm4
-                xrick
-                yabause
-            )
+            DOWNLOAD_DSYM=1
+            exports=(${appstore_cores[*]})
             if [ "$PLATFORM" = "osx" ] ; then
                 exports+=(
                     flycast

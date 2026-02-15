@@ -52,95 +52,6 @@
 #include <retro_inline.h>
 #include <streams/file_stream.h>
 
-#define TRUE 1
-#define FALSE 0
-
-/* cdzl */
-
-chd_error cdzl_codec_init(void *codec, uint32_t hunkbytes)
-{
-	chd_error ret;
-	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
-
-	/* make sure the CHD's hunk size is an even multiple of the frame size */
-	if (hunkbytes % CD_FRAME_SIZE != 0)
-		return CHDERR_CODEC_ERROR;
-
-	cdzl->buffer = (uint8_t*)malloc(sizeof(uint8_t) * hunkbytes);
-	if (cdzl->buffer == NULL)
-		return CHDERR_OUT_OF_MEMORY;
-
-	ret = zlib_codec_init(&cdzl->base_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
-	if (ret != CHDERR_NONE)
-		return ret;
-
-#ifdef WANT_SUBCODE
-	ret = zlib_codec_init(&cdzl->subcode_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
-	if (ret != CHDERR_NONE)
-		return ret;
-#endif
-
-	return CHDERR_NONE;
-}
-
-void cdzl_codec_free(void *codec)
-{
-	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
-
-	zlib_codec_free(&cdzl->base_decompressor);
-#ifdef WANT_SUBCODE
-	zlib_codec_free(&cdzl->subcode_decompressor);
-#endif
-	if (cdzl->buffer)
-		free(cdzl->buffer);
-}
-
-chd_error cdzl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
-{
-#ifdef WANT_RAW_DATA_SECTOR
-	uint8_t *sector;
-#endif
-	uint32_t framenum;
-	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
-
-	/* determine header bytes */
-	uint32_t frames = destlen / CD_FRAME_SIZE;
-	uint32_t complen_bytes = (destlen < 65536) ? 2 : 3;
-	uint32_t ecc_bytes = (frames + 7) / 8;
-	uint32_t header_bytes = ecc_bytes + complen_bytes;
-
-	/* extract compressed length of base */
-	uint32_t complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
-	if (complen_bytes > 2)
-		complen_base = (complen_base << 8) | src[ecc_bytes + 2];
-
-	/* reset and decode */
-	zlib_codec_decompress(&cdzl->base_decompressor, &src[header_bytes], complen_base, &cdzl->buffer[0], frames * CD_MAX_SECTOR_DATA);
-#ifdef WANT_SUBCODE
-	zlib_codec_decompress(&cdzl->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdzl->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
-#endif
-
-	/* reassemble the data */
-	for (framenum = 0; framenum < frames; framenum++)
-	{
-		memcpy(&dest[framenum * CD_FRAME_SIZE], &cdzl->buffer[framenum * CD_MAX_SECTOR_DATA], CD_MAX_SECTOR_DATA);
-#ifdef WANT_SUBCODE
-		memcpy(&dest[framenum * CD_FRAME_SIZE + CD_MAX_SECTOR_DATA], &cdzl->buffer[frames * CD_MAX_SECTOR_DATA + framenum * CD_MAX_SUBCODE_DATA], CD_MAX_SUBCODE_DATA);
-#endif
-
-#ifdef WANT_RAW_DATA_SECTOR
-		/* reconstitute the ECC data and sync header */
-		sector = (uint8_t *)&dest[framenum * CD_FRAME_SIZE];
-		if ((src[framenum / 8] & (1 << (framenum % 8))) != 0)
-		{
-			memcpy(sector, s_cd_sync_header, sizeof(s_cd_sync_header));
-			ecc_generate(sector);
-		}
-#endif
-	}
-	return CHDERR_NONE;
-}
-
 /***************************************************************************
     ZLIB COMPRESSION CODEC
 ***************************************************************************/
@@ -174,10 +85,6 @@ chd_error zlib_codec_init(void *codec, uint32_t hunkbytes)
 	else
 		err = CHDERR_NONE;
 
-	/* handle an error */
-	if (err != CHDERR_NONE)
-		zlib_codec_free(data);
-
 	return err;
 }
 
@@ -193,21 +100,15 @@ void zlib_codec_free(void *codec)
 	/* deinit the streams */
 	if (data != NULL)
 	{
-		int i;
-		zlib_allocator alloc;
-
 		inflateEnd(&data->inflater);
 
 		/* free our fast memory */
-		alloc = data->allocator;
-		for (i = 0; i < MAX_ZLIB_ALLOCS; i++)
-			if (alloc.allocptr[i])
-				free(alloc.allocptr[i]);
+		zlib_allocator_free(&data->allocator);
 	}
 }
 
 /*-------------------------------------------------
-    zlib_codec_decompress - decomrpess data using
+    zlib_codec_decompress - decompress data using
     the ZLIB codec
 -------------------------------------------------*/
 
@@ -229,7 +130,6 @@ chd_error zlib_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 
 	/* do it */
 	zerr = inflate(&data->inflater, Z_FINISH);
-	(void)zerr;
 	if (data->inflater.total_out != destlen)
 		return CHDERR_DECOMPRESSION_ERROR;
 
@@ -249,7 +149,7 @@ voidpf zlib_fast_alloc(voidpf opaque, uInt items, uInt size)
 {
 	zlib_allocator *alloc = (zlib_allocator *)opaque;
 	uintptr_t paddr = 0;
-	UINT32 *ptr;
+	uint32_t *ptr;
 	int i;
 
 	/* compute the size, rounding to the nearest 1k */
@@ -270,7 +170,7 @@ voidpf zlib_fast_alloc(voidpf opaque, uInt items, uInt size)
 	}
 
 	/* alloc a new one */
-	ptr = (UINT32 *)malloc(size + sizeof(UINT32) + ZLIB_MIN_ALIGNMENT_BYTES);
+    ptr = (uint32_t *)malloc(size + sizeof(uint32_t) + ZLIB_MIN_ALIGNMENT_BYTES);
 	if (!ptr)
 		return NULL;
 
@@ -279,7 +179,7 @@ voidpf zlib_fast_alloc(voidpf opaque, uInt items, uInt size)
 		if (!alloc->allocptr[i])
 		{
 			alloc->allocptr[i] = ptr;
-			paddr = (((uintptr_t)ptr) + sizeof(UINT32) + (ZLIB_MIN_ALIGNMENT_BYTES-1)) & (~(ZLIB_MIN_ALIGNMENT_BYTES-1));
+			paddr = (((uintptr_t)ptr) + sizeof(uint32_t) + (ZLIB_MIN_ALIGNMENT_BYTES-1)) & (~(ZLIB_MIN_ALIGNMENT_BYTES-1));
 			alloc->allocptr2[i] = (uint32_t*)paddr;
 			break;
 		}
@@ -299,7 +199,7 @@ voidpf zlib_fast_alloc(voidpf opaque, uInt items, uInt size)
 void zlib_fast_free(voidpf opaque, voidpf address)
 {
 	zlib_allocator *alloc = (zlib_allocator *)opaque;
-	UINT32 *ptr = (UINT32 *)address;
+	uint32_t *ptr = (uint32_t *)address;
 	int i;
 
 	/* find the hunk */
@@ -310,4 +210,102 @@ void zlib_fast_free(voidpf opaque, voidpf address)
 			*(alloc->allocptr[i]) &= ~1;
 			return;
 		}
+}
+
+/*-------------------------------------------------
+    zlib_allocator_free
+-------------------------------------------------*/
+void zlib_allocator_free(voidpf opaque)
+{
+	zlib_allocator *alloc = (zlib_allocator *)opaque;
+	int i;
+
+	for (i = 0; i < MAX_ZLIB_ALLOCS; i++)
+		if (alloc->allocptr[i])
+			free(alloc->allocptr[i]);
+}
+
+
+/* cdzl */
+
+chd_error cdzl_codec_init(void *codec, uint32_t hunkbytes)
+{
+	chd_error ret;
+	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
+
+	/* make sure the CHD's hunk size is an even multiple of the frame size */
+	if (hunkbytes % CD_FRAME_SIZE != 0)
+		return CHDERR_CODEC_ERROR;
+
+	cdzl->buffer = (uint8_t*)malloc(sizeof(uint8_t) * hunkbytes);
+	if (cdzl->buffer == NULL)
+		return CHDERR_OUT_OF_MEMORY;
+
+	ret = zlib_codec_init(&cdzl->base_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SECTOR_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
+
+#ifdef WANT_SUBCODE
+	ret = zlib_codec_init(&cdzl->subcode_decompressor, (hunkbytes / CD_FRAME_SIZE) * CD_MAX_SUBCODE_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
+#endif
+
+	return CHDERR_NONE;
+}
+
+void cdzl_codec_free(void *codec)
+{
+	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
+	zlib_codec_free(&cdzl->base_decompressor);
+#ifdef WANT_SUBCODE
+	zlib_codec_free(&cdzl->subcode_decompressor);
+#endif
+	free(cdzl->buffer);
+}
+
+chd_error cdzl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
+{
+	uint32_t framenum;
+	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
+
+	/* determine header bytes */
+	uint32_t frames = destlen / CD_FRAME_SIZE;
+	uint32_t complen_bytes = (destlen < 65536) ? 2 : 3;
+	uint32_t ecc_bytes = (frames + 7) / 8;
+	uint32_t header_bytes = ecc_bytes + complen_bytes;
+
+	/* extract compressed length of base */
+	uint32_t complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
+	if (complen_bytes > 2)
+		complen_base = (complen_base << 8) | src[ecc_bytes + 2];
+
+	/* reset and decode */
+	zlib_codec_decompress(&cdzl->base_decompressor, &src[header_bytes], complen_base, &cdzl->buffer[0], frames * CD_MAX_SECTOR_DATA);
+#ifdef WANT_SUBCODE
+	zlib_codec_decompress(&cdzl->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdzl->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
+#endif
+
+	/* reassemble the data */
+	for (framenum = 0; framenum < frames; framenum++)
+	{
+		uint8_t *sector;
+
+		memcpy(&dest[framenum * CD_FRAME_SIZE], &cdzl->buffer[framenum * CD_MAX_SECTOR_DATA], CD_MAX_SECTOR_DATA);
+#ifdef WANT_SUBCODE
+		memcpy(&dest[framenum * CD_FRAME_SIZE + CD_MAX_SECTOR_DATA], &cdzl->buffer[frames * CD_MAX_SECTOR_DATA + framenum * CD_MAX_SUBCODE_DATA], CD_MAX_SUBCODE_DATA);
+#endif
+
+#ifdef WANT_RAW_DATA_SECTOR
+		/* reconstitute the ECC data and sync header */
+		sector = (uint8_t *)&dest[framenum * CD_FRAME_SIZE];
+		if ((src[framenum / 8] & (1 << (framenum % 8))) != 0)
+		{
+			const uint8_t s_cd_sync_header[12] = { 0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00 };
+			memcpy(sector, s_cd_sync_header, sizeof(s_cd_sync_header));
+			ecc_generate(sector);
+		}
+#endif
+	}
+	return CHDERR_NONE;
 }

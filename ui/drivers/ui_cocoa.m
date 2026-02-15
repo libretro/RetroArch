@@ -20,6 +20,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <mach/task.h>
+#include <mach/mach_init.h>
+#include <mach/mach_port.h>
+
 #include <boolean.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
@@ -47,6 +51,10 @@
 #include "../../verbosity.h"
 
 #include "ui_cocoa.h"
+
+#ifdef HAVE_SWIFT
+#import "RetroArch-Swift.h"
+#endif
 
 #ifdef HAVE_MIST
 #include "steam/steam.h"
@@ -311,19 +319,9 @@ static void* ui_application_cocoa_initialize(void)
 
 static void ui_application_cocoa_process_events(void)
 {
-    for (;;)
-    {
-        NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
-        if (!event)
-            break;
-#ifndef HAVE_COCOA_METAL
-        [event retain];
-#endif
-        [NSApp sendEvent: event];
-#ifndef HAVE_COCOA_METAL
-        [event retain];
-#endif
-    }
+   /* Intentionally empty. The CFRunLoopObserver (kCFRunLoopBeforeWaiting)
+    * fires after the run loop has already processed pending events, so
+    * manual event polling here is unnecessary and just adds overhead. */
 }
 
 static ui_application_t ui_application_cocoa = {
@@ -441,13 +439,23 @@ static ui_application_t ui_application_cocoa = {
          {
             static NSUInteger old_flags           = 0;
             NSUInteger new_flags                  = event.modifierFlags;
-            bool down                             = (new_flags & old_flags) == old_flags;
+            NSUInteger changed_flags              = new_flags ^ old_flags;
             uint16_t keycode                      = event.keyCode;
+            bool down                             = false;
 
-            old_flags                             = new_flags;
+            /* Determine if the changed modifier is being pressed or released
+             * by checking if it's set in the new flags */
+            if (changed_flags != 0)
+            {
+               /* Find which specific modifier changed and its new state */
+               NSUInteger single_change = changed_flags & -changed_flags; /* Isolate rightmost bit */
+               down = (new_flags & single_change) != 0;
 
-            apple_input_keyboard_event(down, keycode,
-                  0, (uint32_t)new_flags, RETRO_DEVICE_KEYBOARD);
+               apple_input_keyboard_event(down, keycode,
+                     0, (uint32_t)new_flags, RETRO_DEVICE_KEYBOARD);
+            }
+
+            old_flags = new_flags;
          }
          break;
         case NSEventTypeMouseMoved:
@@ -554,12 +562,11 @@ static ui_application_t ui_application_cocoa = {
    if (!window_save_positions || is_fullscreen)
        return;
 
-   NSRect frame = self.window.frame;
-   NSRect bounds = self.window.contentView.bounds;
-   settings->uints.window_position_x      = (unsigned)frame.origin.x;
-   settings->uints.window_position_y      = (unsigned)frame.origin.y;
-   settings->uints.window_position_width  = (unsigned)bounds.size.width;
-   settings->uints.window_position_height = (unsigned)bounds.size.height;
+   NSRect contentRect = [self.window contentRectForFrameRect:self.window.frame];
+   settings->uints.window_position_x      = (unsigned)contentRect.origin.x;
+   settings->uints.window_position_y      = (unsigned)contentRect.origin.y;
+   settings->uints.window_position_width  = (unsigned)contentRect.size.width;
+   settings->uints.window_position_height = (unsigned)contentRect.size.height;
 }
 
 - (void)windowDidResize:(NSNotification *)notification
@@ -572,12 +579,11 @@ static ui_application_t ui_application_cocoa = {
    if (!window_save_positions || is_fullscreen)
        return;
 
-   NSRect frame = self.window.frame;
-   NSRect bounds = self.window.contentView.bounds;
-   settings->uints.window_position_x      = (unsigned)frame.origin.x;
-   settings->uints.window_position_y      = (unsigned)frame.origin.y;
-   settings->uints.window_position_width  = (unsigned)bounds.size.width;
-   settings->uints.window_position_height = (unsigned)bounds.size.height;
+   NSRect contentRect = [self.window contentRectForFrameRect:self.window.frame];
+   settings->uints.window_position_x      = (unsigned)contentRect.origin.x;
+   settings->uints.window_position_y      = (unsigned)contentRect.origin.y;
+   settings->uints.window_position_width  = (unsigned)contentRect.size.width;
+   settings->uints.window_position_height = (unsigned)contentRect.size.height;
 }
 
 @end
@@ -642,7 +648,19 @@ static ui_application_t ui_application_cocoa = {
    [self setupMainWindow];
 #endif
 
+#if HAVE_SWIFT
+   if (@available(macOS 13.0, *)) {
+      [RetroArchAppShortcuts updateAppShortcuts];
+   }
+#endif
+
+#ifdef HAVE_QT
+   /* I think the draw observer should be absolutely fine for qt but I'm not testing it;
+    * whoever does test it and confirm it works can just delete this */
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
+#else
+   rarch_start_draw_observer();
+#endif
 }
 
 #pragma mark - ApplePlatform
@@ -750,11 +768,12 @@ static ui_application_t ui_application_cocoa = {
 
    if (window_save_positions)
    {
-      NSRect frame;
-      frame.origin.x    = settings->uints.window_position_x;
-      frame.origin.y    = settings->uints.window_position_y;
-      frame.size.width  = settings->uints.window_position_width;
-      frame.size.height = settings->uints.window_position_height;
+      NSRect contentRect;
+      contentRect.origin.x    = settings->uints.window_position_x;
+      contentRect.origin.y    = settings->uints.window_position_y;
+      contentRect.size.width  = settings->uints.window_position_width;
+      contentRect.size.height = settings->uints.window_position_height;
+      NSRect frame = [self.window frameRectForContentRect:contentRect];
       [self.window setFrame:frame display:YES];
    }
    else
@@ -788,6 +807,7 @@ static ui_application_t ui_application_cocoa = {
 }
 #endif
 
+#ifdef HAVE_QT
 - (void) rarch_main
 {
     for (;;)
@@ -822,6 +842,7 @@ static ui_application_t ui_application_cocoa = {
 
     main_exit(NULL);
 }
+#endif
 
 - (void)applicationDidBecomeActive:(NSNotification *)notification  { }
 - (void)applicationWillResignActive:(NSNotification *)notification
@@ -832,12 +853,10 @@ static ui_application_t ui_application_cocoa = {
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
    NSApplicationTerminateReply reply = NSTerminateNow;
-   uint32_t runloop_flags            = runloop_get_flags();
-
-   if (runloop_flags & RUNLOOP_FLAG_IS_INITED)
-      reply = NSTerminateCancel;
 
    command_event(CMD_EVENT_QUIT, NULL);
+
+   rarch_stop_draw_observer();
 
    return reply;
 }
@@ -1073,6 +1092,10 @@ static void open_document_handler(
 
 int main(int argc, char *argv[])
 {
+#ifndef NDEBUG
+   task_set_exception_ports(mach_task_self(), EXC_MASK_BAD_ACCESS, MACH_PORT_NULL, EXCEPTION_DEFAULT, THREAD_STATE_NONE);
+#endif
+
    if (argc == 2)
    {
        if (argv[1])

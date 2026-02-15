@@ -28,6 +28,7 @@
 
 #include "../../input/input_driver.h"
 
+#include "../../config.def.h"
 #include "../../configuration.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -113,6 +114,7 @@ int action_scan_directory(const char *path,
 }
 #endif
 
+extern int action_cycle_thumbnail(unsigned mode);
 int action_switch_thumbnail(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -134,46 +136,10 @@ int action_switch_thumbnail(const char *path,
     * types and skip if already visible. */
    if (switch_enabled)
    {
-      if (settings->uints.gfx_thumbnails == 0)
-      {
-         configuration_set_uint(settings,
-               settings->uints.menu_left_thumbnails,
-               settings->uints.menu_left_thumbnails + 1);
-
-         if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
-            configuration_set_uint(settings,
-                  settings->uints.menu_left_thumbnails,
-                  settings->uints.menu_left_thumbnails + 1);
-
-         if (settings->uints.menu_left_thumbnails > 3)
-            configuration_set_uint(settings,
-                  settings->uints.menu_left_thumbnails, 1);
-
-         if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
-            configuration_set_uint(settings,
-                  settings->uints.menu_left_thumbnails,
-                  settings->uints.menu_left_thumbnails + 1);
-      }
+      if (settings->uints.gfx_thumbnails)
+         action_cycle_thumbnail(MENU_ACTION_CYCLE_THUMBNAIL_PRIMARY);
       else
-      {
-         configuration_set_uint(settings,
-               settings->uints.gfx_thumbnails,
-               settings->uints.gfx_thumbnails + 1);
-
-         if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
-            configuration_set_uint(settings,
-                  settings->uints.gfx_thumbnails,
-                  settings->uints.gfx_thumbnails + 1);
-
-         if (settings->uints.gfx_thumbnails > 3)
-            configuration_set_uint(settings,
-                  settings->uints.gfx_thumbnails, 1);
-
-         if (settings->uints.gfx_thumbnails == settings->uints.menu_left_thumbnails)
-            configuration_set_uint(settings,
-                  settings->uints.gfx_thumbnails,
-                  settings->uints.gfx_thumbnails + 1);
-      }
+         action_cycle_thumbnail(MENU_ACTION_CYCLE_THUMBNAIL_SECONDARY);
 
       if (menu_st->driver_ctx)
       {
@@ -278,6 +244,74 @@ static int action_scan_video_xmb_font(const char *path,
 }
 #endif
 
+#ifdef HAVE_OZONE
+static int action_scan_video_ozone_font(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   settings_t *settings       = config_get_ptr();
+
+   strlcpy(settings->paths.path_menu_ozone_font, "null", sizeof(settings->paths.path_menu_ozone_font));
+   command_event(CMD_EVENT_REINIT, NULL);
+
+   return 0;
+}
+#endif
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+static int action_scan_video_shader_opacity_toggle(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   settings_t *settings             = config_get_ptr();
+   const char *menu_ident           = menu_driver_ident();
+   static float framebuffer_opacity = -1;
+   static float wallpaper_opacity   = -1;
+#ifdef HAVE_XMB
+   static int xmb_alpha_factor      = -1;
+#endif
+
+   if (string_is_equal(menu_ident, "rgui"))
+      return 0;
+
+   /* Remember current settings */
+   if (framebuffer_opacity < 0)
+      framebuffer_opacity = settings->floats.menu_framebuffer_opacity;
+   if (wallpaper_opacity < 0)
+      wallpaper_opacity = settings->floats.menu_wallpaper_opacity;
+
+#ifdef HAVE_XMB
+   if (xmb_alpha_factor < 0)
+      xmb_alpha_factor = settings->uints.menu_xmb_alpha_factor;
+#endif
+
+   /* Switch between off and current */
+   if (settings->floats.menu_framebuffer_opacity == 0)
+      settings->floats.menu_framebuffer_opacity = framebuffer_opacity ? framebuffer_opacity : DEFAULT_MENU_FRAMEBUFFER_OPACITY;
+   else
+      settings->floats.menu_framebuffer_opacity = 0;
+
+   if (settings->floats.menu_wallpaper_opacity == 0)
+      settings->floats.menu_wallpaper_opacity = wallpaper_opacity ? wallpaper_opacity : DEFAULT_MENU_WALLPAPER_OPACITY;
+   else
+      settings->floats.menu_wallpaper_opacity = 0;
+
+#ifdef HAVE_XMB
+   if (settings->uints.menu_xmb_alpha_factor == 0)
+      settings->uints.menu_xmb_alpha_factor = xmb_alpha_factor ? xmb_alpha_factor : DEFAULT_XMB_ALPHA_FACTOR;
+   else
+      settings->uints.menu_xmb_alpha_factor = 0;
+#endif
+
+   return 0;
+}
+
+static int action_scan_shader_num_passes(
+      const char *path, const char *label,
+      unsigned type, size_t idx)
+{
+   return menu_shader_manager_clear_num_passes(menu_shader_get());
+}
+#endif
+
 static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
@@ -343,9 +377,39 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
                return 0;
             }
 #endif
+#ifdef HAVE_OZONE
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OZONE_FONT)))
+            {
+               BIND_ACTION_SCAN(cbs, action_scan_video_ozone_font);
+               return 0;
+            }
+#endif
             break;
          default:
          case ST_NONE:
+            break;
+      }
+   }
+
+   if (cbs->enum_idx != MSG_UNKNOWN)
+   {
+      switch (cbs->enum_idx)
+      {
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND:
+         case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            BIND_ACTION_SCAN(cbs, action_scan_shader_num_passes);
+#endif
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
+         case MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            BIND_ACTION_SCAN(cbs, action_scan_video_shader_opacity_toggle);
+#endif
+            break;
+         default:
             break;
       }
    }

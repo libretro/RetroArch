@@ -30,7 +30,7 @@ jobs:
       - name: Compile RA
         run: |
           make -j$(getconf _NPROCESSORS_ONLN) clean
-          make -j$(getconf _NPROCESSORS_ONLN)
+          make -j$(getconf _NPROCESSORS_ONLN) info all
 
       - name: Get short SHA
         id: slug

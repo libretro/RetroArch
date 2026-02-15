@@ -19,6 +19,8 @@
 
 #include "../audio_driver.h"
 #include "../../ctr/ctr_debug.h"
+#include "../../retroarch.h"
+#include "../../verbosity.h"
 
 typedef struct
 {
@@ -113,7 +115,7 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t len)
              * changed, this prevents a hang on sleep. */
             if (!aptMainLoop())
             {
-               command_event(CMD_EVENT_QUIT, NULL);
+               retroarch_main_quit();
                return true;
             }
 
@@ -169,11 +171,11 @@ static bool ctr_dsp_audio_start(void *data, bool is_shutdown)
 
    /* Prevents restarting audio when the menu
     * is toggled off on shutdown */
-   if (is_shutdown)
-      return true;
-
-   ndspSetMasterVol(1.0);
-   ctr->playing = true;
+   if (!is_shutdown)
+   {
+      ndspSetMasterVol(1.0);
+      ctr->playing = true;
+   }
 
    return true;
 }
@@ -196,7 +198,6 @@ static size_t ctr_dsp_audio_write_avail(void *data)
 
 static size_t ctr_dsp_audio_buffer_size(void *data)
 {
-   (void)data;
    return CTR_DSP_AUDIO_COUNT;
 }
 
@@ -213,5 +214,6 @@ audio_driver_t audio_ctr_dsp = {
    NULL,
    NULL,
    ctr_dsp_audio_write_avail,
-   ctr_dsp_audio_buffer_size
+   ctr_dsp_audio_buffer_size,
+   NULL  /* write_raw */
 };

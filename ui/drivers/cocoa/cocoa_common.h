@@ -20,7 +20,7 @@
 #include <Foundation/Foundation.h>
 #include <QuartzCore/QuartzCore.h>
 
-#if defined(HAVE_COCOATOUCH)
+#if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
 #if TARGET_OS_TV
 #import <GameController/GameController.h>
@@ -31,7 +31,7 @@
 
 #include "../../../retroarch.h"
 
-#if defined(HAVE_COCOATOUCH)
+#if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
 #define RAScreen UIScreen
 
 #ifndef UIUserInterfaceIdiomTV
@@ -42,30 +42,25 @@
 #define UIUserInterfaceIdiomCarPlay 3
 #endif
 
-#if TARGET_OS_IOS
+#ifdef HAVE_IOS_SWIFT
 @class EmulatorKeyboardController;
-
-#ifdef HAVE_IOS_TOUCHMOUSE
 @class EmulatorTouchMouseHandler;
 #endif
 
+#if TARGET_OS_IOS
 @interface CocoaView : UIViewController
 
 #elif TARGET_OS_TV
 @interface CocoaView : GCEventViewController
 #endif
 
-#if TARGET_OS_IOS && defined(HAVE_IOS_CUSTOMKEYBOARD)
+#ifdef HAVE_IOS_SWIFT
 @property(nonatomic,strong) EmulatorKeyboardController *keyboardController;
 @property(nonatomic,assign) unsigned int keyboardModifierState;
 -(void)toggleCustomKeyboard;
-#endif
 
-#ifdef HAVE_IOS_TOUCHMOUSE
 @property(nonatomic,strong) EmulatorTouchMouseHandler *mouseHandler;
-#endif
 
-#if defined(HAVE_IOS_SWIFT)
 @property(nonatomic,strong) UIView *helperBarView;
 #endif
 
@@ -96,14 +91,6 @@ void get_ios_version(int *major, int *minor);
 
 @end
 #endif
-
-typedef struct
-{
-   char orientations[32];
-   unsigned orientation_flags;
-   char bluetooth_mode[64];
-} apple_frontend_settings_t;
-extern apple_frontend_settings_t apple_frontend_settings;
 
 #define BOXSTRING(x) [NSString stringWithUTF8String:x]
 #define BOXINT(x)    [NSNumber numberWithInt:x]
@@ -140,6 +127,8 @@ bool cocoa_has_focus(void *data);
 void cocoa_show_mouse(void *data, bool state);
 
 void *cocoa_screen_get_chosen(void);
+
+bool cocoa_launch_game_by_filename(NSString *filename);
 
 #ifdef HAVE_COCOATOUCH
 float cocoa_screen_get_native_scale(void);

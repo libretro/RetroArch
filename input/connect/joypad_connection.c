@@ -143,7 +143,7 @@ joypad_connection_t *pad_connection_init(unsigned pads)
 
    if (pads > MAX_USERS)
    {
-      RARCH_WARN("[joypad] invalid number of pads requested (%d), using default (%d)\n",
+      RARCH_WARN("[Joypad] Invalid number of pads requested (%d), using default (%d).\n",
             pads, MAX_USERS);
       pads = MAX_USERS;
    }
@@ -193,7 +193,7 @@ joypad_connection_entry_t *find_connection_entry(uint16_t vid, uint16_t pid, con
          if (has_name && name_len < 19)
          {
             /* Wii U: Argument 'name' may be truncated. This is not enough for a reliable name match! */
-            RARCH_ERR("find_connection_entry(0x%04x,0x%04x): device name '%s' too short: assuming controller '%s'\n",
+            RARCH_ERR("[Joypad] find_connection_entry(0x%04x,0x%04x): device name '%s' too short: assuming controller '%s'.\n",
                   SWAP_IF_BIG(vid), SWAP_IF_BIG(pid), name, pad_map[i].name);
          }
          else if (!string_is_equal(pad_map[i].name, name))
@@ -307,7 +307,7 @@ void pad_connection_pad_refresh(joypad_connection_t *joyconn,
          default:
 #ifndef NDEBUG
             if (state > 0x03)
-               RARCH_LOG("Unrecognized state: 0x%02x", state);
+               RARCH_LOG("[Joypad] Unrecognized state: 0x%02x.", state);
 #endif
             break;
       }
@@ -326,7 +326,7 @@ void pad_connection_pad_register(joypad_connection_t *joyconn,
    {
       if (iface->max_pad <= 1 || !iface->status || !iface->pad_init)
       {
-         RARCH_ERR("pad_connection_pad_register: multi-pad driver has incomplete implementation\n");
+         RARCH_ERR("[Joypad] pad_connection_pad_register: multi-pad driver has incomplete implementation.\n");
          return;
       }
       max_pad = iface->max_pad;
@@ -357,7 +357,7 @@ void pad_connection_pad_register(joypad_connection_t *joyconn,
          joyconn[found_slot].input_driver = input_driver;
          joyconn[found_slot].connected    = true;
 
-         RARCH_LOG("Connecting pad to slot %d\n", found_slot);
+         RARCH_LOG("[Joypad] Connecting pad to slot %d.\n", found_slot);
          input_pad_connect(found_slot, input_driver);
       }
    }
@@ -385,7 +385,7 @@ int32_t pad_connection_pad_init_entry(joypad_connection_t *joyconn,
    {
       /* We failed to find a matching pad.
        * Set up one without an interface */
-      RARCH_DBG("Pad was not matched. Setting up without an interface.\n");
+      RARCH_DBG("[Joypad] Pad was not matched. Setting up without an interface.\n");
       conn->iface      = NULL;
    }
    conn->data          = data;

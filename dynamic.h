@@ -66,7 +66,7 @@ struct retro_core_t
    void *(*retro_get_memory_data)(unsigned);
    size_t (*retro_get_memory_size)(unsigned);
 
-   unsigned poll_type;
+   enum poll_type poll_type;
    uint8_t flags;
 };
 

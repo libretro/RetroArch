@@ -284,6 +284,12 @@
 #define SUPPORTS_7ZIP false
 #endif
 
+#ifdef HAVE_ZSTD
+#define SUPPORTS_ZSTD true
+#else
+#define SUPPORTS_ZSTD false
+#endif
+
 #ifdef HAVE_DYLIB
 #define SUPPORTS_DYLIB true
 #else

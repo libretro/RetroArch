@@ -91,7 +91,7 @@ int socket_next(void **address)
    return -1;
 }
 
-ssize_t socket_receive_all_nonblocking(int fd, bool *error,
+ssize_t socket_receive_all_nonblocking(int fd, bool *err,
       void *data_, size_t len)
 {
    ssize_t ret = recv(fd, (char*)data_, len, 0);
@@ -99,7 +99,7 @@ ssize_t socket_receive_all_nonblocking(int fd, bool *error,
       return ret;
    if (ret < 0 && isagain((int)ret))
       return 0;
-   *error = true;
+   *err = true;
    return -1;
 }
 
@@ -218,10 +218,10 @@ int socket_close(int fd)
 }
 
 int socket_select(int nfds, fd_set *readfds, fd_set *writefds,
-      fd_set *errorfds, struct timeval *timeout)
+      fd_set *err_fds, struct timeval *timeout)
 {
 #if defined(__PS3__)
-   return socketselect(nfds, readfds, writefds, errorfds, timeout);
+   return socketselect(nfds, readfds, writefds, err_fds, timeout);
 #elif defined(VITA)
    int i, j;
    fd_set rfds, wfds, efds;
@@ -250,7 +250,7 @@ int socket_select(int nfds, fd_set *readfds, fd_set *writefds,
          event_count++;
       else if (writefds && FD_ISSET(i, writefds))
          event_count++;
-      else if (errorfds && FD_ISSET(i, errorfds))
+      else if (err_fds && FD_ISSET(i, err_fds))
          event_count++;
    }
 
@@ -275,7 +275,7 @@ int socket_select(int nfds, fd_set *readfds, fd_set *writefds,
          if (writefds && FD_ISSET(i, writefds))
             event->events |= SCE_NET_EPOLLOUT;
 
-         if (event->events || (errorfds && FD_ISSET(i, errorfds)))
+         if (event->events || (err_fds && FD_ISSET(i, err_fds)))
          {
             event->data.fd = i;
 
@@ -306,8 +306,8 @@ int socket_select(int nfds, fd_set *readfds, fd_set *writefds,
          memcpy(&rfds, readfds, sizeof(rfds));
       if (writefds)
          memcpy(&wfds, writefds, sizeof(wfds));
-      if (errorfds)
-         memcpy(&efds, errorfds, sizeof(efds));
+      if (err_fds)
+         memcpy(&efds, err_fds, sizeof(efds));
    }
    else
    {
@@ -322,8 +322,8 @@ int socket_select(int nfds, fd_set *readfds, fd_set *writefds,
       FD_ZERO(readfds);
    if (writefds)
       FD_ZERO(writefds);
-   if (errorfds)
-      FD_ZERO(errorfds);
+   if (err_fds)
+      FD_ZERO(err_fds);
 
    /* Vita's epoll takes a microsecond timeout parameter. */
    if (timeout)
@@ -350,7 +350,7 @@ int socket_select(int nfds, fd_set *readfds, fd_set *writefds,
 
       EPOLL_FD_SET(SCE_NET_EPOLLIN,  &rfds, readfds)
       EPOLL_FD_SET(SCE_NET_EPOLLOUT, &wfds, writefds)
-      EPOLL_FD_SET(SCE_NET_EPOLLERR, &efds, errorfds)
+      EPOLL_FD_SET(SCE_NET_EPOLLERR, &efds, err_fds)
    }
 
    ret = j;
@@ -363,7 +363,7 @@ done:
 
    return ret;
 #else
-   return select(nfds, readfds, writefds, errorfds, timeout);
+   return select(nfds, readfds, writefds, err_fds, timeout);
 #endif
 }
 
@@ -479,7 +479,6 @@ done:
    for (i = 0; i < timeout_quotient; i++)
    {
       ret = poll(fds, nfds, TIMEOUT_DIVISOR);
-
       /* Success or error. */
       if (ret)
          return ret;
@@ -768,11 +767,11 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
       return false;
 #else
    {
-      int       error = -1;
-      socklen_t errsz = sizeof(error);
+      int       err = -1;
+      socklen_t errsz = sizeof(err);
 
-      getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&error, &errsz);
-      if (error)
+      getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&err, &errsz);
+      if (err)
          return false;
    }
 #endif

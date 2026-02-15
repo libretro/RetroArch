@@ -73,40 +73,48 @@ struct conn_pool_entry
 static struct conn_pool_entry *conn_pool = NULL;
 #ifdef HAVE_THREADS
 static slock_t *conn_pool_lock = NULL;
+#define LOCK_POOL() slock_lock(conn_pool_lock)
+#define UNLOCK_POOL() slock_unlock(conn_pool_lock)
+#else
+#define LOCK_POOL()
+#define UNLOCK_POOL()
 #endif
+
+typedef struct response
+{
+   char *data;
+   struct string_list *headers;
+   size_t pos;
+   size_t len;
+   size_t buflen;
+   int status;
+   enum response_part part;
+   enum bodytype bodytype;
+} response_t;
+
+typedef struct request
+{
+   char *domain;
+   char *path;
+   char *method;
+   char *contenttype;
+   void *postdata;
+   char *useragent;
+   char *headers;
+   size_t contentlength;
+   int port;
+} request_t;
 
 struct http_t
 {
-   bool error;
+   bool err;
 
    struct conn_pool_entry *conn;
    bool ssl;
    bool request_sent;
 
-   struct request
-   {
-      char *domain;
-      char *path;
-      char *method;
-      char *contenttype;
-      void *postdata;
-      char *useragent;
-      char *headers;
-      size_t contentlength;
-      int port;
-   } request;
-
-   struct response
-   {
-      char *data;
-      struct string_list *headers;
-      size_t pos;
-      size_t len;
-      size_t buflen;
-      int status;
-      enum response_part part;
-      enum bodytype bodytype;
-   } response;
+   request_t request;
+   response_t response;
 };
 
 struct http_connection_t
@@ -132,6 +140,9 @@ struct dns_cache_entry
    struct addrinfo *addr;
    retro_time_t timestamp;
    bool valid;
+#ifdef HAVE_THREADS
+   sthread_t *thread;
+#endif
    struct dns_cache_entry *next;
 };
 
@@ -142,6 +153,11 @@ static const retro_time_t dns_cache_timeout = 1000 /* usec/ms */ * 1000 /* ms/s 
 static const retro_time_t dns_cache_fail_timeout = 1000 /* usec/ms */ * 1000 /* ms/s */ * 30 /* s */;
 #ifdef HAVE_THREADS
 static slock_t *dns_cache_lock = NULL;
+#define LOCK_DNS_CACHE() slock_lock(dns_cache_lock)
+#define UNLOCK_DNS_CACHE() slock_unlock(dns_cache_lock)
+#else
+#define LOCK_DNS_CACHE()
+#define UNLOCK_DNS_CACHE()
 #endif
 
 /**
@@ -152,7 +168,7 @@ static slock_t *dns_cache_lock = NULL;
  **/
 void net_http_urlencode(char **dest, const char *source)
 {
-   static const char urlencode_lut[256] =
+   static const char urlencode_lut[] =
    {
       0,       /* 0   */
       0,       /* 1   */
@@ -276,140 +292,7 @@ void net_http_urlencode(char **dest, const char *source)
       'w',     /* 119 */
       'x',     /* 120 */
       'y',     /* 121 */
-      'z',     /* 122 */
-      0,       /* 123 */
-      0,       /* 124 */
-      0,       /* 125 */
-      0,       /* 126 */
-      0,       /* 127 */
-      0,       /* 128 */
-      0,       /* 129 */
-      0,       /* 130 */
-      0,       /* 131 */
-      0,       /* 132 */
-      0,       /* 133 */
-      0,       /* 134 */
-      0,       /* 135 */
-      0,       /* 136 */
-      0,       /* 137 */
-      0,       /* 138 */
-      0,       /* 139 */
-      0,       /* 140 */
-      0,       /* 141 */
-      0,       /* 142 */
-      0,       /* 143 */
-      0,       /* 144 */
-      0,       /* 145 */
-      0,       /* 146 */
-      0,       /* 147 */
-      0,       /* 148 */
-      0,       /* 149 */
-      0,       /* 150 */
-      0,       /* 151 */
-      0,       /* 152 */
-      0,       /* 153 */
-      0,       /* 154 */
-      0,       /* 155 */
-      0,       /* 156 */
-      0,       /* 157 */
-      0,       /* 158 */
-      0,       /* 159 */
-      0,       /* 160 */
-      0,       /* 161 */
-      0,       /* 162 */
-      0,       /* 163 */
-      0,       /* 164 */
-      0,       /* 165 */
-      0,       /* 166 */
-      0,       /* 167 */
-      0,       /* 168 */
-      0,       /* 169 */
-      0,       /* 170 */
-      0,       /* 171 */
-      0,       /* 172 */
-      0,       /* 173 */
-      0,       /* 174 */
-      0,       /* 175 */
-      0,       /* 176 */
-      0,       /* 177 */
-      0,       /* 178 */
-      0,       /* 179 */
-      0,       /* 180 */
-      0,       /* 181 */
-      0,       /* 182 */
-      0,       /* 183 */
-      0,       /* 184 */
-      0,       /* 185 */
-      0,       /* 186 */
-      0,       /* 187 */
-      0,       /* 188 */
-      0,       /* 189 */
-      0,       /* 190 */
-      0,       /* 191 */
-      0,       /* 192 */
-      0,       /* 193 */
-      0,       /* 194 */
-      0,       /* 195 */
-      0,       /* 196 */
-      0,       /* 197 */
-      0,       /* 198 */
-      0,       /* 199 */
-      0,       /* 200 */
-      0,       /* 201 */
-      0,       /* 202 */
-      0,       /* 203 */
-      0,       /* 204 */
-      0,       /* 205 */
-      0,       /* 206 */
-      0,       /* 207 */
-      0,       /* 208 */
-      0,       /* 209 */
-      0,       /* 210 */
-      0,       /* 211 */
-      0,       /* 212 */
-      0,       /* 213 */
-      0,       /* 214 */
-      0,       /* 215 */
-      0,       /* 216 */
-      0,       /* 217 */
-      0,       /* 218 */
-      0,       /* 219 */
-      0,       /* 220 */
-      0,       /* 221 */
-      0,       /* 222 */
-      0,       /* 223 */
-      0,       /* 224 */
-      0,       /* 225 */
-      0,       /* 226 */
-      0,       /* 227 */
-      0,       /* 228 */
-      0,       /* 229 */
-      0,       /* 230 */
-      0,       /* 231 */
-      0,       /* 232 */
-      0,       /* 233 */
-      0,       /* 234 */
-      0,       /* 235 */
-      0,       /* 236 */
-      0,       /* 237 */
-      0,       /* 238 */
-      0,       /* 239 */
-      0,       /* 240 */
-      0,       /* 241 */
-      0,       /* 242 */
-      0,       /* 243 */
-      0,       /* 244 */
-      0,       /* 245 */
-      0,       /* 246 */
-      0,       /* 247 */
-      0,       /* 248 */
-      0,       /* 249 */
-      0,       /* 250 */
-      0,       /* 251 */
-      0,       /* 252 */
-      0,       /* 253 */
-      0,       /* 254 */
-      0        /* 255 */
+      'z'      /* 122 */
    };
 
    /* Assume every character will be encoded, so we need 3 times the space. */
@@ -448,15 +331,16 @@ void net_http_urlencode_full(char *s, const char *source, size_t len)
    size_t tmp_len;
    char url_domain[256];
    char url_path[PATH_MAX_LENGTH];
-   char *tmp                         = NULL;
-   int count                         = 0;
+   int count      = 0;
+   char *tmp      = url_path;
 
    strlcpy(url_path, source, sizeof(url_path));
-   tmp            = url_path;
 
    while (count < 3 && tmp[0] != '\0')
    {
       tmp = strchr(tmp, '/');
+      if (!tmp)
+         break;
       count++;
       tmp++;
    }
@@ -496,27 +380,31 @@ struct http_connection_t *net_http_connection_new(const char *url,
       conn->contentlength  = strlen(data);
    }
 
-   if (!(conn->url = strdup(url)))
-      goto error;
-
-   if (!strncmp(url, "http://", STRLEN_CONST("http://")))
-      conn->scan = conn->url + STRLEN_CONST("http://");
-   else if (!strncmp(url, "https://", STRLEN_CONST("https://")))
+   if ((conn->url = strdup(url)))
    {
-      conn->scan = conn->url + STRLEN_CONST("https://");
-      conn->ssl  = true;
+      if (!strncmp(url, "http://", STRLEN_CONST("http://")))
+      {
+         conn->scan   = conn->url + STRLEN_CONST("http://");
+
+         if (!string_is_empty(conn->scan))
+         {
+            conn->domain = conn->scan;
+            return conn;
+         }
+      }
+      else if (!strncmp(url, "https://", STRLEN_CONST("https://")))
+      {
+         conn->scan   = conn->url + STRLEN_CONST("https://");
+         conn->ssl    = true;
+
+         if (!string_is_empty(conn->scan))
+         {
+            conn->domain = conn->scan;
+            return conn;
+         }
+      }
    }
-   else
-      goto error;
 
-   if (string_is_empty(conn->scan))
-      goto error;
-
-   conn->domain = conn->scan;
-
-   return conn;
-
-error:
    if (conn->url)
       free(conn->url);
    if (conn->method)
@@ -667,7 +555,7 @@ void net_http_connection_set_content(
    if (conn->postdata)
       free(conn->postdata);
 
-   conn->contenttype = content_type ? strdup(content_type) : NULL;
+   conn->contenttype   = content_type ? strdup(content_type) : NULL;
    conn->contentlength = content_length;
    if (content_length)
    {
@@ -695,6 +583,13 @@ static void net_http_dns_cache_remove_expired(void)
       if (     (entry->addr && (entry->timestamp + dns_cache_timeout < cpu_features_get_time_usec()))
             || (!entry->addr && (entry->timestamp + dns_cache_fail_timeout < cpu_features_get_time_usec())))
       {
+#ifdef HAVE_THREADS
+         if (entry->thread)
+         {
+            sthread_join(entry->thread);
+            entry->thread = NULL;
+         }
+#endif
          if (prev)
             prev->next = entry->next;
          else
@@ -724,6 +619,13 @@ static struct dns_cache_entry *net_http_dns_cache_find(const char *domain, int p
    {
       if (port == entry->port && string_is_equal(entry->domain, domain))
       {
+#ifdef HAVE_THREADS
+         if (entry->thread && entry->valid)
+         {
+            sthread_join(entry->thread);
+            entry->thread = NULL;
+         }
+#endif
          /* don't bump timeestamp for failures */
          if (entry->addr)
             entry->timestamp = cpu_features_get_time_usec();
@@ -744,6 +646,9 @@ static struct dns_cache_entry *net_http_dns_cache_add(const char *domain, int po
    entry->addr = addr;
    entry->timestamp = cpu_features_get_time_usec();
    entry->valid = (addr != NULL);
+#ifdef HAVE_THREADS
+   entry->thread = NULL;
+#endif
    entry->next = dns_cache;
    dns_cache = entry;
    return entry;
@@ -770,9 +675,8 @@ static void net_http_conn_pool_remove(struct conn_pool_entry *entry)
    struct conn_pool_entry *current;
    if (!entry)
       return;
-#ifdef HAVE_THREADS
-   slock_lock(conn_pool_lock);
-#endif
+
+   LOCK_POOL();
    current = conn_pool;
    while (current)
    {
@@ -783,32 +687,28 @@ static void net_http_conn_pool_remove(struct conn_pool_entry *entry)
          else
             conn_pool = current->next;
          net_http_conn_pool_free(current);
-#ifdef HAVE_THREADS
-         slock_unlock(conn_pool_lock);
-#endif
+         UNLOCK_POOL();
          return;
       }
       prev = current;
       current = current->next;
    }
-#ifdef HAVE_THREADS
-   slock_unlock(conn_pool_lock);
-#endif
+   UNLOCK_POOL();
 }
 
 /* *NOT* thread safe, caller must lock */
 static void net_http_conn_pool_remove_expired(void)
 {
-   struct conn_pool_entry *entry = conn_pool;
-   struct conn_pool_entry *prev = NULL;
-   struct timeval tv = { 0 };
-   int max = 0;
    fd_set fds;
+   struct conn_pool_entry *entry = NULL;
+   struct conn_pool_entry *prev  = NULL;
+   struct timeval tv             = { 0 };
+   int max                       = 0;
    FD_ZERO(&fds);
    entry = conn_pool;
    while (entry)
    {
-      if (!entry->in_use)
+      if (!entry->in_use && entry->fd >= 0 && entry->fd < FD_SETSIZE)
       {
          FD_SET(entry->fd, &fds);
          if (entry->fd >= max)
@@ -823,23 +723,11 @@ static void net_http_conn_pool_remove_expired(void)
    {
       if (!entry->in_use && FD_ISSET(entry->fd, &fds))
       {
-         char buf[4096];
-         bool error = false;
-#ifdef HAVE_SSL
-         if (entry->ssl && entry->ssl_ctx)
-            ssl_socket_receive_all_nonblocking(entry->ssl_ctx, &error, buf, sizeof(buf));
-         else
-#endif
-            socket_receive_all_nonblocking(entry->fd, &error, buf, sizeof(buf));
-
-         if (!error)
-            continue;
-
+         /* if it's not in use and it's reaadable we assume that means it's closed without checking recv */
          if (prev)
             prev->next = entry->next;
          else
             conn_pool = entry->next;
-         /* if it's not in use and it's reaadable we assume that means it's closed without checking recv */
          net_http_conn_pool_free(entry);
          entry = prev ? prev->next : conn_pool;
       }
@@ -855,12 +743,12 @@ static void net_http_conn_pool_remove_expired(void)
    *NOT* thread safe, caller must lock */
 static void net_http_conn_pool_move_to_end(struct conn_pool_entry *entry)
 {
-   struct conn_pool_entry *prev = NULL;
+   struct conn_pool_entry *prev    = NULL;
    struct conn_pool_entry *current = conn_pool;
    /* 0 items in pool */
    if (!conn_pool)
    {
-      conn_pool = entry;
+      conn_pool   = entry;
       entry->next = NULL;
       return;
    }
@@ -881,17 +769,18 @@ static void net_http_conn_pool_move_to_end(struct conn_pool_entry *entry)
       }
       current = current->next;
    }
-   prev->next = entry;
-   entry->next = NULL;
+
+   if (prev)
+      prev->next  = entry;
+   if (entry)
+      entry->next = NULL;
 }
 
 static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int port)
 {
    struct conn_pool_entry *entry;
 
-#ifdef HAVE_THREADS
-   slock_lock(conn_pool_lock);
-#endif
+   LOCK_POOL();
 
    net_http_conn_pool_remove_expired();
 
@@ -902,16 +791,12 @@ static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int p
       {
          entry->in_use = true;
          net_http_conn_pool_move_to_end(entry);
-#ifdef HAVE_THREADS
-         slock_unlock(conn_pool_lock);
-#endif
+         UNLOCK_POOL();
          return entry;
       }
       entry = entry->next;
    }
-#ifdef HAVE_THREADS
-   slock_unlock(conn_pool_lock);
-#endif
+   UNLOCK_POOL();
    return NULL;
 }
 
@@ -926,13 +811,9 @@ static struct conn_pool_entry *net_http_conn_pool_add(const char *domain, int po
    entry->in_use = true;
    entry->ssl = ssl;
    entry->connected = false;
-#ifdef HAVE_THREADS
-   slock_lock(conn_pool_lock);
-#endif
+   LOCK_POOL();
    net_http_conn_pool_move_to_end(entry);
-#ifdef HAVE_THREADS
-   slock_unlock(conn_pool_lock);
-#endif
+   UNLOCK_POOL();
    return entry;
 }
 
@@ -965,7 +846,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->request.port          = conn->port;
 
    state->response.status  = -1;
-   state->response.buflen  = 16 * 1024;
+   state->response.buflen  = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
    state->response.data    = (char*)malloc(state->response.buflen);
    state->response.headers = string_list_new();
 
@@ -990,25 +871,17 @@ static void net_http_resolve(void *data)
    hints.ai_socktype = SOCK_STREAM;
    hints.ai_flags |= AI_NUMERICSERV;
 
-#ifdef HAVE_THREADS
-   slock_lock(dns_cache_lock);
-#endif
+   LOCK_DNS_CACHE();
    domain = strdup(entry->domain);
    port = entry->port;
-#ifdef HAVE_THREADS
-   slock_unlock(dns_cache_lock);
-#endif
+   UNLOCK_DNS_CACHE();
 
    if (!network_init())
    {
-#ifdef HAVE_THREADS
-      slock_lock(dns_cache_lock);
-#endif
+      LOCK_DNS_CACHE();
       entry->valid = true;
       entry->addr = NULL;
-#ifdef HAVE_THREADS
-      slock_unlock(dns_cache_lock);
-#endif
+      UNLOCK_DNS_CACHE();
       free(domain);
       return;
    }
@@ -1018,14 +891,10 @@ static void net_http_resolve(void *data)
    getaddrinfo_retro(domain, port_buf, &hints, &addr);
    free(domain);
 
-#ifdef HAVE_THREADS
-   slock_lock(dns_cache_lock);
-#endif
+   LOCK_DNS_CACHE();
    entry->valid = true;
    entry->addr = addr;
-#ifdef HAVE_THREADS
-   slock_unlock(dns_cache_lock);
-#endif
+   UNLOCK_DNS_CACHE();
 }
 
 static bool net_http_new_socket(struct http_t *state)
@@ -1034,11 +903,13 @@ static bool net_http_new_socket(struct http_t *state)
    struct dns_cache_entry *entry;
 
 #ifdef HAVE_THREADS
-   sthread_t *thread;
-
    if (!dns_cache_lock)
       dns_cache_lock = slock_new();
-   slock_lock(dns_cache_lock);
+   LOCK_DNS_CACHE();
+
+   /* need some place to create this, I guess */
+   if (!conn_pool_lock)
+      conn_pool_lock = slock_new();
 #endif
 
    entry = net_http_dns_cache_find(state->request.domain, state->request.port);
@@ -1049,27 +920,21 @@ static bool net_http_new_socket(struct http_t *state)
          int fd;
          if (!entry->addr)
          {
-#ifdef HAVE_THREADS
-            slock_unlock(dns_cache_lock);
-#endif
+            UNLOCK_DNS_CACHE();
             return false;
          }
          addr = entry->addr;
          fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
          if (fd >= 0)
             state->conn = net_http_conn_pool_add(state->request.domain, state->request.port, fd, state->ssl);
-#ifdef HAVE_THREADS
          /* still waiting on thread */
-         slock_unlock(dns_cache_lock);
-#endif
+         UNLOCK_DNS_CACHE();
          return (fd >= 0);
       }
       else
       {
-#ifdef HAVE_THREADS
          /* still waiting on thread */
-         slock_unlock(dns_cache_lock);
-#endif
+         UNLOCK_DNS_CACHE();
          return true;
       }
    }
@@ -1078,16 +943,13 @@ static bool net_http_new_socket(struct http_t *state)
       entry = net_http_dns_cache_add(state->request.domain, state->request.port, NULL);
 #ifdef HAVE_THREADS
       /* create the entry for it as an indicator that the request is underway */
-      thread = sthread_create(net_http_resolve, entry);
-      sthread_detach(thread);
+      entry->thread = sthread_create(net_http_resolve, entry);
 #else
-      net_http_resolve(state);
+      net_http_resolve(entry);
 #endif
    }
 
-#ifdef HAVE_THREADS
-   slock_unlock(dns_cache_lock);
-#endif
+   UNLOCK_DNS_CACHE();
 
    return true;
 }
@@ -1106,40 +968,45 @@ static bool net_http_connect(struct http_t *state)
 #else
    if (state->ssl)
    {
-      if (!conn || conn->fd < 0)
+      if (!conn)
          return false;
 
-      if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, state->request.domain)))
+      for (next_addr = addr; conn->fd >= 0; conn->fd = socket_next((void**)&next_addr))
       {
-         net_http_conn_pool_remove(conn);
-         state->conn = NULL;
-         state->error = true;
-         return false;
-      }
+         if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, state->request.domain)))
+         {
+            socket_close(conn->fd);
+            break;
+         }
 
-      /* TODO: Properly figure out what's going wrong when the newer
-         timeout/poll code interacts with mbed and winsock
-         https://github.com/libretro/RetroArch/issues/14742 */
+         /* TODO: Properly figure out what's going wrong when the newer
+          timeout/poll code interacts with mbed and winsock
+          https://github.com/libretro/RetroArch/issues/14742 */
 
-      /* Temp fix, don't use new timeout/poll code for cheevos http requests */
+         /* Temp fix, don't use new timeout/poll code for cheevos http requests */
          bool timeout = true;
 #ifdef __WIN32
-      if (!strcmp(state->request.domain, "retroachievements.org"))
-         timeout = false;
+         if (!strcmp(state->request.domain, "retroachievements.org"))
+            timeout = false;
 #endif
 
-      if (ssl_socket_connect(conn->ssl_ctx, addr, timeout, true) < 0)
-      {
-         net_http_conn_pool_remove(conn);
-         state->conn = NULL;
-         state->error = true;
-         return false;
+         if (ssl_socket_connect(conn->ssl_ctx, next_addr, timeout, true) < 0)
+         {
+            ssl_socket_close(conn->ssl_ctx);
+            ssl_socket_free(conn->ssl_ctx);
+            conn->ssl_ctx = NULL;
+         }
+         else
+         {
+            conn->connected = true;
+            return true;
+         }
       }
-      else
-      {
-         conn->connected = true;
-         return true;
-      }
+      conn->fd    = -1; /* already closed */
+      net_http_conn_pool_remove(conn);
+      state->conn = NULL;
+      state->err  = true;
+      return false;
    }
    else
 #endif
@@ -1154,10 +1021,10 @@ static bool net_http_connect(struct http_t *state)
 
          socket_close(conn->fd);
       }
-      conn->fd = -1; /* already closed */
+      conn->fd    = -1; /* already closed */
       net_http_conn_pool_remove(conn);
       state->conn = NULL;
-      state->error = true;
+      state->err  = true;
       return false;
    }
 }
@@ -1165,27 +1032,27 @@ static bool net_http_connect(struct http_t *state)
 static void net_http_send_str(
       struct http_t *state, const char *text, size_t text_size)
 {
-   if (state->error)
+   if (state->err)
       return;
 #ifdef HAVE_SSL
    if (state->ssl)
    {
       if (!ssl_socket_send_all_blocking(
                   state->conn->ssl_ctx, text, text_size, true))
-         state->error = true;
+         state->err = true;
    }
    else
 #endif
    {
       if (!socket_send_all_blocking(
                   state->conn->fd, text, text_size, true))
-         state->error = true;
+         state->err = true;
    }
 }
 
 static bool net_http_send_request(struct http_t *state)
 {
-   struct request *request = &state->request;
+   struct request *request = (struct request*)&state->request;
 
    /* This is a bit lazy, but it works. */
    if (request->method)
@@ -1202,7 +1069,7 @@ static bool net_http_send_request(struct http_t *state)
    net_http_send_str(state, "Host: ", STRLEN_CONST("Host: "));
    net_http_send_str(state, request->domain, strlen(request->domain));
 
-   if (request->port)
+   if (request->port && request->port != 80 && request->port != 443)
    {
       char portstr[16];
       size_t _len     = 0;
@@ -1227,12 +1094,12 @@ static bool net_http_send_request(struct http_t *state)
 
    if (request->method && (string_is_equal(request->method, "POST") || string_is_equal(request->method, "PUT")))
    {
-      size_t post_len, len;
-      char *len_str        = NULL;
+      size_t _len, len;
+      char *len_str = NULL;
 
       if (!request->postdata && !string_is_equal(request->method, "PUT"))
       {
-         state->error = true;
+         state->err = true;
          return true;
       }
 
@@ -1243,15 +1110,15 @@ static bool net_http_send_request(struct http_t *state)
 
       net_http_send_str(state, "Content-Length: ", STRLEN_CONST("Content-Length: "));
 
-      post_len = request->contentlength;
+      _len = request->contentlength;
 #ifdef _WIN32
-      len     = snprintf(NULL, 0, "%" PRIuPTR, post_len);
+      len     = snprintf(NULL, 0, "%" PRIuPTR, _len);
       len_str = (char*)malloc(len + 1);
-      snprintf(len_str, len + 1, "%" PRIuPTR, post_len);
+      snprintf(len_str, len + 1, "%" PRIuPTR, _len);
 #else
-      len     = snprintf(NULL, 0, "%llu", (long long unsigned)post_len);
+      len     = snprintf(NULL, 0, "%llu", (long long unsigned)_len);
       len_str = (char*)malloc(len + 1);
-      snprintf(len_str, len + 1, "%llu", (long long unsigned)post_len);
+      snprintf(len_str, len + 1, "%llu", (long long unsigned)_len);
 #endif
 
       len_str[len] = '\0';
@@ -1272,10 +1139,11 @@ static bool net_http_send_request(struct http_t *state)
    net_http_send_str(state, "\r\n", STRLEN_CONST("\r\n"));
 
    if (request->postdata && request->contentlength)
-      net_http_send_str(state, request->postdata, request->contentlength);
+      net_http_send_str(state, (const char*)request->postdata,
+            request->contentlength);
 
    state->request_sent = true;
-   return state->error;
+   return state->err;
 }
 
 /**
@@ -1293,11 +1161,11 @@ int net_http_fd(struct http_t *state)
    return state->conn->fd;
 }
 
-static ssize_t net_http_receive_header(struct http_t *state, ssize_t newlen)
+static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
 {
-   struct response *response = &state->response;
+   struct response *response = (struct response*)&state->response;
 
-   response->pos       += newlen;
+   response->pos += len;
 
    while (response->part < P_BODY)
    {
@@ -1317,7 +1185,7 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t newlen)
          if (strncmp(response->data, "HTTP/1.", STRLEN_CONST("HTTP/1."))!=0)
          {
             response->part = P_DONE;
-            state->error = true;
+            state->err     = true;
             return -1;
          }
          response->status = (int)strtoul(response->data
@@ -1365,7 +1233,7 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t newlen)
 
    if (response->part >= P_BODY)
    {
-      newlen        = response->pos;
+      len           = response->pos;
       response->pos = 0;
       if (response->bodytype == T_LEN)
       {
@@ -1381,14 +1249,14 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t newlen)
          response->data    = (char*)realloc(response->data, response->buflen);
       }
    }
-   return newlen;
+   return len;
 }
 
 static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
 {
-   struct response *response = &state->response;
+   struct response *response = (struct response*)&state->response;
 
-   if (newlen < 0 || state->error)
+   if (newlen < 0 || state->err)
    {
       if (response->bodytype != T_FULL)
          return false;
@@ -1519,20 +1387,20 @@ static bool net_http_redirect(struct http_t *state, const char *location)
       }
       else
       {
-         char *path = malloc(PATH_MAX_LENGTH);
+         char *path = (char*)malloc(PATH_MAX_LENGTH);
          fill_pathname_resolve_relative(path, state->request.path, location, PATH_MAX_LENGTH);
          free(state->request.path);
          state->request.path = path;
       }
    }
-   state->request_sent = false;
-   state->response.part = P_HEADER_TOP;
-   state->response.status = -1;
-   state->response.buflen = 16 * 1024;
-   state->response.data = realloc(state->response.data, state->response.buflen);
-   state->response.pos = 0;
-   state->response.len = 0;
-   state->response.bodytype = T_FULL;
+   state->request_sent       = false;
+   state->response.part      = P_HEADER_TOP;
+   state->response.status    = -1;
+   state->response.buflen    = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
+   state->response.data      = (char*)realloc(state->response.data, state->response.buflen);
+   state->response.pos       = 0;
+   state->response.len       = 0;
+   state->response.bodytype  = T_FULL;
    /* after this, assume location is invalid */
    string_list_deinitialize(state->response.headers);
    string_list_initialize(state->response.headers);
@@ -1549,12 +1417,9 @@ static bool net_http_redirect(struct http_t *state, const char *location)
 bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 {
    struct response *response;
-   ssize_t newlen   = 0;
+   ssize_t _len = 0;
 
-   if (!state)
-      return true;
-
-   if (state->error)
+   if (!state || state->err)
       return true;
 
    if (!state->conn)
@@ -1563,45 +1428,59 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       if (!state->conn)
       {
          if (!net_http_new_socket(state))
-            state->error = true;
-         return state->error;
+            state->err = true;
+         return state->err;
       }
    }
 
    if (!state->conn->connected)
    {
       if (!net_http_connect(state))
-         state->error = true;
-      return state->error;
+         state->err = true;
+      return state->err;
    }
 
    if (!state->request_sent)
       return net_http_send_request(state);
 
-   response = &state->response;
+   response = (struct response*)&state->response;
 
 #ifdef HAVE_SSL
    if (state->ssl && state->conn->ssl_ctx)
-      newlen = ssl_socket_receive_all_nonblocking(state->conn->ssl_ctx, &state->error,
+      _len = ssl_socket_receive_all_nonblocking(state->conn->ssl_ctx, &state->err,
             (uint8_t*)response->data + response->pos,
             response->buflen - response->pos);
    else
 #endif
-      newlen = socket_receive_all_nonblocking(state->conn->fd, &state->error,
+      _len = socket_receive_all_nonblocking(state->conn->fd, &state->err,
             (uint8_t*)response->data + response->pos,
             response->buflen - response->pos);
 
    if (response->part < P_BODY)
    {
-      if (newlen < 0 || state->error)
-         goto error;
-      newlen = net_http_receive_header(state, newlen);
+      if (_len < 0 || state->err)
+      {
+         net_http_conn_pool_remove(state->conn);
+         state->conn      = NULL;
+         state->err       = true;
+         response->part   = P_DONE;
+         response->status = -1;
+         return true;
+      }
+      _len = net_http_receive_header(state, _len);
    }
 
    if (response->part >= P_BODY && response->part < P_DONE)
    {
-      if (!net_http_receive_body(state, newlen))
-         goto error;
+      if (!net_http_receive_body(state, _len))
+      {
+         net_http_conn_pool_remove(state->conn);
+         state->conn      = NULL;
+         state->err       = true;
+         response->part   = P_DONE;
+         response->status = -1;
+         return true;
+      }
    }
 
    if (progress)
@@ -1618,9 +1497,9 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    if (response->part != P_DONE)
       return false;
 
-   for (newlen = 0; (size_t)newlen < response->headers->size; newlen++)
+   for (_len = 0; (size_t)_len < response->headers->size; _len++)
    {
-      if (string_is_equal_case_insensitive(response->headers->elems[newlen].data, "connection: close"))
+      if (string_is_equal_case_insensitive(response->headers->elems[_len].data, "connection: close"))
       {
          net_http_conn_pool_remove(state->conn);
          state->conn = NULL;
@@ -1634,22 +1513,13 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
    if (response->status >= 300 && response->status < 400)
    {
-      for (newlen = 0; (size_t)newlen < response->headers->size; newlen++)
+      for (_len = 0; (size_t)_len < response->headers->size; _len++)
       {
-         if (string_starts_with_case_insensitive(response->headers->elems[newlen].data, "Location: "))
-         {
-            return net_http_redirect(state, response->headers->elems[newlen].data + STRLEN_CONST("Location: "));
-         }
+         if (string_starts_with_case_insensitive(response->headers->elems[_len].data, "Location: "))
+            return net_http_redirect(state, response->headers->elems[_len].data + STRLEN_CONST("Location: "));
       }
    }
 
-   return true;
-
-error:
-   net_http_conn_pool_remove(state->conn);
-   state->error     = true;
-   response->part   = P_DONE;
-   response->status = -1;
    return true;
 }
 
@@ -1676,16 +1546,12 @@ int net_http_status(struct http_t *state)
  *
  * @return the response headers. The returned buffer is owned by the
  * caller of net_http_new; it is not freed by net_http_delete().
- * If the status is not 20x and accept_error is false, it returns NULL.
+ * If the status is not 20x and accept_err is false, it returns NULL.
  **/
 struct string_list *net_http_headers(struct http_t *state)
 {
-   if (!state)
+   if (!state || !state->err)
       return NULL;
-
-   if (state->error)
-      return NULL;
-
    return state->response.headers;
 }
 
@@ -1696,14 +1562,14 @@ struct string_list *net_http_headers(struct http_t *state)
  *
  * @return the downloaded data. The returned buffer is owned by the
  * HTTP handler; it's freed by net_http_delete().
- * If the status is not 20x and accept_error is false, it returns NULL.
+ * If the status is not 20x and accept_err is false, it returns NULL.
  **/
-uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error)
+uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_err)
 {
    if (!state)
       return NULL;
 
-   if (!accept_error && (state->error || state->response.status < 200 || state->response.status > 299))
+   if (!accept_err && (state->err || state->response.status < 200 || state->response.status > 299))
    {
       if (len)
          *len = 0;
@@ -1752,5 +1618,5 @@ void net_http_delete(struct http_t *state)
  **/
 bool net_http_error(struct http_t *state)
 {
-   return (state->error || state->response.status < 200 || state->response.status > 299);
+   return (state->err || state->response.status < 200 || state->response.status > 299);
 }

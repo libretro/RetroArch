@@ -89,13 +89,13 @@ typedef struct
 
 void font_driver_bind_block(void *font_data, void *block);
 
-static void INLINE font_bind(font_data_impl_t *font_data)
+static INLINE void font_bind(font_data_impl_t *font_data)
 {
    font_driver_bind_block(font_data->font, &font_data->raster_block);
    font_data->raster_block.carr.coords.vertices = 0;
 }
 
-static void INLINE font_unbind(font_data_impl_t *font_data)
+static INLINE void font_unbind(font_data_impl_t *font_data)
 {
    font_driver_bind_block(font_data->font, NULL);
 }

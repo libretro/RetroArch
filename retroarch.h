@@ -195,7 +195,7 @@ void retroarch_init_task_queue(void);
 /* Creates folder and core options stub file for subsequent runs */
 bool core_options_create_override(bool game_specific);
 bool core_options_remove_override(bool game_specific);
-void core_options_reset(void);
+void core_options_reset(const char *label);
 void core_options_flush(void);
 
 /**
@@ -209,7 +209,7 @@ void retroarch_fail(int error_code, const char *error);
 
 bool should_quit_on_close(void);
 
-uint16_t retroarch_get_flags(void);
+uint32_t retroarch_get_flags(void);
 
 RETRO_END_DECLS
 

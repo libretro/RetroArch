@@ -166,8 +166,6 @@ static void frontend_wiiu_init(void *data)
    DEBUG_LINE();
 }
 
-static int frontend_wiiu_get_rating(void) { return 10; }
-
 enum frontend_architecture frontend_wiiu_get_arch(void)
 {
    return FRONTEND_ARCH_PPC;
@@ -266,7 +264,7 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
 
    if (HBL_loadToMemory(path, (u32)arg - (u32)param) < 0)
    {
-      RARCH_ERR("Failed to load core\n");
+      RARCH_ERR("Failed to load core.\n");
    }
    else
    {
@@ -338,7 +336,6 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    frontend_wiiu_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_wiiu_get_rating,
    NULL,                         /* content_loaded */
    frontend_wiiu_get_arch,       /* get_architecture */
    NULL,                         /* get_powerstate */

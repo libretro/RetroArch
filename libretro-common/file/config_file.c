@@ -634,20 +634,21 @@ static bool config_file_parse_line(config_file_t *conf,
    if (*line != '=')
    {
       list->value = NULL;
-      goto error;
+      list->key   = NULL;
+      free(key);
+      return false;
    }
 
    line++;
 
    if (!(list->value   = config_file_extract_value(line)))
-      goto error;
+   {
+      list->key   = NULL;
+      free(key);
+      return false;
+   }
 
    return true;
-
-error:
-   list->key   = NULL;
-   free(key);
-   return false;
 }
 
 static int config_file_from_string_internal(
@@ -840,7 +841,7 @@ config_file_t *config_file_new_from_path_to_string(const char *path)
 {
    if (path_is_valid(path))
    {
-	   uint8_t *ret_buf                 = NULL;
+      uint8_t *ret_buf                 = NULL;
       int64_t length                   = 0;
       if (filestream_read_file(path, (void**)&ret_buf, &length))
       {

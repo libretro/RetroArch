@@ -27,6 +27,12 @@
 
 #include "camera_driver.h"
 
+#if defined(HAVE_FFMPEG) && defined(HAVE_AVFORMAT) && defined(HAVE_AVCODEC) && \
+   defined(HAVE_AVDEVICE) && defined(HAVE_AVUTIL) && defined(HAVE_SWSCALE)
+/* FFMPEG consists of several libraries, and the camera driver needs most of them */
+#define HAVE_FFMPEG_CAMERA
+#endif
+
 static void *nullcamera_init(const char *device, uint64_t caps,
       unsigned width, unsigned height) { return (void*)-1; }
 static void nullcamera_free(void *data) { }
@@ -49,7 +55,7 @@ const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
    &camera_v4l2,
 #endif
-#ifdef HAVE_PIPEWIRE_STABLE
+#if defined(HAVE_PIPEWIRE) && defined(HAVE_PIPEWIRE_STABLE)
    &camera_pipewire,
 #endif
 #ifdef EMSCRIPTEN
@@ -58,7 +64,10 @@ const camera_driver_t *camera_drivers[] = {
 #ifdef ANDROID
    &camera_android,
 #endif
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_AVF
+   &camera_avfoundation,
+#endif
+#ifdef HAVE_FFMPEG_CAMERA
    &camera_ffmpeg,
 #endif
    &camera_null,

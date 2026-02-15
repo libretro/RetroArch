@@ -433,14 +433,14 @@ bool glslang::compile_spirv(const std::string &source, Stage stage,
             100, ENoProfile, false, false,
             messages, &msg, forbid_include))
    {
-      RARCH_ERR("%s\n", msg.c_str());
+      RARCH_ERR("[Slang] %s\n", msg.c_str());
       return false;
    }
 
    if (!shader.parse(&process.GetResources(), 100, false, messages))
    {
-      RARCH_ERR("%s\n", shader.getInfoLog());
-      RARCH_ERR("%s\n", shader.getInfoDebugLog());
+      RARCH_ERR("[Slang] %s\n", shader.getInfoLog());
+      RARCH_ERR("[Slang] %s\n", shader.getInfoDebugLog());
       return false;
    }
 
@@ -448,8 +448,8 @@ bool glslang::compile_spirv(const std::string &source, Stage stage,
 
    if (!program.link(messages))
    {
-      RARCH_ERR("%s\n", program.getInfoLog());
-      RARCH_ERR("%s\n", program.getInfoDebugLog());
+      RARCH_ERR("[Slang] %s\n", program.getInfoLog());
+      RARCH_ERR("[Slang] %s\n", program.getInfoDebugLog());
       return false;
    }
 

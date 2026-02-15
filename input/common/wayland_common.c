@@ -730,7 +730,7 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
    int found = 1;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   RARCH_DBG("[Wayland]: Add global %u, interface %s, version %u\n",
+   RARCH_DBG("[Wayland] Add global %u, interface %s, version %u.\n",
          id, interface, version);
 
    if (string_is_equal(interface, wl_compositor_interface.name) && found++)
@@ -755,7 +755,6 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
             id, &wl_output_interface, MIN(version, 2));
       wl_output_add_listener(oi->output, &output_listener, oi);
       wl_list_insert(&wl->all_outputs, &od->link);
-      wl_display_roundtrip(wl->input.dpy);
    }
    else if (string_is_equal(interface, xdg_wm_base_interface.name) && found++)
       wl->xdg_shell = (struct xdg_wm_base*)
@@ -806,9 +805,13 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->single_pixel_manager = (struct wp_single_pixel_buffer_manager_v1*)
          wl_registry_bind(
             reg, id, &wp_single_pixel_buffer_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, xdg_toplevel_icon_manager_v1_interface.name) && found++)
+      wl->xdg_toplevel_icon_manager = (struct xdg_toplevel_icon_manager_v1*)
+         wl_registry_bind(
+            reg, id, &xdg_toplevel_icon_manager_v1_interface, MIN(version, 1));
 
    if (found > 1)
-   RARCH_LOG("[Wayland]: Registered interface %s at version %u\n",
+   RARCH_LOG("[Wayland] Registered interface %s at version %u.\n",
          interface, version);
 }
 
@@ -879,7 +882,7 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
          if (null_terminate)
             new_buffer_length  = *total_length + 1;
          else
-            new_buffer_length = *total_length;
+            new_buffer_length  = *total_length;
 
          if (*buffer == NULL)
             output_buffer      = malloc(new_buffer_length);
@@ -911,9 +914,9 @@ static void *wayland_data_offer_receive(
    *length      = 0;
 
    if (!offer)
-      RARCH_WARN("[Wayland]: Invalid data offer\n");
+      RARCH_WARN("[Wayland] Invalid data offer.\n");
    else if (pipe2(pipefd, O_CLOEXEC|O_NONBLOCK) == -1)
-      RARCH_WARN("[Wayland]: Could not read pipe");
+      RARCH_WARN("[Wayland] Could not read pipe.\n");
    else
    {
       wl_data_offer_receive(offer, mime_type, pipefd[1]);
@@ -1024,15 +1027,15 @@ static void wl_data_device_handle_drop(void *data,
 
    if (!(stream = fmemopen(buffer, __len, "r")))
    {
-      RARCH_WARN("[Wayland]: Failed to open DnD buffer\n");
+      RARCH_WARN("[Wayland] Failed to open DnD buffer.\n");
       return;
    }
 
-   RARCH_WARN("[Wayland]: Files opp:\n");
+   RARCH_WARN("[Wayland] Files opp:\n");
    while ((read = getline(&line,  &_len, stream)) != -1)
    {
       line[strcspn(line, "\r\n")] = 0;
-      RARCH_DBG("[Wayland]: > \"%s\"\n", line);
+      RARCH_DBG("[Wayland] > \"%s\".\n", line);
 
       /* TODO/FIXME: Convert from file:// URI, Implement file loading
        * Drag and Drop */
@@ -1117,7 +1120,11 @@ const struct wl_keyboard_listener keyboard_listener = {
    wl_keyboard_handle_keymap,
    wl_keyboard_handle_enter,
    wl_keyboard_handle_leave,
+#ifdef WEBOS
+   wl_keyboard_handle_key_webos,
+#else
    wl_keyboard_handle_key,
+#endif
    wl_keyboard_handle_modifiers,
    wl_keyboard_handle_repeat_info
 };
@@ -1159,23 +1166,33 @@ void flush_wayland_fd(void *data)
    struct pollfd fd             = {0};
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
 
-   wl_display_dispatch_pending(wl->dpy);
-   wl_display_flush(wl->dpy);
-
    fd.fd                        = wl->fd;
    fd.events                    = POLLIN | POLLOUT | POLLERR | POLLHUP;
 
+   while (wl_display_prepare_read(wl->dpy))
+      wl_display_dispatch_pending(wl->dpy);
+
+   wl_display_flush(wl->dpy);
+
    if (poll(&fd, 1, 0) > 0)
    {
+      if (fd.revents & POLLIN)
+      {
+         wl_display_read_events(wl->dpy);
+         wl_display_dispatch_pending(wl->dpy);
+      }
+      else
+         wl_display_cancel_read(wl->dpy);
+
+      if (fd.revents & POLLOUT)
+         wl_display_flush(wl->dpy);
+
       if (fd.revents & (POLLERR | POLLHUP))
       {
          close(wl->fd);
          frontend_driver_set_signal_handler_state(1);
       }
-
-      if (fd.revents & POLLIN)
-         wl_display_dispatch(wl->dpy);
-      if (fd.revents & POLLOUT)
-         wl_display_flush(wl->dpy);
    }
+   else
+      wl_display_cancel_read(wl->dpy);
 }

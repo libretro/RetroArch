@@ -1,0 +1,44 @@
+name: CI Windows ARM64 (MSVC)
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  msvc:
+    runs-on: windows-11-arm
+    strategy:
+      matrix:
+        version: [2022]
+        configuration: [Debug, Release]
+        platform: [ARM64]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1
+
+      - name: Compile RA
+        working-directory: "${{ github.workspace }}/pkg/msvc"
+        run: |
+          msbuild -p:"Configuration=${{ matrix.configuration }}" -p:"Platform=${{ matrix.platform }}" .\RetroArch-msvc${{ matrix.version }}.sln
+
+      - name: Get short SHA
+        id: slug
+        shell: powershell
+        run: echo "sha8=$('${{ github.sha }}'.Substring(0,8))"  >> $env:GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: retroarch-${{ matrix.version }}-${{ matrix.configuration }}-${{ matrix.platform }}-${{ steps.slug.outputs.sha8 }}
+          path: |
+            pkg/msvc/${{ matrix.platform }}/${{ matrix.configuration }}/RetroArch-msvc${{ matrix.version }}.exe

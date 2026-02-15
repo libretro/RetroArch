@@ -7,34 +7,35 @@ else
 TARGET := $(LIBRETRO)_libretro.js
 endif
 endif
-
-EOPT = USE_ZLIB=1 # Emscripten specific options
-EOPTS = $(addprefix -s $(EMPTY), $(EOPT)) # Add '-s ' to each option
+TARGET_BASE := $(subst .js,,$(TARGET))
 
 OS = Emscripten
 OBJ :=
-DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN
-DEFINES += -DHAVE_FILTERS_BUILTIN
+DEFINES := -DRARCH_INTERNAL -DHAVE_MAIN -DEMSCRIPTEN
+DEFINES += -DHAVE_FILTERS_BUILTIN -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORE_INFO -DHAVE_STB_VORBIS
+
+HAVE_STATESTREAM ?= 1
 HAVE_PATCH = 1
 HAVE_DSP_FILTER = 1
 HAVE_VIDEO_FILTER = 1
 HAVE_OVERLAY = 1
-HAVE_NETWORKING = 1
+HAVE_NETWORKING ?= 1
 HAVE_LIBRETRODB = 1
 HAVE_COMPRESSION = 1
 HAVE_UPDATE_ASSETS = 1
 HAVE_ONLINE_UPDATER = 1
 HAVE_GLSL = 1
 HAVE_SCREENSHOTS = 1
-HAVE_REWIND = 1
+HAVE_REWIND ?= 1
+HAVE_RUNAHEAD ?= 1
 HAVE_AUDIOMIXER = 1
-HAVE_CC_RESAMPLER = 1
-HAVE_EGL    ?= 1
+HAVE_CC_RESAMPLER ?= 1
+HAVE_EGL ?= 0
 HAVE_OPENGLES = 1
-HAVE_RJPEG  = 0
-HAVE_RPNG   = 1
+HAVE_RJPEG = 0
+HAVE_RPNG = 1
 HAVE_EMSCRIPTEN = 1
-HAVE_MENU = 1
+HAVE_MENU ?= 1
 HAVE_GFX_WIDGETS = 1
 HAVE_RGUI = 1
 HAVE_SDL = 0
@@ -46,41 +47,79 @@ HAVE_STATIC_AUDIO_FILTERS = 1
 HAVE_STB_FONT = 1
 HAVE_CONFIGFILE = 1
 HAVE_COMMAND = 1
-HAVE_STDIN_CMD = 1
+HAVE_STDIN_CMD ?= 1
 HAVE_CHEATS = 1
 HAVE_IBXM = 1
 HAVE_CORE_INFO_CACHE = 1
 HAVE_7ZIP = 1
-HAVE_BSV_MOVIE = 1
-HAVE_AL = 1
+HAVE_BSV_MOVIE ?= 1
 HAVE_CHD ?= 0
-HAVE_WASMFS ?= 0
-PROXY_TO_PTHREAD ?= 0
 HAVE_NETPLAYDISCOVERY ?= 0
 
-DEFINES += -DHAVE_NETWORKING -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_COMPRESSION
-DEFINES += -DHAVE_UPDATE_CORE_INFO
+# enables pthreads, requires special headers on the web server:
+# see https://web.dev/articles/coop-coep
+HAVE_THREADS ?= 0
 
-# WARNING -- READ BEFORE ENABLING
-# The rwebaudio driver is known to have several audio bugs, such as
-#  minor crackling, or the entire page freezing/crashing.
-#  It works perfectly on chrome, but even firefox has really bad audio quality.
-#  I should also note, the driver on iOS is completely broken (crashes the page).
-#  You have been warned.
-HAVE_RWEBAUDIO = 0
+# requires HAVE_THREADS
+HAVE_AUDIOWORKLET ?= 0
+
+# doesn't work on PROXY_TO_PTHREAD
+HAVE_RWEBAUDIO ?= 1
+
+# requires ASYNC or PROXY_TO_PTHREAD. Prefer another driver.
+HAVE_AL ?= 0
+
+# whether the browser thread is allowed to block to wait for audio to play, not CPU usage-friendly!
+# currently this variable is only used by rwebaudio and audioworklet; openal will never busywait.
+ALLOW_AUDIO_BUSYWAIT ?= 0
+
+# asyncify: enable fibers and sleeping on the browser thread,
+# this has a noticeable impact on compile time, output wasm size, and speed.
+# see https://emscripten.org/docs/porting/asyncify.html for more info
+ASYNC ?= 0
+
+# minimal asyncify: better performance than full asyncify,
+# but sleeping on the browser thread is only possible in some places.
+MIN_ASYNC ?= 0
+
+# JSPI: experimental asyncify alternative, see https://webassembly.org/features/
+# currently (emscripten 4.0.15) this requires a patched emscripten toolchain.
+JSPI ?= 0
+
+# runs RetroArch on a pthread instead of the browser thread; implies HAVE_THREADS
+PROXY_TO_PTHREAD ?= 0
+
+# recommended FS when using HAVE_THREADS
+HAVE_WASMFS ?= 0
+
+# enables OPFS (origin private file system) and FETCHFS, requires PROXY_TO_PTHREAD or JSPI
+HAVE_EXTRA_WASMFS ?= 0
+
+# use the closure compiler to further minify output JS
+CLOSURE_COMPILER ?= 0
+
+# enable javascript filesystem tracking, incompatible with HAVE_WASMFS
+FS_DEBUG ?= 0
 
 # help diagnose GL problems (can cause issues in normal operation)
 GL_DEBUG ?= 0
 
-# enable javascript filesystem tracking
-FS_DEBUG = 0
+# enable runtime assertions (always enabled in debug builds)
+# please use this when testing new emscripten-specific features!
+ASSERTIONS ?= 0
 
-HAVE_OPENGLES ?= 1
+# enable GLES 3.0 (WebGL 2).
+# if left disabled, GLES 2.0 (WebGL 1) will be used.
 HAVE_OPENGLES3 ?= 0
 
-ASYNC ?= 1
+# does nothing on its own, but automatically selected by some other options
+WASM_WORKERS = 0
+
 LTO ?= 0
-PTHREAD ?= 0
+PTHREAD_POOL_SIZE ?= 4
+
+ASYNCIFY_ADD ?= dynCall_*,emscripten_mainloop
+ASYNCIFY_REMOVE ?= threaded_worker
 
 STACK_SIZE ?= 4194304
 INITIAL_HEAP ?= 134217728
@@ -99,58 +138,70 @@ INITIAL_HEAP ?= 134217728
 
 OBJDIR := obj-emscripten
 
-EXPORTED_FUNCTIONS = _main,_malloc,_free,_cmd_savefiles,_cmd_save_state,_cmd_load_state,_cmd_undo_save_state,_cmd_undo_load_state,_cmd_take_screenshot,\
+EXPORTED_FUNCTIONS = _main,_malloc,_free,_cmd_savefiles,_cmd_save_state,_cmd_load_state,_cmd_undo_save_state,_cmd_undo_load_state,_cmd_toggle_fullscreen,_cmd_take_screenshot,\
 _cmd_toggle_menu,_cmd_reload_config,_cmd_toggle_grab_mouse,_cmd_toggle_game_focus,_cmd_reset,_cmd_toggle_pause,_cmd_pause,_cmd_unpause,\
 _cmd_set_volume,_cmd_set_shader,_cmd_cheat_set_code,_cmd_cheat_get_code,_cmd_cheat_toggle_index,_cmd_cheat_get_code_state,_cmd_cheat_realloc,\
 _cmd_cheat_get_size,_cmd_cheat_apply_cheats,EmscriptenSendCommand,EmscriptenReceiveCommandReply
 
-EXPORTS := callMain,FS,PATH,ERRNO_CODES,ENV,stringToNewUTF8,UTF8ToString,Browser,GL,EmscriptenSendCommand,EmscriptenReceiveCommandReply
+EXPORTS := callMain,FS,PATH,ERRNO_CODES,ENV,stringToNewUTF8,UTF8ToString,Browser,EmscriptenSendCommand,EmscriptenReceiveCommandReply
 
-LIBS    := -s USE_ZLIB=1 -lbrowser.js
+LIBS   := -s USE_ZLIB=1
+CFLAGS := -s USE_ZLIB=1
 
-ifeq ($(HAVE_WASMFS), 1)
-   DEFINES += -DHAVE_WASMFS=1
-   LIBS += -sWASMFS -sFORCE_FILESYSTEM=1 -lfetchfs.js -lopfs.js
-   EXPORTS := $(EXPORTS),FETCHFS,OPFS
-   ifeq ($(PTHREAD),0)
-   $(error ERROR: WASMFS requires threading support)
+ifeq ($(HAVE_EXTRA_WASMFS), 1)
+   LIBS += -lfetchfs.js -lopfs.js
+   DEFINES += -DHAVE_EXTRA_WASMFS
+   override HAVE_WASMFS = 1
+   ifeq ($(PROXY_TO_PTHREAD), 0)
+      # note: currently HAVE_EXTRA_WASMFS+JSPI requires ASSERTIONS to be turned off
+      ifeq ($(JSPI), 0)
+         $(error ERROR: HAVE_EXTRA_WASMFS requires PROXY_TO_PTHREAD or JSPI)
+      endif
    endif
 endif
 
-ifeq ($(PROXY_TO_PTHREAD),1)
-   LIBS += -sENVIRONMENT=worker,web
-   LIBS += -sPROXY_TO_PTHREAD -sOFFSCREENCANVAS_SUPPORT
-   DEFINES += -DUSE_OFFSCREENCANVAS=1 -DPROXY_TO_PTHREAD=1
-else
-   override ASYNC = 1
+ifeq ($(HAVE_WASMFS), 1)
+   LIBS += -s WASMFS -s FORCE_FILESYSTEM=1
 endif
-   
+
+# note: real PROXY_TO_PTHREAD is not used here; we do the pthread management ourselves
+ifeq ($(PROXY_TO_PTHREAD), 1)
+   LIBS += -s OFFSCREENCANVAS_SUPPORT
+   DEFINES += -DPROXY_TO_PTHREAD -DEMSCRIPTEN_STACK_SIZE=$(STACK_SIZE)
+   override HAVE_THREADS = 1
+   override WASM_WORKERS = 1
+   # use the default stack size for the browser thread; the RetroArch thread will be created with the specified stack size
+   override STACK_SIZE = 4194304
+else ifeq ($(HAVE_AL), 1)
+   override ASYNC = 1
+   override MIN_ASYNC = 0
+endif
+
 ifeq ($(HAVE_SDL2), 1)
    LIBS += -s USE_SDL=2
    DEFINES += -DHAVE_SDL2
 endif
 
-
 LDFLAGS := -L. --no-heap-copy -s STACK_SIZE=$(STACK_SIZE) -s INITIAL_MEMORY=$(INITIAL_HEAP) \
-           -s EXPORTED_RUNTIME_METHODS=$(EXPORTS) \
+           -s EXPORTED_RUNTIME_METHODS=$(EXPORTS) -s EXIT_RUNTIME=1 \
            -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="$(EXPORTED_FUNCTIONS)" \
            -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME="libretro_$(subst -,_,$(LIBRETRO))" \
            -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 \
-           --extern-pre-js emscripten/pre.js \
+           -s ENVIRONMENT=web,worker -s WASM_BIGINT=1 \
+           --extern-pre-js emscripten/extern_pre.js \
            --js-library emscripten/library_rwebcam.js \
-           -gsource-map -g2 \
            --js-library emscripten/library_platform_emscripten.js
 
 ifeq ($(HAVE_OPENGLES), 1)
    ifeq ($(HAVE_OPENGLES3), 1)
-      LDFLAGS += -s FULL_ES3=1 -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2 -lGL
+      LDFLAGS += -s FULL_ES3=1 -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2
    else
-      LDFLAGS += -s FULL_ES2=1 -s MIN_WEBGL_VERSION=1 -s MAX_WEBGL_VERSION=2 -lGL
+      LDFLAGS += -s FULL_ES2=1 -s MIN_WEBGL_VERSION=1 -s MAX_WEBGL_VERSION=2
    endif
 endif
 
 ifeq ($(GL_DEBUG), 1)
-   LDFLAGS += -s GL_ASSERTIONS=1 -s GL_DEBUG=1 -DHAVE_GL_DEBUG_ES=1
+   LDFLAGS += -s GL_ASSERTIONS=1 -s GL_DEBUG=1
 endif
 
 ifeq ($(FS_DEBUG), 1)
@@ -160,6 +211,18 @@ endif
 ifeq ($(HAVE_RWEBAUDIO), 1)
    LDFLAGS += --js-library emscripten/library_rwebaudio.js
    DEFINES += -DHAVE_RWEBAUDIO
+   ifeq ($(PROXY_TO_PTHREAD), 1)
+      $(error ERROR: RWEBAUDIO is incompatible with PROXY_TO_PTHREAD)
+   endif
+endif
+
+ifeq ($(HAVE_AUDIOWORKLET), 1)
+   LDFLAGS += -s AUDIO_WORKLET=1
+   DEFINES += -DHAVE_AUDIOWORKLET
+   override WASM_WORKERS = 1
+   ifeq ($(HAVE_THREADS), 0)
+      $(error ERROR: AUDIOWORKLET requires HAVE_THREADS)
+   endif
 endif
 
 ifeq ($(HAVE_AL), 1)
@@ -167,26 +230,70 @@ ifeq ($(HAVE_AL), 1)
    DEFINES += -DHAVE_AL
 endif
 
-ifneq ($(PTHREAD), 0)
-   LDFLAGS += -s WASM_MEM_MAX=1073741824 -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD)
-   CFLAGS += -pthread -s SHARED_MEMORY
-   HAVE_THREADS=1
+ifeq ($(PROXY_TO_PTHREAD), 1)
+else ifeq ($(JSPI), 1)
+else ifeq ($(ASYNC), 1)
 else
-   HAVE_THREADS=0
+   DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
+   ifeq ($(MIN_ASYNC), 1)
+      DEFINES += -DEMSCRIPTEN_AUDIO_ASYNC_BLOCK
+   else
+      DEFINES += -DEMSCRIPTEN_AUDIO_FAKE_BLOCK
+   endif
+   ifneq ($(ALLOW_AUDIO_BUSYWAIT), 1)
+      DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
+   endif
 endif
 
+ifeq ($(ALLOW_AUDIO_BUSYWAIT), 1)
+   DEFINES += -DEMSCRIPTEN_AUDIO_BUSYWAIT
+endif
 
-ifeq ($(ASYNC), 1)
-   DEFINES += -DEMSCRIPTEN_ASYNCIFY
-   LDFLAGS += -s ASYNCIFY=$(ASYNC) -s ASYNCIFY_STACK_SIZE=8192 
+# explanation of some of these defines:
+# EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK: audio blocking occurs in the main loop instead of in the audio driver functions.
+# EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK: along with above, enables external blocking in the write function.
+# EMSCRIPTEN_AUDIO_BUSYWAIT: write function will busywait. init function may still use an external block.
+# EMSCRIPTEN_AUDIO_ASYNC_BLOCK: external block uses emscripten_sleep (requires MIN_ASYNC).
+# EMSCRIPTEN_AUDIO_FAKE_BLOCK: external block uses main loop timing (doesn't require asyncify).
+# when building with either PROXY_TO_PTHREAD or ASYNC (full asyncify), none of the above are required.
+
+ifeq ($(HAVE_THREADS), 1)
+   LDFLAGS += -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD_POOL_SIZE)
+   CFLAGS += -pthread -s SHARED_MEMORY
+endif
+
+ifeq ($(WASM_WORKERS), 1)
+   LDFLAGS += -s WASM_WORKERS=1
+endif
+
+ifeq ($(JSPI), 1)
+   CFLAGS += -fwasm-exceptions
+   DEFINES += -DEMSCRIPTEN_ASYNCIFY -DEMSCRIPTEN_FULL_ASYNCIFY -DEMSCRIPTEN_JSPI
+   LDFLAGS += -s JSPI=1 -fwasm-exceptions
+else ifeq ($(MIN_ASYNC), 1)
+   DEFINES += -DEMSCRIPTEN_ASYNCIFY -DEMSCRIPTEN_MIN_ASYNCIFY
+   LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=8192 -s ASYNCIFY_IGNORE_INDIRECT=1 -s ASYNCIFY_ADD='$(ASYNCIFY_ADD)' -s ASYNCIFY_REMOVE='$(ASYNCIFY_REMOVE)'
    ifeq ($(DEBUG), 1)
-      LDFLAGS += -s ASYNCIFY_DEBUG=1 # -s ASYNCIFY_ADVISE
+      LDFLAGS += -s ASYNCIFY_ADVISE #-s ASYNCIFY_DEBUG=1
    endif
+else ifeq ($(ASYNC), 1)
+   DEFINES += -DEMSCRIPTEN_ASYNCIFY -DEMSCRIPTEN_FULL_ASYNCIFY
+   LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=8192
+   ifeq ($(DEBUG), 1)
+      #LDFLAGS += -s ASYNCIFY_DEBUG=1 # broken?
+   endif
+endif
+
+ifeq ($(CLOSURE_COMPILER), 1)
+   LDFLAGS += --closure 1 --closure-args=--externs=emscripten/closure_externs.js --post-js emscripten/closure_post.js
 endif
 
 include Makefile.common
 
-CFLAGS += $(DEF_FLAGS) -Ideps -Ideps/stb
+DEF_FLAGS += $(INCLUDE_DIRS) -Ideps -Ideps/stb
+
+CFLAGS += $(DEF_FLAGS)
+CXXFLAGS += $(DEF_FLAGS) -D__STDC_CONSTANT_MACROS
 
 libretro     =
 libretro_new =
@@ -203,8 +310,15 @@ ifneq ($(V), 1)
 endif
 
 ifeq ($(DEBUG), 1)
-   LDFLAGS += -O0 -g -gsource-map -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
-   CFLAGS += -O0 -g -gsource-map
+   LDFLAGS += -O0 -g -gsource-map -s STACK_OVERFLOW_CHECK=2
+   # -O0 in cflags gives "too many locals" errors
+   CFLAGS += -O1 -g -gsource-map
+   override ASSERTIONS = 1
+   # "WASM_WORKERS is not currently compatible with `-fsanitize` tools"
+   ifeq ($(WASM_WORKERS), 0)
+      CFLAGS  += -fsanitize=undefined
+      LDFLAGS += -fsanitize=undefined
+   endif
 else
    LDFLAGS += -O3
    # WARNING: some optimizations can break some cores (ex: LTO breaks tyrquake)
@@ -214,31 +328,37 @@ else
    CFLAGS += -O3
 endif
 
+ifneq ($(ASSERTIONS), 0)
+   LDFLAGS += -s ASSERTIONS=$(ASSERTIONS)
+endif
+
 CFLAGS += -Wall -I. -Ilibretro-common/include -Ideps/7zip -std=gnu99
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 all: $(TARGET)
 
-$(libretro_new) : $(libretro)
-	mv -f $(libretro) $(libretro_new)
+$(libretro_new): ;
 
-$(TARGET): $(RARCH_OBJ) $(libretro_new)
+mv_libretro:
+	$(Q)mv -f $(libretro) $(libretro_new) || true
+
+$(TARGET): $(RARCH_OBJ) $(libretro_new) mv_libretro
 	@$(if $(Q), $(shell echo echo "LD $@ \<obj\> $(libretro_new) $(LIBS) $(LDFLAGS)"),)
 	$(Q)$(LD) -o $@ $(RARCH_OBJ) $(libretro_new) $(LIBS) $(LDFLAGS)
 
 $(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) $(EOPTS) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
-	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) $(EOPTS) -c -o $@ $<
+	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
 
 clean:
 	rm -rf $(OBJDIR)
 	rm -f $(TARGET)
 
-.PHONY: all clean
+.PHONY: all clean mv_libretro

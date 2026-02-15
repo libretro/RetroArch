@@ -136,7 +136,7 @@ bool angle_init_context(egl_ctx_data_t *egl,
    if (!success)
       return false;
 
-   RARCH_LOG("[EGL]: EGL version: %d.%d\n", *major, *minor);
+   RARCH_LOG("[ANGLE] EGL version: %d.%d\n", *major, *minor);
 
    return egl_init_context_common(egl, count, attrib_ptr, cb, display_data);
 }

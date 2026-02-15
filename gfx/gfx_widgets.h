@@ -38,19 +38,24 @@
 #define MSG_QUEUE_PENDING_MAX          32
 #define MSG_QUEUE_ONSCREEN_MAX         4
 
-#define MSG_QUEUE_ANIMATION_DURATION      330
-#define TASK_FINISHED_DURATION            3000
-#define HOURGLASS_INTERVAL                5000
-#define HOURGLASS_DURATION                1000
+#define MSG_QUEUE_ANIMATION_DURATION   330
+#define TASK_FINISHED_DURATION         3000
+#define HOURGLASS_INTERVAL             5000
+#define HOURGLASS_DURATION             1000
 
-/* TODO: Colors for warning, error and success */
+#define TEXT_COLOR_INFO   0xEEEEEEFF
+#define TEXT_COLOR_FAINT  0x888888FF
 
-#define TEXT_COLOR_INFO 0xD8EEFFFF
-#if 0
-#define TEXT_COLOR_SUCCESS 0x22B14CFF
-#define TEXT_COLOR_ERROR 0xC23B22FF
-#endif
-#define TEXT_COLOR_FAINT 0x878787FF
+#define BG_COLOR_BLACK    0x000000
+#define BG_COLOR_WHITE    0xFFFFFF
+#define BG_COLOR_DEFAULT  0x161616
+#define BG_COLOR_PROGRESS 0x323232
+#define BG_COLOR_MARGIN   0xBBBBBB
+
+#define ICON_COLOR_RED    0xD82020
+#define ICON_COLOR_GREEN  0x20D820
+#define ICON_COLOR_BLUE   0x208BD8
+#define ICON_COLOR_YELLOW 0xD8BA20
 
 RETRO_BEGIN_DECLS
 
@@ -118,7 +123,10 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_POSITIVE                  = (1 << 8),
    DISPWIDG_FLAG_NEGATIVE                  = (1 << 9),
    DISPWIDG_FLAG_CATEGORY_WARNING          = (1 << 10),
-   DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 11)
+   DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 11),
+   DISPWIDG_FLAG_CATEGORY_SUCCESS          = (1 << 12),
+   /* Size */
+   DISPWIDG_FLAG_SMALL                     = (1 << 13)
 };
 
 /* There can only be one message animation at a time to
@@ -177,6 +185,7 @@ typedef struct disp_widget_msg
    int8_t task_progress;
    /* How many tasks have used this notification? */
    uint8_t task_count;
+   bool alternative_look;
 } disp_widget_msg_t;
 
 typedef struct dispgfx_widget
@@ -216,8 +225,6 @@ typedef struct dispgfx_widget
    unsigned simple_widget_height;
 
    /* Used for both generic and libretro messages */
-   unsigned generic_message_height;
-
    unsigned msg_queue_height;
    unsigned msg_queue_padding;
    unsigned msg_queue_spacing;
@@ -228,13 +235,10 @@ typedef struct dispgfx_widget
    unsigned msg_queue_icon_size_y;
    unsigned msg_queue_icon_offset_y;
    unsigned msg_queue_scissor_start_x;
-   unsigned msg_queue_default_rect_width_menu_alive;
    unsigned msg_queue_default_rect_width;
    unsigned msg_queue_regular_padding_x;
    unsigned msg_queue_regular_text_start;
    unsigned msg_queue_task_text_start_x;
-   unsigned msg_queue_task_rect_start_x;
-   unsigned msg_queue_task_hourglass_x;
    unsigned divider_width_1px;
 
    float last_scale_factor;
@@ -305,6 +309,11 @@ struct gfx_widget
     * -- userdata is a dispgfx_widget_t
     * -> draw the widget here */
    void (*frame)(void* data, void *userdata);
+
+   /* called to check if the widget is currently
+    * drawing anything on screen
+    * -> return true if the widget is active */
+   bool (*visible)(void);
 };
 
 float gfx_widgets_get_thumbnail_scale_factor(
@@ -374,6 +383,9 @@ void gfx_widgets_iterate(
 void gfx_widget_screenshot_taken(void *data,
       const char *shotname, const char *filename);
 
+void gfx_widget_state_slot_show(void *data,
+      const char *shotname, const char *filename);
+
 /* AI Service functions */
 #ifdef HAVE_TRANSLATE
 bool gfx_widgets_ai_service_overlay_load(
@@ -409,6 +421,8 @@ bool gfx_widget_start_load_content_animation(void);
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
 void gfx_widgets_frame(void *data);
+
+bool gfx_widgets_visible(void *data);
 
 bool gfx_widgets_ready(void);
 

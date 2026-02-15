@@ -124,11 +124,6 @@ void task_push_update_installed_cores(
       bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro,
       const char *path_dir_core_assets);
-#if 0
-bool task_push_update_single_core(
-      const char *path_core, bool auto_backup, size_t auto_backup_history_size,
-      const char *path_dir_libretro, const char *path_dir_core_assets);
-#endif
 #if defined(ANDROID)
 void *task_push_play_feature_delivery_core_install(
       core_updater_list_t* core_list,
@@ -253,6 +248,7 @@ void input_autoconfigure_blissbox_override_handler(
 bool input_autoconfigure_connect(
       const char *name,
       const char *display_name,
+      const char *phys,
       const char *driver,
       unsigned port,
       unsigned vid,
@@ -279,6 +275,8 @@ extern const char* const input_builtin_autoconfs[];
 /* cloud sync tasks */
 void task_push_cloud_sync_update_driver(void);
 void task_push_cloud_sync(void);
+void task_push_cloud_sync_resolve_keep_local(void);
+void task_push_cloud_sync_resolve_keep_server(void);
 
 RETRO_END_DECLS
 

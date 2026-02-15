@@ -25,8 +25,8 @@
 
 #include "font_driver.h"
 
-#define TICKER_SPACER_DEFAULT "   |   "
-#define TICKER_SPEED       333333
+#define TICKER_SPACER_DEFAULT "  |  "
+#define TICKER_SPEED          333333
 
 /* Pixel ticker nominally increases by one after each
  * TICKER_PIXEL_PERIOD ms (actual increase depends upon

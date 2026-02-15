@@ -368,12 +368,6 @@ static VC_CONTAINER_STATUS_T mpga_reader_read( VC_CONTAINER_T *p_ctx,
       module->frame_index++;
       module->frame_offset += module->frame_size;
       module->frame_time_pos = mpga_calculate_frame_time(p_ctx);
-
-#if 0 /* FIXME: is this useful e.g. progressive download? */
-      module->num_frames = MAX(module->num_frames, module->frame_index);
-      module->data_size = MAX(module->data_size, module->frame_offset);
-      p_ctx->duration = MAX(p_ctx->duration, mpga_calculate_frame_time(p_ctx));
-#endif
    }
 
    return status == VC_CONTAINER_SUCCESS ? STREAM_STATUS(p_ctx) : status;

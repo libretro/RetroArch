@@ -1,4 +1,5 @@
 HAVE_FILE_LOGGER=1
+HAVE_STATESTREAM?=1
 NEED_CXX_LINKER?=0
 NEED_GOLD_LINKER?=0
 MISSING_DECLS   =0
@@ -45,7 +46,6 @@ else
    OBJDIR := $(OBJDIR_BASE)/release
    CFLAGS ?= -O3
    CXXFLAGS ?= -O3
-   DEF_FLAGS += -ffast-math
 endif
 
 DEF_FLAGS += -Wall -Wsign-compare
@@ -113,7 +113,7 @@ endif
 
 ifneq ($(CXX_BUILD), 1)
    ifneq ($(C89_BUILD),)
-      CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long -Werror=declaration-after-statement
+      CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long -Werror=declaration-after-statement -Wno-variadic-macros
    else ifeq ($(HAVE_C99), 1)
       CFLAGS += $(C99_CFLAGS)
    endif
@@ -172,6 +172,33 @@ ifneq ($(MOC_HEADERS),)
 endif
 
 all: $(TARGET) config.mk
+
+define INFO
+ASFLAGS: $(ASFLAGS)
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CPPFLAGS: $(CPPFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+DEFINES: $(DEFINES)
+LDFLAGS: $(LDFLAGS)
+LIBRARY_DIRS: $(LIBRARY_DIRS)
+LIBS: $(LIBS)
+LINK: $(LINK)
+MD: $(MD)
+MOC: $(MOC)
+MOC_TMP: $(MOC_TMP)
+OBJCFLAGS: $(OBJCFLAGS)
+QT_VERSION: $(QT_VERSION)
+RARCH_OBJ: $(RARCH_OBJ)
+WINDRES: $(WINDRES)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 $(MOC_SRC):
 	@$(if $(Q), $(shell echo echo MOC $<),)
@@ -285,9 +312,10 @@ uninstall:
 	rm -rf $(DESTDIR)$(ASSETS_DIR)
 
 clean:
-	rm -rf $(OBJDIR_BASE)
-	rm -f $(TARGET)
-	rm -f *.d
+	@$(if $(Q), echo $@,)
+	$(Q)rm -rf $(OBJDIR_BASE)
+	$(Q)rm -f $(TARGET)
+	$(Q)rm -f *.d
 
 .PHONY: all install uninstall clean
 

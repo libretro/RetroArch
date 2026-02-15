@@ -16,6 +16,10 @@
 
 #include <unistd.h>
 
+#ifdef HAVE_WAYLAND_BACKPORT
+#include "../../gfx/common/wayland_common_backport.h"
+#endif
+
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 
@@ -44,6 +48,26 @@
 
 #ifndef EGL_PLATFORM_WAYLAND_KHR
 #define EGL_PLATFORM_WAYLAND_KHR 0x31D8
+#endif
+
+#ifdef WEBOS
+extern void gfx_ctx_wl_get_video_size_webos(void*, unsigned*, unsigned*);
+extern void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t*);
+extern void gfx_ctx_wl_update_title_webos(void*);
+extern bool gfx_ctx_wl_init_webos(const toplevel_listener_t*, gfx_ctx_wayland_data_t**);
+extern bool gfx_ctx_wl_set_video_mode_common_size_webos(gfx_ctx_wayland_data_t*, unsigned, unsigned, bool);
+extern bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t*, bool);
+extern bool gfx_ctx_wl_suppress_screensaver_webos(void*, bool);
+extern void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t*, void (*)(void*, unsigned*, unsigned*), bool*, bool*, unsigned*, unsigned*);
+
+#define gfx_ctx_wl_get_video_size_common gfx_ctx_wl_get_video_size_webos
+#define gfx_ctx_wl_destroy_resources_common gfx_ctx_wl_destroy_resources_webos
+#define gfx_ctx_wl_update_title_common gfx_ctx_wl_update_title_webos
+#define gfx_ctx_wl_init_common gfx_ctx_wl_init_webos
+#define gfx_ctx_wl_set_video_mode_common_size gfx_ctx_wl_set_video_mode_common_size_webos
+#define gfx_ctx_wl_set_video_mode_common_fullscreen gfx_ctx_wl_set_video_mode_common_fullscreen_webos
+#define gfx_ctx_wl_suppress_screensaver gfx_ctx_wl_suppress_screensaver_webos
+#define gfx_ctx_wl_check_window_common gfx_ctx_wl_check_window_webos
 #endif
 
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
@@ -103,10 +127,10 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    gfx_ctx_wayland_data_t *wl    = (gfx_ctx_wayland_data_t*)data;
    wl->last_buffer_scale         = wl->buffer_scale;
    wl->last_fractional_scale_num = wl->fractional_scale_num;
-   if (!wl->fractional_scale)
-      wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
-
-   wl->ignore_configuration = false;
+   if (!wl->fractional_scale &&
+       wl_compositor_get_version(wl->compositor) >=
+       WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION)
+      wl->ignore_configuration = false;
 #ifdef HAVE_EGL
    wl_egl_window_resize(wl->win, width, height, 0, 0);
 #endif
@@ -155,8 +179,7 @@ static const toplevel_listener_t toplevel_listener = {
    },
 };
 
-static const toplevel_listener_t xdg_toplevel_listener = {
-};
+static const toplevel_listener_t xdg_toplevel_listener = {0};
 
 #ifdef HAVE_EGL
 #define WL_EGL_ATTRIBS_BASE \
@@ -176,7 +199,7 @@ static bool gfx_ctx_wl_egl_init_context(gfx_ctx_wayland_data_t *wl)
    };
 
 #ifdef HAVE_OPENGLES
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3)
    static const EGLint egl_attribs_gles[] = {
       WL_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
@@ -222,7 +245,7 @@ static bool gfx_ctx_wl_egl_init_context(gfx_ctx_wayland_data_t *wl)
          else
 #endif
 #endif
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3)
             attrib_ptr = egl_attribs_gles;
 #endif
 #endif
@@ -380,6 +403,13 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    EGLint *attr              = egl_fill_attribs(
          (gfx_ctx_wayland_data_t*)data, egl_attribs);
 
+   /* Set buffer scale before creating wl_egl_window.
+    * Fixes incorrect size/offset on HiDPI/fullscreen. */
+   if (!wl->fractional_scale &&
+       wl_compositor_get_version(wl->compositor) >=
+       WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION)
+      wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+
    wl->win = wl_egl_window_create(wl->surface,
       wl->buffer_width,
       wl->buffer_height);
@@ -395,6 +425,11 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       goto error;
    egl_set_swap_interval(&wl->egl, wl->egl.interval);
 #endif
+
+   /* Fullscreen is compositor-sized on Wayland.
+    * Do not ignore configure events in fullscreen. */
+   if (fullscreen)
+      wl->ignore_configuration = false;
 
    if (!gfx_ctx_wl_set_video_mode_common_fullscreen(wl, fullscreen))
       goto error;
@@ -496,14 +531,14 @@ static void wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t t
    wl_callback_destroy(cb);
 }
 
-static const struct wl_callback_listener wl_surface_frame_listener = { 
+static const struct wl_callback_listener wl_surface_frame_listener = {
    .done = wl_surface_frame_done,
 };
 
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
-   struct wl_callback *cb; 
+   struct wl_callback *cb;
    gfx_ctx_wayland_data_t *wl     = (gfx_ctx_wayland_data_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
@@ -573,14 +608,14 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
    if (wl->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
-   if (string_is_equal(video_ident, "glcore"))
+   if (string_is_equal(video_ident, "glcore") || string_is_equal(video_ident, "gl"))
    {
+      if (string_is_equal(video_ident, "glcore"))
+      {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
-   }
-   else if (string_is_equal(video_ident, "gl"))
-   {
+      }
 #ifdef HAVE_GLSL
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
@@ -594,6 +629,26 @@ static void gfx_ctx_wl_set_flags(void *data, uint32_t flags)
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
       wl->core_hw_context_enable = true;
+}
+
+static bool gfx_ctx_wl_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return egl_create_surface(&wl->egl, (void*)wl->win);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_wl_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return egl_destroy_surface(&wl->egl);
+#else
+   return false;
+#endif
 }
 
 const gfx_ctx_driver_t gfx_ctx_wayland = {
@@ -632,4 +687,6 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_bind_hw_render,
    NULL,
    NULL,
+   gfx_ctx_wl_create_surface,
+   gfx_ctx_wl_destroy_surface
 };

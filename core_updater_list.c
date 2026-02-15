@@ -236,29 +236,28 @@ bool core_updater_list_get_filename(
       const char *remote_filename,
       const core_updater_list_entry_t **entry)
 {
-   size_t num_entries;
-   size_t i;
 
-   if (!core_list || !entry || string_is_empty(remote_filename))
-      return false;
-
-   num_entries = RBUF_LEN(core_list->entries);
-
-   if (num_entries < 1)
-      return false;
-
-   /* Search for specified filename */
-   for (i = 0; i < num_entries; i++)
+   if (core_list && entry && !string_is_empty(remote_filename))
    {
-      core_updater_list_entry_t *current_entry = &core_list->entries[i];
+      size_t num_entries = RBUF_LEN(core_list->entries);
 
-      if (string_is_empty(current_entry->remote_filename))
-         continue;
-
-      if (string_is_equal(remote_filename, current_entry->remote_filename))
+      if (num_entries >= 1)
       {
-         *entry = current_entry;
-         return true;
+         size_t i;
+         /* Search for specified filename */
+         for (i = 0; i < num_entries; i++)
+         {
+            core_updater_list_entry_t *current_entry = &core_list->entries[i];
+
+            if (string_is_empty(current_entry->remote_filename))
+               continue;
+
+            if (string_is_equal(remote_filename, current_entry->remote_filename))
+            {
+               *entry = current_entry;
+               return true;
+            }
+         }
       }
    }
 
@@ -583,20 +582,13 @@ static bool core_updater_list_set_core_info(
     *    *installed* cores...) */
    if ((core_info = core_info_get_core_updater_info(local_info_path)))
    {
-      /* display_name + is_experimental */
+      entry->is_experimental    = core_info->is_experimental;
+
+      /* display name */
       if (!string_is_empty(core_info->display_name))
-      {
          entry->display_name    = strdup(core_info->display_name);
-         entry->is_experimental = core_info->is_experimental;
-      }
       else
-      {
-         /* If display name is blank, use core filename and
-          * assume core is experimental (i.e. all 'fit for consumption'
-          * cores must have a valid/complete core info file) */
          entry->display_name    = strdup(filename_str);
-         entry->is_experimental = true;
-      }
 
       /* description */
       if (!string_is_empty(core_info->description))
@@ -613,11 +605,8 @@ static bool core_updater_list_set_core_info(
    }
    else
    {
-      /* If info file is missing, use core filename and
-       * assume core is experimental (i.e. all 'fit for consumption'
-       * cores must have a valid/complete core info file) */
+      /* If info file is missing, use core filename */
       entry->display_name       = strdup(filename_str);
-      entry->is_experimental    = true;
       entry->description        = strldup("", sizeof(""));
    }
 

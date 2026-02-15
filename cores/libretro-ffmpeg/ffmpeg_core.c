@@ -97,8 +97,13 @@ static unsigned sw_sws_threads;
 static video_buffer_t *video_buffer;
 static tpool_t *tpool;
 
-#define FFMPEG3 ((LIBAVUTIL_VERSION_INT < (56, 6, 100)) || \
+#ifndef FFMPEG3
+#define FFMPEG3 ((LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56, 6, 100)) || \
       (LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 10, 100)))
+#endif
+#ifndef FFMPEG8
+#define FFMPEG8 (LIBAVCODEC_VERSION_MAJOR >= 62)
+#endif
 
 #if ENABLE_HW_ACCEL
 static enum AVHWDeviceType hw_decoder;
@@ -125,6 +130,7 @@ static ASS_Track *ass_track[MAX_STREAMS];
 static uint8_t *ass_extra_data[MAX_STREAMS];
 static size_t ass_extra_data_size[MAX_STREAMS];
 static slock_t *ass_lock;
+static void render_ass_img(AVFrame *conv_frame, ASS_Image *img);
 #endif
 
 struct attachment
@@ -606,17 +612,38 @@ static void seek_frame(int seek_frames)
    slock_unlock(fifo_lock);
 }
 
+static int seek_adjust(int target)
+{
+   switch (target)
+   {
+      case   0: return  10; /* The logic is kind of */
+      case  10: return  30; /* silly on the face of */
+      case  30: return  60; /* it, but we needed a */
+      case  60: return  90; /* strong seek to get to */
+      case  90: return 300; /* the middle or end of */
+      case 300: return 310; /* a long film; the result */
+      case 310: return 330; /* is this block which is */
+      case 330: return 360; /* used to adjust the seek */
+      case 360: return 390; /* strength without using */
+      case 390: return  10; /* multiple variables. */
+   }
+}
+
 void CORE_PREFIX(retro_run)(void)
 {
    static bool last_left;
    static bool last_right;
    static bool last_up;
    static bool last_down;
-   static bool last_l;
-   static bool last_r;
+   static bool last_l1;
+   static bool last_l2;
+   static bool last_r1;
+   static bool last_r2;
+   static int seek_l2;
+   static int seek_r2;
    double min_pts;
    int16_t audio_buffer[media.sample_rate / 20];
-   bool left, right, up, down, l, r;
+   bool left, right, up, down, l1, l2, r1, r2;
    int16_t ret                  = 0;
    size_t to_read_frames        = 0;
    int seek_frames              = 0;
@@ -660,35 +687,54 @@ void CORE_PREFIX(retro_run)(void)
    }
 
    if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP))
-      ret |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+      ret |= (1 << RETRO_DEVICE_ID_JOYPAD_R);
    if (CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN))
-      ret |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+      ret |= (1 << RETRO_DEVICE_ID_JOYPAD_L);
 
    left  = ret & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
    right = ret & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
    up    = ret & (1 << RETRO_DEVICE_ID_JOYPAD_UP);
    down  = ret & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
-   l     = ret & (1 << RETRO_DEVICE_ID_JOYPAD_L);
-   r     = ret & (1 << RETRO_DEVICE_ID_JOYPAD_R);
+   l1     = ret & (1 << RETRO_DEVICE_ID_JOYPAD_L);
+   l2     = ret & (1 << RETRO_DEVICE_ID_JOYPAD_L2);
+   r1     = ret & (1 << RETRO_DEVICE_ID_JOYPAD_R);
+   r2     = ret & (1 << RETRO_DEVICE_ID_JOYPAD_R2);
 
-   if (left && !last_left)
-      seek_frames -= 10 * media.interpolate_fps;
-   if (right && !last_right)
-      seek_frames += 10 * media.interpolate_fps;
-   if (up && !last_up)
-      seek_frames += 60 * media.interpolate_fps;
-   if (down && !last_down)
-      seek_frames -= 60 * media.interpolate_fps;
+   if (l1 && !last_l1)
+   {
+      seek_frames -= 30 * media.interpolate_fps;
+      seek_l2 = 0;
+   }
+   if (r1 && !last_r1)
+   {
+      seek_frames += 30 * media.interpolate_fps;
+      seek_l2 = 0;
+   }
 
-   if (l && !last_l && audio_streams_num > 0)
+   if (l2 && !last_l2)
+   {
+      seek_l2 = seek_adjust(seek_l2);
+      seek_frames -= seek_l2 * media.interpolate_fps;
+   }
+
+   if (r2 && !last_r2)
+   {
+      seek_r2 = seek_adjust(seek_r2);
+      seek_frames += seek_r2 * media.interpolate_fps;
+   }
+
+   if (((up && !last_up) || (down && !last_down)) && audio_streams_num > 0)
    {
       char msg[256];
       struct retro_message_ext msg_obj = {0};
+      int adjustment = (up) ? (+1) : ((down) ? (-1) : (0));
+
+      seek_l2 = 0;
 
       msg[0] = '\0';
 
       slock_lock(decode_thread_lock);
-      audio_streams_ptr = (audio_streams_ptr + 1) % audio_streams_num;
+      audio_streams_ptr = (((audio_streams_ptr + adjustment) % audio_streams_num) + audio_streams_num) % audio_streams_num;
       slock_unlock(decode_thread_lock);
 
       snprintf(msg, sizeof(msg), "Audio Track #%d.", audio_streams_ptr);
@@ -702,18 +748,25 @@ void CORE_PREFIX(retro_run)(void)
       msg_obj.progress = -1;
       CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg_obj);
    }
-   else if (r && !last_r && subtitle_streams_num > 0)
+
+   if (((right && !last_right) || (left && !last_left)) && subtitle_streams_num > 0)
    {
       char msg[256];
       struct retro_message_ext msg_obj = {0};
+      int adjustment = (right) ? (+1) : ((left) ? (-1) : (0));
+
+      seek_l2 = 0;
 
       msg[0] = '\0';
 
       slock_lock(decode_thread_lock);
-      subtitle_streams_ptr = (subtitle_streams_ptr + 1) % subtitle_streams_num;
+      subtitle_streams_ptr = (((subtitle_streams_ptr + adjustment) % (subtitle_streams_num + 1)) + (subtitle_streams_num + 1)) % (subtitle_streams_num + 1);
       slock_unlock(decode_thread_lock);
 
-      snprintf(msg, sizeof(msg), "Subtitle Track #%d.", subtitle_streams_ptr);
+      if(subtitle_streams_ptr)
+         snprintf(msg, sizeof(msg), "Subtitle Track #%d.", subtitle_streams_ptr - 1);
+      else
+         snprintf(msg, sizeof(msg), "Subtitles Disabled.");
 
       msg_obj.msg      = msg;
       msg_obj.duration = 3000;
@@ -729,8 +782,10 @@ void CORE_PREFIX(retro_run)(void)
    last_right = right;
    last_up    = up;
    last_down  = down;
-   last_l     = l;
-   last_r     = r;
+   last_l1     = l1;
+   last_l2     = l2;
+   last_r1     = r1;
+   last_r2     = r2;
 
    if (reset_triggered)
    {
@@ -834,6 +889,19 @@ void CORE_PREFIX(retro_run)(void)
                video_buffer_get_finished_slot(video_buffer, &ctx);
                pts                          = ctx->pts;
 
+#ifdef HAVE_SSA
+               double video_time = ctx->pts * av_q2d(fctx->streams[video_stream_index]->time_base);
+               slock_lock(ass_lock);
+               if (ass_render && ctx->ass_track_active)
+               {
+                  int change     = 0;
+                  ASS_Image *img = ass_render_frame(ass_render, ctx->ass_track_active,
+                     1000 * video_time, &change);
+                  render_ass_img(ctx->target, img);
+               }
+               slock_unlock(ass_lock);
+#endif
+
 #ifdef HAVE_OPENGLES
                data                         = video_frame_temp_buffer;
 #else
@@ -854,6 +922,7 @@ void CORE_PREFIX(retro_run)(void)
 #ifndef HAVE_OPENGLES
                glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 #endif
+
                glBindTexture(GL_TEXTURE_2D, frames[1].tex);
 #if defined(HAVE_OPENGLES)
                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
@@ -988,12 +1057,15 @@ static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
                                     const enum AVHWDeviceType type,
                                     const enum AVPixelFormat *pix_fmts)
 {
+#if !FFMPEG3
+   int i;
+#endif
    int ret = 0;
    enum AVPixelFormat decoder_pix_fmt = AV_PIX_FMT_NONE;
    const AVCodec *codec = avcodec_find_decoder(fctx->streams[video_stream_index]->codecpar->codec_id);
 
 #if !FFMPEG3
-   for (int i = 0;; i++)
+   for (i = 0;; i++)
    {
       const AVCodecHWConfig *config = avcodec_get_hw_config(codec, i);
       if (!config)
@@ -1205,6 +1277,7 @@ static bool codec_id_is_ass(enum AVCodecID id)
    {
       case AV_CODEC_ID_ASS:
       case AV_CODEC_ID_SSA:
+      case AV_CODEC_ID_SUBRIP:
          return true;
       default:
          break;
@@ -1330,7 +1403,7 @@ static bool init_media_info(void)
          media.duration.hours   = 0;
          media.duration.minutes = 0;
          media.duration.seconds = 0;
-         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not determine media duration\n");
+         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not determine media duration.\n");
       }
    }
 
@@ -1486,19 +1559,6 @@ static void sws_worker_thread(void *arg)
    }
 
    ctx->pts = ctx->source->best_effort_timestamp;
-
-#ifdef HAVE_SSA
-   double video_time = ctx->pts * av_q2d(fctx->streams[video_stream_index]->time_base);
-   slock_lock(ass_lock);
-   if (ass_render && ctx->ass_track_active)
-   {
-      int change     = 0;
-      ASS_Image *img = ass_render_frame(ass_render, ctx->ass_track_active,
-            1000 * video_time, &change);
-      render_ass_img(ctx->target, img);
-   }
-   slock_unlock(ass_lock);
-#endif
 
    av_frame_unref(ctx->source);
 #if ENABLE_HW_ACCEL
@@ -1689,11 +1749,11 @@ static void decode_thread_seek(double time)
       avcodec_flush_buffers(actx[audio_streams_ptr]);
    if (vctx)
       avcodec_flush_buffers(vctx);
-   if (sctx[subtitle_streams_ptr])
-      avcodec_flush_buffers(sctx[subtitle_streams_ptr]);
+   if (subtitle_streams_ptr && sctx[subtitle_streams_ptr - 1])
+      avcodec_flush_buffers(sctx[subtitle_streams_ptr - 1]);
 #ifdef HAVE_SSA
-   if (ass_track[subtitle_streams_ptr])
-      ass_flush_events(ass_track[subtitle_streams_ptr]);
+   if (subtitle_streams_ptr && ass_track[subtitle_streams_ptr - 1])
+      ass_flush_events(ass_track[subtitle_streams_ptr - 1]);
 #endif
 }
 
@@ -1805,11 +1865,11 @@ static void decode_thread(void *data)
       slock_lock(decode_thread_lock);
       audio_stream_index          = audio_streams[audio_streams_ptr];
       audio_stream_ptr            = audio_streams_ptr;
-      subtitle_stream             = subtitle_streams[subtitle_streams_ptr];
+      subtitle_stream             = subtitle_streams_ptr ? subtitle_streams[subtitle_streams_ptr - 1] : 0;
       actx_active                 = actx[audio_streams_ptr];
-      sctx_active                 = sctx[subtitle_streams_ptr];
+      sctx_active                 = subtitle_streams_ptr ? sctx[subtitle_streams_ptr - 1] : 0;
 #ifdef HAVE_SSA
-      ass_track_active            = ass_track[subtitle_streams_ptr];
+      ass_track_active            = subtitle_streams_ptr ? ass_track[subtitle_streams_ptr - 1] : 0;
 #endif
       audio_timebase = av_q2d(fctx->streams[audio_stream_index]->time_base);
       if (video_stream_index >= 0)
@@ -1902,13 +1962,26 @@ static void decode_thread(void *data)
                break;
             }
          }
+         log_cb(RETRO_LOG_DEBUG, "[FFMPEG] [ASS] Decoded subtitle packet, num_rects=%d, pkt->pts=%lld, pkt->duration=%lld, sub.start=%u, sub.end=%u\n", 
+            sub.num_rects, (long long)pkt->pts, (long long)pkt->duration, sub.start_display_time, sub.end_display_time);
 #ifdef HAVE_SSA
          for (i = 0; i < sub.num_rects; i++)
          {
             slock_lock(ass_lock);
+            ass_flush_events(ass_track_active);
             if (sub.rects[i]->ass && ass_track_active)
-               ass_process_data(ass_track_active,
-                     sub.rects[i]->ass, strlen(sub.rects[i]->ass));
+            {
+               char dialogue_line[4096];
+               
+               /* Convert packet timing from stream timebase to milliseconds */
+               double timebase_ms = av_q2d(fctx->streams[subtitle_stream]->time_base) * 1000.0;
+               long long start_time = (long long)((pkt->pts >= 0 ? pkt->pts : 0) * timebase_ms) + sub.start_display_time;
+               long long duration = (long long)(pkt->duration > 0 ? (pkt->duration * timebase_ms) : (sub.end_display_time - sub.start_display_time));
+               
+               snprintf(dialogue_line, sizeof(dialogue_line), "Dialogue: %s", sub.rects[i]->ass);
+               
+               ass_process_chunk(ass_track_active, dialogue_line, strlen(dialogue_line), start_time, duration);
+            }
             slock_unlock(ass_lock);
          }
 #endif
@@ -2088,17 +2161,28 @@ void CORE_PREFIX(retro_unload_game)(void)
 
    for (i = 0; i < MAX_STREAMS; i++)
    {
+#if FFMPEG8
+      if (sctx[i])
+         avcodec_free_context(&sctx[i]);
+      if (actx[i])
+         avcodec_free_context(&actx[i]);
+#else
       if (sctx[i])
          avcodec_close(sctx[i]);
       if (actx[i])
          avcodec_close(actx[i]);
+#endif
       sctx[i] = NULL;
       actx[i] = NULL;
    }
 
    if (vctx)
    {
+#if FFMPEG8
+      avcodec_free_context(&vctx);
+#else
       avcodec_close(vctx);
+#endif
       vctx = NULL;
    }
 
@@ -2142,12 +2226,14 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
 
    struct retro_input_descriptor desc[] = {
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "Seek -10 seconds" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "Seek +60 seconds" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "Seek -60 seconds" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "Seek +10 seconds" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "Cycle Audio Track" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R, "Cycle Subtitle Track" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "Decrement Subtitle Index" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "Increment Subtitle Index" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "Increment Audio Index" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "Decrement Audio Index" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "Seek -60 seconds" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,     "Seek +60 seconds" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,     "Seek Decrementally" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,     "Seek Incrementally" },
 
       { 0 },
    };
@@ -2161,7 +2247,7 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    if (!CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Cannot set pixel format.");
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Cannot set pixel format.\n");
       goto error;
    }
 
@@ -2192,13 +2278,13 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    if (!open_codecs())
    {
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to find codec.");
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to find codec.\n");
       goto error;
    }
 
    if (!init_media_info())
    {
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to init media info.");
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Failed to init media info.\n");
       goto error;
    }
 
@@ -2273,13 +2359,62 @@ bool CORE_PREFIX(retro_load_game_special)(unsigned type, const struct retro_game
    return false;
 }
 
+typedef struct
+{
+   uint64_t frame_cnt;
+   int audio_streams_ptr;
+   int subtitle_streams_ptr;
+} serialized_data;
+
 size_t CORE_PREFIX(retro_serialize_size)(void)
 {
-   return 0;
+   return sizeof(serialized_data);
 }
 
-bool CORE_PREFIX(retro_serialize)(void *data, size_t len) { return false; }
-bool CORE_PREFIX(retro_unserialize)(const void *data, size_t len) { return false; }
+bool CORE_PREFIX(retro_serialize)(void *data, size_t len)
+{
+   serialized_data info;
+
+   slock_lock(decode_thread_lock);
+   info.frame_cnt = frame_cnt;
+   info.audio_streams_ptr = audio_streams_ptr;
+   info.subtitle_streams_ptr = subtitle_streams_ptr;
+   slock_unlock(decode_thread_lock);
+
+   if (sizeof(serialized_data) <= len)
+   {
+      memcpy(data, &info, sizeof(serialized_data));
+
+      return true;
+   }
+
+   return false;
+}
+
+bool CORE_PREFIX(retro_unserialize)(const void *data, size_t len)
+{
+   serialized_data info;
+   info.frame_cnt = 0;
+   info.audio_streams_ptr = 0;
+   info.subtitle_streams_ptr = 0;
+
+   if (sizeof(serialized_data) <= len)
+   {
+      memcpy(&info, data, sizeof(serialized_data));
+
+      slock_lock(decode_thread_lock);
+      audio_streams_ptr = info.audio_streams_ptr;
+      subtitle_streams_ptr = info.subtitle_streams_ptr;
+      slock_unlock(decode_thread_lock);
+
+      seek_frame(info.frame_cnt - frame_cnt);
+
+      return true;
+   }
+
+   return false;
+}
+
 void *CORE_PREFIX(retro_get_memory_data)(unsigned id) { return NULL; }
 size_t CORE_PREFIX(retro_get_memory_size)(unsigned id) { return 0; }
 void CORE_PREFIX(retro_cheat_reset)(void) { }

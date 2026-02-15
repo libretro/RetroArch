@@ -113,7 +113,7 @@ static void find_and_set_first_file(char *s, size_t len,
    }
 
    fill_pathname_join(s, g_defaults.dirs[DEFAULT_DIR_CORE], first_file, len);
-   RARCH_LOG("libretro_path now set to: %s.\n", s);
+   RARCH_LOG("libretro_path now set to: \"%s\".\n", s);
 }
 
 static void salamander_init(char *s, size_t len)
@@ -186,7 +186,7 @@ static void salamander_init(char *s, size_t len)
       }
    }
    else
-      RARCH_LOG("Start [%s] found in %s.\n", s,
+      RARCH_LOG("Start \"%s\" found in \"%s\".\n", s,
             FILE_PATH_SALAMANDER_CONFIG);
 }
 

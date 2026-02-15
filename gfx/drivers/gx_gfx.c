@@ -74,6 +74,9 @@
   }
 #endif
 
+void VIDEO_SetTrapFilter(bool enable);
+void VIDEO_SetGamma(int gamma);
+
 enum
 {
    GX_RESOLUTIONS_DEFAULT = 0,
@@ -582,7 +585,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    VIDEO_Flush();
    VIDEO_WaitVSync();
 
-   RARCH_LOG("[GX]: Resolution: %dx%d (%s)\n", gx_mode.fbWidth,
+   RARCH_LOG("[GX] Resolution: %dx%d (%s).\n", gx_mode.fbWidth,
          gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE
          ? "interlaced" : "progressive");
 
@@ -728,7 +731,7 @@ static void init_vtx(gx_video_t *gx, const video_info_t *video,
 
    if (gx->scale != video->input_scale || gx->rgb32 != video->rgb32)
    {
-      RARCH_LOG("[GX]: Reallocate texture.\n");
+      RARCH_LOG("[GX] Reallocate texture.\n");
       free(g_tex.data);
       g_tex.data = memalign(32,
             RARCH_SCALE_BASE * RARCH_SCALE_BASE * video->input_scale *
@@ -737,13 +740,13 @@ static void init_vtx(gx_video_t *gx, const video_info_t *video,
 
       if (!g_tex.data)
       {
-         RARCH_ERR("[GX]: Error allocating video texture\n");
+         RARCH_ERR("[GX] Error allocating video texture.\n");
          exit(1);
       }
    }
 
-   DCFlushRange(g_tex.data, ((g_tex.width *
-         g_tex.height) * video->rgb32) ? 4 : 2);
+   DCFlushRange(g_tex.data, g_tex.width * g_tex.height *
+            (video->rgb32 ? 4 : 2));
 
    gx->rgb32 = video->rgb32;
    gx->scale = video->input_scale;
@@ -1311,8 +1314,9 @@ static const video_poke_interface_t gx_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void gx_get_poke_interface(void *data,

@@ -142,7 +142,7 @@ struct playlist_entry
    unsigned last_played_minute;
    unsigned last_played_second;
    enum playlist_runtime_status runtime_status;
-   enum playlist_thumbnail_name_flags thumbnail_flags;
+   int thumbnail_flags;
 };
 
 /* Holds all configuration parameters required

@@ -36,8 +36,9 @@ static bool allocate_frames(struct scaler_ctx *ctx)
    ctx->scaled.stride     = ((ctx->out_width + 7) & ~7) * sizeof(uint64_t);
    ctx->scaled.width      = ctx->out_width;
    ctx->scaled.height     = ctx->in_height;
-   scaled_frame           = (uint64_t*)calloc(sizeof(uint64_t),
-            (ctx->scaled.stride * ctx->scaled.height) >> 3);
+   scaled_frame           = (uint64_t*)calloc(
+            (ctx->scaled.stride * ctx->scaled.height) >> 3,
+            sizeof(uint64_t));
 
    if (!scaled_frame)
       return false;
@@ -48,8 +49,9 @@ static bool allocate_frames(struct scaler_ctx *ctx)
    {
       uint32_t *input_frame = NULL;
       ctx->input.stride     = ((ctx->in_width + 7) & ~7) * sizeof(uint32_t);
-      input_frame           = (uint32_t*)calloc(sizeof(uint32_t),
-               (ctx->input.stride * ctx->in_height) >> 2);
+      input_frame           = (uint32_t*)calloc(
+               (ctx->input.stride * ctx->in_height) >> 2,
+               sizeof(uint32_t));
 
       if (!input_frame)
          return false;
@@ -62,8 +64,9 @@ static bool allocate_frames(struct scaler_ctx *ctx)
       uint32_t *output_frame = NULL;
       ctx->output.stride     = ((ctx->out_width + 7) & ~7) * sizeof(uint32_t);
 
-      output_frame           = (uint32_t*)calloc(sizeof(uint32_t),
-               (ctx->output.stride * ctx->out_height) >> 2);
+      output_frame           = (uint32_t*)calloc(
+               (ctx->output.stride * ctx->out_height) >> 2,
+               sizeof(uint32_t));
 
       if (!output_frame)
          return false;

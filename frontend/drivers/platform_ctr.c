@@ -61,6 +61,9 @@
 #endif
 #endif
 
+#include "../../audio/audio_driver.h"
+#include "../../menu/menu_entries.h"
+
 static enum frontend_fork ctr_fork_mode = FRONTEND_FORK_NONE;
 static const char* elf_path_cst         = "sdmc:/retroarch/retroarch.3dsx";
 
@@ -138,6 +141,12 @@ static void frontend_ctr_get_env(int* argc, char* argv[],
    dir_check_defaults("custom.ini");
 #endif
 }
+
+#ifdef USE_CTRULIB_2
+u8* gfxTopLeftFramebuffers[2];
+u8* gfxTopRightFramebuffers[2];
+u8* gfxBottomFramebuffers[2];
+#endif
 
 static void frontend_ctr_deinit(void* data)
 {
@@ -243,10 +252,10 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       /* couldnt launch new core, but context
          is corrupt so we have to quit */
       {
-         char error[PATH_MAX + 32];
-         size_t _len = strlcpy(error, "Can't launch core: ", sizeof(error));
-         strlcpy(error + _len, path, sizeof(error) - _len);
-         error_and_quit(error);
+         char err[PATH_MAX + 32];
+         size_t _len = strlcpy(err, "Can't launch core: ", sizeof(err));
+         strlcpy(err + _len, path, sizeof(err) - _len);
+         error_and_quit(err);
       }
    }
 }
@@ -371,10 +380,6 @@ __attribute__((weak)) u32 __ctr_patch_services;
 void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id);
 
 #ifdef USE_CTRULIB_2
-u8* gfxTopLeftFramebuffers[2];
-u8* gfxTopRightFramebuffers[2];
-u8* gfxBottomFramebuffers[2];
-
 void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id)
 {
    if (screen==GFX_TOP)
@@ -474,33 +479,6 @@ static void frontend_ctr_init(void* data)
    ptmuInit();
    mcuHwcInit();
 #endif
-}
-
-static int frontend_ctr_get_rating(void)
-{
-   u8 device_model = 0xFF;
-
-   /*(0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL)*/
-   CFGU_GetSystemModel(&device_model);
-
-   switch (device_model)
-   {
-      case 0:
-      case 1:
-      case 3:
-         /*Old 3/2DS*/
-         return 3;
-      case 2:
-      case 4:
-      case 5:
-         /*New 3/2DS*/
-         return 6;
-      default:
-         /*Unknown Device Or Check Failed*/
-         break;
-   }
-
-   return -1;
 }
 
 enum frontend_architecture frontend_ctr_get_arch(void)
@@ -637,7 +615,6 @@ frontend_ctx_driver_t frontend_ctx_ctr =
    frontend_ctr_shutdown,        /* shutdown                       */
    frontend_ctr_get_name,        /* get_name                       */
    frontend_ctr_get_os,          /* get_os                         */
-   frontend_ctr_get_rating,      /* get_rating                     */
    NULL,                         /* load_content                   */
    frontend_ctr_get_arch,        /* get_architecture               */
    frontend_ctr_get_powerstate,  /* get_powerstate                 */

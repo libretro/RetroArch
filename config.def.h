@@ -34,6 +34,7 @@
 
 /* Required for 3DS display mode setting */
 #if defined(_3DS)
+#include <3ds.h>
 #include "gfx/common/ctr_defines.h"
 #endif
 
@@ -83,7 +84,7 @@
 
 #define DEFAULT_TOUCH_SCALE 1
 
-#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(EMSCRIPTEN)
+#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(EMSCRIPTEN) || defined (VITA)
 #define DEFAULT_POINTER_ENABLE true
 #else
 #define DEFAULT_POINTER_ENABLE false
@@ -156,6 +157,7 @@
  * > Helps to unify menu appearance when viewing
  *   thumbnails of different sizes */
 #define DEFAULT_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE true
+#define DEFAULT_MENU_THUMBNAIL_BACKGROUND_ENABLE false
 
 #define DEFAULT_SCREEN_BRIGHTNESS 100
 
@@ -166,6 +168,8 @@
 #define DEFAULT_CRT_SWITCH_CENTER_ADJUST 0
 
 #define DEFAULT_CRT_SWITCH_PORCH_ADJUST 0
+
+#define DEFAULT_CRT_SWITCH_VERTICAL_ADJUST 0
 
 #define DEFAULT_CRT_SWITCH_HIRES_MENU true
 
@@ -330,7 +334,6 @@
 #else
 #define DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN true
 #endif
-#define DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING false
 
 /* Specifies whether cores are allowed to
  * present core options in category submenus */
@@ -486,14 +489,14 @@
 /* Choose if the screen will be able to write around the notch or not */
 #define DEFAULT_NOTCH_WRITE_OVER_ENABLE false
 
-/* Enable use of shaders. */
-#ifdef RARCH_CONSOLE
-#define DEFAULT_SHADER_ENABLE true
-#else
-#define DEFAULT_SHADER_ENABLE false
+#ifdef __APPLE__
+#define DEFAULT_USE_METAL_ARG_BUFFERS (!!__builtin_available(macOS 12, iOS 13, tvOS 12, *))
 #endif
 
-/* Should we enable hdr when its supported*/
+/* Enable use of shaders */
+#define DEFAULT_SHADER_ENABLE true
+
+/* Should we enable hdr when its supported */
 #define DEFAULT_VIDEO_HDR_ENABLE false
 
 /* The maximum nunmber of nits the actual display can show - needs to be calibrated */
@@ -502,11 +505,14 @@
 /* The number of nits that paper white is at */
 #define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
 
-/* The contrast setting for hdr used to calculate the display gamma by dividing this value by gamma 2.2  */
-#define DEFAULT_VIDEO_HDR_CONTRAST 5.0f
-
 /* Should we expand the colour gamut when using hdr */
-#define DEFAULT_VIDEO_HDR_EXPAND_GAMUT true
+#define DEFAULT_VIDEO_HDR_EXPAND_GAMUT 0
+
+/* Enable a basic HDR scanline implementation which is the main reason for using HDR in RetroArch */
+#define DEFAULT_VIDEO_HDR_SCANLINES true
+
+/* Default to the largely standard RGB layout */
+#define DEFAULT_VIDEO_HDR_SUBPIXEL_LAYOUT 0
 
 /* When presets are saved they will be saved using the #reference
  * directive by default */
@@ -569,6 +575,7 @@
 #define DEFAULT_REMAP_SAVE_ON_EXIT true
 
 #define DEFAULT_SHOW_HIDDEN_FILES false
+#define DEFAULT_CORE_SUGGEST_ALWAYS false
 
 /* Initialise file browser with the last used start directory */
 #define DEFAULT_USE_LAST_START_DIRECTORY false
@@ -581,7 +588,7 @@
  * controller is connected in port 1 */
 #define DEFAULT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED false
 
-#define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR true
+#define DEFAULT_OVERLAY_SHOW_MOUSE_CURSOR false
 
 #define DEFAULT_DISPLAY_KEYBOARD_OVERLAY false
 
@@ -636,6 +643,7 @@
 #define DEFAULT_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG false
 #define DEFAULT_INPUT_OVERLAY_MOUSE_DTAP_MSEC 200
 #define DEFAULT_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD 1.0f
+#define DEFAULT_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT OVERLAY_MOUSE_BTN_NONE
 
 #ifdef UDEV_TOUCH_SUPPORT
 #define DEFAULT_INPUT_TOUCH_VMOUSE_POINTER true
@@ -658,9 +666,20 @@
 #ifdef HAVE_OZONE
 /* Ozone colour theme: 1 == Basic Black */
 #define DEFAULT_OZONE_COLOR_THEME 1
+#define DEFAULT_OZONE_PADDING_FACTOR 1.0f
+#define DEFAULT_OZONE_HEADER_ICON 1
+#define DEFAULT_OZONE_HEADER_SEPARATOR 1
 #define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
 #define DEFAULT_OZONE_SCROLL_CONTENT_METADATA false
 #define DEFAULT_OZONE_THUMBNAIL_SCALE_FACTOR 1.0f
+#define DEFAULT_OZONE_FONT_SCALE 0
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_GLOBAL 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_TITLE 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_SIDEBAR 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_LABEL 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_SUBLABEL 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_TIME 1.0f
+#define DEFAULT_OZONE_FONT_SCALE_FACTOR_FOOTER 1.0f
 #endif
 
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
@@ -691,6 +710,7 @@
 #define DEFAULT_SETTINGS_SHOW_USER true
 #define DEFAULT_SETTINGS_SHOW_DIRECTORY true
 #define DEFAULT_SETTINGS_SHOW_STEAM true
+#define DEFAULT_SETTINGS_SHOW_SMB_CLIENT true
 
 #define DEFAULT_QUICK_MENU_SHOW_RESUME_CONTENT true
 #define DEFAULT_QUICK_MENU_SHOW_RESTART_CONTENT true
@@ -748,10 +768,6 @@
 #ifdef HAVE_MIST
 #define DEFAULT_MENU_SHOW_CORE_MANAGER_STEAM true
 #endif
-#if 0
-/* Thumbnailpack removal */
-#define DEFAULT_MENU_SHOW_LEGACY_THUMBNAIL_UPDATER false
-#endif
 #define DEFAULT_MENU_SHOW_SUBLABELS true
 #define DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE true
 #define DEFAULT_MENU_SCROLL_FAST false
@@ -793,6 +809,7 @@
 #define DEFAULT_CONTENT_SHOW_SETTINGS true
 #define DEFAULT_CONTENT_SHOW_HISTORY true
 #define DEFAULT_CONTENT_SHOW_FAVORITES true
+#define DEFAULT_CONTENT_SHOW_FAVORITES_FIRST false
 #ifdef HAVE_IMAGEVIEWER
 #define DEFAULT_CONTENT_SHOW_IMAGES true
 #endif
@@ -808,7 +825,7 @@
 #endif
 #endif
 
-#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB
+#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
 
 #define DEFAULT_CONTENT_SHOW_PLAYLISTS true
 #define DEFAULT_CONTENT_SHOW_PLAYLIST_TABS true
@@ -823,7 +840,8 @@
 #define DEFAULT_XMB_VERTICAL_FADE_FACTOR           100
 #define DEFAULT_XMB_SHOW_TITLE_HEADER              true
 #define DEFAULT_XMB_SWITCH_ICONS                   true
-#define DEFAULT_XMB_TITLE_MARGIN                   5
+#define DEFAULT_XMB_CURRENT_MENU_ICON              1
+#define DEFAULT_XMB_TITLE_MARGIN                   3
 #define DEFAULT_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET 0
 #define MAXIMUM_XMB_TITLE_MARGIN                   12
 #define DEFAULT_XMB_ALPHA_FACTOR                   90
@@ -851,7 +869,7 @@
 #define DEFAULT_MENU_FOOTER_OPACITY 1.000f
 #define DEFAULT_MENU_HEADER_OPACITY 1.000f
 
-#if defined(HAVE_OPENGLES2) || (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
+#if (defined(HAVE_OPENGLES2) && !defined(EMSCRIPTEN)) || (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
 #define DEFAULT_MENU_SHADER_PIPELINE 1
 #else
 #define DEFAULT_MENU_SHADER_PIPELINE 2
@@ -945,12 +963,10 @@
 #define DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY 80
 #define DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY 50
 
-#if defined(ANDROID) || defined(_WIN32) || defined(HAVE_STEAM) || TARGET_OS_TV
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
-#else
-#define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS false
-#endif
 #define DEFAULT_MENU_SWAP_SCROLL_BUTTONS false
+#define DEFAULT_MENU_SINGLECLICK_PLAYLISTS false
+#define DEFAULT_MENU_ALLOW_TABS_BACK true
 
 #if defined(WIIU)
 #define DEFAULT_ALL_USERS_CONTROL_MENU true
@@ -958,10 +974,11 @@
 #define DEFAULT_ALL_USERS_CONTROL_MENU false
 #endif
 
-#define DEFAULT_QUIT_PRESS_TWICE true
+#define DEFAULT_CONFIRM_QUIT true
+#define DEFAULT_CONFIRM_CLOSE true
+#define DEFAULT_CONFIRM_RESET true
 
 #define DEFAULT_LOG_TO_FILE false
-
 #define DEFAULT_LOG_TO_FILE_TIMESTAMP false
 
 /* Crop overscanned frames. */
@@ -995,8 +1012,14 @@
  * rather than raw game output. */
 #define DEFAULT_POST_FILTER_RECORD false
 
+/* Screenshots named automatically. */
+#define DEFAULT_AUTO_SCREENSHOT_FILENAME true
+
 /* Screenshots post-shaded GPU output if available. */
-#define DEFAULT_GPU_SCREENSHOT true
+#define DEFAULT_GPU_SCREENSHOT false
+
+/* Record post-shaded GPU output instead of raw game footage if available. */
+#define DEFAULT_GPU_RECORD false
 
 /* Watch shader files for changes and auto-apply as necessary. */
 #define DEFAULT_VIDEO_SHADER_WATCH_FILES false
@@ -1004,12 +1027,6 @@
 /* Initialise file browser with last used directory
  * when selecting shader presets/passes via the menu */
 #define DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR false
-
-/* Screenshots named automatically. */
-#define DEFAULT_AUTO_SCREENSHOT_FILENAME true
-
-/* Record post-shaded GPU output instead of raw game footage if available. */
-#define DEFAULT_GPU_RECORD false
 
 /* OSD-messages. */
 #define DEFAULT_FONT_ENABLE true
@@ -1174,7 +1191,7 @@
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(EMSCRIPTEN) || defined(RETROFW) || defined(MIYOO)
+#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && defined(HAVE_AL))
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #define DEFAULT_IN_LATENCY 128
@@ -1289,11 +1306,7 @@
 #endif
 
 /* Pause gameplay when window loses focus. */
-#if defined(EMSCRIPTEN)
-#define DEFAULT_PAUSE_NONACTIVE false
-#else
 #define DEFAULT_PAUSE_NONACTIVE true
-#endif
 
 /* Pause gameplay when controller disconnects. */
 #define DEFAULT_PAUSE_ON_DISCONNECT false
@@ -1340,8 +1353,6 @@
 #define DEFAULT_NETPLAY_CLIENT_SWAP_INPUT true
 
 #define DEFAULT_NETPLAY_NAT_TRAVERSAL false
-
-#define DEFAULT_NETPLAY_DELAY_FRAMES 16
 
 #define DEFAULT_NETPLAY_CHECK_FRAMES 600
 
@@ -1394,6 +1405,11 @@
 /* Specifies how often checkpoints will be saved to replay files during recording.
  * > Setting value to zero disables recording checkpoints. */
 #define DEFAULT_REPLAY_CHECKPOINT_INTERVAL 0
+/* Specifies whether checkpoints in replay files should be loaded
+ * during playback.  This can be helpful for cores that are not
+ * deterministic but in some cores produces janky results depending on
+ * when inputs are processed. */
+#define DEFAULT_REPLAY_CHECKPOINT_DESERIALIZE true
 
 /* Automatically saves a savestate at the end of RetroArch's lifetime.
  * The path is $SRAM_PATH.auto.
@@ -1402,7 +1418,12 @@
 #define DEFAULT_SAVESTATE_AUTO_SAVE false
 #define DEFAULT_SAVESTATE_AUTO_LOAD false
 
+/* Take screenshots for save states */
+#if defined(__x86_64__)
+#define DEFAULT_SAVESTATE_THUMBNAIL_ENABLE true
+#else
 #define DEFAULT_SAVESTATE_THUMBNAIL_ENABLE false
+#endif
 
 /* When creating save (srm) files, compress
  * written data */
@@ -1504,7 +1525,7 @@
 #define DEFAULT_PLAYLIST_SHOW_SUBLABELS true
 #endif
 
-#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_MAIN
+#define DEFAULT_PLAYLIST_SHOW_HISTORY_ICONS PLAYLIST_SHOW_HISTORY_ICONS_CONTENT
 
 /* Show the indices of playlist entries in
  * a menu-driver-specific fashion */
@@ -1610,6 +1631,11 @@
  * resuming content */
 #define DEFAULT_INPUT_AUTO_GAME_FOCUS AUTO_GAME_FOCUS_OFF
 
+/* Make simultaneous buttons easier to hit on Android */
+#if defined(ANDROID)
+#define DEFAULT_INPUT_BLOCK_TIMEOUT 1
+#endif
+
 /* Show the input descriptors set by the core instead
  * of the default ones. */
 #define DEFAULT_INPUT_DESCRIPTOR_LABEL_SHOW true
@@ -1622,10 +1648,15 @@
 #endif
 
 #define DEFAULT_INPUT_BIND_TIMEOUT 3
+#if defined(ANDROID)
+#define DEFAULT_INPUT_BIND_HOLD 1
+#else
 #define DEFAULT_INPUT_BIND_HOLD 0
+#endif
 #define DEFAULT_INPUT_POLL_TYPE_BEHAVIOR 2
 #define DEFAULT_INPUT_HOTKEY_BLOCK_DELAY 5
 #define DEFAULT_INPUT_HOTKEY_DEVICE_MERGE false
+#define DEFAULT_INPUT_HOTKEY_FOLLOWS_PLAYER1 false
 
 #define DEFAULT_GFX_THUMBNAILS_DEFAULT 3
 
@@ -1646,6 +1677,7 @@
 #define DEFAULT_MENU_TIMEDATE_STYLE          MENU_TIMEDATE_STYLE_DDMM_HM
 #define DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 #define DEFAULT_MENU_REMEMBER_SELECTION      MENU_REMEMBER_SELECTION_ALWAYS
+#define DEFAULT_MENU_STARTUP_PAGE            MENU_STARTUP_PAGE_MAIN_MENU
 #endif
 
 #define DEFAULT_XMB_VERTICAL_THUMBNAILS false
@@ -1683,7 +1715,7 @@
 
 #if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__) || defined(__PS3__)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWER
-#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX) || defined(EMSCRIPTEN)
+#elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWEST
 #else
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_NORMAL
@@ -1820,6 +1852,9 @@
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows/x86_64/latest/"
 #elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_IX86) || defined(_M_IA64)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/windows/x86/latest/"
+#elif defined(__aarch64__) || defined(_M_ARM64)
+/* No official MinGW/clang ARM64 buildbot yet – use empty default */
+#define DEFAULT_BUILDBOT_SERVER_URL ""
 #endif
 #endif
 #elif defined(__linux__)
@@ -1876,4 +1911,12 @@
 
 #define DEFAULT_FILTER_BY_CURRENT_CORE false
 
+#endif
+
+#ifdef HAVE_SMBCLIENT
+#define DEFAULT_SMB_CLIENT_AUTH_MODE 1
+#define DEFAULT_SMB_CLIENT_NUM_CONTEXTS 4
+#define DEFAULT_SMB_CLIENT_MAX_CONTEXTS 20
+#define DEFAULT_SMB_CLIENT_TIMEOUT 5
+#define DEFAULT_SMB_CLIENT_MAX_TIMEOUT 20
 #endif

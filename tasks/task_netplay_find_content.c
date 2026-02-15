@@ -121,8 +121,8 @@ static bool find_content_by_crc(playlist_config_t *playlist_config,
          if (!entry)
             continue;
 
-         if (string_is_equal(entry->crc32, crc_ident) &&
-               !string_is_empty(entry->path))
+         if (string_is_equal(entry->crc32, crc_ident)
+               && !string_is_empty(entry->path))
          {
             if (!string_list_append(paths, entry->path, attr))
             {
@@ -278,9 +278,9 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
 
    if (data->current.core_loaded && data->crc > 0 && data->current.crc > 0)
    {
-      RARCH_LOG("[Lobby] Testing CRC matching for: %08lX\n",
+      RARCH_LOG("[Lobby] Testing CRC matching for: %08lX...\n",
          (unsigned long)data->crc);
-      RARCH_LOG("[Lobby] Current content CRC: %08lX\n",
+      RARCH_LOG("[Lobby] Current content CRC: %08lX.\n",
          (unsigned long)data->current.crc);
 
       if (data->current.crc == data->crc)
@@ -294,19 +294,20 @@ static void task_netplay_crc_scan_handler(retro_task_t *task)
       }
    }
 
-   if (string_is_empty(data->subsystem) ||
-         string_is_equal_case_insensitive(data->subsystem, "N/A"))
+   if (     string_is_empty(data->subsystem)
+         || string_is_equal_case_insensitive(data->subsystem, "N/A"))
    {
-      if (data->current.core_loaded && data->extensions &&
-            !string_is_empty(data->current.content) &&
-            !string_is_empty(data->current.extension))
+      if (     data->current.core_loaded
+            && data->extensions
+            && !string_is_empty(data->current.content)
+            && !string_is_empty(data->current.extension))
       {
-         if (!data->current.subsystem_content ||
-               !data->current.subsystem_content->size)
+         if (     !data->current.subsystem_content
+               || !data->current.subsystem_content->size)
          {
             if (string_is_equal_case_insensitive(
-                     data->current.content, data->content) &&
-                  string_list_find_elem(
+                     data->current.content, data->content)
+                  && string_list_find_elem(
                      data->extensions, data->current.extension))
             {
                RARCH_LOG("[Lobby] Filename match with currently loaded content.\n");
@@ -556,7 +557,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             if (data->current.core_loaded)
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
-            RARCH_LOG("[Lobby] Loading core '%s' with content file '%s'.\n",
+            RARCH_LOG("[Lobby] Loading core \"%s\" with content file \"%s\".\n",
                data->core, content_path);
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -603,7 +604,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             if (data->current.core_loaded)
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
-            RARCH_LOG("[Lobby] Loading core '%s' with subsystem '%s'.\n",
+            RARCH_LOG("[Lobby] Loading core \"%s\" with subsystem \"%s\".\n",
                data->core, subsystem);
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -657,7 +658,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             if (data->current.core_loaded)
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
-            RARCH_LOG("[Lobby] Loading contentless core '%s'.\n", data->core);
+            RARCH_LOG("[Lobby] Loading contentless core \"%s\".\n", data->core);
 
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
@@ -933,8 +934,8 @@ bool task_push_netplay_content_reload(const char *hostname)
       }
    }
 
-   if ((flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT) &&
-         !(scan_state.state & (STATE_LOAD|STATE_LOAD_SUBSYSTEM)))
+   if (      (flags & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
+         && !(scan_state.state & (STATE_LOAD|STATE_LOAD_SUBSYSTEM)))
       scan_state.state |= STATE_LOAD_CONTENTLESS;
 
    data->current.core_loaded = true;

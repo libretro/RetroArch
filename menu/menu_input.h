@@ -192,7 +192,8 @@ enum menu_inp_ptr_hwst_flags
    MENU_INP_PTR_FLG_PRESS_LEFT   = (1 << 5),
    MENU_INP_PTR_FLG_PRESS_RIGHT  = (1 << 6),
    MENU_INP_PTR_FLG_PRESSED      = (1 << 7),
-   MENU_INP_PTR_FLG_DRAGGED      = (1 << 8)
+   MENU_INP_PTR_FLG_DRAGGED      = (1 << 8),
+   MENU_INP_PTR_FLG_RESET        = (1 << 9)
 };
 
 /* Defines set of (abstracted) inputs/states

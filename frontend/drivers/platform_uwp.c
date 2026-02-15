@@ -354,7 +354,6 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    NULL,                           /* shutdown */
    NULL,                           /* get_name */
    frontend_uwp_get_os,
-   NULL,                            /* get_rating */
    NULL,                            /* content_loaded */
    frontend_uwp_get_arch,           /* get_architecture       */
    frontend_uwp_get_powerstate,

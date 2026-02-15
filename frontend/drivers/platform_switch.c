@@ -76,6 +76,37 @@ static enum frontend_fork switch_fork_mode = FRONTEND_FORK_NONE;
 bool platform_switch_has_focus = true;
 
 #ifdef HAVE_LIBNX
+char *SWITCH_CPU_PROFILES[] = {
+    "Maximum Performance",
+    "High Performance",
+    "Boost Performance",
+    "Stock Performance",
+    "Powersaving Mode 1",
+    "Powersaving Mode 2",
+    "Powersaving Mode 3",
+    NULL
+};
+char *SWITCH_CPU_SPEEDS[] = {
+    "1785 MHz",
+    "1581 MHz",
+    "1224 MHz",
+    "1020 MHz",
+    "918 MHz",
+    "816 MHz",
+    "714 MHz",
+    NULL
+};
+unsigned SWITCH_CPU_SPEEDS_VALUES[] = {
+    1785000000,
+    1581000000,
+    1224000000,
+    1020000000,
+    918000000,
+    816000000,
+    714000000,
+    0
+};
+
 static bool psmInitialized  = false;
 
 static AppletHookCookie applet_hook_cookie;
@@ -87,7 +118,7 @@ extern bool nxlink_connected;
 void libnx_apply_overclock(void)
 {
    const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)
-      / sizeof(SWITCH_CPU_PROFILES[1]);
+      / sizeof(SWITCH_CPU_PROFILES[1]) - 1;
    settings_t *settings        = config_get_ptr();
    unsigned libnx_overclock    = settings->uints.libnx_overclock;
 
@@ -455,7 +486,7 @@ char *realpath(const char *name, char *resolved)
 
    if (!resolved)
    {
-      rpath = malloc(path_max);
+      rpath = (char*)malloc(path_max);
       if (!rpath)
          return NULL;
    }
@@ -591,13 +622,8 @@ static void frontend_switch_init(void *data)
    if (R_SUCCEEDED(rc))
        psmInitialized = true;
    else
-       RARCH_WARN("Error initializing psm\n");
+       RARCH_WARN("Error initializing psm.\n");
 #endif /* HAVE_LIBNX (splash) */
-}
-
-static int frontend_switch_get_rating(void)
-{
-   return 11;
 }
 
 enum frontend_architecture frontend_switch_get_arch(void)
@@ -761,7 +787,6 @@ frontend_ctx_driver_t frontend_ctx_switch =
    frontend_switch_shutdown,
    frontend_switch_get_name,
    frontend_switch_get_os,
-   frontend_switch_get_rating,
    NULL,                               /* content_loaded */
    frontend_switch_get_arch,           /* get_architecture       */
    frontend_switch_get_powerstate,     /* get_powerstate         */

@@ -206,7 +206,6 @@ const mitm_server_t netplay_mitm_server_list[NETPLAY_MITM_SERVERS] = {
    { "madrid",    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2 },
    { "saopaulo",  MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3 },
    { "singapore", MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4 },
-   { "chuncheon", MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5 },
    { "custom",    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM }
 };
 
@@ -649,7 +648,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
       /* Send our response */
       sendto(net_st->lan_ad_server_fd,
          (char*)&ad_packet_buffer, sizeof(ad_packet_buffer), 0,
-         (struct sockaddr*)&their_addr, sizeof(their_addr));
+         (struct sockaddr*)&their_addr, addr_size);
    }
 
    return true;
@@ -667,9 +666,9 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
 static uint32_t netplay_impl_magic(void)
 {
    size_t i;
-   uint32_t res                        = 0;
-   const char *ver                     = PACKAGE_VERSION;
-   size_t _len                         = strlen(ver);
+   uint32_t res    = 0;
+   const char *ver = PACKAGE_VERSION;
+   size_t _len     = strlen(ver);
 
    for (i = 0; i < _len; i++)
       res ^= ver[i] << (i & 0xf);
@@ -1439,7 +1438,6 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
    ssize_t recvd;
    struct nick_buf_s nick_buf;
    int32_t ping         = 0;
-   settings_t *settings = config_get_ptr();
 
    RECV(&nick_buf, sizeof(nick_buf)) {}
 
@@ -1471,6 +1469,8 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
 
    if (netplay->is_server)
    {
+      settings_t *settings = config_get_ptr();
+
       if (!netplay_handshake_nick(netplay, connection))
          return false;
 
@@ -2496,7 +2496,7 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd,
       void *buf, size_t len)
 {
    ssize_t recvd;
-   bool error    = false;
+   bool err = false;
 
    if (buf_unread(sbuf) >= len || !buf_remaining(sbuf))
       goto copy;
@@ -2504,11 +2504,11 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd,
    /* Receive whatever we can into the buffer */
    if (sbuf->end >= sbuf->start)
    {
-      recvd = socket_receive_all_nonblocking(sockfd, &error,
+      recvd = socket_receive_all_nonblocking(sockfd, &err,
          sbuf->data + sbuf->end, sbuf->bufsz - sbuf->end -
          ((sbuf->start == 0) ? 1 : 0));
 
-      if (recvd < 0 || error)
+      if (recvd < 0 || err)
          return -1;
 
       sbuf->end += recvd;
@@ -2519,11 +2519,11 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd,
 
          if (sbuf->start > 1 && buf_unread(sbuf) < len)
          {
-            error = false;
-            recvd = socket_receive_all_nonblocking(sockfd, &error,
+            err   = false;
+            recvd = socket_receive_all_nonblocking(sockfd, &err,
                sbuf->data, sbuf->start - 1);
 
-            if (recvd < 0 || error)
+            if (recvd < 0 || err)
                return -1;
 
             sbuf->end += recvd;
@@ -2533,10 +2533,10 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd,
    else
    {
       recvd = socket_receive_all_nonblocking(
-            sockfd, &error, sbuf->data + sbuf->end,
+            sockfd, &err, sbuf->data + sbuf->end,
             sbuf->start - sbuf->end - 1);
 
-      if (recvd < 0 || error)
+      if (recvd < 0 || err)
          return -1;
 
       sbuf->end += recvd;
@@ -3255,14 +3255,14 @@ static void netplay_handle_frame_hash(netplay_t *netplay,
  * handle_connection
  * @netplay : pointer to netplay object
  * @addr    : value of pointer is set to the address of the peer on a completed connection
- * @error   : value of pointer is set to true if a critical error occurs
+ * @err     : value of pointer is set to true if a critical error occurs
  *
  * Accepts a new client connection.
  *
  * Returns: fd of a new connection or -1 if there was no new connection.
  */
 static int handle_connection(netplay_t *netplay, netplay_address_t *addr,
-      bool *error)
+      bool *err)
 {
    struct sockaddr_storage their_addr;
    socklen_t addr_size = sizeof(their_addr);
@@ -3271,7 +3271,7 @@ static int handle_connection(netplay_t *netplay, netplay_address_t *addr,
    if (new_fd < 0)
    {
       if (!isagain(new_fd))
-         *error = true;
+         *err = true;
 
       return -1;
    }
@@ -3314,7 +3314,7 @@ static int handle_connection(netplay_t *netplay, netplay_address_t *addr,
    if (!socket_nonblock(new_fd))
    {
       socket_close(new_fd);
-      *error = true;
+      *err = true;
 
       return -1;
    }
@@ -3346,7 +3346,7 @@ static bool netplay_tunnel_connect(int fd, const struct addrinfo *addr)
  * handle_mitm_connection
  * @netplay : pointer to netplay object
  * @addr    : value of pointer is set to the address of the peer on a completed connection
- * @error   : value of pointer is set to true if a critical error occurs
+ * @err     : value of pointer is set to true if a critical error occurs
  *
  * Do three things here.
  * 1: Check if any pending tunnel connection is ready.
@@ -3358,7 +3358,7 @@ static bool netplay_tunnel_connect(int fd, const struct addrinfo *addr)
  * Returns: fd of a new completed connection or -1 if no connection was completed.
  */
 static int handle_mitm_connection(netplay_t *netplay, netplay_address_t *addr,
-      bool *error)
+      bool *err)
 {
    size_t i;
    int new_fd         = -1;
@@ -3437,7 +3437,7 @@ static int handle_mitm_connection(netplay_t *netplay, netplay_address_t *addr,
          len = sizeof(netplay->mitm_handler->id_buf) -
             netplay->mitm_handler->id_recvd;
 
-      recvd = socket_receive_all_nonblocking(netplay->listen_fd, error,
+      recvd = socket_receive_all_nonblocking(netplay->listen_fd, err,
          (((uint8_t*)&netplay->mitm_handler->id_buf) +
             netplay->mitm_handler->id_recvd),
          len);
@@ -3459,7 +3459,7 @@ static int handle_mitm_connection(netplay_t *netplay, netplay_address_t *addr,
             size_t  len   = sizeof(netplay->mitm_handler->addr_buf) -
                netplay->mitm_handler->addr_recvd;
             ssize_t recvd = socket_receive_all_nonblocking(
-                  netplay->listen_fd, error,
+                  netplay->listen_fd, err,
                   (((uint8_t*)&netplay->mitm_handler->addr_buf) +
                    netplay->mitm_handler->addr_recvd),
                   len);
@@ -3619,7 +3619,7 @@ critical_failure:
    if (new_fd >= 0)
       socket_close(new_fd);
 
-   *error = true;
+   *err = true;
 
    return -1;
 }
@@ -3736,13 +3736,13 @@ static bool netplay_sync_pre_frame(netplay_t *netplay)
    {
       int               new_fd   = -1;
       netplay_address_t new_addr = {0};
-      bool server_error          = false;
+      bool server_err            = false;
 
       if (netplay->mitm_handler)
-         new_fd = handle_mitm_connection(netplay, &new_addr, &server_error);
+         new_fd = handle_mitm_connection(netplay, &new_addr, &server_err);
       else
-         new_fd = handle_connection(netplay, &new_addr, &server_error);
-      if (server_error)
+         new_fd = handle_connection(netplay, &new_addr, &server_err);
+      if (server_err)
       {
          ret = false;
          goto process;
@@ -4936,14 +4936,16 @@ static void netplay_handle_play_spectate(netplay_t *netplay,
 
             if (connection)
             {
-               bool       slave     = false;
-               settings_t *settings = config_get_ptr();
+               bool       slave            = false;
+               settings_t *settings        = config_get_ptr();
+               bool netplay_allow_slaves   = settings->bools.netplay_allow_slaves;
+               bool netplay_require_slaves = settings->bools.netplay_require_slaves;
 
                /* Slave mode unused when core uses netpacket interface */
-               if (     settings->bools.netplay_allow_slaves
+               if (     netplay_allow_slaves
                      && netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
                {
-                  if (settings->bools.netplay_require_slaves)
+                  if (netplay_require_slaves)
                      slave = true;
                   else if (mode & NETPLAY_CMD_PLAY_BIT_SLAVE)
                      slave = true;
@@ -5005,7 +5007,7 @@ static void netplay_handle_play_spectate(netplay_t *netplay,
                mode = NETPLAY_CMD_MODE_BIT_PLAYING;
 
                netplay->self_devices = devices;
-               netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
+               netplay->self_mode    = NETPLAY_CONNECTION_PLAYING;
 
                netplay_announce_play_spectate(netplay, NULL,
                   netplay->self_mode, devices, -1, client_num);
@@ -7659,7 +7661,7 @@ static bool netplay_process_savestate1(retro_ctx_serialize_info_t* serial_info)
 #ifdef HAVE_CHEEVOS
    const settings_t* settings = config_get_ptr();
 #endif
-   const uint8_t* input       = serial_info->data_const;
+   const uint8_t* input       = (const uint8_t*)serial_info->data_const;
    const uint8_t* stop        = input + serial_info->size;
    bool seen_core             = false;
 
@@ -8398,6 +8400,31 @@ static bool netplay_should_skip(netplay_t *netplay)
       netplay->self_mode >= NETPLAY_CONNECTION_CONNECTED;
 }
 
+static size_t retrieve_client_count(netplay_t *netplay,
+      unsigned *players, unsigned *spectators)
+{
+   size_t i, r = 0;
+
+   for (i = 0; i < netplay->connections_size; i++)
+   {
+      struct netplay_connection *connection = &netplay->connections[i];
+
+      /* We only want info from already connected clients. */
+      if (     (connection->flags & NETPLAY_CONN_FLAG_ACTIVE)
+            && (connection->mode >= NETPLAY_CONNECTION_CONNECTED))
+      {
+         r++;
+         if (connection->mode == NETPLAY_CONNECTION_SPECTATING)
+            (*spectators)++;
+         else if (connection->mode == NETPLAY_CONNECTION_PLAYING
+               || connection->mode == NETPLAY_CONNECTION_SLAVE)
+            (*players)++;
+      }
+   }
+
+   return r;
+}
+
 bool init_netplay_deferred(const char *server, unsigned port, const char *mitm_session)
 {
    net_driver_state_t *net_st = &networking_driver_st;
@@ -8462,7 +8489,7 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames)
 }
 
 static void netplay_announce_cb(retro_task_t *task, void *task_data,
-      void *user_data, const char *error)
+      void *user_data, const char *err)
 {
    char *buf, *buf_data;
    size_t remaining;
@@ -8478,7 +8505,7 @@ static void netplay_announce_cb(retro_task_t *task, void *task_data,
    net_st->data->next_announce =
       cpu_features_get_time_usec() + NETPLAY_ANNOUNCE_TIME;
 
-   if (error || !data || !data->data || !data->len || data->status != 200)
+   if (err || !data || !data->data || !data->len || data->status != 200)
    {
       RARCH_ERR("[Netplay] Failed to announce session to the lobby server.");
       return;
@@ -8598,6 +8625,8 @@ static void netplay_announce(netplay_t *netplay)
    int mitm_custom_port             = 0;
    int is_mitm                      = 0;
    uint32_t content_crc             = 0;
+   unsigned players                 = 0;
+   unsigned spectators              = 0;
    net_driver_state_t *net_st       = &networking_driver_st;
    struct netplay_room *host_room   = &net_st->host_room;
    struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
@@ -8676,6 +8705,15 @@ static void netplay_announce(netplay_t *netplay)
    else
       net_http_urlencode(&mitm_custom_addr, "");
 
+   /* Purely informational, should not be used to guess if a host is full. */
+   retrieve_client_count(netplay, &players, &spectators);
+
+   if (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING)
+      spectators++;
+   if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING
+         || netplay->self_mode == NETPLAY_CONNECTION_SLAVE)
+      players++;
+
    /* Estimated to a maximum of 3062 bytes. */
    snprintf(buf, sizeof(buf),
       "username=%s&"
@@ -8693,7 +8731,9 @@ static void netplay_announce(netplay_t *netplay)
       "subsystem_name=%s&"
       "mitm_session=%s&"
       "mitm_custom_addr=%s&"
-      "mitm_custom_port=%d",
+      "mitm_custom_port=%d&"
+      "player_count=%d&"
+      "spectator_count=%d",
       username,
       corename,
       coreversion,
@@ -8709,7 +8749,9 @@ static void netplay_announce(netplay_t *netplay)
       subsystemname,
       mitm_session,
       mitm_custom_addr,
-      mitm_custom_port);
+      mitm_custom_port,
+      players,
+      spectators);
 
    if (task_push_http_post_transfer(FILE_PATH_LOBBY_LIBRETRO_URL "add", buf,
          true, NULL, netplay_announce_cb, NULL))
@@ -8730,7 +8772,7 @@ static void netplay_announce(netplay_t *netplay)
 }
 
 static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
-      void *user_data, const char *error)
+      void *user_data, const char *err)
 {
    char *buf, *buf_data;
    size_t remaining;
@@ -8738,7 +8780,7 @@ static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
    net_driver_state_t  *net_st    = &networking_driver_st;
    struct netplay_room *host_room = &net_st->host_room;
 
-   if (error || !data || !data->data || !data->len || data->status != 200)
+   if (err || !data || !data->data || !data->len || data->status != 200)
    {
       RARCH_ERR("[Netplay] Failed to query the lobby server for tunnel information.");
       return;
@@ -10137,6 +10179,27 @@ static void gfx_widget_netplay_ping_frame(void *data, void *userdata)
    }
 }
 
+static bool gfx_widget_netplay_chat_visible(void)
+{
+   size_t i;
+   net_driver_state_t         *net_st      = &networking_driver_st;
+   struct netplay_chat_buffer *chat_buffer = &net_st->chat_buffer;
+   for (i = 0; i < ARRAY_SIZE(chat_buffer->messages); i++)
+   {
+      if (chat_buffer->messages[i].alpha
+            && !string_is_empty(chat_buffer->messages[i].nick)
+            && !string_is_empty(chat_buffer->messages[i].msg))
+         return true;
+   }
+   return false;
+}
+
+static bool gfx_widget_netplay_ping_visible(void)
+{
+   net_driver_state_t *net_st = &networking_driver_st;
+   return net_st->latest_ping >= 0;
+}
+
 const gfx_widget_t gfx_widget_netplay_chat = {
    NULL,
    NULL,
@@ -10144,7 +10207,8 @@ const gfx_widget_t gfx_widget_netplay_chat = {
    NULL,
    NULL,
    &gfx_widget_netplay_chat_iterate,
-   &gfx_widget_netplay_chat_frame
+   &gfx_widget_netplay_chat_frame,
+   &gfx_widget_netplay_chat_visible
 };
 
 const gfx_widget_t gfx_widget_netplay_ping = {
@@ -10154,6 +10218,7 @@ const gfx_widget_t gfx_widget_netplay_ping = {
    NULL,
    NULL,
    &gfx_widget_netplay_ping_iterate,
-   &gfx_widget_netplay_ping_frame
+   &gfx_widget_netplay_ping_frame,
+   &gfx_widget_netplay_ping_visible
 };
 #endif

@@ -25,6 +25,7 @@
 
 #include <retro_common_api.h>
 #include <boolean.h>
+#include <stdint.h>
 
 #ifdef RARCH_INTERNAL
 #ifndef VFS_FRONTEND
@@ -59,7 +60,9 @@ typedef struct
 enum vfs_scheme
 {
    VFS_SCHEME_NONE = 0,
-   VFS_SCHEME_CDROM
+   VFS_SCHEME_CDROM,
+   VFS_SCHEME_SAF,
+   VFS_SCHEME_SMB
 };
 
 #if !(defined(__WINRT__) && defined(__cplusplus_winrt))
@@ -85,6 +88,10 @@ struct libretro_vfs_implementation_file
    int fd;
    unsigned hints;
    enum vfs_scheme scheme;
+#ifdef HAVE_SMBCLIENT
+   intptr_t smb_fh;
+   intptr_t smb_ctx;
+#endif
 };
 #endif
 

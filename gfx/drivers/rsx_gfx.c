@@ -25,6 +25,8 @@
 #include <retro_math.h>
 #include <encodings/utf.h>
 #include <formats/image.h>
+#include <string/stdstring.h>
+#include <gfx/math/matrix_4x4.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -38,7 +40,165 @@
 #include "../gfx_widgets.h"
 #endif
 
-#include "../common/rsx_defines.h"
+#ifdef __PSL1GHT__
+#include <rsx/rsx.h>
+#include <rsx/nv40.h>
+#include <ppu-types.h>
+#endif
+
+#include "../../driver.h"
+#include "../../retroarch.h"
+
+#define RSX_MAX_BUFFERS 2
+#define RSX_MAX_MENU_BUFFERS 2
+#define RSX_MAX_TEXTURES 4
+#define RSX_MAX_SHADERS 2
+#define RSX_MAX_VERTICES 4
+#define RSX_MAX_TEXTURE_VERTICES 4096 /* Set > 0 for preallocated texture vertices */
+#define RSX_MAX_FONT_VERTICES 8192
+
+#define RSX_SHADER_STOCK_BLEND (RSX_MAX_SHADERS - 1)
+#define RSX_SHADER_MENU        (RSX_MAX_SHADERS - 2)
+
+/* Shader objects */
+extern const u8 modern_opaque_vpo_end[];
+extern const u8 modern_opaque_vpo[];
+extern const u32 modern_opaque_vpo_size;
+extern const u8 modern_opaque_fpo_end[];
+extern const u8 modern_opaque_fpo[];
+extern const u32 modern_opaque_fpo_size;
+
+extern const u8 modern_alpha_blend_vpo_end[];
+extern const u8 modern_alpha_blend_vpo[];
+extern const u32 modern_alpha_blend_vpo_size;
+extern const u8 modern_alpha_blend_fpo_end[];
+extern const u8 modern_alpha_blend_fpo[];
+extern const u32 modern_alpha_blend_fpo_size;
+
+typedef struct
+{
+   float x, y;
+   float w, h;
+   float min, max;
+   float scale[4];
+   float offset[4];
+} rsx_viewport_t;
+
+typedef struct __attribute__((aligned(128)))
+{
+   float x, y;
+   float u, v;
+   float r, g, b, a;
+} rsx_vertex_t;
+
+typedef struct
+{
+   gcmTexture tex;
+   u32 *data;
+   u32 offset;
+   u32 wrap_s;
+   u32 wrap_t;
+   u32 min_filter;
+   u32 mag_filter;
+   u32 width;
+   u32 height;
+} rsx_texture_t;
+
+#ifdef HAVE_OVERLAY
+typedef struct
+{
+   rsx_vertex_t *vertices;
+   rsx_texture_t texture;
+} rsx_overlay_t;
+#endif
+
+typedef struct
+{
+   int height;
+   int width;
+   int id;
+   uint32_t *ptr;
+   /* Internal stuff */
+   uint32_t offset;
+} rsx_buffer;
+
+typedef struct
+{
+   video_viewport_t vp;
+   rsx_buffer buffers[RSX_MAX_BUFFERS];
+#if defined(HAVE_MENU_BUFFER)
+   rsx_buffer menuBuffers[RSX_MAX_MENU_BUFFERS];
+   int menuBuffer;
+#endif
+   int currentBuffer, nextBuffer;
+   gcmContextData* context;
+   u32* depth_buffer;
+
+#if defined(HAVE_MENU_BUFFER)
+   gcmSurface surface[RSX_MAX_BUFFERS + RSX_MAX_MENU_BUFFERS];
+#else
+   gcmSurface surface[RSX_MAX_BUFFERS];
+#endif
+   rsx_texture_t texture[RSX_MAX_TEXTURES];
+   rsx_texture_t menu_texture;
+   rsx_vertex_t *vertices;
+   rsx_vertex_t *texture_vertices;
+   int tex_index;
+   int vert_idx;
+   int texture_vert_idx;
+   int font_vert_idx;
+   u32 pos_offset[RSX_MAX_SHADERS];
+   u32 uv_offset[RSX_MAX_SHADERS];
+   u32 col_offset[RSX_MAX_SHADERS];
+   rsxProgramConst  *proj_matrix[RSX_MAX_SHADERS];
+   rsxProgramConst  *bgcolor[RSX_MAX_SHADERS];
+   rsxProgramAttrib *pos_index[RSX_MAX_SHADERS];
+   rsxProgramAttrib *col_index[RSX_MAX_SHADERS];
+   rsxProgramAttrib *uv_index[RSX_MAX_SHADERS];
+   rsxProgramAttrib *tex_unit[RSX_MAX_SHADERS];
+   void *vp_ucode[RSX_MAX_SHADERS];
+   void *fp_ucode[RSX_MAX_SHADERS];
+   rsxVertexProgram *vpo[RSX_MAX_SHADERS];
+   rsxFragmentProgram *fpo[RSX_MAX_SHADERS];
+   u32 *fp_buffer[RSX_MAX_SHADERS];
+   u32 fp_offset[RSX_MAX_SHADERS];
+   math_matrix_4x4 mvp, mvp_no_rot;
+   const shader_backend_t* shader;
+   void* shader_data;
+   void* renderchain_data;
+   void* ctx_data;
+   const gfx_ctx_driver_t* ctx_driver;
+
+   video_info_t video_info;
+
+   float menu_texture_alpha;
+
+#ifdef HAVE_OVERLAY
+   rsx_overlay_t *overlay;
+   unsigned overlays;
+   bool overlay_enable;
+   bool overlay_full_screen;
+#endif
+
+   unsigned rotation;
+
+   u16 width;
+   u16 height;
+   u16 menu_width;
+   u16 menu_height;
+   u32 depth_pitch;
+   u32 depth_offset;
+
+   bool menu_frame_enable;
+   bool rgb32;
+   bool vsync;
+   bool smooth;
+   bool keep_aspect;
+   bool should_resize;
+   bool msg_rendering_enabled;
+   bool shared_context_use;
+} rsx_t;
+
 #include "../font_driver.h"
 
 #include "../../configuration.h"
@@ -980,35 +1140,14 @@ static void rsx_set_projection(rsx_t *rsx,
 static void rsx_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
-	int i;
+   int i;
    rsx_viewport_t vp;
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
-   settings_t *settings      = config_get_ptr();
    rsx_t *rsx                = (rsx_t*)data;
-   bool video_scale_integer  = settings->bools.video_scale_integer;
 
-   if (video_scale_integer && !force_full)
-   {
-      video_viewport_get_scaled_integer(&rsx->vp,
-            vp_width, vp_height,
-            video_driver_get_aspect_ratio(), rsx->keep_aspect,
-            true);
-      vp_width               = rsx->vp.width;
-      vp_height              = rsx->vp.height;
-   }
-   else if (rsx->keep_aspect && !force_full)
-   {
-      video_viewport_get_scaled_aspect(&rsx->vp, vp_width, vp_height, true);
-      vp_width               = rsx->vp.width;
-      vp_height              = rsx->vp.height;
-   }
-   else
-   {
-      rsx->vp.x               = 0;
-      rsx->vp.y               = 0;
-      rsx->vp.width           = vp_width;
-      rsx->vp.height          = vp_height;
-   }
+   rsx->vp.full_width         = vp_width;
+   rsx->vp.full_height        = vp_height;
+   video_driver_update_viewport(&rsx->vp, force_full, rsx->keep_aspect, true);
 
    vp.min                     = 0.0f;
    vp.max                     = 1.0f;
@@ -1031,13 +1170,6 @@ static void rsx_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
    rsxSetScissor(rsx->context, vp.x, vp.y, vp.w, vp.h);
 
    rsx_set_projection(rsx, &ortho, allow_rotate);
-
-   /* Set last backbuffer viewport. */
-   if (!force_full)
-   {
-      rsx->vp.width           = vp_width;
-      rsx->vp.height          = vp_height;
-   }
 }
 
 static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
@@ -1070,7 +1202,7 @@ static bool rsx_tasks_finder(retro_task_t *task,void *userdata) { return task; }
 task_finder_data_t rsx_tasks_finder_data = {rsx_tasks_finder, NULL};
 #endif
 
-static int rsx_make_buffer(rsxBuffer * buffer, u16 width, u16 height, int id)
+static int rsx_make_buffer(rsx_buffer *buffer, u16 width, u16 height, int id)
 {
    int depth         = sizeof(u32);
    int pitch         = depth * width;
@@ -1229,7 +1361,7 @@ error:
    return NULL;
 }
 
-static void rsx_init_render_target(rsx_t *rsx, rsxBuffer * buffer, int id)
+static void rsx_init_render_target(rsx_t *rsx, rsx_buffer *buffer, int id)
 {
    u32 i;
    memset(&rsx->surface[id], 0, sizeof(gcmSurface));
@@ -1317,7 +1449,7 @@ static void rsx_init_shader(rsx_t *rsx)
    rsx->fp_buffer[RSX_SHADER_MENU]          = (u32*)rsxMemalign(64, fpsize);
    if (!rsx->fp_buffer[RSX_SHADER_MENU])
    {
-      RARCH_ERR("failed to allocate fp_buffer\n");
+      RARCH_ERR("[RSX] Failed to allocate fp_buffer.\n");
       return;
    }
    memcpy(rsx->fp_buffer[RSX_SHADER_MENU], rsx->fp_ucode[RSX_SHADER_MENU], fpsize);
@@ -1337,7 +1469,7 @@ static void rsx_init_shader(rsx_t *rsx)
    rsx->fp_buffer[RSX_SHADER_STOCK_BLEND]   = (u32 *)rsxMemalign(64, fpsize);
    if (!rsx->fp_buffer[RSX_SHADER_STOCK_BLEND])
    {
-      RARCH_ERR("failed to allocate fp_buffer\n");
+      RARCH_ERR("[RSX] Failed to allocate fp_buffer.\n");
       return;
    }
    memcpy(rsx->fp_buffer[RSX_SHADER_STOCK_BLEND], rsx->fp_ucode[RSX_SHADER_STOCK_BLEND], fpsize);
@@ -1437,81 +1569,11 @@ static void* rsx_init(const video_info_t* video,
 
 static void rsx_update_viewport(rsx_t* rsx)
 {
-   int x                     = 0;
-   int y                     = 0;
-   unsigned vp_width         = rsx->width;
-   unsigned vp_height        = rsx->height;
-   float device_aspect       = ((float)vp_width) / vp_height;
-   settings_t *settings      = config_get_ptr();
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+   rsx->vp.full_width  = rsx->width;
+   rsx->vp.full_height = rsx->height;
+   video_driver_update_viewport(&rsx->vp, false, rsx->keep_aspect, true);
 
-   if (video_scale_integer)
-   {
-      video_viewport_get_scaled_integer(&rsx->vp, vp_width, vp_height,
-            video_driver_get_aspect_ratio(), rsx->keep_aspect,
-            true);
-      vp_width               = rsx->vp.width;
-      vp_height              = rsx->vp.height;
-   }
-   else if (rsx->keep_aspect)
-   {
-      float desired_aspect   = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_vp_custom;
-         /* RSX/libgcm has top-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = custom_vp->y;
-         vp_width                    = custom_vp->width;
-         vp_height                   = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if ((fabsf(device_aspect - desired_aspect) < 0.0001f))
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            float viewport_bias = settings->floats.video_vp_bias_x;
-            delta           = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x               = (int)roundf(vp_width * ((0.5f - delta) * (viewport_bias * 2.0f)));
-            vp_width        = (unsigned)roundf(2.0f * vp_width * delta);
-         }
-         else
-         {
-            float viewport_bias = 1.0 - settings->floats.video_vp_bias_y;
-            delta           = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y               = (int)roundf(vp_height * ((0.5f - delta) * (viewport_bias * 2.0f)));
-            vp_height       = (unsigned)roundf(2.0f * vp_height * delta);
-         }
-      }
-
-      rsx->vp.x             = x;
-      rsx->vp.y             = y;
-      rsx->vp.width         = vp_width;
-      rsx->vp.height        = vp_height;
-   }
-   else
-   {
-      rsx->vp.x             = 0;
-      rsx->vp.y             = 0;
-      rsx->vp.width         = vp_width;
-      rsx->vp.height        = vp_height;
-   }
-
-   rsx->should_resize       = false;
+   rsx->should_resize  = false;
 }
 
 static unsigned rsx_wrap_type_to_enum(enum gfx_wrap_type type)
@@ -1572,7 +1634,7 @@ static void rsx_fill_black(uint32_t *dst, uint32_t *dst_end, size_t sz)
 }
 
 static void rsx_blit_buffer(
-      rsxBuffer *buffer, const void *frame, unsigned width,
+      rsx_buffer *buffer, const void *frame, unsigned width,
       unsigned height, unsigned pitch, int rgb32, bool do_scaling)
 {
    int i;
@@ -2086,7 +2148,7 @@ static void rsx_get_overlay_interface(void *data,
 
 static void rsx_update_screen(rsx_t* gcm)
 {
-   rsxBuffer *buffer     = NULL;
+   rsx_buffer *buffer    = NULL;
 #if defined(HAVE_MENU_BUFFER)
    if (gcm->menu_frame_enable)
    {
@@ -2370,8 +2432,9 @@ static const video_poke_interface_t rsx_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void rsx_get_poke_interface(void* data,

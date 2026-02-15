@@ -37,7 +37,8 @@
 
 - (instancetype)init {
     self = [super init];
-    if (self) {
+    if (self)
+    {
         _locationManager = [[CLLocationManager alloc] init];
         _locationManager.delegate = self;
         _locationManager.desiredAccuracy = kCLLocationAccuracyBest;
@@ -66,7 +67,7 @@
 }
 
 - (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error {
-    RARCH_WARN("[LOCATION]: Location manager failed with error: %s\n", error.description.UTF8String);
+    RARCH_WARN("[Location] Location manager failed with error: %s.\n", error.description.UTF8String);
     NSLog(@"Location manager failed with error: %@", error);
 }
 
@@ -91,71 +92,75 @@ typedef struct corelocation {
     CoreLocationManager *manager;
 } corelocation_t;
 
-static void *corelocation_init(void) {
-    corelocation_t *corelocation = (corelocation_t*)calloc(1, sizeof(*corelocation));
-    if (!corelocation)
-        return NULL;
+static void *corelocation_init(void)
+{
+   corelocation_t *corelocation = (corelocation_t*)calloc(1, sizeof(*corelocation));
+   if (!corelocation)
+      return NULL;
 
-    corelocation->manager = [CoreLocationManager sharedInstance];
-    [corelocation->manager requestAuthorization];
+   corelocation->manager = [CoreLocationManager sharedInstance];
+   [corelocation->manager requestAuthorization];
 
-    return corelocation;
+   return corelocation;
 }
 
-static void corelocation_free(void *data) {
-    corelocation_t *corelocation = (corelocation_t*)data;
-    if (!corelocation)
-        return;
+static void corelocation_free(void *data)
+{
+   corelocation_t *corelocation = (corelocation_t*)data;
+   if (!corelocation)
+      return;
 
-    free(corelocation);
+   free(corelocation);
 }
 
-static bool corelocation_start(void *data) {
-    corelocation_t *corelocation = (corelocation_t*)data;
-    if (!corelocation || !corelocation->manager.authorized)
-        return false;
+static bool corelocation_start(void *data)
+{
+   corelocation_t *corelocation = (corelocation_t*)data;
+   if (!corelocation || !corelocation->manager.authorized)
+      return false;
 
 #if !TARGET_OS_TV
-    [corelocation->manager.locationManager startUpdatingLocation];
+   [corelocation->manager.locationManager startUpdatingLocation];
 #endif
-    return true;
+   return true;
 }
 
-static void corelocation_stop(void *data) {
-    corelocation_t *corelocation = (corelocation_t*)data;
-    if (!corelocation)
-        return;
-
-    [corelocation->manager.locationManager stopUpdatingLocation];
+static void corelocation_stop(void *data)
+{
+   corelocation_t *corelocation = (corelocation_t*)data;
+   if (corelocation)
+      [corelocation->manager.locationManager stopUpdatingLocation];
 }
 
 static bool corelocation_get_position(void *data, double *lat, double *lon,
-                                     double *horiz_accuracy, double *vert_accuracy) {
-    corelocation_t *corelocation = (corelocation_t*)data;
-    if (!corelocation || !corelocation->manager.authorized)
-        return false;
+      double *horiz_accuracy, double *vert_accuracy)
+{
+   corelocation_t *corelocation = (corelocation_t*)data;
+   if (!corelocation || !corelocation->manager.authorized)
+      return false;
 
 #if TARGET_OS_TV
-    CLLocation *location = [corelocation->manager.locationManager location];
-    *lat = location.coordinate.latitude;
-    *lon = location.coordinate.longitude;
+   CLLocation *location = [corelocation->manager.locationManager location];
+   *lat = location.coordinate.latitude;
+   *lon = location.coordinate.longitude;
 #else
-    *lat = corelocation->manager.latitude;
-    *lon = corelocation->manager.longitude;
+   *lat = corelocation->manager.latitude;
+   *lon = corelocation->manager.longitude;
 #endif
-    *horiz_accuracy = 0.0; // CoreLocation doesn't provide this directly
-    *vert_accuracy = 0.0;  // CoreLocation doesn't provide this directly
-    return true;
+   *horiz_accuracy = 0.0; // CoreLocation doesn't provide this directly
+   *vert_accuracy = 0.0;  // CoreLocation doesn't provide this directly
+   return true;
 }
 
 static void corelocation_set_interval(void *data, unsigned interval_ms,
-                                    unsigned interval_distance) {
-    corelocation_t *corelocation = (corelocation_t*)data;
-    if (!corelocation)
-        return;
+      unsigned interval_distance)
+{
+   corelocation_t *corelocation = (corelocation_t*)data;
+   if (!corelocation)
+      return;
 
-    corelocation->manager.locationManager.distanceFilter = interval_distance;
-    corelocation->manager.locationManager.desiredAccuracy = kCLLocationAccuracyBest;
+   corelocation->manager.locationManager.distanceFilter = interval_distance;
+   corelocation->manager.locationManager.desiredAccuracy = kCLLocationAccuracyBest;
 }
 
 location_driver_t location_corelocation = {

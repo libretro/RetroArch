@@ -1403,11 +1403,6 @@ static MMAL_STATUS_T test_container_write(VC_CONTAINER_T *container, MMAL_BUFFER
    memset(&packet, 0, sizeof(packet));
    static int first_fragment = 1;
 
-#if 0
-   if (buffer->flags & MMAL_BUFFER_HEADER_FLAG_CONFIG)
-      buffer->length = 0; /* Discard codec config data arriving in buffers */
-#endif
-
    if (buffer->length == 0)
       return MMAL_SUCCESS;
 

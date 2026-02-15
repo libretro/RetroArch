@@ -96,7 +96,7 @@ int64_t rfread(void* buffer,
    size_t elem_size, size_t elem_count, RFILE* stream);
 
 /** @see https://en.cppreference.com/w/c/io/fgets */
-char *rfgets(char *buffer, int maxCount, RFILE* stream);
+char *rfgets(char *s, int maxCount, RFILE* stream);
 
 /** @see https://en.cppreference.com/w/c/io/fgetc */
 int rfgetc(RFILE* stream);

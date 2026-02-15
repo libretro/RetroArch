@@ -15,20 +15,31 @@
 */
 
 #include <libretro.h>
+
+#include <memalign.h>
+#include <retro_common_api.h>
+#include <retro_assert.h>
+#include <rthreads/rthreads.h>
+#include <lists/string_list.h>
+#include <string/stdstring.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <libavdevice/avdevice.h>
-
-#include "../camera_driver.h"
-#include "lists/string_list.h"
-#include "verbosity.h"
-
-#include <configuration.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
-#include <memalign.h>
-#include <retro_assert.h>
-#include <rthreads/rthreads.h>
-#include <string/stdstring.h>
+
+#ifdef __cplusplus
+}
+#endif
+
+#include "../camera_driver.h"
+
+#include "../../configuration.h"
+#include "../../verbosity.h"
 
 #ifdef ANDROID
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "android_camera"
@@ -40,6 +51,8 @@
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "dshow"
 #elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined (__NetBSD__)
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "bktr"
+#else
+#define FFMPEG_CAMERA_DEFAULT_BACKEND "lavfi"
 #endif
 
 typedef struct ffmpeg_camera
@@ -82,36 +95,44 @@ static int ffmpeg_camera_get_initial_options(
    unsigned height
 )
 {
-   int result = 0;
-   char dimensions[128];
+   int ret = 0;
+
+#ifdef __APPLE__
+   /* For AVFoundation, we need to handle options differently
+    * AVFoundation expects these options to be passed to avformat_open_input.
+    * We'll set them later in ffmpeg_camera_open_device */
+   if (backend && string_is_equal(backend->name, "avfoundation"))
+      return 0;
+#endif
+
+   /* If the core is letting the frontend pick the size... */
    if (width != 0 && height != 0)
-   { /* If the core is letting the frontend pick the size... */
+   {
+      char dimensions[128];
       snprintf(dimensions, sizeof(dimensions), "%ux%u", width, height);
 
-      result = av_dict_set(options, "video_size", dimensions, 0);
+      ret = av_dict_set(options, "video_size", dimensions, 0);
 
-      if (result < 0)
+      if (ret < 0)
       {
-         RARCH_ERR("[FFMPEG]: Failed to set option: %s\n", av_err2str(result));
-         goto error;
+         char msg[AV_ERROR_MAX_STRING_SIZE];
+         av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+         RARCH_ERR("[FFMPEG] Failed to set option: %s.\n", msg);
+         av_dict_free(options);
+         return ret;
       }
    }
+
    /* I wanted to list supported formats and pick the most appropriate size
     * if the requested size isn't available,
     * but ffmpeg doesn't seem to offer a way to do that.
     */
-
    if (!options)
    {
-      RARCH_DBG("[FFMPEG]: No options set, not allocating a dict (this isn't an error)");
+      RARCH_DBG("[FFMPEG] No options set, not allocating a dict (this isn't an error).");
    }
 
-   return result;
-
-error:
-   av_dict_free(options);
-   return result;
-
+   return ret;
 }
 
 /* Device URL syntax varies by backend.
@@ -128,7 +149,8 @@ static void ffmpeg_camera_get_source_url(ffmpeg_camera_t *ffmpeg, const AVDevice
    if (string_is_equal(ffmpeg->input_format->name, "avfoundation"))
    {
       /* we only want video, not audio */
-      snprintf(ffmpeg->url, sizeof(ffmpeg->url), "%s:none", device->device_description);
+      /* Use "0:none" for the first video device, no audio */
+      snprintf(ffmpeg->url, sizeof(ffmpeg->url), "0:none");
       return;
    }
 #endif
@@ -143,30 +165,106 @@ static void ffmpeg_camera_get_source_url(ffmpeg_camera_t *ffmpeg, const AVDevice
 
 static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
 {
-   AVDictionaryEntry *e = NULL;
+   AVDictionaryEntry *e  = NULL;
    AVDictionary *options = NULL;
-   int result = ffmpeg->options ? av_dict_copy(&options, ffmpeg->options, 0) : 0;
+   int ret = ffmpeg->options ? av_dict_copy(&options, ffmpeg->options, 0) : 0;
    /* copy the options dict so that other steps in start() can use it,
     * as avformat_open_input clears it and adds unrecognized settings */
 
-   if (result < 0)
+   if (ret < 0)
    {
-      RARCH_ERR("[FFMPEG]: Failed to copy options: %s\n", av_err2str(result));
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+      RARCH_ERR("[FFMPEG] Failed to copy options: %s.\n", msg);
       goto done;
    }
 
-   result = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, &options);
-   if (result < 0)
+#ifdef __APPLE__
+   /* For AVFoundation, set the options that the device expects */
+   if (ffmpeg->input_format && string_is_equal(ffmpeg->input_format->name, "avfoundation"))
    {
-      RARCH_WARN("[FFMPEG]: Failed to open video input device \"%s\": %s\n", ffmpeg->url, av_err2str(result));
+      char dimensions[128];
 
-      if (ffmpeg->options)
-      { /* If we're not already requesting the default format... */
+      /* Set video size if requested */
+      if (ffmpeg->requested_width != 0 && ffmpeg->requested_height != 0)
+      {
+         /* Use a resolution that the device likely supports */
+         /* Common resolutions: 640x480, 1280x720, 1920x1080 */
+         unsigned width = ffmpeg->requested_width;
+         unsigned height = ffmpeg->requested_height;
 
-         result = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, NULL);
-         if (result < 0)
+         /* If the requested resolution is too small, use a minimum supported size */
+         if (width < 640 || height < 480)
          {
-            RARCH_ERR("[FFMPEG]: Failed to open the same device in its default format: %s\n", av_err2str(result));
+            width = 640;
+            height = 480;
+            RARCH_LOG("[FFMPEG] Requested resolution %ux%u too small, using %ux%u instead.\n",
+                     ffmpeg->requested_width, ffmpeg->requested_height, width, height);
+         }
+
+         snprintf(dimensions, sizeof(dimensions), "%ux%u", width, height);
+         av_dict_set(&options, "video_size", dimensions, 0);
+      }
+
+      /* Set framerate */
+      av_dict_set(&options, "framerate", "30", 0);
+
+      /* Set pixel format to a widely supported format */
+      av_dict_set(&options, "pixel_format", "uyvy422", 0);
+   }
+#endif
+
+   ret = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, &options);
+   if (ret < 0)
+   {
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+      RARCH_WARN("[FFMPEG] Failed to open video input device \"%s\": %s.\n", ffmpeg->url, msg);
+
+#ifdef __APPLE__
+      /* For AVFoundation, try with default settings if custom settings fail */
+      if (ffmpeg->input_format && string_is_equal(ffmpeg->input_format->name, "avfoundation"))
+      {
+         RARCH_LOG("[FFMPEG] Trying with default AVFoundation settings...\n");
+         av_dict_free(&options);
+
+         /* Try with just the basic framerate option */
+         av_dict_set(&options, "framerate", "30", 0);
+
+         ret = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, &options);
+         if (ret < 0)
+         {
+            av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+            RARCH_WARN("[FFMPEG] Failed with basic options, trying with no options: %s.\n", msg);
+            av_dict_free(&options);
+
+            /* Last resort: try with no options at all */
+            ret = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, NULL);
+            if (ret < 0)
+            {
+               av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+               RARCH_ERR("[FFMPEG] Failed to open device even with default settings: %s.\n", msg);
+               goto done;
+            }
+
+            RARCH_LOG("[FFMPEG] Successfully opened device with default settings.\n");
+         }
+         else
+         {
+            RARCH_LOG("[FFMPEG] Successfully opened device with basic settings.\n");
+         }
+      }
+      else
+#endif
+      /* If we're not already requesting the default format... */
+      if (ffmpeg->options)
+      {
+         ret = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, NULL);
+         if (ret < 0)
+         {
+            char msg[AV_ERROR_MAX_STRING_SIZE];
+            av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+            RARCH_ERR("[FFMPEG] Failed to open the same device in its default format: %s.\n", msg);
             goto done;
          }
       }
@@ -175,78 +273,107 @@ static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
 done:
    if (options)
    {
-      const AVDictionaryEntry prev;
-      while ((e = av_dict_get(options, "", &prev, AV_DICT_IGNORE_SUFFIX))) {
+      e = NULL;
+      while ((e = av_dict_get(options, "", e, AV_DICT_IGNORE_SUFFIX)))
+      {
          /* av_dict_iterate isn't always available, so we use av_dict_get's legacy behavior instead */
-         RARCH_WARN("[FFMPEG]: Unrecognized option on video input device: %s=%s\n", e->key, e->value);
+         RARCH_WARN("[FFMPEG] Unrecognized option on video input device: %s=%s.\n", e->key, e->value);
       }
    }
 
    av_dict_free(&options); /* noop if NULL */
-   if (result == 0)
+   if (ret == 0)
    {
-      RARCH_LOG("[FFMPEG]: Opened video input device \"%s\".\n", ffmpeg->url);
+      RARCH_LOG("[FFMPEG] Opened video input device \"%s\".\n", ffmpeg->url);
    }
-   return result;
+   return ret;
 }
 
 static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
    ffmpeg_camera_t *ffmpeg = NULL;
    AVDeviceInfoList *device_list = NULL;
-   int result = 0;
+   int ret         = 0;
    int num_sources = 0;
 
+   /* If the core didn't ask for raw framebuffers... */
    if ((caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
-   { /* If the core didn't ask for raw framebuffers... */
-      RARCH_ERR("[FFMPEG]: Camera driver only supports raw framebuffer output.\n");
+   {
+      RARCH_ERR("[FFMPEG] Camera driver only supports raw framebuffer output.\n");
       return NULL;
    }
 
    ffmpeg = (ffmpeg_camera_t*)calloc(1, sizeof(*ffmpeg));
    if (!ffmpeg)
    {
-      RARCH_ERR("[FFMPEG]: Failed to allocate memory for camera driver.\n");
+      RARCH_ERR("[FFMPEG] Failed to allocate memory for camera driver.\n");
       return NULL;
    }
 
-   ffmpeg->requested_width = width;
+   ffmpeg->requested_width  = width;
    ffmpeg->requested_height = height;
 
    avdevice_register_all();
-   RARCH_LOG("[FFMPEG]: Initialized libavdevice.\n");
+   RARCH_LOG("[FFMPEG] Initialized libavdevice.\n");
 
    ffmpeg->input_format = av_find_input_format(FFMPEG_CAMERA_DEFAULT_BACKEND);
    if (!ffmpeg->input_format)
    {
-      RARCH_ERR("[FFMPEG]: No suitable video input backend found.\n");
+      RARCH_ERR("[FFMPEG] No suitable video input backend found.\n");
       goto error;
    }
 
-   RARCH_LOG("[FFMPEG]: Using camera backend: %s (%s, flags=0x%x)\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
+   RARCH_LOG("[FFMPEG] Using camera backend: %s (%s, flags=0x%x).\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
 
-   result = ffmpeg_camera_get_initial_options(ffmpeg->input_format, &ffmpeg->options, caps, width, height);
-   if (result < 0)
+   ret = ffmpeg_camera_get_initial_options(ffmpeg->input_format, &ffmpeg->options, caps, width, height);
+   if (ret < 0)
    {
-      RARCH_ERR("[FFMPEG]: Failed to get initial options: %s\n", av_err2str(result));
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+      RARCH_ERR("[FFMPEG] Failed to get initial options: %s.\n", msg);
       goto error;
    }
 
    num_sources = avdevice_list_input_sources(ffmpeg->input_format, NULL, ffmpeg->options, &device_list);
+
+#ifdef __APPLE__
+   /* AVFoundation device listing may fail or return -38 (function not implemented) */
+   /* but we can still use the device with index 0 */
+   if (num_sources < 0)
+   {
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, num_sources);
+      RARCH_WARN("[FFMPEG] Device enumeration not fully supported on AVFoundation: %s. Using default device.\n", msg);
+      /* Continue with default device */
+      ffmpeg_camera_get_source_url(ffmpeg, NULL);
+   }
+   else if (num_sources == 0)
+   {
+      RARCH_ERR("[FFMPEG] No video input sources found.\n");
+      goto error;
+   }
+   else
+   {
+      ffmpeg_camera_get_source_url(ffmpeg, device_list->devices[0]);
+   }
+#else
    if (num_sources == 0)
    {
-      RARCH_ERR("[FFMPEG]: No video input sources found.\n");
+      RARCH_ERR("[FFMPEG] No video input sources found.\n");
       goto error;
    }
 
    if (num_sources < 0)
    {
-      RARCH_ERR("[FFMPEG]: Failed to list video input sources: %s\n", av_err2str(num_sources));
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, num_sources);
+      RARCH_ERR("[FFMPEG] Failed to list video input sources: %s.\n", msg);
       goto error;
    }
 
    ffmpeg_camera_get_source_url(ffmpeg, device_list->devices[0]);
-   RARCH_LOG("[FFMPEG]: Using video input device: %s (%s, flags=0x%x)\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
+#endif
+   RARCH_LOG("[FFMPEG] Using video input device: %s (%s, flags=0x%x).\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
 
    avdevice_free_list_devices(&device_list);
    return ffmpeg;
@@ -259,7 +386,7 @@ error:
 static void ffmpeg_camera_stop(void *data);
 static void ffmpeg_camera_free(void *data)
 {
-   ffmpeg_camera_t *ffmpeg = data;
+   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
 
    if (!ffmpeg)
       return;
@@ -275,89 +402,104 @@ static void ffmpeg_camera_poll_thread(void *data);
 
 static bool ffmpeg_camera_start(void *data)
 {
-   const settings_t *settings = config_get_ptr();
-   ffmpeg_camera_t *ffmpeg = data;
-   int result = 0;
-   AVStream *stream = NULL;
-   AVDictionary *options = NULL;
+   const AVDictionaryEntry *prev = NULL;
+   ffmpeg_camera_t *ffmpeg    = (ffmpeg_camera_t*)data;
+   int ret                    = 0;
+   AVStream *stream           = NULL;
+   AVDictionary *options      = NULL;
    const AVDictionaryEntry *e = NULL;
-   const AVDictionaryEntry prev;
-   int target_buffer_length = 0;
+   int target_buffer_length   = 0;
 
+   /* TODO: Check the actual format context, not just the pointer */
    if (ffmpeg->format_context)
-   { // TODO: Check the actual format context, not just the pointer
-      RARCH_LOG("[FFMPEG]: Camera %s is already started, no action needed.\n", ffmpeg->format_context->url);
+   {
+      RARCH_LOG("[FFMPEG] Camera %s is already started, no action needed.\n", ffmpeg->format_context->url);
       return true;
    }
 
-   result = ffmpeg_camera_open_device(ffmpeg);
-   if (result < 0)
+   ret = ffmpeg_camera_open_device(ffmpeg);
+   if (ret < 0)
       goto error;
 
-   result = av_dict_copy(&options, ffmpeg->options, 0);
-   if (result < 0)
+   ret = av_dict_copy(&options, ffmpeg->options, 0);
+   if (ret < 0)
    {
-      RARCH_ERR("[FFMPEG]: Failed to copy options: %s\n", av_err2str(result));
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+      RARCH_ERR("[FFMPEG] Failed to copy options: %s.\n", msg);
       goto error;
    }
 
-   result = avformat_find_stream_info(ffmpeg->format_context, &options);
-   if (result < 0)
+   ret = avformat_find_stream_info(ffmpeg->format_context, &options);
+   if (ret < 0)
    {
-      RARCH_ERR("[FFMPEG]: Failed to find stream info: %s\n", av_err2str(result));
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+      RARCH_ERR("[FFMPEG] Failed to find stream info: %s.\n", msg);
       goto error;
    }
 
-   while ((e = av_dict_get(options, "", &prev, AV_DICT_IGNORE_SUFFIX))) {
-      RARCH_WARN("[FFMPEG]: Unrecognized option on video input device: %s=%s\n", e->key, e->value);
-   }
-
-   result = av_find_best_stream(ffmpeg->format_context, AVMEDIA_TYPE_VIDEO, -1, -1, &ffmpeg->decoder, 0);
-   if (result < 0)
+   while ((e = av_dict_get(options, "", prev, AV_DICT_IGNORE_SUFFIX)))
    {
-      RARCH_ERR("[FFMPEG]: Failed to find video stream: %s\n", av_err2str(result));
+      RARCH_WARN("[FFMPEG] Unrecognized option on video input device: %s=%s.\n", e->key, e->value);
+   }
+
+   ret = av_find_best_stream(ffmpeg->format_context,
+         AVMEDIA_TYPE_VIDEO, -1, -1, &ffmpeg->decoder, 0);
+   if (ret < 0)
+   {
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+      RARCH_ERR("[FFMPEG] Failed to find video stream: %s.\n", msg);
       goto error;
    }
-   stream = ffmpeg->format_context->streams[result];
+   stream = ffmpeg->format_context->streams[ret];
 
-   RARCH_LOG("[FFMPEG]: Using video stream #%d with decoder \"%s\" (%s).\n", result, ffmpeg->decoder->name, ffmpeg->decoder->long_name);
+   RARCH_LOG("[FFMPEG] Using video stream #%d with decoder \"%s\" (%s).\n", ret, ffmpeg->decoder->name, ffmpeg->decoder->long_name);
 
    ffmpeg->decoder_context = avcodec_alloc_context3(ffmpeg->decoder);
    if (!ffmpeg->decoder_context)
    {
-      RARCH_ERR("[FFMPEG]: Failed to allocate decoder context.\n");
+      RARCH_ERR("[FFMPEG] Failed to allocate decoder context.\n");
       goto error;
    }
 
-   result = avcodec_parameters_to_context(ffmpeg->decoder_context, stream->codecpar);
-   if (result < 0)
+   ret = avcodec_parameters_to_context(ffmpeg->decoder_context, stream->codecpar);
+   if (ret < 0)
    {
-      RARCH_ERR("[FFMPEG]: Failed to copy codec parameters to decoder context: %s\n", av_err2str(result));
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+      RARCH_ERR("[FFMPEG] Failed to copy codec parameters to decoder context: %s.\n", msg);
       goto error;
    }
 
    if (!sws_isSupportedInput(ffmpeg->decoder_context->pix_fmt))
    {
-      RARCH_ERR("[FFMPEG]: Unsupported scaler input pixel format: %s\n", av_get_pix_fmt_name(ffmpeg->decoder_context->pix_fmt));
+      RARCH_ERR("[FFMPEG] Unsupported scaler input pixel format: %s.\n", av_get_pix_fmt_name(ffmpeg->decoder_context->pix_fmt));
       goto error;
    }
 
-   result = av_dict_copy(&ffmpeg->options, options, 0);
-   if (result < 0)
+   ret = av_dict_copy(&ffmpeg->options, options, 0);
+   if (ret < 0)
    {
-      RARCH_ERR("[FFMPEG]: Failed to copy options: %s\n", av_err2str(result));
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+      RARCH_ERR("[FFMPEG] Failed to copy options: %s.\n", msg);
       goto error;
    }
 
-   result = avcodec_open2(ffmpeg->decoder_context, ffmpeg->decoder, &options);
-   if (result < 0)
+   ret = avcodec_open2(ffmpeg->decoder_context, ffmpeg->decoder, &options);
+   if (ret < 0)
    {
-      RARCH_ERR("[FFMPEG]: Failed to open decoder: %s\n", av_err2str(result));
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+      RARCH_ERR("[FFMPEG] Failed to open decoder: %s.\n", msg);
       goto error;
    }
 
-   while ((e = av_dict_get(options, "", &prev, AV_DICT_IGNORE_SUFFIX))) {
-      RARCH_WARN("[FFMPEG]: Unrecognized option on video input device: %s=%s\n", e->key, e->value);
+   while ((e = av_dict_get(options, "", prev, AV_DICT_IGNORE_SUFFIX)))
+   {
+      RARCH_WARN("[FFMPEG] Unrecognized option on video input device: %s=%s.\n", e->key, e->value);
    }
 
    av_dict_free(&options);
@@ -365,14 +507,14 @@ static bool ffmpeg_camera_start(void *data)
    ffmpeg->packet = av_packet_alloc();
    if (!ffmpeg->packet)
    {
-      RARCH_ERR("[FFMPEG]: Failed to allocate packet.\n");
+      RARCH_ERR("[FFMPEG] Failed to allocate packet.\n");
       goto error;
    }
 
    ffmpeg->camera_frame = av_frame_alloc();
    if (!ffmpeg->camera_frame)
    {
-      RARCH_ERR("[FFMPEG]: Failed to allocate camera frame.\n");
+      RARCH_ERR("[FFMPEG] Failed to allocate camera frame.\n");
       goto error;
    }
 
@@ -389,18 +531,20 @@ static bool ffmpeg_camera_start(void *data)
    );
    if (target_buffer_length < 0)
    {
-      RARCH_ERR("[FFMPEG]: Failed to allocate target plane: %s\n", av_err2str(target_buffer_length));
+      char msg[AV_ERROR_MAX_STRING_SIZE];
+      av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, target_buffer_length);
+      RARCH_ERR("[FFMPEG] Failed to allocate target plane: %s.\n", msg);
       goto error;
    }
 
    /* target buffer aligned to 4 bytes because it's exposed to the core as a uint32_t[] */
    ffmpeg->target_buffer_length = target_buffer_length;
-   ffmpeg->target_buffers[0] = memalign_alloc(4, target_buffer_length);
-   ffmpeg->target_buffers[1] = memalign_alloc(4, target_buffer_length);
+   ffmpeg->target_buffers[0]    = (uint8_t*)memalign_alloc(4, target_buffer_length);
+   ffmpeg->target_buffers[1]    = (uint8_t*)memalign_alloc(4, target_buffer_length);
    ffmpeg->active_buffer = ffmpeg->target_buffers[0];
    if (!ffmpeg->target_buffers[0] || !ffmpeg->target_buffers[1])
    {
-      RARCH_ERR("[FFMPEG]: Failed to allocate target %d-byte buffer for %dx%d %s-formatted video data.\n",
+      RARCH_ERR("[FFMPEG] Failed to allocate target %d-byte buffer for %dx%d %s-formatted video data.\n",
          target_buffer_length,
          ffmpeg->decoder_context->width,
          ffmpeg->decoder_context->height,
@@ -409,7 +553,7 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   RARCH_LOG("[FFMPEG]: Allocated %d bytes for %dx%d %s-formatted video data.\n",
+   RARCH_LOG("[FFMPEG] Allocated %d bytes for %dx%d %s-formatted video data.\n",
       target_buffer_length,
       ffmpeg->decoder_context->width,
       ffmpeg->decoder_context->height,
@@ -428,21 +572,21 @@ static bool ffmpeg_camera_start(void *data)
    );
    if (!ffmpeg->scale_context)
    {
-      RARCH_ERR("[FFMPEG]: Failed to create scale context.\n");
+      RARCH_ERR("[FFMPEG] Failed to create scale context.\n");
       goto error;
    }
 
    ffmpeg->target_buffer_lock = slock_new();
    if (!ffmpeg->target_buffer_lock)
    {
-      RARCH_ERR("[FFMPEG]: Failed to create target buffer lock.\n");
+      RARCH_ERR("[FFMPEG] Failed to create target buffer lock.\n");
       goto error;
    }
 
    ffmpeg->poll_thread = sthread_create(ffmpeg_camera_poll_thread, ffmpeg);
    if (!ffmpeg->poll_thread)
    {
-      RARCH_ERR("[FFMPEG]: Failed to create poll thread.\n");
+      RARCH_ERR("[FFMPEG] Failed to create poll thread.\n");
       goto error;
    }
 
@@ -455,18 +599,20 @@ error:
 
 static void ffmpeg_camera_stop(void *data)
 {
-   ffmpeg_camera_t *ffmpeg = data;
+   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
 
    if (!ffmpeg->format_context)
    {
-      RARCH_LOG("[FFMPEG]: Camera %s is already stopped, no flush needed.\n", ffmpeg->url);
+      RARCH_LOG("[FFMPEG] Camera %s is already stopped, no flush needed.\n", ffmpeg->url);
    }
    else
    {
-      int result = avcodec_send_packet(ffmpeg->decoder_context, NULL);
-      if (result < 0)
+      int ret = avcodec_send_packet(ffmpeg->decoder_context, NULL);
+      if (ret < 0)
       {
-         RARCH_ERR("[FFMPEG]: Failed to flush decoder: %s\n", av_err2str(result));
+         char msg[AV_ERROR_MAX_STRING_SIZE];
+         av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+         RARCH_ERR("[FFMPEG] Failed to flush decoder: %s.\n", msg);
       }
    }
 
@@ -497,47 +643,57 @@ static void ffmpeg_camera_stop(void *data)
    av_packet_free(&ffmpeg->packet);
    avcodec_free_context(&ffmpeg->decoder_context);
    avformat_close_input(&ffmpeg->format_context);
-   RARCH_LOG("[FFMPEG]: Closed video input device %s.\n", ffmpeg->url);
+   RARCH_LOG("[FFMPEG] Closed video input device %s.\n", ffmpeg->url);
 }
 
 static void ffmpeg_camera_poll_thread(void *data)
 {
-   ffmpeg_camera_t *ffmpeg = data;
+   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
 
    if (!ffmpeg)
       return;
 
    while (!ffmpeg->done)
    {
-      int result = av_read_frame(ffmpeg->format_context, ffmpeg->packet);
-      if (result < 0)
-      { /* Read the raw data from the camera. If that fails... */
-         RARCH_ERR("[FFMPEG]: Failed to read frame: %s\n", av_err2str(result));
+      int ret = av_read_frame(ffmpeg->format_context, ffmpeg->packet);
+      /* Read the raw data from the camera. If that fails... */
+      if (ret < 0)
+      {
+         char msg[AV_ERROR_MAX_STRING_SIZE];
+         av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+         RARCH_ERR("[FFMPEG] Failed to read frame: %s.\n", msg);
          continue;
       }
 
-      result = avcodec_send_packet(ffmpeg->decoder_context, ffmpeg->packet);
-      if (result < 0)
+      ret = avcodec_send_packet(ffmpeg->decoder_context, ffmpeg->packet);
+      if (ret < 0)
       { /* Send the raw data to the decoder. If that fails... */
-         if (result == AVERROR_EOF)
+         if (ret == AVERROR_EOF)
          {
-            RARCH_DBG("[FFMPEG]: Video capture device closed\n");
+            RARCH_DBG("[FFMPEG] Video capture device closed.\n");
          }
          else
          {
-            RARCH_ERR("[FFMPEG]: Failed to send packet to decoder: %s\n", av_err2str(result));
+            char msg[AV_ERROR_MAX_STRING_SIZE];
+            av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+            RARCH_ERR("[FFMPEG] Failed to send packet to decoder: %s.\n", msg);
          }
 
          goto done_loop;
       }
 
       /* video streams consist of exactly one frame per packet */
-      result = avcodec_receive_frame(ffmpeg->decoder_context, ffmpeg->camera_frame);
-      if (result < 0)
-      { /* Send the decoded data to the camera frame. If that fails... */
-         if (!(result == AVERROR_EOF || result == AVERROR(EAGAIN)))
-         { /* these error codes mean no new frame, but not necessarily a problem */
-            RARCH_ERR("[FFMPEG]: Failed to receive camera frame from decoder: %s\n", av_err2str(result));
+      ret = avcodec_receive_frame(ffmpeg->decoder_context, ffmpeg->camera_frame);
+
+      /* Send the decoded data to the camera frame. If that fails... */
+      if (ret < 0)
+      {
+         /* These error codes mean no new frame, but not necessarily a problem */
+         if (!(ret == AVERROR_EOF || ret == AVERROR(EAGAIN)))
+         {
+            char msg[AV_ERROR_MAX_STRING_SIZE];
+            av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+            RARCH_ERR("[FFMPEG] Failed to receive camera frame from decoder: %s.\n", msg);
          }
 
          goto done_loop;
@@ -546,7 +702,7 @@ static void ffmpeg_camera_poll_thread(void *data)
       retro_assert(ffmpeg->decoder->type == AVMEDIA_TYPE_VIDEO);
 
       /* sws_scale_frame is tidier but isn't as widely available */
-      result = sws_scale(
+      ret = sws_scale(
          ffmpeg->scale_context,
          (const uint8_t *const *)ffmpeg->camera_frame->data,
          ffmpeg->camera_frame->linesize,
@@ -555,14 +711,18 @@ static void ffmpeg_camera_poll_thread(void *data)
          ffmpeg->target_planes,
          ffmpeg->target_linesizes
       );
-      if (result < 0)
-      { /* Scale and convert the frame to the target format. If that fails... */
-         RARCH_ERR("[FFMPEG]: Failed to scale frame: %s\n", av_err2str(result));
+
+      /* Scale and convert the frame to the target format. If that fails... */
+      if (ret < 0)
+      {
+         char msg[AV_ERROR_MAX_STRING_SIZE];
+         av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+         RARCH_ERR("[FFMPEG] Failed to scale frame: %s.\n", msg);
          goto done_loop;
       }
 
       slock_lock(ffmpeg->target_buffer_lock);
-      result = av_image_copy_to_buffer(
+      ret = av_image_copy_to_buffer(
          ffmpeg->active_buffer,
          ffmpeg->target_buffer_length,
          (const uint8_t *const *)ffmpeg->target_planes,
@@ -572,13 +732,14 @@ static void ffmpeg_camera_poll_thread(void *data)
          ffmpeg->target_height,
          1
       );
-      if (result >= 0) {
+      if (ret >= 0)
          ffmpeg->active_buffer = ffmpeg->active_buffer == ffmpeg->target_buffers[0] ? ffmpeg->target_buffers[1] : ffmpeg->target_buffers[0];
-      }
       slock_unlock(ffmpeg->target_buffer_lock);
-      if (result < 0)
+      if (ret < 0)
       {
-         RARCH_ERR("[FFMPEG]: Failed to copy frame to buffer: %s\n", av_err2str(result));
+         char msg[AV_ERROR_MAX_STRING_SIZE];
+         av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
+         RARCH_ERR("[FFMPEG] Failed to copy frame to buffer: %s.\n", msg);
          goto done_loop;
       }
    done_loop:
@@ -590,22 +751,21 @@ static void ffmpeg_camera_poll_thread(void *data)
    av_packet_unref(ffmpeg->packet);
 }
 
-static bool ffmpeg_camera_poll(
-   void *data,
+static bool ffmpeg_camera_poll(void *data,
    retro_camera_frame_raw_framebuffer_t frame_raw_cb,
    retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
-   ffmpeg_camera_t *ffmpeg = data;
+   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
 
    if (!ffmpeg->format_context)
    {
-      RARCH_ERR("[FFMPEG]: Camera is not started, cannot poll.\n");
+      RARCH_ERR("[FFMPEG] Camera is not started, cannot poll.\n");
       return false;
    }
 
    if (!frame_raw_cb)
    {
-      RARCH_ERR("[FFMPEG]: No callback provided, cannot poll.\n");
+      RARCH_ERR("[FFMPEG] No callback provided, cannot poll.\n");
       return false;
    }
 

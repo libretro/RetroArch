@@ -1655,7 +1655,7 @@ void gfx_animation_deinit(void)
 void gfx_animation_timer_start(float *timer, gfx_timer_ctx_entry_t *timer_entry)
 {
    gfx_animation_ctx_entry_t entry;
-   uintptr_t tag        = (uintptr_t) timer;
+   uintptr_t tag        = (uintptr_t)timer;
 
    gfx_animation_kill_by_tag(&tag);
 

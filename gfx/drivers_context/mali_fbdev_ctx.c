@@ -85,7 +85,7 @@ static int gfx_ctx_mali_fbdev_get_vinfo(void *data)
    {
       vinfo.yoffset = 0;
       if (ioctl(fd, FBIOPUT_VSCREENINFO, &vinfo))
-         RARCH_ERR("Error resetting yoffset to 0.\n");
+         RARCH_ERR("[Mali] Error resetting yoffset to 0.\n");
    }
 
    close(fd);
@@ -250,7 +250,7 @@ static void *gfx_ctx_mali_fbdev_init(void *video_driver)
 
    if (mali_flags & GFX_CTX_MALI_FBDEV_FLAG_GLES3)
       attribs_init[1] = EGL_OPENGL_ES3_BIT;
-   RARCH_LOG("GLES version = %d.\n", (mali_flags & GFX_CTX_MALI_FBDEV_FLAG_GLES3) ? 3 : 2);
+   RARCH_LOG("[Mali] GLES version = %d.\n", (mali_flags & GFX_CTX_MALI_FBDEV_FLAG_GLES3) ? 3 : 2);
 #endif
    if (!(mali = (mali_ctx_data_t*)calloc(1, sizeof(*mali))))
        return NULL;
@@ -386,6 +386,26 @@ static float gfx_ctx_mali_fbdev_get_refresh_rate(void *data)
    return mali->refresh_rate;
 }
 
+static bool gfx_ctx_mali_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
+   return egl_create_surface(&mali->egl, &mali->native_window);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_mali_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
+   return egl_destroy_surface(&mali->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_init,
    gfx_ctx_mali_fbdev_destroy,
@@ -421,5 +441,7 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_set_flags,
    gfx_ctx_mali_fbdev_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   gfx_ctx_mali_create_surface,
+   gfx_ctx_mali_destroy_surface
 };

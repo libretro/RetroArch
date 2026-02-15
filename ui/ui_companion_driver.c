@@ -140,7 +140,11 @@ void ui_companion_driver_init_first(
 {
    uico_driver_state_t *uico_st        = &uico_driver_st;
 #ifdef HAVE_QT
+#ifdef HAVE_QT6  /* FIXME: deferred initialization after loading/unloading content */
+   if (desktop_menu_enable)
+#else
    if (desktop_menu_enable && ui_companion_toggle)
+#endif
    {
       uico_st->qt_data                 = ui_companion_qt.init();
       uico_st->flags                  |= UICO_ST_FLAG_QT_IS_INITED;

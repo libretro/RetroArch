@@ -16,7 +16,7 @@ else
 endif
 
 INCDIR = deps deps/stb deps/7zip libretro-common/include libretro-common/include/compat/zlib
-CFLAGS = $(OPTIMIZE_LV) -ffast-math -fsingle-precision-constant
+CFLAGS = $(OPTIMIZE_LV) -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES = -DPSP \

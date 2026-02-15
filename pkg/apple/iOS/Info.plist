@@ -90,6 +90,8 @@
 		<string>_altserver._tcp</string>
 		<string>_ra_netplay._tcp</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Some cores are able to provide camera input to games.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>RetroArch uses the local network to find local Netplay participants.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
@@ -98,7 +100,7 @@
 	<string>Some cores are able to provide microphone input to games.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
-		<string>ConfigurationIntent</string>
+		<string>PlayGameIntent</string>
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
@@ -108,8 +110,19 @@
 	<array>
 		<string>arm64</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.retroarch.url</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>retroarch</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIRequiresFullScreen</key>
-	<true/>
+	<false/>
 	<key>UIStatusBarHidden</key>
 	<false/>
 	<key>UISupportedInterfaceOrientations</key>

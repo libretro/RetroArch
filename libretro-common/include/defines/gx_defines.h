@@ -27,8 +27,10 @@
 
 #define SYSMEM1_SIZE 0x01800000
 
+#ifndef _SHIFTL
 #define _SHIFTL(v, s, w)	((uint32_t) (((uint32_t)(v) & ((0x01 << (w)) - 1)) << (s)))
 #define _SHIFTR(v, s, w)	((uint32_t)(((uint32_t)(v) >> (s)) & ((0x01 << (w)) - 1)))
+#endif
 
 #define OSThread lwp_t
 #define OSCond lwpq_t
@@ -79,10 +81,6 @@
    } \
    src += tmp_pitch; \
 }
-
-#define CHUNK_FRAMES 64
-#define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))
-#define BLOCKS 16
 
 #define AIInit AUDIO_Init
 #define AIInitDMA AUDIO_InitDMA

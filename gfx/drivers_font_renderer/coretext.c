@@ -53,7 +53,13 @@ typedef struct coretext_renderer
    coretext_atlas_slot_t atlas_slots[CT_ATLAS_SIZE];
    coretext_atlas_slot_t *uc_map[0x100];
    struct font_line_metrics line_metrics;
+   unsigned usage_counter;
+   CTFontRef font_face;
+   CFDictionaryRef attr_dict;  /* Reused for all glyphs */
+   float cached_ascent;        /* Cached font ascent */
 } ct_font_renderer_t;
+
+static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer_t *handle, coretext_atlas_slot_t *slot, uint32_t charcode);
 
 static struct font_atlas *font_renderer_ct_get_atlas(void *data)
 {
@@ -63,17 +69,66 @@ static struct font_atlas *font_renderer_ct_get_atlas(void *data)
    return &handle->atlas;
 }
 
-static const struct font_glyph *font_renderer_ct_get_glyph(
-    void *data, uint32_t charcode)
+static coretext_atlas_slot_t* coretext_font_renderer_get_slot(ct_font_renderer_t *handle)
 {
+   int i, map_id;
+   unsigned oldest = 0;
+
+   for (i = 1; i < CT_ATLAS_SIZE; i++)
+      if ((handle->usage_counter - handle->atlas_slots[i].last_used) >
+            (handle->usage_counter - handle->atlas_slots[oldest].last_used))
+         oldest = i;
+
+   /* remove from map */
+   map_id = handle->atlas_slots[oldest].charcode & 0xFF;
+   if (handle->uc_map[map_id] == &handle->atlas_slots[oldest])
+      handle->uc_map[map_id] = handle->atlas_slots[oldest].next;
+   else if (handle->uc_map[map_id])
+   {
+      coretext_atlas_slot_t* ptr = handle->uc_map[map_id];
+      while (ptr->next && ptr->next != &handle->atlas_slots[oldest])
+         ptr = ptr->next;
+      ptr->next = handle->atlas_slots[oldest].next;
+   }
+
+   return &handle->atlas_slots[oldest];
+}
+
+static const struct font_glyph *font_renderer_ct_get_glyph(
+      void *data, uint32_t charcode)
+{
+   unsigned map_id;
    coretext_atlas_slot_t *atlas_slot = NULL;
    ct_font_renderer_t        *handle = (ct_font_renderer_t*)data;
 
-   if (!handle || charcode >= CT_ATLAS_SIZE)
+   if (!handle)
       return NULL;
 
-   atlas_slot = (coretext_atlas_slot_t*)&handle->atlas_slots[charcode];
+   map_id = charcode & 0xFF;
+   atlas_slot = handle->uc_map[map_id];
 
+   while (atlas_slot)
+   {
+      if (atlas_slot->charcode == charcode)
+      {
+         atlas_slot->last_used = handle->usage_counter++;
+         return &atlas_slot->glyph;
+      }
+      atlas_slot = atlas_slot->next;
+   }
+
+   /* Character not found, need to create it */
+   atlas_slot = coretext_font_renderer_get_slot(handle);
+   atlas_slot->charcode = charcode;
+   atlas_slot->next = handle->uc_map[map_id];
+   handle->uc_map[map_id] = atlas_slot;
+
+   /* Render the glyph on demand */
+   if (handle->font_face)
+      coretext_font_renderer_render_glyph(handle->font_face, handle, atlas_slot, charcode);
+
+   atlas_slot->last_used = handle->usage_counter++;
+   handle->atlas.dirty = true;
    return &atlas_slot->glyph;
 }
 
@@ -84,36 +139,133 @@ static void font_renderer_ct_free(void *data)
    if (!handle)
       return;
 
+   if (handle->font_face)
+   {
+      CFRelease(handle->font_face);
+      handle->font_face = NULL;
+   }
+
+   if (handle->attr_dict)
+   {
+      CFRelease(handle->attr_dict);
+      handle->attr_dict = NULL;
+   }
+
    free(handle->atlas.buffer);
    free(handle);
 }
 
-static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handle)
+static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handle, float font_size)
 {
-   unsigned i;
-   size_t bytesPerRow;
-   CGGlyph glyphs[CT_ATLAS_SIZE];
-   CGRect bounds[CT_ATLAS_SIZE];
-   CGSize advances[CT_ATLAS_SIZE];
+   unsigned i, x, y;
+   coretext_atlas_slot_t* slot = NULL;
+   int max_glyph_size          = (font_size < 0) ? -font_size : font_size;
    float ascent, descent;
+
+   handle->atlas.width         = max_glyph_size * CT_ATLAS_COLS;
+   handle->atlas.height        = max_glyph_size * CT_ATLAS_ROWS;
+
+   handle->atlas.buffer        = (uint8_t*)calloc(
+         handle->atlas.width * handle->atlas.height, 1);
+
+   if (!handle->atlas.buffer)
+      return false;
+
+   ascent  = CTFontGetAscent(face);
+   descent = CTFontGetDescent(face);
+
+   /* Cache ascent for performance */
+   handle->cached_ascent = ascent;
+
+   handle->line_metrics.ascender  = ascent;
+   handle->line_metrics.descender = (descent < 0.0f) ? (-1.0f * descent) : descent;
+   handle->line_metrics.height    = handle->line_metrics.ascender + handle->line_metrics.descender +
+         (float)CTFontGetLeading(face);
+
+   slot = handle->atlas_slots;
+
+   for (y = 0; y < CT_ATLAS_ROWS; y++)
+   {
+      for (x = 0; x < CT_ATLAS_COLS; x++)
+      {
+         slot->glyph.atlas_offset_x = x * max_glyph_size;
+         slot->glyph.atlas_offset_y = y * max_glyph_size;
+         slot->glyph.width          = max_glyph_size;
+         slot->glyph.height         = max_glyph_size;
+         slot++;
+      }
+   }
+
+   /* Pre-generate common ASCII characters */
+   for (i = 32; i < 128; i++)
+      font_renderer_ct_get_glyph(handle, i);
+
+   return true;
+}
+
+static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer_t *handle, coretext_atlas_slot_t *slot, uint32_t charcode)
+{
+   CGGlyph glyph;
+   CGRect bounds;
+   CGSize advance;
    CGContextRef offscreen;
-   CFDictionaryRef attr;
-   CFTypeRef values[1];
-   CFStringRef keys[1];
-   int max_height                    = 0;
-   int max_width                     = 0;
-   void *bitmapData                  = NULL;
-   bool ret                          = true;
-   size_t bitsPerComponent           = 8;
-   UniChar characters[CT_ATLAS_SIZE] = {0};
+   void *bitmapData;
+   UniChar character = (UniChar)charcode;
+   CFStringRef glyph_cfstr;
+   CFAttributedStringRef attrString;
+   CTLineRef line;
+   uint8_t *dst;
+   const uint8_t *src;
+   unsigned r, c;
 
-   values[0]                         = face;
-   keys[0]                           = kCTFontAttributeName;
+   /* Get glyph for character */
+   bool has_glyph = CTFontGetGlyphsForCharacters(face, &character, &glyph, 1);
 
-   for (i = 0; i < CT_ATLAS_SIZE; i++)
-      characters[i] = (UniChar)i;
+   /* If character is not available in font, render a missing glyph rectangle */
+   if (!has_glyph)
+   {
+      /* Draw rectangle directly in atlas buffer */
+      dst = (uint8_t*)handle->atlas.buffer +
+            slot->glyph.atlas_offset_x +
+            slot->glyph.atlas_offset_y * handle->atlas.width;
 
-   CTFontGetGlyphsForCharacters(face, characters, glyphs, CT_ATLAS_SIZE);
+      /* Only draw rectangle if glyph is large enough and within atlas bounds */
+      if (slot->glyph.width >= 6 && slot->glyph.height >= 6)
+      {
+         unsigned max_r = slot->glyph.height - 2;
+         unsigned max_c = slot->glyph.width - 2;
+         int atlas_size = handle->atlas.width * handle->atlas.height;
+
+         /* Draw 2-pixel border rectangle */
+         for (r = 2; r < max_r; r++)
+         {
+            int left_pos = r * handle->atlas.width + 2;
+            int right_pos = r * handle->atlas.width + max_c - 1;
+            if (left_pos < atlas_size && right_pos < atlas_size)
+            {
+               dst[left_pos] = 255;   /* Left */
+               dst[right_pos] = 255;  /* Right */
+            }
+         }
+         for (c = 2; c < max_c; c++)
+         {
+            int top_pos = 2 * handle->atlas.width + c;
+            int bottom_pos = (max_r - 1) * handle->atlas.width + c;
+            if (top_pos < atlas_size && bottom_pos < atlas_size)
+            {
+               dst[top_pos] = 255;    /* Top */
+               dst[bottom_pos] = 255; /* Bottom */
+            }
+         }
+      }
+
+      /* Set basic metrics using cached ascent */
+      slot->glyph.draw_offset_x = 0;
+      slot->glyph.draw_offset_y = (int)floor(-handle->cached_ascent);
+      slot->glyph.advance_x     = slot->glyph.width;
+      slot->glyph.advance_y     = 0;
+      return true;
+   }
 
    CTFontGetBoundingRectsForGlyphs(face,
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= 1080
@@ -121,7 +273,7 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
 #else
          kCTFontDefaultOrientation,
 #endif
-         glyphs, bounds, CT_ATLAS_SIZE);
+         &glyph, &bounds, 1);
 
    CTFontGetAdvancesForGlyphs(face,
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= 1080
@@ -129,137 +281,53 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
 #else
          kCTFontDefaultOrientation,
 #endif
-         glyphs, advances, CT_ATLAS_SIZE);
+         &glyph, &advance, 1);
 
-   ascent  = CTFontGetAscent(face);
-   descent = CTFontGetDescent(face);
+   /* Set up glyph metrics using cached ascent */
+   slot->glyph.draw_offset_x = (int)ceil(bounds.origin.x);
+   slot->glyph.draw_offset_y = (int)floor(-bounds.origin.y) - (int)floor(handle->cached_ascent) + 1;
+   slot->glyph.advance_x     = (int)round(advance.width);
+   slot->glyph.advance_y     = (int)round(advance.height);
 
-   for (i = 0; i < CT_ATLAS_SIZE; i++)
+   /* Create bitmap context */
+   bitmapData = calloc(slot->glyph.height, slot->glyph.width);
+   offscreen  = CGBitmapContextCreate(bitmapData, slot->glyph.width, slot->glyph.height,
+                                      8, slot->glyph.width, NULL, kCGImageAlphaOnly);
+
+   if (!offscreen)
    {
-      int origin_x, origin_y;
-      struct font_glyph *glyph    = &handle->atlas_slots[i].glyph;
-
-      if (!glyph)
-         continue;
-
-      origin_x                    = ceil(bounds[i].origin.x);
-      origin_y                    = ceil(bounds[i].origin.y);
-
-      glyph->draw_offset_x        = 0;
-      glyph->draw_offset_y        = -ascent;
-      glyph->width                = ceil(bounds[i].size.width);
-      glyph->height               = ceil(bounds[i].size.height);
-      glyph->advance_x            = ceil(advances[i].width);
-      glyph->advance_y            = ceil(advances[i].height);
-
-      max_width                   = MAX(max_width, (origin_x + glyph->width));
-      max_height                  = MAX(max_height, (origin_y + glyph->height));
-   }
-
-   max_height                     = MAX(max_height, ceil(ascent+descent));
-
-   handle->atlas.width            = max_width * CT_ATLAS_COLS;
-   handle->atlas.height           = max_height * CT_ATLAS_ROWS;
-
-   handle->line_metrics.ascender  = (float)CTFontGetAscent(face);
-   handle->line_metrics.descender = (float)CTFontGetDescent(face);
-   /* CTFontGetDescent() should return a positive value,
-    * but I have seen several reports online of the
-    * value being negative
-    * > Since I cannot test this on real hardware, add
-    *   a simple safety check... */
-   handle->line_metrics.descender = (handle->line_metrics.descender < 0.0f) ?
-         (-1.0f * handle->line_metrics.descender) : handle->line_metrics.descender;
-   handle->line_metrics.height    =
-         handle->line_metrics.ascender + handle->line_metrics.descender +
-         (float)CTFontGetLeading(face);
-
-   handle->atlas.buffer           = (uint8_t*)calloc(
-         handle->atlas.width * handle->atlas.height, 1);
-
-   if (!handle->atlas.buffer)
+      free(bitmapData);
       return false;
-
-   bytesPerRow                    = max_width;
-   bitmapData                     = calloc(max_height, bytesPerRow);
-   offscreen                      = CGBitmapContextCreate(
-         bitmapData, max_width, max_height,
-         bitsPerComponent, bytesPerRow, NULL, kCGImageAlphaOnly);
+   }
 
    CGContextSetTextMatrix(offscreen, CGAffineTransformIdentity);
 
-   attr = CFDictionaryCreate(NULL, (const void **)&keys, (const void **)&values,
-         sizeof(keys) / sizeof(keys[0]), &kCFTypeDictionaryKeyCallBacks,
-         &kCFTypeDictionaryValueCallBacks);
+   /* Create string from Unicode character using cached dictionary */
+   glyph_cfstr = CFStringCreateWithCharacters(NULL, &character, 1);
+   attrString  = CFAttributedStringCreate(NULL, glyph_cfstr, handle->attr_dict);
+   CFRelease(glyph_cfstr);
+   line        = CTLineCreateWithAttributedString(attrString);
+   CFRelease(attrString);
 
-   for (i = 0; i < CT_ATLAS_SIZE; i++)
-   {
-      unsigned offset_x, offset_y, r, c;
-      char glyph_cstr[2];
-      CFStringRef glyph_cfstr;
-      CFAttributedStringRef attrString;
-      CTLineRef line           = NULL;
-      const uint8_t *src       = NULL;
-      uint8_t       *dst       = NULL;
-      struct font_glyph *glyph = &handle->atlas_slots[i].glyph;
+   /* Render glyph */
+   CGContextSetTextPosition(offscreen, -bounds.origin.x, -bounds.origin.y);
+   CTLineDraw(line, offscreen);
+   CFRelease(line);
 
-      if (!glyph)
-         continue;
+   /* Copy bitmap to atlas */
+   dst = (uint8_t*)handle->atlas.buffer +
+         slot->glyph.atlas_offset_x +
+         slot->glyph.atlas_offset_y * handle->atlas.width;
+   src = (const uint8_t*)bitmapData;
 
-      glyph->width             = max_width;
-      glyph->height            = max_height;
+   for (r = 0; r < slot->glyph.height; r++)
+      for (c = 0; c < slot->glyph.width; c++)
+         dst[r * handle->atlas.width + c] = src[r * slot->glyph.width + c];
 
-      offset_x                 = (i % CT_ATLAS_COLS) * max_width;
-      offset_y                 = (i / CT_ATLAS_COLS) * max_height;
-
-      glyph->atlas_offset_x    = offset_x;
-      glyph->atlas_offset_y    = offset_y;
-
-      glyph_cstr[0]            = i;
-      glyph_cstr[1]            = 0;
-      glyph_cfstr              = CFStringCreateWithCString(
-            NULL, glyph_cstr, kCFStringEncodingASCII);
-      attrString               = CFAttributedStringCreate(
-            NULL, glyph_cfstr, attr);
-      CFRelease(glyph_cfstr);
-      glyph_cfstr              = NULL;
-      line                     = CTLineCreateWithAttributedString(
-            attrString);
-      CFRelease(attrString);
-      attrString               = NULL;
-
-      memset(bitmapData, 0, max_height * bytesPerRow);
-      CGContextSetTextPosition(offscreen, 0, descent);
-      CTLineDraw(line, offscreen);
-      CGContextFlush(offscreen);
-
-      CFRelease(line);
-      line = NULL;
-
-      dst  = (uint8_t*)handle->atlas.buffer;
-      src  = (const uint8_t*)bitmapData;
-
-      for (r = 0; r < (unsigned)max_height; r++)
-      {
-         for (c = 0; c < (unsigned)max_width; c++)
-         {
-            unsigned src_idx  = (unsigned)(r * bytesPerRow + c);
-            unsigned dest_idx =
-               (r + offset_y) * (CT_ATLAS_COLS * max_width) + (c + offset_x);
-            uint8_t v         = src[src_idx];
-            dst[dest_idx]     = v;
-         }
-      }
-   }
-
-   CFRelease(attr);
    CGContextRelease(offscreen);
-
-   attr      = NULL;
-   offscreen = NULL;
    free(bitmapData);
 
-   return ret;
+   return true;
 }
 
 static void *font_renderer_ct_init(const char *font_path, float font_size)
@@ -270,8 +338,7 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
    CFURLRef url                   = NULL;
    CGDataProviderRef dataProvider = NULL;
    CGFontRef theCGFont            = NULL;
-   ct_font_renderer_t *handle     = (ct_font_renderer_t*)
-      calloc(1, sizeof(*handle));
+   ct_font_renderer_t *handle     = (ct_font_renderer_t*)calloc(1, sizeof(*handle));
 
    if (!handle || !path_is_valid(font_path))
    {
@@ -280,7 +347,7 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
    }
 
    if (!(cf_font_path = CFStringCreateWithCString(
-         NULL, font_path, kCFStringEncodingASCII)))
+                     NULL, font_path, kCFStringEncodingASCII)))
    {
       err = 1;
       goto error;
@@ -298,7 +365,19 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
       goto error;
    }
 
-   if (!coretext_font_renderer_create_atlas(face, handle))
+   /* Store the font face for on-demand glyph rendering */
+   handle->font_face = face;
+   CFRetain(face);
+
+   /* Create reusable attribute dictionary for performance */
+   {
+      CFTypeRef values[1] = {face};
+      CFStringRef keys[1] = {kCTFontAttributeName};
+      handle->attr_dict = CFDictionaryCreate(NULL, (const void **)&keys, (const void **)&values,
+            1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+   }
+
+   if (!coretext_font_renderer_create_atlas(face, handle, font_size))
    {
       err = 1;
       goto error;
@@ -360,11 +439,11 @@ static void font_renderer_ct_get_line_metrics(
 }
 
 font_renderer_driver_t coretext_font_renderer = {
-  font_renderer_ct_init,
-  font_renderer_ct_get_atlas,
-  font_renderer_ct_get_glyph,
-  font_renderer_ct_free,
-  font_renderer_ct_get_default_font,
-  "font_renderer_ct",
-  font_renderer_ct_get_line_metrics
+   font_renderer_ct_init,
+   font_renderer_ct_get_atlas,
+   font_renderer_ct_get_glyph,
+   font_renderer_ct_free,
+   font_renderer_ct_get_default_font,
+   "font_renderer_ct",
+   font_renderer_ct_get_line_metrics
 };

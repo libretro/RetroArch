@@ -56,16 +56,11 @@ static int file_decompressed_subdir(const char *name,
    fill_pathname_basedir(path_dir, path, sizeof(path_dir));
 
    /* Make directory */
-   if (!path_mkdir(path_dir))
-      goto error;
+   if (path_mkdir(path_dir))
+      if (file_archive_perform_mode(path, valid_exts,
+               cdata, cmode, csize, size, crc32, userdata))
+         return 1;
 
-   if (!file_archive_perform_mode(path, valid_exts,
-            cdata, cmode, csize, size, crc32, userdata))
-      goto error;
-
-   return 1;
-
-error:
    userdata->dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
    _len  = strlcpy(userdata->dec->callback_error,
          "Failed to deflate ",
@@ -95,18 +90,15 @@ static int file_decompressed(const char *name, const char *valid_exts,
    fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
    path_basedir_wrapper(path);
 
-   if (!path_mkdir(path))
-      goto error;
+   if (path_mkdir(path))
+   {
+      fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
 
-   fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
+      if (file_archive_perform_mode(path, valid_exts,
+               cdata, cmode, csize, size, crc32, userdata))
+         return 1;
+   }
 
-   if (!file_archive_perform_mode(path, valid_exts,
-            cdata, cmode, csize, size, crc32, userdata))
-      goto error;
-
-   return 1;
-
-error:
    dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
    _len  = strlcpy(dec->callback_error, "Failed to deflate ",
 		   CALLBACK_ERROR_SIZE);
@@ -342,16 +334,16 @@ void *task_push_decompress(
 
    _len                = strlcpy(tmp,
 		   msg_hash_to_str(MSG_EXTRACTING), sizeof(tmp));
-   tmp[  _len]         = ' ';
-   tmp[++_len]         = '\'';
+   tmp[  _len]         = ':';
+   tmp[++_len]         = ' ';
    tmp[++_len]         = '\0';
    _len               += strlcpy(tmp + _len,
          path_basename(source_file),
                          sizeof(tmp) - _len);
-   tmp[_len  ]         = '\'';
    tmp[++_len]         = '\0';
 
    t->title            = strdup(tmp);
+   t->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       t->flags        |=  RETRO_TASK_FLG_MUTE;
    else

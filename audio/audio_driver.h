@@ -165,12 +165,30 @@ typedef struct audio_driver
    size_t (*write_avail)(void *data);
 
    size_t (*buffer_size)(void *data);
+
+   /**
+    * Optional. Write raw int16 samples with resampling handled by driver.
+    * If non-NULL, audio_driver will call this instead of doing software
+    * resampling. The driver is responsible for resampling from input_rate
+    * to its output rate, applying the rate_adjust factor for A/V sync,
+    * and applying the volume gain to the output.
+    *
+    * @param data        Driver context
+    * @param samples     Interleaved int16 stereo samples (LRLRLR...)
+    * @param frames      Number of frames (pairs of samples)
+    * @param input_rate  Source sample rate in Hz
+    * @param rate_adjust Rate adjustment multiplier for A/V sync (1.0 = normal)
+    * @param volume      Volume gain to apply (0.0 = muted, 1.0 = full volume)
+    * @return Number of frames written, or -1 on error
+    */
+   ssize_t (*write_raw)(void *data, const int16_t *samples, size_t frames,
+         unsigned input_rate, double rate_adjust, float volume);
 } audio_driver_t;
 
 typedef struct
 {
-   double source_ratio_original;
-   double source_ratio_current;
+   double src_ratio_orig;
+   double src_ratio_curr;
 
    uint64_t free_samples_count;
 
@@ -247,6 +265,7 @@ typedef struct
    bool mute_enable;
 #ifdef HAVE_AUDIOMIXER
    bool mixer_mute_enable;
+   uint8_t mixer_streams_playing;  /* Count of currently playing mixer streams */
 #endif
 
    /* Sample the flush delta-time when fast forwarding to find the correct ratio. */
@@ -320,17 +339,6 @@ bool audio_driver_start(bool is_shutdown);
 
 bool audio_driver_stop(void);
 
-/**
- * If you need to query the size of audio samples,
- * use this function instead of checking the flags directly.
- *
- * @return The size of a single audio sample in bytes,
- * as determined by the presence of the \c AUDIO_FLAG_USE_FLOAT flag.
- * Will currently return either 2 (for \c uint16_t) or 4 (for \c float),
- * although this may change if we add support for more sample types.
- */
-unsigned audio_driver_get_sample_size(void);
-
 #ifdef HAVE_TRANSLATE
 /* TODO/FIXME - Doesn't currently work.  Fix this. */
 bool audio_driver_is_ai_service_speech_running(void);
@@ -344,9 +352,7 @@ bool audio_driver_is_ai_service_speech_running(void);
  **/
 bool audio_compute_buffer_statistics(audio_statistics_t *stats);
 
-bool audio_driver_init_internal(
-      void *settings_data,
-      bool audio_cb_inited);
+bool audio_driver_init_internal(void *data, bool audio_cb_inited);
 
 bool audio_driver_deinit(void);
 
@@ -439,6 +445,7 @@ extern audio_driver_t audio_switch_thread;
 extern audio_driver_t audio_switch_libnx_audren;
 extern audio_driver_t audio_switch_libnx_audren_thread;
 extern audio_driver_t audio_rwebaudio;
+extern audio_driver_t audio_audioworklet;
 
 audio_driver_state_t *audio_state_get_ptr(void);
 

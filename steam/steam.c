@@ -30,7 +30,7 @@ void steam_init(void)
    if (MIST_IS_SUCCESS(result))
       mist_initialized = true;
    else
-      RARCH_ERR("[Steam]: Failed to initialize mist subprocess (%d-%d)\n", MIST_UNPACK_RESULT(result));
+      RARCH_ERR("[Steam] Failed to initialize mist subprocess (%d-%d).\n", MIST_UNPACK_RESULT(result));
 }
 
 void steam_poll(void)
@@ -47,7 +47,7 @@ void steam_poll(void)
       if (has_poll_errored)
          return;
 
-      RARCH_ERR("[Steam]: Error polling (%d-%d)\n", MIST_UNPACK_RESULT(result));
+      RARCH_ERR("[Steam] Error polling (%d-%d).\n", MIST_UNPACK_RESULT(result));
 
       has_poll_errored = true;
    }
@@ -306,7 +306,7 @@ error:
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
-   RARCH_ERR("[Steam]: Error installing DLC %d (%d-%d)\n", core_dlc->app_id, MIST_UNPACK_RESULT(result));
+   RARCH_ERR("[Steam] Error installing DLC %d (%d-%d).\n", core_dlc->app_id, MIST_UNPACK_RESULT(result));
 }
 
 void steam_uninstall_core_dlc(steam_core_dlc_t *core_dlc)
@@ -332,7 +332,7 @@ error:
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
-   RARCH_ERR("[Steam]: Error uninstalling DLC %d (%d-%d)\n", core_dlc->app_id, MIST_UNPACK_RESULT(result));
+   RARCH_ERR("[Steam] Error uninstalling DLC %d (%d-%d).\n", core_dlc->app_id, MIST_UNPACK_RESULT(result));
 }
 
 bool steam_open_osk(void)
@@ -552,5 +552,5 @@ void steam_deinit(void)
    if (MIST_IS_SUCCESS(result))
       mist_initialized = false;
    else
-      RARCH_ERR("[Steam]: Failed to deinitialize mist subprocess (%d-%d)\n", MIST_UNPACK_RESULT(result));
+      RARCH_ERR("[Steam] Failed to deinitialize mist subprocess (%d-%d).\n", MIST_UNPACK_RESULT(result));
 }

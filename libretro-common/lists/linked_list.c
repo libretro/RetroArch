@@ -51,7 +51,7 @@ linked_list_t *linked_list_new(void)
 {
    linked_list_t *list;
 
-   list = (linked_list_t *)calloc(sizeof(linked_list_t), 1);
+   list = (linked_list_t *)calloc(1, sizeof(linked_list_t));
    return list;
 }
 

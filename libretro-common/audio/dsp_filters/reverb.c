@@ -187,27 +187,26 @@ static void revmodel_setmode(struct revmodel *rev, float value)
 
 static void revmodel_init(struct revmodel *rev,int srate)
 {
-
-  static const int comb_lengths[8] = { 1116,1188,1277,1356,1422,1491,1557,1617 };
+  unsigned c;
+  static const int comb_lengths[8]    = { 1116,1188,1277,1356,1422,1491,1557,1617 };
   static const int allpass_lengths[4] = { 225,341,441,556 };
   double r = srate * (1 / 44100.0);
-  unsigned c;
 
    for (c = 0; c < numcombs; ++c)
    {
-	   rev->bufcomb[c] = malloc(r*comb_lengths[c]*sizeof(float));
-	   rev->combL[c].buffer  =  rev->bufcomb[c];
-         memset(rev->combL[c].buffer,0,r*comb_lengths[c]*sizeof(float));
-         rev->combL[c].bufsize=r*comb_lengths[c];
+	   rev->bufcomb[c]      = (float*)malloc(r * comb_lengths[c] * sizeof(float));
+	   rev->combL[c].buffer = rev->bufcomb[c];
+      memset(rev->combL[c].buffer, 0, r * comb_lengths[c] * sizeof(float));
+      rev->combL[c].bufsize=r*comb_lengths[c];
   }
 
    for (c = 0; c < numallpasses; ++c)
    {
-	   rev->bufallpass[c] = malloc(r*allpass_lengths[c]*sizeof(float));
-	   rev->allpassL[c].buffer  =  rev->bufallpass[c];
-         memset(rev->allpassL[c].buffer,0,r*allpass_lengths[c]*sizeof(float));
-         rev->allpassL[c].bufsize=r*allpass_lengths[c];
-         rev->allpassL[c].feedback = 0.5f;
+	   rev->bufallpass[c]       = (float*)malloc(r * allpass_lengths[c] * sizeof(float));
+	   rev->allpassL[c].buffer  = rev->bufallpass[c];
+      memset(rev->allpassL[c].buffer, 0, r * allpass_lengths[c] * sizeof(float));
+      rev->allpassL[c].bufsize=r*allpass_lengths[c];
+      rev->allpassL[c].feedback = 0.5f;
   }
 
    revmodel_setwet(rev, initialwet);
@@ -225,7 +224,7 @@ struct reverb_data
 
 static void reverb_free(void *data)
 {
-   unsigned i;
+   int i;
    struct reverb_data *rev = (struct reverb_data*)data;
 
    for (i = 0; i < numcombs; i++)
@@ -245,7 +244,7 @@ static void reverb_free(void *data)
 static void reverb_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
-   unsigned i;
+   int i;
    float *out;
    struct reverb_data *rev = (struct reverb_data*)data;
 

@@ -223,6 +223,10 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->connectable;
          else if (string_is_equal(p_value, "is_retroarch"))
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->is_retroarch;
+         else if (string_is_equal(p_value, "player_count"))
+            p_ctx->cur_member_int    = &net_st->rooms_data->cur->player_count;
+         else if (string_is_equal(p_value, "spectator_count"))
+            p_ctx->cur_member_int    = &net_st->rooms_data->cur->spectator_count;
       }
    }
 
@@ -239,11 +243,11 @@ static bool netplay_json_start_array(void* ctx)
    return true;
 }
 
-static void netplay_rooms_error(void *context,
-      int line, int col, const char* error)
+static void netplay_rooms_err(void *context,
+      int line, int col, const char* err)
 {
-   RARCH_ERR("[netplay] Error: Invalid JSON at line %d, column %d - %s.\n",
-         line, col, error);
+   RARCH_ERR("[Netplay] Error: Invalid JSON at line %d, column %d - %s.\n",
+         line, col, err);
 }
 
 void netplay_rooms_free(void)
@@ -294,7 +298,7 @@ int netplay_rooms_parse(const char *buf, size_t len)
          NULL /* end_array_handler */,
          netplay_json_boolean,
          NULL /* null handler */,
-         netplay_rooms_error);
+         netplay_rooms_err);
 
    return 0;
 }

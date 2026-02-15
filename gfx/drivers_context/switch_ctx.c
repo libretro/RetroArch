@@ -238,12 +238,9 @@ static uint32_t switch_ctx_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
    }
-   else
-   {
 #ifdef HAVE_GLSL
-      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
-   }
 
     return flags;
 }
@@ -306,6 +303,26 @@ bool switch_ctx_get_metrics(void *data,
    return false;
 }
 
+static bool switch_ctx_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   switch_ctx_data_t *ctx_nx = (switch_ctx_data_t*)data;
+   return egl_create_surface(&ctx_nx->egl, ctx_nx->win);
+#else
+   return false;
+#endif
+}
+
+static bool switch_ctx_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   switch_ctx_data_t *ctx_nx = (switch_ctx_data_t*)data;
+   return egl_destroy_surface(&ctx_nx->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t switch_ctx = {
     switch_ctx_init,
     switch_ctx_destroy,
@@ -341,5 +358,7 @@ const gfx_ctx_driver_t switch_ctx = {
     switch_ctx_set_flags,
     switch_ctx_bind_hw_render,
     NULL,
-    NULL
+    NULL,
+    switch_ctx_create_surface,
+    switch_ctx_destroy_surface
 };

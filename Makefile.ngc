@@ -58,6 +58,7 @@ LIBS               := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END)
 libogc_platform    := 1
 
 EXTERNAL_LIBOGC   ?= 0
+HAVE_OGG_OGC      ?= 0
 GX_PTHREAD_LEGACY ?= 1
 CC                 = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 CXX                = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
@@ -100,6 +101,10 @@ LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
 
 ifeq ($(BIG_STACK), 1)
    LDFLAGS += -T bootstrap/gx/ogc.ld
+endif
+
+ifeq ($(HAVE_OGG_OGC), 1)
+   LIBS += -L$(DEVKITPRO)/portlibs/ppc/lib -lvorbisfile -lvorbis -logg
 endif
 
 ifeq ($(EXTERNAL_LIBOGC), 1)
@@ -233,34 +238,65 @@ else
    CFLAGS += -O3
 endif
 
+ifneq ($(V),1)
+	Q := @
+endif
+
 OBJOUT   = -o
 LINKOUT  = -o
 LINK = $(CXX)
 
 all: $(EXT_TARGET)
 
+define INFO
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CXX: $(CXX)
+LD: $(LD)
+LDFLAGS: $(LDFLAGS)
+LIBDIRS: $(LIBDIRS)
+LIBS: $(LIBS)
+LINK: $(LINK)
+LINKOUT: $(LINKOUT)
+OBJ: $(OBJ)
+OBJOUT: $(OBJOUT)
+PLATEXTRA: $(PLATEXTRA)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
+
 %.dol: %.elf
 	$(ELF2DOL) $< $@
 
 $(EXT_INTER_TARGET): $(OBJ)
-	$(LINK) $(LINKOUT)$@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) $(LIBS)
+	@$(if $(Q), $(shell echo echo LINK $@),)
+	$(Q)$(LINK) $(LINKOUT)$@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) $(LIBS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.cpp
-	$(CXX) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.S
-	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.binobj: %.bin
-	$(LD) -r -b binary $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo LD $@),)
+	$(Q)$(LD) -r -b binary $(OBJOUT)$@ $<
 
 clean:
-	rm -f $(EXT_TARGET)
-	rm -f $(EXT_INTER_TARGET)
-	rm -f $(OBJ)
+	@$(if $(Q), echo $@,)
+	$(Q)rm -f $(EXT_TARGET)
+	$(Q)rm -f $(EXT_INTER_TARGET)
+	$(Q)rm -f $(OBJ)
 
 .PHONY: clean
 

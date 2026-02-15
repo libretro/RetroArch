@@ -237,7 +237,7 @@ static bool sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
    return true;
 
 error:
-   RARCH_WARN("[libShake]: Input device does not support rumble effects.\n");
+   RARCH_WARN("[libShake] Input device does not support rumble effects.\n");
 
    if (rumble->device)
    {
@@ -385,7 +385,7 @@ static void sdl_dingux_joypad_connect(void)
     * autoconfig task */
    input_autoconfigure_connect(
          sdl_dingux_joypad_name(0), /* name */
-         NULL,                      /* display_name */
+         NULL, NULL,                /* display_names */
          sdl_dingux_joypad.ident,   /* driver */
          0,                         /* port */
          0,                         /* vid */

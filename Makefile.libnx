@@ -57,6 +57,8 @@ HAVE_CHD = 1
 HAVE_STB_VORBIS = 1
 HAVE_IBXM = 1
 HAVE_CORE_INFO_CACHE = 1
+HAVE_CLOUDSYNC = 1
+HAVE_SSL = 1
 
 # RetroArch libnx useful flags
 HAVE_THREADS = 1
@@ -127,7 +129,7 @@ APP_ICON := pkg/libnx/retroarch.jpg
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mcpu=cortex-a57+crc+fp+simd
 
-CFLAGS := -g -Wall -O3 -fcommon -ffast-math -ffunction-sections \
+CFLAGS := -g -Wall -O3 -fcommon -ffunction-sections \
           $(ARCH) $(DEFINES) $(INCLUDE_DIRS) -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h #$(shell $(PORTLIBS)/bin/freetype-config --cflags)
 
 CFLAGS += $(INCLUDE) -DSWITCH=1 -DHAVE_LIBNX=1 -DNXLINK=1 -DHAVE_SHADERPIPELINE -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES -DHAVE_UPDATE_CORE_INFO -DHAVE_STB_FONT #-DHAVE_FREETYPE
@@ -148,7 +150,7 @@ LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,--allow-multiple-de
 # add things from Makefile.common
 CFLAGS += $(DEF_FLAGS)
 
-LIBS	:= -lswresample -lavformat -lavcodec -lavutil -lswscale -lstdc++ -lbz2 -lpng -lz -lnx -lvpx -lopus -llzma -lm
+LIBS := -lswresample -lavformat -lavcodec -lavutil -lswscale -lstdc++ -lbz2 -lpng -lz -lnx -lvpx -lopus -llzma -lmbedtls -lmbedx509 -lmbedcrypto -lnx -lm
 
 ifeq ($(HAVE_OPENGL), 1)
   LIBS := -lEGL -lglapi -ldrm_nouveau $(LIBS)

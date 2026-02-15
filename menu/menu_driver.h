@@ -58,8 +58,16 @@ RETRO_BEGIN_DECLS
 
 #define SCROLL_INDEX_SIZE          (2 * (26 + 2) + 1)
 
+#ifdef EMSCRIPTEN
+/* This task reads a variable that is set asynchronously, so the first check might fail.
+ * Check more often because it is cheap and to avoid a long period of missing power info. */
+#define POWERSTATE_CHECK_INTERVAL  1000000
+#else
 #define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
+#endif
+
 #define DATETIME_CHECK_INTERVAL    1000000
+#define MENU_DRAW_ENTRY_DELAY      30
 
 #define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
 
@@ -106,6 +114,9 @@ enum menu_settings_type
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_RIGHT_THUMBNAIL_MODE,
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LEFT_THUMBNAIL_MODE,
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_SORT_MODE,
+   MENU_SETTING_DROPDOWN_ITEM_SCAN_METHOD,
+   MENU_SETTING_DROPDOWN_ITEM_SCAN_USE_DB,
+   MENU_SETTING_DROPDOWN_ITEM_SCAN_DB_SELECT,
    MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_CORE_NAME,
    MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
@@ -239,7 +250,7 @@ enum menu_settings_type
    MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE,
    MENU_SETTINGS_INPUT_INPUT_REMAP_PORT,
    MENU_SETTINGS_INPUT_BEGIN,
-   MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END + 6,
+   MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END + 7,
    MENU_SETTINGS_INPUT_DESC_BEGIN,
    MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + ((RARCH_FIRST_CUSTOM_BIND + 8) * MAX_USERS),
    MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
@@ -273,6 +284,9 @@ enum menu_settings_type
    MENU_SETTING_ACTION_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
    MENU_SETTING_ACTION_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
 
+   MENU_SETTING_SCAN_METHOD,
+   MENU_SETTING_SCAN_USE_DB,
+   MENU_SETTING_SCAN_DB_SELECT,
    MENU_SETTING_MANUAL_CONTENT_SCAN_DIR,
    MENU_SETTING_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    MENU_SETTING_MANUAL_CONTENT_SCAN_CORE_NAME,
@@ -388,7 +402,7 @@ typedef struct menu_ctx_driver
    int (*environ_cb)(enum menu_environ_cb type, void *data, void *userdata);
    void (*update_thumbnail_path)(void *data, unsigned i, char pos);
    void (*update_thumbnail_image)(void *data);
-   void (*refresh_thumbnail_image)(void *data, unsigned i);
+   void (*refresh_thumbnail_image)(void *data, size_t i);
    void (*set_thumbnail_content)(void *data, const char *s);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
@@ -449,7 +463,7 @@ typedef struct
       char file_name[NAME_MAX_LENGTH];
    } last_start_content;
 
-   char menu_state_msg[PATH_MAX_LENGTH * 2];
+   char menu_state_msg[MENU_LABEL_MAX_LENGTH];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
     * paths (subdirs/previous dirs/current dir/path, etc).
@@ -511,7 +525,7 @@ struct menu_state
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
 #ifdef HAVE_RUNAHEAD
-   enum menu_runahead_mode runahead_mode;
+   unsigned int runahead_mode;
 #endif
 
    /* int16_t alignment */

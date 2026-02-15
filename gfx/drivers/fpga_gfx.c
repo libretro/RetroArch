@@ -75,7 +75,7 @@ static unsigned int get_memory_size(void)
 
    if (!size_fp)
    {
-      RARCH_ERR("unable to open the uio size file\n");
+      RARCH_ERR("Unable to open the uio size file.\n");
       exit(1);
    }
 
@@ -99,7 +99,7 @@ static void do_mmap_op(RegOp *regOp)
 
       if (regOp->ptr == MAP_FAILED)
       {
-         RARCH_ERR("could not mmap() memory\n");
+         RARCH_ERR("Could not mmap() memory.\n");
          exit(1);
       }
    }
@@ -108,7 +108,7 @@ static void do_mmap_op(RegOp *regOp)
    {
       if (munmap(regOp->ptr, get_memory_size()) == -1)
       {
-         RARCH_ERR("could not munmap() memory\n");
+         RARCH_ERR("Could not munmap() memory.\n");
          exit(1);
       }
 
@@ -267,12 +267,6 @@ static bool fpga_frame(void *data, const void *frame,
             }
          }
       }
-#if 0
-      else
-      {
-         /* TODO/FIXME: handle 32-bit core output */
-      }
-#endif
    }
 
    return true;
@@ -381,8 +375,9 @@ static const video_poke_interface_t fpga_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void fpga_get_poke_interface(void *data,

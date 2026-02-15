@@ -83,12 +83,7 @@ LIBDIRS := -L. -L$(CTRULIB)/lib
 
 ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=soft
 
-CFLAGS	+=	-mword-relocations \
-			-fomit-frame-pointer -ffast-math \
-         -Werror=implicit-function-declaration \
-			$(ARCH)
-
-#CFLAGS	+= -Wall
+CFLAGS	+=	-mword-relocations -fomit-frame-pointer $(ARCH)
 CFLAGS	+=	-DARM11 -D_3DS
 
 ifeq ($(strip $(USE_CTRULIB_2)),1)
@@ -111,11 +106,12 @@ CFLAGS += -I. -Ideps/7zip -Ideps/stb -Ilibretro-common/include -Ilibretro-common
 CFLAGS += -DRARCH_CONSOLE -DIS_SALAMANDER
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+CFLAGS += -Werror=implicit-function-declaration
 
 ASFLAGS	:=	-g $(ARCH) -O3
 LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-CFLAGS   += -std=gnu99 -ffast-math
+CFLAGS   += -std=gnu99
 
 LIBS	:= -lctru -lm
 

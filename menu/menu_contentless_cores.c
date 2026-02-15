@@ -124,7 +124,7 @@ static void contentless_cores_init_info_entries(
                (contentless_core_info_entry_t*)malloc(sizeof(*entry));
          size_t _len          = strlcpy(licenses_str,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
-               sizeof(licenses_str));
+               sizeof(licenses_str) - 3);
          licenses_str[  _len] = ':';
          licenses_str[++_len] = ' ';
          licenses_str[++_len] = '\0';

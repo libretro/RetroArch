@@ -192,7 +192,7 @@ static void zlib_set_out(void *data, uint8_t *out, uint32_t out_size)
 static bool zlib_deflate_trans(
    void *data, bool flush,
    uint32_t *rd, uint32_t *wn,
-   enum trans_stream_error *error)
+   enum trans_stream_error *err)
 {
    int zret                     = 0;
    bool ret                     = false;
@@ -213,18 +213,18 @@ static bool zlib_deflate_trans(
 
    if (zret == Z_OK)
    {
-      if (error)
-         *error = TRANS_STREAM_ERROR_AGAIN;
+      if (err)
+         *err = TRANS_STREAM_ERROR_AGAIN;
    }
    else if (zret == Z_STREAM_END)
    {
-      if (error)
-         *error = TRANS_STREAM_ERROR_NONE;
+      if (err)
+         *err = TRANS_STREAM_ERROR_NONE;
    }
    else
    {
-      if (error)
-         *error = TRANS_STREAM_ERROR_OTHER;
+      if (err)
+         *err = TRANS_STREAM_ERROR_OTHER;
       return false;
    }
    ret = true;
@@ -235,8 +235,8 @@ static bool zlib_deflate_trans(
       if (z->avail_in != 0)
       {
          ret = false;
-         if (error)
-            *error = TRANS_STREAM_ERROR_BUFFER_FULL;
+         if (err)
+            *err = TRANS_STREAM_ERROR_BUFFER_FULL;
       }
    }
 
@@ -255,7 +255,7 @@ static bool zlib_deflate_trans(
 static bool zlib_inflate_trans(
    void *data, bool flush,
    uint32_t *rd, uint32_t *wn,
-   enum trans_stream_error *error)
+   enum trans_stream_error *err)
 {
    int zret;
    bool ret                     = false;
@@ -276,18 +276,18 @@ static bool zlib_inflate_trans(
 
    if (zret == Z_OK)
    {
-      if (error)
-         *error = TRANS_STREAM_ERROR_AGAIN;
+      if (err)
+         *err = TRANS_STREAM_ERROR_AGAIN;
    }
    else if (zret == Z_STREAM_END)
    {
-      if (error)
-         *error = TRANS_STREAM_ERROR_NONE;
+      if (err)
+         *err = TRANS_STREAM_ERROR_NONE;
    }
    else
    {
-      if (error)
-         *error = TRANS_STREAM_ERROR_OTHER;
+      if (err)
+         *err = TRANS_STREAM_ERROR_OTHER;
       return false;
    }
    ret = true;
@@ -298,8 +298,8 @@ static bool zlib_inflate_trans(
       if (z->avail_in != 0)
       {
          ret = false;
-         if (error)
-            *error = TRANS_STREAM_ERROR_BUFFER_FULL;
+         if (err)
+            *err = TRANS_STREAM_ERROR_BUFFER_FULL;
       }
    }
 

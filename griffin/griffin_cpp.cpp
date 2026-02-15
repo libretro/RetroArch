@@ -70,11 +70,11 @@ UI
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
-#ifdef HAVE_VULKAN
+#if defined(HAVE_VULKAN) && defined(HAVE_SLANG)
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
 #endif
 
-#if defined(HAVE_OPENGL_CORE)
+#if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
 #include "../gfx/drivers_shader/shader_gl3.cpp"
 #endif
 

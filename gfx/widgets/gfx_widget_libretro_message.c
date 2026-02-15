@@ -69,7 +69,7 @@ static gfx_widget_libretro_message_state_t p_w_libretro_message_st = {
    0,                                  /* bg_width */
    0,                                  /* bg_height */
    0,                                  /* text_padding */
-   0xE0E0E0FF,                         /* text_color */
+   TEXT_COLOR_INFO,                    /* text_color */
    0,                                  /* frame_width */
 
    0,                                  /* message_duration */
@@ -84,7 +84,7 @@ static gfx_widget_libretro_message_state_t p_w_libretro_message_st = {
    0.0f,                               /* text_y_end */
    0.0f,                               /* alpha */
 
-   COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f), /* frame_color */
+   COLOR_HEX_TO_FLOAT(BG_COLOR_DEFAULT, 1.0f), /* frame_color */
 
    0,                                  /* message_len */
 
@@ -500,6 +500,12 @@ static void gfx_widget_libretro_message_free(void)
 
 /* Widget definition */
 
+static bool gfx_widget_libretro_message_visible(void)
+{
+   gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
+   return state->status != GFX_WIDGET_LIBRETRO_MESSAGE_IDLE;
+}
+
 const gfx_widget_t gfx_widget_libretro_message = {
    NULL, /* init */
    gfx_widget_libretro_message_free,
@@ -507,5 +513,6 @@ const gfx_widget_t gfx_widget_libretro_message = {
    NULL, /* context_destroy */
    gfx_widget_libretro_message_layout,
    gfx_widget_libretro_message_iterate,
-   gfx_widget_libretro_message_frame
+   gfx_widget_libretro_message_frame,
+   gfx_widget_libretro_message_visible
 };

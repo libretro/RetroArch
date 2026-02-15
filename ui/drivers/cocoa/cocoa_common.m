@@ -21,13 +21,11 @@
 #include "apple_platform.h"
 #include "../ui_cocoa.h"
 #include <compat/apple_compat.h>
+#include "RetroArchPlaylistManager.h"
 
 #ifdef HAVE_COCOATOUCH
 #import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
 #import "WebServer.h"
-#ifdef HAVE_IOS_SWIFT
-#import "RetroArch-Swift.h"
-#endif
 #if TARGET_OS_TV
 #import <TVServices/TVServices.h>
 #import "../../pkg/apple/RetroArchTopShelfExtension/ContentProvider.h"
@@ -55,6 +53,10 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#endif
+
+#ifdef HAVE_MIST
+#include "steam/steam.h"
 #endif
 
 #if IOS
@@ -86,15 +88,73 @@ void *glkitview_init(void);
 void cocoa_file_load_with_detect_core(const char *filename);
 
 @interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate
-#ifdef HAVE_IOS_TOUCHMOUSE
-,EmulatorTouchMouseHandlerDelegate
-#endif
 #if TARGET_OS_IOS
 ,UIDocumentPickerDelegate
 #endif
 >
 @end
 #endif
+
+static CFRunLoopObserverRef iterate_observer;
+
+static void rarch_draw_observer(CFRunLoopObserverRef observer,
+    CFRunLoopActivity activity, void *info)
+{
+   uint32_t runloop_flags;
+   int          ret   = runloop_iterate();
+
+   if (ret == -1)
+   {
+#ifdef HAVE_QT
+      application->quit();
+#endif
+      main_exit(NULL);
+      exit(0);
+      return;
+   }
+
+   task_queue_check();
+
+#ifdef HAVE_MIST
+   steam_poll();
+#endif
+
+   runloop_flags = runloop_get_flags();
+#if !TARGET_OS_TV
+   if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
+#endif
+      CFRunLoopWakeUp(CFRunLoopGetMain());
+#if TARGET_OS_IOS
+   else
+      rarch_stop_draw_observer();
+#elif defined(OSX)
+   else if (!(@available(macOS 15.0, *)))
+      CFRunLoopWakeUp(CFRunLoopGetMain());
+#endif
+}
+
+void rarch_start_draw_observer(void)
+{
+   if (iterate_observer && CFRunLoopObserverIsValid(iterate_observer))
+       return;
+
+   RARCH_LOG("[NS] starting draw observer\n");
+   if (iterate_observer != NULL)
+      CFRelease(iterate_observer);
+   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
+                                              true, 0, rarch_draw_observer, 0);
+   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
+}
+
+void rarch_stop_draw_observer(void)
+{
+    if (!iterate_observer || !CFRunLoopObserverIsValid(iterate_observer))
+        return;
+    RARCH_LOG("[NS] stopping draw observer\n");
+    CFRunLoopObserverInvalidate(iterate_observer);
+    CFRelease(iterate_observer);
+    iterate_observer = NULL;
+}
 
 @implementation CocoaView
 
@@ -123,9 +183,15 @@ void cocoa_file_load_with_detect_core(const char *filename);
       return;
    }
 
+#if !TARGET_OS_TV
    uint32_t runloop_flags = runloop_get_flags();
-   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
+   if (runloop_flags & RUNLOOP_FLAG_FASTMOTION)
+   {
+      /* Fast-forward: observer handles all iterations */
+      rarch_start_draw_observer();
       CFRunLoopWakeUp(CFRunLoopGetMain());
+   }
+#endif
 #endif
 }
 #endif
@@ -141,15 +207,27 @@ void cocoa_file_load_with_detect_core(const char *filename);
       view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
       if (@available(iOS 15.0, tvOS 15.0, *))
-         [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeDefault];
+      {
+         /* Use a wide range by default to support ProMotion displays,
+          * the display server will set the exact rate when needed */
+         [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(60, 120, 120)];
+      }
+      else
+      {
+         /* iOS 9-14: Use preferredFramesPerSecond as fallback */
+         view.displayLink.preferredFramesPerSecond = 120;
+      }
+#else
+      /* Building with SDK < iOS 15: Use preferredFramesPerSecond */
+      view.displayLink.preferredFramesPerSecond = 120;
 #endif
-      [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+      [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 #elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
       if (@available(macOS 14.0, *))
       {
          view.displayLink = [view displayLinkWithTarget:view selector:@selector(step:)];
          view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 120, 120);
-         [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+         [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
       }
 #endif
    }
@@ -480,29 +558,9 @@ void cocoa_file_load_with_detect_core(const char *filename);
     });
 }
 
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
 -(void)toggleCustomKeyboardUsingSwipe:(id)sender {
-    UISwipeGestureRecognizer *gestureRecognizer = (UISwipeGestureRecognizer*)sender;
-    [self.keyboardController.view setHidden:gestureRecognizer.direction == UISwipeGestureRecognizerDirectionDown];
-    [self updateOverlayAndFocus];
-}
-
--(void)toggleCustomKeyboard {
-    [self.keyboardController.view setHidden:!self.keyboardController.view.isHidden];
-    [self updateOverlayAndFocus];
-}
-#endif
-
--(void) updateOverlayAndFocus
-{
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
-    int cmdData = self.keyboardController.view.isHidden ? 0 : 1;
+    enum input_game_focus_cmd_type cmdData = GAME_FOCUS_CMD_TOGGLE;
     command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &cmdData);
-    if (self.keyboardController.view.isHidden)
-        command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-    else
-        command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
-#endif
 }
 
 -(BOOL)prefersHomeIndicatorAutoHidden { return YES; }
@@ -521,23 +579,48 @@ void cocoa_file_load_with_detect_core(const char *filename);
 -(void)adjustViewFrameForSafeArea
 {
    /* This is for adjusting the view frame to account for
-    * the notch in iPhone X phones */
+    * the notch in iPhone X phones. In multitasking mode,
+    * we should only adjust within the current view bounds,
+    * not force full screen dimensions. */
    if (@available(iOS 11, *))
    {
-      settings_t *settings               = config_get_ptr();
-      RAScreen *screen                   = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
-      CGRect screenSize                  = [screen bounds];
-      UIEdgeInsets inset                 = [[UIApplication sharedApplication] delegate].window.safeAreaInsets;
-      UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+      /* Early return if core systems aren't initialized yet */
+      settings_t *settings = config_get_ptr();
+      if (!settings)
+         return;
+
+      /* Check if we're in multitasking mode (Split View or Slide Over)
+       * by comparing our view size to the full screen size */
+      RAScreen *screen     = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
+      if (!screen)
+         return;
+
+      CGRect screenSize    = [screen bounds];
+
+      if (ios_running_on_ipad())
+      {
+         CGRect currentBounds = self.view.bounds;
+         bool isMultitasking  = (currentBounds.size.width < screenSize.size.width ||
+                                 currentBounds.size.height < screenSize.size.height);
+
+         /* In multitasking mode, don't override the frame - let iOS handle it */
+         if (isMultitasking)
+            return;
+      }
 
       if (settings->bools.video_notch_write_over_enable)
       {
-         self.view.frame = CGRectMake(screenSize.origin.x,
-                     screenSize.origin.y,
-                     screenSize.size.width,
-                     screenSize.size.height);
+         self.view.frame = screenSize;
          return;
       }
+
+      /* Only apply safe area adjustments when in full screen mode */
+      UIWindow *window     = [[UIApplication sharedApplication] delegate].window;
+      if (!window)
+         return;
+
+      UIEdgeInsets inset   = window.safeAreaInsets;
+      UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
 
       switch (orientation)
       {
@@ -569,12 +652,6 @@ void cocoa_file_load_with_detect_core(const char *filename);
 - (void)viewWillLayoutSubviews
 {
    [self adjustViewFrameForSafeArea];
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
-   [self.view bringSubviewToFront:self.keyboardController.view];
-#endif
-#if HAVE_IOS_SWIFT
-    [self.view bringSubviewToFront:self.helperBarView];
-#endif
 }
 
 /* NOTE: This version runs on iOS6+. */
@@ -584,9 +661,9 @@ void cocoa_file_load_with_detect_core(const char *filename);
   {
     if (self.shouldLockCurrentInterfaceOrientation)
       return 1 << self.lockInterfaceOrientation;
-    return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
+    return UIInterfaceOrientationMaskAll;
   }
-  return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
+  return UIInterfaceOrientationMaskAll;
 }
 
 /* NOTE: This does not run on iOS 16+ */
@@ -600,29 +677,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
 /* NOTE: This version runs on iOS2-iOS5, but not iOS6+. */
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
-   unsigned orientation_flags = apple_frontend_settings.orientation_flags;
-
-   switch (interfaceOrientation)
-   {
-      case UIInterfaceOrientationPortrait:
-         return (orientation_flags
-               & UIInterfaceOrientationMaskPortrait);
-      case UIInterfaceOrientationPortraitUpsideDown:
-         return (orientation_flags
-               & UIInterfaceOrientationMaskPortraitUpsideDown);
-      case UIInterfaceOrientationLandscapeLeft:
-         return (orientation_flags
-               & UIInterfaceOrientationMaskLandscapeLeft);
-      case UIInterfaceOrientationLandscapeRight:
-         return (orientation_flags
-               & UIInterfaceOrientationMaskLandscapeRight);
-
-      default:
-         break;
-   }
-
-   return (orientation_flags
-            & UIInterfaceOrientationMaskAll);
+   return YES;
 }
 #endif
 
@@ -654,13 +709,6 @@ void cocoa_file_load_with_detect_core(const char *filename);
     swipe.delegate                  = self;
     swipe.direction                 = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
-#ifdef HAVE_IOS_TOUCHMOUSE
-    if (@available(iOS 13, *))
-        [self setupMouseSupport];
-#endif
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
-    if (@available(iOS 13, *))
-        [self setupEmulatorKeyboard];
     UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
     showKeyboardSwipe.numberOfTouchesRequired   = 3;
     showKeyboardSwipe.direction                 = UISwipeGestureRecognizerDirectionUp;
@@ -671,11 +719,6 @@ void cocoa_file_load_with_detect_core(const char *filename);
     hideKeyboardSwipe.direction                 = UISwipeGestureRecognizerDirectionDown;
     hideKeyboardSwipe.delegate                  = self;
     [self.view addGestureRecognizer:hideKeyboardSwipe];
-#endif
-#if defined(HAVE_IOS_TOUCHMOUSE) || defined(HAVE_IOS_CUSTOMKEYBOARDS)
-    if (@available(iOS 13, *))
-        [self setupHelperBar];
-#endif
 #elif TARGET_OS_TV
     UISwipeGestureRecognizer *siriSwipeUp    = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
     siriSwipeUp.direction                    = UISwipeGestureRecognizerDirectionUp;
@@ -712,42 +755,11 @@ void cocoa_file_load_with_detect_core(const char *filename);
 -(void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+#if !TARGET_OS_SIMULATOR
     [[WebServer sharedInstance] startServers];
     [WebServer sharedInstance].webUploader.delegate = self;
-}
-
-#if TARGET_OS_IOS && HAVE_IOS_TOUCHMOUSE
-
-#pragma mark EmulatorTouchMouseHandlerDelegate
-
--(void)handleMouseClickWithIsLeftClick:(BOOL)isLeftClick isPressed:(BOOL)isPressed
-{
-    cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-    if (!apple)
-        return;
-    NSUInteger buttonIndex = isLeftClick ? 0 : 1;
-    if (isPressed)
-        apple->mouse_buttons |= (1 << buttonIndex);
-    else
-        apple->mouse_buttons &= ~(1 << buttonIndex);
-}
-
--(void)handleMouseMoveWithX:(CGFloat)x y:(CGFloat)y
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-   if (!apple)
-      return;
-   apple->mouse_rel_x = (int16_t)x;
-   apple->mouse_rel_y = (int16_t)y;
-   /* use location position to track pointer */
-   if (@available(iOS 13.4, *))
-   {
-      apple->window_pos_x = 0;
-      apple->window_pos_y = 0;
-   }
-}
-
 #endif
+}
 
 #pragma mark GCDWebServerDelegate
 - (void)webServerDidCompleteBonjourRegistration:(GCDWebServer*)server
@@ -760,7 +772,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
     if (server.bonjourServerURL != nil)
         [servers appendString:[NSString stringWithFormat:@"%@",server.bonjourServerURL]];
 
-#if TARGET_OS_TV || TARGET_OS_IOS
+#if TARGET_OS_TV && !TARGET_OS_IOS
     settings_t *settings = config_get_ptr();
     if (!settings->bools.gcdwebserver_alert)
         return;
@@ -770,22 +782,26 @@ void cocoa_file_load_with_detect_core(const char *filename);
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
         [alert addAction:[UIAlertAction actionWithTitle:@"OK"
             style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                rarch_start_draw_observer();
+                struct menu_state *menu_st = menu_state_get_ptr();
+                menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;;
         }]];
         [alert addAction:[UIAlertAction actionWithTitle:@"Don't Show Again"
             style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                rarch_start_draw_observer();
+                struct menu_state *menu_st = menu_state_get_ptr();
+                menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;
                 configuration_set_bool(settings, settings->bools.gcdwebserver_alert, false);
         }]];
 #if TARGET_OS_IOS
         [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [[WebServer sharedInstance] webUploader].delegate = nil;
             [[WebServer sharedInstance] stopServers];
-           rarch_start_draw_observer();
+           struct menu_state *menu_st = menu_state_get_ptr();
+           menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;;
         }]];
 #endif
         [self presentViewController:alert animated:YES completion:^{
-            rarch_stop_draw_observer();
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_st->flags |= MENU_ST_FLAG_BLOCK_ALL_INPUT;
         }];
     });
 #endif
@@ -1168,4 +1184,96 @@ void cocoa_file_load_with_detect_core(const char *filename)
                CORE_TYPE_PLAIN,
                NULL, NULL);
    }
+}
+
+bool cocoa_launch_game_by_filename(NSString *filename)
+{
+   core_info_list_t *core_info_list = NULL;
+   const core_info_t *core_info = NULL;
+   size_t list_size = 0;
+   char full_path[PATH_MAX_LENGTH] = {0};
+   content_ctx_info_t content_info = { 0 };
+
+   RARCH_LOG("Launching game by filename: %s\n", [filename UTF8String]);
+
+   // Strategy 1: Try to find game in playlists first (existing behavior)
+   RetroArchPlaylistGame *game = [RetroArchPlaylistManager findGameByFilename:filename];
+
+   if (game && game.corePath && game.fullPath) {
+      char core_path[PATH_MAX_LENGTH] = {0};
+
+      RARCH_LOG("Found game '%s' in playlist with core '%s'\n",
+                [game.fullPath UTF8String], [game.corePath UTF8String]);
+
+      fill_pathname_expand_special(core_path, [game.corePath UTF8String], sizeof(core_path));
+      fill_pathname_expand_special(full_path, [game.fullPath UTF8String], sizeof(full_path));
+
+      bool success = task_push_load_content_with_new_core_from_companion_ui(core_path, full_path,
+                                                                            NULL, NULL, NULL,
+                                                                            &content_info, NULL, NULL);
+      if (success) {
+         RARCH_LOG("Successfully launched playlist game '%s'\n", [filename UTF8String]);
+         return YES;
+      } else {
+         RARCH_WARN("Failed to launch playlist game '%s'\n", [filename UTF8String]);
+         return NO;
+      }
+   }
+
+   // Strategy 2: Fallback to automatic core detection for non-playlist content
+   RARCH_LOG("Game '%s' not found in playlists, trying automatic core detection\n", [filename UTF8String]);
+
+   fill_pathname_expand_special(full_path, [filename UTF8String], sizeof(full_path));
+   if (!path_is_valid(full_path)) {
+      RARCH_WARN("Could not find file '%s'\n", full_path);
+      return NO;
+   }
+
+   RARCH_LOG("Found file at path: %s\n", full_path);
+
+   // Get list of compatible cores for this content file
+   core_info_get_list(&core_info_list);
+   if (!core_info_list) {
+      RARCH_WARN("No core info list available\n");
+      return NO;
+   }
+
+   core_info_list_get_supported_cores(core_info_list, full_path, &core_info, &list_size);
+
+   if (list_size == 0) {
+      RARCH_WARN("No compatible cores found for '%s'\n", full_path);
+      return NO;
+   }
+
+   RARCH_LOG("Found %zu compatible core(s) for '%s'\n", list_size, full_path);
+
+   path_set(RARCH_PATH_CONTENT, full_path);
+
+   // Strategy 2a: Check if current core supports this content
+   if (!path_is_empty(RARCH_PATH_CORE)) {
+      const char *current_core = path_get(RARCH_PATH_CORE);
+      for (size_t i = 0; i < list_size; i++) {
+         const core_info_t *info = &core_info[i];
+         if (string_is_equal(current_core, info->path)) {
+            RARCH_LOG("Current core '%s' supports this content, using it\n", info->display_name);
+            return task_push_load_content_with_current_core_from_companion_ui(
+               NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+         }
+      }
+   }
+
+   // Strategy 2b: If only one compatible core, use it automatically
+   if (list_size == 1) {
+      const core_info_t *info = &core_info[0];
+      RARCH_LOG("Only one compatible core found: '%s', using it automatically\n", info->display_name);
+      return task_push_load_content_with_new_core_from_companion_ui(
+         info->path, full_path, NULL, NULL, NULL, &content_info, NULL, NULL);
+   }
+
+   // Strategy 2c: Multiple cores available - use the first one
+   // In a future implementation, this could present a user choice dialog
+   const core_info_t *info = &core_info[0];
+   RARCH_LOG("Multiple cores available, automatically selecting first: '%s'\n", info->display_name);
+   return task_push_load_content_with_new_core_from_companion_ui(
+      info->path, full_path, NULL, NULL, NULL, &content_info, NULL, NULL);
 }

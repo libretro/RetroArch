@@ -21,6 +21,7 @@
 
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+#include "../../frontend/drivers/platform_emscripten.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -44,22 +45,7 @@ typedef struct
 
 static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
 {
-   if (interval == 0)
-      emscripten_set_main_loop_timing(EM_TIMING_SETIMMEDIATE, 0);
-   else
-      emscripten_set_main_loop_timing(EM_TIMING_RAF, interval);
-}
-
-static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
-{
-   EMSCRIPTEN_RESULT r = emscripten_get_canvas_element_size("#canvas", width, height);
-
-   if (r != EMSCRIPTEN_RESULT_SUCCESS)
-   {
-      *width  = 800;
-      *height = 600;
-      RARCH_ERR("[EMSCRIPTEN/EGL]: Could not get screen dimensions: %d\n",r);
-   }
+   platform_emscripten_set_main_loop_interval(interval);
 }
 
 static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
@@ -69,21 +55,12 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    int input_height;
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
-   gfx_ctx_emscripten_get_canvas_size(&input_width, &input_height);
+   platform_emscripten_get_canvas_size(&input_width, &input_height);
+
    *resize = (emscripten->fb_width != input_width || emscripten->fb_height != input_height);
    *width  = emscripten->fb_width  = (unsigned)input_width;
    *height = emscripten->fb_height = (unsigned)input_height;
    *quit   = false;
-}
-
-static void gfx_ctx_emscripten_swap_buffers(void *data)
-{
-#ifdef HAVE_EGL
-   /* Doesn't really do anything in WebGL, but it might 
-    * if we use WebGL workers in the future */
-   emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
-   egl_swap_buffers(&emscripten->egl);
-#endif
 }
 
 static void gfx_ctx_emscripten_get_video_size(void *data,
@@ -93,10 +70,9 @@ static void gfx_ctx_emscripten_get_video_size(void *data,
 
    if (!emscripten)
       return;
-   int w, h;
-   gfx_ctx_emscripten_get_canvas_size(&w, &h);
-   *width = w;
-   *height = h;
+
+   *width  = emscripten->fb_width;
+   *height = emscripten->fb_height;
 }
 
 static bool gfx_ctx_emscripten_get_metrics(void *data,
@@ -104,8 +80,9 @@ static bool gfx_ctx_emscripten_get_metrics(void *data,
 {
    switch (type)
    {
-      // there is no way to get the actual DPI in emscripten, so return a standard value instead.
-      // this is needed for menu touch/pointer swipe scrolling to work.
+      /* There is no way to get the actual DPI in emscripten,
+       * so return a standard value instead. This is needed
+       * for menu touch/pointer swipe scrolling to work. */
       case DISPLAY_METRIC_DPI:
          *value = 150.0f;
          break;
@@ -161,7 +138,7 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
 #ifdef HAVE_EGL
    if (g_egl_inited)
    {
-      RARCH_LOG("[EMSCRIPTEN/EGL]: Attempted to re-initialize driver.\n");
+      RARCH_LOG("[EMSCRIPTEN/EGL] Attempted to re-initialize driver.\n");
       return (void*)"emscripten";
    }
 
@@ -185,7 +162,7 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
 
    emscripten->fb_width  = width;
    emscripten->fb_height = height;
-   RARCH_LOG("[EMSCRIPTEN/EGL]: Dimensions: %ux%u\n", width, height);
+   RARCH_LOG("[EMSCRIPTEN/EGL] Dimensions: %ux%u.\n", width, height);
 #endif
 
    return emscripten;
@@ -195,11 +172,11 @@ error:
 }
 
 static bool gfx_ctx_emscripten_set_video_mode(void *data,
-      unsigned width, unsigned height,
-      bool fullscreen)
+      unsigned width, unsigned height, bool fullscreen)
 {
-   if (g_egl_inited)
-      return false;
+   platform_emscripten_set_fullscreen_state(fullscreen);
+   if (!fullscreen)
+      platform_emscripten_set_canvas_size(width, height);
 
    g_egl_inited = true;
    return true;
@@ -226,9 +203,20 @@ static void gfx_ctx_emscripten_input_driver(void *data,
    *input_data     = rwebinput;
 }
 
-static bool gfx_ctx_emscripten_has_focus(void *data) { return g_egl_inited; }
+static bool gfx_ctx_emscripten_has_focus(void *data) {
+   return g_egl_inited && !platform_emscripten_is_window_hidden();
+}
 
-static bool gfx_ctx_emscripten_suppress_screensaver(void *data, bool enable) { return false; }
+static bool gfx_ctx_emscripten_suppress_screensaver(void *data, bool enable)
+{
+   platform_emscripten_set_wake_lock(enable);
+   return true;
+}
+
+static void gfx_ctx_emscripten_show_mouse(void *data, bool state)
+{
+   platform_emscripten_set_pointer_visibility(state);
+}
 
 static float gfx_ctx_emscripten_translate_aspect(void *data,
       unsigned width, unsigned height) { return (float)width / height; }
@@ -257,6 +245,26 @@ static uint32_t gfx_ctx_emscripten_get_flags(void *data)
 
 static void gfx_ctx_emscripten_set_flags(void *data, uint32_t flags) { }
 
+static bool gfx_ctx_emscripten_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
+   return egl_create_surface(&emscripten->egl, 0);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_emscripten_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
+   return egl_destroy_surface(&emscripten->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_emscripten = {
    gfx_ctx_emscripten_init,
    gfx_ctx_emscripten_destroy,
@@ -273,11 +281,11 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    gfx_ctx_emscripten_translate_aspect,
    NULL, /* update_title */
    gfx_ctx_emscripten_check_window,
-   NULL, /* set_resize */
+   NULL, /* set_resize: no-op */
    gfx_ctx_emscripten_has_focus,
    gfx_ctx_emscripten_suppress_screensaver,
-   false,
-   gfx_ctx_emscripten_swap_buffers,
+   true, /* has_windowed */
+   NULL, /* swap_buffers: no-op */
    gfx_ctx_emscripten_input_driver,
 #ifdef HAVE_EGL
    egl_get_proc_address,
@@ -286,11 +294,13 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
 #endif
    gfx_ctx_emscripten_init_egl_image_buffer,
    gfx_ctx_emscripten_write_egl_image,
-   NULL,
+   gfx_ctx_emscripten_show_mouse,
    "egl_emscripten",
    gfx_ctx_emscripten_get_flags,
    gfx_ctx_emscripten_set_flags,
    gfx_ctx_emscripten_bind_hw_render,
-   NULL,
-   NULL
+   NULL, /* get_context_data */
+   NULL, /* make_current */
+   gfx_ctx_emscripten_create_surface,
+   gfx_ctx_emscripten_destroy_surface
 };

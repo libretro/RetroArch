@@ -37,7 +37,6 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
-#include "../common/sixel_defines.h"
 
 #ifndef _WIN32
 #define HAVE_SYS_IOCTL_H
@@ -61,9 +60,16 @@
 #error "Old version of libsixel detected, please upgrade to at least 1.6.0."
 #endif
 
-/*
- * FONT DRIVER
- */
+#define SIXEL_COLORS 256
+
+typedef struct sixel
+{
+   SIXELSTATUS sixel_status;
+   unsigned video_width;
+   unsigned video_height;
+   unsigned screen_width;
+   unsigned screen_height;
+} sixel_t;
 
 typedef struct
 {
@@ -623,8 +629,9 @@ static const video_poke_interface_t sixel_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void sixel_gfx_get_poke_interface(void *data,

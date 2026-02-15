@@ -15,71 +15,115 @@
 
 #pragma once
 
-#include "uwp_main.h"
+#include <winrt/Windows.ApplicationModel.h>
+#include <winrt/Windows.ApplicationModel.Activation.h>
+#include <winrt/Windows.ApplicationModel.Core.h>
+#include <winrt/Windows.UI.Core.h>
+#include <winrt/Windows.UI.Input.h>
+#include <winrt/Windows.UI.ViewManagement.h>
+#include <winrt/Windows.Graphics.Display.h>
+#include <winrt/Windows.Graphics.Display.Core.h>
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.System.h>
 
 namespace RetroArchUWP
 {
    /* Main entry point for our app. Connects the app with the Windows shell and handles application lifecycle events. */
-   ref class App sealed : public Windows::ApplicationModel::Core::IFrameworkView
+   struct App : winrt::implements<App, winrt::Windows::ApplicationModel::Core::IFrameworkView>
    {
    public:
       App();
 
       /* IFrameworkView methods. */
-      virtual void Initialize(Windows::ApplicationModel::Core::CoreApplicationView^ applicationView);
-      virtual void SetWindow(Windows::UI::Core::CoreWindow^ window);
-      virtual void Load(Platform::String^ entryPoint);
-      virtual void Run();
-      virtual void Uninitialize();
+      void Initialize(winrt::Windows::ApplicationModel::Core::CoreApplicationView const& applicationView);
+      void SetWindow(winrt::Windows::UI::Core::CoreWindow const& window);
+      void Load(winrt::hstring const& entryPoint);
+      void Run();
+      void Uninitialize();
 
-   protected:
-      /* Application lifecycle event handlers. */
-      void OnActivated(Windows::ApplicationModel::Core::CoreApplicationView^ applicationView, Windows::ApplicationModel::Activation::IActivatedEventArgs^ args);
-      void OnSuspending(Platform::Object^ sender, Windows::ApplicationModel::SuspendingEventArgs^ args);
-      void OnResuming(Platform::Object^ sender, Platform::Object^ args);
-      void OnEnteredBackground(Platform::Object^ sender, Windows::ApplicationModel::EnteredBackgroundEventArgs^ args);
-
-      void OnBackRequested(Platform::Object^ sender, Windows::UI::Core::BackRequestedEventArgs^ args);
-
-      /* Window event handlers. */
-      void OnWindowSizeChanged(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::WindowSizeChangedEventArgs^ args);
-      void OnVisibilityChanged(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::VisibilityChangedEventArgs^ args);
-      void OnWindowClosed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::CoreWindowEventArgs^ args);
-      void OnWindowActivated(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::WindowActivatedEventArgs^ args);
-      void OnAcceleratorKey(Windows::UI::Core::CoreDispatcher^ sender, Windows::UI::Core::AcceleratorKeyEventArgs^ args);
-      void OnPointer(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::PointerEventArgs^ args);
-
-      /* DisplayInformation event handlers. */
-      void OnDpiChanged(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
-      void OnOrientationChanged(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
-      void OnDisplayContentsInvalidated(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
-
-      void OnPackageInstalling(Windows::ApplicationModel::PackageCatalog^ sender, Windows::ApplicationModel::PackageInstallingEventArgs^ args);
-
-   public:
       bool IsInitialized() { return m_initialized; }
       bool IsWindowClosed() { return m_windowClosed; }
       bool IsWindowVisible() { return m_windowVisible; }
       bool IsWindowFocused() { return m_windowFocused; }
       bool CheckWindowResized() { bool resized = m_windowResized; m_windowResized = false; return resized; }
       void SetWindowResized() { m_windowResized = true; }
-      static App^ GetInstance() { return m_instance; }
+      static App* GetInstance() { return m_instance; }
 
    private:
+      /* Application lifecycle event handlers. */
+      void OnActivated(winrt::Windows::ApplicationModel::Core::CoreApplicationView const& applicationView,
+                       winrt::Windows::ApplicationModel::Activation::IActivatedEventArgs const& args);
+      void OnSuspending(winrt::Windows::Foundation::IInspectable const& sender,
+                        winrt::Windows::ApplicationModel::SuspendingEventArgs const& args);
+      void OnResuming(winrt::Windows::Foundation::IInspectable const& sender,
+                      winrt::Windows::Foundation::IInspectable const& args);
+      void OnEnteredBackground(winrt::Windows::Foundation::IInspectable const& sender,
+                               winrt::Windows::ApplicationModel::EnteredBackgroundEventArgs const& args);
+
+      void OnBackRequested(winrt::Windows::Foundation::IInspectable const& sender,
+                           winrt::Windows::UI::Core::BackRequestedEventArgs const& args);
+
+      /* Window event handlers. */
+      void OnWindowSizeChanged(winrt::Windows::UI::Core::CoreWindow const& sender,
+                               winrt::Windows::UI::Core::WindowSizeChangedEventArgs const& args);
+      void OnVisibilityChanged(winrt::Windows::UI::Core::CoreWindow const& sender,
+                               winrt::Windows::UI::Core::VisibilityChangedEventArgs const& args);
+      void OnWindowClosed(winrt::Windows::UI::Core::CoreWindow const& sender,
+                          winrt::Windows::UI::Core::CoreWindowEventArgs const& args);
+      void OnWindowActivated(winrt::Windows::UI::Core::CoreWindow const& sender,
+                             winrt::Windows::UI::Core::WindowActivatedEventArgs const& args);
+      void OnAcceleratorKey(winrt::Windows::UI::Core::CoreDispatcher const& sender,
+                            winrt::Windows::UI::Core::AcceleratorKeyEventArgs const& args);
+      void OnPointer(winrt::Windows::UI::Core::CoreWindow const& sender,
+                     winrt::Windows::UI::Core::PointerEventArgs const& args);
+
+      /* DisplayInformation event handlers. */
+      void OnDpiChanged(winrt::Windows::Graphics::Display::DisplayInformation const& sender,
+                        winrt::Windows::Foundation::IInspectable const& args);
+      void OnOrientationChanged(winrt::Windows::Graphics::Display::DisplayInformation const& sender,
+                                winrt::Windows::Foundation::IInspectable const& args);
+      void OnDisplayContentsInvalidated(winrt::Windows::Graphics::Display::DisplayInformation const& sender,
+                                        winrt::Windows::Foundation::IInspectable const& args);
+
+      void OnPackageInstalling(winrt::Windows::ApplicationModel::PackageCatalog const& sender,
+                               winrt::Windows::ApplicationModel::PackageInstallingEventArgs const& args);
+
+      void ParseProtocolArgs(winrt::Windows::ApplicationModel::Activation::IActivatedEventArgs const& args,
+                             int *argc, std::vector<char*> *argv, std::vector<std::string> *argvTmp);
+
       bool m_initialized;
       bool m_windowClosed;
       bool m_windowVisible;
       bool m_windowFocused;
       bool m_windowResized;
-      Platform::String^ m_launchOnExit;
+      winrt::hstring m_launchOnExit;
       bool m_launchOnExitShutdown;
-      void ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEventArgs^ args, int *argc, std::vector<char*> *argv, std::vector<std::string> *argvTmp);
-      static App^ m_instance;
+      static App* m_instance;
+
+      /* Event tokens for cleanup */
+      winrt::event_token m_activatedToken;
+      winrt::event_token m_suspendingToken;
+      winrt::event_token m_resumingToken;
+      winrt::event_token m_enteredBackgroundToken;
+      winrt::event_token m_sizeChangedToken;
+      winrt::event_token m_visibilityChangedToken;
+      winrt::event_token m_activatedWindowToken;
+      winrt::event_token m_closedToken;
+      winrt::event_token m_pointerPressedToken;
+      winrt::event_token m_pointerReleasedToken;
+      winrt::event_token m_pointerMovedToken;
+      winrt::event_token m_pointerWheelChangedToken;
+      winrt::event_token m_acceleratorKeyToken;
+      winrt::event_token m_dpiChangedToken;
+      winrt::event_token m_displayContentsInvalidatedToken;
+      winrt::event_token m_orientationChangedToken;
+      winrt::event_token m_backRequestedToken;
+      winrt::event_token m_packageInstallingToken;
    };
 }
 
-ref class Direct3DApplicationSource sealed : Windows::ApplicationModel::Core::IFrameworkViewSource
+struct Direct3DApplicationSource : winrt::implements<Direct3DApplicationSource, winrt::Windows::ApplicationModel::Core::IFrameworkViewSource>
 {
-public:
-   virtual Windows::ApplicationModel::Core::IFrameworkView^ CreateView();
+   winrt::Windows::ApplicationModel::Core::IFrameworkView CreateView();
 };

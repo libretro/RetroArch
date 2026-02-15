@@ -20,7 +20,7 @@
 
 /* necessary for mingw32 multimon defines: */
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
+#define _WIN32_WINNT 0x0500 /* _WIN32_WINNT_WIN2K */
 #endif
 
 #include <tchar.h>
@@ -168,7 +168,7 @@ static void *gfx_ctx_uwp_init(void *video_driver)
 static void gfx_ctx_uwp_destroy(void *data)
 {
    gfx_ctx_uwp_data_t *wgl = (gfx_ctx_uwp_data_t*)data;
-   
+
    if (!wgl)
       return;
 
@@ -187,12 +187,12 @@ static bool gfx_ctx_uwp_set_video_mode(void *data,
 
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
-      RARCH_ERR("[UWP EGL]: win32_set_video_mode failed.\n");
+      RARCH_ERR("[UWP EGL] win32_set_video_mode failed.\n");
    }
 
    if (!create_gles_context(uwp_get_corewindow()))
    {
-      RARCH_ERR("[UWP EGL]: create_gles_context failed.\n");
+      RARCH_ERR("[UWP EGL] create_gles_context failed.\n");
       gfx_ctx_uwp_destroy(data);
       return false;
    }
@@ -253,6 +253,24 @@ static uint32_t gfx_ctx_uwp_get_flags(void *data)
    return flags;
 }
 
+static bool gfx_ctx_uwp_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   return egl_create_surface(&uwp_egl, uwp_get_corewindow());
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_uwp_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   return egl_destroy_surface(&uwp_egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_uwp = {
    gfx_ctx_uwp_init,
    gfx_ctx_uwp_destroy,
@@ -284,5 +302,7 @@ const gfx_ctx_driver_t gfx_ctx_uwp = {
    NULL, /* set flags */
    gfx_ctx_uwp_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   gfx_ctx_uwp_create_surface,
+   gfx_ctx_uwp_destroy_surface
 };

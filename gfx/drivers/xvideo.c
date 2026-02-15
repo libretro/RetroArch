@@ -103,7 +103,7 @@ static void xv_set_nonblock_state(void *data, bool state, bool c, unsigned d)
    if (atom != None && xv->port)
       XvSetPortAttribute(g_x11_dpy, xv->port, atom, !state);
    else
-      RARCH_WARN("Failed to set SYNC_TO_VBLANK attribute.\n");
+      RARCH_WARN("[XVideo] Failed to set SYNC_TO_VBLANK attribute.\n");
 }
 
 static INLINE void xv_calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v,
@@ -173,7 +173,7 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
             r, g, b);
    }
    else
-      RARCH_LOG("[XVideo]: Could not initialize fonts.\n");
+      RARCH_LOG("[XVideo] Could not initialize fonts.\n");
 }
 
 /* We render @ 2x scale to combat chroma downsampling.
@@ -593,25 +593,9 @@ static void xv_calc_out_rect(bool keep_aspect,
       struct video_viewport *vp,
       unsigned vp_width, unsigned vp_height)
 {
-   settings_t *settings = config_get_ptr();
-   bool scale_integer   = settings->bools.video_scale_integer;
-
-   vp->full_width       = vp_width;
-   vp->full_height      = vp_height;
-
-   /* TODO: Does xvideo have its origin in top left or bottom-left? Assuming top left. */
-   if (scale_integer)
-      video_viewport_get_scaled_integer(vp, vp_width, vp_height,
-           video_driver_get_aspect_ratio(), keep_aspect, true);
-   else if (!keep_aspect)
-   {
-      vp->x      = 0;
-      vp->y      = 0;
-      vp->width  = vp_width;
-      vp->height = vp_height;
-   }
-   else
-      video_viewport_get_scaled_aspect(vp, vp_width, vp_height, true);
+   vp->full_width  = vp_width;
+   vp->full_height = vp_height;
+   video_driver_update_viewport(vp, false, keep_aspect, true);
 }
 
 static void *xv_init(const video_info_t *video,
@@ -646,8 +630,8 @@ static void *xv_init(const video_info_t *video,
 
    if (!g_x11_dpy)
    {
-      RARCH_ERR("[XVideo]: Cannot connect to the X server.\n");
-      RARCH_ERR("[XVideo]: Check DISPLAY variable and if X is running.\n");
+      RARCH_ERR("[XVideo] Cannot connect to the X server.\n");
+      RARCH_ERR("[XVideo] Check DISPLAY variable and if X is running.\n");
       goto error;
    }
 
@@ -656,7 +640,7 @@ static void *xv_init(const video_info_t *video,
 
    if (!XShmQueryExtension(g_x11_dpy))
    {
-      RARCH_ERR("[XVideo]: XShm extension not found.\n");
+      RARCH_ERR("[XVideo] XShm extension not found.\n");
       goto error;
    }
 
@@ -670,18 +654,18 @@ static void *xv_init(const video_info_t *video,
    if (ret != Success)
    {
       if (ret == XvBadExtension)
-         RARCH_ERR("[XVideo]: Xv extension not found.\n");
+         RARCH_ERR("[XVideo] Xv extension not found.\n");
       else if (ret == XvBadAlloc)
-         RARCH_ERR("[XVideo]: XvQueryAdaptors() failed to allocate memory.\n");
+         RARCH_ERR("[XVideo] XvQueryAdaptors() failed to allocate memory.\n");
       else
-         RARCH_ERR("[XVideo]: Unknown error in XvQueryAdaptors().\n");
+         RARCH_ERR("[XVideo] Unknown error in XvQueryAdaptors().\n");
 
       goto error;
    }
 
    if (adaptor_count == 0)
    {
-      RARCH_ERR("[XVideo]: XvQueryAdaptors() found 0 adaptors.\n");
+      RARCH_ERR("[XVideo] XvQueryAdaptors() found 0 adaptors.\n");
       goto error;
    }
 
@@ -704,14 +688,14 @@ static void *xv_init(const video_info_t *video,
       xv->depth    = adaptor_info[i].formats->depth;
       xv->visualid = adaptor_info[i].formats->visual_id;
 
-      RARCH_LOG("[XVideo]: Found suitable XvPort #%u\n", (unsigned)xv->port);
+      RARCH_LOG("[XVideo] Found suitable XvPort #%u.\n", (unsigned)xv->port);
       break;
    }
    XvFreeAdaptorInfo(adaptor_info);
 
    if (xv->port == 0)
    {
-      RARCH_ERR("[XVideo]: Failed to find valid XvPort or format.\n");
+      RARCH_ERR("[XVideo] Failed to find valid XvPort or format.\n");
       goto error;
    }
 
@@ -727,7 +711,7 @@ static void *xv_init(const video_info_t *video,
 
    if (visualmatches < 1 || !visualinfo->visual)
    {
-      RARCH_ERR("[XVideo]: Unable to find Xv-compatible visual.\n");
+      RARCH_ERR("[XVideo] Unable to find Xv-compatible visual.\n");
       goto error;
    }
 
@@ -764,7 +748,7 @@ static void *xv_init(const video_info_t *video,
       Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy,
             "_NET_WM_BYPASS_COMPOSITOR", False);
 
-      RARCH_LOG("[XVideo]: Requesting compositor bypass.\n");
+      RARCH_LOG("[XVideo] Requesting compositor bypass.\n");
       XChangeProperty(g_x11_dpy, g_x11_win,
             net_wm_bypass_compositor, cardinal, 32,
             PropModeReplace, (const unsigned char*)&value, 1);
@@ -803,7 +787,7 @@ static void *xv_init(const video_info_t *video,
 
    if (!xv->image)
    {
-      RARCH_ERR("[XVideo]: XShmCreateImage failed.\n");
+      RARCH_ERR("[XVideo] XShmCreateImage failed.\n");
       goto error;
    }
 
@@ -815,7 +799,7 @@ static void *xv_init(const video_info_t *video,
 
    if (!XShmAttach(g_x11_dpy, &xv->shminfo))
    {
-      RARCH_ERR("[XVideo]: XShmAttach failed.\n");
+      RARCH_ERR("[XVideo] XShmAttach failed.\n");
       goto error;
    }
    XSync(g_x11_dpy, False);
@@ -877,7 +861,7 @@ static bool xv_check_resize(xv_t *xv, unsigned width, unsigned height)
 
       if (xv->image == None)
       {
-         RARCH_ERR("[XVideo]: Failed to create image.\n");
+         RARCH_ERR("[XVideo] Failed to create image.\n");
          return false;
       }
 
@@ -889,7 +873,7 @@ static bool xv_check_resize(xv_t *xv, unsigned width, unsigned height)
 
       if (xv->shminfo.shmid < 0)
       {
-         RARCH_ERR("[XVideo]: Failed to init SHM.\n");
+         RARCH_ERR("[XVideo] Failed to init SHM.\n");
          return false;
       }
 
@@ -899,7 +883,7 @@ static bool xv_check_resize(xv_t *xv, unsigned width, unsigned height)
 
       if (!XShmAttach(g_x11_dpy, &xv->shminfo))
       {
-         RARCH_ERR("[XVideo]: Failed to reattch XvShm image.\n");
+         RARCH_ERR("[XVideo] Failed to reattch XvShm image.\n");
          return false;
       }
       XSync(g_x11_dpy, False);
@@ -1115,8 +1099,9 @@ static video_poke_interface_t xv_video_poke_interface = {
    NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void xv_get_poke_interface(void *data,

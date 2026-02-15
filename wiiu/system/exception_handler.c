@@ -300,17 +300,13 @@ void test_os_exceptions(void)
          "stw %r3, 0(%r3) \n"
          );
    DCFlushRange((void*)0, 4);
-#endif
 
    /*Malformed instruction, causes PROG. Doesn't seem to work. */
-#if 0
    __asm__ volatile (
          ".int 0xDEADC0DE"
          );
-#endif
 
    /* Jump to 0; causes ISI */
-#if 0
    void (*testFunc)() = (void(*)())0;
    testFunc();
 #endif

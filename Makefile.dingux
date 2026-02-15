@@ -107,7 +107,7 @@ OPK_NAME = retroarch.opk
 
 OBJ :=
 LINK := $(CXX)
-DEF_FLAGS := -march=mips32 -mtune=mips32r2 -mhard-float -ffast-math -fomit-frame-pointer
+DEF_FLAGS := -march=mips32 -mtune=mips32r2 -mhard-float -fomit-frame-pointer
 DEF_FLAGS += -mplt -mno-shared
 DEF_FLAGS += -ffunction-sections -fdata-sections
 DEF_FLAGS += -I. -Ideps -Ideps/stb -DDINGUX=1 -MMD

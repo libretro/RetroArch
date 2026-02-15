@@ -484,6 +484,7 @@ enum retro_language
    RETRO_LANGUAGE_BELARUSIAN          = 32,
    RETRO_LANGUAGE_GALICIAN            = 33,
    RETRO_LANGUAGE_NORWEGIAN           = 34,
+   RETRO_LANGUAGE_IRISH               = 35,
    RETRO_LANGUAGE_LAST,
 
    /** Defined to ensure that <tt>sizeof(retro_language) == sizeof(int)</tt>. Do not use. */
@@ -517,6 +518,9 @@ enum retro_language
 
 /* Video ram lets a frontend peek into a game systems video RAM (VRAM). */
 #define RETRO_MEMORY_VIDEO_RAM   3
+
+/* ROM lets a frontend peek into a game systems ROM. */
+#define RETRO_MEMORY_ROM   4
 
 /** @} */
 
@@ -2573,6 +2577,18 @@ enum retro_mod
  * @return \c true if the environment call is available.
  */
 #define RETRO_ENVIRONMENT_GET_FILE_BROWSER_START_DIRECTORY 80
+
+/**
+ * Returns the audio sample rate the frontend is targeting, in Hz.
+ * The intended use case is for the core to use the result to select an ideal sample rate.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Pointer to the \c unsigned integer in which the frontend will store its target sample rate.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @return \c true if this environment call is available,
+ * regardless of the value returned in \c data.
+*/
+#define RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE (81 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**@}*/
 

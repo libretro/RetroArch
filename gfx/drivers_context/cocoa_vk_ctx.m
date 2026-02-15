@@ -130,10 +130,11 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
 static void cocoa_vk_gfx_ctx_get_video_size(void *data,
       unsigned* width, unsigned* height)
 {
-    float screenscale               = cocoa_screen_get_native_scale();
-    CGRect size                     = [apple_platform.renderView bounds];
-    *width                          = CGRectGetWidth(size)  * screenscale;
-    *height                         = CGRectGetHeight(size) * screenscale;
+    UIView *renderView              = apple_platform.renderView;
+    CGRect size                     = [renderView bounds];
+    float viewScale                 = [renderView contentScaleFactor];
+    *width                          = CGRectGetWidth(size)  * viewScale;
+    *height                         = CGRectGetHeight(size) * viewScale;
 }
 #endif
 
@@ -241,7 +242,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
    cocoa_ctx->width               = width;
    cocoa_ctx->height              = height;
 
-   RARCH_LOG("[macOS]: Native window size: %u x %u.\n",
+   RARCH_LOG("[Vulkan] Native window size: %ux%u.\n",
          cocoa_ctx->width, cocoa_ctx->height);
 
    if (!vulkan_surface_create(
@@ -253,7 +254,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
             cocoa_ctx->height,
             cocoa_ctx->swap_interval))
    {
-      RARCH_ERR("[macOS]: Failed to create surface.\n");
+      RARCH_ERR("[Vulkan] Failed to create surface.\n");
       return false;
    }
 
@@ -302,7 +303,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
                               cocoa_ctx->height,
                               cocoa_ctx->swap_interval))
    {
-      RARCH_ERR("[iOS Vulkan]: Failed to create surface.\n");
+      RARCH_ERR("[Vulkan] Failed to create surface.\n");
       return false;
    }
 
@@ -341,7 +342,7 @@ static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
    if (!vulkan_create_swapchain(&cocoa_ctx->vk,
             width, height, cocoa_ctx->swap_interval))
    {
-      RARCH_ERR("[macOS/Vulkan]: Failed to update swapchain.\n");
+      RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       return false;
    }
 
@@ -352,6 +353,43 @@ static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
    return true;
 }
 #endif
+
+static void cocoa_vk_gfx_ctx_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+{
+#if TARGET_OS_IPHONE
+   /* iOS/tvOS: Return physical screen resolution, not window size */
+   UIScreen *screen = [UIScreen mainScreen];
+   CGRect nativeBounds = screen.nativeBounds;
+   *width  = (unsigned)nativeBounds.size.width;
+   *height = (unsigned)nativeBounds.size.height;
+
+   if (desc && desc_len > 0)
+   {
+      float scale = cocoa_screen_get_native_scale();
+      if (scale >= 3.0f)
+         strlcpy(desc, "Super Retina", desc_len);
+      else if (scale >= 2.0f)
+         strlcpy(desc, "Retina", desc_len);
+      else
+         strlcpy(desc, "Standard", desc_len);
+   }
+#else
+   /* macOS: Return display resolution */
+   CGDirectDisplayID display = CGMainDisplayID();
+   *width  = (unsigned)CGDisplayPixelsWide(display);
+   *height = (unsigned)CGDisplayPixelsHigh(display);
+
+   if (desc && desc_len > 0)
+   {
+      float scale = cocoa_screen_get_backing_scale_factor();
+      if (scale >= 2.0f)
+         strlcpy(desc, "Retina", desc_len);
+      else
+         strlcpy(desc, "Standard", desc_len);
+   }
+#endif
+}
 
 const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_vk_gfx_ctx_init,
@@ -366,7 +404,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_vk_gfx_ctx_get_video_size,
 #endif
    cocoa_vk_gfx_ctx_get_refresh_rate,
-   NULL, /* get_video_output_size */
+   cocoa_vk_gfx_ctx_get_video_output_size,
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    cocoa_get_metrics,
@@ -385,7 +423,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_has_focus,
    cocoa_vk_gfx_ctx_suppress_screensaver,
 #if defined(HAVE_COCOATOUCH)
-   false,
+   true,
 #else
    true,
 #endif
@@ -400,5 +438,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_vk_gfx_ctx_set_flags,
    cocoa_vk_gfx_ctx_bind_hw_render,
    cocoa_vk_gfx_ctx_get_context_data,
-   NULL  /* make_current */
+   NULL, /* make_current */
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */
 };

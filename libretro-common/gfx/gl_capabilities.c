@@ -78,27 +78,27 @@ bool gl_query_extension(const char *ext)
    return ret;
 }
 
-bool gl_check_error(char **error_string)
+bool gl_check_error(char **err_string)
 {
-   int error = glGetError();
-   switch (error)
+   int err = glGetError();
+   switch (err)
    {
       case GL_INVALID_ENUM:
-         *error_string = strdup("GL: Invalid enum.");
+         *err_string = strdup("GL: Invalid enum.");
          break;
       case GL_INVALID_VALUE:
-         *error_string = strdup("GL: Invalid value.");
+         *err_string = strdup("GL: Invalid value.");
          break;
       case GL_INVALID_OPERATION:
-         *error_string = strdup("GL: Invalid operation.");
+         *err_string = strdup("GL: Invalid operation.");
          break;
       case GL_OUT_OF_MEMORY:
-         *error_string = strdup("GL: Out of memory.");
+         *err_string = strdup("GL: Out of memory.");
          break;
       case GL_NO_ERROR:
          return true;
       default:
-         *error_string = strdup("Non specified GL error.");
+         *err_string = strdup("Non specified GL error.");
          break;
    }
 
@@ -190,10 +190,14 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
 #endif
       case GL_CAPS_ARGB8:
-#ifdef HAVE_OPENGLES
+#if defined(HAVE_OPENGLES) && !defined(EMSCRIPTEN)
          if (gl_query_extension("OES_rgb8_rgba8")
                || gl_query_extension("ARM_rgba8")
                   || major >= 3)
+            return true;
+#elif defined(HAVE_OPENGLES) && defined(EMSCRIPTEN)
+         if (gl_query_extension("EXT_sRGB")
+               || major >= 3)
             return true;
 #else
          /* TODO/FIXME - implement this for non-GLES? */

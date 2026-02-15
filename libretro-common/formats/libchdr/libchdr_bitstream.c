@@ -34,6 +34,7 @@ struct bitstream* create_bitstream(const void *src, uint32_t srclength)
 	return bitstream;
 }
 
+
 /*-----------------------------------------------------
  *  bitstream_peek - fetch the requested number of bits
  *  but don't advance the input pointer
@@ -61,6 +62,7 @@ uint32_t bitstream_peek(struct bitstream* bitstream, int numbits)
 	return bitstream->buffer >> (32 - numbits);
 }
 
+
 /*-----------------------------------------------------
  *  bitstream_remove - advance the input pointer by the
  *  specified number of bits
@@ -73,6 +75,7 @@ void bitstream_remove(struct bitstream* bitstream, int numbits)
 	bitstream->bits -= numbits;
 }
 
+
 /*-----------------------------------------------------
  *  bitstream_read - fetch the requested number of bits
  *-----------------------------------------------------
@@ -84,6 +87,7 @@ uint32_t bitstream_read(struct bitstream* bitstream, int numbits)
 	bitstream_remove(bitstream, numbits);
 	return result;
 }
+
 
 /*-------------------------------------------------
  *  read_offset - return the current read offset
@@ -102,6 +106,7 @@ uint32_t bitstream_read_offset(struct bitstream* bitstream)
 	return result;
 }
 
+
 /*-------------------------------------------------
  *  flush - flush to the nearest byte
  *-------------------------------------------------
@@ -117,3 +122,4 @@ uint32_t bitstream_flush(struct bitstream* bitstream)
 	bitstream->bits = bitstream->buffer = 0;
 	return bitstream->doffset;
 }
+

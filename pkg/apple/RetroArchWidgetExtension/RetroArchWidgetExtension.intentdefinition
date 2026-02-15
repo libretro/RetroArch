@@ -15,46 +15,7 @@
 	<key>INIntentDefinitionToolsVersion</key>
 	<string>15.3</string>
 	<key>INIntents</key>
-	<array>
-		<dict>
-			<key>INIntentCategory</key>
-			<string>information</string>
-			<key>INIntentDescription</key>
-			<string>RetroArch Launch Widget</string>
-			<key>INIntentDescriptionID</key>
-			<string>tVvJ9c</string>
-			<key>INIntentEligibleForWidgets</key>
-			<true/>
-			<key>INIntentIneligibleForSuggestions</key>
-			<true/>
-			<key>INIntentName</key>
-			<string>Configuration</string>
-			<key>INIntentResponse</key>
-			<dict>
-				<key>INIntentResponseCodes</key>
-				<array>
-					<dict>
-						<key>INIntentResponseCodeName</key>
-						<string>success</string>
-						<key>INIntentResponseCodeSuccess</key>
-						<true/>
-					</dict>
-					<dict>
-						<key>INIntentResponseCodeName</key>
-						<string>failure</string>
-					</dict>
-				</array>
-			</dict>
-			<key>INIntentTitle</key>
-			<string>Configuration</string>
-			<key>INIntentTitleID</key>
-			<string>gpCwrM</string>
-			<key>INIntentType</key>
-			<string>Custom</string>
-			<key>INIntentVerb</key>
-			<string>View</string>
-		</dict>
-	</array>
+	<array/>
 	<key>INTypes</key>
 	<array/>
 </dict>

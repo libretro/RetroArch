@@ -199,7 +199,7 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
       handle->glyphs[i].atlas_offset_x = x;
       handle->glyphs[i].atlas_offset_y = y;
       handle->glyphs[i].draw_offset_x  = 0;
-      handle->glyphs[i].draw_offset_y  = -FONT_HEIGHT_BASELINE_OFFSET * handle->scale_factor;
+      handle->glyphs[i].draw_offset_y  = 1 - FONT_HEIGHT_BASELINE_OFFSET * handle->scale_factor;
       handle->glyphs[i].advance_x      = FONT_WIDTH_STRIDE * handle->scale_factor;
       handle->glyphs[i].advance_y      = 0;
    }

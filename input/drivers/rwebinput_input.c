@@ -25,6 +25,7 @@
 
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+#include "../../frontend/drivers/platform_emscripten.h"
 
 #include "../input_driver.h"
 #include "../input_types.h"
@@ -86,11 +87,21 @@ typedef struct rwebinput_mouse_states
    uint8_t buttons;
 } rwebinput_mouse_state_t;
 
+typedef struct rwebinput_motion_states
+{
+   float x;
+   float y;
+   float z;
+   bool enabled;
+} rwebinput_motion_state_t;
+
 typedef struct rwebinput_input
 {
    rwebinput_mouse_state_t mouse;                /* double alignment */
    rwebinput_keyboard_event_queue_t keyboard;    /* ptr alignment */
    rwebinput_pointer_state_t pointer[MAX_TOUCH]; /* int alignment */
+   rwebinput_motion_state_t accelerometer;       /* float alignment */
+   rwebinput_motion_state_t gyroscope;           /* float alignment */
    unsigned pointer_count;
    bool keys[RETROK_LAST];
    bool pointerlock_active;
@@ -299,7 +310,7 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
    }
    else
    {
-      double dpr = emscripten_get_device_pixel_ratio();
+      double dpr = platform_emscripten_get_dpr();
       rwebinput->mouse.x = (int)(mouse_event->targetX * dpr);
       rwebinput->mouse.y = (int)(mouse_event->targetY * dpr);
    }
@@ -317,7 +328,7 @@ static EM_BOOL rwebinput_wheel_cb(int event_type,
 {
    rwebinput_input_t       *rwebinput = (rwebinput_input_t*)user_data;
 
-   double dpr = emscripten_get_device_pixel_ratio();
+   double dpr = platform_emscripten_get_dpr();
    rwebinput->mouse.pending_scroll_x += wheel_event->deltaX * dpr;
    rwebinput->mouse.pending_scroll_y += wheel_event->deltaY * dpr;
 
@@ -341,7 +352,7 @@ static EM_BOOL rwebinput_touch_cb(int event_type,
             if (!(touch_event->touches[touch].isChanged) && rwebinput->pointer[touch].id == touch_event->touches[touch].identifier)
                continue;
 
-            double dpr = emscripten_get_device_pixel_ratio();
+            double dpr = platform_emscripten_get_dpr();
             rwebinput->pointer[touch].x  = (int)(touch_event->touches[touch].targetX * dpr);
             rwebinput->pointer[touch].y  = (int)(touch_event->touches[touch].targetY * dpr);
             rwebinput->pointer[touch].id = touch_event->touches[touch].identifier;
@@ -405,6 +416,26 @@ static EM_BOOL rwebinput_pointerlockchange_cb(int event_type,
    return EM_TRUE;
 }
 
+static EM_BOOL rwebinput_devicemotion_cb(int event_type,
+   const EmscriptenDeviceMotionEvent *device_motion_event, void *user_data)
+{
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)user_data;
+
+   /* TODO: what units does mGBA want? does something need to be changed on the core side? */
+   /* given in m/s^2 (inverted) */
+   rwebinput->accelerometer.x = device_motion_event->accelerationIncludingGravityX / -9.8;
+   rwebinput->accelerometer.y = device_motion_event->accelerationIncludingGravityY / -9.8;
+   rwebinput->accelerometer.z = device_motion_event->accelerationIncludingGravityZ / -9.8;
+   /* XYZ == BetaGammaAlpha according to W3C? in my testing it is AlphaBetaGamma... */
+   /* libretro wants radians/s but it is too fast in mGBA, see above comment */
+   /* given in degrees/s */
+   rwebinput->gyroscope.x = device_motion_event->rotationRateAlpha / 180;
+   rwebinput->gyroscope.y = device_motion_event->rotationRateBeta  / 180;
+   rwebinput->gyroscope.z = device_motion_event->rotationRateGamma / 180;
+
+   return EM_TRUE;
+}
+
 static void *rwebinput_input_init(const char *joypad_driver)
 {
    EMSCRIPTEN_RESULT r;
@@ -416,31 +447,30 @@ static void *rwebinput_input_init(const char *joypad_driver)
 
    rwebinput_generate_lut();
 
-   r = emscripten_set_keydown_callback(
-         "#canvas", rwebinput, false,
+   input_keymaps_init_keyboard_lut(rarch_key_map_rwebinput);
+
+   r = emscripten_set_keydown_callback("#canvas", rwebinput, false,
          rwebinput_keyboard_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create keydown callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create keydown callback: %d.\n", r);
    }
 
-   r = emscripten_set_keyup_callback(
-         "#canvas", rwebinput, false,
+   r = emscripten_set_keyup_callback("#canvas", rwebinput, false,
          rwebinput_keyboard_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create keyup callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create keyup callback: %d.\n", r);
    }
 
-   r = emscripten_set_keypress_callback(
-         "#canvas", rwebinput, false,
+   r = emscripten_set_keypress_callback("#canvas", rwebinput, false,
          rwebinput_keyboard_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create keypress callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create keypress callback: %d.\n", r);
    }
 
    r = emscripten_set_mousedown_callback("#canvas", rwebinput, false,
@@ -448,7 +478,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create mousedown callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create mousedown callback: %d.\n", r);
    }
 
    r = emscripten_set_mouseup_callback("#canvas", rwebinput, false,
@@ -456,7 +486,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create mouseup callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create mouseup callback: %d.\n", r);
    }
 
    r = emscripten_set_mousemove_callback("#canvas", rwebinput, false,
@@ -464,16 +494,15 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create mousemove callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create mousemove callback: %d.\n", r);
    }
 
-   r = emscripten_set_wheel_callback(
-         "#canvas", rwebinput, false,
+   r = emscripten_set_wheel_callback("#canvas", rwebinput, false,
          rwebinput_wheel_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create wheel callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create wheel callback: %d.\n", r);
    }
 
    r = emscripten_set_touchstart_callback("#canvas", rwebinput, false,
@@ -481,7 +510,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create touchstart callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create touchstart callback: %d.\n", r);
    }
 
    r = emscripten_set_touchend_callback("#canvas", rwebinput, false,
@@ -489,7 +518,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create touchend callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create touchend callback: %d.\n", r);
    }
 
    r = emscripten_set_touchmove_callback("#canvas", rwebinput, false,
@@ -497,7 +526,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create touchmove callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create touchmove callback: %d.\n", r);
    }
 
    r = emscripten_set_touchcancel_callback("#canvas", rwebinput, false,
@@ -505,7 +534,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create touchcancel callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create touchcancel callback: %d.\n", r);
    }
 
    r = emscripten_set_pointerlockchange_callback(
@@ -514,10 +543,8 @@ static void *rwebinput_input_init(const char *joypad_driver)
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
       RARCH_ERR(
-         "[EMSCRIPTEN/INPUT] failed to create pointerlockchange callback: %d\n", r);
+         "[EMSCRIPTEN/INPUT] Failed to create pointerlockchange callback: %d.\n", r);
    }
-
-   input_keymaps_init_keyboard_lut(rarch_key_map_rwebinput);
 
    return rwebinput;
 }
@@ -734,15 +761,97 @@ static int16_t rwebinput_input_state(
    return 0;
 }
 
+static void rwebinput_remove_event_listeners(void *data)
+{
+   /* *currently* not automatically proxied in the case of PROXY_TO_PTHREAD */
+   emscripten_html5_remove_all_event_listeners();
+}
+
 static void rwebinput_input_free(void *data)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
 
-   emscripten_html5_remove_all_event_listeners();
-
+   platform_emscripten_run_on_browser_thread_sync(rwebinput_remove_event_listeners, NULL);
    free(rwebinput->keyboard.events);
-
    free(data);
+}
+
+static bool rwebinput_set_sensor_state(void *data, unsigned port,
+      enum retro_sensor_action action, unsigned rate)
+{
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
+   EMSCRIPTEN_RESULT r;
+   bool old_state = rwebinput->accelerometer.enabled || rwebinput->gyroscope.enabled;
+   bool new_state;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         rwebinput->accelerometer.enabled = true;
+         break;
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         rwebinput->accelerometer.enabled = false;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         rwebinput->gyroscope.enabled = true;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         rwebinput->gyroscope.enabled = false;
+         break;
+      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+         return false; /* not supported (browsers removed support for now) */
+      default:
+         return false;
+   }
+
+   new_state = rwebinput->accelerometer.enabled || rwebinput->gyroscope.enabled;
+
+   if (!old_state && new_state)
+   {
+      r = emscripten_set_devicemotion_callback(rwebinput, false, rwebinput_devicemotion_cb);
+      if (r != EMSCRIPTEN_RESULT_SUCCESS)
+      {
+         RARCH_ERR(
+            "[EMSCRIPTEN/INPUT] Failed to create devicemotion callback: %d.\n", r);
+         return false;
+      }
+   }
+   else if (old_state && !new_state)
+   {
+      r = emscripten_set_devicemotion_callback(rwebinput, false, NULL);
+      if (r != EMSCRIPTEN_RESULT_SUCCESS)
+      {
+         RARCH_ERR(
+            "[EMSCRIPTEN/INPUT] Failed to remove devicemotion callback: %d.\n", r);
+         return false;
+      }
+   }
+
+   return true;
+}
+
+static float rwebinput_get_sensor_input(void *data, unsigned port, unsigned id)
+{
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
+
+   switch (id)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_X:
+         return rwebinput->accelerometer.x;
+      case RETRO_SENSOR_ACCELEROMETER_Y:
+         return rwebinput->accelerometer.y;
+      case RETRO_SENSOR_ACCELEROMETER_Z:
+         return rwebinput->accelerometer.z;
+      case RETRO_SENSOR_GYROSCOPE_X:
+         return rwebinput->gyroscope.x;
+      case RETRO_SENSOR_GYROSCOPE_Y:
+         return rwebinput->gyroscope.y;
+      case RETRO_SENSOR_GYROSCOPE_Z:
+         return rwebinput->gyroscope.z;
+   }
+
+   return 0.0f;
 }
 
 static void rwebinput_process_keyboard_events(
@@ -839,8 +948,8 @@ input_driver_t input_rwebinput = {
    rwebinput_input_poll,
    rwebinput_input_state,
    rwebinput_input_free,
-   NULL,
-   NULL,
+   rwebinput_set_sensor_state,
+   rwebinput_get_sensor_input,
    rwebinput_get_capabilities,
    "rwebinput",
    rwebinput_grab_mouse,

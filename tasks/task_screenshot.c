@@ -93,6 +93,11 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
    bool ret                      = false;
 
 #if defined(HAVE_RPNG)
+   const uint8_t* input          = (const uint8_t*)state->frame + ((int)state->height - 1) * state->pitch;
+
+   if (!input)
+      return ret;
+
    if (state->flags & SS_TASK_FLAG_BGR24)
       scaler->in_fmt             = SCALER_FMT_BGR24;
    else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
@@ -193,7 +198,13 @@ static void task_screenshot_handler(retro_task_t *task)
       const char *_msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
       runloop_msg_queue_push(_msg, strlen(_msg), 1,
             (state->flags & SS_TASK_FLAG_IS_PAUSED) ? 1 : 180, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+
+#if defined(HAVE_GFX_WIDGETS)
+      /* Do not show empty widget success on error */
+      if (state)
+         state->flags |= SS_TASK_FLAG_SILENCE;
+#endif
    }
 
    if (task->title)
@@ -455,15 +466,15 @@ static bool take_screenshot_viewport(
       unsigned pixel_format_type)
 {
    struct video_viewport vp;
-   video_driver_state_t *video_st        = video_state_get_ptr();
-   uint8_t *buffer                       = NULL;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   uint8_t *buffer                = NULL;
 
-   vp.x                                  = 0;
-   vp.y                                  = 0;
-   vp.width                              = 0;
-   vp.height                             = 0;
-   vp.full_width                         = 0;
-   vp.full_height                        = 0;
+   vp.x                           = 0;
+   vp.y                           = 0;
+   vp.width                       = 0;
+   vp.height                      = 0;
+   vp.full_width                  = 0;
+   vp.full_height                 = 0;
 
    video_driver_get_viewport_info(&vp);
 
@@ -472,29 +483,26 @@ static bool take_screenshot_viewport(
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if (!(   video_st->current_video->read_viewport
+   if ((   video_st->current_video->read_viewport
          && video_st->current_video->read_viewport(
             video_st->data, buffer, runloop_flags & RUNLOOP_FLAG_IDLE)))
-      goto error;
+   {
+      /* Limit image to screen size */
+      if (vp.width > video_st->width)
+         vp.width = video_st->width;
+      if (vp.height > video_st->height)
+         vp.height = video_st->height;
 
-   /* Limit image to screen size */
-   if (vp.width > video_st->width)
-      vp.width = video_st->width;
-   if (vp.height > video_st->height)
-      vp.height = video_st->height;
+      /* Data read from viewport is in bottom-up order, suitable for BMP. */
+      if (screenshot_dump(screenshot_dir,
+               name_base,
+               buffer, vp.width, vp.height,
+               vp.width * 3, true, buffer,
+               savestate, runloop_flags, fullpath, use_thread,
+               pixel_format_type))
+         return true;
+   }
 
-   /* Data read from viewport is in bottom-up order, suitable for BMP. */
-   if (!screenshot_dump(screenshot_dir,
-            name_base,
-            buffer, vp.width, vp.height,
-            vp.width * 3, true, buffer,
-            savestate, runloop_flags, fullpath, use_thread,
-            pixel_format_type))
-      goto error;
-
-   return true;
-
-error:
    free(buffer);
    return false;
 }
@@ -503,13 +511,18 @@ static bool take_screenshot_raw(
       video_driver_state_t *video_st,
       const char *screenshot_dir,
       const char *name_base, void *userbuf,
-      bool savestate, uint32_t runloop_flags, bool fullpath, bool use_thread,
+      bool savestate, uint32_t runloop_flags,
+      bool fullpath, bool use_thread,
       unsigned pixel_format_type)
 {
-   const void *data       = video_st->frame_cache_data;
-   unsigned width         = video_st->frame_cache_width;
-   unsigned height        = video_st->frame_cache_height;
-   size_t pitch           = video_st->frame_cache_pitch;
+   const void *data = video_st->frame_cache_data;
+   unsigned width   = video_st->frame_cache_width;
+   unsigned height  = video_st->frame_cache_height;
+   size_t pitch     = video_st->frame_cache_pitch;
+
+   if (!data || !width || !height || !pitch)
+      return false;
+
    /* Negative pitch is needed as screenshot takes bottom-up,
     * but we use top-down.
     */
@@ -562,17 +575,17 @@ static bool take_screenshot_choice(
 
    if (supports_read_frame_raw)
    {
-      const void *old_data          = video_st->frame_cache_data;
-      unsigned old_width            = video_st->frame_cache_width;
-      unsigned old_height           = video_st->frame_cache_height;
-      size_t old_pitch              = video_st->frame_cache_pitch;
-      void *frame_data              = video_driver_read_frame_raw(
+      const void *old_data         = video_st->frame_cache_data;
+      unsigned old_width           = video_st->frame_cache_width;
+      unsigned old_height          = video_st->frame_cache_height;
+      size_t old_pitch             = video_st->frame_cache_pitch;
+      void *frame_data             = video_driver_read_frame_raw(
             &old_width, &old_height, &old_pitch);
 
-      video_st->frame_cache_data    = old_data;
-      video_st->frame_cache_width   = old_width;
-      video_st->frame_cache_height  = old_height;
-      video_st->frame_cache_pitch   = old_pitch;
+      video_st->frame_cache_data   = old_data;
+      video_st->frame_cache_width  = old_width;
+      video_st->frame_cache_height = old_height;
+      video_st->frame_cache_pitch  = old_pitch;
 
       if (frame_data)
       {

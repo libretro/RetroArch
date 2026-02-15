@@ -74,58 +74,41 @@ bool file_list_reserve(file_list_t *list, size_t nitems)
    return true;
 }
 
+/* Helper function to initialize item_file structure */
+static INLINE void init_item_file(struct item_file *item,
+    const char *path, const char *label, unsigned type,
+    size_t directory_ptr, size_t entry_idx)
+{
+    item->path          = strdup(path);
+    item->label         = strdup(label);
+    item->alt           = NULL;
+    item->type          = type;
+    item->directory_ptr = directory_ptr;
+    item->entry_idx     = entry_idx;
+    item->userdata      = NULL;
+    item->actiondata    = NULL;
+}
+
 bool file_list_insert(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr,
       size_t entry_idx,
       size_t idx)
 {
-   int i;
-
    /* Expand file list if needed */
    if (list->size >= list->capacity)
-      if (!file_list_reserve(list, list->capacity * 2 + 1))
-         return false;
-
-   for (i = (unsigned)list->size; i > (int)idx; i--)
    {
-      struct item_file *copy = (struct item_file*)
-         malloc(sizeof(struct item_file));
-
-      if (copy)
-      {
-         copy->path             = NULL;
-         copy->label            = NULL;
-         copy->alt              = NULL;
-         copy->type             = 0;
-         copy->directory_ptr    = 0;
-         copy->entry_idx        = 0;
-         copy->userdata         = NULL;
-         copy->actiondata       = NULL;
-
-         memcpy(copy, &list->list[i-1], sizeof(struct item_file));
-
-         memcpy(&list->list[i-1], &list->list[i], sizeof(struct item_file));
-         memcpy(&list->list[i],             copy, sizeof(struct item_file));
-
-         free(copy);
-      }
+      size_t new_capacity = list->capacity > 0 ? list->capacity * 2 : 1;
+      if (!file_list_reserve(list, new_capacity))
+         return false;
    }
 
-   list->list[idx].path          = NULL;
-   list->list[idx].label         = NULL;
-   list->list[idx].alt           = NULL;
-   list->list[idx].type          = type;
-   list->list[idx].directory_ptr = directory_ptr;
-   list->list[idx].entry_idx     = entry_idx;
-   list->list[idx].userdata      = NULL;
-   list->list[idx].actiondata    = NULL;
+   /* Shift elements to the right using memmove */
+   if (idx < list->size)
+      memmove(&list->list[idx + 1], &list->list[idx],
+            (list->size - idx) * sizeof(struct item_file));
 
-   if (label)
-      list->list[idx].label      = strdup(label);
-   if (path)
-      list->list[idx].path       = strdup(path);
-
+   init_item_file(&list->list[idx], path, label, type, directory_ptr, entry_idx);
    list->size++;
 
    return true;

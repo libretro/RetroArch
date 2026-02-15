@@ -59,6 +59,7 @@
 #include "../frontend/frontend_driver.h"
 #include "../record/record_driver.h"
 #include "../ui/ui_companion_driver.h"
+#include "../input/input_overlay.h"
 #include "../driver.h"
 #include "../file_path_special.h"
 #include "../list_special.h"
@@ -778,7 +779,7 @@ static void video_monitor_compute_fps_statistics(uint64_t
          (2 * MEASURE_FRAME_TIME_SAMPLES_COUNT))
    {
       RARCH_DBG(
-            "[Video]: Does not have enough samples for monitor refresh rate"
+            "[Video] Does not have enough samples for monitor refresh rate"
             " estimation. Requires to run for at least %u frames.\n",
             2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
       return;
@@ -787,7 +788,7 @@ static void video_monitor_compute_fps_statistics(uint64_t
    if (video_monitor_fps_statistics(&avg_fps, &stddev, &samples))
    {
       RARCH_DBG(
-            "[Video]: Average monitor Hz: %.6f Hz. (%.3f %% frame time"
+            "[Video] Average monitor Hz: %.6f Hz. (%.3f %% frame time"
             " deviation, based on %u last samples).\n",
             avg_fps, 100.0f * stddev, samples);
    }
@@ -811,9 +812,9 @@ void video_monitor_set_refresh_rate(float hz)
    /* Message is visible for twice the usual duration */
    /* as modeswitch will cause monitors to go blank for a while */
    if (settings->bools.notification_show_refresh_rate)
-      runloop_msg_queue_push(msg, _len, 1, 360, false, NULL,
+      runloop_msg_queue_push(msg, _len, 2, 360, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("[Video]: %s\n", msg);
+   RARCH_LOG("[Video] %s\n", msg);
 
    configuration_set_float(settings,
          settings->floats.video_refresh_rate,
@@ -913,7 +914,7 @@ const gfx_ctx_driver_t *video_context_driver_init(
 {
    if (!ctx->bind_api(data, api, major, minor))
    {
-      RARCH_WARN("Failed to bind API (#%u, version %u.%u)"
+      RARCH_WARN("[Video] Failed to bind API (#%u, version %u.%u)"
             " on context driver \"%s\".\n",
             (unsigned)api, major, minor, ctx->ident);
 
@@ -984,7 +985,7 @@ video_pixel_scaler_t *video_driver_pixel_converter_init(
    if (hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
       return NULL;
 
-   RARCH_WARN("[Video]: 0RGB1555 pixel format is deprecated,"
+   RARCH_WARN("[Video] 0RGB1555 pixel format is deprecated,"
          " and will be slower. For 15/16-bit, RGB565"
          " format is preferred.\n");
 
@@ -1006,7 +1007,7 @@ video_pixel_scaler_t *video_driver_pixel_converter_init(
    if (!scaler_ctx_gen_filter(scalr_ctx))
       goto error;
 
-   if (!(scalr_out = calloc(sizeof(uint16_t), size * size)))
+   if (!(scalr_out = calloc(size * size, sizeof(uint16_t))))
       goto error;
 
    scalr->scaler_out                        = scalr_out;
@@ -1059,7 +1060,7 @@ void recording_dump_frame(
 
       if (!vp.width || !vp.height)
       {
-         RARCH_WARN("[Recording]: %s\n",
+         RARCH_WARN("[Recording] %s\n",
                msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
          video_driver_gpu_record_deinit();
          recording_dump_frame(
@@ -1073,7 +1074,7 @@ void recording_dump_frame(
       {
          const char *_msg =
             msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE);
-         RARCH_WARN("[Recording]: %s\n", _msg);
+         RARCH_WARN("[Recording] %s\n", _msg);
 
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -1155,7 +1156,7 @@ void* video_display_server_init(enum rarch_display_type type)
 
       if (!string_is_empty(current_display_server->ident))
       {
-         RARCH_LOG("[Video]: Found display server: \"%s\".\n",
+         RARCH_LOG("[Video] Found display server: \"%s\".\n",
                current_display_server->ident);
       }
    }
@@ -1177,7 +1178,7 @@ void video_display_server_destroy(void)
    if (initial_screen_orientation != current_screen_orientation)
       video_display_server_set_screen_orientation(initial_screen_orientation);
 
-   if (current_display_server)
+   if (current_display_server && (current_display_server != &dispserv_null))
       if (video_st->current_display_server_data)
          current_display_server->destroy(video_st->current_display_server_data);
 }
@@ -1213,7 +1214,7 @@ bool video_display_server_set_resolution(unsigned width, unsigned height,
       int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
-   RARCH_DBG("[Video]: Display server set resolution to %ux%u %.3f Hz.\n", width, height, hz);
+   RARCH_DBG("[Video] Display server set resolution to %ux%u %.3f Hz.\n", width, height, hz);
    if (current_display_server && current_display_server->set_resolution)
       return current_display_server->set_resolution(
             video_st->current_display_server_data, width, height, int_hz,
@@ -1336,7 +1337,7 @@ void video_switch_refresh_rate_maybe(
 bool video_display_server_set_refresh_rate(float hz)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
-   RARCH_DBG("[Video]: Display server set refresh rate to %.3f Hz.\n", hz);
+   RARCH_DBG("[Video] Display server set refresh rate to %.3f Hz.\n", hz);
    if (current_display_server && current_display_server->set_resolution)
       return current_display_server->set_resolution(
             video_st->current_display_server_data, 0, 0, (int)hz,
@@ -1354,7 +1355,7 @@ void video_display_server_restore_refresh_rate(void)
    if (!refresh_rate_original || refresh_rate_current == refresh_rate_original)
       return;
 
-   RARCH_DBG("[Video]: Restoring original refresh rate: %.3f Hz.\n", video_st->video_refresh_rate_original);
+   RARCH_DBG("[Video] Restoring original refresh rate: %.3f Hz.\n", video_st->video_refresh_rate_original);
 
    if (video_display_server_set_refresh_rate(refresh_rate_original))
    {
@@ -1381,7 +1382,7 @@ void video_display_server_set_screen_orientation(enum rotation rotation)
    video_driver_state_t *video_st             = &video_driver_st;
    if (current_display_server && current_display_server->set_screen_orientation)
    {
-      RARCH_LOG("[Video]: Setting screen orientation to %d.\n", rotation);
+      RARCH_LOG("[Video] Setting screen orientation to %d.\n", rotation);
       video_st->current_screen_orientation    = rotation;
       current_display_server->set_screen_orientation(video_st->current_display_server_data, rotation);
    }
@@ -1534,7 +1535,7 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
 
    if (video_driver_is_hw_context())
    {
-      RARCH_WARN("[Video]: Cannot use CPU filters when hardware rendering is used.\n");
+      RARCH_WARN("[Video] Cannot use CPU filters when hardware rendering is used.\n");
       return;
    }
 
@@ -1542,7 +1543,7 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
          settings->paths.path_softfilter_plugin,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height)))
    {
-      RARCH_ERR("[Video]: Failed to load filter.\n");
+      RARCH_ERR("[Video] Failed to load filter.\n");
       return;
    }
 
@@ -1561,7 +1562,7 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
     * the filter upscaling buffer fits within this limit. */
    if (maxsize >= 2048)
    {
-      RARCH_ERR("[Video]: Softfilter initialization failed."
+      RARCH_ERR("[Video] Softfilter initialization failed."
             " Upscaling buffer exceeds hardware limitations.\n");
       video_driver_filter_free();
       return;
@@ -1588,7 +1589,7 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
 #endif
    if (!buf)
    {
-      RARCH_ERR("[Video]: Softfilter initialization failed.\n");
+      RARCH_ERR("[Video] Softfilter initialization failed.\n");
       video_driver_filter_free();
       return;
    }
@@ -1866,7 +1867,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    {
       accum += video_st->frame_time_samples[i];
 #if 0
-      RARCH_LOG("[Video]: Interval #%u: %d usec / frame.\n",
+      RARCH_LOG("[Video] Interval #%u: %d usec / frame.\n",
             i, (int)frame_time_samples[i]);
 #endif
    }
@@ -2131,26 +2132,38 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
 
    if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      video_viewport_t
-         *custom_vp     = &settings->video_vp_custom;
-      int padding_x     = 0;
-      int padding_y     = 0;
+      video_viewport_t *custom_vp = &settings->video_vp_custom;
 
-      x                 = custom_vp->x;
-      y                 = custom_vp->y;
+      if (custom_vp)
+      {
+         int padding_x     = 0;
+         int padding_y     = 0;
 
-      if (!y_down)
-         y              = vp->full_height - (y + custom_vp->height);
-      padding_x        += (vp_width - custom_vp->width);
-      if (padding_x < 0)
-         padding_x     *= 2;
-      padding_y         = vp_height - custom_vp->height;
-      if (padding_y < 0)
-         padding_y     *= 2;
-      vp_width          = custom_vp->width;
-      vp_height         = custom_vp->height;
-      x                += padding_x * vp_bias_x;
-      y                += padding_y * vp_bias_y;
+         x                 = custom_vp->x;
+         y                 = custom_vp->y;
+
+         if (!y_down)
+            y = -y;
+
+         padding_x         = vp_width - custom_vp->width;
+         padding_y         = vp_height - custom_vp->height;
+
+         if (padding_x < 0)
+         {
+            x -= padding_x * vp_bias_x;
+            padding_x *= 2;
+         }
+         if (padding_y < 0)
+         {
+            y -= padding_y * vp_bias_y;
+            padding_y *= 2;
+         }
+
+         vp_width          = custom_vp->width;
+         vp_height         = custom_vp->height;
+         x                += padding_x * vp_bias_x;
+         y                += padding_y * vp_bias_y;
+      }
    }
    else
    {
@@ -2188,7 +2201,7 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
 }
 
 void video_driver_update_viewport(
-      struct video_viewport* vp, bool force_full, bool keep_aspect)
+      struct video_viewport* vp, bool force_full, bool keep_aspect, bool y_down)
 {
    settings_t *settings            = config_get_ptr();
    bool video_scale_integer        = settings->bools.video_scale_integer;
@@ -2200,14 +2213,78 @@ void video_driver_update_viewport(
    vp->width                       = vp->full_width;
    vp->height                      = vp->full_height;
 
+#ifdef HAVE_OVERLAY
+   /* Check if active overlay specifies viewport override.
+    * Only apply to game viewport, not UI elements (force_full=true) */
+   if (!force_full)
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+      if (input_st && input_st->overlay_ptr && input_st->overlay_ptr->active)
+      {
+         const struct overlay *ol = input_st->overlay_ptr->active;
+         if (ol->flags & OVERLAY_HAS_VIEWPORT)
+         {
+            /* Calculate overlay's viewport bounds in pixels */
+            int ol_x      = (int)(ol->viewport.x * vp->full_width);
+            int ol_y      = (int)(ol->viewport.y * vp->full_height);
+            unsigned ol_w = (unsigned)(ol->viewport.w * vp->full_width);
+            unsigned ol_h = (unsigned)(ol->viewport.h * vp->full_height);
+            RARCH_LOG("[Overlay] Applying viewport override!\n");
+
+            if (ol->flags & OVERLAY_VIEWPORT_FILL)
+            {
+               /* Fill mode: stretch to fill overlay viewport exactly */
+               vp->x      = ol_x;
+               vp->y      = ol_y;
+               vp->width  = ol_w;
+               vp->height = ol_h;
+            }
+            else
+            {
+               /* Fit mode: preserve aspect ratio within overlay viewport */
+               float game_aspect = video_driver_get_aspect_ratio();
+               float ol_aspect   = (float)ol_w / (float)ol_h;
+
+               if (game_aspect > ol_aspect)
+               {
+                  /* Game is wider - pillarbox (bars top/bottom) */
+                  vp->width  = ol_w;
+                  vp->height = (unsigned)(ol_w / game_aspect);
+                  vp->x      = ol_x;
+                  vp->y      = ol_y + (int)(ol_h - vp->height) / 2;
+               }
+               else
+               {
+                  /* Game is taller - letterbox (bars left/right) */
+                  vp->height = ol_h;
+                  vp->width  = (unsigned)(ol_h * game_aspect);
+                  vp->x      = ol_x + (int)(ol_w - vp->width) / 2;
+                  vp->y      = ol_y;
+               }
+            }
+            return;  /* Skip all other viewport calculations */
+         }
+      }
+   }
+#endif
+
    if (video_scale_integer && !force_full)
       video_viewport_get_scaled_integer(
             vp,
             vp->full_width,
             vp->full_height,
-            video_driver_aspect_ratio, keep_aspect, true);
+            video_driver_aspect_ratio, keep_aspect, y_down);
    else if (keep_aspect && !force_full)
-      video_viewport_get_scaled_aspect(vp, vp->full_width, vp->full_height, true);
+   {
+      /* Calculate device_aspect, using translate_aspect if available
+       * (e.g. for SD TV detection on Raspberry Pi) */
+      float device_aspect = (float)vp->full_width / vp->full_height;
+      if (video_st->current_video_context.translate_aspect)
+         device_aspect = video_st->current_video_context.translate_aspect(
+               video_st->context_data, vp->full_width, vp->full_height);
+      video_viewport_get_scaled_aspect2(vp, vp->full_width, vp->full_height,
+            y_down, device_aspect, video_driver_aspect_ratio);
+   }
 }
 
 void video_driver_restore_cached(void *settings_data)
@@ -2220,7 +2297,7 @@ void video_driver_restore_cached(void *settings_data)
             settings->arrays.video_driver, video_st->cached_driver_id);
 
       video_st->cached_driver_id[0] = 0;
-      RARCH_LOG("[Video]: Restored video driver to \"%s\".\n",
+      RARCH_LOG("[Video] Restored video driver to \"%s\".\n",
             settings->arrays.video_driver);
    }
 }
@@ -2255,7 +2332,7 @@ bool video_driver_find_driver(
             case RETRO_HW_CONTEXT_D3D11:
             case RETRO_HW_CONTEXT_D3D12:
 #if defined(HAVE_VULKAN) || defined(HAVE_D3D9) || defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12) || defined(HAVE_OPENGL_CORE)
-               RARCH_LOG("[Video]: Using HW render, %s driver forced.\n",
+               RARCH_LOG("[Video] Using HW render, %s driver forced.\n",
                      rdr_context_name);
 
                if (!string_is_equal(settings->arrays.video_driver,
@@ -2267,7 +2344,7 @@ bool video_driver_find_driver(
                   configuration_set_string(settings,
                         settings->arrays.video_driver,
                         rdr_context_name);
-                  RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
+                  RARCH_LOG("[Video] \"%s\" saved as cached driver.\n",
                         settings->arrays.video_driver);
                }
 
@@ -2278,7 +2355,7 @@ bool video_driver_find_driver(
 #endif
             case RETRO_HW_CONTEXT_OPENGL:
 #if defined(HAVE_OPENGL)
-               RARCH_LOG("[Video]: Using HW render, OpenGL driver forced.\n");
+               RARCH_LOG("[Video] Using HW render, OpenGL driver forced.\n");
 
                /* If we have configured one of the HW render
                 * capable GL drivers, go with that. */
@@ -2292,7 +2369,7 @@ bool video_driver_find_driver(
                   configuration_set_string(settings,
                         settings->arrays.video_driver,
                         "glcore");
-                  RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
+                  RARCH_LOG("[Video] \"%s\" saved as cached driver.\n",
                         settings->arrays.video_driver);
                   video_st->current_video = &video_gl3;
                   return true;
@@ -2306,14 +2383,14 @@ bool video_driver_find_driver(
                   configuration_set_string(settings,
                         settings->arrays.video_driver,
                         "gl");
-                  RARCH_LOG("[Video]: \"%s\" saved as cached driver.\n",
+                  RARCH_LOG("[Video] \"%s\" saved as cached driver.\n",
                         settings->arrays.video_driver);
                   video_st->current_video = &video_gl2;
                   return true;
                }
 #endif
 
-               RARCH_LOG("[Video]: Using configured \"%s\""
+               RARCH_LOG("[Video] Using configured \"%s\""
                      " driver for GL HW render.\n",
                      settings->arrays.video_driver);
                break;
@@ -2331,7 +2408,7 @@ bool video_driver_find_driver(
                frontend_driver_get_video_driver()))
          return true;
 
-      RARCH_WARN("[Video]: Frontend supports get_video_driver() but did not specify one.\n");
+      RARCH_WARN("[Video] Frontend supports get_video_driver() but did not specify one.\n");
    }
 
    i                   = (int)driver_find_index(
@@ -2350,7 +2427,7 @@ bool video_driver_find_driver(
          RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
          for (d = 0; video_drivers[d]; d++)
             RARCH_LOG_OUTPUT("\t%s\n", video_drivers[d]->ident);
-         RARCH_WARN("Going to default to first %s..\n", prefix);
+         RARCH_WARN("Going to default to first %s...\n", prefix);
       }
 
       if (!(video_st->current_video = (video_driver_t*)video_drivers[0]))
@@ -2461,19 +2538,29 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       struct video_viewport *custom_vp = &settings->video_vp_custom;
+
       if (custom_vp)
       {
          x         = custom_vp->x;
          y         = custom_vp->y;
 
          if (!y_down)
-            y      = vp->height - (y + custom_vp->height);
+            y = -y;
+
          padding_x = width - custom_vp->width;
-         if (padding_x < 0)
-            padding_x *= 2;
          padding_y = height - custom_vp->height;
+
+         if (padding_x < 0)
+         {
+            x -= padding_x * vp_bias_x;
+            padding_x *= 2;
+         }
          if (padding_y < 0)
+         {
+            y -= padding_y * vp_bias_y;
             padding_y *= 2;
+         }
+
          width     = custom_vp->width;
          height    = custom_vp->height;
       }
@@ -2489,46 +2576,44 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
          uint8_t max_scale_w = 1;
          uint8_t max_scale_h = 1;
 
-         /* Overscale if less screen is lost by cropping instead of empty added by underscale */
+         /* Overscale if only overscan or a small number of rows get cropped.
+          * Otherwise, underscale if the smallest margin doesn't exceed 12%.
+          * Otherwise, fall back to non-integer scaling. */
          if (scaling == VIDEO_SCALE_INTEGER_SCALING_SMART)
          {
-            unsigned overscale_w  = (width / content_width) + !!(width % content_width);
-            unsigned underscale_w = (width / content_width);
-            unsigned overscale_h  = (height / content_height) + !!(height % content_height);
-            unsigned underscale_h = (height / content_height);
-            int overscale_w_diff  = (content_width * overscale_w) - width;
-            int underscale_w_diff = width - (content_width * underscale_w);
-            int overscale_h_diff  = (content_height * overscale_h) - height;
-            int underscale_h_diff = height - (content_height * underscale_h);
-            int scale_h_diff      = overscale_h_diff - underscale_h_diff;
+            unsigned max_scale_w  = width / content_width;
+            unsigned underscale_h = height / content_height;
+            /* Always check if the next integer factor results in a usable
+             * overscale even if the underscale factor already fills the screen.
+             * This is particularly relevant when scaling 240p content to 4k -
+             * a x9 scale will fill the height, but a x10 overscale will only
+             * crop overscan and fills more of the screen. */
+            unsigned overscale_h  = underscale_h + 1;
+            unsigned max_scale_h  = underscale_h;
+            /* This is the minimum amount content that must be shown in order
+             * for overscan to be used.
+             *
+             * Handhelds don't have overscan, but there are noteworthy cases
+             * where overscaling crops so few pixels that it's worth allowing:
+             * - Atari Lynx @ 800p
+             * - GBA @ 1080p or 4k
+             * - PSP @ 800p, 1080p or 4k
+             * 6 pixels has no special significance, it's simply the smallest
+             * value that covers all of the above cases. */
+            unsigned overscale_min_height = content_height - 6;
+            /* Overscale 240p content if only the overscan area gets cropped.
+             * The core may have applied some cropping, or the emulated console
+             * may not use all 240 lines, so the content height may be lower.
+             * 192 is 80% of 240, and is the title safe area used by Nintendo
+             * for NES development. See https://www.nesdev.org/wiki/Overscan */
+            if (192 <= content_height && content_height <= 240)
+               overscale_min_height = 192;
+            /* Use the 240p thresholds for 480p, just doubled. */
+            else if (192 * 2 <= content_height && content_height <= 480)
+               overscale_min_height = 192 * 2;
 
-            max_scale_w = underscale_w;
-            max_scale_h = underscale_h;
-
-            /* Prefer nearest scale */
-            if (overscale_w_diff <= underscale_w_diff)
-               max_scale_w = overscale_w;
-
-            if (overscale_h_diff <= underscale_h_diff)
+            if (height / overscale_h >= overscale_min_height)
                max_scale_h = overscale_h;
-
-            /* Limit width overscale */
-            if (max_scale_w * content_width >= width + ((int)content_width / 2))
-               max_scale_w = underscale_w;
-
-            /* Allow overscale when it is close enough */
-            if (scale_h_diff > 0 && scale_h_diff < 64)
-               max_scale_h = overscale_h;
-            /* Overscale will be too much even if it is closer */
-            else if ((scale_h_diff < -140 && scale_h_diff >= (int)-content_height / 2)
-                  || (scale_h_diff < -30 && scale_h_diff > -50)
-                  || (scale_h_diff > 20))
-               max_scale_h = underscale_h;
-
-            /* Sensible limiting for small sources */
-            if (content_height <= 200)
-               max_scale_h = underscale_h;
-
             max_scale = MIN(max_scale_w, max_scale_h);
          }
          else if (scaling == VIDEO_SCALE_INTEGER_SCALING_OVERSCALE)
@@ -2547,10 +2632,12 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             float target_ratio        = (float)content_width / (float)content_height;
             float underscale_ratio    = 0;
             float overscale_ratio     = 0;
-            uint16_t content_width_ar = content_width;
+            uint16_t height_threshold = height * 1.12f;
             uint8_t overscale_w       = 0;
             uint8_t overscale_h       = 0;
             uint8_t i                 = 0;
+            bool hires_w              = false;
+            bool hires_h              = false;
 
             /* Reset width to exact width */
             content_width = (rotation % 2)
@@ -2573,7 +2660,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
                }
 
                if (scaling == VIDEO_SCALE_INTEGER_SCALING_SMART)
-                  max_scale_h = ((int)(height - content_height * overscale_h) < -(int)(height * 0.20f))
+                  max_scale_h = ((content_height * overscale_h) > height_threshold)
                      ? overscale_h - 1
                      : overscale_h;
                else if (scaling == VIDEO_SCALE_INTEGER_SCALING_OVERSCALE)
@@ -2601,46 +2688,108 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             else if (i > 1)
                max_scale_w = i - 1;
 
-            /* Special half width scale for hi-res */
-            if (     axis == VIDEO_SCALE_INTEGER_AXIS_Y_XHALF
-                  || axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF
-                  || axis == VIDEO_SCALE_INTEGER_AXIS_XHALF)
-            {
-               float scale_w_ratio    = (float)(content_width * max_scale_w) / (float)(content_height * max_scale_h);
-               uint8_t hires_w        = content_width / 512;
-               int content_width_diff = content_width_ar - (content_width / (hires_w + 1));
-
-               if (     content_width_ar - content_width_diff == (int)content_width / 2
-                     && content_width_diff < 20
-                     && scale_w_ratio - target_ratio > 0.25f)
-                  half_w = -1;
-            }
+            /* Decide hi-res source */
+            hires_w = content_width  / 512;
+            hires_h = content_height / ((rotation % 2) ? 288 : 300);
 
             /* Special half height scale for hi-res */
-            if (     axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF
-                  || axis == VIDEO_SCALE_INTEGER_AXIS_XHALF)
+            if (     (hires_h)
+                  && (axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF)
+                  && (scaling != VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE))
             {
                if (     max_scale_h == (height / content_height)
-                     && content_height / ((rotation % 2) ? 288 : 300)
                      && content_height * max_scale_h < height * 0.90f
+                     && content_height * (max_scale_h + 0.5f) < height_threshold
                   )
+                  half_h = 1;
+            }
+
+            /* Special half width scale for hi-res */
+            if (     (hires_w || hires_h)
+                  && (  axis == VIDEO_SCALE_INTEGER_AXIS_Y_XHALF
+                     || axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF
+                     || axis == VIDEO_SCALE_INTEGER_AXIS_XHALF))
+            {
+               float diff   = 1.0f;
+               uint8_t mode = 0;
+
+               /* Reset current target ratio for stable width matching */
+               if (!hires_w && half_h)
+                  target_ratio = (float)(content_width * max_scale_w) / (float)(content_height * max_scale_h);
+
+               /* Find the nearest ratio */
+               for (i = 0; i < 4; i++)
                {
-                  float halfstep_prev_ratio = (float)(content_width * max_scale_w) / (float)(content_height * max_scale_h);
-                  float halfstep_next_ratio = (float)(content_width * max_scale_w) / (float)(content_height * (max_scale_h + 0.5f));
+                  float diff_mode = content_width;
 
-                  if (content_height * (max_scale_h + 0.5f) < height * 1.12f)
+                  /* Skip half scales with lo-res width */
+                  if (!hires_w && !(i % 2))
+                     continue;
+
+                  switch (i)
                   {
-                     half_h = 1;
-
-                     if (halfstep_next_ratio - target_ratio <= target_ratio - halfstep_prev_ratio)
-                        half_w = 1;
+                     case 0: diff_mode *= (max_scale_w - 0.5f); break;
+                     case 1: diff_mode *= (max_scale_w);        break;
+                     case 2: diff_mode *= (max_scale_w + 0.5f); break;
+                     case 3: diff_mode *= (max_scale_w + 1.0f); break;
                   }
+
+                  diff_mode /= (content_height * (max_scale_h + (half_h * 0.5f)));
+                  diff_mode  = fabsf(diff_mode - target_ratio);
+
+                  if (diff_mode <= diff)
+                  {
+                     diff = diff_mode;
+                     mode = i;
+                  }
+               }
+
+               switch (mode)
+               {
+                  case 0: half_w = -1; break;
+                  case 1: half_w = 0;  break;
+                  case 2: half_w = 1;  break;
+                  case 3: half_w = 2;  break;
                }
             }
          }
 
          padding_x = width  - content_width  * (max_scale_w + (half_w * 0.5f));
          padding_y = height - content_height * (max_scale_h + (half_h * 0.5f));
+
+         if (scaling == VIDEO_SCALE_INTEGER_SCALING_SMART)
+         {
+            /* Final step: check if the underscaling margins are too large.
+             *
+             * Sometimes there's no reasonable integer scale that can be used,
+             * such as when scaling 480p to 720p. Overscaling would crop 25% of
+             * the content height, but underscaling would only use 2/3 of the
+             * display's height.
+             *
+             * A threshold of 88% utilization (i.e. 12% margin) captures the
+             * majority of underscaling scenarios for HD resolutions while
+             * keeping the margins relatively small. Noteworthy use cases that
+             * straddle this cutoff include: GBA scaled to 720p; Nintendo DS
+             * scaled to 1080p; and 480p content scaled to 1080p. Past this,
+             * noticeable jumps in margin size would be needed to capture a
+             * relatively small number of additional use cases.
+             * TODO: Make this threshold configurable. */
+            float width_utilization  = (float)(width  - padding_x) / width;
+            float height_utilization = (float)(height - padding_y) / height;
+            if (MAX(height_utilization, width_utilization) < 0.88)
+            {
+               video_viewport_get_scaled_aspect(vp, width, height, y_down);
+               return;
+            }
+         }
+
+         /* Use regular scaling if overscale is unreasonable */
+         if (     padding_x <= (int)-video_st->av_info.geometry.base_width
+               || padding_y <= (int)-video_st->av_info.geometry.base_height)
+         {
+            video_viewport_get_scaled_aspect(vp, width, height, y_down);
+            return;
+         }
       }
       else
       {
@@ -2817,7 +2966,15 @@ void video_driver_build_info(video_frame_info_t *video_info)
    input_driver_state_t *input_st          = input_state_get_ptr();
 #ifdef HAVE_MENU
    struct menu_state *menu_st              = menu_state_get_ptr();
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   struct video_shader *menu_shader        = menu_shader_get();
+#else
+   struct video_shader *menu_shader        = NULL;
 #endif
+#else
+   struct video_shader *menu_shader        = NULL;
+#endif /* HAVE_MENU */
+   uint8_t menu_shdr_flags                 = (menu_shader) ? menu_shader->flags : 0;
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t *p_dispwidget          = dispwidget_get_ptr();
 #endif
@@ -2827,6 +2984,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    VIDEO_DRIVER_THREADED_LOCK(video_st, is_threaded);
 #endif
+
    custom_vp                               = &settings->video_vp_custom;
 #ifdef HAVE_GFX_WIDGETS
    video_info->widgets_active              = p_dispwidget->active;
@@ -2842,6 +3000,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->crt_switch_resolution_super = settings->uints.crt_switch_resolution_super;
    video_info->crt_switch_center_adjust    = settings->ints.crt_switch_center_adjust;
    video_info->crt_switch_porch_adjust     = settings->ints.crt_switch_porch_adjust;
+   video_info->crt_switch_vert_adjust      = settings->ints.crt_switch_vertical_adjust;
    video_info->crt_switch_hires_menu       = settings->bools.crt_switch_hires_menu;
    video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
    video_info->bfi_dark_frames             = settings->uints.video_bfi_dark_frames;
@@ -2896,6 +3055,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->scale_width                 = video_st->scale_width;
    video_info->scale_height                = video_st->scale_height;
 
+   video_info->shader_active               = !(menu_shdr_flags & SHDR_FLAG_DISABLED) ? true : false;
    video_info->hdr_enable                  = settings->bools.video_hdr_enable;
 
    video_info->libretro_running            = false;
@@ -3464,9 +3624,9 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    }
 
    if (width && height)
-      RARCH_LOG("[Video]: Set video size to: %ux%u.\n", width, height);
+      RARCH_LOG("[Video] Set video size to: %ux%u.\n", width, height);
    else
-      RARCH_LOG("[Video]: Set video size to: fullscreen.\n");
+      RARCH_LOG("[Video] Set video size to: fullscreen.\n");
 
    video_st->display_type     = RARCH_DISPLAY_NONE;
    video_st->display          = 0;
@@ -3529,7 +3689,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    {
       bool ret;
       /* Can't do hardware rendering with threaded driver currently. */
-      RARCH_LOG("[Video]: Starting threaded video driver..\n");
+      RARCH_LOG("[Video] Starting threaded video driver...\n");
 
       ret = video_init_thread(
             (const video_driver_t**)&video_st->current_video,
@@ -3540,7 +3700,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
             video);
       if (!ret)
       {
-         RARCH_ERR("[Video]: Cannot open threaded video driver.. Exiting..\n");
+         RARCH_ERR("[Video] Cannot open threaded video driver. Exiting...\n");
          return false;
       }
    }
@@ -3553,7 +3713,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 
    if (!video_st->data)
    {
-      RARCH_ERR("[Video]: Cannot open video driver.. Exiting..\n");
+      RARCH_ERR("[Video] Cannot open video driver. Exiting...\n");
       return false;
    }
 
@@ -3645,7 +3805,7 @@ void video_driver_frame(const void *data, unsigned width,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps, frame_time;
-   static uint16_t frame_time_accumulator;
+   static int32_t frame_time_accumulator;
    /* Mark the start of nonblock state for
     * ignoring initial previous frame time */
    static int8_t nonblock_active;
@@ -3693,12 +3853,12 @@ void video_driver_frame(const void *data, unsigned width,
          && data
          && (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
          && (data != RETRO_HW_FRAME_BUFFER_VALID)
-         && video_pixel_frame_scale(
-            video_st->scaler_ptr->scaler,
-            video_st->scaler_ptr->scaler_out,
-            data, width, height, pitch)
       )
    {
+      video_pixel_frame_scale(
+            video_st->scaler_ptr->scaler,
+            video_st->scaler_ptr->scaler_out,
+            data, width, height, pitch);
       data                = video_st->scaler_ptr->scaler_out;
       pitch               = video_st->scaler_ptr->scaler->out_stride;
    }
@@ -3729,7 +3889,7 @@ void video_driver_frame(const void *data, unsigned width,
             || (last_frame_duped && !!data))
       )
    {
-      uint16_t frame_time_accumulator_prev = frame_time_accumulator;
+      int32_t frame_time_accumulator_prev  = frame_time_accumulator;
       uint16_t frame_time_delta            = new_time - last_time;
       uint16_t frame_time_target           = video_info.frame_time_target;
 
@@ -4314,8 +4474,8 @@ void video_driver_frame(const void *data, unsigned width,
             dynamic_super_width,
             video_info.crt_switch_resolution_super,
             video_info.crt_switch_hires_menu,
-            config_get_ptr()->uints.video_aspect_ratio_idx
-            );
+            config_get_ptr()->uints.video_aspect_ratio_idx,
+            video_info.crt_switch_vert_adjust);
    }
    else if (!video_info.crt_switch_resolution)
 #endif
@@ -4373,7 +4533,6 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
    static int16_t frame_time_dev = 0;
    uint16_t frame_time_target    = 1000000.0f / refresh_rate;
    uint16_t frame_time           = 0;
-   uint16_t leftover_min         = 2000;
 #if FRAME_DELAY_AUTO_DEBUG
    static uint16_t frame_drops   = 0;
 #endif
@@ -4381,16 +4540,9 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
    static uint8_t overtime_count = 0; /* Frames to wait for another frame drop to increase reserve */
    static uint8_t predict_count  = 0; /* Frames to wait for another predictive delay decrease */
    int8_t frame_delay_cur        = *video_frame_delay_effective;
-   int8_t frame_delay_new        = *video_frame_delay_effective;
+   int8_t frame_delay_new        = 0;
    bool frame_time_over          = false;
    bool frame_time_near          = false;
-
-   /* Reserve reset */
-   if (video_st->frame_time_reserve < leftover_min)
-   {
-      video_st->frame_time_reserve = leftover_min;
-      hold_count = overtime_count = 0;
-   }
 
    /* Ignore overtime counting on initial frames */
    if (video_st->frame_count < frame_time_interval)
@@ -4406,7 +4558,7 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
    if (frame_time_over && core_run_time >= frame_time_target)
       *skip_update = frame_time_interval;
 
-   /* No increasing allowed unless safe */
+   /* No increasing allowed until safe */
    if (!frame_time_near)
       hold_count += (frame_time > frame_time_target) ? 2 : 1;
 
@@ -4485,14 +4637,13 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
          && frame_delay_new
          && frame_delay_new <= video_st->frame_delay_target
          && core_run_time <= video_st->frame_delay_target * 1000
-         && frame_time_target - core_run_time - (frame_delay_new * 1000) > video_st->frame_time_reserve
-         && frame_time_target - core_run_time - (frame_delay_new * 1000) < video_st->frame_time_reserve * 2
-         && (  abs(frame_time_dev) >= 150
-            || abs(frame_time - frame_time_target) >= 150))
+         && video_st->frame_time_reserve < video_st->frame_delay_target * 1000
+         && (  abs(frame_time_dev) >= 100
+            || abs(frame_time - frame_time_target) >= 100))
    {
       frame_delay_new--;
       frame_time_dev = 0;
-      predict_count = refresh_rate / 4;
+      predict_count  = refresh_rate / 5;
    }
 
    /* - Negative delay calculation falls back to current delay
@@ -4516,7 +4667,7 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
          hold_count = refresh_rate;
    }
 
-   /* Make sure leftover never goes below reserve */
+   /* Make sure leftover stays above reserve */
    if (     frame_delay_cur
          && frame_delay_new
          && frame_time_target - core_run_time - (frame_delay_new * 1000) < video_st->frame_time_reserve
@@ -4549,7 +4700,7 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
    if (frame_time_over)
       frame_drops++;
 
-   RARCH_DBG("[Video]: time:%5d near:%d over:%d core:%5d left:%5d,%5d new:%2d,%2d h-o-p:%3d,%3d,%3d su:%d drop:%2d dev:%5d,%5d\n",
+   RARCH_DBG("[Video] time:%5d near:%d over:%d core:%5d left:%5d,%5d new:%2d,%2d h-o-p:%3d,%3d,%3d su:%d drop:%2d dev:%5d,%5d\n",
          frame_time, frame_time_near, frame_time_over, runloop_st->core_run_time,
          frame_time_target - core_run_time - (frame_delay_new * 1000),
          video_st->frame_time_reserve, frame_delay_new, frame_delay_cur,
@@ -4565,16 +4716,13 @@ void video_frame_delay(video_driver_state_t *video_st,
    float refresh_rate                  = settings->floats.video_refresh_rate;
    uint8_t video_frame_delay           = settings->uints.video_frame_delay;
    uint8_t video_frame_delay_effective = video_st->frame_delay_effective;
-   uint8_t video_frame_delay_maybe     = video_frame_delay_effective;
    uint8_t video_swap_interval         = runloop_get_video_swap_interval(settings->uints.video_swap_interval);
    uint8_t video_bfi                   = settings->uints.video_black_frame_insertion;
    uint8_t shader_subframes            = settings->uints.video_shader_subframes;
    bool skip_delay                     = video_st->frame_count < 4
          || (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
-         || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION);
-
-   /* Black frame insertion + swap interval multiplier */
-   refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval / shader_subframes);
+         || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
+         || state_manager_frame_is_reversed();
 
    /* Treat values 20+ as frame time percentage */
    if (video_frame_delay >= 20)
@@ -4582,6 +4730,9 @@ void video_frame_delay(video_driver_state_t *video_st,
    /* Set 0 (Auto) delay target as 3/4 frame time */
    else if (video_frame_delay == 0 && settings->bools.video_frame_delay_auto)
       video_frame_delay = 1 / refresh_rate * 1000 * 0.75f;
+
+   /* Black frame insertion + swap interval multiplier */
+   refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval / shader_subframes);
 
    if (settings->bools.video_frame_delay_auto)
    {
@@ -4621,24 +4772,29 @@ void video_frame_delay(video_driver_state_t *video_st,
          frame_time_update            = false;
          video_st->frame_delay_target = video_frame_delay_effective = video_frame_delay;
          video_st->frame_time_reserve = ((int)(1 / refresh_rate * 1000) - video_st->frame_delay_target) * 1000;
-         RARCH_DBG("[Video]: Frame delay target reset to %d ms.\n", video_frame_delay);
+         RARCH_DBG("[Video] Frame delay target reset to %d ms.\n", video_frame_delay);
+
+         /* Enforce minimum reserve */
+         if (video_st->frame_time_reserve < 1000)
+         {
+            video_st->frame_time_reserve = 1000;
+            video_frame_delay_effective -= video_st->frame_time_reserve / 1000;
+         }
       }
 
-      /* Immediate reaction based on core time */
-      if (video_st->frame_count >= 4 && !skip_delay)
-      {
-         if (video_st->frame_count < frame_time_interval * 8)
-            skip_update = 0;
+      /* Negative leftover force update */
+      if ((1000000.0f / refresh_rate) - (video_frame_delay_effective * 1000) - runloop_st->core_run_time < 0)
+         skip_delay = false;
 
+      /* Immediate reaction based on core time */
+      if (!skip_delay)
+      {
          video_frame_delay_leftover(video_st, runloop_st,
                refresh_rate, frame_time_interval,
-               &skip_update, &video_frame_delay_maybe);
+               &skip_update, &video_frame_delay_effective);
 
-         if (video_frame_delay_maybe > video_frame_delay)
-            video_frame_delay_maybe = video_frame_delay;
-
-         if (video_frame_delay_effective != video_frame_delay_maybe)
-            video_frame_delay_effective = video_frame_delay_maybe;
+         if (video_frame_delay_effective > video_frame_delay)
+            video_frame_delay_effective = video_frame_delay;
       }
 
       if (skip_update)
@@ -4761,9 +4917,9 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
 
 #if FRAME_DELAY_AUTO_DEBUG
       if (mode > 0)
-         RARCH_DBG("[Video]: Frame delay nudge %d by mode %d.\n", frame_time_avg, mode);
+         RARCH_DBG("[Video] Frame delay nudge %d by mode %d.\n", frame_time_avg, mode);
       else if (mode < 0)
-         RARCH_DBG("[Video]: Frame delay ignore %d.\n", frame_time_avg);
+         RARCH_DBG("[Video] Frame delay ignore %d.\n", frame_time_avg);
 #endif
    }
 
@@ -4791,7 +4947,7 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
 
 #if FRAME_DELAY_AUTO_DEBUG
    if (frame_time_index > frame_time_frames)
-      RARCH_DBG("[Video]: %5d / pos:%d,%d min:%d med:%d max:%d / delta:%5d = %5d %5d %5d %5d %5d %5d %5d %5d\n",
+      RARCH_DBG("[Video] %5d / pos:%d,%d min:%d med:%d max:%d / delta:%5d = %5d %5d %5d %5d %5d %5d %5d %5d\n",
             frame_time_avg,
             count_pos,
             count_pos_avg,

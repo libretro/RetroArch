@@ -168,9 +168,23 @@ bool PlaylistModel::isSupportedImage(const QString path) const
    return false;
 }
 
-QString PlaylistModel::getSanitizedThumbnailName(QString label) const
+QString PlaylistModel::getSanitizedThumbnailName(QString dir, QString label) const
 {
-   return label.replace(m_fileSanitizerRegex, "_") + ".png";
+   QDir tnDir(dir);
+
+   QString tnName = label.replace(m_fileSanitizerRegex, "_");
+   if (tnDir.exists(tnName + ".png"))
+      return dir + tnName + ".png";
+   if (tnDir.exists(tnName + ".jpg"))
+      return dir + tnName + ".jpg";
+   if (tnDir.exists(tnName + ".jpeg"))
+      return dir + tnName + ".jpeg";
+   if (tnDir.exists(tnName + ".bmp"))
+      return dir + tnName + ".bmp";
+   if (tnDir.exists(tnName + ".tga"))
+      return dir + tnName + ".tga";
+   return dir + tnName + ".png";
+
 }
 
 QString PlaylistModel::getThumbnailPath(const QHash<QString, QString> &hash, QString type) const
@@ -179,11 +193,12 @@ QString PlaylistModel::getThumbnailPath(const QHash<QString, QString> &hash, QSt
    if (isSupportedImage(hash["path"]))
       return hash["path"];
 
-   return getPlaylistThumbnailsDir(hash.value("db_name"))
+   return getSanitizedThumbnailName(
+      getPlaylistThumbnailsDir(hash.value("db_name"))
       + QStringLiteral("/")
       + type
-      + QStringLiteral("/")
-      + getSanitizedThumbnailName(hash["label_noext"]);
+      + QStringLiteral("/"),
+      hash["label_noext"]);
 }
 
 QString PlaylistModel::getCurrentTypeThumbnailPath(const QModelIndex &index) const
@@ -312,12 +327,9 @@ bool MainWindow::addDirectoryFilesToList(QProgressDialog *dialog,
       if (fileInfo.isDir())
       {
          QDir fileInfoDir(path);
-         bool success = addDirectoryFilesToList(
-               dialog, list, fileInfoDir, extensions);
-
-         if (!success)
+         if (!addDirectoryFilesToList(
+               dialog, list, fileInfoDir, extensions))
             return false;
-
          continue;
       }
 
@@ -508,12 +520,9 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       if (fileInfo.isDir())
       {
          QDir dir(path);
-         bool success = addDirectoryFilesToList(
-               dialog.data(), list, dir, selectedExtensions);
-
-         if (!success)
+         if (!addDirectoryFilesToList(
+               dialog.data(), list, dir, selectedExtensions))
             return;
-
          continue;
       }
 
@@ -1502,8 +1511,8 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
       const char *defaultCorePath = playlist_get_default_core_path(playlist);
 
       /* Get default core path */
-      if (!string_is_empty(defaultCorePath) &&
-          !string_is_equal(defaultCorePath, "DETECT"))
+      if (   !string_is_empty(defaultCorePath)
+          && !string_is_equal(defaultCorePath, "DETECT"))
          corePath = QString::fromUtf8(defaultCorePath);
 
       /* Free playlist, if required */

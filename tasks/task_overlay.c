@@ -40,6 +40,7 @@ struct overlay_loader
    char *overlay_path;
    struct overlay *overlays;
    struct overlay *active;
+   struct string_list *image_list;
 
    size_t resolve_pos;
    unsigned size;
@@ -62,10 +63,41 @@ static void task_overlay_image_done(struct overlay *overlay)
    overlay->pos_increment = (overlay->size / 2) ? ((unsigned)(overlay->size / 2)) : 8;
 }
 
+static bool task_overlay_load_image_texture(
+      overlay_loader_t *loader,
+      struct overlay *overlay,
+      struct texture_image *image,
+      const char *full_path,
+      const char *rel_path)
+{
+   int img_idx = string_list_find_elem(loader->image_list, rel_path) - 1;
+
+   /* Load image if unique. Copy existing texture_image if not */
+   if (img_idx == -1)
+   {
+      union string_list_elem_attr attr;
+
+      image->supports_rgba =
+            (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT) ? true : false;
+
+      if (!image_texture_load(image, full_path))
+         return false;
+
+      attr.p = (void*)image;
+      string_list_append(loader->image_list, rel_path, attr);
+   }
+   else
+      *image = *((struct texture_image*)loader->image_list->elems[img_idx].attr.p);
+
+   overlay->load_images[overlay->load_images_size++] = *image;
+
+   return true;
+}
+
 static void task_overlay_load_desc_image(
       overlay_loader_t *loader,
       struct overlay_desc *desc,
-      struct overlay *input_overlay,
+      struct overlay *overlay,
       unsigned ol_idx, unsigned desc_idx)
 {
    char overlay_desc_image_key[32];
@@ -81,22 +113,16 @@ static void task_overlay_load_desc_image(
    if (config_get_path(conf, overlay_desc_image_key,
             image_path, sizeof(image_path)))
    {
-      struct texture_image image_tex;
       char path[PATH_MAX_LENGTH];
       fill_pathname_resolve_relative(path, loader->overlay_path,
             image_path, sizeof(path));
 
-      image_tex.supports_rgba = (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT) ? true : false;
-
-      if (image_texture_load(&image_tex, path))
-      {
-         input_overlay->load_images[input_overlay->load_images_size++] = image_tex;
-         desc->image       = image_tex;
-         desc->image_index = input_overlay->load_images_size - 1;
-      }
+      if (task_overlay_load_image_texture(loader, overlay, &desc->image,
+               path, image_path))
+         desc->image_index = overlay->load_images_size - 1;
    }
 
-   input_overlay->pos ++;
+   overlay->pos ++;
 }
 
 static void task_overlay_redefine_eightway_direction(
@@ -266,14 +292,14 @@ static bool task_overlay_load_desc(
 
    if (by_pixel && (width == 0 || height == 0))
    {
-      RARCH_ERR("[Overlay]: Base overlay is not set and not using normalized coordinates.\n");
+      RARCH_ERR("[Overlay] Base overlay is not set and not using normalized coordinates.\n");
       ret = false;
       goto end;
    }
 
    if (!config_get_array(conf, overlay_desc_key, overlay, sizeof(overlay)))
    {
-      RARCH_ERR("[Overlay]: Didn't find key: %s.\n", overlay_desc_key);
+      RARCH_ERR("[Overlay] Didn't find key: %s.\n", overlay_desc_key);
       ret = false;
       goto end;
    }
@@ -313,7 +339,7 @@ static bool task_overlay_load_desc(
 
    if (list_size < 6)
    {
-      RARCH_ERR("[Overlay]: Overlay desc is invalid. Requires at least 6 tokens.\n");
+      RARCH_ERR("[Overlay] Overlay desc is invalid. Requires at least 6 tokens.\n");
       ret = false;
       goto end;
    }
@@ -349,7 +375,22 @@ static bool task_overlay_load_desc(
       for (; tmp; tmp = strtok_r(NULL, "|", &save))
       {
          if (!string_is_equal(tmp, "nul"))
-            BIT256_SET(desc->button_mask, input_config_translate_str_to_bind_id(tmp));
+         {
+            unsigned bind_id = input_config_translate_str_to_bind_id(tmp);
+            /* Retry without "_enable" suffix for overlay compat */
+            if (bind_id == RARCH_BIND_LIST_END)
+            {
+               size_t len = strlen(tmp);
+               if (len > 7 && string_is_equal(tmp + len - 7, "_enable"))
+               {
+                  char stripped[64];
+                  strlcpy(stripped, tmp, len - 7 + 1 < sizeof(stripped)
+                        ? len - 7 + 1 : sizeof(stripped));
+                  bind_id = input_config_translate_str_to_bind_id(stripped);
+               }
+            }
+            BIT256_SET(desc->button_mask, bind_id);
+         }
       }
 
       if (BIT256_GET(desc->button_mask, RARCH_OVERLAY_NEXT))
@@ -385,7 +426,7 @@ static bool task_overlay_load_desc(
       desc->hitbox = OVERLAY_HITBOX_RECT;
    else
    {
-      RARCH_ERR("[Overlay]: Hitbox type (%s) is invalid. Use \"radial\" or \"rect\".\n", box);
+      RARCH_ERR("[Overlay] Hitbox type (%s) is invalid. Use \"radial\" or \"rect\".\n", box);
       ret = false;
       goto end;
    }
@@ -396,7 +437,7 @@ static bool task_overlay_load_desc(
       case OVERLAY_TYPE_ANALOG_RIGHT:
          if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
          {
-            RARCH_ERR("[Overlay]: Analog hitbox type must be \"radial\".\n");
+            RARCH_ERR("[Overlay] Analog hitbox type must be \"radial\".\n");
             ret = false;
             goto end;
          }
@@ -548,7 +589,7 @@ static bool task_overlay_resolve_targets(struct overlay *ol,
 
          if (next_idx < 0)
          {
-            RARCH_ERR("[Overlay]: Couldn't find overlay called: \"%s\".\n",
+            RARCH_ERR("[Overlay] Couldn't find overlay called: \"%s\".\n",
                   next);
             return false;
          }
@@ -574,7 +615,7 @@ static void task_overlay_resolve_iterate(retro_task_t *task)
    if (!task_overlay_resolve_targets(loader->overlays,
             loader->resolve_pos, loader->size))
    {
-      RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
+      RARCH_ERR("[Overlay] Failed to resolve next targets.\n");
       task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
       loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
       return;
@@ -640,7 +681,7 @@ static void task_overlay_deferred_loading(retro_task_t *task)
                         overlay->config.normalized,
                         overlay->config.alpha_mod, overlay->config.range_mod))
                {
-                  RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n",
+                  RARCH_ERR("[Overlay] Failed to load overlay descs for overlay #%u.\n",
                         (unsigned)overlay->pos);
                   task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
                   loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
@@ -719,7 +760,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
       if (!config_get_uint(conf, overlay->config.descs.key,
                &overlay->config.descs.size))
       {
-         RARCH_ERR("[Overlay]: Failed to read number of descs from config key: %s.\n",
+         RARCH_ERR("[Overlay] Failed to read number of descs from config key: %s.\n",
                overlay->config.descs.key);
          goto error;
       }
@@ -729,7 +770,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       if (!overlay_desc)
       {
-         RARCH_ERR("[Overlay]: Failed to allocate descs.\n");
+         RARCH_ERR("[Overlay] Failed to allocate descs.\n");
          goto error;
       }
 
@@ -768,7 +809,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       if (!texture_img)
       {
-         RARCH_ERR("[Overlay]: Failed to allocate load_images.\n");
+         RARCH_ERR("[Overlay] Failed to allocate load_images.\n");
          goto error;
       }
 
@@ -781,7 +822,6 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       if (!string_is_empty(overlay->config.paths.path))
       {
-         struct texture_image image_tex;
          char overlay_resolved_path[PATH_MAX_LENGTH];
 
          overlay_resolved_path[0] = '\0';
@@ -790,19 +830,14 @@ static void task_overlay_deferred_load(retro_task_t *task)
                loader->overlay_path,
                overlay->config.paths.path, sizeof(overlay_resolved_path));
 
-         image_tex.supports_rgba =
-               (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT) ? true : false;
-
-         if (!image_texture_load(&image_tex, overlay_resolved_path))
+         if (!task_overlay_load_image_texture(loader, overlay, &overlay->image,
+               overlay_resolved_path, overlay->config.paths.path))
          {
-            RARCH_ERR("[Overlay]: Failed to load image: %s.\n",
+            RARCH_ERR("[Overlay] Failed to load image: \"%s\".\n",
                   overlay_resolved_path);
             loader->loading_status = OVERLAY_IMAGE_TRANSFER_ERROR;
             goto error;
          }
-
-         overlay->load_images[overlay->load_images_size++] = image_tex;
-         overlay->image = image_tex;
       }
 
       config_get_array(conf, overlay->config.names.key,
@@ -867,7 +902,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
          if (list_size < 4)
          {
-            RARCH_ERR("[Overlay]: Failed to split rect \"%s\" into at least four tokens.\n",
+            RARCH_ERR("[Overlay] Failed to split rect \"%s\" into at least four tokens.\n",
                   overlay->config.rect.array);
             free(elem0);
             free(elem1);
@@ -891,6 +926,69 @@ static void task_overlay_deferred_load(retro_task_t *task)
       overlay->flags      &= ~OVERLAY_BLOCK_SCALE;
       overlay->center_x    = overlay->x + 0.5f * overlay->w;
       overlay->center_y    = overlay->y + 0.5f * overlay->h;
+
+      /* Parse viewport override (optional) */
+      strlcpy(conf_key + _len, "_viewport", sizeof(conf_key) - _len);
+      RARCH_LOG("[Overlay] Checking for viewport key: %s\n", conf_key);
+      if (config_get_array(conf, conf_key, tmp_str, sizeof(tmp_str)))
+      {
+         char *tok, *save      = NULL;
+         char *elem0           = NULL;
+         char *elem1           = NULL;
+         char *elem2           = NULL;
+         char *elem3           = NULL;
+         unsigned list_size    = 0;
+         char *cfg_vp_cpy      = strdup(tmp_str);
+         RARCH_LOG("[Overlay] Found viewport value: %s\n", tmp_str);
+
+         if ((tok = strtok_r(cfg_vp_cpy, ", ", &save)))
+         {
+            elem0 = strdup(tok);
+            list_size++;
+         }
+         if ((tok = strtok_r(NULL, ", ", &save)))
+         {
+            elem1 = strdup(tok);
+            list_size++;
+         }
+         if ((tok = strtok_r(NULL, ", ", &save)))
+         {
+            elem2 = strdup(tok);
+            list_size++;
+         }
+         if ((tok = strtok_r(NULL, ", ", &save)))
+         {
+            elem3 = strdup(tok);
+            list_size++;
+         }
+         free(cfg_vp_cpy);
+
+         if (list_size >= 4)
+         {
+            overlay->viewport.x  = (float)strtod(elem0, NULL);
+            overlay->viewport.y  = (float)strtod(elem1, NULL);
+            overlay->viewport.w  = (float)strtod(elem2, NULL);
+            overlay->viewport.h  = (float)strtod(elem3, NULL);
+            overlay->flags      |= OVERLAY_HAS_VIEWPORT;
+            RARCH_LOG("[Overlay] Parsed viewport: x=%.3f y=%.3f w=%.3f h=%.3f\n",
+                  overlay->viewport.x, overlay->viewport.y,
+                  overlay->viewport.w, overlay->viewport.h);
+         }
+         else
+            RARCH_WARN("[Overlay] viewport \"%s\" requires four tokens.\n", tmp_str);
+
+         free(elem0);
+         free(elem1);
+         free(elem2);
+         free(elem3);
+      }
+
+      /* Parse viewport_fill option (optional, default false) */
+      strlcpy(conf_key + _len, "_viewport_fill", sizeof(conf_key) - _len);
+      if (config_get_bool(conf, conf_key, &tmp_bool) && tmp_bool)
+         overlay->flags |= OVERLAY_VIEWPORT_FILL;
+      else
+         overlay->flags &= ~OVERLAY_VIEWPORT_FILL;
 
       /* Check whether x/y separation are force disabled
        * for this overlay */
@@ -945,7 +1043,6 @@ static void task_overlay_free(retro_task_t *task)
 {
    unsigned i;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
-   struct overlay *overlay   = &loader->overlays[loader->pos];
    uint8_t flg               = task_get_flags(task);
 
    if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
@@ -953,11 +1050,9 @@ static void task_overlay_free(retro_task_t *task)
       if (loader->overlay_path)
          free(loader->overlay_path);
 
-      for (i = 0; i < overlay->load_images_size; i++)
-      {
-         struct texture_image *ti = &overlay->load_images[i];
-         image_texture_free(ti);
-      }
+      for (i = 0; i < loader->image_list->size; i++)
+         image_texture_free(loader->image_list->elems[i].attr.p);
+      string_list_free(loader->image_list);
 
       for (i = 0; i < loader->size; i++)
          input_overlay_free_overlay(&loader->overlays[i]);
@@ -1011,6 +1106,7 @@ static void task_overlay_handler(retro_task_t *task)
       data->flags                       = loader->flags;
       data->overlay_types               = loader->overlay_types;
       data->overlay_path                = loader->overlay_path;
+      data->image_list                  = loader->image_list;
 
       task_set_data(task, data);
    }
@@ -1033,9 +1129,10 @@ bool task_push_overlay_load_default(
       void *user_data)
 {
    task_finder_data_t find_data;
-   retro_task_t *t          = NULL;
-   config_file_t *conf      = NULL;
-   overlay_loader_t *loader = NULL;
+   retro_task_t *t                = NULL;
+   config_file_t *conf            = NULL;
+   overlay_loader_t *loader       = NULL;
+   struct string_list *image_list = NULL;
 
    if (string_is_empty(overlay_path))
       return false;
@@ -1052,9 +1149,18 @@ bool task_push_overlay_load_default(
    if (!loader)
       return false;
 
+   image_list               = string_list_new();
+
+   if (!image_list)
+   {
+      free(loader);
+      return false;
+   }
+
    if (!(conf = config_file_new_from_path_to_string(overlay_path)))
    {
       free(loader);
+      free(image_list);
       return false;
    }
 
@@ -1063,6 +1169,7 @@ bool task_push_overlay_load_default(
       /* Error - overlays variable not defined in config. */
       config_file_free(conf);
       free(loader);
+      free(image_list);
       return false;
    }
 
@@ -1073,10 +1180,12 @@ bool task_push_overlay_load_default(
    {
       config_file_free(conf);
       free(loader);
+      free(image_list);
       return false;
    }
 
    loader->conf             = conf;
+   loader->image_list       = image_list;
    loader->state            = OVERLAY_STATUS_DEFERRED_LOAD;
    loader->pos_increment    = (loader->size / 4) ? (loader->size / 4) : 4;
 
@@ -1094,6 +1203,7 @@ bool task_push_overlay_load_default(
       config_file_free(conf);
       free(loader->overlays);
       free(loader);
+      free(image_list);
       return false;
    }
 

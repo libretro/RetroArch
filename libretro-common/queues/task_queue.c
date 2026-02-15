@@ -35,7 +35,7 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(_3DS)
 #include <retro_timers.h>
 #endif
 #ifdef HAVE_GCD
@@ -462,20 +462,20 @@ static bool retro_task_threaded_find(
       retro_task_finder_t func, void *user_data)
 {
    retro_task_t *task = NULL;
-   bool        result = false;
+   bool ret = false;
 
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
    {
       if (func(task, user_data))
       {
-         result = true;
+         ret = true;
          break;
       }
    }
    slock_unlock(running_lock);
 
-   return result;
+   return ret;
 }
 
 static void retro_task_threaded_retrieve(task_retriever_data_t *data)
@@ -525,7 +525,7 @@ static void threaded_worker(void *userdata)
 
       slock_unlock(running_lock);
       task->handler(task);
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(_3DS)
       /* Workaround emscripten pthread bug where not parking the
          thread will prevent other important stuff from
          happening. Maybe due to lack of signals implementation in
@@ -943,12 +943,12 @@ bool task_is_on_main_thread(void)
 #endif
 }
 
-void task_set_error(retro_task_t *task, char *error)
+void task_set_error(retro_task_t *task, char *err)
 {
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
-   task->error = error;
+   task->error = err;
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
 #endif
@@ -1044,17 +1044,15 @@ uint8_t task_get_flags(retro_task_t *task)
 
 char* task_get_error(retro_task_t *task)
 {
-   char *error = NULL;
-
+   char *s = NULL;
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
-   error = task->error;
+   s = task->error;
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
 #endif
-
-   return error;
+   return s;
 }
 
 int8_t task_get_progress(retro_task_t *task)
