@@ -3704,6 +3704,12 @@ static void vulkan_init_readback(vk_t *vk, bool video_gpu_record)
    }
 }
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+static void vulkan_init_render_target(struct vk_image* image,
+      uint32_t width, uint32_t height, VkFormat format,
+      VkRenderPass render_pass, vulkan_context_t* ctx);
+#endif
+
 static void *vulkan_init(const video_info_t *video,
       input_driver_t **input,
       void **input_data)
@@ -3948,6 +3954,23 @@ static void *vulkan_init(const video_info_t *video,
       Also it is required for HDR to not break during reinit, while not ideal it
       is the simplest solution unless reinit tracking is done */
    vk->flags |= VK_FLAG_SHOULD_RESIZE;
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+   /* Create HDR offscreen buffers now if HDR is already enabled.
+    * Without this, the first frame after init renders the menu inside
+    * the HDR render pass (A2B10G10R10) but uses pipelines compiled for
+    * the SDR render pass (B8G8R8A8), causing a render pass format
+    * mismatch. The end-of-frame resize handler will recreate these. */
+   if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+   {
+      vulkan_init_render_target(&vk->offscreen_buffer,
+            vk->video_width, vk->video_height,
+            VK_FORMAT_B8G8R8A8_UNORM, vk->sdr_render_pass, vk->context);
+      vulkan_init_render_target(&vk->readback_image,
+            vk->video_width, vk->video_height,
+            VK_FORMAT_B8G8R8A8_UNORM, vk->readback_render_pass, vk->context);
+   }
+#endif
 
    vulkan_init_readback(vk, settings->bools.video_gpu_record);
    return vk;
