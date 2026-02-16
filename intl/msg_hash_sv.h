@@ -4400,24 +4400,48 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
+   "Sparad fil: Sortera in i mappar efter kärnnamn"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "Sortera sparade filer i mappar med namn efter använd kärna."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+   "Sparat tillstånd: Sortera in i mappar efter kärnnamn"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "Sortera sparade tillstånd i mappar med namn efter den använda kärnan."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Sparad fil: Sortera in i mappar efter innehållskatalog"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "Sortera sparade filer i mappar med namn efter katalogen som innehållet finns i."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Sparat tillstånd: Sortera in i mappar efter innehållskatalog"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Sortera sparade tillstånd i mappar med namn efter den katalog där innehållet finns."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
+   "Sparad fil: Skriv inte över SaveRAM vid Läser in sparat tillstånd"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "Blockera SaveRAM från att skrivas över när sparade tillstånd läses in. Kan potentiellt innebära buggiga spel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
+   "Sparad fil: Intervall för SaveRAM Autosave"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -4426,6 +4450,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Autosparar det icke-flyktiga SRAM-minnet med jämna mellanrum. Detta är inaktiverat som standard om inget annat anges. Intervallet mäts i sekunder. Ett värde på 0 inaktiverar autosparning."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Återuppspelning: Intervall för kontrollpunkt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
@@ -4444,28 +4472,84 @@ MSG_HASH(
    "Om kontrollpunkter som lagrats i återuppspelningar ska avserialiseras under normal uppspelning. Bör ställas in på true för de flesta kärnor, men vissa kan uppvisa ojämnt beteende vid avserialisering av innehåll."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
+   "Sparat tillstånd: Öka index automatiskt"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Innan ett sparat tillstånd skapas, ökas sparat tillstånd-index automatiskt. När innehåll laddas in kommer indexet att sättas till det högsta befintliga indexet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Återuppspelning: Öka index automatiskt"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    "Innan en återuppspelning görs ökas återuppspelningsindexet automatiskt. När innehåll läses in kommer indexet att ställas in på det högsta befintliga indexet."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Sparat tillstånd: Maximal automatisk ökning att behålla"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "Begränsa antalet sparade tillstånd som skapas när ”Öka index automatiskt” är aktiverat. Om gränsen överskrids när ett nytt tillstånd sparas, raderas det befintliga tillståndet med lägst index. Värdet ”0” innebär att ett obegränsat antal tillstånd sparas."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Begränsa antalet återuppspelningar som skapas när ”Öka index automatiskt” är aktiverat. Om gränsen överskrids när en ny återuppspelning spelas in kommer den befintliga återuppspelningen med lägst index att raderas. Värdet ”0” innebär att ett obegränsat antal återuppspelningar spelas in."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
+   "Sparat tillstånd: Automatisk sparning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   "Spara automatiskt tillståndet när innehållet stängs. Detta sparade tillstånd läses in vid start om ”Automatisk inläsning” är aktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   "Sparat tillstånd: Automatisk inläsning"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Läser automatiskt in det automatiskt sparade tillståndet vid uppstart."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+   "Sparat tillstånd: Miniatyrbilder"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+   "Visa miniatyrbilder för sparade tillstånd."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   "Sparad fil: Komprimering"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    "Skriv icke-flyktiga SaveRAM-filer i ett arkiverat format. Minskar filstorleken dramatiskt på bekostnad av (försumbart) ökade spar-/inläsningstider.\nGäller endast kärnor som möjliggör sparande via standardgränssnittet libretro SaveRAM."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   "Sparat tillstånd: Komprimering"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Lagrar dina sparade tillståndsfiler i ett arkiverat format. Minskar dramatiskt filstorleken på bekostnad av längre spar- och inläsningstider."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Spara fil: Skriv till innehållskatalog"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Använd innehållskatalog som katalog för sparade filer."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Sparat tillstånd: Skriv till innehållskatalog"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4480,12 +4564,24 @@ MSG_HASH(
    "Använd innehållskatalog som katalog för system/BIOS."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Skärmdump: Sortera in i mappar efter innehållskatalog"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
    "Sortera skärmbilder i mappar med namn efter katalogen som innehållet finns i."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Skärmdump: Skriv till innehållskatalog"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Använd innehållskatalog som katalog för skärmbilder."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   "Skärmdump: Använd GPU"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -4631,6 +4727,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
    "Spola tillbaka"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
+   "Ändra inställningar för bakåtspolning."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
@@ -14709,6 +14809,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
    "Tryck på VMouse som pekare"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "Aktivera för att vidarebefordra pekhändelser från pekskärmen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,

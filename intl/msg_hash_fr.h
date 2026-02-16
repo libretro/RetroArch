@@ -4520,24 +4520,48 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
+   "Fichier de la sauvegarde : trier dans des dossiers selon le nom du cœur"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "Classer les fichiers de sauvegarde dans des dossiers nommés d'après le cœur utilisé."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+   "Sauvegarde instantanée : trier dans des dossiers selon le nom du cœur"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "Classer les sauvegardes instantanées dans des dossiers nommés d'après le cœur utilisé."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Fichier de la sauvegarde : trier dans des dossiers selon le dossier du contenu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "Trie les fichiers de sauvegarde dans des dossiers nommés en fonction du dossier où le contenu est situé."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Sauvegarde instantanée : trier dans des dossiers selon le dossier du contenu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Trie les fichiers de sauvegarde instantanée dans des dossiers nommés en fonction du dossier où le contenu est situé."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
+   "Fichier de la sauvegarde : ne pas écraser la SaveRAM en chargeant la sauvegarde instantanée"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "Empêche la SRAM d'être écrasée lors du chargement d'une sauvegarde instantanée. Pourrait potentiellement conduire à des bugs de jeu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
+   "Fichier de la sauvegarde : intervalle d'enregistrement automatique de la SaveRAM"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -4546,6 +4570,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Sauvegarde automatiquement la mémoire SRAM non volatile à un intervalle régulier. Cette option est désactivée par défaut. L'intervalle est mesuré en secondes. Une valeur de 0 désactive la sauvegarde automatique."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Replay : intervalle des points de contrôle"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
@@ -4560,32 +4588,96 @@ MSG_HASH(
    "Désérialiser ou non les points de contrôle stockés dans les replays pendant la lecture normale."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Replay : désérialisation des points de contrôle"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    "Désérialiser ou non les points de contrôle stockés dans les replays pendant la lecture normale. Cette option doit être activée pour la plupart des cœurs, mais certains peuvent avoir un comportement désordonné lors de la désérialisation du contenu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
+   "Sauvegarde instantanée : incrémenter automatiquement l'index"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Avant la création d'une sauvegarde instantanée, le numéro de la sauvegarde instantanée est automatiquement incrémenté. Lors du chargement de contenu, le numéro sera réglé sur le plus haut existant."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Replay : incrémenter automatiquement l'index"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    "Avant la création d'un replay, le numéro d'emplacement du replay est automatiquement incrémenté. Lors du chargement de contenu, le numéro sera réglé sur le plus haut existant."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Sauvegarde instantanée : incrémentation automatique maximale à conserver"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "Limiter le nombre de sauvegardes instantanées qui seront créées lorsque l'option 'Incrémenter automatiquement l'index' est activée. Si la limite est dépassée lors de l'enregistrement d'une nouvelle sauvegarde instantanée, la sauvegarde instantanée existante avec l'index le plus bas sera supprimée. Une valeur de '0' signifie que des sauvegardes instantanées illimitées seront enregistrées."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Replay : incrémentation automatique maximale à conserver"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Limiter le nombre de replays qui seront créés lorsque l'option 'Incrémenter automatiquement l'index' est activée. Si la limite est dépassée lors de l'enregistrement d'un nouveau replay, le replay existant avec l'index le plus bas sera supprimé. Une valeur de '0' signifie que des replays illimités seront enregistrés."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
+   "Sauvegarde instantanée : sauvegarde automatique"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   "Faire automatiquement une sauvegarde instantanée lorsque le contenu est fermé. Cette sauvegarde instantanée est chargée au démarrage si l'option 'Chargement automatique' est activée."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   "Sauvegarde instantanée : chargement automatique"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Charger la sauvegarde instantanée automatique au démarrage."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+   "Sauvegarde instantanée : miniatures"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+   "Affiche des miniatures pour les sauvegardes instantanées."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   "Fichier de la sauvegarde : compression"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    "Enregistrer la mémoire SRAM non volatile sous un format archivé. Réduit considérablement la taille du fichier au détriment de l'augmentation (négligeable) des temps de sauvegarde/chargement.\nS'applique uniquement aux cœurs qui peuvent sauvegarder via l'interface Save RAM standard de libretro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   "Sauvegarde instantanée : compression"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Enregistrer les fichiers de sauvegarde instantanée sous un format archivé. Réduit considérablement la taille du fichier au détriment de l'augmentation des temps de sauvegarde/chargement."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Fichier de la sauvegarde : écrire dans le dossier du contenu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Utiliser le dossier du contenu comme dossier de sauvegarde."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Sauvegarde instantanée : écrire dans le dossier du contenu"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4600,12 +4692,24 @@ MSG_HASH(
    "Utiliser le dossier du contenu comme dossier système/BIOS."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Capture d'écran : trier dans des dossiers selon le dossier du contenu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
    "Trie les captures d'écran dans des dossiers nommés en fonction du dossier où le contenu est situé."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Capture d'écran : écrire dans le dossier du contenu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Utiliser le dossier du contenu comme dossier de capture d'écran."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   "Capture d'écran : utiliser le processeur graphique"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,

@@ -4548,24 +4548,48 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
+   "Sábháil Comhad: Sórtáil i bhFillteáin de réir Ainm an Chroí"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "Sórtáil comhaid shábháilte i bhfillteáin ainmnithe i ndiaidh an chroí a úsáideadh."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+   "Stádas Sábháilte: Sórtáil i bhFillteáin de réir Ainm an Chroí"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "Sórtáil stáit sábhála i bhfillteáin ainmnithe i ndiaidh an chroí a úsáideadh."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Sábháil Comhad: Sórtáil i bhFillteáin de réir Eolaire Ábhair"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "Sórtáil comhaid shábháilte i bhfillteáin ainmnithe i ndiaidh an eolaire ina bhfuil an t-ábhar suite."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Stádas Sábháilte: Sórtáil i bhFillteáin de réir Eolaire Ábhair"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Sórtáil stáit sábhála i bhfillteáin ainmnithe i ndiaidh an eolaire ina bhfuil an t-ábhar suite."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
+   "Sábháil Comhad: Ná scríobh thar SaveRAM agus an Stádas Sábháil á Luchtú"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "Bac a chur ar SaveRAM ó bheith róscríobhta agus stáit sábhála á luchtú. D’fhéadfadh sé seo cluichí lochtacha a chruthú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
+   "Sábháil Comhad: Eatramh Uathshábháilte SaveRAM"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -4574,6 +4598,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Uath-shábháiltear an SRAM neamh-luaineach ag eatramh rialta. Tá sé seo díchumasaithe de réir réamhshocraithe mura socraítear a mhalairt. Tomhaistear an t-eatramh i soicindí. Díchumasaíonn luach 0 an t-uath-shábháil."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Athsheinm: Eatramh Seiceála"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
@@ -4588,32 +4616,96 @@ MSG_HASH(
    "Cibé acu ar cheart seicphointí atá stóráilte in athsheinm a dhíshraithiú le linn athsheinm rialta."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Athsheinm: Díshraithiú Seicphointe"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    "Cibé acu ar cheart seicphointí atá stóráilte in athsheinm a dhíshraithiú le linn athsheinm rialta. Ba chóir é seo a shocrú go fíor do fhormhór na gcroíleacán, ach d’fhéadfadh go mbeadh iompar salach ag cuid acu agus ábhar á dhíshraithiú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
+   "Sábháil an Stádas: Méadaigh an tInnéacs go Huathoibríoch"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Sula ndéantar staid sábhála, méadaítear innéacs an staid sábhála go huathoibríoch. Agus ábhar á luchtú, socrófar an t-innéacs go dtí an t-innéacs is airde atá ann cheana."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Athsheinm: Méadaigh an tInnéacs go Huathoibríoch"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    "Sula ndéantar athsheinm, méadaítear innéacs an athsheinm go huathoibríoch. Agus ábhar á luchtú, socrófar an t-innéacs go dtí an t-innéacs is airde atá ann cheana."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Stádas Sábháilte: Uasmhéadú Uathoibríoch le Coinneáil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "Cuir teorainn le líon na stát sábhála a chruthófar nuair a bheidh 'Innéacs Méadaithe go Hiomparúil' cumasaithe. Má sháraítear an teorainn agus stát nua á shábháil, scriosfar an stát atá ann cheana leis an innéacs is ísle. Ciallaíonn luach '0' go dtaifeadfar líon neamhtheoranta stát."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Athsheinm: Uasmhéadú Uathoibríoch le Coinneáil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Cuir teorainn le líon na n-athsheinm a chruthófar nuair a bhíonn 'Innéacs Méadaithe go Hiomparúil' cumasaithe. Má sháraítear an teorainn agus athsheinm nua á taifeadadh, scriosfar an t-athsheinm atá ann cheana féin leis an innéacs is ísle. Ciallaíonn luach '0' go dtaifeadfar athsheinm gan teorainn."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
+   "Stát Sábháil: Sábháil Uathoibríoch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   "Cruthaigh staid sábhála go huathoibríoch nuair a dhúntar ábhar. Luchtófar an staid sábhála seo ag am tosaithe má tá 'Lódáil Uathoibríoch' cumasaithe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   "Sábháil Stádas: Luchtaigh Uathoibríoch"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Luchtaigh an staid uath-shábhála go huathoibríoch ag an am tosaithe."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+   "Stát Sábháil: Mionsamhlacha"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+   "Taispeáin mionsamhlacha de stáit sábhála."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   "Sábháil Comhad: Comhbhrú"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    "Scríobh comhaid SaveRAM neamh-luaineacha i bhformáid chartlannaithe. Laghdaíonn sé méid an chomhaid go suntasach ar chostas méadú (neamhbhríoch) ar amanna sábhála/lódála. \nNí bhaineann sé seo ach le croíthe a chuireann ar chumas sábháil tríd an gcomhéadan SaveRAM caighdeánach libretro."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   "Stát Sábháil: Comhbhrú"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Scríobh comhaid stáit sábhála i bhformáid chartlannaithe. Laghdaíonn sé seo méid an chomhaid go mór ar chostas amanna sábhála/lódála méadaithe."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Sábháil Comhad: Scríobh chuig Eolaire Ábhair"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Úsáid eolaire ábhair mar eolaire comhad sábhála."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Sábháil Stádas: Scríobh chuig Eolaire Ábhair"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4628,12 +4720,24 @@ MSG_HASH(
    "Úsáid an t-eolaire ábhair mar eolaire Córais/BIOS."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Scáileán: Sórtáil i bhFillteáin de réir Eolaire Ábhair"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
    "Sórtáil scáileáin i bhfillteáin ainmnithe i ndiaidh an eolaire ina bhfuil an t-ábhar suite."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Scáileán scáileáin: Scríobh chuig Eolaire Ábhair"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Úsáid eolaire ábhair mar eolaire scáileáin."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   "Scáileán scáileáin: Úsáid GPU"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,

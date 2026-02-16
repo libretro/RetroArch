@@ -4572,24 +4572,48 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
+   "Tệp lưu: Sắp xếp vào thư mục theo tên core"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    "Sắp xếp file lưu vào các thư mục đặt theo tên core được sử dụng."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+   "Lưu trạng thái: Sắp xếp vào thư mục theo tên core"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    "Sắp xếp trạng thái lưu vào các thư mục đặt theo tên core được sử dụng."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Tệp lưu: Sắp xếp vào thư mục theo thư mục nội dung"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    "Sắp xếp các tệp lưu vào các thư mục được đặt tên theo thư mục chứa trò chơi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   "Lưu trò chơi: Sắp xếp vào thư mục theo thư mục nội dung"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Sắp xếp trạng thái lưu trong các thư mục được đặt tên theo thư mục chứa trò chơi."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
+   "Tệp lưu: Không ghi đè SaveRAM khi tải lưu trò chơi"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    "Ngăn SaveRAM bị ghi đè khi tải trạng thái lưu. Có thể dẫn đến lỗi trong một số trò chơi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
+   "Tệp lưu: Khoảng thời gian tự động lưu SaveRAM"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
@@ -4598,6 +4622,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
    "Tự động lưu SRAM không bay hơi theo khoảng thời gian đều đặn. Tùy chọn này mặc định bị tắt trừ khi được đặt khác. Khoảng thời gian được tính bằng giây. Giá trị 0 sẽ tắt tính năng tự động lưu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   "Phát lại: Khoảng thời gian tạo điểm kiểm tra"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
@@ -4612,32 +4640,96 @@ MSG_HASH(
    "Có nên giải tuần tự các điểm kiểm tra được lưu trong các phát lại trong khi phát lại bình thường hay không."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_DESERIALIZE,
+   "Phát lại: Giải tuần tự điểm kiểm tra"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    "Có nên giải tuần tự các điểm kiểm tra được lưu trong các phát lại trong khi phát lại bình thường hay không. Nên bật cho hầu hết các core, nhưng một số core có thể hoạt động không ổn định khi giải tuần tự trò chơi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
+   "Lưu trò chơi: Tự động tăng chỉ số"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    "Trước khi tạo một lưu trạng thái, chỉ số lưu trạng thái sẽ tự động tăng. Khi mở trò chơi, chỉ số sẽ được đặt bằng chỉ số cao nhất hiện có."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   "Phát lại: Tự động tăng chỉ số"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
    "Trước khi tạo một phát lại, chỉ số phát lại sẽ tự động tăng. Khi mở trò chơi, chỉ số sẽ được đặt bằng chỉ số cao nhất hiện có."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   "Lưu trò chơi: Số lượng tự động tăng tối đa được giữ lại"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   "Giới hạn số lượng lưu trò chơi sẽ được tạo khi bật “Tự động tăng chỉ số”.Nếu vượt quá giới hạn khi lưu trò chơi mới, trò chơi có chỉ số thấp nhất sẽ bị xóa.Giá trị “0” nghĩa là không giới hạn số lượng trò chơi được lưu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REPLAY_MAX_KEEP,
+   "Phát lại: Số lượng tự động tăng tối đa được giữ lại"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   "Giới hạn số lượng bản phát lại sẽ được tạo khi bật “Tự động tăng chỉ số”.Nếu vượt quá giới hạn khi ghi bản phát lại mới, bản phát lại có chỉ số thấp nhất sẽ bị xóa.Giá trị “0” nghĩa là không giới hạn số lượng bản phát lại được ghi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
+   "Lưu trò chơi: Tự động lưu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   "Tự động tạo một bản lưu trạng thái khi thoát nội dung. Bản lưu trạng thái này sẽ được tải khi khởi động nếu bật “Tự động tải”."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   "Lưu trò chơi: Tự động tải"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Tự động tải trạng thái lưu tự động khi khởi động."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+   "Lưu trò chơi: Hình thu nhỏ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+   "Hiển thị hình thu nhỏ của các bản lưu trò chơi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   "Tệp lưu: Nén"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    "Ghi các file SaveRAM không thay đổi vào định dạng lưu trữ. Giảm đáng kể kích thước file nhưng thời gian lưu/tải sẽ tăng nhẹ. Chỉ áp dụng cho các core cho phép lưu qua giao diện chuẩn libretro SaveRAM."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   "Lưu trò chơi: Nén"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
    "Ghi file trạng thái lưu vào định dạng lưu trữ. Giảm đáng kể kích thước file nhưng thời gian lưu/tải sẽ tăng."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Tệp lưu: Ghi vào thư mục nội dung"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    "Sử dụng thư mục trò chơi làm thư mục lưu tệp."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Lưu trò chơi: Ghi vào thư mục nội dung"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4652,12 +4744,24 @@ MSG_HASH(
    "Sử dụng thư mục trò chơi làm thư mục Hệ thống/BIOS."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Ảnh chụp màn hình: Sắp xếp vào thư mục theo thư mục nội dung"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
    "Sắp xếp ảnh chụp màn hình vào các thư mục được đặt theo tên thư mục chứa trò chơi."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Ảnh chụp màn hình: Ghi vào thư mục nội dung"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Sử dụng thư mục trò chơi làm thư mục lưu ảnh chụp màn hình."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   "Chụp ảnh màn hình: Sử dụng GPU"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
